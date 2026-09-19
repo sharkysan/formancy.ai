@@ -240,6 +240,9 @@ importers:
       publint:
         specifier: 'catalog:'
         version: 0.3.24
+      tinybench:
+        specifier: ^6.1.4
+        version: 6.1.4
       tsdown:
         specifier: 'catalog:'
         version: 0.23.0(@arethetypeswrong/core@0.18.5)(publint@0.3.24)(typescript@6.0.3)(unrun@0.3.1)

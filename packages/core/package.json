@@ -6,14 +6,20 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
-    ".": { "types": "./dist/index.d.mts", "default": "./dist/index.mjs" }
+    ".": {
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsdown",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "check:pkg": "publint && attw --pack . --profile esm-only"
+    "check:pkg": "publint && attw --pack . --profile esm-only",
+    "bench": "node bench/perf.mjs"
   },
   "dependencies": {
     "@formancy/expressions": "workspace:*",
@@ -23,6 +29,7 @@
     "@arethetypeswrong/cli": "catalog:",
     "fast-check": "catalog:",
     "publint": "catalog:",
+    "tinybench": "^6.1.4",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "unrun": "^0.3.1",
