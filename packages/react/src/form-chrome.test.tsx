@@ -36,7 +36,7 @@ const schema = {
       },
     ],
   },
-} as FormSchema
+} as unknown as FormSchema
 
 function renderForm(engine = createFormEngine({ schema }), props = {}) {
   render(
@@ -136,7 +136,7 @@ describe('the wizard chrome', () => {
         },
       ],
     },
-  } as FormSchema
+  } as unknown as FormSchema
 
   test('renders a stepper naming every page, with aria-current on the active step', async () => {
     const engine = createFormEngine({ schema: paged, initialValue: { firstName: 'Ada' } })
