@@ -22,13 +22,19 @@ export type JsonValue =
 /**
  * A field as a fixture declares it.
  *
- * Extends `FieldDef` from @formancy/spec with the logic and presentation the
- * conformance suite exercises. These properties live here rather than in the
- * spec because @formancy/spec has not yet landed its `logic`, `layout` and
- * `i18n` sections; when it does, this interface shrinks to an import. The
- * suite is written first on purpose — it is what the spec will be held to.
+ * The model shape — `key`, `type`, `required`, `fields`, `clearOnHide` — comes
+ * straight from `FieldDef` in @formancy/spec, and behaviour comes from the
+ * spec's `logic` section on the schema; a fixture must never say something the
+ * spec cannot. What remains here is presentation the conformance suite has to
+ * carry itself because @formancy/spec has not yet landed its `layout` and
+ * `i18n` sections: the accessible names a driver resolves controls by, and the
+ * option lists and repeater bounds a renderer needs to draw the form at all.
+ * When those sections land, this interface shrinks to an import.
+ *
+ * `fields` is re-declared only to deepen it: the spec's `FieldDef[]` becomes a
+ * readonly tree of fixture fields, which a mutable array cannot extend.
  */
-export interface ConformanceFieldDef extends FieldDef {
+export interface ConformanceFieldDef extends Omit<FieldDef, 'fields'> {
   /**
    * The field's accessible name. Inlined rather than referenced through an
    * i18n section because a driver may only find a control by its accessible
@@ -36,16 +42,8 @@ export interface ConformanceFieldDef extends FieldDef {
    * one file.
    */
   readonly label?: string
-  /** Children of a `group`, `page` or `repeater`. */
-  readonly children?: readonly ConformanceFieldDef[]
-  /** CEL. The field is rendered only while this evaluates truthy. */
-  readonly visibleWhen?: string
-  /** CEL. The field is required only while this evaluates truthy. */
-  readonly requiredWhen?: string
-  /** CEL. The field's value is derived, never typed. */
-  readonly calculate?: string
-  /** Drop the value while the field is hidden. Default false: the value is retained. */
-  readonly clearOnHide?: boolean
+  /** The fields held inside a `group`, a `page` or a repeater. */
+  readonly fields?: readonly ConformanceFieldDef[]
   readonly readOnly?: boolean
   readonly options?: readonly ConformanceOption[]
   readonly minItems?: number
@@ -61,6 +59,11 @@ export interface ConformanceOption {
   readonly label: string
 }
 
+/**
+ * The schema a fixture ships. Only `model` deviates from `FormSchema`, and only
+ * to deepen its fields into `ConformanceFieldDef`; `logic` is inherited from
+ * the spec verbatim, so a fixture's rules are exactly what an engine consumes.
+ */
 export interface ConformanceSchema extends Omit<FormSchema, 'model'> {
   readonly model: { readonly fields: readonly ConformanceFieldDef[] }
 }

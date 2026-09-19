@@ -12,22 +12,17 @@
           "key": "details",
           "type": "page",
           "label": "Your details",
-          "children": [
+          "fields": [
             { "key": "firstName", "type": "text", "label": "First name", "required": true },
             { "key": "lastName", "type": "text", "label": "Last name", "required": true },
-            {
-              "key": "company",
-              "type": "text",
-              "label": "Company",
-              "requiredWhen": "invoiceToCompany"
-            }
+            { "key": "company", "type": "text", "label": "Company" }
           ]
         },
         {
           "key": "address",
           "type": "page",
           "label": "Address",
-          "children": [
+          "fields": [
             { "key": "street", "type": "text", "label": "Street", "required": true },
             { "key": "city", "type": "text", "label": "City", "required": true },
             {
@@ -41,7 +36,7 @@
           "key": "review",
           "type": "page",
           "label": "Review",
-          "children": [
+          "fields": [
             {
               "key": "confirm",
               "type": "checkbox",
@@ -50,6 +45,11 @@
             }
           ]
         }
+      ]
+    },
+    "logic": {
+      "rules": [
+        { "target": "company", "kind": "required", "cel": "invoiceToCompany == true" }
       ]
     }
   },

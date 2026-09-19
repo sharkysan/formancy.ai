@@ -7,7 +7,8 @@
  * rejected here, with the position in the file that caused it.
  */
 
-import type { FieldType } from '@formancy/spec'
+import { modelDataPaths } from '@formancy/spec'
+import type { FieldDef, FieldType, RuleKind } from '@formancy/spec'
 import { COMMAND_SEPARATOR, fieldAtPath, pageKeys } from './paths.js'
 import type { ConformanceSchema, Fixture, FixtureStep, StepKind } from './types.js'
 
@@ -60,9 +61,17 @@ const STEP_KEYS: Record<StepKind, true> = {
 
 const stepKeyNames = Object.keys(STEP_KEYS)
 
+/**
+ * Membership goes through a Set, never through the `in` operator on the record:
+ * `'toString' in STEP_KEYS` is true via Object.prototype, so `in` would accept
+ * any inherited name as a step key or a field type and crash the validator
+ * further down. The records above stay for their compile-time totality only.
+ */
+const STEP_KEY_SET: ReadonlySet<string> = new Set(stepKeyNames)
+
 /** The single key of a parsed step, for reporting. */
 export function stepKind(step: FixtureStep): StepKind {
-  const keys = Object.keys(step).filter((key) => key in STEP_KEYS)
+  const keys = Object.keys(step).filter((key) => STEP_KEY_SET.has(key))
   // Unreachable for a parsed fixture: `validateFixture` rejects any other shape.
   if (keys.length !== 1) throw new TypeError(`Not a step: ${JSON.stringify(step)}`)
   return keys[0] as StepKind
@@ -88,11 +97,49 @@ const FIELD_TYPES: Record<FieldType, true> = {
   repeater: true,
 }
 
-/** Types that own children, and are the only types allowed to declare them. */
+const FIELD_TYPE_SET: ReadonlySet<string> = new Set(Object.keys(FIELD_TYPES))
+
+/** Types that hold other fields, and are the only types allowed to declare them. */
 const CONTAINER_TYPES: Partial<Record<FieldType, true>> = {
   group: true,
   page: true,
   repeater: true,
+}
+
+const CONTAINER_TYPE_SET: ReadonlySet<string> = new Set(Object.keys(CONTAINER_TYPES))
+
+/**
+ * Types that carry no accessible name of their own: `hidden` never renders and
+ * `static` is prose, not a control. Every other leaf is a control a driver has
+ * to find by its label.
+ */
+const UNLABELLED_TYPES: ReadonlySet<string> = new Set(['hidden', 'static'])
+
+/**
+ * Mirrors `RuleKind` from @formancy/spec, total for the same reason as
+ * `FIELD_TYPES`: the compiler fails here the day the spec grows a kind.
+ */
+const RULE_KINDS: Record<RuleKind, true> = {
+  visible: true,
+  disabled: true,
+  required: true,
+  computed: true,
+  validate: true,
+}
+
+const RULE_KIND_SET: ReadonlySet<string> = new Set(Object.keys(RULE_KINDS))
+
+/**
+ * Field properties the pre-spec fixture dialect used and the spec then landed
+ * differently. Each one must be a loud error rather than an ignored extra key:
+ * the review proved a `children` schema mounts as an EMPTY form in the engine
+ * — and passes, because none of its assertions can reach a field.
+ */
+const RETIRED_FIELD_KEYS: Readonly<Record<string, string>> = {
+  children: 'renamed: the spec calls this "fields"',
+  visibleWhen: 'moved: behaviour lives in schema.logic rules, e.g. { "target": "...", "kind": "visible", "cel": "..." }',
+  requiredWhen: 'moved: behaviour lives in schema.logic rules, e.g. { "target": "...", "kind": "required", "cel": "..." }',
+  calculate: 'moved: behaviour lives in schema.logic rules, e.g. { "target": "...", "kind": "computed", "cel": "..." }',
 }
 
 /** Validate and narrow, or throw a `FixtureError` naming every problem. */
@@ -195,7 +242,82 @@ function validateSchema(value: unknown, at: string): FixtureProblem[] {
     return problems
   }
 
-  problems.push(...validateFields(fields, `${at}.model.fields`))
+  const fieldProblems = validateFields(fields, `${at}.model.fields`)
+  problems.push(...fieldProblems)
+
+  // Rule targets are only checked against a model that is itself sound, for
+  // the same reason step paths are: one broken field would otherwise report a
+  // problem per rule and bury its cause.
+  const targets =
+    fieldProblems.length === 0
+      ? // The spec's own walk, so a rule target means exactly what it means to
+        // the engine and to diffSchemas. The cast bridges the fixture's readonly
+        // field tree to the spec's mutable one; the walk never mutates.
+        new Set(modelDataPaths({ fields: fields as FieldDef[] }))
+      : undefined
+  problems.push(...validateLogic(schema['logic'], `${at}.logic`, targets))
+
+  return problems
+}
+
+/**
+ * The logic section is the spec's `FormLogic`, verbatim. A rule aimed at a
+ * path the model does not define would evaluate against nothing, so targets
+ * are held to the model the same way step paths are — in the spec's data-path
+ * grammar, where a row-scoped target reads `contacts[].email`.
+ */
+function validateLogic(
+  value: unknown,
+  at: string,
+  targets: ReadonlySet<string> | undefined,
+): FixtureProblem[] {
+  if (value === undefined) return []
+  const logic = asRecord(value)
+  if (logic === undefined) {
+    return [{ path: at, message: `expected an object with a rules array, got ${describeValue(value)}` }]
+  }
+
+  const rules = logic['rules']
+  if (!Array.isArray(rules)) {
+    return [{ path: `${at}.rules`, message: `expected an array, got ${describeValue(rules)}` }]
+  }
+  if (rules.length === 0) {
+    return [{ path: `${at}.rules`, message: 'expected at least one rule; drop the logic section instead' }]
+  }
+
+  const problems: FixtureProblem[] = []
+  rules.forEach((value, index) => {
+    const where = `${at}.rules[${index}]`
+    const rule = asRecord(value)
+    if (rule === undefined) {
+      problems.push({ path: where, message: `expected an object, got ${describeValue(value)}` })
+      return
+    }
+
+    const target = rule['target']
+    if (typeof target !== 'string' || target === '') {
+      problems.push({ path: `${where}.target`, message: 'expected a data path, e.g. "address.city" or "items[].qty"' })
+    } else if (targets !== undefined && !targets.has(target)) {
+      problems.push({ path: `${where}.target`, message: `no field at data path ${JSON.stringify(target)}` })
+    }
+
+    const kind = rule['kind']
+    if (typeof kind !== 'string' || !RULE_KIND_SET.has(kind)) {
+      problems.push({
+        path: `${where}.kind`,
+        message: `expected one of ${Object.keys(RULE_KINDS).join(', ')}, got ${JSON.stringify(kind)}`,
+      })
+    }
+
+    if (typeof rule['cel'] !== 'string' || rule['cel'] === '') {
+      problems.push({ path: `${where}.cel`, message: 'expected a non-empty CEL expression' })
+    }
+
+    if (rule['code'] !== undefined && (typeof rule['code'] !== 'string' || rule['code'] === '')) {
+      problems.push({ path: `${where}.code`, message: 'expected a non-empty string' })
+    }
+  })
+
   return problems
 }
 
@@ -223,8 +345,14 @@ function validateFields(fields: readonly unknown[], at: string): FixtureProblem[
       seen.add(key)
     }
 
+    for (const [retired, hint] of Object.entries(RETIRED_FIELD_KEYS)) {
+      if (field[retired] !== undefined) {
+        problems.push({ path: `${where}.${retired}`, message: hint })
+      }
+    }
+
     const type = field['type']
-    if (typeof type !== 'string' || !(type in FIELD_TYPES)) {
+    if (typeof type !== 'string' || !FIELD_TYPE_SET.has(type)) {
       problems.push({
         path: `${where}.type`,
         message: `expected one of ${Object.keys(FIELD_TYPES).join(', ')}, got ${JSON.stringify(type)}`,
@@ -232,19 +360,29 @@ function validateFields(fields: readonly unknown[], at: string): FixtureProblem[
       return
     }
 
-    const children = field['children']
-    const isContainer = type in CONTAINER_TYPES
+    const nested = field['fields']
+    const isContainer = CONTAINER_TYPE_SET.has(type)
     if (isContainer) {
-      if (!Array.isArray(children) || children.length === 0) {
-        problems.push({ path: `${where}.children`, message: `a ${type} needs at least one child` })
+      if (!Array.isArray(nested) || nested.length === 0) {
+        problems.push({ path: `${where}.fields`, message: `a ${type} needs at least one field` })
       } else {
-        problems.push(...validateFields(children, `${where}.children`))
+        problems.push(...validateFields(nested, `${where}.fields`))
       }
-    } else if (children !== undefined) {
-      problems.push({ path: `${where}.children`, message: `a ${type} cannot have children` })
+    } else if (nested !== undefined) {
+      problems.push({ path: `${where}.fields`, message: `a ${type} cannot hold fields` })
     }
 
-    if (field['label'] !== undefined && typeof field['label'] !== 'string') {
+    if (!isContainer && !UNLABELLED_TYPES.has(type)) {
+      // A driver reaches a control by role and accessible name, and nothing
+      // else — see driver.ts. A control without a label is therefore a control
+      // no conforming driver can find, so the case could not run honestly.
+      if (typeof field['label'] !== 'string' || field['label'] === '') {
+        problems.push({
+          path: `${where}.label`,
+          message: `a ${type} needs a non-empty label: drivers resolve controls by accessible name only`,
+        })
+      }
+    } else if (field['label'] !== undefined && typeof field['label'] !== 'string') {
       problems.push({ path: `${where}.label`, message: 'expected a string' })
     }
   })
@@ -264,7 +402,7 @@ function validateStep(
   }
 
   const keys = Object.keys(step)
-  const known = keys.filter((key) => key in STEP_KEYS)
+  const known = keys.filter((key) => STEP_KEY_SET.has(key))
 
   if (known.length === 0) {
     return [
@@ -301,6 +439,7 @@ function validateStep(
     case 'expectVisible':
     case 'expectHidden': {
       if (!isStringArray(payload)) return [{ path: where, message: 'expected an array of paths' }]
+      if (payload.length === 0) return [{ path: where, message: 'expected at least one path' }]
       return payload.flatMap((path, index) => fieldPathProblems(path, `${where}[${index}]`, schema))
     }
 
@@ -308,6 +447,9 @@ function validateStep(
       const record = asRecord(payload)
       if (record === undefined) {
         return [{ path: where, message: 'expected an object of path to message codes' }]
+      }
+      if (Object.keys(record).length === 0) {
+        return [{ path: where, message: 'expected at least one path' }]
       }
       return Object.entries(record).flatMap(([path, codes]) => {
         const problems = fieldPathProblems(path, `${where}.${path}`, schema)
@@ -324,6 +466,7 @@ function validateStep(
     case 'expectNoErrors': {
       if (payload === true) return []
       if (!isStringArray(payload)) return [{ path: where, message: 'expected true or an array of paths' }]
+      if (payload.length === 0) return [{ path: where, message: 'expected true or at least one path' }]
       return payload.flatMap((path, index) => fieldPathProblems(path, `${where}[${index}]`, schema))
     }
 
@@ -364,7 +507,7 @@ function validateStep(
       if (typeof payload !== 'string' || payload === '') {
         return [{ path: where, message: 'expected a repeater path' }]
       }
-      return repeaterPathProblems(payload, where, schema)
+      return repeaterPathProblems(payload, where, schema, 'addLabel')
     }
 
     case 'removeItem': {
@@ -374,7 +517,7 @@ function validateStep(
       if (typeof record['path'] !== 'string' || record['path'] === '') {
         problems.push({ path: `${where}.path`, message: 'expected a repeater path' })
       } else {
-        problems.push(...repeaterPathProblems(record['path'], `${where}.path`, schema))
+        problems.push(...repeaterPathProblems(record['path'], `${where}.path`, schema, 'removeLabel'))
       }
       if (typeof record['index'] !== 'number' || !Number.isInteger(record['index']) || record['index'] < 0) {
         problems.push({ path: `${where}.index`, message: 'expected a non-negative integer' })
@@ -433,6 +576,7 @@ function repeaterPathProblems(
   path: string,
   at: string,
   schema: ConformanceSchema | undefined,
+  control: 'addLabel' | 'removeLabel',
 ): FixtureProblem[] {
   if (schema === undefined) return []
   const field = fieldAtPath(schema, path)
@@ -441,6 +585,19 @@ function repeaterPathProblems(
   }
   if (field.type !== 'repeater') {
     return [{ path: at, message: `expected a repeater, but ${JSON.stringify(path)} is a ${field.type}` }]
+  }
+  // The step will press this control, and a driver may only press by
+  // accessible name, so a repeater without the name cannot run the step.
+  const label = field[control]
+  if (typeof label !== 'string' || label === '') {
+    return [
+      {
+        path: at,
+        message: `repeater ${JSON.stringify(path)} needs a non-empty ${control}: drivers press its ${
+          control === 'addLabel' ? 'add' : 'remove'
+        } control by accessible name only`,
+      },
+    ]
   }
   return []
 }

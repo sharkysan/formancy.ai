@@ -1,6 +1,6 @@
 {
   "name": "a hidden value is dropped only when the field asks for it",
-  "description": "Retaining by default is the safe direction: someone who ticks a box back on expects to find what they typed. `clearOnHide` is the opt-in for the case where keeping it would submit an answer to a question that was withdrawn. A cleared field leaves no key in the payload at all, rather than a null every consumer then has to special-case.",
+  "description": "Clearing on hide is the spec's default direction: a hidden branch must not smuggle an answer to a withdrawn question into the submission. `clearOnHide: false` is the opt-out for the case where someone who ticks the box back on expects to find what they typed. Both fields declare it explicitly, because a conformance case must not lean on a default it is not testing. A cleared field leaves no key in the payload at all, rather than a null every consumer then has to special-case.",
   "tags": ["visibility", "data"],
   "schema": {
     "specVersion": "0",
@@ -13,16 +13,20 @@
           "key": "notes",
           "type": "textarea",
           "label": "Delivery notes",
-          "visibleWhen": "hasDetails",
           "clearOnHide": true
         },
         {
           "key": "reference",
           "type": "text",
           "label": "Order reference",
-          "visibleWhen": "hasDetails",
           "clearOnHide": false
         }
+      ]
+    },
+    "logic": {
+      "rules": [
+        { "target": "notes", "kind": "visible", "cel": "hasDetails == true" },
+        { "target": "reference", "kind": "visible", "cel": "hasDetails == true" }
       ]
     }
   },

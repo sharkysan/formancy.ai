@@ -9,7 +9,7 @@ import type { Fixture } from './types.js'
 export const builtinFixtures: readonly Fixture[] = [
   {
     name: 'a calculated field recomputes from its inputs and is never typed into',
-    description: 'A calculated value is derived on every change to anything it reads, not on blur and not on submit, so what a person sees is never briefly wrong. It is read-only in the accessible tree, which is how a renderer stops someone typing into a value the engine will overwrite. It travels in the payload so that a consumer reads the same number the person saw rather than recomputing it and disagreeing.',
+    description: 'A computed value is derived on every change to anything it reads, not on blur and not on submit, so what a person sees is never briefly wrong. It is read-only in the accessible tree, which is how a renderer stops someone typing into a value the engine will overwrite. It travels in the payload so that a consumer reads the same number the person saw rather than recomputing it and disagreeing.',
     tags: [
       'calculation',
     ],
@@ -36,7 +36,15 @@ export const builtinFixtures: readonly Fixture[] = [
             type: 'number',
             label: 'Total',
             readOnly: true,
-            calculate: 'quantity * unitPrice',
+          },
+        ],
+      },
+      logic: {
+        rules: [
+          {
+            target: 'total',
+            kind: 'computed',
+            cel: 'quantity * unitPrice',
           },
         ],
       },
@@ -88,7 +96,7 @@ export const builtinFixtures: readonly Fixture[] = [
   },
   {
     name: 'a hidden value is dropped only when the field asks for it',
-    description: 'Retaining by default is the safe direction: someone who ticks a box back on expects to find what they typed. `clearOnHide` is the opt-in for the case where keeping it would submit an answer to a question that was withdrawn. A cleared field leaves no key in the payload at all, rather than a null every consumer then has to special-case.',
+    description: 'Clearing on hide is the spec\'s default direction: a hidden branch must not smuggle an answer to a withdrawn question into the submission. `clearOnHide: false` is the opt-out for the case where someone who ticks the box back on expects to find what they typed. Both fields declare it explicitly, because a conformance case must not lean on a default it is not testing. A cleared field leaves no key in the payload at all, rather than a null every consumer then has to special-case.',
     tags: [
       'visibility',
       'data',
@@ -108,15 +116,27 @@ export const builtinFixtures: readonly Fixture[] = [
             key: 'notes',
             type: 'textarea',
             label: 'Delivery notes',
-            visibleWhen: 'hasDetails',
             clearOnHide: true,
           },
           {
             key: 'reference',
             type: 'text',
             label: 'Order reference',
-            visibleWhen: 'hasDetails',
             clearOnHide: false,
+          },
+        ],
+      },
+      logic: {
+        rules: [
+          {
+            target: 'notes',
+            kind: 'visible',
+            cel: 'hasDetails == true',
+          },
+          {
+            target: 'reference',
+            kind: 'visible',
+            cel: 'hasDetails == true',
           },
         ],
       },
@@ -209,14 +229,26 @@ export const builtinFixtures: readonly Fixture[] = [
             type: 'text',
             label: 'Canton',
             required: true,
-            visibleWhen: 'country == \'CH\'',
           },
           {
             key: 'state',
             type: 'text',
             label: 'State',
             required: true,
-            visibleWhen: 'country == \'US\'',
+          },
+        ],
+      },
+      logic: {
+        rules: [
+          {
+            target: 'canton',
+            kind: 'visible',
+            cel: 'country == \'CH\'',
+          },
+          {
+            target: 'state',
+            kind: 'visible',
+            cel: 'country == \'US\'',
           },
         ],
       },
@@ -296,7 +328,7 @@ export const builtinFixtures: readonly Fixture[] = [
   },
   {
     name: 'a repeating group validates each item and re-indexes when one is removed',
-    description: 'Removing an item is not the same as clearing it: everything after it moves down by one, and so do its values and its messages. A message left behind on contacts[1] after contacts[0] was removed points at a field that is no longer on screen, which is the classic repeater bug and the reason this case pins the indices so hard.',
+    description: 'Removing an item is not the same as clearing it: everything after it moves down by one, and so do its values and its messages. A message left behind on contacts[1] after contacts[0] was removed points at a field that is no longer on screen, which is the classic repeater bug and the reason this case pins the indices so hard. The email format rule is row-scoped — it runs once per item with `item` bound to that row — so a bad address in one row must flag that row and no other.',
     tags: [
       'repeater',
       'validation',
@@ -314,7 +346,7 @@ export const builtinFixtures: readonly Fixture[] = [
             minItems: 1,
             addLabel: 'Add contact',
             removeLabel: 'Remove contact',
-            children: [
+            fields: [
               {
                 key: 'name',
                 type: 'text',
@@ -328,6 +360,16 @@ export const builtinFixtures: readonly Fixture[] = [
                 required: true,
               },
             ],
+          },
+        ],
+      },
+      logic: {
+        rules: [
+          {
+            target: 'contacts[].email',
+            kind: 'validate',
+            cel: 'item.email == null || item.email == \'\' || item.email.contains(\'@\')',
+            code: 'email',
           },
         ],
       },
@@ -399,6 +441,18 @@ export const builtinFixtures: readonly Fixture[] = [
           'contacts[1].name',
           'contacts[1].email',
         ],
+      },
+      {
+        set: {
+          'contacts[0].email': 'not-an-email',
+        },
+      },
+      {
+        expectErrors: {
+          'contacts[0].email': [
+            'email',
+          ],
+        },
       },
       {
         set: {
@@ -504,7 +558,7 @@ export const builtinFixtures: readonly Fixture[] = [
             key: 'details',
             type: 'page',
             label: 'Your details',
-            children: [
+            fields: [
               {
                 key: 'firstName',
                 type: 'text',
@@ -521,7 +575,6 @@ export const builtinFixtures: readonly Fixture[] = [
                 key: 'company',
                 type: 'text',
                 label: 'Company',
-                requiredWhen: 'invoiceToCompany',
               },
             ],
           },
@@ -529,7 +582,7 @@ export const builtinFixtures: readonly Fixture[] = [
             key: 'address',
             type: 'page',
             label: 'Address',
-            children: [
+            fields: [
               {
                 key: 'street',
                 type: 'text',
@@ -553,7 +606,7 @@ export const builtinFixtures: readonly Fixture[] = [
             key: 'review',
             type: 'page',
             label: 'Review',
-            children: [
+            fields: [
               {
                 key: 'confirm',
                 type: 'checkbox',
@@ -561,6 +614,15 @@ export const builtinFixtures: readonly Fixture[] = [
                 required: true,
               },
             ],
+          },
+        ],
+      },
+      logic: {
+        rules: [
+          {
+            target: 'company',
+            kind: 'required',
+            cel: 'invoiceToCompany == true',
           },
         ],
       },

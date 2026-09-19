@@ -63,7 +63,7 @@ export function createFakeDriver(options: FakeDriverOptions = {}): RendererDrive
   function fieldsOnCurrentPage(): readonly ConformanceFieldDef[] {
     const paged = pages()
     if (paged.length === 0) return leaves(mounted().model.fields)
-    return leaves(paged[pageIndex]?.children ?? [])
+    return leaves(paged[pageIndex]?.fields ?? [])
   }
 
   function isVisible(field: ConformanceFieldDef): boolean {
@@ -162,7 +162,7 @@ export function createFakeDriver(options: FakeDriverOptions = {}): RendererDrive
 
 /** Pages are transparent; this fake knows nothing of groups or repeaters. */
 function leaves(fields: readonly ConformanceFieldDef[]): readonly ConformanceFieldDef[] {
-  return fields.flatMap((field) => (field.type === 'page' ? leaves(field.children ?? []) : [field]))
+  return fields.flatMap((field) => (field.type === 'page' ? leaves(field.fields ?? []) : [field]))
 }
 
 function isEmpty(value: JsonValue | undefined): boolean {

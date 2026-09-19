@@ -12,19 +12,19 @@ const nested: ConformanceSchema = {
         key: 'details',
         type: 'page',
         label: 'Your details',
-        children: [
+        fields: [
           { key: 'firstName', type: 'text', label: 'First name' },
           {
             key: 'address',
             type: 'group',
             label: 'Address',
-            children: [{ key: 'street', type: 'text', label: 'Street' }],
+            fields: [{ key: 'street', type: 'text', label: 'Street' }],
           },
           {
             key: 'contacts',
             type: 'repeater',
             label: 'Contacts',
-            children: [{ key: 'email', type: 'text', label: 'Email' }],
+            fields: [{ key: 'email', type: 'text', label: 'Email' }],
           },
         ],
       },
@@ -51,6 +51,24 @@ describe('fieldAtPath', () => {
 
   test('refuses a repeater child addressed without an index', () => {
     expect(fieldAtPath(nested, 'contacts.email')).toBeUndefined()
+  })
+
+  /**
+   * Only a repeater owns rows, so an index anywhere else addresses nothing —
+   * `email[0]` must not quietly resolve to `email`, or a typo in a fixture
+   * would assert against a different field than the one it names.
+   */
+  test('refuses an index on a leaf field', () => {
+    expect(fieldAtPath(nested, 'firstName[0]')).toBeUndefined()
+  })
+
+  test('refuses an index on a group', () => {
+    expect(fieldAtPath(nested, 'address[3]')).toBeUndefined()
+    expect(fieldAtPath(nested, 'address[0].street')).toBeUndefined()
+  })
+
+  test('still resolves an indexed repeater to the repeater itself', () => {
+    expect(fieldAtPath(nested, 'contacts[1]')?.type).toBe('repeater')
   })
 })
 

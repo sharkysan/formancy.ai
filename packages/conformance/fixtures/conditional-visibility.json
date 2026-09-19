@@ -18,20 +18,14 @@
             { "value": "US", "label": "United States" }
           ]
         },
-        {
-          "key": "canton",
-          "type": "text",
-          "label": "Canton",
-          "required": true,
-          "visibleWhen": "country == 'CH'"
-        },
-        {
-          "key": "state",
-          "type": "text",
-          "label": "State",
-          "required": true,
-          "visibleWhen": "country == 'US'"
-        }
+        { "key": "canton", "type": "text", "label": "Canton", "required": true },
+        { "key": "state", "type": "text", "label": "State", "required": true }
+      ]
+    },
+    "logic": {
+      "rules": [
+        { "target": "canton", "kind": "visible", "cel": "country == 'CH'" },
+        { "target": "state", "kind": "visible", "cel": "country == 'US'" }
       ]
     }
   },

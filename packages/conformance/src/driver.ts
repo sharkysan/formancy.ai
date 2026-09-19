@@ -34,6 +34,20 @@ import type { ConformanceSchema, JsonValue, SubmitStatus } from './types.js'
  * fixture's data path to the accessible name to query for: the driver mounted
  * the schema, so it can read `fieldAtPath(schema, path).label`. What it may not
  * do is reach into the implementation to find the control.
+ *
+ * The fixture format backs the rule up mechanically: `validateFixture` refuses
+ * a fixture whose visible leaf fields lack a `label`, and refuses an
+ * addItem/removeItem step on a repeater without `addLabel`/`removeLabel`. So
+ * every runnable case CARRIES the accessible names, and the names a driver
+ * must resolve by are exactly the fixture's `label`, `addLabel` and
+ * `removeLabel` — never a name it invents or translates itself.
+ *
+ * NOTE: that validator check is the minimum enforcement, not the mechanism.
+ * The full driver-contract kit is follow-up work: a shared driver test suite
+ * that mounts deliberately broken markup (an unlabelled input, an unassociated
+ * error message) and asserts the driver CANNOT find it, plus an aria-snapshot
+ * golden per fixture. Until it exists, a driver that queries by test id
+ * passes undetected; the rule above is enforced by review.
  */
 export interface RendererDriver {
   /**

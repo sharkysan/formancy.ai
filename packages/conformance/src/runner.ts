@@ -1,4 +1,3 @@
-import { canonicalize } from '@formancy/spec'
 import type {
   ConformanceMessage,
   DriverFactory,
@@ -38,7 +37,13 @@ export interface StepFailure {
  * the implementation broke, so nothing after it means anything.
  */
 export interface DriverCrash {
-  readonly phase: 'mount' | 'step' | 'unmount'
+  /**
+   * `fixture` is the one phase where the driver is innocent: the case itself
+   * could not run at all — a malformed fixture, or a driver factory that threw
+   * — and `runSuite` reports it this way rather than letting one broken case
+   * abort the whole run.
+   */
+  readonly phase: 'mount' | 'step' | 'unmount' | 'fixture'
   /** Absent when the driver never reached a step. */
   readonly stepIndex?: number
   readonly message: string
@@ -61,6 +66,12 @@ export interface FixtureResult {
   /** At most one: the run stops at the first failure. */
   readonly failure?: StepFailure
   readonly crash?: DriverCrash
+  /**
+   * An unmount that threw AFTER a step had already failed or crashed. Kept
+   * apart from `crash` so teardown noise never rewrites the verdict: the step
+   * outcome is the story, this is the footnote.
+   */
+  readonly teardownError?: DriverCrash
 }
 
 export interface SuiteResult {
@@ -128,11 +139,18 @@ export async function runFixture(fixture: Fixture, driver: RendererDriver): Prom
     }
   }
 
+  let teardownError: DriverCrash | undefined
   if (driver.unmount !== undefined) {
     try {
       await driver.unmount()
     } catch (error) {
-      crash ??= { phase: 'unmount', message: messageOf(error), error }
+      const thrown: DriverCrash = { phase: 'unmount', message: messageOf(error), error }
+      // After a clean run a throwing teardown is the only thing wrong, so it
+      // is the crash: a passing case may not leak into the next one. After a
+      // failure or a step crash it must NOT take over — masking an assertion
+      // failure with teardown noise would hide the reason the case failed.
+      if (failure === undefined && crash === undefined) crash = thrown
+      else teardownError = thrown
     }
   }
 
@@ -142,6 +160,7 @@ export async function runFixture(fixture: Fixture, driver: RendererDriver): Prom
     steps: outcomes,
     ...(failure === undefined ? {} : { failure }),
     ...(crash === undefined ? {} : { crash }),
+    ...(teardownError === undefined ? {} : { teardownError }),
   }
 }
 
@@ -153,8 +172,20 @@ export async function runSuite(
 ): Promise<SuiteResult> {
   const results: FixtureResult[] = []
 
-  for (const fixture of fixtures) {
-    results.push(await runFixture(fixture, await resolveDriver(driver)))
+  for (const [index, fixture] of fixtures.entries()) {
+    try {
+      results.push(await runFixture(fixture, await resolveDriver(driver)))
+    } catch (error) {
+      // A fixture that cannot even run — malformed, or a throwing driver
+      // factory — is one crashed result, not the end of the run: the value of
+      // a conformance run is the whole picture.
+      results.push({
+        fixture: fixtureName(fixture, index),
+        status: 'crashed',
+        steps: [],
+        crash: { phase: 'fixture', message: messageOf(error), error },
+      })
+    }
   }
 
   const passed = results.filter((result) => result.status === 'passed').length
@@ -277,7 +308,7 @@ async function performStep(step: FixtureStep, context: RunContext): Promise<Mism
     const expected = step.expectValue
     const actual: Record<string, unknown> = {}
     for (const path of Object.keys(expected)) actual[path] = await driver.valueOf(path)
-    if (equal(expected, actual)) return undefined
+    if (structuralEqual(expected, actual)) return undefined
     return { detail: 'values differ', expected, actual }
   }
 
@@ -289,7 +320,7 @@ async function performStep(step: FixtureStep, context: RunContext): Promise<Mism
       expected[path] = [...codes].sort()
       actual[path] = codesAt(messages, path)
     }
-    if (equal(expected, actual)) return undefined
+    if (structuralEqual(expected, actual)) return undefined
     return { detail: 'message codes differ', expected, actual }
   }
 
@@ -315,7 +346,7 @@ async function performStep(step: FixtureStep, context: RunContext): Promise<Mism
       }
     }
     const data = step.expectSubmit.data
-    if (data !== undefined && !equal(data, result.data)) {
+    if (data !== undefined && !structuralEqual(data, result.data)) {
       return { detail: 'the submitted payload differs', expected: data, actual: result.data }
     }
     return undefined
@@ -383,9 +414,40 @@ function summarize(message: ConformanceMessage): string {
   return `${message.path}: ${message.code}`
 }
 
-/** Canonical JSON both sides, so key order never decides a verdict. */
-function equal(left: unknown, right: unknown): boolean {
-  return canonicalize(left ?? null) === canonicalize(right ?? null)
+/**
+ * The equality every `expect*` step asserts with. TOTAL by design: the
+ * expected side is validated JSON, but the actual side is whatever a driver
+ * answered, and a driver under test answers undefined, NaN or Infinity
+ * precisely when it is broken — the moment the comparison must produce a
+ * FAILURE with expected versus actual, never throw and turn the verdict into
+ * a crash. (The spec's `canonicalize` throws on all three, which is right for
+ * a wire format and wrong here.)
+ *
+ * So every value is ordinary and comparable: NaN equals NaN — this is an
+ * assertion comparator, not IEEE arithmetic — and null never equals undefined,
+ * at any depth including the top, because "the value is null" and "there is no
+ * value" are different driver answers. Key order never decides a verdict.
+ *
+ * Exported for its own tests; deliberately not re-exported from index.ts.
+ */
+export function structuralEqual(left: unknown, right: unknown): boolean {
+  if (left === right) return true
+  if (typeof left === 'number' && typeof right === 'number') {
+    return Number.isNaN(left) && Number.isNaN(right)
+  }
+  if (Array.isArray(left) || Array.isArray(right)) {
+    if (!Array.isArray(left) || !Array.isArray(right) || left.length !== right.length) return false
+    return left.every((item, index) => structuralEqual(item, right[index]))
+  }
+  if (typeof left === 'object' && typeof right === 'object' && left !== null && right !== null) {
+    const a = left as Record<string, unknown>
+    const b = right as Record<string, unknown>
+    const keys = Object.keys(a)
+    if (keys.length !== Object.keys(b).length) return false
+    // hasOwn, not `in` or a value check: `{a: undefined}` and `{}` differ.
+    return keys.every((key) => Object.hasOwn(b, key) && structuralEqual(a[key], b[key]))
+  }
+  return false
 }
 
 function render(value: unknown): string {
@@ -407,6 +469,12 @@ function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
 }
 
+/** A fixture broken enough to crash may not even carry a readable name. */
+function fixtureName(fixture: Fixture, index: number): string {
+  const name: unknown = (fixture as { name?: unknown } | undefined)?.name
+  return typeof name === 'string' && name !== '' ? name : `fixtures[${index}]`
+}
+
 function formatSuite(
   results: readonly FixtureResult[],
   passed: number,
@@ -418,6 +486,9 @@ function formatSuite(
     if (result.failure !== undefined) lines.push('', result.failure.message)
     if (result.crash !== undefined) {
       lines.push('', `${result.fixture} - driver crashed during ${result.crash.phase}: ${result.crash.message}`)
+    }
+    if (result.teardownError !== undefined) {
+      lines.push(`${result.fixture} - teardown also threw: ${result.teardownError.message}`)
     }
   }
   return lines.join('\n')

@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
-import type { RendererDriver } from './driver.js'
-import { runFixture, runSuite } from './runner.js'
-import type { ConformanceSchema, Fixture } from './types.js'
+import type { RendererDriver, SubmitResult } from './driver.js'
+import { ConformanceAssertionError, assertFixtureResult, runFixture, runSuite, structuralEqual } from './runner.js'
+import type { ConformanceSchema, Fixture, JsonValue } from './types.js'
 import { createFakeDriver } from './testing/fake-driver.js'
 
 const contact: ConformanceSchema = {
@@ -139,16 +139,244 @@ describe('runFixture', () => {
 
   test('unmounts the driver even after a failure, so the next case starts clean', async () => {
     const calls: string[] = []
-    const driver = swissDriver()
+    const failing: Fixture = {
+      name: 'a deliberately wrong case',
+      schema: contact,
+      steps: [{ expectVisible: ['canton'] }],
+    }
     const spied = {
-      ...driver,
+      ...swissDriver(),
       unmount: async (): Promise<void> => {
         calls.push('unmount')
       },
     }
 
-    await runFixture(passing, spied)
+    const result = await runFixture(failing, spied)
+
+    expect(result.status).toBe('failed')
     expect(calls).toEqual(['unmount'])
+  })
+
+  test('a teardown throw after a failed step reports both, and the failure stays the verdict', async () => {
+    const failing: Fixture = {
+      name: 'a deliberately wrong case',
+      schema: contact,
+      steps: [{ expectVisible: ['canton'] }],
+    }
+    const spied = {
+      ...swissDriver(),
+      unmount: async (): Promise<void> => {
+        throw new Error('container was already gone')
+      },
+    }
+
+    const result = await runFixture(failing, spied)
+
+    expect(result.status).toBe('failed')
+    expect(result.failure?.kind).toBe('expectVisible')
+    expect(result.teardownError?.phase).toBe('unmount')
+    expect(result.teardownError?.message).toContain('container was already gone')
+    // What a test framework then throws is the assertion, never the teardown
+    // noise: a renderer author must see WHY the case failed.
+    expect(() => assertFixtureResult(result)).toThrow(ConformanceAssertionError)
+  })
+
+  test('a teardown throw after a clean run is still a crash, because a passing case may not leak', async () => {
+    const spied = {
+      ...swissDriver(),
+      unmount: async (): Promise<void> => {
+        throw new Error('container was already gone')
+      },
+    }
+
+    const result = await runFixture(passing, spied)
+
+    expect(result.status).toBe('crashed')
+    expect(result.crash?.phase).toBe('unmount')
+  })
+
+  test('passes initialValues through to mount()', async () => {
+    const prefilled: Fixture = {
+      name: 'prefilled',
+      schema: contact,
+      initialValues: { email: 'ada@example.com' },
+      steps: [{ expectValue: { email: 'ada@example.com' } }],
+    }
+
+    const result = await runFixture(prefilled, createFakeDriver())
+
+    expect(result.status).toBe('passed')
+  })
+})
+
+describe('assertion equality is total', () => {
+  test('a driver answering undefined is a failure with expected and actual, never a crash', async () => {
+    const wrong: Fixture = {
+      name: 'undefined answer',
+      schema: contact,
+      steps: [{ expectValue: { email: 'ada@example.com' } }],
+    }
+    const spied = {
+      ...createFakeDriver(),
+      valueOf: async (): Promise<JsonValue> => undefined as unknown as JsonValue,
+    }
+
+    const result = await runFixture(wrong, spied)
+
+    expect(result.status).toBe('failed')
+    expect(result.crash).toBeUndefined()
+    expect(result.failure?.expected).toEqual({ email: 'ada@example.com' })
+    expect(result.failure?.actual).toEqual({ email: undefined })
+  })
+
+  test('an expected null payload does not match a submit that returned none', async () => {
+    const wrong: Fixture = {
+      name: 'null is not nothing',
+      schema: contact,
+      steps: [{ submit: true }, { expectSubmit: { status: 'accepted', data: null } }],
+    }
+    const spied = {
+      ...createFakeDriver(),
+      submit: async (): Promise<SubmitResult> => ({ status: 'accepted', messages: [] }),
+    }
+
+    const result = await runFixture(wrong, spied)
+
+    expect(result.status).toBe('failed')
+    expect(result.failure?.kind).toBe('expectSubmit')
+  })
+
+  describe('structuralEqual', () => {
+    test('treats NaN as equal to NaN, as an assertion comparator must', () => {
+      expect(structuralEqual(Number.NaN, Number.NaN)).toBe(true)
+      expect(structuralEqual({ deep: [Number.NaN] }, { deep: [Number.NaN] })).toBe(true)
+      expect(structuralEqual(Number.NaN, 0)).toBe(false)
+    })
+
+    test('compares the infinities as ordinary values', () => {
+      expect(structuralEqual(Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY)).toBe(true)
+      expect(structuralEqual(Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY)).toBe(false)
+    })
+
+    test('distinguishes null from undefined at every level, including the top', () => {
+      expect(structuralEqual(null, undefined)).toBe(false)
+      expect(structuralEqual({ a: null }, { a: undefined })).toBe(false)
+      expect(structuralEqual([null], [undefined])).toBe(false)
+      expect(structuralEqual(undefined, undefined)).toBe(true)
+    })
+
+    test('distinguishes an undefined-valued key from an absent one', () => {
+      expect(structuralEqual({ a: undefined }, {})).toBe(false)
+      expect(structuralEqual({ a: undefined }, { a: undefined })).toBe(true)
+    })
+
+    test('compares structures without regard to key order', () => {
+      expect(structuralEqual({ a: 1, b: [2, { c: 3 }] }, { b: [2, { c: 3 }], a: 1 })).toBe(true)
+      expect(structuralEqual({ a: 1 }, { a: 2 })).toBe(false)
+      expect(structuralEqual([1, 2], [2, 1])).toBe(false)
+    })
+  })
+})
+
+describe('per-step assertions', () => {
+  test('expectHidden fails naming exactly the paths that are wrongly on screen', async () => {
+    const wrong: Fixture = {
+      name: 'hidden means hidden',
+      schema: contact,
+      steps: [{ set: { country: 'CH' } }, { expectHidden: ['canton', 'email'] }],
+    }
+
+    const result = await runFixture(wrong, swissDriver())
+
+    expect(result.status).toBe('failed')
+    expect(result.failure?.actual).toEqual(['canton', 'email'])
+  })
+
+  test('expectHidden passes for a field the driver does not show', async () => {
+    const fixture: Fixture = {
+      name: 'canton hidden outside Switzerland',
+      schema: contact,
+      steps: [{ set: { country: 'US' } }, { expectHidden: ['canton'] }],
+    }
+
+    expect((await runFixture(fixture, swissDriver())).status).toBe('passed')
+  })
+
+  const wizard: ConformanceSchema = {
+    specVersion: '0',
+    id: 'wizard',
+    title: 'Two pages',
+    model: {
+      fields: [
+        { key: 'one', type: 'page', label: 'One', fields: [{ key: 'a', type: 'text', label: 'A' }] },
+        { key: 'two', type: 'page', label: 'Two', fields: [{ key: 'b', type: 'text', label: 'B' }] },
+      ],
+    },
+  }
+
+  test('expectPage follows the wizard across next', async () => {
+    const fixture: Fixture = {
+      name: 'pages',
+      schema: wizard,
+      steps: [{ expectPage: 'one' }, { next: true }, { expectPage: 'two' }],
+    }
+
+    expect((await runFixture(fixture, createFakeDriver())).status).toBe('passed')
+  })
+
+  test('expectPage fails with the page the wizard is actually on', async () => {
+    const wrong: Fixture = {
+      name: 'pages',
+      schema: wizard,
+      steps: [{ expectPage: 'two' }],
+    }
+
+    const result = await runFixture(wrong, createFakeDriver())
+
+    expect(result.status).toBe('failed')
+    expect(result.failure?.expected).toBe('two')
+    expect(result.failure?.actual).toBe('one')
+  })
+
+  test('expectSubmit compares the payload by deep equality', async () => {
+    const fixture: Fixture = {
+      name: 'payload',
+      schema: contact,
+      steps: [
+        { set: { country: 'CH', canton: 'Zürich', email: 'ada@example.com' } },
+        { submit: true },
+        {
+          expectSubmit: {
+            status: 'accepted',
+            data: { country: 'CH', canton: 'Zürich', email: 'ada@example.com' },
+          },
+        },
+      ],
+    }
+
+    expect((await runFixture(fixture, swissDriver())).status).toBe('passed')
+  })
+
+  test('expectSubmit fails when the payload differs anywhere', async () => {
+    const wrong: Fixture = {
+      name: 'payload',
+      schema: contact,
+      steps: [
+        { set: { country: 'CH', canton: 'Zürich', email: 'ada@example.com' } },
+        { submit: true },
+        {
+          expectSubmit: {
+            status: 'accepted',
+            data: { country: 'CH', canton: 'Zürich', email: 'grace@example.com' },
+          },
+        },
+      ],
+    }
+
+    const result = await runFixture(wrong, swissDriver())
+
+    expect(result.status).toBe('failed')
+    expect(result.failure?.message).toContain('payload differs')
   })
 })
 
@@ -184,7 +412,7 @@ describe('the command grammar', () => {
               label: 'Contacts',
               addLabel: 'Add contact',
               removeLabel: 'Remove contact',
-              children: [{ key: 'name', type: 'text', label: 'Name' }],
+              fields: [{ key: 'name', type: 'text', label: 'Name' }],
             },
           ],
         },
@@ -303,5 +531,17 @@ describe('runSuite', () => {
 
     expect(suite.status).toBe('passed')
     expect(suite.report).toContain('1 passed')
+  })
+
+  test('survives a malformed fixture in the middle: reported, and the rest still run', async () => {
+    const broken = { name: 'broken', schema: contact, steps: [{ expectVisable: [] }] }
+
+    const suite = await runSuite([passing, broken as unknown as Fixture, passing], swissDriver())
+
+    expect(suite.results.map((result) => result.status)).toEqual(['passed', 'crashed', 'passed'])
+    expect(suite.crashed).toBe(1)
+    expect(suite.results[1]?.crash?.phase).toBe('fixture')
+    expect(suite.results[1]?.crash?.message).toContain('Invalid fixture')
+    expect(suite.report).toContain('broken')
   })
 })

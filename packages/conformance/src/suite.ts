@@ -18,6 +18,15 @@ import { assertFixtureResult, resolveDriver, runFixture } from './runner.js'
 export interface ConformanceTestApi {
   describe(name: string, body: () => void): void
   test(name: string, body: () => Promise<void> | void): void
+  /**
+   * Register a case the framework reports as SKIPPED. Optional because not
+   * every framework has one — and when it is absent, a skipped case is
+   * registered as a test that THROWS rather than one that passes: a skip that
+   * counted as a pass would let a renderer advertise conformance it does not
+   * have. The vitest/jest wiring is one line:
+   * `skip: (name) => test.skip(name, () => {})`.
+   */
+  skip?(name: string, reason: string): void
 }
 
 export interface DescribeConformanceOptions {
@@ -78,9 +87,25 @@ export function describeConformance(
 
   api.describe(options.name ?? 'conformance', () => {
     for (const fixture of fixtures) {
-      const reason = skip[fixture.name]
+      // hasOwn: a fixture named like an Object.prototype member ("toString")
+      // must not read an inherited function as its skip reason.
+      const reason = Object.hasOwn(skip, fixture.name) ? skip[fixture.name] : undefined
       if (reason !== undefined) {
-        api.test(`${fixture.name} [skipped: ${reason}]`, () => undefined)
+        // The reason travels in the case name either way, so nobody skips
+        // quietly. Without a real skip() the case must FAIL rather than pass:
+        // a body that resolved would count the skip as conformance.
+        const name = `${fixture.name} [skipped: ${reason}]`
+        if (api.skip !== undefined) {
+          api.skip(name, reason)
+        } else {
+          api.test(name, () => {
+            throw new Error(
+              `Skipped, not passing: ${reason}. This test api has no skip(), so the case fails rather than ` +
+                `silently counting as conformant. Wire one up: describeConformance(driver, ` +
+                `{ test: { describe, test, skip: (name) => test.skip(name, () => {}) } }).`,
+            )
+          })
+        }
         continue
       }
 
@@ -107,9 +132,20 @@ function resolveTestApi(injected: ConformanceTestApi | undefined): ConformanceTe
   const test = globals.test ?? globals.it
 
   if (typeof describe === 'function' && typeof test === 'function') {
+    // vitest, jest and mocha hang a real skip off the test function itself;
+    // wiring it here means a global-mode renderer suite reports skips as
+    // skips instead of failing them for want of an injected api.
+    const frameworkSkip = (test as { skip?: unknown }).skip
+    const skip =
+      typeof frameworkSkip === 'function'
+        ? (name: string): void => {
+            ;(frameworkSkip as (name: string, body: () => void) => void)(name, () => undefined)
+          }
+        : undefined
     return {
       describe: describe as ConformanceTestApi['describe'],
       test: test as ConformanceTestApi['test'],
+      ...(skip === undefined ? {} : { skip }),
     }
   }
 

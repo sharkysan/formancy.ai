@@ -77,8 +77,12 @@ export function fieldAtPath(
     field = childNamed(fields, segment.key)
     if (field === undefined) return undefined
 
-    if (field.type === 'repeater') fields = segment.indexed ? field.children : undefined
-    else if (field.type === 'group') fields = segment.indexed ? undefined : field.children
+    // Only a repeater owns rows: an index on anything else must not resolve,
+    // or `email[0]` would quietly address `email` and a fixture would assert
+    // against a different field than the one it names.
+    if (field.type === 'repeater') fields = segment.indexed ? field.fields : undefined
+    else if (segment.indexed) return undefined
+    else if (field.type === 'group') fields = field.fields
     else fields = undefined
   }
 
@@ -92,7 +96,7 @@ function childNamed(
 ): ConformanceFieldDef | undefined {
   for (const field of fields) {
     if (field.type === 'page') {
-      const found = childNamed(field.children ?? [], key)
+      const found = childNamed(field.fields ?? [], key)
       if (found !== undefined) return found
     } else if (field.key === key) {
       return field
@@ -107,7 +111,7 @@ export function pageKeys(schema: ConformanceSchema): readonly string[] {
   const walk = (fields: readonly ConformanceFieldDef[]): void => {
     for (const field of fields) {
       if (field.type === 'page') keys.push(field.key)
-      if (field.children !== undefined) walk(field.children)
+      if (field.fields !== undefined) walk(field.fields)
     }
   }
   walk(schema.model.fields)

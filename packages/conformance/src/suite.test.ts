@@ -112,7 +112,27 @@ describe('describeConformance', () => {
     expect(built).toBe(2)
   })
 
-  test('shows a skip and its reason in the case name, so nobody skips quietly', () => {
+  test('uses the framework’s own skip when the api provides one, so the case reports as skipped', () => {
+    const spy = recorder()
+    const skips: { name: string; reason: string }[] = []
+
+    describeConformance(createFakeDriver(), {
+      test: {
+        ...spy.api,
+        skip: (name, reason) => skips.push({ name, reason }),
+      },
+      fixtures: [failing, passing],
+      skip: { [failing.name]: 'no wizard support yet' },
+    })
+
+    expect(skips).toEqual([
+      { name: `${failing.name} [skipped: no wizard support yet]`, reason: 'no wizard support yet' },
+    ])
+    // The skipped case is not also registered as a runnable test.
+    expect(spy.cases.map((entry) => entry.name)).toEqual([passing.name])
+  })
+
+  test('a skip under an api without skip() registers a THROWING test, never a passing one', async () => {
     const spy = recorder()
 
     describeConformance(createFakeDriver(), {
@@ -121,9 +141,13 @@ describe('describeConformance', () => {
       skip: { [failing.name]: 'no wizard support yet' },
     })
 
+    // The reason stays in the case name, so nobody skips quietly.
     expect(spy.cases[0]?.name).toContain('no wizard support yet')
-    // The body does nothing at all: a skipped case must not touch the driver.
-    expect(spy.cases[0]?.body()).toBeUndefined()
+    // A body that resolved would count the skip as a PASS in every framework
+    // that has no skip wired up, and a renderer could advertise conformance it
+    // does not have. So the body throws, and says how to wire skip support.
+    await expect(async () => spy.cases[0]?.body()).rejects.toThrow(/skip/)
+    await expect(async () => spy.cases[0]?.body()).rejects.toThrow(/no wizard support yet/)
   })
 
   test('refuses a skip naming a fixture that is not in the suite', () => {
@@ -176,6 +200,25 @@ describe('describeConformance', () => {
       })
 
       expect(spy.cases.map((entry) => entry.name)).toEqual([passing.name])
+    })
+
+    test('wires the global test.skip, so vitest and jest report a real skip', () => {
+      const spy = recorder()
+      const skipped: string[] = []
+      const testFn = Object.assign(
+        (name: string, body: () => Promise<void> | void) => spy.api.test(name, body),
+        { skip: (name: string) => skipped.push(name) },
+      )
+
+      withGlobals({ describe: spy.api.describe, test: testFn }, () => {
+        describeConformance(createFakeDriver(), {
+          fixtures: [passing],
+          skip: { [passing.name]: 'browser only' },
+        })
+      })
+
+      expect(skipped[0]).toContain('browser only')
+      expect(spy.cases).toHaveLength(0)
     })
 
     test('accepts a framework that calls it `it`', () => {

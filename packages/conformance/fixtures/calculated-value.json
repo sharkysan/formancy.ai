@@ -1,6 +1,6 @@
 {
   "name": "a calculated field recomputes from its inputs and is never typed into",
-  "description": "A calculated value is derived on every change to anything it reads, not on blur and not on submit, so what a person sees is never briefly wrong. It is read-only in the accessible tree, which is how a renderer stops someone typing into a value the engine will overwrite. It travels in the payload so that a consumer reads the same number the person saw rather than recomputing it and disagreeing.",
+  "description": "A computed value is derived on every change to anything it reads, not on blur and not on submit, so what a person sees is never briefly wrong. It is read-only in the accessible tree, which is how a renderer stops someone typing into a value the engine will overwrite. It travels in the payload so that a consumer reads the same number the person saw rather than recomputing it and disagreeing.",
   "tags": ["calculation"],
   "schema": {
     "specVersion": "0",
@@ -10,14 +10,11 @@
       "fields": [
         { "key": "quantity", "type": "number", "label": "Quantity", "required": true },
         { "key": "unitPrice", "type": "number", "label": "Unit price", "required": true },
-        {
-          "key": "total",
-          "type": "number",
-          "label": "Total",
-          "readOnly": true,
-          "calculate": "quantity * unitPrice"
-        }
+        { "key": "total", "type": "number", "label": "Total", "readOnly": true }
       ]
+    },
+    "logic": {
+      "rules": [{ "target": "total", "kind": "computed", "cel": "quantity * unitPrice" }]
     }
   },
   "steps": [
