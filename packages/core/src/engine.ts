@@ -13,6 +13,8 @@ import { fieldIds } from './ids.js'
 import type { FieldIds } from './ids.js'
 import { createInteractionState } from './interaction.js'
 import { formatPath, parsePath } from './path.js'
+import { buildFieldProps } from './props.js'
+import type { FieldProps } from './props.js'
 import type { Path } from './path.js'
 import { createValueStore } from './store.js'
 import { createWizard } from './wizard.js'
@@ -50,6 +52,8 @@ export interface FieldSnapshot {
   /** Error CODES (e.g. "required") — text belongs to the message catalog, not the engine. */
   errors: readonly string[]
   ids: FieldIds
+  /** Ready-to-spread ARIA wiring; see props.ts for the rules it encodes. */
+  props: FieldProps
 }
 
 export interface ValidationReport {
@@ -704,17 +708,23 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
       const node = resolveNode(path)
       if (!node) throw new Error(`Unknown field "${wire}"`)
 
+      const required = node.def.required === true || requiredWires.has(wire)
+      const disabled = disabledWires.has(wire)
+      const touched = interaction.isTouched(node.path)
+      const errors = Object.freeze([
+        ...(errorsByWire.get(wire) ?? NO_ERRORS),
+        ...(serverErrorsByWire.get(wire) ?? NO_ERRORS),
+      ])
+      const ids = fieldIds(schema.id, node.path)
       const snapshot: FieldSnapshot = Object.freeze({
         value: store.get(node.path),
-        required: node.def.required === true || requiredWires.has(wire),
+        required,
         visible: !hiddenWires.has(wire),
-        disabled: disabledWires.has(wire),
-        touched: interaction.isTouched(node.path),
-        errors: Object.freeze([
-          ...(errorsByWire.get(wire) ?? NO_ERRORS),
-          ...(serverErrorsByWire.get(wire) ?? NO_ERRORS),
-        ]),
-        ids: fieldIds(schema.id, node.path),
+        disabled,
+        touched,
+        errors,
+        ids,
+        props: buildFieldProps({ wire, ids, required, disabled, touched, errors }),
       })
       snapshotCache.set(wire, snapshot)
       return snapshot
