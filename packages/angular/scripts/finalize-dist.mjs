@@ -15,4 +15,7 @@ for (const section of [manifest.dependencies, manifest.peerDependencies]) {
     }
   }
 }
+// The source manifest's publishConfig redirects publishing INTO dist; copied
+// into dist itself it would redirect again, to dist/dist. It has done its job.
+delete manifest.publishConfig
 writeFileSync(dist, JSON.stringify(manifest, null, 2))
