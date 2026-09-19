@@ -102,7 +102,7 @@ export function createReactDriver(): RendererDriver {
           if ((control as HTMLInputElement).checked !== (value === true)) fireEvent.click(control)
         } else if (def?.type === 'radio') {
           const group = screen.getByRole('group', { name: labelOf(path) })
-          const options = (fieldAtPath(schema, path) as { options?: Array<{ value: string; label: string }> }).options ?? []
+          const options = (fieldAtPath(schema, path) as unknown as { options?: Array<{ value: string; label: string }> }).options ?? []
           const chosen = options.find((option) => option.value === value)
           if (chosen === undefined) throw new Error(`No option "${String(value)}" on "${path}"`)
           fireEvent.click(within(group).getByLabelText(chosen.label))
