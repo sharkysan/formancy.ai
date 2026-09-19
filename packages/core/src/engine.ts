@@ -33,6 +33,9 @@ import type { Wizard } from './wizard.js'
  * OPEN for metadata (a broken visibility rule shows the field rather than
  * silently swallowing data) and CLOSED for validation.
  *
+ * A rule targeting `items[].total` is row-scoped: it runs once per row, with
+ * two extra variables in scope — `item`, the row, and `index`, its position.
+ *
  * Snapshots are identity-stable: a field's snapshot object is replaced only
  * when its value, visibility, requiredness, touched state or errors actually
  * change, which is what lets useSyncExternalStore and OnPush change detection
@@ -105,10 +108,16 @@ interface RepeaterNode {
 interface CompiledRule {
   rule: LogicRule
   program: Program
+  /** Top-level rules: the target path. Row rules: unused (built per row). */
   targetPath: Path
+  /** Present when the target is row-scoped (`items[].total`). */
+  row?: { repeater: RepeaterNode; memberPath: Path; templateWire: string }
 }
 
 const NO_ERRORS: readonly string[] = Object.freeze([])
+
+/** Variables every row-scoped rule sees on top of the form's fields. */
+const ROW_VARIABLES: Record<string, DeclaredType> = { item: 'map', index: 'int' }
 
 export function createFormEngine(options: FormEngineOptions): FormEngine {
   const { schema } = options
@@ -161,6 +170,11 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
     return Array.isArray(value) ? value.length : 0
   }
 
+  function currentRows(repeater: RepeaterNode): readonly unknown[] {
+    const value = store.get(repeater.path)
+    return Array.isArray(value) ? value : []
+  }
+
   /** Every field that exists RIGHT NOW: static fields plus one template
    *  instantiation per existing row. */
   function activeNodes(): FieldNode[] {
@@ -206,6 +220,16 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
     return undefined
   }
 
+  /** The repeater an instance path lives in, if any. */
+  function repeaterOf(path: Path): RepeaterNode | undefined {
+    for (const repeater of repeaters) {
+      if (path.length <= repeater.path.length) continue
+      if (typeof path[repeater.path.length] !== 'number') continue
+      if (repeater.path.every((segment, i) => path[i] === segment)) return repeater
+    }
+    return undefined
+  }
+
   // -------------------------------------------------- logic rule compilation
 
   const rules = schema.logic?.rules ?? []
@@ -228,66 +252,126 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
     ]),
   )
 
-  const compiledRules: CompiledRule[] = rules.map((rule) => {
-    if (rule.target.includes('[]')) {
-      throw new Error(
-        `Rule on "${rule.target}": row-scoped rules are not supported yet. Target a field outside the repeater.`,
-      )
+  if (rules.some((rule) => rule.target.includes('[]'))) {
+    for (const reserved of Object.keys(ROW_VARIABLES)) {
+      if (reserved in declarations) {
+        throw new Error(
+          `A top-level field is named "${reserved}", which row-scoped rules reserve for the current row. Rename the field.`,
+        )
+      }
     }
-    const outcome = compile(rule.cel, { kind: rule.kind, variables: declarations })
+  }
+
+  const compiledRules: CompiledRule[] = rules.map((rule) => {
+    const marker = rule.target.indexOf('[]')
+
+    if (marker === -1) {
+      const outcome = compile(rule.cel, { kind: rule.kind, variables: declarations })
+      if (!outcome.ok) {
+        throw new Error(`Rule on "${rule.target}" (${rule.kind}): ${outcome.error.message}`)
+      }
+      return { rule, program: outcome.program, targetPath: parsePath(rule.target) }
+    }
+
+    const repeater = repeaterByWire.get(rule.target.slice(0, marker))
+    if (!repeater) {
+      throw new Error(`Rule on "${rule.target}": "${rule.target.slice(0, marker)}" is not a repeater.`)
+    }
+    const memberWire = rule.target.slice(marker + '[].'.length)
+    const outcome = compile(rule.cel, {
+      kind: rule.kind,
+      variables: { ...declarations, ...ROW_VARIABLES },
+    })
     if (!outcome.ok) {
       throw new Error(`Rule on "${rule.target}" (${rule.kind}): ${outcome.error.message}`)
     }
-    return { rule, program: outcome.program, targetPath: parsePath(rule.target) }
+    return {
+      rule,
+      program: outcome.program,
+      targetPath: parsePath(memberWire),
+      row: { repeater, memberPath: parsePath(memberWire), templateWire: rule.target },
+    }
   })
+
+  /** The graph node a computed rule writes. Row rules keep their `[]` form:
+   *  one node stands for the member across all rows, which is sound because
+   *  every row runs the same rule. */
+  function ruleNodeId(entry: CompiledRule): string {
+    return entry.row ? entry.rule.target : topSegment(entry.rule.target)
+  }
+
+  /** The graph nodes a reference reads, from inside a given rule. */
+  function referenceNodeIds(entry: CompiledRule, reference: string): string[] {
+    if (entry.row) {
+      if (reference === 'index') return []
+      if (reference === 'item' || reference.startsWith('item.') || reference.startsWith('item[')) {
+        // A row-relative read: `item.qty` inside `items[]` reads `items[].qty`.
+        const member = reference === 'item' ? '' : reference.slice('item.'.length)
+        return member === ''
+          ? // Reading the whole row conservatively depends on every computed
+            // member of the same repeater.
+            compiledRules
+              .filter((other) => other.rule.kind === 'computed' && other.row?.repeater === entry.row!.repeater)
+              .map(ruleNodeId)
+          : [`${entry.row.repeater.wire}[].${member}`]
+      }
+    }
+    return [topSegment(reference)]
+  }
 
   // The cycle gate. Only computed rules WRITE, so only they can loop — and the
   // graph is known before any evaluation, so a form that can loop is rejected
   // here, cycle trace in the error, never persisted, never shipped to a user.
-  {
+  // An aggregate ordering edge makes each repeater depend on its row-computed
+  // members: whoever reads `items` reads the rows AFTER they are computed.
+  const computedOrderIndex = (() => {
     const mentioned = new Set<string>(Object.keys(declarations))
-    const computedEdges = new Map<string, string[]>()
-    for (const { rule, program } of compiledRules) {
-      const tops = program.references.map(topSegment)
-      for (const top of tops) mentioned.add(top)
-      mentioned.add(topSegment(rule.target))
-      if (rule.kind === 'computed') computedEdges.set(topSegment(rule.target), tops)
+    const edges = new Map<string, Set<string>>()
+    const edge = (from: string, to: string): void => {
+      mentioned.add(from)
+      mentioned.add(to)
+      let set = edges.get(from)
+      if (!set) edges.set(from, (set = new Set()))
+      set.add(to)
     }
+
+    for (const entry of compiledRules) {
+      const id = ruleNodeId(entry)
+      mentioned.add(id)
+      const reads = entry.program.references.flatMap((reference) => referenceNodeIds(entry, reference))
+      if (entry.rule.kind === 'computed') {
+        for (const read of reads) edge(id, read)
+        if (entry.row) edge(entry.row.repeater.wire, id)
+      } else {
+        for (const read of reads) mentioned.add(read)
+      }
+    }
+
     const graphNodes: GraphNode[] = [...mentioned].map((id) => ({
       id,
-      dependsOn: computedEdges.get(id) ?? [],
+      dependsOn: [...(edges.get(id) ?? [])],
     }))
-    buildGraph(graphNodes) // throws GraphCycleError with the trace
-  }
+    const graph = buildGraph(graphNodes) // throws GraphCycleError with the trace
+    return new Map(graph.order.map((id, position) => [id, position]))
+  })()
 
   /** Computed rules in dependency order, so one settled pass suffices. */
-  const computedInOrder: CompiledRule[] = (() => {
-    const computed = compiledRules.filter((entry) => entry.rule.kind === 'computed')
-    const byTarget = new Map(computed.map((entry) => [topSegment(entry.rule.target), entry]))
-    const sorted: CompiledRule[] = []
-    const done = new Set<string>()
-    const visiting = new Set<string>()
-    function visit(entry: CompiledRule): void {
-      const id = topSegment(entry.rule.target)
-      if (done.has(id) || visiting.has(id)) return
-      visiting.add(id)
-      for (const reference of entry.program.references) {
-        const upstream = byTarget.get(topSegment(reference))
-        if (upstream) visit(upstream)
-      }
-      visiting.delete(id)
-      done.add(id)
-      sorted.push(entry)
-    }
-    for (const entry of computed) visit(entry)
-    return sorted
-  })()
+  const computedInOrder: CompiledRule[] = compiledRules
+    .filter((entry) => entry.rule.kind === 'computed')
+    .sort((a, b) => (computedOrderIndex.get(ruleNodeId(a)) ?? 0) - (computedOrderIndex.get(ruleNodeId(b)) ?? 0))
 
   const metaRules = compiledRules.filter(
     (entry) =>
       entry.rule.kind === 'visible' || entry.rule.kind === 'required' || entry.rule.kind === 'disabled',
   )
   const validateRules = compiledRules.filter((entry) => entry.rule.kind === 'validate')
+  const validateByTemplateWire = new Map<string, CompiledRule[]>()
+  for (const entry of validateRules) {
+    const key = entry.row ? entry.row.templateWire : entry.rule.target
+    const list = validateByTemplateWire.get(key)
+    if (list) list.push(entry)
+    else validateByTemplateWire.set(key, [entry])
+  }
 
   // ------------------------------------------------------------------- state
 
@@ -296,7 +380,8 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
   const errorsByWire = new Map<string, string[]>()
   const serverErrorsByWire = new Map<string, string[]>()
 
-  /** Absence means visible, enabled, and not expression-required. */
+  /** Absence means visible, enabled, and not expression-required. Row-scoped
+   *  entries use instance wires (`items[0].discount`). */
   const hiddenWires = new Set<string>()
   const disabledWires = new Set<string>()
   const requiredWires = new Set<string>()
@@ -349,6 +434,43 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
     return bag
   }
 
+  function rowBag(
+    bag: Record<string, unknown>,
+    row: unknown,
+    index: number,
+  ): Record<string, unknown> {
+    return { ...bag, item: row !== null && typeof row === 'object' ? row : {}, index }
+  }
+
+  /** Instance wire for one row of a row-scoped rule. */
+  function instanceWire(entry: CompiledRule, index: number): string {
+    return `${entry.row!.repeater.wire}[${index}].${formatPath(entry.row!.memberPath)}`
+  }
+
+  function instancePath(entry: CompiledRule, index: number): Path {
+    return [...entry.row!.repeater.path, index, ...entry.row!.memberPath]
+  }
+
+  /** Drop per-instance metadata for rows that no longer exist, so a removed
+   *  row's hidden/required state cannot leak onto a future row. */
+  function pruneStaleInstances(): string[] {
+    const dropped: string[] = []
+    for (const set of [hiddenWires, disabledWires, requiredWires]) {
+      for (const wire of [...set]) {
+        const bracket = wire.indexOf('[')
+        if (bracket === -1) continue
+        const repeater = repeaterByWire.get(wire.slice(0, bracket))
+        if (!repeater) continue
+        const index = Number(wire.slice(bracket + 1, wire.indexOf(']', bracket)))
+        if (index >= currentRowCount(repeater)) {
+          set.delete(wire)
+          dropped.push(wire)
+        }
+      }
+    }
+    return dropped
+  }
+
   function applyRules(): void {
     if (compiledRules.length === 0 || applyingRules) return
     applyingRules = true
@@ -359,22 +481,31 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
 
       store.transact(() => {
         for (const entry of computedInOrder) {
-          const outcome = evaluate(entry.program, bag, { capabilities })
-          // A computed rule that cannot evaluate (half-filled inputs) writes
-          // nothing; the previous value stands until the inputs make sense.
-          if (outcome.ok) {
-            store.set(entry.targetPath, outcome.value)
-            bag[topSegment(entry.rule.target)] = outcome.value
+          if (entry.row === undefined) {
+            const outcome = evaluate(entry.program, bag, { capabilities })
+            // A computed rule that cannot evaluate (half-filled inputs) writes
+            // nothing; the previous value stands until the inputs make sense.
+            if (outcome.ok) {
+              store.set(entry.targetPath, outcome.value)
+              bag[topSegment(entry.rule.target)] = outcome.value
+            }
+            continue
           }
+
+          const { repeater } = entry.row
+          currentRows(repeater).forEach((row, index) => {
+            const outcome = evaluate(entry.program, rowBag(bag, row, index), { capabilities })
+            if (outcome.ok) store.set(instancePath(entry, index), outcome.value)
+          })
+          // Aggregates downstream must see the rows as just written.
+          bag[topSegment(repeater.wire)] = store.get(repeater.path) ?? []
         }
 
-        for (const entry of metaRules) {
-          const outcome = evaluate(entry.program, bag, { capabilities })
-          const wire = entry.rule.target
+        const applyMeta = (entry: CompiledRule, wire: string, path: Path, ok: boolean, value: unknown): void => {
           if (entry.rule.kind === 'visible') {
             // Fail OPEN: a broken visibility rule shows the field. Hiding on
             // error would silently drop whatever the user typed into it.
-            const visible = outcome.ok ? outcome.value === true : true
+            const visible = ok ? value === true : true
             const wasHidden = hiddenWires.has(wire)
             if (visible && wasHidden) {
               hiddenWires.delete(wire)
@@ -382,12 +513,11 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
             } else if (!visible && !wasHidden) {
               hiddenWires.add(wire)
               metaChanged.push(wire)
-              const node = byWire.get(wire)
-              if (node?.def.clearOnHide !== false) store.remove(entry.targetPath)
+              if (resolveNode(path)?.def.clearOnHide !== false) store.remove(path)
             }
           } else {
             const set = entry.rule.kind === 'required' ? requiredWires : disabledWires
-            const active = outcome.ok && outcome.value === true
+            const active = ok && value === true
             if (active !== set.has(wire)) {
               if (active) set.add(wire)
               else set.delete(wire)
@@ -395,6 +525,32 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
             }
           }
         }
+
+        for (const entry of metaRules) {
+          if (entry.row === undefined) {
+            const outcome = evaluate(entry.program, bag, { capabilities })
+            applyMeta(
+              entry,
+              entry.rule.target,
+              entry.targetPath,
+              outcome.ok,
+              outcome.ok ? outcome.value : undefined,
+            )
+            continue
+          }
+          currentRows(entry.row.repeater).forEach((row, index) => {
+            const outcome = evaluate(entry.program, rowBag(bag, row, index), { capabilities })
+            applyMeta(
+              entry,
+              instanceWire(entry, index),
+              instancePath(entry, index),
+              outcome.ok,
+              outcome.ok ? outcome.value : undefined,
+            )
+          })
+        }
+
+        metaChanged.push(...pruneStaleInstances())
       })
 
       invalidate(metaChanged)
@@ -424,18 +580,17 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
     return false
   }
 
+  /** The template form of an instance wire: `items[1].qty` -> `items[].qty`.
+   *  Static wires come back unchanged. */
+  function templateWireOf(wire: string): string {
+    return wire.replace(/\[\d+\]/, '[]')
+  }
+
   function runValidation(): ValidationReport {
     const report: Record<string, string[]> = {}
     const changedWires: string[] = []
     const capabilities = capabilitySource === undefined ? undefined : captureCapabilities(capabilitySource)
     const bag = compiledRules.length > 0 ? buildBag() : undefined
-
-    const validateByTarget = new Map<string, CompiledRule[]>()
-    for (const entry of validateRules) {
-      const list = validateByTarget.get(entry.rule.target)
-      if (list) list.push(entry)
-      else validateByTarget.set(entry.rule.target, [entry])
-    }
 
     for (const node of activeNodes()) {
       // A hidden field is not part of the conversation: not validated,
@@ -451,10 +606,19 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
       const codes: string[] = []
       if (requiredViolated(node, store.get(node.path))) codes.push('required')
 
-      const checks = validateByTarget.get(node.wire)
+      const checks = validateByTemplateWire.get(templateWireOf(node.wire))
       if (checks !== undefined && bag !== undefined && capabilities !== undefined) {
+        const repeater = repeaterOf(node.path)
+        const evaluationBag =
+          repeater === undefined
+            ? bag
+            : rowBag(
+                bag,
+                currentRows(repeater)[node.path[repeater.path.length] as number],
+                node.path[repeater.path.length] as number,
+              )
         for (const entry of checks) {
-          const outcome = evaluate(entry.program, bag, { capabilities })
+          const outcome = evaluate(entry.program, evaluationBag, { capabilities })
           // Fail CLOSED: a validate rule that cannot evaluate cannot vouch for
           // the value; the author sees the broken rule instead of bad data.
           if (!outcome.ok) codes.push(entry.rule.code ?? 'invalid')
