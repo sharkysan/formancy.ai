@@ -1,5 +1,6 @@
 import { formatPath } from './path.js'
 import type { Path } from './path.js'
+import { stripPaths } from './strip.js'
 import { getAt, setAt } from './value.js'
 
 /**
@@ -19,6 +20,8 @@ export interface ValueStore {
   root(): unknown
   get(path: Path): unknown
   set(path: Path, value: unknown): void
+  /** Delete the value outright — the submission carries no trace of the key. */
+  remove(path: Path): void
   transact(body: () => void): void
   subscribe(listener: (changedPaths: ReadonlySet<string>) => void): () => void
   subscribeField(path: Path, listener: () => void): () => void
@@ -59,24 +62,31 @@ export function createValueStore(initial: unknown): ValueStore {
     }
   }
 
+  function applyWrite(path: Path, next: unknown): void {
+    if (next === root) return
+
+    if (transactionDepth > 0) {
+      root = next
+      writtenInTransaction!.add(formatPath(path))
+      return
+    }
+
+    const before = root
+    root = next
+    commit(new Set([formatPath(path)]), before)
+  }
+
   return {
     root: () => root,
     get: (path) => getAt(root, path),
     version: () => commitCount,
 
     set(path, value) {
-      const next = setAt(root, path, value)
-      if (next === root) return
+      applyWrite(path, setAt(root, path, value))
+    },
 
-      if (transactionDepth > 0) {
-        root = next
-        writtenInTransaction!.add(formatPath(path))
-        return
-      }
-
-      const before = root
-      root = next
-      commit(new Set([formatPath(path)]), before)
+    remove(path) {
+      applyWrite(path, stripPaths(root, [path]))
     },
 
     transact(body) {

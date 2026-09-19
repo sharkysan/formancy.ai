@@ -161,3 +161,45 @@ describe('subscribeField', () => {
     expect(firstRow).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('remove', () => {
+  test('deletes the key outright so the submission carries no trace', () => {
+    const store = createValueStore(initial)
+    store.remove(['address', 'zip'])
+
+    expect('zip' in (store.get(['address']) as object)).toBe(false)
+  })
+
+  test('notifies like any other write', () => {
+    const store = createValueStore(initial)
+    const seen: string[][] = []
+    store.subscribe((changed) => seen.push([...changed]))
+
+    store.remove(['email'])
+
+    expect(seen).toEqual([['email']])
+  })
+
+  test('removing a missing key notifies nobody', () => {
+    const store = createValueStore(initial)
+    const listener = vi.fn()
+    store.subscribe(listener)
+
+    store.remove(['ghost'])
+
+    expect(listener).not.toHaveBeenCalled()
+  })
+
+  test('participates in transactions', () => {
+    const store = createValueStore(initial)
+    const listener = vi.fn()
+    store.subscribe(listener)
+
+    store.transact(() => {
+      store.remove(['email'])
+      store.set(['address', 'city'], 'Bern')
+    })
+
+    expect(listener).toHaveBeenCalledTimes(1)
+  })
+})
