@@ -1,5 +1,6 @@
 import type { ErrorObject, ValidateFunction } from 'ajv/dist/2020.js'
 import documentValidatorFn from './generated/document-validator.js'
+import { modelDataPaths } from './paths.js'
 import type { FieldDef, FormSchema } from './types.js'
 
 /** One reason a document is not a valid formancy form. */
@@ -84,6 +85,43 @@ function semanticErrors(schema: FormSchema): SchemaError[] {
       })
     }
     if (previousKey !== undefined) claimedRenames.add(previousKey)
+  }
+
+  errors.push(...logicErrors(schema))
+
+  return errors
+}
+
+/** Rules about the logic section: each rule must aim at a real field, and a
+ *  field can carry at most one rule per kind (validate excepted: each validate
+ *  rule is its own independent check). Two visibility rules on one field would
+ *  have no defined winner, and silently picking one is worse than refusing. */
+function logicErrors(schema: FormSchema): SchemaError[] {
+  const rules = schema.logic?.rules
+  if (rules === undefined) return []
+
+  const knownPaths = new Set(modelDataPaths(schema.model))
+  const claimedKinds = new Set<string>()
+  const errors: SchemaError[] = []
+
+  for (const [index, rule] of rules.entries()) {
+    if (!knownPaths.has(rule.target)) {
+      errors.push({
+        path: `/logic/rules/${String(index)}/target`,
+        message: `No field has the data path "${rule.target}". A rule can only apply to a field the model defines.`,
+      })
+    }
+
+    if (rule.kind !== 'validate') {
+      const claim = `${rule.kind}:${rule.target}`
+      if (claimedKinds.has(claim)) {
+        errors.push({
+          path: `/logic/rules/${String(index)}`,
+          message: `"${rule.target}" already has a ${rule.kind} rule. A field can carry one rule per kind, because two would have no defined winner.`,
+        })
+      }
+      claimedKinds.add(claim)
+    }
   }
 
   return errors

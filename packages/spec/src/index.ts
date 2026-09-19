@@ -8,6 +8,10 @@ export type {
   ChangeSeverity,
   FieldDef,
   FieldType,
+  FormLogic,
   FormModel,
   FormSchema,
+  LogicRule,
+  RuleKind,
 } from './types.js'
+export { modelDataPaths } from './paths.js'

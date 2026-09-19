@@ -1,194 +1,326 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://formancy.dev/schema/0/formancy.schema.json",
-  "title": "Form",
-  "description": "A formancy form, written against version 0 of the spec. The document holds the data contract only: what the form collects, and under what names. How it looks and when it appears are separate concerns, so the same form can have more than one presentation.",
-  "type": "object",
-  "required": ["specVersion", "id", "title", "model"],
-  "additionalProperties": false,
-  "properties": {
-    "specVersion": {
-      "title": "Spec version",
-      "description": "Which version of the formancy spec this form is written against. Always \"0\" today. It is independent of the package version, and it only changes when the shape of the document changes.",
-      "const": "0",
-      "default": "0"
-    },
-    "id": {
-      "title": "Form ID",
-      "description": "The form's stable identifier. It appears in the form's URL and in exported data, so choose it once and leave it alone: changing it breaks existing links and detaches the submissions already collected.",
-      "$ref": "#/$defs/formId"
-    },
-    "title": {
-      "title": "Title",
-      "description": "The form's name, as the person filling it in will read it at the top of the page.",
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 200,
-      "examples": ["Contact us", "Expense claim"]
-    },
-    "model": {
-      "title": "Data model",
-      "description": "Everything the form collects.",
-      "$ref": "#/$defs/model"
-    }
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "https://formancy.dev/schema/0/formancy.schema.json",
+ "title": "Form",
+ "description": "A formancy form, written against version 0 of the spec. The document holds the data contract only: what the form collects, and under what names. How it looks and when it appears are separate concerns, so the same form can have more than one presentation.",
+ "type": "object",
+ "required": [
+  "specVersion",
+  "id",
+  "title",
+  "model"
+ ],
+ "additionalProperties": false,
+ "properties": {
+  "specVersion": {
+   "title": "Spec version",
+   "description": "Which version of the formancy spec this form is written against. Always \"0\" today. It is independent of the package version, and it only changes when the shape of the document changes.",
+   "const": "0",
+   "default": "0"
   },
-  "$defs": {
-    "formId": {
-      "title": "Form ID",
-      "description": "A short URL-safe name: letters, digits, dots, dashes and underscores, beginning with a letter or a digit.",
-      "type": "string",
-      "maxLength": 128,
-      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
-      "examples": ["contact-us", "expense-claim"]
-    },
-
-    "model": {
-      "title": "Data model",
-      "description": "The data contract of the form: its fields, and the names their answers are stored under. Presentation and conditional logic live outside the model, which is why one model can be shown in more than one way.",
-      "type": "object",
-      "required": ["fields"],
-      "additionalProperties": false,
-      "properties": {
-        "fields": {
-          "title": "Fields",
-          "description": "The fields of the form, in the order the reader meets them. Order is presentation: a field is identified by its key, so moving one up or down does not change the data you have already collected.",
-          "$ref": "#/$defs/fieldList"
-        }
-      }
-    },
-
-    "fieldList": {
-      "title": "Fields",
-      "description": "A list of fields.",
-      "type": "array",
-      "items": { "$ref": "#/$defs/field" }
-    },
-
-    "field": {
-      "title": "Field",
-      "description": "One field of the form. Most fields collect a single answer; a group, a page and a repeater collect nothing themselves and hold other fields instead.",
-      "type": "object",
-      "required": ["key", "type"],
-      "properties": {
-        "key": { "$ref": "#/$defs/fieldKey" },
-        "type": { "$ref": "#/$defs/fieldType" },
-        "required": {
-          "title": "Required",
-          "description": "Whether the form can be sent without an answer to this field. Turning this on for a field that already exists invalidates the submissions that left it empty, so publishing reports it as a lossy change.",
-          "type": "boolean",
-          "default": false
-        },
-        "renamedFrom": {
-          "title": "Renamed from",
-          "description": "The key this field used to be called. Set it in the same edit that changes the key and the answers already collected follow the field across. The old key must be gone from this form: if a field still uses it, you have made a copy rather than a rename, and the two would fight over the same answers.",
-          "$ref": "#/$defs/fieldKey"
-        }
-      },
-      "allOf": [
-        {
-          "if": {
-            "required": ["type"],
-            "properties": { "type": { "enum": ["group", "page", "repeater"] } }
-          },
-          "then": { "$ref": "#/$defs/containerField" },
-          "else": { "$ref": "#/$defs/leafField" }
-        }
-      ],
-      "unevaluatedProperties": false
-    },
-
-    "leafField": {
-      "title": "Answer field",
-      "description": "A field that collects one answer and holds no other fields."
-    },
-
-    "containerField": {
-      "title": "Container field",
-      "description": "A group, a page or a repeater. It collects no answer of its own; the fields inside it do.",
-      "type": "object",
-      "properties": {
-        "fields": {
-          "title": "Child fields",
-          "description": "The fields held inside this container. Their keys are unique across the whole form, not just within the container.",
-          "$ref": "#/$defs/fieldList"
-        }
-      }
-    },
-
-    "fieldKey": {
-      "title": "Key",
-      "description": "The name this field's answer is stored under, and the field's identity for as long as the form exists. It becomes a column in exported data and a variable in logic expressions, so it has to read like an identifier: a letter or an underscore, then letters, digits or underscores. Changing a key is a data migration rather than an edit, so say where it came from with \"renamedFrom\".",
-      "type": "string",
-      "maxLength": 64,
-      "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
-      "examples": ["email", "invoice_total", "passengerCount"]
-    },
-
-    "fieldType": {
-      "title": "Field type",
-      "description": "What kind of answer the field collects, or — for a group, a page or a repeater — how it holds the fields inside it. The type decides which control the reader sees and how the answer is stored, so changing it on a live form may leave existing answers unreadable.",
-      "oneOf": [
-        {
-          "const": "text",
-          "title": "Single-line text",
-          "description": "One line of free text: a name, a reference, a short answer."
-        },
-        {
-          "const": "textarea",
-          "title": "Multi-line text",
-          "description": "A box several lines tall, for a message or a description."
-        },
-        {
-          "const": "number",
-          "title": "Number",
-          "description": "A numeric answer, for amounts and counts. Do not use it for phone numbers, postcodes or account numbers: those lose their leading zeros."
-        },
-        {
-          "const": "checkbox",
-          "title": "Checkbox",
-          "description": "A single yes-or-no answer, such as accepting the terms."
-        },
-        {
-          "const": "select",
-          "title": "Dropdown",
-          "description": "One answer picked from a list, shown collapsed. Best when the list is long."
-        },
-        {
-          "const": "radio",
-          "title": "Radio buttons",
-          "description": "One answer picked from a list, with every option visible at once. Best for a handful of options."
-        },
-        {
-          "const": "date",
-          "title": "Date",
-          "description": "A calendar date, with no time of day."
-        },
-        {
-          "const": "hidden",
-          "title": "Hidden value",
-          "description": "Travels with the submission but is never shown to the reader, such as a campaign code or a referral source."
-        },
-        {
-          "const": "static",
-          "title": "Static text",
-          "description": "Text shown to the reader that collects nothing: a heading, an explanation, a notice."
-        },
-        {
-          "const": "group",
-          "title": "Group",
-          "description": "Related fields kept together on the same page. Collects nothing itself."
-        },
-        {
-          "const": "page",
-          "title": "Page",
-          "description": "One step of a form split over several screens. Collects nothing itself."
-        },
-        {
-          "const": "repeater",
-          "title": "Repeater",
-          "description": "A set of fields the reader can fill in more than once, such as one block per passenger. A repeater cannot be placed inside another repeater in this version of the spec."
-        }
-      ]
-    }
+  "id": {
+   "title": "Form ID",
+   "description": "The form's stable identifier. It appears in the form's URL and in exported data, so choose it once and leave it alone: changing it breaks existing links and detaches the submissions already collected.",
+   "$ref": "#/$defs/formId"
+  },
+  "title": {
+   "title": "Title",
+   "description": "The form's name, as the person filling it in will read it at the top of the page.",
+   "type": "string",
+   "minLength": 1,
+   "maxLength": 200,
+   "examples": [
+    "Contact us",
+    "Expense claim"
+   ]
+  },
+  "model": {
+   "title": "Data model",
+   "description": "Everything the form collects.",
+   "$ref": "#/$defs/model"
+  },
+  "logic": {
+   "title": "Logic",
+   "description": "The form's behaviour: when fields show, what they compute, and what counts as a valid answer. Rules live here, apart from the data model, so the same model can carry different behaviour per deployment and so a rule can be reviewed on its own.",
+   "$ref": "#/$defs/logic"
   }
+ },
+ "$defs": {
+  "formId": {
+   "title": "Form ID",
+   "description": "A short URL-safe name: letters, digits, dots, dashes and underscores, beginning with a letter or a digit.",
+   "type": "string",
+   "maxLength": 128,
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
+   "examples": [
+    "contact-us",
+    "expense-claim"
+   ]
+  },
+  "model": {
+   "title": "Data model",
+   "description": "The data contract of the form: its fields, and the names their answers are stored under. Presentation and conditional logic live outside the model, which is why one model can be shown in more than one way.",
+   "type": "object",
+   "required": [
+    "fields"
+   ],
+   "additionalProperties": false,
+   "properties": {
+    "fields": {
+     "title": "Fields",
+     "description": "The fields of the form, in the order the reader meets them. Order is presentation: a field is identified by its key, so moving one up or down does not change the data you have already collected.",
+     "$ref": "#/$defs/fieldList"
+    }
+   }
+  },
+  "fieldList": {
+   "title": "Fields",
+   "description": "A list of fields.",
+   "type": "array",
+   "items": {
+    "$ref": "#/$defs/field"
+   }
+  },
+  "field": {
+   "title": "Field",
+   "description": "One field of the form. Most fields collect a single answer; a group, a page and a repeater collect nothing themselves and hold other fields instead.",
+   "type": "object",
+   "required": [
+    "key",
+    "type"
+   ],
+   "properties": {
+    "key": {
+     "$ref": "#/$defs/fieldKey"
+    },
+    "type": {
+     "$ref": "#/$defs/fieldType"
+    },
+    "required": {
+     "title": "Required",
+     "description": "Whether the form can be sent without an answer to this field. Turning this on for a field that already exists invalidates the submissions that left it empty, so publishing reports it as a lossy change.",
+     "type": "boolean",
+     "default": false
+    },
+    "renamedFrom": {
+     "title": "Renamed from",
+     "description": "The key this field used to be called. Set it in the same edit that changes the key and the answers already collected follow the field across. The old key must be gone from this form: if a field still uses it, you have made a copy rather than a rename, and the two would fight over the same answers.",
+     "$ref": "#/$defs/fieldKey"
+    },
+    "clearOnHide": {
+     "title": "Clear when hidden",
+     "description": "What happens to an answer when a rule hides its field. On (the default), the answer is removed from the submission, so a hidden branch cannot carry data. Off, the answer is kept and comes back when the field reappears.",
+     "type": "boolean",
+     "default": true
+    }
+   },
+   "allOf": [
+    {
+     "if": {
+      "required": [
+       "type"
+      ],
+      "properties": {
+       "type": {
+        "enum": [
+         "group",
+         "page",
+         "repeater"
+        ]
+       }
+      }
+     },
+     "then": {
+      "$ref": "#/$defs/containerField"
+     },
+     "else": {
+      "$ref": "#/$defs/leafField"
+     }
+    }
+   ],
+   "unevaluatedProperties": false
+  },
+  "leafField": {
+   "title": "Answer field",
+   "description": "A field that collects one answer and holds no other fields."
+  },
+  "containerField": {
+   "title": "Container field",
+   "description": "A group, a page or a repeater. It collects no answer of its own; the fields inside it do.",
+   "type": "object",
+   "properties": {
+    "fields": {
+     "title": "Child fields",
+     "description": "The fields held inside this container. Their keys are unique across the whole form, not just within the container.",
+     "$ref": "#/$defs/fieldList"
+    }
+   }
+  },
+  "fieldKey": {
+   "title": "Key",
+   "description": "The name this field's answer is stored under, and the field's identity for as long as the form exists. It becomes a column in exported data and a variable in logic expressions, so it has to read like an identifier: a letter or an underscore, then letters, digits or underscores. Changing a key is a data migration rather than an edit, so say where it came from with \"renamedFrom\".",
+   "type": "string",
+   "maxLength": 64,
+   "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+   "examples": [
+    "email",
+    "invoice_total",
+    "passengerCount"
+   ]
+  },
+  "fieldType": {
+   "title": "Field type",
+   "description": "What kind of answer the field collects, or — for a group, a page or a repeater — how it holds the fields inside it. The type decides which control the reader sees and how the answer is stored, so changing it on a live form may leave existing answers unreadable.",
+   "oneOf": [
+    {
+     "const": "text",
+     "title": "Single-line text",
+     "description": "One line of free text: a name, a reference, a short answer."
+    },
+    {
+     "const": "textarea",
+     "title": "Multi-line text",
+     "description": "A box several lines tall, for a message or a description."
+    },
+    {
+     "const": "number",
+     "title": "Number",
+     "description": "A numeric answer, for amounts and counts. Do not use it for phone numbers, postcodes or account numbers: those lose their leading zeros."
+    },
+    {
+     "const": "checkbox",
+     "title": "Checkbox",
+     "description": "A single yes-or-no answer, such as accepting the terms."
+    },
+    {
+     "const": "select",
+     "title": "Dropdown",
+     "description": "One answer picked from a list, shown collapsed. Best when the list is long."
+    },
+    {
+     "const": "radio",
+     "title": "Radio buttons",
+     "description": "One answer picked from a list, with every option visible at once. Best for a handful of options."
+    },
+    {
+     "const": "date",
+     "title": "Date",
+     "description": "A calendar date, with no time of day."
+    },
+    {
+     "const": "hidden",
+     "title": "Hidden value",
+     "description": "Travels with the submission but is never shown to the reader, such as a campaign code or a referral source."
+    },
+    {
+     "const": "static",
+     "title": "Static text",
+     "description": "Text shown to the reader that collects nothing: a heading, an explanation, a notice."
+    },
+    {
+     "const": "group",
+     "title": "Group",
+     "description": "Related fields kept together on the same page. Collects nothing itself."
+    },
+    {
+     "const": "page",
+     "title": "Page",
+     "description": "One step of a form split over several screens. Collects nothing itself."
+    },
+    {
+     "const": "repeater",
+     "title": "Repeater",
+     "description": "A set of fields the reader can fill in more than once, such as one block per passenger. A repeater cannot be placed inside another repeater in this version of the spec."
+    }
+   ]
+  },
+  "logic": {
+   "title": "Logic",
+   "description": "The rules of the form.",
+   "type": "object",
+   "required": [
+    "rules"
+   ],
+   "additionalProperties": false,
+   "properties": {
+    "rules": {
+     "title": "Rules",
+     "description": "Every rule of the form, in one flat list. A rule names the field it applies to; the order here does not matter, because evaluation order comes from what depends on what.",
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/logicRule"
+     }
+    }
+   }
+  },
+  "logicRule": {
+   "title": "Rule",
+   "description": "One piece of behaviour, attached to one field.",
+   "type": "object",
+   "required": [
+    "target",
+    "kind",
+    "cel"
+   ],
+   "additionalProperties": false,
+   "properties": {
+    "target": {
+     "title": "Target field",
+     "description": "The data path of the field this rule applies to, e.g. \"email\", \"address.city\", or \"items[].qty\" for a field inside a repeater row.",
+     "type": "string",
+     "minLength": 1,
+     "maxLength": 512
+    },
+    "kind": {
+     "title": "Kind",
+     "description": "What the rule decides about its field.",
+     "oneOf": [
+      {
+       "const": "visible",
+       "title": "Visible",
+       "description": "Shows the field while the expression is true. A hidden field is not validated, and by default its answer is removed from the submission."
+      },
+      {
+       "const": "disabled",
+       "title": "Disabled",
+       "description": "Greys the field out while the expression is true. A disabled field keeps its answer and stays visible."
+      },
+      {
+       "const": "required",
+       "title": "Required",
+       "description": "Makes the field required while the expression is true, on top of any fixed required flag in the model."
+      },
+      {
+       "const": "computed",
+       "title": "Computed",
+       "description": "Writes the expression's result into the field whenever something it reads changes. The person filling the form in cannot type over it."
+      },
+      {
+       "const": "validate",
+       "title": "Validate",
+       "description": "Checks an answer. While the expression is false, the field carries the error named by \"code\". A field can have any number of these."
+      }
+     ]
+    },
+    "cel": {
+     "title": "Expression",
+     "description": "The rule itself, in the Common Expression Language. It may read other fields by their data paths; what it reads is what it reacts to.",
+     "type": "string",
+     "minLength": 1,
+     "maxLength": 2000
+    },
+    "code": {
+     "title": "Error code",
+     "description": "For a validate rule: the machine-readable code the field carries while the check fails. The message a person reads is looked up from this code per language, so it does not live here.",
+     "type": "string",
+     "minLength": 1,
+     "maxLength": 64
+    },
+    "editor": {
+     "title": "Editor state",
+     "description": "What the visual rule editor last knew about this rule. Regenerated from \"cel\" when possible; never evaluated. The expression is the single source of truth."
+    }
+   }
+  }
+ }
 }

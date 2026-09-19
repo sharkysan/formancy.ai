@@ -15,6 +15,7 @@ export interface FormSchema {
   id: string
   title: string
   model: FormModel
+  logic?: FormLogic
 }
 
 export interface FormModel {
@@ -68,6 +69,32 @@ export interface FieldDef {
    * other type: they collect an answer rather than holding children.
    */
   fields?: FieldDef[]
+  /**
+   * What happens to the answer when a rule hides this field. Default true:
+   * the value is pruned, so a hidden branch cannot carry data into the
+   * submission. Lives in the model rather than in logic because it decides
+   * the data shape.
+   */
+  clearOnHide?: boolean
+}
+
+/** The form's behaviour, apart from its data model. */
+export interface FormLogic {
+  rules: LogicRule[]
+}
+
+export type RuleKind = 'visible' | 'disabled' | 'required' | 'computed' | 'validate'
+
+export interface LogicRule {
+  /** Data path of the field the rule applies to, e.g. `address.city` or `items[].qty`. */
+  target: string
+  kind: RuleKind
+  /** The rule, in CEL. The single source of truth for evaluation. */
+  cel: string
+  /** validate only: the error code the field carries while the check fails. */
+  code?: string
+  /** Regenerated visual-editor metadata. Never evaluated. */
+  editor?: unknown
 }
 
 /**
