@@ -25,20 +25,34 @@ export interface FormModel {
  * The v0.1 field types. Deferred types keep their names reserved so adding
  * them later is a compatible change: file, datetime, time, multiselect,
  * combobox, richtext, signature, address, rating, slider.
+ *
+ * A list rather than a bare union because formancy.schema.json has to offer
+ * the same twelve values, and a test can only compare two lists.
  */
-export type FieldType =
-  | 'text'
-  | 'textarea'
-  | 'number'
-  | 'checkbox'
-  | 'select'
-  | 'radio'
-  | 'date'
-  | 'hidden'
-  | 'static'
-  | 'group'
-  | 'page'
-  | 'repeater'
+export const FIELD_TYPES = [
+  'text',
+  'textarea',
+  'number',
+  'checkbox',
+  'select',
+  'radio',
+  'date',
+  'hidden',
+  'static',
+  'group',
+  'page',
+  'repeater',
+] as const
+
+export type FieldType = (typeof FIELD_TYPES)[number]
+
+/**
+ * The field types that hold other fields. Every other type collects one answer
+ * and has no children.
+ */
+export const CONTAINER_FIELD_TYPES = ['group', 'page', 'repeater'] as const satisfies readonly FieldType[]
+
+export type ContainerFieldType = (typeof CONTAINER_FIELD_TYPES)[number]
 
 export interface FieldDef {
   /**
@@ -49,6 +63,11 @@ export interface FieldDef {
   type: FieldType
   required?: boolean
   renamedFrom?: string
+  /**
+   * The fields held inside a group, a page or a repeater. Absent on every
+   * other type: they collect an answer rather than holding children.
+   */
+  fields?: FieldDef[]
 }
 
 /**

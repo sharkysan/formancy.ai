@@ -7,14 +7,19 @@ import type { Change, FieldDef, FormSchema } from './types.js'
  *
  * This is the function draft migration, the builder's "what changed before you
  * publish" view, export column unioning and the consumer CI compatibility gate
- * all read from. It exists before the server does, on purpose: getting the
- * severity model wrong is the one mistake that cannot be refactored once there
- * is production data.
+ * all read from. Getting the severity model wrong is the one mistake that
+ * cannot be refactored once there is production data.
  *
- * Field identity is the `key`, never the position, so reordering is not a
- * change. A key that changes without a declared `renamedFrom` is reported as a
- * removal plus an addition rather than guessed at — guessing wrong silently
- * moves one field's data into another.
+ * Identity is the DATA PATH, not the position and not the layout: a `group`
+ * scopes its children (`g.child`), a `repeater` scopes rows (`items[].name`),
+ * and a `page` scopes nothing — so moving a field to another wizard page is no
+ * change at all, while moving it into a group is a removal plus an addition,
+ * because the submission shape actually changed.
+ *
+ * A key that changes without a declared `renamedFrom` is reported as a removal
+ * plus an addition rather than guessed at — guessing wrong silently moves one
+ * field's data into another. A declared rename translates the data paths of
+ * everything beneath it, so renaming a group carries its children along.
  */
 export function diffSchemas(before: FormSchema, after: FormSchema): Change[] {
   if (canonicalize(before) === canonicalize(after)) return []
@@ -30,57 +35,102 @@ export function diffSchemas(before: FormSchema, after: FormSchema): Change[] {
     })
   }
 
-  const beforeFields = byKey(before.model.fields)
-  const afterFields = byKey(after.model.fields)
+  const beforeByPath = new Map<string, FlatField>()
+  flatten(before.model.fields, '', '', beforeByPath)
+  const afterByPath = new Map<string, FlatField>()
+  flatten(after.model.fields, '', '', afterByPath)
 
-  /** Old keys claimed by a declared rename, so they are not also reported removed. */
-  const renamedAway = new Set<string>()
+  /** Before-side data paths claimed by a match, so they are not also removals. */
+  const consumed = new Set<string>()
 
-  for (const field of after.model.fields) {
-    const path = `model.fields.${field.key}`
-    const source = field.renamedFrom
+  for (const entry of afterByPath.values()) {
+    const ownBefore = entry.beforeScope + entry.def.key
+    const renameSource =
+      entry.def.renamedFrom === undefined ? undefined : entry.beforeScope + entry.def.renamedFrom
+    const path = `model.fields.${entry.dataPath}`
 
-    if (source !== undefined && beforeFields.has(source) && !beforeFields.has(field.key)) {
-      renamedAway.add(source)
+    if (
+      renameSource !== undefined &&
+      beforeByPath.has(renameSource) &&
+      !beforeByPath.has(ownBefore) &&
+      !consumed.has(renameSource)
+    ) {
+      consumed.add(renameSource)
       changes.push({
         severity: 'compatible',
         kind: 'field.renamed',
         path,
-        detail: `Renamed from "${source}". Existing data maps across.`,
+        detail: `Renamed from "${entry.def.renamedFrom}". Existing data maps across.`,
       })
-      changes.push(...comparePair(beforeFields.get(source)!, field, path))
+      changes.push(...comparePair(beforeByPath.get(renameSource)!.def, entry.def, path))
       continue
     }
 
-    const previous = beforeFields.get(field.key)
-
-    if (previous === undefined) {
-      changes.push({
-        severity: field.required === true ? 'lossy' : 'compatible',
-        kind: 'field.added',
-        path,
-        detail:
-          field.required === true
-            ? `Added as required. Existing submissions have no value for it and are now invalid.`
-            : `Added as optional.`,
-      })
+    const previous = beforeByPath.get(ownBefore)
+    if (previous !== undefined && !consumed.has(ownBefore)) {
+      consumed.add(ownBefore)
+      changes.push(...comparePair(previous.def, entry.def, path))
       continue
     }
 
-    changes.push(...comparePair(previous, field, path))
+    changes.push({
+      severity: entry.def.required === true ? 'lossy' : 'compatible',
+      kind: 'field.added',
+      path,
+      detail:
+        entry.def.required === true
+          ? `Added as required. Existing submissions have no value for it and are now invalid.`
+          : `Added as optional.`,
+    })
   }
 
-  for (const field of before.model.fields) {
-    if (afterFields.has(field.key) || renamedAway.has(field.key)) continue
+  for (const entry of beforeByPath.values()) {
+    if (consumed.has(entry.dataPath)) continue
     changes.push({
       severity: 'lossy',
       kind: 'field.removed',
-      path: `model.fields.${field.key}`,
+      path: `model.fields.${entry.dataPath}`,
       detail: `Removed. Existing values move to the submission's orphaned data and are not deleted.`,
     })
   }
 
   return changes.sort((a, b) => a.path.localeCompare(b.path) || a.kind.localeCompare(b.kind))
+}
+
+interface FlatField {
+  /** Data path in this schema, e.g. `g.child` or `items[].name`. */
+  dataPath: string
+  /**
+   * The scope this field's parent had in the PREVIOUS schema, translating the
+   * declared rename of every ancestor. Identity lookups against the before
+   * map go through this, which is what lets a renamed group keep its children.
+   */
+  beforeScope: string
+  def: FieldDef
+}
+
+function flatten(
+  defs: readonly FieldDef[],
+  scope: string,
+  beforeScope: string,
+  out: Map<string, FlatField>,
+): void {
+  for (const def of defs) {
+    // Pages hold no data, so they contribute no identity of their own.
+    if (def.type === 'page') {
+      flatten(def.fields ?? [], scope, beforeScope, out)
+      continue
+    }
+
+    const dataPath = scope + def.key
+    out.set(dataPath, { dataPath, beforeScope, def })
+
+    if (def.type === 'group' || def.type === 'repeater') {
+      const marker = def.type === 'repeater' ? '[].' : '.'
+      const childBeforeScope = beforeScope + (def.renamedFrom ?? def.key) + marker
+      flatten(def.fields ?? [], dataPath + marker, childBeforeScope, out)
+    }
+  }
 }
 
 function comparePair(previous: FieldDef, next: FieldDef, path: string): Change[] {
@@ -115,8 +165,4 @@ function comparePair(previous: FieldDef, next: FieldDef, path: string): Change[]
   }
 
   return changes
-}
-
-function byKey(fields: readonly FieldDef[]): Map<string, FieldDef> {
-  return new Map(fields.map((field) => [field.key, field]))
 }

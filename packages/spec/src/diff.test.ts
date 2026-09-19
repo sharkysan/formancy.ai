@@ -194,3 +194,130 @@ describe('diffSchemas invariants', () => {
     )
   })
 })
+
+describe('diffSchemas inside containers', () => {
+  const nested: FormSchema = {
+    specVersion: '0',
+    id: 'f',
+    title: 'T',
+    model: {
+      fields: [
+        {
+          key: 'g',
+          type: 'group',
+          fields: [
+            { key: 'child', type: 'text', required: true },
+            { key: 'other', type: 'text' },
+          ],
+        },
+        {
+          key: 'items',
+          type: 'repeater',
+          fields: [{ key: 'name', type: 'text' }],
+        },
+      ],
+    },
+  }
+
+  test('deleting a required field inside a group is lossy — the reviewer repro', () => {
+    const after = clone(nested)
+    after.model.fields[0]!.fields = after.model.fields[0]!.fields!.filter((f) => f.key !== 'child')
+
+    const changes = diffSchemas(nested, after)
+
+    expect(changes).toContainEqual(
+      expect.objectContaining({ kind: 'field.removed', severity: 'lossy', path: 'model.fields.g.child' }),
+    )
+  })
+
+  test('changing a nested field type is lossy', () => {
+    const after = clone(nested)
+    after.model.fields[0]!.fields![0] = { key: 'child', type: 'number', required: true }
+
+    expect(diffSchemas(nested, after)).toContainEqual(
+      expect.objectContaining({ kind: 'field.typeChanged', severity: 'lossy', path: 'model.fields.g.child' }),
+    )
+  })
+
+  test('tightening a repeater template field is lossy, reported at the row-scoped path', () => {
+    const after = clone(nested)
+    after.model.fields[1]!.fields![0] = { key: 'name', type: 'text', required: true }
+
+    expect(diffSchemas(nested, after)).toContainEqual(
+      expect.objectContaining({
+        kind: 'field.requiredTightened',
+        severity: 'lossy',
+        path: 'model.fields.items[].name',
+      }),
+    )
+  })
+
+  test('a declared rename inside a group maps data across as compatible', () => {
+    const after = clone(nested)
+    after.model.fields[0]!.fields![0] = { key: 'kid', type: 'text', required: true, renamedFrom: 'child' }
+
+    const changes = diffSchemas(nested, after)
+
+    expect(changes).toContainEqual(
+      expect.objectContaining({ kind: 'field.renamed', severity: 'compatible', path: 'model.fields.g.kid' }),
+    )
+    expect(changes.some((c) => c.kind === 'field.removed')).toBe(false)
+  })
+
+  test('renaming a group with renamedFrom carries its children along — no spurious removals', () => {
+    const after = clone(nested)
+    after.model.fields[0] = { ...after.model.fields[0]!, key: 'g2', renamedFrom: 'g' }
+
+    const changes = diffSchemas(nested, after)
+
+    expect(changes).toContainEqual(
+      expect.objectContaining({ kind: 'field.renamed', severity: 'compatible', path: 'model.fields.g2' }),
+    )
+    expect(changes.filter((c) => c.kind === 'field.removed')).toEqual([])
+    expect(changes.filter((c) => c.kind === 'field.added')).toEqual([])
+  })
+
+  test('turning a group into a repeater is a lossy type change and re-homes every child', () => {
+    const after = clone(nested)
+    after.model.fields[0] = { ...after.model.fields[0]!, type: 'repeater' }
+
+    const changes = diffSchemas(nested, after)
+
+    expect(changes).toContainEqual(
+      expect.objectContaining({ kind: 'field.typeChanged', severity: 'lossy', path: 'model.fields.g' }),
+    )
+    // Children move from g.child to g[].child — a different data shape.
+    expect(changes.some((c) => c.kind === 'field.removed' && c.path === 'model.fields.g.child')).toBe(true)
+  })
+})
+
+describe('diffSchemas and pages', () => {
+  const paged: FormSchema = {
+    specVersion: '0',
+    id: 'f',
+    title: 'T',
+    model: {
+      fields: [
+        { key: 'p1', type: 'page', fields: [{ key: 'email', type: 'text' }] },
+        { key: 'p2', type: 'page', fields: [{ key: 'message', type: 'text' }] },
+      ],
+    },
+  }
+
+  test('moving a field to another page is NO change: pages scope presentation, not data', () => {
+    const after = clone(paged)
+    after.model.fields[0]!.fields = []
+    after.model.fields[1]!.fields = [{ key: 'email', type: 'text' }, { key: 'message', type: 'text' }]
+
+    expect(diffSchemas(paged, after)).toEqual([])
+  })
+
+  test('moving a field INTO a group changes its data path and is reported as remove plus add', () => {
+    const after = clone(paged)
+    after.model.fields[0]!.fields = [{ key: 'wrap', type: 'group', fields: [{ key: 'email', type: 'text' }] }]
+
+    const kinds = diffSchemas(paged, after).map((c) => c.kind).sort()
+    expect(kinds).toContain('field.removed')
+    expect(kinds).toContain('field.added')
+  })
+})
