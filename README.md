@@ -21,13 +21,14 @@ most of them own your markup. formancy is built on three commitments:
 ## Layout
 
 ```
-packages/spec           schema types, JSON Schema, canonical hash, diffing
-packages/expressions    CEL parse/check/compile/evaluate + sandbox policy
-packages/core           the headless reactive engine
-packages/react          React binding                                       (not yet)
-packages/angular        Angular binding                                     (not yet)
-packages/conformance    the behaviour + accessibility contract              (not yet)
-packages/server         Fastify backend                                     (not yet)
+packages/spec           schema types, JSON Schema, logic rules, canonical hash, diffing
+packages/expressions    CEL parse/check/compile/evaluate + deterministic metering
+packages/core           the headless reactive engine (rules, rows, wizard, a11y ids)
+packages/react          React binding: hooks, unstyled components, error summary
+packages/angular        Angular binding: signals over the same protocol, zoneless
+packages/conformance    the behaviour + accessibility contract (6 fixtures, published)
+packages/server-core    backend use-cases against storage ports
+packages/server         Fastify + Postgres: publish, resolve, replayed submissions
 ```
 
 ## Development
