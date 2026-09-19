@@ -4,7 +4,7 @@
   "description": "Idiomatic Angular binding for the formancy form engine: signals over the same snapshot protocol.",
   "license": "Apache-2.0",
   "scripts": {
-    "build": "ng-packagr -p ng-package.json",
+    "build": "ng-packagr -p ng-package.json && node scripts/finalize-dist.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "check:pkg": "publint ./dist"
@@ -33,5 +33,9 @@
     "rxjs": "^7.8.1",
     "typescript": "catalog:",
     "vitest": "catalog:"
+  },
+  "publishConfig": {
+    "directory": "dist",
+    "linkDirectory": false
   }
 }
