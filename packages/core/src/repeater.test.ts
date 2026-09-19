@@ -146,3 +146,14 @@ describe('repeaterPaths', () => {
     expect(engine.repeaterPaths()).toEqual(['items'])
   })
 })
+
+describe('repeaters accessor', () => {
+  test('exposes each repeater with its definition, for renderer chrome', () => {
+    const engine = createFormEngine({ schema })
+    const repeaters = engine.repeaters()
+
+    expect(repeaters).toHaveLength(1)
+    expect(repeaters[0]!.wire).toBe('items')
+    expect(repeaters[0]!.def.type).toBe('repeater')
+  })
+})

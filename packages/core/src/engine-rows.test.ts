@@ -135,3 +135,31 @@ describe('row-scoped cycle gates', () => {
     expect(() => createFormEngine({ schema: cyclic, capabilities: FIXED_CLOCK })).toThrow(/grand|items/)
   })
 })
+
+describe('row bags follow the top-level null convention', () => {
+  test('an absent row member reads as null, so null-guarded rules work untouched', () => {
+    const guarded: FormSchema = {
+      ...schema,
+      logic: {
+        rules: [
+          {
+            target: 'items[].reason',
+            kind: 'validate',
+            cel: "item.reason == null || item.reason == '' || item.reason.contains('!')",
+            code: 'excitement',
+          },
+        ],
+      },
+    }
+    // The row exists but has never had a reason typed into it.
+    const engine = createFormEngine({
+      schema: guarded,
+      capabilities: FIXED_CLOCK,
+      initialValue: { items: [{ qty: 1.0 }] },
+    })
+
+    const report = engine.validate()
+
+    expect(report.errors['items[0].reason']).toBeUndefined()
+  })
+})

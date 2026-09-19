@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import type { ComponentType, ReactNode } from 'react'
 import { parsePath } from '@formancy/core'
 import type { FieldDef, FieldType } from '@formancy/spec'
@@ -52,6 +53,9 @@ export interface FormancyFormProps {
 interface DefExtras {
   label?: string
   options?: ReadonlyArray<{ value: string; label: string }>
+  minItems?: number
+  addLabel?: string
+  removeLabel?: string
 }
 
 function extrasOf(def: FieldDef): DefExtras {
@@ -202,7 +206,19 @@ function RepeaterSection({
 }) {
   const engine = useFormEngine()
   const repeater = useRepeater(wire)
-  const label = labels?.[wire] ?? wire
+  const def = engine.repeaters().find((candidate) => candidate.wire === wire)?.def
+  const extras = def === undefined ? {} : extrasOf(def)
+  const label = extras.label ?? labels?.[wire] ?? wire
+  const addLabel = extras.addLabel ?? `Add ${label}`
+  const removeLabel = extras.removeLabel ?? `Remove ${label}`
+  const minItems = extras.minItems ?? 0
+
+  // Seed to minItems on mount: a repeater that promises one row must show one
+  // empty row, not an add button and a shrug.
+  const shortfall = minItems - repeater.rowCount
+  useEffect(() => {
+    for (let i = 0; i < shortfall; i++) repeater.addRow()
+  }, [shortfall, repeater])
 
   const fallbackFor = (instanceWire: string): string | undefined => {
     const template = instanceWire.replace(/\[\d+\]/, '[]')
@@ -228,12 +244,12 @@ function RepeaterSection({
           {/* Position context in the NAME, so a screen-reader user knows which
               row this button kills without walking the tree. */}
           <button type="button" onClick={() => repeater.removeRow(index)}>
-            {`Remove ${label} ${index + 1} of ${repeater.rowCount}`}
+            {`${removeLabel} ${index + 1} of ${repeater.rowCount}`}
           </button>
         </div>
       ))}
       <button type="button" onClick={() => repeater.addRow()}>
-        {`Add ${label}`}
+        {addLabel}
       </button>
     </fieldset>
   )

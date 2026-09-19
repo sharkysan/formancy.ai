@@ -236,7 +236,7 @@ describe('schema access for renderers', () => {
     const labelled = {
       ...schema,
       model: { fields: [{ key: 'email', type: 'text', label: 'Email address' }] },
-    } as FormSchema
+    } as unknown as FormSchema
     const engine = createFormEngine({ schema: labelled })
 
     const def = engine.getFieldSnapshot(['email']).def
@@ -254,5 +254,39 @@ describe('schema access for renderers', () => {
   test('pages() is empty for an unpaged form', () => {
     const flat = { ...schema, model: { fields: [{ key: 'a', type: 'text' }] } } as FormSchema
     expect(createFormEngine({ schema: flat }).pages()).toEqual([])
+  })
+})
+
+describe('continuous revalidation', () => {
+  test('after the first validation, fixing a field clears its error on the spot', () => {
+    const engine = createFormEngine({ schema })
+    engine.submit()
+    expect(engine.getFieldSnapshot(['email']).errors).toEqual(['required'])
+
+    engine.setValue(['email'], 'a@b.ch')
+
+    expect(engine.getFieldSnapshot(['email']).errors).toEqual([])
+  })
+
+  test('and breaking a field surfaces its error on the spot too', () => {
+    const engine = createFormEngine({
+      schema,
+      initialValue: { email: 'a@b.ch', address: { city: 'x' } },
+    })
+    engine.submit()
+    expect(engine.validate().valid).toBe(true)
+
+    engine.setValue(['email'], '')
+
+    expect(engine.getFieldSnapshot(['email']).errors).toEqual(['required'])
+  })
+
+  test('but a pristine form stays silent while the user types for the first time', () => {
+    const engine = createFormEngine({ schema })
+
+    engine.setValue(['email'], 'a')
+    engine.setValue(['email'], '')
+
+    expect(engine.getFieldSnapshot(['email']).errors).toEqual([])
   })
 })

@@ -119,3 +119,48 @@ describe('repeater rendering', () => {
     expect(engine.getFieldSnapshot(['items', 0, 'name']).value).toBe('typed')
   })
 })
+
+describe('repeater schema chrome', () => {
+  const seeded = {
+    specVersion: '0',
+    id: 'crm',
+    title: 'CRM',
+    model: {
+      fields: [
+        {
+          key: 'contacts',
+          type: 'repeater',
+          label: 'Contacts',
+          minItems: 1,
+          addLabel: 'Add contact',
+          removeLabel: 'Remove contact',
+          fields: [{ key: 'name', type: 'text', label: 'Name' }],
+        },
+      ],
+    },
+  } as unknown as FormSchema
+
+  test('minItems seeds empty rows on mount', () => {
+    const engine = createFormEngine({ schema: seeded })
+    render(
+      <FormancyProvider engine={engine}>
+        <FormancyForm />
+      </FormancyProvider>,
+    )
+
+    expect(engine.rowCount(['contacts'])).toBe(1)
+    expect(screen.getByLabelText('Name')).toBeTruthy()
+  })
+
+  test('add and remove controls take their names from the schema, position appended', () => {
+    const engine = createFormEngine({ schema: seeded, initialValue: { contacts: [{}, {}] } })
+    render(
+      <FormancyProvider engine={engine}>
+        <FormancyForm />
+      </FormancyProvider>,
+    )
+
+    expect(screen.getByRole('button', { name: 'Add contact' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Remove contact 2 of 2' })).toBeTruthy()
+  })
+})

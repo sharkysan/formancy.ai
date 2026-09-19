@@ -17,6 +17,7 @@ import { buildFieldProps } from './props.js'
 import type { FieldProps } from './props.js'
 import type { Path } from './path.js'
 import { createValueStore } from './store.js'
+import { getAt, setAt } from './value.js'
 import { createWizard } from './wizard.js'
 import type { Wizard } from './wizard.js'
 
@@ -81,6 +82,8 @@ export interface FormEngine {
   fieldPaths(): string[]
   /** Wire paths of every repeater, so renderers can give rows their own chrome. */
   repeaterPaths(): string[]
+  /** Each repeater with its definition — add/remove labels ride on it. */
+  repeaters(): ReadonlyArray<{ wire: string; def: FieldDef }>
   /** The wizard pages in order, with their definitions. Empty when unpaged. */
   pages(): ReadonlyArray<{ key: string; def: FieldDef }>
   /** The current submission value. */
@@ -453,6 +456,10 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
   // ------------------------------------------------------------ rule running
 
   let applyingRules = false
+  /** Errors track edits LIVE only after the first validation: a pristine form
+   *  must not shout while the user types their first answer, but a corrected
+   *  field must not keep wearing yesterday's error either. */
+  let validatedOnce = false
 
   /** One value bag per pass: every declared top-level name present, with null
    *  standing in for an empty leaf so expressions bind rather than throw. */
@@ -466,12 +473,23 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
     return bag
   }
 
+  /** A row bag follows the same convention as the top-level bag: every leaf
+   *  the template declares is PRESENT, with null standing in for the answer a
+   *  person has not typed yet — CEL errors on a missing map key, and a
+   *  fail-closed validate rule must not misfire on an untouched field. */
   function rowBag(
     bag: Record<string, unknown>,
+    repeater: RepeaterNode,
     row: unknown,
     index: number,
   ): Record<string, unknown> {
-    return { ...bag, item: row !== null && typeof row === 'object' ? row : {}, index }
+    const members: FieldNode[] = []
+    walkTemplate(repeater.def.fields ?? [], [], repeater.page, members)
+    let item: unknown = row !== null && typeof row === 'object' ? row : {}
+    for (const member of members) {
+      if (getAt(item, member.path) === undefined) item = setAt(item, member.path, null)
+    }
+    return { ...bag, item, index }
   }
 
   /** Instance wire for one row of a row-scoped rule. */
@@ -526,7 +544,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
 
           const { repeater } = entry.row
           currentRows(repeater).forEach((row, index) => {
-            const outcome = evaluate(entry.program, rowBag(bag, row, index), { capabilities })
+            const outcome = evaluate(entry.program, rowBag(bag, repeater, row, index), { capabilities })
             if (outcome.ok) store.set(instancePath(entry, index), outcome.value)
           })
           // Aggregates downstream must see the rows as just written.
@@ -571,7 +589,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
             continue
           }
           currentRows(entry.row.repeater).forEach((row, index) => {
-            const outcome = evaluate(entry.program, rowBag(bag, row, index), { capabilities })
+            const outcome = evaluate(entry.program, rowBag(bag, entry.row!.repeater, row, index), { capabilities })
             applyMeta(
               entry,
               instanceWire(entry, index),
@@ -597,6 +615,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
     for (const wire of related) serverErrorsByWire.delete(wire)
     invalidate(related)
     applyRules()
+    if (validatedOnce && !applyingRules) runValidation()
   })
   interaction.subscribe((changed) => invalidate(changed))
 
@@ -619,6 +638,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
   }
 
   function runValidation(): ValidationReport {
+    validatedOnce = true
     const report: Record<string, string[]> = {}
     const changedWires: string[] = []
     const capabilities = capabilitySource === undefined ? undefined : captureCapabilities(capabilitySource)
@@ -646,6 +666,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
             ? bag
             : rowBag(
                 bag,
+                repeater,
                 currentRows(repeater)[node.path[repeater.path.length] as number],
                 node.path[repeater.path.length] as number,
               )
@@ -701,6 +722,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
   return {
     fieldPaths: () => activeNodes().map((node) => node.wire),
     repeaterPaths: () => repeaters.map((node) => node.wire),
+    repeaters: () => repeaters.map((node) => ({ wire: node.wire, def: node.def })),
     pages: () => pageDefs,
     value: () => store.root(),
 
