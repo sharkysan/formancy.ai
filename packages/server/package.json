@@ -5,14 +5,20 @@
   "license": "Apache-2.0",
   "type": "module",
   "exports": {
-    ".": { "types": "./dist/index.d.mts", "default": "./dist/index.mjs" }
+    ".": {
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsdown",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "check:pkg": "publint && attw --pack . --profile esm-only"
+    "check:pkg": "publint && attw --pack . --profile esm-only",
+    "dev": "tsdown && node dist/main.mjs"
   },
   "dependencies": {
     "@formancy/server-core": "workspace:*",

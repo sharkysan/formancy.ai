@@ -1,0 +1,22 @@
+# Development infrastructure: `docker compose up -d` gives you the database;
+# `pnpm --filter @formancy/server dev` runs the server against it.
+# The all-in-one server image arrives with the distribution work.
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: formancy
+      POSTGRES_PASSWORD: formancy
+      POSTGRES_DB: formancy
+    ports:
+      - "5432:5432"
+    volumes:
+      - formancy-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U formancy"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  formancy-pg:
