@@ -1,11 +1,17 @@
 import { useCallback, useMemo, useSyncExternalStore } from 'react'
 import { formatPath, parsePath } from '@formancy/core'
-import type { FieldSnapshot, Path } from '@formancy/core'
+import type { ControlProps, FieldSnapshot, Path } from '@formancy/core'
 import { useFormEngine } from './context.js'
 
 export interface FieldBinding extends FieldSnapshot {
   setValue(value: unknown): void
   touch(): void
+  /** Spread onto the input/select/textarea element. */
+  controlProps: ControlProps
+  /** Spread onto the label element. */
+  labelProps: { id: string; htmlFor: string }
+  /** Spread onto the error text element. */
+  errorProps: { id: string }
 }
 
 /**
@@ -35,5 +41,15 @@ export function useField(path: string | Path): FieldBinding {
   const setValue = useCallback((value: unknown) => engine.setValue(parsed, value), [engine, parsed])
   const touch = useCallback(() => engine.touch(parsed), [engine, parsed])
 
-  return useMemo(() => ({ ...snapshot, setValue, touch }), [snapshot, setValue, touch])
+  return useMemo(
+    () => ({
+      ...snapshot,
+      setValue,
+      touch,
+      controlProps: snapshot.props.control,
+      labelProps: { id: snapshot.props.label.id, htmlFor: snapshot.props.label.for },
+      errorProps: snapshot.props.error,
+    }),
+    [snapshot, setValue, touch],
+  )
 }
