@@ -5,6 +5,8 @@ import { createInteractionState } from './interaction.js'
 import { formatPath } from './path.js'
 import type { Path } from './path.js'
 import { createValueStore } from './store.js'
+import { createWizard } from './wizard.js'
+import type { Wizard } from './wizard.js'
 
 /**
  * The engine assembly for spec version 0.
@@ -51,6 +53,12 @@ export interface FormEngine {
   subscribeField(path: Path, listener: () => void): () => void
   validate(): ValidationReport
   submit(): { ok: boolean; errors: Record<string, string[]> }
+  /** Present when the schema has pages; the same instance for the form's lifetime. */
+  wizard(): Wizard | undefined
+  /** Server verdicts render through the same path as local errors. Cleared per field on edit. */
+  applyServerErrors(errors: Record<string, readonly string[]>): void
+  /** First invalid field in document order — the error summary focuses it. Null when clean. */
+  firstInvalid(): string | null
 }
 
 interface FieldNode {
@@ -166,6 +174,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
   const store = createValueStore(options.initialValue ?? {})
   const interaction = createInteractionState()
   const errorsByWire = new Map<string, string[]>()
+  const serverErrorsByWire = new Map<string, string[]>()
 
   const snapshotCache = new Map<string, FieldSnapshot>()
   const fieldListeners = new Map<string, Set<() => void>>()
@@ -199,7 +208,12 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
     return related
   }
 
-  store.subscribe((written) => invalidate(valueRelated(written)))
+  store.subscribe((written) => {
+    const related = valueRelated(written)
+    // A new value invalidates the server's old verdict about the old value.
+    for (const wire of related) serverErrorsByWire.delete(wire)
+    invalidate(related)
+  })
   interaction.subscribe((changed) => invalidate(changed))
 
   function requiredViolated(def: FieldDef, value: unknown): boolean {
@@ -229,6 +243,17 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
 
     invalidate(changedWires)
     return { valid: Object.keys(report).length === 0, errors: report }
+  }
+
+  let wizardInstance: Wizard | undefined
+
+  function validateOnePage(pageIndex: number): boolean {
+    const pageNodes = activeNodes().filter((node) => node.page === pageIndex)
+    // Pressing next must SHOW the page's problems, so the page gets touched
+    // whether or not it validates; later pages stay pristine.
+    interaction.touchMany(pageNodes.map((node) => node.path))
+    const report = runValidation()
+    return pageNodes.every((node) => !report.errors[node.wire])
   }
 
   function requireRepeater(path: Path): RepeaterNode {
@@ -275,7 +300,10 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
         value: store.get(node.path),
         required: node.def.required === true,
         touched: interaction.isTouched(node.path),
-        errors: Object.freeze(errorsByWire.get(wire)?.slice() ?? NO_ERRORS),
+        errors: Object.freeze([
+          ...(errorsByWire.get(wire) ?? NO_ERRORS),
+          ...(serverErrorsByWire.get(wire) ?? NO_ERRORS),
+        ]),
         ids: fieldIds(schema.id, node.path),
       })
       snapshotCache.set(wire, snapshot)
@@ -294,6 +322,28 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
     },
 
     validate: runValidation,
+
+    wizard() {
+      if (pageCount === 0) return undefined
+      wizardInstance ??= createWizard({ pageCount, validatePage: validateOnePage })
+      return wizardInstance
+    },
+
+    applyServerErrors(errors) {
+      const changed: string[] = []
+      for (const [wire, codes] of Object.entries(errors)) {
+        serverErrorsByWire.set(wire, [...codes])
+        changed.push(wire)
+      }
+      invalidate(changed)
+    },
+
+    firstInvalid() {
+      for (const node of activeNodes()) {
+        if (errorsByWire.has(node.wire) || serverErrorsByWire.has(node.wire)) return node.wire
+      }
+      return null
+    },
 
     submit() {
       interaction.touchMany(activeNodes().map((node) => node.path))
