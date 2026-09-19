@@ -1,10 +1,11 @@
 import type { ComponentType, ReactNode } from 'react'
 import { parsePath } from '@formancy/core'
-import type { FieldType } from '@formancy/spec'
+import type { FieldDef, FieldType } from '@formancy/spec'
 import { useFormEngine } from './context.js'
 import { useField } from './use-field.js'
 import type { FieldBinding } from './use-field.js'
 import { useRepeater } from './use-repeater.js'
+import { useSubmit } from './use-submit.js'
 import { useWizard } from './use-wizard.js'
 
 /**
@@ -26,32 +27,102 @@ export interface Registry {
   byPath?: Record<string, FieldComponent>
 }
 
+export interface SubmitOutcome {
+  ok: boolean
+  errors: Record<string, string[]>
+  /** The canonical value, present when accepted. */
+  data?: unknown
+}
+
 export interface FormancyFormProps {
   /**
    * Display text per wire path (row fields by their template wire,
-   * `items[].name`). Interim until the spec's i18n section lands; a missing
+   * `items[].name`). A `label` on the model definition wins — that is how
+   * fixture schemas carry text until the spec's i18n section lands; a missing
    * entry falls back to the wire path, which is at least honest.
    */
   labels?: Record<string, string>
   registry?: Registry
+  submitLabel?: string
+  onSubmit?: (outcome: SubmitOutcome) => void
+}
+
+/** Labels and options ride on the model definitions until the spec grows its
+ *  i18n and options sections; this is the one place that convention lives. */
+interface DefExtras {
+  label?: string
+  options?: ReadonlyArray<{ value: string; label: string }>
+}
+
+function extrasOf(def: FieldDef): DefExtras {
+  return def as unknown as DefExtras
 }
 
 /**
  * Renders the whole form from the engine: one slot per field, resolved through
  * the registry. Slots subscribe individually, so a keystroke re-renders one
  * field and a visibility flip mounts or unmounts exactly the fields it hit.
- * A paged schema renders one page at a time with navigation; repeaters render
- * their rows with named add and remove controls.
+ * A paged schema renders a stepper, one page at a time, navigation, and the
+ * submit control on the last page — a failed submit navigates to the first
+ * page with a problem instead of leaving the user on a clean review page
+ * staring at a rejection.
  */
 export function FormancyForm(props: FormancyFormProps) {
   const engine = useFormEngine()
-  return engine.wizard() === undefined ? <FieldList {...props} /> : <PagedFields {...props} />
+  return engine.wizard() === undefined ? <FlatForm {...props} /> : <PagedForm {...props} />
 }
 
-function PagedFields(props: FormancyFormProps) {
-  const wizard = useWizard()
+function SubmitButton({ submitLabel, onSubmit, onFailedNavigate }: FormancyFormProps & { onFailedNavigate?: (page: number) => void }) {
+  const engine = useFormEngine()
+  const submit = useSubmit()
+  return (
+    <button
+      type="button"
+      data-formancy-part="submit"
+      onClick={() => {
+        const outcome = submit()
+        if (!outcome.ok && onFailedNavigate !== undefined) {
+          const firstInvalid = engine.firstInvalid()
+          if (firstInvalid !== null) onFailedNavigate(engine.pageOf(parsePath(firstInvalid)))
+        }
+        onSubmit?.(
+          outcome.ok
+            ? { ok: true, errors: outcome.errors, data: engine.value() }
+            : { ok: false, errors: outcome.errors },
+        )
+      }}
+    >
+      {submitLabel ?? 'Submit'}
+    </button>
+  )
+}
+
+function FlatForm(props: FormancyFormProps) {
   return (
     <>
+      <FieldList {...props} />
+      <SubmitButton {...props} />
+    </>
+  )
+}
+
+function PagedForm(props: FormancyFormProps) {
+  const engine = useFormEngine()
+  const wizard = useWizard()
+  const pages = engine.pages()
+  const lastPage = wizard.pageCount - 1
+
+  return (
+    <>
+      <nav data-formancy-part="stepper" aria-label="Progress">
+        <ol>
+          {pages.map((page, index) => (
+            <li key={page.key} aria-current={index === wizard.page ? 'step' : undefined}>
+              {extrasOf(page.def).label ?? page.key}
+            </li>
+          ))}
+        </ol>
+      </nav>
       <FieldList {...props} page={wizard.page} />
       <div data-formancy-part="wizard-nav">
         {wizard.page > 0 ? (
@@ -59,11 +130,13 @@ function PagedFields(props: FormancyFormProps) {
             Back
           </button>
         ) : null}
-        {wizard.page < wizard.pageCount - 1 ? (
+        {wizard.page < lastPage ? (
           <button type="button" onClick={() => void wizard.next()}>
             Next
           </button>
-        ) : null}
+        ) : (
+          <SubmitButton {...props} onFailedNavigate={(page) => wizard.goTo(page)} />
+        )}
       </div>
     </>
   )
@@ -85,7 +158,7 @@ function FieldList({ labels, registry, page }: FormancyFormProps & { page?: numb
   return (
     <>
       {staticWires.filter(inPage).map((wire) => (
-        <FieldSlot key={wire} path={wire} label={labels?.[wire] ?? wire} registry={registry} />
+        <FieldSlot key={wire} path={wire} fallbackLabel={labels?.[wire]} registry={registry} />
       ))}
       {repeaterWires.filter(inPage).map((wire) => (
         <RepeaterSection key={wire} wire={wire} labels={labels} registry={registry} />
@@ -96,11 +169,11 @@ function FieldList({ labels, registry, page }: FormancyFormProps & { page?: numb
 
 function FieldSlot({
   path,
-  label,
+  fallbackLabel,
   registry,
 }: {
   path: string
-  label: string
+  fallbackLabel?: string | undefined
   registry?: Registry | undefined
 }) {
   const field = useField(path)
@@ -114,6 +187,7 @@ function FieldSlot({
     registry?.byPath?.[path] ?? registry?.byType?.[field.type] ?? DEFAULT_COMPONENTS[field.type]
   if (Component === null) return null
 
+  const label = extrasOf(field.def).label ?? fallbackLabel ?? path
   return <Component path={path} label={label} />
 }
 
@@ -130,11 +204,9 @@ function RepeaterSection({
   const repeater = useRepeater(wire)
   const label = labels?.[wire] ?? wire
 
-  /** Row fields by template wire (`items[].name`), so one label entry serves
-   *  every row; the instance wire is the fallback lookup. */
-  const labelFor = (instanceWire: string): string => {
+  const fallbackFor = (instanceWire: string): string | undefined => {
     const template = instanceWire.replace(/\[\d+\]/, '[]')
-    return labels?.[template] ?? labels?.[instanceWire] ?? instanceWire
+    return labels?.[template] ?? labels?.[instanceWire]
   }
 
   return (
@@ -149,7 +221,7 @@ function RepeaterSection({
               <FieldSlot
                 key={instanceWire}
                 path={instanceWire}
-                label={labelFor(instanceWire)}
+                fallbackLabel={fallbackFor(instanceWire)}
                 registry={registry}
               />
             ))}
@@ -272,13 +344,72 @@ function DateField({ path, label }: FieldComponentProps) {
   )
 }
 
+function SelectField({ path, label }: FieldComponentProps) {
+  const field = useField(path)
+  const options = extrasOf(field.def).options ?? []
+  return (
+    <FieldShell field={field} label={label}>
+      <select
+        {...field.controlProps}
+        value={typeof field.value === 'string' ? field.value : ''}
+        onChange={(event) => field.setValue(event.target.value === '' ? null : event.target.value)}
+        onBlur={() => field.touch()}
+      >
+        {/* The empty option is the unanswered state; without it the browser
+            silently pre-selects the first real option, which the engine never
+            heard about. */}
+        <option value="" />
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </FieldShell>
+  )
+}
+
+function RadioGroupField({ path, label }: FieldComponentProps) {
+  const field = useField(path)
+  const options = extrasOf(field.def).options ?? []
+  const showError = field.touched && field.errors.length > 0
+  return (
+    <fieldset
+      data-formancy-part="field"
+      data-state={showError ? 'invalid' : 'valid'}
+      aria-describedby={field.controlProps['aria-describedby']}
+    >
+      <legend data-formancy-part="label">{label}</legend>
+      {options.map((option) => {
+        const optionId = `${field.ids.control}:${option.value}`
+        return (
+          <span key={option.value} data-formancy-part="radio-option">
+            <input
+              type="radio"
+              id={optionId}
+              name={field.controlProps.name}
+              value={option.value}
+              checked={field.value === option.value}
+              onChange={() => field.setValue(option.value)}
+              onBlur={() => field.touch()}
+            />
+            <label htmlFor={optionId}>{option.label}</label>
+          </span>
+        )
+      })}
+      {showError ? (
+        <p data-formancy-part="error" {...field.errorProps}>
+          {field.errors.join(', ')}
+        </p>
+      ) : null}
+    </fieldset>
+  )
+}
+
 /**
  * The built-in unstyled components. `null` means the type renders nothing here:
  * hidden and static are non-inputs, and the container types are laid out by
- * their own machinery, not by a leaf slot. select and radio fall back to text
- * until the spec grows an options section — a select with no options would be
- * a trap, and inventing an options side-channel now would prejudge that spec
- * work.
+ * their own machinery, not by a leaf slot.
  */
 const DEFAULT_COMPONENTS: Record<FieldType, FieldComponent | null> = {
   text: TextField,
@@ -286,8 +417,8 @@ const DEFAULT_COMPONENTS: Record<FieldType, FieldComponent | null> = {
   number: NumberField,
   checkbox: CheckboxField,
   date: DateField,
-  select: TextField,
-  radio: TextField,
+  select: SelectField,
+  radio: RadioGroupField,
   hidden: null,
   static: null,
   group: null,

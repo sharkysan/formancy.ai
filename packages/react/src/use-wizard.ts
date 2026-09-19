@@ -7,6 +7,8 @@ export interface WizardBinding {
   /** Resolves true iff the page advanced; a failed validation keeps the page. */
   next(): Promise<boolean>
   back(): void
+  /** Unvalidated jump — error navigation, never a way past a gate. */
+  goTo(pageIndex: number): void
 }
 
 /**
@@ -31,6 +33,7 @@ export function useWizard(): WizardBinding {
       pageCount: wizard.pageCount,
       next: () => wizard.next(),
       back: () => wizard.back(),
+      goTo: (pageIndex: number) => wizard.goTo(pageIndex),
     }),
     [page, wizard],
   )
