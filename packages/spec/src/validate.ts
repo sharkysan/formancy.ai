@@ -1,6 +1,5 @@
-import { Ajv2020 } from 'ajv/dist/2020.js'
 import type { ErrorObject, ValidateFunction } from 'ajv/dist/2020.js'
-import formDocumentSchema from '../formancy.schema.json' with { type: 'json' }
+import documentValidatorFn from './generated/document-validator.js'
 import type { FieldDef, FormSchema } from './types.js'
 
 /** One reason a document is not a valid formancy form. */
@@ -106,17 +105,14 @@ function* walkFields(
   }
 }
 
-let compiled: ValidateFunction<FormSchema> | undefined
-
-/** Compiled once and kept: ajv's compile step is the expensive part, and the
- *  document schema is a constant. */
+/** Precompiled at authoring time by scripts/generate-validator.mjs (with
+ *  allErrors, because a form author fixing one problem at a time through a
+ *  builder that only ever shows them the first is a miserable afternoon).
+ *  Precompiled rather than ajv.compile() here, because runtime compilation
+ *  reaches runtime code generation — which throws under the strict no-unsafe-eval CSP
+ *  the product documents, in the browser-embedded builder. */
 function documentValidator(): ValidateFunction<FormSchema> {
-  // allErrors, because a form author fixing one problem at a time through a
-  // builder that only ever shows them the first is a miserable afternoon.
-  compiled ??= new Ajv2020({ allErrors: true, strict: true }).compile<FormSchema>(
-    formDocumentSchema,
-  )
-  return compiled
+  return documentValidatorFn
 }
 
 function toSchemaErrors(errors: ErrorObject[], document: unknown): SchemaError[] {
