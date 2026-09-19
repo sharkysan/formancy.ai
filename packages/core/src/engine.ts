@@ -53,6 +53,8 @@ export interface FieldSnapshot {
   touched: boolean
   /** Error CODES (e.g. "required") — text belongs to the message catalog, not the engine. */
   errors: readonly string[]
+  /** The model definition, verbatim — renderers read labels/options extras from it. */
+  def: FieldDef
   ids: FieldIds
   /** Ready-to-spread ARIA wiring; see props.ts for the rules it encodes. */
   props: FieldProps
@@ -79,6 +81,8 @@ export interface FormEngine {
   fieldPaths(): string[]
   /** Wire paths of every repeater, so renderers can give rows their own chrome. */
   repeaterPaths(): string[]
+  /** The wizard pages in order, with their definitions. Empty when unpaged. */
+  pages(): ReadonlyArray<{ key: string; def: FieldDef }>
   /** The current submission value. */
   value(): unknown
   rowCount(path: Path): number
@@ -139,11 +143,13 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
 
   const staticNodes: FieldNode[] = []
   const repeaters: RepeaterNode[] = []
+  const pageDefs: Array<{ key: string; def: FieldDef }> = []
   let pageCount = 0
 
   function walk(defs: readonly FieldDef[], parent: Path, page: number): void {
     for (const def of defs) {
       if (def.type === 'page') {
+        pageDefs.push({ key: def.key, def })
         walk(def.fields ?? [], parent, pageCount++)
       } else if (def.type === 'group') {
         walk(def.fields ?? [], [...parent, def.key], page)
@@ -695,6 +701,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
   return {
     fieldPaths: () => activeNodes().map((node) => node.wire),
     repeaterPaths: () => repeaters.map((node) => node.wire),
+    pages: () => pageDefs,
     value: () => store.root(),
 
     rowCount: (path) => currentRowCount(requireRepeater(path)),
@@ -742,6 +749,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
       const snapshot: FieldSnapshot = Object.freeze({
         value: store.get(node.path),
         type: node.def.type,
+        def: node.def,
         required,
         visible: !hiddenWires.has(wire),
         disabled,

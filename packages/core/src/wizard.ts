@@ -19,6 +19,9 @@ export interface Wizard {
   /** Resolves true iff the page actually advanced. */
   next(): Promise<boolean>
   back(): void
+  /** Jump without validating. Its caller is error navigation — taking the user
+   *  TO a problem — never a way to skip past one. */
+  goTo(pageIndex: number): void
   subscribe(listener: () => void): () => void
 }
 
@@ -60,6 +63,15 @@ export function createWizard(options: WizardOptions): Wizard {
     back() {
       if (current === 0) return
       current--
+      notify()
+    },
+
+    goTo(pageIndex) {
+      if (!Number.isInteger(pageIndex) || pageIndex < 0 || pageIndex >= options.pageCount) {
+        throw new RangeError(`No page ${pageIndex}: valid range is 0..${options.pageCount - 1}`)
+      }
+      if (pageIndex === current) return
+      current = pageIndex
       notify()
     },
 

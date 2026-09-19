@@ -99,3 +99,32 @@ describe('createWizard', () => {
     expect(() => createWizard({ pageCount: 0, validatePage: () => true })).toThrow()
   })
 })
+
+describe('goTo', () => {
+  test('jumps to any page without validating — its caller is error navigation, not next', async () => {
+    const validatePage = vi.fn().mockReturnValue(false)
+    const wizard = createWizard({ pageCount: 3, validatePage })
+
+    wizard.goTo(2)
+
+    expect(wizard.page()).toBe(2)
+    expect(validatePage).not.toHaveBeenCalled()
+  })
+
+  test('notifies subscribers like any other move, and is silent for the current page', () => {
+    const wizard = createWizard({ pageCount: 3, validatePage: () => true })
+    const listener = vi.fn()
+    wizard.subscribe(listener)
+
+    wizard.goTo(1)
+    wizard.goTo(1)
+
+    expect(listener).toHaveBeenCalledTimes(1)
+  })
+
+  test('rejects an out-of-range page', () => {
+    const wizard = createWizard({ pageCount: 2, validatePage: () => true })
+    expect(() => wizard.goTo(2)).toThrow()
+    expect(() => wizard.goTo(-1)).toThrow()
+  })
+})

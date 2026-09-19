@@ -230,3 +230,29 @@ describe('form-level error aggregation', () => {
     expect(heard).toBeGreaterThan(afterValue)
   })
 })
+
+describe('schema access for renderers', () => {
+  test('a snapshot carries its model definition, extras included', () => {
+    const labelled = {
+      ...schema,
+      model: { fields: [{ key: 'email', type: 'text', label: 'Email address' }] },
+    } as FormSchema
+    const engine = createFormEngine({ schema: labelled })
+
+    const def = engine.getFieldSnapshot(['email']).def
+    expect(def.type).toBe('text')
+    expect((def as { label?: string }).label).toBe('Email address')
+  })
+
+  test('pages() lists page keys with their definitions, in order', () => {
+    const engine = createFormEngine({ schema })
+
+    expect(engine.pages().map((page) => page.key)).toEqual(['intro', 'details'])
+    expect(engine.pages()[0]!.def.type).toBe('page')
+  })
+
+  test('pages() is empty for an unpaged form', () => {
+    const flat = { ...schema, model: { fields: [{ key: 'a', type: 'text' }] } } as FormSchema
+    expect(createFormEngine({ schema: flat }).pages()).toEqual([])
+  })
+})
