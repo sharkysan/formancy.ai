@@ -11,6 +11,7 @@
   "files": ["dist", "fixtures"],
   "scripts": {
     "build": "tsdown",
+    "fixtures:embed": "node scripts/embed-fixtures.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "check:pkg": "publint && attw --pack . --profile esm-only"

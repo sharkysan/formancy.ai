@@ -1,0 +1,140 @@
+import type { ConformanceSchema, JsonValue, SubmitStatus } from './types.js'
+
+/**
+ * A driver is the adapter between one fixture suite and one implementation.
+ *
+ * The same fixtures run through the engine in Node, the engine in a browser,
+ * the React renderer, the Angular renderer and the server's revalidation
+ * endpoint. Five drivers, one suite: that is the only mechanism that keeps two
+ * renderers from drifting apart, because a behaviour is written down once and
+ * every implementation is measured against the same words.
+ *
+ * ── THE RULE ─────────────────────────────────────────────────────────────────
+ *
+ * A DRIVER RESOLVES A FIELD BY ACCESSIBLE NAME AND ROLE. NOTHING ELSE.
+ *
+ * `getByRole('textbox', { name })`, `getByLabelText(name)`. Never a test id,
+ * never a CSS selector, never a component instance, never a framework-internal
+ * handle.
+ *
+ * The consequence is the point: a renderer whose markup cannot be queried by
+ * role and accessible name FAILS CONFORMANCE. An input with no label, a custom
+ * combobox built from unlabelled divs, an error message not associated with its
+ * control — none of them can be driven, so none of them can pass. Accessibility
+ * stops being a workstream somebody schedules and becomes a structural property
+ * of a passing test run.
+ *
+ * A future contributor will hit a renderer that is awkward to query and reach
+ * for `data-testid` to unblock themselves. That escape hatch deletes the whole
+ * guarantee: the suite would then pass over markup no screen reader can use,
+ * and it would pass for years before anyone noticed. If a control cannot be
+ * found by name and role, the bug is in the renderer. Fix the renderer.
+ *
+ * The one place a driver may use its own knowledge is the mapping from the
+ * fixture's data path to the accessible name to query for: the driver mounted
+ * the schema, so it can read `fieldAtPath(schema, path).label`. What it may not
+ * do is reach into the implementation to find the control.
+ */
+export interface RendererDriver {
+  /**
+   * Render the schema and resolve once the form is interactive — after the
+   * first calculation pass, so `valueOf` on a calculated field is meaningful.
+   */
+  mount(schema: ConformanceSchema, options?: MountOptions): Promise<void>
+
+  /**
+   * Put a value into the control at `path` the way a person would: focus it,
+   * change it, and let it blur. A driver that writes the value into the
+   * engine's state directly tests nothing about the renderer.
+   */
+  fill(path: string, value: JsonValue): Promise<void>
+
+  /**
+   * Press a control. Either a field path, or a command path such as
+   * `contacts#add`, `contacts[1]#remove`, `#next` or `#back`; see
+   * `COMMAND_SEPARATOR`. The accessible name to press comes from the schema —
+   * a repeater's `addLabel` and `removeLabel`.
+   */
+  activate(path: string): Promise<void>
+
+  /**
+   * The data paths currently in the accessible tree.
+   *
+   * The reference implementation is: for every field path in the mounted
+   * schema, query by that field's role and accessible name, and keep the ones
+   * that are found. So "visible" means "reachable by a person using the form",
+   * not `display !== 'none'` — a field hidden with `aria-hidden` or moved off
+   * screen is correctly reported as hidden.
+   */
+  visibleFields(): Promise<readonly string[]>
+
+  /**
+   * The value shown by the control at `path`, read through the control rather
+   * than from the engine, so a renderer that fails to reflect a calculated
+   * value into its input fails the case.
+   */
+  valueOf(path: string): Promise<JsonValue>
+
+  /**
+   * Validation messages, from the accessible error text associated with the
+   * control (`aria-describedby`, `aria-errormessage`, `role="alert"`). With no
+   * argument, every message in the form.
+   */
+  errorsFor(path?: string): Promise<readonly ConformanceMessage[]>
+
+  /**
+   * The key of the wizard page a person is on, from the page's accessible
+   * identity — the step marked `aria-current="step"`, or the accessible name of
+   * the region. `undefined` when the form is not paginated.
+   */
+  currentPage(): Promise<string | undefined>
+
+  /**
+   * A stable text rendering of the accessible tree, in the shape Playwright's
+   * `ariaSnapshot()` produces. The runner attaches it to a failure, because the
+   * person reading the failure is usually debugging a renderer they did not
+   * write and cannot see the screen.
+   */
+  ariaSnapshot(): Promise<string>
+
+  /** Submit the form as a person would: press the submit control. */
+  submit(): Promise<SubmitResult>
+
+  /** Tear down. Optional: an in-process engine driver has nothing to tear down. */
+  unmount?(): Promise<void>
+}
+
+export interface MountOptions {
+  readonly initialValues?: Readonly<Record<string, JsonValue>>
+  /** BCP 47. Drivers that render one language only may ignore it. */
+  readonly locale?: string
+}
+
+/**
+ * A validation message.
+ *
+ * Fixtures assert on `code`, never on `text`: a suite that asserted on human
+ * wording would fail on every copy edit and could not run under two locales,
+ * and the renderers would then quietly stop being held to anything.
+ */
+export interface ConformanceMessage {
+  readonly path: string
+  /** Machine-readable and stable, e.g. `required`, `minLength`, `pattern`. */
+  readonly code: string
+  /** What a person actually reads. Carried for diagnostics, never asserted. */
+  readonly text?: string
+  readonly severity?: 'error' | 'warning'
+}
+
+export interface SubmitResult {
+  readonly status: SubmitStatus
+  /** The payload, present only when accepted. */
+  readonly data?: JsonValue
+  readonly messages: readonly ConformanceMessage[]
+}
+
+/**
+ * A driver, or a way to make one. A browser renderer wants a fresh instance per
+ * case; an in-process engine is happy to be reused.
+ */
+export type DriverFactory = () => RendererDriver | Promise<RendererDriver>

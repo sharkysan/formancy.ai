@@ -1,0 +1,54 @@
+{
+  "name": "a repeating group validates each item and re-indexes when one is removed",
+  "description": "Removing an item is not the same as clearing it: everything after it moves down by one, and so do its values and its messages. A message left behind on contacts[1] after contacts[0] was removed points at a field that is no longer on screen, which is the classic repeater bug and the reason this case pins the indices so hard.",
+  "tags": ["repeater", "validation"],
+  "schema": {
+    "specVersion": "0",
+    "id": "team",
+    "title": "Who should we contact?",
+    "model": {
+      "fields": [
+        {
+          "key": "contacts",
+          "type": "repeater",
+          "label": "Contacts",
+          "minItems": 1,
+          "addLabel": "Add contact",
+          "removeLabel": "Remove contact",
+          "children": [
+            { "key": "name", "type": "text", "label": "Name", "required": true },
+            { "key": "email", "type": "text", "label": "Email", "required": true }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": [
+    { "expectVisible": ["contacts[0].name", "contacts[0].email"] },
+    { "addItem": "contacts" },
+    { "expectVisible": ["contacts[1].name", "contacts[1].email"] },
+    { "set": { "contacts[1].name": "Ada" } },
+    { "submit": true },
+    { "expectSubmit": { "status": "rejected" } },
+    {
+      "expectErrors": {
+        "contacts[0].name": ["required"],
+        "contacts[0].email": ["required"],
+        "contacts[1].name": [],
+        "contacts[1].email": ["required"]
+      }
+    },
+    { "removeItem": { "path": "contacts", "index": 0 } },
+    { "expectValue": { "contacts[0].name": "Ada" } },
+    { "expectErrors": { "contacts[0].name": [], "contacts[0].email": ["required"] } },
+    { "expectNoErrors": ["contacts[1].name", "contacts[1].email"] },
+    { "set": { "contacts[0].email": "ada@example.com" } },
+    { "submit": true },
+    {
+      "expectSubmit": {
+        "status": "accepted",
+        "data": { "contacts": [{ "name": "Ada", "email": "ada@example.com" }] }
+      }
+    }
+  ]
+}

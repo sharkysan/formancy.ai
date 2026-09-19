@@ -1,0 +1,26 @@
+{
+  "name": "a required field blocks submit until it has a value",
+  "description": "Messages appear when the form is submitted, not while someone is still filling it in for the first time. Once a field has been told it is wrong, it re-validates as it is edited, so the message disappears the moment the value is good rather than at the next submit.",
+  "tags": ["validation"],
+  "schema": {
+    "specVersion": "0",
+    "id": "contact",
+    "title": "Contact us",
+    "model": {
+      "fields": [
+        { "key": "email", "type": "text", "label": "Email", "required": true },
+        { "key": "message", "type": "textarea", "label": "Message" }
+      ]
+    }
+  },
+  "steps": [
+    { "expectNoErrors": true },
+    { "submit": true },
+    { "expectSubmit": { "status": "rejected" } },
+    { "expectErrors": { "email": ["required"], "message": [] } },
+    { "set": { "email": "ada@example.com" } },
+    { "expectNoErrors": true },
+    { "submit": true },
+    { "expectSubmit": { "status": "accepted" } }
+  ]
+}

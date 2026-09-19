@@ -1,0 +1,54 @@
+{
+  "name": "conditional visibility follows country",
+  "description": "A field nobody can see is a field nobody can fix, so a hidden field is not validated: `state` is required and invisible in Switzerland, and must not block submit. Switching country moves the requirement rather than adding to it.",
+  "tags": ["visibility", "validation"],
+  "schema": {
+    "specVersion": "0",
+    "id": "address",
+    "title": "Where do you live?",
+    "model": {
+      "fields": [
+        {
+          "key": "country",
+          "type": "select",
+          "label": "Country",
+          "required": true,
+          "options": [
+            { "value": "CH", "label": "Switzerland" },
+            { "value": "US", "label": "United States" }
+          ]
+        },
+        {
+          "key": "canton",
+          "type": "text",
+          "label": "Canton",
+          "required": true,
+          "visibleWhen": "country == 'CH'"
+        },
+        {
+          "key": "state",
+          "type": "text",
+          "label": "State",
+          "required": true,
+          "visibleWhen": "country == 'US'"
+        }
+      ]
+    }
+  },
+  "steps": [
+    { "expectHidden": ["canton", "state"] },
+    { "set": { "country": "CH" } },
+    { "expectVisible": ["canton"] },
+    { "expectHidden": ["state"] },
+    { "submit": true },
+    { "expectSubmit": { "status": "rejected" } },
+    { "expectErrors": { "canton": ["required"], "state": [] } },
+    { "set": { "country": "US" } },
+    { "expectVisible": ["state"] },
+    { "expectHidden": ["canton"] },
+    { "expectErrors": { "canton": [] } },
+    { "set": { "state": "CA" } },
+    { "submit": true },
+    { "expectSubmit": { "status": "accepted" } }
+  ]
+}
