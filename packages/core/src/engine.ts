@@ -401,7 +401,10 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
    *  path itself, anything under it, and anything above it. */
   function valueRelated(written: ReadonlySet<string>): string[] {
     const related: string[] = []
-    for (const node of activeNodes()) {
+    // Repeater wires are subscribable in their own right (a row list is what a
+    // repeater UI renders), so they participate in relatedness like any field.
+    const observable: Array<{ wire: string }> = [...activeNodes(), ...repeaters]
+    for (const node of observable) {
       for (const wire of written) {
         if (
           node.wire === wire ||

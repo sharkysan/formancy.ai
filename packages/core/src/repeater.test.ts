@@ -104,3 +104,37 @@ describe('repeater rows', () => {
     expect(() => engine.addRow(['customer'])).toThrow()
   })
 })
+
+describe('repeater subscriptions', () => {
+  test('a subscriber on the repeater path itself is woken by row changes', () => {
+    const engine = createFormEngine({ schema, initialValue: { items: [{ name: 'a' }] } })
+    let woken = 0
+    engine.subscribeField(['items'], () => woken++)
+
+    engine.addRow(['items'])
+    expect(woken).toBe(1)
+
+    engine.removeRow(['items'], 0)
+    expect(woken).toBe(2)
+  })
+
+  test('a subscriber on the repeater path is woken by a write inside a row', () => {
+    const engine = createFormEngine({ schema, initialValue: { items: [{ name: 'a' }] } })
+    let woken = 0
+    engine.subscribeField(['items'], () => woken++)
+
+    engine.setValue(['items', 0, 'name'], 'b')
+
+    expect(woken).toBe(1)
+  })
+
+  test('a subscriber on the repeater path stays quiet for unrelated writes', () => {
+    const engine = createFormEngine({ schema, initialValue: { items: [{ name: 'a' }] } })
+    let woken = 0
+    engine.subscribeField(['items'], () => woken++)
+
+    engine.setValue(['customer'], 'ACME')
+
+    expect(woken).toBe(0)
+  })
+})
