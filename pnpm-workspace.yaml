@@ -3,6 +3,11 @@ packages:
   - "apps/*"
 
 # Shared dependency versions live here so the packages cannot drift apart.
+allowBuilds:
+  cpu-features: set this to true or false
+  protobufjs: set this to true or false
+  ssh2: set this to true or false
+
 catalog:
   # Pinned to 6.0.x deliberately: @angular/compiler-cli 22.1.7 declares
   # `typescript: ">=6.0 <6.1"`. TypeScript 7.x is `latest` on npm but Angular
