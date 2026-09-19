@@ -77,6 +77,8 @@ export interface FormEngineOptions {
 export interface FormEngine {
   /** Wire paths of every input field, in document order. */
   fieldPaths(): string[]
+  /** Wire paths of every repeater, so renderers can give rows their own chrome. */
+  repeaterPaths(): string[]
   /** The current submission value. */
   value(): unknown
   rowCount(path: Path): number
@@ -674,6 +676,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
 
   return {
     fieldPaths: () => activeNodes().map((node) => node.wire),
+    repeaterPaths: () => repeaters.map((node) => node.wire),
     value: () => store.root(),
 
     rowCount: (path) => currentRowCount(requireRepeater(path)),
@@ -697,7 +700,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
     },
 
     pageOf(path) {
-      const node = resolveNode(path)
+      const node = resolveNode(path) ?? repeaterByWire.get(formatPath(path))
       if (!node) throw new Error(`Unknown field "${formatPath(path)}"`)
       return node.page
     },

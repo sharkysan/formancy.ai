@@ -1,8 +1,11 @@
-import type { ComponentType } from 'react'
+import type { ComponentType, ReactNode } from 'react'
+import { parsePath } from '@formancy/core'
 import type { FieldType } from '@formancy/spec'
 import { useFormEngine } from './context.js'
 import { useField } from './use-field.js'
 import type { FieldBinding } from './use-field.js'
+import { useRepeater } from './use-repeater.js'
+import { useWizard } from './use-wizard.js'
 
 /**
  * The component registry — theming mechanism number two. The schema decides
@@ -25,8 +28,9 @@ export interface Registry {
 
 export interface FormancyFormProps {
   /**
-   * Display text per wire path. Interim until the spec's i18n section lands;
-   * a missing entry falls back to the wire path, which is at least honest.
+   * Display text per wire path (row fields by their template wire,
+   * `items[].name`). Interim until the spec's i18n section lands; a missing
+   * entry falls back to the wire path, which is at least honest.
    */
   labels?: Record<string, string>
   registry?: Registry
@@ -36,19 +40,69 @@ export interface FormancyFormProps {
  * Renders the whole form from the engine: one slot per field, resolved through
  * the registry. Slots subscribe individually, so a keystroke re-renders one
  * field and a visibility flip mounts or unmounts exactly the fields it hit.
+ * A paged schema renders one page at a time with navigation; repeaters render
+ * their rows with named add and remove controls.
  */
-export function FormancyForm({ labels, registry }: FormancyFormProps) {
+export function FormancyForm(props: FormancyFormProps) {
   const engine = useFormEngine()
+  return engine.wizard() === undefined ? <FieldList {...props} /> : <PagedFields {...props} />
+}
+
+function PagedFields(props: FormancyFormProps) {
+  const wizard = useWizard()
   return (
     <>
-      {engine.fieldPaths().map((wire) => (
+      <FieldList {...props} page={wizard.page} />
+      <div data-formancy-part="wizard-nav">
+        {wizard.page > 0 ? (
+          <button type="button" onClick={() => wizard.back()}>
+            Back
+          </button>
+        ) : null}
+        {wizard.page < wizard.pageCount - 1 ? (
+          <button type="button" onClick={() => void wizard.next()}>
+            Next
+          </button>
+        ) : null}
+      </div>
+    </>
+  )
+}
+
+function FieldList({ labels, registry, page }: FormancyFormProps & { page?: number }) {
+  const engine = useFormEngine()
+  const repeaterWires = engine.repeaterPaths()
+
+  const inPage = (wire: string): boolean =>
+    page === undefined || engine.pageOf(parsePath(wire)) === page
+
+  // Row fields render inside their repeater's own section, never in the flat
+  // list — a row needs its remove button and its position context.
+  const staticWires = engine
+    .fieldPaths()
+    .filter((wire) => !repeaterWires.some((repeater) => wire.startsWith(`${repeater}[`)))
+
+  return (
+    <>
+      {staticWires.filter(inPage).map((wire) => (
         <FieldSlot key={wire} path={wire} label={labels?.[wire] ?? wire} registry={registry} />
+      ))}
+      {repeaterWires.filter(inPage).map((wire) => (
+        <RepeaterSection key={wire} wire={wire} labels={labels} registry={registry} />
       ))}
     </>
   )
 }
 
-function FieldSlot({ path, label, registry }: { path: string; label: string; registry?: Registry | undefined }) {
+function FieldSlot({
+  path,
+  label,
+  registry,
+}: {
+  path: string
+  label: string
+  registry?: Registry | undefined
+}) {
   const field = useField(path)
 
   // A hidden field leaves the DOM entirely: display:none would still ship the
@@ -63,6 +117,56 @@ function FieldSlot({ path, label, registry }: { path: string; label: string; reg
   return <Component path={path} label={label} />
 }
 
+function RepeaterSection({
+  wire,
+  labels,
+  registry,
+}: {
+  wire: string
+  labels?: Record<string, string> | undefined
+  registry?: Registry | undefined
+}) {
+  const engine = useFormEngine()
+  const repeater = useRepeater(wire)
+  const label = labels?.[wire] ?? wire
+
+  /** Row fields by template wire (`items[].name`), so one label entry serves
+   *  every row; the instance wire is the fallback lookup. */
+  const labelFor = (instanceWire: string): string => {
+    const template = instanceWire.replace(/\[\d+\]/, '[]')
+    return labels?.[template] ?? labels?.[instanceWire] ?? instanceWire
+  }
+
+  return (
+    <fieldset data-formancy-part="repeater">
+      <legend data-formancy-part="repeater-legend">{label}</legend>
+      {Array.from({ length: repeater.rowCount }, (_, index) => (
+        <div data-formancy-part="row" key={index}>
+          {engine
+            .fieldPaths()
+            .filter((candidate) => candidate.startsWith(`${wire}[${index}]`))
+            .map((instanceWire) => (
+              <FieldSlot
+                key={instanceWire}
+                path={instanceWire}
+                label={labelFor(instanceWire)}
+                registry={registry}
+              />
+            ))}
+          {/* Position context in the NAME, so a screen-reader user knows which
+              row this button kills without walking the tree. */}
+          <button type="button" onClick={() => repeater.removeRow(index)}>
+            {`Remove ${label} ${index + 1} of ${repeater.rowCount}`}
+          </button>
+        </div>
+      ))}
+      <button type="button" onClick={() => repeater.addRow()}>
+        {`Add ${label}`}
+      </button>
+    </fieldset>
+  )
+}
+
 /** Shared unstyled shell: real label, control, error text as the describedby
  *  target. Zero CSS; `data-formancy-part` is the styling hook. */
 function FieldShell({
@@ -72,10 +176,13 @@ function FieldShell({
 }: {
   field: FieldBinding
   label: string
-  children: React.ReactNode
+  children: ReactNode
 }) {
   return (
-    <div data-formancy-part="field" data-state={field.touched && field.errors.length > 0 ? 'invalid' : 'valid'}>
+    <div
+      data-formancy-part="field"
+      data-state={field.touched && field.errors.length > 0 ? 'invalid' : 'valid'}
+    >
       <label data-formancy-part="label" {...field.labelProps}>
         {label}
       </label>

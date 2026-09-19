@@ -97,6 +97,7 @@ describe('repeater rows', () => {
     const engine = createFormEngine({ schema: paged, initialValue: { items: [{}] } })
 
     expect(engine.pageOf(['items', 0, 'name'])).toBe(1)
+    expect(engine.pageOf(['items'])).toBe(1)
   })
 
   test('addRow on a non-repeater path throws', () => {
@@ -136,5 +137,12 @@ describe('repeater subscriptions', () => {
     engine.setValue(['customer'], 'ACME')
 
     expect(woken).toBe(0)
+  })
+})
+
+describe('repeaterPaths', () => {
+  test('names every repeater wire, so renderers can give rows their own chrome', () => {
+    const engine = createFormEngine({ schema })
+    expect(engine.repeaterPaths()).toEqual(['items'])
   })
 })
