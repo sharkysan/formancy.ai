@@ -41,6 +41,9 @@ export interface FormEngineOptions {
 export interface FormEngine {
   /** Wire paths of every input field, in document order. */
   fieldPaths(): string[]
+  rowCount(path: Path): number
+  addRow(path: Path): void
+  removeRow(path: Path, index: number): void
   pageOf(path: Path): number
   getFieldSnapshot(path: Path): FieldSnapshot
   setValue(path: Path, value: unknown): void
@@ -57,12 +60,20 @@ interface FieldNode {
   page: number
 }
 
+interface RepeaterNode {
+  path: Path
+  wire: string
+  def: FieldDef
+  page: number
+}
+
 const NO_ERRORS: readonly string[] = Object.freeze([])
 
 export function createFormEngine(options: FormEngineOptions): FormEngine {
   const { schema } = options
 
-  const nodes: FieldNode[] = []
+  const staticNodes: FieldNode[] = []
+  const repeaters: RepeaterNode[] = []
   let pageCount = 0
 
   function walk(defs: readonly FieldDef[], parent: Path, page: number): void {
@@ -72,17 +83,85 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
       } else if (def.type === 'group') {
         walk(def.fields ?? [], [...parent, def.key], page)
       } else if (def.type === 'repeater') {
-        // Rows are instantiated at runtime; the template walk lands in the
-        // repeater work, not here.
+        const path = [...parent, def.key]
+        repeaters.push({ path, wire: formatPath(path), def, page })
       } else {
         const path = [...parent, def.key]
-        nodes.push({ path, wire: formatPath(path), def, page })
+        staticNodes.push({ path, wire: formatPath(path), def, page })
       }
     }
   }
   walk(schema.model.fields, [], 0)
 
-  const byWire = new Map(nodes.map((node) => [node.wire, node]))
+  const byWire = new Map(staticNodes.map((node) => [node.wire, node]))
+  const repeaterByWire = new Map(repeaters.map((node) => [node.wire, node]))
+
+  /** Template fields of one row, instantiated at that row's paths. A page
+   *  inside a template cannot start a wizard step, so it scopes nothing and
+   *  keeps the repeater's page; nested repeaters are rejected by
+   *  validateSchema and skipped defensively here. */
+  function walkTemplate(defs: readonly FieldDef[], parent: Path, page: number, out: FieldNode[]): void {
+    for (const def of defs) {
+      if (def.type === 'page') {
+        walkTemplate(def.fields ?? [], parent, page, out)
+      } else if (def.type === 'group') {
+        walkTemplate(def.fields ?? [], [...parent, def.key], page, out)
+      } else if (def.type !== 'repeater') {
+        const path = [...parent, def.key]
+        out.push({ path, wire: formatPath(path), def, page })
+      }
+    }
+  }
+
+  function currentRowCount(repeater: RepeaterNode): number {
+    const value = store.get(repeater.path)
+    return Array.isArray(value) ? value.length : 0
+  }
+
+  /** Every field that exists RIGHT NOW: static fields plus one template
+   *  instantiation per existing row. */
+  function activeNodes(): FieldNode[] {
+    const nodes = [...staticNodes]
+    for (const repeater of repeaters) {
+      const count = currentRowCount(repeater)
+      for (let row = 0; row < count; row++) {
+        walkTemplate(repeater.def.fields ?? [], [...repeater.path, row], repeater.page, nodes)
+      }
+    }
+    return nodes
+  }
+
+  /** Resolve any path — static or inside a repeater row — to its definition. */
+  function resolveNode(path: Path): FieldNode | undefined {
+    const wire = formatPath(path)
+    const hit = byWire.get(wire)
+    if (hit) return hit
+
+    for (const repeater of repeaters) {
+      if (path.length <= repeater.path.length + 1) continue
+      if (!repeater.path.every((segment, i) => path[i] === segment)) continue
+      if (typeof path[repeater.path.length] !== 'number') continue
+
+      const def = resolveTemplate(repeater.def.fields ?? [], path.slice(repeater.path.length + 1))
+      if (def) return { path, wire, def, page: repeater.page }
+    }
+    return undefined
+  }
+
+  function resolveTemplate(defs: readonly FieldDef[], rest: Path): FieldDef | undefined {
+    const head = rest[0]
+    if (head === undefined) return undefined
+    for (const def of defs) {
+      if (def.type === 'page') {
+        const found = resolveTemplate(def.fields ?? [], rest)
+        if (found) return found
+      } else if (def.key === head) {
+        if (def.type === 'group') return resolveTemplate(def.fields ?? [], rest.slice(1))
+        return rest.length === 1 && def.type !== 'repeater' ? def : undefined
+      }
+    }
+    return undefined
+  }
 
   const store = createValueStore(options.initialValue ?? {})
   const interaction = createInteractionState()
@@ -103,7 +182,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
    *  path itself, anything under it, and anything above it. */
   function valueRelated(written: ReadonlySet<string>): string[] {
     const related: string[] = []
-    for (const node of nodes) {
+    for (const node of activeNodes()) {
       for (const wire of written) {
         if (
           node.wire === wire ||
@@ -136,7 +215,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
     const report: Record<string, string[]> = {}
     const changedWires: string[] = []
 
-    for (const node of nodes) {
+    for (const node of activeNodes()) {
       const codes = requiredViolated(node.def, store.get(node.path)) ? ['required'] : []
       if (codes.length > 0) report[node.wire] = codes
 
@@ -152,11 +231,34 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
     return { valid: Object.keys(report).length === 0, errors: report }
   }
 
+  function requireRepeater(path: Path): RepeaterNode {
+    const repeater = repeaterByWire.get(formatPath(path))
+    if (!repeater) throw new Error(`"${formatPath(path)}" is not a repeater`)
+    return repeater
+  }
+
   return {
-    fieldPaths: () => nodes.map((node) => node.wire),
+    fieldPaths: () => activeNodes().map((node) => node.wire),
+
+    rowCount: (path) => currentRowCount(requireRepeater(path)),
+
+    addRow(path) {
+      const repeater = requireRepeater(path)
+      const rows = store.get(repeater.path)
+      store.set(repeater.path, Array.isArray(rows) ? [...rows, {}] : [{}])
+    },
+
+    removeRow(path, index) {
+      const repeater = requireRepeater(path)
+      const rows = store.get(repeater.path)
+      if (!Array.isArray(rows) || index < 0 || index >= rows.length) {
+        throw new RangeError(`Cannot remove row ${index} of "${repeater.wire}"`)
+      }
+      store.set(repeater.path, rows.filter((_, i) => i !== index))
+    },
 
     pageOf(path) {
-      const node = byWire.get(formatPath(path))
+      const node = resolveNode(path)
       if (!node) throw new Error(`Unknown field "${formatPath(path)}"`)
       return node.page
     },
@@ -166,7 +268,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
       const cached = snapshotCache.get(wire)
       if (cached) return cached
 
-      const node = byWire.get(wire)
+      const node = resolveNode(path)
       if (!node) throw new Error(`Unknown field "${wire}"`)
 
       const snapshot: FieldSnapshot = Object.freeze({
@@ -194,7 +296,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
     validate: runValidation,
 
     submit() {
-      interaction.touchMany(nodes.map((node) => node.path))
+      interaction.touchMany(activeNodes().map((node) => node.path))
       const report = runValidation()
       return { ok: report.valid, errors: report.errors }
     },
