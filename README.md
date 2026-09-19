@@ -22,8 +22,8 @@ most of them own your markup. formancy is built on three commitments:
 
 ```
 packages/spec           schema types, JSON Schema, canonical hash, diffing
-packages/expressions    CEL parse/check/compile/evaluate + sandbox policy   (not yet)
-packages/core           the headless reactive engine                        (not yet)
+packages/expressions    CEL parse/check/compile/evaluate + sandbox policy
+packages/core           the headless reactive engine
 packages/react          React binding                                       (not yet)
 packages/angular        Angular binding                                     (not yet)
 packages/conformance    the behaviour + accessibility contract              (not yet)

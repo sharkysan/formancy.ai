@@ -12,3 +12,4 @@ coverage/
 .vitest-reports/
 test-results/
 playwright-report/
+.idea/
