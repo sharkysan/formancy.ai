@@ -186,3 +186,47 @@ describe('snapshot field type', () => {
     expect(engine.getFieldSnapshot(['newsletter']).type).toBe('checkbox')
   })
 })
+
+describe('form-level error aggregation', () => {
+  test('visibleErrors is empty on a pristine form, even an invalid one', () => {
+    const engine = createFormEngine({ schema })
+    engine.validate()
+    expect(engine.visibleErrors()).toEqual([])
+  })
+
+  test('after submit, visibleErrors lists touched invalid fields in document order', () => {
+    const engine = createFormEngine({ schema })
+    engine.submit()
+
+    expect(engine.visibleErrors()).toEqual([
+      { path: 'email', codes: ['required'] },
+      { path: 'address.city', codes: ['required'] },
+    ])
+  })
+
+  test('visibleErrors keeps its identity until something changes', () => {
+    const engine = createFormEngine({ schema })
+    engine.submit()
+
+    const first = engine.visibleErrors()
+    expect(engine.visibleErrors()).toBe(first)
+
+    engine.setValue(['email'], 'a@b.ch')
+    engine.validate()
+    expect(engine.visibleErrors()).not.toBe(first)
+    expect(engine.visibleErrors().some((e) => e.path === 'email')).toBe(false)
+  })
+
+  test('an engine-level subscriber hears validation and value changes alike', () => {
+    const engine = createFormEngine({ schema })
+    let heard = 0
+    engine.subscribe(() => heard++)
+
+    engine.setValue(['email'], 'x')
+    const afterValue = heard
+    engine.submit()
+
+    expect(afterValue).toBeGreaterThan(0)
+    expect(heard).toBeGreaterThan(afterValue)
+  })
+})

@@ -89,6 +89,11 @@ export interface FormEngine {
   setValue(path: Path, value: unknown): void
   touch(path: Path): void
   subscribeField(path: Path, listener: () => void): () => void
+  /** Hears every change: values, metadata, touch state and validation results. */
+  subscribe(listener: () => void): () => void
+  /** Errors a user should currently SEE — touched and invalid — in document
+   *  order. Identity-stable until something changes, for useSyncExternalStore. */
+  visibleErrors(): ReadonlyArray<{ path: string; codes: readonly string[] }>
   validate(): ValidationReport
   submit(): { ok: boolean; errors: Record<string, string[]> }
   /** Present when the schema has pages; the same instance for the form's lifetime. */
@@ -396,12 +401,22 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
 
   const snapshotCache = new Map<string, FieldSnapshot>()
   const fieldListeners = new Map<string, Set<() => void>>()
+  const engineListeners = new Set<() => void>()
+
+  /** Bumped on every invalidation; caches key off it. */
+  let stateVersion = 0
 
   function invalidate(wires: Iterable<string>): void {
+    let any = false
     for (const wire of wires) {
+      any = true
       snapshotCache.delete(wire)
       const listeners = fieldListeners.get(wire)
       if (listeners) for (const listener of [...listeners]) listener()
+    }
+    if (any) {
+      stateVersion++
+      for (const listener of [...engineListeners]) listener()
     }
   }
 
@@ -671,6 +686,9 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
     return repeater
   }
 
+  let visibleErrorsCache: ReadonlyArray<{ path: string; codes: readonly string[] }> | undefined
+  let visibleErrorsCacheVersion = -1
+
   // The first pass: initial visibility and computed values, before anyone asks.
   applyRules()
 
@@ -745,6 +763,29 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
       if (!listeners) fieldListeners.set(wire, (listeners = new Set()))
       listeners.add(listener)
       return () => listeners.delete(listener)
+    },
+
+    subscribe(listener) {
+      engineListeners.add(listener)
+      return () => engineListeners.delete(listener)
+    },
+
+    visibleErrors() {
+      if (visibleErrorsCache !== undefined && visibleErrorsCacheVersion === stateVersion) {
+        return visibleErrorsCache
+      }
+      const list: Array<{ path: string; codes: readonly string[] }> = []
+      for (const node of activeNodes()) {
+        if (!interaction.isTouched(node.path)) continue
+        const codes = [
+          ...(errorsByWire.get(node.wire) ?? NO_ERRORS),
+          ...(serverErrorsByWire.get(node.wire) ?? NO_ERRORS),
+        ]
+        if (codes.length > 0) list.push(Object.freeze({ path: node.wire, codes: Object.freeze(codes) }))
+      }
+      visibleErrorsCache = Object.freeze(list)
+      visibleErrorsCacheVersion = stateVersion
+      return visibleErrorsCache
     },
 
     validate: runValidation,
