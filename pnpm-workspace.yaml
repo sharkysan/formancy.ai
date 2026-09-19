@@ -1,0 +1,28 @@
+packages:
+  - "packages/*"
+  - "apps/*"
+
+# Shared dependency versions live here so the packages cannot drift apart.
+catalog:
+  # Pinned to 6.0.x deliberately: @angular/compiler-cli 22.1.7 declares
+  # `typescript: ">=6.0 <6.1"`. TypeScript 7.x is `latest` on npm but Angular
+  # rejects it, and the whole monorepo must compile under one version.
+  typescript: ~6.0.3
+
+  vitest: ^5.0.1
+  "@vitest/browser": ^5.0.1
+  playwright: ^1.63.0
+  fast-check: ^4.10.1
+
+  tsdown: ^0.23.0
+  publint: ^0.3.24
+  "@arethetypeswrong/cli": ^0.18.5
+
+minimumReleaseAgeExclude:
+  - '@turbo/darwin-64@2.11.2'
+  - '@turbo/darwin-arm64@2.11.2'
+  - '@turbo/linux-64@2.11.2'
+  - '@turbo/linux-arm64@2.11.2'
+  - '@turbo/windows-64@2.11.2'
+  - '@turbo/windows-arm64@2.11.2'
+  - turbo@2.11.2
