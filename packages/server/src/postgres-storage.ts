@@ -1,0 +1,100 @@
+import { eq, max } from 'drizzle-orm'
+import { drizzle } from 'drizzle-orm/postgres-js'
+import type postgres from 'postgres'
+import type { FormSchema } from '@formancy/spec'
+import type { Storage } from '@formancy/server-core'
+import { forms, formVersions, submissions } from './db.js'
+
+/** The Storage port over Postgres — the mirror of server-core's in-memory one. */
+export function createPostgresStorage(sql: postgres.Sql): Storage {
+  const db = drizzle(sql)
+
+  return {
+    async getFormByPath(path) {
+      const rows = await db.select().from(forms).where(eq(forms.path, path)).limit(1)
+      const row = rows[0]
+      if (row === undefined) return undefined
+      return { id: row.id, path: row.path, currentVersionId: row.currentVersionId }
+    },
+
+    async createForm(record) {
+      await db.insert(forms).values({
+        id: record.id,
+        path: record.path,
+        currentVersionId: record.currentVersionId,
+      })
+    },
+
+    async setCurrentVersion(formId, versionId) {
+      await db.update(forms).set({ currentVersionId: versionId }).where(eq(forms.id, formId))
+    },
+
+    async insertVersion(record) {
+      await db.insert(formVersions).values({
+        id: record.id,
+        formId: record.formId,
+        version: record.version,
+        schema: record.schema,
+        schemaHash: record.schemaHash,
+      })
+    },
+
+    async getVersionById(id) {
+      const rows = await db.select().from(formVersions).where(eq(formVersions.id, id)).limit(1)
+      const row = rows[0]
+      if (row === undefined) return undefined
+      return {
+        id: row.id,
+        formId: row.formId,
+        version: row.version,
+        schema: row.schema as FormSchema,
+        schemaHash: row.schemaHash,
+      }
+    },
+
+    async findVersionByHash(formId, schemaHash) {
+      const rows = await db
+        .select()
+        .from(formVersions)
+        .where(eq(formVersions.formId, formId))
+      const row = rows.find((candidate) => candidate.schemaHash === schemaHash)
+      if (row === undefined) return undefined
+      return {
+        id: row.id,
+        formId: row.formId,
+        version: row.version,
+        schema: row.schema as FormSchema,
+        schemaHash: row.schemaHash,
+      }
+    },
+
+    async latestVersionNumber(formId) {
+      const rows = await db
+        .select({ latest: max(formVersions.version) })
+        .from(formVersions)
+        .where(eq(formVersions.formId, formId))
+      return rows[0]?.latest ?? 0
+    },
+
+    async insertSubmission(record) {
+      await db.insert(submissions).values({
+        id: record.id,
+        formId: record.formId,
+        formVersionId: record.formVersionId,
+        data: record.data,
+        submittedAt: new Date(record.submittedAt),
+      })
+    },
+
+    async listSubmissions() {
+      const rows = await db.select().from(submissions)
+      return rows.map((row) => ({
+        id: row.id,
+        formId: row.formId,
+        formVersionId: row.formVersionId,
+        data: row.data,
+        submittedAt: row.submittedAt.toISOString(),
+      }))
+    },
+  }
+}
