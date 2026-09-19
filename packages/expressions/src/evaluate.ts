@@ -4,6 +4,8 @@ import type { Capabilities } from './capabilities.js'
 import { translateCelError } from './cel.js'
 import type { CompiledProgram, Program } from './compile.js'
 import { ExpressionError } from './errors.js'
+import { resolveValueLimits } from './limits.js'
+import type { ValueLimits } from './limits.js'
 import { bindValues, toExpressionValue } from './values.js'
 import type { ExpressionValue } from './values.js'
 
@@ -11,6 +13,8 @@ export interface EvaluateOptions {
   /** One frozen draw of everything impure; see `capabilities.ts`. */
   readonly capabilities: Capabilities
   readonly budget?: Partial<EvaluationBudget> | undefined
+  /** Bounds on the values entering this pass; see `ValueLimits`. */
+  readonly valueLimits?: Partial<ValueLimits> | undefined
 }
 
 export type EvaluationOutcome =
@@ -39,7 +43,12 @@ export function evaluate(
   const pass = { capabilities: options.capabilities, meter }
 
   try {
-    const bound = bindValues(compiled.variables, values, compiled.source)
+    const bound = bindValues(
+      compiled.variables,
+      values,
+      compiled.source,
+      resolveValueLimits(options.valueLimits),
+    )
     const raw = compiled.parsed.program.run(meter.measure(bound) as Record<string, unknown>, pass)
     const value = toExpressionValue(raw, compiled.source)
 

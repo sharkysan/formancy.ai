@@ -52,6 +52,12 @@ describe('referencedPaths across comprehension macros', () => {
     expect(pathsOf('items.map(x, x.active, x.price)')).toEqual(['items'])
   })
 
+  test('keeps the iteration variable local while reporting real reads beside it', () => {
+    // Pins both directions at once: `x` must not leak out of the macro, and
+    // `other.f` must not be swallowed by the scoping that hides `x`.
+    expect(pathsOf('items.map(x, x.ok, other.f)')).toEqual(['items', 'other.f'])
+  })
+
   test('honours shadowing in nested comprehensions', () => {
     expect(pathsOf('outer.all(x, inner.exists(x, x > threshold))')).toEqual([
       'inner',
@@ -70,6 +76,38 @@ describe('referencedPaths across comprehension macros', () => {
 
   test('reports a collection iterated inside its own comprehension once per read', () => {
     expect(pathsOf('items.all(x, items.exists(y, y == x))')).toEqual(['items'])
+  })
+
+  test('scopes BOTH variables of a two-variable comprehension', () => {
+    // `m.all(k, v, …)` names two locals; neither is a field, and reporting a
+    // phantom `v` would put a nonexistent node into the dependency graph.
+    expect(pathsOf('m.all(k, v, k == "a" && v > limit)')).toEqual(['limit', 'm'])
+    expect(pathsOf('m.exists(k, v, v.price > 0)')).toEqual(['m'])
+    expect(pathsOf('m.exists_one(k, v, k == v)')).toEqual(['m'])
+    expect(pathsOf('m.filter(k, v, v != other)')).toEqual(['m', 'other'])
+  })
+
+  test('does not let a two-variable comprehension shadow the outer scope', () => {
+    expect(pathsOf('m.all(k, v, v > 0) && v > 0')).toEqual(['m', 'v'])
+  })
+})
+
+describe('referencedPaths across cel.bind', () => {
+  test('reports neither the namespace nor the bound variable', () => {
+    // `cel` is the implementation's namespace constant and `t` is a local
+    // binding: the expression depends on a and b, nothing else.
+    expect(pathsOf('cel.bind(t, a + b, t * t)')).toEqual(['a', 'b'])
+  })
+
+  test('evaluates the bound value in the outer scope', () => {
+    // The `t` in the VALUE position is the outer variable, not the binding.
+    expect(pathsOf('cel.bind(t, t + 1, t * 2)')).toEqual(['t'])
+  })
+
+  test('reports the receiver of a bind on anything other than the namespace', () => {
+    // The implementation ignores the receiver, so `foo.bind(…)` works too;
+    // then foo is a real read and the binding still scopes its variable.
+    expect(pathsOf('foo.bind(t, a, t)')).toEqual(['a', 'foo'])
   })
 })
 

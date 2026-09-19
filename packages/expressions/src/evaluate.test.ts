@@ -160,6 +160,25 @@ describe('the runtime budget', () => {
     expect(evaluate(compiled, { items }, { capabilities }).ok).toBe(true)
   })
 
+  test('refuses a result that the logical operators absorbed a budget error into', () => {
+    // `||` takes the `true` from its right side even when the left side blew
+    // the budget: the error vanishes into a correct-looking boolean. The meter
+    // remembers being overspent, and evaluate() must refuse to hand back a
+    // result the pass did not pay for.
+    const items = Array.from({ length: 200 }, (_, index) => ({ n: index }))
+    const compiled = program('items.all(x, x.n >= 0) || true', {
+      kind: 'visible',
+      variables: { items: 'list' },
+    })
+
+    const result = evaluate(compiled, { items }, { capabilities, budget: { maxSteps: 100 } })
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.error.kind).toBe('budget')
+    expect(result.error.code).toBe('steps_exceeded')
+  })
+
   test('honours a caller budget that is tighter than the default', () => {
     const compiled = program('items.all(x, x.n > 0)', {
       kind: 'visible',

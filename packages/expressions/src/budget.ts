@@ -47,8 +47,13 @@ export interface Meter {
    * checks this after the pass and refuses a result the meter did not pay for.
    */
   readonly overspent: BudgetExceeded | undefined
-  /** Spend a step, or throw `BudgetExceeded`. */
-  charge(): void
+  /**
+   * Spend `count` steps (one when omitted), or throw `BudgetExceeded`. The
+   * bulk form is how producing a collection is priced by its SIZE: an internal
+   * split() pays for every element it creates, so production drains the budget
+   * the same way iteration does.
+   */
+  charge(count?: number): void
   /** A view of `values` that charges a step for every read reaching into it. */
   measure(values: unknown): unknown
 }
@@ -68,6 +73,7 @@ export function createMeter(budget: EvaluationBudget): Meter {
       : undefined
 
   let steps = 0
+  let sinceClock = 0
   let overspent: BudgetExceeded | undefined
 
   function stop(reason: 'steps' | 'time', detail: string): never {
@@ -75,14 +81,18 @@ export function createMeter(budget: EvaluationBudget): Meter {
     throw overspent
   }
 
-  function charge(): void {
-    steps += 1
+  function charge(count = 1): void {
+    steps += count
     if (steps > maxSteps) {
       stop('steps', `Evaluation used more than ${maxSteps} steps and was stopped.`)
     }
-    if (deadline !== undefined && monotonicMs !== undefined && steps % CLOCK_INTERVAL === 0) {
-      if (monotonicMs() > deadline) {
-        stop('time', `Evaluation ran longer than ${String(maxDurationMs)}ms and was stopped.`)
+    if (deadline !== undefined && monotonicMs !== undefined) {
+      sinceClock += count
+      if (sinceClock >= CLOCK_INTERVAL) {
+        sinceClock = 0
+        if (monotonicMs() > deadline) {
+          stop('time', `Evaluation ran longer than ${String(maxDurationMs)}ms and was stopped.`)
+        }
       }
     }
   }

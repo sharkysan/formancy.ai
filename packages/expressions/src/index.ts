@@ -33,8 +33,8 @@ export type { ExpressionErrorKind, ExpressionErrorInit, SourceSpan } from './err
 export { EXPRESSION_KINDS, KIND_POLICIES } from './kinds.js'
 export type { ExpressionKind, KindPolicy } from './kinds.js'
 
-export { DEFAULT_LIMITS } from './limits.js'
-export type { StructuralLimits } from './limits.js'
+export { DEFAULT_LIMITS, DEFAULT_VALUE_LIMITS } from './limits.js'
+export type { StructuralLimits, ValueLimits } from './limits.js'
 
 export { DEFAULT_BUDGET } from './budget.js'
 export type { EvaluationBudget } from './budget.js'

@@ -1,5 +1,6 @@
 import { Decimal, decimalFromString } from './decimal.js'
 import { ExpressionError } from './errors.js'
+import type { ValueLimits } from './limits.js'
 import type { DeclaredType, VariableDeclarations } from './types.js'
 
 /**
@@ -33,6 +34,7 @@ export function bindValues(
   declarations: VariableDeclarations,
   values: Record<string, unknown>,
   source: string,
+  limits: ValueLimits,
 ): Record<string, unknown> {
   const bound: Record<string, unknown> = {}
   for (const [name, type] of Object.entries(declarations)) {
@@ -46,9 +48,85 @@ export function bindValues(
         hint: `Pass null for an empty field and declare it as dyn, or supply a ${type}.`,
       })
     }
+    assertValueWithinLimits(name, raw, limits, 0, source)
     bound[name] = bindValue(name, type, raw, source)
   }
   return bound
+}
+
+/**
+ * Enforce `ValueLimits` on one bound value, before any expression code sees it.
+ *
+ * The step meter prices READS of the bag, but the cost of a collection an
+ * expression produces internally — split(), concatenation — is set by the size
+ * of what it was produced from. Bounding the inputs here is what makes the
+ * budget's worst case a number rather than a hope, and it must be
+ * deterministic: the same bag is rejected the same way on every machine.
+ */
+function assertValueWithinLimits(
+  path: string,
+  value: unknown,
+  limits: ValueLimits,
+  depth: number,
+  source: string,
+): void {
+  if (typeof value === 'string') {
+    if (value.length > limits.maxStringLength) {
+      throw valueOverLimit(
+        path,
+        source,
+        `a string of ${value.length} characters, over the limit of ${limits.maxStringLength}`,
+      )
+    }
+    return
+  }
+  if (typeof value !== 'object' || value === null) return
+  // A Decimal or Date holds a bounded amount of data; only containers recurse.
+  if (value instanceof Decimal || value instanceof Date) return
+
+  if (depth >= limits.maxNestingDepth) {
+    throw valueOverLimit(
+      path,
+      source,
+      `nested more than ${limits.maxNestingDepth} containers deep`,
+    )
+  }
+
+  if (Array.isArray(value)) {
+    if (value.length > limits.maxListElements) {
+      throw valueOverLimit(
+        path,
+        source,
+        `a list of ${value.length} elements, over the limit of ${limits.maxListElements}`,
+      )
+    }
+    for (let i = 0; i < value.length; i++) {
+      assertValueWithinLimits(`${path}[${i}]`, value[i], limits, depth + 1, source)
+    }
+    return
+  }
+
+  const entries = value instanceof Map ? [...value.entries()] : Object.entries(value)
+  if (entries.length > limits.maxMapEntries) {
+    throw valueOverLimit(
+      path,
+      source,
+      `a map of ${entries.length} entries, over the limit of ${limits.maxMapEntries}`,
+    )
+  }
+  for (const [key, entry] of entries) {
+    assertValueWithinLimits(`${path}.${String(key)}`, entry, limits, depth + 1, source)
+  }
+}
+
+function valueOverLimit(path: string, source: string, detail: string): ExpressionError {
+  return new ExpressionError({
+    kind: 'runtime',
+    code: 'value_limit_exceeded',
+    message: `The value of ${path} is ${detail}.`,
+    source,
+    hint: 'Shrink the value, or raise the evaluation valueLimits on purpose.',
+  })
 }
 
 function bindValue(name: string, type: DeclaredType, raw: unknown, source: string): unknown {
@@ -95,14 +173,39 @@ function bindDecimal(name: string, raw: unknown, source: string): unknown {
   return raw
 }
 
+/**
+ * ISO 8601 date-time WITH an explicit zone: `Z` or a numeric offset. Anything
+ * zone-less (what a datetime-local input emits, or a free-form date) would be
+ * parsed in the HOST'S zone, and a submission that evaluated in the browser
+ * must replay byte-identically on a server whose zone the browser never knew.
+ */
+const ZONED_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,9})?)?(?:Z|[+-]\d{2}:\d{2})$/
+
 function bindTimestamp(name: string, raw: unknown, source: string): unknown {
   if (raw instanceof Date) return raw
-  if (typeof raw === 'string' || typeof raw === 'number') {
+  if (typeof raw === 'string') {
+    if (!ZONED_TIMESTAMP.test(raw)) {
+      throw invalidValue(
+        name,
+        source,
+        `${JSON.stringify(raw)} is not an ISO 8601 date-time with an explicit zone; ` +
+          'supply the zone, e.g. "2026-09-19T00:00:00Z" or "…+02:00"',
+      )
+    }
     const date = new Date(raw)
     if (Number.isNaN(date.getTime())) {
-      throw invalidValue(name, source, `${JSON.stringify(raw)} is not a date`)
+      throw invalidValue(name, source, `${JSON.stringify(raw)} is not a real instant`)
     }
     return date
+  }
+  if (typeof raw === 'number') {
+    // One canonical form at the boundary: an epoch number is unambiguous but
+    // invites a seconds-versus-milliseconds mistake nothing would catch.
+    throw invalidValue(
+      name,
+      source,
+      'a number cannot be used as a timestamp; supply an ISO 8601 date-time with an explicit zone',
+    )
   }
   return raw
 }

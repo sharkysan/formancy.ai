@@ -100,7 +100,9 @@ export function compareDecimal(a: Decimal, b: Decimal): -1 | 0 | 1 {
  * evenly distributed.
  */
 export function roundDecimal(value: Decimal, places: number): Decimal {
-  assertPlaces(places)
+  // Checked up front so the caller is told about THEIR places, not about an
+  // intermediate scale the implementation happened to build on the way.
+  assertScale(places)
   if (places >= value.scale) return new Decimal(rescale(value, places), places)
 
   const divisor = TEN ** BigInt(value.scale - places)
@@ -119,15 +121,21 @@ export function roundDecimal(value: Decimal, places: number): Decimal {
  * author's behalf.
  */
 export function divideDecimal(a: Decimal, b: Decimal, places: number): Decimal {
-  assertPlaces(places)
+  assertScale(places)
   if (b.units === 0n) throw new RangeError('Division by zero')
 
   // Compute one extra place, then round it off, so the last kept digit is
-  // rounded rather than truncated.
+  // rounded rather than truncated. The guard digit lives in plain bigint
+  // arithmetic and never becomes a Decimal, so `places` may use the full
+  // MAX_DECIMAL_SCALE without the internal extra place breaking the ceiling.
   const shift = places + 1 + b.scale - a.scale
   const numerator = shift >= 0 ? a.units * TEN ** BigInt(shift) : a.units
   const denominator = shift >= 0 ? b.units : b.units * TEN ** BigInt(-shift)
-  return roundDecimal(new Decimal(numerator / denominator, places + 1), places)
+  const extended = numerator / denominator
+  const quotient = extended / TEN
+  const roundsAway = abs(extended % TEN) >= 5n
+  const step = extended < 0n ? -1n : 1n
+  return new Decimal(roundsAway ? quotient + step : quotient, places)
 }
 
 const TEN = 10n

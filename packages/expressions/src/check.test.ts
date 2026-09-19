@@ -86,4 +86,19 @@ describe('the result type is a property of the expression kind', () => {
     expect(checkFor('total', 'computed')).toEqual({ ok: true, type: 'decimal' })
     expect(checkFor('name', 'computed')).toEqual({ ok: true, type: 'string' })
   })
+
+  test('lets a validate expression answer with a message string', () => {
+    // The message convention: `false` and a non-empty string both mean "not
+    // acceptable", and the string is what the user is shown. A validate rule
+    // producing a string is therefore legal, not a type mistake.
+    expect(checkFor('name == "" ? "Name is required" : ""', 'validate')).toEqual({
+      ok: true,
+      type: 'string',
+    })
+    expect(checkFor('name != ""', 'validate')).toEqual({ ok: true, type: 'bool' })
+  })
+
+  test('still refuses a validate expression that answers with a number', () => {
+    expect(rejection('age', 'validate').code).toBe('result_type_not_allowed')
+  })
 })

@@ -131,6 +131,32 @@ describe('divideDecimal', () => {
       RangeError,
     )
   })
+
+  test('works at the documented maximum scale, guard digit and all', () => {
+    // The internal guard digit must not count against MAX_DECIMAL_SCALE: the
+    // documented ceiling is the ceiling for the CALLER's places.
+    expect(decimalToString(divideDecimal(decimalFromString('2'), decimalFromString('3'), 20))).toBe(
+      '0.66666666666666666667',
+    )
+  })
+
+  test('rejects one place beyond the maximum, naming the real ceiling', () => {
+    expect(() => divideDecimal(decimalFromString('2'), decimalFromString('3'), 21)).toThrow(
+      /maximum of 20/,
+    )
+  })
+})
+
+describe('roundDecimal at the scale ceiling', () => {
+  test('rounds to the documented maximum scale', () => {
+    expect(decimalToString(roundDecimal(decimalFromString('1.5'), 20))).toBe(
+      '1.50000000000000000000',
+    )
+  })
+
+  test('rejects one place beyond the maximum', () => {
+    expect(() => roundDecimal(decimalFromString('1.5'), 21)).toThrow(/maximum of 20/)
+  })
 })
 
 describe('the scale ceiling', () => {

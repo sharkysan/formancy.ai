@@ -1,4 +1,4 @@
-import { childNodes } from './ast.js'
+import { childNodes, isCelNode } from './ast.js'
 import type { CelNode, ExpressionAst } from './ast.js'
 import { translateCelError } from './cel.js'
 import { decimalFromString } from './decimal.js'
@@ -36,12 +36,15 @@ export function check(ast: ExpressionAst, options: CheckOptions): CheckOutcome {
   const outcome = parsed.program.check()
   if (!outcome.valid) {
     const error = translateCelError(outcome.error, parsed.source)
-    const hint = hintForTypeError(error.message, parsed)
+    const hint = hintForTypeError(error.message, parsed, celErrorNode(outcome.error))
     return { ok: false, error: hint === undefined ? error : withHint(error, hint) }
   }
 
   const badLiteral = findInvalidDecimalLiteral(parsed.node, parsed.source)
   if (badLiteral !== undefined) return { ok: false, error: badLiteral }
+
+  const badEquality = findDecimalEqualityMismatch(parsed.node, parsed.source)
+  if (badEquality !== undefined) return { ok: false, error: badEquality }
 
   // Type checking first: a misspelled function should be reported as unknown
   // rather than as forbidden, which would send the author looking for a
@@ -96,6 +99,12 @@ function findForbiddenCall(
   return undefined
 }
 
+/** The AST node the implementation attached to its type error, if it did. */
+function celErrorNode(error: unknown): CelNode | undefined {
+  const node = (error as { node?: unknown } | null)?.node
+  return isCelNode(node) ? node : undefined
+}
+
 /**
  * Turn the implementation's overload message into advice.
  *
@@ -103,7 +112,11 @@ function findForbiddenCall(
  * nothing. The missing overload is deliberate — see `decimal.ts` — so the
  * error has to carry the way to write what they meant.
  */
-function hintForTypeError(message: string, parsed: ParsedExpression): string | undefined {
+function hintForTypeError(
+  message: string,
+  parsed: ParsedExpression,
+  offending: CelNode | undefined,
+): string | undefined {
   if (!/no such overload:.*\bdecimal\b/.test(message)) return undefined
 
   if (/decimal \/ decimal/.test(message)) {
@@ -111,19 +124,89 @@ function hintForTypeError(message: string, parsed: ParsedExpression): string | u
   }
   if (!/\b(double|u?int)\b/.test(message)) return undefined
 
-  const literal = firstNumericLiteral(parsed.node, parsed.source)
-  const replacement = literal === undefined ? 'dec("0.19")' : `dec(${JSON.stringify(literal)})`
-  const offending = literal === undefined ? 'the plain number' : literal
-  return `Write ${replacement} instead of ${offending}: mixing decimal with double or int would give back the rounding error decimal exists to avoid.`
+  // Only a literal that is an operand OF THE FAILING NODE may be quoted: the
+  // first numeric literal anywhere in the source can be a perfectly fine one,
+  // and a hint the author follows must not produce the next type error.
+  const literal = offending === undefined ? undefined : operandNumericLiteral(offending, parsed.source)
+  if (literal === undefined) {
+    return (
+      'Convert the double or int side with dec(), which takes the digits as a quoted string ' +
+      'or an int value: mixing decimal with double or int would give back the rounding error ' +
+      'decimal exists to avoid.'
+    )
+  }
+  return `Write dec(${JSON.stringify(literal)}) instead of ${literal}: mixing decimal with double or int would give back the rounding error decimal exists to avoid.`
 }
 
-function firstNumericLiteral(node: CelNode, source: string): string | undefined {
-  if (node.op === 'value' && (typeof node.args === 'number' || typeof node.args === 'bigint')) {
-    return source.slice(node.start, node.end)
-  }
+/**
+ * The written form of a numeric literal standing directly under `node`, e.g.
+ * the `0.19` of `round(price, 2) * 0.19`, including a unary minus when there
+ * is one. Deeper literals belong to other expressions and are not this
+ * error's business.
+ */
+function operandNumericLiteral(node: CelNode, source: string): string | undefined {
   for (const child of childNodes(node)) {
-    const found = firstNumericLiteral(child, source)
-    if (found !== undefined) return found
+    const literal = child.op === '-_' ? (child.args as CelNode) : child
+    if (
+      isCelNode(literal) &&
+      literal.op === 'value' &&
+      (typeof literal.args === 'number' || typeof literal.args === 'bigint')
+    ) {
+      return source.slice(child.start, child.end)
+    }
+  }
+  return undefined
+}
+
+/**
+ * The static type the checker wrote onto a node, when it wrote one. Iteration
+ * variables of a comprehension are never checked as expressions, so the field
+ * can be absent; the caller has to treat "unknown" as "not provably wrong".
+ */
+function checkedTypeName(node: CelNode): string | undefined {
+  const type = (node as { checkedType?: { name?: unknown } }).checkedType
+  return typeof type?.name === 'string' ? type.name : undefined
+}
+
+/**
+ * `price == discount` with `discount: dyn` — the pair types.ts recommends for
+ * an optional money field — type-checks, and then the implementation's
+ * universal equality answers `false` for two equal amounts. Equality is the
+ * only operator with that silent fallback, so it gets its own gate: a decimal
+ * may only meet another decimal, and everything else is rejected at save time
+ * with the rewrite the author needs. (A mismatch the checker cannot see, dyn
+ * against dyn, errors at evaluation instead; see `registerDecimal`.)
+ */
+function findDecimalEqualityMismatch(node: CelNode, source: string): ExpressionError | undefined {
+  if (node.op === '==' || node.op === '!=') {
+    const [left, right] = node.args as [CelNode, CelNode]
+    const leftType = checkedTypeName(left)
+    const rightType = checkedTypeName(right)
+    if (
+      leftType !== undefined &&
+      rightType !== undefined &&
+      (leftType === 'decimal') !== (rightType === 'decimal')
+    ) {
+      const other = leftType === 'decimal' ? right : left
+      const otherType = leftType === 'decimal' ? rightType : leftType
+      const written = source.slice(other.start, other.end)
+      const isNumericLiteral =
+        other.op === 'value' && (typeof other.args === 'number' || typeof other.args === 'bigint')
+      const suggestion = isNumericLiteral ? `dec(${JSON.stringify(written)})` : `dec(${written})`
+      return new ExpressionError({
+        kind: 'type',
+        code: 'decimal_equality_mismatch',
+        message: `${node.op} compares a decimal against a ${otherType}, which would never be equal, even for the same amount.`,
+        source,
+        position: { start: node.start, end: node.end },
+        hint: `Compare decimals to decimals: write ${suggestion}, or declare the field as decimal.`,
+      })
+    }
+  }
+
+  for (const child of childNodes(node)) {
+    const mismatch = findDecimalEqualityMismatch(child, source)
+    if (mismatch !== undefined) return mismatch
   }
   return undefined
 }

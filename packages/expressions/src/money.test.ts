@@ -41,6 +41,22 @@ describe('money cannot be mixed with doubles', () => {
     expect(rejection('price * rate').kind).toBe('type')
   })
 
+  test('quotes the literal that actually offends, not the first one anywhere', () => {
+    // The first numeric literal in source order is round's `2`, which is fine
+    // where it is; following a dec("2") hint would produce a fresh type error.
+    const error = rejection('round(price, 2) * 0.19')
+
+    expect(error.hint).toMatch(/dec\("0\.19"\)/)
+    expect(error.hint).not.toMatch(/dec\("2"\)/)
+  })
+
+  test('gives advice without inventing a literal when none is in the source', () => {
+    const error = rejection('price * rate')
+
+    expect(error.hint).toMatch(/dec\(/)
+    expect(error.hint).not.toMatch(/0\.19/)
+  })
+
   test('rejects comparing money against a bare integer', () => {
     const error = rejection('price > 0')
 
@@ -75,6 +91,23 @@ describe('decimal arithmetic through CEL keeps what a double loses', () => {
     expect(rejection('price / dec("3")').kind).toBe('type')
   })
 
+  test('divides at the documented maximum number of places', () => {
+    // 19.90 / 3 to 20 places; the guard digit is internal and must not make
+    // an expression that check() accepted die at evaluation.
+    expect(moneyValue('string(divide(price, dec("3"), 20))')).toBe('6.63333333333333333333')
+  })
+
+  test('reports the real ceiling when one more place is asked for', () => {
+    const compiled = compile('string(divide(price, dec("3"), 21))', money)
+    if (!compiled.ok) throw compiled.error
+    const result = evaluate(compiled.program, values, { capabilities })
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.error.code).toBe('invalid_value')
+    expect(result.error.message).toMatch(/maximum of 20/)
+  })
+
   test('compares by value, so a trailing zero does not change the answer', () => {
     expect(moneyValue('dec("19.90") == price')).toBe(true)
   })
@@ -84,6 +117,86 @@ describe('decimal arithmetic through CEL keeps what a double loses', () => {
 
     expect(total).toBeInstanceOf(Decimal)
     expect(decimalToString(total as Decimal)).toBe('3.7810')
+  })
+})
+
+/**
+ * Equality is the one operator CEL degrades silently: with no decimal overload
+ * matching, a universal fallback answers `false` for two equal amounts. That
+ * fallback must never be reachable for money, in either direction, at either
+ * gate.
+ */
+describe('decimal equality never answers a silent false', () => {
+  const optional: CompileOptions = {
+    kind: 'visible',
+    variables: { price: 'decimal', discount: 'dyn' },
+  }
+  const bag = { price: '19.90', discount: '19.90' }
+
+  test('rejects == between a decimal and a dyn field when the form is saved', () => {
+    const error = rejection('price == discount', optional)
+
+    expect(error.kind).toBe('type')
+    expect(error.code).toBe('decimal_equality_mismatch')
+    expect(error.hint).toMatch(/dec\(discount\)/)
+  })
+
+  test('rejects != the same way, because it is derived from ==', () => {
+    expect(rejection('price != discount', optional).code).toBe('decimal_equality_mismatch')
+  })
+
+  test('rejects == against a statically known non-decimal', () => {
+    expect(rejection('price == "19.90"', optional).code).toBe('decimal_equality_mismatch')
+    expect(rejection('price == 19.90', optional).hint).toMatch(/dec\("19\.90"\)/)
+  })
+
+  test('accepts the dec() workaround and compares by value', () => {
+    const compiled = compile('price == dec(discount)', optional)
+    if (!compiled.ok) throw compiled.error
+
+    const equal = evaluate(compiled.program, bag, { capabilities })
+    expect(equal).toEqual({ ok: true, value: true, steps: expect.any(Number) })
+
+    const different = evaluate(compiled.program, { price: '19.90', discount: '19.91' }, { capabilities })
+    expect(different).toEqual({ ok: true, value: false, steps: expect.any(Number) })
+  })
+
+  test('accepts the dec() workaround for != too', () => {
+    const compiled = compile('price != dec(discount)', optional)
+    if (!compiled.ok) throw compiled.error
+
+    expect(evaluate(compiled.program, bag, { capabilities })).toEqual({
+      ok: true,
+      value: false,
+      steps: expect.any(Number),
+    })
+  })
+
+  test('errors loudly when a decimal meets a non-decimal only at runtime', () => {
+    // Both sides are dyn, so the static gate cannot see the mismatch; the
+    // runtime operator must error rather than let the false fallback answer.
+    const compiled = compile('a == b', { kind: 'visible', variables: { a: 'dyn', b: 'dyn' } })
+    if (!compiled.ok) throw compiled.error
+
+    const result = evaluate(
+      compiled.program,
+      { a: new Decimal(1990n, 2), b: '19.90' },
+      { capabilities },
+    )
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.error.kind).toBe('runtime')
+    expect(result.error.message).toMatch(/decimal/)
+  })
+
+  test('still compares two decimals that only meet at runtime', () => {
+    const compiled = compile('a == b', { kind: 'visible', variables: { a: 'dyn', b: 'dyn' } })
+    if (!compiled.ok) throw compiled.error
+
+    expect(
+      evaluate(compiled.program, { a: new Decimal(1990n, 2), b: new Decimal(199n, 1) }, { capabilities }),
+    ).toEqual({ ok: true, value: true, steps: expect.any(Number) })
   })
 })
 

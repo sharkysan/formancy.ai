@@ -35,6 +35,44 @@ export const DEFAULT_LIMITS: StructuralLimits = Object.freeze({
   maxComprehensionDepth: 2,
 })
 
+/**
+ * The bounds on the VALUES an evaluation is handed, enforced by `bindValues`.
+ *
+ * The structural limits above bound the expression and the step budget bounds
+ * reads of the bag, but a collection PRODUCED inside the expression is only as
+ * bounded as what it was produced from: a four-megabyte string is four million
+ * `split("")` elements. These limits close that end, deterministically, before
+ * any expression code runs — never a wall clock, so a submission that passed
+ * in the browser cannot fail its server replay.
+ */
+export interface ValueLimits {
+  /** Longest string, in UTF-16 code units, anywhere in a bound value. */
+  readonly maxStringLength: number
+  /** Most elements of any single list anywhere in a bound value. */
+  readonly maxListElements: number
+  /** Most entries of any single map anywhere in a bound value. */
+  readonly maxMapEntries: number
+  /** How deeply lists and maps may nest inside a bound value. */
+  readonly maxNestingDepth: number
+}
+
+export const DEFAULT_VALUE_LIMITS: ValueLimits = Object.freeze({
+  maxStringLength: 16_384,
+  maxListElements: 1_024,
+  maxMapEntries: 1_024,
+  maxNestingDepth: 8,
+})
+
+export function resolveValueLimits(overrides?: Partial<ValueLimits> | undefined): ValueLimits {
+  if (overrides === undefined) return DEFAULT_VALUE_LIMITS
+  return Object.freeze({
+    maxStringLength: overrides.maxStringLength ?? DEFAULT_VALUE_LIMITS.maxStringLength,
+    maxListElements: overrides.maxListElements ?? DEFAULT_VALUE_LIMITS.maxListElements,
+    maxMapEntries: overrides.maxMapEntries ?? DEFAULT_VALUE_LIMITS.maxMapEntries,
+    maxNestingDepth: overrides.maxNestingDepth ?? DEFAULT_VALUE_LIMITS.maxNestingDepth,
+  })
+}
+
 export function resolveLimits(overrides?: Partial<StructuralLimits> | undefined): StructuralLimits {
   if (overrides === undefined) return DEFAULT_LIMITS
   return Object.freeze({

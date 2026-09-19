@@ -18,6 +18,14 @@ const COMPREHENSION_MACROS: ReadonlySet<string> = new Set([
 ])
 
 /**
+ * The macros whose three-argument form names TWO local variables, key and
+ * value. `map` is deliberately absent: its three-argument form is
+ * `map(var, filter, transform)`, where the middle argument is an expression
+ * that really does read fields.
+ */
+const TWO_VARIABLE_MACROS: ReadonlySet<string> = new Set(['all', 'exists', 'exists_one', 'filter'])
+
+/**
  * The set of variable paths an expression reads, e.g. `total`, `address.city`.
  *
  * The engine builds its dependency graph from this and rejects cyclic forms at
@@ -53,9 +61,39 @@ function visit(node: CelNode, found: Set<string>, scope: ReadonlySet<string>): v
     // reports the whole collection AND the expression that indexes it.
   }
 
-  if (node.op === 'rcall' && visitComprehension(node, found, scope)) return
+  if (node.op === 'rcall') {
+    if (visitComprehension(node, found, scope)) return
+    if (visitBind(node, found, scope)) return
+  }
 
   for (const child of childNodes(node)) visit(child, found, scope)
+}
+
+/**
+ * Walk `x.bind(name, value, expression)` with its binding scoped, or return
+ * false when this call is not the bind macro.
+ *
+ * The implementation expands `bind` by NAME, on any receiver, and never reads
+ * the receiver at runtime. `cel` in particular is its namespace constant and
+ * not a field, so reporting it would hand the dependency graph a node that can
+ * never exist. Any other receiver is reported: it is an identifier the author
+ * wrote, and over-reporting is the conservative direction here.
+ */
+function visitBind(node: CelNode, found: Set<string>, scope: ReadonlySet<string>): boolean {
+  const [name, receiver, macroArgs] = node.args as [string, CelNode, CelNode[]]
+  if (name !== 'bind' || !Array.isArray(macroArgs) || macroArgs.length !== 3) return false
+
+  const bound = macroArgs[0] !== undefined ? identifierName(macroArgs[0]) : undefined
+  if (bound === undefined) return false
+
+  if (isCelNode(receiver) && identifierName(receiver) !== 'cel') visit(receiver, found, scope)
+
+  // The value is computed BEFORE the name exists; only the body sees it.
+  if (macroArgs[1] !== undefined) visit(macroArgs[1], found, scope)
+  const inner = new Set(scope)
+  inner.add(bound)
+  if (macroArgs[2] !== undefined) visit(macroArgs[2], found, inner)
+  return true
 }
 
 /**
@@ -78,9 +116,17 @@ function visitComprehension(
 
   if (isCelNode(receiver)) visit(receiver, found, scope)
 
+  // The two-variable form binds a second local — `m.all(k, v, …)` — and that
+  // slot is a NAME, not a read; visiting it would report a phantom field.
+  const secondVariable =
+    TWO_VARIABLE_MACROS.has(name) && macroArgs.length === 3 && macroArgs[1] !== undefined
+      ? identifierName(macroArgs[1])
+      : undefined
+
   const inner = new Set(scope)
   inner.add(iterationVariable)
-  for (let i = 1; i < macroArgs.length; i++) {
+  if (secondVariable !== undefined) inner.add(secondVariable)
+  for (let i = secondVariable === undefined ? 1 : 2; i < macroArgs.length; i++) {
     const arg = macroArgs[i]
     if (arg !== undefined) visit(arg, found, inner)
   }

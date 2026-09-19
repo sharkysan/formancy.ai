@@ -54,6 +54,25 @@ describe('structural limits', () => {
     )
   })
 
+  test('charges CHAINED comprehensions a plus b, not a times b', () => {
+    // The receiver runs once, so filter-into-filter-into-map is three passes
+    // in sequence, each at depth one; only nesting in a predicate multiplies.
+    expect(
+      parse('a.filter(x, x.ok).filter(y, y.on).map(z, z.n)', {
+        limits: { maxComprehensionDepth: 1 },
+      }).ok,
+    ).toBe(true)
+  })
+
+  test('still counts nesting inside the predicate of a chained comprehension', () => {
+    const result = parse('a.filter(x, b.exists(y, y == x)).map(z, z.n)', {
+      limits: { maxComprehensionDepth: 1 },
+    })
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.error.code).toBe('comprehension_too_deep')
+  })
+
   test('has defaults small enough that the worst case stays cheap', () => {
     expect(DEFAULT_LIMITS.maxComprehensionDepth).toBeLessThanOrEqual(3)
     expect(DEFAULT_LIMITS.maxAstNodes).toBeLessThanOrEqual(1000)

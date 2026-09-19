@@ -11,6 +11,7 @@ import {
   EvaluationError,
   TypeError as CelTypeError,
 } from '@marcbachmann/cel-js'
+import { childNodes } from './ast.js'
 import type { CelNode } from './ast.js'
 import type { Meter } from './budget.js'
 import type { Capabilities } from './capabilities.js'
@@ -108,6 +109,7 @@ export function createRuntime(spec: RuntimeSpec): CelRuntime {
 
   registerDecimal(environment, current)
   registerCapabilityFunctions(environment, current)
+  registerMetering(environment, current)
 
   if (spec.variables !== undefined) {
     for (const [name, type] of Object.entries(spec.variables)) {
@@ -118,6 +120,7 @@ export function createRuntime(spec: RuntimeSpec): CelRuntime {
   return {
     parse(source) {
       const parsed = environment.parse(source)
+      instrumentForMetering(parsed.ast as unknown as SurgicalNode, environment)
       return {
         node: parsed.ast as unknown as CelNode,
         check() {
@@ -140,6 +143,14 @@ export function createRuntime(spec: RuntimeSpec): CelRuntime {
 }
 
 type PassAccessor = (name: string) => EvaluationPass
+
+/** What a runtime value is, in words a form author uses, for error messages. */
+function runtimeTypeName(value: unknown): string {
+  if (value === null) return 'null'
+  if (value instanceof Date) return 'timestamp'
+  if (Array.isArray(value)) return 'list'
+  return typeof value === 'object' ? 'map' : typeof value
+}
 
 /**
  * Registers `decimal` as a first-class CEL type with no implicit conversion to
@@ -184,6 +195,21 @@ function registerDecimal(environment: Environment, current: PassAccessor): void 
   environment.registerOperator('decimal == decimal', (a: Decimal, b: Decimal) => {
     return compareDecimal(a, b) === 0
   })
+  // A decimal beside a string, double or int must not fall through to the
+  // implementation's universal cross-type equality: that fallback answers
+  // `false` for a decimal next to its own written form — silently wrong for
+  // exactly the values people compare money against. These overloads make the
+  // meeting a loud error instead. (`decimal == dyn` cannot be used here: it
+  // makes runtime dispatch of decimal == decimal through dyn slots ambiguous.)
+  for (const otherType of ['string', 'double', 'int']) {
+    environment.registerOperator(`decimal == ${otherType}`, (a: unknown, b: unknown) => {
+      const other = a instanceof Decimal ? b : a
+      throw new RangeError(
+        `A decimal can only be compared to another decimal, not to a ${runtimeTypeName(other)}; ` +
+          'convert the other side with dec() first',
+      )
+    })
+  }
   // `!=` is derived from `==` by the implementation; registering it is an error.
   environment.registerOperator('decimal < decimal', (a: Decimal, b: Decimal) => {
     return compareDecimal(a, b) < 0
@@ -197,6 +223,199 @@ function registerDecimal(environment: Environment, current: PassAccessor): void 
   environment.registerOperator('decimal >= decimal', (a: Decimal, b: Decimal) => {
     return compareDecimal(a, b) >= 0
   })
+}
+
+/**
+ * The internal metering pass-throughs, `T -> T` so they are invisible to the
+ * type checker. Their names never appear in an author's expression: the policy
+ * allow-list rejects them at check time, and the only call sites are the ones
+ * `instrumentForMetering` splices in.
+ */
+const STEP_FUNCTION = '__it'
+const SIZE_FUNCTION = '__sz'
+
+/**
+ * One step buys this many characters of internal string production. Charging
+ * per character would make ordinary concatenation absurdly expensive against a
+ * 20k budget; charging per string would make length free. Sixty-four keeps a
+ * legal 16 KiB field worth a few hundred steps.
+ */
+const STRING_CHUNK = 64
+
+/** Steps a produced value costs beyond the call itself, by its SIZE. */
+function sizeCost(value: unknown): number {
+  if (typeof value === 'string') return Math.floor(value.length / STRING_CHUNK)
+  if (Array.isArray(value)) return value.length
+  if (value instanceof Map) return value.size
+  if (typeof value === 'object' && value !== null) {
+    const prototype = Object.getPrototypeOf(value) as object | null
+    if (prototype === Object.prototype || prototype === null) return Object.keys(value).length
+  }
+  return 0
+}
+
+/**
+ * The step meter charges reads of the value bag, which leaves everything an
+ * expression produces INTERNALLY free: `s.split("")` mints a list as long as
+ * the field, and a comprehension walks it without spending a step. These two
+ * functions are the counter for that side: `__it` marks one comprehension
+ * iteration, `__sz` prices a value by the size it was just produced or
+ * consumed at. Both count deterministically, so a submission that passed in
+ * the browser replays identically on the server.
+ */
+function registerMetering(environment: Environment, current: PassAccessor): void {
+  environment.registerFunction(`${STEP_FUNCTION}(T): T`, (value: unknown) => {
+    current(STEP_FUNCTION)
+    return value
+  })
+  environment.registerFunction(`${SIZE_FUNCTION}(T): T`, (value: unknown) => {
+    current(SIZE_FUNCTION).meter.charge(sizeCost(value))
+    return value
+  })
+}
+
+/**
+ * The mutable face of a parsed node, used only by the instrumentation below.
+ *
+ * `meta` is where the implementation caches a node's behaviour: `alternate` is
+ * the tree a macro expanded to at parse time (check and evaluation follow it
+ * instead of the visible node), and `check`/`evaluate` are the node's own
+ * operator functions. Everything here is public API of the node object, just
+ * not of the package's typings.
+ */
+interface SurgicalNode {
+  readonly op: string
+  readonly args: unknown
+  readonly meta: {
+    alternate?: SurgicalNode
+    macro?: unknown
+    check: unknown
+    evaluate: unknown
+  }
+  clone(op: OperatorHandle, args: unknown): SurgicalNode
+  setMeta(key: string, value: unknown): SurgicalNode
+}
+
+interface OperatorHandle {
+  readonly name: string
+  readonly check: unknown
+  readonly evaluate: unknown
+}
+
+/** The comprehension expansion's payload; a plain mutable object. */
+interface ComprehensionArgs {
+  iterable: SurgicalNode
+  step: SurgicalNode
+}
+
+/** The calls whose RESULT size an expression can inflate internally. */
+const SIZE_METERED_CALLS: ReadonlySet<string> = new Set(['split', 'join'])
+
+/**
+ * The calls that walk their whole RECEIVER on every evaluation. Inside a
+ * comprehension each of them rescans per iteration, so the receiver's size is
+ * the real per-iteration cost and gets charged as such. The calendar getters
+ * and conversions are absent on purpose: their receivers are scalar.
+ */
+const RECEIVER_METERED_CALLS: ReadonlySet<string> = new Set([
+  'contains',
+  'startsWith',
+  'endsWith',
+  'matches',
+  'indexOf',
+  'lastIndexOf',
+  'substring',
+  'lowerAscii',
+  'upperAscii',
+  'trim',
+  'size',
+  'split',
+  'join',
+])
+
+/**
+ * Splice the metering calls into a freshly parsed tree, before its first check.
+ *
+ * Comprehension macros expand at PARSE time into a `comprehension` node stored
+ * as the rcall's alternate, so the amplifying positions are reachable and
+ * mutable: the STEP (runs once per iteration -> `__it`), the ITERABLE (its
+ * size is the iteration count -> `__sz`), plus `split`/`join` results and `+`
+ * (the two ways to mint something big from something small). Wrappers are
+ * clones carrying the wrapped node's source span, so every error still points
+ * at what the author wrote; walkers over `node.args` (policy allow-list,
+ * referencedPaths) never see them because they live in `meta.alternate` and in
+ * the expansion, not in the visible tree.
+ */
+function instrumentForMetering(root: SurgicalNode, environment: Environment): void {
+  // A genuine call node to steal the `call` operator functions from: nodes can
+  // only be built through clone(), and the operator table is not exported.
+  const template = environment.parse(`${STEP_FUNCTION}(true)`).ast as unknown as SurgicalNode
+  const callOp: OperatorHandle = {
+    name: 'call',
+    check: template.meta.check,
+    evaluate: template.meta.evaluate,
+  }
+  const wrapCall = (name: string, inner: SurgicalNode): SurgicalNode =>
+    inner.clone(callOp, [name, [inner]])
+
+  /** Nodes some wrapper already prices, so a second one would double-charge. */
+  const sizeCharged = new Set<SurgicalNode>()
+
+  /**
+   * Redirect `node` through a metering call without touching its parent: the
+   * wrapper becomes the node's alternate and the node's own behaviour moves
+   * into a clone. Parents, captured macro expansions and AST walkers keep
+   * their references; only check and evaluation follow the detour.
+   */
+  function wrapInPlace(node: SurgicalNode): void {
+    if (sizeCharged.has(node)) return
+    // A macro object reads its arguments positionally rather than as
+    // expressions; nothing wrapped here is one, but a guard beats a corrupted
+    // tree if the implementation ever grows a macro named like these calls.
+    if (node.meta.macro !== undefined) return
+    sizeCharged.add(node)
+    const inner =
+      node.meta.alternate ??
+      node.clone({ name: node.op, check: node.meta.check, evaluate: node.meta.evaluate }, node.args)
+    node.setMeta('alternate', wrapCall(SIZE_FUNCTION, inner))
+  }
+
+  /**
+   * First pass: comprehensions. It must run to completion before any
+   * `wrapInPlace`, because that mutation swaps a node's alternate for a call
+   * wrapper and would hide the `comprehension` this pass is looking for.
+   */
+  function walkComprehensions(node: SurgicalNode): void {
+    if (node.op === 'rcall') {
+      const alternate = node.meta.alternate
+      if (alternate !== undefined && alternate.op === 'comprehension') {
+        const args = alternate.args as ComprehensionArgs
+        args.step = wrapCall(STEP_FUNCTION, args.step)
+        sizeCharged.add(args.iterable)
+        args.iterable = wrapCall(SIZE_FUNCTION, args.iterable)
+      }
+    }
+    for (const child of childNodes(node as unknown as CelNode)) {
+      walkComprehensions(child as unknown as SurgicalNode)
+    }
+  }
+
+  /** Second pass: everything that produces or rescans by size. */
+  function walkProducers(node: SurgicalNode): void {
+    if (node.op === 'rcall') {
+      const [name, receiver] = node.args as [string, SurgicalNode, ...unknown[]]
+      if (SIZE_METERED_CALLS.has(name)) wrapInPlace(node)
+      if (RECEIVER_METERED_CALLS.has(name) && receiver !== undefined) wrapInPlace(receiver)
+    } else if (node.op === '+') {
+      wrapInPlace(node)
+    }
+    for (const child of childNodes(node as unknown as CelNode)) {
+      walkProducers(child as unknown as SurgicalNode)
+    }
+  }
+
+  walkComprehensions(root)
+  walkProducers(root)
 }
 
 /**
