@@ -1,4 +1,4 @@
-import type { FieldDef, FormSchema, LogicRule } from '@formancy/spec'
+import type { FieldDef, FieldType, FormSchema, LogicRule } from '@formancy/spec'
 import { captureCapabilities, compile, evaluate } from '@formancy/expressions'
 import type {
   Capabilities,
@@ -45,6 +45,8 @@ import type { Wizard } from './wizard.js'
  */
 export interface FieldSnapshot {
   value: unknown
+  /** The model field type, so component registries can dispatch on it. */
+  type: FieldType
   required: boolean
   visible: boolean
   disabled: boolean
@@ -718,6 +720,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
       const ids = fieldIds(schema.id, node.path)
       const snapshot: FieldSnapshot = Object.freeze({
         value: store.get(node.path),
+        type: node.def.type,
         required,
         visible: !hiddenWires.has(wire),
         disabled,

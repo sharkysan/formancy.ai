@@ -177,3 +177,12 @@ describe('createFormEngine: required validation', () => {
     expect(engine.getFieldSnapshot(['message']).touched).toBe(true)
   })
 })
+
+describe('snapshot field type', () => {
+  test('a snapshot names its field type, so registries can dispatch on it', () => {
+    const engine = createFormEngine({ schema })
+    expect(engine.getFieldSnapshot(['email']).type).toBe('text')
+    expect(engine.getFieldSnapshot(['message']).type).toBe('textarea')
+    expect(engine.getFieldSnapshot(['newsletter']).type).toBe('checkbox')
+  })
+})
