@@ -26,6 +26,8 @@
     "@angular/core": "^22.1.7",
     "@angular/platform-browser": "^22.1.7",
     "@arethetypeswrong/cli": "catalog:",
+    "@formancy/conformance": "workspace:*",
+    "@formancy/expressions": "workspace:*",
     "@testing-library/angular": "^19.5.0",
     "jsdom": "^30.1.0",
     "ng-packagr": "^22.1.1",
