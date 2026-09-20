@@ -215,6 +215,91 @@
        }
       }
      }
+    },
+    {
+     "if": {
+      "required": [
+       "type"
+      ],
+      "properties": {
+       "type": {
+        "const": "number"
+       }
+      }
+     },
+     "then": {
+      "properties": {
+       "min": {
+        "title": "Minimum",
+        "description": "The smallest value that counts as a valid answer.",
+        "type": "number"
+       },
+       "max": {
+        "title": "Maximum",
+        "description": "The largest value that counts as a valid answer.",
+        "type": "number"
+       }
+      }
+     }
+    },
+    {
+     "if": {
+      "required": [
+       "type"
+      ],
+      "properties": {
+       "type": {
+        "enum": [
+         "text",
+         "textarea"
+        ]
+       }
+      }
+     },
+     "then": {
+      "properties": {
+       "minLength": {
+        "title": "Minimum length",
+        "description": "The shortest answer that counts, in characters.",
+        "type": "integer",
+        "minimum": 0
+       },
+       "maxLength": {
+        "title": "Maximum length",
+        "description": "The longest answer that counts, in characters.",
+        "type": "integer",
+        "minimum": 1
+       },
+       "pattern": {
+        "title": "Pattern",
+        "description": "A regular expression the whole answer must match. Checked when the form is saved, so a broken or dangerous pattern never reaches a person filling the form in.",
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 500
+       },
+       "format": {
+        "title": "Format",
+        "description": "A named shape the answer must have. A closed list on purpose: each entry is one well-tested check, not a per-form regular expression.",
+        "oneOf": [
+         {
+          "const": "email",
+          "title": "Email address",
+          "description": "One address, with a mailbox and a domain."
+         },
+         {
+          "const": "url",
+          "title": "Web address",
+          "description": "An absolute http or https URL."
+         },
+         {
+          "const": "uuid",
+          "title": "UUID",
+          "description": "A universally unique identifier in its canonical hex form."
+         }
+        ]
+       }
+      }
+     }
     }
    ],
    "unevaluatedProperties": false

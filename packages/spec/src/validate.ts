@@ -85,6 +85,19 @@ function semanticErrors(schema: FormSchema): SchemaError[] {
       })
     }
     if (previousKey !== undefined) claimedRenames.add(previousKey)
+
+    // A broken pattern must fail the AUTHOR, not the person filling the form
+    // in — new RegExp at answer time would throw mid-keystroke.
+    if (field.pattern !== undefined) {
+      try {
+        new RegExp(field.pattern, 'u')
+      } catch (cause) {
+        errors.push({
+          path: `${path}/pattern`,
+          message: `This is not a valid regular expression: ${cause instanceof Error ? cause.message : String(cause)}.`,
+        })
+      }
+    }
   }
 
   errors.push(...logicErrors(schema))

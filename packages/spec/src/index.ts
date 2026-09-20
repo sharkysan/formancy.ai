@@ -7,6 +7,7 @@ export type {
   ContainerFieldType,
   ChangeSeverity,
   FieldDef,
+  FieldFormat,
   FieldOption,
   FieldType,
   FormLogic,

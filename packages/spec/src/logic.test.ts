@@ -156,3 +156,58 @@ describe('v0 presentation-lite properties', () => {
     expect(result.valid).toBe(false)
   })
 })
+
+describe('v0.1 model validators', () => {
+  test('numeric bounds on a number field, text bounds and pattern and format on text fields', () => {
+    const document: FormSchema = {
+      specVersion: '0',
+      id: 'f',
+      title: 'T',
+      model: {
+        fields: [
+          { key: 'qty', type: 'number', min: 1, max: 100 },
+          { key: 'name', type: 'text', minLength: 2, maxLength: 50, pattern: '^[A-Z]' },
+          { key: 'email', type: 'text', format: 'email' },
+          { key: 'site', type: 'text', format: 'url' },
+          { key: 'ref', type: 'text', format: 'uuid' },
+        ],
+      },
+    }
+
+    expect(validateSchema(document).valid).toBe(true)
+  })
+
+  test('numeric bounds on a text field are rejected', () => {
+    const result = validateSchema({
+      specVersion: '0',
+      id: 'f',
+      title: 'T',
+      model: { fields: [{ key: 'a', type: 'text', min: 1 }] },
+    })
+    expect(result.valid).toBe(false)
+  })
+
+  test('an unknown format is rejected', () => {
+    const result = validateSchema({
+      specVersion: '0',
+      id: 'f',
+      title: 'T',
+      model: { fields: [{ key: 'a', type: 'text', format: 'phone' }] },
+    })
+    expect(result.valid).toBe(false)
+  })
+
+  test('a pattern that is not a valid regular expression is rejected semantically', () => {
+    const result = validateSchema({
+      specVersion: '0',
+      id: 'f',
+      title: 'T',
+      model: { fields: [{ key: 'a', type: 'text', pattern: '([' }] },
+    })
+
+    expect(result.valid).toBe(false)
+    if (!result.valid) {
+      expect(result.errors.some((e) => e.path === '/model/fields/0/pattern')).toBe(true)
+    }
+  })
+})

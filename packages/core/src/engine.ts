@@ -12,6 +12,7 @@ import type { GraphNode } from './graph.js'
 import { fieldIds } from './ids.js'
 import type { FieldIds } from './ids.js'
 import { createInteractionState } from './interaction.js'
+import { modelViolations } from './model-validators.js'
 import { formatPath, parsePath } from './path.js'
 import { buildFieldProps } from './props.js'
 import type { FieldProps } from './props.js'
@@ -655,8 +656,10 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
         continue
       }
 
+      const value = store.get(node.path)
       const codes: string[] = []
-      if (requiredViolated(node, store.get(node.path))) codes.push('required')
+      if (requiredViolated(node, value)) codes.push('required')
+      codes.push(...modelViolations(node.def, value))
 
       const checks = validateByTemplateWire.get(templateWireOf(node.wire))
       if (checks !== undefined && bag !== undefined && capabilities !== undefined) {

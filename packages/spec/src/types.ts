@@ -88,7 +88,19 @@ export interface FieldDef {
   maxItems?: number
   addLabel?: string
   removeLabel?: string
+  /** number fields: the valid range. */
+  min?: number
+  max?: number
+  /** text fields: bounds, a whole-match pattern, and a named format. */
+  minLength?: number
+  maxLength?: number
+  pattern?: string
+  format?: FieldFormat
 }
+
+/** A closed list on purpose: each entry is one well-tested check, not a
+ *  per-form regular expression. */
+export type FieldFormat = 'email' | 'url' | 'uuid'
 
 export interface FieldOption {
   /** Stored in the submission; stable like a field key. */
