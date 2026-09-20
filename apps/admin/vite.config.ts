@@ -9,5 +9,13 @@ export default defineConfig({
     // in development the admin reaches it through this same-origin proxy.
     proxy: { '/api': { target: 'http://localhost:4380', changeOrigin: true, rewrite: (p) => p.slice('/api'.length) } },
   },
-  test: { include: ['src/**/*.test.ts'], passWithNoTests: true },
+  test: {
+    include: ['src/**/*.test.ts'], passWithNoTests: true,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', ['lcov', { projectRoot: '../..' }]],
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: ['src/**/*.test.{ts,tsx}', 'src/**/*.spec.{ts,tsx}', 'src/**/*.d.ts', 'src/test-setup.ts'],
+    },
+  },
 })

@@ -36,7 +36,12 @@ jobs:
 
       - run: pnpm build
       - run: pnpm typecheck
-      - run: pnpm test
+      - run: pnpm test:coverage
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v7
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: true
       # Packaging correctness (publint + attw) is a release gate, not a nicety:
       # broken exports maps are the top cause of "doesn't work in my app" for
       # multi-framework libraries.

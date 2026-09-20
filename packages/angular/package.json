@@ -5,6 +5,7 @@
   "license": "Apache-2.0",
   "scripts": {
     "build": "ng-packagr -p ng-package.json && node scripts/finalize-dist.mjs",
+    "test:coverage": "vitest run --coverage",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "check:pkg": "publint ./dist"
@@ -34,7 +35,8 @@
     "publint": "catalog:",
     "rxjs": "^7.8.1",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "@vitest/coverage-v8": "catalog:"
   },
   "publishConfig": {
     "directory": "dist",
