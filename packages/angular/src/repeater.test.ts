@@ -14,7 +14,7 @@ afterEach(() => {
 })
 
 const schema: FormSchema = {
-  specVersion: '0',
+  specVersion: '1',
   id: 'team',
   title: 'Team',
   model: {

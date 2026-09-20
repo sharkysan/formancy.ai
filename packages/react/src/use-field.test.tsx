@@ -9,7 +9,7 @@ import type { FormSchema } from '@formancy/spec'
 import { FormancyProvider, useField } from './index.js'
 
 const schema: FormSchema = {
-  specVersion: '0',
+  specVersion: '1',
   id: 'contact',
   title: 'Contact',
   model: {

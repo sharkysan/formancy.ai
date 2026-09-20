@@ -25,7 +25,7 @@ import { FormancyForm, provideFormancy } from '@formancy/angular'
 import type { FormSchema } from '@formancy/spec'
 
 const schema: FormSchema = {
-  specVersion: '0',
+  specVersion: '1',
   id: 'contact',
   title: 'Contact us',
   model: {

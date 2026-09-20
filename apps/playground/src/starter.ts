@@ -4,7 +4,7 @@
  * total over repeater rows, per-row validation and a required consent box.
  */
 export const STARTER_SCHEMA = {
-  specVersion: '0',
+  specVersion: '1',
   id: 'order',
   title: 'Order',
   model: {

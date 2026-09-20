@@ -2,6 +2,7 @@ import type { ErrorObject, ValidateFunction } from 'ajv/dist/2020.js'
 import documentValidatorFn from './generated/document-validator.js'
 import { modelDataPaths } from './paths.js'
 import { collectFieldPaths, isMessageRef, modelPathsForLayout } from './presentation.js'
+import { ROW_ID } from './types.js'
 import type { FieldDef, FormSchema, LayoutNode, Text } from './types.js'
 
 /** One reason a document is not a valid formancy form. */
@@ -111,6 +112,7 @@ function semanticErrors(schema: FormSchema): SchemaError[] {
 
   errors.push(...logicErrors(schema))
   errors.push(...presentationErrors(schema))
+  errors.push(...reservedKeyErrors(schema))
 
   return errors
 }
@@ -136,6 +138,13 @@ function logicErrors(schema: FormSchema): SchemaError[] {
     }
 
     if (rule.kind !== 'validate') {
+      if (rule.runsOn !== undefined) {
+        errors.push({
+          path: `/logic/rules/${String(index)}/runsOn`,
+          message: `Only a validate rule can choose where it runs. A ${rule.kind} rule that behaved differently in the browser and on the server would leave the server unable to check what the browser did.`,
+        })
+      }
+
       const claim = `${rule.kind}:${rule.target}`
       if (claimedKinds.has(claim)) {
         errors.push({
@@ -248,6 +257,32 @@ function presentationErrors(schema: FormSchema): SchemaError[] {
     void duplicates
     void collectFieldPaths
   }
+
+  return errors
+}
+
+/**
+ * `_id` belongs to the engine: it is how a repeater row keeps an identity that
+ * its position cannot give it. A field claiming the same key would collide with
+ * it inside every row, so the collision is refused here rather than discovered
+ * when two things disagree about what `items[0]._id` means.
+ */
+function reservedKeyErrors(schema: FormSchema): SchemaError[] {
+  const errors: SchemaError[] = []
+
+  const walk = (fields: readonly FieldDef[], base: string): void => {
+    for (const [index, field] of fields.entries()) {
+      const path = `${base}/${String(index)}`
+      if (field.key === ROW_ID) {
+        errors.push({
+          path: `${path}/key`,
+          message: `"${ROW_ID}" is reserved: it is how a repeater row carries its identity, so no field can be called that.`,
+        })
+      }
+      walk(field.fields ?? [], `${path}/fields`)
+    }
+  }
+  walk(schema.model.fields, '/model/fields')
 
   return errors
 }

@@ -17,9 +17,11 @@ export type {
   FormSchema,
   LayoutNode,
   MessageRef,
+  RunsOn,
   Text,
   LogicRule,
   RuleKind,
 } from './types.js'
 export { modelDataPaths } from './paths.js'
+export { ROW_ID, ROW_ID_PREFIX } from './types.js'
 export { collectFieldPaths, isMessageRef, modelPathsForLayout, resolveText, unreferencedPaths } from './presentation.js'

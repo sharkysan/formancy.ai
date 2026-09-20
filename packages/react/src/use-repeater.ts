@@ -5,6 +5,8 @@ import { useFormEngine } from './context.js'
 
 export interface RepeaterBinding {
   rowCount: number
+  /** Stable per-row keys, in row order. Never key a row by its index. */
+  rowIds: readonly string[]
   addRow(): void
   removeRow(index: number): void
 }
@@ -30,5 +32,16 @@ export function useRepeater(path: string | Path): RepeaterBinding {
   const addRow = useCallback(() => engine.addRow(parsed), [engine, parsed])
   const removeRow = useCallback((index: number) => engine.removeRow(parsed, index), [engine, parsed])
 
-  return useMemo(() => ({ rowCount, addRow, removeRow }), [rowCount, addRow, removeRow])
+  // Derived from rowCount rather than subscribed separately: the engine mints
+  // an id when a row is created, so the count changing is exactly when the ids
+  // change.
+  const rowIds = useMemo(
+    () => Array.from({ length: rowCount }, (_, index) => engine.rowId(parsed, index)),
+    [engine, parsed, rowCount],
+  )
+
+  return useMemo(
+    () => ({ rowCount, rowIds, addRow, removeRow }),
+    [rowCount, rowIds, addRow, removeRow],
+  )
 }

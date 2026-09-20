@@ -18,7 +18,7 @@ let sql: postgres.Sql
 let app: FastifyInstance
 
 const schema: FormSchema = {
-  specVersion: '0',
+  specVersion: '1',
   id: 'contact',
   title: 'Contact',
   model: {

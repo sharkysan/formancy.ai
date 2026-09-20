@@ -334,8 +334,10 @@ focus area for their own verification.
    cannot produce one.
 2. Pay particular attention to **A5** (visibility rules fail open), **C2** (no
    tenant boundary), **D3** (pattern linting not yet implemented) and the
-   unstable spec version. These are the entries where the residual risk is real
-   rather than theoretical.
+   pre-release package versions. These are the entries where the residual risk
+   is real rather than theoretical. Note that the *spec* is frozen
+   ([0042](../decisions/0042-freeze-the-spec.md)), so stored data has a settled
+   shape; it is the software that is still moving.
 3. Decide whether automated accessibility checking is sufficient evidence for
    the device's intended users, and plan a manual audit if it is not.
 4. Treat the 118 known CEL corpus failures as a functional limitation to be

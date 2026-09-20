@@ -5,7 +5,7 @@ import { createBuilderSession } from './session.js'
 /** A form with every structural situation the builder has to handle: pages,
  *  a group, a repeater, choice options and a logic rule. */
 export const base: FormSchema = {
-  specVersion: '0',
+  specVersion: '1',
   id: 'trip',
   title: 'Trip report',
   model: {

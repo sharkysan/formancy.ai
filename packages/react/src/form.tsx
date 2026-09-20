@@ -204,8 +204,11 @@ function RepeaterSection({
   return (
     <fieldset data-formancy-part="repeater">
       <legend data-formancy-part="repeater-legend">{label}</legend>
-      {Array.from({ length: repeater.rowCount }, (_, index) => (
-        <div data-formancy-part="row" key={index}>
+      {repeater.rowIds.map((rowId, index) => (
+        // Keyed by identity, not position: removing a row renumbers every row
+        // after it, and an index key would make React reuse the wrong DOM
+        // nodes — moving focus and animating the wrong element.
+        <div data-formancy-part="row" key={rowId}>
           {engine
             .fieldPaths()
             .filter((candidate) => candidate.startsWith(`${wire}[${index}]`))

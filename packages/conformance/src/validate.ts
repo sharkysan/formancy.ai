@@ -215,8 +215,8 @@ function validateSchema(value: unknown, at: string): FixtureProblem[] {
 
   const problems: FixtureProblem[] = []
 
-  if (schema['specVersion'] !== '0') {
-    problems.push({ path: `${at}.specVersion`, message: 'expected "0"' })
+  if (schema['specVersion'] !== '1') {
+    problems.push({ path: `${at}.specVersion`, message: 'expected "1"' })
   }
   for (const key of ['id', 'title'] as const) {
     if (typeof schema[key] !== 'string' || schema[key] === '') {

@@ -35,7 +35,7 @@ import { FormancyProvider, FormancyForm } from '@formancy/react'
 import type { FormSchema } from '@formancy/spec'
 
 const schema = {
-  specVersion: '0',
+  specVersion: '1',
   id: 'contact-us',
   title: 'Contact us',
   model: {

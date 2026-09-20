@@ -5,7 +5,7 @@ import type { ConformanceSchema, Fixture, JsonValue } from './types.js'
 import { createFakeDriver } from './testing/fake-driver.js'
 
 const contact: ConformanceSchema = {
-  specVersion: '0',
+  specVersion: '1',
   id: 'contact',
   title: 'Contact us',
   model: {
@@ -303,7 +303,7 @@ describe('per-step assertions', () => {
   })
 
   const wizard: ConformanceSchema = {
-    specVersion: '0',
+    specVersion: '1',
     id: 'wizard',
     title: 'Two pages',
     model: {
@@ -401,7 +401,7 @@ describe('the command grammar', () => {
     const fixture: Fixture = {
       name: 'commands',
       schema: {
-        specVersion: '0',
+        specVersion: '1',
         id: 'commands',
         title: 'Commands',
         model: {

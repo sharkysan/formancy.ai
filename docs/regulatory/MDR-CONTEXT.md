@@ -98,11 +98,12 @@ in another.
 4. Treat [`../decisions/`](../decisions/) as design rationale you may reference
    but did not author. Decisions marked "Not mechanically enforced" are the
    ones where your own verification has to do the work.
-5. Note that spec version 0 is explicitly unstable
-   ([0009](../decisions/0009-independent-spec-version.md)). Building a
-   regulated product on an unstable data format is a decision to take
-   deliberately, with a written rationale, or to defer until the spec freezes
-   to version 1.
+5. Note which version line you are relying on. The **spec** is frozen at
+   version 1 ([0042](../decisions/0042-freeze-the-spec.md)), so the shape of
+   your form documents and stored submissions is settled. The **packages** are
+   pre-release and their APIs will still change, which is an ordinary
+   dependency-management problem rather than a data-integrity one — but it
+   means pinning a version and reading `MIGRATIONS.md` before moving.
 
 ## Honesty about what this documentation is
 

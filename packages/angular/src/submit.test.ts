@@ -17,7 +17,7 @@ afterEach(() => {
 })
 
 const schema: FormSchema = {
-  specVersion: '0',
+  specVersion: '1',
   id: 'contact',
   title: 'Contact',
   model: { fields: [{ key: 'email', type: 'text', label: 'Email', required: true }] },

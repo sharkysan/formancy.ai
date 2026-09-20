@@ -6,7 +6,7 @@ function caseFile(name: string): string {
   return JSON.stringify({
     name,
     schema: {
-      specVersion: '0',
+      specVersion: '1',
       id: 'contact',
       title: 'Contact us',
       model: { fields: [{ key: 'email', type: 'text', label: 'Email' }] },

@@ -120,6 +120,8 @@ export class FormancyFieldSlot implements OnInit {
 
 interface RepeaterRow {
   index: number
+  /** The row's stable identity, which `@for` tracks instead of its position. */
+  id: string
   wires: readonly string[]
 }
 
@@ -137,7 +139,7 @@ interface RepeaterRow {
     @if (state; as s) {
       <fieldset data-formancy-part="repeater">
         <legend data-formancy-part="repeater-legend">{{ s.label }}</legend>
-        @for (row of s.rows(); track row.index) {
+        @for (row of s.rows(); track row.id) {
           <div data-formancy-part="row">
             @for (instanceWire of row.wires; track instanceWire) {
               <formancy-field [path]="instanceWire" [fallbackLabel]="fallbackFor(instanceWire)" />
@@ -193,6 +195,10 @@ export class FormancyRepeaterSection implements OnInit {
       rows: computed(() =>
         Array.from({ length: repeater.rowCount() }, (_, index) => ({
           index,
+          // Identity, not position: removing a row renumbers everything after
+          // it, and tracking by index would make Angular reuse the wrong DOM
+          // nodes — moving focus and animating the wrong element.
+          id: repeater.rowIds()[index] ?? String(index),
           wires: this.engine.fieldPaths().filter((candidate) => candidate.startsWith(`${wire}[${index}]`)),
         })),
       ),

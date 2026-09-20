@@ -100,19 +100,20 @@ function renderConstants(oneOf) {
 const out = []
 
 out.push(`---
-title: Spec reference (v0)
+title: Spec reference (v1)
 description: Every property of a formancy form document, generated from the JSON Schema in packages/spec.
 ---
 
 :::note[This page is generated]
 Generated from \`packages/spec/formancy.schema.json\` (the JSON Schema for spec
-version 0) by \`apps/docs/scripts/generate-spec-reference.mjs\`. The schema is
+version 1) by \`apps/docs/scripts/generate-spec-reference.mjs\`. The schema is
 the source of truth — edit it, not this page.
 :::
 
-:::caution
-Spec version 0 is **unstable**. See [Versioning](/concepts/versioning/) for what
-that means and when it freezes.
+:::note
+Spec version 1 is **frozen**: a document that validates today keeps validating.
+See [Versioning](/concepts/versioning/) for how that relates to package
+versions, and for what happens when the spec eventually moves to 2.
 :::
 `)
 

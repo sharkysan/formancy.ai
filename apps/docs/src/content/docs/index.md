@@ -4,9 +4,9 @@ description: A self-hostable form engine, renderers and backend for React and An
 ---
 
 :::caution[Status: pre-alpha]
-formancy is pre-alpha software. The schema spec is `specVersion: "0"` and is
-**unstable**: it freezes to `"1"` once it has been proven against more than one
-framework. The packages are **not yet published to npm** — to try formancy
+formancy is pre-alpha software. The schema spec is `specVersion: "1"` and is
+**frozen** — documents written today keep working. The *packages* are still
+pre-alpha and their APIs will change. They are **not yet published to npm** — to try formancy
 today, clone the repository. The server has authentication and role-based
 authorization, but not yet rate limiting, anonymous-submission hardening or
 audit logging. Do not build on it yet, and do not deploy it anywhere public.

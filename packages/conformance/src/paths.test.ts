@@ -3,7 +3,7 @@ import { addItemCommand, fieldAtPath, pageKeys, removeItemCommand } from './path
 import type { ConformanceSchema } from './types.js'
 
 const nested: ConformanceSchema = {
-  specVersion: '0',
+  specVersion: '1',
   id: 'nested',
   title: 'Nested',
   model: {

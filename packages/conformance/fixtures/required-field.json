@@ -3,7 +3,7 @@
   "description": "Messages appear when the form is submitted, not while someone is still filling it in for the first time. Once a field has been told it is wrong, it re-validates as it is edited, so the message disappears the moment the value is good rather than at the next submit.",
   "tags": ["validation"],
   "schema": {
-    "specVersion": "0",
+    "specVersion": "1",
     "id": "contact",
     "title": "Contact us",
     "model": {

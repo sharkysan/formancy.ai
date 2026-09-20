@@ -75,13 +75,15 @@ may land in minors and are documented in `MIGRATIONS.md`.
 
 **The spec version** inside each document is independent, because it is the
 artifact with real switching costs — your forms and submissions are written
-against it. Packages 0.9 and 1.4 can both speak spec `"0"`.
+against it. Packages 0.9 and 1.4 can both speak spec `"1"`.
 
-Spec `"0"` is **unstable** by design while the model is being proven. The
-`i18n` and `layout` sections that were the last things holding the freeze are
-now in, so the remaining gate is Angular and React proving the model is not
-React-shaped — which the shared conformance suite now does. From v1 onward a
-spec bump is a major event,
+Spec **`"1"` is frozen.** A document that validates today will validate against
+every future release that speaks spec 1. It was deliberately shipped as `"0"`
+and unstable first, because three things about the model turned out to be
+undiscoverable without a renderer and a server in the loop: what happens to a
+hidden field's answer, how a repeating-group row keeps an identity that is not
+its position, and where a validation check runs. All three are settled, so the
+version froze. From here a spec bump is a major event,
 `@formancy/cli migrate` rewrites documents forward — and **submissions never
 migrate**. They stay bound to the exact version that produced them, which is
 what makes an old one auditable at all.

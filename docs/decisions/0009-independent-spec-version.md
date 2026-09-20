@@ -3,8 +3,8 @@
 - **Status:** accepted
 - **Date:** 2026-09-19
 - **Deciders:** Daniel Bacher
-- **Verified by:** `specVersion` is the literal type `'0'` in
-  `packages/spec/src/types.ts` and `"const": "0"` in
+- **Verified by:** `specVersion` is the literal type `'1'` in
+  `packages/spec/src/types.ts` and `"const": "1"` in
   `packages/spec/formancy.schema.json`, so the precompiled validator refuses a
   document claiming any other version; `diffSchemas` classifies a `specVersion`
   change as `breaking`, pinned by "a spec version bump is breaking" in
@@ -27,12 +27,12 @@ changelog rather than by looking at a number.
 One version number across all packages, moved together in the Angular and
 Vitest style, and a separate, independent version line for the spec, carried
 inside every document as `specVersion`. Packages 0.9 and 1.4 can both speak spec
-`"0"`.
+`"1"`.
 
-Spec `"0"` is deliberately unstable while the model is being proven. It freezes
-to `"1"` once the presentation sections exist
-([0014](0014-presentation-sections.md)) and Angular has shown the model is not
-React-shaped.
+Spec `"0"` shipped deliberately unstable while the model was being proven, and
+**froze to `"1"` on 2026-09-20** once its three open semantics were settled —
+see [0042](0042-freeze-the-spec.md), which records what they were and how each
+was answered.
 
 ## Consequences
 
@@ -50,10 +50,10 @@ in anyone's data.
 **What it forecloses.** Publishing the spec early. Three things about the model
 turned out to be undiscoverable without a renderer and a server in the loop:
 what happens to a hidden field's answer
-([0013](0013-hidden-field-semantics.md)), repeating-group item identity, and
-whether async validation runs before or after submit. So the spec was designed
-first and published last, and early adopters track an unstable `"0"` until the
-freeze.
+([0013](0013-hidden-field-semantics.md)), repeating-group item identity
+([0041](0041-repeater-row-identity.md)), and where a validation check runs
+([0043](0043-runs-on.md)). So the spec was designed first and published last,
+and the version stayed `"0"` until all three had answers.
 
 ## Alternatives considered
 

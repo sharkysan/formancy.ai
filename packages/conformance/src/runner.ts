@@ -5,6 +5,7 @@ import type {
   RendererDriver,
   SubmitResult,
 } from './driver.js'
+import { ROW_ID } from '@formancy/spec'
 import { BACK_COMMAND, NEXT_COMMAND, addItemCommand, removeItemCommand } from './paths.js'
 import type { Fixture, FixtureStep, StepKind } from './types.js'
 import { parseFixture, stepKind } from './validate.js'
@@ -214,6 +215,28 @@ export async function resolveDriver(
 }
 
 /**
+ * Row identities, removed before comparing a payload.
+ *
+ * A repeater row carries an `_id` so that stored data can say which row an
+ * answer belonged to. It is minted by the ENGINE, identically for every
+ * renderer, so making each fixture spell it out would add noise that tests
+ * nothing about the renderer under test — and would couple every fixture an
+ * outside author writes to the id scheme. The identities themselves are pinned
+ * by the engine's own tests.
+ */
+function withoutRowIds(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(withoutRowIds)
+  if (typeof value !== 'object' || value === null) return value
+
+  const out: Record<string, unknown> = {}
+  for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
+    if (key === ROW_ID) continue
+    out[key] = withoutRowIds(entry)
+  }
+  return out
+}
+
+/**
  * Throw what a test framework expects: the driver's own error for a crash, so
  * its stack survives, and a formatted assertion error for a failure.
  */
@@ -346,8 +369,12 @@ async function performStep(step: FixtureStep, context: RunContext): Promise<Mism
       }
     }
     const data = step.expectSubmit.data
-    if (data !== undefined && !structuralEqual(data, result.data)) {
-      return { detail: 'the submitted payload differs', expected: data, actual: result.data }
+    if (data !== undefined && !structuralEqual(data, withoutRowIds(result.data))) {
+      return {
+        detail: 'the submitted payload differs',
+        expected: data,
+        actual: withoutRowIds(result.data),
+      }
     }
     return undefined
   }

@@ -3,7 +3,7 @@
   "description": "Labels may be references into the message catalogue rather than literal strings. Everything a person reads — field labels, radio option labels — must resolve before it reaches the page. THE RULE of this suite is that fields are found by accessible name, so a renderer that leaked a message id, or an object, fails every step below without needing an assertion of its own.",
   "tags": ["i18n"],
   "schema": {
-    "specVersion": "0",
+    "specVersion": "1",
     "id": "translated",
     "title": "Translated",
     "model": {

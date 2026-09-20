@@ -1,28 +1,29 @@
 ---
-title: Spec reference (v0)
+title: Spec reference (v1)
 description: Every property of a formancy form document, generated from the JSON Schema in packages/spec.
 ---
 
 :::note[This page is generated]
 Generated from `packages/spec/formancy.schema.json` (the JSON Schema for spec
-version 0) by `apps/docs/scripts/generate-spec-reference.mjs`. The schema is
+version 1) by `apps/docs/scripts/generate-spec-reference.mjs`. The schema is
 the source of truth — edit it, not this page.
 :::
 
-:::caution
-Spec version 0 is **unstable**. See [Versioning](/concepts/versioning/) for what
-that means and when it freezes.
+:::note
+Spec version 1 is **frozen**: a document that validates today keeps validating.
+See [Versioning](/concepts/versioning/) for how that relates to package
+versions, and for what happens when the spec eventually moves to 2.
 :::
 
 ## The form document
 
-A formancy form, written against version 0 of the spec. The document holds the data contract only: what the form collects, and under what names. How it looks and when it appears are separate concerns, so the same form can have more than one presentation.
+A formancy form, written against version 1 of the spec. The document holds the data contract only: what the form collects, and under what names. How it looks and when it appears are separate concerns, so the same form can have more than one presentation.
 
 ### `specVersion`
 
-required · the constant `"0"` · default `"0"`
+required · the constant `"1"` · default `"1"`
 
-**Spec version.** Which version of the formancy spec this form is written against. Always "0" today. It is independent of the package version, and it only changes when the shape of the document changes.
+**Spec version.** Which version of the formancy spec this form is written against. Version 1 is frozen: a document that validates today will validate against every future release of the packages that speaks spec 1. It is independent of the package version, and it only changes when the shape of the document changes.
 
 ### `id`
 
@@ -260,6 +261,12 @@ optional · string · min length 1 · max length 64
 optional · value
 
 **Editor state.** What the visual rule editor last knew about this rule. Regenerated from "cel" when possible; never evaluated. The expression is the single source of truth.
+
+#### `runsOn`
+
+optional · one of `"both"`, `"client"`, `"server"` · default `"both"`
+
+**Runs on.** Where a validation check runs. Some checks only make sense in one place — a uniqueness check needs the database, a typing hint needs the keyboard. Only a validate rule may set this: if visibility or requiredness differed between the browser and the server, the server could no longer check what the browser did.
 
 ### Rule kinds
 

@@ -11,7 +11,7 @@
  */
 export interface FormSchema {
   /** Spec version, independent of package versions. */
-  specVersion: '0'
+  specVersion: '1'
   id: string
   title: string
   model: FormModel
@@ -54,6 +54,23 @@ export type LayoutNode =
 export interface FormModel {
   fields: FieldDef[]
 }
+
+/**
+ * The key under which a repeater row carries its identity.
+ *
+ * Rows need an identity that is not their position, because position is not
+ * stable: removing a row renumbers every row after it. It lives IN the row
+ * rather than beside it so that a stored submission is self-describing — an
+ * export or an audit read years later can still say which row an answer
+ * belonged to, without the engine that wrote it.
+ *
+ * The cost of that choice is this: `_id` is reserved, and no field may use it
+ * as a key. `validateSchema` refuses one that tries.
+ */
+export const ROW_ID = '_id'
+
+/** Minted ids are this prefix followed by a per-repeater counter. */
+export const ROW_ID_PREFIX = 'r'
 
 /**
  * The v0.1 field types. Deferred types keep their names reserved so adding
@@ -148,6 +165,9 @@ export interface FormLogic {
 
 export type RuleKind = 'visible' | 'disabled' | 'required' | 'computed' | 'validate'
 
+/** Where a validation rule runs. */
+export type RunsOn = 'both' | 'client' | 'server'
+
 export interface LogicRule {
   /** Data path of the field the rule applies to, e.g. `address.city` or `items[].qty`. */
   target: string
@@ -156,6 +176,18 @@ export interface LogicRule {
   cel: string
   /** validate only: the error code the field carries while the check fails. */
   code?: string
+  /**
+   * validate only: where this check runs. Defaults to `both`.
+   *
+   * Some checks cannot run in both places — a uniqueness check needs the
+   * database, a debounced hint needs the keyboard — and without a way to say
+   * so, an author writes the check twice and the two copies drift.
+   *
+   * Metadata rules deliberately cannot carry this. If visibility or
+   * requiredness could differ between client and server, the server's replay
+   * would stop being a check and become a second opinion.
+   */
+  runsOn?: RunsOn
   /** Regenerated visual-editor metadata. Never evaluated. */
   editor?: unknown
 }

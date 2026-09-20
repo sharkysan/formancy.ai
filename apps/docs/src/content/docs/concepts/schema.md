@@ -7,7 +7,7 @@ A form is one JSON document. Four things live in it, kept apart on purpose:
 
 ```jsonc
 {
-  "specVersion": "0",
+  "specVersion": "1",
   "id": "order",
   "title": "Order",
   "model":  { "fields": [ /* what the form collects */ ] },

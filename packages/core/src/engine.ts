@@ -1,5 +1,5 @@
 import type { FieldDef, FieldType, FormSchema, LogicRule, Text } from '@formancy/spec'
-import { resolveText } from '@formancy/spec'
+import { ROW_ID, ROW_ID_PREFIX, resolveText } from '@formancy/spec'
 import { captureCapabilities, compile, evaluate } from '@formancy/expressions'
 import type {
   Capabilities,
@@ -94,6 +94,14 @@ export interface FormEngineOptions {
    * locale; an unknown locale falls back to it rather than showing message ids.
    */
   locale?: string
+  /**
+   * Which side this engine is. Decides which `runsOn` validation rules apply;
+   * everything else behaves identically, because a replay that behaved
+   * differently would not be a check.
+   *
+   * Defaults to `client`, since that is where a form is filled in.
+   */
+  mode?: 'client' | 'server'
 }
 
 export interface FormEngine {
@@ -110,6 +118,12 @@ export interface FormEngine {
   rowCount(path: Path): number
   addRow(path: Path): void
   removeRow(path: Path, index: number): void
+  /**
+   * The stable identity of a row, which is NOT its position — removing a row
+   * renumbers everything after it. Renderers key on this so that focus and
+   * animation follow the row a person was working in.
+   */
+  rowId(path: Path, index: number): string
   pageOf(path: Path): number
   getFieldSnapshot(path: Path): FieldSnapshot
   setValue(path: Path, value: unknown): void
@@ -163,6 +177,11 @@ const NO_ERRORS: readonly string[] = Object.freeze([])
 /** Variables every row-scoped rule sees on top of the form's fields. */
 const ROW_VARIABLES: Record<string, DeclaredType> = { item: 'map', index: 'int' }
 
+/** The side a rule must be marked for in order NOT to run here. */
+function otherSide(mode: 'client' | 'server'): 'client' | 'server' {
+  return mode === 'client' ? 'server' : 'client'
+}
+
 export function createFormEngine(options: FormEngineOptions): FormEngine {
   const { schema } = options
 
@@ -211,6 +230,11 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
     }
   }
 
+  /** A row is an object unless something wrote the array by hand. */
+  function isRowObject(row: unknown): row is Record<string, unknown> {
+    return typeof row === 'object' && row !== null && !Array.isArray(row)
+  }
+
   function currentRowCount(repeater: RepeaterNode): number {
     const value = store.get(repeater.path)
     return Array.isArray(value) ? value.length : 0
@@ -219,6 +243,55 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
   function currentRows(repeater: RepeaterNode): readonly unknown[] {
     const value = store.get(repeater.path)
     return Array.isArray(value) ? value : []
+  }
+
+  /**
+   * One counter per repeater, monotonic for the engine's lifetime. It is never
+   * decremented on removal, so a deleted row's id is never reissued — a new row
+   * wearing a dead row's id would be indistinguishable from it in any export or
+   * audit trail that recorded the first.
+   *
+   * A counter rather than a random id because the engine has no ambient
+   * randomness to draw on (see docs/decisions/0019-injected-capabilities.md),
+   * and uniqueness is only ever needed within one repeater of one submission.
+   */
+  const rowIdCounters = new Map<string, number>()
+
+  function mintRowId(repeater: RepeaterNode): string {
+    const next = (rowIdCounters.get(repeater.wire) ?? 0) + 1
+    rowIdCounters.set(repeater.wire, next)
+    return `${ROW_ID_PREFIX}${String(next)}`
+  }
+
+  /**
+   * Give every row an id, keeping any that arrived with the data.
+   *
+   * Data written before rows had identity is not stranded: it is adopted on
+   * load. An id that IS present is kept, because a draft, a log or an export
+   * may already refer to it — and the counter is advanced past it so the next
+   * row cannot collide with what is already there.
+   */
+  function adoptRowIds(repeater: RepeaterNode): void {
+    const rows = currentRows(repeater)
+    if (rows.length === 0) return
+
+    let highest = rowIdCounters.get(repeater.wire) ?? 0
+    for (const row of rows) {
+      const existing = isRowObject(row) ? row[ROW_ID] : undefined
+      if (typeof existing !== 'string') continue
+      const suffix = existing.startsWith(ROW_ID_PREFIX)
+        ? Number.parseInt(existing.slice(ROW_ID_PREFIX.length), 10)
+        : Number.NaN
+      if (Number.isInteger(suffix) && suffix > highest) highest = suffix
+    }
+    rowIdCounters.set(repeater.wire, highest)
+
+    const adopted = rows.map((row) => {
+      const base = isRowObject(row) ? row : {}
+      if (typeof base[ROW_ID] === 'string') return row
+      return { ...base, [ROW_ID]: mintRowId(repeater) }
+    })
+    if (adopted.some((row, index) => row !== rows[index])) store.set(repeater.path, adopted)
   }
 
   /** Every field that exists RIGHT NOW: static fields plus one template
@@ -416,7 +489,12 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
     (entry) =>
       entry.rule.kind === 'visible' || entry.rule.kind === 'required' || entry.rule.kind === 'disabled',
   )
-  const validateRules = compiledRules.filter((entry) => entry.rule.kind === 'validate')
+  // A rule that does not run on this side is dropped at compile time rather
+  // than skipped at evaluation time, so it costs nothing per keystroke.
+  const mode = options.mode ?? 'client'
+  const validateRules = compiledRules.filter(
+    (entry) => entry.rule.kind === 'validate' && (entry.rule.runsOn ?? 'both') !== otherSide(mode),
+  )
   const validateByTemplateWire = new Map<string, CompiledRule[]>()
   for (const entry of validateRules) {
     const key = entry.row ? entry.row.templateWire : entry.rule.target
@@ -753,11 +831,14 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
   // and, under React StrictMode's double-invoked effects, a source of extra
   // rows nobody asked for.
   for (const repeater of repeaters) {
+    // Adopt first: a seeded row must not be handed an id that rows already in
+    // the data are using.
+    adoptRowIds(repeater)
+
     const minimum = repeater.def.minItems ?? 0
-    const existing = currentRowCount(repeater)
-    if (existing >= minimum) continue
-    const rows = Array.isArray(store.get(repeater.path)) ? [...(store.get(repeater.path) as unknown[])] : []
-    while (rows.length < minimum) rows.push({})
+    if (currentRowCount(repeater) >= minimum) continue
+    const rows = [...currentRows(repeater)]
+    while (rows.length < minimum) rows.push({ [ROW_ID]: mintRowId(repeater) })
     store.set(repeater.path, rows)
   }
 
@@ -775,8 +856,22 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
 
     addRow(path) {
       const repeater = requireRepeater(path)
-      const rows = store.get(repeater.path)
-      store.set(repeater.path, Array.isArray(rows) ? [...rows, {}] : [{}])
+      store.set(repeater.path, [...currentRows(repeater), { [ROW_ID]: mintRowId(repeater) }])
+    },
+
+    rowId(path, index) {
+      const repeater = requireRepeater(path)
+      const row = currentRows(repeater)[index]
+      if (row === undefined) {
+        throw new RangeError(`No row ${String(index)} in "${repeater.wire}"`)
+      }
+      const id = isRowObject(row) ? row[ROW_ID] : undefined
+      if (typeof id !== 'string') {
+        // adoptRowIds runs for every repeater at construction and addRow mints
+        // one, so a row without an id means something wrote the array directly.
+        throw new Error(`Row ${String(index)} of "${repeater.wire}" has no ${ROW_ID}`)
+      }
+      return id
     },
 
     removeRow(path, index) {

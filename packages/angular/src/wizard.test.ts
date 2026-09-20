@@ -14,7 +14,7 @@ afterEach(() => {
 })
 
 const paged: FormSchema = {
-  specVersion: '0',
+  specVersion: '1',
   id: 'signup',
   title: 'Sign up',
   model: {
@@ -36,7 +36,7 @@ const paged: FormSchema = {
 }
 
 const flat: FormSchema = {
-  specVersion: '0',
+  specVersion: '1',
   id: 'contact',
   title: 'Contact',
   model: { fields: [{ key: 'email', type: 'text', label: 'Email' }] },

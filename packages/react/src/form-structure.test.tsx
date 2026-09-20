@@ -9,7 +9,7 @@ afterEach(cleanup)
 
 describe('paged rendering', () => {
   const paged: FormSchema = {
-    specVersion: '0',
+    specVersion: '1',
     id: 'onboarding',
     title: 'Onboarding',
     model: {
@@ -62,7 +62,7 @@ describe('paged rendering', () => {
 
 describe('repeater rendering', () => {
   const withRows: FormSchema = {
-    specVersion: '0',
+    specVersion: '1',
     id: 'order',
     title: 'Order',
     model: {
@@ -122,7 +122,7 @@ describe('repeater rendering', () => {
 
 describe('repeater schema chrome', () => {
   const seeded = {
-    specVersion: '0',
+    specVersion: '1',
     id: 'crm',
     title: 'CRM',
     model: {

@@ -7,7 +7,7 @@ import { FormancyProvider, useField, useRepeater, useSubmit, useWizard } from '.
 afterEach(cleanup)
 
 const schema: FormSchema = {
-  specVersion: '0',
+  specVersion: '1',
   id: 'order',
   title: 'Order',
   model: {

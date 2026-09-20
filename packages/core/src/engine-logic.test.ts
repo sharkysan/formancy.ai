@@ -6,7 +6,7 @@ import type { FormEngineOptions } from './engine.js'
 const FIXED_CLOCK = { now: () => 1_726_000_000_000, today: () => '2026-09-19', random: () => 0.5 }
 
 const schema: FormSchema = {
-  specVersion: '0',
+  specVersion: '1',
   id: 'order',
   title: 'Order',
   model: {
@@ -168,7 +168,7 @@ describe('compile-time gates', () => {
  */
 describe('an expression that fails at runtime', () => {
   const brittle: FormSchema = {
-    specVersion: '0',
+    specVersion: '1',
     id: 'brittle',
     title: 'Brittle',
     model: {
@@ -239,5 +239,59 @@ describe('an expression that fails at runtime', () => {
 
     expect(engine.getFieldSnapshot(['shown']).visible).toBe(true)
     expect(outcome.ok).toBe(false)
+  })
+})
+
+/**
+ * `runsOn` exists because some checks cannot run in both places. A uniqueness
+ * check needs the database; a debounced hint needs the keyboard. Without a way
+ * to say which, an author writes the check twice — which is the duplicated,
+ * drifting logic this project exists to prevent.
+ *
+ * It applies to `validate` rules only. Metadata rules must run identically in
+ * both places or the server's replay stops being a check at all, so the spec
+ * refuses `runsOn` on anything else.
+ */
+describe('runsOn', () => {
+  const sided: FormSchema = {
+    specVersion: '1',
+    id: 'sided',
+    title: 'Sided',
+    model: { fields: [{ key: 'email', type: 'text' }] },
+    logic: {
+      rules: [
+        { target: 'email', kind: 'validate', cel: 'false', code: 'everywhere' },
+        { target: 'email', kind: 'validate', cel: 'false', code: 'clientOnly', runsOn: 'client' },
+        { target: 'email', kind: 'validate', cel: 'false', code: 'serverOnly', runsOn: 'server' },
+      ],
+    },
+  }
+
+  const codesIn = (mode: 'client' | 'server' | undefined): string[] => {
+    const engine = createFormEngine({
+      schema: sided,
+      capabilities: FIXED_CLOCK,
+      ...(mode === undefined ? {} : { mode }),
+    } satisfies FormEngineOptions)
+    return engine.validate().errors['email'] ?? []
+  }
+
+  test('an unmarked rule runs in both places', () => {
+    expect(codesIn('client')).toContain('everywhere')
+    expect(codesIn('server')).toContain('everywhere')
+  })
+
+  test('a client-only rule does not run on the server', () => {
+    expect(codesIn('client')).toContain('clientOnly')
+    expect(codesIn('server')).not.toContain('clientOnly')
+  })
+
+  test('a server-only rule does not run on the client', () => {
+    expect(codesIn('server')).toContain('serverOnly')
+    expect(codesIn('client')).not.toContain('serverOnly')
+  })
+
+  test('the default is the client, because that is where a form is filled in', () => {
+    expect(codesIn(undefined)).toEqual(codesIn('client'))
   })
 })

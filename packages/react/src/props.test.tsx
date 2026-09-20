@@ -7,7 +7,7 @@ import { FormancyProvider, useField } from './index.js'
 afterEach(cleanup)
 
 const schema: FormSchema = {
-  specVersion: '0',
+  specVersion: '1',
   id: 'contact',
   title: 'Contact',
   model: { fields: [{ key: 'email', type: 'text', required: true }] },

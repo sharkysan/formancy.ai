@@ -5,7 +5,7 @@ import { FixtureError, parseFixture, stepKind, validateFixture } from './validat
 const minimal = {
   name: 'a minimal fixture',
   schema: {
-    specVersion: '0',
+    specVersion: '1',
     id: 'contact',
     title: 'Contact us',
     model: { fields: [{ key: 'email', type: 'text', label: 'Email' }] },
@@ -21,7 +21,7 @@ function revise(edit: (draft: Record<string, unknown>) => void): unknown {
   return draft
 }
 const nested: ConformanceSchema = {
-  specVersion: '0',
+  specVersion: '1',
   id: 'nested',
   title: 'Nested',
   model: {
@@ -115,7 +115,7 @@ describe('validateFixture rejects', () => {
   })
 
   test('a schema without the fields array', () => {
-    const problems = problemsOf(revise((draft) => (draft['schema'] = { specVersion: '0' })))
+    const problems = problemsOf(revise((draft) => (draft['schema'] = { specVersion: '1' })))
     expect(problems).toContain('schema.model: expected an object, got undefined')
   })
 

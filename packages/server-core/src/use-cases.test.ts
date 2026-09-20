@@ -5,7 +5,7 @@ import type { ServerDeps } from './use-cases.js'
 import { createMemoryStorage } from './testing/memory-storage.js'
 
 const schema: FormSchema = {
-  specVersion: '0',
+  specVersion: '1',
   id: 'contact',
   title: 'Contact',
   model: {
@@ -289,7 +289,10 @@ describe('exportCsv', () => {
     const csv = await exportCsv(deps, 'orders')
 
     expect(csv!.split('\n')[0]).toContain('items')
-    expect(csv).toContain('"[{""name"":""x""}]"')
+    // The row carries its _id into the export on purpose: an export read years
+    // later should still be able to say which row an answer belonged to, which
+    // is the whole reason the id lives in the data rather than beside it.
+    expect(csv).toContain('"[{""name"":""x"",""_id"":""r1""}]"')
   })
 })
 
@@ -361,9 +364,11 @@ describe('drafts', () => {
     if (!v1.ok) throw new Error('publish failed')
     await saveDraft(deps, { path: 'contact-us', draftId: 'd1', data: { email: 'wip@b.ch' } })
 
-    const breaking = { ...schema, specVersion: '1' } as unknown as typeof schema
-    // A spec bump would not validate today; force a breaking change through the
-    // storage layer the way a future spec migration would.
+    // Spec 1 is frozen, so a bump is the one change that is breaking by
+    // definition. It cannot be published through validateSchema — there is no
+    // spec 2 — so it goes in through the storage layer the way a future spec
+    // migration would put it there.
+    const breaking = { ...schema, specVersion: '2' } as unknown as typeof schema
     const form = await deps.storage.getFormByPath('contact-us')
     await deps.storage.insertVersion({
       id: 'v-breaking',

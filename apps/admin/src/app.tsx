@@ -77,7 +77,7 @@ export function App() {
 const NEW_FORM_TEMPLATE = (path: string) =>
   JSON.stringify(
     {
-      specVersion: '0',
+      specVersion: '1',
       id: path,
       title: path,
       model: { fields: [{ key: 'email', type: 'text', label: 'Email', required: true }] },

@@ -3,7 +3,7 @@ import type { FormSchema } from '@formancy/spec'
 import { createFormEngine } from './engine.js'
 
 const schema: FormSchema = {
-  specVersion: '0',
+  specVersion: '1',
   id: 'order',
   title: 'Order',
   model: {
@@ -160,7 +160,7 @@ describe('repeaters accessor', () => {
 
 describe('minItems', () => {
   const seeded: FormSchema = {
-    specVersion: '0',
+    specVersion: '1',
     id: 'crm',
     title: 'CRM',
     model: {
@@ -211,5 +211,117 @@ describe('minItems', () => {
   test('a repeater without minItems still opens empty', () => {
     const engine = createFormEngine({ schema })
     expect(engine.rowCount(['items'])).toBe(0)
+  })
+})
+
+/**
+ * A row needs an identity that is not its position, because its position is not
+ * stable: removing row 0 renumbers every row after it. Renderers keyed by index
+ * therefore move focus to the wrong control and animate the wrong element, and
+ * — the reason this belongs in the DATA rather than in a renderer — a stored
+ * submission has no way to say which row an answer belonged to.
+ *
+ * See docs/decisions/0041-repeater-row-identity.md.
+ */
+describe('row identity', () => {
+  const ids = (engine: ReturnType<typeof createFormEngine>): unknown[] =>
+    (engine.value() as { items?: Array<{ _id?: unknown }> }).items?.map((row) => row._id) ?? []
+
+  test('a new row is born with an id', () => {
+    const engine = createFormEngine({ schema })
+    engine.addRow(['items'])
+
+    expect(engine.rowId(['items'], 0)).toMatch(/^r\d+$/)
+    expect(ids(engine)).toEqual([engine.rowId(['items'], 0)])
+  })
+
+  test('ids are distinct within a repeater', () => {
+    const engine = createFormEngine({ schema })
+    engine.addRow(['items'])
+    engine.addRow(['items'])
+    engine.addRow(['items'])
+
+    expect(new Set(ids(engine)).size).toBe(3)
+  })
+
+  test('removing a row does not renumber the rows after it', () => {
+    const engine = createFormEngine({ schema })
+    engine.addRow(['items'])
+    engine.addRow(['items'])
+    engine.addRow(['items'])
+    const [, second, third] = ids(engine)
+
+    engine.removeRow(['items'], 0)
+
+    // The whole point: the surviving rows keep the identity they had, even
+    // though both have moved down one position.
+    expect(ids(engine)).toEqual([second, third])
+    expect(engine.rowId(['items'], 0)).toBe(second)
+  })
+
+  test('a removed row never has its id reissued', () => {
+    const engine = createFormEngine({ schema })
+    engine.addRow(['items'])
+    const first = engine.rowId(['items'], 0)
+    engine.removeRow(['items'], 0)
+    engine.addRow(['items'])
+
+    // Reusing it would make a new row indistinguishable from a deleted one in
+    // any log, export or audit trail that recorded the first.
+    expect(engine.rowId(['items'], 0)).not.toBe(first)
+  })
+
+  test('rows seeded to satisfy minItems get ids too', () => {
+    const seeded = createFormEngine({
+      schema: {
+        ...schema,
+        model: {
+          fields: [
+            { key: 'customer', type: 'text' },
+            {
+              key: 'items',
+              type: 'repeater',
+              minItems: 2,
+              fields: [{ key: 'name', type: 'text' }],
+            },
+          ],
+        },
+      },
+    })
+
+    expect(ids(seeded)).toHaveLength(2)
+    expect(new Set(ids(seeded)).size).toBe(2)
+  })
+
+  test('rows that arrive without an id are given one, so old data is not stranded', () => {
+    const engine = createFormEngine({
+      schema,
+      initialValue: { items: [{ name: 'a' }, { name: 'b' }] },
+    })
+
+    expect(new Set(ids(engine)).size).toBe(2)
+  })
+
+  test('an id that arrives with the data is kept, because something may reference it', () => {
+    const engine = createFormEngine({
+      schema,
+      initialValue: { items: [{ _id: 'r7', name: 'a' }] },
+    })
+    engine.addRow(['items'])
+
+    expect(engine.rowId(['items'], 0)).toBe('r7')
+    // And the next id must clear the one already in the data rather than
+    // starting from scratch and colliding with it.
+    expect(engine.rowId(['items'], 1)).not.toBe('r7')
+  })
+
+  test('_id is not a field, so it is neither validated nor rendered', () => {
+    const engine = createFormEngine({ schema })
+    engine.addRow(['items'])
+
+    expect(engine.fieldPaths()).not.toContain('items[0]._id')
+    expect(engine.validate().errors).not.toHaveProperty('items[0]._id')
+    // The row's own field still validates, so the row is not being skipped.
+    expect(Object.keys(engine.validate().errors)).toContain('items[0].name')
   })
 })

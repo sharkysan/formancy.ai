@@ -4,7 +4,7 @@ import type { FormSchema } from './types.js'
 import { validateSchema } from './validate.js'
 
 const withI18n: FormSchema = {
-  specVersion: '0',
+  specVersion: '1',
   id: 'contact',
   title: 'Contact',
   model: {
@@ -41,7 +41,7 @@ describe('the i18n section', () => {
 
   test('rejects a reference when there is no i18n section at all', () => {
     const result = validateSchema({
-      specVersion: '0',
+      specVersion: '1',
       id: 'f',
       title: 'T',
       model: { fields: [{ key: 'a', type: 'text', label: { $t: 'a.label' } }] },
@@ -88,7 +88,7 @@ describe('resolveText', () => {
 })
 
 const withLayout: FormSchema = {
-  specVersion: '0',
+  specVersion: '1',
   id: 'order',
   title: 'Order',
   model: {

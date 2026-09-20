@@ -49,9 +49,9 @@ it.
 | `publint` + `attw` + `size-limit` | `pnpm check:pkg` | The commonest cause of "it doesn't work in my app" for a multi-framework library |
 | Typecheck with no `@types/node` in the isomorphic packages | `pnpm typecheck` | The layer boundary holds |
 
-At the commit these documents describe: **793 automated tests** across eight
-packages, plus 21 integration tests against PostgreSQL. Per package — spec 109,
-expressions 189, core 210, conformance 115, react 52, builder-core 51, angular
+At the commit these documents describe: **808 automated tests** across eight
+packages, plus 21 integration tests against PostgreSQL. Per package — spec 112,
+expressions 189, core 222, conformance 115, react 52, builder-core 51, angular
 34, server-core 33.
 
 ## 10.3 The driver interface is the accessibility contract

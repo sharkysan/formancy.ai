@@ -4,7 +4,7 @@ import { modelDataPaths } from './paths.js'
 import { validateSchema } from './validate.js'
 
 const base: FormSchema = {
-  specVersion: '0',
+  specVersion: '1',
   id: 'f',
   title: 'T',
   model: {
@@ -101,7 +101,7 @@ describe('logic section validation', () => {
 describe('v0 presentation-lite properties', () => {
   test('a labelled field with options, add/remove labels and minItems validates', () => {
     const document: FormSchema = {
-      specVersion: '0',
+      specVersion: '1',
       id: 'order',
       title: 'Order',
       model: {
@@ -134,7 +134,7 @@ describe('v0 presentation-lite properties', () => {
 
   test('options on a non-choice field are rejected', () => {
     const result = validateSchema({
-      specVersion: '0',
+      specVersion: '1',
       id: 'f',
       title: 'T',
       model: {
@@ -147,7 +147,7 @@ describe('v0 presentation-lite properties', () => {
 
   test('an option needs both value and label', () => {
     const result = validateSchema({
-      specVersion: '0',
+      specVersion: '1',
       id: 'f',
       title: 'T',
       model: { fields: [{ key: 'a', type: 'select', options: [{ value: 'x' }] }] },
@@ -160,7 +160,7 @@ describe('v0 presentation-lite properties', () => {
 describe('v0.1 model validators', () => {
   test('numeric bounds on a number field, text bounds and pattern and format on text fields', () => {
     const document: FormSchema = {
-      specVersion: '0',
+      specVersion: '1',
       id: 'f',
       title: 'T',
       model: {
@@ -179,7 +179,7 @@ describe('v0.1 model validators', () => {
 
   test('numeric bounds on a text field are rejected', () => {
     const result = validateSchema({
-      specVersion: '0',
+      specVersion: '1',
       id: 'f',
       title: 'T',
       model: { fields: [{ key: 'a', type: 'text', min: 1 }] },
@@ -189,7 +189,7 @@ describe('v0.1 model validators', () => {
 
   test('an unknown format is rejected', () => {
     const result = validateSchema({
-      specVersion: '0',
+      specVersion: '1',
       id: 'f',
       title: 'T',
       model: { fields: [{ key: 'a', type: 'text', format: 'phone' }] },
@@ -199,7 +199,7 @@ describe('v0.1 model validators', () => {
 
   test('a pattern that is not a valid regular expression is rejected semantically', () => {
     const result = validateSchema({
-      specVersion: '0',
+      specVersion: '1',
       id: 'f',
       title: 'T',
       model: { fields: [{ key: 'a', type: 'text', pattern: '([' }] },
@@ -215,7 +215,7 @@ describe('v0.1 model validators', () => {
 describe('pages are top-level only', () => {
   test('a page inside a group is rejected — a wizard step is not a data container', () => {
     const result = validateSchema({
-      specVersion: '0',
+      specVersion: '1',
       id: 'f',
       title: 'T',
       model: {
@@ -237,7 +237,7 @@ describe('pages are top-level only', () => {
 
   test('a page inside a repeater is rejected too', () => {
     const result = validateSchema({
-      specVersion: '0',
+      specVersion: '1',
       id: 'f',
       title: 'T',
       model: {
@@ -256,7 +256,7 @@ describe('pages are top-level only', () => {
 
   test('a page at the top level is fine, and so is a group inside it', () => {
     const result = validateSchema({
-      specVersion: '0',
+      specVersion: '1',
       id: 'f',
       title: 'T',
       model: {
@@ -271,5 +271,42 @@ describe('pages are top-level only', () => {
     })
 
     expect(result.valid).toBe(true)
+  })
+})
+
+describe('runsOn', () => {
+  const withRule = (rule: Record<string, unknown>): FormSchema =>
+    ({
+      specVersion: '1',
+      id: 'f',
+      title: 'F',
+      model: { fields: [{ key: 'email', type: 'text' }] },
+      logic: { rules: [rule] },
+    }) as unknown as FormSchema
+
+  test('a validate rule may choose where it runs', () => {
+    const result = validateSchema(
+      withRule({ target: 'email', kind: 'validate', cel: 'true', code: 'x', runsOn: 'server' }),
+    )
+
+    expect(result.valid).toBe(true)
+  })
+
+  test('a metadata rule may not, because the server could no longer check the client', () => {
+    const result = validateSchema(
+      withRule({ target: 'email', kind: 'visible', cel: 'true', runsOn: 'client' }),
+    )
+
+    expect(result.valid).toBe(false)
+    if (result.valid) throw new Error('unreachable')
+    expect(result.errors.map((error) => error.path)).toContain('/logic/rules/0/runsOn')
+  })
+
+  test('an unknown side is refused by the schema itself', () => {
+    const result = validateSchema(
+      withRule({ target: 'email', kind: 'validate', cel: 'true', code: 'x', runsOn: 'nowhere' }),
+    )
+
+    expect(result.valid).toBe(false)
   })
 })

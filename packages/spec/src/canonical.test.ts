@@ -4,8 +4,8 @@ import { canonicalize } from './canonical.js'
 
 describe('canonicalize', () => {
   test('produces identical output for objects differing only in key order', () => {
-    const a = { title: 'Contact', model: { fields: [] }, specVersion: '0' }
-    const b = { specVersion: '0', model: { fields: [] }, title: 'Contact' }
+    const a = { title: 'Contact', model: { fields: [] }, specVersion: '1' }
+    const b = { specVersion: '1', model: { fields: [] }, title: 'Contact' }
 
     expect(canonicalize(a)).toBe(canonicalize(b))
   })

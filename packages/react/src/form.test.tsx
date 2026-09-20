@@ -9,7 +9,7 @@ afterEach(cleanup)
 const CLOCK = { now: () => 0, today: () => '2026-09-19', random: () => 0.5 }
 
 const schema: FormSchema = {
-  specVersion: '0',
+  specVersion: '1',
   id: 'contact',
   title: 'Contact',
   model: {

@@ -5,7 +5,7 @@ import { createFormEngine } from './engine.js'
 const FIXED_CLOCK = { now: () => 1_726_000_000_000, today: () => '2026-09-19', random: () => 0.5 }
 
 const schema: FormSchema = {
-  specVersion: '0',
+  specVersion: '1',
   id: 'invoice',
   title: 'Invoice',
   model: {

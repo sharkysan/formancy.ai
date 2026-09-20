@@ -7,7 +7,7 @@ import type { ConformanceSchema, Fixture } from './types.js'
 import { createFakeDriver } from './testing/fake-driver.js'
 
 const contact: ConformanceSchema = {
-  specVersion: '0',
+  specVersion: '1',
   id: 'contact',
   title: 'Contact us',
   model: { fields: [{ key: 'email', type: 'text', label: 'Email', required: true }] },

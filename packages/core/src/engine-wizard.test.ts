@@ -3,7 +3,7 @@ import type { FormSchema } from '@formancy/spec'
 import { createFormEngine } from './engine.js'
 
 const paged: FormSchema = {
-  specVersion: '0',
+  specVersion: '1',
   id: 'onboarding',
   title: 'Onboarding',
   model: {

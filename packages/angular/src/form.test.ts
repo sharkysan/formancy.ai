@@ -21,7 +21,7 @@ afterEach(() => {
 })
 
 function flatSchema(fields: FormSchema['model']['fields']): FormSchema {
-  return { specVersion: '0', id: 'test', title: 'Test', model: { fields } }
+  return { specVersion: '1', id: 'test', title: 'Test', model: { fields } }
 }
 
 async function renderForm(engine: FormEngine, options?: Parameters<typeof render>[1]) {

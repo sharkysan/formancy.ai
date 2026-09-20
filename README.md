@@ -2,7 +2,7 @@
 
 A modern, self-hostable form engine, visual builder and backend — for React and Angular.
 
-> **Status: pre-alpha.** The schema spec is `specVersion: "0"` and is *unstable*. It
+> **Status: pre-alpha.** The schema spec is `specVersion: "1"` and is *unstable*. It
 > freezes to `"1"` once the Angular renderer has proved the model is not React-shaped.
 > Do not build on it yet.
 

@@ -8,7 +8,7 @@ import type { SchemaError, ValidationResult } from './validate.js'
 import { validateSchema } from './validate.js'
 
 const contactForm: FormSchema = {
-  specVersion: '0',
+  specVersion: '1',
   id: 'contact-us',
   title: 'Contact us',
   model: {
@@ -251,7 +251,7 @@ function arbField(depth: number): fc.Arbitrary<FieldDef> {
 
 const arbDocument = fc
   .record({
-    specVersion: fc.constant('0' as const),
+    specVersion: fc.constant('1' as const),
     id: fc.constantFrom('contact-us', 'expense.claim', 'f_1'),
     title: fc.string({ minLength: 1, maxLength: 20 }),
     fields: fc.array(arbField(2), { maxLength: 4 }),
@@ -296,7 +296,7 @@ describe('validateSchema, canonicalize and schemaHash together', () => {
 describe('renamedFrom uniqueness across fields', () => {
   test('two fields claiming the same dead key is rejected — a migration cannot map one column into two', () => {
     const result = validateSchema({
-      specVersion: '0',
+      specVersion: '1',
       id: 'f',
       title: 'T',
       model: {
@@ -318,7 +318,7 @@ describe('renamedFrom uniqueness across fields', () => {
 describe('error folding with several broken fields', () => {
   test('each bad field type lists the allowed values exactly once', () => {
     const result = validateSchema({
-      specVersion: '0',
+      specVersion: '1',
       id: 'f',
       title: 'T',
       model: {

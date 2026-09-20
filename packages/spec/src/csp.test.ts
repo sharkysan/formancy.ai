@@ -29,7 +29,7 @@ describe('the validator under a strict CSP', () => {
   test('validateSchema still behaves identically through the precompiled path', () => {
     expect(
       validateSchema({
-        specVersion: '0',
+        specVersion: '1',
         id: 'f',
         title: 'T',
         model: { fields: [{ key: 'email', type: 'text' }] },

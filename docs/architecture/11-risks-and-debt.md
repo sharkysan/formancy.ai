@@ -61,9 +61,7 @@ defect would be most costly.
 
 | Debt | Why it exists | What it costs |
 |---|---|---|
-| **Spec version 0 is unstable** | Three properties were undiscoverable without a renderer and a server in the loop | Anyone building on it now may have to migrate documents |
-| **Repeater rows carry no identity** | Never settled; `addRow` pushes `{}` and both renderers key by index | **Blocks the spec freeze** — see below |
-| **`runsOn` and `async` are not reserved** | Intended to be, and were not | `logicRule` is `additionalProperties: false`, so adding either is a spec bump rather than an additive change |
+| **Async validators do not exist** | Deferred; they need a new rule kind, which is a spec 2 change | The version line exists for it, and `runsOn` is in place so the ordering question can be answered without restructuring ([0043](../decisions/0043-runs-on.md)) |
 | **`recheck` pattern linting is designed, not implemented** | Deferred past the walking skeleton | A form author's regular expression can still hang the server ([SAFETY-ANALYSIS D3](../regulatory/SAFETY-ANALYSIS.md)) |
 | **Rate limiter store is per-process** | `@fastify/rate-limit`'s default | Wrong behind more than one replica; documented rather than fixed |
 | **No server container image** | Distribution work not started | `docker compose up` gives a database, not a product |
@@ -103,30 +101,27 @@ arbitrary in six months, which is why it is written down.
 of [0002](../decisions/0002-apache-2-0.md), accepted on purpose; the answer is
 the open-core line, not a licence restriction.
 
-## 11.4 What the spec freeze is actually waiting on
+## 11.4 The spec freeze, and what it locked in
 
-The plan named three things as undiscoverable without a renderer and a server
-in the loop, and therefore as the reasons to ship `specVersion: "0"` and freeze
-later. Their current state:
+The spec froze to `"1"` on 2026-09-20 ([0042](../decisions/0042-freeze-the-spec.md)).
+All three of the semantics it was waiting on were settled first: hidden-field
+answers ([0013](../decisions/0013-hidden-field-semantics.md)), repeater row
+identity ([0041](../decisions/0041-repeater-row-identity.md)) and where a
+validation check runs ([0043](../decisions/0043-runs-on.md)).
 
-| Gate | State |
-|---|---|
-| What happens to a hidden field's answer | **Settled.** `clearOnHide`, specified, property-tested, and applied identically on the server ([0013](../decisions/0013-hidden-field-semantics.md)) |
-| Repeating-group item identity | **Not settled.** Settled by default as *no identity*, which is the answer the design argued against |
-| Async validation versus submit ordering | **Not settled**, because async validators do not exist |
+That converts several open questions into locked-in bets. The ones worth
+knowing about, because they are now expensive to revisit:
 
-Row identity is the one that blocks. It is a question about the shape of stored
-data, not about rendering: a row is `{}` today, and giving rows a generated id
-later adds a key to every row of every submission already collected. After the
-freeze that is a migration of user data or a permanently dual-shaped reader.
-Before it, it is a decision.
+- **A page contributes nothing to a data path**
+  ([0012](../decisions/0012-pages-scope-nothing.md)). Moving a field between
+  pages never moves data, and that is now permanent.
+- **`_id` is reserved** and no field may use it
+  ([0041](../decisions/0041-repeater-row-identity.md)).
+- **CEL is the expression language** ([0016](../decisions/0016-cel.md)), with
+  its 118 known corpus gaps.
 
-Keying by index also has a present-tense cost the design predicted — removing a
-row renumbers every row after it, which moves focus and breaks animations.
-
-The other two are cheaper. Reserving `runsOn` and `async` as optional
-properties with safe defaults is a small change that makes the async ordering
-question answerable at v2 instead of forcing a v2 to ask it.
+The packages are **not** frozen and are nowhere near 1.0. Conflating the two is
+the likeliest misreading of the freeze.
 
 ## 11.5 Open decisions
 

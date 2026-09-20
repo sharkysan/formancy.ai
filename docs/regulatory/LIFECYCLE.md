@@ -15,7 +15,7 @@ quality management system, and this is not a claim of IEC 62304 conformity.**
 | §5.2 Software requirements analysis | Partially | Requirements exist as the spec, the conformance fixtures and the quality budgets; not as a numbered requirements list |
 | §5.3 Software architectural design | **Yes** | [the architecture documents](../architecture/01-introduction-and-goals.md) and [`../decisions/`](../decisions/) |
 | §5.4 Software detailed design | Partially | In code and in comments, which are unusually dense about *why*; no separate detailed design documents |
-| §5.5 Unit implementation and verification | **Yes** | Test-first development; 793 automated tests |
+| §5.5 Unit implementation and verification | **Yes** | Test-first development; 808 automated tests |
 | §5.6 Software integration and integration testing | **Yes** | Conformance suite across five implementations; integration tests against real PostgreSQL |
 | §5.7 Software system testing | Partially | End-to-end verification performed manually and recorded; not automated end-to-end |
 | §5.8 Software release | **No** | Nothing has been released |
@@ -94,7 +94,7 @@ Each gate exists for a reason that was paid for at least once:
 - **`typecheck`** — carries part of the architecture. The isomorphic packages
   have no `@types/node`, so a Node import is a compile error rather than a
   review finding ([0008](../decisions/0008-layered-packages.md)).
-- **`test`** — 793 tests plus, locally and in the integration job, 21 against a
+- **`test`** — 808 tests plus, locally and in the integration job, 21 against a
   real PostgreSQL instance through Testcontainers. Versioning defects only
   manifest against real SQL semantics, so a mocked database would not find
   them.
@@ -125,11 +125,17 @@ compilation at ≈1.7 ms against a 30 ms budget.
 ## Change control on the data format
 
 The spec carries its own version, independent of the packages
-([0009](../decisions/0009-independent-spec-version.md)). Version `"0"` is
-declared unstable and may change. From `"1"` onward a spec change is a major
-event, documents are rewritten forward by an explicit migration, and
+([0009](../decisions/0009-independent-spec-version.md)). Version `"1"` is
+**frozen** as of 2026-09-20 ([0042](../decisions/0042-freeze-the-spec.md)): a
+document that validates today keeps validating. A spec change from here is a
+major event, documents are rewritten forward by an explicit migration, and
 **submissions never migrate** — they stay bound to the version that produced
 them.
+
+The three semantics the freeze waited on are themselves an example of the
+lifecycle working: each was a question that could only be answered by building
+the renderer and server that would reveal it, and each was answered before the
+version was committed to rather than guessed at beforehand.
 
 Breaking changes before 1.0 may land in minor releases and are documented in
 `MIGRATIONS.md`.

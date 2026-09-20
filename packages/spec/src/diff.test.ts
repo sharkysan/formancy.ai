@@ -4,7 +4,7 @@ import { diffSchemas } from './diff.js'
 import type { FormSchema } from './types.js'
 
 const base: FormSchema = {
-  specVersion: '0',
+  specVersion: '1',
   id: 'contact',
   title: 'Contact us',
   model: {
@@ -137,7 +137,11 @@ describe('diffSchemas severity', () => {
   })
 
   test('a spec version bump is breaking', () => {
-    const after = { ...clone(base), specVersion: '1' as unknown as '0' }
+    // Spec 1 is frozen and there is no spec 2, so this reaches past the type to
+    // construct one. The rule has to exist before the version it guards does:
+    // finding out that a bump was silently compatible AFTER shipping spec 2
+    // would mean finding out in somebody's data.
+    const after = { ...clone(base), specVersion: '2' as unknown as '1' }
 
     expect(diffSchemas(base, after)).toContainEqual(
       expect.objectContaining({ kind: 'specVersion.changed', severity: 'breaking' }),
@@ -166,7 +170,7 @@ const arbField = fc.record(
 
 const arbSchema = fc
   .record({
-    specVersion: fc.constant('0' as const),
+    specVersion: fc.constant('1' as const),
     id: fc.string({ minLength: 1, maxLength: 8 }),
     title: fc.string({ maxLength: 20 }),
     fields: fc.uniqueArray(arbField, { maxLength: 8, selector: (f) => f.key }),
@@ -197,7 +201,7 @@ describe('diffSchemas invariants', () => {
 
 describe('diffSchemas inside containers', () => {
   const nested: FormSchema = {
-    specVersion: '0',
+    specVersion: '1',
     id: 'f',
     title: 'T',
     model: {
@@ -293,7 +297,7 @@ describe('diffSchemas inside containers', () => {
 
 describe('diffSchemas and pages', () => {
   const paged: FormSchema = {
-    specVersion: '0',
+    specVersion: '1',
     id: 'f',
     title: 'T',
     model: {

@@ -14,7 +14,7 @@ import type { FormSchema } from '@formancy/spec'
 import { injectField, provideFormancy } from './index'
 
 const schema: FormSchema = {
-  specVersion: '0',
+  specVersion: '1',
   id: 'contact',
   title: 'Contact',
   model: {

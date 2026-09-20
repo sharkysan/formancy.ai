@@ -3,7 +3,7 @@
   "description": "A field nobody can see is a field nobody can fix, so a hidden field is not validated: `state` is required and invisible in Switzerland, and must not block submit. Switching country moves the requirement rather than adding to it.",
   "tags": ["visibility", "validation"],
   "schema": {
-    "specVersion": "0",
+    "specVersion": "1",
     "id": "address",
     "title": "Where do you live?",
     "model": {

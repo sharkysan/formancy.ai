@@ -14,7 +14,7 @@ export const builtinFixtures: readonly Fixture[] = [
       'calculation',
     ],
     schema: {
-      specVersion: '0',
+      specVersion: '1',
       id: 'quote',
       title: 'Request a quote',
       model: {
@@ -102,7 +102,7 @@ export const builtinFixtures: readonly Fixture[] = [
       'data',
     ],
     schema: {
-      specVersion: '0',
+      specVersion: '1',
       id: 'order',
       title: 'Place an order',
       model: {
@@ -203,7 +203,7 @@ export const builtinFixtures: readonly Fixture[] = [
       'validation',
     ],
     schema: {
-      specVersion: '0',
+      specVersion: '1',
       id: 'address',
       title: 'Where do you live?',
       model: {
@@ -334,7 +334,7 @@ export const builtinFixtures: readonly Fixture[] = [
       'validation',
     ],
     schema: {
-      specVersion: '0',
+      specVersion: '1',
       id: 'team',
       title: 'Who should we contact?',
       model: {
@@ -484,7 +484,7 @@ export const builtinFixtures: readonly Fixture[] = [
       'validation',
     ],
     schema: {
-      specVersion: '0',
+      specVersion: '1',
       id: 'contact',
       title: 'Contact us',
       model: {
@@ -548,7 +548,7 @@ export const builtinFixtures: readonly Fixture[] = [
       'i18n',
     ],
     schema: {
-      specVersion: '0',
+      specVersion: '1',
       id: 'translated',
       title: 'Translated',
       model: {
@@ -655,7 +655,7 @@ export const builtinFixtures: readonly Fixture[] = [
       'validation',
     ],
     schema: {
-      specVersion: '0',
+      specVersion: '1',
       id: 'signup',
       title: 'Open an account',
       model: {

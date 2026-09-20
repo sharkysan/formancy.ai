@@ -10,7 +10,7 @@ afterEach(cleanup)
 // Labels and options ride on the model definitions, the way fixture schemas
 // carry them; the spec's i18n section will formalise this.
 const schema = {
-  specVersion: '0',
+  specVersion: '1',
   id: 'poll',
   title: 'Poll',
   model: {
@@ -117,7 +117,7 @@ describe('the submit control', () => {
 
 describe('the wizard chrome', () => {
   const paged = {
-    specVersion: '0',
+    specVersion: '1',
     id: 'signup',
     title: 'Sign up',
     model: {

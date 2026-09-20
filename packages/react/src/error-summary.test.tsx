@@ -7,7 +7,7 @@ import { ErrorSummary, FormancyForm, FormancyProvider, useSubmit } from './index
 afterEach(cleanup)
 
 const schema: FormSchema = {
-  specVersion: '0',
+  specVersion: '1',
   id: 'contact',
   title: 'Contact',
   model: {
