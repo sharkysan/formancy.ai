@@ -1,6 +1,6 @@
 {
   "name": "@formancy/core",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "The headless formancy form engine: one reactive evaluation graph, identical in browser and Node.",
   "license": "Apache-2.0",
   "type": "module",

@@ -5,9 +5,9 @@ developed under IEC 62304, and who therefore has to record what this software
 is, what it needs, what it is known to get wrong, and what evidence exists that
 it works. Read [`MDR-CONTEXT.md`](MDR-CONTEXT.md) first.
 
-**This document describes commit `6d5e702`.** Everything below is true of that
-commit and of no other. Pin an exact version; a range is not characterised
-software.
+**This document describes version `0.1.0`.** Everything below is true of that
+version and of no other. Pin an exact version; a range is not characterised
+software, and neither is `latest`.
 
 ## Identity
 
@@ -17,7 +17,7 @@ software.
 | Supplier | the formancy project (open source) |
 | Licence | Apache-2.0 for every package ([0002](../decisions/0002-apache-2-0.md)) |
 | Source | this repository, in full, including tests |
-| Package version | `0.0.0` — **pre-release; not yet published to npm** |
+| Package version | `0.1.0` — **pre-release; not yet published to npm** |
 | Spec version | `"1"` — **frozen** 2026-09-20 ([0042](../decisions/0042-freeze-the-spec.md)) |
 | Development stage | walking skeleton complete; v0.1 not released |
 

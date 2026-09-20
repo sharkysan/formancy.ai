@@ -1,6 +1,6 @@
 {
   "name": "@formancy/server",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "The self-hostable formancy backend: Fastify routes and Postgres storage over @formancy/server-core.",
   "license": "Apache-2.0",
   "type": "module",

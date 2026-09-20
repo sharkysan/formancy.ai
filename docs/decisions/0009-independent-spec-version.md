@@ -9,7 +9,7 @@
   document claiming any other version; `diffSchemas` classifies a `specVersion`
   change as `breaking`, pinned by "a spec version bump is breaking" in
   `packages/spec/src/diff.test.ts`. The single package version line is **not
-  mechanically enforced** — every `package.json` reads `0.0.0` today and nothing
+  mechanically enforced** — every `package.json` reads `0.1.0` today and nothing
   in CI compares them.
 
 ## Context

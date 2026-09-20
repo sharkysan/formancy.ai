@@ -1,6 +1,6 @@
 {
   "name": "@formancy/conformance",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "The formancy behaviour and accessibility contract: renderer driver interface, fixtures and runner.",
   "license": "Apache-2.0",
   "type": "module",

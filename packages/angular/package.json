@@ -1,6 +1,6 @@
 {
   "name": "@formancy/angular",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Idiomatic Angular binding for the formancy form engine: signals over the same snapshot protocol.",
   "license": "Apache-2.0",
   "scripts": {

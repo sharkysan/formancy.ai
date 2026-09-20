@@ -1,6 +1,6 @@
 {
   "name": "@formancy/builder-core",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "The headless form-builder document engine: schema editing as commands with undo, selection and valid-target computation.",
   "license": "Apache-2.0",
   "type": "module",

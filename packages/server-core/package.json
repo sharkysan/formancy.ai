@@ -1,6 +1,6 @@
 {
   "name": "@formancy/server-core",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "The formancy backend's use-cases: publish, resolve, revalidate, store — framework-free, against repository ports.",
   "license": "Apache-2.0",
   "type": "module",

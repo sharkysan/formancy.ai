@@ -1,6 +1,6 @@
 {
   "name": "@formancy/spec",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "The formancy form schema specification: types, JSON Schema, canonical serialisation and diffing.",
   "license": "Apache-2.0",
   "type": "module",

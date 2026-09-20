@@ -1,6 +1,6 @@
 {
   "name": "@formancy/themes",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Reference themes for formancy renderers — CSS only, targeting data-formancy-part hooks.",
   "license": "Apache-2.0",
   "type": "module",

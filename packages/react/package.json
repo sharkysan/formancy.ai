@@ -1,6 +1,6 @@
 {
   "name": "@formancy/react",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Idiomatic React binding for the formancy form engine.",
   "license": "Apache-2.0",
   "type": "module",
