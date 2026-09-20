@@ -211,3 +211,65 @@ describe('v0.1 model validators', () => {
     }
   })
 })
+
+describe('pages are top-level only', () => {
+  test('a page inside a group is rejected — a wizard step is not a data container', () => {
+    const result = validateSchema({
+      specVersion: '0',
+      id: 'f',
+      title: 'T',
+      model: {
+        fields: [
+          {
+            key: 'wrap',
+            type: 'group',
+            fields: [{ key: 'step', type: 'page', fields: [{ key: 'a', type: 'text' }] }],
+          },
+        ],
+      },
+    })
+
+    expect(result.valid).toBe(false)
+    if (!result.valid) {
+      expect(result.errors.some((e) => e.path.includes('/fields/0/type'))).toBe(true)
+    }
+  })
+
+  test('a page inside a repeater is rejected too', () => {
+    const result = validateSchema({
+      specVersion: '0',
+      id: 'f',
+      title: 'T',
+      model: {
+        fields: [
+          {
+            key: 'rows',
+            type: 'repeater',
+            fields: [{ key: 'step', type: 'page', fields: [{ key: 'a', type: 'text' }] }],
+          },
+        ],
+      },
+    })
+
+    expect(result.valid).toBe(false)
+  })
+
+  test('a page at the top level is fine, and so is a group inside it', () => {
+    const result = validateSchema({
+      specVersion: '0',
+      id: 'f',
+      title: 'T',
+      model: {
+        fields: [
+          {
+            key: 'step',
+            type: 'page',
+            fields: [{ key: 'g', type: 'group', fields: [{ key: 'a', type: 'text' }] }],
+          },
+        ],
+      },
+    })
+
+    expect(result.valid).toBe(true)
+  })
+})

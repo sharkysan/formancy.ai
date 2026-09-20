@@ -46,6 +46,14 @@ function semanticErrors(schema: FormSchema): SchemaError[] {
   const claimed = new Set<string>()
   const claimedRenames = new Set<string>()
 
+  // A page is a wizard step, which only exists at the top level of a form.
+  // Nested inside a group or a repeater it would be a step inside a data
+  // container — the engine would count it as a page while its fields are
+  // scoped by the container, which is a shape nothing can render coherently.
+  for (const topLevel of schema.model.fields) {
+    forbidNestedPages(topLevel, `/model/fields/${String(schema.model.fields.indexOf(topLevel))}`, errors)
+  }
+
   for (const { field, path, insideRepeater } of fields) {
     // v0.1 rejects this rather than half-supporting it: the engine has no
     // answer for what a row index means two repeaters deep, and accepting the
@@ -138,6 +146,23 @@ function logicErrors(schema: FormSchema): SchemaError[] {
   }
 
   return errors
+}
+
+
+/** Every page below the top level is an error, wherever it hides. */
+function forbidNestedPages(field: FieldDef, path: string, errors: SchemaError[]): void {
+  const children = field.fields
+  if (children === undefined) return
+  for (const [index, child] of children.entries()) {
+    const childPath = `${path}/fields/${String(index)}`
+    if (child.type === 'page') {
+      errors.push({
+        path: `${childPath}/type`,
+        message: `A page can only sit at the top level of a form. Move it out of "${field.key}", or make it a group.`,
+      })
+    }
+    forbidNestedPages(child, childPath, errors)
+  }
 }
 
 /** Every field in the document, container children included, with the JSON
