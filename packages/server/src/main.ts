@@ -4,6 +4,14 @@ import { createApp } from './app.js'
 import { bootstrapSchema } from './db.js'
 import { createPostgresStorage } from './postgres-storage.js'
 
+// recheck ships a 23 MB JVM jar and a native binary per platform as OPTIONAL
+// dependencies and falls back to a pure-JavaScript engine without them. For
+// one static analysis at publish time, the jar is a large thing to carry in a
+// self-hosted container and the per-platform binaries are an awkward thing to
+// pin in an SBOM. Choosing the pure engine explicitly also makes the verdict
+// deterministic rather than dependent on what happened to install.
+process.env['RECHECK_BACKEND'] ??= 'pure'
+
 /**
  * The runnable server: `node dist/main.mjs` with DATABASE_URL set, or
  * `docker compose up` from the repo root, which supplies both.

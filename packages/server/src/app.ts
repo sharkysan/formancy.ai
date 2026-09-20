@@ -212,10 +212,18 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
 
     const outcome = await publishForm(deps, { path: body.path, schema: body.schema })
     if (!outcome.ok) {
-      return reply.code(422).send({
-        error: outcome.kind,
-        ...(outcome.kind === 'invalid_schema' ? { errors: outcome.errors } : { message: outcome.message }),
-      })
+      // A switch rather than a ternary chain, so adding a refusal kind to
+      // PublishOutcome fails to compile here until it is given a shape.
+      switch (outcome.kind) {
+        case 'invalid_schema':
+          return reply.code(422).send({ error: outcome.kind, errors: outcome.errors })
+        case 'unsafe_pattern':
+          // The pattern and its complexity, so the author can see which field
+          // and why rather than being told no.
+          return reply.code(422).send({ error: outcome.kind, patterns: outcome.patterns })
+        case 'invalid_logic':
+          return reply.code(422).send({ error: outcome.kind, message: outcome.message })
+      }
     }
     return reply.code(201).send({ version: outcome.version, schemaHash: outcome.schemaHash })
   })

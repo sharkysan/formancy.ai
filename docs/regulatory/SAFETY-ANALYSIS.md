@@ -261,13 +261,17 @@ without bound — and it was fixed.
 
 ### D3. A form author's regular expression hangs the server
 
-*Constraint:* `pattern` values are anchored and validated at save time. The
-design calls for linting every pattern with `recheck` at publish time and
-rejecting catastrophic backtracking; **this is designed and not yet
-implemented**, which is recorded here rather than implied.
+*Constraint:* every `pattern` is analysed with `recheck` at publish time and a
+vulnerable one is refused, naming the field, the pattern and the complexity
+([0045](../decisions/0045-reject-backtracking-patterns.md)). It has to be
+caught there: a JavaScript regular expression cannot be timed out once it has
+started matching. The check found a polynomial case in formancy's own built-in
+email format on its first run, which is now fixed and pinned by a timing test.
 
-*Residual:* real, until that lint ships. A deployment accepting form definitions
-from untrusted authors should treat this as open.
+*Residual:* a pattern recheck reports as `unknown` is accepted, deliberately —
+refusing on an undecided analysis would make publishing depend on an analysis
+timeout. Patterns stored before this gate existed were never analysed, so a
+deployment carrying older forms should republish them.
 
 ### D4. A control cannot be reached by assistive technology
 

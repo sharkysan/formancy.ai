@@ -24,7 +24,8 @@
   },
   "dependencies": {
     "@formancy/core": "workspace:*",
-    "@formancy/spec": "workspace:*"
+    "@formancy/spec": "workspace:*",
+    "recheck": "^4.5.0"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "catalog:",

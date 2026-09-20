@@ -61,9 +61,15 @@ function patternFor(def: FieldDef): RegExp {
 }
 
 const FORMAT_CHECKS: Record<FieldFormat, (value: string) => boolean> = {
-  // One mailbox, one domain with a dot, no whitespace: the pragmatic check.
+  // One mailbox, one dotted domain, no whitespace: the pragmatic check.
   // Deliverability is the server's business; this catches typos.
-  email: (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
+  //
+  // The domain labels exclude `.` on purpose. The obvious spelling —
+  // `[^\s@]+\.[^\s@]+` — lets both halves match a dot, so the engine can split
+  // a long dotted string in quadratically many ways before failing. recheck
+  // rates that polynomial degree 2 and produces an attack string; this
+  // spelling is linear and accepts and rejects exactly the same addresses.
+  email: (value) => /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/.test(value),
 
   // No URL constructor here: this package runs with neither DOM nor Node lib
   // types on purpose, and the global is exactly the kind of dependency that

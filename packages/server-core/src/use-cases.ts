@@ -5,6 +5,8 @@ import type { SchemaError } from '@formancy/spec/validate'
 import { createFormEngine } from '@formancy/core'
 import type { CapabilitySource } from '@formancy/core'
 import type { FormRecord, Storage } from './ports.js'
+import { unsafePatterns } from './redos.js'
+import type { UnsafePattern } from './redos.js'
 
 /**
  * The backend's use-cases, framework-free.
@@ -25,6 +27,7 @@ export type PublishOutcome =
   | { ok: true; formId: string; versionId: string; version: number; schemaHash: string }
   | { ok: false; kind: 'invalid_schema'; errors?: SchemaError[] }
   | { ok: false; kind: 'invalid_logic'; message: string }
+  | { ok: false; kind: 'unsafe_pattern'; patterns: UnsafePattern[] }
 
 /**
  * Publish a schema as a form's next version.
@@ -50,6 +53,17 @@ export async function publishForm(
       ok: false,
       kind: 'invalid_logic',
       message: error instanceof Error ? error.message : String(error),
+    }
+  }
+
+  // Before the schema is persisted, because after it is there is no way to
+  // time out a regular expression that has already started matching.
+  const unsafe = await unsafePatterns(schema)
+  if (unsafe.length > 0) {
+    return {
+      ok: false,
+      kind: 'unsafe_pattern',
+      patterns: unsafe,
     }
   }
 

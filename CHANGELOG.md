@@ -138,8 +138,15 @@ opt-in; the management plane requires a session or an API key and runs
   across a boundary where it is wrong.
 - The public submission route is **rate limited per IP** — 30 a minute by
   default — and counts attempts rather than successes, so a refused request
-  still costs an attacker their budget. Requests are capped at 256 kB before
-  the JSON parser sees them.
+  still costs an attacker their budget. Login is limited to 10 a minute, which
+  matters because enumeration resistance makes each wrong guess cost a full
+  argon2 verification. Requests are capped at 256 kB before the JSON parser
+  sees them.
+- Every `pattern` is checked for catastrophic backtracking at publish time and
+  a vulnerable one is refused — a form author's regular expression is run by
+  the server against submitted text, and it cannot be timed out once started.
+  The check found a polynomial case in formancy's own email format the first
+  time it ran.
 - CSV export unions columns across every version a form has had, and neutralises
   spreadsheet formulas — type-aware, so a numeric `-5` stays `-5`.
 
@@ -203,8 +210,8 @@ server container image.
 
 - 118 CEL specification cases fail. If your forms use expressions, read
   `CEL-CONFORMANCE.md` rather than this summary.
-- `recheck` linting of author-supplied `pattern` values is designed and not
-  implemented, so a catastrophic regular expression can still hang the server.
+- A `pattern` that `recheck` cannot decide about is accepted rather than
+  refused, and patterns published before the gate existed were never analysed.
 - `@fastify/rate-limit`'s default store is per-process and therefore wrong
   behind more than one replica.
 - A `visible` rule that fails at runtime shows the field. That is deliberate,

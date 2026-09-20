@@ -582,3 +582,74 @@ describe('public submission access', () => {
     }
   })
 })
+
+/**
+ * A `pattern` is written by a form author and run by the server against
+ * whatever a submitter typed. A catastrophic one is therefore an author-side
+ * denial of service reachable by anyone who can submit the form.
+ *
+ * It has to be refused at publish time, because a JavaScript regular
+ * expression cannot be timed out once it has started matching. The only moment
+ * the cost can be declined is before the pattern is stored.
+ */
+describe('patterns that backtrack are refused at publish', () => {
+  const withPattern = (pattern: string): unknown => ({
+    specVersion: '1',
+    id: 'reg',
+    title: 'Reg',
+    model: { fields: [{ key: 'code', type: 'text', pattern }] },
+  })
+
+  test('an exponential pattern is refused, and the form is never stored', async () => {
+    const outcome = await publishForm(deps, { path: 'reg', schema: withPattern('(?:[a-z]+)+') })
+
+    expect(outcome).toMatchObject({ ok: false, kind: 'unsafe_pattern' })
+    if (outcome.ok || outcome.kind !== 'unsafe_pattern') throw new Error('unreachable')
+    expect(outcome.patterns[0]).toMatchObject({ path: 'code', complexity: 'exponential' })
+
+    // Refused means refused: nothing was persisted on the way to the error.
+    expect(await deps.storage.getFormByPath('reg')).toBeUndefined()
+  })
+
+  test('a polynomial pattern is refused too, with its degree named', async () => {
+    const outcome = await publishForm(deps, {
+      path: 'reg',
+      schema: withPattern('[^\s@]+@[^\s@]+\.[^\s@]+'),
+    })
+
+    expect(outcome).toMatchObject({ ok: false, kind: 'unsafe_pattern' })
+    if (outcome.ok || outcome.kind !== 'unsafe_pattern') throw new Error('unreachable')
+    expect(outcome.patterns[0]?.complexity).toBe('polynomial degree 2')
+  })
+
+  test('an ordinary pattern publishes', async () => {
+    expect(await publishForm(deps, { path: 'reg', schema: withPattern('[A-Z]{2}-\d{4}') })).toMatchObject({
+      ok: true,
+    })
+  })
+
+  test('a pattern inside a repeater is found, and reported at its data path', async () => {
+    const outcome = await publishForm(deps, {
+      path: 'reg',
+      schema: {
+        specVersion: '1',
+        id: 'reg',
+        title: 'Reg',
+        model: {
+          fields: [
+            {
+              key: 'contacts',
+              type: 'repeater',
+              fields: [{ key: 'code', type: 'text', pattern: '(?:[a-z]+)+' }],
+            },
+          ],
+        },
+      },
+    })
+
+    expect(outcome).toMatchObject({ ok: false, kind: 'unsafe_pattern' })
+    if (outcome.ok || outcome.kind !== 'unsafe_pattern') throw new Error('unreachable')
+    // The same path grammar everything else uses, so an author can find it.
+    expect(outcome.patterns[0]?.path).toBe('contacts[].code')
+  })
+})

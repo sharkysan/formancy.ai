@@ -21,6 +21,8 @@ export type {
   ServerDeps,
   SubmissionOutcome,
 } from './use-cases.js'
+export { unsafePatterns } from './redos.js'
+export type { UnsafePattern } from './redos.js'
 export type { DraftRecord, FormRecord, FormVersionRecord, Storage, SubmissionRecord } from './ports.js'
 export { createMemoryStorage } from './testing/memory-storage.js'
 export {

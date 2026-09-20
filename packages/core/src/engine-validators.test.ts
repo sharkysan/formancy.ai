@@ -95,3 +95,56 @@ describe('model validators', () => {
     expect(errorsFor({ qty: 'many' })['qty']).toEqual(['min'])
   })
 })
+
+/**
+ * The format checks run against whatever a person typed, at whatever length
+ * the body cap allows. A regex that backtracks catastrophically is therefore a
+ * denial-of-service vector reachable by anyone who can submit a form, which is
+ * the whole public plane.
+ *
+ * The email pattern was polynomial degree 2 until a static analysis of it said
+ * so. These tests pin both halves of the fix: the behaviour did not change, and
+ * the pathological input is now cheap.
+ */
+describe('format checks are cheap on hostile input', () => {
+  const emailErrors = (value: string): string[] | undefined =>
+    errorsFor({ email: value })['email']
+
+  test('the addresses people actually have are still accepted', () => {
+    for (const address of [
+      'ada@example.ch',
+      'first.last@example.ch',
+      'a+tag@sub.example.co.uk',
+      "o'brien@example.org",
+      'x@y.zz',
+    ]) {
+      expect(emailErrors(address), address).toBeUndefined()
+    }
+  })
+
+  test('the ones that are not addresses are still rejected', () => {
+    for (const notAnAddress of [
+      'plain',
+      'no@domain',
+      '@example.ch',
+      'a b@example.ch',
+      'a@b',
+      'a@.ch',
+      'a@b.',
+    ]) {
+      expect(emailErrors(notAnAddress), notAnAddress).toEqual(['email'])
+    }
+  })
+
+  test('recheck\u2019s attack string is rejected promptly rather than hanging', () => {
+    // The shape recheck produced for the old pattern, shortened: a long run of
+    // dotted segments that can be split in quadratically many ways. Under the
+    // old regex this grows as the square of the length; under the new one it
+    // is linear, so the assertion is really about the clock.
+    const attack = `a@a${'.a'.repeat(20_000)}.@..a`
+
+    const started = Date.now()
+    expect(emailErrors(attack)).toEqual(['email'])
+    expect(Date.now() - started).toBeLessThan(250)
+  })
+})
