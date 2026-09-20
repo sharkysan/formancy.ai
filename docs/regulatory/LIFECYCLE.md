@@ -153,8 +153,10 @@ Stated plainly, because a gap named is more useful than a gap implied:
   regression test and described in the commit.
 - No release process, because nothing has been released.
 - No manual accessibility audit and no published VPAT.
-- No signed release artefacts. npm provenance, cosign-signed images and a
-  CycloneDX SBOM are designed and not yet implemented.
+- No released artefacts, so nothing is signed yet. The pipeline that would
+  sign them exists — npm provenance via GitHub OIDC, a CycloneDX SBOM, and a
+  keyless cosign signature over it — and has never run, because a release is
+  what triggers it. Container image signing waits on there being an image.
 
 A manufacturer needing any of these for their classification must either supply
 it themselves as part of their own SOUP evaluation, or treat its absence as a

@@ -84,8 +84,11 @@ from the JSON Schema.
 ## Releases
 
 [`CHANGELOG.md`](./CHANGELOG.md) — what is in each version, and what is
-knowingly missing from it. Nothing is published yet; 0.1.0 is written up and
-uncut.
+knowingly missing from it. [`RELEASING.md`](./RELEASING.md) — how a release is
+cut, and what the pipeline signs and attests.
+
+Nothing is published yet: 0.1.0 is tagged, and the `@formancy` npm scope has
+not been claimed.
 
 ## License
 

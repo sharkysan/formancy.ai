@@ -1,0 +1,116 @@
+name: Release
+
+# Publishing happens here and nowhere else. A release cut from a laptop cannot
+# carry provenance — the attestation is a statement by GitHub about which
+# workflow, at which commit, produced the tarball, and only the workflow can
+# make it.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write # create the GitHub release
+      id-token: write # OIDC, for npm provenance and keyless signing
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # the tag's history, so the release notes can reference it
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      - run: corepack enable pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # The tag is the claim; this checks the repository agrees with it. A tag
+      # that says v0.1.0 on a tree that says 0.2.0 would publish the wrong
+      # version under the right name, which is unfixable after the fact.
+      - name: The tag and the manifests must agree
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          PKG=$(node -p "require('./packages/core/package.json').version")
+          if [ "$TAG" != "$PKG" ]; then
+            echo "::error::Tag is $TAG but the packages say $PKG"
+            exit 1
+          fi
+          echo "Releasing $PKG"
+
+      # The same gates CI runs. A release must not be the first time they run
+      # against this tree.
+      - run: pnpm build
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm check:pkg
+
+      # Apache-2.0 4(a) and 4(d). scripts/sync-licenses.mjs puts them in place
+      # during build; this refuses to publish if they did not land.
+      - name: Every tarball carries its licence
+        run: node scripts/verify-licenses.mjs
+
+      - name: Publish to npm with provenance
+        run: pnpm publish -r --access public --provenance --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: 'true'
+
+      # A bill of materials for what actually ships, so a consumer — or an
+      # auditor — can answer "what is in this" without resolving it themselves.
+      #
+      # --required-only because an SBOM for a released artefact should describe
+      # the artefact, not the workbench. It keeps every runtime dependency
+      # (verified: cel-js, noble/hashes, node-rs/argon2, ajv, fastify,
+      # drizzle-orm, jose, postgres) and drops the test tooling — 71 components
+      # rather than 1067.
+      - name: Generate a CycloneDX SBOM
+        run: |
+          npx --yes @cyclonedx/cdxgen@12.8.4 \
+            --type javascript \
+            --required-only \
+            --output "formancy-${GITHUB_REF_NAME}-sbom.cdx.json" \
+            --project-name formancy \
+            --project-version "${GITHUB_REF_NAME#v}" \
+            .
+          node -e "
+            const s = require('./formancy-${GITHUB_REF_NAME}-sbom.cdx.json');
+            const purls = (s.components ?? []).map((c) => c.purl ?? '').join('\n');
+            // The evaluator decides whether a submission is valid. An SBOM that
+            // omitted it would be worse than none, so the release stops here.
+            if (!purls.includes('%40marcbachmann/cel-js')) {
+              console.error('::error::SBOM is missing the CEL evaluator');
+              process.exit(1);
+            }
+            console.log('SBOM: ' + String((s.components ?? []).length) + ' components');
+          "
+
+      - uses: sigstore/cosign-installer@v3
+
+      # Keyless: the signature is bound to this workflow's OIDC identity rather
+      # than to a private key somebody has to keep. There is no key to leak and
+      # no key to lose.
+      - name: Sign the SBOM
+        run: |
+          cosign sign-blob --yes \
+            --bundle "formancy-${GITHUB_REF_NAME}-sbom.cdx.json.sigstore" \
+            "formancy-${GITHUB_REF_NAME}-sbom.cdx.json"
+
+      - name: Create the GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: CHANGELOG.md
+          files: |
+            formancy-*-sbom.cdx.json
+            formancy-*-sbom.cdx.json.sigstore
+          fail_on_unmatched_files: true
+
+  # Container image signing lands with the container image. There is no server
+  # image yet (see CHANGELOG), and a job that signs nothing is worse than an
+  # absent one because it reads as coverage.

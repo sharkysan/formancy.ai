@@ -160,6 +160,25 @@ opt-in; the management plane requires a session or an API key and runs
 - Performance, measured: keystroke on a large conditional form **≈0.38 ms**
   against a 1 ms budget; cold graph compile **≈1.7 ms** against 30 ms.
 
+### Supply chain
+
+Releases are cut by a GitHub Actions workflow and nowhere else, because
+provenance is a statement *by GitHub* about which workflow produced a tarball —
+a release built on a laptop cannot carry one.
+
+- **npm provenance** via OIDC, so every tarball is bound to the workflow run,
+  commit and repository that built it. Check it with `npm audit signatures`.
+  There is no private key, so there is none to leak.
+- **A CycloneDX SBOM** attached to each GitHub release, describing what ships
+  rather than the workbench, and **signed with cosign** keylessly.
+- **Licence enforcement.** Apache-2.0 requires the licence and NOTICE to travel
+  with the work. Both are copied into every package at build time and the
+  release refuses to publish a tarball missing either.
+- **Version agreement.** A tag that disagrees with the manifests fails the
+  release rather than publishing the wrong version under the right name.
+
+See [`RELEASING.md`](./RELEASING.md).
+
 ### Known limitations
 
 Named rather than implied.
@@ -167,7 +186,7 @@ Named rather than implied.
 **Not built yet.** The builder UI — `builder-core`, the document engine
 underneath it, is done and tested; file upload; webhooks and actions; rate
 limiting, challenge and origin allowlists on the public plane; multi-tenancy; a
-server container image; release signing, npm provenance and an SBOM.
+server container image.
 
 **Known gaps.**
 
@@ -185,6 +204,9 @@ server container image; release signing, npm provenance and an SBOM.
   criteria are machine-testable at all.
 - Async validators do not exist. They need a new rule kind, which is a spec 2
   change; `runsOn` is already in place so that change is additive.
+- The release pipeline — npm provenance, CycloneDX SBOM, cosign signature — is
+  configured but has never run. Its first execution is its first test. Container
+  image signing waits on there being a container image.
 
 ### Getting it
 
