@@ -30,6 +30,11 @@ same conformance fixtures.
 **The conformance suite** (`@formancy/conformance`) — published, so third-party
 renderers can self-certify.
 
+**The builder's document engine** (`@formancy/builder-core`) — schema editing as
+commands with undo/redo and valid-target computation, where a command that would
+produce an invalid document is refused rather than applied, and a rename
+declares `renamedFrom` so collected answers follow the field.
+
 **The backend** (`@formancy/server`) — Fastify and Postgres: publish with the
 engine as the save gate, submissions replayed server-side and stored canonical,
 drafts with lazy migration, submissions listing, CSV export unioned across
@@ -42,9 +47,12 @@ history, submissions).
 
 ## What does not exist yet
 
-- **The drag-and-drop builder.** Deliberately deferred: a half-built builder
-  gets compared to products with a decade of polish, while the effort is better
-  spent on renderer quality first. The admin ships a schema editor instead.
+- **The drag-and-drop builder UI.** Its headless half exists
+  (`@formancy/builder-core`: commands, undo/redo, valid-target computation);
+  the canvas and palette do not. Deliberately sequenced that way — a
+  half-finished builder UI gets compared to products with a decade of polish,
+  while the hard part is the document engine underneath it. The admin ships a
+  schema editor in the meantime.
 - **File uploads**, webhooks and form actions.
 - **OIDC / SAML.** Local users and API keys only for now.
 - **Rate limiting, anonymous-submission hardening, audit logging.**
@@ -62,9 +70,10 @@ Roughly in order, and subject to change:
 
 1. **`i18n` and `layout` sections** in the spec, replacing the v0
    presentation-lite properties — after which the spec can freeze to `"1"`.
-2. **The builder**, headless document engine first, then the UI. The keyboard
-   "move to…" path is built before the drag affordance, because WCAG 2.2
-   requires every drag operation to have a non-drag alternative.
+2. **The builder UI** over the existing document engine. Its commands are
+   already keyboard-shaped — insert, move, remove, rename — because WCAG 2.2
+   requires every drag operation to have a non-drag alternative, and building
+   the drag layer first is how that alternative ends up unfinished.
 3. **Files and actions**, with the storage abstraction and webhook delivery
    already designed.
 4. **Hardening the public plane**: rate limits, a challenge, origin allowlists.

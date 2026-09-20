@@ -27,11 +27,13 @@ packages/core           the headless reactive engine (rules, rows, wizard, a11y 
 packages/react          React binding: hooks, unstyled components, error summary
 packages/angular        Angular binding: signals over the same protocol, zoneless
 packages/conformance    the behaviour + accessibility contract (6 fixtures, published)
+packages/builder-core   headless schema editing: commands, undo/redo, valid targets
 packages/server-core    backend use-cases against storage ports
 packages/server         Fastify + Postgres: publish, resolve, replayed submissions,
                         drafts with lazy migration, CSV export
 apps/playground         the one-screen demo (editor / live form / engine state)
 apps/admin              the self-hosted admin, v0.1 cut
+apps/docs               the documentation site (Astro Starlight)
 ```
 
 ## Development
