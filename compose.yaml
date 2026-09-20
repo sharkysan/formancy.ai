@@ -9,7 +9,9 @@ services:
       POSTGRES_PASSWORD: formancy
       POSTGRES_DB: formancy
     ports:
-      - "5432:5432"
+      # 5439 on the host: 5432 is too often taken by a locally installed
+      # Postgres, and a silent collision looks exactly like a wrong password.
+      - "5439:5432"
     volumes:
       - formancy-pg:/var/lib/postgresql/data
     healthcheck:
