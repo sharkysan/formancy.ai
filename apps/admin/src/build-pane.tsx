@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createBuilderSession } from '@formancy/builder-core'
 import type { BuilderSession } from '@formancy/builder-core'
-import { FormancyBuilder, PropertyPanel, useBuilder } from '@formancy/builder-react'
+import { FormancyBuilder, LogicPanel, PropertyPanel, useBuilder } from '@formancy/builder-react'
 import { createFormEngine } from '@formancy/core'
 import { FormancyForm, FormancyProvider } from '@formancy/react'
 import type { FormSchema } from '@formancy/spec'
@@ -182,7 +182,10 @@ function BuilderWorkspace({
               Press <kbd>a</kbd> in the structure pane to add a field.
             </p>
           ) : (
-            <PropertyPanel session={session} keyPath={editing} />
+            <>
+              <PropertyPanel session={session} keyPath={editing} />
+              <LogicPanel session={session} keyPath={editing} />
+            </>
           )}
         </div>
       </section>

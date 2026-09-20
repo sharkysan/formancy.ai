@@ -92,6 +92,36 @@ That file styles the *tool*. `blueprint.css` and `dusk.css` style the *forms*
 the tool makes. Keeping them apart is why restyling your forms cannot
 accidentally restyle the builder.
 
+## Logic is authored as conditions, not expressions
+
+"Country is Switzerland", chosen from three dropdowns, compiled to
+`country == "CH"`. A form author should not have to know that `==` compares and
+`=` does not exist.
+
+The CEL is the single source of truth for evaluation. The structured condition
+is stored beside it as `editor` metadata and is **never evaluated** — it exists
+so the panel can reopen a condition instead of parsing CEL back. If both were
+evaluable, client and server drift would return through the side door.
+
+The generated expression is shown, before the rule is added and after. A form
+author need not read it; a developer should not have to guess it.
+
+Two details that are easy to get wrong and are tested against the real engine
+rather than against a string:
+
+- **Numbers compile as doubles.** CEL does not convert implicitly and every
+  number a form collects is a double, so `qty > 5` is a type error at check
+  time and `qty > 5.0` is what was meant.
+- **"Is answered" is a null check**, not a truthiness test. An unanswered field
+  is null, and a bare `country` is a type error on a string field rather than
+  the falsey check somebody arriving from JavaScript expects.
+
+Values are escaped explicitly — backslash first, then quotes, then newlines and
+tabs. Hand-rolled quoting is how an apostrophe in a surname becomes a syntax
+error and a trailing backslash becomes something worse: `"C:\"` escapes the
+closing quote and the expression runs on into whatever follows. There is a test
+for that exact string.
+
 ## What it does not do yet
 
-Authoring logic rules, and dragging.
+Dragging, and conditions that combine more than one comparison.

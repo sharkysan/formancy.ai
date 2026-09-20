@@ -666,3 +666,105 @@ kbd {
   font-size: 0.75rem;
   color: var(--wb-invalid);
 }
+
+/* ------------------------------------------------------------ logic authoring */
+
+[data-formancy-part='logic-panel'] {
+  margin-block-start: 1rem;
+  padding-block-start: 0.75rem;
+  border-block-start: 2px solid var(--wb-rule);
+}
+
+[data-formancy-part='logic-panel'] h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+[data-formancy-part='logic-empty'] {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  color: var(--wb-muted);
+}
+
+[data-formancy-part='logic-list'] {
+  list-style: none;
+  margin: 0 0 0.5rem;
+  padding: 0;
+  display: grid;
+  gap: 0.375rem;
+}
+
+[data-formancy-part='logic-rule'] {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.5rem;
+  background: var(--wb-surface);
+  border: 1px solid var(--wb-rule);
+  border-radius: 3px;
+}
+
+[data-formancy-part='logic-kind'] {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* The generated expression, shown rather than hidden: a form author need not
+   read it, and a developer should not have to guess it. Violet is what the
+   inspector already uses for "the engine decided this". */
+[data-formancy-part='logic-rule'] code,
+[data-formancy-part='logic-preview'] {
+  font-family: var(--wb-mono);
+  font-size: 0.6875rem;
+  color: var(--wb-derived);
+  background: var(--wb-panel);
+  border: 1px solid var(--wb-rule);
+  border-radius: 2px;
+  padding: 0.1875rem 0.375rem;
+  overflow-wrap: anywhere;
+}
+
+[data-formancy-part='logic-rule'] button {
+  justify-self: end;
+  font-size: 0.6875rem;
+}
+
+[data-formancy-part='logic-draft'] {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.625rem;
+  background: var(--wb-surface);
+  border: 1px solid var(--wb-signal);
+  border-radius: 3px;
+}
+
+[data-formancy-part='logic-draft'] label {
+  display: grid;
+  gap: 0.1875rem;
+  font-size: 0.75rem;
+  color: var(--wb-muted);
+}
+
+[data-formancy-part='logic-draft'] :is(select, input) {
+  font: inherit;
+  font-size: 0.8125rem;
+  color: var(--wb-ink);
+  background: var(--wb-surface);
+  border: 1px solid var(--wb-rule);
+  border-radius: 3px;
+  padding: 0.1875rem 0.375rem;
+  width: 100%;
+  min-width: 0;
+}
+
+[data-formancy-part='logic-hint'] {
+  margin: 0;
+  font-size: 0.6875rem;
+  color: var(--wb-muted);
+  line-height: 1.45;
+}
+
+[data-formancy-part='logic-actions'] {
+  display: flex;
+  gap: 0.375rem;
+}

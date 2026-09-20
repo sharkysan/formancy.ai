@@ -7,7 +7,7 @@ import type { SchemaError } from '@formancy/spec/validate'
 import formancySchemaJson from '@formancy/spec/schema.json'
 import { ErrorSummary, FormancyForm, FormancyProvider } from '@formancy/react'
 import { createBuilderSession } from '@formancy/builder-core'
-import { FormancyBuilder, PropertyPanel, useBuilder } from '@formancy/builder-react'
+import { FormancyBuilder, LogicPanel, PropertyPanel, useBuilder } from '@formancy/builder-react'
 import '@formancy/themes/blueprint.css'
 import '@formancy/themes/dusk.css'
 import '@formancy/themes/workbench.css'
@@ -346,7 +346,12 @@ function BuilderBody({
         <FormancyBuilder session={session} />
       </div>
 
-      {editing === null ? null : <PropertyPanel session={session} keyPath={editing} />}
+      {editing === null ? null : (
+        <>
+          <PropertyPanel session={session} keyPath={editing} />
+          <LogicPanel session={session} keyPath={editing} />
+        </>
+      )}
     </div>
   )
 }

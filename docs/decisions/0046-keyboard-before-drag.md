@@ -111,3 +111,38 @@ Handed a definition captured before the edit, its controlled inputs never see a
 new value, so every keystroke resets the box and only the last character
 survives — and a consumer wiring it the obvious way would reproduce that
 exactly. Found by a test typing three characters and getting one.
+
+---
+
+## Addendum — authoring logic as conditions
+
+A rule is edited as a condition — a field, a comparison and a value — and
+compiled to CEL. A form author should not have to know that `==` compares and
+`=` does not exist.
+
+**CEL remains the single source of truth for evaluation.** The structured
+condition is stored beside it in the rule's `editor` field and is never
+evaluated; it exists so the panel can reopen a condition rather than parse CEL
+back. The spec is explicit about why: if both were evaluable, the client and
+server drift this project exists to prevent would return through the side door.
+
+Two compilation details are load-bearing, and both are verified by running the
+output through the real engine rather than by comparing strings — a condition
+that looks right and does not compile is worse than no condition builder:
+
+- **Numbers compile as doubles.** CEL does not convert implicitly and every
+  number a form collects is a double, so `qty > 5` fails the type check and
+  `qty > 5.0` is what was meant.
+- **"Is answered" compiles to a null check.** A bare `country` is a type error
+  on a string field, not the falsey test somebody arriving from JavaScript
+  expects.
+
+String values are escaped explicitly, backslash first. Hand-rolled quoting is
+how an apostrophe in a surname becomes a syntax error and a trailing backslash
+becomes worse: `"C:\"` escapes the closing quote and the expression runs on
+into whatever follows it. That exact case is a test, and it is checked by
+evaluating the result rather than by inspecting it.
+
+The expression is shown in the panel, before the rule is added and afterwards.
+Hiding it would make the builder a place where CEL is written by someone who
+cannot see it.
