@@ -8,7 +8,7 @@
  * can only run where that callback runs, and the renderers are free to drift.
  */
 
-import type { FieldDef, FormSchema } from '@formancy/spec'
+import type { FieldDef, FieldOption, FormSchema } from '@formancy/spec'
 
 /** JSON, and nothing but JSON. A fixture must survive a file round-trip unchanged. */
 export type JsonValue =
@@ -22,42 +22,21 @@ export type JsonValue =
 /**
  * A field as a fixture declares it.
  *
- * The model shape — `key`, `type`, `required`, `fields`, `clearOnHide` — comes
- * straight from `FieldDef` in @formancy/spec, and behaviour comes from the
- * spec's `logic` section on the schema; a fixture must never say something the
- * spec cannot. What remains here is presentation the conformance suite has to
- * carry itself because @formancy/spec has not yet landed its `layout` and
- * `i18n` sections: the accessible names a driver resolves controls by, and the
- * option lists and repeater bounds a renderer needs to draw the form at all.
- * When those sections land, this interface shrinks to an import.
- *
- * `fields` is re-declared only to deepen it: the spec's `FieldDef[]` becomes a
- * readonly tree of fixture fields, which a mutable array cannot extend.
+ * Everything a fixture says about a field now comes straight from `FieldDef`
+ * in @formancy/spec — the spec landed labels, options and repeater chrome as
+ * its version-0 presentation-lite, which is exactly the moment this interface
+ * promised to shrink to an import. What remains is the readonly deepening of
+ * `fields` (a fixture is data, never mutated) and `readOnly`, which the spec
+ * has not modelled yet.
  */
 export interface ConformanceFieldDef extends Omit<FieldDef, 'fields'> {
-  /**
-   * The field's accessible name. Inlined rather than referenced through an
-   * i18n section because a driver may only find a control by its accessible
-   * name, so the name is part of the case, and a case should be readable as
-   * one file.
-   */
-  readonly label?: string
   /** The fields held inside a `group`, a `page` or a repeater. */
   readonly fields?: readonly ConformanceFieldDef[]
   readonly readOnly?: boolean
-  readonly options?: readonly ConformanceOption[]
-  readonly minItems?: number
-  readonly maxItems?: number
-  /** Accessible name of a repeater's add control. */
-  readonly addLabel?: string
-  /** Accessible name of a repeater item's remove control. */
-  readonly removeLabel?: string
 }
 
-export interface ConformanceOption {
-  readonly value: JsonValue
-  readonly label: string
-}
+/** One choice of a select or radio field; the spec's own option shape. */
+export type ConformanceOption = FieldOption
 
 /**
  * The schema a fixture ships. Only `model` deviates from `FormSchema`, and only

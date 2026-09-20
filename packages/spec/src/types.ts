@@ -76,6 +76,24 @@ export interface FieldDef {
    * the data shape.
    */
   clearOnHide?: boolean
+  /**
+   * Version 0 presentation-lite, superseded by the i18n and layout sections at
+   * spec v1: one language of display text, options for choice fields, and
+   * repeater chrome. They live here because a form without labels is unusable
+   * and inventing a side-channel would be worse than carrying them openly.
+   */
+  label?: string
+  options?: FieldOption[]
+  minItems?: number
+  maxItems?: number
+  addLabel?: string
+  removeLabel?: string
+}
+
+export interface FieldOption {
+  /** Stored in the submission; stable like a field key. */
+  value: string
+  label: string
 }
 
 /** The form's behaviour, apart from its data model. */

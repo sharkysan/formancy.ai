@@ -112,6 +112,13 @@
      "description": "What happens to an answer when a rule hides its field. On (the default), the answer is removed from the submission, so a hidden branch cannot carry data. Off, the answer is kept and comes back when the field reappears.",
      "type": "boolean",
      "default": true
+    },
+    "label": {
+     "title": "Label",
+     "description": "What the person filling the form in reads next to this field. Version 0 carries one language here; the i18n section of a later spec version replaces it with a message reference.",
+     "type": "string",
+     "minLength": 1,
+     "maxLength": 300
     }
    },
    "allOf": [
@@ -135,6 +142,78 @@
      },
      "else": {
       "$ref": "#/$defs/leafField"
+     }
+    },
+    {
+     "if": {
+      "required": [
+       "type"
+      ],
+      "properties": {
+       "type": {
+        "enum": [
+         "select",
+         "radio"
+        ]
+       }
+      }
+     },
+     "then": {
+      "properties": {
+       "options": {
+        "title": "Options",
+        "description": "The answers this field offers, in the order they appear.",
+        "type": "array",
+        "minItems": 1,
+        "items": {
+         "$ref": "#/$defs/fieldOption"
+        }
+       }
+      }
+     }
+    },
+    {
+     "if": {
+      "required": [
+       "type"
+      ],
+      "properties": {
+       "type": {
+        "const": "repeater"
+       }
+      }
+     },
+     "then": {
+      "properties": {
+       "minItems": {
+        "title": "Minimum rows",
+        "description": "How many rows the form opens with and will not go below. A repeater that promises one row shows one empty row, not an add button and a shrug.",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 1000
+       },
+       "maxItems": {
+        "title": "Maximum rows",
+        "description": "How many rows a person may add.",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 1000
+       },
+       "addLabel": {
+        "title": "Add button label",
+        "description": "The accessible name of the control that adds a row.",
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 300
+       },
+       "removeLabel": {
+        "title": "Remove button label",
+        "description": "The accessible name of the control that removes a row. The renderer appends the row's position, so a screen reader user hears which row a button kills.",
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 300
+       }
+      }
      }
     }
    ],
@@ -319,6 +398,32 @@
     "editor": {
      "title": "Editor state",
      "description": "What the visual rule editor last knew about this rule. Regenerated from \"cel\" when possible; never evaluated. The expression is the single source of truth."
+    }
+   }
+  },
+  "fieldOption": {
+   "title": "Option",
+   "description": "One answer a select or radio field offers.",
+   "type": "object",
+   "required": [
+    "value",
+    "label"
+   ],
+   "additionalProperties": false,
+   "properties": {
+    "value": {
+     "title": "Value",
+     "description": "What is stored in the submission when this option is chosen. Stable like a field key: changing it detaches the answers already collected.",
+     "type": "string",
+     "minLength": 1,
+     "maxLength": 200
+    },
+    "label": {
+     "title": "Label",
+     "description": "What the person choosing reads.",
+     "type": "string",
+     "minLength": 1,
+     "maxLength": 300
     }
    }
   }

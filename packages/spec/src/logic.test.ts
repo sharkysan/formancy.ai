@@ -97,3 +97,62 @@ describe('logic section validation', () => {
     expect(validateSchema(document).valid).toBe(true)
   })
 })
+
+describe('v0 presentation-lite properties', () => {
+  test('a labelled field with options, add/remove labels and minItems validates', () => {
+    const document: FormSchema = {
+      specVersion: '0',
+      id: 'order',
+      title: 'Order',
+      model: {
+        fields: [
+          {
+            key: 'country',
+            type: 'select',
+            label: 'Country',
+            options: [
+              { value: 'CH', label: 'Switzerland' },
+              { value: 'DE', label: 'Germany' },
+            ],
+          },
+          {
+            key: 'items',
+            type: 'repeater',
+            label: 'Items',
+            minItems: 1,
+            maxItems: 10,
+            addLabel: 'Add item',
+            removeLabel: 'Remove item',
+            fields: [{ key: 'name', type: 'text', label: 'Name' }],
+          },
+        ],
+      },
+    }
+
+    expect(validateSchema(document).valid).toBe(true)
+  })
+
+  test('options on a non-choice field are rejected', () => {
+    const result = validateSchema({
+      specVersion: '0',
+      id: 'f',
+      title: 'T',
+      model: {
+        fields: [{ key: 'a', type: 'text', options: [{ value: 'x', label: 'X' }] }],
+      },
+    })
+
+    expect(result.valid).toBe(false)
+  })
+
+  test('an option needs both value and label', () => {
+    const result = validateSchema({
+      specVersion: '0',
+      id: 'f',
+      title: 'T',
+      model: { fields: [{ key: 'a', type: 'select', options: [{ value: 'x' }] }] },
+    })
+
+    expect(result.valid).toBe(false)
+  })
+})
