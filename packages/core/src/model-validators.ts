@@ -1,4 +1,4 @@
-import type { FieldDef } from '@formancy/spec'
+import type { FieldDef, FieldFormat } from '@formancy/spec'
 
 /**
  * The spec's built-in model validators: bounds, pattern, format.
@@ -60,19 +60,15 @@ function patternFor(def: FieldDef): RegExp {
   return compiled
 }
 
-const FORMAT_CHECKS: Record<string, (value: string) => boolean> = {
+const FORMAT_CHECKS: Record<FieldFormat, (value: string) => boolean> = {
   // One mailbox, one domain with a dot, no whitespace: the pragmatic check.
   // Deliverability is the server's business; this catches typos.
   email: (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
 
-  url: (value) => {
-    try {
-      const parsed = new URL(value)
-      return parsed.protocol === 'http:' || parsed.protocol === 'https:'
-    } catch {
-      return false
-    }
-  },
+  // No URL constructor here: this package runs with neither DOM nor Node lib
+  // types on purpose, and the global is exactly the kind of dependency that
+  // rule exists to catch. An absolute http(s) URL shape is enough for v0.
+  url: (value) => /^https?:\/\/[^\s/$.?#][^\s]*$/i.test(value),
 
   uuid: (value) =>
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value),
