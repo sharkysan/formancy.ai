@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'vitest'
 import { deliver } from './deliver.js'
 
 /**
@@ -159,5 +159,124 @@ describe('allowPrivateAddresses', () => {
 
     expect(result.ok).toBe(false)
     expect(result.error).not.toContain('not reachable from here')
+  })
+})
+
+/**
+ * Against a real socket.
+ *
+ * Everything above stops before a connection is opened, which left the half of
+ * this module that actually delivers untested — and that is exactly the half
+ * where the two bugs were. Neither could be caught without a socket: the Agent
+ * has to come from the same undici instance as the fetch that uses it, and
+ * undici calls the connect lookup with `{ all: true }` and wants an array of
+ * `{ address, family }` back, not node:net's `(err, address, family)`. Both
+ * fail only at connect time.
+ *
+ * A loopback server, so the escape hatches are on. They are what this
+ * exercises as much as the delivery is.
+ */
+describe('delivering to something that answers', () => {
+  let server: import('node:http').Server
+  let port: number
+  let received: Array<{ headers: Record<string, string | string[] | undefined>; body: string }>
+  let reply: (request: import('node:http').IncomingMessage, response: import('node:http').ServerResponse) => void
+
+  const local = { allowHttp: true, allowPrivateAddresses: true, timeoutMs: 2000 }
+
+  beforeAll(async () => {
+    const { createServer } = await import('node:http')
+    server = createServer((request, response) => {
+      let body = ''
+      request.on('data', (chunk: Buffer) => (body += chunk.toString('utf8')))
+      request.on('end', () => {
+        received.push({ headers: request.headers, body })
+        reply(request, response)
+      })
+    })
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
+    const address = server.address()
+    port = typeof address === 'object' && address !== null ? address.port : 0
+  })
+
+  afterAll(async () => {
+    await new Promise<void>((resolve) => server.close(() => resolve()))
+  })
+
+  beforeEach(() => {
+    received = []
+    reply = (_request, response) => response.writeHead(204).end()
+  })
+
+  const to = (path = '/hook') => ({ ...BASE, url: `http://127.0.0.1:${String(port)}${path}` })
+
+  test('a 2xx is a delivery', async () => {
+    const result = await deliver(to(), local)
+
+    expect(result).toEqual({ ok: true, status: 204 })
+  })
+
+  test('the receiver gets the signature, the event id and the attempt', async () => {
+    await deliver(to(), local)
+
+    const headers = received[0]?.headers ?? {}
+    expect(headers['x-formancy-signature']).toMatch(/^t=\d+,v1=[0-9a-f]{64}$/)
+    expect(headers['x-formancy-event-id']).toBe('ev_1')
+    expect(headers['x-formancy-attempt']).toBe('1')
+    expect(received[0]?.body).toBe(BASE.body)
+  })
+
+  test('a 5xx is a failure that says what it was, without the body', async () => {
+    reply = (_request, response) => response.writeHead(503).end('the database is on fire')
+
+    const result = await deliver(to(), local)
+
+    expect(result.ok).toBe(false)
+    expect(result.status).toBe(503)
+    // A receiver's body is not ours to repeat into an operator's action log.
+    expect(result.error).not.toContain('fire')
+  })
+
+  test('a redirect is refused rather than followed', async () => {
+    // A redirect is a second destination nothing has checked. Following one
+    // would hand the whole address guard back to whoever wrote the URL.
+    reply = (_request, response) => response.writeHead(302, { location: 'http://169.254.169.254/' }).end()
+
+    const result = await deliver(to(), local)
+
+    expect(result).toEqual({ ok: false, status: 302, error: 'Redirects are not followed.' })
+  })
+
+  test('a response larger than the cap is read to the cap and stopped', async () => {
+    reply = (_request, response) => {
+      response.writeHead(200, { 'content-type': 'text/plain' })
+      // Well past the 64 kB cap. An unbounded read is a memory exhaustion the
+      // receiver controls.
+      response.end('x'.repeat(256 * 1024))
+    }
+
+    const result = await deliver(to(), local)
+
+    expect(result).toEqual({ ok: true, status: 200 })
+  })
+
+  test('a receiver that never answers times out rather than hanging the worker', async () => {
+    reply = () => undefined
+
+    const result = await deliver(to(), { ...local, timeoutMs: 150 })
+
+    expect(result.ok).toBe(false)
+    expect(result.error).toBeDefined()
+  })
+
+  test('nothing listening is a failed delivery carrying the cause', async () => {
+    const result = await deliver(
+      { ...BASE, url: 'http://127.0.0.1:1/hook' },
+      { ...local, timeoutMs: 500 },
+    )
+
+    expect(result.ok).toBe(false)
+    // `fetch failed` on its own tells an operator nothing.
+    expect(result.error).toMatch(/ECONNREFUSED|fetch failed/)
   })
 })
