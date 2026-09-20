@@ -719,6 +719,19 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
   let visibleErrorsCache: ReadonlyArray<{ path: string; codes: readonly string[] }> | undefined
   let visibleErrorsCacheVersion = -1
 
+  // minItems is a MODEL property, so the engine honours it rather than each
+  // renderer seeding rows in a mount effect — which is both duplicated work
+  // and, under React StrictMode's double-invoked effects, a source of extra
+  // rows nobody asked for.
+  for (const repeater of repeaters) {
+    const minimum = repeater.def.minItems ?? 0
+    const existing = currentRowCount(repeater)
+    if (existing >= minimum) continue
+    const rows = Array.isArray(store.get(repeater.path)) ? [...(store.get(repeater.path) as unknown[])] : []
+    while (rows.length < minimum) rows.push({})
+    store.set(repeater.path, rows)
+  }
+
   // The first pass: initial visibility and computed values, before anyone asks.
   applyRules()
 

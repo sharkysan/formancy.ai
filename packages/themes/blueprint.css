@@ -1,0 +1,306 @@
+/*
+ * Blueprint — a reference theme for formancy.
+ *
+ * Technical drawing: square corners, hairline rules, a single blueprint blue
+ * that means "you can act here" and a red that means "this is wrong". Nothing
+ * is coloured because it looked plain.
+ *
+ * Every selector targets a `data-formancy-part` attribute or a control inside
+ * one. Nothing here knows a class name the renderers emit, because they emit
+ * none — that is the whole point of the file.
+ *
+ * Scoped under [data-formancy-theme='blueprint'] so a page can hold more than
+ * one theme and switch between them without reloading.
+ */
+
+[data-formancy-theme='blueprint'] {
+  --fm-ink: #17222e;
+  --fm-paper: #ffffff;
+  --fm-chrome: #eef2f6;
+  --fm-rule: #cbd6e0;
+  --fm-muted: #56687a;
+  --fm-signal: #0b5fce;
+  --fm-invalid: #a81d1d;
+  --fm-invalid-wash: #fdf3f2;
+
+  --fm-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --fm-mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Code', 'Consolas', monospace;
+
+  --fm-step: 1.125rem;
+  --fm-radius: 3px;
+}
+
+/* ------------------------------------------------------------------ fields */
+
+[data-formancy-theme='blueprint'] [data-formancy-part='field'] {
+  display: grid;
+  gap: 0.375rem;
+  margin-block-end: var(--fm-step);
+  font-family: var(--fm-sans);
+  color: var(--fm-ink);
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='label'] {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--fm-ink);
+}
+
+/* A required field earns a mark; an optional one says nothing. The mark is
+   decorative to a screen reader, which already hears `aria-required`. */
+[data-formancy-theme='blueprint'] [data-formancy-part='field']:has([aria-required='true']) [data-formancy-part='label']::after {
+  content: '*';
+  margin-inline-start: 0.25em;
+  color: var(--fm-signal);
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='field'] :is(input, select, textarea) {
+  font: inherit;
+  font-size: 0.9375rem;
+  color: var(--fm-ink);
+  background: var(--fm-paper);
+  border: 1px solid var(--fm-rule);
+  border-radius: var(--fm-radius);
+  padding: 0.5rem 0.625rem;
+  width: 100%;
+  min-width: 0;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='field'] textarea {
+  min-height: 5.5rem;
+  resize: vertical;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='field'] :is(input, select, textarea):focus-visible {
+  outline: none;
+  border-color: var(--fm-signal);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--fm-signal) 22%, transparent);
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='field'] :is(input, select, textarea):disabled {
+  background: var(--fm-chrome);
+  color: var(--fm-muted);
+  cursor: not-allowed;
+}
+
+/* Checkboxes and radios are not full-width text boxes. */
+[data-formancy-theme='blueprint'] [data-formancy-part='field']:has(> input[type='checkbox']) {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0.5rem;
+}
+[data-formancy-theme='blueprint'] [data-formancy-part='field'] > input[type='checkbox'] {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--fm-signal);
+  order: -1;
+}
+
+/* ------------------------------------------------------------------- state */
+
+/* The invalid marker is a bar on the leading edge, not a red glow: it survives
+   greyscale, and it points at which field rather than tinting the whole area. */
+[data-formancy-theme='blueprint'] [data-formancy-part='field'][data-state='invalid'] {
+  border-inline-start: 2px solid var(--fm-invalid);
+  padding-inline-start: 0.75rem;
+  margin-inline-start: -0.875rem;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='field'][data-state='invalid'] :is(input, select, textarea) {
+  border-color: var(--fm-invalid);
+  background: var(--fm-invalid-wash);
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='error'] {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--fm-invalid);
+}
+
+
+/* A checkbox field is a two-column grid; its error belongs under both, not
+   squeezed beside the box. */
+[data-formancy-theme='blueprint'] [data-formancy-part='field']:has(> input[type='checkbox']) [data-formancy-part='error'] {
+  grid-column: 1 / -1;
+}
+
+/* --------------------------------------------------------------- radio sets */
+
+[data-formancy-theme='blueprint'] fieldset[data-formancy-part='field'] {
+  border: 1px solid var(--fm-rule);
+  border-radius: var(--fm-radius);
+  padding: 0.75rem 0.875rem 0.875rem;
+  display: block;
+}
+
+[data-formancy-theme='blueprint'] fieldset[data-formancy-part='field'] > [data-formancy-part='label'] {
+  padding-inline: 0.25rem;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='radio-option'] {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-block-start: 0.5rem;
+  font-size: 0.9375rem;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='radio-option'] input {
+  width: auto;
+  accent-color: var(--fm-signal);
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='radio-option'] label {
+  font-weight: 400;
+}
+
+/* --------------------------------------------------------------- repeaters */
+
+[data-formancy-theme='blueprint'] [data-formancy-part='repeater'] {
+  border: 1px solid var(--fm-rule);
+  border-radius: var(--fm-radius);
+  padding: 0.25rem 1rem 1rem;
+  margin-block-end: var(--fm-step);
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='repeater-legend'] {
+  font-family: var(--fm-sans);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--fm-ink);
+  padding-inline: 0.375rem;
+}
+
+/* Rows are separated by a rule rather than nested boxes: a box inside a box
+   inside a form reads as three unrelated things. */
+[data-formancy-theme='blueprint'] [data-formancy-part='row'] + [data-formancy-part='row'] {
+  border-block-start: 1px solid var(--fm-rule);
+  padding-block-start: var(--fm-step);
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='row'] {
+  padding-block-start: 0.75rem;
+}
+
+/* --------------------------------------------------------------- buttons */
+
+[data-formancy-theme='blueprint'] [data-formancy-part='repeater'] button,
+[data-formancy-theme='blueprint'] [data-formancy-part='wizard-nav'] button,
+[data-formancy-theme='blueprint'] [data-formancy-part='submit'] {
+  font: inherit;
+  font-family: var(--fm-sans);
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: var(--fm-radius);
+  padding: 0.4375rem 0.875rem;
+  cursor: pointer;
+  border: 1px solid var(--fm-rule);
+  background: var(--fm-paper);
+  color: var(--fm-ink);
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='repeater'] button:hover,
+[data-formancy-theme='blueprint'] [data-formancy-part='wizard-nav'] button:hover {
+  border-color: var(--fm-signal);
+  color: var(--fm-signal);
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='submit'] {
+  background: var(--fm-signal);
+  border-color: var(--fm-signal);
+  color: var(--fm-paper);
+  padding-inline: 1.125rem;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='submit']:hover {
+  background: color-mix(in srgb, var(--fm-signal) 88%, black);
+}
+
+[data-formancy-theme='blueprint'] :is([data-formancy-part='repeater'], [data-formancy-part='wizard-nav'], [data-formancy-part='submit']):focus-visible,
+[data-formancy-theme='blueprint'] [data-formancy-part='repeater'] button:focus-visible,
+[data-formancy-theme='blueprint'] [data-formancy-part='wizard-nav'] button:focus-visible {
+  outline: 2px solid var(--fm-signal);
+  outline-offset: 2px;
+}
+
+/* ----------------------------------------------------------------- wizard */
+
+[data-formancy-theme='blueprint'] [data-formancy-part='stepper'] ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  list-style: none;
+  margin: 0 0 1.5rem;
+  padding: 0 0 0.75rem;
+  border-block-end: 1px solid var(--fm-rule);
+  font-family: var(--fm-sans);
+  font-size: 0.875rem;
+  color: var(--fm-muted);
+}
+
+/* The current step is the only one that carries weight and colour — the
+   stepper answers "where am I", so only one item should answer it. */
+[data-formancy-theme='blueprint'] [data-formancy-part='stepper'] li[aria-current='step'] {
+  color: var(--fm-signal);
+  font-weight: 600;
+  box-shadow: inset 0 -2px 0 0 var(--fm-signal);
+  padding-block-end: 0.75rem;
+  margin-block-end: -0.75rem;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='wizard-nav'] {
+  display: flex;
+  gap: 0.625rem;
+  margin-block-start: 1.5rem;
+  padding-block-start: 1.25rem;
+  border-block-start: 1px solid var(--fm-rule);
+}
+
+/* ---------------------------------------------------------- error summary */
+
+[data-formancy-theme='blueprint'] [data-formancy-part='error-summary'] {
+  border: 1px solid var(--fm-invalid);
+  border-inline-start-width: 3px;
+  border-radius: var(--fm-radius);
+  background: var(--fm-invalid-wash);
+  padding: 0.875rem 1rem;
+  margin-block-end: 1.5rem;
+  font-family: var(--fm-sans);
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='error-summary']:focus-visible {
+  outline: 2px solid var(--fm-invalid);
+  outline-offset: 2px;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='error-summary-heading'] {
+  margin: 0 0 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--fm-invalid);
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='error-summary'] ul {
+  margin: 0;
+  padding-inline-start: 1.125rem;
+  font-size: 0.875rem;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='error-summary'] li + li {
+  margin-block-start: 0.25rem;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='error-summary'] a {
+  color: var(--fm-invalid);
+  text-underline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-formancy-theme='blueprint'] [data-formancy-part] * {
+    transition: none !important;
+  }
+}

@@ -157,3 +157,59 @@ describe('repeaters accessor', () => {
     expect(repeaters[0]!.def.type).toBe('repeater')
   })
 })
+
+describe('minItems', () => {
+  const seeded: FormSchema = {
+    specVersion: '0',
+    id: 'crm',
+    title: 'CRM',
+    model: {
+      fields: [
+        {
+          key: 'contacts',
+          type: 'repeater',
+          minItems: 2,
+          fields: [{ key: 'name', type: 'text' }],
+        },
+      ],
+    },
+  }
+
+  test('the engine opens with the minimum number of rows', () => {
+    const engine = createFormEngine({ schema: seeded })
+
+    expect(engine.rowCount(['contacts'])).toBe(2)
+    expect(engine.fieldPaths()).toContain('contacts[1].name')
+  })
+
+  test('seeding tops up a short initial value rather than replacing it', () => {
+    const engine = createFormEngine({
+      schema: seeded,
+      initialValue: { contacts: [{ name: 'Ada' }] },
+    })
+
+    expect(engine.rowCount(['contacts'])).toBe(2)
+    expect(engine.getFieldSnapshot(['contacts', 0, 'name']).value).toBe('Ada')
+  })
+
+  test('an initial value above the minimum is left alone', () => {
+    const engine = createFormEngine({
+      schema: seeded,
+      initialValue: { contacts: [{}, {}, {}] },
+    })
+
+    expect(engine.rowCount(['contacts'])).toBe(3)
+  })
+
+  test('seeding is idempotent — building twice yields the same shape', () => {
+    const once = createFormEngine({ schema: seeded }).value()
+    const twice = createFormEngine({ schema: seeded, initialValue: once }).value()
+
+    expect(twice).toEqual(once)
+  })
+
+  test('a repeater without minItems still opens empty', () => {
+    const engine = createFormEngine({ schema })
+    expect(engine.rowCount(['items'])).toBe(0)
+  })
+})
