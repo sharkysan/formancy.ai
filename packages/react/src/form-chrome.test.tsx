@@ -169,9 +169,8 @@ describe('the wizard chrome', () => {
     const engine = createFormEngine({ schema: paged, initialValue: { firstName: '   ' } })
     renderForm(engine)
 
-    // The whitespace value sneaks past next() only because the user never
-    // touched it? No — next validates. Fill properly, then clear via engine to
-    // simulate a later-page dependency invalidating an earlier page.
+    // Fill page one properly, advance, then break it from the engine — the
+    // shape of a later answer invalidating an earlier page.
     engine.setValue(['firstName'], 'Ada')
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Next' }))

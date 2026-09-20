@@ -194,7 +194,9 @@ export function createReactDriver(): RendererDriver {
         const describedBy = control?.getAttribute('aria-describedby')
         if (describedBy == null) continue
         for (const id of describedBy.split(/\s+/)) {
-          const text = document.getElementById(id)?.textContent
+          // Trimmed: JSX happens not to introduce element-internal whitespace
+          // today, but a reformat must not silently break code parsing.
+          const text = document.getElementById(id)?.textContent?.trim()
           if (text == null || text === '') continue
           for (const code of text.split(', ')) messages.push({ path: candidate, code, text })
         }
@@ -206,7 +208,7 @@ export function createReactDriver(): RendererDriver {
       const { schema } = requireMounted()
       const active = document.querySelector('[aria-current="step"]')
       if (active === null) return undefined
-      const name = active.textContent ?? ''
+      const name = (active.textContent ?? '').trim()
       // Map the step's accessible name back to the page key it stands for.
       for (const field of schema.model.fields) {
         const extras = field as { type?: string; key?: string; label?: string }

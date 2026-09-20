@@ -48,20 +48,6 @@ export interface FormancyFormProps {
   onSubmit?: (outcome: SubmitOutcome) => void
 }
 
-/** Labels and options ride on the model definitions until the spec grows its
- *  i18n and options sections; this is the one place that convention lives. */
-interface DefExtras {
-  label?: string
-  options?: ReadonlyArray<{ value: string; label: string }>
-  minItems?: number
-  addLabel?: string
-  removeLabel?: string
-}
-
-function extrasOf(def: FieldDef): DefExtras {
-  return def as unknown as DefExtras
-}
-
 /**
  * Renders the whole form from the engine: one slot per field, resolved through
  * the registry. Slots subscribe individually, so a keystroke re-renders one
@@ -122,7 +108,7 @@ function PagedForm(props: FormancyFormProps) {
         <ol>
           {pages.map((page, index) => (
             <li key={page.key} aria-current={index === wizard.page ? 'step' : undefined}>
-              {extrasOf(page.def).label ?? page.key}
+              {page.def.label ?? page.key}
             </li>
           ))}
         </ol>
@@ -191,7 +177,7 @@ function FieldSlot({
     registry?.byPath?.[path] ?? registry?.byType?.[field.type] ?? DEFAULT_COMPONENTS[field.type]
   if (Component === null) return null
 
-  const label = extrasOf(field.def).label ?? fallbackLabel ?? path
+  const label = field.def.label ?? fallbackLabel ?? path
   return <Component path={path} label={label} />
 }
 
@@ -207,11 +193,10 @@ function RepeaterSection({
   const engine = useFormEngine()
   const repeater = useRepeater(wire)
   const def = engine.repeaters().find((candidate) => candidate.wire === wire)?.def
-  const extras = def === undefined ? {} : extrasOf(def)
-  const label = extras.label ?? labels?.[wire] ?? wire
-  const addLabel = extras.addLabel ?? `Add ${label}`
-  const removeLabel = extras.removeLabel ?? `Remove ${label}`
-  const minItems = extras.minItems ?? 0
+  const label = def?.label ?? labels?.[wire] ?? wire
+  const addLabel = def?.addLabel ?? `Add ${label}`
+  const removeLabel = def?.removeLabel ?? `Remove ${label}`
+  const minItems = def?.minItems ?? 0
 
   // Seed to minItems on mount: a repeater that promises one row must show one
   // empty row, not an add button and a shrug.
@@ -362,9 +347,13 @@ function DateField({ path, label }: FieldComponentProps) {
 
 function SelectField({ path, label }: FieldComponentProps) {
   const field = useField(path)
-  const options = extrasOf(field.def).options ?? []
+  const options = field.def.options ?? []
   return (
     <FieldShell field={field} label={label}>
+      {/* Setting `value` on the select works only because React applies it
+          AFTER the option children render; a select's value property is
+          settable once its options exist. Angular binds [selected] per option
+          for the same reason — the explicit form of the same contract. */}
       <select
         {...field.controlProps}
         value={typeof field.value === 'string' ? field.value : ''}
@@ -387,7 +376,7 @@ function SelectField({ path, label }: FieldComponentProps) {
 
 function RadioGroupField({ path, label }: FieldComponentProps) {
   const field = useField(path)
-  const options = extrasOf(field.def).options ?? []
+  const options = field.def.options ?? []
   const showError = field.touched && field.errors.length > 0
   return (
     <fieldset
