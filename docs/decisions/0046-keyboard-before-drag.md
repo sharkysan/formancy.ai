@@ -146,3 +146,33 @@ evaluating the result rather than by inspecting it.
 The expression is shown in the panel, before the rule is added and afterwards.
 Hiding it would make the builder a place where CEL is written by someone who
 cannot see it.
+
+---
+
+## Addendum — the drag surface, added second
+
+It exists now, and the order it was built in is what this record was about.
+Dragging calls the same `moveField` the keyboard palette calls. Remove it and
+nothing is lost but the convenience; remove the keyboard path and the builder
+stops being usable without a pointer.
+
+Three decisions in it are worth keeping:
+
+**Only legal drops are offered.** The indicator is drawn from a computed
+destination, so an illegal target shows no line and accepts nothing. The
+alternative — allow the drop, let the session refuse it — makes the field snap
+back to where it was with no explanation, which reads as a bug rather than a
+rule.
+
+**Every drop is announced** through the same polite region a keyboard move
+uses. Somebody who drags with a mouse and reads with a screen reader is not an
+unusual person, and a silent command is a command they cannot confirm.
+
+**The index is computed after the field is lifted out.** A move index counts
+positions in the container as it will be, not as it is, so a downward move
+within one container is off by one if computed naively — and off by one means
+the field lands one place past where the person pointed. `dropLocation` handles
+it, and the tests cover moving down, moving up, dropping onto oneself, dropping
+a container into its own child, and drops that would change nothing. The last
+of those is refused rather than committed, because a no-op move still pushes an
+entry onto the undo stack and announces a move that did not happen.

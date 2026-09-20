@@ -13,14 +13,20 @@ const session = createBuilderSession(schema)
 <FormancyBuilder session={session} />
 ```
 
-## It is a keyboard interface first
+## It is a keyboard interface first, and a drag surface second
 
-There is no drag surface yet, and that is the order on purpose. WCAG 2.2
-SC 2.5.7 requires every dragging movement to have a non-dragging alternative
-that does the same job. Built the other way round, the drag ships and the
-keyboard path becomes a follow-up competing with features — so the keyboard
-path is the whole thing, and a drag surface will be a second way to reach the
-same commands.
+Both work. The order they were built in is the point: WCAG 2.2 SC 2.5.7
+requires every dragging movement to have a non-dragging alternative that does
+the same job, and built the other way round the drag ships while the keyboard
+path becomes a follow-up competing with features. Here the keyboard path is the
+whole interface and dragging calls the same session commands — remove it and
+nothing is lost but the convenience.
+
+Dragging only offers drops the session will accept. The indicator is drawn from
+the computed destination, so an illegal target shows no line and takes no drop;
+allowing one and refusing it afterwards makes the field snap back with no
+explanation. Every drop is announced through the same live region a keyboard
+move uses, so a drag is not a silent command for somebody using both.
 
 | Key | What it does |
 |---|---|
@@ -124,4 +130,4 @@ for that exact string.
 
 ## What it does not do yet
 
-Dragging, and conditions that combine more than one comparison.
+Conditions that combine more than one comparison.

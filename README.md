@@ -151,10 +151,12 @@ come apart, so four criteria shape how they are built:
 | **1.4.10** Reflow | A row becomes one column when there is no width for two, via `auto-fit`/`minmax` — a media query, not a measurement. A layout that reflows only after scripts run does not reflow |
 | **1.3.1** Info and Relationships | A row is presentation and gets no semantics; a *labelled* section is visibly grouping fields, so it is a real `role="group"` with an accessible name. An unlabelled one stays a plain box, because a group with no name announces "group" and tells nobody anything |
 
-**The builder is keyboard-first** and has no drag surface at all, because
-2.5.7 requires every dragging movement to have an equivalent alternative and
-building the alternative second is how it ends up unfinished
-([0046](./docs/decisions/0046-keyboard-before-drag.md)).
+**The builder is keyboard-first**, and its drag surface was added afterwards
+on purpose: 2.5.7 requires every dragging movement to have an equivalent
+alternative, and building the alternative second is how it ends up unfinished
+([0046](./docs/decisions/0046-keyboard-before-drag.md)). Dragging calls the
+same commands the keyboard does, offers only drops the session will accept, and
+announces through the same live region.
 
 **What this is not.** Automated checking catches roughly 57% of
 machine-detectable issues by Deque's own figure, and about 30% of WCAG 2.2

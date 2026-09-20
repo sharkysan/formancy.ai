@@ -214,8 +214,7 @@ See [`RELEASING.md`](./RELEASING.md).
 
 Named rather than implied.
 
-**Not built yet.** A drag surface for the builder, and conditions combining more
-than one comparison; file upload; webhooks and actions; rate
+**Not built yet.** Conditions combining more than one comparison; file upload; webhooks and actions; rate
 limiting, challenge and origin allowlists on the public plane; multi-tenancy; a
 published container image — one builds locally from `docker compose up`, but nothing is pushed to a registry or signed.
 

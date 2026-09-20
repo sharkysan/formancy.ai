@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'vitest'
-import { cleanup, render, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 // Named, not default: the package exports both, and under NodeNext the
 // default resolves to the module namespace rather than the object with setup().
 import { userEvent } from '@testing-library/user-event'
@@ -275,5 +275,66 @@ describe('adding a field', () => {
 
     expect(keys()).toEqual(['Customer', 'Billing address', 'Street', 'City'])
     expect(screen.queryByRole('dialog')).toBeNull()
+  })
+})
+
+/**
+ * Dragging is a SECOND way to reach the same commands. WCAG 2.2 SC 2.5.7 is
+ * satisfied by the keyboard path existing, which it did first and still does
+ * without this — these tests exist to keep that true.
+ */
+describe('dragging', () => {
+  const dragFromTo = (from: string, to: string, edge: 'top' | 'bottom'): void => {
+    const source = screen.getByRole('treeitem', { name: from })
+    const target = screen.getByRole('treeitem', { name: to })
+
+    // jsdom gives every element a zero-sized box, so the midpoint is 0 and
+    // clientY decides the edge.
+    const dataTransfer = {
+      effectAllowed: '',
+      dropEffect: '',
+      setData: () => undefined,
+      getData: () => '',
+    }
+
+    fireEvent.dragStart(source, { dataTransfer })
+    fireEvent.dragOver(target, { dataTransfer, clientY: edge === 'top' ? -1 : 1 })
+    fireEvent.drop(target, { dataTransfer, clientY: edge === 'top' ? -1 : 1 })
+  }
+
+  test('a field can be dragged to another position', () => {
+    mount()
+
+    dragFromTo('Customer', 'City', 'bottom')
+
+    expect(keys()).toEqual(['Billing address', 'Street', 'City', 'Customer'])
+  })
+
+  test('the keyboard path still works afterwards, because it never depended on this', () => {
+    mount()
+
+    dragFromTo('Customer', 'City', 'bottom')
+    // The tree is still a tree: the same commands, unchanged.
+    expect(screen.getByRole('tree')).toBeTruthy()
+    expect(screen.getAllByRole('treeitem')).toHaveLength(4)
+  })
+
+  test('a drop is announced through the same live region a keyboard move uses', () => {
+    mount()
+
+    dragFromTo('Customer', 'City', 'bottom')
+
+    // Otherwise a drag is a silent command for somebody using both.
+    expect(screen.getByRole('status').textContent).toMatch(/^Moved /)
+  })
+
+  test('an illegal drop is never offered, rather than refused after the fact', () => {
+    mount()
+
+    // A container into its own child. If the UI accepted it and the session
+    // refused, the field would snap back with no explanation.
+    dragFromTo('Billing address', 'Street', 'bottom')
+
+    expect(keys()).toEqual(['Customer', 'Billing address', 'Street', 'City'])
   })
 })

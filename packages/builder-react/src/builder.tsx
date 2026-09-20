@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
 import type { BuilderSession } from '@formancy/builder-core'
+import { dropLocation } from './drop.js'
 import { newFieldOfType, paletteEntries } from './palette.js'
 import { useBuilder } from './use-builder.js'
 import type { MoveTarget } from './use-builder.js'
@@ -43,6 +44,18 @@ export function FormancyBuilder({ session, label = 'Form structure' }: BuilderPr
   // second question cannot be asked without an answer to the first.
   const [adding, setAdding] = useState<{ type: string } | null>(null)
   const [announcement, setAnnouncement] = useState('')
+  /**
+   * The drag in progress, if any.
+   *
+   * A second way to reach the same commands — never the only way. WCAG 2.2
+   * SC 2.5.7 requires an equivalent alternative to every dragging movement,
+   * and the alternative here is the whole keyboard interface, which was built
+   * first and does not depend on this.
+   */
+  const [dragging, setDragging] = useState<readonly string[] | null>(null)
+  const [dropTarget, setDropTarget] = useState<{ index: number; edge: 'before' | 'after' } | null>(
+    null,
+  )
 
   const itemRefs = useRef<Array<HTMLLIElement | null>>([])
   const treeRef = useRef<HTMLUListElement | null>(null)
@@ -216,6 +229,55 @@ export function FormancyBuilder({ session, label = 'Form structure' }: BuilderPr
             // hundred-field form should not cost a hundred tabs to get past.
             tabIndex={position === index ? 0 : -1}
             onFocus={() => setFocusedIndex(position)}
+            // 2.5.7 is satisfied by the keyboard path existing, not by this.
+            // Dragging is an addition for people who prefer it.
+            draggable
+            data-dragging={dragging !== null && samePath(dragging, node.keyPath) ? 'true' : undefined}
+            data-drop={dropTarget?.index === position ? dropTarget.edge : undefined}
+            onDragStart={(event) => {
+              setDragging(node.keyPath)
+              event.dataTransfer.effectAllowed = 'move'
+              // Some browsers refuse to start a drag without data set.
+              event.dataTransfer.setData('text/plain', node.keyPath.join('.'))
+            }}
+            onDragEnd={() => {
+              setDragging(null)
+              setDropTarget(null)
+            }}
+            onDragOver={(event) => {
+              if (dragging === null) return
+              const edge = edgeOf(event)
+              // Only a legal drop shows an indicator and accepts. Allowing one
+              // the session will refuse means the field snaps back with no
+              // explanation.
+              if (dropLocation(view.document, dragging, node.keyPath, edge) === undefined) {
+                setDropTarget(null)
+                return
+              }
+              event.preventDefault()
+              event.dataTransfer.dropEffect = 'move'
+              setDropTarget({ index: position, edge })
+            }}
+            onDragLeave={() => setDropTarget(null)}
+            onDrop={(event) => {
+              event.preventDefault()
+              const from = dragging
+              setDragging(null)
+              setDropTarget(null)
+              if (from === null) return
+
+              const location = dropLocation(view.document, from, node.keyPath, edgeOf(event))
+              if (location === undefined) return
+
+              const outcome = session.moveField(from, location)
+              // Announced through the same live region the keyboard path uses,
+              // so a drag is not a silent command for somebody using both.
+              announce(
+                outcome.ok
+                  ? `Moved ${nameOf(view.document, node.def)}.`
+                  : `Cannot move: ${outcome.message}`,
+              )
+            }}
           >
             {nameOf(view.document, node.def)}
           </li>
@@ -302,6 +364,16 @@ export function FormancyBuilder({ session, label = 'Form structure' }: BuilderPr
       </dl>
     </div>
   )
+}
+
+/** Which half of the row the pointer is over. */
+function edgeOf(event: React.DragEvent<HTMLElement>): 'before' | 'after' {
+  const box = event.currentTarget.getBoundingClientRect()
+  return event.clientY < box.top + box.height / 2 ? 'before' : 'after'
+}
+
+function samePath(a: readonly string[], b: readonly string[]): boolean {
+  return a.length === b.length && a.every((key, at) => key === b[at])
 }
 
 function labelForType(type: string): string {
