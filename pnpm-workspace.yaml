@@ -5,14 +5,16 @@ packages:
 # Shared dependency versions live here so the packages cannot drift apart.
 allowBuilds:
   '@node-rs/argon2': true
-  '@parcel/watcher': set this to true or false
-  cpu-features: set this to true or false
+  '@parcel/watcher': true
+  # Optional SSH acceleration used by transitive tooling; JS fallbacks suffice.
+  cpu-features: false
   esbuild: true
-  lmdb: set this to true or false
-  msgpackr-extract: set this to true or false
-  protobufjs: set this to true or false
+  lmdb: true
+  msgpackr-extract: true
+  # Only checks dependency version notation; no generated runtime artifacts.
+  protobufjs: false
   sharp: true
-  ssh2: set this to true or false
+  ssh2: false
 
 catalog:
   # Pinned to 6.0.x deliberately: @angular/compiler-cli 22.1.7 declares
