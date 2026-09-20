@@ -6,10 +6,13 @@ description: A self-hostable form engine, renderers and backend for React and An
 :::caution[Status: pre-alpha]
 formancy is pre-alpha software. The schema spec is `specVersion: "1"` and is
 **frozen** — documents written today keep working. The *packages* are still
-pre-alpha and their APIs will change. They are **not yet published to npm** — to try formancy
-today, clone the repository. The server has authentication and role-based
-authorization, but not yet rate limiting, anonymous-submission hardening or
-audit logging. Do not build on it yet, and do not deploy it anywhere public.
+pre-alpha and their APIs will change. They are **on npm** under the
+[`@formancy`](https://www.npmjs.com/org/formancy) scope at `0.1.0`, published
+from CI with provenance — except `@formancy/builder-react`, which lands in
+the next release. The server has authentication, role-based authorization,
+per-IP rate limiting and a per-form origin allowlist, but no proof-of-work
+challenge, no submission tokens and no audit logging. Do not build on it yet,
+and do not deploy it anywhere public.
 :::
 
 formancy is a modern, self-hostable form platform for React and Angular. It is

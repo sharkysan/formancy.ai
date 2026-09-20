@@ -16,14 +16,29 @@ A modern, self-hostable form engine and backend — for React and Angular.
 > The **spec is frozen** at `specVersion: "1"`: a form document written today
 > keeps working, and the submissions stored against it keep their shape. The
 > **package APIs are not frozen** — they will change before 1.0.
-> The core engine is available on npm as
-> [`@formancy/core`](https://www.npmjs.com/package/@formancy/core).
+> Ten packages are on npm under the
+> [`@formancy`](https://www.npmjs.com/org/formancy) scope at `0.1.0`, published
+> from CI with provenance.
 >
 > The server is not ready for a public deployment. It has authentication,
 > role-based authorization, forms that are private until opened, per-IP rate
 > limits, a request body cap and a publish-time check that refuses regular
 > expressions which can be made to backtrack — but no challenge, no submission
 > tokens and no audit logging.
+
+## Install
+
+```bash
+npm install @formancy/react @formancy/core @formancy/spec    # React 19
+npm install @formancy/angular @formancy/core @formancy/spec  # Angular 22
+```
+
+ESM-only, Node >= 22.12. The framework package is a peer dependency, so you
+keep the React or Angular version you already have. The backend is a container
+rather than a dependency — see [running the stack](#run-the-stack-locally).
+
+`@formancy/builder-react` is not published yet; [clone the
+repository](#development) to use the builder.
 
 ## Why
 
@@ -218,8 +233,25 @@ knowingly missing from it. [`RELEASING.md`](./RELEASING.md) — how a release is
 cut, and what the pipeline signs and attests.
 
 Releases are published from CI with npm provenance, and each one carries a
-CycloneDX SBOM signed with cosign. Nothing is published yet: 0.1.0 is tagged,
-and the `@formancy` npm scope has not been claimed.
+CycloneDX SBOM signed with cosign.
+
+**0.1.0 is on npm.** Ten packages under the
+[`@formancy`](https://www.npmjs.com/org/formancy) scope —
+`@formancy/spec`, `@formancy/expressions`, `@formancy/core`,
+`@formancy/react`, `@formancy/angular`, `@formancy/conformance`,
+`@formancy/builder-core`, `@formancy/server-core`, `@formancy/server` and
+`@formancy/themes` — each carrying a SLSA v1 provenance attestation that
+binds the tarball to the workflow run, commit and repository that built it.
+There is no signing key, so there is none to leak. Check one yourself:
+
+```bash
+npm install @formancy/core
+npm audit signatures
+```
+
+`@formancy/builder-react` is the one exception: it was written after 0.1.0 was
+cut and lands in the next release. Until then the builder is reachable by
+cloning the repository.
 
 ## License
 

@@ -3,15 +3,25 @@ title: "Quickstart: React"
 description: Render a working formancy form in React with createFormEngine, FormancyProvider and FormancyForm.
 ---
 
-:::note
-`@formancy/react` is **not yet published to npm**. To try it today, clone the
-repository and work inside the monorepo — the playground app
-(`apps/playground`) is the fastest place to poke at a live form.
+## Install
+
+```bash
+npm install @formancy/react @formancy/core @formancy/spec
+```
+
+React 19 is a peer dependency. The packages are ESM-only, so Node 22.12 or
+newer and any bundler from the last few years.
+
+:::note[Pre-alpha]
+`0.1.0` is on npm with provenance — `npm audit signatures` will tell you
+which workflow run built it — but the package APIs will change before 1.0.
+The *schema* is frozen at `specVersion: "1"`; the code around it is not.
 :::
 
-## Set up the repository
+### Or from the repository
 
-You need Node >= 22.12 and pnpm (via corepack).
+The playground app is the fastest place to poke at a live form, and it is the
+only way to use the builder until `@formancy/builder-react` is published.
 
 ```bash
 git clone https://github.com/sharkysan/formancy.ai.git
@@ -19,6 +29,7 @@ cd formancy.ai
 corepack enable pnpm
 pnpm install
 pnpm build
+pnpm --filter @formancy/playground dev
 ```
 
 ## A minimal form

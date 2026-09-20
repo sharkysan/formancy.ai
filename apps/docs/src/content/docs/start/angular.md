@@ -3,9 +3,20 @@ title: "Quickstart: Angular"
 description: Render a working formancy form in Angular with provideFormancy, injectField and the FormancyForm component.
 ---
 
-:::note
-`@formancy/angular` is **not yet published to npm**. To try it today, clone the
-repository and work inside the monorepo.
+## Install
+
+```bash
+npm install @formancy/angular @formancy/core @formancy/spec
+```
+
+`@angular/core` is a peer dependency, and the binding targets Angular 22. To
+work inside the monorepo instead, clone
+[the repository](https://github.com/sharkysan/formancy.ai) and run
+`pnpm install && pnpm build`.
+
+:::note[Pre-alpha]
+`0.1.0` is on npm with provenance, but the package APIs will change before 1.0.
+The *schema* is frozen at `specVersion: "1"`; the code around it is not.
 :::
 
 formancy's Angular binding targets **Angular 22** and is **zoneless**: it never
