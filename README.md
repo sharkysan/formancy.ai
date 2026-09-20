@@ -81,6 +81,12 @@ from the JSON Schema.
   formancy is not a medical device and claims no conformity; the documents say
   what they are and what they are not.
 
+## Releases
+
+[`CHANGELOG.md`](./CHANGELOG.md) — what is in each version, and what is
+knowingly missing from it. Nothing is published yet; 0.1.0 is written up and
+uncut.
+
 ## License
 
 Apache-2.0. See [LICENSE](./LICENSE) and [NOTICE](./NOTICE).
