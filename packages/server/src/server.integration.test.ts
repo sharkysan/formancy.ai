@@ -181,3 +181,32 @@ describe('the walking skeleton, end to end', () => {
     expect(await app.inject({ method: 'GET', url: '/f/cyclic-form' }).then((r) => r.statusCode)).toBe(404)
   })
 })
+
+describe('listing and export', () => {
+  test('the submissions list is newest first and version-tagged', async () => {
+    const response = await app.inject({ method: 'GET', url: '/f/contact-us/submissions' })
+
+    expect(response.statusCode).toBe(200)
+    const body = response.json() as { submissions: Array<{ version: number; data: unknown }> }
+    expect(body.submissions.length).toBeGreaterThanOrEqual(2)
+    expect(body.submissions[0]!.version).toBeGreaterThanOrEqual(1)
+  })
+
+  test('the CSV export unions columns across the two published versions', async () => {
+    const response = await app.inject({ method: 'GET', url: '/f/contact-us/submissions/export.csv' })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.headers['content-type']).toContain('text/csv')
+    const [header] = response.body.split('\n')
+    // v2 dropped nothing but changed the title; both versions share columns —
+    // the header must carry the model columns plus the bookkeeping ones.
+    expect(header).toContain('id,submittedAt,version')
+    expect(header).toContain('email')
+    expect(response.body).toContain('a@b.ch')
+  })
+
+  test('both 404 on an unknown form', async () => {
+    expect((await app.inject({ method: 'GET', url: '/f/ghost/submissions' })).statusCode).toBe(404)
+    expect((await app.inject({ method: 'GET', url: '/f/ghost/submissions/export.csv' })).statusCode).toBe(404)
+  })
+})

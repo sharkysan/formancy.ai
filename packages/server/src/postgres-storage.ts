@@ -1,4 +1,4 @@
-import { eq, max } from 'drizzle-orm'
+import { desc, eq, max } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import type postgres from 'postgres'
 import type { FormSchema } from '@formancy/spec'
@@ -88,13 +88,47 @@ export function createPostgresStorage(sql: postgres.Sql): Storage {
 
     async listSubmissions() {
       const rows = await db.select().from(submissions)
+      return rows.map(toSubmissionRecord)
+    },
+
+    async listSubmissionsByForm(formId) {
+      const rows = await db
+        .select()
+        .from(submissions)
+        .where(eq(submissions.formId, formId))
+        .orderBy(desc(submissions.submittedAt), desc(submissions.id))
+      return rows.map(toSubmissionRecord)
+    },
+
+    async listVersionsByForm(formId) {
+      const rows = await db
+        .select()
+        .from(formVersions)
+        .where(eq(formVersions.formId, formId))
+        .orderBy(desc(formVersions.version))
       return rows.map((row) => ({
         id: row.id,
         formId: row.formId,
-        formVersionId: row.formVersionId,
-        data: row.data,
-        submittedAt: row.submittedAt.toISOString(),
+        version: row.version,
+        schema: row.schema as FormSchema,
+        schemaHash: row.schemaHash,
       }))
     },
+  }
+}
+
+function toSubmissionRecord(row: {
+  id: string
+  formId: string
+  formVersionId: string
+  data: unknown
+  submittedAt: Date
+}) {
+  return {
+    id: row.id,
+    formId: row.formId,
+    formVersionId: row.formVersionId,
+    data: row.data,
+    submittedAt: row.submittedAt.toISOString(),
   }
 }

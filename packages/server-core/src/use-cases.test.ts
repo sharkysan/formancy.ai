@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from 'vitest'
 import type { FormSchema } from '@formancy/spec'
-import { createSubmission, publishForm, resolveForm } from './use-cases.js'
+import { createSubmission, exportCsv, listSubmissions, publishForm, resolveForm } from './use-cases.js'
 import type { ServerDeps } from './use-cases.js'
 import { createMemoryStorage } from './testing/memory-storage.js'
 
@@ -171,5 +171,124 @@ describe('createSubmission', () => {
     })
 
     expect(outcome).toMatchObject({ ok: false, kind: 'unknown_form' })
+  })
+})
+
+describe('listSubmissions', () => {
+  test('returns the submissions of one form, newest first, version-tagged', async () => {
+    const published = await publishForm(deps, { path: 'contact-us', schema })
+    if (!published.ok) throw new Error('publish failed')
+    await createSubmission(deps, {
+      path: 'contact-us',
+      declaredSchemaHash: published.schemaHash,
+      data: { email: 'first@b.ch' },
+    })
+    await createSubmission(deps, {
+      path: 'contact-us',
+      declaredSchemaHash: published.schemaHash,
+      data: { email: 'second@b.ch' },
+    })
+
+    const listed = await listSubmissions(deps, 'contact-us')
+
+    expect(listed).not.toBeUndefined()
+    expect(listed!.map((s) => (s.data as { email: string }).email)).toEqual([
+      'second@b.ch',
+      'first@b.ch',
+    ])
+    expect(listed![0]!.version).toBe(1)
+  })
+
+  test('an unknown form is undefined, not an empty list — the caller must 404', async () => {
+    expect(await listSubmissions(deps, 'ghost')).toBeUndefined()
+  })
+})
+
+describe('exportCsv', () => {
+  test('unions columns across schema versions: old columns survive, new ones appear', async () => {
+    const v1 = await publishForm(deps, { path: 'contact-us', schema })
+    if (!v1.ok) throw new Error('publish failed')
+    await createSubmission(deps, {
+      path: 'contact-us',
+      declaredSchemaHash: v1.schemaHash,
+      data: { email: 'old@b.ch', country: 'CH', canton: 'ZH' },
+    })
+
+    // v2 drops canton and adds a phone field.
+    const evolved = {
+      ...schema,
+      model: {
+        fields: [
+          { key: 'email', type: 'text', required: true },
+          { key: 'phone', type: 'text' },
+          { key: 'price', type: 'number' },
+          { key: 'qty', type: 'number' },
+          { key: 'total', type: 'number' },
+        ],
+      },
+      logic: { rules: [{ target: 'total', kind: 'computed', cel: 'price * qty' }] },
+    } as typeof schema
+    const v2 = await publishForm(deps, { path: 'contact-us', schema: evolved })
+    if (!v2.ok) throw new Error('publish failed')
+    await createSubmission(deps, {
+      path: 'contact-us',
+      declaredSchemaHash: v2.schemaHash,
+      data: { email: 'new@b.ch', phone: '+41' },
+    })
+
+    const csv = await exportCsv(deps, 'contact-us')
+
+    expect(csv).not.toBeUndefined()
+    const [header, ...rows] = csv!.trim().split('\n')
+    // Current version's column order leads; extinct columns keep their data at the end.
+    expect(header).toBe('id,submittedAt,version,email,phone,price,qty,total,country,canton')
+    expect(rows).toHaveLength(2)
+    expect(rows[0]).toContain('new@b.ch')
+    expect(rows[0]).toContain('+41')
+    expect(rows[1]).toContain('old@b.ch')
+    expect(rows[1]).toContain('ZH')
+  })
+
+  test('escapes quotes, commas and newlines the CSV way', async () => {
+    const published = await publishForm(deps, { path: 'contact-us', schema })
+    if (!published.ok) throw new Error('publish failed')
+    await createSubmission(deps, {
+      path: 'contact-us',
+      declaredSchemaHash: published.schemaHash,
+      data: { email: 'a@b.ch', country: 'says "hi", twice' },
+    })
+
+    const csv = await exportCsv(deps, 'contact-us')
+
+    expect(csv).toContain('"says ""hi"", twice"')
+  })
+
+  test('a repeater column carries its rows as JSON in one cell', async () => {
+    const { logic: _dropped, ...withoutLogic } = schema
+    const withRows = {
+      ...withoutLogic,
+      model: {
+        fields: [
+          { key: 'email', type: 'text', required: true },
+          {
+            key: 'items',
+            type: 'repeater',
+            fields: [{ key: 'name', type: 'text' }],
+          },
+        ],
+      },
+    } as unknown as typeof schema
+    const published = await publishForm(deps, { path: 'orders', schema: withRows })
+    if (!published.ok) throw new Error('publish failed')
+    await createSubmission(deps, {
+      path: 'orders',
+      declaredSchemaHash: published.schemaHash,
+      data: { email: 'a@b.ch', items: [{ name: 'x' }] },
+    })
+
+    const csv = await exportCsv(deps, 'orders')
+
+    expect(csv!.split('\n')[0]).toContain('items')
+    expect(csv).toContain('"[{""name"":""x""}]"')
   })
 })

@@ -160,3 +160,104 @@ export async function createSubmission(
   })
   return { ok: true, id, canonicalData: engine.value() }
 }
+
+export interface ListedSubmission {
+  id: string
+  version: number
+  submittedAt: string
+  data: unknown
+}
+
+/** The submissions of one form, newest first, each tagged with the schema
+ *  version that produced it. Undefined for an unknown form: the caller must
+ *  404, and an empty list would lie about that. */
+export async function listSubmissions(
+  deps: ServerDeps,
+  path: string,
+): Promise<ListedSubmission[] | undefined> {
+  const form = await deps.storage.getFormByPath(path)
+  if (form === undefined) return undefined
+
+  const versions = await deps.storage.listVersionsByForm(form.id)
+  const versionNumberById = new Map(versions.map((version) => [version.id, version.version]))
+
+  const records = await deps.storage.listSubmissionsByForm(form.id)
+  return records.map((record) => ({
+    id: record.id,
+    version: versionNumberById.get(record.formVersionId) ?? 0,
+    submittedAt: record.submittedAt,
+    data: record.data,
+  }))
+}
+
+/**
+ * Every submission of a form as CSV, columns UNIONED across schema versions:
+ * the current version's columns lead in its own order, and columns that only
+ * exist in older versions follow — data outlives the field that collected it,
+ * and an export that silently dropped extinct columns would lose it.
+ *
+ * A repeater is one column carrying its rows as JSON: rows-per-cell beats
+ * exploding one submission across several CSV lines, which breaks every
+ * spreadsheet join a business user will try.
+ */
+export async function exportCsv(deps: ServerDeps, path: string): Promise<string | undefined> {
+  const form = await deps.storage.getFormByPath(path)
+  if (form === undefined) return undefined
+
+  const versions = await deps.storage.listVersionsByForm(form.id)
+  const versionNumberById = new Map(versions.map((version) => [version.id, version.version]))
+
+  const columns: string[] = []
+  const seen = new Set<string>()
+  for (const version of versions) {
+    for (const column of dataColumns(version.schema)) {
+      if (!seen.has(column)) {
+        seen.add(column)
+        columns.push(column)
+      }
+    }
+  }
+
+  const records = await deps.storage.listSubmissionsByForm(form.id)
+  const lines = [['id', 'submittedAt', 'version', ...columns].map(csvCell).join(',')]
+  for (const record of records) {
+    const cells = [
+      record.id,
+      record.submittedAt,
+      String(versionNumberById.get(record.formVersionId) ?? 0),
+      ...columns.map((column) => cellValue(record.data, column)),
+    ]
+    lines.push(cells.map(csvCell).join(','))
+  }
+  return lines.join('\n') + '\n'
+}
+
+/** One column per collected answer: leaves as dotted paths through groups,
+ *  a repeater as a single column, pages transparent as always. */
+function dataColumns(schema: FormSchema): string[] {
+  const columns: string[] = []
+  const walk = (fields: readonly FormSchema['model']['fields'][number][], prefix: string): void => {
+    for (const field of fields) {
+      if (field.type === 'page') walk(field.fields ?? [], prefix)
+      else if (field.type === 'group') walk(field.fields ?? [], `${prefix}${field.key}.`)
+      else columns.push(`${prefix}${field.key}`)
+    }
+  }
+  walk(schema.model.fields, '')
+  return columns
+}
+
+function cellValue(data: unknown, column: string): string {
+  let current: unknown = data
+  for (const segment of column.split('.')) {
+    if (current === null || typeof current !== 'object') return ''
+    current = (current as Record<string, unknown>)[segment]
+  }
+  if (current === undefined || current === null) return ''
+  if (typeof current === 'object') return JSON.stringify(current)
+  return String(current)
+}
+
+function csvCell(value: string): string {
+  return /[",\n\r]/.test(value) ? `"${value.replaceAll('"', '""')}"` : value
+}

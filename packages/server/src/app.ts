@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import Fastify from 'fastify'
 import type { FastifyInstance } from 'fastify'
-import { createSubmission, publishForm, resolveForm } from '@formancy/server-core'
+import { createSubmission, exportCsv, listSubmissions, publishForm, resolveForm } from '@formancy/server-core'
 import type { ServerDeps, Storage } from '@formancy/server-core'
 
 export const SCHEMA_HASH_HEADER = 'x-formancy-schema-hash'
@@ -55,6 +55,26 @@ export function createApp(storage: Storage): FastifyInstance {
       schemaHash: resolved.schemaHash,
       schema: resolved.schema,
     })
+  })
+
+  // NOTE: listing and export ship unauthenticated in the thin slice, exactly
+  // like publish — the auth layer is SP-6 and wraps all management routes at
+  // once. Do not deploy this slice anywhere public.
+  app.get('/f/:path/submissions', async (request, reply) => {
+    const { path } = request.params as { path: string }
+    const listed = await listSubmissions(deps, path)
+    if (listed === undefined) return reply.code(404).send({ error: 'unknown_form' })
+    return reply.send({ submissions: listed })
+  })
+
+  app.get('/f/:path/submissions/export.csv', async (request, reply) => {
+    const { path } = request.params as { path: string }
+    const csv = await exportCsv(deps, path)
+    if (csv === undefined) return reply.code(404).send({ error: 'unknown_form' })
+    return reply
+      .header('content-type', 'text/csv; charset=utf-8')
+      .header('content-disposition', `attachment; filename="${path}-submissions.csv"`)
+      .send(csv)
   })
 
   app.post('/f/:path/submissions', async (request, reply) => {

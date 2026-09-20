@@ -47,5 +47,13 @@ export function createMemoryStorage(): Storage {
     },
 
     listSubmissions: async () => [...submissions],
+
+    listSubmissionsByForm: async (formId) =>
+      submissions.filter((record) => record.formId === formId).reverse(),
+
+    listVersionsByForm: async (formId) =>
+      [...versions.values()]
+        .filter((version) => version.formId === formId)
+        .sort((a, b) => b.version - a.version),
   }
 }

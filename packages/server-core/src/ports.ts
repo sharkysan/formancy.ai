@@ -37,4 +37,7 @@ export interface Storage {
   latestVersionNumber(formId: string): Promise<number>
   insertSubmission(record: SubmissionRecord): Promise<void>
   listSubmissions(): Promise<SubmissionRecord[]>
+  /** Newest first. */
+  listSubmissionsByForm(formId: string): Promise<SubmissionRecord[]>
+  listVersionsByForm(formId: string): Promise<FormVersionRecord[]>
 }
