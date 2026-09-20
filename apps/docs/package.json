@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "predev": "node scripts/generate-spec-reference.mjs",
     "dev": "astro dev",
+    "prebuild": "node scripts/generate-spec-reference.mjs",
     "build": "astro build",
     "test": "echo \"docs: no tests\"",
     "typecheck": "astro check || echo \"astro check unavailable\""
