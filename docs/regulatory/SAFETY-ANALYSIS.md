@@ -191,11 +191,11 @@ leading apostrophe.
 exists, so both paths do the same work and return the same error
 ([0031](../decisions/0031-enumeration-resistant-login.md)).
 
-*Residual:* the login endpoint itself is **not** rate limited — only anonymous
-submission is — so an attacker can still grind passwords at whatever rate the
-network allows. And `@fastify/rate-limit`'s default store is per-process, so
-behind more than one replica every limit counts a fraction of the traffic and
-permits a multiple of what it says.
+*Residual:* `@fastify/rate-limit`'s default store is per-process, so behind
+more than one replica every limit counts a fraction of the traffic and permits
+a multiple of what it says. Login is limited to 10 attempts per IP per minute
+and submission to 30, both counting attempts rather than successes — but a
+distributed attacker with many addresses is not meaningfully slowed by either.
 
 ### C2. A submission is read by someone not entitled to it
 

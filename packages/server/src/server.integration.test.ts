@@ -56,6 +56,7 @@ beforeAll(async () => {
     // High enough that the rest of the suite is never throttled by it. The
     // limit has its own app below, with its own budget.
     submissionRateLimit: { max: 10_000, timeWindowMs: 60_000 },
+    loginRateLimit: { max: 10_000, timeWindowMs: 60_000 },
   })
   const login = await app.inject({
     method: 'POST',
@@ -413,6 +414,32 @@ describe('rate limiting the public plane', () => {
       await post()
 
       expect(await post()).toBe(429)
+    } finally {
+      await throttled.close()
+    }
+  })
+
+  test('login is limited too, because a wrong guess costs a full argon2 verification', async () => {
+    const throttled = await createApp(createPostgresStorage(sql), {
+      authSecret: 'integration-test-secret-with-length',
+      loginRateLimit: { max: 2, timeWindowMs: 60_000 },
+    })
+
+    try {
+      const attempt = async (): Promise<number> =>
+        (
+          await throttled.inject({
+            method: 'POST',
+            url: '/auth/login',
+            payload: { email: 'nobody@test.ch', password: 'wrong-password-here' },
+          })
+        ).statusCode
+
+      expect(await attempt()).toBe(401)
+      expect(await attempt()).toBe(401)
+      // Enumeration resistance means every wrong guess costs real CPU, so an
+      // unlimited endpoint is an unlimited invitation to spend it.
+      expect(await attempt()).toBe(429)
     } finally {
       await throttled.close()
     }

@@ -44,6 +44,8 @@ export interface AppOptions {
    * deployment must supply a shared store.
    */
   submissionRateLimit?: { max: number; timeWindowMs: number }
+  /** Login attempts per IP per minute. Defaults to 10. */
+  loginRateLimit?: { max: number; timeWindowMs: number }
   /**
    * Largest accepted request body, in bytes. A structural cap BEFORE parsing:
    * the JSON parser should never be handed something enormous in the first
@@ -73,6 +75,7 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
   const app = Fastify({ logger: false, bodyLimit: options.bodyLimitBytes ?? 256 * 1024 })
 
   const submissionLimit = options.submissionRateLimit ?? { max: 30, timeWindowMs: 60_000 }
+  const loginLimit = options.loginRateLimit ?? { max: 10, timeWindowMs: 60_000 }
   await app.register(rateLimit, {
     global: false, // opted into per route: the management plane is authenticated
     max: submissionLimit.max,
@@ -138,15 +141,30 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
 
   // -------------------------------------------------------------------- auth
 
-  app.post('/auth/login', async (request, reply) => {
-    const body = request.body as { email?: unknown; password?: unknown } | null
-    if (body === null || typeof body.email !== 'string' || typeof body.password !== 'string') {
-      return reply.code(400).send({ error: 'bad_request', message: 'Body needs { email, password }.' })
-    }
-    const outcome = await authenticateLocal(authDeps, { email: body.email, password: body.password })
-    if (!outcome.ok) return reply.code(401).send({ error: 'invalid_credentials' })
-    return reply.send({ token: await sessions.issue(outcome.actor), role: outcome.actor.role })
-  })
+  app.post(
+    '/auth/login',
+    {
+      // Enumeration resistance makes a wrong guess cost a full argon2
+      // verification, which is deliberate — but it also means an unlimited
+      // login endpoint is an unlimited invitation to spend the server's CPU.
+      // Tighter than submission: nobody logs in ten times a minute honestly.
+      config: { rateLimit: { max: loginLimit.max, timeWindow: loginLimit.timeWindowMs } },
+    },
+    async (request, reply) => {
+      const body = request.body as { email?: unknown; password?: unknown } | null
+      if (body === null || typeof body.email !== 'string' || typeof body.password !== 'string') {
+        return reply
+          .code(400)
+          .send({ error: 'bad_request', message: 'Body needs { email, password }.' })
+      }
+      const outcome = await authenticateLocal(authDeps, {
+        email: body.email,
+        password: body.password,
+      })
+      if (!outcome.ok) return reply.code(401).send({ error: 'invalid_credentials' })
+      return reply.send({ token: await sessions.issue(outcome.actor), role: outcome.actor.role })
+    },
+  )
 
   app.post('/users', { preHandler: requires('user.create') }, async (request, reply) => {
     const body = request.body as { email?: unknown; password?: unknown; role?: unknown } | null
