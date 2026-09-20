@@ -2,6 +2,8 @@
 
 <p>
   <a href="https://github.com/sharkysan/formancy.ai/actions/workflows/ci.yml"><img src="https://github.com/sharkysan/formancy.ai/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
+  <a href="https://codecov.io/gh/sharkysan/formancy.ai"><img src="https://codecov.io/gh/sharkysan/formancy.ai/branch/main/graph/badge.svg" alt="Codecov coverage" /></a>
+  <a href="https://www.npmjs.com/package/@formancy/core"><img src="https://img.shields.io/npm/v/%40formancy%2Fcore?style=flat&amp;label=npm&amp;color=a8f5ca&amp;labelColor=102b29" alt="npm version: @formancy/core" /></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-a8f5ca?style=flat&amp;labelColor=102b29" alt="License: Apache-2.0" /></a>
   <a href="#development"><img src="https://img.shields.io/badge/node-%3E%3D22.12.0-a8f5ca?style=flat&amp;labelColor=102b29" alt="Node.js: >=22.12.0" /></a>
   <a href="#formancy"><img src="https://img.shields.io/badge/status-pre--alpha-a8f5ca?style=flat&amp;labelColor=102b29" alt="Status: pre-alpha" /></a>
@@ -9,12 +11,13 @@
 
 A modern, self-hostable form engine and backend — for React and Angular.
 
-> **Status: pre-alpha, version 0.1.0, unpublished.**
+> **Status: pre-alpha, version 0.1.0.**
 >
 > The **spec is frozen** at `specVersion: "1"`: a form document written today
 > keeps working, and the submissions stored against it keep their shape. The
-> **packages are not** — their APIs will change before 1.0, and they are not on
-> npm yet, so clone the repository to try them.
+> **package APIs are not frozen** — they will change before 1.0.
+> The core engine is available on npm as
+> [`@formancy/core`](https://www.npmjs.com/package/@formancy/core).
 >
 > The server is not ready for a public deployment. It has authentication,
 > role-based authorization, forms that are private until opened, per-IP rate
