@@ -1,6 +1,8 @@
-# Development infrastructure: `docker compose up -d` gives you the database;
-# `pnpm --filter @formancy/server dev` runs the server against it.
-# The all-in-one server image arrives with the distribution work.
+# `docker compose up -d` gives you the whole product: a database and the server.
+#
+# For development against the source instead, run only the database
+# (`docker compose up -d postgres`) and start the server with
+# `pnpm --filter @formancy/server dev`.
 services:
   postgres:
     image: postgres:17-alpine
@@ -20,5 +22,28 @@ services:
       timeout: 3s
       retries: 10
 
+  server:
+    build:
+      context: .
+      dockerfile: packages/server/Dockerfile
+    ports:
+      - "4380:4380"
+    environment:
+      DATABASE_URL: postgres://formancy:formancy@postgres:5432/formancy
+      # Development values. A real deployment supplies its own and does not
+      # keep them in a file that is committed — see the note below.
+      FORMANCY_AUTH_SECRET: ${FORMANCY_AUTH_SECRET:-dev-only-secret-at-least-32-characters}
+      FORMANCY_ADMIN_EMAIL: ${FORMANCY_ADMIN_EMAIL:-admin@formancy.local}
+      FORMANCY_ADMIN_PASSWORD: ${FORMANCY_ADMIN_PASSWORD:-change-me-immediately}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   formancy-pg:
+
+# The admin account is created only while no user exists, so it cannot re-seed
+# an admin into a running installation. The auth secret here is a development
+# default and is deliberately obvious: a deployment that leaves it in place has
+# a session signing key that everyone who has read this file knows.

@@ -9,9 +9,11 @@ A modern, self-hostable form engine and backend — for React and Angular.
 > **packages are not** — their APIs will change before 1.0, and they are not on
 > npm yet, so clone the repository to try them.
 >
-> Do not deploy the server anywhere public. It has authentication and
-> role-based authorization, but no rate limiting, no anonymous-submission
-> hardening and no audit logging.
+> The server is not ready for a public deployment. It has authentication,
+> role-based authorization, forms that are private until opened, per-IP rate
+> limits, a request body cap and a publish-time check that refuses regular
+> expressions which can be made to backtrack — but no challenge, no submission
+> tokens and no audit logging.
 
 ## Why
 
@@ -67,7 +69,19 @@ pnpm typecheck
 ### Run the stack locally
 
 ```bash
-docker compose up -d                    # Postgres on :5439
+docker compose up -d                    # Postgres on :5439, API on :4380
+```
+
+That builds and runs the server image. It seeds an admin the first time
+only — `admin@formancy.local` / `change-me-immediately` unless you override
+`FORMANCY_ADMIN_EMAIL` and `FORMANCY_ADMIN_PASSWORD` — and the compose
+file's auth secret is a development default a real deployment must replace.
+
+To work on the source instead, run only the database and start the server
+from the workspace:
+
+```bash
+docker compose up -d postgres           # Postgres on :5439
 
 DATABASE_URL=postgres://formancy:formancy@localhost:5439/formancy \
   pnpm --filter @formancy/server dev    # API on :4380
@@ -95,7 +109,7 @@ from the JSON Schema.
 
 - [Architecture](./docs/README.md#architecture), arc42-shaped. Start with
   [the five ideas everything else follows from](./docs/architecture/04-solution-strategy.md).
-- [Forty-three decision records](./docs/decisions/), each naming what would
+- [Forty-five decision records](./docs/decisions/), each naming what would
   fail if the decision were violated — or saying plainly that nothing would.
 - [Regulatory material](./docs/regulatory/MDR-CONTEXT.md) for anyone
   incorporating formancy into a product that has to answer to a regulator.

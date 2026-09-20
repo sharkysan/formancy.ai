@@ -64,7 +64,7 @@ defect would be most costly.
 | **Async validators do not exist** | Deferred; they need a new rule kind, which is a spec 2 change | The version line exists for it, and `runsOn` is in place so the ordering question can be answered without restructuring ([0043](../decisions/0043-runs-on.md)) |
 | **`recheck` pattern linting is designed, not implemented** | Deferred past the walking skeleton | A form author's regular expression can still hang the server ([SAFETY-ANALYSIS D3](../regulatory/SAFETY-ANALYSIS.md)) |
 | **Rate limiter store is per-process** | `@fastify/rate-limit`'s default | Wrong behind more than one replica; documented rather than fixed |
-| **No server container image** | Distribution work not started | `docker compose up` gives a database, not a product |
+| **The image is not published or signed** | No registry chosen yet | It builds locally from `docker compose up`. Signing it with cosign belongs in the release workflow once there is somewhere to push it |
 | **The release pipeline has never run** | Nothing has been released | `.github/workflows/release.yml` does provenance, SBOM and signing, and is configured but unexercised. Its first run is its first test |
 | **No manual accessibility audit, no VPAT** | Requires assistive-technology testing that has not been done | The accessibility claim rests on automated checking, which covers roughly 57% |
 | **`@marcbachmann/cel-js`: 118 known corpus failures** | The library implements most, not all, of CEL | Enumerated in `CEL-CONFORMANCE.md`; a form using an affected construct behaves incorrectly |

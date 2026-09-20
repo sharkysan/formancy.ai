@@ -204,7 +204,7 @@ Named rather than implied.
 **Not built yet.** The builder UI — `builder-core`, the document engine
 underneath it, is done and tested; file upload; webhooks and actions; rate
 limiting, challenge and origin allowlists on the public plane; multi-tenancy; a
-server container image.
+published container image — one builds locally from `docker compose up`, but nothing is pushed to a registry or signed.
 
 **Known gaps.**
 

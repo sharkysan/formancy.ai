@@ -1,0 +1,17 @@
+# Everything the image does not need, so the build context stays small and a
+# stale local build cannot leak into it.
+node_modules
+**/node_modules
+**/dist
+**/.turbo
+.turbo
+.git
+.github
+apps
+docs
+**/*.test.ts
+**/*.test.tsx
+.tmp-workflows
+.pnpm-store
+.idea
+.playwright-mcp
