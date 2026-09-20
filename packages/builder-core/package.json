@@ -1,7 +1,7 @@
 {
-  "name": "@formancy/expressions",
+  "name": "@formancy/builder-core",
   "version": "0.0.0",
-  "description": "CEL parse, type-check, compile and evaluate, with formancy's safety policy.",
+  "description": "The headless form-builder document engine: schema editing as commands with undo, selection and valid-target computation.",
   "license": "Apache-2.0",
   "type": "module",
   "sideEffects": false,
@@ -21,12 +21,10 @@
     "check:pkg": "publint && attw --pack . --profile esm-only"
   },
   "dependencies": {
-    "@marcbachmann/cel-js": "^8.0.0"
+    "@formancy/spec": "workspace:*"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "catalog:",
-    "@bufbuild/cel-spec": "^0.6.1",
-    "@bufbuild/protobuf": "^2.15.0",
     "fast-check": "catalog:",
     "publint": "catalog:",
     "tsdown": "catalog:",

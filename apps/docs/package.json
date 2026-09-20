@@ -1,0 +1,16 @@
+{
+  "name": "@formancy/docs",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "test": "echo \"docs: no tests\"",
+    "typecheck": "astro check || echo \"astro check unavailable\""
+  },
+  "dependencies": {
+    "@astrojs/starlight": "^0.42.2",
+    "astro": "^7.3.3"
+  }
+}

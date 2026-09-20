@@ -4,12 +4,14 @@ packages:
 
 # Shared dependency versions live here so the packages cannot drift apart.
 allowBuilds:
+  '@node-rs/argon2': true
   '@parcel/watcher': set this to true or false
   cpu-features: set this to true or false
   esbuild: true
   lmdb: set this to true or false
   msgpackr-extract: set this to true or false
   protobufjs: set this to true or false
+  sharp: true
   ssh2: set this to true or false
 
 catalog:
