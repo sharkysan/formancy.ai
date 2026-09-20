@@ -99,14 +99,120 @@ describe('the property panel', () => {
     expect(values).toEqual(['', 'email', 'url', 'uuid'])
   })
 
-  test('options say they are not editable here rather than rendering as JSON', () => {
-    const withSelect: FormSchema = {
-      ...schema,
-      model: { fields: [{ key: 'country', type: 'select', label: 'Country' }] },
-    }
-    const session = createBuilderSession(withSelect)
-    render(<PropertyPanel session={session} keyPath={['country']} />)
+})
 
-    expect(screen.getByText(/Options is not editable here yet/)).toBeTruthy()
+/**
+ * The one property the generic renderer cannot handle. Until this existed the
+ * panel said so and stopped, which meant a select or radio field could be
+ * created by the builder and then not finished in it.
+ */
+describe('editing a field\u2019s choices', () => {
+  const selectSchema: FormSchema = {
+    specVersion: '1',
+    id: 'order',
+    title: 'Order',
+    model: {
+      fields: [
+        {
+          key: 'country',
+          type: 'select',
+          label: 'Country',
+          options: [
+            { value: 'ch', label: 'Switzerland' },
+            { value: 'de', label: 'Germany' },
+          ],
+        },
+      ],
+    },
+  }
+
+  const mountSelect = (): ReturnType<typeof createBuilderSession> => {
+    const session = createBuilderSession(selectSchema)
+    render(<PropertyPanel session={session} keyPath={['country']} />)
+    return session
+  }
+
+  const optionsOf = (session: ReturnType<typeof createBuilderSession>): unknown =>
+    (session.document().model.fields[0] as unknown as Record<string, unknown>)['options']
+
+  test('the existing choices are shown as label and stored value', () => {
+    mountSelect()
+
+    expect(screen.getAllByLabelText('Choice label').map((input) => (input as HTMLInputElement).value)).toEqual([
+      'Switzerland',
+      'Germany',
+    ])
+    expect(
+      screen.getAllByLabelText('Stored value').map((input) => (input as HTMLInputElement).value),
+    ).toEqual(['ch', 'de'])
+  })
+
+  test('rewording a label leaves the stored value alone', async () => {
+    const user = userEvent.setup()
+    const session = mountSelect()
+
+    await user.clear(screen.getAllByLabelText('Choice label')[0]!)
+    await user.type(screen.getAllByLabelText('Choice label')[0]!, 'Schweiz')
+
+    // The label is what a person reads; the value is what is already sitting
+    // in every submission. Changing one must not change the other.
+    expect(optionsOf(session)).toEqual([
+      { value: 'ch', label: 'Schweiz' },
+      { value: 'de', label: 'Germany' },
+    ])
+  })
+
+  test('adding a choice does not collide with a value already in use', async () => {
+    const user = userEvent.setup()
+    const session = mountSelect()
+
+    await user.click(screen.getByRole('button', { name: 'Add a choice' }))
+
+    const values = (optionsOf(session) as Array<{ value: string }>).map((o) => o.value)
+    expect(new Set(values).size).toBe(values.length)
+    expect(session.canPublish().valid).toBe(true)
+  })
+
+  test('each remove button says what it removes', () => {
+    mountSelect()
+
+    // Five identical "remove" buttons are five identical announcements.
+    expect(screen.getByRole('button', { name: 'Remove Switzerland' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Remove Germany' })).toBeTruthy()
+  })
+
+  test('removing one leaves the rest', async () => {
+    const user = userEvent.setup()
+    const session = mountSelect()
+
+    await user.click(screen.getByRole('button', { name: 'Remove Switzerland' }))
+
+    expect(optionsOf(session)).toEqual([{ value: 'de', label: 'Germany' }])
+  })
+})
+
+describe('a choice can be retyped, not only appended to', () => {
+  test('clearing a label and typing a new one replaces it', async () => {
+    const user = userEvent.setup()
+    const session = createBuilderSession({
+      specVersion: '1',
+      id: 'order',
+      title: 'Order',
+      model: {
+        fields: [
+          { key: 'c', type: 'select', label: 'Country', options: [{ value: 'ch', label: 'Switzerland' }] },
+        ],
+      },
+    } as FormSchema)
+    render(<PropertyPanel session={session} keyPath={['c']} />)
+
+    await user.clear(screen.getByLabelText('Choice label'))
+    await user.type(screen.getByLabelText('Choice label'), 'Schweiz')
+
+    // An empty label is momentarily invalid, so the session refuses it. A
+    // purely controlled box snaps back to the old text and the next keystroke
+    // appends to it — this produced "SwitzerlandSchweiz".
+    const options = (session.document().model.fields[0] as unknown as Record<string, unknown>)['options']
+    expect(options).toEqual([{ value: 'ch', label: 'Schweiz' }])
   })
 })

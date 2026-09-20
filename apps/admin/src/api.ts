@@ -28,8 +28,73 @@ export interface SubmissionEntry {
 
 const BASE = '/api'
 
+/**
+ * The session token, kept in sessionStorage.
+ *
+ * Not localStorage: this dies with the tab, so a shared machine does not leave
+ * an admin session behind. Still readable by script on this origin, which is
+ * the standing trade-off for a token in a browser — the mitigation is that the
+ * admin renders no untrusted HTML, and the real answer is an httpOnly cookie
+ * when the server grows one.
+ */
+const TOKEN_KEY = 'formancy.admin.token'
+
+export function currentToken(): string | null {
+  try {
+    return sessionStorage.getItem(TOKEN_KEY)
+  } catch {
+    // Private mode, or storage disabled. A session that does not persist is
+    // better than an admin that will not load.
+    return null
+  }
+}
+
+export function setToken(token: string | null): void {
+  try {
+    if (token === null) sessionStorage.removeItem(TOKEN_KEY)
+    else sessionStorage.setItem(TOKEN_KEY, token)
+  } catch {
+    /* as above */
+  }
+}
+
+export class Unauthorized extends Error {
+  constructor() {
+    super('Not signed in')
+    this.name = 'Unauthorized'
+  }
+}
+
+/** Every management call goes through here, so none can forget the header. */
+async function authed(input: string, init?: RequestInit): Promise<Response> {
+  const token = currentToken()
+  const response = await fetch(input, {
+    ...init,
+    headers: {
+      ...init?.headers,
+      ...(token === null ? {} : { authorization: `Bearer ${token}` }),
+    },
+  })
+  if (response.status === 401) {
+    setToken(null)
+    throw new Unauthorized()
+  }
+  return response
+}
+
+export async function login(email: string, password: string): Promise<boolean> {
+  const response = await fetch(`${BASE}/auth/login`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  })
+  if (!response.ok) return false
+  setToken((await response.json() as { token: string }).token)
+  return true
+}
+
 export async function fetchForms(): Promise<FormListEntry[]> {
-  const response = await fetch(`${BASE}/forms`)
+  const response = await authed(`${BASE}/forms`)
   if (!response.ok) throw new Error(`GET /forms failed: ${response.status}`)
   return ((await response.json()) as { forms: FormListEntry[] }).forms
 }
@@ -37,7 +102,7 @@ export async function fetchForms(): Promise<FormListEntry[]> {
 export async function fetchForm(
   path: string,
 ): Promise<{ version: number; schemaHash: string; schema: FormSchema }> {
-  const response = await fetch(`${BASE}/f/${encodeURIComponent(path)}`)
+  const response = await authed(`${BASE}/f/${encodeURIComponent(path)}`)
   if (!response.ok) throw new Error(`GET /f/${path} failed: ${response.status}`)
   return (await response.json()) as { version: number; schemaHash: string; schema: FormSchema }
 }
@@ -47,7 +112,7 @@ export type PublishResult =
   | { ok: false; message: string; errors?: SchemaError[] }
 
 export async function publish(path: string, schema: unknown): Promise<PublishResult> {
-  const response = await fetch(`${BASE}/forms`, {
+  const response = await authed(`${BASE}/forms`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ path, schema }),
@@ -64,13 +129,13 @@ export async function publish(path: string, schema: unknown): Promise<PublishRes
 }
 
 export async function fetchVersions(path: string): Promise<VersionEntry[]> {
-  const response = await fetch(`${BASE}/f/${encodeURIComponent(path)}/versions`)
+  const response = await authed(`${BASE}/f/${encodeURIComponent(path)}/versions`)
   if (!response.ok) throw new Error(`versions failed: ${response.status}`)
   return ((await response.json()) as { versions: VersionEntry[] }).versions
 }
 
 export async function fetchSubmissions(path: string): Promise<SubmissionEntry[]> {
-  const response = await fetch(`${BASE}/f/${encodeURIComponent(path)}/submissions`)
+  const response = await authed(`${BASE}/f/${encodeURIComponent(path)}/submissions`)
   if (!response.ok) throw new Error(`submissions failed: ${response.status}`)
   return ((await response.json()) as { submissions: SubmissionEntry[] }).submissions
 }

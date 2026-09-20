@@ -61,7 +61,37 @@ the spec, nobody remembers the panel, and the builder quietly cannot set it.
 The tests assert that a text field is offered `pattern` and not `min`, and a
 number field the reverse, without either list appearing in this package.
 
+## Choices get their own editor
+
+Everything in the property panel is generated except a `select` or `radio`
+field's `options`. The schema says "array of objects", and the honest generic
+rendering of that is a textarea full of JSON.
+
+The editor distinguishes the two columns, because they are not the same kind of
+thing. **Stored value** is identity — changing it orphans every answer already
+given, exactly as a field key does — and is shown monospaced. **Choice label**
+is what a person reads and is safe to reword.
+
+It holds a local draft. Clearing a label to retype it makes it empty for a
+moment, the schema requires a non-empty one, and so the session refuses it — a
+purely controlled input then snaps back mid-word and the next keystroke appends
+to the old text. Typing "Schweiz" over "Switzerland" produced
+"SwitzerlandSchweiz" until this existed.
+
+## Styling
+
+The components ship no CSS. They emit `data-formancy-part` hooks, and
+`@formancy/themes/workbench.css` is a stylesheet that dresses them in the
+three-pane inspector layout the admin and playground use:
+
+```ts
+import '@formancy/themes/workbench.css'
+```
+
+That file styles the *tool*. `blueprint.css` and `dusk.css` style the *forms*
+the tool makes. Keeping them apart is why restyling your forms cannot
+accidentally restyle the builder.
+
 ## What it does not do yet
 
-Authoring logic rules, editing a `select`'s options, and dragging. The commands
-for the first two exist in `builder-core`.
+Authoring logic rules, and dragging.

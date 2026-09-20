@@ -1,15 +1,22 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Editor from '@monaco-editor/react'
+import { BuildPane } from './build-pane.js'
+import { SignIn } from './sign-in.js'
+import '@formancy/themes/workbench.css'
+import '@formancy/themes/blueprint.css'
 import { createFormEngine } from '@formancy/core'
 import { validateSchema } from '@formancy/spec/validate'
 import { ErrorSummary, FormancyForm, FormancyProvider } from '@formancy/react'
 import {
+  Unauthorized,
+  currentToken,
   exportUrl,
   fetchForm,
   fetchForms,
   fetchSubmissions,
   fetchVersions,
   publish,
+  setToken,
 } from './api.js'
 import type { FormListEntry, PublishResult, SubmissionEntry, VersionEntry } from './api.js'
 
@@ -23,24 +30,42 @@ export function App() {
   const [forms, setForms] = useState<FormListEntry[]>([])
   const [selected, setSelected] = useState<string | undefined>(undefined)
   const [creating, setCreating] = useState('')
+  const [signedIn, setSignedIn] = useState(() => currentToken() !== null)
 
   const reloadForms = useCallback(async () => {
     setForms(await fetchForms())
   }, [])
 
   useEffect(() => {
-    void reloadForms().catch(() => setForms([]))
-  }, [reloadForms])
+    if (!signedIn) return
+    // Swallowing the error used to render an empty list, which reads as "there
+    // are no forms" rather than "you are not signed in". A 401 now says so.
+    void reloadForms().catch((error: unknown) => {
+      setForms([])
+      if (error instanceof Unauthorized) setSignedIn(false)
+    })
+  }, [reloadForms, signedIn])
+
+  if (!signedIn) return <SignIn onSignedIn={() => setSignedIn(true)} />
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', height: '100vh', fontFamily: 'system-ui' }}>
-      <nav style={{ borderRight: '1px solid #ccc', padding: '1rem', overflow: 'auto' }}>
-        <h1 style={{ fontSize: '1.2rem', marginTop: 0 }}>formancy</h1>
-        <ul style={{ listStyle: 'none', padding: 0 }}>
+    <div className="wb-app">
+      <nav className="wb-nav">
+        <h1>formancy</h1>
+        <button
+          className="wb-quiet"
+          onClick={() => {
+            setToken(null)
+            setSignedIn(false)
+          }}
+        >
+          Sign out
+        </button>
+        <ul>
           {forms.map((form) => (
             <li key={form.path}>
               <button
-                style={{ width: '100%', textAlign: 'left', padding: '0.4rem', fontWeight: form.path === selected ? 'bold' : 'normal' }}
+                aria-current={form.path === selected}
                 onClick={() => setSelected(form.path)}
               >
                 {form.title} <small>v{form.version}</small>
@@ -87,7 +112,7 @@ const NEW_FORM_TEMPLATE = (path: string) =>
   )
 
 function FormWorkspace({ path, onPublished }: { path: string; onPublished: () => Promise<void> }) {
-  const [tab, setTab] = useState<'editor' | 'versions' | 'submissions'>('editor')
+  const [tab, setTab] = useState<'build' | 'editor' | 'versions' | 'submissions'>('build')
   const [source, setSource] = useState<string | undefined>(undefined)
   const [serverHash, setServerHash] = useState<string | undefined>(undefined)
   const [publishState, setPublishState] = useState<PublishResult | undefined>(undefined)
@@ -101,38 +126,52 @@ function FormWorkspace({ path, onPublished }: { path: string; onPublished: () =>
       .catch(() => setSource(NEW_FORM_TEMPLATE(path)))
   }, [path])
 
+  // One publish path for every tab. Two copies is how the builder starts
+  // publishing something subtly different from the editor.
+  const publishSource = async (): Promise<void> => {
+    if (source === undefined) return
+    try {
+      const outcome = await publish(path, JSON.parse(source))
+      setPublishState(outcome)
+      if (outcome.ok) {
+        setServerHash(outcome.schemaHash)
+        await onPublished()
+      }
+    } catch (error) {
+      setPublishState({ ok: false, message: error instanceof Error ? error.message : String(error) })
+    }
+  }
+
   if (source === undefined) return <p style={{ padding: '1rem' }}>Loading…</p>
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div style={{ borderBottom: '1px solid #ccc', padding: '0.5rem 1rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+    <div className="wb-main">
+      <div className="wb-titlebar">
         <strong>{path}</strong>
-        {(['editor', 'versions', 'submissions'] as const).map((candidate) => (
+        <div className="wb-tabs">
+        {(['build', 'editor', 'versions', 'submissions'] as const).map((candidate) => (
           <button key={candidate} onClick={() => setTab(candidate)} aria-pressed={tab === candidate}>
             {candidate}
           </button>
         ))}
-        <span style={{ marginLeft: 'auto', fontSize: '0.8rem', color: '#666' }}>
+        </div>
+        <span className="wb-published">
           {serverHash === undefined ? 'never published' : `published ${serverHash.slice(0, 12)}…`}
         </span>
       </div>
-      {tab === 'editor' ? (
+      {tab === 'build' ? (
+        <BuildPane
+          source={source}
+          onChange={setSource}
+          publishState={publishState}
+          onPublish={() => { void publishSource() }}
+        />
+      ) : tab === 'editor' ? (
         <EditorPane
           source={source}
           onChange={setSource}
           publishState={publishState}
-          onPublish={async () => {
-            try {
-              const outcome = await publish(path, JSON.parse(source))
-              setPublishState(outcome)
-              if (outcome.ok) {
-                setServerHash(outcome.schemaHash)
-                await onPublished()
-              }
-            } catch (error) {
-              setPublishState({ ok: false, message: error instanceof Error ? error.message : String(error) })
-            }
-          }}
+          onPublish={() => { void publishSource() }}
         />
       ) : tab === 'versions' ? (
         <VersionsPane path={path} />
@@ -151,7 +190,7 @@ function EditorPane({
 }: {
   source: string
   onChange: (next: string) => void
-  onPublish: () => Promise<void>
+  onPublish: () => void
   publishState: PublishResult | undefined
 }) {
   const preview = useMemo(() => {

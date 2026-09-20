@@ -1,0 +1,668 @@
+/*
+ * Workbench — the chrome around a formancy tool, not a theme for the forms it
+ * makes.
+ *
+ * blueprint.css and dusk.css dress the FORM, through `data-formancy-part`
+ * hooks that the renderers emit. This file dresses the INSTRUMENT: the
+ * builder's structure tree, its palettes and its property inspector, plus the
+ * pane furniture the playground and the admin share. Keeping them apart is the
+ * point — a person restyling their forms must not accidentally restyle the
+ * tool, and the tool having opinions must not weaken the claim that the
+ * renderers have none.
+ *
+ * The layout is the three-pane inspector every builder uses — structure, then
+ * canvas, then properties — because a form builder that invents its own
+ * arrangement makes somebody learn a layout they already know.
+ *
+ * Nothing depends on this file; an application opts in by importing it.
+ */
+
+:root {
+  --wb-ink: #17222e;
+  --wb-bench: #e7ecf1;
+  --wb-panel: #f7f9fb;
+  --wb-surface: #fff;
+  --wb-rule: #cbd6e0;
+  --wb-muted: #56687a;
+  --wb-signal: #0b5fce;
+  --wb-derived: #6b4fbb;
+  --wb-invalid: #a81d1d;
+  --wb-ok: #1d7a3a;
+
+  --wb-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --wb-mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Code', Consolas, monospace;
+}
+
+/* ------------------------------------------------------------ pane scaffold */
+
+.wb {
+  display: grid;
+  grid-template-columns: minmax(15rem, 19rem) minmax(0, 1fr) minmax(17rem, 22rem);
+  min-height: 0;
+  height: 100%;
+  font-family: var(--wb-sans);
+  color: var(--wb-ink);
+  background: var(--wb-bench);
+}
+
+.wb-pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  background: var(--wb-panel);
+  border-inline-end: 1px solid var(--wb-rule);
+}
+
+.wb-pane:last-child {
+  border-inline-end: none;
+  border-inline-start: 1px solid var(--wb-rule);
+}
+
+/* The canvas is the bench surface: the only place the form itself sits. */
+.wb-pane.wb-canvas {
+  background: var(--wb-bench);
+}
+
+.wb-pane > header {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-block-end: 1px solid var(--wb-rule);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--wb-muted);
+}
+
+.wb-pane > .wb-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 0.75rem;
+}
+
+.wb-canvas > .wb-body {
+  padding: 1.5rem;
+  display: flex;
+  justify-content: center;
+}
+
+.wb-sheet {
+  background: var(--wb-surface);
+  border: 1px solid var(--wb-rule);
+  border-radius: 4px;
+  padding: 1.5rem 1.625rem 1.75rem;
+  width: 100%;
+  max-width: 34rem;
+  align-self: flex-start;
+}
+
+/* --------------------------------------------------------------- toolbar */
+
+.wb-tools {
+  display: flex;
+  gap: 0.375rem;
+  align-items: center;
+  margin-inline-start: auto;
+}
+
+.wb-pane button,
+.wb-tools button {
+  font: inherit;
+  font-size: 0.75rem;
+  color: var(--wb-ink);
+  background: var(--wb-surface);
+  border: 1px solid var(--wb-rule);
+  border-radius: 3px;
+  padding: 0.25rem 0.625rem;
+  cursor: pointer;
+}
+
+.wb-pane button:hover:not(:disabled) {
+  border-color: var(--wb-signal);
+  color: var(--wb-signal);
+}
+
+.wb-pane button:disabled {
+  color: var(--wb-muted);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.wb-pane button:focus-visible,
+.wb [data-formancy-part] button:focus-visible {
+  outline: 2px solid var(--wb-signal);
+  outline-offset: 1px;
+}
+
+.wb-primary {
+  background: var(--wb-signal) !important;
+  border-color: var(--wb-signal) !important;
+  color: #fff !important;
+  font-weight: 600;
+}
+
+.wb-primary:disabled {
+  background: var(--wb-rule) !important;
+  border-color: var(--wb-rule) !important;
+  color: var(--wb-muted) !important;
+}
+
+/* ------------------------------------------------------- the structure tree */
+
+[data-formancy-part='builder'] {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+[data-formancy-part='builder-tree'] {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  min-height: 0;
+}
+
+[data-formancy-part='builder-node'] {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 3px;
+  font-size: 0.8125rem;
+  cursor: default;
+}
+
+/* Depth as indentation, driven by the aria-level the tree already sets — so
+   the visual nesting and the announced nesting cannot disagree. */
+[data-formancy-part='builder-node'][aria-level='2'] { padding-inline-start: 1.5rem; }
+[data-formancy-part='builder-node'][aria-level='3'] { padding-inline-start: 2.5rem; }
+[data-formancy-part='builder-node'][aria-level='4'] { padding-inline-start: 3.5rem; }
+
+/* A container reads differently from a field: it holds things rather than
+   collecting an answer. */
+[data-formancy-part='builder-node'][data-container='true'] {
+  font-weight: 600;
+}
+
+[data-formancy-part='builder-node'][data-container='true']::before {
+  content: '▾';
+  font-size: 0.625rem;
+  color: var(--wb-muted);
+}
+
+[data-formancy-part='builder-node'][aria-selected='true'] {
+  background: color-mix(in srgb, var(--wb-signal) 12%, transparent);
+  box-shadow: inset 2px 0 0 var(--wb-signal);
+}
+
+[data-formancy-part='builder-node']:focus-visible {
+  outline: 2px solid var(--wb-signal);
+  outline-offset: -2px;
+}
+
+[data-formancy-part='builder-empty'] {
+  font-size: 0.8125rem;
+  color: var(--wb-muted);
+  padding: 0.5rem;
+}
+
+/* The live region. Present for assistive technology, and shown as a status
+   line rather than hidden, because a sighted keyboard user needs the same
+   confirmation that a command landed. */
+[data-formancy-part='builder-status'] {
+  margin: 0.5rem 0 0;
+  padding: 0.375rem 0.5rem;
+  font-size: 0.75rem;
+  color: var(--wb-muted);
+  min-height: 1.5rem;
+  border-block-start: 1px solid var(--wb-rule);
+}
+
+[data-formancy-part='builder-status']:empty {
+  border-block-start: none;
+}
+
+/* Key help: a compact legend, not a definition list sprawling down the pane. */
+[data-formancy-part='builder-keys'] {
+  margin: 0.5rem 0 0;
+  padding-block-start: 0.5rem;
+  border-block-start: 1px solid var(--wb-rule);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  font-size: 0.6875rem;
+  color: var(--wb-muted);
+}
+
+[data-formancy-part='builder-keys'] > div {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3125rem;
+}
+
+[data-formancy-part='builder-keys'] dt {
+  font-family: var(--wb-mono);
+  font-size: 0.6875rem;
+  color: var(--wb-ink);
+  background: var(--wb-surface);
+  border: 1px solid var(--wb-rule);
+  border-radius: 2px;
+  padding: 0 0.25rem;
+  white-space: nowrap;
+}
+
+[data-formancy-part='builder-keys'] dd {
+  margin: 0;
+}
+
+/* ------------------------------------------------------------- the palettes */
+
+/* Overlays, because a list of choices dumped into the flow pushes the thing
+   you were looking at off the screen while you choose. */
+[data-formancy-part='add-palette'],
+[data-formancy-part='add-where'],
+[data-formancy-part='move-palette'] {
+  position: fixed;
+  inset-block-start: 50%;
+  inset-inline-start: 50%;
+  translate: -50% -50%;
+  z-index: 20;
+  width: min(30rem, calc(100vw - 2rem));
+  max-height: min(32rem, calc(100vh - 4rem));
+  overflow: auto;
+  background: var(--wb-surface);
+  border: 1px solid var(--wb-rule);
+  border-radius: 6px;
+  box-shadow: 0 12px 32px rgb(23 34 46 / 18%);
+  padding: 0.75rem;
+}
+
+[data-formancy-part='add-palette'] ul,
+[data-formancy-part='add-where'] ul,
+[data-formancy-part='move-palette'] ul {
+  list-style: none;
+  margin: 0 0 0.5rem;
+  padding: 0;
+  display: grid;
+  gap: 0.125rem;
+}
+
+[data-formancy-part='add-palette'] li,
+[data-formancy-part='add-where'] li,
+[data-formancy-part='move-palette'] li {
+  display: grid;
+  gap: 0.125rem;
+  padding: 0.375rem 0.5rem;
+  border-radius: 3px;
+}
+
+[data-formancy-part='add-palette'] li:hover,
+[data-formancy-part='add-where'] li:hover,
+[data-formancy-part='move-palette'] li:hover {
+  background: var(--wb-panel);
+}
+
+[data-formancy-part='add-palette'] li button,
+[data-formancy-part='add-where'] li button,
+[data-formancy-part='move-palette'] li button {
+  justify-self: start;
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--wb-signal);
+  text-align: start;
+}
+
+[data-formancy-part='palette-hint'] {
+  font-size: 0.75rem;
+  color: var(--wb-muted);
+  line-height: 1.45;
+}
+
+/* ---------------------------------------------------------- the inspector */
+
+[data-formancy-part='property-panel'] h2 {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+[data-formancy-part='property-panel-type'] {
+  margin: 0.125rem 0 0.875rem;
+  font-family: var(--wb-mono);
+  font-size: 0.6875rem;
+  color: var(--wb-derived);
+  text-transform: none;
+}
+
+[data-formancy-part='property'] {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  padding-block: 0.5rem;
+  border-block-start: 1px solid var(--wb-rule);
+}
+
+[data-formancy-part='property'] > label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+[data-formancy-part='property'] input[type='text'],
+[data-formancy-part='property'] input[type='number'],
+[data-formancy-part='property'] select {
+  font: inherit;
+  font-size: 0.8125rem;
+  color: var(--wb-ink);
+  background: var(--wb-surface);
+  border: 1px solid var(--wb-rule);
+  border-radius: 3px;
+  padding: 0.1875rem 0.375rem;
+  width: 9rem;
+  min-width: 0;
+}
+
+[data-formancy-part='property'] input[type='checkbox'] {
+  accent-color: var(--wb-signal);
+  justify-self: end;
+}
+
+[data-formancy-part='property'] :is(input, select):focus-visible {
+  outline: 2px solid var(--wb-signal);
+  outline-offset: 1px;
+}
+
+/*
+ * The hint spans both columns and is small and quiet. At body size — which is
+ * what it was — every property carried a paragraph, and the panel became a
+ * wall of prose with the controls lost inside it. The words are the spec's own
+ * and worth keeping; they are not worth reading first.
+ */
+[data-formancy-part='property-hint'] {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 0.6875rem;
+  line-height: 1.45;
+  color: var(--wb-muted);
+}
+
+[data-formancy-part='property-unsupported'] {
+  margin: 0;
+  padding-block: 0.5rem;
+  border-block-start: 1px solid var(--wb-rule);
+  font-size: 0.75rem;
+  color: var(--wb-muted);
+  font-style: italic;
+}
+
+/* ------------------------------------------------------------------ notices */
+
+.wb-problem {
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+  color: var(--wb-invalid);
+  line-height: 1.45;
+}
+
+.wb-ok {
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+  color: var(--wb-ok);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wb *,
+  .wb [data-formancy-part] * {
+    transition: none !important;
+  }
+}
+
+/* ------------------------------------------------- the application shell
+ *
+ * The furniture around the panes: a form list, a tab strip, a title bar. Kept
+ * here rather than in the admin so the playground can wear the same clothes,
+ * which is the whole reason this file is separate from the form themes.
+ */
+
+.wb-app {
+  display: grid;
+  grid-template-columns: 15rem 1fr;
+  height: 100vh;
+  font-family: var(--wb-sans);
+  color: var(--wb-ink);
+  background: var(--wb-bench);
+}
+
+.wb-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.875rem;
+  overflow: auto;
+  background: var(--wb-panel);
+  border-inline-end: 1px solid var(--wb-rule);
+}
+
+.wb-nav h1 {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.wb-nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.125rem;
+}
+
+.wb-nav li button {
+  width: 100%;
+  text-align: start;
+  font-size: 0.8125rem;
+  padding: 0.3125rem 0.5rem;
+  border-color: transparent;
+  background: none;
+}
+
+.wb-nav li button:hover {
+  background: var(--wb-surface);
+}
+
+.wb-nav li button[aria-current='true'] {
+  background: color-mix(in srgb, var(--wb-signal) 12%, transparent);
+  box-shadow: inset 2px 0 0 var(--wb-signal);
+  font-weight: 600;
+}
+
+.wb-nav small {
+  color: var(--wb-muted);
+  font-family: var(--wb-mono);
+  font-size: 0.6875rem;
+  margin-inline-start: 0.375rem;
+}
+
+.wb-nav label {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--wb-muted);
+}
+
+.wb-nav input {
+  font: inherit;
+  font-size: 0.8125rem;
+  padding: 0.25rem 0.375rem;
+  border: 1px solid var(--wb-rule);
+  border-radius: 3px;
+  background: var(--wb-surface);
+  color: var(--wb-ink);
+}
+
+/* No auto margin: `margin-block-start: auto` on a flex child pushes every
+   LATER sibling down too, which put the form list at the bottom of the pane. */
+.wb-nav .wb-quiet {
+  font-size: 0.6875rem;
+  align-self: start;
+}
+
+/* The element between the shell grid and the pane grid has to stretch, or the
+   panes size to their content and stop halfway down the window. */
+.wb-app > main {
+  display: grid;
+  min-height: 0;
+  min-width: 0;
+}
+
+.wb-main {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 0;
+  min-width: 0;
+}
+
+.wb-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 44px;
+  padding-inline: 0.875rem;
+  background: var(--wb-panel);
+  border-block-end: 1px solid var(--wb-rule);
+}
+
+.wb-titlebar strong {
+  font-size: 0.875rem;
+  font-family: var(--wb-mono);
+}
+
+/* A tab strip, not a row of buttons: the current one is joined to the pane
+   below it. */
+.wb-tabs {
+  display: flex;
+  gap: 0.125rem;
+  margin-inline-start: 0.5rem;
+}
+
+.wb-tabs button {
+  font-size: 0.75rem;
+  border: 1px solid transparent;
+  border-radius: 3px 3px 0 0;
+  background: none;
+  padding: 0.3125rem 0.625rem;
+  color: var(--wb-muted);
+}
+
+.wb-tabs button[aria-pressed='true'] {
+  background: var(--wb-surface);
+  border-color: var(--wb-rule);
+  border-block-end-color: var(--wb-surface);
+  color: var(--wb-ink);
+  font-weight: 600;
+  margin-block-end: -1px;
+}
+
+.wb-titlebar .wb-published {
+  margin-inline-start: auto;
+  font-size: 0.6875rem;
+  font-family: var(--wb-mono);
+  color: var(--wb-muted);
+}
+
+.wb-empty {
+  display: grid;
+  place-content: center;
+  color: var(--wb-muted);
+  font-size: 0.875rem;
+}
+
+kbd {
+  font-family: var(--wb-mono);
+  font-size: 0.6875rem;
+  background: var(--wb-surface);
+  border: 1px solid var(--wb-rule);
+  border-radius: 2px;
+  padding: 0 0.25rem;
+}
+
+/* ------------------------------------------------------- the choices editor */
+
+[data-formancy-part='options-editor'] {
+  padding-block: 0.5rem;
+  border-block-start: 1px solid var(--wb-rule);
+}
+
+[data-formancy-part='options-heading'] {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  margin-block-end: 0.375rem;
+}
+
+[data-formancy-part='options-list'] {
+  list-style: none;
+  margin: 0 0 0.5rem;
+  padding: 0;
+  display: grid;
+  gap: 0.375rem;
+}
+
+/* Label above value, because the label is the thing usually being edited and
+   the stored value is the thing usually being left alone. */
+[data-formancy-part='option-row'] {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  padding: 0.5rem;
+  background: var(--wb-surface);
+  border: 1px solid var(--wb-rule);
+  border-radius: 3px;
+}
+
+[data-formancy-part='option-row'] label {
+  font-size: 0.6875rem;
+  color: var(--wb-muted);
+  white-space: nowrap;
+}
+
+[data-formancy-part='option-row'] input {
+  font: inherit;
+  font-size: 0.8125rem;
+  width: 100%;
+  min-width: 0;
+  padding: 0.1875rem 0.375rem;
+  border: 1px solid var(--wb-rule);
+  border-radius: 3px;
+  background: var(--wb-surface);
+  color: var(--wb-ink);
+}
+
+/* The stored value is identity: changing it orphans answers already given, the
+   same way a field key does. Monospaced so it reads as data rather than prose. */
+[data-formancy-part='option-row'] input[id*='-value-'] {
+  font-family: var(--wb-mono);
+  font-size: 0.75rem;
+}
+
+[data-formancy-part='option-row'] button {
+  grid-column: 1 / -1;
+  justify-self: end;
+  font-size: 0.6875rem;
+}
+
+[data-formancy-part='options-empty'] {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  color: var(--wb-invalid);
+}

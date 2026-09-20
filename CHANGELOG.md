@@ -77,10 +77,10 @@ existed.
 | `@formancy/angular` | Angular 22 bindings, zoneless and signal-based |
 | `@formancy/conformance` | The behavioural suite, published so others can self-certify |
 | `@formancy/builder-core` | Headless schema editing: commands, undo/redo, legality |
-| `@formancy/builder-react` | The builder's structure editor. Keyboard-first, no drag surface |
+| `@formancy/builder-react` | The builder UI: structure tree, field palette, property panel. Keyboard-first, no drag surface |
 | `@formancy/server-core` | Use cases, framework-free |
 | `@formancy/server` | Fastify routes, PostgreSQL, auth runtime |
-| `@formancy/themes` | Two reference themes. Nothing depends on them |
+| `@formancy/themes` | Two reference form themes, plus the workbench chrome for the tools. Nothing depends on them |
 
 ### Engine
 
@@ -202,9 +202,7 @@ See [`RELEASING.md`](./RELEASING.md).
 
 Named rather than implied.
 
-**Not built yet.** The rest of the builder — the structure editor exists and is
-keyboard-driven, but a field palette, a property editor and logic authoring do
-not, and neither does a drag surface; file upload; webhooks and actions; rate
+**Not built yet.** Logic authoring in the builder, and a drag surface; file upload; webhooks and actions; rate
 limiting, challenge and origin allowlists on the public plane; multi-tenancy; a
 published container image — one builds locally from `docker compose up`, but nothing is pushed to a registry or signed.
 

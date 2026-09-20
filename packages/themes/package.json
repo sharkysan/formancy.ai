@@ -6,11 +6,13 @@
   "type": "module",
   "exports": {
     "./blueprint.css": "./blueprint.css",
-    "./dusk.css": "./dusk.css"
+    "./dusk.css": "./dusk.css",
+    "./workbench.css": "./workbench.css"
   },
   "files": [
     "blueprint.css",
     "dusk.css",
+    "workbench.css",
     "LICENSE",
     "NOTICE"
   ],

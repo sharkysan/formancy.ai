@@ -1,6 +1,8 @@
 import { useId } from 'react'
 import type { ReactElement } from 'react'
+import type { FieldOption } from '@formancy/spec'
 import type { BuilderSession } from '@formancy/builder-core'
+import { OptionsEditor } from './options-editor.js'
 import { editablePropertiesFor } from './properties.js'
 import type { EditableProperty } from './properties.js'
 import { useBuilder } from './use-builder.js'
@@ -76,14 +78,14 @@ function PropertyField({
   const id = useId()
   const hintId = `${id}-hint`
 
-  // Options are value/label pairs and need an editor of their own. Rendering
-  // them through the generic path would produce a textarea full of JSON, which
-  // is worse than saying so.
+  // Options are value/label pairs, and the generic path would render them as
+  // a textarea full of JSON. They get an editor of their own.
   if (property.kind === 'options') {
     return (
-      <p data-formancy-part="property-unsupported">
-        {property.title} is not editable here yet.
-      </p>
+      <OptionsEditor
+        options={Array.isArray(value) ? (value as FieldOption[]) : []}
+        onChange={(next) => onChange(next.length === 0 ? undefined : next)}
+      />
     )
   }
 

@@ -16,7 +16,9 @@
     "@monaco-editor/react": "^4.7.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
-    "@formancy/themes": "workspace:*"
+    "@formancy/themes": "workspace:*",
+    "@formancy/builder-core": "workspace:*",
+    "@formancy/builder-react": "workspace:*"
   },
   "devDependencies": {
     "@types/react": "^19.3.0",
