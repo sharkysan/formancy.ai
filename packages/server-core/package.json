@@ -6,9 +6,14 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
-    ".": { "types": "./dist/index.d.mts", "default": "./dist/index.mjs" }
+    ".": {
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsdown",
     "test": "vitest run",
@@ -26,5 +31,15 @@
     "typescript": "catalog:",
     "unrun": "^0.3.1",
     "vitest": "catalog:"
-  }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sharkysan/formancy.ai.git",
+    "directory": "packages/server-core"
+  },
+  "homepage": "https://github.com/sharkysan/formancy.ai",
+  "bugs": "https://github.com/sharkysan/formancy.ai/issues"
 }

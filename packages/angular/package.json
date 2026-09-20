@@ -38,6 +38,14 @@
   },
   "publishConfig": {
     "directory": "dist",
-    "linkDirectory": false
-  }
+    "linkDirectory": false,
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sharkysan/formancy.ai.git",
+    "directory": "packages/angular"
+  },
+  "homepage": "https://github.com/sharkysan/formancy.ai",
+  "bugs": "https://github.com/sharkysan/formancy.ai/issues"
 }
