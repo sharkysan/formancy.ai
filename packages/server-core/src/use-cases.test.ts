@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from 'vitest'
 import type { FormSchema } from '@formancy/spec'
-import { createSubmission, exportCsv, listSubmissions, publishForm, resolveForm, resumeDraft, saveDraft } from './use-cases.js'
+import { createSubmission, exportCsv, listForms, listSubmissions, listVersions, publishForm, resolveForm, resumeDraft, saveDraft } from './use-cases.js'
 import type { ServerDeps } from './use-cases.js'
 import { createMemoryStorage } from './testing/memory-storage.js'
 
@@ -420,5 +420,37 @@ describe('CSV formula injection', () => {
     const csv = await exportCsv(deps, 'contact-us')
     expect(csv).toContain(',-5,')
     expect(csv).not.toContain(`'-5`)
+  })
+})
+
+describe('catalog reads', () => {
+  test('listForms names every form with its current version', async () => {
+    await publishForm(deps, { path: 'contact-us', schema })
+    await publishForm(deps, { path: 'orders', schema: { ...schema, id: 'orders' } })
+
+    const forms = await listForms(deps)
+
+    expect(forms.map((f) => f.path).sort()).toEqual(['contact-us', 'orders'])
+    expect(forms[0]).toMatchObject({ version: 1 })
+  })
+
+  test('listVersions is newest first with hash and a field count, never the whole schema', async () => {
+    await publishForm(deps, { path: 'contact-us', schema })
+    await publishForm(deps, {
+      path: 'contact-us',
+      schema: { ...schema, title: 'Contact v2' },
+    })
+
+    const versions = await listVersions(deps, 'contact-us')
+
+    expect(versions).not.toBeUndefined()
+    expect(versions!.map((v) => v.version)).toEqual([2, 1])
+    expect(versions![0]!.schemaHash).toMatch(/^[0-9a-f]{64}$/)
+    expect(versions![0]!.title).toBe('Contact v2')
+    expect('schema' in versions![0]!).toBe(false)
+  })
+
+  test('listVersions of an unknown form is undefined', async () => {
+    expect(await listVersions(deps, 'ghost')).toBeUndefined()
   })
 })

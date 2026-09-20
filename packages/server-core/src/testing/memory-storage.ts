@@ -14,6 +14,8 @@ export function createMemoryStorage(): Storage {
   return {
     getFormByPath: async (path) => [...forms.values()].find((form) => form.path === path),
 
+    listForms: async () => [...forms.values()].map((form) => ({ ...form })),
+
     createForm: async (record) => {
       forms.set(record.id, { ...record })
     },

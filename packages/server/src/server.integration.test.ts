@@ -247,3 +247,19 @@ describe('drafts over HTTP', () => {
     expect((await app.inject({ method: 'GET', url: '/f/contact-us/drafts/nope' })).statusCode).toBe(404)
   })
 })
+
+describe('catalog reads over HTTP', () => {
+  test('forms and version history are listable', async () => {
+    const forms = await app.inject({ method: 'GET', url: '/forms' })
+    expect(forms.statusCode).toBe(200)
+    expect((forms.json() as { forms: Array<{ path: string }> }).forms.map((f) => f.path)).toContain(
+      'contact-us',
+    )
+
+    const versions = await app.inject({ method: 'GET', url: '/f/contact-us/versions' })
+    expect(versions.statusCode).toBe(200)
+    const listed = (versions.json() as { versions: Array<{ version: number }> }).versions
+    expect(listed.length).toBeGreaterThanOrEqual(2)
+    expect(listed[0]!.version).toBeGreaterThan(listed[listed.length - 1]!.version)
+  })
+})

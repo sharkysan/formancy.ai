@@ -17,6 +17,15 @@ export function createPostgresStorage(sql: postgres.Sql): Storage {
       return { id: row.id, path: row.path, currentVersionId: row.currentVersionId }
     },
 
+    async listForms() {
+      const rows = await db.select().from(forms)
+      return rows.map((row) => ({
+        id: row.id,
+        path: row.path,
+        currentVersionId: row.currentVersionId,
+      }))
+    },
+
     async createForm(record) {
       await db.insert(forms).values({
         id: record.id,

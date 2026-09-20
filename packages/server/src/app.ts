@@ -4,7 +4,9 @@ import type { FastifyInstance } from 'fastify'
 import {
   createSubmission,
   exportCsv,
+  listForms,
   listSubmissions,
+  listVersions,
   publishForm,
   resolveForm,
   resumeDraft,
@@ -52,6 +54,17 @@ export function createApp(storage: Storage): FastifyInstance {
       version: outcome.version,
       schemaHash: outcome.schemaHash,
     })
+  })
+
+  app.get('/forms', async (_request, reply) => {
+    return reply.send({ forms: await listForms(deps) })
+  })
+
+  app.get('/f/:path/versions', async (request, reply) => {
+    const { path } = request.params as { path: string }
+    const versions = await listVersions(deps, path)
+    if (versions === undefined) return reply.code(404).send({ error: 'unknown_form' })
+    return reply.send({ versions })
   })
 
   app.get('/f/:path', async (request, reply) => {

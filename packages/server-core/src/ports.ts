@@ -37,6 +37,7 @@ export interface DraftRecord {
 
 export interface Storage {
   getFormByPath(path: string): Promise<FormRecord | undefined>
+  listForms(): Promise<FormRecord[]>
   createForm(record: FormRecord): Promise<void>
   setCurrentVersion(formId: string, versionId: string): Promise<void>
   insertVersion(record: FormVersionRecord): Promise<void>

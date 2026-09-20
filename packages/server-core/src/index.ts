@@ -1,7 +1,9 @@
 export {
   createSubmission,
   exportCsv,
+  listForms,
   listSubmissions,
+  listVersions,
   publishForm,
   resolveForm,
   resumeDraft,
@@ -9,7 +11,9 @@ export {
 } from './use-cases.js'
 export type {
   DraftMigration,
+  ListedForm,
   ListedSubmission,
+  ListedVersion,
   PublishOutcome,
   ResolvedForm,
   ResumeOutcome,

@@ -451,3 +451,50 @@ function takeAtDottedPath(data: Record<string, unknown>, dottedPath: string): un
 function structuredCloneJson<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T
 }
+
+export interface ListedForm {
+  path: string
+  title: string
+  version: number
+  schemaHash: string
+}
+
+/** Every form with its current version — the admin's landing view. */
+export async function listForms(deps: ServerDeps): Promise<ListedForm[]> {
+  const forms = await deps.storage.listForms()
+  const listed: ListedForm[] = []
+  for (const form of forms) {
+    if (form.currentVersionId === null) continue
+    const current = await deps.storage.getVersionById(form.currentVersionId)
+    if (current === undefined) continue
+    listed.push({
+      path: form.path,
+      title: current.schema.title,
+      version: current.version,
+      schemaHash: current.schemaHash,
+    })
+  }
+  return listed
+}
+
+export interface ListedVersion {
+  version: number
+  schemaHash: string
+  title: string
+}
+
+/** A form's version history, newest first — metadata only, because a history
+ *  view rendering fifty full schemas would be its own denial of service. */
+export async function listVersions(
+  deps: ServerDeps,
+  path: string,
+): Promise<ListedVersion[] | undefined> {
+  const form = await deps.storage.getFormByPath(path)
+  if (form === undefined) return undefined
+  const versions = await deps.storage.listVersionsByForm(form.id)
+  return versions.map((version) => ({
+    version: version.version,
+    schemaHash: version.schemaHash,
+    title: version.schema.title,
+  }))
+}
