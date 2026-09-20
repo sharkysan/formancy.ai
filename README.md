@@ -41,7 +41,8 @@ packages/react          React binding: hooks, unstyled components, error summary
 packages/angular        Angular binding: signals over the same protocol, zoneless
 packages/conformance    the behaviour + accessibility contract (7 fixtures, published)
 packages/builder-core   headless schema editing: commands, undo/redo, valid targets
-packages/builder-react  the builder's structure editor, keyboard-first
+packages/builder-react  the builder UI: structure tree, field palette,
+                        property panel — all keyboard-first
 packages/server-core    backend use-cases against storage ports
 packages/server         Fastify + Postgres: publish, resolve, replayed submissions,
                         drafts with lazy migration, CSV export
@@ -52,10 +53,11 @@ apps/docs               the documentation site (Astro Starlight)
 ```
 
 **The builder is partly built.** `builder-core` holds the document, the undo
-stack and the rules about which edits are legal; `builder-react` is the
-structure editor over it, and it is a keyboard interface with no drag surface —
+stack and the rules about which edits are legal. `builder-react` is the
+interface over it — structure tree, field palette and property panel — and it
+is entirely keyboard-driven with no drag surface,
 [deliberately in that order](./docs/decisions/0046-keyboard-before-drag.md).
-A field palette, a property editor and logic authoring are still to come.
+Logic authoring and dragging are still to come.
 
 ## Development
 

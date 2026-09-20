@@ -192,3 +192,88 @@ describe('removing and undoing', () => {
     expect(document.activeElement?.textContent).toBe('Street')
   })
 })
+
+/**
+ * Adding a field is the command without which the builder cannot build
+ * anything, and it is two questions: what, then where. Both are lists, because
+ * both have to be answerable by somebody who is not using a pointer.
+ */
+describe('adding a field', () => {
+  test('a offers the types the spec defines, in the spec\u2019s own words', async () => {
+    const user = userEvent.setup()
+    mount()
+    await user.tab()
+
+    await user.keyboard('a')
+
+    const palette = screen.getByRole('dialog', { name: 'Add a field' })
+    const offered = within(palette)
+      .getAllByRole('button')
+      .map((button) => button.textContent)
+
+    expect(offered).toContain('Single-line text')
+    expect(offered).toContain('Repeater')
+    // A page may only sit at the top level, so it is not a palette choice.
+    expect(offered).not.toContain('Page')
+  })
+
+  test('choosing a type then a place inserts it', async () => {
+    const user = userEvent.setup()
+    mount()
+    await user.tab()
+    await user.keyboard('a')
+
+    await user.click(screen.getByRole('button', { name: 'Single-line text' }))
+    await user.click(
+      within(screen.getByRole('dialog', { name: /Where should the Single-line text go/ })).getByRole(
+        'button',
+        { name: 'Order, before Customer' },
+      ),
+    )
+
+    expect(keys()).toEqual(['Single-line text', 'Customer', 'Billing address', 'Street', 'City'])
+  })
+
+  test('a second field of the same type does not collide with the first', async () => {
+    const user = userEvent.setup()
+    const session = mount()
+    await user.tab()
+
+    for (let round = 0; round < 2; round += 1) {
+      await user.keyboard('a')
+      await user.click(screen.getByRole('button', { name: 'Single-line text' }))
+      const where = screen.getByRole('dialog', { name: /Where should/ })
+      await user.click(within(where).getAllByRole('button')[0]!)
+    }
+
+    const topLevel = session.document().model.fields.map((field) => field.key)
+    expect(new Set(topLevel).size).toBe(topLevel.length)
+  })
+
+  test('a group arrives valid, with a field already inside it', async () => {
+    const user = userEvent.setup()
+    const session = mount()
+    await user.tab()
+    await user.keyboard('a')
+
+    await user.click(screen.getByRole('button', { name: 'Group' }))
+    const where = screen.getByRole('dialog', { name: /Where should/ })
+    await user.click(within(where).getAllByRole('button')[0]!)
+
+    // An empty group fails validation, so inserting one would make the very
+    // first edit a refusal.
+    expect(session.canPublish().valid).toBe(true)
+  })
+
+  test('cancelling the first question adds nothing', async () => {
+    const user = userEvent.setup()
+    mount()
+    await user.tab()
+    await user.keyboard('a')
+
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+
+    expect(keys()).toEqual(['Customer', 'Billing address', 'Street', 'City'])
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+})

@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useSyncExternalStore } from 'react'
 import type { BuilderSession, Location } from '@formancy/builder-core'
-import type { FormSchema } from '@formancy/spec'
+import type { FieldDef, FormSchema } from '@formancy/spec'
 import { describeTarget, flatten } from './tree.js'
 import type { TreeNode } from './tree.js'
 
@@ -19,6 +19,8 @@ export interface BuilderView {
   publishable: { valid: boolean; errors: ReturnType<BuilderSession['canPublish']>['errors'] }
   /** Every legal destination for a field, already described in words. */
   moveTargetsFor(keyPath: readonly string[]): MoveTarget[]
+  /** The same, for a field that does not exist yet. */
+  insertTargetsFor(def: FieldDef): MoveTarget[]
 }
 
 /**
@@ -55,6 +57,12 @@ export function useBuilder(session: BuilderSession): BuilderView {
       canUndo: session.canUndo(),
       canRedo: session.canRedo(),
       publishable: session.canPublish(),
+      insertTargetsFor: (def) =>
+        session
+          .validTargets(def)
+          // No `moving` argument: nothing is being lifted out, so every
+          // existing field is a real neighbour.
+          .map((location) => ({ location, label: describeTarget(document, location) })),
       moveTargetsFor: (keyPath) => {
         // Where the field already is. builder-core offers it because it is a
         // legal destination, which is true and useless: a list whose first

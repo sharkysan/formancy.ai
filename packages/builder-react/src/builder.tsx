@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
 import type { BuilderSession } from '@formancy/builder-core'
+import { newFieldOfType, paletteEntries } from './palette.js'
 import { useBuilder } from './use-builder.js'
 import type { MoveTarget } from './use-builder.js'
 import type { TreeNode } from './tree.js'
@@ -27,6 +28,7 @@ export interface BuilderProps {
 
 const KEY_HELP = [
   ['↑ ↓', 'move between fields'],
+  ['a', 'add a field'],
   ['m', 'move the focused field'],
   ['Delete', 'remove it'],
   ['Ctrl+Z / Ctrl+Y', 'undo / redo'],
@@ -36,6 +38,9 @@ export function FormancyBuilder({ session, label = 'Form structure' }: BuilderPr
   const view = useBuilder(session)
   const [focusedIndex, setFocusedIndex] = useState(0)
   const [moving, setMoving] = useState<{ node: TreeNode; targets: MoveTarget[] } | null>(null)
+  // Adding is two choices: what, then where. Kept as one piece of state so the
+  // second question cannot be asked without an answer to the first.
+  const [adding, setAdding] = useState<{ type: string } | null>(null)
   const [announcement, setAnnouncement] = useState('')
 
   const itemRefs = useRef<Array<HTMLLIElement | null>>([])
@@ -61,12 +66,12 @@ export function FormancyBuilder({ session, label = 'Form structure' }: BuilderPr
   const keepFocus = useRef(false)
 
   useEffect(() => {
-    if (moving !== null) return
+    if (moving !== null || adding !== null) return
     const active = document.activeElement
     const inside = treeRef.current !== null && active !== null && treeRef.current.contains(active)
     if (inside || keepFocus.current) itemRefs.current[index]?.focus()
     keepFocus.current = false
-  }, [index, moving, view.document])
+  }, [index, moving, adding, view.document])
 
   const announce = useCallback((message: string) => {
     setAnnouncement(message)
@@ -123,6 +128,11 @@ export function FormancyBuilder({ session, label = 'Form structure' }: BuilderPr
         setMoving({ node: focused, targets })
         break
       }
+      case 'a':
+      case 'A':
+        event.preventDefault()
+        setAdding({ type: '' })
+        break
       case 'Delete':
       case 'Backspace': {
         event.preventDefault()
@@ -137,6 +147,32 @@ export function FormancyBuilder({ session, label = 'Form structure' }: BuilderPr
       default:
         break
     }
+  }
+
+  const existingKeys = new Set(view.nodes.map((node) => node.keyPath[node.keyPath.length - 1]!))
+
+  const insertTargets = (type: string): MoveTarget[] =>
+    view.insertTargetsFor(newFieldOfType(type, existingKeys))
+
+  const cancelDialog = (): void => {
+    setAdding(null)
+    setMoving(null)
+    keepFocus.current = true
+    treeRef.current?.focus()
+    itemRefs.current[index]?.focus()
+  }
+
+  const completeAdd = (type: string, target: MoveTarget): void => {
+    setAdding(null)
+    const def = newFieldOfType(type, existingKeys)
+    const outcome = session.insertField(target.location, def)
+    announce(
+      outcome.ok
+        ? `Added ${labelForType(type)} to ${target.label}.`
+        : `Cannot add: ${outcome.message}`,
+    )
+    keepFocus.current = true
+    itemRefs.current[index]?.focus()
   }
 
   const completeMove = (target: MoveTarget): void => {
@@ -187,6 +223,43 @@ export function FormancyBuilder({ session, label = 'Form structure' }: BuilderPr
 
       {count === 0 ? <p data-formancy-part="builder-empty">This form has no fields yet.</p> : null}
 
+      {adding === null ? null : adding.type === '' ? (
+        <div role="dialog" aria-label="Add a field" data-formancy-part="add-palette">
+          <ul>
+            {paletteEntries().map((entry) => (
+              <li key={entry.type}>
+                <button type="button" onClick={() => setAdding({ type: entry.type })}>
+                  {entry.title}
+                </button>
+                <span data-formancy-part="palette-hint">{entry.description}</span>
+              </li>
+            ))}
+          </ul>
+          <button type="button" onClick={() => cancelDialog()}>
+            Cancel
+          </button>
+        </div>
+      ) : (
+        <div
+          role="dialog"
+          aria-label={`Where should the ${labelForType(adding.type)} go?`}
+          data-formancy-part="add-where"
+        >
+          <ul>
+            {insertTargets(adding.type).map((target) => (
+              <li key={`${target.location.parent.join('.')}:${String(target.location.index)}`}>
+                <button type="button" onClick={() => completeAdd(adding.type, target)}>
+                  {target.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+          <button type="button" onClick={() => cancelDialog()}>
+            Cancel
+          </button>
+        </div>
+      )}
+
       {moving === null ? null : (
         <div role="dialog" aria-label={`Move ${nameOf(moving.node)}`} data-formancy-part="move-palette">
           <ul>
@@ -228,6 +301,10 @@ export function FormancyBuilder({ session, label = 'Form structure' }: BuilderPr
       </dl>
     </div>
   )
+}
+
+function labelForType(type: string): string {
+  return paletteEntries().find((entry) => entry.type === type)?.title ?? type
 }
 
 function nameOf(node: TreeNode): string {

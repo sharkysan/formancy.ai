@@ -26,6 +26,7 @@ same commands.
 |---|---|
 | `↑` `↓` | Move between fields, in the order a person reading the form meets them |
 | `Home` `End` | First and last field |
+| `a` | Add a field — asks what, then where |
 | `m` | Move the focused field — opens a list of destinations |
 | `Delete` | Remove it |
 | `Ctrl+Z` / `Ctrl+Y` | Undo / redo |
@@ -48,7 +49,19 @@ is really "after Billing", naming the field doing the travelling. And the
 field's current position is not offered at all: it is a legal destination, and
 a list whose first entry does nothing makes you read it to find that out.
 
+## The panels are generated, not written
+
+Both the field palette and the property panel are read out of
+`packages/spec/formancy.schema.json`, including every label and hint. The
+schema already says which types exist and which properties belong to which
+type — that is what its `oneOf` and `allOf`/`if`/`then` branches are for.
+
+Written by hand instead, they rot within two releases: a property is added to
+the spec, nobody remembers the panel, and the builder quietly cannot set it.
+The tests assert that a text field is offered `pattern` and not `min`, and a
+number field the reverse, without either list appearing in this package.
+
 ## What it does not do yet
 
-Inserting fields from a palette, editing properties, and authoring logic. The
-commands for all three exist in `builder-core`; this package covers structure.
+Authoring logic rules, editing a `select`'s options, and dragging. The commands
+for the first two exist in `builder-core`.
