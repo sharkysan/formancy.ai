@@ -20,6 +20,20 @@ export interface WebhookUrlOptions {
    * same host may reasonably turn it on.
    */
   allowHttp?: boolean
+  /**
+   * Allow delivery to a private address.
+   *
+   * OFF by default, and the only reason it exists is the case the design
+   * itself names: a receiver running as a sidecar on the same host or the same
+   * private network. Without it that deployment simply cannot use webhooks,
+   * which is a worse outcome than an escape hatch nobody has to touch.
+   *
+   * Turning it on gives up the confused-deputy protection entirely — the
+   * server will then fetch whatever URL a form author writes, including the
+   * cloud metadata service. A deployment that enables it should also be one
+   * where form authors are trusted.
+   */
+  allowPrivateAddresses?: boolean
 }
 
 /**
@@ -54,7 +68,11 @@ export function webhookUrlProblem(
   // Only a LITERAL address can be judged here. A hostname is checked after
   // resolution, at delivery time, by the caller — and running the fail-closed
   // address check against one would refuse every hostname in the world.
-  if (isIpLiteral(url.hostname) && isPrivateAddress(url.hostname)) {
+  if (
+    options.allowPrivateAddresses !== true &&
+    isIpLiteral(url.hostname) &&
+    isPrivateAddress(url.hostname)
+  ) {
     return `${url.hostname} is not an address this server may be pointed at.`
   }
 

@@ -130,3 +130,34 @@ describe('a resolver that fails', () => {
     expect(result.error).toContain('ENOTFOUND')
   })
 })
+
+/**
+ * The escape hatch, and the reason it exists.
+ *
+ * Without it a receiver running as a sidecar on the same host — the case the
+ * design itself names — simply cannot be delivered to, which is a worse
+ * outcome than an opt-in nobody has to touch.
+ */
+describe('allowPrivateAddresses', () => {
+  test('is off by default, so the guard is the default', async () => {
+    const result = await deliver(
+      { ...BASE, url: 'https://sidecar.internal/hook' },
+      { resolve: async () => ['10.0.0.5'] },
+    )
+
+    expect(result.ok).toBe(false)
+  })
+
+  test('turning it on gets past the address check, not past everything', async () => {
+    // It reaches the connection attempt and fails there, in a jsdom-free
+    // environment with nothing listening — which is exactly as far as this
+    // test can see, and proves the refusal was the address check.
+    const result = await deliver(
+      { ...BASE, url: 'https://127.0.0.1:1/hook' },
+      { allowPrivateAddresses: true, resolve: async () => ['127.0.0.1'], timeoutMs: 500 },
+    )
+
+    expect(result.ok).toBe(false)
+    expect(result.error).not.toContain('not reachable from here')
+  })
+})

@@ -125,3 +125,14 @@ gives the tests an in-memory implementation.
 `server` holds Fastify routes in two planes, the PostgreSQL adapter, the schema
 including the immutability trigger, and the auth runtime (argon2id via
 `@node-rs/argon2`, sessions via `jose`).
+
+The webhook outbox shows the split at its sharpest. `server-core/outbox.ts` has
+`afterAttempt` — pure, four arguments, the entire retry policy — and
+`drainOutbox`, one batch that returns. `server/deliver.ts` has the part that
+cannot be isomorphic: `node:dns`, an undici agent pinned to the address that
+was checked, and a `URL`. `server/outbox-worker.ts` is the clock and nothing
+else, which is why it fits on one screen. The address *classification* sits
+back in `server-core/address.ts`, because deciding whether `::ffff:10.0.0.5` is
+private needs no runtime at all — only parsing it into a `URL` does, and that
+is why `webhookUrlProblem` lives in `server` while `isPrivateAddress` does
+not.

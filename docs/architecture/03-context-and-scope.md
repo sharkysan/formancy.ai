@@ -27,7 +27,7 @@
 | **Person filling in a form** | Sends answers; receives visibility, requiredness, calculated values and validation messages |
 | **Self-hoster** | Operates the container. Supplies configuration; receives submissions, exports and audit records |
 | **PostgreSQL** | Stores forms, immutable versions, submissions, drafts, audit rows and the job queue. One database; no Redis and no second store ([0024](../decisions/0024-postgres-over-mongodb.md)) |
-| **Webhook receivers** | Receive submission events, signed and idempotent. Designed; not implemented in v0.1 |
+| **Webhook receivers** | Receive submission events over HTTPS, signed with Stripe's scheme and carrying an event id stable across retries, so a receiver can verify and dedupe with code it already has ([0048](../decisions/0048-webhook-delivery.md)) |
 
 ## Technical context
 

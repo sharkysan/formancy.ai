@@ -167,6 +167,16 @@ opt-in; the management plane requires a session or an API key and runs
   independent. Redirects are not followed, the response is capped at 64 kB and
   never interpreted, and the signature is Stripe's scheme so receivers can use
   code they already have.
+- **The outbox is drained** by a five-second polling worker in the server
+  process — no queue library, no second container. Retries are exponential with
+  full jitter over eight attempts, and a delivery that runs out of them is
+  marked dead rather than deleted, because the row is the evidence that
+  something was supposed to be sent and never arrived. It is **not** a
+  distributed queue: run exactly one replica, or a delivery goes out twice.
+  Plain http and private addresses are each opt-in per deployment
+  (`FORMANCY_WEBHOOK_ALLOW_HTTP`, `FORMANCY_WEBHOOK_ALLOW_PRIVATE`) for a
+  receiver on a trusted network — per deployment, never per form, since a form
+  author is exactly who the address guard defends against.
 
 ### Applications
 
@@ -222,12 +232,14 @@ See [`RELEASING.md`](./RELEASING.md).
 
 Named rather than implied.
 
-**Not built yet.** The worker that drains the webhook outbox — deliveries are
-queued correctly and the delivery code and retry schedule are tested, but
-nothing runs them on a timer yet, so queued rows sit in the table. Conditions
-combining more than one comparison; file upload; webhooks and actions; rate
-limiting, challenge and origin allowlists on the public plane; multi-tenancy; a
-published container image — one builds locally from `docker compose up`, but nothing is pushed to a registry or signed.
+**Not built yet.** Conditions combining more than one comparison; file upload;
+a per-action circuit breaker and dead-letter replay from the admin, so a
+receiver that has been down for a day is retried on the same schedule as one
+that failed once and re-queueing a dead delivery is a SQL statement; a
+proof-of-work challenge on the public plane, which the rate limit and the
+origin allowlist stand in for; multi-tenancy; a published container
+image — one builds locally from `docker compose up`, but nothing is pushed to a
+registry or signed.
 
 **Known gaps.**
 
@@ -236,7 +248,9 @@ published container image — one builds locally from `docker compose up`, but n
 - A `pattern` that `recheck` cannot decide about is accepted rather than
   refused, and patterns published before the gate existed were never analysed.
 - `@fastify/rate-limit`'s default store is per-process and therefore wrong
-  behind more than one replica.
+  behind more than one replica. The outbox worker has the same constraint for a
+  different reason — `claimDueDeliveries` takes no row lock — so more than one
+  replica delivers every webhook more than once.
 - A `visible` rule that fails at runtime shows the field. That is deliberate,
   but it means a form whose visibility rules are quietly failing looks as though
   it is working.

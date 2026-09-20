@@ -128,6 +128,7 @@ record whose only enforcement is "we remember" says so plainly.
 | [0046](0046-keyboard-before-drag.md) | Build the builder UI keyboard path before its drag surface | accepted |
 | [0047](0047-layouts-render.md) | Render layouts, with the DOM as the arrangement | accepted |
 | [0048](0048-webhook-delivery.md) | Deliver webhooks from a transactional outbox, to an address we checked | accepted |
+| [0049](0049-one-polling-worker.md) | Drain the outbox from one polling worker, and say so | accepted |
 
 ### Verification
 

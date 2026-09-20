@@ -5,7 +5,7 @@
 - **Deciders:** Daniel Bacher
 - **Verified by:** `packages/server-core/src/address.test.ts` (17 cases,
   including ranges adjacent to the private ones, IPv4-mapped IPv6 and
-  unparseable input), `packages/server/src/deliver.test.ts` (10 cases, all the
+  unparseable input), `packages/server/src/deliver.test.ts` (12 cases, all the
   rebinding shapes, with an injected resolver so no network is needed),
   `packages/server-core/src/webhook.test.ts` (13, including an HMAC pinned
   against a value computed independently with Node's crypto), and `the webhook
@@ -69,16 +69,20 @@ types cannot be used to read the cloud metadata service.
 **What it costs.** Pinning the address means a host behind round-robin DNS is
 contacted at one address per attempt rather than balanced across them, and a
 deployment whose receiver legitimately lives on a private address must set
-`allowHttp` and accept that the guard is off for it. Refusing every address
-when any is private is stricter than necessary for a multi-homed host that is
-genuinely public on one interface; the stricter rule is the one that cannot be
-walked around.
+`FORMANCY_WEBHOOK_ALLOW_PRIVATE` and accept that the guard is off for it —
+per deployment, never per form, for the reason given in
+[0049](0049-one-polling-worker.md). Refusing every address when any is private
+is stricter than necessary for a multi-homed host that is genuinely public on
+one interface; the stricter rule is the one that cannot be walked around.
 
-**What is not built.** The worker that drains the outbox — the ports exist
-(`claimDueDeliveries`, `updateDelivery`) and the schedule is implemented and
-tested, but nothing runs it on a timer yet, so queued deliveries sit in the
-table. A per-action circuit breaker and a dead-letter replay in the admin are
-also absent.
+**What drains it.** A five-second polling worker in the server process, decided
+separately in [0049](0049-one-polling-worker.md) because the questions it
+answers — what runs the timer, what happens with two replicas, and how a
+receiver on a private address is reached at all — are not these ones.
+
+**What is not built.** A per-action circuit breaker, so a receiver that has
+been down for a day is retried on the same schedule as one that failed once,
+and dead-letter replay from the admin.
 
 ## Alternatives considered
 
