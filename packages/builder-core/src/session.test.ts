@@ -123,3 +123,69 @@ describe('createBuilderSession', () => {
     expect(calls).toBe(0)
   })
 })
+
+/**
+ * WCAG 2.2 SC 2.5.7 asks for a keyboard alternative to dragging that does the
+ * same job — not a reduced one. A drag can drop a field between any two
+ * others, so the list of targets has to offer that too.
+ */
+describe('validTargets offers every position, not just the end', () => {
+  const schema = {
+    specVersion: '1',
+    id: 'order',
+    title: 'Order',
+    model: {
+      fields: [
+        { key: 'customer', type: 'text', label: 'Customer' },
+        {
+          key: 'billing',
+          type: 'group',
+          label: 'Billing',
+          fields: [
+            { key: 'street', type: 'text', label: 'Street' },
+            { key: 'city', type: 'text', label: 'City' },
+          ],
+        },
+      ],
+    },
+  } as unknown as FormSchema
+
+  const offered = (session: ReturnType<typeof createBuilderSession>, path: string[]): string[] =>
+    session.validTargets(path).map((target) => `${target.parent.join('/')}#${String(target.index)}`)
+
+  test('a field can land between two others inside a container', () => {
+    const session = createBuilderSession(schema)
+
+    const targets = offered(session, ['customer'])
+
+    // Before Street, between Street and City, after City — three positions in
+    // a container holding two fields, not one.
+    expect(targets).toContain('billing#0')
+    expect(targets).toContain('billing#1')
+    expect(targets).toContain('billing#2')
+  })
+
+  test('and between two others at the top level', () => {
+    const session = createBuilderSession(schema)
+
+    // Moving Street out of the group: it can go before Customer, after it, or
+    // at the end.
+    expect(offered(session, ['billing', 'street'])).toEqual(
+      expect.arrayContaining(['#0', '#1', '#2']),
+    )
+  })
+
+  test('every offered target is actually accepted, which is the point of trying the edit', () => {
+    for (const target of createBuilderSession(schema).validTargets(['customer'])) {
+      const session = createBuilderSession(schema)
+      const outcome = session.moveField(['customer'], target)
+      expect(outcome.ok, `${target.parent.join('/')}#${String(target.index)}`).toBe(true)
+    }
+  })
+
+  test('a container is still not offered a home inside itself', () => {
+    const session = createBuilderSession(schema)
+
+    expect(offered(session, ['billing']).some((target) => target.startsWith('billing'))).toBe(false)
+  })
+})

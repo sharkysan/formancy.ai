@@ -294,7 +294,22 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
         if (container === undefined) continue
         container.push(movingPath === undefined ? withUniqueKey(copy(probe), draft) : copy(probe))
 
-        if (verdictFor(draft).valid) targets.push({ parent, index: container.length - 1 })
+        // Legality is tested once per container, at the end, and then every
+        // position in that container is offered. Nothing the validator checks
+        // depends on where among its siblings a field sits — duplicate keys,
+        // nesting depth and rule targets are all position-blind — so testing
+        // each index separately would run the validator n times to learn the
+        // same thing.
+        //
+        // Offering only the last position would be cheaper still, and was what
+        // this did first. It also made the keyboard path weaker than a drag:
+        // you could move a field to the end of a group but never between two
+        // of its fields, which is not the equivalent function WCAG 2.2 SC
+        // 2.5.7 asks for.
+        if (!verdictFor(draft).valid) continue
+        for (let index = 0; index < container.length; index += 1) {
+          targets.push({ parent, index })
+        }
       }
       return targets
     },

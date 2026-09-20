@@ -41,6 +41,7 @@ packages/react          React binding: hooks, unstyled components, error summary
 packages/angular        Angular binding: signals over the same protocol, zoneless
 packages/conformance    the behaviour + accessibility contract (7 fixtures, published)
 packages/builder-core   headless schema editing: commands, undo/redo, valid targets
+packages/builder-react  the builder's structure editor, keyboard-first
 packages/server-core    backend use-cases against storage ports
 packages/server         Fastify + Postgres: publish, resolve, replayed submissions,
                         drafts with lazy migration, CSV export
@@ -50,9 +51,11 @@ apps/admin              the self-hosted admin, v0.1 cut
 apps/docs               the documentation site (Astro Starlight)
 ```
 
-**There is no builder UI yet.** `builder-core` is the document engine
-underneath one — commands, undo/redo, and legality decided by attempting the
-edit — and it is done and tested. The canvas is the next large piece of work.
+**The builder is partly built.** `builder-core` holds the document, the undo
+stack and the rules about which edits are legal; `builder-react` is the
+structure editor over it, and it is a keyboard interface with no drag surface —
+[deliberately in that order](./docs/decisions/0046-keyboard-before-drag.md).
+A field palette, a property editor and logic authoring are still to come.
 
 ## Development
 
@@ -118,7 +121,7 @@ from the JSON Schema.
 
 - [Architecture](./docs/README.md#architecture), arc42-shaped. Start with
   [the five ideas everything else follows from](./docs/architecture/04-solution-strategy.md).
-- [Forty-five decision records](./docs/decisions/), each naming what would
+- [Forty-six decision records](./docs/decisions/), each naming what would
   fail if the decision were violated — or saying plainly that nothing would.
 - [Regulatory material](./docs/regulatory/MDR-CONTEXT.md) for anyone
   incorporating formancy into a product that has to answer to a regulator.

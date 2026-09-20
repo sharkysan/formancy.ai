@@ -1,0 +1,59 @@
+{
+  "name": "@formancy/builder-react",
+  "version": "0.1.0",
+  "description": "Keyboard-first React builder UI for formancy form documents.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "check:pkg": "publint && attw --pack . --profile esm-only"
+  },
+  "dependencies": {
+    "@formancy/builder-core": "workspace:*",
+    "@formancy/core": "workspace:*",
+    "@formancy/react": "workspace:*",
+    "@formancy/spec": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "catalog:",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.7",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "jsdom": "^30.1.0",
+    "publint": "catalog:",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "unrun": "^0.3.1",
+    "vitest": "catalog:"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sharkysan/formancy.ai.git",
+    "directory": "packages/builder-react"
+  },
+  "homepage": "https://github.com/sharkysan/formancy.ai",
+  "bugs": "https://github.com/sharkysan/formancy.ai/issues"
+}
