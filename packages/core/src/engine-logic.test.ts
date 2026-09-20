@@ -154,3 +154,90 @@ describe('compile-time gates', () => {
     expect(() => createFormEngine({ schema: plain })).not.toThrow()
   })
 })
+
+/**
+ * A rule can type-check at save time and still fail when it runs. `int(ref)` on
+ * a text field is the realistic case: it type-checks, because int(string) is a
+ * legal conversion, and it throws the moment somebody types something that is
+ * not a number.
+ *
+ * What happens then is a safety decision, and it is deliberately asymmetric:
+ * see docs/decisions/0022-fail-open-fail-closed.md. These tests exist because
+ * writing that record revealed that nothing enforced it — swapping the two
+ * branches would previously have broken no test at all.
+ */
+describe('an expression that fails at runtime', () => {
+  const brittle: FormSchema = {
+    specVersion: '0',
+    id: 'brittle',
+    title: 'Brittle',
+    model: {
+      fields: [
+        { key: 'reference', type: 'text' },
+        { key: 'shown', type: 'text' },
+        { key: 'asked', type: 'text' },
+        { key: 'locked', type: 'text' },
+        { key: 'checked', type: 'text' },
+      ],
+    },
+    logic: {
+      rules: [
+        { target: 'shown', kind: 'visible', cel: 'int(reference) > 5' },
+        { target: 'asked', kind: 'required', cel: 'int(reference) > 5' },
+        { target: 'locked', kind: 'disabled', cel: 'int(reference) > 5' },
+        { target: 'checked', kind: 'validate', cel: 'int(reference) > 5', code: 'unproven' },
+      ],
+    },
+  }
+
+  const brittleEngine = (): ReturnType<typeof createFormEngine> => {
+    const engine = createFormEngine({
+      schema: brittle,
+      capabilities: FIXED_CLOCK,
+    } satisfies FormEngineOptions)
+    engine.setValue(['reference'], 'not a number')
+    return engine
+  }
+
+  test('the premise: the rule really does fail, rather than quietly returning false', () => {
+    // Without this, every assertion below would pass for the wrong reason — an
+    // expression that evaluated successfully to false looks identical to one
+    // that failed open.
+    const working = createFormEngine({
+      schema: brittle,
+      capabilities: FIXED_CLOCK,
+    } satisfies FormEngineOptions)
+    working.setValue(['reference'], '9')
+
+    expect(working.getFieldSnapshot(['asked']).required).toBe(true)
+    expect(brittleEngine().getFieldSnapshot(['asked']).required).toBe(false)
+  })
+
+  test('a visible rule fails OPEN, because hiding a field discards what was typed into it', () => {
+    expect(brittleEngine().getFieldSnapshot(['shown']).visible).toBe(true)
+  })
+
+  test('a required rule fails OPEN, because a field nobody can satisfy blocks the form', () => {
+    expect(brittleEngine().getFieldSnapshot(['asked']).required).toBe(false)
+  })
+
+  test('a disabled rule fails OPEN, because a control nobody can use blocks the form', () => {
+    expect(brittleEngine().getFieldSnapshot(['locked']).disabled).toBe(false)
+  })
+
+  test('a validate rule fails CLOSED, because unchecked data in a database is not recoverable', () => {
+    const engine = brittleEngine()
+    const report = engine.validate()
+
+    expect(report.valid).toBe(false)
+    expect(report.errors['checked']).toEqual(['unproven'])
+  })
+
+  test('the asymmetry holds in one pass: the form is usable and the submission is refused', () => {
+    const engine = brittleEngine()
+    const outcome = engine.submit()
+
+    expect(engine.getFieldSnapshot(['shown']).visible).toBe(true)
+    expect(outcome.ok).toBe(false)
+  })
+})
