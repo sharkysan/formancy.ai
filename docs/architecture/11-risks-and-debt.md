@@ -62,6 +62,8 @@ defect would be most costly.
 | Debt | Why it exists | What it costs |
 |---|---|---|
 | **Spec version 0 is unstable** | Three properties were undiscoverable without a renderer and a server in the loop | Anyone building on it now may have to migrate documents |
+| **Repeater rows carry no identity** | Never settled; `addRow` pushes `{}` and both renderers key by index | **Blocks the spec freeze** — see below |
+| **`runsOn` and `async` are not reserved** | Intended to be, and were not | `logicRule` is `additionalProperties: false`, so adding either is a spec bump rather than an additive change |
 | **`recheck` pattern linting is designed, not implemented** | Deferred past the walking skeleton | A form author's regular expression can still hang the server ([SAFETY-ANALYSIS D3](../regulatory/SAFETY-ANALYSIS.md)) |
 | **Rate limiter store is per-process** | `@fastify/rate-limit`'s default | Wrong behind more than one replica; documented rather than fixed |
 | **No server container image** | Distribution work not started | `docker compose up` gives a database, not a product |
@@ -101,7 +103,32 @@ arbitrary in six months, which is why it is written down.
 of [0002](../decisions/0002-apache-2-0.md), accepted on purpose; the answer is
 the open-core line, not a licence restriction.
 
-## 11.4 Open decisions
+## 11.4 What the spec freeze is actually waiting on
+
+The plan named three things as undiscoverable without a renderer and a server
+in the loop, and therefore as the reasons to ship `specVersion: "0"` and freeze
+later. Their current state:
+
+| Gate | State |
+|---|---|
+| What happens to a hidden field's answer | **Settled.** `clearOnHide`, specified, property-tested, and applied identically on the server ([0013](../decisions/0013-hidden-field-semantics.md)) |
+| Repeating-group item identity | **Not settled.** Settled by default as *no identity*, which is the answer the design argued against |
+| Async validation versus submit ordering | **Not settled**, because async validators do not exist |
+
+Row identity is the one that blocks. It is a question about the shape of stored
+data, not about rendering: a row is `{}` today, and giving rows a generated id
+later adds a key to every row of every submission already collected. After the
+freeze that is a migration of user data or a permanently dual-shaped reader.
+Before it, it is a decision.
+
+Keying by index also has a present-tense cost the design predicted — removing a
+row renumbers every row after it, which moves focus and breaks animations.
+
+The other two are cheaper. Reserving `runsOn` and `async` as optional
+properties with safe defaults is a small change that makes the async ordering
+question answerable at v2 instead of forcing a v2 to ask it.
+
+## 11.5 Open decisions
 
 Genuinely undecided, and recorded as such rather than quietly defaulted:
 

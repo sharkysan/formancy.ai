@@ -70,7 +70,7 @@ POST /f/contact-us
                                      OVERWRITING what arrived
                                    · recompute visibility and requiredness
                                    · strip values under server-hidden subtrees
-                                   · run validators where runsOn allows
+                                   · run every validator (see note below)
                                        │
                                   ┌────┴────┐
                                   ▼         ▼
@@ -88,6 +88,14 @@ is the same build ([0006](../decisions/0006-one-engine-build.md)) and the clock
 is injected ([0019](../decisions/0019-injected-capabilities.md)). Without
 either, the two evaluations could legitimately differ and the comparison would
 mean nothing.
+
+> **`runsOn` does not exist yet.** Every validator currently runs in both
+> places. The design calls for `runsOn: 'both' | 'client' | 'server'` per
+> validator, without which a uniqueness check (server-only) or a debounced hint
+> (client-only) cannot be expressed — but the property is not in the spec, and
+> `logicRule` is `additionalProperties: false`, so adding it is a spec version
+> bump rather than an additive change. See
+> [11. Risks and technical debt](11-risks-and-debt.md).
 
 The single transaction is the reason for choosing PostgreSQL
 ([0024](../decisions/0024-postgres-over-mongodb.md)): "the webhook fired but the

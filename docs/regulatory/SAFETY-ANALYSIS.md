@@ -50,8 +50,11 @@ or random source, so a replay is byte-identical
 ([0019](../decisions/0019-injected-capabilities.md)). An engine constructed
 without a capability source throws rather than falling back to `Date.now()`.
 
-*Residual:* a rule marked `runsOn: 'client'` is by definition not enforced on
-the server. That is deliberate and must be understood by whoever authors rules.
+*Residual:* none known today, because every validator runs in both places —
+the `runsOn` property that would let an author mark a rule client-only is
+designed but **not in the spec**. When it lands, a rule marked
+`runsOn: 'client'` will by definition not be enforced on the server, and that
+will need to be understood by whoever authors rules.
 
 ### A3. A calculated value is supplied by the client rather than computed
 

@@ -60,9 +60,15 @@ history, submissions).
 - **A Vue renderer.** The engine protocol is designed for one; it is not a
   commitment yet.
 
-Reserved names exist in the spec for several of these (`file`, async
-validators, remote option sources), so adding them later is a compatible change
-rather than a breaking one.
+Field **type names** for several of these are reserved — `file`, `datetime`,
+`multiselect` and the rest are simply absent from the type list, and adding a
+value to that list is a compatible change.
+
+Rule-level properties are **not** reserved, and this is a real gap: `runsOn`
+and `async` were meant to be, but `logicRule` is `additionalProperties: false`,
+so a document carrying either would be rejected today. Adding them is therefore
+a spec version bump, not an additive change — which is worth settling before
+the spec freezes rather than after.
 
 ## What comes next
 
