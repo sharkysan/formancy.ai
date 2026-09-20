@@ -4,8 +4,9 @@ description: Run the formancy backend locally with Docker and Postgres, and walk
 ---
 
 :::caution[Pre-alpha]
-This backend is pre-alpha. It has authentication and role-based authorization,
-but not yet rate limiting, anonymous-submission hardening, audit logging or
+This backend is pre-alpha. It has authentication, role-based authorization,
+per-IP rate limiting, a per-form origin allowlist and a request body cap —
+but no proof-of-work challenge, no submission tokens, no audit logging and no
 file uploads. Treat it as something to evaluate, not something to expose to the
 public internet.
 :::

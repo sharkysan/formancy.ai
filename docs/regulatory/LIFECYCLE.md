@@ -15,11 +15,11 @@ quality management system, and this is not a claim of IEC 62304 conformity.**
 | §5.2 Software requirements analysis | Partially | Requirements exist as the spec, the conformance fixtures and the quality budgets; not as a numbered requirements list |
 | §5.3 Software architectural design | **Yes** | [the architecture documents](../architecture/01-introduction-and-goals.md) and [`../decisions/`](../decisions/) |
 | §5.4 Software detailed design | Partially | In code and in comments, which are unusually dense about *why*; no separate detailed design documents |
-| §5.5 Unit implementation and verification | **Yes** | Test-first development; 808 automated tests |
+| §5.5 Unit implementation and verification | **Yes** | Test-first development; 1,155 automated tests, with per-package coverage reported |
 | §5.6 Software integration and integration testing | **Yes** | Conformance suite across five implementations; integration tests against real PostgreSQL |
 | §5.7 Software system testing | Partially | End-to-end verification performed manually and recorded; not automated end-to-end |
-| §5.8 Software release | **No** | Nothing has been released |
-| §6 Software maintenance | **No** | No released version to maintain |
+| §5.8 Software release | Partially | `0.1.0` released to npm from CI with provenance and a signed SBOM; the gates are mechanical and no human sign-off is recorded against a checklist |
+| §6 Software maintenance | **No** | One release exists, but no maintenance process is defined for it — no support commitment, no backport policy, and no defined response time beyond `SECURITY.md` |
 | §7 Risk management | Partially | [`SAFETY-ANALYSIS.md`](SAFETY-ANALYSIS.md) identifies failure modes; no ISO 14971 file, by design |
 | §8 Configuration management | **Yes** | Git, pinned dependencies, lockfile, immutable published schema versions |
 | §9 Problem resolution | Partially | Defects are fixed with a regression test; no formal problem-report record |
@@ -151,12 +151,16 @@ Stated plainly, because a gap named is more useful than a gap implied:
   but not as a matrix.
 - No formal problem-report and resolution record. Defects are fixed with a
   regression test and described in the commit.
-- No release process, because nothing has been released.
+- No formal release *review*. Releases are cut from CI and the gates are
+  mechanical — tests, typecheck, package linting, licence presence, tag-to-
+  manifest version agreement — but no human sign-off is recorded against a
+  checklist. See [`RELEASING.md`](../../RELEASING.md).
 - No manual accessibility audit and no published VPAT.
-- No released artefacts, so nothing is signed yet. The pipeline that would
-  sign them exists — npm provenance via GitHub OIDC, a CycloneDX SBOM, and a
-  keyless cosign signature over it — and has never run, because a release is
-  what triggers it. Container image signing waits on there being an image.
+- The container image is neither published nor signed, because no registry has
+  been chosen. It builds locally from `docker compose up`. The npm side is
+  done: `0.1.0` went out from CI with a SLSA v1 provenance attestation per
+  tarball and a CycloneDX SBOM signed with cosign, keylessly, so there is no
+  private key to protect or leak.
 
 A manufacturer needing any of these for their classification must either supply
 it themselves as part of their own SOUP evaluation, or treat its absence as a

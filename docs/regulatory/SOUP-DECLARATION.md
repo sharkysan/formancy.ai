@@ -17,9 +17,10 @@ software, and neither is `latest`.
 | Supplier | the formancy project (open source) |
 | Licence | Apache-2.0 for every package ([0002](../decisions/0002-apache-2-0.md)) |
 | Source | this repository, in full, including tests |
-| Package version | `0.1.0` — **pre-release; not yet published to npm** |
+| Package version | `0.1.0`, published to npm under the `@formancy` scope |
 | Spec version | `"1"` — **frozen** 2026-09-20 ([0042](../decisions/0042-freeze-the-spec.md)) |
-| Development stage | walking skeleton complete; v0.1 not released |
+| Development stage | v0.1 released; pre-alpha. `@formancy/builder-react` is the one package not yet published |
+| Integrity | each tarball carries a SLSA v1 provenance attestation issued by GitHub's OIDC identity for the workflow run that built it, plus a registry signature. Verify with `npm audit signatures`; the pipeline is described in [`RELEASING.md`](../../RELEASING.md) |
 
 The two version lines are independent and both matter. The package version
 governs the code; the spec version governs the *documents and stored
@@ -138,22 +139,38 @@ requiring an accessibility conformance statement must perform that work.
 
 | Evidence | Where |
 |---|---|
-| 808 automated tests across eight packages, all passing at this commit | `pnpm test` |
-| 21 further integration tests against a real PostgreSQL instance via Testcontainers | `packages/server/src/server.integration.test.ts` |
+| 1,155 automated tests across ten packages, all passing at this commit | `pnpm test` |
+| 29 of those run against a real PostgreSQL instance via Testcontainers, rather than a stub | `packages/server/src/server.integration.test.ts` |
 | One behavioural conformance suite executed against the engine, both renderers and the server | `packages/conformance` ([0033](../decisions/0033-one-suite-n-drivers.md)) |
 | Property-based invariants over hide/unhide, repeater identity and evaluation order | `packages/core` |
 | The official CEL corpus, with results pinned | `packages/expressions/CEL-CONFORMANCE.md` |
 | Performance budgets, measured: keystroke ≈0.38 ms against a <1 ms budget; graph compile ≈1.7 ms against a <30 ms budget | `packages/core/bench/perf.mjs` |
 | Package-publication gates: `publint`, `@arethetypeswrong/cli`, `size-limit` | `pnpm check:pkg` |
+| Line coverage, reported per package and uploaded per commit | `pnpm turbo run test:coverage`, and Codecov |
+| Build provenance for every published tarball | `npm audit signatures` against the installed version |
 
-Per-package counts at this commit: spec 112, expressions 189, core 222,
-conformance 115, react 52, builder-core 51, angular 34, server-core 33.
+Per-package counts at this commit: core 225, expressions 189, builder-react
+160, conformance 115, spec 112, builder-core 96, server-core 75, server 61,
+react 64, angular 42. A further 45 cover the two applications, which are not
+distributed as packages and are listed separately for that reason.
+
+Coverage is reported rather than targeted, and what it counts is stated in
+`vitest.coverage.ts`: barrels and composition roots are excluded, with the
+reasoning written beside the exclusion, because a coverage figure is only
+evidence if the reader can see what it measured. The two lowest figures are the
+applications; every distributed package is above 85% of statements.
 
 ## Maintenance and support
 
 No commercial support, no service-level agreement, and no security-response
 commitment beyond `SECURITY.md`. Governance is documented honestly in
 `GOVERNANCE.md` as a single maintainer.
+
+Obtaining a fixed version does not depend on this repository staying up: the
+packages are on the public npm registry, each Apache-2.0, each with a
+provenance attestation tying it to the commit it was built from — so a
+manufacturer can establish what they installed without trusting the supplier's
+own claim about it.
 
 A manufacturer relying on this in a regulated product should plan for the
 possibility of maintaining it themselves. Apache-2.0 permits that, the

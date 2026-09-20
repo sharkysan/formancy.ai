@@ -8,7 +8,7 @@ Loosely [Keep a Changelog](https://keepachangelog.com), with reasons attached �
 a line that says only *what* changed is rarely the line you need six months
 later.
 
-## [0.1.0] — unreleased
+## [0.1.0] — 2026-09-20
 
 The first release. **Spec version: `"1"` (frozen).**
 
@@ -18,8 +18,18 @@ The *spec* is frozen; the *packages* are not. A form document written today
 keeps working, and the submissions stored against it keep their shape. The
 package APIs are pre-alpha and will change before 1.0.
 
-The packages are **not on npm yet** — the `@formancy` scope is unclaimed. To try
-formancy today, clone the repository.
+The packages are **on npm** under the
+[`@formancy`](https://www.npmjs.com/org/formancy) scope: `@formancy/spec`, `@formancy/expressions`, `@formancy/core`,
+`@formancy/react`, `@formancy/angular`, `@formancy/conformance`,
+`@formancy/builder-core`, `@formancy/server-core`, `@formancy/server` and
+`@formancy/themes`. Each was
+published from CI with a SLSA v1 provenance attestation, so `npm audit
+signatures` can say which workflow run and which commit built the tarball you
+installed.
+
+`@formancy/builder-react` is not among them. It was written after this release
+was cut and lands in the next one; clone the repository to use the builder
+today.
 
 Do not deploy the server anywhere public. It has authentication, role-based
 authorization, a fail-closed access gate on anonymous submission, per-IP rate
@@ -287,11 +297,21 @@ registry or signed.
   criteria are machine-testable at all.
 - Async validators do not exist. They need a new rule kind, which is a spec 2
   change; `runsOn` is already in place so that change is additive.
-- The release pipeline — npm provenance, CycloneDX SBOM, cosign signature — is
-  configured but has never run. Its first execution is its first test. Container
-  image signing waits on there being a container image.
+- The container image is neither published nor signed, because no registry has
+  been chosen. It builds locally from `docker compose up`. The npm side of the
+  release pipeline has run: provenance attestations and a cosign-signed
+  CycloneDX SBOM went out with `0.1.0`.
+- `@formancy/builder-react` missed the release. It was written after `0.1.0`
+  was cut, so the builder is reachable only by cloning.
 
 ### Getting it
+
+```bash
+npm install @formancy/react @formancy/core @formancy/spec   # or @formancy/angular
+npm audit signatures                                        # check the provenance
+```
+
+Or from source, which is the only way to get the builder for now:
 
 ```bash
 git clone <this repository> && cd formancy.ai

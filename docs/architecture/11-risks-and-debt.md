@@ -62,10 +62,10 @@ defect would be most costly.
 | Debt | Why it exists | What it costs |
 |---|---|---|
 | **Async validators do not exist** | Deferred; they need a new rule kind, which is a spec 2 change | The version line exists for it, and `runsOn` is in place so the ordering question can be answered without restructuring ([0043](../decisions/0043-runs-on.md)) |
-| **`recheck` pattern linting is designed, not implemented** | Deferred past the walking skeleton | A form author's regular expression can still hang the server ([SAFETY-ANALYSIS D3](../regulatory/SAFETY-ANALYSIS.md)) |
+| **A `recheck` verdict of `unknown` is accepted** | Refusing on undecidable would reject patterns that are fine | Every `pattern` is analysed at publish time and a vulnerable one refused — the check found a polynomial case in formancy's own email format the first time it ran — but an analysis that times out lets the pattern through ([0045](../decisions/0045-reject-backtracking-patterns.md)) |
 | **Rate limiter store is per-process** | `@fastify/rate-limit`'s default | Wrong behind more than one replica; documented rather than fixed |
 | **The image is not published or signed** | No registry chosen yet | It builds locally from `docker compose up`. Signing it with cosign belongs in the release workflow once there is somewhere to push it |
-| **The release pipeline has never run** | Nothing has been released | `.github/workflows/release.yml` does provenance, SBOM and signing, and is configured but unexercised. Its first run is its first test |
+| **`@formancy/builder-react` is not on npm** | Written after 0.1.0 was cut | Ten packages are published with provenance; the builder is reachable only by cloning, which is the package a prospective adopter most wants to see |
 | **No manual accessibility audit, no VPAT** | Requires assistive-technology testing that has not been done | The accessibility claim rests on automated checking, which covers roughly 57% |
 | **`@marcbachmann/cel-js`: 118 known corpus failures** | The library implements most, not all, of CEL | Enumerated in `CEL-CONFORMANCE.md`; a form using an affected construct behaves incorrectly |
 | **No requirements traceability matrix** | Requirements live as fixtures and budgets, not as a numbered list | A regulated consumer must construct traceability themselves |
@@ -135,5 +135,8 @@ Genuinely undecided, and recorded as such rather than quietly defaulted:
   retrofitting a CLA is effectively impossible.
 - **Trademark registration.** Cheap now, effectively impossible after adoption,
   and it is what preserves the commercial hosted option without relicensing.
-- **The `@formancy` npm scope is unclaimed.** Every package manifest is
-  prepared for publication, but the scope itself has not been registered.
+- **`@formancy/builder-react` is not published.** The scope is claimed and ten
+  packages are on npm at `0.1.0` with provenance; this one was written after
+  that release was cut. It is the package a prospective adopter most wants to
+  *see*, so the gap is worth closing in the next release rather than the one
+  after.
