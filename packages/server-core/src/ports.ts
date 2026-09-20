@@ -27,6 +27,14 @@ export interface SubmissionRecord {
   submittedAt: string
 }
 
+export interface DraftRecord {
+  id: string
+  formId: string
+  formVersionId: string
+  data: unknown
+  updatedAt: string
+}
+
 export interface Storage {
   getFormByPath(path: string): Promise<FormRecord | undefined>
   createForm(record: FormRecord): Promise<void>
@@ -40,4 +48,6 @@ export interface Storage {
   /** Newest first. */
   listSubmissionsByForm(formId: string): Promise<SubmissionRecord[]>
   listVersionsByForm(formId: string): Promise<FormVersionRecord[]>
+  upsertDraft(record: DraftRecord): Promise<void>
+  getDraft(formId: string, draftId: string): Promise<DraftRecord | undefined>
 }

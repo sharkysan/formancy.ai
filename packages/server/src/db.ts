@@ -29,6 +29,18 @@ export const formVersions = pgTable('form_versions', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
+export const drafts = pgTable('drafts', {
+  id: text('id').notNull(),
+  formId: uuid('form_id')
+    .notNull()
+    .references(() => forms.id),
+  formVersionId: uuid('form_version_id')
+    .notNull()
+    .references(() => formVersions.id),
+  data: jsonb('data').notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull(),
+})
+
 export const submissions = pgTable('submissions', {
   id: uuid('id').primaryKey(),
   formId: uuid('form_id')
@@ -72,6 +84,15 @@ export async function bootstrapSchema(sql: postgres.Sql): Promise<void> {
       form_version_id uuid NOT NULL REFERENCES form_versions(id) ON DELETE RESTRICT,
       data jsonb NOT NULL,
       submitted_at timestamptz NOT NULL
+    )`
+  await sql`
+    CREATE TABLE IF NOT EXISTS drafts (
+      id text NOT NULL,
+      form_id uuid NOT NULL REFERENCES forms(id),
+      form_version_id uuid NOT NULL REFERENCES form_versions(id),
+      data jsonb NOT NULL,
+      updated_at timestamptz NOT NULL,
+      PRIMARY KEY (form_id, id)
     )`
   // Immutability lives in the database, not in application discipline: a
   // published version row can never change, because every submission's audit

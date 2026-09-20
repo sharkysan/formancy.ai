@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from 'vitest'
 import type { FormSchema } from '@formancy/spec'
-import { createSubmission, exportCsv, listSubmissions, publishForm, resolveForm } from './use-cases.js'
+import { createSubmission, exportCsv, listSubmissions, publishForm, resolveForm, resumeDraft, saveDraft } from './use-cases.js'
 import type { ServerDeps } from './use-cases.js'
 import { createMemoryStorage } from './testing/memory-storage.js'
 
@@ -290,5 +290,135 @@ describe('exportCsv', () => {
 
     expect(csv!.split('\n')[0]).toContain('items')
     expect(csv).toContain('"[{""name"":""x""}]"')
+  })
+})
+
+describe('drafts', () => {
+  test('an autosaved draft comes back bound to the version it was written under', async () => {
+    const published = await publishForm(deps, { path: 'contact-us', schema })
+    if (!published.ok) throw new Error('publish failed')
+
+    await saveDraft(deps, { path: 'contact-us', draftId: 'd1', data: { email: 'wip@b.ch' } })
+    const resumed = await resumeDraft(deps, { path: 'contact-us', draftId: 'd1' })
+
+    expect(resumed).toMatchObject({
+      outcome: 'resumed',
+      data: { email: 'wip@b.ch' },
+      version: 1,
+    })
+  })
+
+  test('a compatible republish rebinds the draft silently', async () => {
+    const v1 = await publishForm(deps, { path: 'contact-us', schema })
+    if (!v1.ok) throw new Error('publish failed')
+    await saveDraft(deps, { path: 'contact-us', draftId: 'd1', data: { email: 'wip@b.ch' } })
+
+    // Adding an optional field is compatible.
+    const evolved = {
+      ...schema,
+      model: { fields: [...schema.model.fields, { key: 'note', type: 'text' }] },
+    } as typeof schema
+    await publishForm(deps, { path: 'contact-us', schema: evolved })
+
+    const resumed = await resumeDraft(deps, { path: 'contact-us', draftId: 'd1' })
+
+    expect(resumed).toMatchObject({ outcome: 'resumed', version: 2 })
+    expect(resumed && 'migration' in resumed ? resumed.migration : undefined).toBeUndefined()
+  })
+
+  test('a lossy republish rebinds with a migration report, orphaning rather than deleting', async () => {
+    const v1 = await publishForm(deps, { path: 'contact-us', schema })
+    if (!v1.ok) throw new Error('publish failed')
+    await saveDraft(deps, {
+      path: 'contact-us',
+      draftId: 'd1',
+      data: { email: 'wip@b.ch', country: 'CH' },
+    })
+
+    // Dropping country is lossy.
+    const evolved = {
+      ...schema,
+      model: { fields: schema.model.fields.filter((f) => f.key !== 'country' && f.key !== 'canton') },
+      logic: { rules: [{ target: 'total', kind: 'computed', cel: 'price * qty' }] },
+    } as typeof schema
+    await publishForm(deps, { path: 'contact-us', schema: evolved })
+
+    const resumed = await resumeDraft(deps, { path: 'contact-us', draftId: 'd1' })
+
+    expect(resumed).toMatchObject({ outcome: 'resumed', version: 2 })
+    if (resumed?.outcome !== 'resumed') throw new Error('unexpected outcome')
+    expect(resumed.migration).toBeDefined()
+    expect(resumed.migration!.severity).toBe('lossy')
+    const data = resumed.data as Record<string, unknown>
+    // The value the removed field held is not deleted: it moves aside.
+    expect('country' in data).toBe(false)
+    expect((data['__orphaned'] as Record<string, unknown>)['country']).toBe('CH')
+    expect(data['email']).toBe('wip@b.ch')
+  })
+
+  test('a breaking republish returns the draft read-only against its original version', async () => {
+    const v1 = await publishForm(deps, { path: 'contact-us', schema })
+    if (!v1.ok) throw new Error('publish failed')
+    await saveDraft(deps, { path: 'contact-us', draftId: 'd1', data: { email: 'wip@b.ch' } })
+
+    const breaking = { ...schema, specVersion: '1' } as unknown as typeof schema
+    // A spec bump would not validate today; force a breaking change through the
+    // storage layer the way a future spec migration would.
+    const form = await deps.storage.getFormByPath('contact-us')
+    await deps.storage.insertVersion({
+      id: 'v-breaking',
+      formId: form!.id,
+      version: 99,
+      schema: breaking,
+      schemaHash: 'hash-breaking',
+    })
+    await deps.storage.setCurrentVersion(form!.id, 'v-breaking')
+
+    const resumed = await resumeDraft(deps, { path: 'contact-us', draftId: 'd1' })
+
+    expect(resumed).toMatchObject({ outcome: 'readOnly', version: 1 })
+  })
+
+  test('an unknown draft or form is undefined', async () => {
+    expect(await resumeDraft(deps, { path: 'ghost', draftId: 'x' })).toBeUndefined()
+    await publishForm(deps, { path: 'contact-us', schema })
+    expect(await resumeDraft(deps, { path: 'contact-us', draftId: 'nope' })).toBeUndefined()
+  })
+})
+
+describe('CSV formula injection', () => {
+  test('a value that a spreadsheet would execute is neutralised with a leading apostrophe', async () => {
+    const published = await publishForm(deps, { path: 'contact-us', schema })
+    if (!published.ok) throw new Error('publish failed')
+    await createSubmission(deps, {
+      path: 'contact-us',
+      declaredSchemaHash: published.schemaHash,
+      data: { email: 'a@b.ch', country: '=HYPERLINK("http://evil.example","click")' },
+    })
+    await createSubmission(deps, {
+      path: 'contact-us',
+      declaredSchemaHash: published.schemaHash,
+      data: { email: 'b@b.ch', country: '@SUM(1,1)' },
+    })
+
+    const csv = await exportCsv(deps, 'contact-us')
+
+    expect(csv).toContain(`'=HYPERLINK`)
+    expect(csv).toContain(`'@SUM`)
+    expect(csv).not.toMatch(/(^|,)"?=HYPERLINK/m)
+  })
+
+  test('negative NUMBERS stay plain — only strings can smuggle formulas', async () => {
+    const published = await publishForm(deps, { path: 'contact-us', schema })
+    if (!published.ok) throw new Error('publish failed')
+    await createSubmission(deps, {
+      path: 'contact-us',
+      declaredSchemaHash: published.schemaHash,
+      data: { email: 'c@b.ch', qty: -5.0, price: 2.0 },
+    })
+
+    const csv = await exportCsv(deps, 'contact-us')
+    expect(csv).toContain(',-5,')
+    expect(csv).not.toContain(`'-5`)
   })
 })

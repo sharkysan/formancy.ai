@@ -1,4 +1,4 @@
-import type { FormRecord, FormVersionRecord, Storage, SubmissionRecord } from '../ports.js'
+import type { DraftRecord, FormRecord, FormVersionRecord, Storage, SubmissionRecord } from '../ports.js'
 
 /**
  * The in-memory Storage — the second implementation that keeps the port
@@ -9,6 +9,7 @@ export function createMemoryStorage(): Storage {
   const forms = new Map<string, FormRecord>()
   const versions = new Map<string, FormVersionRecord>()
   const submissions: SubmissionRecord[] = []
+  const drafts = new Map<string, DraftRecord>()
 
   return {
     getFormByPath: async (path) => [...forms.values()].find((form) => form.path === path),
@@ -55,5 +56,11 @@ export function createMemoryStorage(): Storage {
       [...versions.values()]
         .filter((version) => version.formId === formId)
         .sort((a, b) => b.version - a.version),
+
+    upsertDraft: async (record) => {
+      drafts.set(record.formId + ':' + record.id, { ...record })
+    },
+
+    getDraft: async (formId, draftId) => drafts.get(formId + ':' + draftId),
   }
 }

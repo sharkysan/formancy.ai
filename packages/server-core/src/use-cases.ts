@@ -1,5 +1,5 @@
-import { schemaHash } from '@formancy/spec'
-import type { FormSchema } from '@formancy/spec'
+import { diffSchemas, schemaHash } from '@formancy/spec'
+import type { Change, FormSchema } from '@formancy/spec'
 import { validateSchema } from '@formancy/spec/validate'
 import type { SchemaError } from '@formancy/spec/validate'
 import { createFormEngine } from '@formancy/core'
@@ -255,9 +255,199 @@ function cellValue(data: unknown, column: string): string {
   }
   if (current === undefined || current === null) return ''
   if (typeof current === 'object') return JSON.stringify(current)
+  if (typeof current === 'string' && FORMULA_STARTERS.has(current.charAt(0))) {
+    // Spreadsheets execute a cell that starts like a formula. A submission is
+    // attacker-controlled and this file is opened by exactly the person worth
+    // attacking, so neutralise with the apostrophe convention. Only strings:
+    // a number cannot smuggle a formula, and a quoted -5 would break every
+    // numeric column.
+    return "'" + current
+  }
   return String(current)
 }
 
 function csvCell(value: string): string {
   return /[",\n\r]/.test(value) ? `"${value.replaceAll('"', '""')}"` : value
+}
+
+/** Save (or re-save) a partial form, bound to the CURRENT version. Undefined
+ *  for an unknown form. */
+export async function saveDraft(
+  deps: ServerDeps,
+  input: { path: string; draftId: string; data: unknown },
+): Promise<{ version: number } | undefined> {
+  const current = await resolveForm(deps, input.path)
+  if (current === undefined) return undefined
+
+  await deps.storage.upsertDraft({
+    id: input.draftId,
+    formId: current.formId,
+    formVersionId: current.versionId,
+    data: input.data,
+    updatedAt: deps.nowIso(),
+  })
+  return { version: current.version }
+}
+
+export interface DraftMigration {
+  severity: 'lossy'
+  changes: Change[]
+}
+
+export type ResumeOutcome =
+  | {
+      outcome: 'resumed'
+      version: number
+      schema: FormSchema
+      schemaHash: string
+      data: unknown
+      /** Present when the rebind lost something; absent for a silent rebind. */
+      migration?: DraftMigration
+    }
+  | {
+      /** The schema changed in a way no automatic rebind survives: the draft
+       *  comes back against ITS OWN version, and the caller offers a restart. */
+      outcome: 'readOnly'
+      version: number
+      schema: FormSchema
+      data: unknown
+    }
+
+/**
+ * Resume a draft — and migrate it LAZILY if the form was republished since,
+ * which is versioning rule five: never migrate eagerly on publish, because
+ * most drafts are abandoned and eager migration multiplies every publish by
+ * every draft.
+ *
+ * diffSchemas drives the decision: `compatible` rebinds silently, `lossy`
+ * rebinds with a report — declared renames carry their value to the new key,
+ * removed fields move their value into `__orphaned` rather than deleting it —
+ * and `breaking` refuses to rebind at all. A successful rebind is persisted,
+ * so the migration runs once, not on every resume.
+ */
+export async function resumeDraft(
+  deps: ServerDeps,
+  input: { path: string; draftId: string },
+): Promise<ResumeOutcome | undefined> {
+  const current = await resolveForm(deps, input.path)
+  if (current === undefined) return undefined
+
+  const draft = await deps.storage.getDraft(current.formId, input.draftId)
+  if (draft === undefined) return undefined
+
+  if (draft.formVersionId === current.versionId) {
+    return {
+      outcome: 'resumed',
+      version: current.version,
+      schema: current.schema,
+      schemaHash: current.schemaHash,
+      data: draft.data,
+    }
+  }
+
+  const draftVersion = await deps.storage.getVersionById(draft.formVersionId)
+  if (draftVersion === undefined) return undefined
+
+  const changes = diffSchemas(draftVersion.schema, current.schema)
+  const severity = changes.reduce<'compatible' | 'lossy' | 'breaking'>(
+    (worst, change) =>
+      SEVERITY_RANK[change.severity] > SEVERITY_RANK[worst] ? change.severity : worst,
+    'compatible',
+  )
+
+  if (severity === 'breaking') {
+    return {
+      outcome: 'readOnly',
+      version: draftVersion.version,
+      schema: draftVersion.schema,
+      data: draft.data,
+    }
+  }
+
+  const migrated = migrateDraftData(draft.data, current.schema, changes)
+
+  await deps.storage.upsertDraft({
+    id: draft.id,
+    formId: draft.formId,
+    formVersionId: current.versionId,
+    data: migrated,
+    updatedAt: deps.nowIso(),
+  })
+
+  return {
+    outcome: 'resumed',
+    version: current.version,
+    schema: current.schema,
+    schemaHash: current.schemaHash,
+    data: migrated,
+    ...(severity === 'lossy' ? { migration: { severity, changes } } : {}),
+  }
+}
+
+const SEVERITY_RANK = { compatible: 0, lossy: 1, breaking: 2 } as const
+
+const FORMULA_STARTERS = new Set(['=', '+', '-', '@', String.fromCharCode(9), String.fromCharCode(13)])
+
+function migrateDraftData(data: unknown, currentSchema: FormSchema, changes: Change[]): unknown {
+  if (data === null || typeof data !== 'object' || Array.isArray(data)) return data
+  const migrated: Record<string, unknown> = structuredCloneJson(data as Record<string, unknown>)
+
+  // Declared renames first: the value follows the field to its new key.
+  applyRenames(currentSchema.model.fields, migrated)
+
+  // Then removals: the value moves aside instead of vanishing. Only top-level
+  // and group paths move; row members stay inside their (possibly orphaned)
+  // repeater value, which travels as a whole.
+  const orphaned: Record<string, unknown> = {}
+  for (const change of changes) {
+    if (change.kind !== 'field.removed') continue
+    const dataPath = change.path.replace(/^model\.fields\./, '')
+    if (dataPath.includes('[]')) continue
+    const value = takeAtDottedPath(migrated, dataPath)
+    if (value !== undefined) orphaned[dataPath] = value
+  }
+  if (Object.keys(orphaned).length > 0) {
+    migrated['__orphaned'] = {
+      ...(migrated['__orphaned'] as Record<string, unknown> | undefined),
+      ...orphaned,
+    }
+  }
+  return migrated
+}
+
+function applyRenames(fields: FormSchema['model']['fields'], data: Record<string, unknown>): void {
+  for (const field of fields) {
+    if (field.type === 'page') {
+      applyRenames(field.fields ?? [], data)
+      continue
+    }
+    if (field.renamedFrom !== undefined && !(field.key in data) && field.renamedFrom in data) {
+      data[field.key] = data[field.renamedFrom]
+      delete data[field.renamedFrom]
+    }
+    if (field.type === 'group' && typeof data[field.key] === 'object' && data[field.key] !== null) {
+      applyRenames(field.fields ?? [], data[field.key] as Record<string, unknown>)
+    }
+  }
+}
+
+/** Remove and return the value at a dotted path, pruning nothing else. */
+function takeAtDottedPath(data: Record<string, unknown>, dottedPath: string): unknown {
+  const segments = dottedPath.split('.')
+  let parent: Record<string, unknown> = data
+  for (const segment of segments.slice(0, -1)) {
+    const next = parent[segment]
+    if (next === null || typeof next !== 'object' || Array.isArray(next)) return undefined
+    parent = next as Record<string, unknown>
+  }
+  const last = segments[segments.length - 1]!
+  const value = parent[last]
+  delete parent[last]
+  return value
+}
+
+/** JSON-safe deep clone: draft data is JSON by construction, and this package
+ *  runs without structuredClone in its lib on purpose. */
+function structuredCloneJson<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T
 }

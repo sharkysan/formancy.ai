@@ -1,9 +1,9 @@
-import { desc, eq, max } from 'drizzle-orm'
+import { and, desc, eq, max } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import type postgres from 'postgres'
 import type { FormSchema } from '@formancy/spec'
 import type { Storage } from '@formancy/server-core'
-import { forms, formVersions, submissions } from './db.js'
+import { drafts, forms, formVersions, submissions } from './db.js'
 
 /** The Storage port over Postgres — the mirror of server-core's in-memory one. */
 export function createPostgresStorage(sql: postgres.Sql): Storage {
@@ -113,6 +113,43 @@ export function createPostgresStorage(sql: postgres.Sql): Storage {
         schema: row.schema as FormSchema,
         schemaHash: row.schemaHash,
       }))
+    },
+
+    async upsertDraft(record) {
+      await db
+        .insert(drafts)
+        .values({
+          id: record.id,
+          formId: record.formId,
+          formVersionId: record.formVersionId,
+          data: record.data,
+          updatedAt: new Date(record.updatedAt),
+        })
+        .onConflictDoUpdate({
+          target: [drafts.formId, drafts.id],
+          set: {
+            formVersionId: record.formVersionId,
+            data: record.data,
+            updatedAt: new Date(record.updatedAt),
+          },
+        })
+    },
+
+    async getDraft(formId, draftId) {
+      const rows = await db
+        .select()
+        .from(drafts)
+        .where(and(eq(drafts.formId, formId), eq(drafts.id, draftId)))
+        .limit(1)
+      const row = rows[0]
+      if (row === undefined) return undefined
+      return {
+        id: row.id,
+        formId: row.formId,
+        formVersionId: row.formVersionId,
+        data: row.data,
+        updatedAt: row.updatedAt.toISOString(),
+      }
     },
   }
 }

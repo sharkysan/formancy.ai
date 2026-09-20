@@ -210,3 +210,40 @@ describe('listing and export', () => {
     expect((await app.inject({ method: 'GET', url: '/f/ghost/submissions/export.csv' })).statusCode).toBe(404)
   })
 })
+
+describe('drafts over HTTP', () => {
+  test('autosave, republish, resume: the draft migrates lazily with a report', async () => {
+    const put = await app.inject({
+      method: 'PUT',
+      url: '/f/contact-us/drafts/draft-1',
+      payload: { email: 'wip@b.ch', qty: 3 },
+    })
+    expect(put.statusCode).toBe(200)
+
+    // Republish with qty dropped — lossy for the draft.
+    const evolved = {
+      ...schema,
+      title: 'Contact v3',
+      model: { fields: schema.model.fields.filter((f) => f.key !== 'qty' && f.key !== 'total') },
+      logic: { rules: [{ target: 'canton', kind: 'visible', cel: 'country == "CH"' }] },
+    }
+    const publish = await app.inject({ method: 'POST', url: '/forms', payload: { path: 'contact-us', schema: evolved } })
+    expect(publish.statusCode).toBe(201)
+
+    const resumed = await app.inject({ method: 'GET', url: '/f/contact-us/drafts/draft-1' })
+    expect(resumed.statusCode).toBe(200)
+    const body = resumed.json() as {
+      outcome: string
+      data: Record<string, unknown>
+      migration?: { severity: string }
+    }
+    expect(body.outcome).toBe('resumed')
+    expect(body.migration?.severity).toBe('lossy')
+    expect(body.data['email']).toBe('wip@b.ch')
+    expect((body.data['__orphaned'] as Record<string, unknown>)['qty']).toBe(3)
+  })
+
+  test('an unknown draft 404s', async () => {
+    expect((await app.inject({ method: 'GET', url: '/f/contact-us/drafts/nope' })).statusCode).toBe(404)
+  })
+})

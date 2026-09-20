@@ -1,7 +1,15 @@
 import { randomUUID } from 'node:crypto'
 import Fastify from 'fastify'
 import type { FastifyInstance } from 'fastify'
-import { createSubmission, exportCsv, listSubmissions, publishForm, resolveForm } from '@formancy/server-core'
+import {
+  createSubmission,
+  exportCsv,
+  listSubmissions,
+  publishForm,
+  resolveForm,
+  resumeDraft,
+  saveDraft,
+} from '@formancy/server-core'
 import type { ServerDeps, Storage } from '@formancy/server-core'
 
 export const SCHEMA_HASH_HEADER = 'x-formancy-schema-hash'
@@ -75,6 +83,20 @@ export function createApp(storage: Storage): FastifyInstance {
       .header('content-type', 'text/csv; charset=utf-8')
       .header('content-disposition', `attachment; filename="${path}-submissions.csv"`)
       .send(csv)
+  })
+
+  app.put('/f/:path/drafts/:draftId', async (request, reply) => {
+    const { path, draftId } = request.params as { path: string; draftId: string }
+    const saved = await saveDraft(deps, { path, draftId, data: request.body ?? {} })
+    if (saved === undefined) return reply.code(404).send({ error: 'unknown_form' })
+    return reply.send(saved)
+  })
+
+  app.get('/f/:path/drafts/:draftId', async (request, reply) => {
+    const { path, draftId } = request.params as { path: string; draftId: string }
+    const resumed = await resumeDraft(deps, { path, draftId })
+    if (resumed === undefined) return reply.code(404).send({ error: 'unknown_draft' })
+    return reply.send(resumed)
   })
 
   app.post('/f/:path/submissions', async (request, reply) => {
