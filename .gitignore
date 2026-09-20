@@ -15,3 +15,8 @@ playwright-report/
 .idea/
 .pnpm-store/
 .playwright-mcp/
+
+# Copied into each package at build time by scripts/sync-licenses.mjs so the
+# tarballs carry them. The root LICENSE and NOTICE are the only real ones.
+packages/*/LICENSE
+packages/*/NOTICE

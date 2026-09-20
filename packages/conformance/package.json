@@ -13,7 +13,9 @@
   },
   "files": [
     "dist",
-    "fixtures"
+    "fixtures",
+    "LICENSE",
+    "NOTICE"
   ],
   "scripts": {
     "build": "tsdown",

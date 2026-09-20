@@ -10,7 +10,9 @@
   },
   "files": [
     "blueprint.css",
-    "dusk.css"
+    "dusk.css",
+    "LICENSE",
+    "NOTICE"
   ],
   "sideEffects": [
     "*.css"

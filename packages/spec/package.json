@@ -18,7 +18,9 @@
   },
   "files": [
     "dist",
-    "formancy.schema.json"
+    "formancy.schema.json",
+    "LICENSE",
+    "NOTICE"
   ],
   "scripts": {
     "build": "tsdown",
