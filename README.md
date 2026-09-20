@@ -72,10 +72,19 @@ pnpm typecheck
 docker compose up -d                    # Postgres on :5439, API on :4380
 ```
 
-That builds and runs the server image. It seeds an admin the first time
-only — `admin@formancy.local` / `change-me-immediately` unless you override
-`FORMANCY_ADMIN_EMAIL` and `FORMANCY_ADMIN_PASSWORD` — and the compose
-file's auth secret is a development default a real deployment must replace.
+That builds and runs the server image. It **refuses to start until you have
+secrets**:
+
+```bash
+cp .env.example .env
+# then fill in FORMANCY_AUTH_SECRET, FORMANCY_ADMIN_EMAIL and
+# FORMANCY_ADMIN_PASSWORD — .env.example has a one-line generator
+```
+
+There are no defaults, here or in the image. A form platform that boots with a
+signing key printed in its own repository is one that anyone who has read the
+repository can forge a session for. The admin is created only while no user
+exists, so it cannot re-seed an admin into a running installation.
 
 To work on the source instead, run only the database and start the server
 from the workspace:

@@ -1,5 +1,10 @@
 # `docker compose up -d` gives you the whole product: a database and the server.
 #
+# It will refuse to start until you have secrets. That is deliberate — see
+# .env.example, which explains how to make them in one command. A form platform
+# that boots with a signing key printed in its own repository is a form platform
+# anyone who has read the repository can sign a session for.
+#
 # For development against the source instead, run only the database
 # (`docker compose up -d postgres`) and start the server with
 # `pnpm --filter @formancy/server dev`.
@@ -8,12 +13,16 @@ services:
     image: postgres:17-alpine
     environment:
       POSTGRES_USER: formancy
-      POSTGRES_PASSWORD: formancy
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-formancy}
       POSTGRES_DB: formancy
     ports:
-      # 5439 on the host: 5432 is too often taken by a locally installed
-      # Postgres, and a silent collision looks exactly like a wrong password.
-      - "5439:5432"
+      # Bound to loopback, not to every interface. The default `5439:5432`
+      # publishes the database to the whole network, which on a laptop on a
+      # café network is a database on a café network.
+      #
+      # 5439 rather than 5432 because a locally installed Postgres usually has
+      # 5432, and a silent collision looks exactly like a wrong password.
+      - "127.0.0.1:5439:5432"
     volumes:
       - formancy-pg:/var/lib/postgresql/data
     healthcheck:
@@ -29,12 +38,16 @@ services:
     ports:
       - "4380:4380"
     environment:
-      DATABASE_URL: postgres://formancy:formancy@postgres:5432/formancy
-      # Development values. A real deployment supplies its own and does not
-      # keep them in a file that is committed — see the note below.
-      FORMANCY_AUTH_SECRET: ${FORMANCY_AUTH_SECRET:-dev-only-secret-at-least-32-characters}
-      FORMANCY_ADMIN_EMAIL: ${FORMANCY_ADMIN_EMAIL:-admin@formancy.local}
-      FORMANCY_ADMIN_PASSWORD: ${FORMANCY_ADMIN_PASSWORD:-change-me-immediately}
+      DATABASE_URL: postgres://formancy:${POSTGRES_PASSWORD:-formancy}@postgres:5432/formancy
+
+      # `:?` means compose stops with this message rather than starting an
+      # insecure server. There is no default, here or in the image.
+      FORMANCY_AUTH_SECRET: ${FORMANCY_AUTH_SECRET:?set it in .env — see .env.example}
+
+      # The first admin, created only while no user exists. Also no default: an
+      # admin password that ships in a repository is not a password.
+      FORMANCY_ADMIN_EMAIL: ${FORMANCY_ADMIN_EMAIL:?set it in .env — see .env.example}
+      FORMANCY_ADMIN_PASSWORD: ${FORMANCY_ADMIN_PASSWORD:?set it in .env — see .env.example}
     depends_on:
       postgres:
         condition: service_healthy
@@ -42,8 +55,3 @@ services:
 
 volumes:
   formancy-pg:
-
-# The admin account is created only while no user exists, so it cannot re-seed
-# an admin into a running installation. The auth secret here is a development
-# default and is deliberately obvious: a deployment that leaves it in place has
-# a session signing key that everyone who has read this file knows.

@@ -42,6 +42,21 @@ From spec `"1"` on:
   produced them, forever. That binding is what makes an old submission
   auditable, and no upgrade may touch it.
 
+## If you ran `docker compose up` before 2026-09-20
+
+An earlier compose file supplied default values for the auth secret and the
+first admin's password. Both were in the repository, so both were public.
+
+Fixing the compose file does not fix an installation that already booted with
+them: the admin row is in the volume and still works. Verified rather than
+assumed — the old password authenticated against a running container after the
+defaults were removed.
+
+If you have such an installation, change that account's password, and rotate
+`FORMANCY_AUTH_SECRET`, which invalidates every session signed with the old
+one. Or, if it holds nothing you need, `docker compose down -v` and start
+again.
+
 ## Known pre-1.0 caveats
 
 - The spec is frozen; the PACKAGES are not. Their APIs will still change before
