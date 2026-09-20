@@ -230,13 +230,19 @@ export class FormancyRepeaterSection implements OnInit {
  * - **1.3.1 Info and Relationships** — a row is presentation and gets no
  *   semantics; a labelled section is visibly grouping fields, so it is a real
  *   `group` with an accessible name.
+ *
+ * Every container also carries `data-formancy-layout-path`, the index path of
+ * the node that produced it, matching the React renderer attribute for
+ * attribute. It is inert — nothing in this package reads it — and exists so a
+ * tool outside the renderer can say which node an element on screen came from
+ * without the renderer knowing anything about editing.
  */
 @Component({
   selector: 'formancy-layout',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormancyFieldSlot, FormancyRepeaterSection],
   template: `
-    @for (node of nodes(); track $index) {
+    @for (node of nodes(); track $index; let i = $index) {
       @if (node.kind === 'field') {
         @if (isRepeater(node.path)) {
           <formancy-repeater [wire]="node.path" [labels]="labels()" />
@@ -247,23 +253,32 @@ export class FormancyRepeaterSection implements OnInit {
         <!-- Presentation only: two fields being beside each other is not a
              relationship the author described, and announcing "group" around
              every pair would be noise. -->
-        <div data-formancy-part="layout-row" [attr.data-columns]="node.children.length">
-          <formancy-layout [nodes]="node.children" [labels]="labels()" />
+        <div
+          data-formancy-part="layout-row"
+          [attr.data-formancy-layout-path]="pathOf(i)"
+          [attr.data-columns]="node.children.length"
+        >
+          <formancy-layout [nodes]="node.children" [labels]="labels()" [at]="pathOf(i)" />
         </div>
       } @else if (node.kind === 'column') {
-        <div data-formancy-part="layout-column">
-          <formancy-layout [nodes]="node.children" [labels]="labels()" />
+        <div data-formancy-part="layout-column" [attr.data-formancy-layout-path]="pathOf(i)">
+          <formancy-layout [nodes]="node.children" [labels]="labels()" [at]="pathOf(i)" />
         </div>
       } @else if (headingFor(node); as heading) {
-        <div data-formancy-part="layout-section" role="group" [attr.aria-labelledby]="heading.id">
+        <div
+          data-formancy-part="layout-section"
+          [attr.data-formancy-layout-path]="pathOf(i)"
+          role="group"
+          [attr.aria-labelledby]="heading.id"
+        >
           <p [id]="heading.id" data-formancy-part="layout-section-heading">{{ heading.text }}</p>
-          <formancy-layout [nodes]="node.children" [labels]="labels()" />
+          <formancy-layout [nodes]="node.children" [labels]="labels()" [at]="pathOf(i)" />
         </div>
       } @else {
         <!-- A group with no accessible name is announced as "group" and tells
              nobody anything, so an unlabelled section stays a box. -->
-        <div data-formancy-part="layout-section">
-          <formancy-layout [nodes]="node.children" [labels]="labels()" />
+        <div data-formancy-part="layout-section" [attr.data-formancy-layout-path]="pathOf(i)">
+          <formancy-layout [nodes]="node.children" [labels]="labels()" [at]="pathOf(i)" />
         </div>
       }
     }
@@ -272,8 +287,16 @@ export class FormancyRepeaterSection implements OnInit {
 export class FormancyLayout {
   readonly nodes = input.required<readonly LayoutNode[]>()
   readonly labels = input<Record<string, string> | undefined>(undefined)
+  /** Index path of the container these nodes are the children of. */
+  readonly at = input<string>('')
 
   private readonly engine = injectEngine()
+
+  /** This node's index path, as the dotted string the attribute carries. */
+  protected pathOf(index: number): string {
+    const prefix = this.at()
+    return prefix === '' ? String(index) : `${prefix}.${String(index)}`
+  }
 
   /**
    * Headings are cached per node. Minting an id inside the template would give

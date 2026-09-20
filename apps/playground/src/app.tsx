@@ -5,9 +5,18 @@ import type { FormEngine } from '@formancy/core'
 import { validateSchema } from '@formancy/spec/validate'
 import type { SchemaError } from '@formancy/spec/validate'
 import formancySchemaJson from '@formancy/spec/schema.json'
+import type { FormSchema } from '@formancy/spec'
 import { ErrorSummary, FormancyForm, FormancyProvider } from '@formancy/react'
 import { createBuilderSession } from '@formancy/builder-core'
-import { FormancyBuilder, LogicPanel, PropertyPanel, useBuilder } from '@formancy/builder-react'
+import type { BuilderSession } from '@formancy/builder-core'
+import {
+  FormancyArrangeSurface,
+  FormancyBuilder,
+  FormancyLayoutPane,
+  LogicPanel,
+  PropertyPanel,
+  useBuilder,
+} from '@formancy/builder-react'
 import '@formancy/themes/blueprint.css'
 import '@formancy/themes/dusk.css'
 import '@formancy/themes/workbench.css'
@@ -48,6 +57,32 @@ export function App() {
   const [theme, setTheme] = useState<ThemeId>('blueprint')
   const [locale, setLocale] = useState<LocaleId>('en')
   const [pane, setPane] = useState<'build' | 'schema'>('build')
+  /**
+   * The builder session lives up here, not inside the Build pane, because the
+   * PREVIEW is a drop target too and a drop has to reach the same session the
+   * tree edits. Two sessions over one document would be two documents.
+   */
+  const [session, setSession] = useState<BuilderSession | null>(null)
+  const [builderTab, setBuilderTab] = useState<'fields' | 'arrangement'>('fields')
+
+  // Opened when the Build pane appears, from whatever the text says then.
+  // Deliberately not re-opened as `source` changes: the builder writes it on
+  // every edit, and re-opening each time would throw the undo stack away.
+  useEffect(() => {
+    if (pane !== 'build') {
+      setSession(null)
+      return
+    }
+    try {
+      setSession(createBuilderSession(JSON.parse(source) as FormSchema))
+    } catch {
+      // createBuilderSession refuses an invalid document on purpose, so a
+      // half-typed schema sends you back to the text rather than into a
+      // builder that cannot explain itself.
+      setSession(null)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pane])
 
   const monaco = useMonaco()
   if (monaco !== null) {
@@ -113,9 +148,15 @@ export function App() {
   return (
     <div className="app">
       <header className="bar">
-        <h1>formancy playground</h1>
+        <h1>formancy.ai playground</h1>
         <span className="note">Edit the schema; the form and the engine follow.</span>
         <div className="spacer" />
+        <a className="repo" href="https://github.com/sharkysan/formancy.ai" rel="noreferrer noopener">
+          {/* Named, not an unlabelled icon: "GitHub" alone says which site, not
+              which repository, and this page is the first thing anyone
+              evaluating the project sees. */}
+          formancy.ai on GitHub
+        </a>
         <label className="switcher">
           Language
           <select value={locale} onChange={(event) => setLocale(event.target.value as LocaleId)}>
@@ -153,7 +194,18 @@ export function App() {
             ))}
           </h2>
           <div className="body" hidden={pane !== 'build'}>
-            {pane === 'build' ? <BuilderPane source={source} onChange={setSource} /> : null}
+            {pane !== 'build' ? null : session === null ? (
+              <p className="empty" style={{ padding: '1rem' }}>
+                This schema cannot be opened in the builder yet. Fix it under Schema and come back.
+              </p>
+            ) : (
+              <BuilderBody
+                session={session}
+                onChange={setSource}
+                tab={builderTab}
+                onTab={setBuilderTab}
+              />
+            )}
           </div>
           <div className="body" hidden={pane !== 'schema'}>
             <Editor
@@ -181,12 +233,23 @@ export function App() {
             ) : built?.engineError !== undefined ? (
               <Problem title="The engine refused this schema" detail={built.engineError} />
             ) : built?.engine !== undefined ? (
-              <div className="sheet" data-formancy-theme={theme}>
-                <FormancyProvider engine={built.engine} key={source}>
-                  <ErrorSummary />
-                  <FormancyForm layout="web" />
-                </FormancyProvider>
-              </div>
+              // The same form, and — while the Arrangement tab is showing — a
+              // drop target for it. Every drop goes through the same session
+              // command the tree and the keyboard use, so the two views cannot
+              // disagree: the drop edits the document, the document rewrites
+              // the JSON, and the JSON rebuilds this engine.
+              <FormancyArrangeSurface
+                session={session ?? PLACEHOLDER_SESSION}
+                layout="web"
+                enabled={session !== null && pane === 'build' && builderTab === 'arrangement'}
+              >
+                <div className="sheet" data-formancy-theme={theme}>
+                  <FormancyProvider engine={built.engine} key={source}>
+                    <ErrorSummary />
+                    <FormancyForm layout="web" />
+                  </FormancyProvider>
+                </div>
+              </FormancyArrangeSurface>
             ) : null}
           </div>
         </section>
@@ -282,38 +345,29 @@ function EngineInspector({ engine }: { engine: FormEngine }) {
  * the current text and every edit writes it back, so the JSON is always what
  * the builder built and the builder always shows what the JSON says.
  */
-function BuilderPane({ source, onChange }: { source: string; onChange: (next: string) => void }) {
-  const session = useMemo(() => {
-    try {
-      return createBuilderSession(JSON.parse(source) as Parameters<typeof createBuilderSession>[0])
-    } catch {
-      // createBuilderSession refuses an invalid document on purpose, so a
-      // half-typed schema sends you back to the text rather than into a
-      // builder that cannot explain itself.
-      return null
-    }
-    // Opened from the text as it was when this pane appeared. Re-opening on
-    // every keystroke would throw the undo stack away.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  if (session === null) {
-    return (
-      <p className="empty" style={{ padding: '1rem' }}>
-        This schema cannot be opened in the builder yet. Fix it under Schema and come back.
-      </p>
-    )
-  }
-
-  return <BuilderBody session={session} onChange={onChange} />
-}
+/**
+ * A session that exists only so the preview's drop surface has one to hold
+ * while the document is unopenable. It is never enabled, so nothing reaches
+ * it — and a component whose props go optional for one edge case grows two
+ * code paths for the rest of its life.
+ */
+const PLACEHOLDER_SESSION: BuilderSession = createBuilderSession({
+  specVersion: '1',
+  id: 'placeholder',
+  title: 'No form',
+  model: { fields: [] },
+})
 
 function BuilderBody({
   session,
   onChange,
+  tab,
+  onTab,
 }: {
-  session: ReturnType<typeof createBuilderSession>
+  session: BuilderSession
   onChange: (next: string) => void
+  tab: 'fields' | 'arrangement'
+  onTab: (next: 'fields' | 'arrangement') => void
 }) {
   const view = useBuilder(session)
   const [selected, setSelected] = useState<readonly string[] | null>(null)
@@ -333,23 +387,43 @@ function BuilderBody({
         <button onClick={() => session.redo()} disabled={!view.canRedo}>
           Redo
         </button>
+        <span className="builder-tabs">
+          {(['fields', 'arrangement'] as const).map((candidate) => (
+            <button
+              key={candidate}
+              aria-pressed={tab === candidate}
+              onClick={() => onTab(candidate)}
+            >
+              {candidate === 'fields' ? 'Fields' : 'Arrangement'}
+            </button>
+          ))}
+        </span>
       </div>
 
-      <div
-        onFocusCapture={(event) => {
-          const item = (event.target as HTMLElement).closest('[role="treeitem"]')
-          const at = item === null ? -1 : [...(item.parentElement?.children ?? [])].indexOf(item)
-          const node = at < 0 ? undefined : view.nodes[at]
-          if (node !== undefined) setSelected(node.keyPath)
-        }}
-      >
-        <FormancyBuilder session={session} />
-      </div>
-
-      {editing === null ? null : (
+      {tab === 'arrangement' ? (
+        // Outside the focus-capture wrapper below on purpose: that one reads
+        // a tree item's position as an index into the MODEL, and a layout node
+        // at the same position is a different thing entirely.
+        <FormancyLayoutPane session={session} layout="web" />
+      ) : (
         <>
-          <PropertyPanel session={session} keyPath={editing} />
-          <LogicPanel session={session} keyPath={editing} />
+          <div
+            onFocusCapture={(event) => {
+              const item = (event.target as HTMLElement).closest('[role="treeitem"]')
+              const at = item === null ? -1 : [...(item.parentElement?.children ?? [])].indexOf(item)
+              const node = at < 0 ? undefined : view.nodes[at]
+              if (node !== undefined) setSelected(node.keyPath)
+            }}
+          >
+            <FormancyBuilder session={session} />
+          </div>
+
+          {editing === null ? null : (
+            <>
+              <PropertyPanel session={session} keyPath={editing} />
+              <LogicPanel session={session} keyPath={editing} />
+            </>
+          )}
         </>
       )}
     </div>

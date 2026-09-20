@@ -23,7 +23,11 @@ import { injectFieldContext } from './registry.js'
   selector: 'formancy-field-shell',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div data-formancy-part="field" [attr.data-state]="showError() ? 'invalid' : 'valid'">
+    <div
+      data-formancy-part="field"
+      [attr.data-formancy-field-path]="path()"
+      [attr.data-state]="showError() ? 'invalid' : 'valid'"
+    >
       <label data-formancy-part="label" [id]="field().snapshot().props.label.id" [attr.for]="field().snapshot().props.label.for">{{ label() }}</label>
       <ng-content />
       @if (showError()) {
@@ -35,6 +39,8 @@ import { injectFieldContext } from './registry.js'
 export class FormancyFieldShell {
   readonly field = input.required<FieldBinding>()
   readonly label = input.required<string>()
+  /** Inert here; read by tools outside the renderer. See FormancyLayout. */
+  readonly path = input<string>('')
 
   protected readonly showError = computed(() => {
     const snapshot = this.field().snapshot()
@@ -70,7 +76,7 @@ abstract class FieldComponentBase {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormancyFieldShell],
   template: `
-    <formancy-field-shell [field]="field" [label]="context.label">
+    <formancy-field-shell [field]="field" [label]="context.label" [path]="context.path">
       <input
         type="text"
         [id]="control().id"
@@ -102,7 +108,7 @@ export class FormancyTextField extends FieldComponentBase {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormancyFieldShell],
   template: `
-    <formancy-field-shell [field]="field" [label]="context.label">
+    <formancy-field-shell [field]="field" [label]="context.label" [path]="context.path">
       <textarea
         [id]="control().id"
         [attr.name]="control().name"
@@ -133,7 +139,7 @@ export class FormancyTextareaField extends FieldComponentBase {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormancyFieldShell],
   template: `
-    <formancy-field-shell [field]="field" [label]="context.label">
+    <formancy-field-shell [field]="field" [label]="context.label" [path]="context.path">
       <input
         type="number"
         [id]="control().id"
@@ -166,7 +172,7 @@ export class FormancyNumberField extends FieldComponentBase {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormancyFieldShell],
   template: `
-    <formancy-field-shell [field]="field" [label]="context.label">
+    <formancy-field-shell [field]="field" [label]="context.label" [path]="context.path">
       <input
         type="checkbox"
         [id]="control().id"
@@ -195,7 +201,7 @@ export class FormancyCheckboxField extends FieldComponentBase {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormancyFieldShell],
   template: `
-    <formancy-field-shell [field]="field" [label]="context.label">
+    <formancy-field-shell [field]="field" [label]="context.label" [path]="context.path">
       <input
         type="date"
         [id]="control().id"
@@ -228,7 +234,7 @@ export class FormancyDateField extends FieldComponentBase {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormancyFieldShell],
   template: `
-    <formancy-field-shell [field]="field" [label]="context.label">
+    <formancy-field-shell [field]="field" [label]="context.label" [path]="context.path">
       <select
         [id]="control().id"
         [attr.name]="control().name"
@@ -269,6 +275,7 @@ export class FormancySelectField extends FieldComponentBase {
   template: `
     <fieldset
       data-formancy-part="field"
+      [attr.data-formancy-field-path]="context.path"
       [attr.data-state]="showError() ? 'invalid' : 'valid'"
       [attr.aria-describedby]="control()['aria-describedby']"
     >

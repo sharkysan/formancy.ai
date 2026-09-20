@@ -341,3 +341,33 @@ body {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* The two editors over one document: fields and the arrangement. */
+.builder-tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-inline-start: auto;
+}
+
+.builder-tabs button[aria-pressed='true'] {
+  background: var(--pg-ink);
+  color: #fff;
+  border-color: var(--pg-ink);
+}
+
+/* The way out of the playground and into the source. */
+.bar .repo {
+  font-size: 0.8125rem;
+  color: var(--pg-ink);
+  text-decoration: none;
+  border: 1px solid var(--pg-rule);
+  border-radius: 3px;
+  padding: 0.25rem 0.625rem;
+  white-space: nowrap;
+}
+
+.bar .repo:hover,
+.bar .repo:focus-visible {
+  border-color: var(--pg-ink);
+  text-decoration: underline;
+}

@@ -30,32 +30,44 @@ same conformance fixtures.
 **The conformance suite** (`@formancy/conformance`) — published, so third-party
 renderers can self-certify.
 
-**The builder's document engine** (`@formancy/builder-core`) — schema editing as
-commands with undo/redo and valid-target computation, where a command that would
-produce an invalid document is refused rather than applied, and a rename
-declares `renamedFrom` so collected answers follow the field.
+**The builder** (`@formancy/builder-core` and `@formancy/builder-react`) —
+schema editing as commands with undo/redo and valid-target computation, where a
+command that would produce an invalid document is refused rather than applied,
+and a rename declares `renamedFrom` so collected answers follow the field. Over
+that: a structure tree, an arrangement tree for rows and columns, a field
+palette, a property panel generated from the spec's own JSON Schema, and a
+condition editor that compiles to CEL — all keyboard-driven, each with a drag
+surface added afterwards as a second route to the same commands. Rows and
+columns can also be dragged on the rendered form itself.
 
 **The backend** (`@formancy/server`) — Fastify and Postgres: publish with the
 engine as the save gate, submissions replayed server-side and stored canonical,
 drafts with lazy migration, submissions listing, CSV export unioned across
-versions, and a management plane behind sessions, API keys and role-based
-authorization.
+versions, a management plane behind sessions, API keys and role-based
+authorization, per-IP rate limiting and per-form origin allowlists on the
+public plane, and webhooks delivered from a transactional outbox to an address
+the server resolved and checked itself.
 
-**Two apps** — a playground (schema, live form and engine state side by side)
-and the self-hosted admin (schema editor with live preview, publish, version
-history, submissions).
+**Two apps** — a playground (schema or builder, live form and engine state side
+by side, with theme and language switchers) and the self-hosted admin (the
+builder in a three-pane inspector, a raw schema editor, publish, version
+history, submissions and export).
 
 ## What does not exist yet
 
-- **The drag-and-drop builder UI.** Its headless half exists
-  (`@formancy/builder-core`: commands, undo/redo, valid-target computation);
-  the canvas and palette do not. Deliberately sequenced that way — a
-  half-finished builder UI gets compared to products with a decade of polish,
-  while the hard part is the document engine underneath it. The admin ships a
-  schema editor in the meantime.
-- **File uploads**, webhooks and form actions.
+- **A pointer gesture that creates a row.** You add one and move fields into
+  it. Dropping *between* two elements rather than onto one would need gap
+  targets the renderers do not emit.
+- **Conditions combining more than one comparison** in the builder's editor.
+  The expression language handles them; the authoring UI does not yet, and you
+  can still write the CEL directly.
+- **File uploads** and form actions.
+- **A per-action circuit breaker and dead-letter replay.** A dead delivery is
+  kept and findable, but re-queueing one is a SQL statement.
 - **OIDC / SAML.** Local users and API keys only for now.
-- **Rate limiting, anonymous-submission hardening, audit logging.**
+- **A proof-of-work challenge** on the public plane. The rate limit and the
+  origin allowlist stand in for it.
+- **Audit logging.**
 - **Multi-tenancy, PDF output, e-signatures, analytics.**
 - **A Vue renderer.** The engine protocol is designed for one; it is not a
   commitment yet.
@@ -74,16 +86,15 @@ the spec freezes rather than after.
 
 Roughly in order, and subject to change:
 
-1. **Freezing the spec to `"1"`.** The `i18n` and `layout` sections have
-   landed, which were the last structural additions the freeze was waiting on.
-2. **The builder UI** over the existing document engine. Its commands are
-   already keyboard-shaped — insert, move, remove, rename — because WCAG 2.2
-   requires every drag operation to have a non-drag alternative, and building
-   the drag layer first is how that alternative ends up unfinished.
-3. **Files and actions**, with the storage abstraction and webhook delivery
-   already designed.
-4. **Hardening the public plane**: rate limits, a challenge, origin allowlists.
-5. **A published docs site and npm releases.**
+1. **Files and actions**, with the storage abstraction already designed and
+   webhook delivery already built.
+2. **A per-action circuit breaker and dead-letter replay in the admin.**
+   Self-hosters have no operations team watching a dashboard, so a failing
+   receiver has to be visible in the product rather than in a table.
+3. **A proof-of-work challenge** on the public plane, to sit alongside the rate
+   limit and the origin allowlist.
+4. **Audit logging**, written in the same transaction as the mutation.
+5. **A published container image**, signed, alongside the npm releases.
 
 ## Versioning promises
 

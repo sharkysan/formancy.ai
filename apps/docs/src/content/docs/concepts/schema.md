@@ -198,6 +198,19 @@ Layouts are optional too. Without any, fields render in the order the model
 declares them, which is what the renderers did before this section existed and
 still do.
 
+Because addressing is by data path, an arrangement is a *view* of the model and
+cannot outlive it: deleting a field removes it from every layout, and renaming
+one repoints every layout at the new path. The builder does both as part of the
+command, since a layout node naming a field that does not exist is invalid — so
+without it, a field could not be deleted or renamed at all once it had been
+arranged.
+
+A layout node has no key of its own. It is addressed by position — the second
+thing inside the third thing — and every insert or removal renumbers its
+neighbours. That is why the builder keeps layout navigation apart from model
+navigation, and why a tool editing arrangements has to be careful in a way that
+editing fields does not require.
+
 ## Why these are separate sections
 
 Labels could have stayed strings and layout could have been implied by nesting.

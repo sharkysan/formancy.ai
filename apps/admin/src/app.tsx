@@ -51,7 +51,7 @@ export function App() {
   return (
     <div className="wb-app">
       <nav className="wb-nav">
-        <h1>formancy</h1>
+        <h1>formancy.ai</h1>
         <button
           className="wb-quiet"
           onClick={() => {

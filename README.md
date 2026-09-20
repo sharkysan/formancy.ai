@@ -1,4 +1,4 @@
-# formancy
+# formancy.ai
 
 <p>
   <a href="https://github.com/sharkysan/formancy.ai/actions/workflows/ci.yml"><img src="https://github.com/sharkysan/formancy.ai/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
@@ -51,8 +51,9 @@ packages/react          React binding: hooks, unstyled components, error summary
 packages/angular        Angular binding: signals over the same protocol, zoneless
 packages/conformance    the behaviour + accessibility contract (7 fixtures, published)
 packages/builder-core   headless schema editing: commands, undo/redo, valid targets
-packages/builder-react  the builder UI: structure tree, field palette,
-                        property panel — all keyboard-first
+packages/builder-react  the builder UI: structure tree, arrangement tree,
+                        field palette, property panel, logic — keyboard-first,
+                        with drag as a second route
 packages/server-core    backend use-cases against storage ports
 packages/server         Fastify + Postgres: publish, resolve, replayed submissions,
                         drafts with lazy migration, CSV export
@@ -62,12 +63,21 @@ apps/admin              the self-hosted admin, v0.1 cut
 apps/docs               the documentation site (Astro Starlight)
 ```
 
-**The builder is partly built.** `builder-core` holds the document, the undo
-stack and the rules about which edits are legal. `builder-react` is the
-interface over it — structure tree, field palette and property panel — and it
-is entirely keyboard-driven with no drag surface,
+**The builder edits two documents over one model.** `builder-core` holds the
+document, the undo stack and the rules about which edits are legal.
+`builder-react` is the interface over it, in two trees:
+
+- **Structure** — what the form collects. Fields, groups, pages and repeaters,
+  with a palette, a property panel generated from the spec's own JSON Schema,
+  and conditions that compile to CEL.
+- **Arrangement** — where it appears. Rows, columns and sections, which is how
+  two fields end up side by side.
+
+Both are entirely keyboard-driven, and both grew a drag surface afterwards,
 [deliberately in that order](./docs/decisions/0046-keyboard-before-drag.md).
-Logic authoring and dragging are still to come.
+Rows and columns can also be dragged **on the preview itself** — the rendered
+form is a drop target, going through the same commands, so the two views cannot
+disagree ([0050](./docs/decisions/0050-arrange-in-two-places.md)).
 
 ## Development
 
@@ -115,13 +125,16 @@ pnpm --filter @formancy/playground dev  # playground on :4381
 ```
 
 The admin has a **build** tab — the keyboard-driven builder in a three-pane
-inspector, beside a live preview — plus the raw schema editor, publish, version
+inspector, beside a live preview, switching between the structure and the
+arrangement in the pane header — plus the raw schema editor, publish, version
 history, and submissions with a CSV export whose columns are unioned across
 schema versions.
 
 The playground is the one-screen demo: schema or builder on the left, the live
-form in the middle, the engine's actual state on the right. Two switchers, and
-neither is decoration.
+form in the middle, the engine's actual state on the right. Under **Build**,
+*Fields* and *Arrangement* are two views of one document — move a field into a
+row in either tree, or drag it on the form itself, and all three panes follow.
+Two switchers, and neither is decoration.
 
 **Theme** proves the headless claim: the renderers ship no CSS, and two themes
 that look like unrelated products swap live with no remount and no component
@@ -161,12 +174,17 @@ come apart, so four criteria shape how they are built:
 | **1.4.10** Reflow | A row becomes one column when there is no width for two, via `auto-fit`/`minmax` — a media query, not a measurement. A layout that reflows only after scripts run does not reflow |
 | **1.3.1** Info and Relationships | A row is presentation and gets no semantics; a *labelled* section is visibly grouping fields, so it is a real `role="group"` with an accessible name. An unlabelled one stays a plain box, because a group with no name announces "group" and tells nobody anything |
 
-**The builder is keyboard-first**, and its drag surface was added afterwards
+**The builder is keyboard-first**, and its drag surfaces were added afterwards
 on purpose: 2.5.7 requires every dragging movement to have an equivalent
 alternative, and building the alternative second is how it ends up unfinished
-([0046](./docs/decisions/0046-keyboard-before-drag.md)). Dragging calls the
-same commands the keyboard does, offers only drops the session will accept, and
-announces through the same live region.
+([0046](./docs/decisions/0046-keyboard-before-drag.md)). That holds for all
+three of them — the structure tree, the arrangement tree and the preview
+itself. Each drag calls the same commands the keyboard does, offers only drops
+the session will accept, and announces through the same live region. The
+keyboard move palette names destinations as sentences rather than coordinates:
+*"Row with First name and Last name, between First name and Last name"* is a
+choice somebody can make without seeing the screen, and
+`{ parent: [0], index: 1 }` is not.
 
 **What this is not.** Automated checking catches roughly 57% of
 machine-detectable issues by Deque's own figure, and about 30% of WCAG 2.2

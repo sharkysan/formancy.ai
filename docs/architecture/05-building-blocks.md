@@ -115,6 +115,29 @@ name — and `builtin-fixtures.ts` is generated from `fixtures/*.json` with the
 case list pinned in a test, so a case that silently stopped being embedded is
 caught.
 
+### `@formancy/builder-core` and `@formancy/builder-react`
+
+`builder-core` is the document engine: commands, undo/redo, and one rule that
+shapes the rest — a session may never hold a document the validator rejects, so
+every command is applied to a copy, validated, and committed only if it passes.
+Legality is decided by *trying* an edit rather than by a second implementation
+of the validator's rules, which would drift from it.
+
+It holds two addressing schemes that deliberately do not mix. A model field is
+a key path (`['contact', 'email']`); a layout node is a position path
+(`[0, 1]`), because an arrangement's nodes have no keys and every edit
+renumbers their neighbours. `layout.ts` keeps the second one's navigation
+apart from the first's for that reason
+([0050](../decisions/0050-arrange-in-two-places.md)).
+
+`builder-react` is the interface: a structure tree, an arrangement tree, a
+property panel generated from the spec's own JSON Schema, a condition editor
+that compiles to CEL, and three drag surfaces — none of which is the only way
+to reach anything ([0046](../decisions/0046-keyboard-before-drag.md)). One of
+those surfaces is the rendered form itself, which works because the renderers
+emit two inert attributes and this package reads them from the outside. The
+dependency runs one way only: `@formancy/react` knows nothing about the builder.
+
 ### `@formancy/server-core` and `@formancy/server`
 
 `server-core` holds the use cases — publish, resolve, submit with replay, list,

@@ -178,15 +178,43 @@ opt-in; the management plane requires a session or an API key and runs
   receiver on a trusted network — per deployment, never per form, since a form
   author is exactly who the address guard defends against.
 
+### The arrangement editor
+
+- **Rows, columns and sections are authorable**, which is how two fields end up
+  side by side. Renderable since the layout work landed, and until now editable
+  only as JSON.
+- **Two views of one document.** A separate arrangement tree beside the
+  structure tree — the model says what a form collects, the arrangement says
+  where it appears, and a field can be in one without the other — and the
+  **rendered form itself is a drop target**. Both go through the same session
+  command, so they cannot disagree.
+- **Keyboard first, again.** Add, move, unwrap and remove all work with no
+  pointer, and the move palette reads destinations as sentences: *"Row with
+  First name and Last name, between First name and Last name"*. Dragging came
+  afterwards, in all three places.
+- **The renderer knows nothing about any of it.** It emits two inert
+  attributes; the builder reads them from the outside. Nothing in
+  `@formancy/react` imports anything from `@formancy/builder-react`.
+- **Fields the arrangement leaves out are named**, because a field the only
+  layout omits is collected by the form and invisible to everyone filling it in.
+- **Deleting or renaming a field now keeps every layout in step.** Both were
+  refused outright before — a layout node pointing at a field that does not
+  exist is invalid — so a field could not be deleted or renamed at all once it
+  had been arranged.
+
 ### Applications
 
 - **Admin** — the builder in a three-pane inspector with live preview, plus a
-  raw schema editor, publish, version history, submissions and CSV export.
+  raw schema editor, publish, version history, submissions and CSV export. The
+  left pane switches between the form's **structure** and its **arrangement**.
 - **Playground** — schema *or* the builder on the left, the live form in the
-  middle, the engine's actual state on the right. A theme switcher that proves
-  the renderers ship no CSS, and a language switcher over a demo form written
-  in `$t` references with a deliberately partial French catalogue, so the
-  fallback to the default locale is visible rather than claimed.
+  middle, the engine's actual state on the right. Under Build, *Fields* and
+  *Arrangement* are two views of one document, and the form in the middle is a
+  drop target for the second. A theme switcher that proves the renderers ship
+  no CSS, and a language switcher over a demo form written in `$t` references
+  with a deliberately partial French catalogue, so the fallback to the default
+  locale is visible rather than claimed. A link to the repository, since this
+  page is where most people meet the project.
 - **Docs** — Astro Starlight; the spec reference is generated from the JSON
   Schema.
 
