@@ -76,3 +76,38 @@ exists to describe, and the two defects above are what it would have shipped.
 Rejected. It cannot express moving into or out of a container, so a keyboard
 user could not build a nested form at all — an alternative that does less is
 not an alternative.
+
+---
+
+## Addendum, same day — the property panel
+
+The panel that edits a field's properties is **generated from
+`packages/spec/formancy.schema.json`**, not written out per field type.
+
+The schema already says which properties belong to which type: that is what its
+`allOf` / `if` / `then` branches are for. `editablePropertiesFor(type)` reads
+them, and takes each control's label and hint from the schema's own `title` and
+`description`, so the builder and the generated spec reference cannot disagree
+about what a property means.
+
+The alternative is twelve hand-written panels that rot within two releases —
+somebody adds a property to the spec, nobody remembers the panel, and the
+builder quietly cannot set it. Verified by tests asserting that a text field is
+offered `pattern` and not `min`, a number field the reverse, and a repeater its
+own four; none of those lists appears in the builder's source.
+
+Four properties are deliberately excluded. `key` is a rename, which carries
+`renamedFrom` semantics and has its own command — typing over it in a text box
+is how answers get orphaned ([0011](0011-declared-renames.md)). `fields` is
+structure, which the tree edits. `type` would be a different field.
+`renamedFrom` is written by the session, never by a person.
+
+`options` is offered as a named gap rather than rendered generically: it is a
+list of value/label pairs, and the generic path would produce a textarea full
+of JSON, which is worse than saying it is not editable here yet.
+
+The panel reads the field from the session rather than taking it as a prop.
+Handed a definition captured before the edit, its controlled inputs never see a
+new value, so every keystroke resets the box and only the last character
+survives — and a consumer wiring it the obvious way would reproduce that
+exactly. Found by a test typing three characters and getting one.
