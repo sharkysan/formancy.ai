@@ -100,6 +100,19 @@
   align-self: flex-start;
 }
 
+/* Two editors over one document, switched in the pane header rather than in a
+   menu: which one is showing is the first thing to know about this pane. */
+.wb-switch {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.wb-switch button[aria-pressed='true'] {
+  background: var(--wb-ink);
+  border-color: var(--wb-ink);
+  color: var(--wb-surface);
+}
+
 /* --------------------------------------------------------------- toolbar */
 
 .wb-tools {
@@ -206,7 +219,8 @@
   outline-offset: -2px;
 }
 
-[data-formancy-part='builder-empty'] {
+[data-formancy-part='builder-empty'],
+[data-formancy-part='layout-empty'] {
   font-size: 0.8125rem;
   color: var(--wb-muted);
   padding: 0.5rem;
@@ -215,7 +229,8 @@
 /* The live region. Present for assistive technology, and shown as a status
    line rather than hidden, because a sighted keyboard user needs the same
    confirmation that a command landed. */
-[data-formancy-part='builder-status'] {
+[data-formancy-part='builder-status'],
+[data-formancy-part='layout-status'] {
   margin: 0.5rem 0 0;
   padding: 0.375rem 0.5rem;
   font-size: 0.75rem;
@@ -224,12 +239,14 @@
   border-block-start: 1px solid var(--wb-rule);
 }
 
-[data-formancy-part='builder-status']:empty {
+[data-formancy-part='builder-status']:empty,
+[data-formancy-part='layout-status']:empty {
   border-block-start: none;
 }
 
 /* Key help: a compact legend, not a definition list sprawling down the pane. */
-[data-formancy-part='builder-keys'] {
+[data-formancy-part='builder-keys'],
+[data-formancy-part='layout-keys'] {
   margin: 0.5rem 0 0;
   padding-block-start: 0.5rem;
   border-block-start: 1px solid var(--wb-rule);
@@ -240,13 +257,15 @@
   color: var(--wb-muted);
 }
 
-[data-formancy-part='builder-keys'] > div {
+[data-formancy-part='builder-keys'] > div,
+[data-formancy-part='layout-keys'] > div {
   display: flex;
   align-items: baseline;
   gap: 0.3125rem;
 }
 
-[data-formancy-part='builder-keys'] dt {
+[data-formancy-part='builder-keys'] dt,
+[data-formancy-part='layout-keys'] dt {
   font-family: var(--wb-mono);
   font-size: 0.6875rem;
   color: var(--wb-ink);
@@ -257,7 +276,8 @@
   white-space: nowrap;
 }
 
-[data-formancy-part='builder-keys'] dd {
+[data-formancy-part='builder-keys'] dd,
+[data-formancy-part='layout-keys'] dd {
   margin: 0;
 }
 
@@ -267,7 +287,10 @@
    you were looking at off the screen while you choose. */
 [data-formancy-part='add-palette'],
 [data-formancy-part='add-where'],
-[data-formancy-part='move-palette'] {
+[data-formancy-part='move-palette'],
+[data-formancy-part='layout-add'],
+[data-formancy-part='layout-add-where'],
+[data-formancy-part='layout-move'] {
   position: fixed;
   inset-block-start: 50%;
   inset-inline-start: 50%;
@@ -285,7 +308,10 @@
 
 [data-formancy-part='add-palette'] ul,
 [data-formancy-part='add-where'] ul,
-[data-formancy-part='move-palette'] ul {
+[data-formancy-part='move-palette'] ul,
+[data-formancy-part='layout-add'] ul,
+[data-formancy-part='layout-add-where'] ul,
+[data-formancy-part='layout-move'] ul {
   list-style: none;
   margin: 0 0 0.5rem;
   padding: 0;
@@ -295,7 +321,10 @@
 
 [data-formancy-part='add-palette'] li,
 [data-formancy-part='add-where'] li,
-[data-formancy-part='move-palette'] li {
+[data-formancy-part='move-palette'] li,
+[data-formancy-part='layout-add'] li,
+[data-formancy-part='layout-add-where'] li,
+[data-formancy-part='layout-move'] li {
   display: grid;
   gap: 0.125rem;
   padding: 0.375rem 0.5rem;
@@ -304,13 +333,19 @@
 
 [data-formancy-part='add-palette'] li:hover,
 [data-formancy-part='add-where'] li:hover,
-[data-formancy-part='move-palette'] li:hover {
+[data-formancy-part='move-palette'] li:hover,
+[data-formancy-part='layout-add'] li:hover,
+[data-formancy-part='layout-add-where'] li:hover,
+[data-formancy-part='layout-move'] li:hover {
   background: var(--wb-panel);
 }
 
 [data-formancy-part='add-palette'] li button,
 [data-formancy-part='add-where'] li button,
-[data-formancy-part='move-palette'] li button {
+[data-formancy-part='move-palette'] li button,
+[data-formancy-part='layout-add'] li button,
+[data-formancy-part='layout-add-where'] li button,
+[data-formancy-part='layout-move'] li button {
   justify-self: start;
   border: none;
   background: none;
@@ -799,4 +834,174 @@ kbd {
   [data-formancy-part='builder-node'] {
     transition: none !important;
   }
+}
+
+/* -------------------------------------------------- the arrangement editor
+ *
+ * The same chrome as the structure tree, because they are the same gesture
+ * over two different documents — a person who has learned one has learned the
+ * other. What differs is what a row MEANS: here it is a place, not a field,
+ * and the kinds are worth telling apart at a glance.
+ */
+
+[data-formancy-part='layout-pane'] {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  gap: 0.5rem;
+}
+
+[data-formancy-part='layout-tree'] {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  min-height: 0;
+}
+
+[data-formancy-part='layout-node'] {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 3px;
+  font-size: 0.8125rem;
+  cursor: grab;
+}
+
+/* Indentation from aria-level, so the visual nesting and the announced
+   nesting cannot disagree. */
+[data-formancy-part='layout-node'][aria-level='2'] { padding-inline-start: 1.5rem; }
+[data-formancy-part='layout-node'][aria-level='3'] { padding-inline-start: 2.5rem; }
+[data-formancy-part='layout-node'][aria-level='4'] { padding-inline-start: 3.5rem; }
+[data-formancy-part='layout-node'][aria-level='5'] { padding-inline-start: 4.5rem; }
+
+/* A marker per kind, never as the only cue: the row's text already names what
+   it is, so this is a second signal and not the signal. */
+[data-formancy-part='layout-node']::before {
+  font-size: 0.625rem;
+  color: var(--wb-muted);
+  content: '·';
+}
+
+[data-formancy-part='layout-node'][data-kind='row']::before { content: '⬌'; }
+[data-formancy-part='layout-node'][data-kind='column']::before { content: '⬍'; }
+[data-formancy-part='layout-node'][data-kind='section']::before { content: '▤'; }
+
+[data-formancy-part='layout-node'][data-kind='row'],
+[data-formancy-part='layout-node'][data-kind='column'],
+[data-formancy-part='layout-node'][data-kind='section'] {
+  font-weight: 600;
+}
+
+[data-formancy-part='layout-node'][aria-selected='true'] {
+  background: color-mix(in srgb, var(--wb-signal) 12%, transparent);
+  box-shadow: inset 2px 0 0 var(--wb-signal);
+}
+
+[data-formancy-part='layout-node']:focus-visible {
+  outline: 2px solid var(--wb-signal);
+  outline-offset: -2px;
+}
+
+[data-formancy-part='layout-node'][data-dragging='true'] {
+  opacity: 0.4;
+  cursor: grabbing;
+}
+
+[data-formancy-part='layout-node'][data-drop='before'] {
+  box-shadow: inset 0 2px 0 var(--wb-signal);
+}
+
+[data-formancy-part='layout-node'][data-drop='after'] {
+  box-shadow: inset 0 -2px 0 var(--wb-signal);
+}
+
+/* Fields the arrangement leaves out. Loud rather than tucked away: the form
+   still collects them and nobody filling it in can see them. */
+[data-formancy-part='layout-unplaced'] {
+  border: 1px solid var(--wb-rule);
+  border-radius: 4px;
+  padding: 0.5rem 0.625rem;
+  background: var(--wb-panel);
+}
+
+[data-formancy-part='layout-unplaced'] h3 {
+  margin: 0 0 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--wb-muted);
+}
+
+[data-formancy-part='layout-unplaced'] ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+  font-size: 0.8125rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-formancy-part='layout-node'] {
+    transition: none !important;
+  }
+}
+
+/* ------------------------------------------- arranging on the preview
+ *
+ * The form is a form until an editor says otherwise. Everything here is
+ * inside [data-arranging], so a rendered form in production picks up none
+ * of it — the two data attributes it carries are inert.
+ *
+ * SC 2.5.7 is satisfied by the keyboard path in the arrangement tree, not by
+ * any of this. This is the second route for people who prefer a pointer.
+ */
+
+[data-formancy-part='arrange-surface'][data-arranging='true'] [data-arrangeable='true'] {
+  cursor: grab;
+  outline: 1px dashed color-mix(in srgb, var(--wb-signal) 45%, transparent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+[data-formancy-part='arrange-surface'][data-arranging='true'] [data-arrangeable='true']:hover {
+  outline-style: solid;
+  outline-color: var(--wb-signal);
+}
+
+/* The line shows where it will land. Drawn only for a drop the session will
+   accept, because an indicator over an illegal target promises a move that
+   will not happen. A row's children sit side by side, so there the edge is
+   left and right rather than top and bottom. */
+[data-formancy-part='arrange-surface'] [data-drop='before'] {
+  box-shadow: inset 0 3px 0 var(--wb-signal);
+}
+
+[data-formancy-part='arrange-surface'] [data-drop='after'] {
+  box-shadow: inset 0 -3px 0 var(--wb-signal);
+}
+
+[data-formancy-part='layout-row'] > [data-drop='before'] {
+  box-shadow: inset 3px 0 0 var(--wb-signal);
+}
+
+[data-formancy-part='layout-row'] > [data-drop='after'] {
+  box-shadow: inset -3px 0 0 var(--wb-signal);
+}
+
+/* Present for assistive technology, and out of the way visually: the drop
+   itself is the visible feedback for anyone who can see it. */
+[data-formancy-part='arrange-status'] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }

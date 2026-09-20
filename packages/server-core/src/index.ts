@@ -45,3 +45,6 @@ export {
   verifySignature,
 } from './webhook.js'
 export type { DeliveryHeaders } from './webhook.js'
+export { afterAttempt, drainOutbox } from './outbox.js'
+export type { AttemptOutcome, OutboxDeps } from './outbox.js'
+export type { DeliveryRecord, WebhookRecord } from './ports.js'

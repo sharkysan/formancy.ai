@@ -67,10 +67,15 @@ form is not publicly submittable unless it says so.
 
 ## Operational notes a self-hoster needs
 
-- **`@fastify/rate-limit`'s default store is in-memory and therefore
-  per-process.** Behind more than one replica it does not do what it appears to
-  do. This is a silent footgun and is called out in the documentation rather
-  than left to be discovered.
+- **Run exactly one replica.** Two things break behind more than one, for
+  unrelated reasons, and both are silent.
+  `@fastify/rate-limit`'s default store is in-memory and therefore per-process,
+  so the limit is multiplied by the replica count. And the outbox worker's
+  `claimDueDeliveries` takes no row lock, so every replica picks up the same
+  due delivery and the receiver gets it once per replica. The stable event id
+  makes that survivable for a receiver that dedupes; it does not make it
+  correct. `FOR UPDATE SKIP LOCKED` is the fix and is a contained change to one
+  port method ([0049](../decisions/0049-one-polling-worker.md)).
 - **Never serve uploaded files from the application origin.** A separate
   hostname, or forced `Content-Disposition: attachment` with `nosniff` and a
   restrictive CSP. Stored cross-site scripting via uploaded HTML or SVG is the
@@ -81,6 +86,19 @@ form is not publicly submittable unless it says so.
   then fetch it" is defeated by DNS rebinding, which is the difference between
   a mitigation and theatre. A self-hosted instance sits inside a private
   network, and webhook URLs are attacker-influenceable.
+- **`FORMANCY_WEBHOOK_ALLOW_PRIVATE` turns that guard off installation-wide.**
+  It exists because a receiver running as a sidecar on the same host cannot
+  otherwise be delivered to at all, which is a worse outcome than an opt-in
+  nobody has to touch. It is per deployment and never per form: the form
+  document is the surface the guard is defending against, so putting the switch
+  in it would hand the attacker the switch. `FORMANCY_WEBHOOK_ALLOW_HTTP` is
+  the same shape, for plain http.
+- **Deliveries are attempted within five seconds of being queued**, eight times
+  over roughly a day with exponential backoff and full jitter, and then marked
+  `dead` rather than deleted. A dead row is the evidence that something was
+  supposed to be sent and never arrived; find them with
+  `SELECT * FROM deliveries WHERE state = 'dead'`. Re-queueing one is a SQL
+  statement today — there is no replay button yet.
 - **The application database role needs `INSERT` and `SELECT` on `audit_log`
   and nothing else.** Append-only is a grant, not a convention.
 

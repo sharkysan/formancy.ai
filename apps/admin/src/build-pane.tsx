@@ -1,7 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createBuilderSession } from '@formancy/builder-core'
 import type { BuilderSession } from '@formancy/builder-core'
-import { FormancyBuilder, LogicPanel, PropertyPanel, useBuilder } from '@formancy/builder-react'
+import {
+  FormancyArrangeSurface,
+  FormancyBuilder,
+  FormancyLayoutPane,
+  LogicPanel,
+  PropertyPanel,
+  useBuilder,
+} from '@formancy/builder-react'
 import { createFormEngine } from '@formancy/core'
 import { FormancyForm, FormancyProvider } from '@formancy/react'
 import type { FormSchema } from '@formancy/spec'
@@ -89,6 +96,14 @@ function BuilderWorkspace({
   onSelect: (keyPath: readonly string[]) => void
 }) {
   const view = useBuilder(session)
+  /**
+   * Two editors over one document.
+   *
+   * The model says what the form collects; the arrangement says where it
+   * appears. A field can be in the first and missing from the second, so one
+   * tree showing both would have to pretend those are the same question.
+   */
+  const [editor, setEditor] = useState<'structure' | 'arrangement'>('structure')
 
   // The JSON text follows the document, so the editor tab and the publish
   // button always see what the builder actually built.
@@ -114,12 +129,26 @@ function BuilderWorkspace({
   }, [view.document])
 
   const editing = selected ?? view.nodes[0]?.keyPath ?? null
+  // The preview renders THROUGH the arrangement when there is one. Without
+  // this, moving two fields into a row changes nothing anybody can see, which
+  // reads as a broken editor rather than as a preview that ignores layouts.
+  const layoutName = view.document.layouts?.[0]?.name
 
   return (
     <div className="wb">
       <section className="wb-pane">
         <header>
-          Structure
+          <span className="wb-switch">
+            {(['structure', 'arrangement'] as const).map((candidate) => (
+              <button
+                key={candidate}
+                aria-pressed={editor === candidate}
+                onClick={() => setEditor(candidate)}
+              >
+                {candidate === 'structure' ? 'Structure' : 'Arrangement'}
+              </button>
+            ))}
+          </span>
           <div className="wb-tools">
             <button onClick={() => session.undo()} disabled={!view.canUndo}>
               Undo
@@ -137,14 +166,24 @@ function BuilderWorkspace({
           className="wb-body"
           onFocusCapture={(event) => {
             // The tree owns its own focus; this only notices which field it
-            // landed on, so the inspector can follow.
+            // landed on, so the inspector can follow. Skipped for the
+            // arrangement, whose tree items are positions rather than fields —
+            // reading one as an index into the model would select at random.
+            if (editor !== 'structure') return
             const item = (event.target as HTMLElement).closest('[role="treeitem"]')
             const at = item === null ? -1 : [...(item.parentElement?.children ?? [])].indexOf(item)
             const node = at < 0 ? undefined : view.nodes[at]
             if (node !== undefined) onSelect(node.keyPath)
           }}
         >
-          <FormancyBuilder session={session} />
+          {editor === 'structure' ? (
+            <FormancyBuilder session={session} />
+          ) : (
+            <FormancyLayoutPane
+              session={session}
+              {...(layoutName === undefined ? {} : { layout: layoutName })}
+            />
+          )}
 
           {view.publishable.valid ? null : (
             <p className="wb-problem">
@@ -165,11 +204,23 @@ function BuilderWorkspace({
           {'error' in preview ? (
             <p className="wb-problem">{preview.error}</p>
           ) : (
-            <div className="wb-sheet" data-formancy-theme="blueprint">
-              <FormancyProvider engine={preview.engine}>
-                <FormancyForm onSubmit={() => undefined} />
-              </FormancyProvider>
-            </div>
+            // The preview is also a drop target while the Arrangement editor
+            // is showing. The same session command the tree and the keyboard
+            // use, so the two views cannot disagree about the document.
+            <FormancyArrangeSurface
+              session={session}
+              layout={layoutName ?? ''}
+              enabled={editor === 'arrangement' && layoutName !== undefined}
+            >
+              <div className="wb-sheet" data-formancy-theme="blueprint">
+                <FormancyProvider engine={preview.engine}>
+                  <FormancyForm
+                    onSubmit={() => undefined}
+                    {...(layoutName === undefined ? {} : { layout: layoutName })}
+                  />
+                </FormancyProvider>
+              </div>
+            </FormancyArrangeSurface>
           )}
         </div>
       </section>

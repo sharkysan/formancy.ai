@@ -29,7 +29,7 @@ export function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
           .finally(() => setBusy(false))
       }}
     >
-      <h1 style={{ fontSize: '1.1rem' }}>Sign in to formancy</h1>
+      <h1 style={{ fontSize: '1.1rem' }}>Sign in to formancy.ai</h1>
 
       <label htmlFor="admin-email">Email</label>
       <input

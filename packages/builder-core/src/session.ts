@@ -1,6 +1,16 @@
-import type { FieldDef, FormSchema, LogicRule } from '@formancy/spec'
+import type { FieldDef, FormSchema, LayoutNode, LogicRule, Text } from '@formancy/spec'
+import { unreferencedPaths } from '@formancy/spec'
 import { validateSchema } from '@formancy/spec/validate'
 import type { SchemaError } from '@formancy/spec/validate'
+import {
+  childrenAt as layoutChildrenAt,
+  containerPaths as layoutContainerPaths,
+  encloses,
+  isLayoutContainer,
+  nodeAt as layoutNodeAt,
+  nodesOfLayout,
+} from './layout.js'
+import type { LayoutAddress, LayoutLocation } from './layout.js'
 
 /**
  * The headless document engine under the form builder.
@@ -69,6 +79,26 @@ export interface BuilderSession {
    * definition) or an existing field being moved (pass its key path).
    */
   validTargets(what: FieldDef | readonly string[]): Location[]
+
+  // --- the arrangement, which is a second document over the same model ---
+
+  addLayout(name: string): CommandOutcome
+  removeLayout(name: string): CommandOutcome
+  insertLayoutNode(location: LayoutLocation, node: LayoutNode): CommandOutcome
+  removeLayoutNode(address: LayoutAddress): CommandOutcome
+  /** Replace a container with its children, in order, where it stood. */
+  unwrapLayoutNode(address: LayoutAddress): CommandOutcome
+  moveLayoutNode(from: LayoutAddress, to: LayoutLocation): CommandOutcome
+  setLayoutNodeLabel(address: LayoutAddress, label: Text | undefined): CommandOutcome
+
+  /**
+   * Every position a layout node may legally occupy: a new node (pass it) or
+   * an existing one being moved (pass its index path).
+   */
+  validLayoutTargets(layout: string, what: LayoutNode | readonly number[]): LayoutLocation[]
+
+  /** Data paths the named layout does not place. Empty for an unknown layout. */
+  unplacedFields(layout: string): string[]
 }
 
 const CONTAINER_TYPES = new Set(['group', 'page', 'repeater'])
@@ -183,7 +213,15 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
       return attempt((draft) => {
         const found = locate(draft, keyPath)
         if (found === undefined) return refuse('/model/fields', `No field at "${keyPath.join('.')}".`)
+        // Read before the removal: afterwards the path cannot be resolved.
+        const dataPath = dataPathOf(draft, keyPath)
         found.siblings.splice(found.index, 1)
+        // A layout node placing a field that no longer exists is invalid, so
+        // without this the command is simply refused and a form author cannot
+        // delete a field at all once it has been arranged. Pruning it here is
+        // not a convenience: an arrangement is a view of the model, and it
+        // cannot outlive what it is a view of.
+        if (dataPath !== undefined) unplaceEverywhere(draft, dataPath)
         return undefined
       })
     },
@@ -215,6 +253,7 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
         const field = found.siblings[found.index]!
         const baseline = baselineByCurrentKey.get(field.key) ?? field.key
 
+        const before = dataPathOf(draft, keyPath)
         field.key = newKey
         if (newKey === baseline) {
           // Back where it started: there is nothing to migrate, and leaving a
@@ -223,6 +262,12 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
         } else {
           field.renamedFrom = baseline
         }
+        // Every arrangement follows the rename. A layout addresses fields by
+        // data path, so leaving them behind would make the document invalid
+        // and the rename impossible — for exactly the fields most likely to
+        // need one, the ones somebody has already arranged.
+        const after = dataPathOf(draft, [...keyPath.slice(0, -1), newKey])
+        if (before !== undefined && after !== undefined) repathEverywhere(draft, before, after)
         baselineByCurrentKey.set(newKey, baseline)
         return undefined
       })
@@ -267,6 +312,165 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
         rules.splice(index, 1)
         return undefined
       })
+    },
+
+    // ------------------------------------------------------------- layouts
+
+    addLayout(name) {
+      return attempt((draft) => {
+        draft.layouts = draft.layouts ?? []
+        draft.layouts.push({ name, nodes: [] })
+        return undefined
+      })
+    },
+
+    removeLayout(name) {
+      return attempt((draft) => {
+        const at = draft.layouts?.findIndex((layout) => layout.name === name) ?? -1
+        if (at === -1 || draft.layouts === undefined) {
+          return refuse('/layouts', `No layout called "${name}".`)
+        }
+        draft.layouts.splice(at, 1)
+        // An empty list and no list at all mean the same thing to a renderer,
+        // and only one of them survives a round trip unchanged.
+        if (draft.layouts.length === 0) delete draft.layouts
+        return undefined
+      })
+    },
+
+    insertLayoutNode(location, node) {
+      return attempt((draft) => {
+        const container = layoutChildrenAt(draft, location.layout, location.parent)
+        if (container === undefined) return noSuchContainer(location)
+        container.splice(clampIndex(location.index, container.length), 0, copy(node))
+        return undefined
+      })
+    },
+
+    removeLayoutNode(address) {
+      return attempt((draft) => {
+        const found = locateLayout(draft, address)
+        if (found === undefined) return noSuchNode(address)
+        found.siblings.splice(found.index, 1)
+        return undefined
+      })
+    },
+
+    unwrapLayoutNode(address) {
+      return attempt((draft) => {
+        const found = locateLayout(draft, address)
+        if (found === undefined) return noSuchNode(address)
+        const node = found.siblings[found.index]!
+        if (!isLayoutContainer(node)) {
+          return refuse(
+            layoutPointer(address),
+            'A field node places one field. There is nothing inside it to keep.',
+          )
+        }
+        found.siblings.splice(found.index, 1, ...node.children)
+        return undefined
+      })
+    },
+
+    moveLayoutNode(from, to) {
+      // A field has one place per arrangement, so moving it across layouts
+      // would silently unplace it where it came from — a deletion wearing the
+      // word "move". Two commands, deliberately, so the second is deliberate.
+      if (from.layout !== to.layout) {
+        return refuse(
+          layoutPointer(from),
+          `Cannot move between the "${from.layout}" and "${to.layout}" layouts. Remove it from one and place it in the other.`,
+        )
+      }
+      if (encloses(from.path, to.parent)) {
+        return refuse(
+          layoutPointer(from),
+          'Cannot move this inside itself or one of its own children.',
+        )
+      }
+
+      return attempt((draft) => {
+        const found = locateLayout(draft, from)
+        if (found === undefined) return noSuchNode(from)
+        const [moved] = found.siblings.splice(found.index, 1)
+        // `to.parent` addresses the container as the CALLER sees it, before
+        // anything is lifted — so it is corrected here, once, in the one place
+        // that knows the lift has happened. `to.index`, by contrast, already
+        // counts positions after the lift, the same convention moveField uses.
+        // Splitting it this way is what lets the self-containment check above
+        // compare two paths in the same frame of reference.
+        const container = layoutChildrenAt(draft, to.layout, shiftAfterLift(to.parent, from.path))
+        if (container === undefined) return noSuchContainer(to)
+        container.splice(clampIndex(to.index, container.length), 0, moved!)
+        return undefined
+      })
+    },
+
+    setLayoutNodeLabel(address, label) {
+      return attempt((draft) => {
+        const found = locateLayout(draft, address)
+        if (found === undefined) return noSuchNode(address)
+        const node = found.siblings[found.index]!
+        if (!isLayoutContainer(node)) {
+          return refuse(layoutPointer(address), 'A field node takes its name from the field it places.')
+        }
+        if (label === undefined) delete node.label
+        else node.label = copy(label)
+        return undefined
+      })
+    },
+
+    validLayoutTargets(layout, what) {
+      const movingPath = Array.isArray(what) ? (what as readonly number[]) : undefined
+      const probe =
+        movingPath === undefined ? (what as LayoutNode) : layoutNodeAt(present, layout, movingPath)
+      if (probe === undefined) return []
+      if (nodesOfLayout(present, layout) === undefined) return []
+
+      const targets: LayoutLocation[] = []
+      for (const parent of layoutContainerPaths(present, layout)) {
+        // Nothing may be moved into itself or its own descendants.
+        if (movingPath !== undefined && encloses(movingPath, parent)) continue
+
+        // Legality is decided by TRYING the edit against the validator, the
+        // same way field moves are, so these rules cannot drift from the ones
+        // publish enforces — a field already placed elsewhere is refused here
+        // because the validator refuses it there.
+        const draft = copy(present)
+        if (movingPath !== undefined) {
+          const found = locateLayout(draft, { layout, path: movingPath })
+          if (found === undefined) continue
+          found.siblings.splice(found.index, 1)
+        }
+        // `parent` is the container as the caller sees it. Finding it in the
+        // lifted draft needs the correction; handing it back does not, because
+        // a Location addresses the document the caller is looking at.
+        const container = layoutChildrenAt(draft, layout, shiftAfterLift(parent, movingPath))
+        if (container === undefined) continue
+        container.push(copy(probe))
+        if (!verdictFor(draft).valid) continue
+        container.pop()
+
+        // Every position, not just the end: offering only the end makes the
+        // keyboard path weaker than a drag, which is what SC 2.5.7 forbids.
+        for (let index = 0; index <= container.length; index += 1) {
+          // Within the container it came from, the slot it already occupies is
+          // not a move. After the lift, that is the index it was lifted from.
+          if (
+            movingPath !== undefined &&
+            sameLayoutPath(parent, movingPath.slice(0, -1)) &&
+            index === movingPath[movingPath.length - 1]
+          ) {
+            continue
+          }
+          targets.push({ layout, parent, index })
+        }
+      }
+      return targets
+    },
+
+    unplacedFields(layout) {
+      return unreferencedPaths(present, layout) ?? []
     },
 
     validTargets(what) {
@@ -361,6 +565,137 @@ function containerPaths(document: FormSchema): string[][] {
   }
   walk(document.model.fields, [])
   return paths
+}
+
+// ----------------------------------------------- keeping layouts in step
+
+/**
+ * The data path of a field, which is not its key path.
+ *
+ * A page contributes no segment — a layout arranges what a person sees, and
+ * `page1.email` is not what the engine calls that answer. Undefined when the
+ * key path reaches nothing, or passes through something that holds no fields.
+ */
+function dataPathOf(document: FormSchema, keyPath: readonly string[]): string | undefined {
+  const segments: string[] = []
+  let fields: readonly FieldDef[] = document.model.fields
+
+  for (const [depth, key] of keyPath.entries()) {
+    const field = fields.find((candidate) => candidate.key === key)
+    if (field === undefined) return undefined
+    if (field.type !== 'page') segments.push(key)
+    if (depth === keyPath.length - 1) return segments.join('.')
+    fields = field.fields ?? []
+  }
+  return undefined
+}
+
+/** Whether `path` is `prefix` itself or a field inside it. */
+function underPath(path: string, prefix: string): boolean {
+  return path === prefix || path.startsWith(`${prefix}.`)
+}
+
+/** Drop every layout node placing `dataPath`, or anything inside it. */
+function unplaceEverywhere(draft: FormSchema, dataPath: string): void {
+  for (const layout of draft.layouts ?? []) {
+    layout.nodes = pruned(layout.nodes, dataPath)
+  }
+}
+
+function pruned(nodes: readonly LayoutNode[], dataPath: string): LayoutNode[] {
+  const kept: LayoutNode[] = []
+  for (const node of nodes) {
+    if (node.kind === 'field') {
+      if (!underPath(node.path, dataPath)) kept.push(node)
+      continue
+    }
+    // The container stays even when it empties. Removing one field should not
+    // silently take a row with it and rearrange everything beside it.
+    kept.push({ ...node, children: pruned(node.children, dataPath) })
+  }
+  return kept
+}
+
+/** Point every layout node at the new path, including fields inside a group. */
+function repathEverywhere(draft: FormSchema, before: string, after: string): void {
+  const walk = (nodes: LayoutNode[]): void => {
+    for (const [index, node] of nodes.entries()) {
+      if (node.kind === 'field') {
+        if (underPath(node.path, before)) {
+          nodes[index] = { ...node, path: after + node.path.slice(before.length) }
+        }
+        continue
+      }
+      walk(node.children)
+    }
+  }
+  for (const layout of draft.layouts ?? []) walk(layout.nodes)
+}
+
+// ----------------------------------------------------------- layout helpers
+
+interface LocatedNode {
+  siblings: LayoutNode[]
+  index: number
+}
+
+function locateLayout(document: FormSchema, address: LayoutAddress): LocatedNode | undefined {
+  if (address.path.length === 0) return undefined
+  const siblings = layoutChildrenAt(document, address.layout, address.path.slice(0, -1))
+  if (siblings === undefined) return undefined
+  const index = address.path[address.path.length - 1]!
+  if (index < 0 || index >= siblings.length) return undefined
+  return { siblings, index }
+}
+
+function layoutPointer(address: LayoutAddress): string {
+  return `/layouts/${address.layout}/nodes/${address.path.join('/')}`
+}
+
+function noSuchNode(address: LayoutAddress): Refusal {
+  return {
+    ok: false,
+    path: layoutPointer(address),
+    message: `Nothing at that position in the "${address.layout}" layout.`,
+  }
+}
+
+function noSuchContainer(location: LayoutLocation): Refusal {
+  return {
+    ok: false,
+    path: `/layouts/${location.layout}/nodes/${location.parent.join('/')}`,
+    message:
+      location.parent.length === 0
+        ? `No layout called "${location.layout}".`
+        : `Nothing at that position in the "${location.layout}" layout holds other nodes.`,
+  }
+}
+
+/**
+ * A container path, re-read after a node has been lifted out.
+ *
+ * Both paths index the document as it stood. If the lifted node shared a
+ * container with an ancestor of this path and sat before it, that ancestor has
+ * shifted up one — and walking the unshifted path now arrives at a different
+ * node entirely, which is the silent kind of wrong.
+ */
+function shiftAfterLift(
+  parent: readonly number[],
+  lifted: readonly number[] | undefined,
+): number[] {
+  if (lifted === undefined) return [...parent]
+  const depth = lifted.length - 1
+  if (parent.length <= depth) return [...parent]
+  // Only when the lift happened in an ancestor's own container.
+  for (let at = 0; at < depth; at += 1) if (parent[at] !== lifted[at]) return [...parent]
+
+  const shifted = [...parent]
+  if (shifted[depth]! > lifted[depth]!) shifted[depth] = shifted[depth]! - 1
+  return shifted
+}
+
+function sameLayoutPath(a: readonly number[], b: readonly number[]): boolean {
+  return a.length === b.length && a.every((step, at) => b[at] === step)
 }
 
 function isPrefix(prefix: readonly string[], candidate: readonly string[]): boolean {

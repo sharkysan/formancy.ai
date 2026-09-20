@@ -288,8 +288,6 @@ describe('dragging', () => {
     const source = screen.getByRole('treeitem', { name: from })
     const target = screen.getByRole('treeitem', { name: to })
 
-    // jsdom gives every element a zero-sized box, so the midpoint is 0 and
-    // clientY decides the edge.
     const dataTransfer = {
       effectAllowed: '',
       dropEffect: '',
@@ -297,9 +295,26 @@ describe('dragging', () => {
       getData: () => '',
     }
 
-    fireEvent.dragStart(source, { dataTransfer })
-    fireEvent.dragOver(target, { dataTransfer, clientY: edge === 'top' ? -1 : 1 })
-    fireEvent.drop(target, { dataTransfer, clientY: edge === 'top' ? -1 : 1 })
+    // Dispatched as MouseEvents, not through fireEvent.dragOver. jsdom has no
+    // DragEvent, and Testing Library's fallback drops clientY — so both edges
+    // arrived as `undefined` and every drop landed below the target, which is
+    // half of what this code decides.
+    //
+    // jsdom also gives every element a zero-sized box, so the midpoint is 0
+    // and the sign of clientY picks the edge.
+    const at = (type: string): Event => {
+      const event = new MouseEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        clientY: edge === 'top' ? -1 : 1,
+      })
+      Object.defineProperty(event, 'dataTransfer', { value: dataTransfer })
+      return event
+    }
+
+    fireEvent(source, at('dragstart'))
+    fireEvent(target, at('dragover'))
+    fireEvent(target, at('drop'))
   }
 
   test('a field can be dragged to another position', () => {
@@ -308,6 +323,16 @@ describe('dragging', () => {
     dragFromTo('Customer', 'City', 'bottom')
 
     expect(keys()).toEqual(['Billing address', 'Street', 'City', 'Customer'])
+  })
+
+  test('the upper half of a row means before it, not after', () => {
+    mount()
+
+    // The other half of the decision, and the one a fireEvent-based test
+    // silently could not reach.
+    dragFromTo('City', 'Street', 'top')
+
+    expect(keys()).toEqual(['Customer', 'Billing address', 'City', 'Street'])
   })
 
   test('the keyboard path still works afterwards, because it never depended on this', () => {

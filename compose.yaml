@@ -48,6 +48,12 @@ services:
       # admin password that ships in a repository is not a password.
       FORMANCY_ADMIN_EMAIL: ${FORMANCY_ADMIN_EMAIL:?set it in .env — see .env.example}
       FORMANCY_ADMIN_PASSWORD: ${FORMANCY_ADMIN_PASSWORD:?set it in .env — see .env.example}
+
+      # Webhook delivery refuses plain http and private addresses by default,
+      # which is what stops a form author pointing the server at the cloud
+      # metadata service. Both are opt-in, for a receiver on a trusted network.
+      FORMANCY_WEBHOOK_ALLOW_HTTP: ${FORMANCY_WEBHOOK_ALLOW_HTTP:-false}
+      FORMANCY_WEBHOOK_ALLOW_PRIVATE: ${FORMANCY_WEBHOOK_ALLOW_PRIVATE:-false}
     depends_on:
       postgres:
         condition: service_healthy

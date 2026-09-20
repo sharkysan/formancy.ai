@@ -27,6 +27,12 @@ import { resolveText } from '@formancy/spec'
  * so programmatically too — `role="group"` with `aria-labelledby`. Marking up
  * the row instead would invent a relationship the author did not describe, and
  * leaving the section bare would hide one they did.
+ *
+ * Every container also carries `data-formancy-layout-path`, the index path of
+ * the node that produced it. It is inert here — nothing in this package reads
+ * it — and exists so a tool outside the renderer, such as the builder's
+ * arrange-on-the-preview surface, can say which node an element came from
+ * without the renderer knowing anything about editing.
  */
 
 export interface LayoutTreeProps {
@@ -35,9 +41,17 @@ export interface LayoutTreeProps {
   locale: string
   /** Renders one field, given its data path. */
   renderField: (path: string) => ReactElement | null
+  /** Index path of the container these nodes are the children of. */
+  at?: readonly number[]
 }
 
-export function LayoutTree({ schema, nodes, locale, renderField }: LayoutTreeProps): ReactElement {
+export function LayoutTree({
+  schema,
+  nodes,
+  locale,
+  renderField,
+  at = [],
+}: LayoutTreeProps): ReactElement {
   return (
     <>
       {nodes.map((node, index) => (
@@ -49,6 +63,7 @@ export function LayoutTree({ schema, nodes, locale, renderField }: LayoutTreePro
           node={node}
           locale={locale}
           renderField={renderField}
+          at={[...at, index]}
         />
       ))}
     </>
@@ -60,43 +75,69 @@ function LayoutNodeView({
   node,
   locale,
   renderField,
+  at,
 }: {
   schema: FormSchema
   node: LayoutNode
   locale: string
   renderField: (path: string) => ReactElement | null
+  at: readonly number[]
 }): ReactElement | null {
   const headingId = useId()
 
   if (node.kind === 'field') return renderField(node.path)
 
   const label = resolveText(schema, node.label, locale)
+  const here = at.join('.')
   const children = (
-    <LayoutTree schema={schema} nodes={node.children} locale={locale} renderField={renderField} />
+    <LayoutTree
+      schema={schema}
+      nodes={node.children}
+      locale={locale}
+      renderField={renderField}
+      at={at}
+    />
   )
 
   if (node.kind === 'row') {
     // Presentation only. A row carries no meaning a screen reader needs, and
     // announcing "group" around every pair of fields is noise.
     return (
-      <div data-formancy-part="layout-row" data-columns={String(node.children.length)}>
+      <div
+        data-formancy-part="layout-row"
+        data-formancy-layout-path={here}
+        data-columns={String(node.children.length)}
+      >
         {children}
       </div>
     )
   }
 
   if (node.kind === 'column') {
-    return <div data-formancy-part="layout-column">{children}</div>
+    return (
+      <div data-formancy-part="layout-column" data-formancy-layout-path={here}>
+        {children}
+      </div>
+    )
   }
 
   // A section. Labelled, it is a real grouping and says so; unlabelled, it is
   // a box and stays one.
   if (label === undefined) {
-    return <div data-formancy-part="layout-section">{children}</div>
+    return (
+      <div data-formancy-part="layout-section" data-formancy-layout-path={here}>
+        {children}
+      </div>
+    )
   }
 
   return (
-    <div data-formancy-part="layout-section" role="group" aria-labelledby={headingId}>
+    <div
+      data-formancy-part="layout-section"
+      data-formancy-layout-path={here}
+      role="group"
+      aria-labelledby={headingId}
+    >
       <p id={headingId} data-formancy-part="layout-section-heading">
         {label}
       </p>

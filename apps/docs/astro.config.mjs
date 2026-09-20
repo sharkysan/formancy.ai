@@ -5,7 +5,7 @@ import starlight from '@astrojs/starlight'
 export default defineConfig({
   integrations: [
     starlight({
-      title: 'formancy',
+      title: 'formancy.ai',
       favicon: '/favicon.svg',
       description:
         'A self-hostable form engine and backend for React and Angular: one engine in browser and server, headless renderers, Apache-2.0.',

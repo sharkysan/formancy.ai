@@ -89,20 +89,64 @@ is injected ([0019](../decisions/0019-injected-capabilities.md)). Without
 either, the two evaluations could legitimately differ and the comparison would
 mean nothing.
 
-> **`runsOn` does not exist yet.** Every validator currently runs in both
-> places. The design calls for `runsOn: 'both' | 'client' | 'server'` per
-> validator, without which a uniqueness check (server-only) or a debounced hint
-> (client-only) cannot be expressed — but the property is not in the spec, and
-> `logicRule` is `additionalProperties: false`, so adding it is a spec version
-> bump rather than an additive change. See
-> [11. Risks and technical debt](11-risks-and-debt.md).
+> **`runsOn` decides which validators run here.** `runsOn: 'both' | 'client' |
+> 'server'`, defaulting to `both`, is what lets a uniqueness check be
+> server-only and a debounced hint client-only. The replay filters out anything
+> marked `client`, and the browser filters out anything marked `server` — the
+> same rule, read from the same document, applied from the two ends
+> ([0043](../decisions/0043-runs-on.md)).
 
 The single transaction is the reason for choosing PostgreSQL
 ([0024](../decisions/0024-postgres-over-mongodb.md)): "the webhook fired but the
 submission rolled back" is the worst support burden a self-hosted product can
 have.
 
-## 6.3 Publishing a form
+## 6.3 Delivering a webhook
+
+```
+every 5s, one pass at a time, in the server process
+   │
+   ▼
+claimDueDeliveries(now, 20)      state = 'pending' AND next_attempt_at <= now
+   │                             NO row lock — see the replica note below
+   ▼
+for each: the webhook still exists?
+   ├─ no ──▶ state = 'dead'      nothing left to deliver to; retrying forever
+   │                             against a deleted destination helps nobody
+   ▼ yes
+resolve the hostname OURSELVES
+   │
+   ├─ any address private? ──▶ refuse, without opening a socket
+   │                           (unless FORMANCY_WEBHOOK_ALLOW_PRIVATE)
+   ▼
+POST through an undici agent whose lookup returns ONLY the checked address
+   │     · Host header and SNI keep the original name, so TLS still validates
+   │     · redirect: 'manual' — a redirect is a destination nothing checked
+   │     · Stripe-scheme signature over `timestamp.body`
+   │     · X-Formancy-Event-Id stable across attempts; attempt number sent,
+   │       deliberately NOT signed, so a retry reuses the signature
+   │     · response read to 64 kB and never interpreted
+   ▼
+afterAttempt(delivery, outcome, now, random)      pure; the only decision-maker
+   │
+   ├─ ok ──────────────▶ state = 'delivered'
+   ├─ attempt < 8 ─────▶ state = 'pending', next_attempt_at = now + backoff
+   │                     exponential with FULL jitter, so an outage's backlog
+   │                     does not retry in one thundering instant
+   └─ attempt == 8 ────▶ state = 'dead', lastError kept
+```
+
+A thrown send is caught and turned into a failed outcome rather than allowed to
+escape, because escaping abandons every remaining delivery in the batch.
+
+The pass is deliberately one batch that returns, not a loop that never does:
+what to do is `@formancy/server-core` and testable without a clock or a
+network, and when to do it is the host's
+([0049](../decisions/0049-one-polling-worker.md)). The same decision records why
+this is **not** a distributed queue — `claimDueDeliveries` takes no lock, so a
+second replica delivers everything a second time.
+
+## 6.4 Publishing a form
 
 ```
 author saves
@@ -131,7 +175,7 @@ CREATE per-form partial indexes for fields marked indexed
 A form that could loop is never persisted. A published version is never
 modified.
 
-## 6.4 Resuming a draft after the form changed
+## 6.5 Resuming a draft after the form changed
 
 ```
 resume(draftId)

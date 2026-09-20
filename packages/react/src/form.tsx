@@ -269,10 +269,12 @@ function RepeaterSection({
 /** Shared unstyled shell: real label, control, error text as the describedby
  *  target. Zero CSS; `data-formancy-part` is the styling hook. */
 function FieldShell({
+  path,
   field,
   label,
   children,
 }: {
+  path: string
   field: FieldBinding
   label: string
   children: ReactNode
@@ -280,6 +282,9 @@ function FieldShell({
   return (
     <div
       data-formancy-part="field"
+      // Inert here, and read by tools outside the renderer — the builder's
+      // arrange surface needs to know which field an element on screen is.
+      data-formancy-field-path={path}
       data-state={field.touched && field.errors.length > 0 ? 'invalid' : 'valid'}
     >
       <label data-formancy-part="label" {...field.labelProps}>
@@ -298,7 +303,7 @@ function FieldShell({
 function TextField({ path, label }: FieldComponentProps) {
   const field = useField(path)
   return (
-    <FieldShell field={field} label={label}>
+    <FieldShell path={path} field={field} label={label}>
       <input
         type="text"
         {...field.controlProps}
@@ -313,7 +318,7 @@ function TextField({ path, label }: FieldComponentProps) {
 function TextareaField({ path, label }: FieldComponentProps) {
   const field = useField(path)
   return (
-    <FieldShell field={field} label={label}>
+    <FieldShell path={path} field={field} label={label}>
       <textarea
         {...field.controlProps}
         value={typeof field.value === 'string' ? field.value : ''}
@@ -327,7 +332,7 @@ function TextareaField({ path, label }: FieldComponentProps) {
 function NumberField({ path, label }: FieldComponentProps) {
   const field = useField(path)
   return (
-    <FieldShell field={field} label={label}>
+    <FieldShell path={path} field={field} label={label}>
       <input
         type="number"
         {...field.controlProps}
@@ -344,7 +349,7 @@ function NumberField({ path, label }: FieldComponentProps) {
 function CheckboxField({ path, label }: FieldComponentProps) {
   const field = useField(path)
   return (
-    <FieldShell field={field} label={label}>
+    <FieldShell path={path} field={field} label={label}>
       <input
         type="checkbox"
         {...field.controlProps}
@@ -359,7 +364,7 @@ function CheckboxField({ path, label }: FieldComponentProps) {
 function DateField({ path, label }: FieldComponentProps) {
   const field = useField(path)
   return (
-    <FieldShell field={field} label={label}>
+    <FieldShell path={path} field={field} label={label}>
       <input
         type="date"
         {...field.controlProps}
@@ -388,7 +393,7 @@ function SelectField({ path, label }: FieldComponentProps) {
   const field = useField(path)
   const options = useResolvedOptions(field)
   return (
-    <FieldShell field={field} label={label}>
+    <FieldShell path={path} field={field} label={label}>
       {/* Setting `value` on the select works only because React applies it
           AFTER the option children render; a select's value property is
           settable once its options exist. Angular binds [selected] per option
@@ -420,6 +425,7 @@ function RadioGroupField({ path, label }: FieldComponentProps) {
   return (
     <fieldset
       data-formancy-part="field"
+      data-formancy-field-path={path}
       data-state={showError ? 'invalid' : 'valid'}
       aria-describedby={field.controlProps['aria-describedby']}
     >

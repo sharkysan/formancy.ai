@@ -1,5 +1,9 @@
 import { lookup as dnsLookup } from 'node:dns/promises'
-import { Agent } from 'undici'
+// fetch from undici, NOT the global one. Node's global fetch is undici too,
+// but a DIFFERENT instance, and handing it an Agent from this one fails at
+// connect time with "invalid onRequestStart method" — a mismatch no unit test
+// reaches, because none of them get as far as opening a socket.
+import { Agent, fetch as undiciFetch } from 'undici'
 import { deliveryHeaders, isPrivateAddress } from '@formancy/server-core'
 import { webhookUrlProblem } from './webhook-url.js'
 
@@ -32,6 +36,12 @@ export interface DeliveryOptions {
   timeoutMs?: number
   /** Plain http, for a sidecar on the same host. Off by default. */
   allowHttp?: boolean
+  /**
+   * Deliver to a private address. Off by default — see webhook-url.ts. This
+   * gives up the confused-deputy protection, so it is opt-in per deployment
+   * and never per form.
+   */
+  allowPrivateAddresses?: boolean
   /** Swappable so tests do not depend on the network. */
   resolve?: (hostname: string) => Promise<string[]>
 }
@@ -54,7 +64,10 @@ export async function deliver(
   },
   options: DeliveryOptions = {},
 ): Promise<DeliveryResult> {
-  const problem = webhookUrlProblem(input.url, { allowHttp: options.allowHttp ?? false })
+  const problem = webhookUrlProblem(input.url, {
+    allowHttp: options.allowHttp ?? false,
+    allowPrivateAddresses: options.allowPrivateAddresses ?? false,
+  })
   if (problem !== undefined) return { ok: false, error: problem }
 
   const url = new URL(input.url)
@@ -72,7 +85,9 @@ export async function deliver(
   // EVERY address, not the first. A name that returns one public and one
   // private address is the rebinding attack spelled out, and picking the
   // public one to validate while the stack might use either is no check at all.
-  const forbidden = addresses.find((address) => isPrivateAddress(address))
+  const forbidden = options.allowPrivateAddresses === true
+    ? undefined
+    : addresses.find((address) => isPrivateAddress(address))
   if (forbidden !== undefined) {
     return { ok: false, error: `${url.hostname} resolves to ${forbidden}, which is not reachable from here.` }
   }
@@ -82,16 +97,29 @@ export async function deliver(
   // The agent connects to the address we checked and nothing else. The
   // original hostname stays in the Host header and in SNI, so TLS validates
   // against the certificate the site actually has.
+  const family = pinned.includes(':') ? 6 : 4
   const agent = new Agent({
     connect: {
-      lookup: (_hostname, _opts, callback) => {
-        callback(null, pinned, pinned.includes(':') ? 6 : 4)
+      // undici calls this with `all: true` and then expects an ARRAY of
+      // { address, family }; the plain `(err, address, family)` form that
+      // node:net uses comes back as "Invalid IP address: undefined". Both
+      // shapes are handled because which one arrives depends on undici's
+      // internals, and getting it wrong fails only at connect time — where no
+      // unit test looks.
+      lookup: (_hostname, opts: { all?: boolean | undefined }, callback: (...args: never[]) => void) => {
+        const done = callback as unknown as (
+          error: Error | null,
+          result: string | Array<{ address: string; family: number }>,
+          family?: number,
+        ) => void
+        if (opts.all === true) done(null, [{ address: pinned, family }])
+        else done(null, pinned, family)
       },
     },
   })
 
   try {
-    const response = await fetch(url, {
+    const response = await undiciFetch(url, {
       method: 'POST',
       headers: deliveryHeaders({
         eventId: input.eventId,
@@ -105,7 +133,6 @@ export async function deliver(
       // one would hand an attacker the whole guard back.
       redirect: 'manual',
       signal: AbortSignal.timeout(options.timeoutMs ?? 10_000),
-      // @ts-expect-error undici's dispatcher is not in the DOM fetch types
       dispatcher: agent,
     })
 
@@ -122,15 +149,19 @@ export async function deliver(
       ? { ok: true, status: response.status }
       : { ok: false, status: response.status, error: `Receiver answered ${String(response.status)}.` }
   } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : String(error) }
+    // `fetch failed` on its own tells an operator nothing. The cause carries
+    // the refused connection, the TLS failure or the timeout.
+    const cause = error instanceof Error && error.cause instanceof Error ? `: ${error.cause.message}` : ''
+    return { ok: false, error: `${error instanceof Error ? error.message : String(error)}${cause}` }
   } finally {
     await agent.close()
   }
 }
 
 /** Consume at most `cap` bytes so the connection can be reused, then stop. */
-async function drain(response: Response, cap: number): Promise<void> {
-  const reader = response.body?.getReader()
+async function drain(response: { body?: unknown }, cap: number): Promise<void> {
+  const body = response.body as ReadableStream<Uint8Array> | null | undefined
+  const reader = body?.getReader()
   if (reader === undefined) return
 
   let read = 0
