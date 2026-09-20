@@ -254,6 +254,12 @@ importers:
 
   apps/playground:
     dependencies:
+      '@formancy/builder-core':
+        specifier: workspace:*
+        version: link:../../packages/builder-core
+      '@formancy/builder-react':
+        specifier: workspace:*
+        version: link:../../packages/builder-react
       '@formancy/core':
         specifier: workspace:*
         version: link:../../packages/core

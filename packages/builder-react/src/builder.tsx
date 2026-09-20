@@ -4,6 +4,7 @@ import type { BuilderSession } from '@formancy/builder-core'
 import { newFieldOfType, paletteEntries } from './palette.js'
 import { useBuilder } from './use-builder.js'
 import type { MoveTarget } from './use-builder.js'
+import { nameOf } from './tree.js'
 import type { TreeNode } from './tree.js'
 
 /**
@@ -122,7 +123,7 @@ export function FormancyBuilder({ session, label = 'Form structure' }: BuilderPr
         // An empty palette is a real answer — a page cannot go inside a group —
         // and saying so is better than opening an empty dialog.
         if (targets.length === 0) {
-          announce(`${nameOf(focused)} cannot be moved anywhere else.`)
+          announce(`${nameOf(view.document, focused.def)} cannot be moved anywhere else.`)
           return
         }
         setMoving({ node: focused, targets })
@@ -139,8 +140,8 @@ export function FormancyBuilder({ session, label = 'Form structure' }: BuilderPr
         const outcome = session.removeField(focused.keyPath)
         announce(
           outcome.ok
-            ? `Removed ${nameOf(focused)}.`
-            : `Cannot remove ${nameOf(focused)}: ${outcome.message}`,
+            ? `Removed ${nameOf(view.document, focused.def)}.`
+            : `Cannot remove ${nameOf(view.document, focused.def)}: ${outcome.message}`,
         )
         break
       }
@@ -182,7 +183,7 @@ export function FormancyBuilder({ session, label = 'Form structure' }: BuilderPr
 
     const outcome = session.moveField(node.keyPath, target.location)
     announce(
-      outcome.ok ? `Moved ${nameOf(node)} to ${target.label}.` : `Cannot move: ${outcome.message}`,
+      outcome.ok ? `Moved ${nameOf(view.document, node.def)} to ${target.label}.` : `Cannot move: ${outcome.message}`,
     )
     treeRef.current?.focus()
   }
@@ -216,7 +217,7 @@ export function FormancyBuilder({ session, label = 'Form structure' }: BuilderPr
             tabIndex={position === index ? 0 : -1}
             onFocus={() => setFocusedIndex(position)}
           >
-            {nameOf(node)}
+            {nameOf(view.document, node.def)}
           </li>
         ))}
       </ul>
@@ -261,7 +262,7 @@ export function FormancyBuilder({ session, label = 'Form structure' }: BuilderPr
       )}
 
       {moving === null ? null : (
-        <div role="dialog" aria-label={`Move ${nameOf(moving.node)}`} data-formancy-part="move-palette">
+        <div role="dialog" aria-label={`Move ${nameOf(view.document, moving.node.def)}`} data-formancy-part="move-palette">
           <ul>
             {moving.targets.map((target) => (
               <li key={`${target.location.parent.join('.')}:${String(target.location.index)}`}>
@@ -307,7 +308,4 @@ function labelForType(type: string): string {
   return paletteEntries().find((entry) => entry.type === type)?.title ?? type
 }
 
-function nameOf(node: TreeNode): string {
-  const label = node.def.label
-  return typeof label === 'string' && label !== '' ? label : node.def.key
-}
+

@@ -5,6 +5,7 @@ import type { BuilderSession } from '@formancy/builder-core'
 import { OptionsEditor } from './options-editor.js'
 import { editablePropertiesFor } from './properties.js'
 import type { EditableProperty } from './properties.js'
+import { nameOf } from './tree.js'
 import { useBuilder } from './use-builder.js'
 
 /**
@@ -42,7 +43,7 @@ export function PropertyPanel({ session, keyPath }: PropertyPanelProps): ReactEl
 
   return (
     <div data-formancy-part="property-panel">
-      <h2>{typeof def.label === 'string' && def.label !== '' ? def.label : def.key}</h2>
+      <h2>{nameOf(view.document, def)}</h2>
       <p data-formancy-part="property-panel-type">{def.type}</p>
 
       {properties.map((property) => (

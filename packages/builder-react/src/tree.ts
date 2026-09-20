@@ -1,3 +1,4 @@
+import { resolveText } from '@formancy/spec'
 import type { FieldDef, FormSchema } from '@formancy/spec'
 import type { Location } from '@formancy/builder-core'
 
@@ -44,12 +45,18 @@ export function flatten(schema: FormSchema): TreeNode[] {
   return nodes
 }
 
-/** What a person should call this field. Its label, or its key if it has none. */
-function nameOf(def: FieldDef): string {
-  const label = def.label
-  if (typeof label === 'string' && label !== '') return label
-  // A message reference cannot be resolved here without a locale, and the
-  // builder edits the document rather than renders it. The key is honest.
+/**
+ * What a person should call this field.
+ *
+ * A label may be a reference into the message catalogue, and a builder that
+ * fell back to the key for those would show `items.qty` as `qty` the moment a
+ * form was translated — which is precisely the form whose structure is hardest
+ * to read. Resolved in the document's default locale, because that is the one
+ * the spec guarantees is complete.
+ */
+export function nameOf(schema: FormSchema, def: FieldDef): string {
+  const resolved = resolveText(schema, def.label, schema.i18n?.defaultLocale ?? '')
+  if (resolved !== undefined && resolved !== '') return resolved
   return def.key
 }
 
@@ -99,7 +106,7 @@ export function describeTarget(
   moving?: readonly string[],
 ): string {
   const container = containerAt(schema, location.parent)
-  const where = container === undefined ? schema.title : nameOf(container)
+  const where = container === undefined ? schema.title : nameOf(schema, container)
 
   const movingKey = moving?.[moving.length - 1]
   const fromSameContainer =
@@ -116,7 +123,7 @@ export function describeTarget(
   const before = siblings[location.index - 1]
   const after = siblings[location.index]
 
-  if (before === undefined) return `${where}, before ${nameOf(after!)}`
-  if (after === undefined) return `${where}, after ${nameOf(before)}`
-  return `${where}, between ${nameOf(before)} and ${nameOf(after)}`
+  if (before === undefined) return `${where}, before ${nameOf(schema, after!)}`
+  if (after === undefined) return `${where}, after ${nameOf(schema, before)}`
+  return `${where}, between ${nameOf(schema, before)} and ${nameOf(schema, after)}`
 }

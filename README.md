@@ -104,12 +104,24 @@ pnpm --filter @formancy/admin dev       # admin on :4382 (proxies /api)
 pnpm --filter @formancy/playground dev  # playground on :4381
 ```
 
-The admin is the v0.1 cut: a schema editor with live preview, publish, version
+The admin has a **build** tab — the keyboard-driven builder in a three-pane
+inspector, beside a live preview — plus the raw schema editor, publish, version
 history, and submissions with a CSV export whose columns are unioned across
-schema versions. The playground is the one-screen demo — schema on the left,
-the live form in the middle, the engine's actual state on the right — with a
-theme switcher, because two themes that look like unrelated products are how
-the headless claim gets falsified rather than asserted.
+schema versions.
+
+The playground is the one-screen demo: schema or builder on the left, the live
+form in the middle, the engine's actual state on the right. Two switchers, and
+neither is decoration.
+
+**Theme** proves the headless claim: the renderers ship no CSS, and two themes
+that look like unrelated products swap live with no remount and no component
+change.
+
+**Language** proves the i18n section. The demo form's labels are `$t`
+references into three catalogues, and French is deliberately incomplete —
+switch to it and most of the form is French while three labels stay English,
+because a missing translation falls back to the default locale rather than
+printing a message id at somebody.
 
 ## Documentation
 

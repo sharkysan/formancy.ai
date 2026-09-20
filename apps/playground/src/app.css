@@ -275,3 +275,69 @@ body {
     border-block-end: 1px solid var(--pg-rule);
   }
 }
+
+/* --------------------------------------------------- the schema / build tabs */
+
+.pane.editor > h2 {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.375rem 0.5rem;
+}
+
+.pane.editor > h2 .mode {
+  font: inherit;
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  color: var(--pg-muted);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  padding: 0.1875rem 0.5rem;
+  cursor: pointer;
+}
+
+.pane.editor > h2 .mode[aria-pressed='true'] {
+  background: #fff;
+  border-color: var(--pg-rule);
+  color: var(--pg-ink);
+}
+
+.pane.editor > h2 .mode:focus-visible {
+  outline: 2px solid var(--pg-signal);
+  outline-offset: 1px;
+}
+
+/* A hidden pane must not keep its height, or the visible one is pushed off. */
+.pane .body[hidden] {
+  display: none;
+}
+
+/* The builder inside the playground's left pane: one column rather than the
+   admin's three, because it is sharing a column with the JSON editor. */
+.builder-pane {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.75rem;
+}
+
+.builder-tools {
+  display: flex;
+  gap: 0.375rem;
+}
+
+.builder-tools button {
+  font: inherit;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.625rem;
+  border: 1px solid var(--pg-rule);
+  border-radius: 3px;
+  background: #fff;
+  color: var(--pg-ink);
+  cursor: pointer;
+}
+
+.builder-tools button:disabled {
+  color: var(--pg-muted);
+  opacity: 0.6;
+  cursor: not-allowed;
+}

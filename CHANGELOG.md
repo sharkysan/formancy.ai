@@ -153,10 +153,13 @@ opt-in; the management plane requires a session or an API key and runs
 
 ### Applications
 
-- **Admin** — schema editor with live preview, publish, version history,
-  submissions, CSV export.
-- **Playground** — schema on the left, the live form in the middle, the engine's
-  actual state on the right, with the theme switcher.
+- **Admin** — the builder in a three-pane inspector with live preview, plus a
+  raw schema editor, publish, version history, submissions and CSV export.
+- **Playground** — schema *or* the builder on the left, the live form in the
+  middle, the engine's actual state on the right. A theme switcher that proves
+  the renderers ship no CSS, and a language switcher over a demo form written
+  in `$t` references with a deliberately partial French catalogue, so the
+  fallback to the default locale is visible rather than claimed.
 - **Docs** — Astro Starlight; the spec reference is generated from the JSON
   Schema.
 

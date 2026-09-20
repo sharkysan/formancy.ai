@@ -146,6 +146,10 @@ label points at a message nobody wrote, because the failure mode is
 some other locale falls back to the default** rather than showing the id: an
 untranslated label is a small problem, a message id on screen is a large one.
 
+You can see this in the playground: its demo form is written entirely in
+references, and its language switcher includes a deliberately half-finished
+French catalogue so the fallback is visible rather than described.
+
 Resolution happens in the engine, not in each renderer:
 
 ```ts

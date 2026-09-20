@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import type { FormSchema } from '@formancy/spec'
-import { describeTarget, flatten } from './tree.js'
+import { describeTarget, flatten, nameOf } from './tree.js'
 
 const schema: FormSchema = {
   specVersion: '1',
@@ -140,5 +140,53 @@ describe('describeTarget when a field is being moved', () => {
     }
 
     expect(describeTarget(solo, { parent: [], index: 0 }, ['only'])).toBe('Order, before Bag')
+  })
+})
+
+/**
+ * A translated form is the one whose structure is hardest to read, so it is the
+ * one the builder must not fall back to keys on.
+ */
+describe('a form written in message references', () => {
+  const translated: FormSchema = {
+    specVersion: '1',
+    id: 'order',
+    title: 'Order',
+    model: {
+      fields: [
+        { key: 'customer', type: 'text', label: { $t: 'customer' } },
+        { key: 'qty', type: 'number', label: { $t: 'qty' } },
+        { key: 'nameless', type: 'text' },
+      ],
+    },
+    i18n: {
+      defaultLocale: 'en',
+      messages: {
+        en: { customer: 'Customer', qty: 'Quantity' },
+        de: { customer: 'Kundin oder Kunde', qty: 'Menge' },
+      },
+    },
+  }
+
+  test('the tree shows the words, not the message ids or the keys', () => {
+    expect(flatten(translated).map((node) => nameOf(translated, node.def))).toEqual([
+      'Customer',
+      'Quantity',
+      // No label at all, so the key is the honest answer.
+      'nameless',
+    ])
+  })
+
+  test('destinations name the fields the same way', () => {
+    expect(describeTarget(translated, { parent: [], index: 1 })).toBe(
+      'Order, between Customer and Quantity',
+    )
+  })
+
+  test('resolved in the default locale, which the spec guarantees is complete', () => {
+    // Not the browser's locale and not a parameter: the builder edits one
+    // document, and the default locale is the only one every reference is
+    // required to resolve in.
+    expect(nameOf(translated, translated.model.fields[0]!)).toBe('Customer')
   })
 })
