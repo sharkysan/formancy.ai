@@ -123,6 +123,7 @@ record whose only enforcement is "we remember" says so plainly.
 | [0030](0030-never-trust-client-state.md) | Recompute every derived value on the server | accepted |
 | [0031](0031-enumeration-resistant-login.md) | Make a failed login indistinguishable from an unknown user | accepted |
 | [0032](0032-csv-formula-neutralisation.md) | Neutralise formulas in exported CSV | accepted |
+| [0044](0044-access-outside-the-document.md) | Who may submit is a property of the deployment, not of the document | accepted |
 
 ### Verification
 

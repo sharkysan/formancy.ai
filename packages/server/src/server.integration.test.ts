@@ -81,6 +81,30 @@ describe('the walking skeleton, end to end', () => {
     schemaHash = body.schemaHash
   })
 
+  test('a freshly published form refuses anonymous submissions', async () => {
+    // Before opening it below. A form is private the moment it exists, and the
+    // rest of this suite only works because the next test says otherwise.
+    const response = await app.inject({
+      method: 'POST',
+      url: '/f/contact-us/submissions',
+      headers: { [SCHEMA_HASH_HEADER]: schemaHash },
+      payload: { email: 'a@b.ch' },
+    })
+
+    expect(response.statusCode).toBe(403)
+  })
+
+  test('opening the form to the public is a separate, deliberate act', async () => {
+    const response = await app.inject({
+      method: 'PUT',
+      url: '/f/contact-us/access',
+      headers: asAdmin(),
+      payload: { submit: 'public' },
+    })
+
+    expect(response.statusCode).toBe(204)
+  })
+
   test('resolving returns exactly what was published', async () => {
     const response = await app.inject({ method: 'GET', url: '/f/contact-us' })
 

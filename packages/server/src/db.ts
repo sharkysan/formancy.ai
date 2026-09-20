@@ -15,6 +15,14 @@ export const forms = pgTable('forms', {
   id: uuid('id').primaryKey(),
   path: text('path').notNull().unique(),
   currentVersionId: uuid('current_version_id'),
+  // Defaults to the safe value in the DATABASE as well as in the code, so a
+  // row inserted by a migration or a fixture is private unless it says
+  // otherwise. A default of 'public' one refactor away from being forgotten is
+  // how a private form becomes a public one.
+  accessSubmit: text('access_submit').notNull().default('authenticated'),
+  // NULL means no allowlist is in force. An empty array means nothing is
+  // allowed — a different thing, and the reason this is nullable.
+  allowedOrigins: text('allowed_origins').array(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
@@ -82,8 +90,22 @@ export async function bootstrapSchema(sql: postgres.Sql): Promise<void> {
       id uuid PRIMARY KEY,
       path text NOT NULL UNIQUE,
       current_version_id uuid,
+      -- Private by default in the DATABASE, not only in the code, so a row
+      -- inserted by a migration or a fixture is not accidentally open.
+      access_submit text NOT NULL DEFAULT 'authenticated'
+        CHECK (access_submit IN ('authenticated', 'public')),
+      -- NULL: no allowlist in force. Empty array: nothing allowed. Different
+      -- things, which is why this is nullable rather than defaulting to '{}'.
+      allowed_origins text[],
       created_at timestamptz NOT NULL DEFAULT now()
     )`
+  // Existing databases predate the two columns above. Adding them here rather
+  // than in a separate migration keeps bootstrap idempotent for both a fresh
+  // database and one created before access control existed.
+  await sql`
+    ALTER TABLE forms
+      ADD COLUMN IF NOT EXISTS access_submit text NOT NULL DEFAULT 'authenticated'`
+  await sql`ALTER TABLE forms ADD COLUMN IF NOT EXISTS allowed_origins text[]`
   await sql`
     CREATE TABLE IF NOT EXISTS form_versions (
       id uuid PRIMARY KEY,

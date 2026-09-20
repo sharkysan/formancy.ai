@@ -8,6 +8,7 @@ export {
   resolveForm,
   resumeDraft,
   saveDraft,
+  setFormAccess,
 } from './use-cases.js'
 export type {
   DraftMigration,

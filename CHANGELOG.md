@@ -21,9 +21,10 @@ package APIs are pre-alpha and will change before 1.0.
 The packages are **not on npm yet** — the `@formancy` scope is unclaimed. To try
 formancy today, clone the repository.
 
-Do not deploy the server anywhere public. It has authentication and role-based
-authorization, but no rate limiting, no anonymous-submission hardening and no
-audit logging. The route comments say so too.
+Do not deploy the server anywhere public. It has authentication, role-based
+authorization, and a fail-closed access gate on anonymous submission — but no
+rate limiting, no challenge, no submission tokens and no audit logging. The
+route comments say so too.
 
 ### What it does
 
@@ -129,6 +130,12 @@ opt-in; the management plane requires a session or an API key and runs
   never migrate.**
 - Login is enumeration-resistant: a missing user costs the same argon2
   verification as a wrong password.
+- A form is **private until opened**. `PUT /f/:path/access` turns on anonymous
+  submission and optionally pins an origin allowlist, which is matched exactly
+  — a missing `Origin` is refused, and an empty allowlist allows nothing rather
+  than everything. Access is a property of the deployment rather than of the
+  form document, so exporting a form cannot carry "anyone may submit this"
+  across a boundary where it is wrong.
 - CSV export unions columns across every version a form has had, and neutralises
   spreadsheet formulas — type-aware, so a numeric `-5` stays `-5`.
 

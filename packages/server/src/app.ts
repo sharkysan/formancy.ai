@@ -14,6 +14,7 @@ import {
   listVersions,
   publishForm,
   resolveForm,
+  setFormAccess,
   resumeDraft,
   saveDraft,
 } from '@formancy/server-core'
@@ -175,6 +176,35 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
     return reply.code(201).send({ version: outcome.version, schemaHash: outcome.schemaHash })
   })
 
+  app.put('/f/:path/access', { preHandler: requires('form.publish') }, async (request, reply) => {
+    const { path } = request.params as { path: string }
+    const body = request.body as { submit?: unknown; allowedOrigins?: unknown } | null
+
+    const submit = body?.submit
+    if (submit !== 'authenticated' && submit !== 'public') {
+      return reply.code(400).send({
+        error: 'invalid_access',
+        message: 'submit must be "authenticated" or "public".',
+      })
+    }
+
+    const origins = body?.allowedOrigins
+    if (origins !== undefined && !(Array.isArray(origins) && origins.every((o) => typeof o === 'string'))) {
+      return reply.code(400).send({
+        error: 'invalid_access',
+        message: 'allowedOrigins must be an array of strings, or absent for no allowlist.',
+      })
+    }
+
+    const outcome = await setFormAccess(deps, {
+      path,
+      submit,
+      ...(origins === undefined ? {} : { allowedOrigins: origins as string[] }),
+    })
+    if (!outcome.ok) return reply.code(404).send({ error: 'unknown_form' })
+    return reply.code(204).send()
+  })
+
   app.get('/forms', { preHandler: requires('form.read') }, async (_request, reply) => {
     return reply.send({ forms: await listForms(deps) })
   })
@@ -248,10 +278,19 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
       })
     }
 
+    // The public plane is public, so an identity is optional here — but if one
+    // is presented and valid, the access policy does not apply to it. An
+    // invalid credential is treated as no credential rather than as an error:
+    // this route's job is to accept submissions, not to adjudicate logins.
+    const actor = await actorOf(request)
+    const origin = request.headers.origin
+
     const outcome = await createSubmission(deps, {
       path,
       declaredSchemaHash,
       data: request.body ?? {},
+      actor: actor === undefined ? 'anonymous' : 'authenticated',
+      ...(typeof origin === 'string' ? { origin } : {}),
     })
 
     if (outcome.ok) return reply.code(201).send({ id: outcome.id, data: outcome.canonicalData })
@@ -277,6 +316,10 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
         // The identical error shape the client's engine produces, so server
         // errors render through the same code path as local ones.
         return reply.code(422).send({ error: 'invalid', errors: outcome.errors })
+      case 'forbidden':
+        // Deliberately says nothing about WHICH rule refused. "Not public" and
+        // "not from your origin" are the same answer to someone probing.
+        return reply.code(403).send({ error: 'forbidden' })
     }
   })
 

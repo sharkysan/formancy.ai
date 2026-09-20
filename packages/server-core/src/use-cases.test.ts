@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from 'vitest'
 import type { FormSchema } from '@formancy/spec'
-import { createSubmission, exportCsv, listForms, listSubmissions, listVersions, publishForm, resolveForm, resumeDraft, saveDraft } from './use-cases.js'
+import { createSubmission, exportCsv, setFormAccess, listForms, listSubmissions, listVersions, publishForm, resolveForm, resumeDraft, saveDraft } from './use-cases.js'
 import type { ServerDeps } from './use-cases.js'
 import { createMemoryStorage } from './testing/memory-storage.js'
 
@@ -99,6 +99,7 @@ describe('createSubmission', () => {
     const outcome = await createSubmission(deps, {
       path: 'contact-us',
       declaredSchemaHash: published.schemaHash,
+      actor: 'authenticated',
       data: { email: 'a@b.ch' },
     })
 
@@ -116,6 +117,7 @@ describe('createSubmission', () => {
     const outcome = await createSubmission(deps, {
       path: 'contact-us',
       declaredSchemaHash: 'deadbeef',
+      actor: 'authenticated',
       data: { email: 'a@b.ch' },
     })
 
@@ -131,6 +133,7 @@ describe('createSubmission', () => {
     const outcome = await createSubmission(deps, {
       path: 'contact-us',
       declaredSchemaHash: published.schemaHash,
+      actor: 'authenticated',
       data: {},
     })
 
@@ -146,6 +149,7 @@ describe('createSubmission', () => {
     const outcome = await createSubmission(deps, {
       path: 'contact-us',
       declaredSchemaHash: published.schemaHash,
+      actor: 'authenticated',
       data: {
         email: 'a@b.ch',
         country: 'DE',
@@ -167,6 +171,7 @@ describe('createSubmission', () => {
     const outcome = await createSubmission(deps, {
       path: 'ghost',
       declaredSchemaHash: 'x',
+      actor: 'authenticated',
       data: {},
     })
 
@@ -181,11 +186,13 @@ describe('listSubmissions', () => {
     await createSubmission(deps, {
       path: 'contact-us',
       declaredSchemaHash: published.schemaHash,
+      actor: 'authenticated',
       data: { email: 'first@b.ch' },
     })
     await createSubmission(deps, {
       path: 'contact-us',
       declaredSchemaHash: published.schemaHash,
+      actor: 'authenticated',
       data: { email: 'second@b.ch' },
     })
 
@@ -211,6 +218,7 @@ describe('exportCsv', () => {
     await createSubmission(deps, {
       path: 'contact-us',
       declaredSchemaHash: v1.schemaHash,
+      actor: 'authenticated',
       data: { email: 'old@b.ch', country: 'CH', canton: 'ZH' },
     })
 
@@ -233,6 +241,7 @@ describe('exportCsv', () => {
     await createSubmission(deps, {
       path: 'contact-us',
       declaredSchemaHash: v2.schemaHash,
+      actor: 'authenticated',
       data: { email: 'new@b.ch', phone: '+41' },
     })
 
@@ -255,6 +264,7 @@ describe('exportCsv', () => {
     await createSubmission(deps, {
       path: 'contact-us',
       declaredSchemaHash: published.schemaHash,
+      actor: 'authenticated',
       data: { email: 'a@b.ch', country: 'says "hi", twice' },
     })
 
@@ -283,6 +293,7 @@ describe('exportCsv', () => {
     await createSubmission(deps, {
       path: 'orders',
       declaredSchemaHash: published.schemaHash,
+      actor: 'authenticated',
       data: { email: 'a@b.ch', items: [{ name: 'x' }] },
     })
 
@@ -398,11 +409,13 @@ describe('CSV formula injection', () => {
     await createSubmission(deps, {
       path: 'contact-us',
       declaredSchemaHash: published.schemaHash,
+      actor: 'authenticated',
       data: { email: 'a@b.ch', country: '=HYPERLINK("http://evil.example","click")' },
     })
     await createSubmission(deps, {
       path: 'contact-us',
       declaredSchemaHash: published.schemaHash,
+      actor: 'authenticated',
       data: { email: 'b@b.ch', country: '@SUM(1,1)' },
     })
 
@@ -419,6 +432,7 @@ describe('CSV formula injection', () => {
     await createSubmission(deps, {
       path: 'contact-us',
       declaredSchemaHash: published.schemaHash,
+      actor: 'authenticated',
       data: { email: 'c@b.ch', qty: -5.0, price: 2.0 },
     })
 
@@ -457,5 +471,114 @@ describe('catalog reads', () => {
 
   test('listVersions of an unknown form is undefined', async () => {
     expect(await listVersions(deps, 'ghost')).toBeUndefined()
+  })
+})
+
+/**
+ * Who may submit, and from where.
+ *
+ * This lives on the form RECORD rather than in the form document. A document
+ * has to mean the same thing wherever it is moved — embedding "anyone may
+ * submit this" in it would carry a policy across a deployment boundary where
+ * it is wrong, and the spec is a data contract rather than a permission model.
+ *
+ * Fail-closed throughout: a form is private until somebody says otherwise, and
+ * a public form accepts no origin until somebody lists one.
+ */
+describe('public submission access', () => {
+  const publish = async (): Promise<string> => {
+    const published = await publishForm(deps, { path: 'contact-us', schema })
+    if (!published.ok) throw new Error('publish failed')
+    return published.schemaHash
+  }
+
+  const submit = async (
+    hash: string,
+    context?: { actor?: 'anonymous' | 'authenticated'; origin?: string },
+  ): ReturnType<typeof createSubmission> =>
+    createSubmission(deps, {
+      path: 'contact-us',
+      declaredSchemaHash: hash,
+      data: { email: 'a@b.ch' },
+      actor: context?.actor ?? 'anonymous',
+      ...(context?.origin === undefined ? {} : { origin: context.origin }),
+    })
+
+  test('a new form refuses anonymous submissions, because the default must be the safe one', async () => {
+    const hash = await publish()
+
+    const outcome = await submit(hash)
+
+    expect(outcome).toMatchObject({ ok: false, kind: 'forbidden' })
+  })
+
+  test('an authenticated actor is unaffected by the public setting', async () => {
+    const hash = await publish()
+
+    expect(await submit(hash, { actor: 'authenticated' })).toMatchObject({ ok: true })
+  })
+
+  test('opening a form to the public lets an anonymous submission through', async () => {
+    const hash = await publish()
+    await setFormAccess(deps, { path: 'contact-us', submit: 'public' })
+
+    expect(await submit(hash)).toMatchObject({ ok: true })
+  })
+
+  test('an origin allowlist, once set, refuses everything not on it', async () => {
+    const hash = await publish()
+    await setFormAccess(deps, {
+      path: 'contact-us',
+      submit: 'public',
+      allowedOrigins: ['https://example.ch'],
+    })
+
+    expect(await submit(hash, { origin: 'https://example.ch' })).toMatchObject({ ok: true })
+    expect(await submit(hash, { origin: 'https://evil.example' })).toMatchObject({
+      ok: false,
+      kind: 'forbidden',
+    })
+  })
+
+  test('a request with no Origin header is refused once an allowlist exists', async () => {
+    const hash = await publish()
+    await setFormAccess(deps, {
+      path: 'contact-us',
+      submit: 'public',
+      allowedOrigins: ['https://example.ch'],
+    })
+
+    // Absent is not the same as allowed. A caller that sends no Origin is
+    // either not a browser or is hiding, and neither is on the list.
+    expect(await submit(hash)).toMatchObject({ ok: false, kind: 'forbidden' })
+  })
+
+  test('an empty allowlist means no origin is allowed, not every origin', async () => {
+    const hash = await publish()
+    await setFormAccess(deps, { path: 'contact-us', submit: 'public', allowedOrigins: [] })
+
+    expect(await submit(hash, { origin: 'https://example.ch' })).toMatchObject({
+      ok: false,
+      kind: 'forbidden',
+    })
+  })
+
+  test('origins are compared exactly, so a suffix match cannot be smuggled', async () => {
+    const hash = await publish()
+    await setFormAccess(deps, {
+      path: 'contact-us',
+      submit: 'public',
+      allowedOrigins: ['https://example.ch'],
+    })
+
+    for (const origin of [
+      'https://evil-example.ch',
+      'https://example.ch.evil.test',
+      'http://example.ch',
+      'https://example.ch:8443',
+      'https://EXAMPLE.ch/',
+    ]) {
+      expect(await submit(hash, { origin }), origin).toMatchObject({ ok: false })
+    }
   })
 })

@@ -18,6 +18,11 @@ export function createMemoryStorage(): Storage {
 
     listForms: async () => [...forms.values()].map((form) => ({ ...form })),
 
+    updateFormAccess: async (formId, access) => {
+      const form = forms.get(formId)
+      if (form !== undefined) forms.set(formId, { ...form, ...access })
+    },
+
     createForm: async (record) => {
       forms.set(record.id, { ...record })
     },

@@ -198,7 +198,10 @@ therefore **wrong behind more than one replica**.
 ### C2. A submission is read by someone not entitled to it
 
 *Constraint:* one table-driven `can(actor, action, resource)` function; the
-management plane requires authentication and the public plane is separate.
+management plane requires authentication and the public plane is separate. A
+form is **private until opened**, and an origin allowlist — when set — is
+matched exactly, with a missing `Origin` header refused
+([0044](../decisions/0044-access-outside-the-document.md)).
 
 *Residual:* **v0.1 has no multi-tenancy**. Authorisation is per-user and
 per-form, and there is no tenant boundary. A deployment serving more than one

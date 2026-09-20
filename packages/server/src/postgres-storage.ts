@@ -15,7 +15,13 @@ export function createPostgresStorage(sql: postgres.Sql): Storage {
       const rows = await db.select().from(forms).where(eq(forms.path, path)).limit(1)
       const row = rows[0]
       if (row === undefined) return undefined
-      return { id: row.id, path: row.path, currentVersionId: row.currentVersionId }
+      return {
+        id: row.id,
+        path: row.path,
+        currentVersionId: row.currentVersionId,
+        accessSubmit: row.accessSubmit === 'public' ? 'public' : 'authenticated',
+        allowedOrigins: row.allowedOrigins,
+      }
     },
 
     async listForms() {
@@ -24,6 +30,8 @@ export function createPostgresStorage(sql: postgres.Sql): Storage {
         id: row.id,
         path: row.path,
         currentVersionId: row.currentVersionId,
+        accessSubmit: row.accessSubmit === 'public' ? ('public' as const) : ('authenticated' as const),
+        allowedOrigins: row.allowedOrigins,
       }))
     },
 
@@ -32,7 +40,16 @@ export function createPostgresStorage(sql: postgres.Sql): Storage {
         id: record.id,
         path: record.path,
         currentVersionId: record.currentVersionId,
+        accessSubmit: record.accessSubmit,
+        allowedOrigins: record.allowedOrigins,
       })
+    },
+
+    async updateFormAccess(formId, access) {
+      await db
+        .update(forms)
+        .set({ accessSubmit: access.accessSubmit, allowedOrigins: access.allowedOrigins })
+        .where(eq(forms.id, formId))
     },
 
     async setCurrentVersion(formId, versionId) {

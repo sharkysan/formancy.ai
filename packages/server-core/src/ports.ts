@@ -10,6 +10,22 @@ export interface FormRecord {
   id: string
   path: string
   currentVersionId: string | null
+  /**
+   * Who may submit. Deliberately NOT part of the form document: a document has
+   * to mean the same thing wherever it is moved, and carrying "anyone may
+   * submit this" across a deployment boundary is how a private form becomes a
+   * public one by accident.
+   *
+   * Defaults to `authenticated`. The safe value is the default because the
+   * unsafe one should require somebody to have said it.
+   */
+  accessSubmit: 'authenticated' | 'public'
+  /**
+   * Origins allowed to submit anonymously. `null` means no allowlist is in
+   * force; an empty array means nothing is allowed, which is not the same
+   * thing and is why this is not just an array.
+   */
+  allowedOrigins: string[] | null
 }
 
 export interface FormVersionRecord {
@@ -59,6 +75,10 @@ export interface Storage {
   getFormByPath(path: string): Promise<FormRecord | undefined>
   listForms(): Promise<FormRecord[]>
   createForm(record: FormRecord): Promise<void>
+  updateFormAccess(
+    formId: string,
+    access: Pick<FormRecord, 'accessSubmit' | 'allowedOrigins'>,
+  ): Promise<void>
   setCurrentVersion(formId: string, versionId: string): Promise<void>
   insertVersion(record: FormVersionRecord): Promise<void>
   getVersionById(id: string): Promise<FormVersionRecord | undefined>

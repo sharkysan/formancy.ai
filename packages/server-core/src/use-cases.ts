@@ -4,7 +4,7 @@ import { validateSchema } from '@formancy/spec/validate'
 import type { SchemaError } from '@formancy/spec/validate'
 import { createFormEngine } from '@formancy/core'
 import type { CapabilitySource } from '@formancy/core'
-import type { Storage } from './ports.js'
+import type { FormRecord, Storage } from './ports.js'
 
 /**
  * The backend's use-cases, framework-free.
@@ -86,7 +86,15 @@ export async function publishForm(
 
   const formId = deps.newId()
   const versionId = deps.newId()
-  await deps.storage.createForm({ id: formId, path: input.path, currentVersionId: null })
+  await deps.storage.createForm({
+    id: formId,
+    path: input.path,
+    currentVersionId: null,
+    // A newly published form is private. Opening it is a separate, deliberate
+    // act through setFormAccess.
+    accessSubmit: 'authenticated',
+    allowedOrigins: null,
+  })
   await deps.storage.insertVersion({ id: versionId, formId, version: 1, schema, schemaHash: hash })
   await deps.storage.setCurrentVersion(formId, versionId)
   return { ok: true, formId, versionId, version: 1, schemaHash: hash }
@@ -119,6 +127,8 @@ export type SubmissionOutcome =
   | { ok: false; kind: 'unknown_form' }
   | { ok: false; kind: 'version_changed'; current?: ResolvedForm }
   | { ok: false; kind: 'invalid'; errors: Record<string, string[]> }
+  /** The caller may not submit this form: not public, or not from this origin. */
+  | { ok: false; kind: 'forbidden' }
 
 /**
  * Accept one submission: resolve the version the client says it rendered,
@@ -129,10 +139,71 @@ export type SubmissionOutcome =
  * are stripped, so a client cannot smuggle data by lying about what was shown.
  * Client validation is UX; this is truth.
  */
+/**
+ * Change who may submit a form, and from where.
+ *
+ * Separate from publishing on purpose: access is a property of the deployment,
+ * and changing it must not mint a new immutable form version or invalidate the
+ * schema hash every client is holding.
+ */
+export async function setFormAccess(
+  deps: ServerDeps,
+  input: { path: string; submit: 'authenticated' | 'public'; allowedOrigins?: string[] },
+): Promise<{ ok: boolean }> {
+  const form = await deps.storage.getFormByPath(input.path)
+  if (form === undefined) return { ok: false }
+
+  await deps.storage.updateFormAccess(form.id, {
+    accessSubmit: input.submit,
+    allowedOrigins: input.allowedOrigins ?? null,
+  })
+  return { ok: true }
+}
+
+/**
+ * Whether this caller may submit this form at all, before any of the work.
+ *
+ * Every branch that is not an explicit permission returns false. An allowlist
+ * that exists but does not name the origin refuses; an origin header that is
+ * absent refuses, because absent is not the same as allowed; an empty
+ * allowlist refuses everything, because a list of no origins is a list.
+ */
+function maySubmit(
+  form: FormRecord,
+  actor: 'anonymous' | 'authenticated',
+  origin: string | undefined,
+): boolean {
+  if (actor === 'authenticated') return true
+  if (form.accessSubmit !== 'public') return false
+
+  const allowed = form.allowedOrigins
+  if (allowed === null) return true
+  if (origin === undefined) return false
+
+  // Exact match, never a prefix or suffix one: `https://evil-example.ch` ends
+  // with the same characters as `example.ch` and must not pass, and
+  // `https://example.ch:8443` is a different origin from `https://example.ch`.
+  return allowed.includes(origin)
+}
+
 export async function createSubmission(
   deps: ServerDeps,
-  input: { path: string; declaredSchemaHash: string; data: unknown },
+  input: {
+    path: string
+    declaredSchemaHash: string
+    data: unknown
+    /** Defaults to anonymous: the caller must prove otherwise, not the reverse. */
+    actor?: 'anonymous' | 'authenticated'
+    origin?: string
+  },
 ): Promise<SubmissionOutcome> {
+  const form = await deps.storage.getFormByPath(input.path)
+  if (form === undefined) return { ok: false, kind: 'unknown_form' }
+
+  if (!maySubmit(form, input.actor ?? 'anonymous', input.origin)) {
+    return { ok: false, kind: 'forbidden' }
+  }
+
   const current = await resolveForm(deps, input.path)
   if (current === undefined) return { ok: false, kind: 'unknown_form' }
 
