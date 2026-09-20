@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import Fastify from 'fastify'
+import rateLimit from '@fastify/rate-limit'
 import type { FastifyInstance, FastifyRequest, preHandlerHookHandler } from 'fastify'
 import {
   authenticateApiKey,
@@ -33,6 +34,22 @@ export interface AppOptions {
    * into a running installation.
    */
   bootstrapAdmin?: { email: string; password: string }
+  /**
+   * Anonymous submissions allowed per IP per minute. Off in tests by setting
+   * it high; a real deployment should leave the default.
+   *
+   * NOTE: @fastify/rate-limit's default store is in-memory and therefore
+   * PER PROCESS. Behind more than one replica this counts a fraction of the
+   * traffic and silently permits N times the limit. A multi-replica
+   * deployment must supply a shared store.
+   */
+  submissionRateLimit?: { max: number; timeWindowMs: number }
+  /**
+   * Largest accepted request body, in bytes. A structural cap BEFORE parsing:
+   * the JSON parser should never be handed something enormous in the first
+   * place, whatever the schema says afterwards.
+   */
+  bodyLimitBytes?: number
 }
 
 /**
@@ -51,7 +68,16 @@ export interface AppOptions {
  * injected and replayable.
  */
 export async function createApp(storage: Storage, options: AppOptions): Promise<FastifyInstance> {
-  const app = Fastify({ logger: false })
+  // 256 kB by default. Large enough for a long form with a repeater, small
+  // enough that a request cannot cost meaningful memory before it is rejected.
+  const app = Fastify({ logger: false, bodyLimit: options.bodyLimitBytes ?? 256 * 1024 })
+
+  const submissionLimit = options.submissionRateLimit ?? { max: 30, timeWindowMs: 60_000 }
+  await app.register(rateLimit, {
+    global: false, // opted into per route: the management plane is authenticated
+    max: submissionLimit.max,
+    timeWindow: submissionLimit.timeWindowMs,
+  })
 
   const deps: ServerDeps = {
     storage,
@@ -268,7 +294,15 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
     return reply.send(resumed)
   })
 
-  app.post('/f/:path/submissions', async (request, reply) => {
+  app.post(
+    '/f/:path/submissions',
+    {
+      // The one unauthenticated write in the product, so the one that needs
+      // this most. Keyed by IP, which is the only identity an anonymous
+      // submitter has.
+      config: { rateLimit: { max: submissionLimit.max, timeWindow: submissionLimit.timeWindowMs } },
+    },
+    async (request, reply) => {
     const { path } = request.params as { path: string }
     const declaredSchemaHash = request.headers[SCHEMA_HASH_HEADER]
     if (typeof declaredSchemaHash !== 'string' || declaredSchemaHash === '') {
@@ -321,7 +355,8 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
         // "not from your origin" are the same answer to someone probing.
         return reply.code(403).send({ error: 'forbidden' })
     }
-  })
+    },
+  )
 
   return app
 }

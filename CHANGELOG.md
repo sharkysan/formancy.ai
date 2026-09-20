@@ -22,9 +22,9 @@ The packages are **not on npm yet** — the `@formancy` scope is unclaimed. To t
 formancy today, clone the repository.
 
 Do not deploy the server anywhere public. It has authentication, role-based
-authorization, and a fail-closed access gate on anonymous submission — but no
-rate limiting, no challenge, no submission tokens and no audit logging. The
-route comments say so too.
+authorization, a fail-closed access gate on anonymous submission, per-IP rate
+limiting and a request body cap — but no challenge, no submission tokens and no
+audit logging. The route comments say so too.
 
 ### What it does
 
@@ -136,6 +136,10 @@ opt-in; the management plane requires a session or an API key and runs
   than everything. Access is a property of the deployment rather than of the
   form document, so exporting a form cannot carry "anyone may submit this"
   across a boundary where it is wrong.
+- The public submission route is **rate limited per IP** — 30 a minute by
+  default — and counts attempts rather than successes, so a refused request
+  still costs an attacker their budget. Requests are capped at 256 kB before
+  the JSON parser sees them.
 - CSV export unions columns across every version a form has had, and neutralises
   spreadsheet formulas — type-aware, so a numeric `-5` stays `-5`.
 

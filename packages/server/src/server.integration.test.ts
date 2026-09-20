@@ -53,6 +53,9 @@ beforeAll(async () => {
   app = await createApp(createPostgresStorage(sql), {
     authSecret: 'integration-test-secret-with-length',
     bootstrapAdmin: { email: 'root@test.ch', password: 'root-password-1' },
+    // High enough that the rest of the suite is never throttled by it. The
+    // limit has its own app below, with its own budget.
+    submissionRateLimit: { max: 10_000, timeWindowMs: 60_000 },
   })
   const login = await app.inject({
     method: 'POST',
@@ -377,5 +380,62 @@ describe('the two planes', () => {
   test('the public plane needs no identity: resolve, submit, drafts', async () => {
     const resolved = await app.inject({ method: 'GET', url: '/f/contact-us' })
     expect(resolved.statusCode).toBe(200)
+  })
+})
+
+/**
+ * The one unauthenticated write in the product. Without a limit, a public form
+ * is an open endpoint that writes a database row per request.
+ */
+describe('rate limiting the public plane', () => {
+  test('a burst past the limit is refused, and says so as 429', async () => {
+    const throttled = await createApp(createPostgresStorage(sql), {
+      authSecret: 'integration-test-secret-with-length',
+      submissionRateLimit: { max: 2, timeWindowMs: 60_000 },
+    })
+
+    try {
+      const post = async (): Promise<number> =>
+        (
+          await throttled.inject({
+            method: 'POST',
+            url: '/f/contact-us/submissions',
+            headers: { [SCHEMA_HASH_HEADER]: 'whatever' },
+            payload: { email: 'a@b.ch' },
+          })
+        ).statusCode
+
+      // The status of the first two does not matter — they are refused for
+      // other reasons. What matters is that they are COUNTED, so the limit
+      // applies to attempts rather than to successes. A limiter that only
+      // counted accepted submissions would not slow an attacker down at all.
+      await post()
+      await post()
+
+      expect(await post()).toBe(429)
+    } finally {
+      await throttled.close()
+    }
+  })
+
+  test('a body larger than the cap is refused before it is parsed', async () => {
+    const tiny = await createApp(createPostgresStorage(sql), {
+      authSecret: 'integration-test-secret-with-length',
+      bodyLimitBytes: 1024,
+      submissionRateLimit: { max: 10_000, timeWindowMs: 60_000 },
+    })
+
+    try {
+      const response = await tiny.inject({
+        method: 'POST',
+        url: '/f/contact-us/submissions',
+        headers: { [SCHEMA_HASH_HEADER]: 'whatever' },
+        payload: { email: 'a'.repeat(4096) },
+      })
+
+      expect(response.statusCode).toBe(413)
+    } finally {
+      await tiny.close()
+    }
   })
 })

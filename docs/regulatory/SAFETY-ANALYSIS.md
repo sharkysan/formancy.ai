@@ -191,9 +191,11 @@ leading apostrophe.
 exists, so both paths do the same work and return the same error
 ([0031](../decisions/0031-enumeration-resistant-login.md)).
 
-*Residual:* rate limiting on the login endpoint is a deployment
-responsibility, and `@fastify/rate-limit`'s default store is per-process and
-therefore **wrong behind more than one replica**.
+*Residual:* the login endpoint itself is **not** rate limited — only anonymous
+submission is — so an attacker can still grind passwords at whatever rate the
+network allows. And `@fastify/rate-limit`'s default store is per-process, so
+behind more than one replica every limit counts a fraction of the traffic and
+permits a multiple of what it says.
 
 ### C2. A submission is read by someone not entitled to it
 
