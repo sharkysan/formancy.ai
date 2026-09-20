@@ -62,6 +62,25 @@ version history and submissions with a CSV export whose columns are unioned
 across schema versions. The playground is the one-screen demo: schema on the
 left, the live form in the middle, the engine's actual state on the right.
 
+## Documentation
+
+Two sets, for two different questions.
+
+**How to use it** — [`apps/docs`](./apps/docs), an Astro Starlight site with
+quickstarts for React and Angular, the concepts, and a spec reference generated
+from the JSON Schema.
+
+**Why it is built this way** — [`docs/`](./docs):
+
+- [Architecture](./docs/README.md#architecture), arc42-shaped. Start with
+  [the five ideas everything else follows from](./docs/architecture/04-solution-strategy.md).
+- [Forty decision records](./docs/decisions/), each naming what would fail if
+  the decision were violated — or saying plainly that nothing would.
+- [Regulatory material](./docs/regulatory/MDR-CONTEXT.md) for anyone
+  incorporating formancy into a product that has to answer to a regulator.
+  formancy is not a medical device and claims no conformity; the documents say
+  what they are and what they are not.
+
 ## License
 
 Apache-2.0. See [LICENSE](./LICENSE) and [NOTICE](./NOTICE).
