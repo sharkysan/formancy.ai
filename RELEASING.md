@@ -55,10 +55,55 @@ This is the signing story for the packages themselves. There is no private key,
 because there is no key at all — the identity is the workflow's OIDC token,
 which cannot be leaked or lost.
 
-**Requirements**, all already in place: the repository is public, every
-manifest carries a `repository` field matching it, and publishing happens from
-GitHub Actions. The only secret is `NPM_TOKEN`, which must be an automation
-token on an account with publish rights to the `@formancy` scope.
+**Requirements**: the repository is public, every manifest carries a
+`repository` field matching it, and publishing happens from GitHub Actions. All
+three are in place.
+
+### The token, which is the part that bites
+
+The only secret is `NPM_TOKEN`, and **its type matters more than its
+permissions**.
+
+npm accounts set to `auth-and-writes` two-factor authentication demand a
+one-time password for every publish. A classic **Publish** token does not
+bypass that, so CI fails with:
+
+```
+Error: ERR_PNPM_OTP_NON_INTERACTIVE
+  × The registry requires additional authentication, but pnpm is not running
+  │ in an interactive terminal
+```
+
+— and it fails *after* the whole gate has run, because publishing is the last
+thing that happens. Use one of these instead, both of which bypass 2FA:
+
+- a classic **Automation** token, or
+- a **Granular Access Token** with read-and-write on the `@formancy` scope.
+
+Neither can be created from the CLI — `npm token create` only offers
+`--read-only` and `--cidr`. They are made at
+[npmjs.com/settings/~/tokens](https://www.npmjs.com/settings/~/tokens).
+
+A preflight step checks the token authenticates before anything is built, and
+warns if the account enforces 2FA on writes, so this is a ten-second failure
+rather than an eight-minute one.
+
+### The OIDC warning is not a problem
+
+pnpm tries npm's **trusted publishing** first and logs this when it is not
+configured:
+
+```
+[WARN] Skipped OIDC: ERR_PNPM_AUTH_TOKEN_EXCHANGE: Failed token exchange
+request with body message: Unknown error (status code 404)
+```
+
+It then falls back to `NODE_AUTH_TOKEN`, which is the intended path today.
+
+Trusted publishing is the better destination — it removes the token entirely,
+so there is no secret to rotate or leak — but it is configured per package on
+npmjs.com against an existing package. Worth setting up once the first release
+has landed.
 
 ## The SBOM
 

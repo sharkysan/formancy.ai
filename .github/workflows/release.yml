@@ -31,6 +31,31 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # Before anything expensive. A token problem discovered after eight
+      # minutes of build and test is the same token problem, found later.
+      - name: The npm token must work, and must not want an OTP
+        run: |
+          if [ -z "${NODE_AUTH_TOKEN}" ]; then
+            echo "::error::NPM_TOKEN is not set on this repository"
+            exit 1
+          fi
+          WHO=$(npm whoami 2>&1) || {
+            echo "::error::npm rejected the token: ${WHO}"
+            exit 1
+          }
+          echo "Authenticated as ${WHO}"
+          # A classic "Publish" token on an account set to auth-and-writes
+          # demands a one-time password for every publish, and CI has no
+          # terminal to type one into — it fails with ERR_PNPM_OTP_NON_INTERACTIVE
+          # AFTER the whole gate has run. Automation and granular tokens bypass
+          # 2FA; this is the cheap way to notice which one is in the secret.
+          if npm profile get 2>/dev/null | grep -q "auth-and-writes"; then
+            echo "::warning::Account enforces 2FA on writes. The token must be an \
+          Automation or Granular Access token, or publish will fail. See RELEASING.md."
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
       # The tag is the claim; this checks the repository agrees with it. A tag
       # that says v0.1.0 on a tree that says 0.2.0 would publish the wrong
       # version under the right name, which is unfixable after the fact.
