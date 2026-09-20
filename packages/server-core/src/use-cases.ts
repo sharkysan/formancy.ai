@@ -236,13 +236,36 @@ export async function createSubmission(
   if (!outcome.ok) return { ok: false, kind: 'invalid', errors: outcome.errors }
 
   const id = deps.newId()
+
+  // Queued in the SAME call that stores the submission, so one COMMIT decides
+  // both. Posting after the insert returns gives the two failures a
+  // self-hoster cannot debug: the webhook fired and the submission rolled
+  // back, or the submission is stored and nothing was ever sent.
+  const hooks = await deps.storage.webhooksForForm(current.formId)
+  // The CANONICAL value, not the request body: the receiver sees what was
+  // stored, with computed fields recomputed and hidden branches stripped.
+  const body = JSON.stringify({ id, form: input.path, data: engine.value() })
+  const queued = hooks.map((hook) => ({
+    id: deps.newId(),
+    webhookId: hook.id,
+    submissionId: id,
+    // Stable for every retry of this delivery, which is what lets a receiver
+    // dedupe. A fresh id per attempt would turn our retry into their duplicate.
+    eventId: deps.newId(),
+    body,
+    attempt: 0,
+    nextAttemptAt: deps.nowIso(),
+    state: 'pending' as const,
+    lastError: null,
+  }))
+
   await deps.storage.insertSubmission({
     id,
     formId: current.formId,
     formVersionId: current.versionId,
     data: engine.value(),
     submittedAt: deps.nowIso(),
-  })
+  }, queued)
   return { ok: true, id, canonicalData: engine.value() }
 }
 

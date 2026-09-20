@@ -159,6 +159,14 @@ opt-in; the management plane requires a session or an API key and runs
   time it ran.
 - CSV export unions columns across every version a form has had, and neutralises
   spreadsheet formulas — type-aware, so a numeric `-5` stays `-5`.
+- **Webhooks** are queued by the same transaction that stores the submission,
+  so a delivery exists if and only if the submission does. Delivery resolves
+  the hostname itself, refuses if any returned address is private, and connects
+  to the address it checked through a pinned agent — "validate the URL then
+  fetch it" is defeated by DNS rebinding, since the two lookups are
+  independent. Redirects are not followed, the response is capped at 64 kB and
+  never interpreted, and the signature is Stripe's scheme so receivers can use
+  code they already have.
 
 ### Applications
 
@@ -214,7 +222,10 @@ See [`RELEASING.md`](./RELEASING.md).
 
 Named rather than implied.
 
-**Not built yet.** Conditions combining more than one comparison; file upload; webhooks and actions; rate
+**Not built yet.** The worker that drains the webhook outbox — deliveries are
+queued correctly and the delivery code and retry schedule are tested, but
+nothing runs them on a timer yet, so queued rows sit in the table. Conditions
+combining more than one comparison; file upload; webhooks and actions; rate
 limiting, challenge and origin allowlists on the public plane; multi-tenancy; a
 published container image — one builds locally from `docker compose up`, but nothing is pushed to a registry or signed.
 

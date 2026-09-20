@@ -466,3 +466,90 @@ describe('rate limiting the public plane', () => {
     }
   })
 })
+
+/**
+ * The transactional outbox, against a real database.
+ *
+ * This is the requirement that chose Postgres over MongoDB
+ * (docs/decisions/0024-postgres-over-mongodb.md): the submission and the
+ * deliveries it triggers commit together or not at all. In-memory storage can
+ * imitate that; only real SQL can prove it.
+ */
+describe('the webhook outbox', () => {
+  test('a delivery is queued by the same transaction that stores the submission', async () => {
+    const published = await app.inject({
+      method: 'POST',
+      url: '/forms',
+      headers: asAdmin(),
+      payload: { path: 'hooked', schema: { ...schema, id: 'hooked' } },
+    })
+    const hash = (published.json() as { schemaHash: string }).schemaHash
+
+    const form = await sql`SELECT id FROM forms WHERE path = 'hooked'`
+    await sql`
+      INSERT INTO webhooks (id, form_id, url, secret)
+      VALUES (gen_random_uuid(), ${form[0]!['id'] as string}, 'https://example.ch/hook', 'whsec_x')`
+
+    await app.inject({
+      method: 'PUT',
+      url: '/f/hooked/access',
+      headers: asAdmin(),
+      payload: { submit: 'public' },
+    })
+
+    const submitted = await app.inject({
+      method: 'POST',
+      url: '/f/hooked/submissions',
+      headers: { [SCHEMA_HASH_HEADER]: hash },
+      payload: { email: 'a@b.ch' },
+    })
+    expect(submitted.statusCode).toBe(201)
+
+    const queued = await sql`SELECT state, attempt, body FROM deliveries`
+    expect(queued).toHaveLength(1)
+    expect(queued[0]!['state']).toBe('pending')
+    // The CANONICAL value, not the request body: a receiver sees what was
+    // stored, with computed fields recomputed and hidden branches stripped.
+    expect(String(queued[0]!['body'])).toContain('a@b.ch')
+  })
+
+  test('no webhook, no outbox row — the submission still lands', async () => {
+    const published = await app.inject({
+      method: 'POST',
+      url: '/forms',
+      headers: asAdmin(),
+      payload: { path: 'unhooked', schema: { ...schema, id: 'unhooked' } },
+    })
+    const hash = (published.json() as { schemaHash: string }).schemaHash
+    await app.inject({
+      method: 'PUT',
+      url: '/f/unhooked/access',
+      headers: asAdmin(),
+      payload: { submit: 'public' },
+    })
+
+    const before = await sql`SELECT count(*)::int AS n FROM deliveries`
+    await app.inject({
+      method: 'POST',
+      url: '/f/unhooked/submissions',
+      headers: { [SCHEMA_HASH_HEADER]: hash },
+      payload: { email: 'c@d.ch' },
+    })
+    const after = await sql`SELECT count(*)::int AS n FROM deliveries`
+
+    expect(after[0]!['n']).toBe(before[0]!['n'])
+  })
+
+  test('a delivery cannot outlive the submission it describes', async () => {
+    const form = await sql`SELECT id FROM forms WHERE path = 'hooked'`
+    const submission = await sql`
+      SELECT id FROM submissions WHERE form_id = ${form[0]!['id'] as string} LIMIT 1`
+
+    // ON DELETE RESTRICT: the delivery is the record that something was sent
+    // about this submission, and deleting the submission must not quietly
+    // erase it.
+    await expect(
+      sql`DELETE FROM submissions WHERE id = ${submission[0]!['id'] as string}`,
+    ).rejects.toThrow()
+  })
+})

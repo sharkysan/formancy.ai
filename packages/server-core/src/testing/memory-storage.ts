@@ -1,4 +1,6 @@
-import type { ApiKeyRecord, DraftRecord, FormRecord, FormVersionRecord, Storage, SubmissionRecord, UserRecord } from '../ports.js'
+import type {
+  DeliveryRecord,
+  WebhookRecord, ApiKeyRecord, DraftRecord, FormRecord, FormVersionRecord, Storage, SubmissionRecord, UserRecord } from '../ports.js'
 
 /**
  * The in-memory Storage — the second implementation that keeps the port
@@ -7,6 +9,8 @@ import type { ApiKeyRecord, DraftRecord, FormRecord, FormVersionRecord, Storage,
  */
 export function createMemoryStorage(): Storage {
   const forms = new Map<string, FormRecord>()
+  const webhooks = new Map<string, WebhookRecord>()
+  const deliveries = new Map<string, DeliveryRecord>()
   const versions = new Map<string, FormVersionRecord>()
   const submissions: SubmissionRecord[] = []
   const drafts = new Map<string, DraftRecord>()
@@ -52,8 +56,29 @@ export function createMemoryStorage(): Storage {
           .map((version) => version.version),
       ),
 
-    insertSubmission: async (record) => {
+    webhooksForForm: async (formId) =>
+      [...webhooks.values()].filter((hook) => hook.formId === formId).map((hook) => ({ ...hook })),
+
+    insertWebhook: async (record) => {
+      webhooks.set(record.id, { ...record })
+    },
+
+    claimDueDeliveries: async (nowIso, limit) =>
+      [...deliveries.values()]
+        .filter((entry) => entry.state === 'pending' && entry.nextAttemptAt <= nowIso)
+        .sort((a, b) => a.nextAttemptAt.localeCompare(b.nextAttemptAt))
+        .slice(0, limit)
+        .map((entry) => ({ ...entry })),
+
+    updateDelivery: async (record) => {
+      deliveries.set(record.id, { ...record })
+    },
+
+    insertSubmission: async (record, queued) => {
+      // One step, like the real transaction it stands in for: both land or
+      // neither does.
       submissions.push({ ...record })
+      for (const delivery of queued ?? []) deliveries.set(delivery.id, { ...delivery })
     },
 
     listSubmissions: async () => [...submissions],

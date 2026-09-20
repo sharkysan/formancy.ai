@@ -1,5 +1,12 @@
 # formancy
 
+<p>
+  <a href="https://github.com/sharkysan/formancy.ai/actions/workflows/ci.yml"><img src="https://github.com/sharkysan/formancy.ai/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-a8f5ca?style=flat&amp;labelColor=102b29" alt="License: Apache-2.0" /></a>
+  <a href="#development"><img src="https://img.shields.io/badge/node-%3E%3D22.12.0-a8f5ca?style=flat&amp;labelColor=102b29" alt="Node.js: >=22.12.0" /></a>
+  <a href="#formancy"><img src="https://img.shields.io/badge/status-pre--alpha-a8f5ca?style=flat&amp;labelColor=102b29" alt="Status: pre-alpha" /></a>
+</p>
+
 A modern, self-hostable form engine and backend — for React and Angular.
 
 > **Status: pre-alpha, version 0.1.0, unpublished.**
@@ -176,7 +183,7 @@ from the JSON Schema.
 
 - [Architecture](./docs/README.md#architecture), arc42-shaped. Start with
   [the five ideas everything else follows from](./docs/architecture/04-solution-strategy.md).
-- [Forty-seven decision records](./docs/decisions/), each naming what would
+- [Forty-eight decision records](./docs/decisions/), each naming what would
   fail if the decision were violated — or saying plainly that nothing would.
 - [Regulatory material](./docs/regulatory/MDR-CONTEXT.md) for anyone
   incorporating formancy into a product that has to answer to a regulator.

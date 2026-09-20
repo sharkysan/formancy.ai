@@ -1,9 +1,9 @@
-import { and, desc, eq, max } from 'drizzle-orm'
+import { and, desc, eq, lte, max } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import type postgres from 'postgres'
 import type { FormSchema } from '@formancy/spec'
 import type { Role, Storage } from '@formancy/server-core'
-import { apiKeys, drafts, forms, formVersions, submissions } from './db.js'
+import { apiKeys, deliveries, drafts, forms, formVersions, submissions, webhooks } from './db.js'
 import { users } from './db.js'
 
 /** The Storage port over Postgres — the mirror of server-core's in-memory one. */
@@ -103,14 +103,66 @@ export function createPostgresStorage(sql: postgres.Sql): Storage {
       return rows[0]?.latest ?? 0
     },
 
-    async insertSubmission(record) {
-      await db.insert(submissions).values({
-        id: record.id,
-        formId: record.formId,
-        formVersionId: record.formVersionId,
-        data: record.data,
-        submittedAt: new Date(record.submittedAt),
+    async insertSubmission(record, queued) {
+      // ONE transaction. The submission and the deliveries it triggers commit
+      // together or not at all — the requirement that chose this database
+      // (docs/decisions/0024-postgres-over-mongodb.md).
+      await db.transaction(async (tx) => {
+        await tx.insert(submissions).values({
+          id: record.id,
+          formId: record.formId,
+          formVersionId: record.formVersionId,
+          data: record.data,
+          submittedAt: new Date(record.submittedAt),
+        })
+
+        if (queued !== undefined && queued.length > 0) {
+          await tx.insert(deliveries).values(
+            queued.map((delivery) => ({
+              id: delivery.id,
+              webhookId: delivery.webhookId,
+              submissionId: delivery.submissionId,
+              eventId: delivery.eventId,
+              body: delivery.body,
+              attempt: delivery.attempt,
+              nextAttemptAt: new Date(delivery.nextAttemptAt),
+              state: delivery.state,
+              lastError: delivery.lastError,
+            })),
+          )
+        }
       })
+    },
+
+    async webhooksForForm(formId) {
+      const rows = await db.select().from(webhooks).where(eq(webhooks.formId, formId))
+      return rows.map((row) => ({ id: row.id, formId: row.formId, url: row.url, secret: row.secret }))
+    },
+
+    async insertWebhook(record) {
+      await db.insert(webhooks).values(record)
+    },
+
+    async claimDueDeliveries(nowIso, limit) {
+      const rows = await db
+        .select()
+        .from(deliveries)
+        .where(and(eq(deliveries.state, 'pending'), lte(deliveries.nextAttemptAt, new Date(nowIso))))
+        .orderBy(deliveries.nextAttemptAt)
+        .limit(limit)
+      return rows.map(toDeliveryRecord)
+    },
+
+    async updateDelivery(record) {
+      await db
+        .update(deliveries)
+        .set({
+          attempt: record.attempt,
+          nextAttemptAt: new Date(record.nextAttemptAt),
+          state: record.state,
+          lastError: record.lastError,
+        })
+        .where(eq(deliveries.id, record.id))
     },
 
     async listSubmissions() {
@@ -263,5 +315,20 @@ function toSubmissionRecord(row: {
     formVersionId: row.formVersionId,
     data: row.data,
     submittedAt: row.submittedAt.toISOString(),
+  }
+}
+
+/** A delivery row as the port describes it. */
+function toDeliveryRecord(row: typeof deliveries.$inferSelect) {
+  return {
+    id: row.id,
+    webhookId: row.webhookId,
+    submissionId: row.submissionId,
+    eventId: row.eventId,
+    body: row.body,
+    attempt: row.attempt,
+    nextAttemptAt: row.nextAttemptAt.toISOString(),
+    state: row.state as 'pending' | 'delivered' | 'dead',
+    lastError: row.lastError,
   }
 }

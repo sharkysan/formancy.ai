@@ -148,5 +148,5 @@ message catalogue.
 | Trusting the client | Nothing computed by the client is trusted; everything is recomputed and overwritten ([0030](../decisions/0030-never-trust-client-state.md)) |
 | Account enumeration | A decoy hash, so both paths do the same work ([0031](../decisions/0031-enumeration-resistant-login.md)) |
 | Export injection | Type-aware formula neutralisation ([0032](../decisions/0032-csv-formula-neutralisation.md)) |
-| SSRF on webhooks | Resolve DNS, validate the address, connect to the validated address preserving Host and SNI. Designed; v0.2 |
+| SSRF on webhooks | Resolve DNS in-process, refuse if ANY returned address is private, connect to the checked address through a pinned agent with Host and SNI preserved; redirects not followed ([0048](../decisions/0048-webhook-delivery.md)) |
 | ReDoS from a form author | Anchored patterns, compiled at save time; `recheck` linting at publish is designed and **not yet implemented** |

@@ -67,6 +67,32 @@ export const drafts = pgTable('drafts', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull(),
 })
 
+export const webhooks = pgTable('webhooks', {
+  id: uuid('id').primaryKey(),
+  formId: uuid('form_id')
+    .notNull()
+    .references(() => forms.id),
+  url: text('url').notNull(),
+  secret: text('secret').notNull(),
+})
+
+/**
+ * The outbox. A row here and the submission that caused it are written by the
+ * same transaction, which is what makes "accepted" and "will be delivered" one
+ * decision rather than two.
+ */
+export const deliveries = pgTable('deliveries', {
+  id: uuid('id').primaryKey(),
+  webhookId: uuid('webhook_id').notNull(),
+  submissionId: uuid('submission_id').notNull(),
+  eventId: uuid('event_id').notNull(),
+  body: text('body').notNull(),
+  attempt: integer('attempt').notNull().default(0),
+  nextAttemptAt: timestamp('next_attempt_at', { withTimezone: true }).notNull(),
+  state: text('state').notNull().default('pending'),
+  lastError: text('last_error'),
+})
+
 export const submissions = pgTable('submissions', {
   id: uuid('id').primaryKey(),
   formId: uuid('form_id')
@@ -125,6 +151,32 @@ export async function bootstrapSchema(sql: postgres.Sql): Promise<void> {
       data jsonb NOT NULL,
       submitted_at timestamptz NOT NULL
     )`
+  await sql`
+    CREATE TABLE IF NOT EXISTS webhooks (
+      id uuid PRIMARY KEY,
+      form_id uuid NOT NULL REFERENCES forms(id) ON DELETE CASCADE,
+      url text NOT NULL,
+      secret text NOT NULL
+    )`
+  await sql`
+    CREATE TABLE IF NOT EXISTS deliveries (
+      id uuid PRIMARY KEY,
+      webhook_id uuid NOT NULL REFERENCES webhooks(id) ON DELETE CASCADE,
+      -- RESTRICT, not CASCADE: a delivery is the record that something was
+      -- sent about this submission, and deleting the submission must not
+      -- quietly erase it.
+      submission_id uuid NOT NULL REFERENCES submissions(id) ON DELETE RESTRICT,
+      event_id uuid NOT NULL,
+      body text NOT NULL,
+      attempt integer NOT NULL DEFAULT 0,
+      next_attempt_at timestamptz NOT NULL,
+      state text NOT NULL DEFAULT 'pending'
+        CHECK (state IN ('pending', 'delivered', 'dead')),
+      last_error text
+    )`
+  await sql`
+    CREATE INDEX IF NOT EXISTS deliveries_due
+      ON deliveries (next_attempt_at) WHERE state = 'pending'`
   await sql`
     CREATE TABLE IF NOT EXISTS users (
       id uuid PRIMARY KEY,

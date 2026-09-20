@@ -71,6 +71,39 @@ export interface DraftRecord {
   updatedAt: string
 }
 
+/** A webhook registered against a form. */
+export interface WebhookRecord {
+  id: string
+  formId: string
+  url: string
+  /** Shared with the receiver; signs every delivery. */
+  secret: string
+}
+
+/**
+ * One queued delivery — the outbox row.
+ *
+ * It exists so that "a submission was accepted" and "its webhooks will be
+ * delivered" are decided by the same COMMIT. The alternative, posting after
+ * the insert returns, produces the two failures a self-hoster cannot debug:
+ * the webhook fired and the submission rolled back, or the submission is
+ * stored and nothing was ever sent.
+ */
+export interface DeliveryRecord {
+  id: string
+  webhookId: string
+  submissionId: string
+  /** Stable across every retry, so a receiver can be idempotent. */
+  eventId: string
+  body: string
+  attempt: number
+  /** Not before this instant. Set by the retry schedule. */
+  nextAttemptAt: string
+  /** `pending`, `delivered`, or `dead` once the attempts run out. */
+  state: 'pending' | 'delivered' | 'dead'
+  lastError: string | null
+}
+
 export interface Storage {
   getFormByPath(path: string): Promise<FormRecord | undefined>
   listForms(): Promise<FormRecord[]>
@@ -84,7 +117,20 @@ export interface Storage {
   getVersionById(id: string): Promise<FormVersionRecord | undefined>
   findVersionByHash(formId: string, schemaHash: string): Promise<FormVersionRecord | undefined>
   latestVersionNumber(formId: string): Promise<number>
-  insertSubmission(record: SubmissionRecord): Promise<void>
+  /**
+   * The submission and every delivery it triggers, in ONE transaction.
+   *
+   * One method rather than two calls, because the atomicity is the point and a
+   * port that exposes them separately invites a caller to break it. See
+   * docs/decisions/0024-postgres-over-mongodb.md, where this requirement is
+   * what chose the database.
+   */
+  insertSubmission(record: SubmissionRecord, deliveries?: readonly DeliveryRecord[]): Promise<void>
+  webhooksForForm(formId: string): Promise<WebhookRecord[]>
+  insertWebhook(record: WebhookRecord): Promise<void>
+  /** Oldest first, only those due. */
+  claimDueDeliveries(nowIso: string, limit: number): Promise<DeliveryRecord[]>
+  updateDelivery(record: DeliveryRecord): Promise<void>
   listSubmissions(): Promise<SubmissionRecord[]>
   /** Newest first. */
   listSubmissionsByForm(formId: string): Promise<SubmissionRecord[]>
