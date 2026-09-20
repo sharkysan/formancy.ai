@@ -24,9 +24,9 @@ pnpm build
 ## A minimal form
 
 A form is a plain JSON document: a `model` (what the form collects) and
-optional `logic` (how it behaves). Display text rides on the model as `label`
-for now — that is version-0 presentation-lite, superseded by a dedicated `i18n`
-section at spec v1.
+optional `logic` (how it behaves). Display text rides on the model as `label`,
+either as a literal string or as a reference into the form's [`i18n`
+catalogue](/concepts/schema/#words-i18n).
 
 ```tsx
 import { useState } from 'react'

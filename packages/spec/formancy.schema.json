@@ -43,6 +43,19 @@
    "title": "Logic",
    "description": "The form's behaviour: when fields show, what they compute, and what counts as a valid answer. Rules live here, apart from the data model, so the same model can carry different behaviour per deployment and so a rule can be reviewed on its own.",
    "$ref": "#/$defs/logic"
+  },
+  "i18n": {
+   "title": "Translations",
+   "description": "The form's words, apart from its structure.",
+   "$ref": "#/$defs/i18n"
+  },
+  "layouts": {
+   "title": "Layouts",
+   "description": "Named arrangements of the model. Without any, fields appear in the order the model declares them.",
+   "type": "array",
+   "items": {
+    "$ref": "#/$defs/layout"
+   }
   }
  },
  "$defs": {
@@ -115,10 +128,8 @@
     },
     "label": {
      "title": "Label",
-     "description": "What the person filling the form in reads next to this field. Version 0 carries one language here; the i18n section of a later spec version replaces it with a message reference.",
-     "type": "string",
-     "minLength": 1,
-     "maxLength": 300
+     "description": "What the person filling the form in reads next to this field, or a reference to it in the message catalogue.",
+     "$ref": "#/$defs/text"
     }
    },
    "allOf": [
@@ -506,9 +517,158 @@
     "label": {
      "title": "Label",
      "description": "What the person choosing reads.",
+     "$ref": "#/$defs/text"
+    }
+   }
+  },
+  "messageRef": {
+   "title": "Message reference",
+   "description": "Points at an entry in the message catalogue instead of spelling the text out here, so the same form can be read in more than one language.",
+   "type": "object",
+   "required": [
+    "$t"
+   ],
+   "additionalProperties": false,
+   "properties": {
+    "$t": {
+     "title": "Message id",
+     "description": "The key this text is stored under in every locale.",
+     "type": "string",
+     "minLength": 1,
+     "maxLength": 200
+    }
+   }
+  },
+  "text": {
+   "title": "Text",
+   "description": "Something a person reads: either the words themselves, or a reference into the message catalogue.",
+   "oneOf": [
+    {
      "type": "string",
      "minLength": 1,
      "maxLength": 300
+    },
+    {
+     "$ref": "#/$defs/messageRef"
+    }
+   ]
+  },
+  "i18n": {
+   "title": "Translations",
+   "description": "The words of the form, kept apart from its structure so the same form can be published in several languages without duplicating it.",
+   "type": "object",
+   "required": [
+    "defaultLocale",
+    "messages"
+   ],
+   "additionalProperties": false,
+   "properties": {
+    "defaultLocale": {
+     "title": "Default locale",
+     "description": "The language every message must exist in. Other languages may be incomplete; a missing translation falls back to this one rather than showing an id.",
+     "type": "string",
+     "minLength": 2,
+     "maxLength": 35
+    },
+    "messages": {
+     "title": "Catalogues",
+     "description": "One catalogue per language, each mapping a message id to the words a person reads.",
+     "type": "object",
+     "additionalProperties": {
+      "type": "object",
+      "additionalProperties": {
+       "type": "string"
+      }
+     }
+    }
+   }
+  },
+  "layoutNode": {
+   "title": "Layout node",
+   "description": "Either one field placed on the page, or a container holding more nodes.",
+   "oneOf": [
+    {
+     "title": "Field placement",
+     "type": "object",
+     "required": [
+      "kind",
+      "path"
+     ],
+     "additionalProperties": false,
+     "properties": {
+      "kind": {
+       "title": "Kind",
+       "description": "Marks this node as placing a single field.",
+       "const": "field"
+      },
+      "path": {
+       "title": "Field path",
+       "description": "The data path of the field to place here, e.g. \"email\" or \"address.city\".",
+       "type": "string",
+       "minLength": 1,
+       "maxLength": 512
+      }
+     }
+    },
+    {
+     "title": "Grouping",
+     "type": "object",
+     "required": [
+      "kind",
+      "children"
+     ],
+     "additionalProperties": false,
+     "properties": {
+      "kind": {
+       "title": "Kind",
+       "description": "How the children are arranged: stacked under a heading, side by side, or in a column.",
+       "enum": [
+        "section",
+        "row",
+        "column"
+       ]
+      },
+      "label": {
+       "title": "Heading",
+       "description": "Optional heading for the group.",
+       "$ref": "#/$defs/text"
+      },
+      "children": {
+       "title": "Children",
+       "description": "The nodes inside this group.",
+       "type": "array",
+       "items": {
+        "$ref": "#/$defs/layoutNode"
+       }
+      }
+     }
+    }
+   ]
+  },
+  "layout": {
+   "title": "Layout",
+   "description": "One arrangement of the model. A form may have several over the same data — a web layout and a print layout collect identical answers.",
+   "type": "object",
+   "required": [
+    "name",
+    "nodes"
+   ],
+   "additionalProperties": false,
+   "properties": {
+    "name": {
+     "title": "Name",
+     "description": "How this arrangement is asked for, e.g. \"web\" or \"print\". Unique within the form.",
+     "type": "string",
+     "minLength": 1,
+     "maxLength": 64
+    },
+    "nodes": {
+     "title": "Nodes",
+     "description": "What this arrangement places, in the order a person meets it.",
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/layoutNode"
+     }
     }
    }
   }

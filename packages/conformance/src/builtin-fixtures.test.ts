@@ -54,6 +54,7 @@ describe('builtinFixtures', () => {
   test('embeds the whole starter suite', () => {
     expect(builtinFixtures.map((fixture) => fixture.name).sort()).toEqual([
       'a calculated field recomputes from its inputs and is never typed into',
+      'a form written in message references renders in the default locale',
       'a hidden value is dropped only when the field asks for it',
       'a repeating group validates each item and re-indexes when one is removed',
       'a required field blocks submit until it has a value',

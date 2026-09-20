@@ -1,7 +1,8 @@
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { createFormEngine } from '@formancy/core'
 import type { FormEngine } from '@formancy/core'
-import type { FormSchema } from '@formancy/spec'
+import { resolveText } from '@formancy/spec'
+import type { FormSchema, Text } from '@formancy/spec'
 import { BACK_COMMAND, COMMAND_SEPARATOR, NEXT_COMMAND, fieldAtPath } from '@formancy/conformance'
 import type {
   ConformanceMessage,
@@ -42,10 +43,19 @@ export function createReactDriver(): RendererDriver {
     return match === null ? undefined : Number(match[1])
   }
 
+  /**
+   * The accessible name the renderer will have produced — resolved through the
+   * message catalogue, exactly as the renderer resolves it. Reading `label` raw
+   * would look up "[object Object]" the moment a fixture uses a translation.
+   */
+  function textOf(value: Text | undefined): string | undefined {
+    const { schema } = requireMounted()
+    return resolveText(schema, value, schema.i18n?.defaultLocale ?? '')
+  }
+
   function labelOf(path: string): string {
     const { schema } = requireMounted()
-    const def = fieldAtPath(schema, path)
-    const label = (def as { label?: string } | undefined)?.label
+    const label = textOf(fieldAtPath(schema, path)?.label)
     if (label === undefined) throw new Error(`No label for "${path}" — the fixture validator should have refused this`)
     return label
   }
@@ -93,19 +103,27 @@ export function createReactDriver(): RendererDriver {
 
     async fill(path, value) {
       const { schema } = requireMounted()
-      const def = fieldAtPath(schema, path) as { type?: string } | undefined
+      const def = fieldAtPath(schema, path)
+
+      // A radio group is answered before any control lookup, because the group
+      // itself has no labelled control: its accessible name is on the fieldset,
+      // and the individual inputs are named by their own options.
+      if (def?.type === 'radio') {
+        const group = screen.getByRole('group', { name: labelOf(path) })
+        const chosen = (def.options ?? []).find((option) => option.value === value)
+        if (chosen === undefined) throw new Error(`No option "${String(value)}" on "${path}"`)
+        await settle(() => {
+          fireEvent.click(within(group).getByLabelText(textOf(chosen.label) ?? chosen.value))
+        })
+        return
+      }
+
       const control = controlFor(path)
       if (control === undefined) throw new Error(`No control in the tree for "${path}"`)
 
       await settle(() => {
         if (def?.type === 'checkbox') {
           if ((control as HTMLInputElement).checked !== (value === true)) fireEvent.click(control)
-        } else if (def?.type === 'radio') {
-          const group = screen.getByRole('group', { name: labelOf(path) })
-          const options = (fieldAtPath(schema, path) as unknown as { options?: Array<{ value: string; label: string }> }).options ?? []
-          const chosen = options.find((option) => option.value === value)
-          if (chosen === undefined) throw new Error(`No option "${String(value)}" on "${path}"`)
-          fireEvent.click(within(group).getByLabelText(chosen.label))
         } else {
           fireEvent.focus(control)
           fireEvent.change(control, { target: { value: value === null ? '' : String(value) } })
@@ -211,8 +229,7 @@ export function createReactDriver(): RendererDriver {
       const name = (active.textContent ?? '').trim()
       // Map the step's accessible name back to the page key it stands for.
       for (const field of schema.model.fields) {
-        const extras = field as { type?: string; key?: string; label?: string }
-        if (extras.type === 'page' && (extras.label ?? extras.key) === name) return extras.key
+        if (field.type === 'page' && (textOf(field.label) ?? field.key) === name) return field.key
       }
       return name
     },

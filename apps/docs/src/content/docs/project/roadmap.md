@@ -68,8 +68,8 @@ rather than a breaking one.
 
 Roughly in order, and subject to change:
 
-1. **`i18n` and `layout` sections** in the spec, replacing the v0
-   presentation-lite properties — after which the spec can freeze to `"1"`.
+1. **Freezing the spec to `"1"`.** The `i18n` and `layout` sections have
+   landed, which were the last structural additions the freeze was waiting on.
 2. **The builder UI** over the existing document engine. Its commands are
    already keyboard-shaped — insert, move, remove, rename — because WCAG 2.2
    requires every drag operation to have a non-drag alternative, and building

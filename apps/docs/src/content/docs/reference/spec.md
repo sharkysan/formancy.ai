@@ -52,6 +52,18 @@ optional · Logic (see below)
 
 **Logic.** The form's behaviour: when fields show, what they compute, and what counts as a valid answer. Rules live here, apart from the data model, so the same model can carry different behaviour per deployment and so a rule can be reviewed on its own.
 
+### `i18n`
+
+optional · Translations (see below)
+
+**Translations.** The form's words, apart from its structure.
+
+### `layouts`
+
+optional · array of Layout
+
+**Layouts.** Named arrangements of the model. Without any, fields appear in the order the model declares them.
+
 ## Fields
 
 One field of the form. Most fields collect a single answer; a group, a page and a repeater collect nothing themselves and hold other fields instead.
@@ -94,9 +106,9 @@ optional · boolean · default `true`
 
 #### `label`
 
-optional · string · min length 1 · max length 300
+optional · Text (see below)
 
-**Label.** What the person filling the form in reads next to this field. Version 0 carries one language here; the i18n section of a later spec version replaces it with a message reference.
+**Label.** What the person filling the form in reads next to this field, or a reference to it in the message catalogue.
 
 ### Field types
 
@@ -303,6 +315,90 @@ required · string · min length 1 · max length 200
 
 #### `label`
 
-required · string · min length 1 · max length 300
+required · Text (see below)
 
 **Label.** What the person choosing reads.
+
+### Message reference
+
+Points at an entry in the message catalogue instead of spelling the text out here, so the same form can be read in more than one language.
+
+#### `$t`
+
+required · string · min length 1 · max length 200
+
+**Message id.** The key this text is stored under in every locale.
+
+### Text
+
+Something a person reads: either the words themselves, or a reference into the message catalogue.
+
+### Translations
+
+The words of the form, kept apart from its structure so the same form can be published in several languages without duplicating it.
+
+#### `defaultLocale`
+
+required · string · min length 2 · max length 35
+
+**Default locale.** The language every message must exist in. Other languages may be incomplete; a missing translation falls back to this one rather than showing an id.
+
+#### `messages`
+
+required · object
+
+**Catalogues.** One catalogue per language, each mapping a message id to the words a person reads.
+
+### Layout node
+
+Either one field placed on the page, or a container holding more nodes.
+
+#### Field placement
+
+##### `kind`
+
+required · the constant `"field"`
+
+**Kind.** Marks this node as placing a single field.
+
+##### `path`
+
+required · string · min length 1 · max length 512
+
+**Field path.** The data path of the field to place here, e.g. "email" or "address.city".
+
+#### Grouping
+
+##### `kind`
+
+required · one of `"section"`, `"row"`, `"column"`
+
+**Kind.** How the children are arranged: stacked under a heading, side by side, or in a column.
+
+##### `label`
+
+optional · Text (see below)
+
+**Heading.** Optional heading for the group.
+
+##### `children`
+
+required · array of Layout node
+
+**Children.** The nodes inside this group.
+
+### Layout
+
+One arrangement of the model. A form may have several over the same data — a web layout and a print layout collect identical answers.
+
+#### `name`
+
+required · string · min length 1 · max length 64
+
+**Name.** How this arrangement is asked for, e.g. "web" or "print". Unique within the form.
+
+#### `nodes`
+
+required · array of Layout node
+
+**Nodes.** What this arrangement places, in the order a person meets it.

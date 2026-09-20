@@ -3,6 +3,7 @@ import type { Type } from '@angular/core'
 import type { FieldOption, FieldType } from '@formancy/spec'
 import { injectField } from './field.js'
 import type { FieldBinding } from './field.js'
+import { injectEngine } from './provide.js'
 import { injectFieldContext } from './registry.js'
 
 /**
@@ -49,6 +50,19 @@ abstract class FieldComponentBase {
   protected readonly context = injectFieldContext()
   protected readonly field = injectField(this.context.path)
   protected readonly control = computed(() => this.field.snapshot().props.control)
+  private readonly engine = injectEngine()
+
+  /**
+   * Option labels resolved to strings, since a label may be a reference into
+   * the message catalogue. Falling back to the stored value keeps an
+   * untranslated option selectable rather than blank.
+   */
+  protected readonly options = computed<ReadonlyArray<{ value: string; label: string }>>(() =>
+    (this.field.snapshot().def.options ?? []).map((option: FieldOption) => ({
+      value: option.value,
+      label: this.engine.text(option.label) ?? option.value,
+    })),
+  )
 }
 
 @Component({
@@ -238,10 +252,6 @@ export class FormancyDateField extends FieldComponentBase {
   `,
 })
 export class FormancySelectField extends FieldComponentBase {
-  protected readonly options = computed<readonly FieldOption[]>(
-    () => this.field.snapshot().def.options ?? [],
-  )
-
   protected readonly selected = computed(() => {
     const value = this.field.snapshot().value
     return typeof value === 'string' ? value : ''
@@ -284,10 +294,6 @@ export class FormancySelectField extends FieldComponentBase {
   `,
 })
 export class FormancyRadioGroupField extends FieldComponentBase {
-  protected readonly options = computed<readonly FieldOption[]>(
-    () => this.field.snapshot().def.options ?? [],
-  )
-
   protected readonly showError = computed(() => {
     const snapshot = this.field.snapshot()
     return snapshot.touched && snapshot.errors.length > 0
@@ -295,7 +301,7 @@ export class FormancyRadioGroupField extends FieldComponentBase {
 
   protected readonly errorText = computed(() => this.field.snapshot().errors.join(', '))
 
-  protected optionId(option: FieldOption): string {
+  protected optionId(option: { value: string }): string {
     return `${this.field.snapshot().ids.control}:${option.value}`
   }
 }

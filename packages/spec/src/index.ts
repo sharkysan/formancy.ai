@@ -11,9 +11,15 @@ export type {
   FieldOption,
   FieldType,
   FormLogic,
+  FormI18n,
+  FormLayout,
   FormModel,
   FormSchema,
+  LayoutNode,
+  MessageRef,
+  Text,
   LogicRule,
   RuleKind,
 } from './types.js'
 export { modelDataPaths } from './paths.js'
+export { collectFieldPaths, isMessageRef, modelPathsForLayout, resolveText, unreferencedPaths } from './presentation.js'

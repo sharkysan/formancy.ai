@@ -1,0 +1,51 @@
+{
+  "name": "a form written in message references renders in the default locale",
+  "description": "Labels may be references into the message catalogue rather than literal strings. Everything a person reads — field labels, radio option labels — must resolve before it reaches the page. THE RULE of this suite is that fields are found by accessible name, so a renderer that leaked a message id, or an object, fails every step below without needing an assertion of its own.",
+  "tags": ["i18n"],
+  "schema": {
+    "specVersion": "0",
+    "id": "translated",
+    "title": "Translated",
+    "model": {
+      "fields": [
+        { "key": "email", "type": "text", "label": { "$t": "email.label" }, "required": true },
+        {
+          "key": "contactBy",
+          "type": "radio",
+          "label": { "$t": "contactBy.label" },
+          "options": [
+            { "value": "email", "label": { "$t": "contactBy.email" } },
+            { "value": "post", "label": "Post" }
+          ]
+        },
+        { "key": "note", "type": "textarea", "label": "A literal label, alongside the references" }
+      ]
+    },
+    "i18n": {
+      "defaultLocale": "en",
+      "messages": {
+        "en": {
+          "email.label": "Email address",
+          "contactBy.label": "How should we reach you?",
+          "contactBy.email": "By email"
+        },
+        "de": {
+          "email.label": "E-Mail-Adresse",
+          "contactBy.label": "Wie sollen wir Sie erreichen?",
+          "contactBy.email": "Per E-Mail"
+        }
+      }
+    }
+  },
+  "steps": [
+    { "submit": true },
+    { "expectSubmit": { "status": "rejected" } },
+    { "expectErrors": { "email": ["required"] } },
+    { "set": { "email": "ada@example.com" } },
+    { "set": { "contactBy": "email" } },
+    { "expectValue": { "contactBy": "email" } },
+    { "expectNoErrors": true },
+    { "submit": true },
+    { "expectSubmit": { "status": "accepted" } }
+  ]
+}

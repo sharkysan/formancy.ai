@@ -542,6 +542,112 @@ export const builtinFixtures: readonly Fixture[] = [
     ],
   },
   {
+    name: 'a form written in message references renders in the default locale',
+    description: 'Labels may be references into the message catalogue rather than literal strings. Everything a person reads — field labels, radio option labels — must resolve before it reaches the page. THE RULE of this suite is that fields are found by accessible name, so a renderer that leaked a message id, or an object, fails every step below without needing an assertion of its own.',
+    tags: [
+      'i18n',
+    ],
+    schema: {
+      specVersion: '0',
+      id: 'translated',
+      title: 'Translated',
+      model: {
+        fields: [
+          {
+            key: 'email',
+            type: 'text',
+            label: {
+              $t: 'email.label',
+            },
+            required: true,
+          },
+          {
+            key: 'contactBy',
+            type: 'radio',
+            label: {
+              $t: 'contactBy.label',
+            },
+            options: [
+              {
+                value: 'email',
+                label: {
+                  $t: 'contactBy.email',
+                },
+              },
+              {
+                value: 'post',
+                label: 'Post',
+              },
+            ],
+          },
+          {
+            key: 'note',
+            type: 'textarea',
+            label: 'A literal label, alongside the references',
+          },
+        ],
+      },
+      i18n: {
+        defaultLocale: 'en',
+        messages: {
+          en: {
+            'email.label': 'Email address',
+            'contactBy.label': 'How should we reach you?',
+            'contactBy.email': 'By email',
+          },
+          de: {
+            'email.label': 'E-Mail-Adresse',
+            'contactBy.label': 'Wie sollen wir Sie erreichen?',
+            'contactBy.email': 'Per E-Mail',
+          },
+        },
+      },
+    },
+    steps: [
+      {
+        submit: true,
+      },
+      {
+        expectSubmit: {
+          status: 'rejected',
+        },
+      },
+      {
+        expectErrors: {
+          email: [
+            'required',
+          ],
+        },
+      },
+      {
+        set: {
+          email: 'ada@example.com',
+        },
+      },
+      {
+        set: {
+          contactBy: 'email',
+        },
+      },
+      {
+        expectValue: {
+          contactBy: 'email',
+        },
+      },
+      {
+        expectNoErrors: true,
+      },
+      {
+        submit: true,
+      },
+      {
+        expectSubmit: {
+          status: 'accepted',
+        },
+      },
+    ],
+  },
+  {
     name: 'a wizard validates the current page on next and the whole form on submit',
     description: 'Next may only look at the page a person is on: validating pages they have not reached yet would show them errors for questions nobody has asked them. Submit must look at everything, because an answer on a later page can make a field on an earlier one required, and it must take them to the first page that has a problem rather than leaving them on a clean review page staring at a rejection. Pages are presentation: they own no data, so the payload is flat and moving a field between pages is not a data migration.',
     tags: [

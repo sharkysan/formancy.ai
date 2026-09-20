@@ -290,3 +290,46 @@ describe('continuous revalidation', () => {
     expect(engine.getFieldSnapshot(['email']).errors).toEqual([])
   })
 })
+
+describe('resolved text', () => {
+  const translated = {
+    specVersion: '0',
+    id: 'contact',
+    title: 'Contact',
+    model: {
+      fields: [
+        { key: 'email', type: 'text', label: { $t: 'email.label' } },
+        { key: 'note', type: 'text', label: 'A plain string' },
+        { key: 'bare', type: 'text' },
+      ],
+    },
+    i18n: {
+      defaultLocale: 'en',
+      messages: { en: { 'email.label': 'Email' }, de: { 'email.label': 'E-Mail' } },
+    },
+  } as FormSchema
+
+  test('a snapshot carries its label already resolved', () => {
+    const engine = createFormEngine({ schema: translated })
+    expect(engine.getFieldSnapshot(['email']).label).toBe('Email')
+    expect(engine.getFieldSnapshot(['note']).label).toBe('A plain string')
+    expect(engine.getFieldSnapshot(['bare']).label).toBeUndefined()
+  })
+
+  test('the locale option chooses the catalogue', () => {
+    const engine = createFormEngine({ schema: translated, locale: 'de' })
+    expect(engine.getFieldSnapshot(['email']).label).toBe('E-Mail')
+  })
+
+  test('an untranslated locale falls back rather than showing an id', () => {
+    const engine = createFormEngine({ schema: translated, locale: 'fr' })
+    expect(engine.getFieldSnapshot(['email']).label).toBe('Email')
+  })
+
+  test('text() resolves anything else a renderer needs, in the same locale', () => {
+    const engine = createFormEngine({ schema: translated, locale: 'de' })
+    expect(engine.text({ $t: 'email.label' })).toBe('E-Mail')
+    expect(engine.text('literal')).toBe('literal')
+    expect(engine.text(undefined)).toBeUndefined()
+  })
+})

@@ -115,10 +115,89 @@ if (!result.valid) {
 
 Messages are written for a form author, not a compiler.
 
-## Presentation in spec v0
+## Words: `i18n`
 
-`label`, `options`, `minItems`, `maxItems`, `addLabel` and `removeLabel` are
-real properties today, carried openly rather than through a side channel,
-because a form without labels is unusable. They are **temporary**: spec v1
-replaces them with proper `i18n` and `layout` sections, and the migrator will
-move them. See [Versioning](/concepts/versioning/) and `MIGRATIONS.md`.
+Anywhere a person reads something — a field's `label`, an option's `label`, a
+heading in a layout — the document may carry either the words themselves or a
+reference into a catalogue:
+
+```jsonc
+{
+  "model": {
+    "fields": [{ "key": "email", "type": "text", "label": { "$t": "email.label" } }]
+  },
+  "i18n": {
+    "defaultLocale": "en",
+    "messages": {
+      "en": { "email.label": "Email address" },
+      "de": { "email.label": "E-Mail-Adresse" }
+    }
+  }
+}
+```
+
+The section is optional, and a plain string stays a plain string, so a
+monolingual form never has to think about it.
+
+Two rules make this safe rather than merely possible. Every reference must
+resolve in the **default locale** — `validateSchema` refuses a document whose
+label points at a message nobody wrote, because the failure mode is
+`email.label` appearing in front of a customer. And a **missing translation in
+some other locale falls back to the default** rather than showing the id: an
+untranslated label is a small problem, a message id on screen is a large one.
+
+Resolution happens in the engine, not in each renderer:
+
+```ts
+const engine = createFormEngine({ schema, locale: 'de' })
+engine.getFieldSnapshot(['email']).label // "E-Mail-Adresse"
+engine.text({ $t: 'email.label' })       // the same, for anything else
+```
+
+That is the same reasoning that put ids and ARIA wiring in the engine: React
+and Angular cannot disagree about what a field is called if neither of them
+decides. The locale is fixed when the engine is built — snapshots are
+identity-stable, and a locale that moved underneath them would leave every
+cached snapshot quietly wrong — so switching language means building a new
+engine.
+
+## Arrangement: `layouts`
+
+A layout places fields somewhere other than model order, and a form may have
+several over the same data:
+
+```jsonc
+{
+  "layouts": [
+    {
+      "name": "web",
+      "nodes": [
+        { "kind": "section", "label": { "$t": "about.you" }, "children": [
+          { "kind": "row", "children": [
+            { "kind": "field", "path": "firstName" },
+            { "kind": "field", "path": "lastName" }
+          ] }
+        ] }
+      ]
+    }
+  ]
+}
+```
+
+Nodes address fields by **data path**, the same paths everything else in
+formancy uses. A layout may leave a field out — a print layout that omits the
+consent checkbox is doing its job — but it may not place one twice, and it may
+not name a path the model does not define. `unreferencedPaths(schema, 'web')`
+tells a builder what a given arrangement is not showing.
+
+Layouts are optional too. Without any, fields render in the order the model
+declares them, which is what the renderers did before this section existed and
+still do.
+
+## Why these are separate sections
+
+Labels could have stayed strings and layout could have been implied by nesting.
+Keeping words and arrangement out of the model is what lets the same model be
+published in five languages and two arrangements without duplicating the thing
+that defines what the data *is* — and it is what makes `diffSchemas` able to
+say that a translation changed and the data did not.

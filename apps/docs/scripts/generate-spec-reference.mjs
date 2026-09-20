@@ -34,6 +34,9 @@ function typeLabel(rawNode) {
   if (Array.isArray(node.oneOf) && node.oneOf.every((branch) => branch.const !== undefined)) {
     return `one of ${node.oneOf.map((branch) => `\`${JSON.stringify(branch.const)}\``).join(', ')}`
   }
+  if (Array.isArray(node.enum)) {
+    return `one of ${node.enum.map((value) => '`' + JSON.stringify(value) + '`').join(', ')}`
+  }
   if (node.type === 'array') {
     const items = node.items === undefined ? undefined : deref(node.items).node
     return items?.title !== undefined ? `array of ${items.title}` : 'array'
@@ -192,6 +195,19 @@ for (const [name, def] of Object.entries(defs)) {
   if (facts.length > 0) out.push(`${facts.join(' · ')}\n`)
   if (def.description !== undefined) out.push(`${def.description}\n`)
   if (def.properties !== undefined) out.push(renderProperties(def, '####'))
+  // A definition that is a choice between object SHAPES (a layout node is
+  // either a placement or a container) needs each shape spelled out; a choice
+  // between constants is handled by renderConstants elsewhere.
+  if (Array.isArray(def.oneOf) && def.oneOf.some((branch) => branch.properties !== undefined)) {
+    for (const branch of def.oneOf) {
+      if (branch.properties === undefined) continue
+      out.push(`#### ${branch.title ?? 'Variant'}
+`)
+      if (branch.description !== undefined) out.push(`${branch.description}
+`)
+      out.push(renderProperties(branch, '#####'))
+    }
+  }
   if (Array.isArray(def.examples) && def.examples.length > 0) {
     out.push(`Examples: ${def.examples.map((example) => `\`${JSON.stringify(example)}\``).join(', ')}\n`)
   }

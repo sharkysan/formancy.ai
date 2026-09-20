@@ -14,6 +14,7 @@ import {
 import type { ComponentRef, OnChanges, OnDestroy, OnInit, Signal, Type } from '@angular/core'
 import { parsePath } from '@formancy/core'
 import type { FieldSnapshot } from '@formancy/core'
+import type { FieldDef } from '@formancy/spec'
 import { DEFAULT_FIELD_COMPONENTS } from './fields.js'
 import { injectField } from './field.js'
 import { injectRepeater } from './repeater.js'
@@ -105,7 +106,7 @@ export class FormancyFieldSlot implements OnInit {
       DEFAULT_FIELD_COMPONENTS[snapshot().type]
     // Labels ride on the model definition (version-0 presentation-lite); the
     // labels input is the fallback, and the wire path is at least honest.
-    const label = snapshot().def.label ?? this.fallbackLabel() ?? path
+    const label = snapshot().label ?? this.fallbackLabel() ?? path
     this.state = {
       snapshot,
       component,
@@ -169,7 +170,7 @@ export class FormancyRepeaterSection implements OnInit {
   ngOnInit(): void {
     const wire = this.wire()
     const def = this.engine.repeaters().find((candidate) => candidate.wire === wire)?.def
-    const label = def?.label ?? this.labels()?.[wire] ?? wire
+    const label = this.engine.text(def?.label) ?? this.labels()?.[wire] ?? wire
     const minItems = def?.minItems ?? 0
 
     const repeater = runInInjectionContext(this.injector, () => {
@@ -222,7 +223,7 @@ export class FormancyRepeaterSection implements OnInit {
       <nav data-formancy-part="stepper" aria-label="Progress">
         <ol>
           @for (page of pages; track page.key; let i = $index) {
-            <li [attr.aria-current]="i === w.page() ? 'step' : null">{{ page.def.label ?? page.key }}</li>
+            <li [attr.aria-current]="i === w.page() ? 'step' : null">{{ pageLabel(page) }}</li>
           }
         </ol>
       </nav>
@@ -293,6 +294,10 @@ export class FormancyForm {
 
   protected fallbackFor(wire: string): string | undefined {
     return this.labels()?.[wire]
+  }
+
+  protected pageLabel(page: { key: string; def: FieldDef }): string {
+    return this.engine.text(page.def.label) ?? page.key
   }
 
   protected onNext(): void {

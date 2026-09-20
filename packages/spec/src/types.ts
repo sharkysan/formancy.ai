@@ -16,7 +16,40 @@ export interface FormSchema {
   title: string
   model: FormModel
   logic?: FormLogic
+  /** Message catalogues. Optional: a form may carry plain strings instead. */
+  i18n?: FormI18n
+  /** Named arrangements of the same model. Optional: model order is the default. */
+  layouts?: FormLayout[]
 }
+
+/** A reference into the message catalogue, in place of a literal string. */
+export interface MessageRef {
+  $t: string
+}
+
+/** Anything a person reads: a literal, or a reference to a translation. */
+export type Text = string | MessageRef
+
+export interface FormI18n {
+  /** The locale every reference must resolve in, and the fallback for the rest. */
+  defaultLocale: string
+  /** locale -> message id -> text. Non-default locales may be partial. */
+  messages: Record<string, Record<string, string>>
+}
+
+/**
+ * One arrangement of a model. A form may have several — `web`, `print`,
+ * `mobile` — over the same data, which is the point of keeping layout out of
+ * the model in the first place.
+ */
+export interface FormLayout {
+  name: string
+  nodes: LayoutNode[]
+}
+
+export type LayoutNode =
+  | { kind: 'field'; path: string }
+  | { kind: 'section' | 'row' | 'column'; label?: Text; children: LayoutNode[] }
 
 export interface FormModel {
   fields: FieldDef[]
@@ -82,7 +115,7 @@ export interface FieldDef {
    * repeater chrome. They live here because a form without labels is unusable
    * and inventing a side-channel would be worse than carrying them openly.
    */
-  label?: string
+  label?: Text
   options?: FieldOption[]
   minItems?: number
   maxItems?: number
@@ -105,7 +138,7 @@ export type FieldFormat = 'email' | 'url' | 'uuid'
 export interface FieldOption {
   /** Stored in the submission; stable like a field key. */
   value: string
-  label: string
+  label: Text
 }
 
 /** The form's behaviour, apart from its data model. */

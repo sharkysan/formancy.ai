@@ -1,4 +1,5 @@
-import type { FieldDef, FieldType, FormSchema, LogicRule } from '@formancy/spec'
+import type { FieldDef, FieldType, FormSchema, LogicRule, Text } from '@formancy/spec'
+import { resolveText } from '@formancy/spec'
 import { captureCapabilities, compile, evaluate } from '@formancy/expressions'
 import type {
   Capabilities,
@@ -55,7 +56,19 @@ export interface FieldSnapshot {
   touched: boolean
   /** Error CODES (e.g. "required") — text belongs to the message catalog, not the engine. */
   errors: readonly string[]
-  /** The model definition, verbatim — renderers read labels/options extras from it. */
+  /**
+   * The label already resolved to a string in the engine's locale.
+   *
+   * `def.label` may be a reference into the message catalogue, and resolving it
+   * in the engine rather than in each renderer is what keeps React and Angular
+   * from disagreeing about what a field is called — the same reasoning that put
+   * ids and ARIA wiring here.
+   *
+   * Always present, undefined when the field declares no label at all — a
+   * renderer then falls back to something of its own.
+   */
+  label: string | undefined
+  /** The model definition, verbatim — renderers read options and extras from it. */
   def: FieldDef
   ids: FieldIds
   /** Ready-to-spread ARIA wiring; see props.ts for the rules it encodes. */
@@ -76,6 +89,11 @@ export interface FormEngineOptions {
    * must be able to replay a submission and get byte-identical results.
    */
   capabilities?: CapabilitySource
+  /**
+   * Which message catalogue to read. Defaults to the schema's own default
+   * locale; an unknown locale falls back to it rather than showing message ids.
+   */
+  locale?: string
 }
 
 export interface FormEngine {
@@ -110,6 +128,11 @@ export interface FormEngine {
   applyServerErrors(errors: Record<string, readonly string[]>): void
   /** First invalid field in document order — the error summary focuses it. Null when clean. */
   firstInvalid(): string | null
+  /**
+   * Resolve any other piece of schema text — option labels, repeater buttons,
+   * page titles — in the same locale the snapshots used.
+   */
+  text(value: Text | undefined): string | undefined
 }
 
 interface FieldNode {
@@ -257,6 +280,12 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
 
   const rules = schema.logic?.rules ?? []
   const capabilitySource = options.capabilities
+
+  // Fixed for the engine's lifetime: a snapshot's identity is supposed to change
+  // only when that field's state changes, and a locale that could move under it
+  // would make every cached snapshot silently wrong. Switching language means
+  // building a new engine.
+  const locale = options.locale ?? schema.i18n?.defaultLocale ?? ''
 
   if (rules.length > 0 && capabilitySource === undefined) {
     throw new Error(
@@ -787,6 +816,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
       const snapshot: FieldSnapshot = Object.freeze({
         value: store.get(node.path),
         type: node.def.type,
+        label: resolveText(schema, node.def.label, locale),
         def: node.def,
         required,
         visible: !hiddenWires.has(wire),
@@ -856,6 +886,10 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
         if (errorsByWire.has(node.wire) || serverErrorsByWire.has(node.wire)) return node.wire
       }
       return null
+    },
+
+    text(value) {
+      return resolveText(schema, value, locale)
     },
 
     submit() {

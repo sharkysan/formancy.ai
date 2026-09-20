@@ -1,7 +1,8 @@
 import type { ErrorObject, ValidateFunction } from 'ajv/dist/2020.js'
 import documentValidatorFn from './generated/document-validator.js'
 import { modelDataPaths } from './paths.js'
-import type { FieldDef, FormSchema } from './types.js'
+import { collectFieldPaths, isMessageRef, modelPathsForLayout } from './presentation.js'
+import type { FieldDef, FormSchema, LayoutNode, Text } from './types.js'
 
 /** One reason a document is not a valid formancy form. */
 export interface SchemaError {
@@ -109,6 +110,7 @@ function semanticErrors(schema: FormSchema): SchemaError[] {
   }
 
   errors.push(...logicErrors(schema))
+  errors.push(...presentationErrors(schema))
 
   return errors
 }
@@ -148,6 +150,107 @@ function logicErrors(schema: FormSchema): SchemaError[] {
   return errors
 }
 
+
+
+/**
+ * The presentation sections: every message reference must resolve, and every
+ * layout must place real fields, once each.
+ *
+ * A reference that resolves nowhere would put a message id in front of a
+ * person, which is the failure these sections exist to prevent — so it is an
+ * error when the form is saved rather than a surprise when it is filled in.
+ */
+function presentationErrors(schema: FormSchema): SchemaError[] {
+  const errors: SchemaError[] = []
+  const i18n = schema.i18n
+
+  if (i18n !== undefined && i18n.messages[i18n.defaultLocale] === undefined) {
+    errors.push({
+      path: '/i18n/defaultLocale',
+      message: `There is no "${i18n.defaultLocale}" catalogue, so the language everything falls back to has no words in it.`,
+    })
+  }
+
+  const known = new Set(Object.keys(i18n?.messages[i18n.defaultLocale] ?? {}))
+  const checkText = (text: Text | undefined, path: string): void => {
+    if (!isMessageRef(text)) return
+    if (i18n === undefined) {
+      errors.push({
+        path,
+        message: `"${text.$t}" refers to a translation, but this form has no i18n section.`,
+      })
+      return
+    }
+    if (!known.has(text.$t)) {
+      errors.push({
+        path,
+        message: `No message called "${text.$t}" in the "${i18n.defaultLocale}" catalogue.`,
+      })
+    }
+  }
+
+  const walkFieldText = (fields: readonly FieldDef[], base: string): void => {
+    for (const [index, field] of fields.entries()) {
+      const path = `${base}/${String(index)}`
+      checkText(field.label, `${path}/label`)
+      for (const [optionIndex, option] of (field.options ?? []).entries()) {
+        checkText(option.label, `${path}/options/${String(optionIndex)}/label`)
+      }
+      walkFieldText(field.fields ?? [], `${path}/fields`)
+    }
+  }
+  walkFieldText(schema.model.fields, '/model/fields')
+
+  const layouts = schema.layouts
+  if (layouts === undefined) return errors
+
+  const placeable = new Set(modelPathsForLayout(schema.model.fields, ''))
+  const namesSeen = new Set<string>()
+
+  for (const [index, layout] of layouts.entries()) {
+    const at = `/layouts/${String(index)}`
+    if (namesSeen.has(layout.name)) {
+      errors.push({
+        path: `${at}/name`,
+        message: `Another layout is already called "${layout.name}". A layout is asked for by name, so two cannot share one.`,
+      })
+    }
+    namesSeen.add(layout.name)
+
+    // A field has one place in a given arrangement; twice would render it
+    // twice, bound to the same answer, which no form means.
+    const placed = new Set<string>()
+    const duplicates = new Set<string>()
+    const walkNodes = (nodes: readonly LayoutNode[], nodeBase: string): void => {
+      for (const [nodeIndex, node] of nodes.entries()) {
+        const nodePath = `${nodeBase}/${String(nodeIndex)}`
+        if (node.kind === 'field') {
+          if (!placeable.has(node.path)) {
+            errors.push({
+              path: `${nodePath}/path`,
+              message: `No field has the data path "${node.path}", so this layout places nothing here.`,
+            })
+          } else if (placed.has(node.path)) {
+            duplicates.add(node.path)
+            errors.push({
+              path: `${nodePath}/path`,
+              message: `"${node.path}" is already placed in the "${layout.name}" layout. A field has one place in an arrangement.`,
+            })
+          }
+          placed.add(node.path)
+        } else {
+          checkText(node.label, `${nodePath}/label`)
+          walkNodes(node.children, `${nodePath}/children`)
+        }
+      }
+    }
+    walkNodes(layout.nodes, `${at}/nodes`)
+    void duplicates
+    void collectFieldPaths
+  }
+
+  return errors
+}
 
 /** Every page below the top level is an error, wherever it hides. */
 function forbidNestedPages(field: FieldDef, path: string, errors: SchemaError[]): void {

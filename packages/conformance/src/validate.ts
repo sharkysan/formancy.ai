@@ -242,7 +242,14 @@ function validateSchema(value: unknown, at: string): FixtureProblem[] {
     return problems
   }
 
-  const fieldProblems = validateFields(fields, `${at}.model.fields`)
+  // The names a message reference may resolve to. A fixture is allowed to be
+  // written in references instead of literals, but THE RULE still holds: every
+  // control must end up with an accessible name, so a reference that resolves
+  // nowhere is exactly as unfindable as no label at all.
+  const messages = messageCatalogue(schema['i18n'])
+  problems.push(...validateI18n(schema['i18n'], `${at}.i18n`))
+
+  const fieldProblems = validateFields(fields, `${at}.model.fields`, messages)
   problems.push(...fieldProblems)
 
   // Rule targets are only checked against a model that is itself sound, for
@@ -321,7 +328,11 @@ function validateLogic(
   return problems
 }
 
-function validateFields(fields: readonly unknown[], at: string): FixtureProblem[] {
+function validateFields(
+  fields: readonly unknown[],
+  at: string,
+  messages: ReadonlySet<string> | undefined,
+): FixtureProblem[] {
   const problems: FixtureProblem[] = []
   const seen = new Set<string>()
 
@@ -366,26 +377,125 @@ function validateFields(fields: readonly unknown[], at: string): FixtureProblem[
       if (!Array.isArray(nested) || nested.length === 0) {
         problems.push({ path: `${where}.fields`, message: `a ${type} needs at least one field` })
       } else {
-        problems.push(...validateFields(nested, `${where}.fields`))
+        problems.push(...validateFields(nested, `${where}.fields`, messages))
       }
     } else if (nested !== undefined) {
       problems.push({ path: `${where}.fields`, message: `a ${type} cannot hold fields` })
     }
 
+    const labelProblem = accessibleNameProblem(field['label'], messages)
     if (!isContainer && !UNLABELLED_TYPES.has(type)) {
       // A driver reaches a control by role and accessible name, and nothing
       // else — see driver.ts. A control without a label is therefore a control
       // no conforming driver can find, so the case could not run honestly.
-      if (typeof field['label'] !== 'string' || field['label'] === '') {
+      if (labelProblem !== undefined) {
         problems.push({
           path: `${where}.label`,
-          message: `a ${type} needs a non-empty label: drivers resolve controls by accessible name only`,
+          message: `a ${type} ${labelProblem}: drivers resolve controls by accessible name only`,
         })
       }
-    } else if (field['label'] !== undefined && typeof field['label'] !== 'string') {
-      problems.push({ path: `${where}.label`, message: 'expected a string' })
+    } else if (field['label'] !== undefined && labelProblem !== undefined) {
+      problems.push({ path: `${where}.label`, message: labelProblem })
+    }
+
+    // Option labels are accessible names too: a driver clicks a radio by the
+    // name beside it, not by its stored value.
+    const options = field['options']
+    if (Array.isArray(options)) {
+      for (const [index, option] of options.entries()) {
+        const record = asRecord(option)
+        if (record === undefined) continue
+        const problem = accessibleNameProblem(record['label'], messages)
+        if (problem !== undefined) {
+          problems.push({ path: `${where}.options[${String(index)}].label`, message: problem })
+        }
+      }
     }
   })
+
+  return problems
+}
+
+/**
+ * What is wrong with a piece of text that has to become an accessible name, or
+ * undefined when it will. Accepts either a literal or a `{ $t }` reference,
+ * because the renderers accept both — and insists the reference resolves,
+ * because a driver searching for an unresolved id finds nothing.
+ */
+function accessibleNameProblem(
+  label: unknown,
+  messages: ReadonlySet<string> | undefined,
+): string | undefined {
+  if (typeof label === 'string') {
+    return label === '' ? 'needs a non-empty label' : undefined
+  }
+  const record = asRecord(label)
+  const ref = record?.['$t']
+  if (typeof ref !== 'string') return 'needs a non-empty label'
+  if (messages === undefined) {
+    return `refers to "${ref}", but the fixture has no i18n section`
+  }
+  if (!messages.has(ref)) {
+    return `refers to "${ref}", which the default locale does not define`
+  }
+  return undefined
+}
+
+/** The message ids the default locale defines, or undefined when unlocalised. */
+function messageCatalogue(value: unknown): ReadonlySet<string> | undefined {
+  const i18n = asRecord(value)
+  if (i18n === undefined) return undefined
+  const locale = i18n['defaultLocale']
+  if (typeof locale !== 'string') return new Set()
+  const catalogue = asRecord(asRecord(i18n['messages'])?.[locale])
+  if (catalogue === undefined) return new Set()
+  return new Set(Object.keys(catalogue).filter((id) => typeof catalogue[id] === 'string'))
+}
+
+function validateI18n(value: unknown, at: string): FixtureProblem[] {
+  if (value === undefined) return []
+  const i18n = asRecord(value)
+  if (i18n === undefined) {
+    return [{ path: at, message: `expected an object, got ${describeValue(value)}` }]
+  }
+
+  const problems: FixtureProblem[] = []
+  const locale = i18n['defaultLocale']
+  if (typeof locale !== 'string' || locale === '') {
+    problems.push({ path: `${at}.defaultLocale`, message: 'expected a non-empty string' })
+  }
+
+  const messages = asRecord(i18n['messages'])
+  if (messages === undefined) {
+    problems.push({
+      path: `${at}.messages`,
+      message: `expected an object, got ${describeValue(i18n['messages'])}`,
+    })
+    return problems
+  }
+
+  if (typeof locale === 'string' && asRecord(messages[locale]) === undefined) {
+    problems.push({
+      path: `${at}.messages.${locale}`,
+      message: 'the default locale needs a catalogue: it is what every other locale falls back to',
+    })
+  }
+
+  for (const [name, catalogue] of Object.entries(messages)) {
+    const entries = asRecord(catalogue)
+    if (entries === undefined) {
+      problems.push({ path: `${at}.messages.${name}`, message: 'expected an object' })
+      continue
+    }
+    for (const [id, text] of Object.entries(entries)) {
+      if (typeof text !== 'string' || text === '') {
+        problems.push({
+          path: `${at}.messages.${name}.${id}`,
+          message: 'expected a non-empty string',
+        })
+      }
+    }
+  }
 
   return problems
 }

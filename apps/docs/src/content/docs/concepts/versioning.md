@@ -77,9 +77,11 @@ may land in minors and are documented in `MIGRATIONS.md`.
 artifact with real switching costs — your forms and submissions are written
 against it. Packages 0.9 and 1.4 can both speak spec `"0"`.
 
-Spec `"0"` is **unstable** by design while the model is being proven. It freezes
-to `"1"` once the presentation-lite properties have been replaced by proper
-`i18n` and `layout` sections. From v1 onward a spec bump is a major event,
+Spec `"0"` is **unstable** by design while the model is being proven. The
+`i18n` and `layout` sections that were the last things holding the freeze are
+now in, so the remaining gate is Angular and React proving the model is not
+React-shaped — which the shared conformance suite now does. From v1 onward a
+spec bump is a major event,
 `@formancy/cli migrate` rewrites documents forward — and **submissions never
 migrate**. They stay bound to the exact version that produced them, which is
 what makes an old one auditable at all.

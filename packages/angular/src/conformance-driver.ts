@@ -4,7 +4,8 @@ import { TestBed } from '@angular/core/testing'
 import { fireEvent, render, screen, within } from '@testing-library/angular'
 import { createFormEngine } from '@formancy/core'
 import type { FormEngine } from '@formancy/core'
-import type { FormSchema } from '@formancy/spec'
+import { resolveText } from '@formancy/spec'
+import type { FormSchema, Text } from '@formancy/spec'
 import { BACK_COMMAND, COMMAND_SEPARATOR, NEXT_COMMAND, fieldAtPath } from '@formancy/conformance'
 import type {
   ConformanceMessage,
@@ -51,10 +52,19 @@ export function createAngularDriver(): RendererDriver {
     return match === null ? undefined : Number(match[1])
   }
 
+  /**
+   * The accessible name the renderer will have produced — resolved through the
+   * message catalogue, exactly as the renderer resolves it. Reading `label` raw
+   * would look up "[object Object]" the moment a fixture uses a translation.
+   */
+  function textOf(value: Text | undefined): string | undefined {
+    const { schema } = requireMounted()
+    return resolveText(schema, value, schema.i18n?.defaultLocale ?? '')
+  }
+
   function labelOf(path: string): string {
     const { schema } = requireMounted()
-    const def = fieldAtPath(schema, path)
-    const label = def?.label
+    const label = textOf(fieldAtPath(schema, path)?.label)
     if (label === undefined) {
       throw new Error(`No label for "${path}" — the fixture validator should have refused this`)
     }
@@ -110,7 +120,7 @@ export function createAngularDriver(): RendererDriver {
         const group = screen.getByRole('group', { name: labelOf(path) })
         const chosen = (def.options ?? []).find((option) => option.value === value)
         if (chosen === undefined) throw new Error(`No option "${String(value)}" on "${path}"`)
-        fireEvent.click(within(group).getByLabelText(chosen.label))
+        fireEvent.click(within(group).getByLabelText(textOf(chosen.label) ?? chosen.value))
         await settle()
         return
       }

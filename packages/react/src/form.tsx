@@ -1,4 +1,3 @@
-import { useEffect } from 'react'
 import type { ComponentType, ReactNode } from 'react'
 import { parsePath } from '@formancy/core'
 import type { FieldDef, FieldType } from '@formancy/spec'
@@ -108,7 +107,7 @@ function PagedForm(props: FormancyFormProps) {
         <ol>
           {pages.map((page, index) => (
             <li key={page.key} aria-current={index === wizard.page ? 'step' : undefined}>
-              {page.def.label ?? page.key}
+              {engine.text(page.def.label) ?? page.key}
             </li>
           ))}
         </ol>
@@ -177,7 +176,7 @@ function FieldSlot({
     registry?.byPath?.[path] ?? registry?.byType?.[field.type] ?? DEFAULT_COMPONENTS[field.type]
   if (Component === null) return null
 
-  const label = field.def.label ?? fallbackLabel ?? path
+  const label = field.label ?? fallbackLabel ?? path
   return <Component path={path} label={label} />
 }
 
@@ -193,17 +192,9 @@ function RepeaterSection({
   const engine = useFormEngine()
   const repeater = useRepeater(wire)
   const def = engine.repeaters().find((candidate) => candidate.wire === wire)?.def
-  const label = def?.label ?? labels?.[wire] ?? wire
+  const label = engine.text(def?.label) ?? labels?.[wire] ?? wire
   const addLabel = def?.addLabel ?? `Add ${label}`
   const removeLabel = def?.removeLabel ?? `Remove ${label}`
-  const minItems = def?.minItems ?? 0
-
-  // Seed to minItems on mount: a repeater that promises one row must show one
-  // empty row, not an add button and a shrug.
-  const shortfall = minItems - repeater.rowCount
-  useEffect(() => {
-    for (let i = 0; i < shortfall; i++) repeater.addRow()
-  }, [shortfall, repeater])
 
   const fallbackFor = (instanceWire: string): string | undefined => {
     const template = instanceWire.replace(/\[\d+\]/, '[]')
@@ -345,9 +336,22 @@ function DateField({ path, label }: FieldComponentProps) {
   )
 }
 
+/**
+ * Option labels resolved to strings, since a label may be a message reference.
+ * Falling back to the stored value keeps an untranslated option selectable
+ * rather than blank.
+ */
+function useResolvedOptions(field: { def: FieldDef }): Array<{ value: string; label: string }> {
+  const engine = useFormEngine()
+  return (field.def.options ?? []).map((option) => ({
+    value: option.value,
+    label: engine.text(option.label) ?? option.value,
+  }))
+}
+
 function SelectField({ path, label }: FieldComponentProps) {
   const field = useField(path)
-  const options = field.def.options ?? []
+  const options = useResolvedOptions(field)
   return (
     <FieldShell field={field} label={label}>
       {/* Setting `value` on the select works only because React applies it
@@ -376,7 +380,7 @@ function SelectField({ path, label }: FieldComponentProps) {
 
 function RadioGroupField({ path, label }: FieldComponentProps) {
   const field = useField(path)
-  const options = field.def.options ?? []
+  const options = useResolvedOptions(field)
   const showError = field.touched && field.errors.length > 0
   return (
     <fieldset
