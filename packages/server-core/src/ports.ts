@@ -1,4 +1,5 @@
 import type { FormSchema } from '@formancy/spec'
+import type { Role } from './auth.js'
 
 /**
  * The storage port. Implemented over Postgres in @formancy/server and over a
@@ -27,6 +28,25 @@ export interface SubmissionRecord {
   submittedAt: string
 }
 
+export interface UserRecord {
+  id: string
+  email: string
+  passwordHash: string
+  role: Role
+  createdAt: string
+}
+
+export interface ApiKeyRecord {
+  id: string
+  name: string
+  /** The visible first characters — index and display, never authentication. */
+  prefix: string
+  secretHash: string
+  role: Role
+  createdAt: string
+  revokedAt: string | null
+}
+
 export interface DraftRecord {
   id: string
   formId: string
@@ -51,4 +71,10 @@ export interface Storage {
   listVersionsByForm(formId: string): Promise<FormVersionRecord[]>
   upsertDraft(record: DraftRecord): Promise<void>
   getDraft(formId: string, draftId: string): Promise<DraftRecord | undefined>
+  insertUser(record: UserRecord): Promise<void>
+  getUserByEmail(email: string): Promise<UserRecord | undefined>
+  insertApiKey(record: ApiKeyRecord): Promise<void>
+  listApiKeys(): Promise<ApiKeyRecord[]>
+  findApiKeysByPrefix(prefix: string): Promise<ApiKeyRecord[]>
+  revokeApiKey(id: string, atIso: string): Promise<void>
 }

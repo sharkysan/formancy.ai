@@ -1,7 +1,12 @@
 import { randomUUID } from 'node:crypto'
 import Fastify from 'fastify'
-import type { FastifyInstance } from 'fastify'
+import type { FastifyInstance, FastifyRequest, preHandlerHookHandler } from 'fastify'
 import {
+  authenticateApiKey,
+  authenticateLocal,
+  can,
+  createApiKey,
+  createLocalUser,
   createSubmission,
   exportCsv,
   listForms,
@@ -12,18 +17,39 @@ import {
   resumeDraft,
   saveDraft,
 } from '@formancy/server-core'
-import type { ServerDeps, Storage } from '@formancy/server-core'
+import type { Action, Actor, AuthDeps, Role, ServerDeps, Storage } from '@formancy/server-core'
+import { createSessionTokens, realRandomToken, realSecretHashing } from './auth-runtime.js'
 
 export const SCHEMA_HASH_HEADER = 'x-formancy-schema-hash'
+export const API_KEY_HEADER = 'x-formancy-api-key'
+
+export interface AppOptions {
+  /** Signs the short-lived session tokens. At least 32 characters. */
+  authSecret: string
+  /**
+   * Created at startup IF no user exists yet — the docker-compose path to a
+   * first login. Ignored once any user exists, so it cannot re-seed an admin
+   * into a running installation.
+   */
+  bootstrapAdmin?: { email: string; password: string }
+}
 
 /**
- * The HTTP surface of the thin slice.
+ * The HTTP surface, split into two planes.
+ *
+ * PUBLIC — what a person filling a form needs: resolve, submit, drafts. These
+ * stay unauthenticated by design; anonymous-submission hardening is its own
+ * upcoming step and is opt-in per form.
+ *
+ * MANAGEMENT — everything an operator does: publish, catalog, submissions,
+ * export, users, keys. Authenticated via a session token (login) or an API
+ * key header, authorized through server-core's one-table can().
  *
  * This file is the composition root, so THIS is where ambient reality enters:
- * randomUUID for identities and the real clock for capabilities. Everything
- * below it stays injected and replayable.
+ * randomUUID, the real clock, argon2 and the CSPRNG. Everything below stays
+ * injected and replayable.
  */
-export function createApp(storage: Storage): FastifyInstance {
+export async function createApp(storage: Storage, options: AppOptions): Promise<FastifyInstance> {
   const app = Fastify({ logger: false })
 
   const deps: ServerDeps = {
@@ -37,7 +63,103 @@ export function createApp(storage: Storage): FastifyInstance {
     },
   }
 
-  app.post('/forms', async (request, reply) => {
+  const authDeps: AuthDeps = {
+    storage,
+    newId: deps.newId,
+    nowIso: deps.nowIso,
+    randomToken: realRandomToken,
+    ...realSecretHashing(),
+  }
+
+  const sessions = createSessionTokens(options.authSecret)
+
+  if (options.bootstrapAdmin !== undefined) {
+    const alreadyThere = await storage.getUserByEmail(options.bootstrapAdmin.email)
+    if (alreadyThere === undefined) {
+      const outcome = await createLocalUser(authDeps, { ...options.bootstrapAdmin, role: 'admin' })
+      if (!outcome.ok) throw new Error(`Bootstrap admin rejected: ${outcome.message}`)
+    }
+  }
+
+  async function actorOf(request: FastifyRequest): Promise<Actor | undefined> {
+    const bearer = request.headers.authorization
+    if (typeof bearer === 'string' && bearer.startsWith('Bearer ')) {
+      return sessions.verify(bearer.slice('Bearer '.length))
+    }
+    const apiKey = request.headers[API_KEY_HEADER]
+    if (typeof apiKey === 'string' && apiKey !== '') {
+      const outcome = await authenticateApiKey(authDeps, apiKey)
+      return outcome.ok ? outcome.actor : undefined
+    }
+    return undefined
+  }
+
+  /** 401 without an identity, 403 with one that lacks the permission — the
+   *  difference tells a client whether to log in or to give up. */
+  function requires(action: Action): preHandlerHookHandler {
+    return async (request, reply) => {
+      const actor = await actorOf(request)
+      if (actor === undefined) {
+        return reply.code(401).send({ error: 'unauthenticated' })
+      }
+      if (!can(actor, action)) {
+        return reply.code(403).send({ error: 'forbidden', action })
+      }
+      ;(request as FastifyRequest & { actor: Actor }).actor = actor
+    }
+  }
+
+  // -------------------------------------------------------------------- auth
+
+  app.post('/auth/login', async (request, reply) => {
+    const body = request.body as { email?: unknown; password?: unknown } | null
+    if (body === null || typeof body.email !== 'string' || typeof body.password !== 'string') {
+      return reply.code(400).send({ error: 'bad_request', message: 'Body needs { email, password }.' })
+    }
+    const outcome = await authenticateLocal(authDeps, { email: body.email, password: body.password })
+    if (!outcome.ok) return reply.code(401).send({ error: 'invalid_credentials' })
+    return reply.send({ token: await sessions.issue(outcome.actor), role: outcome.actor.role })
+  })
+
+  app.post('/users', { preHandler: requires('user.create') }, async (request, reply) => {
+    const body = request.body as { email?: unknown; password?: unknown; role?: unknown } | null
+    if (
+      body === null ||
+      typeof body.email !== 'string' ||
+      typeof body.password !== 'string' ||
+      (body.role !== 'admin' && body.role !== 'editor' && body.role !== 'viewer')
+    ) {
+      return reply
+        .code(400)
+        .send({ error: 'bad_request', message: 'Body needs { email, password, role }.' })
+    }
+    const outcome = await createLocalUser(authDeps, {
+      email: body.email,
+      password: body.password,
+      role: body.role as Role,
+    })
+    if (!outcome.ok) return reply.code(422).send({ error: 'rejected', message: outcome.message })
+    return reply.code(201).send({ id: outcome.id })
+  })
+
+  app.post('/api-keys', { preHandler: requires('apiKey.create') }, async (request, reply) => {
+    const body = request.body as { name?: unknown; role?: unknown } | null
+    if (
+      body === null ||
+      typeof body.name !== 'string' ||
+      (body.role !== 'admin' && body.role !== 'editor' && body.role !== 'viewer')
+    ) {
+      return reply.code(400).send({ error: 'bad_request', message: 'Body needs { name, role }.' })
+    }
+    const outcome = await createApiKey(authDeps, { name: body.name, role: body.role as Role })
+    if (!outcome.ok) return reply.code(422).send({ error: 'rejected', message: outcome.message })
+    // The one and only time the secret exists in full outside a hash.
+    return reply.code(201).send({ id: outcome.id, secret: outcome.secret })
+  })
+
+  // -------------------------------------------------------------- management
+
+  app.post('/forms', { preHandler: requires('form.publish') }, async (request, reply) => {
     const body = request.body as { path?: unknown; schema?: unknown } | null
     if (body === null || typeof body.path !== 'string' || body.path === '' || body.schema === undefined) {
       return reply.code(400).send({ error: 'bad_request', message: 'Body needs { path, schema }.' })
@@ -50,22 +172,46 @@ export function createApp(storage: Storage): FastifyInstance {
         ...(outcome.kind === 'invalid_schema' ? { errors: outcome.errors } : { message: outcome.message }),
       })
     }
-    return reply.code(201).send({
-      version: outcome.version,
-      schemaHash: outcome.schemaHash,
-    })
+    return reply.code(201).send({ version: outcome.version, schemaHash: outcome.schemaHash })
   })
 
-  app.get('/forms', async (_request, reply) => {
+  app.get('/forms', { preHandler: requires('form.read') }, async (_request, reply) => {
     return reply.send({ forms: await listForms(deps) })
   })
 
-  app.get('/f/:path/versions', async (request, reply) => {
+  app.get('/f/:path/versions', { preHandler: requires('form.read') }, async (request, reply) => {
     const { path } = request.params as { path: string }
     const versions = await listVersions(deps, path)
     if (versions === undefined) return reply.code(404).send({ error: 'unknown_form' })
     return reply.send({ versions })
   })
+
+  app.get(
+    '/f/:path/submissions',
+    { preHandler: requires('submission.read') },
+    async (request, reply) => {
+      const { path } = request.params as { path: string }
+      const listed = await listSubmissions(deps, path)
+      if (listed === undefined) return reply.code(404).send({ error: 'unknown_form' })
+      return reply.send({ submissions: listed })
+    },
+  )
+
+  app.get(
+    '/f/:path/submissions/export.csv',
+    { preHandler: requires('submission.export') },
+    async (request, reply) => {
+      const { path } = request.params as { path: string }
+      const csv = await exportCsv(deps, path)
+      if (csv === undefined) return reply.code(404).send({ error: 'unknown_form' })
+      return reply
+        .header('content-type', 'text/csv; charset=utf-8')
+        .header('content-disposition', `attachment; filename="${path}-submissions.csv"`)
+        .send(csv)
+    },
+  )
+
+  // ------------------------------------------------------------------ public
 
   app.get('/f/:path', async (request, reply) => {
     const { path } = request.params as { path: string }
@@ -76,26 +222,6 @@ export function createApp(storage: Storage): FastifyInstance {
       schemaHash: resolved.schemaHash,
       schema: resolved.schema,
     })
-  })
-
-  // NOTE: listing and export ship unauthenticated in the thin slice, exactly
-  // like publish — the auth layer is SP-6 and wraps all management routes at
-  // once. Do not deploy this slice anywhere public.
-  app.get('/f/:path/submissions', async (request, reply) => {
-    const { path } = request.params as { path: string }
-    const listed = await listSubmissions(deps, path)
-    if (listed === undefined) return reply.code(404).send({ error: 'unknown_form' })
-    return reply.send({ submissions: listed })
-  })
-
-  app.get('/f/:path/submissions/export.csv', async (request, reply) => {
-    const { path } = request.params as { path: string }
-    const csv = await exportCsv(deps, path)
-    if (csv === undefined) return reply.code(404).send({ error: 'unknown_form' })
-    return reply
-      .header('content-type', 'text/csv; charset=utf-8')
-      .header('content-disposition', `attachment; filename="${path}-submissions.csv"`)
-      .send(csv)
   })
 
   app.put('/f/:path/drafts/:draftId', async (request, reply) => {

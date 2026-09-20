@@ -29,6 +29,24 @@ export const formVersions = pgTable('form_versions', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
+export const users = pgTable('users', {
+  id: uuid('id').primaryKey(),
+  email: text('email').notNull().unique(),
+  passwordHash: text('password_hash').notNull(),
+  role: text('role').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+})
+
+export const apiKeys = pgTable('api_keys', {
+  id: uuid('id').primaryKey(),
+  name: text('name').notNull(),
+  prefix: text('prefix').notNull(),
+  secretHash: text('secret_hash').notNull(),
+  role: text('role').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+  revokedAt: timestamp('revoked_at', { withTimezone: true }),
+})
+
 export const drafts = pgTable('drafts', {
   id: text('id').notNull(),
   formId: uuid('form_id')
@@ -85,6 +103,25 @@ export async function bootstrapSchema(sql: postgres.Sql): Promise<void> {
       data jsonb NOT NULL,
       submitted_at timestamptz NOT NULL
     )`
+  await sql`
+    CREATE TABLE IF NOT EXISTS users (
+      id uuid PRIMARY KEY,
+      email text NOT NULL UNIQUE,
+      password_hash text NOT NULL,
+      role text NOT NULL,
+      created_at timestamptz NOT NULL
+    )`
+  await sql`
+    CREATE TABLE IF NOT EXISTS api_keys (
+      id uuid PRIMARY KEY,
+      name text NOT NULL,
+      prefix text NOT NULL,
+      secret_hash text NOT NULL,
+      role text NOT NULL,
+      created_at timestamptz NOT NULL,
+      revoked_at timestamptz
+    )`
+  await sql`CREATE INDEX IF NOT EXISTS api_keys_prefix ON api_keys (prefix)`
   await sql`
     CREATE TABLE IF NOT EXISTS drafts (
       id text NOT NULL,

@@ -1,4 +1,4 @@
-import type { DraftRecord, FormRecord, FormVersionRecord, Storage, SubmissionRecord } from '../ports.js'
+import type { ApiKeyRecord, DraftRecord, FormRecord, FormVersionRecord, Storage, SubmissionRecord, UserRecord } from '../ports.js'
 
 /**
  * The in-memory Storage — the second implementation that keeps the port
@@ -10,6 +10,8 @@ export function createMemoryStorage(): Storage {
   const versions = new Map<string, FormVersionRecord>()
   const submissions: SubmissionRecord[] = []
   const drafts = new Map<string, DraftRecord>()
+  const users = new Map<string, UserRecord>()
+  const apiKeys = new Map<string, ApiKeyRecord>()
 
   return {
     getFormByPath: async (path) => [...forms.values()].find((form) => form.path === path),
@@ -64,5 +66,26 @@ export function createMemoryStorage(): Storage {
     },
 
     getDraft: async (formId, draftId) => drafts.get(formId + ':' + draftId),
+
+    insertUser: async (record) => {
+      users.set(record.id, { ...record })
+    },
+
+    getUserByEmail: async (email) =>
+      [...users.values()].find((user) => user.email === email),
+
+    insertApiKey: async (record) => {
+      apiKeys.set(record.id, { ...record })
+    },
+
+    listApiKeys: async () => [...apiKeys.values()].map((key) => ({ ...key })),
+
+    findApiKeysByPrefix: async (prefix) =>
+      [...apiKeys.values()].filter((key) => key.prefix === prefix),
+
+    revokeApiKey: async (id, atIso) => {
+      const key = apiKeys.get(id)
+      if (key !== undefined) key.revokedAt = atIso
+    },
   }
 }

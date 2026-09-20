@@ -39,11 +39,27 @@ const schema: FormSchema = {
   },
 }
 
+let adminToken = ''
+
+/** Management requests carry the bootstrap admin's session token. */
+function asAdmin(headers: Record<string, string> = {}): Record<string, string> {
+  return { authorization: `Bearer ${adminToken}`, ...headers }
+}
+
 beforeAll(async () => {
   container = await new PostgreSqlContainer('postgres:17-alpine').start()
   sql = postgres(container.getConnectionUri())
   await bootstrapSchema(sql)
-  app = createApp(createPostgresStorage(sql))
+  app = await createApp(createPostgresStorage(sql), {
+    authSecret: 'integration-test-secret-with-length',
+    bootstrapAdmin: { email: 'root@test.ch', password: 'root-password-1' },
+  })
+  const login = await app.inject({
+    method: 'POST',
+    url: '/auth/login',
+    payload: { email: 'root@test.ch', password: 'root-password-1' },
+  })
+  adminToken = (login.json() as { token: string }).token
 }, 180_000)
 
 afterAll(async () => {
@@ -56,7 +72,7 @@ describe('the walking skeleton, end to end', () => {
   let schemaHash = ''
 
   test('publishing a form yields version 1 and its hash', async () => {
-    const response = await app.inject({ method: 'POST', url: '/forms', payload: { path: 'contact-us', schema } })
+    const response = await app.inject({ method: 'POST', url: '/forms', headers: asAdmin(), payload: { path: 'contact-us', schema } })
 
     expect(response.statusCode).toBe(201)
     const body = response.json() as { version: number; schemaHash: string }
@@ -137,13 +153,13 @@ describe('the walking skeleton, end to end', () => {
   })
 
   test('republishing an identical schema stays at version 1', async () => {
-    const response = await app.inject({ method: 'POST', url: '/forms', payload: { path: 'contact-us', schema } })
+    const response = await app.inject({ method: 'POST', url: '/forms', headers: asAdmin(), payload: { path: 'contact-us', schema } })
     expect((response.json() as { version: number }).version).toBe(1)
   })
 
   test('publishing a changed schema bumps the version, and the old hash now 409s', async () => {
     const changed = { ...schema, title: 'Contact us please' }
-    const publish = await app.inject({ method: 'POST', url: '/forms', payload: { path: 'contact-us', schema: changed } })
+    const publish = await app.inject({ method: 'POST', url: '/forms', headers: asAdmin(), payload: { path: 'contact-us', schema: changed } })
     expect((publish.json() as { version: number }).version).toBe(2)
 
     const submit = await app.inject({
@@ -175,7 +191,7 @@ describe('the walking skeleton, end to end', () => {
         ],
       },
     }
-    const response = await app.inject({ method: 'POST', url: '/forms', payload: { path: 'cyclic-form', schema: cyclic } })
+    const response = await app.inject({ method: 'POST', url: '/forms', headers: asAdmin(), payload: { path: 'cyclic-form', schema: cyclic } })
 
     expect(response.statusCode).toBe(422)
     expect(await app.inject({ method: 'GET', url: '/f/cyclic-form' }).then((r) => r.statusCode)).toBe(404)
@@ -184,7 +200,7 @@ describe('the walking skeleton, end to end', () => {
 
 describe('listing and export', () => {
   test('the submissions list is newest first and version-tagged', async () => {
-    const response = await app.inject({ method: 'GET', url: '/f/contact-us/submissions' })
+    const response = await app.inject({ method: 'GET', url: '/f/contact-us/submissions', headers: asAdmin() })
 
     expect(response.statusCode).toBe(200)
     const body = response.json() as { submissions: Array<{ version: number; data: unknown }> }
@@ -193,7 +209,7 @@ describe('listing and export', () => {
   })
 
   test('the CSV export unions columns across the two published versions', async () => {
-    const response = await app.inject({ method: 'GET', url: '/f/contact-us/submissions/export.csv' })
+    const response = await app.inject({ method: 'GET', url: '/f/contact-us/submissions/export.csv', headers: asAdmin() })
 
     expect(response.statusCode).toBe(200)
     expect(response.headers['content-type']).toContain('text/csv')
@@ -206,8 +222,8 @@ describe('listing and export', () => {
   })
 
   test('both 404 on an unknown form', async () => {
-    expect((await app.inject({ method: 'GET', url: '/f/ghost/submissions' })).statusCode).toBe(404)
-    expect((await app.inject({ method: 'GET', url: '/f/ghost/submissions/export.csv' })).statusCode).toBe(404)
+    expect((await app.inject({ method: 'GET', url: '/f/ghost/submissions', headers: asAdmin() })).statusCode).toBe(404)
+    expect((await app.inject({ method: 'GET', url: '/f/ghost/submissions/export.csv', headers: asAdmin() })).statusCode).toBe(404)
   })
 })
 
@@ -227,7 +243,7 @@ describe('drafts over HTTP', () => {
       model: { fields: schema.model.fields.filter((f) => f.key !== 'qty' && f.key !== 'total') },
       logic: { rules: [{ target: 'canton', kind: 'visible', cel: 'country == "CH"' }] },
     }
-    const publish = await app.inject({ method: 'POST', url: '/forms', payload: { path: 'contact-us', schema: evolved } })
+    const publish = await app.inject({ method: 'POST', url: '/forms', headers: asAdmin(), payload: { path: 'contact-us', schema: evolved } })
     expect(publish.statusCode).toBe(201)
 
     const resumed = await app.inject({ method: 'GET', url: '/f/contact-us/drafts/draft-1' })
@@ -250,16 +266,92 @@ describe('drafts over HTTP', () => {
 
 describe('catalog reads over HTTP', () => {
   test('forms and version history are listable', async () => {
-    const forms = await app.inject({ method: 'GET', url: '/forms' })
+    const forms = await app.inject({ method: 'GET', url: '/forms', headers: asAdmin() })
     expect(forms.statusCode).toBe(200)
     expect((forms.json() as { forms: Array<{ path: string }> }).forms.map((f) => f.path)).toContain(
       'contact-us',
     )
 
-    const versions = await app.inject({ method: 'GET', url: '/f/contact-us/versions' })
+    const versions = await app.inject({ method: 'GET', url: '/f/contact-us/versions', headers: asAdmin() })
     expect(versions.statusCode).toBe(200)
     const listed = (versions.json() as { versions: Array<{ version: number }> }).versions
     expect(listed.length).toBeGreaterThanOrEqual(2)
     expect(listed[0]!.version).toBeGreaterThan(listed[listed.length - 1]!.version)
+  })
+})
+
+describe('the two planes', () => {
+  test('management without identity is 401; with a viewer identity but no permission, 403', async () => {
+    expect((await app.inject({ method: 'POST', url: '/forms', payload: {} })).statusCode).toBe(401)
+
+    const created = await app.inject({
+      method: 'POST',
+      url: '/users',
+      headers: asAdmin(),
+      payload: { email: 'viewer@test.ch', password: 'viewer-password-1', role: 'viewer' },
+    })
+    expect(created.statusCode).toBe(201)
+    const login = await app.inject({
+      method: 'POST',
+      url: '/auth/login',
+      payload: { email: 'viewer@test.ch', password: 'viewer-password-1' },
+    })
+    const viewerToken = (login.json() as { token: string }).token
+
+    const publishAttempt = await app.inject({
+      method: 'POST',
+      url: '/forms',
+      headers: { authorization: `Bearer ${viewerToken}` },
+      payload: { path: 'x', schema },
+    })
+    expect(publishAttempt.statusCode).toBe(403)
+
+    // But reading is within the viewer's rights.
+    const listed = await app.inject({
+      method: 'GET',
+      url: '/forms',
+      headers: { authorization: `Bearer ${viewerToken}` },
+    })
+    expect(listed.statusCode).toBe(200)
+  })
+
+  test('an api key authenticates a machine, and its secret is shown exactly once', async () => {
+    const created = await app.inject({
+      method: 'POST',
+      url: '/api-keys',
+      headers: asAdmin(),
+      payload: { name: 'ci', role: 'editor' },
+    })
+    expect(created.statusCode).toBe(201)
+    const { secret } = created.json() as { secret: string }
+    expect(secret.startsWith('fmc_')).toBe(true)
+
+    const publish = await app.inject({
+      method: 'POST',
+      url: '/forms',
+      headers: { 'x-formancy-api-key': secret },
+      payload: { path: 'machine-form', schema: { ...schema, id: 'machine' } },
+    })
+    expect(publish.statusCode).toBe(201)
+  })
+
+  test('a wrong password and an unknown user are indistinguishable 401s', async () => {
+    const wrong = await app.inject({
+      method: 'POST',
+      url: '/auth/login',
+      payload: { email: 'root@test.ch', password: 'nope-nope-nope' },
+    })
+    const ghost = await app.inject({
+      method: 'POST',
+      url: '/auth/login',
+      payload: { email: 'ghost@test.ch', password: 'nope-nope-nope' },
+    })
+    expect(wrong.statusCode).toBe(401)
+    expect(ghost.json()).toEqual(wrong.json())
+  })
+
+  test('the public plane needs no identity: resolve, submit, drafts', async () => {
+    const resolved = await app.inject({ method: 'GET', url: '/f/contact-us' })
+    expect(resolved.statusCode).toBe(200)
   })
 })

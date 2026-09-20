@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto'
 import postgres from 'postgres'
 import { createApp } from './app.js'
 import { bootstrapSchema } from './db.js'
@@ -20,8 +21,26 @@ if (databaseUrl === undefined || databaseUrl === '') {
 const port = Number(process.env['PORT'] ?? 4380)
 const sql = postgres(databaseUrl)
 
+let authSecret = process.env['FORMANCY_AUTH_SECRET']
+if (authSecret === undefined || authSecret === '') {
+  // A generated secret keeps `docker compose up` working, at the cost of every
+  // session dying on restart. Say so loudly rather than failing dev cold.
+  authSecret = randomBytes(33).toString('base64url')
+  console.warn(
+    'FORMANCY_AUTH_SECRET is not set: generated an ephemeral one, sessions will not survive a restart.',
+  )
+}
+
+const adminEmail = process.env['FORMANCY_ADMIN_EMAIL']
+const adminPassword = process.env['FORMANCY_ADMIN_PASSWORD']
+
 await bootstrapSchema(sql)
-const app = createApp(createPostgresStorage(sql))
+const app = await createApp(createPostgresStorage(sql), {
+  authSecret,
+  ...(adminEmail !== undefined && adminPassword !== undefined
+    ? { bootstrapAdmin: { email: adminEmail, password: adminPassword } }
+    : {}),
+})
 
 await app.listen({ port, host: process.env['HOST'] ?? '0.0.0.0' })
 console.log(`formancy server listening on :${port}`)
