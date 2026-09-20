@@ -105,6 +105,16 @@ export interface FormEngineOptions {
 }
 
 export interface FormEngine {
+  /**
+   * The document this engine was built from, frozen.
+   *
+   * Renderers need it for the parts of the spec that are presentation rather
+   * than state: which `layouts` exist, and which locale the catalogues default
+   * to. Exposing it is cheaper and more honest than mirroring those onto the
+   * engine one at a time — but it is read-only, and nothing about the form's
+   * behaviour should be recomputed from it rather than asked of the engine.
+   */
+  schema(): FormSchema
   /** Wire paths of every input field, in document order. */
   fieldPaths(): string[]
   /** Wire paths of every repeater, so renderers can give rows their own chrome. */
@@ -846,6 +856,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
   applyRules()
 
   return {
+    schema: () => schema,
     fieldPaths: () => activeNodes().map((node) => node.wire),
     repeaterPaths: () => repeaters.map((node) => node.wire),
     repeaters: () => repeaters.map((node) => ({ wire: node.wire, def: node.def })),

@@ -309,3 +309,38 @@
     transition: none !important;
   }
 }
+
+/* ------------------------------------------------------------------ layouts
+ *
+ * Fields side by side, from the schema's `layouts` section.
+ *
+ * The columns are placed by SOURCE ORDER and nothing else — no `order`, no
+ * explicit `grid-column`. WCAG 1.3.2 and 2.4.3 both require the visual order
+ * to match the DOM order, and a grid that repositions items is the easiest way
+ * in CSS to break them apart.
+ *
+ * `auto-fit` with a `minmax` floor is what satisfies 1.4.10 Reflow: when
+ * there is not room for two columns at the minimum width, they become one,
+ * with no horizontal scrolling at 320 CSS pixels and no JavaScript involved.
+ */
+
+[data-formancy-theme='dusk'] [data-formancy-part='layout-row'] {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 0 1rem;
+  align-items: start;
+}
+
+[data-formancy-theme='dusk'] [data-formancy-part='layout-column'] {
+  display: grid;
+  align-content: start;
+}
+
+[data-formancy-theme='dusk'] [data-formancy-part='layout-section'] {
+  margin-block-end: var(--fm-step);
+}
+
+[data-formancy-theme='dusk'] [data-formancy-part='layout-section-heading'] {
+  margin: 0 0 0.75rem;
+  font-weight: 600;
+}

@@ -14,7 +14,8 @@ import {
 import type { ComponentRef, OnChanges, OnDestroy, OnInit, Signal, Type } from '@angular/core'
 import { parsePath } from '@formancy/core'
 import type { FieldSnapshot } from '@formancy/core'
-import type { FieldDef } from '@formancy/spec'
+import { resolveText } from '@formancy/spec'
+import type { FieldDef, LayoutNode } from '@formancy/spec'
 import { DEFAULT_FIELD_COMPONENTS } from './fields.js'
 import { injectField } from './field.js'
 import { injectRepeater } from './repeater.js'
@@ -212,6 +213,98 @@ export class FormancyRepeaterSection implements OnInit {
 }
 
 /**
+ * Rendering a named `layouts` entry — fields side by side, in sections, in the
+ * arrangement the document asks for rather than model order. The Angular half
+ * of the same decisions packages/react/src/layout.tsx documents, and
+ * deliberately the same markup.
+ *
+ * Four WCAG criteria shape it, and all four say the DOM is the arrangement:
+ *
+ * - **1.3.2 Meaningful Sequence** and **2.4.3 Focus Order** — children are
+ *   emitted in declared order and the stylesheet places them by source order
+ *   alone. Nothing here or in CSS may reorder them, or a screen reader and an
+ *   eye meet the form in different orders.
+ * - **1.4.10 Reflow** — becoming one column when there is no room for two is a
+ *   media query, not a measurement. A layout that reflows only after scripts
+ *   have run does not reflow.
+ * - **1.3.1 Info and Relationships** — a row is presentation and gets no
+ *   semantics; a labelled section is visibly grouping fields, so it is a real
+ *   `group` with an accessible name.
+ */
+@Component({
+  selector: 'formancy-layout',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FormancyFieldSlot, FormancyRepeaterSection],
+  template: `
+    @for (node of nodes(); track $index) {
+      @if (node.kind === 'field') {
+        @if (isRepeater(node.path)) {
+          <formancy-repeater [wire]="node.path" [labels]="labels()" />
+        } @else {
+          <formancy-field [path]="node.path" />
+        }
+      } @else if (node.kind === 'row') {
+        <!-- Presentation only: two fields being beside each other is not a
+             relationship the author described, and announcing "group" around
+             every pair would be noise. -->
+        <div data-formancy-part="layout-row" [attr.data-columns]="node.children.length">
+          <formancy-layout [nodes]="node.children" [labels]="labels()" />
+        </div>
+      } @else if (node.kind === 'column') {
+        <div data-formancy-part="layout-column">
+          <formancy-layout [nodes]="node.children" [labels]="labels()" />
+        </div>
+      } @else if (headingFor(node); as heading) {
+        <div data-formancy-part="layout-section" role="group" [attr.aria-labelledby]="heading.id">
+          <p [id]="heading.id" data-formancy-part="layout-section-heading">{{ heading.text }}</p>
+          <formancy-layout [nodes]="node.children" [labels]="labels()" />
+        </div>
+      } @else {
+        <!-- A group with no accessible name is announced as "group" and tells
+             nobody anything, so an unlabelled section stays a box. -->
+        <div data-formancy-part="layout-section">
+          <formancy-layout [nodes]="node.children" [labels]="labels()" />
+        </div>
+      }
+    }
+  `,
+})
+export class FormancyLayout {
+  readonly nodes = input.required<readonly LayoutNode[]>()
+  readonly labels = input<Record<string, string> | undefined>(undefined)
+
+  private readonly engine = injectEngine()
+
+  /**
+   * Headings are cached per node. Minting an id inside the template would give
+   * a different one on every change-detection pass, leaving aria-labelledby
+   * pointing at an element that no longer exists.
+   */
+  private readonly headings = new WeakMap<object, { id: string; text: string } | null>()
+  private static counter = 0
+
+  protected isRepeater(path: string): boolean {
+    return this.engine.repeaterPaths().includes(path)
+  }
+
+  protected headingFor(node: LayoutNode): { id: string; text: string } | null {
+    const cached = this.headings.get(node)
+    if (cached !== undefined) return cached
+
+    const schema = this.engine.schema()
+    const label = node.kind === 'field' ? undefined : node.label
+    const text = resolveText(schema, label, schema.i18n?.defaultLocale ?? '')
+    const heading =
+      text === undefined || text === ''
+        ? null
+        : { id: `formancy-section-${String((FormancyLayout.counter += 1))}`, text }
+
+    this.headings.set(node, heading)
+    return heading
+  }
+}
+
+/**
  * Renders the whole form from the engine: one slot per field, resolved through
  * the registry. Slots subscribe individually, so a keystroke re-renders one
  * field and a visibility flip mounts or unmounts exactly the fields it hit.
@@ -223,7 +316,7 @@ export class FormancyRepeaterSection implements OnInit {
 @Component({
   selector: 'formancy-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormancyFieldSlot, FormancyRepeaterSection],
+  imports: [FormancyFieldSlot, FormancyRepeaterSection, FormancyLayout],
   template: `
     @if (wizard; as w) {
       <nav data-formancy-part="stepper" aria-label="Progress">
@@ -249,6 +342,9 @@ export class FormancyRepeaterSection implements OnInit {
           <button type="button" data-formancy-part="submit" (click)="onSubmit()">{{ submitLabel() ?? 'Submit' }}</button>
         }
       </div>
+    } @else if (arrangement(); as nodes) {
+      <formancy-layout [nodes]="nodes" [labels]="labels()" />
+      <button type="button" data-formancy-part="submit" (click)="onSubmit()">{{ submitLabel() ?? 'Submit' }}</button>
     } @else {
       @for (wire of staticWires; track wire) {
         <formancy-field [path]="wire" [fallbackLabel]="fallbackFor(wire)" />
@@ -273,6 +369,11 @@ export class FormancyForm {
    * fixture schemas carry text until the spec's i18n section lands.
    */
   readonly labels = input<Record<string, string>>()
+  /**
+   * Render a named entry from the schema's `layouts` instead of model order.
+   * Unknown or absent, the form falls back to model order.
+   */
+  readonly layout = input<string>()
   readonly submitLabel = input<string>()
   readonly submitted = output<SubmitOutcome>()
 
@@ -296,6 +397,16 @@ export class FormancyForm {
     const wizard = this.wizard
     if (wizard === undefined) return this.repeaterWires
     return this.repeaterWires.filter((wire) => this.engine.pageOf(parsePath(wire)) === wizard.page())
+  })
+
+  /**
+   * The nodes of the named layout, or undefined to fall back to model order —
+   * a mistyped layout name should not produce an empty form.
+   */
+  protected readonly arrangement = computed<readonly LayoutNode[] | undefined>(() => {
+    const name = this.layout()
+    if (name === undefined) return undefined
+    return this.engine.schema().layouts?.find((candidate) => candidate.name === name)?.nodes
   })
 
   protected fallbackFor(wire: string): string | undefined {

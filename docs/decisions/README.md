@@ -126,6 +126,7 @@ record whose only enforcement is "we remember" says so plainly.
 | [0044](0044-access-outside-the-document.md) | Who may submit is a property of the deployment, not of the document | accepted |
 | [0045](0045-reject-backtracking-patterns.md) | Refuse a pattern that can be made to backtrack | accepted |
 | [0046](0046-keyboard-before-drag.md) | Build the builder UI keyboard path before its drag surface | accepted |
+| [0047](0047-layouts-render.md) | Render layouts, with the DOM as the arrangement | accepted |
 
 ### Verification
 

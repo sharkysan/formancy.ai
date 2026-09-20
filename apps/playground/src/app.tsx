@@ -47,7 +47,7 @@ export function App() {
   const [source, setSource] = useState(() => JSON.stringify(STARTER_SCHEMA, null, 2))
   const [theme, setTheme] = useState<ThemeId>('blueprint')
   const [locale, setLocale] = useState<LocaleId>('en')
-  const [pane, setPane] = useState<'schema' | 'build'>('schema')
+  const [pane, setPane] = useState<'build' | 'schema'>('build')
 
   const monaco = useMonaco()
   if (monaco !== null) {
@@ -141,14 +141,14 @@ export function App() {
       <div className="panes">
         <section className="pane editor">
           <h2>
-            {(['schema', 'build'] as const).map((candidate) => (
+            {(['build', 'schema'] as const).map((candidate) => (
               <button
                 key={candidate}
                 className="mode"
                 aria-pressed={pane === candidate}
                 onClick={() => setPane(candidate)}
               >
-                {candidate === 'schema' ? 'Schema' : 'Build'}
+                {candidate === 'build' ? 'Build' : 'Schema'}
               </button>
             ))}
           </h2>
@@ -184,7 +184,7 @@ export function App() {
               <div className="sheet" data-formancy-theme={theme}>
                 <FormancyProvider engine={built.engine} key={source}>
                   <ErrorSummary />
-                  <FormancyForm />
+                  <FormancyForm layout="web" />
                 </FormancyProvider>
               </div>
             ) : null}

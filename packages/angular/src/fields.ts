@@ -311,6 +311,23 @@ export class FormancyRadioGroupField extends FieldComponentBase {
  * hidden and static are non-inputs, and the container types are laid out by
  * their own machinery, not by a leaf slot.
  */
+/**
+ * Text the reader sees that collects nothing — a heading, an explanation, a
+ * notice.
+ *
+ * Not a label, because there is no control for one to label. Not a heading
+ * element either: the spec does not say what level it would be, and guessing
+ * produces a document outline that skips levels.
+ */
+@Component({
+  selector: 'formancy-static-field',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `<p data-formancy-part="static">{{ context.label }}</p>`,
+})
+export class FormancyStaticField {
+  protected readonly context = injectFieldContext()
+}
+
 export const DEFAULT_FIELD_COMPONENTS: Record<FieldType, Type<unknown> | null> = {
   text: FormancyTextField,
   textarea: FormancyTextareaField,
@@ -320,7 +337,7 @@ export const DEFAULT_FIELD_COMPONENTS: Record<FieldType, Type<unknown> | null> =
   select: FormancySelectField,
   radio: FormancyRadioGroupField,
   hidden: null,
-  static: null,
+  static: FormancyStaticField,
   group: null,
   page: null,
   repeater: null,

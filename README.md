@@ -123,6 +123,45 @@ switch to it and most of the form is French while three labels stay English,
 because a missing translation falls back to the default locale rather than
 printing a message id at somebody.
 
+## Accessibility
+
+Not a workstream beside the code — a property of passing the tests.
+
+**A renderer whose markup cannot be reached by role and accessible name fails
+the conformance suite.** The drivers are forbidden from using test ids or CSS
+selectors, so a control a screen reader cannot find is a control no test can
+drive ([0034](./docs/decisions/0034-accessible-name-only.md)). axe-core runs
+after every mount and every DOM-mutating change.
+
+**The engine owns ids and ARIA composition**
+([0021](./docs/decisions/0021-engine-owns-aria.md)), so both renderers wire
+them identically rather than each getting it slightly wrong: `aria-invalid`
+only when validated *and* invalid, `aria-required` reactive because
+requiredness can be expression-driven, real `fieldset`/`legend` for groups,
+exactly one polite live region per form, and an error summary that takes focus
+without `role="alert"` — focusing it already announces it.
+
+**Side-by-side layouts** are where reading order and visual order most easily
+come apart, so four criteria shape how they are built:
+
+| Criterion | What it forces |
+|---|---|
+| **1.3.2** Meaningful Sequence | Children are emitted in the layout's declared order; the stylesheet places them by source order alone — no `order`, no explicit `grid-column` |
+| **2.4.3** Focus Order | Follows from the same rule: tab order is DOM order is visual order |
+| **1.4.10** Reflow | A row becomes one column when there is no width for two, via `auto-fit`/`minmax` — a media query, not a measurement. A layout that reflows only after scripts run does not reflow |
+| **1.3.1** Info and Relationships | A row is presentation and gets no semantics; a *labelled* section is visibly grouping fields, so it is a real `role="group"` with an accessible name. An unlabelled one stays a plain box, because a group with no name announces "group" and tells nobody anything |
+
+**The builder is keyboard-first** and has no drag surface at all, because
+2.5.7 requires every dragging movement to have an equivalent alternative and
+building the alternative second is how it ends up unfinished
+([0046](./docs/decisions/0046-keyboard-before-drag.md)).
+
+**What this is not.** Automated checking catches roughly 57% of
+machine-detectable issues by Deque's own figure, and about 30% of WCAG 2.2
+criteria are machine-testable at all. No manual screen-reader audit has been
+performed and no VPAT is published. The claim is "built to be accessible and
+tested to a floor", not "conformant".
+
 ## Documentation
 
 Two sets, for two different questions.
@@ -135,7 +174,7 @@ from the JSON Schema.
 
 - [Architecture](./docs/README.md#architecture), arc42-shaped. Start with
   [the five ideas everything else follows from](./docs/architecture/04-solution-strategy.md).
-- [Forty-six decision records](./docs/decisions/), each naming what would
+- [Forty-seven decision records](./docs/decisions/), each naming what would
   fail if the decision were violated — or saying plainly that nothing would.
 - [Regulatory material](./docs/regulatory/MDR-CONTEXT.md) for anyone
   incorporating formancy into a product that has to answer to a regulator.

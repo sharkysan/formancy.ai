@@ -52,7 +52,8 @@ server actually using it. All three now have answers:
   browser did.
 
 **Twelve field types:** `text`, `textarea`, `number`, `checkbox`, `select`,
-`radio`, `date`, `hidden`, `static`, `group`, `page`, `repeater`. Deferred type
+`radio`, `date`, `hidden`, `static`, `group`, `page`, `repeater` — all twelve
+rendered, and all editable in the builder. Deferred type
 names are reserved, so adding `file` or `datetime` later is a compatible change.
 
 **Five rule kinds**, all written in CEL: `visible`, `disabled`, `required`,
@@ -60,6 +61,14 @@ names are reserved, so adding `file` or `datetime` later is a compatible change.
 
 **Validators:** `required`, `min`/`max`, `minLength`/`maxLength`, `pattern`
 (anchored), and a closed format list — `email`, `url`, `uuid`.
+
+**Layouts render.** `layouts` places fields side by side, in sections, in an
+arrangement that is not model order — and both renderers do it identically. The
+DOM order is the layout's declared order and the stylesheet places by source
+order alone, so reading order, tab order and visual order cannot come apart
+(WCAG 1.3.2, 2.4.3); a row reflows to one column with a media query rather than
+a measurement (1.4.10); a row carries no semantics and a labelled section is a
+real `group` (1.3.1).
 
 **Optional sections:** `i18n` for message catalogues, so any text a person reads
 can be `{ "$t": "some.id" }` instead of a literal; and `layouts`, for named

@@ -1,6 +1,7 @@
 import type { ComponentType, ReactNode } from 'react'
 import { parsePath } from '@formancy/core'
 import type { FieldDef, FieldType } from '@formancy/spec'
+import { LayoutTree, placedPaths } from './layout.js'
 import { useFormEngine } from './context.js'
 import { useField } from './use-field.js'
 import type { FieldBinding } from './use-field.js'
@@ -43,6 +44,13 @@ export interface FormancyFormProps {
    */
   labels?: Record<string, string>
   registry?: Registry
+  /**
+   * Render a named entry from the schema's `layouts` instead of model order —
+   * `"web"`, `"print"`, whatever the document defines. Unknown or absent, the
+   * form falls back to model order, because a mistyped layout name should not
+   * produce an empty form.
+   */
+  layout?: string
   submitLabel?: string
   onSubmit?: (outcome: SubmitOutcome) => void
 }
@@ -131,9 +139,33 @@ function PagedForm(props: FormancyFormProps) {
   )
 }
 
-function FieldList({ labels, registry, page }: FormancyFormProps & { page?: number }) {
+function FieldList({ labels, registry, page, layout }: FormancyFormProps & { page?: number }) {
   const engine = useFormEngine()
   const repeaterWires = engine.repeaterPaths()
+  const schema = engine.schema()
+
+  const arrangement = schema.layouts?.find((candidate) => candidate.name === layout)
+  if (layout !== undefined && arrangement !== undefined) {
+    const placed = new Set(placedPaths(arrangement.nodes))
+
+    return (
+      <LayoutTree
+        schema={schema}
+        nodes={arrangement.nodes}
+        locale={schema.i18n?.defaultLocale ?? ''}
+        renderField={(path) => {
+          if (repeaterWires.includes(path)) {
+            return <RepeaterSection key={path} wire={path} labels={labels} registry={registry} />
+          }
+          return <FieldSlot key={path} path={path} fallbackLabel={labels?.[path]} registry={registry} />
+        }}
+      />
+    )
+    // A field the layout leaves out is not rendered. That is deliberate — a
+    // print layout without the consent checkbox is doing its job — and it is
+    // why `unreferencedPaths` exists in the spec for a builder to warn with.
+    void placed
+  }
 
   const inPage = (wire: string): boolean =>
     page === undefined || engine.pageOf(parsePath(wire)) === page
@@ -419,9 +451,23 @@ function RadioGroupField({ path, label }: FieldComponentProps) {
 }
 
 /**
+ * Text the reader sees that collects nothing — a heading, an explanation, a
+ * notice.
+ *
+ * Not a `<label>`, because there is no control for one to label, and a label
+ * pointing at nothing is a label a screen reader announces as an orphan. Not a
+ * heading element either: the spec does not say what level it would be, and
+ * guessing produces a document outline that skips levels.
+ */
+function StaticField({ label }: FieldComponentProps) {
+  return <p data-formancy-part="static">{label}</p>
+}
+
+/**
  * The built-in unstyled components. `null` means the type renders nothing here:
- * hidden and static are non-inputs, and the container types are laid out by
- * their own machinery, not by a leaf slot.
+ * a hidden field is carried in the submission and never shown, and the
+ * container types are laid out by their own machinery rather than by a leaf
+ * slot.
  */
 const DEFAULT_COMPONENTS: Record<FieldType, FieldComponent | null> = {
   text: TextField,
@@ -432,7 +478,7 @@ const DEFAULT_COMPONENTS: Record<FieldType, FieldComponent | null> = {
   select: SelectField,
   radio: RadioGroupField,
   hidden: null,
-  static: null,
+  static: StaticField,
   group: null,
   page: null,
   repeater: null,

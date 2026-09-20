@@ -25,6 +25,7 @@
   "dependencies": {
     "@formancy/core": "workspace:*",
     "@formancy/spec": "workspace:*",
+    "@noble/hashes": "^2.4.0",
     "recheck": "^4.5.0"
   },
   "devDependencies": {

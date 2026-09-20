@@ -29,6 +29,7 @@ export {
   FormancyFieldSlot,
   FormancyForm,
   FormancyRepeaterSection,
+  FormancyLayout,
 } from './form.js'
 export type { SubmitOutcome } from './form.js'
 export { FormancyErrorSummary } from './error-summary.js'
