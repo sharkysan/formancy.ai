@@ -71,3 +71,46 @@ describe('editablePropertiesFor', () => {
     expect(names('no-such-type')).toEqual(expect.arrayContaining(['label', 'required']))
   })
 })
+
+/**
+ * The spec 2 types, which is the real test of generating the panel rather
+ * than writing one: nobody added a line here for any of them, and the panel
+ * offers exactly what the schema says each one takes.
+ */
+describe('the spec 2 types', () => {
+  test('selectboxes gets options and a bound on how many may be ticked', () => {
+    const names = editablePropertiesFor('selectboxes').map((property) => property.name)
+
+    expect(names).toContain('options')
+    expect(names).toContain('minItems')
+    expect(names).toContain('maxItems')
+  })
+
+  test('file gets what it will accept, how large and how many', () => {
+    const properties = editablePropertiesFor('file')
+    const names = properties.map((property) => property.name)
+
+    expect(names).toEqual(expect.arrayContaining(['accept', 'maxFileSize', 'minItems', 'maxItems']))
+    // A list of plain strings, so the panel gives it a line-per-value box
+    // rather than a text field somebody has to guess the separator for.
+    expect(properties.find((property) => property.name === 'accept')?.kind).toBe('strings')
+  })
+
+  test('richtext gets a length cap and no pattern', () => {
+    const names = editablePropertiesFor('richtext').map((property) => property.name)
+
+    expect(names).toContain('maxLength')
+    // `pattern` belongs to single-line text. Offering it here would invite an
+    // author to write a regular expression against markup.
+    expect(names).not.toContain('pattern')
+  })
+
+  test('each new type is described in the schema’s own words', () => {
+    for (const type of ['selectboxes', 'file', 'richtext']) {
+      for (const property of editablePropertiesFor(type)) {
+        expect(property.title, `${type}.${property.name}`).not.toBe(property.name)
+        expect(property.description.length, `${type}.${property.name}`).toBeGreaterThan(10)
+      }
+    }
+  })
+})

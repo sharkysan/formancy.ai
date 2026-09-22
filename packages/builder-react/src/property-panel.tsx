@@ -95,6 +95,36 @@ function PropertyField({
     'aria-describedby': property.description === '' ? undefined : hintId,
   }
 
+  // A list of plain strings, one per line. Not comma-separated: a media type
+  // has no comma in it but an extension list somebody pastes from elsewhere
+  // often does, and a separator that appears inside a value is a separator
+  // that silently splits one.
+  if (property.kind === 'strings') {
+    const lines = Array.isArray(value) ? (value as unknown[]).map(String) : []
+    return (
+      <div data-formancy-part="property">
+        <label htmlFor={id}>{property.title}</label>
+        <textarea
+          {...shared}
+          rows={3}
+          value={lines.join('\n')}
+          onChange={(event) => {
+            const next = event.target.value
+              .split('\n')
+              .map((line) => line.trim())
+              .filter((line) => line !== '')
+            onChange(next.length === 0 ? undefined : next)
+          }}
+        />
+        {property.description === '' ? null : (
+          <p id={hintId} data-formancy-part="property-hint">
+            {property.description}
+          </p>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div data-formancy-part="property">
       <label htmlFor={id}>{property.title}</label>

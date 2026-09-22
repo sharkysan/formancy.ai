@@ -60,6 +60,7 @@ describe('builtinFixtures', () => {
       'a required field blocks submit until it has a value',
       'a wizard validates the current page on next and the whole form on submit',
       'conditional visibility follows country',
+      "several answers from one list, stored in the list's own order",
     ])
   })
 

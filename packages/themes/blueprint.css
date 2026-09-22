@@ -339,3 +339,176 @@
   margin: 0 0 0.625rem;
   font-weight: 600;
 }
+
+/* ------------------------------------------- spec 2: the newer field types
+ *
+ * Still zero CSS in the renderers. Everything below hangs off the same
+ * `data-formancy-part` hooks the rest of this file uses, which is what lets
+ * two themes that look like unrelated products swap live with no remount.
+ */
+
+/* A checkbox group reads like the radio group, because it IS the radio group's
+   relationship: several controls answering one question. */
+[data-formancy-theme='blueprint'] [data-formancy-part='checkbox-option'] {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-block-start: 0.5rem;
+  font-size: 0.9375rem;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='checkbox-option'] input {
+  width: auto;
+  accent-color: var(--fm-signal);
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='checkbox-option'] label {
+  font-weight: 400;
+}
+
+/* Formatted text: the box, then what it will look like. */
+[data-formancy-theme='blueprint'] [data-formancy-part='richtext-preview'] {
+  margin-block-start: 0.5rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px dashed var(--fm-rule);
+  border-radius: var(--fm-radius);
+  font-size: 0.9375rem;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='richtext-preview']:has([data-formancy-part='richtext']:empty),
+[data-formancy-theme='blueprint'] [data-formancy-part='richtext-preview']:not(:has(*)) {
+  display: none;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='richtext'] > :first-child { margin-block-start: 0; }
+[data-formancy-theme='blueprint'] [data-formancy-part='richtext'] > :last-child { margin-block-end: 0; }
+
+[data-formancy-theme='blueprint'] [data-formancy-part='richtext'] a {
+  color: var(--fm-signal);
+}
+
+/* Attachments. */
+[data-formancy-theme='blueprint'] [data-formancy-part='file-list'] {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.25rem;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='file-item'] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.375rem 0.625rem;
+  border: 1px solid var(--fm-rule);
+  border-radius: var(--fm-radius);
+  font-size: 0.9375rem;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='file-unavailable'] {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--fm-muted);
+}
+
+/* The upload's own progress. Present for assistive technology; the list of
+   attachments below it is the visible feedback. */
+[data-formancy-theme='blueprint'] [data-formancy-part='file-status']:empty {
+  display: none;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='file-status'] {
+  margin: 0.375rem 0 0;
+  font-size: 0.875rem;
+  color: var(--fm-muted);
+}
+
+/* ------------------------------------------- spec 2: tabs and tables
+ *
+ * The same rule the rows follow: the DOM is the arrangement and CSS only
+ * decides how wide things are. A closed tab panel is hidden with the `hidden`
+ * attribute by the renderer, not by a rule in here — a panel hidden only by a
+ * stylesheet is a panel that is not hidden when the stylesheet fails to load.
+ */
+
+[data-formancy-theme='blueprint'] [data-formancy-part='tablist'] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  border-block-end: 1px solid var(--fm-rule);
+  margin-block-end: var(--fm-step);
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='tab'] {
+  font: inherit;
+  font-size: 0.9375rem;
+  /* 2.5.8 Target Size: 24 by 24 is the floor, and a tab strip is exactly
+     where a designer is tempted to go under it. */
+  min-height: 2.25rem;
+  padding: 0.375rem 0.875rem;
+  border: 1px solid transparent;
+  border-block-end: none;
+  border-start-start-radius: var(--fm-radius);
+  border-start-end-radius: var(--fm-radius);
+  background: none;
+  color: var(--fm-muted);
+  cursor: pointer;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='tab'][aria-selected='true'] {
+  border-color: var(--fm-rule);
+  background: var(--fm-paper);
+  color: var(--fm-ink);
+  font-weight: 600;
+  /* Covers the strip's own border, so the open tab reads as joined to its
+     panel rather than as one more button in a row. */
+  margin-block-end: -1px;
+  padding-block-end: calc(0.375rem + 1px);
+}
+
+/* 2.4.7 and 2.4.11: visible, and not clipped by the strip's own border. */
+[data-formancy-theme='blueprint'] [data-formancy-part='tab']:focus-visible {
+  outline: 2px solid var(--fm-signal);
+  outline-offset: -2px;
+}
+
+/* 1.4.1 Use of Colour: which tab is open is carried by weight, background and
+   a border as well as by colour. */
+[data-formancy-theme='blueprint'] [data-formancy-part='tabpanel'][hidden] {
+  display: none;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='layout-table'] {
+  display: grid;
+  /* The declared column count, so cells line up across rows — the one thing
+     stacked rows cannot do. `minmax(0, 1fr)` rather than `1fr` so a long word
+     in one cell cannot push the grid wider than its container. */
+  grid-template-columns: repeat(var(--fm-columns, 2), minmax(0, 1fr));
+  gap: 0 1rem;
+  align-items: start;
+  margin-block-end: var(--fm-step);
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='layout-table'][data-columns='1'] { --fm-columns: 1; }
+[data-formancy-theme='blueprint'] [data-formancy-part='layout-table'][data-columns='2'] { --fm-columns: 2; }
+[data-formancy-theme='blueprint'] [data-formancy-part='layout-table'][data-columns='3'] { --fm-columns: 3; }
+[data-formancy-theme='blueprint'] [data-formancy-part='layout-table'][data-columns='4'] { --fm-columns: 4; }
+[data-formancy-theme='blueprint'] [data-formancy-part='layout-table'][data-columns='5'] { --fm-columns: 5; }
+[data-formancy-theme='blueprint'] [data-formancy-part='layout-table'][data-columns='6'] { --fm-columns: 6; }
+
+/* 1.4.10 Reflow. A grid with a fixed column count does not collapse on its
+   own the way `auto-fit` does, so it is told to — in a media query rather
+   than from a measurement, because a layout that reflows only after scripts
+   have run does not reflow. */
+@media (max-width: 40rem) {
+  [data-formancy-theme='blueprint'] [data-formancy-part='layout-table'] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* A heading inside a grid is a row of its own, not a cell. */
+[data-formancy-theme='blueprint'] [data-formancy-part='layout-table'] > [data-formancy-part='layout-section-heading'] {
+  grid-column: 1 / -1;
+}

@@ -75,9 +75,17 @@ export function createAngularDriver(): RendererDriver {
    *  nth match for a row instance. Returns undefined when not in the tree. */
   function controlFor(path: string): HTMLElement | undefined {
     const label = labelOf(path)
-    const matches = screen.queryAllByLabelText(label)
     const index = rowIndexOf(path) ?? 0
-    return matches[index]
+    const labelled = screen.queryAllByLabelText(label)
+    if (labelled[index] !== undefined) return labelled[index]
+
+    // A field answered by several controls — a radio group, a checkbox group —
+    // has its accessible name on the fieldset, and a legend is not a label, so
+    // the query above finds nothing. Falling back to the group is what makes
+    // those fields visible to `visibleFields` and gives `errorsFor` something
+    // to read `aria-describedby` from; without it the driver reports a whole
+    // question as absent from the form.
+    return screen.queryAllByRole('group', { name: label })[index]
   }
 
   async function settle(): Promise<void> {
@@ -121,6 +129,22 @@ export function createAngularDriver(): RendererDriver {
         const chosen = (def.options ?? []).find((option) => option.value === value)
         if (chosen === undefined) throw new Error(`No option "${String(value)}" on "${path}"`)
         fireEvent.click(within(group).getByLabelText(textOf(chosen.label) ?? chosen.value))
+        await settle()
+        return
+      }
+
+      // Checkboxes answering one question, the same shape as a radio group.
+      // The value is the whole list, so every box is set to match it rather
+      // than one being toggled.
+      if (def?.type === 'selectboxes') {
+        const group = screen.getByRole('group', { name: labelOf(path) })
+        const wanted = new Set((Array.isArray(value) ? value : []).map(String))
+        for (const option of def.options ?? []) {
+          const box = within(group).getByLabelText(
+            textOf(option.label) ?? option.value,
+          ) as HTMLInputElement
+          if (box.checked !== wanted.has(option.value)) fireEvent.click(box)
+        }
         await settle()
         return
       }
@@ -198,6 +222,17 @@ export function createAngularDriver(): RendererDriver {
           .getAllByRole('radio')
           .find((radio) => (radio as HTMLInputElement).checked)
         return checked === undefined ? null : (checked as HTMLInputElement).value
+      }
+      if (def?.type === 'selectboxes') {
+        const group = screen.getByRole('group', { name: labelOf(path) })
+        // In the DOM's order, which is the options' order, which is the order
+        // the engine stores them in — and the same order the React driver
+        // reads. Reading them in click order would let the two renderers
+        // disagree about the same answers while both passed.
+        return within(group)
+          .getAllByRole('checkbox')
+          .filter((box) => (box as HTMLInputElement).checked)
+          .map((box) => (box as HTMLInputElement).value)
       }
       const control = controlFor(path)
       if (control === undefined) throw new Error(`No control in the tree for "${path}"`)
