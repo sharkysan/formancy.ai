@@ -2,14 +2,18 @@ import {
   ChangeDetectionStrategy,
   Component,
   Directive,
+  ElementRef,
   Injector,
   ViewContainerRef,
   computed,
   effect,
+  forwardRef,
   inject,
   input,
   output,
   runInInjectionContext,
+  signal,
+  viewChildren,
 } from '@angular/core'
 import type { ComponentRef, OnChanges, OnDestroy, OnInit, Signal, Type } from '@angular/core'
 import { parsePath } from '@formancy/core'
@@ -237,10 +241,149 @@ export class FormancyRepeaterSection implements OnInit {
  * tool outside the renderer can say which node an element on screen came from
  * without the renderer knowing anything about editing.
  */
+/**
+ * One panel at a time, behind a row of tabs — the ARIA tabs pattern, matching
+ * the React binding element for element.
+ *
+ * Written out rather than reached for from a library because the keyboard
+ * behaviour IS the specification: arrows move between tabs, Home and End reach
+ * the ends, and the strip is one tab stop through a roving tabindex, so a form
+ * with twelve tabs does not cost twelve presses to get past.
+ *
+ * **Every panel stays in the DOM.** A closed tab is hidden, not removed. Tabs
+ * are presentation, unlike pages: a field in a closed tab is still validated
+ * and still submitted, so it has to be there to be validated, and the
+ * browser's own find-in-page finds it. Removing it would also throw away what
+ * somebody had typed the moment they looked at another tab.
+ *
+ * **A tab opens when focus lands inside it.** An error summary focuses the
+ * first invalid control, and focusing something inside a hidden panel does
+ * nothing at all — the reader is told the form has an error and sent nowhere.
+ */
+@Component({
+  selector: 'formancy-tabs',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [forwardRef(() => FormancyLayout)],
+  template: `
+    <div data-formancy-part="layout-tabs" [attr.data-formancy-layout-path]="at()">
+      <div
+        role="tablist"
+        [attr.aria-label]="stripLabel()"
+        data-formancy-part="tablist"
+        (keydown)="onKeyDown($event)"
+      >
+        @for (panel of panels(); track $index; let i = $index) {
+          <button
+            #tab
+            type="button"
+            role="tab"
+            [id]="tabId(i)"
+            [attr.aria-controls]="panelId(i)"
+            [attr.aria-selected]="i === open()"
+            [attr.tabindex]="i === open() ? 0 : -1"
+            data-formancy-part="tab"
+            (click)="open.set(i)"
+          >{{ nameOf(panel, i) }}</button>
+        }
+      </div>
+
+      @for (panel of panels(); track $index; let i = $index) {
+        <div
+          role="tabpanel"
+          [id]="panelId(i)"
+          [attr.aria-labelledby]="tabId(i)"
+          data-formancy-part="tabpanel"
+          [hidden]="i !== open()"
+          (focusin)="open.set(i)"
+        >
+          <formancy-layout
+            [nodes]="childrenOf(panel)"
+            [labels]="labels()"
+            [at]="panelPath(i)"
+          />
+        </div>
+      }
+    </div>
+  `,
+})
+export class FormancyTabs {
+  readonly at = input<string>('')
+  readonly stripLabel = input<string | null>(null)
+  readonly panels = input.required<readonly LayoutNode[]>()
+  readonly labels = input<Record<string, string> | undefined>(undefined)
+
+  protected readonly open = signal(0)
+
+  private readonly tabButtons = viewChildren<ElementRef<HTMLButtonElement>>('tab')
+  private readonly engine = injectEngine()
+  /** Set only by a key press, so focus is never taken from elsewhere. */
+  private moveFocus = false
+
+  private static counter = 0
+  // After the counter, not before: a static read from a field initialiser runs
+  // in declaration order, and the other way round it is NaN on every instance.
+  private readonly id = `formancy-tabs-${String((FormancyTabs.counter += 1))}`
+
+  constructor() {
+    effect(() => {
+      const index = this.open()
+      if (!this.moveFocus) return
+      this.moveFocus = false
+      this.tabButtons()[index]?.nativeElement.focus()
+    })
+  }
+
+  protected tabId(index: number): string {
+    return `${this.id}-tab-${String(index)}`
+  }
+
+  protected panelId(index: number): string {
+    return `${this.id}-panel-${String(index)}`
+  }
+
+  protected panelPath(index: number): string {
+    const prefix = this.at()
+    return prefix === '' ? String(index) : `${prefix}.${String(index)}`
+  }
+
+  protected childrenOf(node: LayoutNode): readonly LayoutNode[] {
+    return node.kind === 'field' ? [node] : node.children
+  }
+
+  /** A tab's name is its section's heading. The validator insists it has one. */
+  protected nameOf(node: LayoutNode, index: number): string {
+    if (node.kind === 'field') return `Tab ${String(index + 1)}`
+    const schema = this.engine.schema()
+    return (
+      resolveText(schema, node.label, schema.i18n?.defaultLocale ?? '') ??
+      `Tab ${String(index + 1)}`
+    )
+  }
+
+  protected onKeyDown(event: KeyboardEvent): void {
+    const last = this.panels().length - 1
+    const current = this.open()
+    const next =
+      event.key === 'ArrowRight'
+        ? Math.min(current + 1, last)
+        : event.key === 'ArrowLeft'
+          ? Math.max(current - 1, 0)
+          : event.key === 'Home'
+            ? 0
+            : event.key === 'End'
+              ? last
+              : undefined
+    if (next === undefined) return
+    event.preventDefault()
+    this.moveFocus = true
+    this.open.set(next)
+  }
+}
+
 @Component({
   selector: 'formancy-layout',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormancyFieldSlot, FormancyRepeaterSection],
+  imports: [FormancyFieldSlot, FormancyRepeaterSection, FormancyTabs],
   template: `
     @for (node of nodes(); track $index; let i = $index) {
       @if (node.kind === 'field') {
@@ -262,6 +405,30 @@ export class FormancyRepeaterSection implements OnInit {
         </div>
       } @else if (node.kind === 'column') {
         <div data-formancy-part="layout-column" [attr.data-formancy-layout-path]="pathOf(i)">
+          <formancy-layout [nodes]="node.children" [labels]="labels()" [at]="pathOf(i)" />
+        </div>
+      } @else if (node.kind === 'tabs') {
+        <formancy-tabs
+          [panels]="node.children"
+          [labels]="labels()"
+          [at]="pathOf(i)"
+          [stripLabel]="stripLabelFor(node)"
+        />
+      } @else if (node.kind === 'table') {
+        <!-- A grid, not a <table>. Laying fields out in columns is not
+             tabular data, and marking it up as a table would announce rows and
+             columns that mean nothing (WCAG 1.3.1). The column count is data
+             so the stylesheet can collapse it with a media query. -->
+        <div
+          data-formancy-part="layout-table"
+          [attr.data-formancy-layout-path]="pathOf(i)"
+          [attr.data-columns]="node.columns"
+          [attr.role]="headingFor(node) ? 'group' : null"
+          [attr.aria-labelledby]="headingFor(node)?.id ?? null"
+        >
+          @if (headingFor(node); as heading) {
+            <p [id]="heading.id" data-formancy-part="layout-section-heading">{{ heading.text }}</p>
+          }
           <formancy-layout [nodes]="node.children" [labels]="labels()" [at]="pathOf(i)" />
         </div>
       } @else if (headingFor(node); as heading) {
@@ -305,6 +472,13 @@ export class FormancyLayout {
    */
   private readonly headings = new WeakMap<object, { id: string; text: string } | null>()
   private static counter = 0
+
+  /** A tabs node's own name, for the tab strip. Null when it has none. */
+  protected stripLabelFor(node: LayoutNode): string | null {
+    if (node.kind !== 'tabs') return null
+    const schema = this.engine.schema()
+    return resolveText(schema, node.label, schema.i18n?.defaultLocale ?? '') ?? null
+  }
 
   protected isRepeater(path: string): boolean {
     return this.engine.repeaterPaths().includes(path)

@@ -2,7 +2,7 @@ import type { ErrorObject, ValidateFunction } from 'ajv/dist/2020.js'
 import documentValidatorFn from './generated/document-validator.js'
 import { modelDataPaths } from './paths.js'
 import { collectFieldPaths, isMessageRef, modelPathsForLayout } from './presentation.js'
-import { ROW_ID } from './types.js'
+import { ROW_ID, SPEC_1_FIELD_TYPES, SPEC_1_LAYOUT_KINDS } from './types.js'
 import type { FieldDef, FormSchema, LayoutNode, Text } from './types.js'
 
 /** One reason a document is not a valid formancy form. */
@@ -41,10 +41,60 @@ export function validateSchema(document: unknown): ValidationResult {
 
 /** The rules JSON Schema cannot state, because they are about the relationship
  *  between fields rather than the shape of any one of them. */
+/**
+ * Constructs a document uses that its declared version does not define.
+ *
+ * Structural validation cannot do this on its own without threading the
+ * version through every branch of the JSON Schema, and the message it would
+ * produce — "must match exactly one schema in oneOf" — is no use to
+ * anybody. So the schema accepts the union and this says, by name, which
+ * construct needs which version.
+ *
+ * The direction that matters: a version 1 document must not use version 2
+ * constructs. The reverse is fine, because 2 is a superset. That is the whole
+ * compatibility story, and it is one function long on purpose.
+ */
+function versionErrors(
+  schema: FormSchema,
+  fields: ReadonlyArray<{ field: FieldDef; path: string }>,
+): SchemaError[] {
+  if (schema.specVersion !== '1') return []
+
+  const errors: SchemaError[] = []
+  const spec1Types = new Set<string>(SPEC_1_FIELD_TYPES)
+  const spec1Kinds = new Set<string>(SPEC_1_LAYOUT_KINDS)
+
+  for (const { field, path } of fields) {
+    if (spec1Types.has(field.type)) continue
+    errors.push({
+      path: `${path}/type`,
+      message: `A "${field.type}" field needs specVersion "2". This document says "1". Change it to "2" — everything already in the document keeps working, because version 2 only adds.`,
+    })
+  }
+
+  for (const [layoutIndex, layout] of (schema.layouts ?? []).entries()) {
+    const walk = (nodes: readonly LayoutNode[], base: string): void => {
+      for (const [index, node] of nodes.entries()) {
+        const at = `${base}/${String(index)}`
+        if (!spec1Kinds.has(node.kind)) {
+          errors.push({
+            path: `${at}/kind`,
+            message: `A "${node.kind}" layout node needs specVersion "2". This document says "1". Change it to "2" — everything already in the document keeps working, because version 2 only adds.`,
+          })
+        }
+        if (node.kind !== 'field') walk(node.children, `${at}/children`)
+      }
+    }
+    walk(layout.nodes, `/layouts/${String(layoutIndex)}/nodes`)
+  }
+
+  return errors
+}
+
 function semanticErrors(schema: FormSchema): SchemaError[] {
   const fields = [...walkFields(schema.model.fields, '/model/fields')]
   const liveKeys = new Set(fields.map(({ field }) => field.key))
-  const errors: SchemaError[] = []
+  const errors: SchemaError[] = [...versionErrors(schema, fields)]
   const claimed = new Set<string>()
   const claimedRenames = new Set<string>()
 
@@ -248,7 +298,42 @@ function presentationErrors(schema: FormSchema): SchemaError[] {
           }
           placed.add(node.path)
         } else {
-          checkText(node.label, `${nodePath}/label`)
+          if (node.kind !== 'tabs') checkText(node.label, `${nodePath}/label`)
+
+          if (node.kind === 'tabs') {
+            // Every child is one tab, and a tab with no name is a tab nobody
+            // can choose — not a styling problem but an unusable control.
+            // A section is the node that has a name, so a tabs node holds
+            // sections and nothing else.
+            for (const [childIndex, child] of node.children.entries()) {
+              const childPath = `${nodePath}/children/${String(childIndex)}`
+              if (child.kind !== 'section') {
+                errors.push({
+                  path: childPath,
+                  message: `A tabs node holds sections, one per tab, and this one holds a "${child.kind}". Wrap it in a section and give the section a label — that label is the tab's name.`,
+                })
+              } else if (child.label === undefined) {
+                errors.push({
+                  path: `${childPath}/label`,
+                  message: `This tab has no name, so nobody can tell what is behind it. Give the section a label.`,
+                })
+              }
+            }
+            if (node.children.length === 0) {
+              errors.push({
+                path: `${nodePath}/children`,
+                message: `A tabs node with no tabs shows nothing at all.`,
+              })
+            }
+          }
+
+          if (node.kind === 'table' && !Number.isInteger(node.columns)) {
+            errors.push({
+              path: `${nodePath}/columns`,
+              message: `A table's column count has to be a whole number.`,
+            })
+          }
+
           walkNodes(node.children, `${nodePath}/children`)
         }
       }

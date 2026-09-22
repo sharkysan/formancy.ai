@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'vitest'
 import { createBuilderSession } from '@formancy/builder-core'
+import { FIELD_TYPES, SPEC_1_FIELD_TYPES } from '@formancy/spec'
 import type { FormSchema } from '@formancy/spec'
-import { newFieldOfType, paletteEntries } from './palette.js'
+import { newFieldOfType, paletteEntries, typesNeedingUpgrade } from './palette.js'
 
 const schema: FormSchema = {
   specVersion: '1',
@@ -26,19 +27,34 @@ describe('paletteEntries', () => {
   })
 
   test('covers everything else the spec defines', () => {
-    expect(paletteEntries().map((entry) => entry.type)).toEqual([
-      'text',
-      'textarea',
-      'number',
-      'checkbox',
-      'select',
-      'radio',
-      'date',
-      'hidden',
-      'static',
-      'group',
-      'repeater',
+    // Derived rather than listed: the palette is generated from the schema
+    // precisely so a new type appears in it without anyone remembering, and a
+    // literal list here would be the one place that still had to be edited.
+    expect(paletteEntries().map((entry) => entry.type)).toEqual(
+      FIELD_TYPES.filter((type) => type !== 'page'),
+    )
+  })
+
+  test('a version 1 document is offered only what version 1 defines', () => {
+    const offered = paletteEntries('1').map((entry) => entry.type)
+
+    expect(offered).toEqual(SPEC_1_FIELD_TYPES.filter((type) => type !== 'page'))
+    expect(offered).not.toContain('selectboxes')
+  })
+
+  test('a version 2 document is offered everything', () => {
+    expect(paletteEntries('2').map((entry) => entry.type)).toContain('selectboxes')
+  })
+
+  test('what a version 1 document is missing is named, so the builder can offer the upgrade', () => {
+    // A shorter palette with no explanation reads as a broken builder. The
+    // document needs upgrading, and that is something the builder can do.
+    expect(typesNeedingUpgrade('1').map((entry) => entry.type)).toEqual([
+      'selectboxes',
+      'file',
+      'richtext',
     ])
+    expect(typesNeedingUpgrade('2')).toEqual([])
   })
 })
 
@@ -66,9 +82,17 @@ describe('newFieldOfType', () => {
     expect(group.fields?.[0]?.key).not.toBe(group.key)
   })
 
+  test('a choice field arrives with an option, because an empty list cannot be answered', () => {
+    for (const type of ['select', 'radio', 'selectboxes']) {
+      expect(newFieldOfType(type, new Set()).options, type).toHaveLength(1)
+    }
+  })
+
   test('every palette entry actually inserts, which is the point of generating both', () => {
-    for (const entry of paletteEntries()) {
-      const session = createBuilderSession(schema)
+    // Against a version 2 document, so the palette and the document agree
+    // about which types exist. Version 1 is covered by the filter test above.
+    for (const entry of paletteEntries('2')) {
+      const session = createBuilderSession({ ...schema, specVersion: '2' })
       const def = newFieldOfType(entry.type, new Set(['text']))
       const target = session.validTargets(def)[0]
 

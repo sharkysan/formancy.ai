@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
 import type { BuilderSession } from '@formancy/builder-core'
 import { dropLocation } from './drop.js'
-import { newFieldOfType, paletteEntries } from './palette.js'
+import { newFieldOfType, paletteEntries, typesNeedingUpgrade } from './palette.js'
 import { useBuilder } from './use-builder.js'
 import type { MoveTarget } from './use-builder.js'
 import { nameOf } from './tree.js'
@@ -164,6 +164,8 @@ export function FormancyBuilder({ session, label = 'Form structure' }: BuilderPr
   }
 
   const existingKeys = new Set(view.nodes.map((node) => node.keyPath[node.keyPath.length - 1]!))
+  /** Types this document's spec version does not define yet. */
+  const locked = typesNeedingUpgrade(view.document.specVersion)
 
   const insertTargets = (type: string): MoveTarget[] =>
     view.insertTargetsFor(newFieldOfType(type, existingKeys))
@@ -289,7 +291,7 @@ export function FormancyBuilder({ session, label = 'Form structure' }: BuilderPr
       {adding === null ? null : adding.type === '' ? (
         <div role="dialog" aria-label="Add a field" data-formancy-part="add-palette">
           <ul>
-            {paletteEntries().map((entry) => (
+            {paletteEntries(view.document.specVersion).map((entry) => (
               <li key={entry.type}>
                 <button type="button" onClick={() => setAdding({ type: entry.type })}>
                   {entry.title}
@@ -298,6 +300,29 @@ export function FormancyBuilder({ session, label = 'Form structure' }: BuilderPr
               </li>
             ))}
           </ul>
+          {locked.length === 0 ? null : (
+            <p data-formancy-part="palette-locked">
+              {/* Said rather than silently omitted: a shorter palette with no
+                  explanation reads as a broken builder, when what is actually
+                  true is that the document is written against an older version
+                  of the spec and can be moved forward in one step. */}
+              {locked.map((entry) => entry.title).join(', ')} need spec version 2. This form says
+              version {view.document.specVersion}.{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  const outcome = session.upgradeSpec()
+                  announce(
+                    outcome.ok
+                      ? 'Moved this form to spec version 2. Nothing else changed.'
+                      : `Cannot upgrade: ${outcome.message}`,
+                  )
+                }}
+              >
+                Move it to version 2
+              </button>
+            </p>
+          )}
           <button type="button" onClick={() => cancelDialog()}>
             Cancel
           </button>

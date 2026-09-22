@@ -371,15 +371,16 @@ describe('drafts', () => {
   })
 
   test('a breaking republish returns the draft read-only against its original version', async () => {
-    const v1 = await publishForm(deps, { path: 'contact-us', schema })
+    // Published as spec 2 so the republish below can go DOWN a version, which
+    // is the breaking direction: version 2 only adds, so moving up rebinds
+    // silently, and moving down leaves whatever was added with nowhere to go.
+    // (This test used to bump 1 to 2 for its breaking change, on the reasoning
+    // that any bump must be breaking. Spec 2 exists now and that was wrong.)
+    const v1 = await publishForm(deps, { path: 'contact-us', schema: { ...schema, specVersion: '2' } })
     if (!v1.ok) throw new Error('publish failed')
     await saveDraft(deps, { path: 'contact-us', draftId: 'd1', data: { email: 'wip@b.ch' } })
 
-    // Spec 1 is frozen, so a bump is the one change that is breaking by
-    // definition. It cannot be published through validateSchema — there is no
-    // spec 2 — so it goes in through the storage layer the way a future spec
-    // migration would put it there.
-    const breaking = { ...schema, specVersion: '2' } as unknown as typeof schema
+    const breaking = { ...schema, specVersion: '1' as const }
     const form = await deps.storage.getFormByPath('contact-us')
     await deps.storage.insertVersion({
       id: 'v-breaking',

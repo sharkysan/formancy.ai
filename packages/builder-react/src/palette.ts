@@ -1,5 +1,6 @@
 import schema from '@formancy/spec/schema.json' with { type: 'json' }
-import type { FieldDef } from '@formancy/spec'
+import { SPEC_1_FIELD_TYPES } from '@formancy/spec'
+import type { FieldDef, SpecVersion } from '@formancy/spec'
 
 /**
  * The list of field types a person can add, and the starting definition for
@@ -24,14 +25,25 @@ interface TypeBranch {
 
 const root = schema as unknown as { $defs: Record<string, { oneOf?: TypeBranch[] }> }
 
-/** Types a person adds from a palette. */
-export function paletteEntries(): PaletteEntry[] {
+const SPEC_1 = new Set<string>(SPEC_1_FIELD_TYPES)
+
+/**
+ * Types a person adds from a palette.
+ *
+ * `specVersion` narrows the list to what the document being edited actually
+ * allows. Offering a `selectboxes` while editing a version 1 document would
+ * offer a choice the session refuses every time — and the refusal would read
+ * as a broken builder rather than as a document that needs upgrading, which
+ * is a thing the builder can offer to do.
+ */
+export function paletteEntries(specVersion?: SpecVersion): PaletteEntry[] {
   return (root.$defs['fieldType']?.oneOf ?? [])
     .filter((branch): branch is TypeBranch & { const: string } => typeof branch.const === 'string')
     // `page` is left out: pages may only sit at the top level, so offering one
     // from a palette that can target any container would offer a choice that is
     // refused most of the time. Adding a page is its own command.
     .filter((branch) => branch.const !== 'page')
+    .filter((branch) => specVersion !== '1' || SPEC_1.has(branch.const))
     .map((branch) => ({
       type: branch.const,
       title: branch.title ?? branch.const,
@@ -39,7 +51,20 @@ export function paletteEntries(): PaletteEntry[] {
     }))
 }
 
+/**
+ * Types this document cannot hold yet, with the version that would allow them.
+ *
+ * So the builder can say "these need spec 2" and offer the upgrade, rather
+ * than silently showing a shorter list than the spec reference documents.
+ */
+export function typesNeedingUpgrade(specVersion: SpecVersion): PaletteEntry[] {
+  if (specVersion !== '1') return []
+  return paletteEntries().filter((entry) => !SPEC_1.has(entry.type))
+}
+
 const CONTAINERS = new Set(['group', 'repeater'])
+
+const CHOICE_TYPES = new Set(['select', 'radio', 'selectboxes'])
 
 /**
  * A new field of this type, ready to insert.
@@ -62,6 +87,13 @@ export function newFieldOfType(type: string, existingKeys: ReadonlySet<string>):
   if (CONTAINERS.has(type)) {
     const childKey = uniqueKey('field', new Set([...existingKeys, key]))
     return { ...def, fields: [{ key: childKey, type: 'text', label: 'New field' } as FieldDef] }
+  }
+
+  // A choice field with no options renders as an empty list, which is a
+  // control nobody can answer. One starter option is something to edit; none
+  // is a dead end the person has to work out how to leave.
+  if (CHOICE_TYPES.has(type)) {
+    return { ...def, options: [{ value: 'option1', label: 'First option' }] }
   }
 
   return def

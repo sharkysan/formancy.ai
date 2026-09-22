@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { ComponentType, ReactNode } from 'react'
 import { parsePath } from '@formancy/core'
 import type { FieldDef, FieldType } from '@formancy/spec'
@@ -8,6 +9,9 @@ import type { FieldBinding } from './use-field.js'
 import { useRepeater } from './use-repeater.js'
 import { useSubmit } from './use-submit.js'
 import { useWizard } from './use-wizard.js'
+import { RichText } from './rich-text.js'
+import { useUploader } from './uploads.js'
+import type { StoredFile } from './uploads.js'
 
 /**
  * The component registry — theming mechanism number two. The schema decides
@@ -470,6 +474,196 @@ function StaticField({ label }: FieldComponentProps) {
 }
 
 /**
+ * Several answers from a list, every option visible at once.
+ *
+ * A `fieldset` with a `legend`, exactly like the radio group, because the
+ * relationship is the same one: several controls that answer a single
+ * question. What differs is only that more than one may be chosen, which is
+ * `type="checkbox"` and an array — not a different structure and not a
+ * different way of being announced.
+ *
+ * `aria-required` sits on the group rather than on each box: requiring "at
+ * least one" is a property of the question, and putting it on every box would
+ * announce each one as required, which is the opposite of what it means.
+ */
+function SelectBoxesField({ path, label }: FieldComponentProps) {
+  const field = useField(path)
+  const options = useResolvedOptions(field)
+  const showError = field.touched && field.errors.length > 0
+  const chosen = Array.isArray(field.value) ? (field.value as unknown[]) : []
+
+  const toggle = (value: string, on: boolean): void => {
+    // Rebuilt in the options' own order rather than in the order they were
+    // ticked, so two people choosing the same answers store the same array and
+    // a diff of two submissions means something.
+    const next = options
+      .map((option) => option.value)
+      .filter((candidate) => (candidate === value ? on : chosen.includes(candidate)))
+    field.setValue(next)
+  }
+
+  return (
+    <fieldset
+      data-formancy-part="field"
+      data-formancy-field-path={path}
+      data-state={showError ? 'invalid' : 'valid'}
+      aria-describedby={field.controlProps['aria-describedby']}
+      aria-required={field.required ? true : undefined}
+    >
+      <legend data-formancy-part="label">{label}</legend>
+      {options.map((option) => {
+        const optionId = `${field.ids.control}:${option.value}`
+        return (
+          <span key={option.value} data-formancy-part="checkbox-option">
+            <input
+              type="checkbox"
+              id={optionId}
+              name={field.controlProps.name}
+              value={option.value}
+              checked={chosen.includes(option.value)}
+              disabled={field.disabled}
+              onChange={(event) => toggle(option.value, event.target.checked)}
+              onBlur={() => field.touch()}
+            />
+            <label htmlFor={optionId}>{option.label}</label>
+          </span>
+        )
+      })}
+      {showError ? (
+        <p data-formancy-part="error" {...field.errorProps}>
+          {field.errors.join(', ')}
+        </p>
+      ) : null}
+    </fieldset>
+  )
+}
+
+/**
+ * Formatted text, written as the restricted markup the spec defines.
+ *
+ * A textarea, not a contenteditable surface. That is a deliberate v1 cut and
+ * not laziness: a WYSIWYG editor is a large accessibility surface of its own
+ * — keyboard shortcuts, an announced selection model, focus management
+ * inside a rich region — and shipping a half-built one is worse than
+ * shipping a textarea that works with every assistive technology already.
+ *
+ * What the reader types is never treated as markup by anything. It is parsed
+ * into a typed tree and rendered as elements, so there is no path from an
+ * answer to `innerHTML` and no sanitiser to keep correct forever.
+ */
+function RichTextField({ path, label }: FieldComponentProps) {
+  const field = useField(path)
+  const value = typeof field.value === 'string' ? field.value : ''
+
+  return (
+    <FieldShell path={path} field={field} label={label}>
+      <textarea
+        {...field.controlProps}
+        rows={5}
+        value={value}
+        onChange={(event) => field.setValue(event.target.value)}
+        onBlur={() => field.touch()}
+      />
+      {/* What the stored answer will look like, from the same parser the form
+          that displays it will use. Not decoration: the grammar is small
+          enough that a preview is how somebody learns it. */}
+      <div data-formancy-part="richtext-preview" aria-live="off">
+        <RichText source={value} />
+      </div>
+    </FieldShell>
+  )
+}
+
+/**
+ * Attached files.
+ *
+ * The control picks files; something else uploads them and reports back what
+ * was stored. That split is the whole design: this package has no opinion
+ * about where bytes go, which is what lets the same field work against local
+ * disk, S3 or a customer's own service.
+ *
+ * Without an uploader the field is read-only and says so, rather than
+ * pretending to accept a file it has nowhere to put.
+ */
+function FileField({ path, label }: FieldComponentProps) {
+  const field = useField(path)
+  const upload = useUploader()
+  const files = Array.isArray(field.value) ? (field.value as StoredFile[]) : []
+  const [busy, setBusy] = useState(false)
+  const [failure, setFailure] = useState<string | undefined>(undefined)
+
+  const accept = field.def.accept
+  const multiple = field.def.maxItems === undefined || field.def.maxItems > 1
+
+  const onPick = async (picked: FileList | null): Promise<void> => {
+    if (picked === null || picked.length === 0 || upload === undefined) return
+    setBusy(true)
+    setFailure(undefined)
+    try {
+      const stored: StoredFile[] = []
+      for (const file of Array.from(picked)) stored.push(await upload(file))
+      field.setValue([...files, ...stored])
+    } catch (error) {
+      // Said out loud rather than swallowed: a file that silently failed to
+      // upload is a submission somebody believes they attached evidence to.
+      setFailure(error instanceof Error ? error.message : String(error))
+    } finally {
+      setBusy(false)
+      field.touch()
+    }
+  }
+
+  return (
+    <FieldShell path={path} field={field} label={label}>
+      {upload === undefined ? (
+        <p data-formancy-part="file-unavailable">
+          This form cannot accept files here, because no upload destination has been configured.
+        </p>
+      ) : (
+        <input
+          {...field.controlProps}
+          type="file"
+          multiple={multiple}
+          {...(accept === undefined ? {} : { accept: accept.join(',') })}
+          disabled={field.disabled || busy}
+          onChange={(event) => {
+            void onPick(event.target.files)
+            event.target.value = ''
+          }}
+        />
+      )}
+
+      {files.length === 0 ? null : (
+        <ul data-formancy-part="file-list">
+          {files.map((file) => (
+            <li key={file.id} data-formancy-part="file-item">
+              <span>{file.name}</span>
+              <button
+                type="button"
+                disabled={field.disabled}
+                onClick={() => field.setValue(files.filter((other) => other.id !== file.id))}
+              >
+                {/* Named with the file, so a screen reader user hears which
+                    attachment a button removes rather than "remove" six
+                    times over. */}
+                Remove {file.name}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* One polite region per field for the upload's own progress: the form's
+          error region belongs to validation, and an upload failure is not a
+          validation error. */}
+      <p role="status" data-formancy-part="file-status">
+        {busy ? 'Uploading…' : (failure ?? '')}
+      </p>
+    </FieldShell>
+  )
+}
+
+/**
  * The built-in unstyled components. `null` means the type renders nothing here:
  * a hidden field is carried in the submission and never shown, and the
  * container types are laid out by their own machinery rather than by a leaf
@@ -483,6 +677,9 @@ const DEFAULT_COMPONENTS: Record<FieldType, FieldComponent | null> = {
   date: DateField,
   select: SelectField,
   radio: RadioGroupField,
+  selectboxes: SelectBoxesField,
+  file: FileField,
+  richtext: RichTextField,
   hidden: null,
   static: StaticField,
   group: null,

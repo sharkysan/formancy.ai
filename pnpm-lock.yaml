@@ -593,9 +593,6 @@ importers:
 
   packages/react:
     dependencies:
-      '@formancy/conformance':
-        specifier: workspace:*
-        version: link:../conformance
       '@formancy/core':
         specifier: workspace:*
         version: link:../core
@@ -606,6 +603,9 @@ importers:
       '@arethetypeswrong/cli':
         specifier: 'catalog:'
         version: 0.18.5
+      '@formancy/conformance':
+        specifier: workspace:*
+        version: link:../conformance
       '@testing-library/react':
         specifier: ^16.3.3
         version: 16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)

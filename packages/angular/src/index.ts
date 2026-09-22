@@ -33,3 +33,6 @@ export {
 } from './form.js'
 export type { SubmitOutcome } from './form.js'
 export { FormancyErrorSummary } from './error-summary.js'
+export { FormancyRichInline, FormancyRichText } from './rich-text.js'
+export { FORMANCY_UPLOADER, injectUploader, provideFormancyUploader } from './uploads.js'
+export type { StoredFile, Uploader } from './uploads.js'

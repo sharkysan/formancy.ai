@@ -746,6 +746,10 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
     if (node.def.type === 'checkbox') return value !== true
     if (value === undefined || value === null) return true
     if (typeof value === 'string') return value.trim() === ''
+    // A required list answer needs something in it. An empty array is how a
+    // selectboxes field with nothing ticked and a file field with nothing
+    // attached both arrive, and `[]` is not an answer.
+    if (Array.isArray(value)) return value.length === 0
     return false
   }
 

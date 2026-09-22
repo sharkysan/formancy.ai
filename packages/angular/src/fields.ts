@@ -1,10 +1,13 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core'
+import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core'
 import type { Type } from '@angular/core'
 import type { FieldOption, FieldType } from '@formancy/spec'
 import { injectField } from './field.js'
 import type { FieldBinding } from './field.js'
 import { injectEngine } from './provide.js'
 import { injectFieldContext } from './registry.js'
+import { FormancyRichText } from './rich-text.js'
+import { injectUploader } from './uploads.js'
+import type { StoredFile } from './uploads.js'
 
 /**
  * The built-in unstyled field components — the Angular rendering of the same
@@ -335,6 +338,230 @@ export class FormancyStaticField {
   protected readonly context = injectFieldContext()
 }
 
+/**
+ * Several answers from a list, every option visible at once.
+ *
+ * A fieldset with a legend, exactly like the radio group, because the
+ * relationship is the same one: several controls answering a single question.
+ * What differs is only that more than one may be chosen.
+ *
+ * `aria-required` sits on the group, not on each box: "at least one" is a
+ * property of the question, and on every box it would announce each option as
+ * required, which is the opposite of what it means.
+ */
+@Component({
+  selector: 'formancy-select-boxes-field',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <fieldset
+      data-formancy-part="field"
+      [attr.data-formancy-field-path]="context.path"
+      [attr.data-state]="showError() ? 'invalid' : 'valid'"
+      [attr.aria-describedby]="control()['aria-describedby']"
+      [attr.aria-required]="field.snapshot().required ? 'true' : null"
+    >
+      <legend data-formancy-part="label">{{ context.label }}</legend>
+      @for (option of options(); track option.value) {
+        <span data-formancy-part="checkbox-option">
+          <input
+            type="checkbox"
+            [id]="optionId(option)"
+            [attr.name]="control().name"
+            [value]="option.value"
+            [checked]="isChosen(option.value)"
+            [disabled]="field.snapshot().disabled"
+            (change)="toggle(option.value, $event)"
+            (blur)="field.touch()"
+          />
+          <label [attr.for]="optionId(option)">{{ option.label }}</label>
+        </span>
+      }
+      @if (showError()) {
+        <p data-formancy-part="error" [id]="field.snapshot().props.error.id">{{ errorText() }}</p>
+      }
+    </fieldset>
+  `,
+})
+export class FormancySelectBoxesField extends FieldComponentBase {
+  protected readonly showError = computed(() => {
+    const snapshot = this.field.snapshot()
+    return snapshot.touched && snapshot.errors.length > 0
+  })
+
+  protected readonly errorText = computed(() => this.field.snapshot().errors.join(', '))
+
+  protected readonly chosen = computed<readonly unknown[]>(() => {
+    const value = this.field.snapshot().value
+    return Array.isArray(value) ? value : []
+  })
+
+  protected isChosen(value: string): boolean {
+    return this.chosen().includes(value)
+  }
+
+  protected optionId(option: { value: string }): string {
+    return `${this.field.snapshot().ids.control}:${option.value}`
+  }
+
+  protected toggle(value: string, event: Event): void {
+    const on = (event.target as HTMLInputElement).checked
+    // Rebuilt in the options' own order rather than the order they were
+    // ticked, so two people choosing the same answers store the same array and
+    // the React binding stores it identically.
+    const next = this.options()
+      .map((option) => option.value)
+      .filter((candidate) => (candidate === value ? on : this.isChosen(candidate)))
+    this.field.setValue(next)
+  }
+}
+
+/**
+ * Formatted text, written as the restricted markup the spec defines.
+ *
+ * A textarea, not a contenteditable surface — a deliberate v1 cut. A WYSIWYG
+ * editor is a large accessibility surface of its own, and half of one is worse
+ * than a textarea that every assistive technology already understands.
+ */
+@Component({
+  selector: 'formancy-rich-text-field',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FormancyFieldShell, FormancyRichText],
+  template: `
+    <formancy-field-shell [field]="field" [label]="context.label" [path]="context.path">
+      <textarea
+        [id]="control().id"
+        [attr.name]="control().name"
+        [attr.aria-describedby]="control()['aria-describedby']"
+        [attr.aria-invalid]="control()['aria-invalid']"
+        [attr.aria-required]="control()['aria-required']"
+        [disabled]="field.snapshot().disabled"
+        rows="5"
+        [value]="text()"
+        (input)="field.setValue($any($event.target).value)"
+        (blur)="field.touch()"
+      ></textarea>
+      <div data-formancy-part="richtext-preview">
+        <formancy-rich-text [source]="text()" />
+      </div>
+    </formancy-field-shell>
+  `,
+})
+export class FormancyRichTextField extends FieldComponentBase {
+  protected readonly text = computed(() => {
+    const value = this.field.snapshot().value
+    return typeof value === 'string' ? value : ''
+  })
+}
+
+/**
+ * Attached files.
+ *
+ * The control picks files; an injected uploader puts them somewhere and
+ * reports what was stored. Without one the field is read-only and says so,
+ * rather than accepting a file it has nowhere to put.
+ */
+@Component({
+  selector: 'formancy-file-field',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FormancyFieldShell],
+  template: `
+    <formancy-field-shell [field]="field" [label]="context.label" [path]="context.path">
+      @if (upload === null) {
+        <p data-formancy-part="file-unavailable">
+          This form cannot accept files here, because no upload destination has been configured.
+        </p>
+      } @else {
+        <input
+          type="file"
+          [id]="control().id"
+          [attr.name]="control().name"
+          [attr.aria-describedby]="control()['aria-describedby']"
+          [attr.accept]="acceptAttribute()"
+          [attr.multiple]="multiple() ? '' : null"
+          [disabled]="field.snapshot().disabled || busy()"
+          (change)="pick($event)"
+        />
+      }
+
+      @if (files().length > 0) {
+        <ul data-formancy-part="file-list">
+          @for (file of files(); track file.id) {
+            <li data-formancy-part="file-item">
+              <span>{{ file.name }}</span>
+              <button
+                type="button"
+                [disabled]="field.snapshot().disabled"
+                (click)="remove(file.id)"
+              >
+                <!-- Named with the file, so a screen reader user hears which
+                     attachment a button removes rather than "remove" six
+                     times over. -->
+                Remove {{ file.name }}
+              </button>
+            </li>
+          }
+        </ul>
+      }
+
+      <!-- One polite region per field for the upload itself: the form's error
+           region belongs to validation, and a failed upload is not one. -->
+      <p role="status" data-formancy-part="file-status">{{ status() }}</p>
+    </formancy-field-shell>
+  `,
+})
+export class FormancyFileField extends FieldComponentBase {
+  protected readonly upload = injectUploader()
+  protected readonly busy = signal(false)
+  protected readonly failure = signal<string | undefined>(undefined)
+
+  protected readonly files = computed<readonly StoredFile[]>(() => {
+    const value = this.field.snapshot().value
+    return Array.isArray(value) ? (value as StoredFile[]) : []
+  })
+
+  protected readonly status = computed(() => (this.busy() ? 'Uploading…' : (this.failure() ?? '')))
+
+  protected acceptAttribute(): string | null {
+    const accept = this.field.snapshot().def.accept
+    return accept === undefined || accept.length === 0 ? null : accept.join(',')
+  }
+
+  protected multiple(): boolean {
+    const max = this.field.snapshot().def.maxItems
+    return max === undefined || max > 1
+  }
+
+  protected remove(id: string): void {
+    this.field.setValue(this.files().filter((file) => file.id !== id))
+  }
+
+  protected pick(event: Event): void {
+    const input = event.target as HTMLInputElement
+    const picked = input.files
+    if (picked === null || picked.length === 0 || this.upload === null) return
+    void this.store(Array.from(picked)).finally(() => {
+      input.value = ''
+    })
+  }
+
+  private async store(picked: readonly File[]): Promise<void> {
+    this.busy.set(true)
+    this.failure.set(undefined)
+    try {
+      const stored: StoredFile[] = []
+      for (const file of picked) stored.push(await this.upload!(file))
+      this.field.setValue([...this.files(), ...stored])
+    } catch (error) {
+      // Said out loud rather than swallowed: a file that silently failed is a
+      // submission somebody believes they attached evidence to.
+      this.failure.set(error instanceof Error ? error.message : String(error))
+    } finally {
+      this.busy.set(false)
+      this.field.touch()
+    }
+  }
+}
+
 export const DEFAULT_FIELD_COMPONENTS: Record<FieldType, Type<unknown> | null> = {
   text: FormancyTextField,
   textarea: FormancyTextareaField,
@@ -343,6 +570,9 @@ export const DEFAULT_FIELD_COMPONENTS: Record<FieldType, Type<unknown> | null> =
   date: FormancyDateField,
   select: FormancySelectField,
   radio: FormancyRadioGroupField,
+  selectboxes: FormancySelectBoxesField,
+  file: FormancyFileField,
+  richtext: FormancyRichTextField,
   hidden: null,
   static: FormancyStaticField,
   group: null,
