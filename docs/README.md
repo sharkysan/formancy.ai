@@ -61,11 +61,4 @@ and the record now says so, with the earlier state left visible.
 | [Software failure mode analysis](regulatory/SAFETY-ANALYSIS.md) | What this software can do wrong and what constrains it. An **input** to ISO 14971, never a substitute |
 | [Development lifecycle](regulatory/LIFECYCLE.md) | How the software is actually developed, mapped onto IEC 62304's process areas, including the areas that are absent |
 
-## Reading these honestly
 
-They were written after the software, from the real history. Where something is
-designed but not built, they say so; where a claim rests on automated checking
-that covers roughly 57% of what it might, they say that too. Every factual
-claim points at something in the repository that a reader can open.
-
-A tidier narrative was available and would have been worth less.
