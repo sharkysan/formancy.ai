@@ -148,3 +148,4 @@ record whose only enforcement is "we remember" says so plainly.
 | [0038](0038-esm-only.md) | Publish ESM only | accepted |
 | [0039](0039-pin-typescript.md) | Pin TypeScript to the range Angular accepts | accepted |
 | [0040](0040-no-eval.md) | No `eval` and no `new Function`, anywhere | accepted |
+| [0054](0054-expressions-that-never-work.md) | Refuse an expression that compiles and then never works | accepted |
