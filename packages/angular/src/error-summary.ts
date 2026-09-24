@@ -1,3 +1,4 @@
+import { focusControl } from './focus-control.js'
 import {
   ChangeDetectionStrategy,
   Component,
@@ -79,6 +80,6 @@ export class FormancyErrorSummary {
   protected focusControl(event: Event, path: string): void {
     // The hash alone scrolls but does not focus; do both.
     event.preventDefault()
-    document.getElementById(this.controlIdOf(path))?.focus()
+    focusControl(document.getElementById(this.controlIdOf(path)))
   }
 }

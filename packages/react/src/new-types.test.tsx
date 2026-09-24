@@ -359,7 +359,7 @@ describe('tabs', () => {
     expect(outcome.errors['email']).toContain('required')
   })
 
-  test('focus landing in a hidden panel opens its tab', async () => {
+  test('failed submit reveals the panel before focusing its control', async () => {
     mount(schema)
 
     // The error-summary case. Focusing a control inside a hidden panel
@@ -368,7 +368,13 @@ describe('tabs', () => {
     // `hidden: true`, because the control genuinely is hidden right now — that
     // is the situation being tested, and the default query would not find it.
     const email = screen.getByRole('textbox', { name: 'Email', hidden: true })
-    email.focus()
+    const focus = email.focus.bind(email)
+    email.focus = () => {
+      expect(email.closest('[hidden]')).toBeNull()
+      focus()
+    }
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Submit' }))
+    expect(document.activeElement).toBe(email)
 
     await waitFor(() =>
       expect(screen.getByRole('tab', { name: 'Contact' }).getAttribute('aria-selected')).toBe(

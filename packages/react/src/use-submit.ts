@@ -1,3 +1,4 @@
+import { focusControl } from './focus-control.js'
 import { useCallback } from 'react'
 import { parsePath } from '@formancy/core'
 import { useFormEngine } from './context.js'
@@ -24,7 +25,7 @@ export function useSubmit(): () => { ok: boolean; errors: Record<string, string[
         const firstInvalid = engine.firstInvalid()
         if (firstInvalid !== null) {
           const ids = engine.getFieldSnapshot(parsePath(firstInvalid)).ids
-          document.getElementById(ids.control)?.focus()
+          focusControl(document.getElementById(ids.control))
         }
       }
     }

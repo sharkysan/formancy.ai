@@ -206,3 +206,11 @@ describe('it terminates, on the shapes that make parsers hang', () => {
     expect(Date.now() - started).toBeLessThan(500)
   })
 })
+
+
+test('hostile emphasis nesting stays within a renderable tree depth', () => {
+  const source = '*'.repeat(40_000)
+  expect(() => parseRichText(source)).not.toThrow()
+  expect(() => richTextToPlain(source)).not.toThrow()
+  expect(richTextToPlain(source)).toContain('*'.repeat(100))
+})

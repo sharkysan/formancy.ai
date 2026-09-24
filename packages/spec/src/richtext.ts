@@ -122,9 +122,14 @@ export function parseRichText(source: string): RichBlock[] {
  * Hand-written rather than regular-expression-driven: the patterns for nested
  * emphasis are exactly the shape `recheck` rejects elsewhere in this codebase,
  * and a form author's answer is attacker-controlled text run by the server.
- * This scans once and cannot backtrack.
+ * Nesting is bounded so hostile markup cannot exhaust the call stack.
  */
-function parseInline(source: string): RichInline[] {
+// Bound both parser recursion and the depth consumed by renderers. Beyond this
+// limit the remaining markup is preserved as literal text.
+const MAX_INLINE_DEPTH = 32
+
+function parseInline(source: string, depth = 0): RichInline[] {
+  if (depth >= MAX_INLINE_DEPTH) return [{ kind: 'text', text: source }]
   const out: RichInline[] = []
   let text = ''
 
@@ -148,7 +153,7 @@ function parseInline(source: string): RichInline[] {
         // way somebody typing it expects, and taking the first two does not.
         while (source[end + 2] === '*') end += 1
         flush()
-        out.push({ kind: 'strong', children: parseInline(source.slice(at + 2, end)) })
+        out.push({ kind: 'strong', children: parseInline(source.slice(at + 2, end), depth + 1) })
         at = end + 2
         continue
       }
@@ -158,7 +163,7 @@ function parseInline(source: string): RichInline[] {
       const end = source.indexOf('*', at + 1)
       if (end !== -1) {
         flush()
-        out.push({ kind: 'emphasis', children: parseInline(source.slice(at + 1, end)) })
+        out.push({ kind: 'emphasis', children: parseInline(source.slice(at + 1, end), depth + 1) })
         at = end + 1
         continue
       }
@@ -170,7 +175,7 @@ function parseInline(source: string): RichInline[] {
         flush()
         out.push(
           isSafeHref(link.href)
-            ? { kind: 'link', href: link.href.trim(), children: parseInline(link.text) }
+            ? { kind: 'link', href: link.href.trim(), children: parseInline(link.text, depth + 1) }
             : // Shown as typed. A reader can see what was meant, and nothing
               // navigates anywhere on their behalf.
               { kind: 'text', text: source.slice(at, link.next) },

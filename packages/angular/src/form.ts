@@ -1,5 +1,6 @@
 import {
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
   Component,
   Directive,
   ElementRef,
@@ -256,7 +257,7 @@ export class FormancyRepeaterSection implements OnInit {
  * browser's own find-in-page finds it. Removing it would also throw away what
  * somebody had typed the moment they looked at another tab.
  *
- * **A tab opens when focus lands inside it.** An error summary focuses the
+ * **A tab opens before error navigation focuses a control inside it.** An error summary focuses the
  * first invalid control, and focusing something inside a hidden panel does
  * nothing at all — the reader is told the form has an error and sent nowhere.
  */
@@ -294,7 +295,7 @@ export class FormancyRepeaterSection implements OnInit {
           [attr.aria-labelledby]="tabId(i)"
           data-formancy-part="tabpanel"
           [hidden]="i !== open()"
-          (focusin)="open.set(i)"
+          (formancy-reveal)="reveal(i)"
         >
           <formancy-layout
             [nodes]="childrenOf(panel)"
@@ -313,6 +314,12 @@ export class FormancyTabs {
   readonly labels = input<Record<string, string> | undefined>(undefined)
 
   protected readonly open = signal(0)
+  private readonly changeDetector = inject(ChangeDetectorRef)
+
+  protected reveal(index: number): void {
+    this.open.set(index)
+    this.changeDetector.detectChanges()
+  }
 
   private readonly tabButtons = viewChildren<ElementRef<HTMLButtonElement>>('tab')
   private readonly engine = injectEngine()
