@@ -3,11 +3,16 @@
 - **Status:** accepted
 - **Date:** 2026-09-24
 - **Deciders:** Daniel Bacher
-- **Verified by:** `apps/site/src/site.test.tsx` (16 cases: the demo is real
-  markup with a working conditional and a computed value, the page has one
-  heading level one and a skip link, and the ending is announced rather than
-  only shown), and a manual check at 320 CSS pixels and under
-  `prefers-reduced-motion: reduce`.
+- **Verified by:** `apps/site/src/site.test.tsx` (23 cases: the demo is real
+  markup with a working conditional, a computed value and every field type
+  spec 2 added, the page has one heading level one and a skip link, and the
+  ending is announced rather than only shown), and a manual check at 320 CSS
+  pixels and under `prefers-reduced-motion: reduce`.
+- **History:** the demo grew the spec 2 types after the fact, and writing it is
+  what found the bug in [0022](0022-fail-open-fail-closed.md) — a `visible`
+  rule over a `selectboxes` field showed the field it was meant to hide. Which
+  is this record's own argument arriving sooner than expected: a page that
+  renders the product finds what a page of screenshots cannot.
 
 ## Context
 
@@ -32,6 +37,20 @@ theme. Choosing the managed plan reveals a field because the document says so;
 a computed field computes. It is a separate app (`apps/site`) rather than a
 page in the docs site, and it depends on `@formancy/react` the way a customer
 would — so it breaks when the package breaks.
+
+The document is arranged in **tabs**, which is what lets the demo carry every
+spec 2 type without becoming a page somebody has to scroll: one panel is shown
+at a time, so the form is the same height it was when it had five fields. The
+second panel holds `selectboxes`, `richtext` and `file`, and the first is a
+`table` rather than two rows, because columns that line up across rows are the
+one thing stacked rows cannot do.
+
+**The file field uploads nowhere, and says so.** The page is static on purpose
+— a landing page that needs a database to render is a landing page that goes
+down — so its uploader keeps the file in the tab and writes
+`demo:nothing-was-uploaded` as the storage key. Minting a plausible-looking key
+would make the demo read better and make the product look like it silently
+drops files.
 
 **The page is themed by the thing it sells.** The palette is the `dusk` theme's
 own tokens. A landing page for a theming system that invents a palette is

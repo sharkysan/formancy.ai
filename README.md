@@ -140,7 +140,12 @@ DATABASE_URL=postgres://formancy:formancy@localhost:5439/formancy \
 
 pnpm --filter @formancy/admin dev       # admin on :4382 (proxies /api)
 pnpm --filter @formancy/playground dev  # playground on :4381
+pnpm --filter @formancy/site dev        # formancy.ai on :4384
 ```
+
+Those ports are fixed rather than "the next free one", so a stale dev
+server is an error you see immediately instead of a page at an address
+nobody was told about.
 
 The admin has a **build** tab — the keyboard-driven builder in a three-pane
 inspector, beside a live preview, switching between the structure and the

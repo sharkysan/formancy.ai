@@ -60,7 +60,13 @@ form is showing a field.
 
 **The website.** `apps/site` is formancy.ai, and the form halfway down it is a
 real document handed to `@formancy/react` rather than a screenshot
-([0053](./docs/decisions/0053-the-page-is-the-product.md)).
+([0053](./docs/decisions/0053-the-page-is-the-product.md)). It exercises every
+type spec 2 added — `selectboxes`, `richtext` and `file`, arranged in `tabs`
+over a `table` — which is how the list-field bug above was found. Its file
+field uploads nowhere and says so in the storage key, because the page is
+static and a demo that looks like it stored something makes the product look
+like it silently drops files. The playground is one click away from the bar,
+from the demo and from the end of the page.
 
 ### Fixed
 

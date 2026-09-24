@@ -8,9 +8,11 @@ import type { FormSchema } from '@formancy/spec'
  * theme a consumer would get. A landing page for a form engine that shows a
  * picture of a form is a landing page arguing against its own product.
  *
- * Small on purpose. It has to make three claims visible in one screen —
- * conditional logic, a computed value, and a side-by-side row — and anything
- * more is a demo somebody has to study rather than notice.
+ * It has to make four claims visible without becoming a demo somebody has to
+ * study — conditional logic, a computed value, the field types spec 2 added,
+ * and a layout that is more than a stack. Tabs are what let the last two fit:
+ * the document is twice the size it was and the form is the same height,
+ * because only one panel is shown at a time.
  */
 export const DEMO_SCHEMA: FormSchema = {
   specVersion: '2',
@@ -43,6 +45,29 @@ export const DEMO_SCHEMA: FormSchema = {
         { value: 'us', label: 'United States' },
       ] },
       { key: 'monthly', type: 'number', label: 'Estimated monthly (CHF)' },
+      {
+        key: 'topics',
+        type: 'selectboxes',
+        label: 'What the quote should cover',
+        options: [
+          { value: 'migration', label: 'Migrating forms we already have' },
+          { value: 'audit', label: 'An accessibility audit' },
+          { value: 'support', label: 'Support with a response time' },
+        ],
+      },
+      {
+        key: 'brief',
+        type: 'richtext',
+        label: 'Anything else we should know',
+        maxLength: 600,
+      },
+      {
+        key: 'existing',
+        type: 'file',
+        label: 'The forms you are migrating',
+        accept: ['application/pdf'],
+        maxFileSize: 5 * 1024 * 1024,
+      },
     ],
   },
   logic: {
@@ -55,6 +80,10 @@ export const DEMO_SCHEMA: FormSchema = {
       // `seats * 4` is double times int — a type error that leaves the field
       // silently empty rather than saying anything. Worth knowing about.
       { target: 'monthly', kind: 'computed', cel: 'seats * 4.0' },
+      // A selectboxes answer is the list of values ticked, so a rule reads it
+      // as a list. Asking for the old forms before anybody said they had any
+      // is the sort of field a form grows until nobody fills it in.
+      { target: 'existing', kind: 'visible', cel: "'migration' in topics" },
     ],
   },
   layouts: [
@@ -62,20 +91,42 @@ export const DEMO_SCHEMA: FormSchema = {
       name: 'web',
       nodes: [
         {
-          kind: 'row',
+          // The strip is named, because a form may have two of them and
+          // "tab list" twice tells a screen-reader user nothing.
+          kind: 'tabs',
+          label: 'Quote',
           children: [
-            { kind: 'field', path: 'company' },
-            { kind: 'field', path: 'seats' },
+            {
+              kind: 'section',
+              label: 'Requirement',
+              children: [
+                {
+                  // A table rather than two rows: columns that line up across
+                  // rows are the one thing stacked rows cannot do, because
+                  // each row sizes itself.
+                  kind: 'table',
+                  columns: 2,
+                  children: [
+                    { kind: 'field', path: 'company' },
+                    { kind: 'field', path: 'seats' },
+                    { kind: 'field', path: 'plan' },
+                    { kind: 'field', path: 'region' },
+                  ],
+                },
+                { kind: 'field', path: 'monthly' },
+              ],
+            },
+            {
+              kind: 'section',
+              label: 'Detail',
+              children: [
+                { kind: 'field', path: 'topics' },
+                { kind: 'field', path: 'brief' },
+                { kind: 'field', path: 'existing' },
+              ],
+            },
           ],
         },
-        {
-          kind: 'row',
-          children: [
-            { kind: 'field', path: 'plan' },
-            { kind: 'field', path: 'region' },
-          ],
-        },
-        { kind: 'field', path: 'monthly' },
       ],
     },
   ],
@@ -95,7 +146,11 @@ export const DEMO_SOURCE = `{
     { "key": "seats",   "type": "number" },
     { "key": "plan",    "type": "radio" },
     { "key": "region",  "type": "select" },
-    { "key": "monthly", "type": "number" }
+    { "key": "monthly", "type": "number" },
+    { "key": "topics",  "type": "selectboxes" },
+    { "key": "brief",   "type": "richtext" },
+    { "key": "existing","type": "file",
+      "accept": ["application/pdf"] }
   ]},
   "logic": { "rules": [
     { "target": "region",
@@ -103,12 +158,25 @@ export const DEMO_SOURCE = `{
       "cel": "plan == 'cloud'" },
     { "target": "monthly",
       "kind": "computed",
-      "cel": "seats * 4.0" }
+      "cel": "seats * 4.0" },
+    { "target": "existing",
+      "kind": "visible",
+      "cel": "'migration' in topics" }
   ]},
   "layouts": [{ "name": "web", "nodes": [
-    { "kind": "row",
-      "children": ["company", "seats"] },
-    { "kind": "row",
-      "children": ["plan", "region"] }
+    { "kind": "tabs", "children": [
+      { "kind": "section", "label": "Requirement",
+        "children": [
+          { "kind": "table", "columns": 2,
+            "children": [
+              "company", "seats", "plan", "region"
+            ]},
+          "monthly"
+        ]},
+      { "kind": "section", "label": "Detail",
+        "children": [
+          "topics", "brief", "existing"
+        ]}
+    ]}
   ]}]
 }`
