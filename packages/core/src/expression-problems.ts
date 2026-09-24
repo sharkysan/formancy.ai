@@ -85,7 +85,10 @@ function isMixedNumeric(message: string): boolean {
  *
  * Only what the engine already promises about the shape of a stored answer, so
  * this cannot disagree with what actually arrives. A `date` is an ISO string,
- * a choice is its option's value, and the list types are lists.
+ * a choice is its option's value, and the list types are lists. `selectboxes`
+ * is a list of selected option values and `file` is a list of stored file
+ * metadata objects; both stay `list` here because CEL overload resolution only
+ * needs to know that arithmetic and scalar comparisons do not apply.
  */
 const STRICT_TYPES: Record<string, DeclaredType> = {
   text: 'string',
