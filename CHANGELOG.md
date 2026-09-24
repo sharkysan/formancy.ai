@@ -58,6 +58,16 @@ now names the types whose answer is a list, in `@formancy/spec` rather than in
 the engine, because two readers disagreeing about it disagree about whether a
 form is showing a field.
 
+**The website deploys as one static site.** The landing page at `/` and the
+playground at `/playground/`, built by `pnpm build:web`. The playground is
+built with `base: '/playground/'`, without which Vite's absolute asset URLs
+point at the site's asset directory instead of its own — the page loads, the
+script 404s, and the deployment is a blank screen while the build log says
+everything succeeded. The build script reads the built HTML back and refuses
+to finish if that has happened, because a check that only runs when somebody
+remembers to look is not a check. The site also has a favicon now; it had been
+asking for one that was never there.
+
 **The website.** `apps/site` is formancy.ai, and the form halfway down it is a
 real document handed to `@formancy/react` rather than a screenshot
 ([0053](./docs/decisions/0053-the-page-is-the-product.md)). It exercises every
