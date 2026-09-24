@@ -1,3 +1,4 @@
+import { focusControl } from './focus-control.js'
 import { parsePath } from '@formancy/core'
 import { injectEngine } from './provide.js'
 
@@ -25,7 +26,7 @@ export function injectSubmit(): () => { ok: boolean; errors: Record<string, stri
         const firstInvalid = engine.firstInvalid()
         if (firstInvalid !== null) {
           const ids = engine.getFieldSnapshot(parsePath(firstInvalid)).ids
-          document.getElementById(ids.control)?.focus()
+          focusControl(document.getElementById(ids.control))
         }
       }
     }

@@ -1,3 +1,4 @@
+import { flushSync } from 'react-dom'
 import { useEffect, useId, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
 import type { FormSchema, LayoutNode } from '@formancy/spec'
@@ -196,7 +197,7 @@ function LayoutNodeView({
  * **A tab opens when an error is in it.** An error summary focuses the first
  * invalid control, and focusing something inside a hidden panel does nothing
  * at all — the reader is told the form has an error and sent nowhere. So the
- * strip listens for focus moving into a panel it is hiding and opens it.
+ * strip handles an explicit reveal request before the control receives focus.
  */
 function Tabs({
   schema,
@@ -231,15 +232,14 @@ function Tabs({
     tabs.current[open]?.focus()
   }, [open])
 
-  // Focus landing in a hidden panel is the error-summary case. `focusin`
-  // rather than React's onFocus because the focus may be moved imperatively by
-  // something outside this subtree entirely.
+  // Commit the tab change before focusControl calls focus(). The reveal event
+  // bubbles through all enclosing panels, including nested tab strips.
   useEffect(() => {
     const listeners = panels.current.map((panel, index) => {
       if (panel === null) return undefined
-      const onFocusIn = (): void => setOpen(index)
-      panel.addEventListener('focusin', onFocusIn)
-      return () => panel.removeEventListener('focusin', onFocusIn)
+      const reveal = (): void => flushSync(() => setOpen(index))
+      panel.addEventListener('formancy-reveal', reveal)
+      return () => panel.removeEventListener('formancy-reveal', reveal)
     })
     return () => {
       for (const off of listeners) off?.()

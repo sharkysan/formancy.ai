@@ -2,7 +2,7 @@ import { diffSchemas, schemaHash } from '@formancy/spec'
 import type { Change, FormSchema } from '@formancy/spec'
 import { validateSchema } from '@formancy/spec/validate'
 import type { SchemaError } from '@formancy/spec/validate'
-import { createFormEngine } from '@formancy/core'
+import { createFormEngine, expressionProblems } from '@formancy/core'
 import type { CapabilitySource } from '@formancy/core'
 import { maySubmit } from './access.js'
 import { filesToClaim } from './uploads.js'
@@ -55,6 +55,20 @@ export async function publishForm(
       ok: false,
       kind: 'invalid_logic',
       message: error instanceof Error ? error.message : String(error),
+    }
+  }
+
+  // Expressions that compile and then fail for every value anybody enters.
+  // The engine cannot refuse these — it declares leaves as `dyn` so that a
+  // half-typed answer is not a type error, which also makes `seats * 4` look
+  // fine until it runs. Refused here rather than at render, so a form already
+  // published with the mistake keeps opening for whoever is filling it in.
+  const problems = expressionProblems(schema)
+  if (problems.length > 0) {
+    return {
+      ok: false,
+      kind: 'invalid_logic',
+      message: problems.map((problem) => problem.message).join('\n'),
     }
   }
 

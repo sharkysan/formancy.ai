@@ -251,10 +251,17 @@ describe('tabs', () => {
     expect(engine.submit().errors['email']).toContain('required')
   })
 
-  test('focus landing in a hidden panel opens its tab', async () => {
+  test('failed submit reveals the panel before focusing its control', async () => {
     const view = await renderForm(engineFor(schema))
 
-    screen.getByRole('textbox', { name: 'Email', hidden: true }).focus()
+    const email = screen.getByRole('textbox', { name: 'Email', hidden: true })
+    const focus = email.focus.bind(email)
+    email.focus = () => {
+      expect(email.closest('[hidden]')).toBeNull()
+      focus()
+    }
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }))
+    expect(document.activeElement).toBe(email)
     await view.fixture.whenStable()
 
     expect(screen.getByRole('tab', { name: 'Contact' }).getAttribute('aria-selected')).toBe('true')

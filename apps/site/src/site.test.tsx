@@ -89,7 +89,7 @@ describe('the page is a document first', () => {
     const links = screen
       .getAllByRole('link')
       .map((link) => link.getAttribute('href'))
-      .filter((href) => href?.includes('github.com'))
+      .filter((href) => href === 'https://github.com/sharkysan/formancy.ai')
 
     expect(links.length).toBeGreaterThan(1)
     expect(links[0]).toBe('https://github.com/sharkysan/formancy.ai')

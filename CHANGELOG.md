@@ -75,6 +75,23 @@ real document handed to `@formancy/react` rather than a screenshot
 - `newFieldOfType` produced choice fields with no options — a control nobody
   can answer.
 
+- **An expression that compiles and then never works is refused at publish.**
+  `seats * 4` on a `number` field computed nothing — not an error, nothing —
+  for every value anybody typed, with no signal in the builder, at publish or
+  at runtime. Two correct decisions produced it: leaves are declared `dyn` so
+  that a half-typed answer is not a type error, and a computed rule that fails
+  writes nothing so that a half-filled input keeps its previous value. CEL is
+  strongly typed at runtime and a JSON number is a double, so `double * int`
+  has no overload and the engine cannot tell "not ready yet" from "never will
+  be".
+
+  `expressionProblems(schema)` re-checks each rule with leaves declared as the
+  model says and reports the failures strictness is reliably right about — and
+  only those, because a check that refuses a valid form is worse than the
+  silence it replaces. It runs at publish, not at render, so a form already out
+  there keeps opening for whoever is filling it in.
+  ([0054](./docs/decisions/0054-expressions-that-never-work.md)).
+
 ## [0.1.0] — 2026-09-20
 
 The first release. **Spec version: `"1"` (frozen).**

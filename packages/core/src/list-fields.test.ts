@@ -130,6 +130,17 @@ describe('file', () => {
     expect(engine.value()).toEqual({ evidence: [pdf] })
   })
 
+  test.each([null, 1, 'file', [], {}, { ...pdf, size: undefined },
+    { ...pdf, size: -1 }, { ...pdf, size: 1.5 }, { ...pdf, size: Infinity },
+    { ...pdf, id: '' }, { ...pdf, storageKey: undefined }, { ...pdf, contentType: null },
+  ])('malformed attachment metadata is rejected without throwing: %j', (file) => {
+    for (const constraints of [{}, { maxFileSize: 100 }, { accept: ['application/pdf'] }]) {
+      const engine = engineFor(evidence(constraints))
+      engine.setValue(parsePath('evidence'), [file])
+      expect(engine.submit().errors['evidence']).toContain('type')
+    }
+  })
+
   test('maxFileSize is checked here, not only by the browser', () => {
     const engine = engineFor(evidence({ maxFileSize: 5_000_000 }))
 

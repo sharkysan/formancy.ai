@@ -74,9 +74,20 @@ const LIST_VALUED = new Set(['selectboxes', 'file'])
 
 /** One attached file, as the submission stores it. Never the bytes. */
 interface StoredFile {
-  name?: unknown
-  size?: unknown
-  contentType?: unknown
+  id: string
+  name: string
+  size: number
+  contentType: string
+  storageKey: string
+}
+
+function isStoredFile(value: unknown): value is StoredFile {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false
+  const file = value as Record<string, unknown>
+  return ['id', 'name', 'storageKey'].every((key) =>
+    typeof file[key] === 'string' && file[key].length > 0,
+  ) && typeof file['contentType'] === 'string' &&
+    typeof file['size'] === 'number' && Number.isSafeInteger(file['size']) && file['size'] >= 0
 }
 
 /**
@@ -87,6 +98,7 @@ interface StoredFile {
  * form and nothing at all to somebody posting to the endpoint directly.
  */
 function fileViolations(def: FieldDef, files: readonly unknown[]): string[] {
+  if (!files.every(isStoredFile)) return ['type']
   const codes: string[] = []
 
   for (const entry of files) {
