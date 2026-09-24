@@ -10,8 +10,10 @@ import {
   useBuilder,
 } from '@formancy/builder-react'
 import { createFormEngine } from '@formancy/core'
-import { FormancyForm, FormancyProvider } from '@formancy/react'
-import type { FormSchema } from '@formancy/spec'
+import { FormancyForm, FormancyProvider, UploaderProvider } from '@formancy/react'
+import type { Uploader } from '@formancy/react'
+import type { FieldDef, FormSchema } from '@formancy/spec'
+import { uploadFile } from './api.js'
 import type { PublishResult } from './api.js'
 
 /**
@@ -30,11 +32,20 @@ export function BuildPane({
   onChange,
   publishState,
   onPublish,
+  formPath,
 }: {
   source: string
   onChange: (next: string) => void
   publishState: PublishResult | undefined
   onPublish: () => void
+  /**
+   * The form being edited, so the preview can accept files.
+   *
+   * Absent for a form that has never been published: there is nowhere to put
+   * bytes for a form the server has not heard of, and the file field says so
+   * rather than failing when somebody picks one.
+   */
+  formPath?: string
 }) {
   const [session, setSession] = useState<BuilderSession | null>(null)
   const [openError, setOpenError] = useState<string | null>(null)
@@ -76,6 +87,7 @@ export function BuildPane({
       onPublish={onPublish}
       selected={selected}
       onSelect={setSelected}
+      {...(formPath === undefined ? {} : { formPath })}
     />
   )
 }
@@ -87,6 +99,7 @@ function BuilderWorkspace({
   onPublish,
   selected,
   onSelect,
+  formPath,
 }: {
   session: BuilderSession
   onChange: (next: string) => void
@@ -94,6 +107,7 @@ function BuilderWorkspace({
   onPublish: () => void
   selected: readonly string[] | null
   onSelect: (keyPath: readonly string[]) => void
+  formPath?: string
 }) {
   const view = useBuilder(session)
   /**
@@ -129,6 +143,27 @@ function BuilderWorkspace({
   }, [view.document])
 
   const editing = selected ?? view.nodes[0]?.keyPath ?? null
+
+  /**
+   * The preview accepts files for real, against the server.
+   *
+   * Undefined until the form has been published: there is nowhere to put bytes
+   * for a form the server has not heard of, and the field says so rather than
+   * accepting a file it will lose. `useMemo` because a new function identity
+   * every render would remount every file input under it.
+   */
+  const uploader = useMemo<Uploader | undefined>(
+    () =>
+      formPath === undefined
+        ? undefined
+        : // The field the file is for is not something the renderer passes, so
+          // this is per-form rather than per-field for now — the server takes
+          // the field in the offer, and the first file field is what a preview
+          // is exercising. Named here rather than hidden, because it is a real
+          // limitation of this wiring and not of the API.
+          (file: File) => uploadFile(formPath, firstFileField(view.document) ?? '', file),
+    [formPath, view.document],
+  )
   // The preview renders THROUGH the arrangement when there is one. Without
   // this, moving two fields into a row changes nothing anybody can see, which
   // reads as a broken editor rather than as a preview that ignores layouts.
@@ -213,12 +248,14 @@ function BuilderWorkspace({
               enabled={editor === 'arrangement' && layoutName !== undefined}
             >
               <div className="wb-sheet" data-formancy-theme="blueprint">
+                <UploaderProvider value={uploader}>
                 <FormancyProvider engine={preview.engine}>
                   <FormancyForm
                     onSubmit={() => undefined}
                     {...(layoutName === undefined ? {} : { layout: layoutName })}
                   />
                 </FormancyProvider>
+                </UploaderProvider>
               </div>
             </FormancyArrangeSurface>
           )}
@@ -242,4 +279,28 @@ function BuilderWorkspace({
       </section>
     </div>
   )
+}
+
+/**
+ * The first file field in a document, as a data path.
+ *
+ * A stopgap: the renderer does not tell an uploader which field it is for, so
+ * a preview with two file fields would offer both against the first one's
+ * rules. Worth fixing by widening `Uploader` to take the field; worth naming
+ * here until it is.
+ */
+function firstFileField(document: FormSchema): string | undefined {
+  const walk = (fields: readonly FieldDef[], prefix: string): string | undefined => {
+    for (const field of fields) {
+      const path = field.type === 'page' ? prefix : `${prefix}${field.key}`
+      if (field.type === 'file') return path
+      const inside = walk(
+        field.fields ?? [],
+        field.type === 'page' ? prefix : field.type === 'repeater' ? `${path}[].` : `${path}.`,
+      )
+      if (inside !== undefined) return inside
+    }
+    return undefined
+  }
+  return walk(document.model.fields, '')
 }

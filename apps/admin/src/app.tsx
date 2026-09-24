@@ -165,6 +165,7 @@ function FormWorkspace({ path, onPublished }: { path: string; onPublished: () =>
           onChange={setSource}
           publishState={publishState}
           onPublish={() => { void publishSource() }}
+          formPath={path}
         />
       ) : tab === 'editor' ? (
         <EditorPane

@@ -50,6 +50,13 @@ the control does — it is what a consumer reading the submission gets.
 | `select`, `radio` | the chosen option's `value` | 1 |
 | `selectboxes` | the chosen values, **in the options' declared order** so two people who choose the same answers store the same array | 2 |
 | `file` | `{ id, name, size, contentType, storageKey }` per attachment — never the bytes | 2 |
+
+A `file` answer is written by the upload endpoints rather than typed: the
+client asks `POST /f/:path/files` where to put a file, PUTs the bytes to the
+URL it gets back, and puts the reply in the submission. The server claims those
+files inside the submission's own transaction, so a submission exists if and
+only if the files it names belong to it, and a file nobody claims is deleted a
+day later ([0055](../../../../../docs/decisions/0055-files-are-claimed.md)).
 | `richtext` | a string in the [formatted-text grammar](#formatted-text-is-not-html) | 2 |
 
 `minItems` and `maxItems` bound the list types, the same two properties a

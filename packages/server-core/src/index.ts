@@ -23,7 +23,14 @@ export type {
 } from './use-cases.js'
 export { unsafePatterns } from './redos.js'
 export type { UnsafePattern } from './redos.js'
-export type { DraftRecord, FormRecord, FormVersionRecord, Storage, SubmissionRecord } from './ports.js'
+export type {
+  DraftRecord,
+  FileRecord,
+  FormRecord,
+  FormVersionRecord,
+  Storage,
+  SubmissionRecord,
+} from './ports.js'
 export { createMemoryStorage } from './testing/memory-storage.js'
 export {
   authenticateApiKey,
@@ -48,3 +55,5 @@ export type { DeliveryHeaders } from './webhook.js'
 export { afterAttempt, drainOutbox } from './outbox.js'
 export type { AttemptOutcome, OutboxDeps } from './outbox.js'
 export type { DeliveryRecord, WebhookRecord } from './ports.js'
+export { collectAbandonedFiles, filesToClaim, fileFieldPaths, offerUpload } from './uploads.js'
+export type { ClaimOutcome, OfferDeps, OfferInput, OfferOutcome } from './uploads.js'

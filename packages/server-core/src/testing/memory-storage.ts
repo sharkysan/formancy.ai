@@ -1,6 +1,6 @@
 import type {
   DeliveryRecord,
-  WebhookRecord, ApiKeyRecord, DraftRecord, FormRecord, FormVersionRecord, Storage, SubmissionRecord, UserRecord } from '../ports.js'
+  WebhookRecord, ApiKeyRecord, DraftRecord, FileRecord, FormRecord, FormVersionRecord, Storage, SubmissionRecord, UserRecord } from '../ports.js'
 
 /**
  * The in-memory Storage — the second implementation that keeps the port
@@ -16,6 +16,7 @@ export function createMemoryStorage(): Storage {
   const drafts = new Map<string, DraftRecord>()
   const users = new Map<string, UserRecord>()
   const apiKeys = new Map<string, ApiKeyRecord>()
+  const files = new Map<string, FileRecord>()
 
   return {
     getFormByPath: async (path) => [...forms.values()].find((form) => form.path === path),
@@ -74,11 +75,43 @@ export function createMemoryStorage(): Storage {
       deliveries.set(record.id, { ...record })
     },
 
-    insertSubmission: async (record, queued) => {
+    insertFile: async (record) => {
+      files.set(record.id, { ...record })
+    },
+
+    getFile: async (id) => {
+      const found = files.get(id)
+      return found === undefined ? undefined : { ...found }
+    },
+
+    updateFile: async (record) => {
+      files.set(record.id, { ...record })
+    },
+
+    // A claimed file belongs to a submission and is never rubbish, however
+    // old. Age is a reason to collect an unclaimed one, never a claimed one.
+    abandonedFiles: async (beforeIso) =>
+      [...files.values()]
+        .filter((file) => file.state !== 'claimed' && file.createdAt < beforeIso)
+        .map((file) => ({ ...file })),
+
+    deleteFiles: async (ids) => {
+      for (const id of ids) files.delete(id)
+    },
+
+    insertSubmission: async (record, queued, claimFileIds) => {
       // One step, like the real transaction it stands in for: both land or
       // neither does.
       submissions.push({ ...record })
       for (const delivery of queued ?? []) deliveries.set(delivery.id, { ...delivery })
+      for (const id of claimFileIds ?? []) {
+        const file = files.get(id)
+        // Same call, same commit: a submission exists if and only if the
+        // files it names belong to it.
+        if (file !== undefined) {
+          files.set(id, { ...file, state: 'claimed', submissionId: record.id })
+        }
+      }
     },
 
     listSubmissions: async () => [...submissions],

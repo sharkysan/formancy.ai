@@ -61,6 +61,9 @@ defect would be most costly.
 
 | Debt | Why it exists | What it costs |
 |---|---|---|
+| **Uploaded files are not scanned** | A `ScanHook` with a ClamAV sidecar is designed and not built | A file is trusted the moment its bytes land. They are only ever served as authenticated attachments, so the exposure is to whoever downloads one deliberately ([0055](../decisions/0055-files-are-claimed.md)) |
+| **No resumable or multipart upload** | Deferred | The deployment's byte ceiling is also the largest single file, and a dropped connection restarts the whole thing |
+| **Only a local-disk file store** | `docker compose up` has to work | It does not survive more than one replica; the `FileStore` interface is shaped so an S3 adapter replaces one file |
 | **Async validators do not exist** | Deferred; they need a new rule kind, which is a spec 2 change | The version line exists for it, and `runsOn` is in place so the ordering question can be answered without restructuring ([0043](../decisions/0043-runs-on.md)) |
 | **A `recheck` verdict of `unknown` is accepted** | Refusing on undecidable would reject patterns that are fine | Every `pattern` is analysed at publish time and a vulnerable one refused — the check found a polynomial case in formancy's own email format the first time it ran — but an analysis that times out lets the pattern through ([0045](../decisions/0045-reject-backtracking-patterns.md)) |
 | **Rate limiter store is per-process** | `@fastify/rate-limit`'s default | Wrong behind more than one replica; documented rather than fixed |
