@@ -145,6 +145,9 @@ record whose only enforcement is "we remember" says so plainly.
 
 ### Tooling and distribution
 
+Decision numbers are global across this index, not per section; 0041–0053 are
+listed under the sections they belong to above.
+
 | # | Decision | Status |
 |---|---|---|
 | [0037](0037-turborepo-over-nx.md) | pnpm workspaces with Turborepo, not Nx | accepted |
