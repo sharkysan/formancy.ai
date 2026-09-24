@@ -27,13 +27,18 @@ const REPO = 'https://github.com/sharkysan/formancy.ai'
 /**
  * Where the playground lives.
  *
- * One origin in production, where the site and the playground are served
- * from the same host — and two Vite servers in development, where a
- * relative path would land on whichever app is being worked on rather than
- * the playground. A link that is broken for everybody developing the site
- * is a link nobody notices is broken in production either.
+ * One origin in production, where the site and the playground are served from
+ * the same host — and two Vite servers in development, where a relative path
+ * would land on whichever app is being worked on rather than the playground. A
+ * link that is broken for everybody developing the site is a link nobody
+ * notices is broken in production either.
+ *
+ * The trailing slash is load-bearing. `/playground` is a directory, and
+ * whether it resolves to `/playground/index.html` depends on the static host:
+ * some redirect, some 404. Asking for the address we actually mean costs
+ * nothing and removes the host from the question.
  */
-const PLAYGROUND = import.meta.env.DEV ? 'http://localhost:4381/' : '/playground'
+const PLAYGROUND = import.meta.env.DEV ? 'http://localhost:4381/' : '/playground/'
 
 export function App(): ReactElement {
   const journey = useJourney()

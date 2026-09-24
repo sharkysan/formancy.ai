@@ -147,6 +147,31 @@ Those ports are fixed rather than "the next free one", so a stale dev
 server is an error you see immediately instead of a page at an address
 nobody was told about.
 
+### Build formancy.ai
+
+The website is one static deployment: the landing page at `/`, the playground
+copied into `/playground/`.
+
+```bash
+pnpm build:web                          # -> apps/site/dist
+```
+
+Two Vite apps rather than one, because they are two products — and serving
+them together is a copy. The playground is **built with `base: '/playground/'`**,
+which is the part that is easy to get wrong and impossible to notice: Vite
+writes absolute asset URLs, so a playground built at the default base asks for
+`/assets/index-<hash>.js`, which is the *site's* asset directory. The page
+loads, the script 404s, and the deployment is a blank screen while every build
+log says it succeeded. `scripts/build-web.mjs` reads the built HTML back and
+refuses to finish if that has happened.
+
+Deploying is whatever serves a directory. With Cloudflare:
+
+```bash
+pnpm build:web                          # build command
+cd apps/site && npx wrangler deploy --assets=dist   --name=formancy-ai --compatibility-date=2026-09-18
+```
+
 The admin has a **build** tab — the keyboard-driven builder in a three-pane
 inspector, beside a live preview, switching between the structure and the
 arrangement in the pane header — plus the raw schema editor, publish, version

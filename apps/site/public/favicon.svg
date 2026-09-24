@@ -1,0 +1,12 @@
+<!--
+  The same F as the playground's mark, in the site's own palette: the violet
+  is the browser and the teal is the server, which is the one idea the whole
+  page is about. Two colours rather than one because a single-colour F says
+  nothing the wordmark does not already say.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="18" fill="#10141c"/>
+  <rect x="14" y="14" width="12" height="36" rx="6" fill="#7c6bf5"/>
+  <rect x="30" y="14" width="20" height="12" rx="6" fill="#3fd0c9"/>
+  <rect x="30" y="30" width="14" height="12" rx="6" fill="#3fd0c9"/>
+</svg>
