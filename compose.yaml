@@ -54,6 +54,15 @@ services:
       # metadata service. Both are opt-in, for a receiver on a trusted network.
       FORMANCY_WEBHOOK_ALLOW_HTTP: ${FORMANCY_WEBHOOK_ALLOW_HTTP:-false}
       FORMANCY_WEBHOOK_ALLOW_PRIVATE: ${FORMANCY_WEBHOOK_ALLOW_PRIVATE:-false}
+
+      # Uploads are off until there is somewhere to put bytes. Pointed at the
+      # volume below, so they survive the container — a files directory
+      # inside a container's own filesystem is a directory that is deleted on
+      # the next deploy.
+      FORMANCY_FILES_DIR: /var/lib/formancy/files
+      FORMANCY_MAX_FILE_BYTES: ${FORMANCY_MAX_FILE_BYTES:-10485760}
+    volumes:
+      - formancy-files:/var/lib/formancy/files
     depends_on:
       postgres:
         condition: service_healthy
@@ -61,3 +70,4 @@ services:
 
 volumes:
   formancy-pg:
+  formancy-files:

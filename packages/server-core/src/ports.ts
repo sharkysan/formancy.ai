@@ -104,6 +104,37 @@ export interface DeliveryRecord {
   lastError: string | null
 }
 
+/**
+ * One uploaded file, in three states.
+ *
+ * `offered` means somebody asked where to put a file and the bytes have not
+ * arrived. `stored` means they have. `claimed` means a submission that
+ * references it was accepted, which is the only state that makes a file worth
+ * keeping — everything else is rubbish waiting to be collected.
+ *
+ * The row is written BEFORE the bytes, so a file that dies halfway through
+ * uploading is still something the collector knows to look for. An orphan on
+ * disk with no row is one nothing will ever find.
+ *
+ * `name` is what the reader called it and is shown back to them; it is never
+ * part of `storageKey`, because a key built from a submitted filename is a
+ * path traversal waiting for somebody to try it.
+ */
+export interface FileRecord {
+  id: string
+  formId: string
+  /** What the reader called it. Display only. */
+  name: string
+  size: number
+  contentType: string
+  /** Where the bytes are, in whatever the host's storage calls a location. */
+  storageKey: string
+  state: 'offered' | 'stored' | 'claimed'
+  createdAt: string
+  /** The submission that claimed it, or null. One file, one submission. */
+  submissionId: string | null
+}
+
 export interface Storage {
   getFormByPath(path: string): Promise<FormRecord | undefined>
   listForms(): Promise<FormRecord[]>
@@ -125,7 +156,26 @@ export interface Storage {
    * docs/decisions/0024-postgres-over-mongodb.md, where this requirement is
    * what chose the database.
    */
-  insertSubmission(record: SubmissionRecord, deliveries?: readonly DeliveryRecord[]): Promise<void>
+  /**
+   * The submission, the webhooks it triggers and the files it claims, in ONE
+   * call because they belong in one COMMIT. A port that exposed them
+   * separately would invite a caller to break that, and the three failures it
+   * prevents — a webhook fired for a rolled-back submission, a stored
+   * submission nothing was sent about, an accepted submission whose files the
+   * collector deletes — are the ones a self-hoster cannot debug.
+   */
+  insertSubmission(
+    record: SubmissionRecord,
+    deliveries?: readonly DeliveryRecord[],
+    claimFileIds?: readonly string[],
+  ): Promise<void>
+
+  insertFile(record: FileRecord): Promise<void>
+  getFile(id: string): Promise<FileRecord | undefined>
+  updateFile(record: FileRecord): Promise<void>
+  /** Every file in a state other than `claimed`, created before `beforeIso`. */
+  abandonedFiles(beforeIso: string): Promise<FileRecord[]>
+  deleteFiles(ids: readonly string[]): Promise<void>
   webhooksForForm(formId: string): Promise<WebhookRecord[]>
   insertWebhook(record: WebhookRecord): Promise<void>
   /** Oldest first, only those due. */

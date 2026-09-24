@@ -4,6 +4,8 @@ import { validateSchema } from '@formancy/spec/validate'
 import type { SchemaError } from '@formancy/spec/validate'
 import { createFormEngine } from '@formancy/core'
 import type { CapabilitySource } from '@formancy/core'
+import { maySubmit } from './access.js'
+import { filesToClaim } from './uploads.js'
 import type { FormRecord, Storage } from './ports.js'
 import { unsafePatterns } from './redos.js'
 import type { UnsafePattern } from './redos.js'
@@ -174,31 +176,6 @@ export async function setFormAccess(
   return { ok: true }
 }
 
-/**
- * Whether this caller may submit this form at all, before any of the work.
- *
- * Every branch that is not an explicit permission returns false. An allowlist
- * that exists but does not name the origin refuses; an origin header that is
- * absent refuses, because absent is not the same as allowed; an empty
- * allowlist refuses everything, because a list of no origins is a list.
- */
-function maySubmit(
-  form: FormRecord,
-  actor: 'anonymous' | 'authenticated',
-  origin: string | undefined,
-): boolean {
-  if (actor === 'authenticated') return true
-  if (form.accessSubmit !== 'public') return false
-
-  const allowed = form.allowedOrigins
-  if (allowed === null) return true
-  if (origin === undefined) return false
-
-  // Exact match, never a prefix or suffix one: `https://evil-example.ch` ends
-  // with the same characters as `example.ch` and must not pass, and
-  // `https://example.ch:8443` is a different origin from `https://example.ch`.
-  return allowed.includes(origin)
-}
 
 export async function createSubmission(
   deps: ServerDeps,
@@ -259,13 +236,30 @@ export async function createSubmission(
     lastError: null,
   }))
 
+  // Checked before the insert and claimed inside it. A submission naming a
+  // file that is not hers is not a submission.
+  const claimable = await filesToClaim(deps.storage, {
+    schema: current.schema,
+    formId: current.formId,
+    data: engine.value(),
+  })
+  if (!claimable.ok) {
+    return {
+      ok: false,
+      kind: 'invalid',
+      errors: {
+        _files: [`unknown_file:${claimable.unknown.join(',')}`],
+      },
+    }
+  }
+
   await deps.storage.insertSubmission({
     id,
     formId: current.formId,
     formVersionId: current.versionId,
     data: engine.value(),
     submittedAt: deps.nowIso(),
-  }, queued)
+  }, queued, claimable.ids)
   return { ok: true, id, canonicalData: engine.value() }
 }
 
