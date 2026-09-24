@@ -1,5 +1,5 @@
-import type { FieldDef, FormSchema, LayoutNode, LogicRule, Text } from '@formancy/spec'
-import { unreferencedPaths } from '@formancy/spec'
+import type { FieldDef, FormSchema, LayoutNode, LogicRule, SpecVersion, Text } from '@formancy/spec'
+import { CURRENT_SPEC_VERSION, unreferencedPaths } from '@formancy/spec'
 import { validateSchema } from '@formancy/spec/validate'
 import type { SchemaError } from '@formancy/spec/validate'
 import {
@@ -99,6 +99,16 @@ export interface BuilderSession {
 
   /** Data paths the named layout does not place. Empty for an unknown layout. */
   unplacedFields(layout: string): string[]
+
+  /**
+   * Move the document to a newer spec version.
+   *
+   * One line of document change, undoable like any other command, and the
+   * reason it is a command at all: the builder offers the newer field types
+   * only to a document that allows them, so somebody who wants one has to be
+   * able to say yes from inside the builder rather than by editing JSON.
+   */
+  upgradeSpec(to?: SpecVersion): CommandOutcome
 }
 
 const CONTAINER_TYPES = new Set(['group', 'page', 'repeater'])
@@ -471,6 +481,19 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
 
     unplacedFields(layout) {
       return unreferencedPaths(present, layout) ?? []
+    },
+
+    upgradeSpec(to = CURRENT_SPEC_VERSION) {
+      return attempt((draft) => {
+        if (draft.specVersion > to) {
+          return refuse(
+            '/specVersion',
+            `This form is written against spec ${draft.specVersion} and cannot go back to ${to}: whatever the newer version added has nowhere to go, so it would be data loss rather than a change.`,
+          )
+        }
+        draft.specVersion = to
+        return undefined
+      })
     },
 
     validTargets(what) {

@@ -1,8 +1,5 @@
 /**
- * The formancy form schema, spec version 0.
- *
- * UNSTABLE. Freezes to "1" once the Angular renderer has proved the model is
- * not React-shaped.
+ * The formancy form schema.
  *
  * The four sections are separated deliberately: `model` is the data contract,
  * `logic` is behaviour, `layout` is presentation, `i18n` is text. form.io mixes
@@ -10,8 +7,12 @@
  * presentations of the same data.
  */
 export interface FormSchema {
-  /** Spec version, independent of package versions. */
-  specVersion: '1'
+  /**
+   * Which version of the document format this form is written against.
+   * Independent of package versions, and the thing a reader checks before
+   * deciding whether it understands the document at all.
+   */
+  specVersion: SpecVersion
   id: string
   title: string
   model: FormModel
@@ -21,6 +22,47 @@ export interface FormSchema {
   /** Named arrangements of the same model. Optional: model order is the default. */
   layouts?: FormLayout[]
 }
+
+/**
+ * The document format versions a reader of this package understands.
+ *
+ * Version 1 is frozen and stays readable forever. Version 2 is a superset: it
+ * adds field types and layout kinds and removes nothing, so every spec 1
+ * document is also a valid spec 2 document and `upgradeSpecVersion` is a
+ * one-line change.
+ *
+ * The line is drawn by what a READER must understand, not by what a document
+ * happens to contain. A `selectboxes` field is meaningless to an
+ * implementation that has never heard of it — it would silently drop the
+ * answer — so a document using one is not a spec 1 document, however
+ * compatible the rest of it looks
+ * ([0051](../../../docs/decisions/0051-spec-2-adds-types.md)).
+ */
+export const SPEC_VERSIONS = ['1', '2'] as const
+
+export type SpecVersion = (typeof SPEC_VERSIONS)[number]
+
+/** What a document gets when nothing says otherwise: the newest this package speaks. */
+export const CURRENT_SPEC_VERSION: SpecVersion = '2'
+
+/** Field types version 1 defines. Everything else needs `specVersion: "2"`. */
+export const SPEC_1_FIELD_TYPES = [
+  'text',
+  'textarea',
+  'number',
+  'checkbox',
+  'select',
+  'radio',
+  'date',
+  'hidden',
+  'static',
+  'group',
+  'page',
+  'repeater',
+] as const satisfies readonly FieldType[]
+
+/** Layout node kinds version 1 defines. */
+export const SPEC_1_LAYOUT_KINDS = ['field', 'section', 'row', 'column'] as const
 
 /** A reference into the message catalogue, in place of a literal string. */
 export interface MessageRef {
@@ -50,6 +92,35 @@ export interface FormLayout {
 export type LayoutNode =
   | { kind: 'field'; path: string }
   | { kind: 'section' | 'row' | 'column'; label?: Text; children: LayoutNode[] }
+  /**
+   * One panel shown at a time, each child section supplying a tab and its
+   * label supplying the tab's name.
+   *
+   * Reusing `section` rather than inventing a panel node keeps the union small
+   * and makes the rule obvious: a tab needs a name, and a section is the node
+   * that has one.
+   *
+   * Tabs are **presentation**, unlike `page`. Every field in every tab is
+   * validated and submitted whether its tab is open or not, because hiding a
+   * field behind a tab is not the same as saying it does not apply
+   * ([0012](../../../docs/decisions/0012-pages-scope-nothing.md) draws the
+   * same line for pages). A renderer therefore has to be able to open the tab
+   * an error is in.
+   *
+   * A `label` here names the tab strip itself, not a tab. Two tab strips in
+   * one form are otherwise both announced as "tab list" and a screen-reader
+   * user cannot tell which is which.
+   */
+  | { kind: 'tabs'; label?: Text; children: LayoutNode[] }
+  /**
+   * A grid whose columns line up across rows, which is the one thing stacked
+   * `row` nodes cannot do — each row sizes itself independently.
+   *
+   * `columns` is the count at full width. Narrower than that and it collapses,
+   * like every other container here, because WCAG 1.4.10 is a media query and
+   * not a measurement.
+   */
+  | { kind: 'table'; columns: number; label?: Text; children: LayoutNode[] }
 
 export interface FormModel {
   fields: FieldDef[]
@@ -73,12 +144,17 @@ export const ROW_ID = '_id'
 export const ROW_ID_PREFIX = 'r'
 
 /**
- * The v0.1 field types. Deferred types keep their names reserved so adding
- * them later is a compatible change: file, datetime, time, multiselect,
- * combobox, richtext, signature, address, rating, slider.
+ * Every field type this package understands, across both spec versions.
+ *
+ * `SPEC_1_FIELD_TYPES` says which of them version 1 allows; the rest need
+ * `specVersion: "2"`, and `validateSchema` refuses one in a version 1 document
+ * by name rather than by a schema error nobody can read.
+ *
+ * Still reserved, unimplemented: datetime, time, multiselect, combobox,
+ * signature, address, rating, slider.
  *
  * A list rather than a bare union because formancy.schema.json has to offer
- * the same twelve values, and a test can only compare two lists.
+ * the same values, and a test can only compare two lists.
  */
 export const FIELD_TYPES = [
   'text',
@@ -87,7 +163,10 @@ export const FIELD_TYPES = [
   'checkbox',
   'select',
   'radio',
+  'selectboxes',
   'date',
+  'file',
+  'richtext',
   'hidden',
   'static',
   'group',
@@ -138,6 +217,17 @@ export interface FieldDef {
   maxItems?: number
   addLabel?: string
   removeLabel?: string
+  /**
+   * `file` fields: which files may be attached, and how many.
+   *
+   * `accept` holds media types or extensions in the same grammar the HTML
+   * `accept` attribute uses, so the picker filters and the server checks the
+   * same list — a client-side filter alone is a suggestion, not a rule.
+   * `maxFileSize` is in bytes. `minItems`/`maxItems` bound the count, the same
+   * two properties a repeater uses.
+   */
+  accept?: string[]
+  maxFileSize?: number
   /** number fields: the valid range. */
   min?: number
   max?: number

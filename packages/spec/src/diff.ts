@@ -27,11 +27,19 @@ export function diffSchemas(before: FormSchema, after: FormSchema): Change[] {
   const changes: Change[] = []
 
   if (before.specVersion !== after.specVersion) {
+    // Upwards is a superset and costs nothing: version 2 adds field types and
+    // layout kinds and removes none, so a document that was valid stays valid
+    // and every answer keeps its path. Downwards is not, because whatever was
+    // added is now unreadable — and this is a diff, so it has to say which
+    // direction it is looking.
+    const upgrade = before.specVersion < after.specVersion
     changes.push({
-      severity: 'breaking',
+      severity: upgrade ? 'compatible' : 'breaking',
       kind: 'specVersion.changed',
       path: 'specVersion',
-      detail: `Spec version ${before.specVersion} to ${after.specVersion}. Existing data cannot be rebound automatically.`,
+      detail: upgrade
+        ? `Spec version ${before.specVersion} to ${after.specVersion}. Version ${after.specVersion} only adds, so the data keeps its shape.`
+        : `Spec version ${before.specVersion} to ${after.specVersion}. A reader of the older version cannot be given what the newer one added, so existing data cannot be rebound automatically.`,
     })
   }
 

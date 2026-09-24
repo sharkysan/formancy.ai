@@ -1,3 +1,4 @@
+import { focusControl } from './focus-control.js'
 import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react'
 import { parsePath } from '@formancy/core'
 import { useFormEngine } from './context.js'
@@ -50,7 +51,7 @@ export function ErrorSummary({ labels }: ErrorSummaryProps) {
                 onClick={(event) => {
                   // The hash alone scrolls but does not focus; do both.
                   event.preventDefault()
-                  document.getElementById(controlId)?.focus()
+                  focusControl(document.getElementById(controlId))
                 }}
               >
                 {`${labelFor(path)}: ${codes.join(', ')}`}

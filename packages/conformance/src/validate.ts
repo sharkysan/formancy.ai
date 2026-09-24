@@ -7,7 +7,7 @@
  * rejected here, with the position in the file that caused it.
  */
 
-import { modelDataPaths } from '@formancy/spec'
+import { SPEC_VERSIONS, modelDataPaths } from '@formancy/spec'
 import type { FieldDef, FieldType, RuleKind } from '@formancy/spec'
 import { COMMAND_SEPARATOR, fieldAtPath, pageKeys } from './paths.js'
 import type { ConformanceSchema, Fixture, FixtureStep, StepKind } from './types.js'
@@ -89,7 +89,10 @@ const FIELD_TYPES: Record<FieldType, true> = {
   checkbox: true,
   select: true,
   radio: true,
+  selectboxes: true,
   date: true,
+  file: true,
+  richtext: true,
   hidden: true,
   static: true,
   group: true,
@@ -215,8 +218,11 @@ function validateSchema(value: unknown, at: string): FixtureProblem[] {
 
   const problems: FixtureProblem[] = []
 
-  if (schema['specVersion'] !== '1') {
-    problems.push({ path: `${at}.specVersion`, message: 'expected "1"' })
+  if (!SPEC_VERSIONS.includes(schema['specVersion'] as never)) {
+    problems.push({
+      path: `${at}.specVersion`,
+      message: `expected one of ${SPEC_VERSIONS.map((version) => `"${version}"`).join(', ')}`,
+    })
   }
   for (const key of ['id', 'title'] as const) {
     if (typeof schema[key] !== 'string' || schema[key] === '') {

@@ -136,14 +136,23 @@ describe('diffSchemas severity', () => {
     })
   })
 
-  test('a spec version bump is breaking', () => {
-    // Spec 1 is frozen and there is no spec 2, so this reaches past the type to
-    // construct one. The rule has to exist before the version it guards does:
-    // finding out that a bump was silently compatible AFTER shipping spec 2
-    // would mean finding out in somebody's data.
-    const after = { ...clone(base), specVersion: '2' as unknown as '1' }
+  test('moving up a spec version is compatible, because the newer one only adds', () => {
+    // This rule was written as "any bump is breaking" before spec 2 existed,
+    // which was the safe guess and turned out to be the wrong one: version 2
+    // adds field types and layout kinds and removes nothing, so every answer
+    // keeps its path and nothing has to be rebound.
+    const after = { ...clone(base), specVersion: '2' as const }
 
     expect(diffSchemas(base, after)).toContainEqual(
+      expect.objectContaining({ kind: 'specVersion.changed', severity: 'compatible' }),
+    )
+  })
+
+  test('moving down one is breaking, because what the newer version added cannot be expressed', () => {
+    const before = { ...clone(base), specVersion: '2' as const }
+    const after = { ...clone(base), specVersion: '1' as const }
+
+    expect(diffSchemas(before, after)).toContainEqual(
       expect.objectContaining({ kind: 'specVersion.changed', severity: 'breaking' }),
     )
   })

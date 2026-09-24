@@ -1,0 +1,49 @@
+{
+  "name": "several answers from one list, stored in the list's own order",
+  "description": "A selectboxes field is several controls answering a single question, which is the radio group's relationship with more than one answer allowed — so it is a group with one accessible name, and each box is named by its own option. The answer is the list of values chosen, stored in the order the options are declared rather than the order they were ticked, so two people who choose the same answers produce the same submission and a diff of two submissions means something. Emptiness is required's job: an empty list is not an answer, and a bound on how many may be ticked is not a way of making the field required.",
+  "tags": ["fields", "spec2"],
+  "schema": {
+    "specVersion": "2",
+    "id": "newsletter",
+    "title": "What would you like to hear about?",
+    "model": {
+      "fields": [
+        {
+          "key": "topics",
+          "type": "selectboxes",
+          "label": "Topics",
+          "required": true,
+          "maxItems": 2,
+          "options": [
+            { "value": "news", "label": "News" },
+            { "value": "offers", "label": "Offers" },
+            { "value": "events", "label": "Events" }
+          ]
+        },
+        { "key": "email", "type": "text", "label": "Email", "required": true }
+      ]
+    }
+  },
+  "steps": [
+    { "set": { "email": "a@example.ch" } },
+    { "submit": true },
+    { "expectErrors": { "topics": ["required"] } },
+
+    { "set": { "topics": ["events", "news"] } },
+    { "expectValue": { "topics": ["news", "events"] } },
+    { "expectNoErrors": true },
+
+    { "set": { "topics": ["news", "offers", "events"] } },
+    { "submit": true },
+    { "expectErrors": { "topics": ["maxItems"] } },
+
+    { "set": { "topics": ["offers"] } },
+    { "submit": true },
+    {
+      "expectSubmit": {
+        "status": "accepted",
+        "data": { "topics": ["offers"], "email": "a@example.ch" }
+      }
+    }
+  ]
+}

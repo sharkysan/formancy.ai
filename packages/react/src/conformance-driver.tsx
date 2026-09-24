@@ -64,9 +64,17 @@ export function createReactDriver(): RendererDriver {
    *  nth match for a row instance. Returns undefined when not in the tree. */
   function controlFor(path: string): HTMLElement | undefined {
     const label = labelOf(path)
-    const matches = screen.queryAllByLabelText(label)
     const index = rowIndexOf(path) ?? 0
-    return matches[index]
+    const labelled = screen.queryAllByLabelText(label)
+    if (labelled[index] !== undefined) return labelled[index]
+
+    // A field answered by several controls — a radio group, a checkbox group —
+    // has its accessible name on the fieldset, and a legend is not a label, so
+    // the query above finds nothing. Falling back to the group is what makes
+    // those fields visible to `visibleFields` and gives `errorsFor` something
+    // to read `aria-describedby` from; without it the driver reports a whole
+    // question as absent from the form.
+    return screen.queryAllByRole('group', { name: label })[index]
   }
 
   async function settle(action: () => void): Promise<void> {
@@ -115,6 +123,26 @@ export function createReactDriver(): RendererDriver {
         await settle(() => {
           fireEvent.click(within(group).getByLabelText(textOf(chosen.label) ?? chosen.value))
         })
+        return
+      }
+
+      // Checkboxes answering one question, the same shape as a radio group:
+      // the accessible name is on the fieldset and each box is named by its
+      // own option. The value is the whole list, so this sets every box to
+      // match it rather than toggling one.
+      if (def?.type === 'selectboxes') {
+        const group = screen.getByRole('group', { name: labelOf(path) })
+        const wanted = new Set((Array.isArray(value) ? value : []).map(String))
+        for (const option of def.options ?? []) {
+          const box = within(group).getByLabelText(
+            textOf(option.label) ?? option.value,
+          ) as HTMLInputElement
+          if (box.checked !== wanted.has(option.value)) {
+            await settle(() => {
+              fireEvent.click(box)
+            })
+          }
+        }
         return
       }
 
@@ -179,13 +207,26 @@ export function createReactDriver(): RendererDriver {
 
     async valueOf(path) {
       const { schema } = requireMounted()
-      const def = fieldAtPath(schema, path) as { type?: string } | undefined
+      const def = fieldAtPath(schema, path) as
+        | { type?: string; options?: Array<{ value: string; label: unknown }> }
+        | undefined
       if (def?.type === 'radio') {
         const group = screen.getByRole('group', { name: labelOf(path) })
         const checked = within(group)
           .getAllByRole('radio')
           .find((radio) => (radio as HTMLInputElement).checked)
         return checked === undefined ? null : (checked as HTMLInputElement).value
+      }
+      if (def?.type === 'selectboxes') {
+        const group = screen.getByRole('group', { name: labelOf(path) })
+        // In the DOM's order, which is the options' order, which is the order
+        // the engine stores them in. Reading them in click order would make
+        // this pass against a renderer that stores them in click order too,
+        // and the two renderers would then disagree about the same answers.
+        return within(group)
+          .getAllByRole('checkbox')
+          .filter((box) => (box as HTMLInputElement).checked)
+          .map((box) => (box as HTMLInputElement).value)
       }
       const control = controlFor(path)
       if (control === undefined) throw new Error(`No control in the tree for "${path}"`)

@@ -18,7 +18,7 @@ software, and neither is `latest`.
 | Licence | Apache-2.0 for every package ([0002](../decisions/0002-apache-2-0.md)) |
 | Source | this repository, in full, including tests |
 | Package version | `0.1.0`, published to npm under the `@formancy` scope |
-| Spec version | `"1"` — **frozen** 2026-09-20 ([0042](../decisions/0042-freeze-the-spec.md)) |
+| Spec version | `"2"` ([0051](../decisions/0051-spec-2-adds-types.md)). Version `"1"` is frozen and stays readable ([0042](../decisions/0042-freeze-the-spec.md)) |
 | Development stage | v0.1 released; pre-alpha. `@formancy/builder-react` is the one package not yet published |
 | Integrity | each tarball carries a SLSA v1 provenance attestation issued by GitHub's OIDC identity for the workflow run that built it, plus a registry signature. Verify with `npm audit signatures`; the pipeline is described in [`RELEASING.md`](../../RELEASING.md) |
 
@@ -26,6 +26,13 @@ The two version lines are independent and both matter. The package version
 governs the code; the spec version governs the *documents and stored
 submissions*, which is the artefact with real switching costs.
 
+> **A manufacturer must pin the spec version as well as the package version.**
+> Version 2 is a superset of version 1: it adds field types and layout kinds and
+> removes nothing, so a document characterised under version 1 is unchanged and
+> still valid. But a reader that speaks only version 1 cannot read a version 2
+> document, and the failure is a validation error rather than a silent one
+> ([0051](../decisions/0051-spec-2-adds-types.md)).
+>
 > **The data format is stable; the code is not.** Spec version 1 is frozen, so
 > a form document and the submissions stored against it keep their shape. The
 > *packages* are pre-release and their APIs will still change. A manufacturer

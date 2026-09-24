@@ -57,7 +57,11 @@ export interface ExpressionProblem {
  * that one expression to the silence everything had before this existed —
  * a fair trade for never refusing a valid form.
  */
+// CEL keeps arithmetic overloads separate across its numeric types, so seeing
+// any two of these in one overload error usually means "write 4.0", not "the
+// field types are wrong".
 const NUMERIC = ['int', 'uint', 'double']
+export const MIXED_NUMERIC_LITERAL_EXAMPLE = '4 becomes 4.0'
 
 function reportable(code: string | undefined, message: string): boolean {
   if (code !== 'no_such_overload') return false
@@ -81,7 +85,10 @@ function isMixedNumeric(message: string): boolean {
  *
  * Only what the engine already promises about the shape of a stored answer, so
  * this cannot disagree with what actually arrives. A `date` is an ISO string,
- * a choice is its option's value, and the list types are lists.
+ * a choice is its option's value, and the list types are lists. `selectboxes`
+ * is a list of selected option values and `file` is a list of stored file
+ * metadata objects; both stay `list` here because CEL overload resolution only
+ * needs to know that arithmetic and scalar comparisons do not apply.
  */
 const STRICT_TYPES: Record<string, DeclaredType> = {
   text: 'string',
@@ -131,7 +138,7 @@ export function expressionProblems(schema: FormSchema): ExpressionProblem[] {
     if (!reportable(outcome.error.code, outcome.error.message)) continue
 
     const hint = isMixedNumeric(outcome.error.message)
-      ? ` A number field holds a double and CEL will not widen a whole number to meet it, so write the literals with a decimal point — 4 becomes 4.0.`
+      ? ` A number field holds a double and CEL will not widen a whole number to meet it, so write the literals with a decimal point — ${MIXED_NUMERIC_LITERAL_EXAMPLE}.`
       : ''
 
     problems.push({

@@ -130,6 +130,9 @@ record whose only enforcement is "we remember" says so plainly.
 | [0048](0048-webhook-delivery.md) | Deliver webhooks from a transactional outbox, to an address we checked | accepted |
 | [0049](0049-one-polling-worker.md) | Drain the outbox from one polling worker, and say so | accepted |
 | [0050](0050-arrange-in-two-places.md) | Edit the arrangement in two places, over one document | accepted |
+| [0051](0051-spec-2-adds-types.md) | Spec 2 adds field types; spec 1 documents keep working | accepted |
+| [0052](0052-richtext-is-not-html.md) | A formatted-text answer is not HTML | accepted |
+| [0053](0053-the-page-is-the-product.md) | The landing page renders a real form, and no effect is load-bearing | accepted |
 
 ### Verification
 
@@ -141,6 +144,9 @@ record whose only enforcement is "we remember" says so plainly.
 | [0036](0036-pin-the-cel-corpus.md) | Run the official CEL corpus and pin the result | accepted |
 
 ### Tooling and distribution
+
+Decision numbers are global across this index, not per section; 0041–0053 are
+listed under the sections they belong to above.
 
 | # | Decision | Status |
 |---|---|---|

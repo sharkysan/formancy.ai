@@ -12,7 +12,7 @@ import schema from '@formancy/spec/schema.json' with { type: 'json' }
  * the only version that cannot drift.
  */
 
-export type PropertyKind = 'string' | 'number' | 'boolean' | 'enum' | 'options'
+export type PropertyKind = 'string' | 'number' | 'boolean' | 'enum' | 'options' | 'strings'
 
 export interface EditableProperty {
   name: string
@@ -87,6 +87,10 @@ function kindOf(node: JsonSchemaNode, name: string): PropertyKind {
   if (choicesOf(node) !== undefined) return 'enum'
   if (node.type === 'boolean') return 'boolean'
   if (node.type === 'number' || node.type === 'integer') return 'number'
+  // A plain list of strings — a file field's `accept`, today. Read from the
+  // schema rather than from the property's name, so the next one the spec
+  // grows gets an editor without anybody remembering to add it here.
+  if (node.type === 'array' && node.items?.type === 'string') return 'strings'
   return 'string'
 }
 

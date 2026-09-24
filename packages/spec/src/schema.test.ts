@@ -102,15 +102,19 @@ function isBareRef(node: unknown): boolean {
 }
 
 describe('per-type documentation', () => {
-  // The twelve oneOf branches ARE the reason fieldType is written as oneOf of
-  // const rather than a flat enum: each carries the title and description the
+  // The oneOf branches ARE the reason fieldType is written as oneOf of const
+  // rather than a flat enum: each carries the title and description the
   // builder's palette and Monaco hovers render. An undocumented branch is a
   // blank tooltip in the product.
+  //
+  // Counted against FIELD_TYPES rather than against a literal, which is what
+  // the previous version did — so adding a type meant editing a number here
+  // with no idea why it was 12.
   test('every fieldType branch carries a non-empty title and description', () => {
     const defs = (schemaDocument as { $defs: Record<string, unknown> }).$defs
     const fieldType = defs['fieldType'] as { oneOf: Array<Record<string, unknown>> }
 
-    expect(fieldType.oneOf.length).toBe(12)
+    expect(fieldType.oneOf.length).toBe(FIELD_TYPES.length)
     for (const branch of fieldType.oneOf) {
       expect(typeof branch['title']).toBe('string')
       expect((branch['title'] as string).length).toBeGreaterThan(0)

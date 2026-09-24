@@ -17,13 +17,13 @@ versions, and for what happens when the spec eventually moves to 2.
 
 ## The form document
 
-A formancy form, written against version 1 of the spec. The document holds the data contract only: what the form collects, and under what names. How it looks and when it appears are separate concerns, so the same form can have more than one presentation.
+A formancy form. The document holds the data contract only: what the form collects, and under what names. How it looks and when it appears are separate concerns, so the same form can have more than one presentation. `specVersion` says which version of this format it is written against.
 
 ### `specVersion`
 
-required · the constant `"1"` · default `"1"`
+required · one of `"1"`, `"2"` · default `"2"`
 
-**Spec version.** Which version of the formancy spec this form is written against. Version 1 is frozen: a document that validates today will validate against every future release of the packages that speaks spec 1. It is independent of the package version, and it only changes when the shape of the document changes.
+**Spec version.** Which version of the document format this form is written against. Version 1 is frozen: a document that validates today will validate against every future release that speaks spec 1. Version 2 is a superset — it adds field types and layout kinds and removes nothing — so every version 1 document is also a valid version 2 document, and upgrading is a one-line change. Independent of the package version.
 
 ### `id`
 
@@ -121,7 +121,10 @@ What kind of answer the field collects, or — for a group, a page or a repeater
 - `"checkbox"` — **Checkbox.** A single yes-or-no answer, such as accepting the terms.
 - `"select"` — **Dropdown.** One answer picked from a list, shown collapsed. Best when the list is long.
 - `"radio"` — **Radio buttons.** One answer picked from a list, with every option visible at once. Best for a handful of options.
+- `"selectboxes"` — **Checkboxes.** Several answers picked from a list, every option visible at once. The answer is the list of values chosen, so an option removed later leaves the submissions that chose it unchanged.
 - `"date"` — **Date.** A calendar date, with no time of day.
+- `"file"` — **File upload.** One or more attached files. The submission stores what each file is and where it went — never its bytes — so a submission stays small and readable on its own.
+- `"richtext"` — **Formatted text.** Several lines of text the reader can emphasise, link and list. Stored as a restricted markup, not as HTML: nothing a reader writes is ever parsed as markup by the renderer, which is what keeps a submitted answer from becoming a script on the page that displays it.
 - `"hidden"` — **Hidden value.** Travels with the submission but is never shown to the reader, such as a campaign code or a referral source.
 - `"static"` — **Static text.** Text shown to the reader that collects nothing: a heading, an explanation, a notice.
 - `"group"` — **Group.** Related fields kept together on the same page. Collects nothing itself.
@@ -144,7 +147,7 @@ optional · Fields (see below)
 
 Every other type is an answer field: a field that collects one answer and holds no other fields.
 
-#### `select`, `radio`
+#### `select`, `radio`, `selectboxes`
 
 ##### `options`
 
@@ -223,6 +226,54 @@ Values of `format`:
 - `"email"` — **Email address.** One address, with a mailbox and a domain.
 - `"url"` — **Web address.** An absolute http or https URL.
 - `"uuid"` — **UUID.** A universally unique identifier in its canonical hex form.
+
+#### `selectboxes`
+
+##### `minItems`
+
+optional · integer · minimum 0 · maximum 1000
+
+**Fewest choices.** How many options must be ticked. Leave it unset to accept any number — and use `required` rather than a minimum of 1, so the reader is told the field is required before they touch it.
+
+##### `maxItems`
+
+optional · integer · minimum 1 · maximum 1000
+
+**Most choices.** How many options may be ticked at once.
+
+#### `file`
+
+##### `accept`
+
+optional · array
+
+**Accepted file types.** Media types or extensions, such as `application/pdf` or `.png` — the same grammar the HTML `accept` attribute uses, so the file picker filters on exactly what the server then enforces. A filter in the browser alone is a suggestion, not a rule.
+
+##### `maxFileSize`
+
+optional · integer · minimum 1
+
+**Largest file.** The size limit for one file, in bytes. The server checks it as well, because the browser cannot be trusted to.
+
+##### `minItems`
+
+optional · integer · minimum 0 · maximum 1000
+
+**Fewest files.** How many files must be attached.
+
+##### `maxItems`
+
+optional · integer · minimum 1 · maximum 1000
+
+**Most files.** How many files may be attached.
+
+#### `richtext`
+
+##### `maxLength`
+
+optional · integer · minimum 1 · maximum 1000000
+
+**Longest answer.** The cap on the answer, counted in characters of the stored markup rather than of the text a reader sees.
 
 ## Logic rules
 
@@ -393,6 +444,52 @@ optional · Text (see below)
 required · array of Layout node
 
 **Children.** The nodes inside this group.
+
+#### Tabs
+
+##### `kind`
+
+required · the constant `"tabs"`
+
+**Kind.** Shows one child at a time behind a row of tabs. Presentation only: every field in every tab is still validated and submitted, unlike a page.
+
+##### `label`
+
+optional · Text (see below)
+
+**Name of the tab strip.** Names the strip itself, not a tab. Two sets of tabs in one form are otherwise both announced as "tab list", and somebody using a screen reader cannot tell which is which.
+
+##### `children`
+
+required · array of Layout node · at least 1 item
+
+**Tabs.** One section per tab. Each section’s heading is its tab’s name, so every one of them needs a heading — a tab with no name is a tab nobody can choose.
+
+#### Table
+
+##### `kind`
+
+required · the constant `"table"`
+
+**Kind.** A grid whose columns line up across every row, which stacked rows cannot do — each row sizes itself on its own.
+
+##### `columns`
+
+required · integer · minimum 1 · maximum 12
+
+**Columns.** How many columns at full width. Narrower than that and it collapses to one, so the form still works at 320 pixels without sideways scrolling.
+
+##### `label`
+
+optional · Text (see below)
+
+**Heading.** Optional heading for the grid.
+
+##### `children`
+
+required · array of Layout node
+
+**Cells.** The nodes to place, filling the columns in order.
 
 ### Layout
 
