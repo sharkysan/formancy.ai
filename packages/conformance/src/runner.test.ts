@@ -1,6 +1,13 @@
 import { describe, expect, test } from 'vitest'
 import type { RendererDriver, SubmitResult } from './driver.js'
-import { ConformanceAssertionError, assertFixtureResult, runFixture, runSuite, structuralEqual } from './runner.js'
+import {
+  AccessibilityAssertionError,
+  ConformanceAssertionError,
+  assertFixtureResult,
+  runFixture,
+  runSuite,
+  structuralEqual,
+} from './runner.js'
 import type { ConformanceSchema, Fixture, JsonValue } from './types.js'
 import { createFakeDriver } from './testing/fake-driver.js'
 
@@ -543,5 +550,148 @@ describe('runSuite', () => {
     expect(suite.results[1]?.crash?.phase).toBe('fixture')
     expect(suite.results[1]?.crash?.message).toContain('Invalid fixture')
     expect(suite.report).toContain('broken')
+  })
+})
+
+/**
+ * The accessibility gate.
+ *
+ * A conformance run that only checked behaviour would pass a renderer whose
+ * markup nobody can use: the fixtures cannot see a missing label, and the
+ * driver contract's name-and-role rule catches only the controls a fixture
+ * happens to touch. The audit runs on the mounted form and after every step
+ * that can change the DOM, because the states worth checking are the ones the
+ * form reaches DURING use — an error appearing, a row arriving, a page turning
+ * — and those are exactly the states a manual audit never visits.
+ */
+describe('the accessibility audit', () => {
+  const missingLabel = {
+    id: 'label',
+    impact: 'critical' as const,
+    help: 'Form elements must have labels',
+    helpUrl: 'https://dequeuniversity.com/rules/axe/4.13/label',
+    nodes: ['<input id="canton">'],
+  }
+
+  const auditing = (reports: readonly (readonly (typeof missingLabel)[])[]) =>
+    createFakeDriver({ visibleWhen: { canton: { path: 'country', equals: 'CH' } }, auditReports: reports })
+
+  test('a clean form passes, and the audit leaves no trace on the result', async () => {
+    const result = await runFixture(passing, auditing([[], [], [], []]))
+
+    expect(result.status).toBe('passed')
+    expect(result.accessibility).toBeUndefined()
+  })
+
+  test('markup that is wrong before anybody touches it fails the case', async () => {
+    const result = await runFixture(passing, auditing([[missingLabel]]))
+
+    expect(result.status).toBe('failed')
+    // No step index: wrong on arrival is a different report from wrong after a
+    // transition, and it points at the renderer rather than at a state change.
+    expect(result.accessibility?.afterStep).toBeUndefined()
+    expect(result.accessibility?.violations).toEqual([missingLabel])
+  })
+
+  test('a form that only breaks once it is used fails at the step that broke it', async () => {
+    // Clean on arrival, clean after the first set, broken after the second.
+    const result = await runFixture(passing, auditing([[], [], [missingLabel]]))
+
+    expect(result.status).toBe('failed')
+    // Steps 0 and 2 are the `set`s; step 1 is an expectation and is not
+    // audited, so the third report belongs to step 2.
+    expect(result.accessibility?.afterStep).toBe(2)
+  })
+
+  test('every assertion can pass and the case still fail', async () => {
+    const result = await runFixture(passing, auditing([[], [], [missingLabel]]))
+
+    // The whole point. A renderer cannot conform by behaving correctly.
+    expect(result.steps.filter((step) => step.status === 'failed')).toHaveLength(0)
+    expect(result.status).toBe('failed')
+  })
+
+  test('auditing stops at the first one, but the steps do not', async () => {
+    const result = await runFixture(passing, auditing([[missingLabel]]))
+
+    // One violation reported, not the same one at every state after it — and
+    // the behaviour assertions still ran, because unusable markup must not
+    // hide a conditional that fires backwards. One run, both bugs.
+    expect(result.accessibility?.violations).toHaveLength(1)
+    expect(result.steps.every((step) => step.status === 'passed')).toBe(true)
+  })
+
+  test('the report names the rule, the impact and every offending node', async () => {
+    const twoNodes = { ...missingLabel, nodes: ['<input id="canton">', '<input id="email">'] }
+    const result = await runFixture(passing, auditing([[twoNodes]]))
+
+    const message = result.accessibility?.message ?? ''
+    expect(message).toContain('label')
+    expect(message).toContain('[critical]')
+    // Both, not the first: one of four unlabelled inputs sends somebody to fix
+    // a quarter of the problem.
+    expect(message).toContain('<input id="canton">')
+    expect(message).toContain('<input id="email">')
+    expect(message).toContain('dequeuniversity.com')
+  })
+
+  test('a driver with no audit() is not audited, and that is not a failure', async () => {
+    // A driver with no DOM — the engine in Node, the server's replay — has
+    // nothing to audit, and demanding a stub from it would be asking for a lie.
+    const result = await runFixture(passing, swissDriver())
+
+    expect(result.status).toBe('passed')
+    expect(result.accessibility).toBeUndefined()
+  })
+
+  test('an auditor that throws is a crash, not a violation', async () => {
+    const driver = createFakeDriver({
+      visibleWhen: { canton: { path: 'country', equals: 'CH' } },
+      auditReports: [[]],
+      crashOn: ['audit'],
+    })
+
+    const result = await runFixture(passing, driver)
+
+    // A broken auditor says nothing about the renderer, and reporting it as a
+    // violation would send somebody looking for a label that is already there.
+    expect(result.status).toBe('crashed')
+    expect(result.crash?.phase).toBe('audit')
+  })
+
+  test('a behaviour failure is reported ahead of an audit failure', async () => {
+    const wrong: Fixture = {
+      name: 'wrong and inaccessible at once',
+      schema: contact,
+      steps: [{ set: { country: 'US' } }, { expectVisible: ['canton'] }],
+    }
+
+    const result = await runFixture(wrong, auditing([[], [missingLabel]]))
+
+    // Both are reported …
+    expect(result.failure?.kind).toBe('expectVisible')
+    expect(result.accessibility).toBeDefined()
+    // … and the behaviour failure is the one that throws, because it is the
+    // more actionable of the two.
+    expect(() => {
+      assertFixtureResult(result)
+    }).toThrow(ConformanceAssertionError)
+  })
+
+  test('assertFixtureResult throws its own error type for an audit failure', async () => {
+    const result = await runFixture(passing, auditing([[missingLabel]]))
+
+    // Its own class, so a CI log can tell the two kinds apart without parsing
+    // a message.
+    expect(() => {
+      assertFixtureResult(result)
+    }).toThrow(AccessibilityAssertionError)
+  })
+
+  test('the suite report carries the violation, not just the count', async () => {
+    const suite = await runSuite([passing], () => auditing([[missingLabel]]))
+
+    expect(suite.failed).toBe(1)
+    expect(suite.report).toContain('Form elements must have labels')
   })
 })

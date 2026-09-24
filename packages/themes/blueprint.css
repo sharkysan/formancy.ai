@@ -55,6 +55,16 @@
   color: var(--fm-signal);
 }
 
+/* A grouped field carries a real element instead, because `role="group"`
+   cannot carry `aria-required` and the requirement has to reach a screen
+   reader through the group's description. Here it is not decorative: it is
+   the thing being announced, so it is styled as text rather than as a mark. */
+[data-formancy-theme='blueprint'] [data-formancy-part='required-hint'] {
+  margin-inline-start: 0.5em;
+  font-size: 0.75rem;
+  color: var(--fm-signal);
+}
+
 [data-formancy-theme='blueprint'] [data-formancy-part='field'] :is(input, select, textarea) {
   font: inherit;
   font-size: 0.9375rem;

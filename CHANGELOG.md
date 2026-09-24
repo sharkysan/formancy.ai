@@ -58,6 +58,29 @@ now names the types whose answer is a list, in `@formancy/spec` rather than in
 the engine, because two readers disagreeing about it disagree about whether a
 form is showing a field.
 
+**The conformance run audits accessibility, and it found a bug on its first
+pass.** axe-core now runs on every mounted form and after every step that can
+change the DOM — an error appearing, a row arriving, a page turning — which
+are the states a hand-written audit never visits. The rule set lives in
+`@formancy/conformance` rather than in a driver, because two renderers audited
+against two rule sets are not held to one standard and both suites would stay
+green while they drifted. The auditor itself belongs to the driver: the
+published package stays framework-free, and a third party may certify with a
+different tool.
+
+The bug: a required `radio` or `selectboxes` group carried `aria-required` on
+its `<fieldset>`. `role="group"` does not support that attribute, so assistive
+technology ignored it — a required group said nothing about being required,
+and the attribute was invalid ARIA besides. Requiredness for a grouped field is
+now announced through the group's description, which the engine composes, and
+is visible as well as announced. A required radio group never announced it at
+all, which no test could have told you, because the wrong answer and no answer
+look identical from the outside.
+
+Two documents already described axe as running in the conformance suite. It
+was not. That is the second time writing something down has been what found it
+missing.
+
 **The website deploys as one static site.** The landing page at `/` and the
 playground at `/playground/`, built by `pnpm build:web`. The playground is
 built with `base: '/playground/'`, without which Vite's absolute asset URLs

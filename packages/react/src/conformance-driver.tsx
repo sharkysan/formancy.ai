@@ -1,10 +1,20 @@
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
-import { createFormEngine } from '@formancy/core'
+import axe from 'axe-core'
+import { createFormEngine, parsePath } from '@formancy/core'
 import type { FormEngine } from '@formancy/core'
 import { resolveText } from '@formancy/spec'
 import type { FormSchema, Text } from '@formancy/spec'
-import { BACK_COMMAND, COMMAND_SEPARATOR, NEXT_COMMAND, fieldAtPath } from '@formancy/conformance'
+import {
+  ACCESSIBILITY_EXCLUSIONS,
+  ACCESSIBILITY_TAGS,
+  ACCESSIBILITY_UNMEASURABLE_IN_JSDOM,
+  BACK_COMMAND,
+  COMMAND_SEPARATOR,
+  NEXT_COMMAND,
+  fieldAtPath,
+} from '@formancy/conformance'
 import type {
+  AccessibilityViolation,
   ConformanceMessage,
   ConformanceSchema,
   JsonValue,
@@ -252,7 +262,13 @@ export function createReactDriver(): RendererDriver {
         })()
         const describedBy = control?.getAttribute('aria-describedby')
         if (describedBy == null) continue
+        // The ERROR target only. `aria-describedby` also carries the hint — a
+        // required group says so there, because `role="group"` cannot carry
+        // `aria-required` — and reading every target would report the word
+        // "required" as a second error code on a field with one error.
+        const errorId = engine.getFieldSnapshot(parsePath(candidate)).ids.error
         for (const id of describedBy.split(/\s+/)) {
+          if (id !== errorId) continue
           // Trimmed: JSX happens not to introduce element-internal whitespace
           // today, but a reformat must not silently break code parsing.
           const text = document.getElementById(id)?.textContent?.trim()
@@ -307,12 +323,58 @@ export function createReactDriver(): RendererDriver {
       return { status: 'rejected', messages }
     },
 
+    async audit(): Promise<readonly AccessibilityViolation[]> {
+      requireMounted()
+      return auditRendered()
+    },
+
     async unmount() {
       cleanup()
       engine = undefined
       schema = undefined
     },
   }
+}
+
+/**
+ * Run axe over the mounted form.
+ *
+ * `document.body` rather than a container element: Testing Library renders
+ * into the body, and a form's error summary, live region and any portalled
+ * content are siblings of the form rather than children of it. Auditing the
+ * form element alone would skip exactly the parts that are hardest to get
+ * right.
+ *
+ * The rule set is `@formancy/conformance`'s, not this file's. Two renderers
+ * audited against two rule sets are not held to the same standard, and both
+ * suites would be green while they drifted.
+ */
+async function auditRendered(): Promise<readonly AccessibilityViolation[]> {
+  const disabled = {
+    ...ACCESSIBILITY_EXCLUSIONS,
+    ...ACCESSIBILITY_UNMEASURABLE_IN_JSDOM,
+  }
+  const rules = Object.fromEntries(
+    Object.keys(disabled).map((id) => [id, { enabled: false }] as const),
+  )
+
+  const results = await axe.run(document.body, {
+    runOnly: { type: 'tag', values: [...ACCESSIBILITY_TAGS] },
+    rules,
+    // The summary axe attaches to each node is a paragraph of prose, and the
+    // runner already prints the rule, the impact and the markup.
+    resultTypes: ['violations'],
+  })
+
+  return results.violations.map((violation) => ({
+    id: violation.id,
+    ...(violation.impact === undefined || violation.impact === null
+      ? {}
+      : { impact: violation.impact }),
+    help: violation.help,
+    helpUrl: violation.helpUrl,
+    nodes: violation.nodes.map((node) => node.html),
+  }))
 }
 
 function escapeRegExp(value: string): string {

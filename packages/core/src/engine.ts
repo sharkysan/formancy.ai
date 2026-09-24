@@ -192,6 +192,16 @@ function otherSide(mode: 'client' | 'server'): 'client' | 'server' {
   return mode === 'client' ? 'server' : 'client'
 }
 
+/**
+ * The field types a renderer draws as a fieldset and a legend.
+ *
+ * Several controls answering one question, which is a `group` to assistive
+ * technology — and `role="group"` does not support `aria-required`, so these
+ * say they are required in their description instead. See
+ * `FieldPropsInput.grouped`.
+ */
+const GROUPED_TYPES: ReadonlySet<string> = new Set(['radio', 'selectboxes'])
+
 export function createFormEngine(options: FormEngineOptions): FormEngine {
   const { schema } = options
 
@@ -941,7 +951,15 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
         touched,
         errors,
         ids,
-        props: buildFieldProps({ wire, ids, required, disabled, touched, errors }),
+        props: buildFieldProps({
+          wire,
+          ids,
+          required,
+          disabled,
+          touched,
+          errors,
+          grouped: GROUPED_TYPES.has(node.def.type),
+        }),
       })
       snapshotCache.set(wire, snapshot)
       return snapshot

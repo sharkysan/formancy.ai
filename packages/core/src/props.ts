@@ -33,6 +33,21 @@ export interface FieldPropsInput {
   wire: string
   ids: FieldIds
   required: boolean
+  /**
+   * The field is announced as a GROUP rather than as a single control: a radio
+   * group or a set of tick boxes, drawn as a fieldset and a legend.
+   *
+   * It changes how requiredness is expressed, and it has to. `aria-required`
+   * is not a supported property of `role="group"` — assistive technology
+   * ignores it, and an auditor reports it as invalid ARIA. So a required group
+   * says so in its DESCRIPTION instead, through the `hint` slot, which is
+   * announced after the legend and is valid everywhere.
+   *
+   * Decided here rather than in each renderer, because two renderers that
+   * expressed this differently would announce the same form differently while
+   * both looked right.
+   */
+  grouped: boolean
   disabled: boolean
   touched: boolean
   errors: readonly string[]
@@ -42,13 +57,19 @@ export function buildFieldProps(input: FieldPropsInput): FieldProps {
   const showError = input.touched && input.errors.length > 0
 
   const control: ControlProps = { id: input.ids.control, name: input.wire }
-  if (input.required) control['aria-required'] = true
+  // Not on a group: `aria-required` is not supported on `role="group"`, so on
+  // a fieldset it is ignored by assistive technology and reported as invalid
+  // ARIA. The hint below carries it instead.
+  if (input.required && !input.grouped) control['aria-required'] = true
   if (input.disabled) control.disabled = true
   if (showError) control['aria-invalid'] = true
 
   // Error text is a describedby target and must NOT also be a live region —
   // that combination is the classic double-announcement bug.
-  const describes = describedBy(input.ids, { error: showError })
+  const describes = describedBy(input.ids, {
+    hint: input.grouped && input.required,
+    error: showError,
+  })
   if (describes !== undefined) control['aria-describedby'] = describes
 
   return Object.freeze({
