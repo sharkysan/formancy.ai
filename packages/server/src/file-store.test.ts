@@ -83,10 +83,14 @@ describe('keys that try to leave', () => {
     'form1/../../escaped',
     './../../escaped',
     '..\\escaped',
+    'form1\\..\\..\\escaped',
+    'form1/..\\../escaped',
   ])('refuses %s', async (key) => {
     const store = createLocalFileStore(root)
 
     await expect(store.put(key, Buffer.from('x'))).rejects.toThrow(/outside the store/)
+    await expect(store.open(key)).rejects.toThrow(/outside the store/)
+    await expect(store.remove(key)).rejects.toThrow(/outside the store/)
   })
 
   test('refuses reading outside as well as writing', async () => {

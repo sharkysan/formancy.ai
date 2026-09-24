@@ -42,6 +42,11 @@ export function createLocalFileStore(root: string): FileStore {
   const base = resolve(root)
 
   const pathFor = (key: string): string => {
+    // Keys use forward slashes on every platform. Reject Windows separators
+    // before native path resolution: POSIX treats them as filename characters.
+    if (key.includes('\\')) {
+      throw new Error(`Refusing a storage key that could resolve outside the store: ${key}`)
+    }
     const full = resolve(join(base, key))
     // `startsWith(base)` alone matches `/data/formancy-evil` against
     // `/data/formancy`, so the separator is part of the test.
