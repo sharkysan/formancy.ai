@@ -119,6 +119,28 @@ describe('publishForm', () => {
 
     expect((await publishForm(deps, { path: 'x', schema: fixed })).ok).toBe(true)
   })
+
+  test('reports every expression that can never work in one publish attempt', async () => {
+    const broken: FormSchema = {
+      ...schema,
+      logic: {
+        rules: [
+          { target: 'price', kind: 'computed', cel: 'qty * 4' },
+          { target: 'total', kind: 'computed', cel: 'price * 4' },
+        ],
+      },
+    }
+
+    const outcome = await publishForm(deps, { path: 'x', schema: broken })
+
+    expect(outcome.ok).toBe(false)
+    if (outcome.ok) return
+    expect(outcome.kind).toBe('invalid_logic')
+    if (outcome.kind !== 'invalid_logic') return
+    expect(outcome.message).toContain('Rule on "price"')
+    expect(outcome.message).toContain('Rule on "total"')
+    expect(outcome.message.split('\n')).toHaveLength(2)
+  })
 })
 
 describe('createSubmission', () => {

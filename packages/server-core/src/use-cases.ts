@@ -63,7 +63,11 @@ export async function publishForm(
   // published with the mistake keeps opening for whoever is filling it in.
   const problems = expressionProblems(schema)
   if (problems.length > 0) {
-    return { ok: false, kind: 'invalid_logic', message: problems[0]!.message }
+    return {
+      ok: false,
+      kind: 'invalid_logic',
+      message: problems.map((problem) => problem.message).join('\n'),
+    }
   }
 
   // Before the schema is persisted, because after it is there is no way to
