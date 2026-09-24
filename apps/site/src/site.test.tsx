@@ -188,8 +188,14 @@ describe('the ending', () => {
 
     // Somebody who cannot see the stamp land should still be told the page did
     // the thing it spent seven sections building to.
+    // Scoped: the file field keeps its own status region for upload progress,
+    // so the page has more than one and an unscoped query is a trap waiting
+    // for whoever opens that tab in a test.
+    const finale = document.querySelector('#finale') as HTMLElement
     await waitFor(() =>
-      expect(screen.getByRole('status').textContent).toContain('validated by the same engine'),
+      expect(within(finale).getByRole('status').textContent).toContain(
+        'validated by the same engine',
+      ),
     )
   })
 })
@@ -212,5 +218,98 @@ describe('submissionFor', () => {
   test('is complete only when every section has been read', () => {
     expect(isComplete(new Set(['hero']))).toBe(false)
     expect(isComplete(new Set(JOURNEY.map((stop) => stop.section)))).toBe(true)
+  })
+})
+
+describe('the types spec 2 added', () => {
+  /** Open the demo's second tab, where the new types live. */
+  const openDetail = async (user: ReturnType<typeof userEvent.setup>): Promise<void> => {
+    await user.click(screen.getByRole('tab', { name: 'Detail' }))
+  }
+
+  test('the demo is arranged in tabs, and the strip is named', () => {
+    render(<App />)
+
+    // Named because a form may have two strips, and "tab list" twice tells a
+    // screen-reader user which one they are in exactly as well as nothing.
+    const strip = screen.getByRole('tablist', { name: 'Quote' })
+    expect(within(strip).getAllByRole('tab')).toHaveLength(2)
+  })
+
+  test('a selectboxes answer is a list of ticks', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await openDetail(user)
+
+    const group = screen.getByRole('group', { name: 'What the quote should cover' })
+    await user.click(within(group).getByRole('checkbox', { name: 'An accessibility audit' }))
+
+    expect(
+      within(group).getByRole<HTMLInputElement>('checkbox', { name: 'An accessibility audit' })
+        .checked,
+    ).toBe(true)
+  })
+
+  test('a rule reads that list, and a field appears because of what is in it', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await openDetail(user)
+
+    expect(screen.queryByLabelText('The forms you are migrating')).toBeNull()
+
+    await user.click(screen.getByRole('checkbox', { name: 'Migrating forms we already have' }))
+
+    // `'migration' in topics` — the same expression the server would replay.
+    expect(await screen.findByLabelText('The forms you are migrating')).toBeTruthy()
+  })
+
+  test('rich text is parsed into elements, never handed to innerHTML', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await openDetail(user)
+
+    await user.type(screen.getByLabelText('Anything else we should know'), '**urgent**')
+
+    // The preview is the proof: what was typed came back as a `strong`
+    // element, which means it went through the parser rather than through a
+    // sanitiser somebody has to keep correct forever.
+    const preview = document.querySelector('[data-formancy-part="richtext"]')
+    await waitFor(() => expect(preview?.querySelector('strong')?.textContent).toBe('urgent'))
+  })
+
+  test('the file field accepts a file, and the page does not pretend it went anywhere', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await openDetail(user)
+    await user.click(screen.getByRole('checkbox', { name: 'Migrating forms we already have' }))
+
+    const input = await screen.findByLabelText<HTMLInputElement>('The forms you are migrating')
+    await user.upload(input, new File(['%PDF'], 'intake.pdf', { type: 'application/pdf' }))
+
+    expect(await screen.findByText('intake.pdf')).toBeTruthy()
+    // Said in the copy as well as in the storage key. A demo that looks like
+    // it stored something is a demo that makes the product look like it
+    // silently drops files.
+    expect(screen.getByText(/stays in this tab/)).toBeTruthy()
+  })
+})
+
+describe('the way out to the playground', () => {
+  test('is in the bar and at the end', () => {
+    render(<App />)
+
+    const links = screen.getAllByRole('link', { name: /playground/i })
+    expect(links.length).toBeGreaterThan(1)
+  })
+
+  test('is absolute in development, because the two apps are two servers then', () => {
+    render(<App />)
+
+    // A relative path would land on whichever app is being worked on. Broken
+    // for everybody developing the site is broken nobody notices in
+    // production either.
+    for (const link of screen.getAllByRole('link', { name: /playground/i })) {
+      expect(link.getAttribute('href')).toBe('http://localhost:4381/')
+    }
   })
 })
