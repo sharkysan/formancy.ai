@@ -27,7 +27,9 @@ data loss wearing the word "conversion".
 - **`selectboxes`** — several answers from one list. A fieldset and a legend,
   like the radio group, because the relationship is the same one; the answer is
   stored in the options' own order, so two people who choose the same answers
-  produce the same submission.
+  produce the same submission. Nothing ticked is `[]`, never null
+  (see below) — an empty list is an answer, and treating it as the absence of
+  one is the mistake every implementation makes first.
 - **`file`** — attachments. The submission stores what each file is and where
   it went, never its bytes. `accept` and `maxFileSize` are enforced by the
   engine as well as by the picker, because a picker's filter means nothing to
@@ -44,6 +46,17 @@ data loss wearing the word "conversion".
   the strip opens the tab that focus lands in.
 - **`table`** — a grid whose columns line up across rows, which stacked rows
   cannot do. Not a `<table>`: arranging fields in columns is not tabular data.
+
+**A rule reading a list field now hides what it was told to hide.** An
+untouched `selectboxes` or `file` field reached expressions as null rather than
+as `[]`, so `'migration' in topics` was `in` against null: no overload, a
+runtime failure, and a `visible` rule that fails is shown rather than hidden
+([0022](./docs/decisions/0022-fail-open-fail-closed.md)). Every field whose
+visibility depended on a tick was therefore visible until the first tick, which
+reads as an inverted rule rather than a broken one. `LIST_VALUED_FIELD_TYPES`
+now names the types whose answer is a list, in `@formancy/spec` rather than in
+the engine, because two readers disagreeing about it disagree about whether a
+form is showing a field.
 
 **The website.** `apps/site` is formancy.ai, and the form halfway down it is a
 real document handed to `@formancy/react` rather than a screenshot

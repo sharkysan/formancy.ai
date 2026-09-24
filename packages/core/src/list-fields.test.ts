@@ -232,3 +232,79 @@ describe('richtext', () => {
     expect(errorsOn(engine, 'notes')).toContain('maxLength')
   })
 })
+
+/**
+ * What a rule sees before anybody has ticked anything.
+ *
+ * The case every implementation gets wrong first, and the one that is
+ * invisible until a form uses it: an empty list answer is `[]`, and CEL is
+ * unforgiving about the difference. `'a' in topics` is false against an empty
+ * list and an ERROR against null — and a visibility rule that errors fails
+ * OPEN, on purpose, so the field it was meant to hide is shown instead. The
+ * form looks like the rule is inverted, not like the rule is broken.
+ */
+describe('an untouched list answer is an empty list, not nothing', () => {
+  const withRule = (type: 'selectboxes' | 'file') =>
+    createFormEngine({
+      schema: {
+        specVersion: '2',
+        id: 'lists',
+        title: 'Lists',
+        model: {
+          fields: [
+            {
+              key: 'topics',
+              type,
+              label: 'Topics',
+              ...(type === 'selectboxes'
+                ? { options: [{ value: 'migration', label: 'Migration' }] }
+                : {}),
+            },
+            { key: 'detail', type: 'text', label: 'Detail' },
+          ],
+        },
+        logic: {
+          rules: [{ target: 'detail', kind: 'visible', cel: "'migration' in topics" }],
+        },
+      },
+      capabilities: CAPABILITIES,
+    })
+
+  test('a rule over a selectboxes field hides before the first tick', () => {
+    const engine = withRule('selectboxes')
+
+    expect(engine.getFieldSnapshot(parsePath('detail')).visible).toBe(false)
+
+    engine.setValue(parsePath('topics'), ['migration'])
+
+    expect(engine.getFieldSnapshot(parsePath('detail')).visible).toBe(true)
+  })
+
+  test('and over a file field, before the first attachment', () => {
+    // `file` holds objects rather than strings, but the shape of the mistake
+    // is identical, so the fix has to cover both or it covers neither.
+    expect(withRule('file').getFieldSnapshot(parsePath('detail')).visible).toBe(false)
+  })
+
+  test('the empty list is what the expression is handed, not a stand-in', () => {
+    const engine = createFormEngine({
+      schema: {
+        specVersion: '2',
+        id: 'lists',
+        title: 'Lists',
+        model: {
+          fields: [
+            { key: 'topics', type: 'selectboxes', label: 'Topics', options: [] },
+            { key: 'count', type: 'number', label: 'Count' },
+          ],
+        },
+        logic: { rules: [{ target: 'count', kind: 'computed', cel: 'size(topics)' }] },
+      },
+      capabilities: CAPABILITIES,
+    })
+
+    // `size(null)` has no overload, so a computed rule would write nothing and
+    // the field would sit empty with no explanation anywhere.
+    expect(engine.getFieldSnapshot(parsePath('count')).value).toBe(0)
+  })
+})
