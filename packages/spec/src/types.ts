@@ -184,6 +184,27 @@ export const CONTAINER_FIELD_TYPES = ['group', 'page', 'repeater'] as const sati
 
 export type ContainerFieldType = (typeof CONTAINER_FIELD_TYPES)[number]
 
+/**
+ * The field types whose answer is a list.
+ *
+ * Empty for these is `[]`, never null: a selectboxes field with nothing ticked
+ * has an answer, and it is the empty list. The distinction is not pedantry
+ * — `'a' in topics` is false against `[]` and an ERROR against null, so a
+ * reader that gets this wrong makes every rule reading an untouched list field
+ * fail, and a visibility rule that fails shows the field it was meant to hide.
+ *
+ * Here rather than in an implementation because it is a property of the
+ * format: anything reading a formancy document has to agree about it, or two
+ * readers disagree about whether a form is showing a field.
+ */
+export const LIST_VALUED_FIELD_TYPES = [
+  'selectboxes',
+  'file',
+  'repeater',
+] as const satisfies readonly FieldType[]
+
+export type ListValuedFieldType = (typeof LIST_VALUED_FIELD_TYPES)[number]
+
 export interface FieldDef {
   /**
    * The field's identity, forever. Renaming a key is a data migration, not an
