@@ -13,8 +13,10 @@ A modern, self-hostable form engine and backend — for React and Angular.
 
 > **Status: pre-alpha, version 0.1.0.**
 >
-> The **spec is frozen** at `specVersion: "1"`: a form document written today
-> keeps working, and the submissions stored against it keep their shape. The
+> **Spec version 2.** A form document written against version 1 keeps working
+> and its submissions keep their shape — version 2 only adds, so upgrading is
+> one line and nothing rebinds
+> ([0051](./docs/decisions/0051-spec-2-adds-types.md)). The
 > **package APIs are not frozen** — they will change before 1.0.
 > Ten packages are on npm under the
 > [`@formancy`](https://www.npmjs.com/org/formancy) scope at `0.1.0`, published
@@ -73,6 +75,7 @@ packages/server-core    backend use-cases against storage ports
 packages/server         Fastify + Postgres: publish, resolve, replayed submissions,
                         drafts with lazy migration, CSV export
 packages/themes         two reference themes. Nothing depends on them
+apps/site               formancy.ai — the landing page, which renders a real form
 apps/playground         the one-screen demo (editor / live form / engine state)
 apps/admin              the self-hosted admin, v0.1 cut
 apps/docs               the documentation site (Astro Starlight)
@@ -187,7 +190,32 @@ come apart, so four criteria shape how they are built:
 | **1.3.2** Meaningful Sequence | Children are emitted in the layout's declared order; the stylesheet places them by source order alone — no `order`, no explicit `grid-column` |
 | **2.4.3** Focus Order | Follows from the same rule: tab order is DOM order is visual order |
 | **1.4.10** Reflow | A row becomes one column when there is no width for two, via `auto-fit`/`minmax` — a media query, not a measurement. A layout that reflows only after scripts run does not reflow |
-| **1.3.1** Info and Relationships | A row is presentation and gets no semantics; a *labelled* section is visibly grouping fields, so it is a real `role="group"` with an accessible name. An unlabelled one stays a plain box, because a group with no name announces "group" and tells nobody anything |
+| **1.3.1** Info and Relationships | A row is presentation and gets no semantics; a *labelled* section is visibly grouping fields, so it is a real `role="group"` with an accessible name. An unlabelled one stays a plain box, because a group with no name announces "group" and tells nobody anything. A **table** is a grid and not a `<table>`: arranging fields in columns is not tabular data, and the markup would announce rows and columns that mean nothing |
+
+**Tabs** are presentation, unlike pages, and everything about them follows from
+that one fact.
+
+| Criterion | What it forces |
+|---|---|
+| **4.1.2** Name, Role, Value | The full ARIA tabs pattern: `tablist`, `tab`, `tabpanel`, `aria-selected`, `aria-controls`. A strip may be named, because two strips in one form are otherwise both announced as "tab list" |
+| **2.1.1** Keyboard | Arrows move between tabs, Home and End reach the ends, and the strip is one tab stop through a roving tabindex — twelve tabs must not cost twelve presses to get past |
+| **3.3.1** Error Identification | A field in a closed tab is still validated and still submitted, so the error summary can send focus to it. Focusing a control inside a hidden panel does nothing at all, so the strip **opens the tab focus lands in** — without that, a reader is told the form has an error and sent nowhere |
+| **1.4.1** Use of Colour | Which tab is open is carried by weight, background and a border as well as by colour |
+| **2.5.8** Target Size | A tab is at least 24 CSS pixels tall, which is exactly where a tab strip is tempting to shrink |
+
+**A formatted-text answer is never HTML.** It is stored as a small closed
+grammar, parsed once into a typed tree, and rendered as elements by both
+renderers — so there is no path from an answer somebody typed to
+`innerHTML`, and a `javascript:` link renders as the text they wrote
+([0052](./docs/decisions/0052-richtext-is-not-html.md)). That is a security
+decision before it is an accessibility one, but it is the same principle: the
+safe thing is the structural thing, not the thing a consumer has to remember.
+
+**The website holds itself to this too.** formancy.ai passes at 320 CSS pixels
+with no horizontal scrolling, and `prefers-reduced-motion` removes every
+scroll effect in the stylesheet rather than in script
+([0053](./docs/decisions/0053-the-page-is-the-product.md)). A page that makes
+somebody ill while they read the part about accessibility has refuted itself.
 
 **The builder is keyboard-first**, and its drag surfaces were added afterwards
 on purpose: 2.5.7 requires every dragging movement to have an equivalent

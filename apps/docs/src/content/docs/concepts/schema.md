@@ -37,6 +37,51 @@ shape of every submission already collected — a data migration caused by a
 purely cosmetic decision. So pages are presentation, the payload stays flat
 across them, and a form author can reorganise steps freely.
 
+## The answer shape each type stores
+
+Most types store one value. Three do not, and the difference matters more than
+the control does — it is what a consumer reading the submission gets.
+
+| Type | Answer | Added in |
+| --- | --- | --- |
+| `text`, `textarea`, `date`, `hidden` | a string | 1 |
+| `number` | a number | 1 |
+| `checkbox` | a boolean — a required one is a consent gate, so only a tick satisfies it | 1 |
+| `select`, `radio` | the chosen option's `value` | 1 |
+| `selectboxes` | the chosen values, **in the options' declared order** so two people who choose the same answers store the same array | 2 |
+| `file` | `{ id, name, size, contentType, storageKey }` per attachment — never the bytes | 2 |
+| `richtext` | a string in the [formatted-text grammar](#formatted-text-is-not-html) | 2 |
+
+`minItems` and `maxItems` bound the list types, the same two properties a
+repeater uses: "how many" is one question however it is asked. An empty list is
+not an answer, so `required` is what makes a choice compulsory rather than a
+minimum of one.
+
+## Formatted text is not HTML
+
+A `richtext` answer is stored in a small closed grammar — paragraphs, bullet
+and numbered lists, `**bold**`, `*italic*` and `[links](https://example.ch)`
+— and nothing else. It is parsed once into a typed tree and rendered as
+elements, so no consumer is ever handed a string to interpret.
+
+That is a security decision. A form answer is written by anyone who can reach
+the form and read later by an administrator, which is the exact shape of a
+stored cross-site scripting bug. Storing HTML would make correctness the
+responsibility of every consumer forever — this renderer, the other renderer,
+a CSV export, a PDF, somebody's own dashboard — and one of them would get it
+wrong.
+
+A link may use `http:`, `https:` or `mailto:`. Anything else renders as the
+literal text somebody typed: visible, harmless and honest, where dropping it
+would leave a reader wondering where their link went.
+
+```ts
+import { parseRichText, richTextToPlain } from '@formancy/spec'
+
+parseRichText('**urgent** — see [the notes](https://example.ch)')
+richTextToPlain('**urgent**') // 'urgent', for a CSV cell or a search index
+```
+
 ## A key is an identity, forever
 
 ```jsonc
@@ -197,6 +242,13 @@ tells a builder what a given arrangement is not showing.
 Layouts are optional too. Without any, fields render in the order the model
 declares them, which is what the renderers did before this section existed and
 still do.
+
+Version 2 adds two more kinds. A **`tabs`** node shows one child section at a
+time, each section's heading supplying its tab's name — presentation only, so
+a field in a closed tab is still validated and still submitted, unlike one on a
+page the reader has not reached. A **`table`** node declares a column count and
+lines its cells up across rows, which stacked rows cannot do because each row
+sizes itself independently.
 
 Because addressing is by data path, an arrangement is a *view* of the model and
 cannot outlive it: deleting a field removes it from every layout, and renaming

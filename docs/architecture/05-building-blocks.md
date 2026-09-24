@@ -138,6 +138,20 @@ those surfaces is the rendered form itself, which works because the renderers
 emit two inert attributes and this package reads them from the outside. The
 dependency runs one way only: `@formancy/react` knows nothing about the builder.
 
+### The applications
+
+`apps/playground` and `apps/admin` are the two tools; `apps/docs` is the
+reference; `apps/site` is formancy.ai.
+
+The website is listed here rather than left out of the architecture because it
+takes a real dependency on `@formancy/react` and renders a real document with a
+real engine ([0053](../decisions/0053-the-page-is-the-product.md)). That is
+deliberate: a marketing page for a rendering library that shows screenshots
+proves nothing, and one that imports the library breaks when the library does.
+Its effects are CSS scroll-driven animations with no scroll listener anywhere,
+and `prefers-reduced-motion` removes them in the stylesheet rather than in
+script.
+
 ### `@formancy/server-core` and `@formancy/server`
 
 `server-core` holds the use cases — publish, resolve, submit with replay, list,

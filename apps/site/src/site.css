@@ -1,0 +1,842 @@
+/**
+ * formancy.ai
+ *
+ * The page is drawn with the product's own design tokens — the `dusk` theme's
+ * ground, raised and signal colours — because a landing page for a theming
+ * system that invents its own palette is arguing against itself.
+ *
+ * Two accents, and they carry information rather than variety: violet is the
+ * browser, teal is the server. The product's whole claim is that one engine
+ * runs in both, so the two hues appear together wherever that is the point and
+ * nowhere else.
+ *
+ * MOTION. Every effect below is a CSS scroll-driven animation: the browser
+ * runs them off the compositor with no scroll listener and no frame loop, so
+ * there is nothing here to jank. A browser without `animation-timeline` gets
+ * the page with no animation at all, which is a page that reads perfectly.
+ *
+ * `prefers-reduced-motion` turns all of it off, in CSS rather than in script,
+ * because a preference honoured by JavaScript is a preference honoured only
+ * once the JavaScript has loaded. A project whose argument is that
+ * accessibility is structural cannot ship a page that makes somebody ill while
+ * they read the part about accessibility.
+ */
+
+@property --sweep {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 0%;
+}
+
+:root {
+  --ground: #10141c;
+  --raised: #1a2030;
+  --inset: #0b0f16;
+  --text: #e6eaf2;
+  --muted: #8a96a8;
+  --edge: #2a3345;
+
+  /* The browser. */
+  --client: #7c6bf5;
+  /* The server. The pair is the argument. */
+  --server: #3fd0c9;
+
+  --sans: 'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Code', Consolas, monospace;
+
+  --gutter: clamp(1.25rem, 5vw, 5rem);
+  --measure: 34rem;
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: clamp(1rem, 0.96rem + 0.2vw, 1.0625rem);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* The page's one persistent texture: a faint vertical seam down the middle,
+   the line the document and the form sit either side of. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(60rem 40rem at 50% -10rem, rgb(124 107 245 / 12%), transparent 70%),
+    radial-gradient(40rem 30rem at 100% 40%, rgb(63 208 201 / 6%), transparent 70%);
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--client);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* Skipping to the content, for a page this long. */
+.skip {
+  position: absolute;
+  inset-inline-start: -100vw;
+  top: 0.75rem;
+  z-index: 100;
+  padding: 0.625rem 1rem;
+  background: var(--raised);
+  border: 1px solid var(--client);
+  border-radius: 4px;
+  text-decoration: none;
+}
+
+.skip:focus {
+  inset-inline-start: 0.75rem;
+}
+
+/* ------------------------------------------------------------------ type */
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.08;
+  text-wrap: balance;
+}
+
+h1 {
+  font-size: clamp(2.5rem, 1.6rem + 4.4vw, 5.5rem);
+  letter-spacing: -0.035em;
+}
+
+h2 {
+  font-size: clamp(1.875rem, 1.4rem + 2.1vw, 3rem);
+}
+
+h3 {
+  font-size: 1.0625rem;
+  letter-spacing: -0.01em;
+}
+
+p {
+  margin: 0;
+  max-width: var(--measure);
+}
+
+.lede {
+  font-size: clamp(1.0625rem, 1rem + 0.5vw, 1.375rem);
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.key {
+  font-family: var(--mono);
+  font-weight: 400;
+  font-size: 0.82em;
+  letter-spacing: -0.01em;
+  color: var(--client);
+}
+
+.note {
+  font-size: 0.9375rem;
+  color: var(--muted);
+}
+
+code {
+  font-family: var(--mono);
+  font-size: 0.9em;
+}
+
+/* --------------------------------------------------------------- shell */
+
+.page {
+  position: relative;
+  z-index: 1;
+}
+
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.875rem var(--gutter);
+  background: color-mix(in srgb, var(--ground) 82%, transparent);
+  backdrop-filter: blur(14px);
+  border-block-end: 1px solid color-mix(in srgb, var(--edge) 60%, transparent);
+}
+
+.bar strong {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.bar nav {
+  margin-inline-start: auto;
+  display: flex;
+  gap: 1.25rem;
+  font-size: 0.9375rem;
+}
+
+.bar nav a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.bar nav a:hover {
+  color: var(--text);
+}
+
+@media (max-width: 46rem) {
+  .bar nav a.optional {
+    display: none;
+  }
+}
+
+/* The read-so-far rail. Scroll-driven, so the browser animates it without a
+   single scroll event reaching JavaScript. */
+.rail {
+  position: absolute;
+  inset-inline: 0;
+  bottom: -1px;
+  height: 2px;
+  transform-origin: 0 50%;
+  background: linear-gradient(90deg, var(--client), var(--server));
+  scale: 0 1;
+  animation: rail linear;
+  animation-timeline: scroll(root block);
+}
+
+@keyframes rail {
+  to {
+    scale: 1 1;
+  }
+}
+
+section {
+  padding-block: clamp(5rem, 12vh, 9rem);
+  padding-inline: var(--gutter);
+}
+
+.wide {
+  max-width: 76rem;
+  margin-inline: auto;
+}
+
+/* The running submission is fixed to the bottom-right, so the page keeps a
+   column clear for it rather than letting prose slide underneath. Below the
+   width where the panel is hidden this reservation disappears with it. */
+@media (min-width: 62rem) {
+  section {
+    padding-inline-end: calc(var(--gutter) + 15rem);
+  }
+}
+
+/* --------------------------------------------------------------- hero */
+
+.hero {
+  min-height: 92svh;
+  display: grid;
+  /* `minmax(0, 1fr)` rather than `1fr`: a grid item's default minimum is its
+     content, so the code block below would push the hero — and with it the
+     whole page — wider than the viewport. That is 1.4.10 Reflow failing on the
+     page that claims the product takes it seriously. */
+  grid-template-columns: minmax(0, 1fr);
+  align-content: center;
+  padding-block-start: clamp(3rem, 8vh, 6rem);
+}
+
+.hero h1 {
+  max-width: 18ch;
+}
+
+.hero .lede {
+  margin-block-start: 1.5rem;
+  max-width: 40ch;
+}
+
+.actions {
+  margin-block-start: 2.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.action {
+  display: inline-flex;
+  align-items: center;
+  /* 2.5.8 Target size, with room to spare. */
+  min-height: 2.75rem;
+  padding: 0 1.25rem;
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.action.primary {
+  border-color: transparent;
+  background: var(--client);
+  color: #0b0713;
+}
+
+.action:hover {
+  border-color: var(--client);
+}
+
+.action.primary:hover {
+  background: color-mix(in srgb, var(--client) 85%, white);
+}
+
+/* ------------------------------------------------------- the two planes
+ *
+ * The page's one bold moment, and the product's claim made literal: the
+ * document behind, the form in front, separated in Z and converging as you
+ * scroll. Everything else on the page stays quiet so this can be loud.
+ */
+
+.planes {
+  position: relative;
+  margin-block-start: clamp(3rem, 8vh, 5rem);
+  perspective: 1600px;
+  perspective-origin: 50% 40%;
+}
+
+.plane {
+  min-width: 0;
+  border: 1px solid var(--edge);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--raised) 88%, transparent);
+  box-shadow: 0 30px 80px -40px rgb(0 0 0 / 80%);
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.plane header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 0.875rem;
+  border-block-end: 1px solid var(--edge);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--client);
+}
+
+.plane.server .dot {
+  background: var(--server);
+}
+
+.plane pre {
+  margin: 0;
+  padding: 1rem 1.125rem;
+  overflow: auto;
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  line-height: 1.7;
+  color: #b9c3d6;
+  tab-size: 2;
+}
+
+.plane-document {
+  position: relative;
+  z-index: 1;
+  rotate: y 14deg;
+  translate: 0 0 -140px;
+  animation: converge-document linear both;
+  animation-timeline: view(block);
+  animation-range: entry 10% cover 55%;
+}
+
+.plane-form {
+  position: relative;
+  z-index: 2;
+  margin-block-start: -3.5rem;
+  margin-inline-start: auto;
+  width: min(100%, 30rem);
+  rotate: y -16deg;
+  translate: 0 0 90px;
+  animation: converge-form linear both;
+  animation-timeline: view(block);
+  animation-range: entry 10% cover 55%;
+}
+
+@keyframes converge-document {
+  to {
+    rotate: y 0deg;
+    translate: 0 0 0;
+  }
+}
+
+@keyframes converge-form {
+  to {
+    rotate: y 0deg;
+    translate: 0 0 0;
+  }
+}
+
+@media (max-width: 52rem) {
+  .plane-form {
+    margin-block-start: 1.25rem;
+    margin-inline-start: 0;
+    width: 100%;
+  }
+}
+
+.sheet {
+  padding: 1.25rem 1.375rem 1.5rem;
+}
+
+/* -------------------------------------------------------- the two hues */
+
+.pair {
+  display: grid;
+  gap: clamp(1.5rem, 4vw, 3rem);
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  margin-block-start: 3rem;
+}
+
+.side {
+  padding-inline-start: 1.125rem;
+  border-inline-start: 2px solid var(--client);
+}
+
+.side.server {
+  border-inline-start-color: var(--server);
+}
+
+.side h3 {
+  color: var(--client);
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: 0.8125rem;
+}
+
+.side.server h3 {
+  color: var(--server);
+}
+
+.side p {
+  margin-block-start: 0.5rem;
+  font-size: 0.9375rem;
+  color: var(--muted);
+}
+
+/* A line of type that reads as one sentence and is two truths: the same
+   expression, evaluated on both sides. */
+.mirror {
+  margin-block-start: 3rem;
+  display: grid;
+  gap: 1px;
+  grid-template-columns: 1fr 1fr;
+  background: var(--edge);
+  border: 1px solid var(--edge);
+  border-radius: 10px;
+  overflow: hidden;
+  font-family: var(--mono);
+  font-size: clamp(0.75rem, 0.6rem + 0.5vw, 0.9375rem);
+}
+
+.mirror > div {
+  padding: 1.25rem;
+  background: var(--inset);
+}
+
+.mirror b {
+  display: block;
+  margin-block-end: 0.625rem;
+  font-weight: 500;
+  font-size: 0.6875rem;
+  color: var(--muted);
+}
+
+.mirror .expr {
+  color: var(--text);
+}
+
+.mirror > div:first-child .expr {
+  border-block-end: 2px solid var(--client);
+  display: inline-block;
+  padding-block-end: 2px;
+}
+
+.mirror > div:last-child .expr {
+  border-block-end: 2px solid var(--server);
+  display: inline-block;
+  padding-block-end: 2px;
+}
+
+@media (max-width: 40rem) {
+  .mirror {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ------------------------------------------------------------ the demo */
+
+.demo {
+  display: grid;
+  gap: clamp(1.25rem, 3vw, 2.5rem);
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  margin-block-start: 3rem;
+  align-items: start;
+}
+
+.demo pre {
+  font-size: 0.75rem;
+  line-height: 1.75;
+}
+
+@media (max-width: 54rem) {
+  .demo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* --------------------------------------------------------- the keyboard */
+
+.keys {
+  margin-block-start: 2.5rem;
+  display: grid;
+  gap: 0.5rem 1.5rem;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  max-width: 34rem;
+  font-size: 0.9375rem;
+}
+
+kbd {
+  justify-self: start;
+  padding: 0.125rem 0.5rem;
+  border: 1px solid var(--edge);
+  border-block-end-width: 2px;
+  border-radius: 4px;
+  background: var(--inset);
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+}
+
+.keys span {
+  color: var(--muted);
+}
+
+/* ------------------------------------------------------------- terminal */
+
+.terminal {
+  margin-block-start: 2.5rem;
+  max-width: 44rem;
+  border: 1px solid var(--edge);
+  border-radius: 10px;
+  background: var(--inset);
+  overflow: hidden;
+}
+
+.terminal pre {
+  margin: 0;
+  padding: 1.125rem 1.25rem;
+  overflow-x: auto;
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  line-height: 1.9;
+}
+
+.terminal .prompt {
+  color: var(--server);
+}
+
+.terminal .out {
+  color: var(--muted);
+}
+
+/* ------------------------------------------------------------ the panel
+ *
+ * The running submission. It sits in the corner from the first section and
+ * fills in as the page is read — the conceit being that reading it is filling
+ * a form in, which the ending pays off. It is a real submission shape, not a
+ * decoration shaped like one, or the ending would be a trick.
+ */
+
+.panel {
+  position: fixed;
+  z-index: 15;
+  inset-block-end: 1rem;
+  inset-inline-end: 1rem;
+  width: 14rem;
+  border: 1px solid var(--edge);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--inset) 92%, transparent);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 24px 60px -30px rgb(0 0 0 / 90%);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  overflow: hidden;
+}
+
+.panel header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-block-end: 1px solid var(--edge);
+  color: var(--muted);
+  font-size: 0.6875rem;
+}
+
+.panel .meter {
+  margin-inline-start: auto;
+  width: 4rem;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--edge);
+  overflow: hidden;
+}
+
+.panel .meter i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--client), var(--server));
+  transition: width 400ms ease;
+}
+
+.panel pre {
+  margin: 0;
+  padding: 0.75rem;
+  max-height: 11rem;
+  overflow: auto;
+  line-height: 1.8;
+  color: #b9c3d6;
+}
+
+.panel pre,
+.plane pre,
+.terminal pre,
+.receipt pre {
+  scrollbar-width: thin;
+  scrollbar-color: var(--edge) transparent;
+}
+
+.panel .sent {
+  padding: 0.75rem;
+  border-block-start: 1px solid var(--edge);
+  color: var(--server);
+}
+
+@media (max-width: 46rem) {
+  .panel {
+    display: none;
+  }
+}
+
+/* ------------------------------------------------------------- the end
+ *
+ * What the whole page has been building to. One orchestrated moment rather
+ * than an effect per section: the submission the visitor has been filling in
+ * without knowing goes to the server, and the server answers.
+ */
+
+.finale {
+  min-height: 100svh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: center;
+  text-align: center;
+  justify-items: center;
+}
+
+.finale h2 {
+  max-width: 20ch;
+}
+
+.finale .lede {
+  margin-block-start: 1.25rem;
+  margin-inline: auto;
+  max-width: 44ch;
+}
+
+.receipt {
+  margin-block-start: 3rem;
+  width: min(100%, 32rem);
+  border: 1px solid var(--edge);
+  border-radius: 12px;
+  background: var(--inset);
+  text-align: start;
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  overflow: hidden;
+  position: relative;
+}
+
+.receipt header {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.625rem 0.875rem;
+  border-block-end: 1px solid var(--edge);
+  color: var(--muted);
+  font-size: 0.6875rem;
+}
+
+.receipt pre {
+  margin: 0;
+  padding: 1rem;
+  line-height: 1.8;
+  color: #b9c3d6;
+  overflow-x: auto;
+}
+
+.stamp {
+  position: absolute;
+  inset-block-start: 3.25rem;
+  inset-inline-end: 1rem;
+  padding: 0.375rem 0.75rem;
+  border: 2px solid var(--server);
+  border-radius: 6px;
+  color: var(--server);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  rotate: -8deg;
+  opacity: 0;
+  scale: 1.6;
+}
+
+.stamp.landed {
+  animation: land 520ms cubic-bezier(0.2, 1.4, 0.35, 1) forwards;
+}
+
+@keyframes land {
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+/* The seam finally closes: the two hues meet. */
+.seal {
+  margin-block-start: 2.5rem;
+  width: min(100%, 32rem);
+  height: 2px;
+  background: linear-gradient(90deg, var(--client) 0 var(--sweep), var(--edge) var(--sweep));
+  animation: seal 900ms 300ms ease-out forwards;
+}
+
+@keyframes seal {
+  from {
+    --sweep: 0%;
+  }
+  to {
+    --sweep: 100%;
+  }
+}
+
+footer {
+  padding: 3rem var(--gutter) 4rem;
+  border-block-start: 1px solid var(--edge);
+  color: var(--muted);
+  font-size: 0.875rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 2rem;
+}
+
+footer a {
+  color: var(--muted);
+}
+
+footer .spacer {
+  margin-inline-start: auto;
+}
+
+/* ------------------------------------------------- the reduced-motion cut
+ *
+ * Not "smaller movements": none. Scroll-driven transforms are the effect most
+ * likely to cause harm, and the page is a document without them — every plane
+ * sits flat and square, which is how it is designed to read anyway.
+ */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  .plane-document,
+  .plane-form {
+    rotate: none;
+    translate: none;
+    animation: none;
+  }
+
+  .planes {
+    perspective: none;
+  }
+
+  .rail {
+    scale: 1 1;
+  }
+
+  .stamp {
+    opacity: 1;
+    scale: 1;
+    rotate: none;
+  }
+
+  .seal {
+    --sweep: 100%;
+  }
+}
+
+/* A browser with no scroll-driven animations shows the planes flat, which is
+   the same thing the reduced-motion cut shows. There is no third design. */
+@supports not (animation-timeline: view()) {
+  .plane-document,
+  .plane-form {
+    rotate: none;
+    translate: none;
+  }
+
+  .planes {
+    perspective: none;
+  }
+
+  .rail {
+    scale: 1 1;
+  }
+}

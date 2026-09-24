@@ -4,8 +4,9 @@ description: A self-hostable form engine, renderers and backend for React and An
 ---
 
 :::caution[Status: pre-alpha]
-formancy is pre-alpha software. The schema spec is `specVersion: "1"` and is
-**frozen** — documents written today keep working. The *packages* are still
+formancy is pre-alpha software. The schema spec is at `specVersion: "2"`.
+Version 1 is frozen and every version 1 document still validates — version 2
+only adds, so upgrading is one line and nothing rebinds. The *packages* are still
 pre-alpha and their APIs will change. They are **on npm** under the
 [`@formancy`](https://www.npmjs.com/org/formancy) scope at `0.1.0`, published
 from CI with provenance — except `@formancy/builder-react`, which lands in

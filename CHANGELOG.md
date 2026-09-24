@@ -8,6 +8,57 @@ Loosely [Keep a Changelog](https://keepachangelog.com), with reasons attached �
 a line that says only *what* changed is rarely the line you need six months
 later.
 
+## Unreleased
+
+**Spec version 2.** Five constructs form.io has and formancy did not:
+`selectboxes`, `file` and `richtext` field types, and `tabs` and `table` layout
+kinds. Adding them is a version bump rather than a quiet addition, because the
+version line answers "can I read this?" and the answer changes the moment the
+format grows something a reader has never heard of
+([0051](./docs/decisions/0051-spec-2-adds-types.md)).
+
+Version 2 is a superset: it adds and removes nothing, so every version 1
+document is a valid version 2 document, `upgradeSpecVersion` is one line, and a
+1-to-2 diff is `compatible`. A version 2 construct inside a document declaring
+version 1 is refused by name with the fix in the message. Going backwards is
+refused rather than performed, because dropping what the newer version added is
+data loss wearing the word "conversion".
+
+- **`selectboxes`** — several answers from one list. A fieldset and a legend,
+  like the radio group, because the relationship is the same one; the answer is
+  stored in the options' own order, so two people who choose the same answers
+  produce the same submission.
+- **`file`** — attachments. The submission stores what each file is and where
+  it went, never its bytes. `accept` and `maxFileSize` are enforced by the
+  engine as well as by the picker, because a picker's filter means nothing to
+  somebody posting to the endpoint directly. The renderers take an uploader
+  from the host and say so plainly when there is none.
+- **`richtext`** — formatted text, **stored as a small closed grammar rather
+  than as HTML**. Parsed once into a typed tree and rendered as elements by
+  both renderers, so there is no path from an answer to `innerHTML`, no
+  sanitiser to keep correct forever, and a `javascript:` link renders as the
+  text somebody typed ([0052](./docs/decisions/0052-richtext-is-not-html.md)).
+- **`tabs`** — one panel at a time, the full ARIA pattern with a roving
+  tabindex. Presentation, unlike pages: a field in a closed tab is still
+  validated and still submitted, so a panel is hidden rather than unmounted and
+  the strip opens the tab that focus lands in.
+- **`table`** — a grid whose columns line up across rows, which stacked rows
+  cannot do. Not a `<table>`: arranging fields in columns is not tabular data.
+
+**The website.** `apps/site` is formancy.ai, and the form halfway down it is a
+real document handed to `@formancy/react` rather than a screenshot
+([0053](./docs/decisions/0053-the-page-is-the-product.md)).
+
+### Fixed
+
+- Deleting or renaming a field that a layout placed was refused outright, so a
+  field could not be changed at all once it had been arranged.
+- The Angular rich-text component recursed through its own selector without
+  importing itself, which Angular renders as an empty custom element and does
+  not report.
+- `newFieldOfType` produced choice fields with no options — a control nobody
+  can answer.
+
 ## [0.1.0] — 2026-09-20
 
 The first release. **Spec version: `"1"` (frozen).**
