@@ -73,7 +73,7 @@ real document handed to `@formancy/react` rather than a screenshot
   model says and reports the failures strictness is reliably right about — and
   only those, because a check that refuses a valid form is worse than the
   silence it replaces. It runs at publish, not at render, so a form already out
-  there keeps opening for whoever is filling it in
+  there keeps opening for whoever is filling it in.
   ([0054](./docs/decisions/0054-expressions-that-never-work.md)).
 
 ## [0.1.0] — 2026-09-20
