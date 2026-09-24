@@ -89,6 +89,35 @@ describe('publishForm', () => {
     expect(outcome.kind).toBe('invalid_logic')
     expect(await resolveForm(deps, 'x')).toBeUndefined()
   })
+
+  test('refuses an expression that compiles and then never works', async () => {
+    // `qty * 4` type-checks — the engine declares leaves as `dyn` so that a
+    // half-typed answer is not an error — and then fails at runtime for every
+    // value, because a JSON number is a double and CEL will not widen an int.
+    // The engine cannot refuse it, so the save gate does.
+    const silent: FormSchema = {
+      ...schema,
+      logic: { rules: [{ target: 'price', kind: 'computed', cel: 'qty * 4' }] },
+    }
+
+    const outcome = await publishForm(deps, { path: 'x', schema: silent })
+
+    expect(outcome.ok).toBe(false)
+    if (outcome.ok) return
+    expect(outcome.kind).toBe('invalid_logic')
+    if (outcome.kind !== 'invalid_logic') return
+    expect(outcome.message).toContain('4 becomes 4.0')
+    expect(await resolveForm(deps, 'x')).toBeUndefined()
+  })
+
+  test('publishes it once the literal has a decimal point', async () => {
+    const fixed: FormSchema = {
+      ...schema,
+      logic: { rules: [{ target: 'price', kind: 'computed', cel: 'qty * 4.0' }] },
+    }
+
+    expect((await publishForm(deps, { path: 'x', schema: fixed })).ok).toBe(true)
+  })
 })
 
 describe('createSubmission', () => {

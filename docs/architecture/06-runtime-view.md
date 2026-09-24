@@ -161,6 +161,13 @@ validateSchema           structural (ajv) then semantic:
 compile every expression, build the dependency graph
    ├─ cycle ──▶ refused, with the trace   ([0018](../decisions/0018-static-dependencies.md))
    ▼
+re-check every expression with leaves typed as the MODEL says
+   │                     the engine types them `dyn`, so an unfinished answer
+   │                     is not an error — which also lets `seats * 4` compile
+   │                     and then fail for every value, silently, forever
+   ├─ no overload ──▶ refused, naming the fix
+   │                     ([0054](../decisions/0054-expressions-that-never-work.md))
+   ▼
 canonicalise and hash                      ([0010](../decisions/0010-canonical-hash.md))
    │
    ▼
@@ -173,7 +180,10 @@ CREATE per-form partial indexes for fields marked indexed
 ```
 
 A form that could loop is never persisted. A published version is never
-modified.
+modified. And the second expression check runs *here* rather than in the
+engine: a form already published with that mistake keeps opening for whoever is
+halfway through filling it in, with the one field that never fills in that it
+has always had.
 
 ## 6.5 Resuming a draft after the form changed
 
