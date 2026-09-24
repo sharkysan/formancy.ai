@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, test } from 'vitest'
 import type { FormSchema } from '@formancy/spec'
+import { MIXED_NUMERIC_LITERAL_EXAMPLE } from '@formancy/core'
 import { createSubmission, exportCsv, setFormAccess, listForms, listSubmissions, listVersions, publishForm, resolveForm, resumeDraft, saveDraft } from './use-cases.js'
 import type { ServerDeps } from './use-cases.js'
 import { createMemoryStorage } from './testing/memory-storage.js'
@@ -106,7 +107,7 @@ describe('publishForm', () => {
     if (outcome.ok) return
     expect(outcome.kind).toBe('invalid_logic')
     if (outcome.kind !== 'invalid_logic') return
-    expect(outcome.message).toContain('4 becomes 4.0')
+    expect(outcome.message).toContain(MIXED_NUMERIC_LITERAL_EXAMPLE)
     expect(await resolveForm(deps, 'x')).toBeUndefined()
   })
 
