@@ -56,7 +56,7 @@ renderer can certify against the same behavioural contract.
 
 ## What keeps the renderers honest
 
-Both renderers pass the same [conformance suite](/concepts/conformance/): six
+Both renderers pass the same [conformance suite](/docs/concepts/conformance/): six
 fixtures, written once as data, executed against each implementation. A driver
 may locate a control only by **accessible name and role** — never a test id or
 a CSS selector — so a renderer whose markup a screen reader cannot use cannot
@@ -64,11 +64,11 @@ pass the suite either.
 
 ## Where to go next
 
-- [Quickstart: React](/start/react/) — a working form in one component.
-- [Quickstart: Angular](/start/angular/) — the same form over signals.
-- [Quickstart: self-hosting](/start/self-hosting/) — Postgres, the server, and
+- [Quickstart: React](/docs/start/react/) — a working form in one component.
+- [Quickstart: Angular](/docs/start/angular/) — the same form over signals.
+- [Quickstart: self-hosting](/docs/start/self-hosting/) — Postgres, the server, and
   the full HTTP surface.
-- [The schema](/concepts/schema/) — why the model, the logic and the
+- [The schema](/docs/concepts/schema/) — why the model, the logic and the
   presentation are separate sections.
-- [Roadmap and status](/project/roadmap/) — what exists today and what is
+- [Roadmap and status](/docs/project/roadmap/) — what exists today and what is
   planned.
