@@ -118,6 +118,52 @@ whole document and the three-pane grid below never got a say. It wraps now, and
 the strap line stands down on a narrow screen because the controls are what
 somebody came for.
 
+**The playground looks like the rest of formancy.ai, works on a phone, and
+has a way back.** It is drawn in the landing page's colours now — a dark bench,
+glass panes, violet for what you act on and teal for what the engine decided —
+with the builder re-coloured purely through `workbench.css`'s own variables
+and the JSON editor in a matching Monaco theme. The form keeps whichever theme
+is chosen, on a sheet, because the themes are what is being shown. The header
+leads back to the landing page, the way every page on the site starts.
+
+On a desktop the three panes fill the screen and each scrolls on its own; the
+page used to be 1,420 pixels tall on a 900-pixel screen, because a grid track's
+default minimum is its content. Below 64rem the page shows one pane at a time
+at its full height, chosen from a switch that sticks to the top, with the form
+first. Stacked, each pane had been a 320-pixel box with a scrollbar of its own
+inside a page with another — a form you could see four fields of at a time.
+
+**Blueprint sets its own text colour.** Fields always did, but a form's title,
+section headings and static text inherited the host page's colour, so a light
+Blueprint form inside a dark app read as pale text on white paper. Dusk has
+always set it; Blueprint does now.
+
+**`validate_form` asks the engine, so it no longer calls a broken form
+valid.** It ran the schema check and the expression check and not the engine's
+own compile, which the server's publish gate runs between them — so a document
+with a misspelled field name, a cycle between computed fields, or a checkbox
+written as a condition on its own came back "Valid, and every expression
+type-checks", and was then refused by the server and could not be opened by
+any renderer. The builder's authoring loop had the same gap, so such a
+document could land in the editor. `engineRefusal` in `@formancy/core` answers
+the question by building an engine, not by re-implementing its checks, and
+both now call it in the gate's order. Only the analysis of backtracking
+`pattern`s stays on the server
+([0056](./docs/decisions/0056-agents-get-the-checks.md) says why, and records
+the drift it warned about).
+
+The engine's refusals also say what to write instead. A checkbox used as a
+condition — the most natural way to write "when the box is ticked" — is
+refused because an untouched box is null, and the message now ends with
+`write halfBoard == true` rather than "produces dyn". The expression package's
+own hints, the decimal ones, used to be attached to the error and dropped by
+the engine; they are carried through now.
+
+**The spec reference keeps its link.** Its generator still wrote the old
+root-absolute link to *Versioning*, so every docs build undid the fix
+committed by hand — and `pnpm build:web` then refused to finish, because it
+checks for exactly that link.
+
 **The landing page, made to excite.** It still read as plain, and its one
 example — a quote request — was the form nobody has ever wanted to fill in.
 There are three now, behind a tab strip: a conference ticket that prices

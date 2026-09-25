@@ -97,12 +97,88 @@ describe('validate_form', () => {
   })
 
   test('and the summary says why nothing would report it at runtime', () => {
+    // A total, not `seats` computed from itself: that is a cycle, which the
+    // engine refuses before this check is ever reached — as the server does.
     const result = validateForm({
       ...valid,
-      logic: { rules: [{ target: 'seats', kind: 'computed', cel: 'seats * 4' }] },
+      model: { fields: [...valid.model.fields, { key: 'total', type: 'number', label: 'Total' }] },
+      logic: { rules: [{ target: 'total', kind: 'computed', cel: 'seats * 4' }] },
     })
 
     expect(result.summary).toContain('never')
+  })
+  describe('what the engine would refuse, it refuses', () => {
+    // These three used to come back "Valid, and every expression type-checks":
+    // the validator does not read CEL, and the expression check skips what the
+    // engine refuses — so nothing here asked the engine. The server's publish
+    // gate did, and refused every one of them.
+    const withRules = (
+      fields: readonly object[],
+      rules: readonly object[],
+    ): Record<string, unknown> => ({
+      ...valid,
+      model: { fields: [...valid.model.fields, ...fields] },
+      logic: { rules },
+    })
+
+    test('a misspelled field name — the mistake a model makes most', () => {
+      const result = validateForm(
+        withRules([{ key: 'notes', type: 'text', label: 'Notes' }], [
+          { target: 'notes', kind: 'visible', cel: "compnay != ''" },
+        ]),
+      )
+
+      expect(result.ok).toBe(false)
+      expect(result.summary).toContain('compnay')
+      // Structurally the document is fine; it is the engine that says no, and
+      // the answer says which so the model looks in the right place.
+      expect(result.data).toMatchObject({ valid: true })
+      expect((result.data as { engineRefusal: string }).engineRefusal).toContain('compnay')
+    })
+
+    test('a checkbox written as a condition on its own, with what to write instead', () => {
+      const result = validateForm(
+        withRules(
+          [
+            { key: 'callback', type: 'checkbox', label: 'Call me back' },
+            { key: 'phone', type: 'text', label: 'Phone' },
+          ],
+          [{ target: 'phone', kind: 'visible', cel: 'callback' }],
+        ),
+      )
+
+      expect(result.ok).toBe(false)
+      expect(result.summary).toContain('write callback == true')
+    })
+
+    test('a cycle between computed fields', () => {
+      const result = validateForm(
+        withRules(
+          [{ key: 'total', type: 'number', label: 'Total' }],
+          [
+            { target: 'total', kind: 'computed', cel: 'seats * 4.0' },
+            { target: 'seats', kind: 'computed', cel: 'total / 4.0' },
+          ],
+        ),
+      )
+
+      expect(result.ok).toBe(false)
+      expect(result.summary).toMatch(/cycle/i)
+    })
+
+    test('and the same compile the server runs passes what it would open', () => {
+      const result = validateForm(
+        withRules(
+          [
+            { key: 'callback', type: 'checkbox', label: 'Call me back' },
+            { key: 'phone', type: 'text', label: 'Phone' },
+          ],
+          [{ target: 'phone', kind: 'visible', cel: 'callback == true' }],
+        ),
+      )
+
+      expect(result).toMatchObject({ ok: true })
+    })
   })
 })
 
@@ -160,14 +236,34 @@ describe('publish_form', () => {
       return json({})
     })
 
-    await publishForm(server, 'quote', {
+    const result = await publishForm(server, 'quote', {
       ...valid,
-      logic: { rules: [{ target: 'seats', kind: 'computed', cel: 'seats * 4' }] },
+      model: { fields: [...valid.model.fields, { key: 'total', type: 'number', label: 'Total' }] },
+      logic: { rules: [{ target: 'total', kind: 'computed', cel: 'seats * 4' }] },
     })
 
     // A form that publishes cleanly and then quietly computes nothing is the
     // worst outcome available here, so it is refused at the same gate.
     expect(called).toBe(false)
+    expect(JSON.stringify(result.data)).toContain('4.0')
+  })
+
+  test('and a document the engine would refuse never travels either', async () => {
+    let called = false
+    const server = access(() => {
+      called = true
+      return json({})
+    })
+
+    const result = await publishForm(server, 'quote', {
+      ...valid,
+      logic: { rules: [{ target: 'seats', kind: 'visible', cel: "compnay != ''" }] },
+    })
+
+    // The server would have refused it too — with a 422 the model has to
+    // interpret, three turns after it last looked at the document.
+    expect(called).toBe(false)
+    expect(result.summary).toContain('compnay')
   })
 
   test('a good document is sent, with the key', async () => {

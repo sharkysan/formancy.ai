@@ -105,6 +105,53 @@ describe('an answer that does not work', () => {
     expect(second.user).toContain('4.0')
   })
 
+  test('a document the engine would not open is sent back in the engine’s words', async () => {
+    // Used to pass this loop: valid against the schema, and the expression
+    // check skips what the engine refuses. So a form with one misspelled field
+    // name landed in the editor, and the preview could not open it.
+    const misspelled = {
+      ...GOOD,
+      model: { fields: [...GOOD.model.fields, { key: 'notes', type: 'text', label: 'Notes' }] },
+      logic: { rules: [{ target: 'notes', kind: 'visible', cel: "emial != ''" }] },
+    }
+    const fixed = {
+      ...misspelled,
+      logic: { rules: [{ target: 'notes', kind: 'visible', cel: "email != ''" }] },
+    }
+    const ask = scripted(JSON.stringify(misspelled), JSON.stringify(fixed))
+
+    const result = await authorForm(ask, 'notes once they have given an email')
+
+    expect(result).toMatchObject({ ok: true, attempts: 2 })
+    const second = (ask as ReturnType<typeof vi.fn>).mock.calls[1]?.[0] as { user: string }
+    expect(second.user).toContain('emial')
+  })
+
+  test('and one that never opens is never returned as a success', async () => {
+    const callback = {
+      ...GOOD,
+      model: {
+        fields: [
+          ...GOOD.model.fields,
+          { key: 'callback', type: 'checkbox', label: 'Call me back' },
+          { key: 'phone', type: 'text', label: 'Phone' },
+        ],
+      },
+      logic: { rules: [{ target: 'phone', kind: 'visible', cel: 'callback' }] },
+    }
+
+    const result = await authorForm(scripted(JSON.stringify(callback)), 'a phone number on request', {
+      attempts: 1,
+    })
+
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.problems[0]).toMatchObject({ kind: 'logic' })
+      // What to write, so the next attempt can be the right one.
+      expect(result.problems[0]?.detail).toContain('callback == true')
+    }
+  })
+
   test('only the most recent complaint is repeated', async () => {
     const ask = scripted('not json', JSON.stringify({ specVersion: '2' }), JSON.stringify(GOOD))
 

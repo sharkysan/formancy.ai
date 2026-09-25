@@ -2,23 +2,56 @@
  * The playground's own chrome. Deliberately separate from the themes: this is
  * the workbench, they are the artefact on it.
  *
+ * It is drawn in the landing page's colours — a dark bench, glass panes, violet
+ * for what you act on and teal for what the engine decided — so arriving here
+ * from formancy.ai is walking into the next room rather than into another
+ * product. The form is the exception, on purpose: it sits on a sheet in
+ * whichever theme is chosen, because the themes are what is being shown.
+ *
  * The three panes are not equal. The form is the thing being demonstrated, so
- * it gets the widest column and the only white surface; the editor and the
- * inspector are instruments around it.
+ * it gets the widest column and the only surface that is not glass; the editor
+ * and the inspector are instruments around it. Too narrow for three columns,
+ * the page shows one pane at a time at its full height, chosen from a switch
+ * that stays in reach — three stacked boxes with a scrollbar each was a form
+ * you could see four fields of at a time.
  */
 
 :root {
-  --pg-ink: #17222e;
-  --pg-bench: #e7ecf1;
-  --pg-panel: #f7f9fb;
-  --pg-rule: #cbd6e0;
-  --pg-muted: #56687a;
-  --pg-signal: #0b5fce;
-  --pg-derived: #6b4fbb;
-  --pg-invalid: #a81d1d;
+  --ground: #080a12;
+  --inset: #0b0f18;
+  --glass: rgb(17 22 36 / 72%);
+  --text: #eef1f8;
+  --muted: #95a0b4;
+  --edge: rgb(255 255 255 / 9%);
+  --edge-strong: rgb(255 255 255 / 15%);
 
-  --pg-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --pg-mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Code', Consolas, monospace;
+  /* What you act on. */
+  --client: #8b7bff;
+  /* What the engine decided. */
+  --server: #3fe0d5;
+  --invalid: #ff7a8a;
+
+  --sans: 'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Code', Consolas, monospace;
+  --display: 'Archivo', 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+
+  /* The builder's own theme, workbench.css, re-pointed at a dark bench. It is
+     written entirely in these variables, which is what lets the tool change
+     colour without a single rule of it being overridden. */
+  --wb-ink: var(--text);
+  --wb-bench: var(--inset);
+  --wb-panel: #0f1422;
+  --wb-surface: #151b2b;
+  --wb-rule: rgb(255 255 255 / 12%);
+  --wb-muted: var(--muted);
+  --wb-signal: var(--client);
+  --wb-derived: var(--server);
+  --wb-invalid: var(--invalid);
+  --wb-ok: #4fdc8a;
+  --wb-sans: var(--sans);
+  --wb-mono: var(--mono);
+
+  color-scheme: dark;
 }
 
 * {
@@ -33,63 +66,151 @@ body,
 }
 
 body {
-  font-family: var(--pg-sans);
-  color: var(--pg-ink);
-  background: var(--pg-bench);
+  font-family: var(--sans);
+  color: var(--text);
+  background: var(--ground);
   -webkit-font-smoothing: antialiased;
 }
 
+::selection {
+  background: color-mix(in srgb, var(--client) 45%, transparent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--server);
+  outline-offset: 2px;
+}
+
 .app {
+  position: relative;
   display: grid;
-  grid-template-rows: auto 1fr;
+  /* `minmax(0, 1fr)` rather than `1fr`: a track's default minimum is its
+     content, so the panes grew to their full height and the whole page
+     scrolled instead of each pane — the page was 1,420 pixels tall on a
+     900-pixel screen. Rows are assigned below, because the pane switch is not
+     displayed at all on a wide screen and would otherwise pull the panes up
+     into its track. */
+  grid-template-rows: auto auto minmax(0, 1fr);
   height: 100%;
+}
+
+/* The light behind the bench: still, because this is a tool somebody works
+   in for an hour, and a moving background is a distraction there that it is
+   not on a page read once. */
+.glow {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(50rem 30rem at 12% -8rem, rgb(139 123 255 / 16%), transparent 70%),
+    radial-gradient(40rem 26rem at 95% 0%, rgb(63 224 213 / 10%), transparent 70%),
+    linear-gradient(rgb(255 255 255 / 3%) 1px, transparent 1px) 0 0 / 56px 56px,
+    linear-gradient(90deg, rgb(255 255 255 / 3%) 1px, transparent 1px) 0 0 / 56px 56px;
+  mask-image: linear-gradient(black, transparent 85%);
+}
+
+.bar,
+.show,
+.panes {
+  position: relative;
+  z-index: 1;
 }
 
 /* ------------------------------------------------------------------ header */
 
 .bar {
+  grid-row: 1;
   display: flex;
   align-items: center;
   /* Wraps rather than holding its width. A flex item's default `min-width` is
-     its content, so six of them in a row set a floor under the whole document
-     — which is how a three-pane tool ends up 918 pixels wide on a phone and
-     scrolls sideways before anything else on the page has a say. */
+     its content, so a row of controls that will not wrap sets a floor under
+     the whole document — which is how a three-pane tool ends up 918 pixels
+     wide on a phone and scrolls sideways before anything else has a say. */
   flex-wrap: wrap;
-  gap: 0.5rem 1.25rem;
-  padding: 0.5rem 1rem;
-  min-height: 48px;
-  background: var(--pg-panel);
-  border-block-end: 1px solid var(--pg-rule);
+  gap: 0.5rem 0.875rem;
+  padding: 0.75rem 1rem;
+}
+
+/* The way back to the landing page: the mark and the name, as it is at the top
+   of every page on formancy.ai, with an arrow that says which way it goes. */
+.home {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3125rem 0.75rem 0.3125rem 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--text);
+  font-weight: 600;
+  font-size: 0.9375rem;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease;
+}
+
+.home::before {
+  /* An empty alternative, so the arrow is seen and not read out: generated
+     content otherwise joins the link's accessible name. */
+  content: '←' / '';
+  color: var(--muted);
+  transition: translate 160ms ease;
+}
+
+.home:hover {
+  background: rgb(255 255 255 / 5%);
+  border-color: var(--edge);
+}
+
+.home:hover::before {
+  translate: -2px 0;
+  color: var(--text);
+}
+
+.mark {
+  display: block;
+  width: 1.375rem;
+  height: 1.375rem;
+  border-radius: 6px;
+  filter: drop-shadow(0 0 8px rgb(139 123 255 / 45%));
+}
+
+.mark .stem {
+  fill: var(--client);
+}
+
+.mark .arm {
+  fill: var(--server);
+}
+
+.crumb {
+  color: var(--edge-strong);
 }
 
 .bar h1 {
   margin: 0;
-  font-size: 0.9375rem;
-  font-weight: 600;
+  font-family: var(--display);
+  font-size: 1rem;
+  font-weight: 700;
   letter-spacing: -0.01em;
+  background: linear-gradient(90deg, #c3b9ff, var(--server));
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
 }
 
 .bar .note {
   font-size: 0.8125rem;
-  color: var(--pg-muted);
+  color: var(--muted);
 }
 
-/* The strap line is the first thing to go: it explains what the panes below
-   already demonstrate, and on a narrow screen the controls are what somebody
-   came for. */
-@media (max-width: 60rem) {
-  .bar .note {
-    display: none;
-  }
-
-  /* With the bar wrapped, an auto margin would push the controls onto a line
-     of their own and leave a gap above them. */
-  .bar .spacer {
-    display: none;
-  }
-}
-
-.bar .spacer {
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
   margin-inline-start: auto;
 }
 
@@ -98,29 +219,67 @@ body {
   align-items: center;
   gap: 0.5rem;
   font-size: 0.8125rem;
-  color: var(--pg-muted);
+  color: var(--muted);
 }
 
 .switcher select {
+  appearance: none;
   font: inherit;
   font-size: 0.8125rem;
-  color: var(--pg-ink);
-  background: #fff;
-  border: 1px solid var(--pg-rule);
-  border-radius: 3px;
-  padding: 0.25rem 0.5rem;
+  color: var(--text);
+  background:
+    linear-gradient(45deg, transparent 50%, var(--muted) 50%) calc(100% - 15px) 55% / 5px 5px
+      no-repeat,
+    linear-gradient(-45deg, transparent 50%, var(--muted) 50%) calc(100% - 10px) 55% / 5px 5px
+      no-repeat,
+    rgb(255 255 255 / 5%);
+  border: 1px solid var(--edge-strong);
+  border-radius: 999px;
+  padding: 0.375rem 1.875rem 0.375rem 0.75rem;
+  cursor: pointer;
 }
 
-.switcher select:focus-visible {
-  outline: 2px solid var(--pg-signal);
-  outline-offset: 1px;
+.switcher select:hover {
+  border-color: var(--client);
+}
+
+.switcher option {
+  background: #151b2b;
+  color: var(--text);
+}
+
+/* The way out, into the source. */
+.repo {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text);
+  text-decoration: none;
+  white-space: nowrap;
+  padding: 0.375rem 0.875rem;
+  border: 1px solid var(--edge-strong);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 4%);
+}
+
+.repo:hover {
+  border-color: var(--client);
+}
+
+/* ------------------------------------------------------------- pane switch */
+
+.show {
+  grid-row: 2;
+  display: none;
 }
 
 /* ------------------------------------------------------------------- panes */
 
 .panes {
+  grid-row: 3;
   display: grid;
-  grid-template-columns: minmax(300px, 1fr) minmax(400px, 1.15fr) minmax(280px, 0.85fr);
+  grid-template-columns: minmax(19rem, 1fr) minmax(24rem, 1.25fr) minmax(16rem, 0.8fr);
+  gap: 0.75rem;
+  padding: 0 0.75rem 0.75rem;
   min-height: 0;
 }
 
@@ -129,23 +288,48 @@ body {
   flex-direction: column;
   min-height: 0;
   min-width: 0;
-  border-inline-end: 1px solid var(--pg-rule);
-  background: var(--pg-panel);
-}
-
-.pane:last-child {
-  border-inline-end: none;
+  border: 1px solid var(--edge-strong);
+  border-radius: 16px;
+  background: var(--glass);
+  backdrop-filter: blur(14px);
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 5%) inset,
+    0 30px 70px -40px rgb(0 0 0 / 90%);
+  overflow: hidden;
 }
 
 .pane > h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   margin: 0;
-  padding: 0.625rem 1rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: var(--pg-muted);
-  border-block-end: 1px solid var(--pg-rule);
+  padding: 0.6875rem 1rem;
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-block-end: 1px solid var(--edge);
+  background: rgb(255 255 255 / 2%);
   flex: none;
+}
+
+/* A dot per pane, in the pane's channel: violet where you act, teal where the
+   engine answers. Generated content with no text, so no name changes. */
+.pane.preview > h2::before,
+.pane.engine > h2::before {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--client);
+  box-shadow: 0 0 10px var(--client);
+}
+
+.pane.engine > h2::before {
+  background: var(--server);
+  box-shadow: 0 0 10px var(--server);
 }
 
 .pane > .body {
@@ -153,80 +337,84 @@ body {
   min-height: 0;
   overflow: auto;
   padding: 1.25rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--edge-strong) transparent;
 }
 
 .pane.editor > .body {
   padding: 0;
 }
 
-/* The form pane is the bench surface; the form itself sits on a sheet. */
-.pane.preview {
-  background: var(--pg-bench);
+/* A hidden pane must not keep its height, or the visible one is pushed off. */
+.pane .body[hidden] {
+  display: none;
+}
+
+/* The form sits on a drafting table: a faint dot grid under the sheet. */
+.pane.preview > .body {
+  background-image: radial-gradient(rgb(255 255 255 / 7%) 1px, transparent 1px);
+  background-size: 18px 18px;
 }
 
 .sheet {
+  margin-inline: auto;
+  max-width: 38rem;
+  padding: 1.75rem 1.875rem 2rem;
+  border-radius: 14px;
   background: #fff;
-  border: 1px solid var(--pg-rule);
-  border-radius: 4px;
-  padding: 1.5rem 1.625rem 1.75rem;
-  max-width: 34rem;
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 12%),
+    0 30px 80px -30px rgb(139 123 255 / 45%);
+  /* The form's own theme decides its controls, not the bench: Blueprint's
+     date picker and select have to be the light ones. */
+  color-scheme: light;
 }
 
 /* Dusk is a dark theme, so the sheet under it must be dark too — otherwise the
    demo shows a dark form on a white card and looks broken rather than themed. */
 .sheet[data-formancy-theme='dusk'] {
   background: #10141c;
-  border-color: #2a3345;
+  box-shadow:
+    0 0 0 1px #2a3345,
+    0 30px 80px -30px rgb(63 224 213 / 35%);
+  color-scheme: dark;
 }
 
 /* --------------------------------------------------------------- inspector */
 
 .inspect h3 {
-  margin: 0 0 0.375rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  color: var(--pg-muted);
+  margin: 0 0 0.5rem;
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
 .inspect h3 + pre,
-.inspect h3 + ul {
-  margin: 0 0 1.375rem;
+.inspect h3 + ul,
+.inspect h3 + .empty {
+  margin: 0 0 1.5rem;
 }
 
 .inspect pre,
 .inspect code,
 .inspect li {
-  font-family: var(--pg-mono);
+  font-family: var(--mono);
   font-size: 0.78125rem;
-  line-height: 1.55;
+  line-height: 1.6;
 }
 
 .inspect pre {
-  background: #fff;
-  border: 1px solid var(--pg-rule);
-  border-radius: 3px;
-  padding: 0.625rem 0.75rem;
+  background: var(--inset);
+  border: 1px solid var(--edge);
+  border-radius: 10px;
+  padding: 0.75rem 0.875rem;
   overflow-x: auto;
   white-space: pre-wrap;
   word-break: break-word;
-}
-
-/* Violet marks what the ENGINE decided rather than what a person typed — here,
-   a field a visibility rule is currently withholding. It is the only other
-   colour in the inspector, and it always means that. */
-.inspect .hidden-field {
-  color: var(--pg-derived);
-}
-
-.inspect .tag {
-  font-family: var(--pg-sans);
-  font-size: 0.6875rem;
-  margin-inline-start: 0.5rem;
-  padding: 0.0625rem 0.375rem;
-  border: 1px solid currentColor;
-  border-radius: 2px;
-  opacity: 0.75;
+  color: #c4ccdc;
 }
 
 .inspect ul {
@@ -236,30 +424,64 @@ body {
 }
 
 .inspect li {
-  padding: 0.1875rem 0;
-  color: var(--pg-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  color: #c4ccdc;
+}
+
+.inspect li:hover {
+  background: rgb(255 255 255 / 4%);
+}
+
+/* Teal marks what the ENGINE decided rather than what a person typed — here,
+   a field a visibility rule is currently withholding. It is the only other
+   colour in the inspector, and it always means that. */
+.inspect .hidden-field {
+  color: var(--server);
+}
+
+.inspect .tag {
+  font-family: var(--sans);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.0625rem 0.4375rem;
+  border: 1px solid color-mix(in srgb, var(--server) 45%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--server) 12%, transparent);
 }
 
 .inspect li .code {
-  color: var(--pg-invalid);
+  color: var(--invalid);
 }
 
-.inspect .empty {
-  font-family: var(--pg-sans);
+.inspect .empty,
+.empty {
+  font-family: var(--sans);
   font-size: 0.8125rem;
-  color: var(--pg-muted);
+  color: var(--muted);
 }
 
 /* ---------------------------------------------------------------- problems */
 
 .problem {
-  font-family: var(--pg-sans);
+  max-width: 38rem;
+  margin-inline: auto;
+  padding: 1.25rem 1.375rem;
+  border: 1px solid color-mix(in srgb, var(--invalid) 40%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--invalid) 8%, var(--inset));
+  font-family: var(--sans);
 }
 
 .problem h3 {
-  margin: 0 0 0.5rem;
+  margin: 0 0 0.625rem;
   font-size: 0.9375rem;
-  color: var(--pg-invalid);
+  color: var(--invalid);
 }
 
 .problem ul {
@@ -270,95 +492,94 @@ body {
 }
 
 .problem code {
-  font-family: var(--pg-mono);
+  font-family: var(--mono);
   font-size: 0.8125rem;
+  color: #ffc2ca;
 }
 
 .problem pre {
-  font-family: var(--pg-mono);
+  margin: 0;
+  font-family: var(--mono);
   font-size: 0.8125rem;
   white-space: pre-wrap;
-  background: #fff;
-  border: 1px solid var(--pg-rule);
-  border-radius: 3px;
+  background: var(--inset);
+  border: 1px solid var(--edge);
+  border-radius: 10px;
   padding: 0.75rem;
-}
-
-@media (max-width: 1100px) {
-  .panes {
-    grid-template-columns: 1fr;
-    grid-auto-rows: minmax(320px, auto);
-    overflow: auto;
-  }
-  .pane {
-    border-inline-end: none;
-    border-block-end: 1px solid var(--pg-rule);
-  }
+  color: #ffd9de;
 }
 
 /* --------------------------------------------------- the schema / build tabs */
 
 .pane.editor > h2 {
-  display: flex;
+  padding: 0.4375rem 0.5rem;
   gap: 0.25rem;
-  padding: 0.375rem 0.5rem;
+  letter-spacing: 0.06em;
+}
+
+.pane.editor > h2 .mode,
+.show button,
+.builder-tools button {
+  font: inherit;
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease;
 }
 
 .pane.editor > h2 .mode {
-  font: inherit;
-  font-size: 0.75rem;
-  letter-spacing: 0.02em;
-  color: var(--pg-muted);
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
   background: none;
   border: 1px solid transparent;
-  border-radius: 3px;
-  padding: 0.1875rem 0.5rem;
-  cursor: pointer;
+  border-radius: 999px;
+  padding: 0.3125rem 0.75rem;
+}
+
+.pane.editor > h2 .mode:hover {
+  color: var(--text);
 }
 
 .pane.editor > h2 .mode[aria-pressed='true'] {
-  background: #fff;
-  border-color: var(--pg-rule);
-  color: var(--pg-ink);
-}
-
-.pane.editor > h2 .mode:focus-visible {
-  outline: 2px solid var(--pg-signal);
-  outline-offset: 1px;
-}
-
-/* A hidden pane must not keep its height, or the visible one is pushed off. */
-.pane .body[hidden] {
-  display: none;
+  color: var(--text);
+  background: rgb(139 123 255 / 18%);
+  border-color: rgb(139 123 255 / 45%);
 }
 
 /* The builder inside the playground's left pane: one column rather than the
    admin's three, because it is sharing a column with the JSON editor. */
 .builder-pane {
   display: grid;
-  gap: 0.75rem;
-  padding: 0.75rem;
+  gap: 0.875rem;
+  padding: 0.875rem;
 }
 
 .builder-tools {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.375rem;
 }
 
 .builder-tools button {
-  font: inherit;
   font-size: 0.75rem;
-  padding: 0.25rem 0.625rem;
-  border: 1px solid var(--pg-rule);
-  border-radius: 3px;
-  background: #fff;
-  color: var(--pg-ink);
-  cursor: pointer;
+  padding: 0.3125rem 0.75rem;
+  border: 1px solid var(--edge-strong);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 4%);
+  color: var(--text);
+}
+
+.builder-tools button:hover:not(:disabled) {
+  border-color: var(--client);
 }
 
 .builder-tools button:disabled {
-  color: var(--pg-muted);
-  opacity: 0.6;
+  color: var(--muted);
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
@@ -370,24 +591,141 @@ body {
 }
 
 .builder-tabs button[aria-pressed='true'] {
-  background: var(--pg-ink);
-  color: #fff;
-  border-color: var(--pg-ink);
+  background: linear-gradient(100deg, rgb(139 123 255 / 85%), rgb(63 224 213 / 70%));
+  border-color: transparent;
+  color: #06050d;
+  font-weight: 600;
 }
 
-/* The way out of the playground and into the source. */
-.bar .repo {
-  font-size: 0.8125rem;
-  color: var(--pg-ink);
-  text-decoration: none;
-  border: 1px solid var(--pg-rule);
-  border-radius: 3px;
-  padding: 0.25rem 0.625rem;
-  white-space: nowrap;
+/* ------------------------------------------------------------- narrow screens
+ *
+ * One pane at a time, at its full height, and the page scrolls rather than
+ * the pane — a phone has one scroll gesture, and nesting a second inside it is
+ * how a pane swallows the page. The switch sticks to the top, so the other
+ * two panes are one tap away wherever somebody is.
+ */
+@media (max-width: 64rem) {
+  .app {
+    height: auto;
+    min-height: 100%;
+  }
+
+  .bar .note {
+    display: none;
+  }
+
+  /* Two rows: the way back, the title and the way out on the first; the two
+     switchers side by side on the second. */
+  .repo {
+    margin-inline-start: auto;
+  }
+
+  .controls {
+    order: 1;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    margin-inline-start: 0;
+  }
+
+  .switcher {
+    min-width: 0;
+  }
+
+  .switcher select {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .show {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    gap: 0.25rem;
+    margin: 0 0.75rem 0.75rem;
+    padding: 0.3125rem;
+    border: 1px solid var(--edge-strong);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--ground) 82%, transparent);
+    backdrop-filter: blur(16px);
+  }
+
+  .show button {
+    flex: 1;
+    min-height: 2.5rem;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  .show button[aria-pressed='true'] {
+    background: linear-gradient(100deg, rgb(139 123 255 / 85%), rgb(63 224 213 / 70%));
+    color: #06050d;
+    font-weight: 600;
+  }
+
+  .panes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .panes[data-shown='form'] > .pane:not(.preview),
+  .panes[data-shown='editor'] > .pane:not(.editor),
+  .panes[data-shown='engine'] > .pane:not(.engine) {
+    display: none;
+  }
+
+  .pane,
+  .pane > .body {
+    overflow: visible;
+  }
+
+  .pane > .body {
+    padding: 1rem;
+  }
+
+  /* Monaco sizes itself to its container, and a container that sizes itself
+     to its content is zero pixels tall. */
+  .pane.editor > .body.schema {
+    height: 72svh;
+  }
+
+  .sheet {
+    padding: 1.25rem 1.125rem 1.5rem;
+  }
 }
 
-.bar .repo:hover,
-.bar .repo:focus-visible {
-  border-color: var(--pg-ink);
-  text-decoration: underline;
+/* Phone width: "GitHub" is enough to see; the whole name is still what a
+   screen reader says, because the words are clipped rather than removed. */
+@media (max-width: 30rem) {
+  .repo .long {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .crumb {
+    display: none;
+  }
+
+  .bar {
+    gap: 0.5rem;
+    padding-inline: 0.625rem;
+  }
+
+  .home {
+    padding-inline: 0.375rem 0.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0.001ms !important;
+  }
 }

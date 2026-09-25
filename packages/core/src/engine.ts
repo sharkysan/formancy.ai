@@ -20,6 +20,7 @@ import type { FieldProps } from './props.js'
 import type { Path } from './path.js'
 import { createValueStore } from './store.js'
 import { getAt, setAt } from './value.js'
+import { refusedRule } from './rule-refusal.js'
 import { createWizard } from './wizard.js'
 import type { Wizard } from './wizard.js'
 
@@ -397,8 +398,9 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
    *  declaring a selectboxes field `dyn` shows every field it was meant to
    *  hide, right up until the first tick. */
   const listValued: readonly FieldType[] = LIST_VALUED_FIELD_TYPES
+  const topLevel = topLevelDataFields(schema.model.fields)
   const declarations: VariableDeclarations = Object.fromEntries(
-    topLevelDataFields(schema.model.fields).map((def): [string, DeclaredType] => [
+    topLevel.map((def): [string, DeclaredType] => [
       def.key,
       def.type === 'group' ? 'map' : listValued.includes(def.type) ? 'list' : 'dyn',
     ]),
@@ -414,14 +416,15 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
     }
   }
 
+  /** For saying what to write instead when a rule is refused. */
+  const fieldsByKey = new Map(topLevel.map((def) => [def.key, def]))
+
   const compiledRules: CompiledRule[] = rules.map((rule) => {
     const marker = rule.target.indexOf('[]')
 
     if (marker === -1) {
       const outcome = compile(rule.cel, { kind: rule.kind, variables: declarations })
-      if (!outcome.ok) {
-        throw new Error(`Rule on "${rule.target}" (${rule.kind}): ${outcome.error.message}`)
-      }
+      if (!outcome.ok) throw new Error(refusedRule(rule, outcome.error, fieldsByKey))
       return { rule, program: outcome.program, targetPath: parsePath(rule.target) }
     }
 
@@ -434,9 +437,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
       kind: rule.kind,
       variables: { ...declarations, ...ROW_VARIABLES },
     })
-    if (!outcome.ok) {
-      throw new Error(`Rule on "${rule.target}" (${rule.kind}): ${outcome.error.message}`)
-    }
+    if (!outcome.ok) throw new Error(refusedRule(rule, outcome.error, fieldsByKey))
     return {
       rule,
       program: outcome.program,

@@ -10,6 +10,14 @@
   by a real client, because a tool registered with the wrong argument name is
   invisible in a unit test and fatal in use). The built binary was also
   launched as a client launches it and spoken to over stdio.
+- **History:** amended on 2026-09-25, when the consequence this record warned
+  about had already happened. `validate_form` ran two of the publish gate's
+  three checks — the schema and the expression check — and not the engine's
+  own compile, so it called a document valid that the server then refused: a
+  misspelled field name, a cycle, a checkbox written as a condition on its own.
+  The landing page found it, when a demo form with the last of those took the
+  whole page down. `engineRefusal` in `@formancy/core` now asks the engine, and
+  the tool and the builder's authoring loop both call it.
 
 ## Context
 
@@ -75,10 +83,23 @@ amount of documentation.
 
 **What it costs.** Two implementations of "is this document alright" could
 drift — the server validates on publish too, and it must. They do not drift
-here because both call `validateSchema` from `@formancy/spec`; the MCP tool
-runs it earlier, not differently. If either ever grows its own opinion, this
-record is wrong and the tool becomes a second authority that disagrees with the
-product.
+because the tool runs the publish gate's checks in the gate's order:
+`validateSchema` from `@formancy/spec`, then the engine's own compile, then
+`expressionProblems` — earlier, not differently. The engine's compile is asked
+by building an engine (`engineRefusal`) rather than by re-implementing its
+rules, because a re-implementation is a second opinion.
+
+One check stays on the server: the analysis that refuses a `pattern` prone to
+catastrophic backtracking ([0045](0045-reject-backtracking-patterns.md)). It
+needs `recheck`, an analysis engine too heavy for a package that also has to
+run in a browser, and the server's refusal names the pattern, so it still
+comes back as something to fix.
+
+They did drift once, exactly as this paragraph said they could: the tool ran
+the schema and expression checks and not the engine's compile, and became a
+second authority that disagreed with the product. A check added to the publish
+gate has to be added here in the same change, or named here as staying on the
+server.
 
 The tool descriptions are prompts, and prompts are untested code in most
 projects. They are exported as `TOOL_DEFINITIONS` and asserted on, because a

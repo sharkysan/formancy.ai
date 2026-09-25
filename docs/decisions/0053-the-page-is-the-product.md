@@ -81,8 +81,8 @@ only that one pays now. The hero is two columns: the headline, and the document
 it is talking about with what the engine makes of it.
 
 **Numbers, not adjectives.** A strip of measured readings under the hero:
-one engine, **zero** uses of `eval`, fifteen field types, seven agent tools, 57
-decision records. The audience has been told "blazing fast" before and stopped
+one engine, **zero** uses of `eval`, fifteen field types, seven agent tools, and
+the number of decision records. The audience has been told "blazing fast" before and stopped
 believing it. The zero earns its place because
 [0040](0040-no-eval.md) has a test that fails if it ever stops being true, the
 field-type count is asserted against `FIELD_TYPES`, and the record count
