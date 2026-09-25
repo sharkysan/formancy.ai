@@ -1,3 +1,7 @@
 export { createApp, SCHEMA_HASH_HEADER } from './app.js'
 export { createPostgresStorage } from './postgres-storage.js'
 export { bootstrapSchema } from './db.js'
+export { createLocalFileStore, sha256 } from './file-store.js'
+export type { FileStore } from './file-store.js'
+export { startFileCollector } from './file-collector.js'
+export type { CollectorHandle } from './file-collector.js'

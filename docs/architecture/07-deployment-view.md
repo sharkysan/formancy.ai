@@ -76,11 +76,20 @@ form is not publicly submittable unless it says so.
   makes that survivable for a receiver that dedupes; it does not make it
   correct. `FOR UPDATE SKIP LOCKED` is the fix and is a contained change to one
   port method ([0049](../decisions/0049-one-polling-worker.md)).
-- **Never serve uploaded files from the application origin.** A separate
-  hostname, or forced `Content-Disposition: attachment` with `nosniff` and a
-  restrictive CSP. Stored cross-site scripting via uploaded HTML or SVG is the
-  most commonly exploited vulnerability in this product category. (Files are
-  v0.2; the rule is recorded now because it constrains the design.)
+- **Uploaded files are never served from the application origin inline.** A
+  separate hostname is the right answer and a single-container deployment does
+  not have one, so files come back with `Content-Disposition: attachment`,
+  `nosniff` and a sandboxing CSP, and only to an authenticated caller — being
+  allowed to submit a form is not being allowed to read what everybody else
+  attached to it. Stored cross-site scripting via uploaded HTML or SVG is the
+  most commonly exploited vulnerability in this product category, and forcing a
+  download is the accommodation
+  ([0055](../decisions/0055-files-are-claimed.md)).
+- **Uploads are off until `FORMANCY_FILES_DIR` is set**, and in a container it
+  has to be a mounted volume or the files go with the container. Not defaulted,
+  because a volume is the one thing a self-hoster has to think about. The local
+  store is also the second reason to run one replica: two containers with two
+  volumes each accept uploads the other cannot serve.
 - **Outbound webhook requests must resolve DNS themselves** and connect to the
   validated address with the original Host and SNI preserved. "Validate the URL
   then fetch it" is defeated by DNS rebinding, which is the difference between

@@ -1,9 +1,9 @@
-import { and, desc, eq, lte, max } from 'drizzle-orm'
+import { and, desc, eq, inArray, lt, lte, max, ne } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import type postgres from 'postgres'
 import type { FormSchema } from '@formancy/spec'
-import type { Role, Storage } from '@formancy/server-core'
-import { apiKeys, deliveries, drafts, forms, formVersions, submissions, webhooks } from './db.js'
+import type { FileRecord, Role, Storage } from '@formancy/server-core'
+import { apiKeys, deliveries, drafts, files, forms, formVersions, submissions, webhooks } from './db.js'
 import { users } from './db.js'
 
 /** The Storage port over Postgres — the mirror of server-core's in-memory one. */
@@ -103,7 +103,7 @@ export function createPostgresStorage(sql: postgres.Sql): Storage {
       return rows[0]?.latest ?? 0
     },
 
-    async insertSubmission(record, queued) {
+    async insertSubmission(record, queued, claimFileIds) {
       // ONE transaction. The submission and the deliveries it triggers commit
       // together or not at all — the requirement that chose this database
       // (docs/decisions/0024-postgres-over-mongodb.md).
@@ -131,7 +131,57 @@ export function createPostgresStorage(sql: postgres.Sql): Storage {
             })),
           )
         }
+
+        if (claimFileIds !== undefined && claimFileIds.length > 0) {
+          // In the same transaction, and only from `stored`: two concurrent
+          // submissions naming the same file both pass the check made outside
+          // the transaction, and this is where the second one loses. The row
+          // count is what says it lost — an UPDATE that matched nothing is not
+          // an error in SQL, so it has to be looked at.
+          const claimed = await tx
+            .update(files)
+            .set({ state: 'claimed', submissionId: record.id })
+            .where(and(inArray(files.id, [...claimFileIds]), eq(files.state, 'stored')))
+            .returning({ id: files.id })
+
+          if (claimed.length !== claimFileIds.length) {
+            throw new Error(
+              'A file this submission names was claimed by another one first. Rolling back, so the submission does not reference bytes it does not own.',
+            )
+          }
+        }
       })
+    },
+
+    async insertFile(record) {
+      await db.insert(files).values({ ...record, createdAt: new Date(record.createdAt) })
+    },
+
+    async getFile(id) {
+      const [row] = await db.select().from(files).where(eq(files.id, id)).limit(1)
+      return row === undefined ? undefined : toFileRecord(row)
+    },
+
+    async updateFile(record) {
+      await db
+        .update(files)
+        .set({ state: record.state, submissionId: record.submissionId })
+        .where(eq(files.id, record.id))
+    },
+
+    async abandonedFiles(beforeIso) {
+      // A claimed file belongs to a submission and is never rubbish, however
+      // old. Age is a reason to collect an unclaimed one, never a claimed one.
+      const rows = await db
+        .select()
+        .from(files)
+        .where(and(ne(files.state, 'claimed'), lt(files.createdAt, new Date(beforeIso))))
+      return rows.map(toFileRecord)
+    },
+
+    async deleteFiles(ids) {
+      if (ids.length === 0) return
+      await db.delete(files).where(inArray(files.id, [...ids]))
     },
 
     async webhooksForForm(formId) {
@@ -330,5 +380,20 @@ function toDeliveryRecord(row: typeof deliveries.$inferSelect) {
     nextAttemptAt: row.nextAttemptAt.toISOString(),
     state: row.state as 'pending' | 'delivered' | 'dead',
     lastError: row.lastError,
+  }
+}
+
+/** A files row as the port describes it: timestamps as ISO strings. */
+function toFileRecord(row: typeof files.$inferSelect): FileRecord {
+  return {
+    id: row.id,
+    formId: row.formId,
+    name: row.name,
+    size: row.size,
+    contentType: row.contentType,
+    storageKey: row.storageKey,
+    state: row.state as FileRecord['state'],
+    createdAt: row.createdAt.toISOString(),
+    submissionId: row.submissionId,
   }
 }

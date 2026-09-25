@@ -47,6 +47,15 @@
   --gutter: clamp(1.25rem, 5vw, 5rem);
   --measure: 34rem;
 
+  /* One depth scale, so 3D reads as a place rather than as a pile of
+     arbitrary translations. Each step is roughly a plane's thickness. */
+  --persp: 1400px;
+  --z1: 40px;
+  --z2: 90px;
+  --z3: 150px;
+  --z4: 220px;
+  --z5: 300px;
+
   color-scheme: dark;
 }
 
@@ -185,9 +194,31 @@ code {
 }
 
 .bar strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   font-size: 1rem;
   font-weight: 600;
   letter-spacing: -0.02em;
+}
+
+/* The mark, which is the favicon: violet stem, teal arms — the browser and
+   the server, the same pair the whole page is about. Drawn rather than
+   fetched, so it inherits the accents instead of hard-coding them twice. */
+.mark {
+  display: block;
+  width: 1.375rem;
+  height: 1.375rem;
+  border-radius: 6px;
+  flex: none;
+}
+
+.mark .stem {
+  fill: var(--client);
+}
+
+.mark .arm {
+  fill: var(--server);
 }
 
 .bar nav {
@@ -416,6 +447,184 @@ section {
 
 .sheet {
   padding: 1.25rem 1.375rem 1.5rem;
+}
+
+/* ------------------------------------------------------------- the stack
+ *
+ * The page's bold moment, and the only place 3D is load-bearing rather than
+ * decorative: formancy IS a layer cake, so the cake is drawn as one. The
+ * shared layers sit deep and carry both accents; the two per-framework layers
+ * sit near the reader and split violet from teal. Where the product forks is
+ * something you can see from across the room.
+ *
+ * It is an ordered list, not a diagram. Without 3D, without scroll timelines,
+ * or with motion turned off, it is the packages in build order — which is the
+ * content. The geometry is a second reading of the same thing, never the only
+ * one.
+ */
+
+.stack {
+  --tilt: 26deg;
+  --spread: 1;
+
+  list-style: none;
+  margin: clamp(3rem, 7vh, 4.5rem) 0 0;
+  padding: 0;
+  perspective: var(--persp);
+  perspective-origin: 50% 30%;
+
+  /* Named so the readout in the heading can follow this list's own scroll
+     from a different branch of the document. */
+  view-timeline-name: --stack;
+  view-timeline-axis: block;
+}
+
+.stratum {
+  position: relative;
+  display: grid;
+  gap: 0.25rem;
+  padding: 1.125rem 1.375rem;
+  margin-block-end: 0.75rem;
+  max-width: 44rem;
+
+  border: 1px solid var(--edge);
+  border-radius: 12px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--raised) 92%, transparent),
+    color-mix(in srgb, var(--inset) 88%, transparent)
+  );
+  box-shadow: 0 24px 60px -34px rgb(0 0 0 / 85%);
+
+  transform-style: preserve-3d;
+  /* Rotation and lift are two animations on one element. Without this the
+     second would overwrite the first instead of composing with it. */
+  animation-composition: accumulate;
+  will-change: transform;
+}
+
+/* The edge-light says which layers are shared and which are written twice.
+   1.4.1: the word on the right of each row says the same thing, so the colour
+   is a second channel rather than the only one. */
+.stratum::before {
+  content: '';
+  position: absolute;
+  inset-block: -1px;
+  inset-inline-start: -1px;
+  width: 3px;
+  border-start-start-radius: 12px;
+  border-end-start-radius: 12px;
+}
+
+.stratum[data-plane='shared']::before {
+  background: linear-gradient(180deg, var(--client), var(--server));
+}
+
+.stratum[data-plane='split']::before {
+  background: linear-gradient(180deg, var(--client) 50%, var(--server) 50%);
+}
+
+.stratum[data-plane='yours']::before {
+  background: repeating-linear-gradient(
+    180deg,
+    var(--muted) 0 4px,
+    transparent 4px 8px
+  );
+}
+
+.stratum[data-plane='yours'] {
+  border-style: dashed;
+  background: none;
+  box-shadow: none;
+}
+
+.stratum b {
+  font-family: var(--mono);
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.stratum span {
+  font-size: 0.9375rem;
+  color: var(--muted);
+}
+
+.stratum code {
+  color: color-mix(in srgb, var(--text) 80%, var(--client));
+}
+
+/* Lying almost flat and stacked into the screen when the section arrives,
+   rising to face the reader as it passes. Each layer is offset one depth step
+   deeper than the one after it, so the list reads as a stack rather than as
+   six cards. */
+@supports (animation-timeline: view()) {
+  .stratum {
+    animation: rise linear both;
+    animation-timeline: view(block);
+    animation-range: entry 5% cover 45%;
+  }
+
+  .stratum:nth-child(1) { --depth: var(--z5); }
+  .stratum:nth-child(2) { --depth: var(--z4); }
+  .stratum:nth-child(3) { --depth: var(--z3); }
+  .stratum:nth-child(4) { --depth: var(--z2); }
+  .stratum:nth-child(5) { --depth: var(--z1); }
+  .stratum:nth-child(6) { --depth: 0px; }
+}
+
+@keyframes rise {
+  from {
+    transform: translate3d(0, 2.5rem, calc(var(--depth, 0px) * -1)) rotateX(var(--tilt))
+      scale(0.94);
+    opacity: 0.35;
+  }
+  to {
+    transform: translate3d(0, 0, 0) rotateX(0deg) scale(1);
+    opacity: 1;
+  }
+}
+
+/* The depth readout, driven by the LIST's scroll from inside the heading — a
+   different branch of the document entirely. `timeline-scope` is what makes
+   that legal, and a browser without it simply never fills the bar. */
+.depth {
+  display: inline-block;
+  vertical-align: middle;
+  margin-inline-start: 0.75rem;
+  width: clamp(3rem, 8vw, 5rem);
+  height: 3px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--edge) 80%, transparent);
+  overflow: hidden;
+}
+
+.depth i {
+  display: block;
+  height: 100%;
+  width: 100%;
+  transform-origin: left;
+  scale: 0 1;
+  background: linear-gradient(90deg, var(--client), var(--server));
+}
+
+@supports (animation-timeline: view()) {
+  #stack {
+    timeline-scope: --stack;
+  }
+
+  .depth i {
+    animation: fill-depth linear both;
+    animation-timeline: --stack;
+    animation-range: entry 0% exit 100%;
+  }
+}
+
+@keyframes fill-depth {
+  to {
+    scale: 1 1;
+  }
 }
 
 /* -------------------------------------------------------- the two hues */
@@ -806,6 +1015,24 @@ footer .spacer {
 
   .planes {
     perspective: none;
+  }
+
+  /* The stack goes back to being what it always was underneath: a list of
+     packages in build order. Flat, upright, fully opaque — nothing to
+     animate and nothing left half-faded, which is the failure mode of turning
+     a scroll animation off by cancelling it halfway. */
+  .stack {
+    perspective: none;
+  }
+
+  .stratum {
+    animation: none;
+    transform: none;
+    opacity: 1;
+  }
+
+  .depth {
+    display: none;
   }
 
   .rail {

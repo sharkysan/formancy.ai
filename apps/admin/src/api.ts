@@ -1,5 +1,6 @@
 import type { FormSchema } from '@formancy/spec'
 import type { SchemaError } from '@formancy/spec/validate'
+import type { StoredFile } from '@formancy/react'
 
 /**
  * The admin's view of the server API, through the dev proxy (/api -> :4380).
@@ -142,4 +143,47 @@ export async function fetchSubmissions(path: string): Promise<SubmissionEntry[]>
 
 export function exportUrl(path: string): string {
   return `${BASE}/f/${encodeURIComponent(path)}/submissions/export.csv`
+}
+
+/**
+ * Uploading a file for a form, in the two steps the server asks for.
+ *
+ * Offer first, bytes second. The offer is where the size and the type are
+ * checked, so a file the form does not accept is refused before a byte is
+ * sent rather than after it has arrived.
+ *
+ * Shaped as the renderers' `Uploader`, so the preview uses the same control a
+ * consumer's form does — including the part where a failure is said out loud
+ * instead of leaving somebody believing they attached something.
+ */
+export async function uploadFile(path: string, field: string, file: File): Promise<StoredFile> {
+  const offered = await authed(`${BASE}/f/${encodeURIComponent(path)}/files`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      field,
+      name: file.name,
+      size: file.size,
+      contentType: file.type === '' ? 'application/octet-stream' : file.type,
+    }),
+  })
+
+  if (!offered.ok) {
+    const body = (await offered.json().catch(() => ({}))) as { error?: string; message?: string }
+    throw new Error(body.message ?? body.error ?? `The server refused the upload (${String(offered.status)}).`)
+  }
+
+  const stored = (await offered.json()) as StoredFile & { uploadUrl: string }
+
+  const put = await authed(`${BASE}${stored.uploadUrl}`, {
+    method: 'PUT',
+    headers: { 'content-type': stored.contentType },
+    body: file,
+  })
+  if (!put.ok) throw new Error(`The upload failed (${String(put.status)}).`)
+
+  // Without uploadUrl: it is how to send the bytes, not part of the answer,
+  // and storing it would put a route into somebody's submission data.
+  const { uploadUrl: _sent, ...answer } = stored
+  return answer
 }

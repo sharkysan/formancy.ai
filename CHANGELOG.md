@@ -30,8 +30,9 @@ data loss wearing the word "conversion".
   produce the same submission. Nothing ticked is `[]`, never null
   (see below) — an empty list is an answer, and treating it as the absence of
   one is the mistake every implementation makes first.
-- **`file`** — attachments. The submission stores what each file is and where
-  it went, never its bytes. `accept` and `maxFileSize` are enforced by the
+- **`file`** — attachments, now with a server behind them. The submission
+  stores what each file is and where it went, never its bytes. `accept` and
+  `maxFileSize` are enforced by the
   engine as well as by the picker, because a picker's filter means nothing to
   somebody posting to the endpoint directly. The renderers take an uploader
   from the host and say so plainly when there is none.
@@ -46,6 +47,22 @@ data loss wearing the word "conversion".
   the strip opens the tab that focus lands in.
 - **`table`** — a grid whose columns line up across rows, which stacked rows
   cannot do. Not a `<table>`: arranging fields in columns is not tabular data.
+
+**File uploads work.** The `file` type shipped with a renderer and nowhere to
+put bytes; the server now has somewhere. A file is **offered** before any bytes
+exist, **stored** when they arrive, and **claimed** inside the submission's own
+transaction — so a submission exists if and only if the files it names belong
+to it, and two submissions naming the same file are adjudicated by the database
+rather than by whichever check ran first. The field's `accept` list and size
+limit are enforced at the offer, before a byte is sent, because a browser's
+filter means nothing to somebody posting to the endpoint directly. Unclaimed
+files are collected after a day, bytes first and the row second. Files come
+back as authenticated attachments with `nosniff`, never inline
+([0055](./docs/decisions/0055-files-are-claimed.md)).
+
+Set `FORMANCY_FILES_DIR` to turn uploads on. Leaving it unset is a supported
+state, not a misconfiguration: a form with a file field still renders and still
+submits, and the field says plainly that there is nowhere to put one.
 
 **A rule reading a list field now hides what it was told to hide.** An
 untouched `selectboxes` or `file` field reached expressions as null rather than
@@ -81,6 +98,7 @@ Two documents already described axe as running in the conformance suite. It
 was not. That is the second time writing something down has been what found it
 missing.
 
+<<<<<<< HEAD
 **The playground is a version 2 document, and works on a phone.** Two reports,
 one cause each.
 
@@ -100,6 +118,18 @@ item's default `min-width` is its content, so those six set a floor under the
 whole document and the three-pane grid below never got a say. It wraps now, and
 the strap line stands down on a narrow screen because the controls are what
 somebody came for.
+=======
+**The stack, in three dimensions.** formancy is a layer cake, so the landing
+page draws one: the shared layers deep and carrying both accents, the two
+per-framework layers near the reader and split violet from teal. Where the
+product forks is now something you can see rather than read. It is an ordered
+list of packages underneath — without 3D, without scroll timelines or with
+motion turned off it is exactly that, because the geometry is a second reading
+of the content and never the only one. Built with `timeline-scope` and
+`animation-composition`, so the depth readout in the heading follows a list in
+a different branch of the document and nothing needs a frame loop. The mark
+from the favicon is now in the bar.
+>>>>>>> origin/main
 
 **The website deploys as one static site.** The landing page at `/` and the
 playground at `/playground/`, built by `pnpm build:web`. The playground is

@@ -4,6 +4,8 @@ import { createApp } from './app.js'
 import { bootstrapSchema } from './db.js'
 import { createPostgresStorage } from './postgres-storage.js'
 import { startOutboxWorker } from './outbox-worker.js'
+import { startFileCollector } from './file-collector.js'
+import { createLocalFileStore } from './file-store.js'
 
 // recheck ships a 23 MB JVM jar and a native binary per platform as OPTIONAL
 // dependencies and falls back to a pure-JavaScript engine without them. For
@@ -43,6 +45,24 @@ if (authSecret === undefined || authSecret === '') {
 const adminEmail = process.env['FORMANCY_ADMIN_EMAIL']
 const adminPassword = process.env['FORMANCY_ADMIN_PASSWORD']
 
+/**
+ * Where uploaded bytes go.
+ *
+ * Absent means this deployment accepts no files, and that is a supported
+ * state rather than a misconfiguration: a form with a file field still renders
+ * and still submits, and the field says plainly that there is nowhere to put
+ * one. Turning uploads on is naming a directory, which in a container is
+ * naming a volume — and a volume is the one thing a self-hoster has to think
+ * about, so it is not defaulted.
+ */
+const filesDirectory = process.env['FORMANCY_FILES_DIR']
+const fileStore = filesDirectory === undefined ? undefined : createLocalFileStore(filesDirectory)
+
+const maxFileBytes = Number(process.env['FORMANCY_MAX_FILE_BYTES'] ?? 10 * 1024 * 1024)
+if (!Number.isFinite(maxFileBytes) || maxFileBytes <= 0) {
+  throw new Error('FORMANCY_MAX_FILE_BYTES must be a positive number of bytes.')
+}
+
 await bootstrapSchema(sql)
 const storage = createPostgresStorage(sql)
 const app = await createApp(storage, {
@@ -50,6 +70,8 @@ const app = await createApp(storage, {
   ...(adminEmail !== undefined && adminPassword !== undefined
     ? { bootstrapAdmin: { email: adminEmail, password: adminPassword } }
     : {}),
+  ...(fileStore === undefined ? {} : { fileStore }),
+  maxFileBytes,
 })
 
 // Queued deliveries are useless until something sends them.
@@ -61,9 +83,16 @@ const outbox = startOutboxWorker(storage, {
     ? { allowPrivateAddresses: true }
     : {}),
 })
+// Somebody who attaches a file and closes the tab leaves bytes behind. A disk
+// that fills up for a reason nobody is watching is the most tedious outage
+// there is.
+const collector =
+  fileStore === undefined ? undefined : startFileCollector(storage, fileStore)
+
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.once(signal, () => {
     outbox.stop()
+    collector?.stop()
     void app.close().then(() => process.exit(0))
   })
 }
