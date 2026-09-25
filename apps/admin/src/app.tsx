@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Editor from '@monaco-editor/react'
 import { BuildPane } from './build-pane.js'
+import { WebhooksPane } from './webhooks-pane.js'
 import { SignIn } from './sign-in.js'
 import '@formancy/themes/workbench.css'
 import '@formancy/themes/blueprint.css'
@@ -122,7 +123,9 @@ const NEW_FORM_TEMPLATE = (path: string) =>
   )
 
 function FormWorkspace({ path, onPublished }: { path: string; onPublished: () => Promise<void> }) {
-  const [tab, setTab] = useState<'build' | 'editor' | 'versions' | 'submissions'>('build')
+  const [tab, setTab] = useState<
+    'build' | 'editor' | 'versions' | 'submissions' | 'webhooks'
+  >('build')
   const [source, setSource] = useState<string | undefined>(undefined)
   const [serverHash, setServerHash] = useState<string | undefined>(undefined)
   const [publishState, setPublishState] = useState<PublishResult | undefined>(undefined)
@@ -159,7 +162,7 @@ function FormWorkspace({ path, onPublished }: { path: string; onPublished: () =>
       <div className="wb-titlebar">
         <strong>{path}</strong>
         <div className="wb-tabs">
-        {(['build', 'editor', 'versions', 'submissions'] as const).map((candidate) => (
+        {(['build', 'editor', 'versions', 'submissions', 'webhooks'] as const).map((candidate) => (
           <button key={candidate} onClick={() => setTab(candidate)} aria-pressed={tab === candidate}>
             {candidate}
           </button>
@@ -186,6 +189,8 @@ function FormWorkspace({ path, onPublished }: { path: string; onPublished: () =>
         />
       ) : tab === 'versions' ? (
         <VersionsPane path={path} />
+      ) : tab === 'webhooks' ? (
+        <WebhooksPane />
       ) : (
         <SubmissionsPane path={path} />
       )}

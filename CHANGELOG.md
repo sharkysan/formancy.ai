@@ -249,6 +249,18 @@ Found by writing the audit log: recording a publish meant asking when a publish
 is finished, and the answer was "after three calls that could stop in the
 middle".
 
+**The admin has a Webhooks tab.** Which destinations are failing, since when,
+and what died on the way to them — with a button to send a dead delivery
+again. This is the reason the breaker's counters live on the webhook row rather
+than in the worker's memory: a self-hoster has no operations team watching a
+dashboard, so the answer has to be in the product. Until now it was only
+reachable with curl.
+
+The state is a word rather than a colour ("Working", "Trying again", "Not
+delivering"), the pane does not poll — an operator looking at a failure wants
+it to hold still — and a replayed row is marked rather than removed, because
+a list that shrinks as you work leaves you unsure which one you pressed.
+
 **A circuit breaker per webhook, and dead deliveries you can replay.** The
 retry schedule gave up after eight attempts per DELIVERY, which is the wrong
 unit when the destination is down: a form taking a submission a minute produced
