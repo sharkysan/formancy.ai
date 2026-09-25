@@ -28,6 +28,12 @@
 
   --fm-step: 1.125rem;
   --fm-radius: 3px;
+
+  /* The form's text colour is the theme's, not whatever the host page set.
+     Fields set it for themselves, but a form's title, its section headings and
+     static text inherit it — so a light Blueprint form inside a dark app read
+     as pale text on white paper. Dusk has always done this. */
+  color: var(--fm-ink);
 }
 
 /* ------------------------------------------------------------------ fields */

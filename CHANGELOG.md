@@ -118,6 +118,26 @@ whole document and the three-pane grid below never got a say. It wraps now, and
 the strap line stands down on a narrow screen because the controls are what
 somebody came for.
 
+**The playground looks like the rest of formancy.ai, works on a phone, and
+has a way back.** It is drawn in the landing page's colours now — a dark bench,
+glass panes, violet for what you act on and teal for what the engine decided —
+with the builder re-coloured purely through `workbench.css`'s own variables
+and the JSON editor in a matching Monaco theme. The form keeps whichever theme
+is chosen, on a sheet, because the themes are what is being shown. The header
+leads back to the landing page, the way every page on the site starts.
+
+On a desktop the three panes fill the screen and each scrolls on its own; the
+page used to be 1,420 pixels tall on a 900-pixel screen, because a grid track's
+default minimum is its content. Below 64rem the page shows one pane at a time
+at its full height, chosen from a switch that sticks to the top, with the form
+first. Stacked, each pane had been a 320-pixel box with a scrollbar of its own
+inside a page with another — a form you could see four fields of at a time.
+
+**Blueprint sets its own text colour.** Fields always did, but a form's title,
+section headings and static text inherited the host page's colour, so a light
+Blueprint form inside a dark app read as pale text on white paper. Dusk has
+always set it; Blueprint does now.
+
 **`validate_form` asks the engine, so it no longer calls a broken form
 valid.** It ran the schema check and the expression check and not the engine's
 own compile, which the server's publish gate runs between them — so a document

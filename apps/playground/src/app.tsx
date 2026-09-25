@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import Editor, { useMonaco } from '@monaco-editor/react'
+import type { Monaco } from '@monaco-editor/react'
 import { createFormEngine, parsePath } from '@formancy/core'
 import type { FormEngine } from '@formancy/core'
 import { validateSchema } from '@formancy/spec/validate'
@@ -52,6 +53,35 @@ const LOCALES = [
 
 type LocaleId = (typeof LOCALES)[number]['id']
 
+const REPO = 'https://github.com/sharkysan/formancy.ai'
+
+/**
+ * Where the landing page lives — the way back from here.
+ *
+ * One origin in production, where the site is at `/` and this app at
+ * `/playground/`; two Vite servers in development, where a relative path would
+ * land on the playground's own root. The same reasoning, mirrored, as the
+ * site's link to this page.
+ */
+const SITE = import.meta.env.DEV ? 'http://localhost:4384/' : '/'
+
+/**
+ * The three panes, for a screen too narrow to show them side by side.
+ *
+ * Stacked, each pane became a 320-pixel box with its own scrollbar inside a
+ * page with another one — a form you could see four fields of at a time.
+ * Narrow, the page shows one pane at a time at its full height instead, and
+ * this chooses which. The form is first because it is what somebody came to
+ * see. Wide, all three are shown and the switch is not.
+ */
+const PANES = [
+  { id: 'form', label: 'Form' },
+  { id: 'editor', label: 'Editor' },
+  { id: 'engine', label: 'Engine' },
+] as const
+
+type PaneId = (typeof PANES)[number]['id']
+
 export function App() {
   const [source, setSource] = useState(() => JSON.stringify(STARTER_SCHEMA, null, 2))
   const [theme, setTheme] = useState<ThemeId>('blueprint')
@@ -64,6 +94,7 @@ export function App() {
    */
   const [session, setSession] = useState<BuilderSession | null>(null)
   const [builderTab, setBuilderTab] = useState<'fields' | 'arrangement'>('fields')
+  const [shown, setShown] = useState<PaneId>('form')
 
   // Opened when the Build pane appears, from whatever the text says then.
   // Deliberately not re-opened as `source` changes: the builder writes it on
@@ -147,40 +178,67 @@ export function App() {
 
   return (
     <div className="app">
+      <div className="glow" aria-hidden="true" />
+
       <header className="bar">
-        <h1>formancy.ai playground</h1>
-        <span className="note">Edit the schema; the form and the engine follow.</span>
-        <div className="spacer" />
-        <a className="repo" href="https://github.com/sharkysan/formancy.ai" rel="noreferrer noopener">
-          {/* Named, not an unlabelled icon: "GitHub" alone says which site, not
-              which repository, and this page is the first thing anyone
-              evaluating the project sees. */}
-          formancy.ai on GitHub
+        <a className="home" href={SITE}>
+          <Mark />
+          formancy.ai
         </a>
-        <label className="switcher">
-          Language
-          <select value={locale} onChange={(event) => setLocale(event.target.value as LocaleId)}>
-            {LOCALES.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="switcher">
-          Theme
-          <select value={theme} onChange={(event) => setTheme(event.target.value as ThemeId)}>
-            {THEMES.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
+        <span className="crumb" aria-hidden="true">
+          /
+        </span>
+        <h1>Playground</h1>
+        <span className="note">Edit the schema; the form and the engine follow.</span>
+
+        <div className="controls">
+          <label className="switcher">
+            Language
+            <select value={locale} onChange={(event) => setLocale(event.target.value as LocaleId)}>
+              {LOCALES.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="switcher">
+            Theme
+            <select value={theme} onChange={(event) => setTheme(event.target.value as ThemeId)}>
+              {THEMES.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <a className="repo" href={REPO} rel="noreferrer noopener">
+          {/* Named, not an unlabelled icon: "GitHub" alone says which site,
+              not which repository, and this page is the first thing anyone
+              evaluating the project sees. On a phone the first two words are
+              hidden visually and still read out. */}
+          <span className="long">formancy.ai on </span>GitHub
+        </a>
       </header>
 
-      <div className="panes">
-        <section className="pane editor">
+      <nav className="show" aria-label="Pane">
+        {PANES.map((candidate) => (
+          <button
+            key={candidate.id}
+            type="button"
+            aria-pressed={shown === candidate.id}
+            aria-controls={`pane-${candidate.id}`}
+            onClick={() => setShown(candidate.id)}
+          >
+            {candidate.label}
+          </button>
+        ))}
+      </nav>
+
+      <div className="panes" data-shown={shown}>
+        <section className="pane editor" id="pane-editor">
           <h2>
             {(['build', 'schema'] as const).map((candidate) => (
               <button
@@ -207,11 +265,13 @@ export function App() {
               />
             )}
           </div>
-          <div className="body" hidden={pane !== 'schema'}>
+          <div className="body schema" hidden={pane !== 'schema'}>
             <Editor
               language="json"
               value={source}
               onChange={(next) => setSource(next ?? '')}
+              beforeMount={defineNightTheme}
+              theme="formancy-night"
               options={{
                 minimap: { enabled: false },
                 scrollBeyondLastLine: false,
@@ -223,7 +283,7 @@ export function App() {
           </div>
         </section>
 
-        <section className="pane preview">
+        <section className="pane preview" id="pane-form">
           <h2>Form</h2>
           <div className="body">
             {parsed.parseError !== undefined ? (
@@ -254,7 +314,7 @@ export function App() {
           </div>
         </section>
 
-        <section className="pane">
+        <section className="pane engine" id="pane-engine">
           <h2>Engine</h2>
           <div className="body inspect">
             {built?.engine !== undefined ? (
@@ -266,6 +326,50 @@ export function App() {
         </section>
       </div>
     </div>
+  )
+}
+
+/**
+ * The JSON editor, in the page's colours.
+ *
+ * Monaco draws its own surface, so a dark workbench around the stock light
+ * editor reads as two products glued together. Keys, strings and literals
+ * take the same three colours the landing page gives them.
+ */
+function defineNightTheme(monaco: Monaco): void {
+  monaco.editor.defineTheme('formancy-night', {
+    base: 'vs-dark',
+    inherit: true,
+    rules: [
+      { token: 'string.key.json', foreground: 'c3b9ff' },
+      { token: 'string.value.json', foreground: '9ee8c9' },
+      { token: 'number', foreground: 'ff9ecf' },
+      { token: 'keyword.json', foreground: 'ff9ecf' },
+    ],
+    colors: {
+      'editor.background': '#0b0f18',
+      'editor.lineHighlightBackground': '#141a29',
+      'editorLineNumber.foreground': '#3a445a',
+      'editorLineNumber.activeForeground': '#95a0b4',
+      'editorIndentGuide.background1': '#1b2233',
+      'editor.selectionBackground': '#3b3470',
+      'editorCursor.foreground': '#3fe0d5',
+    },
+  })
+}
+
+/**
+ * The mark — the same one as the favicon and the landing page's bar. Hidden
+ * from assistive technology: the link text beside it already says the name.
+ */
+function Mark() {
+  return (
+    <svg className="mark" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+      <rect width="64" height="64" rx="18" fill="#0b0f18" />
+      <rect className="stem" x="14" y="14" width="12" height="36" rx="6" />
+      <rect className="arm" x="30" y="14" width="20" height="12" rx="6" />
+      <rect className="arm" x="30" y="30" width="14" height="12" rx="6" />
+    </svg>
   )
 }
 

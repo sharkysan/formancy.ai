@@ -50,6 +50,37 @@ describe('the page', () => {
     expect(link.getAttribute('href')).toBe('https://github.com/sharkysan/formancy.ai')
   })
 
+  test('has a way back to the landing page', () => {
+    render(<App />)
+
+    // Absolute in development, where the site and the playground are two Vite
+    // servers and a relative path would land on this app's own root.
+    const link = screen.getByRole('link', { name: 'formancy.ai' })
+    expect(link.getAttribute('href')).toBe('http://localhost:4384/')
+  })
+
+  test('on a narrow screen, one pane is shown at a time, and the form first', async () => {
+    const user = userEvent.setup()
+    const { container } = render(<App />)
+
+    // The switch only displays below 64rem, which jsdom cannot show; what can
+    // be checked is that it drives the panes and says which one is chosen.
+    const switchNav = screen.getByRole('navigation', { name: 'Pane' })
+    const panes = container.querySelector('.panes') as HTMLElement
+    expect(panes.dataset['shown']).toBe('form')
+    expect(within(switchNav).getByRole('button', { name: 'Form' }).getAttribute('aria-pressed')).toBe(
+      'true',
+    )
+
+    await user.click(within(switchNav).getByRole('button', { name: 'Engine' }))
+
+    expect(panes.dataset['shown']).toBe('engine')
+    expect(
+      within(switchNav).getByRole('button', { name: 'Engine' }).getAttribute('aria-controls'),
+    ).toBe('pane-engine')
+    expect(container.querySelector('#pane-engine')).toBeTruthy()
+  })
+
   test('shows the engine state, not a screenshot of it', () => {
     render(<App />)
 
