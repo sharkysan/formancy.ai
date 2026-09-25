@@ -2,7 +2,10 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
 import { FIELD_TYPES } from '@formancy/spec'
+import { validateSchema } from '@formancy/spec/validate'
+import { createFormEngine, expressionProblems } from '@formancy/core'
 import { App } from './app.js'
+import { EXAMPLES } from './examples.js'
 import { JOURNEY, isComplete, submissionFor } from './scroll.js'
 
 /**
@@ -101,8 +104,8 @@ describe('the demo is the product, not a picture of it', () => {
   test('it renders real labelled controls from the document', () => {
     render(<App />)
 
-    expect(screen.getByLabelText('Company')).toBeTruthy()
-    expect(screen.getByRole('group', { name: 'Plan' })).toBeTruthy()
+    expect(screen.getByLabelText('Full name')).toBeTruthy()
+    expect(screen.getByRole('group', { name: 'Ticket' })).toBeTruthy()
   })
 
   test('a field appears because the document says it should', async () => {
@@ -110,22 +113,126 @@ describe('the demo is the product, not a picture of it', () => {
     render(<App />)
 
     // The claim the section makes, checked rather than asserted in prose.
-    expect(screen.queryByLabelText('Region')).toBeNull()
+    expect(screen.queryByRole('group', { name: 'Pick your workshops' })).toBeNull()
 
-    await user.click(screen.getByRole('radio', { name: 'Managed cloud' }))
+    await user.click(screen.getByRole('radio', { name: 'Conference + workshops · CHF 690' }))
 
-    expect(await screen.findByLabelText('Region')).toBeTruthy()
+    expect(await screen.findByRole('group', { name: 'Pick your workshops' })).toBeTruthy()
   })
 
   test('a computed field is computed, not typed into', async () => {
     const user = userEvent.setup()
     render(<App />)
 
-    await user.type(screen.getByLabelText('Seats'), '25')
+    await user.click(screen.getByRole('radio', { name: 'Conference + workshops · CHF 690' }))
+    await user.type(screen.getByLabelText('Hotel nights · CHF 180 each'), '2')
 
+    // 690 + 2 × 180. The rule is `… + nights * 180.0`, and the decimal
+    // point is the difference between this and a total that stays empty.
     await waitFor(() =>
-      expect(screen.getByLabelText<HTMLInputElement>('Estimated monthly (CHF)').value).toBe('100'),
+      expect(screen.getByLabelText<HTMLInputElement>('Total (CHF)').value).toBe('1050'),
     )
+  })
+
+  test('the rules beside the form are read off the same engine', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    const rules = screen.getByRole('list', { name: 'The rules, as the engine evaluates them' })
+    const workshops = within(rules).getByText('workshops · visible').closest('li') as HTMLElement
+    expect(workshops.textContent).toContain('hidden')
+
+    await user.click(screen.getByRole('radio', { name: 'Conference + workshops · CHF 690' }))
+
+    // Not the page's opinion of what the rule ought to say: the hook a
+    // consumer would use, on the engine that drew the form.
+    await waitFor(() => expect(workshops.textContent).toContain('shown'))
+    expect(workshops.className).toContain('on')
+  })
+
+  test('the document beside the form is the document the form was drawn from', () => {
+    render(<App />)
+
+    // Derived, not hand-written: every rule the engine runs is in the source
+    // shown next to it, so the two cannot drift apart.
+    const source = document.querySelector('#build .code')?.textContent ?? ''
+    for (const rule of EXAMPLES[0]?.schema.logic?.rules ?? []) {
+      expect(source).toContain(JSON.stringify(rule.cel))
+    }
+  })
+})
+
+describe('the examples', () => {
+  test('every one is a document the MCP server would accept', () => {
+    // The same two checks an agent's document goes through: the spec
+    // validator, and the check for an expression that compiles and then never
+    // does anything. A demo form that quietly computes nothing is worse than
+    // no demo.
+    for (const example of EXAMPLES) {
+      expect(validateSchema(example.schema)).toMatchObject({ valid: true })
+      expect(expressionProblems(example.schema)).toEqual([])
+    }
+  })
+
+  test('every one builds an engine', () => {
+    // A third check, because the first two are not the whole story: the
+    // engine refuses a visibility rule that is not certain to produce a bool,
+    // and a bare checkbox (`halfBoard`) is null until somebody touches it.
+    // That refusal takes the whole page down, so it is pinned here.
+    const capabilities = { now: () => 0, today: () => '2027-01-01', random: () => 0 }
+    for (const example of EXAMPLES) {
+      expect(() => createFormEngine({ schema: example.schema, capabilities })).not.toThrow()
+    }
+  })
+
+  test('are a named tab strip, and arrow keys move along it', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    const strip = screen.getByRole('tablist', { name: 'Examples' })
+    const tabs = within(strip).getAllByRole('tab')
+    expect(tabs.map((tab) => tab.textContent)).toEqual(EXAMPLES.map((example) => example.title))
+
+    // Only the selected tab is in the tab order; the arrows do the rest.
+    expect(tabs.map((tab) => tab.tabIndex)).toEqual([0, -1, -1])
+    tabs[0]?.focus()
+    await user.keyboard('{ArrowRight}')
+
+    expect(within(strip).getByRole('tab', { name: 'Bug report' }).getAttribute('aria-selected')).toBe(
+      'true',
+    )
+    expect(document.activeElement?.textContent).toBe('Bug report')
+  })
+
+  test('switching away and back keeps what somebody typed', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.type(screen.getByLabelText('Full name'), 'Ada')
+    await user.click(screen.getByRole('tab', { name: 'Mountain hut' }))
+    await user.click(screen.getByRole('tab', { name: 'Conference ticket' }))
+
+    expect(screen.getByLabelText<HTMLInputElement>('Full name').value).toBe('Ada')
+  })
+
+  test('the hut prices a stay from three answers and a tick', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await user.click(screen.getByRole('tab', { name: 'Mountain hut' }))
+
+    await user.type(screen.getByLabelText('Nights'), '2')
+    await user.type(screen.getByLabelText('Guests'), '2')
+    await waitFor(() =>
+      expect(screen.getByLabelText<HTMLInputElement>('Total (CHF)').value).toBe('260'),
+    )
+
+    await user.click(screen.getByRole('checkbox', { name: 'Half board · dinner and breakfast' }))
+
+    // 2 nights × 2 guests × (65 + 48), and the kitchen question with it.
+    await waitFor(() =>
+      expect(screen.getByLabelText<HTMLInputElement>('Total (CHF)').value).toBe('452'),
+    )
+    expect(screen.getByRole('group', { name: 'Anything the kitchen should know?' })).toBeTruthy()
   })
 })
 
@@ -223,53 +330,56 @@ describe('submissionFor', () => {
 })
 
 describe('the types spec 2 added', () => {
-  /** Open the demo's second tab, where the new types live. */
-  const openDetail = async (user: ReturnType<typeof userEvent.setup>): Promise<void> => {
-    await user.click(screen.getByRole('tab', { name: 'Detail' }))
+  /** Open the bug report, and its second tab, where the new types live. */
+  const openDetails = async (user: ReturnType<typeof userEvent.setup>): Promise<void> => {
+    await user.click(screen.getByRole('tab', { name: 'Bug report' }))
+    await user.click(screen.getByRole('tab', { name: 'Details' }))
   }
 
-  test('the demo is arranged in tabs, and the strip is named', () => {
+  test('the bug report is arranged in tabs, and the strip is named', async () => {
+    const user = userEvent.setup()
     render(<App />)
+    await user.click(screen.getByRole('tab', { name: 'Bug report' }))
 
-    // Named because a form may have two strips, and "tab list" twice tells a
+    // Named because the page has two strips, and "tab list" twice tells a
     // screen-reader user which one they are in exactly as well as nothing.
-    const strip = screen.getByRole('tablist', { name: 'Quote' })
+    const strip = screen.getByRole('tablist', { name: 'Bug report' })
     expect(within(strip).getAllByRole('tab')).toHaveLength(2)
   })
 
-  test('a selectboxes answer is a list of ticks', async () => {
+  test('a blocker asks how bad it is, and insists on an answer', async () => {
     const user = userEvent.setup()
     render(<App />)
-    await openDetail(user)
+    await user.click(screen.getByRole('tab', { name: 'Bug report' }))
 
-    const group = screen.getByRole('group', { name: 'What the quote should cover' })
-    await user.click(within(group).getByRole('checkbox', { name: 'An accessibility audit' }))
+    expect(screen.queryByLabelText(/Users affected/)).toBeNull()
 
-    expect(
-      within(group).getByRole<HTMLInputElement>('checkbox', { name: 'An accessibility audit' })
-        .checked,
-    ).toBe(true)
+    await user.click(screen.getByRole('radio', { name: 'Blocker · production is down' }))
+
+    const affected = await screen.findByLabelText(/Users affected/)
+    expect(affected.getAttribute('aria-required')).toBe('true')
   })
 
-  test('a rule reads that list, and a field appears because of what is in it', async () => {
+  test('a selectboxes answer is a list, and a rule reads it', async () => {
     const user = userEvent.setup()
     render(<App />)
-    await openDetail(user)
+    await openDetails(user)
 
-    expect(screen.queryByLabelText('The forms you are migrating')).toBeNull()
+    expect(screen.queryByLabelText('API version')).toBeNull()
 
-    await user.click(screen.getByRole('checkbox', { name: 'Migrating forms we already have' }))
+    const group = screen.getByRole('group', { name: 'Where does it happen?' })
+    await user.click(within(group).getByRole('checkbox', { name: 'Public API' }))
 
-    // `'migration' in topics` — the same expression the server would replay.
-    expect(await screen.findByLabelText('The forms you are migrating')).toBeTruthy()
+    // `'api' in platforms` — the same expression the server would replay.
+    expect(await screen.findByLabelText('API version')).toBeTruthy()
   })
 
   test('rich text is parsed into elements, never handed to innerHTML', async () => {
     const user = userEvent.setup()
     render(<App />)
-    await openDetail(user)
+    await openDetails(user)
 
-    await user.type(screen.getByLabelText('Anything else we should know'), '**urgent**')
+    await user.type(screen.getByLabelText('Steps to reproduce'), '**urgent**')
 
     // The preview is the proof: what was typed came back as a `strong`
     // element, which means it went through the parser rather than through a
@@ -281,13 +391,12 @@ describe('the types spec 2 added', () => {
   test('the file field accepts a file, and the page does not pretend it went anywhere', async () => {
     const user = userEvent.setup()
     render(<App />)
-    await openDetail(user)
-    await user.click(screen.getByRole('checkbox', { name: 'Migrating forms we already have' }))
+    await openDetails(user)
 
-    const input = await screen.findByLabelText<HTMLInputElement>('The forms you are migrating')
-    await user.upload(input, new File(['%PDF'], 'intake.pdf', { type: 'application/pdf' }))
+    const input = screen.getByLabelText<HTMLInputElement>('Screenshot or recording')
+    await user.upload(input, new File(['png'], 'crash.png', { type: 'image/png' }))
 
-    expect(await screen.findByText('intake.pdf')).toBeTruthy()
+    expect(await screen.findByText('crash.png')).toBeTruthy()
     // Said in the copy as well as in the storage key. A demo that looks like
     // it stored something is a demo that makes the product look like it
     // silently drops files.
@@ -322,7 +431,7 @@ describe('the stack', () => {
     // The 3D is a second reading. The first one has to be the content: a
     // reader with no scroll timelines, no 3D or motion turned off still gets
     // the packages in build order, which is what the section is for.
-    const list = screen.getByRole('list', { name: '' , hidden: false })
+    const list = screen.getByRole('list', { name: 'The packages, in build order' })
     expect(list.tagName).toBe('OL')
     const items = within(list).getAllByRole('listitem')
     expect(items.map((item) => item.querySelector('b')?.textContent)).toEqual([
@@ -330,7 +439,7 @@ describe('the stack', () => {
       '@formancy/expressions',
       '@formancy/core',
       '@formancy/react · @formancy/angular',
-      '@formancy/ui-react · ui-angular',
+      '@formancy/themes',
       'your design system',
     ])
   })
@@ -343,7 +452,7 @@ describe('the stack', () => {
     const shared = document.querySelectorAll('[data-plane="shared"]')
     const split = document.querySelectorAll('[data-plane="split"]')
     expect(shared).toHaveLength(3)
-    expect(split).toHaveLength(2)
+    expect(split).toHaveLength(1)
   })
 
   test('answers a field in the running submission, like every other section', () => {
@@ -379,8 +488,8 @@ describe('the readings', () => {
       '1',
       '0',
       '15',
-      '1,435',
-      '56',
+      '7',
+      '57',
     ])
   })
 
@@ -401,5 +510,16 @@ describe('the readings', () => {
     // page keeps saying fifteen.
     const shown = document.querySelectorAll('.reading dt')[2]?.textContent
     expect(shown).toBe(String(FIELD_TYPES.length))
+  })
+
+  test('the decision-record count is the number of records', () => {
+    render(<App />)
+
+    // The other figure that drifts on its own: every week adds a record.
+    // Counted by the bundler rather than by `fs`: the glob is resolved
+    // against this file, and a record is a numbered Markdown file.
+    const records = Object.keys(import.meta.glob('../../../docs/decisions/[0-9][0-9][0-9][0-9]-*.md'))
+    const shown = document.querySelectorAll('.reading dt')[4]?.textContent
+    expect(shown).toBe(String(records.length))
   })
 })

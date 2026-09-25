@@ -118,6 +118,29 @@ whole document and the three-pane grid below never got a say. It wraps now, and
 the strap line stands down on a narrow screen because the controls are what
 somebody came for.
 
+**The landing page, made to excite.** It still read as plain, and its one
+example — a quote request — was the form nobody has ever wanted to fill in.
+There are three now, behind a tab strip: a conference ticket that prices
+itself, a bug report that asks more of a blocker, and a night in a mountain
+hut. Beside each form is its document, generated from the schema so the two
+cannot drift, and under that every rule lights up as the engine evaluates it —
+read through `useField`, so it is the engine's answer rather than the page's.
+Every example passes the same validator and expression check the MCP server
+runs on an agent's document, and builds an engine; that last check exists
+because a bare checkbox in a visibility rule passes the first two and then
+takes the whole page down.
+
+Around it: light drifting behind a fading grid, glass windows, a feature grid
+whose cards catch a light that follows the pointer, and a section on coding
+agents with the session played out line by line — including the real message
+the MCP server sends back when a model writes `seats * 4`. The stack now lists
+the packages that exist (`@formancy/themes`, not `ui-react`), and the readings
+count agent tools and decision records, both checked, instead of a test count
+nothing checked. Everything that moves animates `transform` or `opacity`, and
+`prefers-reduced-motion` still removes all of it
+([0053](./docs/decisions/0053-the-page-is-the-product.md) records what was
+reversed and why).
+
 **The landing page fills its frame.** Every section was reserving fifteen rems
 of its right edge for the submission panel, which occupies one corner — so
 two fifths of every screen sat empty the whole way down and the page read as a

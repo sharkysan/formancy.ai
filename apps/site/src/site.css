@@ -1,19 +1,20 @@
 /**
  * formancy.ai
  *
- * The page is drawn with the product's own design tokens — the `dusk` theme's
+ * The page is drawn from the product's own design tokens — the `dusk` theme's
  * ground, raised and signal colours — because a landing page for a theming
  * system that invents its own palette is arguing against itself.
  *
  * Two accents, and they carry information rather than variety: violet is the
  * browser, teal is the server. The product's whole claim is that one engine
- * runs in both, so the two hues appear together wherever that is the point and
- * nowhere else.
+ * runs in both, so the two hues meet wherever that is the point — in the
+ * headline, in the light behind the page, and in the stamp at the end.
  *
- * MOTION. Every effect below is a CSS scroll-driven animation: the browser
- * runs them off the compositor with no scroll listener and no frame loop, so
- * there is nothing here to jank. A browser without `animation-timeline` gets
- * the page with no animation at all, which is a page that reads perfectly.
+ * MOTION. Everything that moves is either a CSS animation on `transform` and
+ * `opacity`, or a CSS scroll-driven animation: the browser runs them off the
+ * compositor with no scroll listener and no frame loop, so there is nothing
+ * here to jank. A browser without `animation-timeline` gets the page with the
+ * scroll effects left out, which is a page that reads perfectly.
  *
  * `prefers-reduced-motion` turns all of it off, in CSS rather than in script,
  * because a preference honoured by JavaScript is a preference honoured only
@@ -28,31 +29,41 @@
   initial-value: 0%;
 }
 
+@property --spin {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
 :root {
-  --ground: #10141c;
-  --raised: #1a2030;
-  --inset: #0b0f16;
-  --text: #e6eaf2;
-  --muted: #8a96a8;
-  --edge: #2a3345;
+  --ground: #080a12;
+  --raised: #141a29;
+  --inset: #0b0f18;
+  --glass: rgb(20 26 41 / 55%);
+  --text: #eef1f8;
+  --muted: #95a0b4;
+  --edge: rgb(255 255 255 / 9%);
+  --edge-strong: rgb(255 255 255 / 16%);
 
   /* The browser. */
-  --client: #7c6bf5;
+  --client: #8b7bff;
   /* The server. The pair is the argument. */
-  --server: #3fd0c9;
+  --server: #3fe0d5;
+  /* Where the two meet. Used sparingly: the headline and the payoff. */
+  --meet: #f07bd8;
 
   --sans: 'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
   --mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Code', Consolas, monospace;
   /* The display face. Archivo is a grotesque with a width axis — engineered
-     rather than editorial, which is the register this product speaks in. The
-     body stays Plex: two faces, clearly distinct, and no third. */
+     rather than editorial, which is the register this product speaks in. */
   --display: 'Archivo', 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
 
   --gutter: clamp(1.25rem, 5vw, 5rem);
-  --measure: 34rem;
+  --measure: 36rem;
+  --radius: 16px;
 
   /* One depth scale, so 3D reads as a place rather than as a pile of
-     arbitrary translations. Each step is roughly a plane's thickness. */
+     arbitrary translations. */
   --persp: 1400px;
   --z1: 40px;
   --z2: 90px;
@@ -82,17 +93,8 @@ body {
   overflow-x: hidden;
 }
 
-/* The page's one persistent texture: a faint vertical seam down the middle,
-   the line the document and the form sit either side of. */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(60rem 40rem at 50% -10rem, rgb(124 107 245 / 12%), transparent 70%),
-    radial-gradient(40rem 30rem at 100% 40%, rgb(63 208 201 / 6%), transparent 70%);
+::selection {
+  background: color-mix(in srgb, var(--client) 45%, transparent);
 }
 
 a {
@@ -100,9 +102,9 @@ a {
 }
 
 :focus-visible {
-  outline: 2px solid var(--client);
+  outline: 2px solid var(--server);
   outline-offset: 3px;
-  border-radius: 2px;
+  border-radius: 4px;
 }
 
 /* Skipping to the content, for a page this long. */
@@ -114,12 +116,97 @@ a {
   padding: 0.625rem 1rem;
   background: var(--raised);
   border: 1px solid var(--client);
-  border-radius: 4px;
+  border-radius: 8px;
   text-decoration: none;
 }
 
 .skip:focus {
   inset-inline-start: 0.75rem;
+}
+
+/* ------------------------------------------------------------ backdrop
+ *
+ * Three washes of light drifting behind everything, a grid that fades out
+ * below the fold, and a grain so the gradients do not band. Gradients rather
+ * than `filter: blur()`, which would repaint a full-screen layer every frame;
+ * these only ever move by `transform`.
+ */
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.backdrop i {
+  position: absolute;
+  display: block;
+}
+
+.aurora {
+  width: 70vmax;
+  height: 70vmax;
+  border-radius: 50%;
+  opacity: 0.55;
+  will-change: transform;
+}
+
+.a1 {
+  inset-block-start: -35vmax;
+  inset-inline-start: -15vmax;
+  background: radial-gradient(closest-side, rgb(139 123 255 / 55%), transparent);
+  animation: drift-a 26s ease-in-out infinite alternate;
+}
+
+.a2 {
+  inset-block-start: -20vmax;
+  inset-inline-end: -30vmax;
+  background: radial-gradient(closest-side, rgb(63 224 213 / 38%), transparent);
+  animation: drift-b 32s ease-in-out infinite alternate;
+}
+
+.a3 {
+  inset-block-start: 40vh;
+  inset-inline-start: 20vw;
+  width: 55vmax;
+  height: 55vmax;
+  background: radial-gradient(closest-side, rgb(240 123 216 / 20%), transparent);
+  animation: drift-c 38s ease-in-out infinite alternate;
+}
+
+@keyframes drift-a {
+  to {
+    transform: translate3d(18vw, 14vh, 0) scale(1.15);
+  }
+}
+
+@keyframes drift-b {
+  to {
+    transform: translate3d(-22vw, 22vh, 0) scale(0.9);
+  }
+}
+
+@keyframes drift-c {
+  to {
+    transform: translate3d(-30vw, -26vh, 0) scale(1.2);
+  }
+}
+
+.grid {
+  inset: 0;
+  background-image:
+    linear-gradient(rgb(255 255 255 / 4.5%) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 4.5%) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 30%, transparent 75%);
+}
+
+.grain {
+  inset: -50%;
+  opacity: 0.07;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 /* ------------------------------------------------------------------ type */
@@ -130,27 +217,59 @@ h3 {
   margin: 0;
   font-family: var(--display);
   font-weight: 700;
-  /* Archivo's width axis, set slightly narrow: the headlines are long
-     sentences rather than words, and a condensed setting is what lets them
-     stay large without wrapping into five lines. */
+  /* Archivo's width axis, set slightly narrow: the headlines are sentences
+     rather than words, and a condensed setting is what lets them stay large
+     without wrapping into five lines. */
   font-variation-settings: 'wdth' 92;
-  letter-spacing: -0.025em;
-  line-height: 1.02;
+  letter-spacing: -0.02em;
+  line-height: 1.04;
   text-wrap: balance;
 }
 
 h1 {
-  font-size: clamp(2.5rem, 1.1rem + 4.2vw, 4.75rem);
-  letter-spacing: -0.035em;
+  font-size: clamp(2.75rem, 1.2rem + 4.8vw, 5.5rem);
+  letter-spacing: -0.032em;
+  /* Tight tracking closes the word spaces too; open them back up so
+     "browser and" does not read as one word. */
+  word-spacing: 0.08em;
+  line-height: 0.98;
 }
 
 h2 {
-  font-size: clamp(1.875rem, 1.4rem + 2.1vw, 3rem);
+  font-size: clamp(2rem, 1.4rem + 2.4vw, 3.5rem);
+  max-width: 22ch;
+  background: linear-gradient(180deg, var(--text) 30%, color-mix(in srgb, var(--text) 62%, var(--ground)));
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
 }
 
 h3 {
-  font-size: 1.0625rem;
-  letter-spacing: -0.01em;
+  font-size: 1.125rem;
+  letter-spacing: -0.015em;
+}
+
+/* The two channels, meeting in the headline. The gradient slides slowly so
+   the words read as light rather than as paint. */
+.glow {
+  background: linear-gradient(
+    100deg,
+    var(--client) 0%,
+    var(--meet) 35%,
+    var(--server) 65%,
+    var(--client) 100%
+  );
+  background-size: 250% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation: shimmer 9s linear infinite;
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -250% 0;
+  }
 }
 
 p {
@@ -159,27 +278,47 @@ p {
 }
 
 .lede {
-  font-size: clamp(1.0625rem, 1rem + 0.5vw, 1.375rem);
-  line-height: 1.5;
+  margin-block-start: 1.25rem;
+  font-size: clamp(1.0625rem, 1rem + 0.45vw, 1.3125rem);
+  line-height: 1.55;
   color: var(--muted);
 }
 
-.key {
+.eyebrow {
+  margin-block-end: 1rem;
   font-family: var(--mono);
-  font-weight: 400;
-  font-size: 0.82em;
-  letter-spacing: -0.01em;
-  color: var(--client);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--server);
+}
+
+.eyebrow::before {
+  content: '';
+  display: inline-block;
+  vertical-align: middle;
+  width: 1.5rem;
+  height: 1px;
+  margin-inline-end: 0.625rem;
+  background: linear-gradient(90deg, var(--client), var(--server));
 }
 
 .note {
+  margin-block-start: 2rem;
   font-size: 0.9375rem;
   color: var(--muted);
 }
 
+.note a {
+  color: var(--text);
+  text-decoration-color: var(--client);
+  text-underline-offset: 3px;
+}
+
 code {
   font-family: var(--mono);
-  font-size: 0.9em;
+  font-size: 0.88em;
 }
 
 /* --------------------------------------------------------------- shell */
@@ -196,10 +335,10 @@ code {
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 0.875rem var(--gutter);
-  background: color-mix(in srgb, var(--ground) 82%, transparent);
-  backdrop-filter: blur(14px);
-  border-block-end: 1px solid color-mix(in srgb, var(--edge) 60%, transparent);
+  padding: 0.75rem var(--gutter);
+  background: color-mix(in srgb, var(--ground) 62%, transparent);
+  backdrop-filter: blur(18px) saturate(1.4);
+  border-block-end: 1px solid var(--edge);
 }
 
 .bar strong {
@@ -212,14 +351,14 @@ code {
 }
 
 /* The mark, which is the favicon: violet stem, teal arms — the browser and
-   the server, the same pair the whole page is about. Drawn rather than
-   fetched, so it inherits the accents instead of hard-coding them twice. */
+   the server, the same pair the whole page is about. */
 .mark {
   display: block;
-  width: 1.375rem;
-  height: 1.375rem;
-  border-radius: 6px;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 7px;
   flex: none;
+  filter: drop-shadow(0 0 10px rgb(139 123 255 / 45%));
 }
 
 .mark .stem {
@@ -233,22 +372,47 @@ code {
 .bar nav {
   margin-inline-start: auto;
   display: flex;
-  gap: 1.25rem;
+  align-items: center;
+  gap: 1.375rem;
   font-size: 0.9375rem;
 }
 
 .bar nav a {
   color: var(--muted);
   text-decoration: none;
+  transition: color 160ms ease;
 }
 
 .bar nav a:hover {
   color: var(--text);
 }
 
-@media (max-width: 46rem) {
+.bar nav .bar-cta {
+  padding: 0.375rem 0.875rem;
+  border: 1px solid var(--edge-strong);
+  border-radius: 999px;
+  color: var(--text);
+  background: rgb(255 255 255 / 4%);
+}
+
+.bar nav .bar-cta:hover {
+  border-color: var(--client);
+}
+
+@media (max-width: 50rem) {
   .bar nav a.optional {
     display: none;
+  }
+}
+
+/* 320 CSS pixels still has to fit the wordmark and both links. */
+@media (max-width: 24rem) {
+  .bar nav {
+    gap: 0.75rem;
+  }
+
+  .bar nav .bar-cta {
+    padding-inline: 0.625rem;
   }
 }
 
@@ -260,7 +424,7 @@ code {
   bottom: -1px;
   height: 2px;
   transform-origin: 0 50%;
-  background: linear-gradient(90deg, var(--client), var(--server));
+  background: linear-gradient(90deg, var(--client), var(--meet), var(--server));
   scale: 0 1;
   animation: rail linear;
   animation-timeline: scroll(root block);
@@ -273,44 +437,35 @@ code {
 }
 
 section {
-  padding-block: clamp(4rem, 9vh, 6.5rem);
+  padding-block: clamp(4.5rem, 11vh, 8rem);
   padding-inline: var(--gutter);
 }
 
-/* Every section heading carries a rule to the edge of the frame.
- *
- * Structure rather than decoration, and it does two jobs: it reaches the right
- * side of the page, which was otherwise empty at every scroll position, and it
- * carries the channel colour — violet where the section is about the
- * browser, teal where it is about the server, both where the point is that
- * they are the same. A drawing has rules; a brochure has whitespace.
- */
-.page > section > h2 {
-  position: relative;
-  padding-block-end: 1.25rem;
-}
-
-.page > section > h2::after {
-  content: '';
-  position: absolute;
-  inset-inline: 0;
-  inset-block-end: 0;
-  height: 1px;
-  background: linear-gradient(90deg, var(--client), var(--server) 38%, transparent 88%);
-  opacity: 0.55;
-}
-
 .wide {
-  max-width: 76rem;
+  max-width: 78rem;
   margin-inline: auto;
 }
 
-/* The running submission is fixed to the bottom-right corner, and it used to
-   be paid for by padding EVERY section's right edge by fifteen rems — which
-   reserved a column down the entire page for a panel that occupies one corner
-   of it, and left two fifths of every screen empty. The panel is fixed, so it
-   overlays; only the last section can actually collide with it, and only that
-   one pays. */
+/* Sections rise into place as they arrive. Scroll-driven, so it costs
+   nothing, and a browser without timelines shows them where they are. */
+@supports (animation-timeline: view()) {
+  .page > section:not(.hero) > * {
+    animation: arrive linear both;
+    animation-timeline: view(block);
+    animation-range: entry 0% entry 55%;
+  }
+}
+
+@keyframes arrive {
+  from {
+    opacity: 0;
+    transform: translateY(2.5rem);
+  }
+}
+
+/* The running submission is fixed to the bottom-right corner and overlays
+   the page; only the last section can collide with it, so only that one
+   makes room. */
 @media (min-width: 62rem) {
   .finale {
     padding-inline-end: calc(var(--gutter) + 15rem);
@@ -320,107 +475,91 @@ section {
 /* --------------------------------------------------------------- hero */
 
 .hero {
-  min-height: 88svh;
+  min-height: calc(100svh - 3.5rem);
   display: grid;
   /* `minmax(0, 1fr)` rather than `1fr`: a grid item's default minimum is its
-     content, so the code block would push the hero — and with it the whole
-     page — wider than the viewport. That is 1.4.10 Reflow failing on the
-     page that claims the product takes it seriously. */
+     content, so the code block would push the page wider than the viewport —
+     1.4.10 Reflow failing on the page that claims the product takes it
+     seriously. */
   grid-template-columns: minmax(0, 1fr);
   align-content: center;
-  gap: clamp(2.5rem, 6vh, 4rem);
-  padding-block-start: clamp(3rem, 8vh, 6rem);
+  gap: clamp(3rem, 7vh, 4.5rem);
+  padding-block: clamp(3rem, 9vh, 6rem) clamp(2rem, 5vh, 3rem);
 }
 
-/* Two columns, where there is room for two. The right one holds the thing the
-   headline is talking about: a document and what the engine makes of it. The
-   argument is on screen before anybody scrolls, and the frame is full. */
 @media (min-width: 64rem) {
   .hero {
-    grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr);
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
     align-items: center;
     column-gap: clamp(2.5rem, 5vw, 5rem);
-  }
-
-  .hero .readings {
-    grid-column: 1 / -1;
   }
 }
 
 .hero h1 {
-  max-width: 17ch;
+  max-width: 13ch;
 }
 
 .hero .lede {
-  margin-block-start: 1.5rem;
-  max-width: 38ch;
+  margin-block-start: 1.75rem;
+  max-width: 40ch;
 }
 
-/* ------------------------------------------------------------- readings
- *
- * Measured numbers, not adjectives. Every one of these is read off the
- * repository and checked by a test, because the audience is people who have
- * been told "blazing fast" before and stopped believing it. The zero is the
- * one worth the space: no `eval`, no `new Function`, anywhere, which is what
- * lets the product run under a strict CSP with no configuration.
- */
+/* The announcement above the headline. A pill with a moving edge of light:
+   a conic gradient in a mask, turned by a registered custom property. */
+.pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin-block-end: 1.75rem;
+  padding: 0.375rem 0.875rem 0.375rem 0.375rem;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 5%);
+  font-size: 0.875rem;
+  color: var(--text);
+  text-decoration: none;
+  isolation: isolate;
+}
 
-/* The fixed submission panel occupies the bottom-right corner, and the
-   readings are the one full-width element that shares that height. Ending
-   short of it is cheaper than moving the panel, and only this strip pays. */
-@media (min-width: 62rem) {
-  .readings {
-    margin-inline-end: 15rem;
+.pill::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  padding: 1px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--spin),
+    var(--edge-strong) 0deg,
+    var(--client) 60deg,
+    var(--server) 120deg,
+    var(--edge-strong) 180deg,
+    var(--edge-strong) 360deg
+  );
+  mask:
+    linear-gradient(black 0 0) content-box,
+    linear-gradient(black 0 0);
+  mask-composite: exclude;
+  animation: spin 4s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    --spin: 360deg;
   }
 }
 
-.readings {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
-  gap: 1px;
-  margin-block-start: clamp(2rem, 5vh, 3.5rem);
-  background: var(--edge);
-  border-block: 1px solid var(--edge);
+.pill-tag {
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--client), var(--server));
+  color: #07060f;
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 
-.reading {
-  display: grid;
-  gap: 0.25rem;
-  padding: 1rem 0.25rem 1rem 1rem;
-  background: var(--ground);
-}
-
-.reading dt,
-.reading dd {
-  margin: 0;
-}
-
-.reading b {
-  font-family: var(--display);
-  font-variation-settings: 'wdth' 88;
-  font-size: clamp(1.75rem, 1.2rem + 1.4vw, 2.5rem);
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: -0.03em;
-  font-variant-numeric: tabular-nums;
-}
-
-.reading dd span {
-  display: block;
-  font-family: var(--mono);
-  font-size: 0.6875rem;
-  line-height: 1.45;
-  color: var(--muted);
-}
-
-/* The channels, again: what the browser does and what the server does are the
-   same two colours everywhere on this page. */
-.reading:nth-child(odd) b {
-  color: color-mix(in srgb, var(--text) 82%, var(--client));
-}
-
-.reading:nth-child(even) b {
-  color: color-mix(in srgb, var(--text) 82%, var(--server));
+.pill:hover {
+  background: rgb(255 255 255 / 8%);
 }
 
 .actions {
@@ -431,69 +570,111 @@ section {
 }
 
 .action {
+  position: relative;
   display: inline-flex;
   align-items: center;
   /* 2.5.8 Target size, with room to spare. */
-  min-height: 2.75rem;
-  padding: 0 1.25rem;
-  border: 1px solid var(--edge);
+  min-height: 3rem;
+  padding: 0 1.5rem;
+  border: 1px solid var(--edge-strong);
   border-radius: 999px;
-  background: transparent;
+  background: rgb(255 255 255 / 4%);
   color: var(--text);
   font: inherit;
   font-size: 0.9375rem;
   font-weight: 500;
   text-decoration: none;
   cursor: pointer;
-}
-
-.action.primary {
-  border-color: transparent;
-  background: var(--client);
-  color: #0b0713;
+  backdrop-filter: blur(8px);
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
 }
 
 .action:hover {
   border-color: var(--client);
+  transform: translateY(-1px);
+}
+
+.action.primary {
+  border-color: transparent;
+  background: linear-gradient(100deg, var(--client), #6e5cf0 45%, var(--server));
+  color: #06050d;
+  font-weight: 600;
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 12%) inset,
+    0 10px 40px -10px rgb(139 123 255 / 70%);
 }
 
 .action.primary:hover {
-  background: color-mix(in srgb, var(--client) 85%, white);
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 25%) inset,
+    0 14px 50px -8px rgb(63 224 213 / 60%);
 }
 
 /* ------------------------------------------------------- the two planes
  *
- * The page's one bold moment, and the product's claim made literal: the
- * document behind, the form in front, separated in Z and converging as you
- * scroll. Everything else on the page stays quiet so this can be loud.
+ * The page's one loud moment, and the product's claim made literal: the
+ * document behind, what the engine makes of it in front, separated in Z and
+ * converging as you scroll.
  */
 
 .planes {
   position: relative;
-  margin-block-start: clamp(3rem, 8vh, 5rem);
   perspective: 1600px;
   perspective-origin: 50% 40%;
+  padding-block: 1.5rem;
 }
 
-.plane {
+/* A window: the one container shape on the page, used for code, forms and
+   terminals alike, so the parts read as belonging to one system. */
+.window {
   min-width: 0;
-  border: 1px solid var(--edge);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--raised) 88%, transparent);
-  box-shadow: 0 30px 80px -40px rgb(0 0 0 / 80%);
-  transform-style: preserve-3d;
-  will-change: transform;
+  border: 1px solid var(--edge-strong);
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, rgb(28 35 54 / 72%), rgb(14 18 30 / 82%));
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 6%) inset,
+    0 40px 90px -40px rgb(0 0 0 / 90%);
+  backdrop-filter: blur(16px);
+  overflow: hidden;
 }
 
-.plane header {
+.window > header {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.625rem 0.875rem;
+  gap: 0.625rem;
+  padding: 0.6875rem 1rem;
   border-block-end: 1px solid var(--edge);
+  background: rgb(255 255 255 / 2.5%);
   font-family: var(--mono);
   font-size: 0.75rem;
   color: var(--muted);
+}
+
+.lights {
+  display: inline-flex;
+  gap: 0.375rem;
+}
+
+.lights i {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 14%);
+}
+
+.lights i:first-child {
+  background: #ff6b81;
+}
+
+.lights i:nth-child(2) {
+  background: #ffc861;
+}
+
+.lights i:nth-child(3) {
+  background: #4fdc8a;
 }
 
 .dot {
@@ -501,28 +682,67 @@ section {
   height: 0.5rem;
   border-radius: 50%;
   background: var(--client);
+  box-shadow: 0 0 10px var(--client);
 }
 
-.plane.server .dot {
+.dot.server {
   background: var(--server);
+  box-shadow: 0 0 10px var(--server);
 }
 
-.plane pre {
+.dot.live {
+  background: #4fdc8a;
+  box-shadow: 0 0 10px #4fdc8a;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+pre {
+  scrollbar-width: thin;
+  scrollbar-color: var(--edge-strong) transparent;
+}
+
+.code {
   margin: 0;
-  padding: 1rem 1.125rem;
+  padding: 1.125rem 1.25rem;
   overflow: auto;
   font-family: var(--mono);
   font-size: 0.8125rem;
-  line-height: 1.7;
-  color: #b9c3d6;
+  line-height: 1.75;
+  color: #aeb8cc;
   tab-size: 2;
+}
+
+/* The syntax colours keep to the page's two channels: keys are structure,
+   strings are data, and the CEL — the part that does something — is lit. */
+.t-key {
+  color: #c3b9ff;
+}
+
+.t-str {
+  color: #9ee8c9;
+}
+
+.t-cel {
+  color: #ffd27a;
+  text-shadow: 0 0 18px rgb(255 210 122 / 35%);
+}
+
+.t-lit,
+.t-num {
+  color: #ff9ecf;
 }
 
 .plane-document {
   position: relative;
   z-index: 1;
-  rotate: y 14deg;
-  translate: 0 0 -140px;
+  rotate: y 12deg;
+  translate: 0 0 -120px;
   animation: converge-document linear both;
   animation-timeline: view(block);
   animation-range: entry 10% cover 55%;
@@ -531,14 +751,15 @@ section {
 .plane-form {
   position: relative;
   z-index: 2;
-  /* Overlapping, not covering. At rest the document has to stay readable
-     underneath — a pane that cuts the one behind it mid-line reads as a
-     rendering fault rather than as depth. */
-  margin-block-start: -1.5rem;
+  margin-block-start: -2.5rem;
   margin-inline-start: auto;
-  width: min(100%, 27rem);
-  rotate: y -16deg;
+  width: min(100%, 22rem);
+  rotate: y -14deg;
   translate: 0 0 90px;
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 8%) inset,
+    0 0 0 1px rgb(63 224 213 / 18%),
+    0 30px 80px -30px rgb(63 224 213 / 45%);
   animation: converge-form linear both;
   animation-timeline: view(block);
   animation-range: entry 10% cover 55%;
@@ -558,39 +779,731 @@ section {
   }
 }
 
+.verdicts {
+  margin: 0;
+  padding: 0.875rem 1rem 1rem;
+  display: grid;
+  gap: 0.5rem;
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+}
+
+.verdicts div {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  background: rgb(255 255 255 / 3%);
+}
+
+.verdicts dt {
+  color: var(--muted);
+}
+
+.verdicts dd {
+  margin: 0;
+  color: var(--text);
+}
+
+.verdicts .on dd {
+  color: var(--server);
+}
+
+.chip {
+  position: absolute;
+  z-index: 3;
+  padding: 0.4375rem 0.875rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  white-space: nowrap;
+  backdrop-filter: blur(10px);
+  animation: bob 6s ease-in-out infinite;
+}
+
+.chip-client {
+  inset-block-start: 0;
+  inset-inline-end: 8%;
+  border: 1px solid rgb(139 123 255 / 50%);
+  background: rgb(139 123 255 / 16%);
+  color: #d6d0ff;
+  box-shadow: 0 10px 30px -10px rgb(139 123 255 / 60%);
+}
+
+.chip-server {
+  inset-block-end: 0;
+  inset-inline-start: 4%;
+  border: 1px solid rgb(63 224 213 / 50%);
+  background: rgb(63 224 213 / 13%);
+  color: #bff7f2;
+  box-shadow: 0 10px 30px -10px rgb(63 224 213 / 60%);
+  animation-delay: -3s;
+}
+
+@keyframes bob {
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
 @media (max-width: 52rem) {
   .plane-form {
     margin-block-start: 1.25rem;
     margin-inline-start: 0;
     width: 100%;
   }
+
+  .chip {
+    display: none;
+  }
 }
 
+/* ------------------------------------------------------------ marquee */
+
+.marquee {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  overflow: hidden;
+  padding-block: 1.25rem;
+  border-block: 1px solid var(--edge);
+  background: rgb(255 255 255 / 1.5%);
+  mask-image: linear-gradient(90deg, transparent, black 12%, black 88%, transparent);
+}
+
+.marquee ul {
+  display: flex;
+  flex: none;
+  gap: 3rem;
+  margin: 0;
+  padding: 0 1.5rem;
+  list-style: none;
+  animation: scroll-x 40s linear infinite;
+}
+
+.marquee li {
+  font-family: var(--display);
+  font-variation-settings: 'wdth' 100;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--text) 50%, transparent);
+  white-space: nowrap;
+}
+
+.marquee li::before {
+  content: '◆';
+  margin-inline-end: 3rem;
+  font-size: 0.5rem;
+  vertical-align: middle;
+  color: var(--client);
+}
+
+.marquee:hover ul {
+  animation-play-state: paused;
+}
+
+@keyframes scroll-x {
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+/* ------------------------------------------------------------- readings
+ *
+ * Measured numbers, not adjectives. Every one of these is read off the
+ * repository, because the audience is people who have been told "blazing
+ * fast" before and stopped believing it.
+ */
+
+.readings-wrap {
+  position: relative;
+  z-index: 1;
+  padding-inline: var(--gutter);
+  padding-block-start: clamp(3rem, 7vh, 4.5rem);
+}
+
+.readings {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.reading {
+  display: grid;
+  gap: 0.375rem;
+  padding: 1.25rem 1.25rem 1.125rem;
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+}
+
+.reading dt,
+.reading dd {
+  margin: 0;
+}
+
+.reading b {
+  font-family: var(--display);
+  font-variation-settings: 'wdth' 88;
+  font-size: clamp(2.25rem, 1.5rem + 1.8vw, 3.25rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  background: linear-gradient(135deg, var(--text) 20%, var(--client));
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.reading:nth-child(even) b {
+  background-image: linear-gradient(135deg, var(--text) 20%, var(--server));
+}
+
+.reading dd span {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.71875rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+/* Two set lines where there is room for them; running text where there is
+   not, so a narrow tile does not break "so it" onto a line of its own. */
+@media (max-width: 40rem) {
+  .reading dd span {
+    display: inline;
+  }
+
+  .reading dd span + span::before {
+    content: ' ';
+  }
+}
+
+/* -------------------------------------------------------- the two hues */
+
+.pair {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  margin-block-start: 1.5rem;
+}
+
+.side {
+  padding: 1.5rem;
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  background:
+    radial-gradient(120% 90% at 0% 0%, rgb(139 123 255 / 14%), transparent 55%),
+    var(--glass);
+}
+
+.side.server {
+  background:
+    radial-gradient(120% 90% at 100% 0%, rgb(63 224 213 / 12%), transparent 55%),
+    var(--glass);
+}
+
+.side h3 {
+  color: var(--client);
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: 0.8125rem;
+}
+
+.side.server h3 {
+  color: var(--server);
+}
+
+.side p {
+  margin-block-start: 0.625rem;
+  font-size: 0.9375rem;
+  color: var(--muted);
+}
+
+/* One expression, evaluated on both sides — and the sign between them. */
+.mirror {
+  margin-block-start: 3rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 1rem;
+  font-family: var(--mono);
+  font-size: clamp(0.8125rem, 0.65rem + 0.5vw, 1rem);
+}
+
+.mirror > div {
+  display: grid;
+  gap: 0.5rem;
+  padding: 1.5rem;
+  border: 1px solid rgb(139 123 255 / 35%);
+  border-radius: var(--radius);
+  background: rgb(139 123 255 / 7%);
+  box-shadow: 0 20px 60px -30px rgb(139 123 255 / 55%);
+}
+
+.mirror > div:last-child {
+  border-color: rgb(63 224 213 / 35%);
+  background: rgb(63 224 213 / 6%);
+  box-shadow: 0 20px 60px -30px rgb(63 224 213 / 55%);
+}
+
+.mirror b {
+  font-weight: 500;
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.mirror .expr {
+  font-size: 1.15em;
+  color: #ffd27a;
+}
+
+.mirror i {
+  font-style: normal;
+  font-family: var(--sans);
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.mirror-eq {
+  font-size: 2rem;
+  background: linear-gradient(180deg, var(--client), var(--server));
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+@media (max-width: 40rem) {
+  .mirror {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .mirror-eq {
+    justify-self: center;
+    rotate: 90deg;
+  }
+}
+
+/* ---------------------------------------------------------- examples */
+
+.examples {
+  margin-block-start: 3rem;
+}
+
+.picker {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding: 0.3125rem;
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+}
+
+.picker button {
+  min-height: 2.5rem;
+  padding: 0 1.125rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 180ms ease,
+    color 180ms ease;
+}
+
+.picker button:hover {
+  color: var(--text);
+}
+
+.picker button[aria-selected='true'] {
+  background: linear-gradient(100deg, rgb(139 123 255 / 85%), rgb(63 224 213 / 70%));
+  color: #06050d;
+  box-shadow: 0 8px 30px -10px rgb(139 123 255 / 80%);
+}
+
+.demo {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  margin-block-start: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 58rem) {
+  .demo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* One column: the form first. It is the thing to touch, and the document
+     behind it reads better once somebody has seen what it does. */
+  .form-window {
+    order: -1;
+  }
+}
+
+.demo-code {
+  display: grid;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+.demo .code {
+  max-height: 24rem;
+  font-size: 0.75rem;
+}
+
+.form-window {
+  position: relative;
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 8%) inset,
+    0 0 0 1px rgb(139 123 255 / 22%),
+    0 40px 100px -40px rgb(139 123 255 / 55%);
+}
+
+.hint {
+  margin: 1rem 1.375rem 0;
+  max-width: none;
+  padding: 0.625rem 0.875rem;
+  border-radius: 10px;
+  background: rgb(255 210 122 / 8%);
+  border: 1px solid rgb(255 210 122 / 22%);
+  color: #ffe2a8;
+  font-size: 0.875rem;
+}
+
+.hint::before {
+  content: '→ ';
+}
+
+/* The dusk theme, lifted onto glass: the same theme a consumer gets, with
+   its ground made translucent so the window reads as one surface. */
 .sheet {
   padding: 1.25rem 1.375rem 1.5rem;
+  --fm-raised: rgb(255 255 255 / 4%);
+  --fm-inset: rgb(5 7 14 / 60%);
+  --fm-edge: rgb(255 255 255 / 10%);
+  --fm-signal: var(--client);
+  --fm-sans: var(--sans);
+}
+
+/* The rules, lighting up as the engine evaluates them. */
+.rules {
+  margin: 0;
+  padding: 0.5rem;
+  list-style: none;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.rule {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'dot cel reading'
+    'dot target reading';
+  align-items: center;
+  column-gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  transition:
+    background 240ms ease,
+    border-color 240ms ease;
+}
+
+.rule.on {
+  background: rgb(63 224 213 / 7%);
+  border-color: rgb(63 224 213 / 25%);
+}
+
+.rule-dot {
+  grid-area: dot;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 18%);
+  transition:
+    background 240ms ease,
+    box-shadow 240ms ease;
+}
+
+.rule.on .rule-dot {
+  background: var(--server);
+  box-shadow: 0 0 12px var(--server);
+}
+
+.rule-cel {
+  grid-area: cel;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  color: #ffd27a;
+}
+
+.rule-target {
+  grid-area: target;
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  color: var(--muted);
+}
+
+.rule-reading {
+  grid-area: reading;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted);
+  animation: flash 700ms ease-out;
+}
+
+.rule.on .rule-reading {
+  color: var(--server);
+}
+
+@keyframes flash {
+  from {
+    transform: scale(1.25);
+    text-shadow: 0 0 16px currentColor;
+  }
+}
+
+/* ------------------------------------------------------------ features */
+
+.bento {
+  margin-block-start: 3rem;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 62rem) {
+  .bento {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 40rem) {
+  .bento {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.card {
+  --x: 50%;
+  --y: 0%;
+
+  position: relative;
+  padding: 1.625rem;
+  border: 1px solid var(--edge);
+  border-radius: 20px;
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+  overflow: hidden;
+  isolation: isolate;
+  transition:
+    transform 240ms ease,
+    border-color 240ms ease;
+}
+
+/* A light that follows the pointer across the card. */
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(
+    420px circle at var(--x) var(--y),
+    rgb(139 123 255 / 18%),
+    rgb(63 224 213 / 6%) 40%,
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+
+.card:hover {
+  border-color: var(--edge-strong);
+  transform: translateY(-3px);
+}
+
+.card:hover::before {
+  opacity: 1;
+}
+
+@media (min-width: 62rem) {
+  .wide-card {
+    grid-column: span 2;
+  }
+}
+
+.card-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin-block-end: 1.25rem;
+  border-radius: 12px;
+  border: 1px solid rgb(139 123 255 / 35%);
+  background: linear-gradient(135deg, rgb(139 123 255 / 22%), rgb(63 224 213 / 12%));
+  color: #d9d3ff;
+  box-shadow: 0 8px 24px -10px rgb(139 123 255 / 70%);
+}
+
+.card h3 {
+  font-size: 1.1875rem;
+}
+
+.card p {
+  margin-block-start: 0.625rem;
+  font-size: 0.9375rem;
+  color: var(--muted);
+}
+
+/* ------------------------------------------------------------- agents */
+
+.agents {
+  display: grid;
+  gap: clamp(2rem, 5vw, 4rem);
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+}
+
+@media (min-width: 62rem) {
+  .agents {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  }
+}
+
+.transcript {
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 8%) inset,
+    0 0 0 1px rgb(63 224 213 / 18%),
+    0 40px 100px -40px rgb(63 224 213 / 45%);
+}
+
+.transcript ol {
+  margin: 0;
+  padding: 1.125rem 1.25rem 1.375rem;
+  list-style: none;
+  display: grid;
+  gap: 0.625rem;
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: #c4ccdc;
+}
+
+.transcript li {
+  overflow-wrap: anywhere;
+}
+
+.transcript b {
+  font-weight: 500;
+}
+
+.t-cmd .prompt {
+  color: var(--server);
+}
+
+.t-you {
+  padding: 0.625rem 0.875rem;
+  border-radius: 12px;
+  background: rgb(139 123 255 / 12%);
+  border: 1px solid rgb(139 123 255 / 28%);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 0.9375rem;
+}
+
+.t-you b {
+  display: block;
+  margin-block-end: 0.125rem;
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  color: var(--client);
+}
+
+.t-tool {
+  color: var(--muted);
+}
+
+.t-tool b::before {
+  content: '⏺ ';
+  color: var(--client);
+}
+
+.t-err {
+  padding-inline-start: 1rem;
+  border-inline-start: 2px solid #ff7a8a;
+  color: #ffc2ca;
+}
+
+.t-err b {
+  color: #ff7a8a;
+}
+
+.t-ok {
+  padding-inline-start: 1rem;
+  border-inline-start: 2px solid var(--server);
+  color: #c9fbf6;
+}
+
+.t-ok b {
+  color: var(--server);
+}
+
+/* The session plays out as the section arrives. */
+@supports (animation-timeline: view()) {
+  .transcript li {
+    animation: type-in linear both;
+    animation-timeline: view(block);
+  }
+
+  .transcript li:nth-child(1) { animation-range: entry 20% entry 45%; }
+  .transcript li:nth-child(2) { animation-range: entry 30% entry 55%; }
+  .transcript li:nth-child(3) { animation-range: entry 40% entry 65%; }
+  .transcript li:nth-child(4) { animation-range: entry 50% entry 75%; }
+  .transcript li:nth-child(5) { animation-range: entry 60% entry 85%; }
+  .transcript li:nth-child(6) { animation-range: entry 70% entry 95%; }
+  .transcript li:nth-child(7) { animation-range: entry 80% cover 55%; }
+  .transcript li:nth-child(8) { animation-range: entry 90% cover 60%; }
+}
+
+@keyframes type-in {
+  from {
+    opacity: 0;
+    transform: translateX(-0.75rem);
+  }
 }
 
 /* ------------------------------------------------------------- the stack
  *
- * The page's bold moment, and the only place 3D is load-bearing rather than
- * decorative: formancy IS a layer cake, so the cake is drawn as one. The
- * shared layers sit deep and carry both accents; the two per-framework layers
- * sit near the reader and split violet from teal. Where the product forks is
- * something you can see from across the room.
- *
- * It is an ordered list, not a diagram. Without 3D, without scroll timelines,
- * or with motion turned off, it is the packages in build order — which is the
- * content. The geometry is a second reading of the same thing, never the only
- * one.
+ * The only place 3D is load-bearing rather than decorative: formancy IS a
+ * layer cake, so the cake is drawn as one. It is an ordered list, not a
+ * diagram — without 3D, without scroll timelines, or with motion turned off,
+ * it is the packages in build order, which is the content.
  */
 
 .stack {
   --tilt: 26deg;
-  --spread: 1;
 
   list-style: none;
   margin: clamp(3rem, 7vh, 4.5rem) 0 0;
   padding: 0;
+  display: grid;
+  gap: 0.625rem;
   perspective: var(--persp);
   perspective-origin: 50% 30%;
 
@@ -606,66 +1519,54 @@ section {
   grid-template-columns: minmax(0, 20rem) minmax(0, 1fr);
   align-items: baseline;
   gap: 0.25rem 2rem;
-  padding: 1.125rem 1.375rem;
-  max-width: 54rem;
-
-  /* A drawing, not a card. Rounded boxes with a soft shadow are what every
-     landing page does to a list, and they say nothing — these are strata,
-     so they are ruled like strata: one hairline between each, the channel
-     colour on the edge, and no radius to make them look like objects. */
-  border-block-start: 1px solid var(--edge);
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--raised) 55%, transparent),
-    transparent 70%
-  );
-
+  padding: 1.125rem 1.5rem;
+  max-width: 56rem;
+  border: 1px solid var(--edge);
+  border-radius: 14px;
+  background: var(--glass);
+  backdrop-filter: blur(10px);
+  overflow: hidden;
   transform-style: preserve-3d;
-  /* Rotation and lift are two animations on one element. Without this the
-     second would overwrite the first instead of composing with it. */
-  animation-composition: accumulate;
   will-change: transform;
 }
 
 /* The edge-light says which layers are shared and which are written twice.
-   1.4.1: the word on the right of each row says the same thing, so the colour
-   is a second channel rather than the only one. */
+   1.4.1: the words say the same thing, so the colour is a second channel
+   rather than the only one. */
 .stratum::before {
   content: '';
   position: absolute;
-  inset-block: -1px;
+  inset-block: 0;
   inset-inline-start: 0;
-  width: 2px;
+  width: 3px;
+}
+
+.stratum[data-plane='shared'] {
+  background:
+    linear-gradient(90deg, rgb(139 123 255 / 12%), rgb(63 224 213 / 6%) 40%, transparent 75%),
+    var(--glass);
 }
 
 .stratum[data-plane='shared']::before {
   background: linear-gradient(180deg, var(--client), var(--server));
+  box-shadow: 0 0 14px var(--client);
 }
 
 .stratum[data-plane='split']::before {
   background: linear-gradient(180deg, var(--client) 50%, var(--server) 50%);
 }
 
-.stratum[data-plane='yours']::before {
-  background: repeating-linear-gradient(
-    180deg,
-    var(--muted) 0 4px,
-    transparent 4px 8px
-  );
+.stratum[data-plane='optional']::before {
+  background: var(--meet);
 }
 
 .stratum[data-plane='yours'] {
-  border-block-start-style: dashed;
+  border-style: dashed;
   background: none;
 }
 
-/* The last one closes the drawing. Without it the stack reads as unfinished
-   rather than as ending where the product does. */
-.stack::after {
-  content: '';
-  display: block;
-  max-width: 54rem;
-  border-block-start: 1px solid var(--edge);
+.stratum[data-plane='yours']::before {
+  background: repeating-linear-gradient(180deg, var(--muted) 0 4px, transparent 4px 8px);
 }
 
 .stratum b {
@@ -681,6 +1582,10 @@ section {
   color: var(--muted);
 }
 
+.stratum code {
+  color: #ffd27a;
+}
+
 @media (max-width: 52rem) {
   .stratum {
     grid-template-columns: minmax(0, 1fr);
@@ -688,14 +1593,8 @@ section {
   }
 }
 
-.stratum code {
-  color: color-mix(in srgb, var(--text) 80%, var(--client));
-}
-
 /* Lying almost flat and stacked into the screen when the section arrives,
-   rising to face the reader as it passes. Each layer is offset one depth step
-   deeper than the one after it, so the list reads as a stack rather than as
-   six cards. */
+   rising to face the reader as it passes. */
 @supports (animation-timeline: view()) {
   .stratum {
     animation: rise linear both;
@@ -715,7 +1614,7 @@ section {
   from {
     transform: translate3d(0, 2.5rem, calc(var(--depth, 0px) * -1)) rotateX(var(--tilt))
       scale(0.94);
-    opacity: 0.35;
+    opacity: 0.3;
   }
   to {
     transform: translate3d(0, 0, 0) rotateX(0deg) scale(1);
@@ -723,9 +1622,7 @@ section {
   }
 }
 
-/* The depth readout, driven by the LIST's scroll from inside the heading — a
-   different branch of the document entirely. `timeline-scope` is what makes
-   that legal, and a browser without it simply never fills the bar. */
+/* The depth readout, driven by the LIST's scroll from inside the heading. */
 .depth {
   display: inline-block;
   vertical-align: middle;
@@ -733,7 +1630,7 @@ section {
   width: clamp(3rem, 8vw, 5rem);
   height: 3px;
   border-radius: 2px;
-  background: color-mix(in srgb, var(--edge) 80%, transparent);
+  background: var(--edge-strong);
   overflow: hidden;
 }
 
@@ -764,133 +1661,30 @@ section {
   }
 }
 
-/* -------------------------------------------------------- the two hues */
-
-.pair {
-  display: grid;
-  gap: clamp(1.5rem, 4vw, 3rem);
-  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
-  margin-block-start: 3rem;
-}
-
-.side {
-  padding-inline-start: 1.125rem;
-  border-inline-start: 2px solid var(--client);
-}
-
-.side.server {
-  border-inline-start-color: var(--server);
-}
-
-.side h3 {
-  color: var(--client);
-  font-family: var(--mono);
-  font-weight: 500;
-  font-size: 0.8125rem;
-}
-
-.side.server h3 {
-  color: var(--server);
-}
-
-.side p {
-  margin-block-start: 0.5rem;
-  font-size: 0.9375rem;
-  color: var(--muted);
-}
-
-/* A line of type that reads as one sentence and is two truths: the same
-   expression, evaluated on both sides. */
-.mirror {
-  margin-block-start: 3rem;
-  display: grid;
-  gap: 1px;
-  grid-template-columns: 1fr 1fr;
-  background: var(--edge);
-  border: 1px solid var(--edge);
-  border-radius: 10px;
-  overflow: hidden;
-  font-family: var(--mono);
-  font-size: clamp(0.75rem, 0.6rem + 0.5vw, 0.9375rem);
-}
-
-.mirror > div {
-  padding: 1.25rem;
-  background: var(--inset);
-}
-
-.mirror b {
-  display: block;
-  margin-block-end: 0.625rem;
-  font-weight: 500;
-  font-size: 0.6875rem;
-  color: var(--muted);
-}
-
-.mirror .expr {
-  color: var(--text);
-}
-
-.mirror > div:first-child .expr {
-  border-block-end: 2px solid var(--client);
-  display: inline-block;
-  padding-block-end: 2px;
-}
-
-.mirror > div:last-child .expr {
-  border-block-end: 2px solid var(--server);
-  display: inline-block;
-  padding-block-end: 2px;
-}
-
-@media (max-width: 40rem) {
-  .mirror {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* ------------------------------------------------------------ the demo */
-
-.demo {
-  display: grid;
-  gap: clamp(1.25rem, 3vw, 2.5rem);
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-  margin-block-start: 3rem;
-  align-items: start;
-}
-
-.demo pre {
-  font-size: 0.75rem;
-  line-height: 1.75;
-}
-
-@media (max-width: 54rem) {
-  .demo {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
 /* --------------------------------------------------------- the keyboard */
 
 .keys {
   margin-block-start: 2.5rem;
   display: grid;
-  gap: 0.5rem 1.5rem;
+  gap: 0.875rem 1.5rem;
   grid-template-columns: auto 1fr;
-  align-items: baseline;
-  max-width: 34rem;
-  font-size: 0.9375rem;
+  align-items: center;
+  max-width: 40rem;
+  font-size: 0.9875rem;
 }
 
 kbd {
   justify-self: start;
-  padding: 0.125rem 0.5rem;
-  border: 1px solid var(--edge);
-  border-block-end-width: 2px;
-  border-radius: 4px;
-  background: var(--inset);
+  min-width: 2.5rem;
+  padding: 0.3125rem 0.75rem;
+  border: 1px solid var(--edge-strong);
+  border-block-end-width: 3px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgb(255 255 255 / 8%), rgb(255 255 255 / 2%));
   font-family: var(--mono);
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
+  text-align: center;
+  box-shadow: 0 6px 18px -8px rgb(139 123 255 / 60%);
 }
 
 .keys span {
@@ -902,10 +1696,22 @@ kbd {
 .terminal {
   margin-block-start: 2.5rem;
   max-width: 44rem;
-  border: 1px solid var(--edge);
-  border-radius: 10px;
-  background: var(--inset);
+  border: 1px solid var(--edge-strong);
+  border-radius: var(--radius);
+  background: rgb(5 7 14 / 80%);
   overflow: hidden;
+  box-shadow: 0 40px 90px -40px rgb(63 224 213 / 35%);
+}
+
+.terminal header {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.6875rem 1rem;
+  border-block-end: 1px solid var(--edge);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--muted);
 }
 
 .terminal pre {
@@ -913,7 +1719,7 @@ kbd {
   padding: 1.125rem 1.25rem;
   overflow-x: auto;
   font-family: var(--mono);
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   line-height: 1.9;
 }
 
@@ -921,16 +1727,35 @@ kbd {
   color: var(--server);
 }
 
+.terminal .ok {
+  color: #4fdc8a;
+}
+
 .terminal .out {
   color: var(--muted);
+}
+
+/* ------------------------------------------------------------- licence */
+
+.licence {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+}
+
+.licence h2 {
+  max-width: none;
+}
+
+.licence .lede {
+  margin-inline: auto;
 }
 
 /* ------------------------------------------------------------ the panel
  *
  * The running submission. It sits in the corner from the first section and
  * fills in as the page is read — the conceit being that reading it is filling
- * a form in, which the ending pays off. It is a real submission shape, not a
- * decoration shaped like one, or the ending would be a trick.
+ * a form in, which the ending pays off.
  */
 
 .panel {
@@ -938,15 +1763,25 @@ kbd {
   z-index: 15;
   inset-block-end: 1rem;
   inset-inline-end: 1rem;
-  width: 14rem;
-  border: 1px solid var(--edge);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--inset) 92%, transparent);
-  backdrop-filter: blur(16px);
-  box-shadow: 0 24px 60px -30px rgb(0 0 0 / 90%);
+  width: 14.5rem;
+  border: 1px solid var(--edge-strong);
+  border-radius: 14px;
+  background: rgb(10 13 22 / 78%);
+  backdrop-filter: blur(18px);
+  box-shadow:
+    0 24px 60px -30px rgb(0 0 0 / 90%),
+    0 0 0 1px rgb(139 123 255 / 12%);
   font-family: var(--mono);
   font-size: 0.75rem;
   overflow: hidden;
+  animation: panel-in 420ms cubic-bezier(0.2, 1.2, 0.4, 1);
+}
+
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(1rem) scale(0.96);
+  }
 }
 
 .panel header {
@@ -964,7 +1799,7 @@ kbd {
   width: 4rem;
   height: 3px;
   border-radius: 999px;
-  background: var(--edge);
+  background: var(--edge-strong);
   overflow: hidden;
 }
 
@@ -984,14 +1819,6 @@ kbd {
   color: #b9c3d6;
 }
 
-.panel pre,
-.plane pre,
-.terminal pre,
-.receipt pre {
-  scrollbar-width: thin;
-  scrollbar-color: var(--edge) transparent;
-}
-
 .panel .sent {
   padding: 0.75rem;
   border-block-start: 1px solid var(--edge);
@@ -1006,12 +1833,12 @@ kbd {
 
 /* ------------------------------------------------------------- the end
  *
- * What the whole page has been building to. One orchestrated moment rather
- * than an effect per section: the submission the visitor has been filling in
- * without knowing goes to the server, and the server answers.
+ * What the whole page has been building to: the submission the visitor has
+ * been filling in without knowing goes to the server, and the server answers.
  */
 
 .finale {
+  position: relative;
   min-height: 100svh;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -1021,26 +1848,37 @@ kbd {
 }
 
 .finale h2 {
-  max-width: 20ch;
+  max-width: 18ch;
 }
 
 .finale .lede {
-  margin-block-start: 1.25rem;
   margin-inline: auto;
   max-width: 44ch;
 }
 
+.finale .actions {
+  justify-content: center;
+}
+
 .receipt {
+  position: relative;
   margin-block-start: 3rem;
   width: min(100%, 32rem);
-  border: 1px solid var(--edge);
-  border-radius: 12px;
-  background: var(--inset);
+  border: 1px solid var(--edge-strong);
+  border-radius: var(--radius);
+  background: rgb(10 13 22 / 80%);
+  backdrop-filter: blur(14px);
   text-align: start;
   font-family: var(--mono);
   font-size: 0.8125rem;
   overflow: hidden;
-  position: relative;
+  transition: box-shadow 600ms ease;
+}
+
+.finale.sent .receipt {
+  box-shadow:
+    0 0 0 1px rgb(63 224 213 / 35%),
+    0 40px 120px -30px rgb(63 224 213 / 55%);
 }
 
 .receipt header {
@@ -1067,10 +1905,13 @@ kbd {
   inset-inline-end: 1rem;
   padding: 0.375rem 0.75rem;
   border: 2px solid var(--server);
-  border-radius: 6px;
+  border-radius: 8px;
+  background: rgb(63 224 213 / 10%);
   color: var(--server);
   font-weight: 600;
   letter-spacing: 0.04em;
+  text-shadow: 0 0 12px rgb(63 224 213 / 70%);
+  box-shadow: 0 0 30px -6px rgb(63 224 213 / 60%);
   rotate: -8deg;
   opacity: 0;
   scale: 1.6;
@@ -1092,7 +1933,12 @@ kbd {
   margin-block-start: 2.5rem;
   width: min(100%, 32rem);
   height: 2px;
-  background: linear-gradient(90deg, var(--client) 0 var(--sweep), var(--edge) var(--sweep));
+  background: linear-gradient(
+    90deg,
+    var(--client) 0,
+    var(--server) var(--sweep),
+    var(--edge) var(--sweep)
+  );
   animation: seal 900ms 300ms ease-out forwards;
 }
 
@@ -1106,6 +1952,8 @@ kbd {
 }
 
 footer {
+  position: relative;
+  z-index: 1;
   padding: 3rem var(--gutter) 4rem;
   border-block-start: 1px solid var(--edge);
   color: var(--muted);
@@ -1125,9 +1973,8 @@ footer .spacer {
 
 /* ------------------------------------------------- the reduced-motion cut
  *
- * Not "smaller movements": none. Scroll-driven transforms are the effect most
- * likely to cause harm, and the page is a document without them — every plane
- * sits flat and square, which is how it is designed to read anyway.
+ * Not "smaller movements": none. Every plane sits flat and square, every
+ * section is where it belongs, and the light behind the page is a still.
  */
 @media (prefers-reduced-motion: reduce) {
   html {
@@ -1143,6 +1990,28 @@ footer .spacer {
     transition-duration: 0.001ms !important;
   }
 
+  .aurora,
+  .glow,
+  .chip,
+  .marquee ul,
+  .pill::before,
+  .dot.live,
+  .rule-reading,
+  .transcript li,
+  .page > section > * {
+    animation: none !important;
+    opacity: 1;
+    transform: none;
+  }
+
+  .marquee {
+    overflow-x: auto;
+  }
+
+  .marquee ul[aria-hidden='true'] {
+    display: none;
+  }
+
   .plane-document,
   .plane-form {
     rotate: none;
@@ -1150,14 +2019,7 @@ footer .spacer {
     animation: none;
   }
 
-  .planes {
-    perspective: none;
-  }
-
-  /* The stack goes back to being what it always was underneath: a list of
-     packages in build order. Flat, upright, fully opaque — nothing to
-     animate and nothing left half-faded, which is the failure mode of turning
-     a scroll animation off by cancelling it halfway. */
+  .planes,
   .stack {
     perspective: none;
   }
