@@ -137,3 +137,45 @@ async function findWebhook(storage: Storage, id: string): Promise<WebhookRecord 
   }
   return undefined
 }
+
+/**
+ * Put a dead delivery back in the queue.
+ *
+ * Dead is where a delivery goes when the attempts run out, and the row is the
+ * evidence that something was supposed to be sent and never arrived. Replay is
+ * what makes that evidence useful: the receiver was down for a morning, it is
+ * back, and the twelve submissions it missed should go now.
+ *
+ * The attempt count resets. It is a new run against a destination somebody has
+ * looked at and decided is fixed — carrying the old count over would give it
+ * one try before dying again, which is not a replay so much as a formality.
+ *
+ * Refuses anything that is not dead. Replaying a pending delivery would
+ * duplicate it, and replaying a delivered one would send it twice: the event
+ * id is stable across retries so a well-behaved receiver would ignore the
+ * second, but this service does not get to assume the receiver is
+ * well-behaved.
+ */
+export type ReplayOutcome =
+  | { ok: true; delivery: DeliveryRecord }
+  | { ok: false; kind: 'unknown' | 'not-dead'; state?: DeliveryRecord['state'] }
+
+export async function replayDelivery(
+  deps: { storage: Storage; now: () => Date },
+  id: string,
+): Promise<ReplayOutcome> {
+  const delivery = await deps.storage.getDelivery(id)
+  if (delivery === undefined) return { ok: false, kind: 'unknown' }
+  if (delivery.state !== 'dead') return { ok: false, kind: 'not-dead', state: delivery.state }
+
+  const revived: DeliveryRecord = {
+    ...delivery,
+    attempt: 0,
+    state: 'pending',
+    // Now, not on the retry schedule. Somebody pressed a button; the next
+    // pass should pick it up.
+    nextAttemptAt: deps.now().toISOString(),
+  }
+  await deps.storage.updateDelivery(revived)
+  return { ok: true, delivery: revived }
+}

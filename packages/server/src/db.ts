@@ -74,6 +74,8 @@ export const webhooks = pgTable('webhooks', {
     .references(() => forms.id),
   url: text('url').notNull(),
   secret: text('secret').notNull(),
+  consecutiveFailures: integer('consecutive_failures').notNull().default(0),
+  openedAt: timestamp('opened_at', { withTimezone: true }),
 })
 
 /**
@@ -170,6 +172,14 @@ export async function bootstrapSchema(sql: postgres.Sql): Promise<void> {
       url text NOT NULL,
       secret text NOT NULL
     )`
+  await sql`
+    ALTER TABLE webhooks
+      ADD COLUMN IF NOT EXISTS consecutive_failures integer NOT NULL DEFAULT 0,
+      -- When the breaker opened, null while the destination is answering. On
+      -- the row rather than in the worker's memory: memory does not survive a
+      -- restart, and a self-hoster with no operations team needs a failing
+      -- webhook to be visible on a screen rather than in a log nobody tails.
+      ADD COLUMN IF NOT EXISTS opened_at timestamptz`
   await sql`
     CREATE TABLE IF NOT EXISTS deliveries (
       id uuid PRIMARY KEY,

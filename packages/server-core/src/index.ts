@@ -1,3 +1,5 @@
+export { replayDelivery } from './outbox.js'
+export type { ReplayOutcome } from './outbox.js'
 export {
   BREAKER_COOLDOWN_MS,
   BREAKER_THRESHOLD,
