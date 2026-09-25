@@ -1,3 +1,11 @@
+export { authorForm } from './authoring.js'
+export type {
+  AskModel,
+  AuthoringOptions,
+  AuthoringPrompt,
+  AuthoringProblem,
+  AuthoringResult,
+} from './authoring.js'
 export { createBuilderSession } from './session.js'
 export type { BuilderSession, CommandOutcome, Location, Refusal } from './session.js'
 export {

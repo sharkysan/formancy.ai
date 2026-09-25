@@ -65,6 +65,19 @@ export interface BuilderSession {
   /** One notification per accepted command, undo or redo. */
   subscribe(listener: () => void): () => void
 
+  /**
+   * Take a whole document, as ONE undoable edit.
+   *
+   * For a change that is not an edit to the document so much as a different
+   * document — a form written from an instruction, or a paste into the
+   * schema editor. It goes through the same validator every other command
+   * does, so a session can never come to hold something invalid, and it lands
+   * on the undo stack as a single step: Ctrl+Z after "write me a contact form"
+   * puts back what was there before, which is the only behaviour anybody
+   * would expect.
+   */
+  replaceDocument(next: FormSchema): CommandOutcome
+
   insertField(location: Location, def: FieldDef): CommandOutcome
   removeField(keyPath: readonly string[]): CommandOutcome
   moveField(from: readonly string[], to: Location): CommandOutcome
@@ -206,6 +219,17 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
     subscribe(listener) {
       listeners.add(listener)
       return () => listeners.delete(listener)
+    },
+
+    replaceDocument(next) {
+      return attempt((draft) => {
+        // Assigned key by key rather than returned, because `attempt` commits
+        // the draft it was given and a new object would be dropped.
+        const mutable = draft as unknown as Record<string, unknown>
+        for (const key of Object.keys(mutable)) delete mutable[key]
+        Object.assign(draft, copy(next))
+        return undefined
+      })
     },
 
     insertField(location, def) {

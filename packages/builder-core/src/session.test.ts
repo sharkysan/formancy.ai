@@ -189,3 +189,74 @@ describe('validTargets offers every position, not just the end', () => {
     expect(offered(session, ['billing']).some((target) => target.startsWith('billing'))).toBe(false)
   })
 })
+
+/**
+ * Taking a whole document at once.
+ *
+ * For a change that is not an edit so much as a different document: a form
+ * written from an instruction, or a paste into the schema editor.
+ */
+describe('replaceDocument', () => {
+  const other: FormSchema = {
+    specVersion: '2',
+    id: 'other',
+    title: 'Other',
+    model: { fields: [{ key: 'reference', type: 'text', label: 'Reference' }] },
+  }
+
+  test('takes it, and it becomes the document', () => {
+    const session = createBuilderSession(base)
+
+    const outcome = session.replaceDocument(other)
+
+    expect(outcome.ok).toBe(true)
+    expect(session.document().id).toBe('other')
+  })
+
+  test('is ONE step on the undo stack', () => {
+    const session = createBuilderSession(base)
+    const before = session.document().id
+
+    session.replaceDocument(other)
+    session.undo()
+
+    // Ctrl+Z after "write me a contact form" has to put back what was there,
+    // which is the only behaviour anybody would expect — and would not be
+    // what happened if this were applied as a sequence of field edits.
+    expect(session.document().id).toBe(before)
+  })
+
+  test('refuses one the validator does not accept, and keeps the old one', () => {
+    const session = createBuilderSession(base)
+
+    const outcome = session.replaceDocument({ specVersion: '2', id: 'x' } as unknown as FormSchema)
+
+    expect(outcome.ok).toBe(false)
+    // A session may never come to hold something invalid, whatever route the
+    // document arrived by.
+    expect(session.document().id).toBe(base.id)
+  })
+
+  test('does not keep a reference to the caller’s object', () => {
+    const session = createBuilderSession(base)
+    // A plain clone: this package has no DOM and no Node globals, which is
+    // the point of it, so `structuredClone` is not available here.
+    const mutable = JSON.parse(JSON.stringify(other)) as FormSchema
+
+    session.replaceDocument(mutable)
+    mutable.title = 'changed underneath'
+
+    expect(session.document().title).toBe('Other')
+  })
+
+  test('leaves nothing of the previous document behind', () => {
+    // Replaced key by key on a draft, so a section the old document had and
+    // the new one does not must actually be gone rather than surviving the
+    // assignment.
+    const session = createBuilderSession({ ...base, logic: { rules: [] } })
+
+    session.replaceDocument(other)
+
+    expect(session.document().logic).toBeUndefined()
+  })
+})

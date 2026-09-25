@@ -457,6 +457,9 @@ importers:
 
   packages/builder-core:
     dependencies:
+      '@formancy/core':
+        specifier: workspace:*
+        version: link:../core
       '@formancy/spec':
         specifier: workspace:*
         version: link:../spec
