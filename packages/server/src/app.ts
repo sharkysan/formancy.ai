@@ -6,6 +6,8 @@ import type { FastifyInstance, FastifyRequest, preHandlerHookHandler } from 'fas
 import {
   auditedBy,
   authenticateApiKey,
+  healthOf,
+  replayDelivery,
   authenticateLocal,
   can,
   createApiKey,
@@ -358,6 +360,71 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
     const limit = Number.isFinite(asked) ? Math.min(Math.max(asked, 1), 500) : 100
     return reply.send({ entries: await deps.storage.listAudit(limit) })
   })
+
+  /**
+   * Webhook health, and the deliveries that died.
+   *
+   * The reason the breaker keeps its counters on the row rather than in the
+   * worker's memory. A self-hoster has no operations team watching a
+   * dashboard, so a destination refusing deliveries since Tuesday has to be
+   * answerable from the product — otherwise it is found when somebody asks
+   * why the CRM has no leads this week.
+   */
+  app.get('/webhooks', { preHandler: requires('form.publish') }, async (_request, reply) => {
+    const now = new Date(deps.nowIso())
+    const hooks = await deps.storage.listWebhooks()
+    return reply.send({ webhooks: hooks.map((hook) => healthOf(hook, now)) })
+  })
+
+  app.get('/deliveries/dead', { preHandler: requires('form.publish') }, async (request, reply) => {
+    const raw = (request.query as { limit?: unknown } | undefined)?.limit
+    const asked = typeof raw === 'string' ? Number.parseInt(raw, 10) : 50
+    const limit = Number.isFinite(asked) ? Math.min(Math.max(asked, 1), 200) : 50
+    const dead = await deps.storage.deadDeliveries(limit)
+    // Not the body. That is the submission's data in another coat, and this
+    // endpoint answers "what failed", not "what was in it".
+    return reply.send({
+      deliveries: dead.map((delivery) => ({
+        id: delivery.id,
+        webhookId: delivery.webhookId,
+        submissionId: delivery.submissionId,
+        eventId: delivery.eventId,
+        attempt: delivery.attempt,
+        lastError: delivery.lastError,
+      })),
+    })
+  })
+
+  app.post(
+    '/deliveries/:id/replay',
+    { preHandler: requires('form.publish') },
+    async (request, reply) => {
+      const { id } = request.params as { id: string }
+      const outcome = await replayDelivery(
+        { storage: deps.storage, now: () => new Date(deps.nowIso()) },
+        id,
+      )
+
+      if (!outcome.ok) {
+        return outcome.kind === 'unknown'
+          ? reply.code(404).send({ error: 'unknown_delivery' })
+          : reply.code(409).send({
+              error: 'not_dead',
+              state: outcome.state,
+              message:
+                'Only a dead delivery can be replayed. A pending one is already queued, and a delivered one would be sent twice.',
+            })
+      }
+
+      // Recorded: it sends data to a third party on a person's say-so.
+      await audit(request, {
+        action: 'delivery.replayed',
+        subject: id,
+        detail: { webhookId: outcome.delivery.webhookId },
+      })
+      return reply.code(202).send({ id, state: outcome.delivery.state })
+    },
+  )
 
   app.get('/forms', { preHandler: requires('form.read') }, async (_request, reply) => {
     return reply.send({ forms: await listForms(deps) })

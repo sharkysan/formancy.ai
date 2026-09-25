@@ -59,6 +59,9 @@ export const AUDIT_ACTIONS = [
   'user.created',
   'apiKey.created',
   'apiKey.revoked',
+  // Somebody decided a dead delivery should go after all. Recorded because it
+  // sends data to a third party on a person's say-so.
+  'delivery.replayed',
 ] as const
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number]
