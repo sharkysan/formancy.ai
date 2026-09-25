@@ -10,6 +10,7 @@ import {
   login,
   publish,
   setToken,
+  uploadFile,
 } from './api.js'
 
 /**
@@ -181,5 +182,97 @@ describe('publish', () => {
 describe('exportUrl', () => {
   test('encodes the path', () => {
     expect(exportUrl('a/b')).toBe('/api/f/a%2Fb/submissions/export.csv')
+  })
+})
+
+/**
+ * The preview's uploader.
+ *
+ * Two round trips — offer the file, then send the bytes — and the answer
+ * that comes back is what a submission will carry forever. Worth pinning
+ * rather than trusting, because every way this goes wrong is quiet: a refusal
+ * swallowed leaves somebody believing they attached evidence, and a stray
+ * field in the answer ends up stored in a submission and read back years
+ * later.
+ */
+describe('uploadFile', () => {
+  beforeEach(() => setToken('t_abc'))
+
+  const stored = {
+    id: 'f1',
+    name: 'plan.pdf',
+    size: 12,
+    contentType: 'application/pdf',
+    storageKey: 'forms/contact/f1',
+    uploadUrl: '/f/contact/files/f1',
+  }
+
+  const pdf = (): File =>
+    new File([new Uint8Array(12)], 'plan.pdf', { type: 'application/pdf' })
+
+  test('offers the file, then sends the bytes', async () => {
+    answering((url) => (url.endsWith('/files') ? json(stored, 201) : new Response(null, { status: 204 })))
+
+    await uploadFile('contact', 'evidence', pdf())
+
+    expect(fetched[0]?.init?.method).toBe('POST')
+    expect(JSON.parse(String(fetched[0]?.init?.body))).toMatchObject({
+      field: 'evidence',
+      name: 'plan.pdf',
+      size: 12,
+      contentType: 'application/pdf',
+    })
+    // The bytes go to the address the offer handed back, not to one the
+    // client made up.
+    expect(fetched[1]?.url).toContain('/f/contact/files/f1')
+    expect(fetched[1]?.init?.method).toBe('PUT')
+  })
+
+  test('the answer does not carry the upload address', async () => {
+    answering((url) => (url.endsWith('/files') ? json(stored, 201) : new Response(null, { status: 204 })))
+
+    const answer = await uploadFile('contact', 'evidence', pdf())
+
+    // `uploadUrl` is how to send the bytes, not part of what was attached.
+    // Kept, it would write a route into somebody's submission data and sit
+    // there long after the route stopped existing.
+    expect(answer).not.toHaveProperty('uploadUrl')
+    expect(answer).toMatchObject({ id: 'f1', name: 'plan.pdf', storageKey: 'forms/contact/f1' })
+  })
+
+  test('a refused offer throws what the server said', async () => {
+    answering(() => json({ error: 'not_accepted', message: 'This field takes PDFs only.' }, 400))
+
+    // The field says this out loud. Swallowed, it would leave somebody
+    // believing their attachment went with the form.
+    await expect(uploadFile('contact', 'evidence', pdf())).rejects.toThrow('This field takes PDFs only.')
+  })
+
+  test('a refusal with no message still says something useful', async () => {
+    answering(() => new Response('gateway timeout', { status: 504 }))
+
+    await expect(uploadFile('contact', 'evidence', pdf())).rejects.toThrow('504')
+  })
+
+  test('bytes that do not land are an error, not a silent success', async () => {
+    answering((url) =>
+      url.endsWith('/files') ? json(stored, 201) : new Response(null, { status: 413 }),
+    )
+
+    // The offer succeeding and the PUT failing is the worst case to get wrong:
+    // there is a row in the database and no bytes behind it.
+    await expect(uploadFile('contact', 'evidence', pdf())).rejects.toThrow('413')
+  })
+
+  test('a file the browser cannot type still gets one', async () => {
+    answering((url) => (url.endsWith('/files') ? json(stored, 201) : new Response(null, { status: 204 })))
+
+    await uploadFile('contact', 'evidence', new File([new Uint8Array(1)], 'notes', { type: '' }))
+
+    // A submission that says nothing about what was attached is worse than one
+    // that admits it could not tell.
+    expect(JSON.parse(String(fetched[0]?.init?.body))).toMatchObject({
+      contentType: 'application/octet-stream',
+    })
   })
 })

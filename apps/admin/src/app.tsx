@@ -6,6 +6,7 @@ import '@formancy/themes/workbench.css'
 import '@formancy/themes/blueprint.css'
 import { createFormEngine } from '@formancy/core'
 import { validateSchema } from '@formancy/spec/validate'
+import { CURRENT_SPEC_VERSION } from '@formancy/spec'
 import { ErrorSummary, FormancyForm, FormancyProvider } from '@formancy/react'
 import {
   Unauthorized,
@@ -99,10 +100,19 @@ export function App() {
   )
 }
 
+/**
+ * What a brand new form starts as.
+ *
+ * Version 2, not 1. A version 1 document may not contain a version 2
+ * construct, so a form started at version 1 cannot be given tick boxes, a file
+ * field or formatted text — the builder refuses them by name and offers to
+ * move the document, which is correct and is also a dead end nobody asked to
+ * be in. A form created today should start at the version this package speaks.
+ */
 const NEW_FORM_TEMPLATE = (path: string) =>
   JSON.stringify(
     {
-      specVersion: '1',
+      specVersion: CURRENT_SPEC_VERSION,
       id: path,
       title: path,
       model: { fields: [{ key: 'email', type: 'text', label: 'Email', required: true }] },

@@ -129,6 +129,20 @@ of the content and never the only one. Built with `timeline-scope` and
 a different branch of the document and nothing needs a frame loop. The mark
 from the favicon is now in the bar.
 
+**A new form in the admin starts at version 2.** It started at version 1,
+which meant a form created today could not be given tick boxes, a file field
+or formatted text: the builder refuses a version 2 construct in a version 1
+document, correctly, and offers to move it — a dead end nobody asked to be
+in. The same mistake the playground's starter had.
+
+**The admin is tested.** It was the least-covered part of the repo at 57% of
+lines while being the part a self-hoster touches most: the workspace — four
+tabs, publish, versions, submissions, the CSV export — had almost none. Now
+86%, and every case is a thing that would have been silently wrong rather than
+loudly broken: a publish reporting success it did not get, an edit lost on a
+tab switch, a refusal swallowed. The uploader is at 100%, including the part
+where the offer succeeds and the bytes do not land.
+
 **The website deploys as one static site.** The landing page at `/` and the
 playground at `/playground/`, built by `pnpm build:web`. The playground is
 built with `base: '/playground/'`, without which Vite's absolute asset URLs
