@@ -143,6 +143,22 @@ loudly broken: a publish reporting success it did not get, an edit lost on a
 tab switch, a refusal swallowed. The uploader is at 100%, including the part
 where the offer succeeds and the bytes do not land.
 
+**`@formancy/mcp`: formancy as tools for a coding agent.** Seven of them, over
+the Model Context Protocol, installable in Claude Code or Cursor with
+`claude mcp add formancy -- npx -y @formancy/mcp`.
+
+The difference from wrapping a REST API in tool definitions is that **the tools
+check before they act**. A model writing a form is a model writing logic, and a
+wrong expression does not throw — it shows the wrong field to the wrong
+person for a year. `publish_form` runs the document through `validateSchema`
+and `expressionProblems` first and refuses to open a socket for one that would
+not have worked, so the model is told `no such overload: double * int … write
+4.0` instead of getting a 201 and a form that computes nothing.
+
+Four tools need no server and no credentials at all, which makes authoring and
+checking a whole form possible before anything is deployed
+([0056](./docs/decisions/0056-agents-get-the-checks.md)).
+
 **A rich text editor, not a box you type markers into.** The `richtext` field
 has a toolbar now — Bold, Italic, Link, bulleted and numbered lists, with
 Ctrl+B and Ctrl+I — and it toggles: pressing Bold on bold text takes it off,

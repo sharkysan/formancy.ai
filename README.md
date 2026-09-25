@@ -75,6 +75,7 @@ packages/server-core    backend use-cases against storage ports
 packages/server         Fastify + Postgres: publish, resolve, replayed submissions,
                         drafts with lazy migration, CSV export
 packages/themes         two reference themes. Nothing depends on them
+packages/mcp            formancy as tools for a coding agent (MCP)
 apps/site               formancy.ai — the landing page, which renders a real form
 apps/playground         the one-screen demo (editor / live form / engine state)
 apps/admin              the self-hosted admin, v0.1 cut
@@ -146,6 +147,30 @@ pnpm --filter @formancy/site dev        # formancy.ai on :4384
 Those ports are fixed rather than "the next free one", so a stale dev
 server is an error you see immediately instead of a page at an address
 nobody was told about.
+
+### Use it from a coding agent
+
+```bash
+claude mcp add formancy -- npx -y @formancy/mcp
+```
+
+Seven tools. Four of them — `describe_spec`, `validate_form`, `diff_forms`,
+and the checking half of `publish_form` — need **no server and no
+credentials**, so an agent can write a whole form and be told exactly what is
+wrong with it before anybody deploys anything. Set `FORMANCY_URL` and
+`FORMANCY_API_KEY` together to add publishing and reading submissions.
+
+The point is not that the API is reachable by prompt. It is that a model
+writing a form is a model writing logic, and this is the one product category
+where the logic can be **checked before the form exists**: the document format
+has a published JSON Schema, and CEL type-checks. Ask an agent for
+`seats * 4` and it is told
+
+> no such overload: double * int. This evaluates to nothing for every value
+> anybody enters […] write the literals with a decimal point — 4 becomes 4.0.
+
+rather than publishing a form whose total silently stays empty
+([0056](./docs/decisions/0056-agents-get-the-checks.md)).
 
 ### Build formancy.ai
 
