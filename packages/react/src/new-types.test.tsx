@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
 import { createFormEngine } from '@formancy/core'
 import type { FormSchema } from '@formancy/spec'
@@ -121,6 +121,105 @@ describe('selectboxes', () => {
 describe('richtext', () => {
   const schema = base({
     model: { fields: [{ key: 'notes', type: 'richtext', label: 'Notes' }] },
+  })
+
+  test('has a toolbar, and it is one tab stop rather than five', () => {
+    mount(schema)
+
+    const toolbar = screen.getByRole('toolbar', { name: 'Formatting for Notes' })
+    const buttons = within(toolbar).getAllByRole('button')
+
+    expect(buttons.map((button) => button.textContent)).toEqual([
+      'BBold',
+      'IItalic',
+      '↗Link',
+      '•Bulleted list',
+      '1.Numbered list',
+    ])
+    // A roving tabindex: five stops between a keyboard user and the box they
+    // came to type in is five too many.
+    expect(buttons.filter((button) => button.getAttribute('tabindex') === '0')).toHaveLength(1)
+  })
+
+  test('Bold wraps the selection in the grammar, not in HTML', async () => {
+    const user = userEvent.setup()
+    mount(schema)
+
+    const box = screen.getByRole('textbox', { name: 'Notes' }) as HTMLTextAreaElement
+    await user.type(box, 'hello there')
+    box.setSelectionRange(0, 5)
+    await user.click(screen.getByRole('button', { name: 'Bold' }))
+
+    // What is stored is the grammar. There is no path from an answer to
+    // innerHTML, so there is nothing here for a sanitiser to get wrong.
+    expect(box.value).toBe('**hello** there')
+  })
+
+  test('pressing Bold again takes it off', async () => {
+    const user = userEvent.setup()
+    mount(schema)
+
+    const box = screen.getByRole('textbox', { name: 'Notes' }) as HTMLTextAreaElement
+    await user.type(box, 'hello')
+    box.setSelectionRange(0, 5)
+    await user.click(screen.getByRole('button', { name: 'Bold' }))
+    box.setSelectionRange(2, 7)
+    await user.click(screen.getByRole('button', { name: 'Bold' }))
+
+    expect(box.value).toBe('hello')
+  })
+
+  test('Ctrl+B does the same thing as the button', async () => {
+    const user = userEvent.setup()
+    mount(schema)
+
+    const box = screen.getByRole('textbox', { name: 'Notes' }) as HTMLTextAreaElement
+    await user.type(box, 'hello')
+    box.setSelectionRange(0, 5)
+    box.focus()
+    await user.keyboard('{Control>}b{/Control}')
+
+    expect(box.value).toBe('**hello**')
+  })
+
+  test('the arrow keys move along the toolbar', async () => {
+    const user = userEvent.setup()
+    mount(schema)
+
+    const bold = screen.getByRole('button', { name: 'Bold' })
+    bold.focus()
+    await user.keyboard('{ArrowRight}')
+
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Italic' }))
+  })
+
+  test('a list button marks every line the selection touches', async () => {
+    const user = userEvent.setup()
+    mount(schema)
+
+    const box = screen.getByRole('textbox', { name: 'Notes' }) as HTMLTextAreaElement
+    fireEvent.change(box, { target: { value: 'one\ntwo' } })
+    box.setSelectionRange(0, 7)
+    await user.click(screen.getByRole('button', { name: 'Bulleted list' }))
+
+    expect(box.value).toBe('- one\n- two')
+  })
+
+  test('the preview shows what the toolbar produced', async () => {
+    const user = userEvent.setup()
+    mount(schema)
+
+    const box = screen.getByRole('textbox', { name: 'Notes' }) as HTMLTextAreaElement
+    await user.type(box, 'hello')
+    box.setSelectionRange(0, 5)
+    await user.click(screen.getByRole('button', { name: 'Bold' }))
+
+    // A `strong` element built from the parsed tree — the same parser the
+    // form that displays this answer will use.
+    await waitFor(() => {
+      const preview = document.querySelector('[data-formancy-part="richtext"]')
+      expect(preview?.querySelector('strong')?.textContent).toBe('hello')
+    })
   })
 
   test('is a textarea, which every assistive technology already knows', () => {

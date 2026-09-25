@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { ComponentType, ReactNode } from 'react'
 import { parsePath } from '@formancy/core'
-import type { FieldDef, FieldType } from '@formancy/spec'
+import { applyRichCommand } from '@formancy/spec'
+import type { FieldDef, FieldType, RichCommand } from '@formancy/spec'
 import { LayoutTree, placedPaths } from './layout.js'
 import { useFormEngine } from './context.js'
 import { useField } from './use-field.js'
@@ -575,16 +576,160 @@ function SelectBoxesField({ path, label }: FieldComponentProps) {
  * into a typed tree and rendered as elements, so there is no path from an
  * answer to `innerHTML` and no sanitiser to keep correct forever.
  */
+/**
+ * The rich text toolbar.
+ *
+ * A row of buttons over a textarea, not a contenteditable surface. That is the
+ * deliberate choice — see `@formancy/spec`'s `richtext-edit` for why — and
+ * it is what makes this editor cheap to make correct: the control is a plain
+ * `<textarea>` that every assistive technology already knows, and the buttons
+ * are ordinary buttons that do string arithmetic.
+ *
+ * The ARIA toolbar pattern, which means ONE tab stop for the whole row and
+ * arrow keys within it. Five buttons that each take a tab press would put five
+ * stops between a keyboard user and the box they came to type in.
+ */
+function RichTextToolbar({
+  disabled,
+  label,
+  onCommand,
+}: {
+  disabled: boolean
+  label: ReactNode
+  onCommand: (command: RichCommand, href?: string) => void
+}) {
+  const buttons = useRef<Array<HTMLButtonElement | null>>([])
+  const [active, setActive] = useState(0)
+
+  const commands: ReadonlyArray<{ command: RichCommand; name: string; glyph: string }> = [
+    { command: 'strong', name: 'Bold', glyph: 'B' },
+    { command: 'emphasis', name: 'Italic', glyph: 'I' },
+    { command: 'link', name: 'Link', glyph: '↗' },
+    { command: 'bulletList', name: 'Bulleted list', glyph: '•' },
+    { command: 'orderedList', name: 'Numbered list', glyph: '1.' },
+  ]
+
+  const move = (to: number): void => {
+    const index = (to + commands.length) % commands.length
+    setActive(index)
+    buttons.current[index]?.focus()
+  }
+
+  return (
+    <div
+      role="toolbar"
+      // Named with the field, because a form may have several of these and
+      // "toolbar" five times tells a screen-reader user nothing about which
+      // question they are formatting the answer to.
+      aria-label={typeof label === 'string' ? `Formatting for ${label}` : 'Formatting'}
+      data-formancy-part="richtext-toolbar"
+      onKeyDown={(event) => {
+        if (event.key === 'ArrowRight') {
+          event.preventDefault()
+          move(active + 1)
+        } else if (event.key === 'ArrowLeft') {
+          event.preventDefault()
+          move(active - 1)
+        } else if (event.key === 'Home') {
+          event.preventDefault()
+          move(0)
+        } else if (event.key === 'End') {
+          event.preventDefault()
+          move(commands.length - 1)
+        }
+      }}
+    >
+      {commands.map((entry, index) => (
+        <button
+          key={entry.command}
+          ref={(element) => {
+            buttons.current[index] = element
+          }}
+          type="button"
+          disabled={disabled}
+          // The roving tabindex: one stop for the row, arrows within it.
+          tabIndex={index === active ? 0 : -1}
+          data-formancy-part="richtext-button"
+          onFocus={() => setActive(index)}
+          onClick={() => {
+            // A link needs an address, and a prompt is the honest version of
+            // asking for one without building a dialog this package would
+            // then own the accessibility of. A host wanting its own can
+            // replace the whole field through the component registry.
+            if (entry.command === 'link') {
+              const href = window.prompt('Address for the link')
+              if (href === null || href === '') return
+              onCommand('link', href)
+              return
+            }
+            onCommand(entry.command)
+          }}
+        >
+          {/* The glyph is decoration; the button's name is the word. */}
+          <span aria-hidden="true">{entry.glyph}</span>
+          <span data-formancy-part="visually-hidden">{entry.name}</span>
+        </button>
+      ))}
+    </div>
+  )
+}
+
 function RichTextField({ path, label }: FieldComponentProps) {
   const field = useField(path)
   const value = typeof field.value === 'string' ? field.value : ''
+  const box = useRef<HTMLTextAreaElement | null>(null)
+
+  /**
+   * Run a toolbar command against the live selection and put the caret back.
+   *
+   * The selection is restored in an effect-free way {@link queueMicrotask}
+   * would not guarantee: React has to have written the new value first, so
+   * the box is updated on the next frame rather than immediately. An editor
+   * that drops the caret to the end after every button is one nobody can use
+   * for a second word.
+   */
+  const run = (command: RichCommand, href?: string): void => {
+    const element = box.current
+    if (element === null) return
+
+    const next = applyRichCommand(
+      command,
+      { value, start: element.selectionStart, end: element.selectionEnd },
+      href === undefined ? {} : { href },
+    )
+    field.setValue(next.value)
+    requestAnimationFrame(() => {
+      element.focus()
+      element.setSelectionRange(next.start, next.end)
+    })
+  }
 
   return (
     <FieldShell path={path} field={field} label={label}>
+      <RichTextToolbar
+        disabled={field.disabled}
+        label={label}
+        onCommand={run}
+      />
       <textarea
         {...field.controlProps}
+        ref={box}
         rows={5}
         value={value}
+        onKeyDown={(event) => {
+          // The two shortcuts every editor has. Nothing else is bound: a
+          // surprise binding in a form field is worse than no binding.
+          if (!(event.ctrlKey || event.metaKey)) return
+          const command =
+            event.key.toLowerCase() === 'b'
+              ? 'strong'
+              : event.key.toLowerCase() === 'i'
+                ? 'emphasis'
+                : undefined
+          if (command === undefined) return
+          event.preventDefault()
+          run(command)
+        }}
         onChange={(event) => field.setValue(event.target.value)}
         onBlur={() => field.touch()}
       />
