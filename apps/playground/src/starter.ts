@@ -6,6 +6,13 @@
  * computed value, per-row validation on a repeater, a required consent box,
  * and three message catalogues.
  *
+ * **Version 2, and it has to be.** The intro says "every field type the spec
+ * defines", and for a while that sentence was false: the document declared
+ * version 1, so `selectboxes`, `file` and `richtext` were not in it — and the
+ * builder correctly refused to add one, because a version 1 document may not
+ * contain a version 2 construct. The form said it had everything and the
+ * palette said no. A claim in a demo is a claim.
+ *
  * Every piece of text a person reads is a `$t` reference rather than a
  * literal, so the locale switcher has something to switch. French is
  * deliberately incomplete — which is what a translation looks like halfway
@@ -13,7 +20,7 @@
  * rather than printing a message id at somebody.
  */
 export const STARTER_SCHEMA = {
-  specVersion: '1',
+  specVersion: '2',
   id: 'order',
   title: 'Order',
   model: {
@@ -67,6 +74,32 @@ export const STARTER_SCHEMA = {
       },
 
       { key: 'notes', type: 'textarea', label: { $t: 'notes' }, maxLength: 500 },
+      // selectboxes: several answers from one list. The answer is the list of
+      // values ticked, in the options' own order.
+      {
+        key: 'extras',
+        type: 'selectboxes',
+        label: { $t: 'extras' },
+        options: [
+          { value: 'giftwrap', label: { $t: 'extras.giftwrap' } },
+          { value: 'insurance', label: { $t: 'extras.insurance' } },
+          { value: 'signature', label: { $t: 'extras.signature' } },
+        ],
+      },
+      // richtext: formatted text stored as a closed grammar, never HTML. The
+      // field shows a live preview from the same parser that will render it.
+      { key: 'message', type: 'richtext', label: { $t: 'message' }, maxLength: 500 },
+      // file: the submission stores what each file is and where it went, never
+      // its bytes. With no uploader configured the field says so plainly,
+      // which is what the playground shows: it has no server behind it.
+      {
+        key: 'artwork',
+        type: 'file',
+        label: { $t: 'artwork' },
+        accept: ['image/png', 'image/jpeg', 'application/pdf'],
+        maxFileSize: 5 * 1024 * 1024,
+      },
+
       { key: 'terms', type: 'checkbox', label: { $t: 'terms' }, required: true },
       // hidden: travels with the submission, never shown.
       { key: 'source', type: 'hidden', label: { $t: 'source' } },
@@ -129,7 +162,42 @@ export const STARTER_SCHEMA = {
               ],
             },
             { kind: 'field', path: 'items' },
-            { kind: 'field', path: 'notes' },
+          ],
+        },
+        {
+          // tabs: one panel at a time, and presentation only — a field in a
+          // closed tab is still validated and still submitted, so the strip
+          // opens the tab an error is in.
+          kind: 'tabs',
+          label: { $t: 'tabs' },
+          children: [
+            {
+              kind: 'section',
+              label: { $t: 'tab.extras' },
+              children: [
+                { kind: 'field', path: 'extras' },
+                {
+                  // table: columns that line up across rows, which stacked
+                  // rows cannot do because each row sizes itself.
+                  kind: 'table',
+                  columns: 2,
+                  children: [
+                    { kind: 'field', path: 'message' },
+                    { kind: 'field', path: 'artwork' },
+                  ],
+                },
+              ],
+            },
+            {
+              // `source` is deliberately left out of every arrangement: it is
+              // a hidden field, it renders nothing, and a tab holding one
+              // would be an empty panel. The arrangement pane names it as
+              // unplaced, which is the honest way to show a field that
+              // travels with the submission without being on the screen.
+              kind: 'section',
+              label: { $t: 'tab.notes' },
+              children: [{ kind: 'field', path: 'notes' }],
+            },
           ],
         },
         { kind: 'field', path: 'terms' },
@@ -155,6 +223,10 @@ export const STARTER_SCHEMA = {
       },
       // Express delivery needs a date; standard does not.
       { target: 'wantedBy', kind: 'required', cel: 'delivery == "express"' },
+      // A rule reading a LIST answer. Untouched, `extras` is `[]` rather than
+      // null, which is why this is false before the first tick instead of
+      // failing and showing the field it was meant to hide.
+      { target: 'artwork', kind: 'visible', cel: "'giftwrap' in extras" },
     ],
   },
 
@@ -162,7 +234,7 @@ export const STARTER_SCHEMA = {
     defaultLocale: 'en',
     messages: {
       en: {
-        intro: 'Every field type the spec defines, in one form.',
+        intro: 'Every field type except the two that nest, in one form.',
         'section.you': 'About you',
         'section.where': 'Where it goes',
         'section.order': 'What you want',
@@ -185,11 +257,20 @@ export const STARTER_SCHEMA = {
         'items.unitPrice': 'Unit price',
         'items.lineTotal': 'Line total',
         notes: 'Notes',
+        tabs: 'Extras and anything else',
+        'tab.extras': 'Extras',
+        'tab.notes': 'Anything else',
+        extras: 'Add to your order',
+        'extras.giftwrap': 'Gift wrapping',
+        'extras.insurance': 'Insurance',
+        'extras.signature': 'Signature on delivery',
+        message: 'A message on the gift card',
+        artwork: 'Artwork for the gift wrap',
         terms: 'I accept the terms',
         source: 'Source',
       },
       de: {
-        intro: 'Jeder Feldtyp der Spezifikation, in einem Formular.',
+        intro: 'Jeder Feldtyp ausser den zwei verschachtelnden, in einem Formular.',
         'section.you': 'Über Sie',
         'section.where': 'Lieferadresse',
         'section.order': 'Ihre Bestellung',
@@ -212,6 +293,15 @@ export const STARTER_SCHEMA = {
         'items.unitPrice': 'Einzelpreis',
         'items.lineTotal': 'Zeilensumme',
         notes: 'Bemerkungen',
+        tabs: 'Extras und Sonstiges',
+        'tab.extras': 'Extras',
+        'tab.notes': 'Sonstiges',
+        extras: 'Zur Bestellung hinzufügen',
+        'extras.giftwrap': 'Geschenkverpackung',
+        'extras.insurance': 'Versicherung',
+        'extras.signature': 'Unterschrift bei Zustellung',
+        message: 'Eine Nachricht auf der Geschenkkarte',
+        artwork: 'Motiv für die Geschenkverpackung',
         terms: 'Ich akzeptiere die Bedingungen',
         source: 'Quelle',
       },
@@ -219,7 +309,7 @@ export const STARTER_SCHEMA = {
       // stay English rather than turning into message ids: an untranslated
       // label is a small problem, `items.qty` on the screen is a large one.
       fr: {
-        intro: 'Chaque type de champ de la spécification, dans un formulaire.',
+        intro: 'Chaque type de champ sauf les deux imbriqués, dans un formulaire.',
         'section.you': 'À votre sujet',
         'section.where': 'Adresse de livraison',
         firstName: 'Prénom',
@@ -232,6 +322,8 @@ export const STARTER_SCHEMA = {
         postcode: 'Code postal',
         city: 'Localité',
         items: 'Postes',
+        extras: 'Ajouter à votre commande',
+        'extras.giftwrap': 'Emballage cadeau',
       },
     },
   },

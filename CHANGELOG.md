@@ -98,6 +98,27 @@ Two documents already described axe as running in the conformance suite. It
 was not. That is the second time writing something down has been what found it
 missing.
 
+<<<<<<< HEAD
+**The playground is a version 2 document, and works on a phone.** Two reports,
+one cause each.
+
+The rich text field could not be added, and neither could tick boxes or a file
+field: the starter declared `specVersion: '1'`, so the builder refused all
+three — correctly, because a version 1 document may not contain a version 2
+construct — while the form's own intro claimed "every field type the spec
+defines". The form advertised everything and the palette said no. The starter
+is now version 2 and contains every field type except `group` and `page`, the
+two that nest a form inside a form, with a `tabs` and a `table` arrangement
+over them. A test enforces the claim against `FIELD_TYPES`, so the intro cannot
+drift from the document again.
+
+The playground also scrolled sideways on a phone — 528 pixels of it at 390
+wide. The header was a flex row of six items that would not wrap, and a flex
+item's default `min-width` is its content, so those six set a floor under the
+whole document and the three-pane grid below never got a say. It wraps now, and
+the strap line stands down on a narrow screen because the controls are what
+somebody came for.
+=======
 **The stack, in three dimensions.** formancy is a layer cake, so the landing
 page draws one: the shared layers deep and carrying both accents, the two
 per-framework layers near the reader and split violet from teal. Where the
@@ -108,6 +129,7 @@ of the content and never the only one. Built with `timeline-scope` and
 `animation-composition`, so the depth readout in the heading follows a list in
 a different branch of the document and nothing needs a frame loop. The mark
 from the favicon is now in the bar.
+>>>>>>> origin/main
 
 **The website deploys as one static site.** The landing page at `/` and the
 playground at `/playground/`, built by `pnpm build:web`. The playground is
