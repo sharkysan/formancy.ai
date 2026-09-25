@@ -159,6 +159,24 @@ Four tools need no server and no credentials at all, which makes authoring and
 checking a whole form possible before anything is deployed
 ([0056](./docs/decisions/0056-agents-get-the-checks.md)).
 
+**A rich text editor, not a box you type markers into.** The `richtext` field
+has a toolbar now — Bold, Italic, Link, bulleted and numbered lists, with
+Ctrl+B and Ctrl+I — and it toggles: pressing Bold on bold text takes it off,
+whether the reader selected the word or the markers around it. The selection
+survives the press, because an editor that drops the caret to the end after
+every button is one nobody can use for a second word.
+
+Still a textarea underneath, still no contenteditable, still no HTML. The
+transformations are pure functions in `@formancy/spec`, so React and Angular
+run the same code and a Bold button cannot mean two things; the toolbar is the
+ARIA pattern with one tab stop and arrow keys, so it adds no stops between a
+keyboard user and the box. It adds no dependency: an editor library would have
+meant an HTML-first document model to keep restricted forever, formatting the
+grammar cannot store, and — the actual blocker — Angular support that is
+community-maintained and behind
+([0052](./docs/decisions/0052-richtext-is-not-html.md) has the full reasoning).
+A host that wants TipTap can still put it in through the component registry.
+
 **The website deploys as one static site.** The landing page at `/` and the
 playground at `/playground/`, built by `pnpm build:web`. The playground is
 built with `base: '/playground/'`, without which Vite's absolute asset URLs

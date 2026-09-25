@@ -527,3 +527,56 @@
 [data-formancy-theme='dusk'] [data-formancy-part='layout-table'] > [data-formancy-part='layout-section-heading'] {
   grid-column: 1 / -1;
 }
+
+/* The rich text toolbar. A row of buttons over a textarea rather than a
+   contenteditable surface, which is what keeps the control something every
+   assistive technology already understands. */
+[data-formancy-theme='dusk'] [data-formancy-part='richtext-toolbar'] {
+  display: flex;
+  gap: 0.25rem;
+  margin-block-end: 0.375rem;
+}
+
+[data-formancy-theme='dusk'] [data-formancy-part='richtext-button'] {
+  /* 2.5.8 Target Size: 24 by 24 is the floor and a toolbar is exactly where
+     that gets forgotten. */
+  min-width: 1.75rem;
+  min-height: 1.75rem;
+  display: inline-grid;
+  place-items: center;
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+[data-formancy-theme='dusk'] [data-formancy-part='richtext-button']:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* The word each button is named by. Off screen rather than `display: none`,
+   which would take it out of the accessibility tree along with the button's
+   only name. */
+[data-formancy-theme='dusk'] [data-formancy-part='visually-hidden'] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+[data-formancy-theme='dusk'] [data-formancy-part='richtext-button'] {
+  color: var(--fm-muted);
+  background: var(--fm-inset);
+  border: 1px solid var(--fm-edge);
+  border-radius: var(--fm-radius);
+}
+
+[data-formancy-theme='dusk'] [data-formancy-part='richtext-button']:hover:not(:disabled) {
+  color: var(--fm-text);
+  border-color: var(--fm-signal);
+}
