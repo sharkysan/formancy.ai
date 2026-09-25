@@ -313,3 +313,55 @@ describe('the way out to the playground', () => {
     }
   })
 })
+
+describe('the stack', () => {
+  test('is a list of packages, not a picture of one', () => {
+    render(<App />)
+
+    // The 3D is a second reading. The first one has to be the content: a
+    // reader with no scroll timelines, no 3D or motion turned off still gets
+    // the packages in build order, which is what the section is for.
+    const list = screen.getByRole('list', { name: '' , hidden: false })
+    expect(list.tagName).toBe('OL')
+    const items = within(list).getAllByRole('listitem')
+    expect(items.map((item) => item.querySelector('b')?.textContent)).toEqual([
+      '@formancy/spec',
+      '@formancy/expressions',
+      '@formancy/core',
+      '@formancy/react · @formancy/angular',
+      '@formancy/ui-react · ui-angular',
+      'your design system',
+    ])
+  })
+
+  test('says which layers are shared and which are written twice, in words', () => {
+    render(<App />)
+
+    // 1.4.1: the edge-light on each plane carries this visually, so something
+    // that is not colour has to carry it too.
+    const shared = document.querySelectorAll('[data-plane="shared"]')
+    const split = document.querySelectorAll('[data-plane="split"]')
+    expect(shared).toHaveLength(3)
+    expect(split).toHaveLength(2)
+  })
+
+  test('answers a field in the running submission, like every other section', () => {
+    render(<App />)
+
+    read('stack')
+
+    expect(within(screen.getByRole('complementary')).getByText(/"layers"/)).toBeTruthy()
+  })
+})
+
+describe('the mark', () => {
+  test('is decoration beside a wordmark that already says the name', () => {
+    render(<App />)
+
+    const mark = document.querySelector('.mark')
+    // Announced, it would read the name twice. It is the favicon, drawn
+    // inline so it takes the page's accents rather than repeating them.
+    expect(mark?.getAttribute('aria-hidden')).toBe('true')
+    expect(screen.getAllByText('formancy.ai').length).toBeGreaterThan(0)
+  })
+})

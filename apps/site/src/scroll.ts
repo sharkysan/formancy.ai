@@ -41,6 +41,7 @@ export interface Answer {
 export const JOURNEY: ReadonlyArray<{ section: string; answer: Answer }> = [
   { section: 'hero', answer: { key: 'interested', value: true } },
   { section: 'engine', answer: { key: 'runsIn', value: ['browser', 'server'] } },
+  { section: 'stack', answer: { key: 'layers', value: 'shared-below-the-binding' } },
   { section: 'renderers', answer: { key: 'framework', value: 'react-and-angular' } },
   { section: 'builder', answer: { key: 'authoredBy', value: 'anyone-with-a-keyboard' } },
   { section: 'access', answer: { key: 'accessible', value: true } },

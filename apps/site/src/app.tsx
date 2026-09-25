@@ -63,10 +63,16 @@ export function App(): ReactElement {
       </a>
 
       <header className="bar">
-        <strong>formancy.ai</strong>
+        <strong>
+          <Mark />
+          formancy.ai
+        </strong>
         <nav>
           <a className="optional" href="#engine">
             How it works
+          </a>
+          <a className="optional" href="#stack">
+            The stack
           </a>
           <a className="optional" href="#build">
             Build
@@ -139,6 +145,57 @@ export function App(): ReactElement {
               </p>
             </div>
           </div>
+        </Section>
+
+        <Section id="stack" className="wide" journey={journey} section="stack">
+          <h2>
+            One engine. Two bindings. Your markup on top.
+            <span className="depth" aria-hidden="true">
+              <i />
+            </span>
+          </h2>
+          <p className="lede" style={{ marginBlockStart: '1.25rem' }}>
+            Everything shared sits at the bottom, and it is the larger part. Only the two
+            layers nearest you are written twice, once per framework — and the top one is
+            optional, because the markup is meant to be yours.
+          </p>
+
+          {/* One list, not a diagram beside a list. The planes below ARE these
+              items: a reader with no 3D, no scroll timelines or no patience for
+              either gets an ordered list of the packages, in build order, which
+              is the content. The geometry is a second way of reading it. */}
+          <ol className="stack">
+            <li className="stratum" data-plane="shared">
+              <b>@formancy/spec</b>
+              <span>The document format, and a canonical hash of it.</span>
+            </li>
+            <li className="stratum" data-plane="shared">
+              <b>@formancy/expressions</b>
+              <span>CEL, parsed and type-checked. No <code>eval</code>, anywhere, ever.</span>
+            </li>
+            <li className="stratum" data-plane="shared">
+              <b>@formancy/core</b>
+              <span>The engine: visibility, requiredness, calculation, validation.</span>
+            </li>
+            <li className="stratum" data-plane="split">
+              <b>@formancy/react · @formancy/angular</b>
+              <span>Hooks on one side, signals on the other. Neither wraps the other.</span>
+            </li>
+            <li className="stratum" data-plane="split">
+              <b>@formancy/ui-react · ui-angular</b>
+              <span>Unstyled controls, if you want them. Not one stylesheet.</span>
+            </li>
+            <li className="stratum" data-plane="yours">
+              <b>your design system</b>
+              <span>Nothing below this line knows it exists, which is the point.</span>
+            </li>
+          </ol>
+
+          <p className="note" style={{ marginBlockStart: '2.5rem' }}>
+            The server imports the same three bottom layers the browser does — the identical
+            build, not a port of it. That is the whole architecture in one sentence, and the
+            reason the two cannot disagree.
+          </p>
         </Section>
 
         <Section id="renderers" className="wide" journey={journey} section="renderers">
@@ -293,6 +350,25 @@ export function App(): ReactElement {
 
       <Panel journey={journey} />
     </>
+  )
+}
+
+/**
+ * The mark — the same one in the favicon and the browser tab.
+ *
+ * Inline rather than an `<img>`, so the stem and the arms take the page's own
+ * accent tokens instead of hard-coding the two colours a second time. Hidden
+ * from assistive technology: the wordmark beside it already says the name, and
+ * hearing it twice helps nobody.
+ */
+function Mark(): ReactElement {
+  return (
+    <svg className="mark" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+      <rect width="64" height="64" rx="18" fill="var(--inset)" />
+      <rect className="stem" x="14" y="14" width="12" height="36" rx="6" />
+      <rect className="arm" x="30" y="14" width="20" height="12" rx="6" />
+      <rect className="arm" x="30" y="30" width="14" height="12" rx="6" />
+    </svg>
   )
 }
 
