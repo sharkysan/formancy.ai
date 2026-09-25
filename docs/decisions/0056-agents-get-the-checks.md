@@ -102,6 +102,38 @@ second description of it in another dialect is a second authority. The day they
 disagree, the tool refuses something the product accepts. `document` is
 `unknown` and is checked by `validateSchema`.
 
+## The same loop, in the builder
+
+`PromptPane` in `@formancy/builder-react` is the same idea with a person in
+front of it: describe a form, get one. It is not a box that pastes a model's
+answer into the editor — `authorForm` in `builder-core` parses the answer,
+validates it, type-checks the expressions, and if any of that fails **tells the
+model exactly what was wrong and asks again**, up to three times. Nothing
+reaches the document until it would work, so the two outcomes are a valid form
+or a refusal that says what was tried. There is deliberately no third outcome
+where something plausible lands in the editor and somebody finds out at the
+first submission.
+
+Three attempts, not more: the first answer, one correction, and one for the
+mistake the correction introduced. Past that a model is circling rather than
+converging, and a person reading four failures is better served by the first.
+Only the most recent complaint is repeated, because a model given three rounds
+of accumulated ones starts fixing the first again.
+
+**The model belongs to the host.** `AskModel` is a prop, exactly as `Uploader`
+is a provider: this package has no vendor, no key, no network call and no
+opinion about who pays for tokens. A self-hoster can point it at something on
+their own hardware so that nothing about a form's contents leaves their
+network, and without the prop the pane renders nothing rather than a button
+that cannot work. It also makes the loop testable with a scripted function,
+which is why it has fifteen cases and no mocking library.
+
+The result lands through `session.replaceDocument`, which is **one undoable
+step**. Ctrl+Z after "write me a contact form" puts back what was there, which
+is the only behaviour anybody would expect.
+
+## Alternatives considered (continued)
+
 **Ship an agent skills library too.** Deferred, not rejected. Skills are prose
 and prose is cheap to write and expensive to keep true; the tools have tests
 and the descriptions are asserted. A skills library on top of a tool surface

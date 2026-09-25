@@ -143,6 +143,25 @@ loudly broken: a publish reporting success it did not get, an edit lost on a
 tab switch, a refusal swallowed. The uploader is at 100%, including the part
 where the offer succeeds and the bytes do not land.
 
+**Describe a form and get one, in the builder.** `PromptPane` takes an
+instruction and produces a document — and it is not a box that pastes a
+model's answer into the editor. `authorForm` parses the answer, validates it
+against the spec and type-checks its expressions, and when any of that fails it
+tells the model exactly what was wrong and asks again, up to three times.
+Nothing reaches the document until it would work, so the outcomes are a valid
+form or a refusal that says what was tried and what the model last said. It
+lands as **one undoable step**: Ctrl+Z puts back what was there.
+
+The model is the host's. `AskModel` is a prop, exactly as `Uploader` is a
+provider: no vendor, no key, no network call in this package, and a self-hoster
+can point it at something on their own hardware so nothing about a form leaves
+their network. Without the prop the pane renders nothing, which is the honest
+way to show a feature nobody has configured.
+
+`session.replaceDocument` is new and is how a whole document arrives —
+through the same validator every other command uses, so a session still cannot
+come to hold something invalid.
+
 **`@formancy/mcp`: formancy as tools for a coding agent.** Seven of them, over
 the Model Context Protocol, installable in Claude Code or Cursor with
 `claude mcp add formancy -- npx -y @formancy/mcp`.

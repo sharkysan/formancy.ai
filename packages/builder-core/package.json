@@ -24,6 +24,7 @@
     "check:pkg": "publint && attw --pack . --profile esm-only"
   },
   "dependencies": {
+    "@formancy/core": "workspace:*",
     "@formancy/spec": "workspace:*"
   },
   "devDependencies": {

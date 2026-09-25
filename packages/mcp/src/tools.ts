@@ -1,13 +1,4 @@
-import {
-  CONTAINER_FIELD_TYPES,
-  CURRENT_SPEC_VERSION,
-  FIELD_TYPES,
-  LIST_VALUED_FIELD_TYPES,
-  SPEC_1_FIELD_TYPES,
-  SPEC_1_LAYOUT_KINDS,
-  SPEC_VERSIONS,
-  diffSchemas,
-} from '@formancy/spec'
+import { authoringFacts, diffSchemas } from '@formancy/spec'
 import { validateSchema } from '@formancy/spec/validate'
 import type { Change, FormSchema } from '@formancy/spec'
 import { expressionProblems } from '@formancy/core'
@@ -70,29 +61,14 @@ export interface ServerAccess {
  * with `format: "email"` is the answer. Told up front, it does not.
  */
 export function describeSpec(): ToolResult {
+  const facts = authoringFacts()
   return {
     ok: true,
     summary:
-      `formancy speaks spec versions ${SPEC_VERSIONS.join(' and ')}; new documents should use ` +
-      `"${CURRENT_SPEC_VERSION}". A field type not in this list does not exist, whatever other ` +
-      `form builders call it — an email field is type "text" with format "email".`,
-    data: {
-      specVersions: SPEC_VERSIONS,
-      currentSpecVersion: CURRENT_SPEC_VERSION,
-      fieldTypes: FIELD_TYPES,
-      fieldTypesInSpec1: SPEC_1_FIELD_TYPES,
-      containerFieldTypes: CONTAINER_FIELD_TYPES,
-      listValuedFieldTypes: LIST_VALUED_FIELD_TYPES,
-      layoutKinds: [...SPEC_1_LAYOUT_KINDS, 'tabs', 'table'],
-      ruleKinds: ['visible', 'disabled', 'required', 'computed', 'validate'],
-      formats: ['email', 'url', 'uuid'],
-      notes: [
-        'A version 1 document may not contain a version 2 construct. selectboxes, file, richtext, tabs and table all need version 2.',
-        'An empty answer for a list-valued field is [], never null. A rule reads it as a list.',
-        'Expressions are CEL and are type-checked. A JSON number is a double, so write 4.0 rather than 4 when multiplying one.',
-        'Field keys are identity. Renaming one is a migration, declared with renamedFrom, not an edit.',
-      ],
-    },
+      `formancy speaks spec versions ${facts.specVersions.join(' and ')}; new documents should ` +
+      `use "${facts.currentSpecVersion}". A field type not in this list does not exist, whatever ` +
+      `other form builders call it — an email field is type "text" with format "email".`,
+    data: facts,
   }
 }
 
