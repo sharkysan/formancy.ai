@@ -63,6 +63,25 @@ if (!Number.isFinite(maxFileBytes) || maxFileBytes <= 0) {
   throw new Error('FORMANCY_MAX_FILE_BYTES must be a positive number of bytes.')
 }
 
+/**
+ * Turns the proof-of-work challenge on for anonymous submissions.
+ *
+ * Unset is a supported state rather than a misconfiguration: a deployment
+ * whose forms all require a session has no anonymous surface to protect, and
+ * the challenge route says so with a 404 rather than failing. A deployment
+ * with public forms should set it — the other layers are rate limits, an
+ * origin allowlist and a body cap, all of which an attacker with a few
+ * addresses walks past.
+ *
+ * Separate from FORMANCY_AUTH_SECRET so that rotating one does not invalidate
+ * the other: rotating this one costs an unsolved puzzle, rotating that one
+ * costs everybody their session.
+ */
+const challengeSecret = process.env['FORMANCY_CHALLENGE_SECRET']
+if (challengeSecret !== undefined && challengeSecret.length < 32) {
+  throw new Error('FORMANCY_CHALLENGE_SECRET must be at least 32 characters, or unset.')
+}
+
 await bootstrapSchema(sql)
 const storage = createPostgresStorage(sql)
 const app = await createApp(storage, {
@@ -71,6 +90,7 @@ const app = await createApp(storage, {
     ? { bootstrapAdmin: { email: adminEmail, password: adminPassword } }
     : {}),
   ...(fileStore === undefined ? {} : { fileStore }),
+  ...(challengeSecret === undefined ? {} : { challengeSecret }),
   maxFileBytes,
 })
 

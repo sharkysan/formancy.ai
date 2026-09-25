@@ -295,6 +295,30 @@ Found by writing the audit log: recording a publish meant asking when a publish
 is finished, and the answer was "after three calls that could stop in the
 middle".
 
+**A proof-of-work challenge for anonymous submissions, and no third party in
+it.** Turnstile and reCAPTCHA round-trip every visitor through somebody else's
+service before that visitor may speak to a form — which, for a self-hosted
+deployment, turns a form on your own server into a data transfer to a third
+party on every visit, whether or not anybody submits. A Tor or VPN user gets a
+puzzle or a refusal on the strength of their address, with no override.
+
+So the default is arithmetic the browser does by itself. The server publishes
+`sha256(salt + number)` and signs it with its own key; the browser searches for
+the number. Verification recomputes the hash and checks the signature, so a
+challenge nobody minted cannot be solved into a valid one, and the expiry rides
+in the salt so a stale one costs nothing to refuse.
+
+Spending is separate and storage-backed, because a correct solution stays
+correct: `spent_challenges` has the challenge as its primary key and the insert
+is the claim, so two requests racing one solution are adjudicated by the
+database rather than by whichever check ran first. There is an integration test
+that races them.
+
+Set `FORMANCY_CHALLENGE_SECRET` to turn it on. Unset is supported: a deployment
+whose forms all need a session has no anonymous surface, and the challenge
+route says 404 rather than failing. Signed-in submitters are never asked
+([0059](./docs/decisions/0059-proof-of-work-not-a-captcha.md)).
+
 **The admin has a Webhooks tab.** Which destinations are failing, since when,
 and what died on the way to them — with a button to send a dead delivery
 again. This is the reason the breaker's counters live on the webhook row rather

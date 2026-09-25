@@ -3,7 +3,7 @@ import { drizzle } from 'drizzle-orm/postgres-js'
 import type postgres from 'postgres'
 import type { FormSchema } from '@formancy/spec'
 import type { AuditEntry, FileRecord, Role, Storage } from '@formancy/server-core'
-import { apiKeys, auditLog, deliveries, drafts, files, forms, formVersions, submissions, webhooks } from './db.js'
+import { apiKeys, auditLog, spentChallenges, deliveries, drafts, files, forms, formVersions, submissions, webhooks } from './db.js'
 import { users } from './db.js'
 
 /** The Storage port over Postgres — the mirror of server-core's in-memory one. */
@@ -197,6 +197,26 @@ export function createPostgresStorage(sql: postgres.Sql): Storage {
         // behind saying it happened.
         if (audit !== undefined) await tx.insert(auditLog).values(auditRow(audit))
       })
+    },
+
+    async spendChallenge(challenge, expiresAtIso) {
+      // `ON CONFLICT DO NOTHING` and look at what came back: the insert is the
+      // claim, and the row count is the answer. Checking first and inserting
+      // second would leave a window between the two.
+      const claimed = await db
+        .insert(spentChallenges)
+        .values({ challenge, expiresAt: new Date(expiresAtIso) })
+        .onConflictDoNothing()
+        .returning({ challenge: spentChallenges.challenge })
+      return claimed.length === 1
+    },
+
+    async forgetExpiredChallenges(beforeIso) {
+      const gone = await db
+        .delete(spentChallenges)
+        .where(lt(spentChallenges.expiresAt, new Date(beforeIso)))
+        .returning({ challenge: spentChallenges.challenge })
+      return gone.length
     },
 
     async recordAudit(entry) {

@@ -1,3 +1,11 @@
+export {
+  CHALLENGE_TTL_SECONDS,
+  DEFAULT_MAX_NUMBER,
+  mintChallenge,
+  solveChallenge,
+  verifySolution,
+} from './challenge.js'
+export type { Challenge, Solution, VerifyOutcome } from './challenge.js'
 export { AUDIT_ACTIONS, auditedBy } from './audit.js'
 export type { AuditAction, AuditDraft, AuditEntry } from './audit.js'
 export { replayDelivery } from './outbox.js'

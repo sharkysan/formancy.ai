@@ -225,6 +225,25 @@ export interface Storage {
   /** Newest first. Reading the log is itself a management-plane action. */
   listAudit(limit: number): Promise<AuditEntry[]>
 
+  /**
+   * Spend a solved challenge, once.
+   *
+   * Returns false when it has been spent already. The signature on a challenge
+   * proves this server minted it and the hash proves somebody did the work —
+   * and neither stops the same correct solution being sent a thousand times,
+   * because a correct solution stays correct. Only a record of what has been
+   * used can.
+   *
+   * It must be ATOMIC: two requests arriving with one solution both pass every
+   * stateless check, and the database is the only thing that can decide which
+   * of them spends it. An implementation that reads then writes has a race
+   * exactly where the attacker is looking.
+   */
+  spendChallenge(challenge: string, expiresAtIso: string): Promise<boolean>
+
+  /** Drop spent challenges that can no longer be replayed anyway. */
+  forgetExpiredChallenges(beforeIso: string): Promise<number>
+
   insertFile(record: FileRecord): Promise<void>
   getFile(id: string): Promise<FileRecord | undefined>
   updateFile(record: FileRecord): Promise<void>

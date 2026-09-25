@@ -7,6 +7,7 @@ import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 import type { FastifyInstance } from 'fastify'
 import type { FormSchema } from '@formancy/spec'
 import { bootstrapSchema } from './db.js'
+import { solveChallenge } from '@formancy/server-core'
 import { createApp, SCHEMA_HASH_HEADER } from './app.js'
 import { createPostgresStorage } from './postgres-storage.js'
 import type { FileStore } from './file-store.js'
@@ -1063,5 +1064,167 @@ describe('dead letters', () => {
     })
 
     expect(missing.statusCode).toBe(404)
+  })
+})
+
+
+/**
+ * The proof-of-work challenge, over HTTP and against real SQL.
+ *
+ * The spend-once guard needs a database: two requests carrying one solution
+ * both pass every stateless check, and only the unique constraint can decide
+ * which of them wins. Nothing else in this block could be faked either — the
+ * signature is the server's, and a challenge minted by a stub would prove
+ * nothing about the one this server mints.
+ */
+describe('the proof-of-work challenge', () => {
+  const SECRET = 'challenge-signing-key-of-real-length'
+  let guarded: FastifyInstance
+  let hash = ''
+
+  beforeAll(async () => {
+    guarded = await createApp(createPostgresStorage(sql), {
+      authSecret: 'integration-test-secret-with-length',
+      submissionRateLimit: { max: 10_000, timeWindowMs: 60_000 },
+      challengeSecret: SECRET,
+    })
+
+    // Its own form, publicly submittable: the challenge only applies to a
+    // visitor who is not signed in, so the form has to admit one.
+    const published = await app.inject({
+      method: 'POST',
+      url: '/forms',
+      headers: asAdmin(),
+      payload: {
+        path: 'challenged',
+        schema: {
+          specVersion: '2',
+          id: 'challenged',
+          title: 'Challenged',
+          model: { fields: [{ key: 'email', type: 'text', label: 'Email', required: true }] },
+        },
+      },
+    })
+    hash = (published.json() as { schemaHash: string }).schemaHash
+    await app.inject({
+      method: 'PUT',
+      url: '/f/challenged/access',
+      headers: asAdmin(),
+      payload: { submit: 'public' },
+    })
+  })
+
+  afterAll(async () => {
+    await guarded.close()
+  })
+
+  /** Ask for a puzzle, solve it, and encode it the way a client would. */
+  async function solved(): Promise<string> {
+    const minted = await guarded.inject({ method: 'GET', url: '/f/challenged/challenge' })
+    expect(minted.statusCode).toBe(200)
+    const challenge = minted.json() as {
+      salt: string
+      challenge: string
+      maxNumber: number
+      signature: string
+    }
+    const number = solveChallenge(challenge)
+    expect(number).toBeTypeOf('number')
+    return Buffer.from(JSON.stringify({ ...challenge, number })).toString('base64')
+  }
+
+  const submit = (header?: string) =>
+    guarded.inject({
+      method: 'POST',
+      url: '/f/challenged/submissions',
+      headers: {
+        [SCHEMA_HASH_HEADER]: hash,
+        ...(header === undefined ? {} : { 'x-formancy-challenge': header }),
+      },
+      payload: { email: 'ada@example.ch' },
+    })
+
+  test('an anonymous submission without one is refused, and told how to get one', async () => {
+    const response = await submit()
+
+    expect(response.statusCode).toBe(400)
+    const body = response.json() as { error: string; message: string }
+    expect(body.error).toBe('challenge_required')
+    // A refusal that does not say what to do next is a dead end.
+    expect(body.message).toContain('/challenge')
+  })
+
+  test('a solved one is accepted', async () => {
+    const response = await submit(await solved())
+
+    expect(response.statusCode).toBe(201)
+  })
+
+  test('the same solution cannot be used twice', async () => {
+    const header = await solved()
+    expect((await submit(header)).statusCode).toBe(201)
+
+    const again = await submit(header)
+
+    // A correct solution stays correct, so nothing stateless can refuse this.
+    // Only the record of what has been spent can.
+    expect(again.statusCode).toBe(400)
+    expect((again.json() as { error: string }).error).toBe('challenge_spent')
+  })
+
+  test('two requests racing one solution: exactly one wins', async () => {
+    const header = await solved()
+
+    const [first, second] = await Promise.all([submit(header), submit(header)])
+
+    // Both pass every stateless check. The unique constraint is what
+    // adjudicates, which is why this test needs a real database.
+    const accepted = [first, second].filter((response) => response.statusCode === 201)
+    expect(accepted).toHaveLength(1)
+  })
+
+  test('a solution nobody minted is refused as forged', async () => {
+    const invented = Buffer.from(
+      JSON.stringify({
+        salt: `deadbeef.${String(Math.floor(Date.now() / 1000) + 600)}`,
+        number: 1,
+        challenge: 'not-the-hash',
+        signature: 'f'.repeat(64),
+      }),
+    ).toString('base64')
+
+    const response = await submit(invented)
+
+    expect(response.statusCode).toBe(400)
+    // Refused for the arithmetic before the key is consulted.
+    expect((response.json() as { error: string }).error).toMatch(/challenge_(wrong|forged)/)
+  })
+
+  test('a header that is not base64 JSON is refused rather than crashing', async () => {
+    const response = await submit('not base64 at all !!')
+
+    expect(response.statusCode).toBe(400)
+    expect((response.json() as { error: string }).error).toBe('challenge_malformed')
+  })
+
+  test('a signed-in submitter is not asked to solve anything', async () => {
+    // They have already paid a cost the puzzle stands in for. Asking as well
+    // would be ceremony.
+    const response = await guarded.inject({
+      method: 'POST',
+      url: '/f/challenged/submissions',
+      headers: { [SCHEMA_HASH_HEADER]: hash, ...asAdmin() },
+      payload: { email: 'ada@example.ch' },
+    })
+
+    expect(response.statusCode).toBe(201)
+  })
+
+  test('the deployment without a secret does not ask, and says so', async () => {
+    // `app` is built without one. Absent is a supported state rather than a
+    // broken one, and the route says 404 rather than failing.
+    const minted = await app.inject({ method: 'GET', url: '/f/challenged/challenge' })
+    expect(minted.statusCode).toBe(404)
+    expect((minted.json() as { error: string }).error).toBe('challenge_not_enabled')
   })
 })
