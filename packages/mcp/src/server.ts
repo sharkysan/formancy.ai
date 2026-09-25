@@ -46,9 +46,11 @@ export const TOOL_DEFINITIONS = {
     'Call this BEFORE writing a form document. A type not in the list does not exist, whatever ' +
     'other form builders call it.',
   validate_form:
-    'Check a form document against the spec and type-check its expressions, without publishing. ' +
-    'Reports structural errors with the path to each, and separately reports expressions that ' +
-    'compile but can never evaluate — the failure that is silent at runtime.',
+    "Run the server's publish checks without publishing: against the spec, through the engine " +
+    'that renders the form (a misspelled field name, a cycle between computed fields, a ' +
+    'condition that is not certain to produce a bool), and for expressions that compile but ' +
+    'can never evaluate — the failure that is silent at runtime. Each comes back separately, ' +
+    'with what to change.',
   diff_forms:
     'Compare two form documents and report what the change would do to submissions already ' +
     'collected: compatible, lossy, or breaking. Call this before publishing over an existing form.',

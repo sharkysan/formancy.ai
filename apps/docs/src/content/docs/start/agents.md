@@ -42,12 +42,24 @@ field it was meant to hide.
 The agent fixes it in the next turn. Without this it would publish a form that
 looks right and computes nothing.
 
+The same goes for the mistakes the engine refuses outright — a misspelled field
+name, a cycle between two computed fields, or a checkbox written as a condition
+on its own. `validate_form` builds the same engine the server's publish gate and
+every renderer build, so it does not call a form valid whose logic the server
+would then refuse, and it says what to write instead:
+
+```
+Rule on "phone" (visible): A visible expression must produce bool, but this one
+produces dyn. A checkbox nobody has touched is null rather than false, so it
+cannot be a condition on its own: write callback == true.
+```
+
 ## The tools
 
 | Tool | Needs a server | What it is for |
 | --- | --- | --- |
 | `describe_spec` | no | Every field type, layout kind, rule kind and format. Call it before writing anything. |
-| `validate_form` | no | Check a document and type-check its expressions, without publishing. |
+| `validate_form` | no | The server's publish checks, without publishing: schema, the engine's compile, expressions that never evaluate. |
 | `diff_forms` | no | What a change would do to submissions already collected: compatible, lossy or breaking. |
 | `publish_form` | yes | Publish — after validating locally and refusing to send a document that would not work. |
 | `list_forms` | yes | The forms on the server, with their current version. |
@@ -115,8 +127,8 @@ port:
 
 The same loop is available with a person in front of it. `PromptPane` from
 `@formancy/builder-react` takes an instruction, and the answer is parsed,
-validated and type-checked before anything reaches the editor — if it fails,
-the model is told what was wrong and asked again.
+validated, compiled by the engine and type-checked before anything reaches the
+editor — if it fails, the model is told what was wrong and asked again.
 
 The model is yours. `ask` is a prop, the way an uploader is a provider: no
 vendor, no key and no network call inside any formancy package, so you can

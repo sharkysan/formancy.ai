@@ -1,7 +1,7 @@
 import { authoringBriefing, canonicalize } from '@formancy/spec'
 import { validateSchema } from '@formancy/spec/validate'
 import type { FormSchema } from '@formancy/spec'
-import { expressionProblems } from '@formancy/core'
+import { engineRefusal, expressionProblems } from '@formancy/core'
 
 /**
  * Writing a form from an instruction, and refusing to hand back one that does
@@ -40,9 +40,15 @@ export interface AuthoringPrompt {
   readonly user: string
 }
 
-/** Why an attempt was rejected, in the words the model is given back. */
+/**
+ * Why an attempt was rejected, in the words the model is given back.
+ *
+ * `logic` is the engine refusing to open the document at all — a misspelled
+ * field, a cycle, a condition that is not certain to be a bool — and
+ * `expression` is one it would open whose rule then never does anything.
+ */
 export interface AuthoringProblem {
-  readonly kind: 'not-json' | 'invalid-document' | 'expression'
+  readonly kind: 'not-json' | 'invalid-document' | 'logic' | 'expression'
   readonly detail: string
 }
 
@@ -103,6 +109,15 @@ export async function authorForm(
         kind: 'invalid-document',
         detail: validated.errors.map((error) => `${error.path}: ${error.message}`).join('\n'),
       })
+      continue
+    }
+
+    // The engine's own compile, which is what the preview and the server run.
+    // Without it a document with one misspelled field name passed this loop,
+    // landed in the editor, and the preview could not open it.
+    const refusal = engineRefusal(parsed as FormSchema)
+    if (refusal !== undefined) {
+      problems.push({ kind: 'logic', detail: refusal })
       continue
     }
 

@@ -1,7 +1,7 @@
 import { authoringFacts, diffSchemas } from '@formancy/spec'
 import { validateSchema } from '@formancy/spec/validate'
 import type { Change, FormSchema } from '@formancy/spec'
-import { expressionProblems } from '@formancy/core'
+import { engineRefusal, expressionProblems } from '@formancy/core'
 
 /**
  * What formancy can be asked to do by a coding agent, as plain functions.
@@ -73,12 +73,21 @@ export function describeSpec(): ToolResult {
 }
 
 /**
- * Check a document without publishing it, and check the two things separately.
+ * Check a document without publishing it — the server's publish checks, in the
+ * gate's order. Only the analysis of regular-expression `pattern`s stays on
+ * the server: it needs an analysis engine this package does not carry, and the
+ * server's refusal names the pattern.
  *
- * Schema validity and expression sanity are different failures with different
- * fixes, and an expression that type-checks in a document the validator has
- * already rejected means nothing. So the structure is checked first and the
- * logic only if it passed.
+ * Schema validity, the engine's compile and expression sanity are different
+ * failures with different fixes, and a later check means nothing in a document
+ * an earlier one has rejected. So the structure is checked first, then whether
+ * the engine would open the document at all, then whether its expressions
+ * would ever do anything.
+ *
+ * The middle check was once missing, and this tool told a model that a form
+ * with a misspelled field name was valid: the validator does not read CEL and
+ * the expression check skips what the engine refuses, so nothing here asked
+ * the engine. The server did, and refused it.
  */
 export function validateForm(document: unknown): ToolResult {
   const result = validateSchema(document)
@@ -87,6 +96,18 @@ export function validateForm(document: unknown): ToolResult {
       ok: false,
       summary: `Not a valid formancy document: ${String(result.errors.length)} problem(s). Fix these before publishing.`,
       data: { valid: false, errors: result.errors },
+    }
+  }
+
+  const refusal = engineRefusal(document as FormSchema)
+  if (refusal !== undefined) {
+    return {
+      ok: false,
+      summary:
+        `The document is structurally valid, but the engine refuses to open it — the same engine the ` +
+        `server's publish gate and every renderer build, so this form could be neither published nor shown. ` +
+        refusal,
+      data: { valid: true, engineRefusal: refusal },
     }
   }
 
