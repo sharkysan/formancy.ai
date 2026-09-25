@@ -118,6 +118,32 @@ whole document and the three-pane grid below never got a say. It wraps now, and
 the strap line stands down on a narrow screen because the controls are what
 somebody came for.
 
+**Four themes, and the two that existed look finished.** `@formancy/themes`
+gains **Pop** — neo-brutalist: black outlines, hard offset shadows, choices as
+chips, an error as a sticker, a submit button that presses in — and **Paper** —
+editorial: a serif, spaced small capitals for labels, a line to write on
+rather than a box, ruled lines under a long answer, sections numbered in
+roman numerals and an introduction with a drop capital. With Blueprint and
+Dusk that is four products that do not look related, over the same markup;
+none of them needed a component changed.
+
+Blueprint and Dusk were functional and plain. Both now draw their own
+checkboxes, radios and select arrows instead of borrowing the platform's
+(`appearance: none` changes how an input looks, not what it is), style the
+file picker's button, set an introduction as a lead, and tell adding a row
+from removing one. Blueprint numbers its wizard steps and rules its section
+headings to the edge; Dusk's inputs were a shade off its ground and are now
+wells that differ from whatever surface they sit on, its tabs are a segmented
+pill, and its submit button glows.
+
+Every theme now sets `box-sizing` on its own subtree. Without it, every
+full-width control overflowed its column in any host page that had no reset of
+its own — the playground and the site had one, which is why nobody saw it.
+
+The landing page's live examples switch between all four, in place: one
+attribute changes, nothing remounts, and what somebody typed stays typed. The
+playground offers all four as well.
+
 **The playground looks like the rest of formancy.ai, works on a phone, and
 has a way back.** It is drawn in the landing page's colours now — a dark bench,
 glass panes, violet for what you act on and teal for what the engine decided —

@@ -162,6 +162,36 @@ describe('the demo is the product, not a picture of it', () => {
   })
 })
 
+describe('the themes', () => {
+  test('the live form can be shown in four themes', () => {
+    render(<App />)
+
+    const group = screen.getByRole('group', { name: 'Theme' })
+    expect(within(group).getAllByRole('button').map((button) => button.textContent)).toEqual([
+      'Dusk',
+      'Blueprint',
+      'Pop',
+      'Paper',
+    ])
+    expect(document.querySelector('#build .sheet')?.getAttribute('data-formancy-theme')).toBe('dusk')
+  })
+
+  test('switching one changes an attribute, not the form — what was typed stays', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.type(screen.getByLabelText('Full name'), 'Ada')
+    const group = screen.getByRole('group', { name: 'Theme' })
+    await user.click(within(group).getByRole('button', { name: 'Paper' }))
+
+    // The headless claim, where a visitor can press a button and watch it: no
+    // remount and no new engine, only another stylesheet over the same parts.
+    expect(document.querySelector('#build .sheet')?.getAttribute('data-formancy-theme')).toBe('paper')
+    expect(within(group).getByRole('button', { name: 'Paper' }).getAttribute('aria-pressed')).toBe('true')
+    expect(screen.getByLabelText<HTMLInputElement>('Full name').value).toBe('Ada')
+  })
+})
+
 describe('the examples', () => {
   test('every one is a document the MCP server would accept', () => {
     // The same two checks an agent's document goes through: the spec

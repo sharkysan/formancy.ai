@@ -189,6 +189,15 @@ describe('the switchers', () => {
     expect(within(form()).queryByText(/\$t|field\..*\.label/)).toBeNull()
   })
 
+  test('four themes that do not look related', () => {
+    render(<App />)
+
+    const options = [...screen.getByLabelText<HTMLSelectElement>('Theme').options].map(
+      (option) => option.value,
+    )
+    expect(options).toEqual(['blueprint', 'dusk', 'pop', 'paper'])
+  })
+
   test('a theme change touches the sheet, not the markup', async () => {
     const user = userEvent.setup()
     const { container } = render(<App />)

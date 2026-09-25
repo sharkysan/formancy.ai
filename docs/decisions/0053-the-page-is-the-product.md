@@ -56,6 +56,13 @@ makes: conditional fields, computed prices, list answers read by a rule,
 for the life of the page, so switching away does not throw away what somebody
 typed.
 
+**The form switches theme in place.** A strip in the form window's title bar
+shows the same example in Dusk, Blueprint, Pop or Paper. It changes one
+attribute on the sheet and nothing else — no remount, no new engine, so what
+somebody typed stays typed — which is the headless claim made where a visitor
+can press a button and watch it, rather than in a sentence they have to take
+on trust.
+
 **The rules evaluate beside the form.** The document is shown next to the form
 it drew — generated from the schema, so the two cannot drift — and under it
 each rule lights up as the engine evaluates it, read through `useField`, the
