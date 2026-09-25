@@ -295,6 +295,20 @@ Found by writing the audit log: recording a publish meant asking when a publish
 is finished, and the answer was "after three calls that could stop in the
 middle".
 
+**`@formancy/challenge`: the challenge scheme, in one isomorphic package.** It
+is used in two places that cannot share server code — the server mints and
+verifies, a browser solves — and a solver written separately would be a
+second description of one protocol. The day the two disagreed, the symptom
+would be submissions the server rejects for no visible reason, which reads as
+an attack rather than as a bug.
+
+So it is one zero-dependency module on Web Crypto, running in both places, and
+`@formancy/server-core` re-exports it rather than restating it. `solveChallenge`
+takes an optional progress callback so a page can yield rather than freeze; the
+advice is still a Web Worker. Spent challenges are swept hourly, on their own
+timer rather than the file collector's, because the two are configured
+independently.
+
 **A proof-of-work challenge for anonymous submissions, and no third party in
 it.** Turnstile and reCAPTCHA round-trip every visitor through somebody else's
 service before that visitor may speak to a form — which, for a self-hosted

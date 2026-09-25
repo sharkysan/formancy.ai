@@ -5,6 +5,7 @@ import { bootstrapSchema } from './db.js'
 import { createPostgresStorage } from './postgres-storage.js'
 import { startOutboxWorker } from './outbox-worker.js'
 import { startFileCollector } from './file-collector.js'
+import { startChallengeSweeper } from './challenge-sweeper.js'
 import { createLocalFileStore } from './file-store.js'
 
 // recheck ships a 23 MB JVM jar and a native binary per platform as OPTIONAL
@@ -109,10 +110,15 @@ const outbox = startOutboxWorker(storage, {
 const collector =
   fileStore === undefined ? undefined : startFileCollector(storage, fileStore)
 
+// Independent of the collector: a deployment can have public forms and no
+// uploads, and that deployment still accumulates spent challenges.
+const sweeper = challengeSecret === undefined ? undefined : startChallengeSweeper(storage)
+
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.once(signal, () => {
     outbox.stop()
     collector?.stop()
+    sweeper?.stop()
     void app.close().then(() => process.exit(0))
   })
 }

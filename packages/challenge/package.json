@@ -1,7 +1,7 @@
 {
-  "name": "@formancy/server-core",
+  "name": "@formancy/challenge",
   "version": "0.1.0",
-  "description": "The formancy backend's use-cases: publish, resolve, revalidate, store \u2014 framework-free, against repository ports.",
+  "description": "The formancy proof-of-work challenge: mint, solve and verify. Isomorphic, zero dependencies.",
   "license": "Apache-2.0",
   "type": "module",
   "sideEffects": false,
@@ -23,19 +23,11 @@
     "typecheck": "tsc --noEmit",
     "check:pkg": "publint && attw --pack . --profile esm-only"
   },
-  "dependencies": {
-    "@formancy/challenge": "workspace:*",
-    "@formancy/core": "workspace:*",
-    "@formancy/spec": "workspace:*",
-    "@noble/hashes": "^2.4.0",
-    "recheck": "^4.5.0"
-  },
   "devDependencies": {
     "@arethetypeswrong/cli": "catalog:",
     "publint": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:",
-    "unrun": "^0.3.1",
     "vitest": "catalog:",
     "@vitest/coverage-v8": "catalog:"
   },
@@ -45,7 +37,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/sharkysan/formancy.ai.git",
-    "directory": "packages/server-core"
+    "directory": "packages/challenge"
   },
   "homepage": "https://github.com/sharkysan/formancy.ai",
   "bugs": "https://github.com/sharkysan/formancy.ai/issues"

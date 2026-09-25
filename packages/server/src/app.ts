@@ -1,12 +1,12 @@
-import { randomBytes as randomBytesOf, randomUUID } from 'node:crypto'
+import { randomUUID } from 'node:crypto'
 import Fastify from 'fastify'
 import type { FileStore } from './file-store.js'
 import rateLimit from '@fastify/rate-limit'
 import type { FastifyInstance, FastifyRequest, preHandlerHookHandler } from 'fastify'
-import type { Solution } from '@formancy/server-core'
 import {
   auditedBy,
   authenticateApiKey,
+  decodeSolution,
   mintChallenge,
   verifySolution,
   healthOf,
@@ -461,10 +461,9 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
     if (form === undefined) return reply.code(404).send({ error: 'unknown_form' })
 
     return reply.send(
-      mintChallenge({
+      await mintChallenge({
         secret: challengeSecret,
-        randomBytes: (length) => randomBytesOf(length),
-        nowSeconds: () => Math.floor(new Date(deps.nowIso()).getTime() / 1000),
+        nowSeconds: Math.floor(new Date(deps.nowIso()).getTime() / 1000),
       }),
     )
   })
@@ -489,15 +488,13 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
       }
     }
 
-    let solution: Solution
-    try {
-      solution = JSON.parse(Buffer.from(header, 'base64').toString('utf8')) as Solution
-    } catch {
+    const solution = decodeSolution(header)
+    if (solution === undefined) {
       return { error: 'challenge_malformed', message: 'The challenge header is not base64 JSON.' }
     }
 
     const nowSeconds = Math.floor(new Date(deps.nowIso()).getTime() / 1000)
-    const verified = verifySolution(challengeSecret!, solution, nowSeconds)
+    const verified = await verifySolution(challengeSecret!, solution, nowSeconds)
     if (!verified.ok) {
       return {
         error: `challenge_${verified.reason}`,
@@ -505,9 +502,11 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
       }
     }
 
+    // The expiry comes back from verification rather than being parsed out of
+     // the salt a second time — one place reads that format.
     const spent = await deps.storage.spendChallenge(
       verified.challenge,
-      new Date((Number(solution.salt.split('.')[1]) + 1) * 1000).toISOString(),
+      new Date(verified.expiresAtSeconds * 1000).toISOString(),
     )
     if (!spent) {
       return {

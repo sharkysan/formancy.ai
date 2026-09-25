@@ -1128,7 +1128,7 @@ describe('the proof-of-work challenge', () => {
       maxNumber: number
       signature: string
     }
-    const number = solveChallenge(challenge)
+    const number = await solveChallenge(challenge)
     expect(number).toBeTypeOf('number')
     return Buffer.from(JSON.stringify({ ...challenge, number })).toString('base64')
   }

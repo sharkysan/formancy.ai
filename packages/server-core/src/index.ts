@@ -1,6 +1,9 @@
 export {
   CHALLENGE_TTL_SECONDS,
   DEFAULT_MAX_NUMBER,
+  decodeSolution,
+  encodeSolution,
+  hashOf,
   mintChallenge,
   solveChallenge,
   verifySolution,

@@ -69,15 +69,23 @@ it as the defence would be the mistake.
 has no anonymous surface to protect. The challenge route answers 404 rather
 than failing, and the submission path does not ask.
 
-**Not built yet: the browser solver.** The search loop belongs in a client, and
-`solveChallenge` is exported from `@formancy/server-core` as the one definition
-of the scheme so that a solver cannot disagree with the verifier — a
-disagreement would produce submissions this server rejects, and the bug would
-look like an attack. Until a renderer ships one, a consumer writes the loop
-themselves; it is nine lines.
+**The scheme is its own package, and that is the point.** It is used in two
+places that cannot share server code: the server mints and verifies, a browser
+solves. A solver written separately would be a second description of one
+protocol, and the day the two disagreed the symptom would be submissions the
+server rejects for no visible reason — which reads as an attack rather than
+as a bug. So `@formancy/challenge` is zero-dependency and isomorphic, built on
+Web Crypto because that is in every browser and in Node, and
+`@formancy/server-core` re-exports it rather than restating it.
 
-**Spent challenges accumulate** until `forgetExpiredChallenges` is called. The
-row is tiny and the expiry is ten minutes, but nothing calls it on a timer yet.
+Everything is asynchronous as a result. A synchronous hash would mean shipping
+an implementation of SHA-256, and an implementation is a thing to keep correct
+forever.
+
+**Spent challenges are swept hourly** by `startChallengeSweeper`, on its own
+timer rather than as a job on the file collector: the two are configured
+independently, and a deployment with public forms and no uploads still
+accumulates rows.
 
 ## Alternatives considered
 
