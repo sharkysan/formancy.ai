@@ -226,6 +226,27 @@ Found by writing the audit log: recording a publish meant asking when a publish
 is finished, and the answer was "after three calls that could stop in the
 middle".
 
+**A circuit breaker per webhook, and dead deliveries you can replay.** The
+retry schedule gave up after eight attempts per DELIVERY, which is the wrong
+unit when the destination is down: a form taking a submission a minute produced
+a minute's worth of deliveries, each independently trying eight times against an
+endpoint that had been returning 502 since Tuesday.
+
+Three consecutive failures now open the breaker — not one, because a single
+failure is a deploy or a restart. Five minutes later exactly one delivery goes
+through as a probe: it succeeds and the breaker closes, it fails and the
+cool-down starts again. Being skipped does not cost a delivery an attempt.
+
+The counters live on the webhook row rather than in the worker, because a
+self-hoster has no operations team watching a dashboard and memory does not
+survive a restart. `GET /webhooks` says which destinations are failing and since
+when, without the signing secret. `GET /deliveries/dead` says what died and why,
+without the body — that is the submission in another coat.
+`POST /deliveries/:id/replay` puts one back with its attempts reset, refuses
+anything not actually dead, and is audited, because it sends data to a third
+party on somebody's say-so
+([0058](./docs/decisions/0058-a-breaker-per-destination.md)).
+
 **Audit logging.** Who did what, to which thing, and when — written
 append-only, and enforced there by a trigger rather than by application
 discipline, because the one moment it matters is the moment somebody has a

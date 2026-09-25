@@ -79,6 +79,17 @@ export interface WebhookRecord {
   url: string
   /** Shared with the receiver; signs every delivery. */
   secret: string
+  /**
+   * Failures in a row against this destination. Reset by any success.
+   *
+   * On the record rather than in the worker's memory for two reasons: memory
+   * does not survive a restart, and a self-hoster with no operations team
+   * needs a failing webhook to be visible on a screen rather than in a log
+   * nobody is tailing.
+   */
+  consecutiveFailures: number
+  /** When the breaker opened, or null while the destination is answering. */
+  openedAt: string | null
 }
 
 /**
@@ -222,6 +233,18 @@ export interface Storage {
   deleteFiles(ids: readonly string[]): Promise<void>
   webhooksForForm(formId: string): Promise<WebhookRecord[]>
   insertWebhook(record: WebhookRecord): Promise<void>
+  /** Health, after an attempt. The record is the breaker's only memory. */
+  updateWebhook(record: WebhookRecord): Promise<void>
+  listWebhooks(): Promise<WebhookRecord[]>
+  /**
+   * Deliveries that ran out of attempts.
+   *
+   * Dead, not deleted: the row is the evidence that something was supposed to
+   * be sent and never arrived. Without a way to list them the evidence is in
+   * a table nobody looks at, which is the same as not having it.
+   */
+  deadDeliveries(limit: number): Promise<DeliveryRecord[]>
+  getDelivery(id: string): Promise<DeliveryRecord | undefined>
   /** Oldest first, only those due. */
   claimDueDeliveries(nowIso: string, limit: number): Promise<DeliveryRecord[]>
   updateDelivery(record: DeliveryRecord): Promise<void>

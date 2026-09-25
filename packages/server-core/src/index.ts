@@ -1,5 +1,16 @@
 export { AUDIT_ACTIONS, auditedBy } from './audit.js'
 export type { AuditAction, AuditDraft, AuditEntry } from './audit.js'
+export { replayDelivery } from './outbox.js'
+export type { ReplayOutcome } from './outbox.js'
+export {
+  BREAKER_COOLDOWN_MS,
+  BREAKER_THRESHOLD,
+  afterWebhookAttempt,
+  breakerState,
+  healthOf,
+  mayAttempt,
+} from './breaker.js'
+export type { BreakerState, WebhookHealth } from './breaker.js'
 export {
   createSubmission,
   exportCsv,

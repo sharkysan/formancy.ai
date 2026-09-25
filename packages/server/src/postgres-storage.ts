@@ -252,11 +252,54 @@ export function createPostgresStorage(sql: postgres.Sql): Storage {
 
     async webhooksForForm(formId) {
       const rows = await db.select().from(webhooks).where(eq(webhooks.formId, formId))
-      return rows.map((row) => ({ id: row.id, formId: row.formId, url: row.url, secret: row.secret }))
+      return rows.map(toWebhookRecord)
     },
 
     async insertWebhook(record) {
-      await db.insert(webhooks).values(record)
+      // Spelled out rather than spread: `openedAt` is an ISO string on the
+      // record and a timestamp in the column, and a spread would have passed
+      // the string straight through.
+      await db.insert(webhooks).values({
+        id: record.id,
+        formId: record.formId,
+        url: record.url,
+        secret: record.secret,
+        consecutiveFailures: record.consecutiveFailures,
+        openedAt: record.openedAt === null ? null : new Date(record.openedAt),
+      })
+    },
+
+    async updateWebhook(record) {
+      // Health only. The url and the secret are not the worker's to change,
+      // and a full row update here would let a failed delivery quietly
+      // rewrite where the next one goes.
+      await db
+        .update(webhooks)
+        .set({
+          consecutiveFailures: record.consecutiveFailures,
+          openedAt: record.openedAt === null ? null : new Date(record.openedAt),
+        })
+        .where(eq(webhooks.id, record.id))
+    },
+
+    async listWebhooks() {
+      const rows = await db.select().from(webhooks)
+      return rows.map(toWebhookRecord)
+    },
+
+    async deadDeliveries(limit) {
+      const rows = await db
+        .select()
+        .from(deliveries)
+        .where(eq(deliveries.state, 'dead'))
+        .orderBy(desc(deliveries.nextAttemptAt))
+        .limit(limit)
+      return rows.map(toDeliveryRecord)
+    },
+
+    async getDelivery(id) {
+      const [row] = await db.select().from(deliveries).where(eq(deliveries.id, id)).limit(1)
+      return row === undefined ? undefined : toDeliveryRecord(row)
     },
 
     async claimDueDeliveries(nowIso, limit) {
@@ -461,6 +504,18 @@ function toFileRecord(row: typeof files.$inferSelect): FileRecord {
     state: row.state as FileRecord['state'],
     createdAt: row.createdAt.toISOString(),
     submissionId: row.submissionId,
+  }
+}
+
+/** A webhook row as the port describes it, health included. */
+function toWebhookRecord(row: typeof webhooks.$inferSelect) {
+  return {
+    id: row.id,
+    formId: row.formId,
+    url: row.url,
+    secret: row.secret,
+    consecutiveFailures: row.consecutiveFailures,
+    openedAt: row.openedAt === null ? null : row.openedAt.toISOString(),
   }
 }
 

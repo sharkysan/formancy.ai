@@ -77,6 +77,23 @@ export function createMemoryStorage(): Storage {
       webhooks.set(record.id, { ...record })
     },
 
+    updateWebhook: async (record) => {
+      webhooks.set(record.id, { ...record })
+    },
+
+    listWebhooks: async () => [...webhooks.values()].map((w) => ({ ...w })),
+
+    deadDeliveries: async (limit) =>
+      [...deliveries.values()]
+        .filter((delivery) => delivery.state === 'dead')
+        .slice(0, limit)
+        .map((delivery) => ({ ...delivery })),
+
+    getDelivery: async (id) => {
+      const found = deliveries.get(id)
+      return found === undefined ? undefined : { ...found }
+    },
+
     claimDueDeliveries: async (nowIso, limit) =>
       [...deliveries.values()]
         .filter((entry) => entry.state === 'pending' && entry.nextAttemptAt <= nowIso)

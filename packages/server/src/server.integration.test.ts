@@ -1,5 +1,6 @@
 import { PostgreSqlContainer } from '@testcontainers/postgresql'
 import type { StartedPostgreSqlContainer } from '@testcontainers/postgresql'
+import { randomUUID } from 'node:crypto'
 import { Readable } from 'node:stream'
 import postgres from 'postgres'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
@@ -935,5 +936,132 @@ describe('the audit log', () => {
   test('and the rows survive the attempt', async () => {
     const rows = await sql`SELECT count(*)::int AS n FROM audit_log`
     expect(rows[0]?.['n']).toBeGreaterThan(0)
+  })
+})
+
+
+/**
+ * Webhook health and dead letters, over HTTP.
+ *
+ * The reason the breaker's counters live on the row: a self-hoster has no
+ * operations team watching a dashboard, so a destination that has been
+ * refusing deliveries since Tuesday has to be answerable from the product.
+ */
+describe('webhook health', () => {
+  let webhookId = ''
+
+  beforeAll(async () => {
+    const [form] = await sql`SELECT id FROM forms LIMIT 1`
+    webhookId = randomUUID()
+    await sql`
+      INSERT INTO webhooks (id, form_id, url, secret, consecutive_failures, opened_at)
+      VALUES (${webhookId}, ${form!['id']}, 'https://example.ch/hook', 'whsec_x', 4,
+              ${'2026-09-25T12:00:00.000Z'}::timestamptz)`
+  })
+
+  test('a failing destination is visible, with how long it has been failing', async () => {
+    const response = await app.inject({ method: 'GET', url: '/webhooks', headers: asAdmin() })
+
+    expect(response.statusCode).toBe(200)
+    const { webhooks } = response.json() as {
+      webhooks: { id: string; state: string; consecutiveFailures: number; failingSince: string | null }[]
+    }
+    const failing = webhooks.find((hook) => hook.id === webhookId)
+    expect(failing).toMatchObject({ consecutiveFailures: 4 })
+    expect(failing?.failingSince).toBeTruthy()
+  })
+
+  test('and the signing secret is not', async () => {
+    const response = await app.inject({ method: 'GET', url: '/webhooks', headers: asAdmin() })
+
+    // It is shown on a screen. A secret is not a health indicator.
+    expect(response.body).not.toContain('whsec_x')
+  })
+
+  test('reading it needs a session', async () => {
+    expect((await app.inject({ method: 'GET', url: '/webhooks' })).statusCode).toBe(401)
+  })
+})
+
+describe('dead letters', () => {
+  let deadId = ''
+  let webhookId = ''
+
+  beforeAll(async () => {
+    const [form] = await sql`SELECT id FROM forms LIMIT 1`
+    const [submission] = await sql`SELECT id FROM submissions LIMIT 1`
+    webhookId = randomUUID()
+    deadId = randomUUID()
+    await sql`
+      INSERT INTO webhooks (id, form_id, url, secret)
+      VALUES (${webhookId}, ${form!['id']}, 'https://example.ch/dead', 'whsec_dead')`
+    await sql`
+      INSERT INTO deliveries (id, webhook_id, submission_id, event_id, body, attempt, next_attempt_at, state, last_error)
+      VALUES (${deadId}, ${webhookId}, ${submission!['id']}, ${randomUUID()},
+              '{"secretValue":"do-not-leak"}', 8, now(), 'dead', 'Receiver answered 502.')`
+  })
+
+  test('are listed with what went wrong', async () => {
+    const response = await app.inject({
+      method: 'GET',
+      url: '/deliveries/dead',
+      headers: asAdmin(),
+    })
+
+    const { deliveries } = response.json() as { deliveries: { id: string; lastError: string }[] }
+    const found = deliveries.find((delivery) => delivery.id === deadId)
+    expect(found?.lastError).toContain('502')
+  })
+
+  test('without the body, which is the submission in another coat', async () => {
+    const response = await app.inject({
+      method: 'GET',
+      url: '/deliveries/dead',
+      headers: asAdmin(),
+    })
+
+    // This endpoint answers "what failed", not "what was in it".
+    expect(response.body).not.toContain('do-not-leak')
+  })
+
+  test('replaying one puts it back in the queue and records who did it', async () => {
+    const replayed = await app.inject({
+      method: 'POST',
+      url: `/deliveries/${deadId}/replay`,
+      headers: asAdmin(),
+    })
+
+    expect(replayed.statusCode).toBe(202)
+    const [row] = await sql`SELECT state, attempt FROM deliveries WHERE id = ${deadId}`
+    expect(row?.['state']).toBe('pending')
+    expect(row?.['attempt']).toBe(0)
+
+    // It sends data to a third party on a person's say-so.
+    const audited = await sql`
+      SELECT count(*)::int AS n FROM audit_log
+      WHERE action = 'delivery.replayed' AND subject = ${deadId}`
+    expect(audited[0]?.['n']).toBe(1)
+  })
+
+  test('replaying it again is refused, because it is queued now', async () => {
+    const again = await app.inject({
+      method: 'POST',
+      url: `/deliveries/${deadId}/replay`,
+      headers: asAdmin(),
+    })
+
+    // Replaying a pending delivery would duplicate it.
+    expect(again.statusCode).toBe(409)
+    expect((again.json() as { error: string }).error).toBe('not_dead')
+  })
+
+  test('a delivery that does not exist is a 404, not a 409', async () => {
+    const missing = await app.inject({
+      method: 'POST',
+      url: `/deliveries/${randomUUID()}/replay`,
+      headers: asAdmin(),
+    })
+
+    expect(missing.statusCode).toBe(404)
   })
 })
