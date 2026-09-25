@@ -63,9 +63,9 @@ export function WebhooksPane(): ReactElement {
   }
 
   return (
-    <div className="wb-body" style={{ overflow: 'auto', padding: '1rem' }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: '1rem' }}>
-        <h3 style={{ margin: 0 }}>Destinations</h3>
+    <div className="wb-body wb-page">
+      <div className="wb-page-header">
+        <h3>Destinations</h3>
         <button type="button" onClick={() => void load()}>
           Refresh
         </button>
@@ -78,66 +78,68 @@ export function WebhooksPane(): ReactElement {
       )}
 
       {health === undefined ? (
-        <p>Loading…</p>
+        <p className="wb-empty-note">Loading…</p>
       ) : health.length === 0 ? (
-        <p>No webhooks are configured.</p>
+        <p className="wb-empty-note">No webhooks are configured.</p>
       ) : (
-        <table style={{ borderCollapse: 'collapse', marginBlockStart: '0.5rem' }}>
+        <table className="wb-table">
           <thead>
             <tr>
-              <th style={cell}>Destination</th>
-              <th style={cell}>State</th>
-              <th style={cell}>Failures in a row</th>
-              <th style={cell}>Failing since</th>
+              <th>Destination</th>
+              <th>State</th>
+              <th>Failures in a row</th>
+              <th>Failing since</th>
             </tr>
           </thead>
           <tbody>
             {health.map((hook) => (
               <tr key={hook.id}>
-                <td style={cell}>
+                <td>
                   <code>{hook.url}</code>
                 </td>
-                <td style={cell}>
+                <td>
                   {/* The word, not a colour. A state carried only by a red dot
                       is a state somebody cannot perceive (WCAG 1.4.1). */}
-                  <span data-state={hook.state}>{LABELS[hook.state]}</span>
+                  <span className="wb-state" data-state={hook.state}>
+                    {LABELS[hook.state]}
+                  </span>
                 </td>
-                <td style={cell}>{hook.consecutiveFailures}</td>
-                <td style={cell}>{hook.failingSince ?? '—'}</td>
+                <td>{hook.consecutiveFailures}</td>
+                <td>{hook.failingSince ?? '—'}</td>
               </tr>
             ))}
           </tbody>
         </table>
       )}
 
-      <h3 style={{ marginBlockStart: '2rem' }}>Deliveries that died</h3>
+      <h3 className="wb-page-subhead">Deliveries that died</h3>
       {dead === undefined ? (
-        <p>Loading…</p>
+        <p className="wb-empty-note">Loading…</p>
       ) : dead.length === 0 ? (
-        <p>Nothing has run out of attempts.</p>
+        <p className="wb-empty-note">Nothing has run out of attempts.</p>
       ) : (
-        <table style={{ borderCollapse: 'collapse' }}>
+        <table className="wb-table">
           <thead>
             <tr>
-              <th style={cell}>Submission</th>
-              <th style={cell}>Attempts</th>
-              <th style={cell}>Last error</th>
-              <th style={cell}> </th>
+              <th>Submission</th>
+              <th>Attempts</th>
+              <th>Last error</th>
+              <th> </th>
             </tr>
           </thead>
           <tbody>
             {dead.map((delivery) => (
               <tr key={delivery.id}>
-                <td style={cell}>
+                <td>
                   <code>{delivery.submissionId.slice(0, 8)}…</code>
                 </td>
-                <td style={cell}>{delivery.attempt}</td>
-                <td style={cell}>{delivery.lastError ?? '—'}</td>
-                <td style={cell}>
+                <td>{delivery.attempt}</td>
+                <td>{delivery.lastError ?? '—'}</td>
+                <td>
                   {replayed.has(delivery.id) ? (
                     // Marked rather than removed: a list that shrinks as you
                     // work leaves you unsure which one you pressed.
-                    <span>Queued again</span>
+                    <span className="wb-state" data-state="closed">Queued again</span>
                   ) : (
                     <button
                       type="button"
@@ -164,4 +166,3 @@ const LABELS: Readonly<Record<WebhookHealthEntry['state'], string>> = {
   open: 'Not delivering',
 }
 
-const cell = { textAlign: 'left', padding: '0.3rem 1rem' } as const

@@ -118,6 +118,23 @@ whole document and the three-pane grid below never got a say. It wraps now, and
 the strap line stands down on a narrow screen because the controls are what
 somebody came for.
 
+**The admin looks like the rest of formancy.ai.** It was the last piece still
+dressed as a first draft: inline styles throughout, a sign-in form with no
+styling at all, bare tables, and a schema preview rendered in no theme, which
+looked like a broken page rather than like the form. It now shares the
+playground's room — a dark bench, glass panels, the builder re-coloured
+purely through `workbench.css`'s own variables — with a sign-in card, a form
+list that marks the open form and its version, a segmented tab strip, a
+"published" badge that turns teal once the server has the form, tables with
+status pills for webhooks, empty states that say what to do next, and the
+schema editor in the same Monaco theme as the playground. Every inline style
+is gone; every text and role the tests rely on is unchanged.
+
+On a narrow screen the form list becomes a bar across the top and the
+builder's panes stack at useful heights. Two grids had no declared columns,
+so their one implicit track took the width of the widest property row and the
+workspace ran off a phone's screen; they shrink now.
+
 **Four themes, and the two that existed look finished.** `@formancy/themes`
 gains **Pop** — neo-brutalist: black outlines, hard offset shadows, choices as
 chips, an error as a sticker, a submit button that presses in — and **Paper** —
