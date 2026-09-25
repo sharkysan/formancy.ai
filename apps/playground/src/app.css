@@ -50,9 +50,14 @@ body {
 .bar {
   display: flex;
   align-items: center;
-  gap: 1.25rem;
-  padding: 0 1rem;
-  height: 48px;
+  /* Wraps rather than holding its width. A flex item's default `min-width` is
+     its content, so six of them in a row set a floor under the whole document
+     — which is how a three-pane tool ends up 918 pixels wide on a phone and
+     scrolls sideways before anything else on the page has a say. */
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  padding: 0.5rem 1rem;
+  min-height: 48px;
   background: var(--pg-panel);
   border-block-end: 1px solid var(--pg-rule);
 }
@@ -67,6 +72,21 @@ body {
 .bar .note {
   font-size: 0.8125rem;
   color: var(--pg-muted);
+}
+
+/* The strap line is the first thing to go: it explains what the panes below
+   already demonstrate, and on a narrow screen the controls are what somebody
+   came for. */
+@media (max-width: 60rem) {
+  .bar .note {
+    display: none;
+  }
+
+  /* With the bar wrapped, an auto margin would push the controls onto a line
+     of their own and leave a gap above them. */
+  .bar .spacer {
+    display: none;
+  }
 }
 
 .bar .spacer {

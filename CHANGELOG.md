@@ -81,6 +81,26 @@ Two documents already described axe as running in the conformance suite. It
 was not. That is the second time writing something down has been what found it
 missing.
 
+**The playground is a version 2 document, and works on a phone.** Two reports,
+one cause each.
+
+The rich text field could not be added, and neither could tick boxes or a file
+field: the starter declared `specVersion: '1'`, so the builder refused all
+three — correctly, because a version 1 document may not contain a version 2
+construct — while the form's own intro claimed "every field type the spec
+defines". The form advertised everything and the palette said no. The starter
+is now version 2 and contains every field type except `group` and `page`, the
+two that nest a form inside a form, with a `tabs` and a `table` arrangement
+over them. A test enforces the claim against `FIELD_TYPES`, so the intro cannot
+drift from the document again.
+
+The playground also scrolled sideways on a phone — 528 pixels of it at 390
+wide. The header was a flex row of six items that would not wrap, and a flex
+item's default `min-width` is its content, so those six set a floor under the
+whole document and the three-pane grid below never got a say. It wraps now, and
+the strap line stands down on a narrow screen because the controls are what
+somebody came for.
+
 **The website deploys as one static site.** The landing page at `/` and the
 playground at `/playground/`, built by `pnpm build:web`. The playground is
 built with `base: '/playground/'`, without which Vite's absolute asset URLs
