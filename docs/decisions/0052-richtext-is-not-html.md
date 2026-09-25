@@ -8,7 +8,11 @@
   shapes that make naive parsers hang), plus the renderer cases in
   `packages/react/src/new-types.test.tsx` and
   `packages/angular/src/new-types.test.ts` that type a script tag into the
-  field and look for an element that is not there.
+  field and look for an element that is not there. The editor over it is
+  `packages/spec/src/richtext-edit.test.ts` (15 cases of selection arithmetic,
+  written with `|` and `[...]` markers because an off-by-one in a caret is
+  invisible in a diff), and the same seven toolbar cases in BOTH renderers —
+  identical because the behaviour they drive is one shared function.
 
 ## Context
 
@@ -82,6 +86,45 @@ its own (keyboard shortcuts, an announced selection model, focus management
 inside a rich region) and half of one is worse than a textarea every assistive
 technology already understands. A live preview, from the same parser, is what
 teaches the grammar in the meantime.
+
+## The editor over it
+
+A **toolbar over a `<textarea>`**, not a contenteditable surface: Bold, Italic,
+Link, and the two lists. Pressing a button does what somebody typing the
+grammar by hand would have done, and the transformations are pure functions in
+this package — `applyRichCommand` in `richtext-edit.ts` — so React and
+Angular cannot disagree about what Bold means.
+
+Three things follow from the choice, and all three are the reason for it. The
+control is a textarea, so every assistive technology already knows it and none
+of the caret, selection and focus problems of a contenteditable exist to get
+wrong. The value cannot express anything the grammar cannot, so there is no gap
+between what the editor produces and what the parser accepts. And it adds no
+dependency to a renderer whose budget is four kilobytes.
+
+**Why not an editor library.** TipTap, Lexical, ProseMirror and Slate are all
+good, and none of them fits this requirement. Angular support is the hard
+blocker: TipTap's is community-maintained and lags version parity, Lexical and
+Slate are React-first, and the conformance suite forbids a renderer behaving
+differently from its twin. A form platform whose central promise is that two
+renderers agree cannot ship a rich text editor where one of them is a
+third-party port. Beyond that: each is HTML-first, so keeping it inside this
+grammar becomes a configuration somebody must hold correct forever — which is
+the sanitiser problem this record exists to avoid, wearing a different hat —
+and each offers headings, tables, images and code blocks that the grammar has
+no way to store, so the editor would show formatting the renderer will not.
+
+**A host that wants one can have one.** The component registry replaces any
+field's component, so a consumer may render `richtext` with TipTap and
+serialise to this grammar themselves. That is a decision about their bundle and
+their accessibility surface, which is where it belongs.
+
+**Not built: a pressed state on the buttons.** Knowing whether the caret sits
+inside a bold run needs a source offset, and the parser reports a tree. The
+bridge is either a second scanner that re-implements the grammar, which would
+drift, or source spans on every node, which is a parser change for the sake of
+a button's appearance. The buttons still toggle correctly, and the preview
+under the box shows the truth either way.
 
 ## Alternatives considered
 

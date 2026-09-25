@@ -1,6 +1,15 @@
-import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core'
-import type { Type } from '@angular/core'
-import type { FieldOption, FieldType } from '@formancy/spec'
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  input,
+  signal,
+  viewChild,
+  viewChildren,
+} from '@angular/core'
+import type { ElementRef, Type } from '@angular/core'
+import { applyRichCommand } from '@formancy/spec'
+import type { FieldOption, FieldType, RichCommand } from '@formancy/spec'
 import { injectField } from './field.js'
 import type { FieldBinding } from './field.js'
 import { injectEngine } from './provide.js'
@@ -435,9 +444,11 @@ export class FormancySelectBoxesField extends FieldComponentBase {
 /**
  * Formatted text, written as the restricted markup the spec defines.
  *
- * A textarea, not a contenteditable surface — a deliberate v1 cut. A WYSIWYG
- * editor is a large accessibility surface of its own, and half of one is worse
- * than a textarea that every assistive technology already understands.
+ * A toolbar over a textarea, not a contenteditable surface. Deliberate, and
+ * the same decision the React renderer makes — the transformations live in
+ * `@formancy/spec` so a Bold button cannot mean one thing here and something
+ * else there. A contenteditable is a large accessibility surface of its own,
+ * and it could produce markup the grammar has no way to store.
  */
 @Component({
   selector: 'formancy-rich-text-field',
@@ -445,7 +456,32 @@ export class FormancySelectBoxesField extends FieldComponentBase {
   imports: [FormancyFieldShell, FormancyRichText],
   template: `
     <formancy-field-shell [field]="field" [label]="context.label" [path]="context.path">
+      <!-- The ARIA toolbar pattern: ONE tab stop for the row, arrows within
+           it. Five buttons that each took a tab press would put five stops
+           between a keyboard user and the box they came to type in. -->
+      <div
+        role="toolbar"
+        [attr.aria-label]="toolbarLabel()"
+        data-formancy-part="richtext-toolbar"
+        (keydown)="onToolbarKey($event)"
+      >
+        @for (entry of commands; track entry.command; let i = $index) {
+          <button
+            type="button"
+            #toolbarButton
+            [disabled]="field.snapshot().disabled"
+            [attr.tabindex]="i === active() ? 0 : -1"
+            data-formancy-part="richtext-button"
+            (focus)="active.set(i)"
+            (click)="press(entry.command)"
+          >
+            <span aria-hidden="true">{{ entry.glyph }}</span>
+            <span data-formancy-part="visually-hidden">{{ entry.name }}</span>
+          </button>
+        }
+      </div>
       <textarea
+        #box
         [id]="control().id"
         [attr.name]="control().name"
         [attr.aria-describedby]="control()['aria-describedby']"
@@ -454,6 +490,7 @@ export class FormancySelectBoxesField extends FieldComponentBase {
         [disabled]="field.snapshot().disabled"
         rows="5"
         [value]="text()"
+        (keydown)="onKey($event)"
         (input)="field.setValue($any($event.target).value)"
         (blur)="field.touch()"
       ></textarea>
@@ -468,6 +505,90 @@ export class FormancyRichTextField extends FieldComponentBase {
     const value = this.field.snapshot().value
     return typeof value === 'string' ? value : ''
   })
+
+  protected readonly active = signal(0)
+
+  protected readonly commands: ReadonlyArray<{
+    command: RichCommand
+    name: string
+    glyph: string
+  }> = [
+    { command: 'strong', name: 'Bold', glyph: 'B' },
+    { command: 'emphasis', name: 'Italic', glyph: 'I' },
+    { command: 'link', name: 'Link', glyph: '↗' },
+    { command: 'bulletList', name: 'Bulleted list', glyph: '•' },
+    { command: 'orderedList', name: 'Numbered list', glyph: '1.' },
+  ]
+
+  private readonly box = viewChild<ElementRef<HTMLTextAreaElement>>('box')
+  private readonly toolbarButtons = viewChildren<ElementRef<HTMLButtonElement>>('toolbarButton')
+
+  /** Named with the field: a form may have several of these, and "toolbar"
+   *  five times says nothing about which question is being answered. */
+  protected toolbarLabel(): string {
+    const label = this.context.label
+    return typeof label === 'string' ? `Formatting for ${label}` : 'Formatting'
+  }
+
+  protected press(command: RichCommand): void {
+    if (command === 'link') {
+      // A prompt rather than a dialog this package would then own the
+      // accessibility of. A host wanting its own replaces the field through
+      // the component registry.
+      const href = window.prompt('Address for the link')
+      if (href === null || href === '') return
+      this.run(command, href)
+      return
+    }
+    this.run(command)
+  }
+
+  protected onKey(event: KeyboardEvent): void {
+    if (!(event.ctrlKey || event.metaKey)) return
+    const key = event.key.toLowerCase()
+    const command = key === 'b' ? 'strong' : key === 'i' ? 'emphasis' : undefined
+    if (command === undefined) return
+    event.preventDefault()
+    this.run(command)
+  }
+
+  protected onToolbarKey(event: KeyboardEvent): void {
+    const last = this.commands.length - 1
+    const to =
+      event.key === 'ArrowRight'
+        ? this.active() + 1
+        : event.key === 'ArrowLeft'
+          ? this.active() - 1
+          : event.key === 'Home'
+            ? 0
+            : event.key === 'End'
+              ? last
+              : undefined
+    if (to === undefined) return
+    event.preventDefault()
+    const index = (to + this.commands.length) % this.commands.length
+    this.active.set(index)
+    this.toolbarButtons()[index]?.nativeElement.focus()
+  }
+
+  private run(command: RichCommand, href?: string): void {
+    const element = this.box()?.nativeElement
+    if (element === undefined) return
+
+    const next = applyRichCommand(
+      command,
+      { value: this.text(), start: element.selectionStart, end: element.selectionEnd },
+      href === undefined ? {} : { href },
+    )
+    this.field.setValue(next.value)
+    // After the signal has been written through to the DOM. An editor that
+    // drops the caret to the end after every button is one nobody can use for
+    // a second word.
+    requestAnimationFrame(() => {
+      element.focus()
+      element.setSelectionRange(next.start, next.end)
+    })
+  }
 }
 
 /**

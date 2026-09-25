@@ -13,6 +13,8 @@ export {
 export { upgradeSpecVersion } from './upgrade.js'
 export { isSafeHref, parseRichText, richTextToPlain } from './richtext.js'
 export type { RichBlock, RichInline } from './richtext.js'
+export { applyRichCommand } from './richtext-edit.js'
+export type { EditResult, RichCommand, TextSelection } from './richtext-edit.js'
 export type {
   Change,
   ContainerFieldType,

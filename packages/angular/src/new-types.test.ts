@@ -116,6 +116,78 @@ describe('richtext', () => {
     expect(screen.getByRole('textbox', { name: 'Notes' }).tagName).toBe('TEXTAREA')
   })
 
+  test('has the same toolbar the React renderer has', async () => {
+    await renderForm(engineFor(schema))
+
+    // The same five, named the same way. The transformations live in
+    // @formancy/spec so a Bold button cannot mean one thing here and
+    // something else there — this asserts the row agrees as well.
+    const toolbar = screen.getByRole('toolbar', { name: 'Formatting for Notes' })
+    const buttons = within(toolbar).getAllByRole('button')
+    expect(buttons.map((button) => button.textContent?.trim())).toEqual([
+      'BBold',
+      'IItalic',
+      '↗Link',
+      '•Bulleted list',
+      '1.Numbered list',
+    ])
+    expect(buttons.filter((button) => button.getAttribute('tabindex') === '0')).toHaveLength(1)
+  })
+
+  test('Bold wraps the selection in the grammar', async () => {
+    await renderForm(engineFor(schema))
+
+    const box = screen.getByRole('textbox', { name: 'Notes' }) as HTMLTextAreaElement
+    fireEvent.input(box, { target: { value: 'hello there' } })
+    box.setSelectionRange(0, 5)
+    fireEvent.click(screen.getByRole('button', { name: 'Bold' }))
+
+    expect(box.value).toBe('**hello** there')
+  })
+
+  test('pressing Bold again takes it off', async () => {
+    await renderForm(engineFor(schema))
+
+    const box = screen.getByRole('textbox', { name: 'Notes' }) as HTMLTextAreaElement
+    fireEvent.input(box, { target: { value: '**hello**' } })
+    box.setSelectionRange(2, 7)
+    fireEvent.click(screen.getByRole('button', { name: 'Bold' }))
+
+    expect(box.value).toBe('hello')
+  })
+
+  test('Ctrl+B does the same thing as the button', async () => {
+    await renderForm(engineFor(schema))
+
+    const box = screen.getByRole('textbox', { name: 'Notes' }) as HTMLTextAreaElement
+    fireEvent.input(box, { target: { value: 'hello' } })
+    box.setSelectionRange(0, 5)
+    fireEvent.keyDown(box, { key: 'b', ctrlKey: true })
+
+    expect(box.value).toBe('**hello**')
+  })
+
+  test('the arrow keys move along the toolbar', async () => {
+    await renderForm(engineFor(schema))
+
+    const bold = screen.getByRole('button', { name: 'Bold' })
+    bold.focus()
+    fireEvent.keyDown(bold.parentElement as HTMLElement, { key: 'ArrowRight' })
+
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Italic' }))
+  })
+
+  test('a list button marks every line the selection touches', async () => {
+    await renderForm(engineFor(schema))
+
+    const box = screen.getByRole('textbox', { name: 'Notes' }) as HTMLTextAreaElement
+    fireEvent.input(box, { target: { value: 'one\ntwo' } })
+    box.setSelectionRange(0, 7)
+    fireEvent.click(screen.getByRole('button', { name: 'Bulleted list' }))
+
+    expect(box.value).toBe('- one\n- two')
+  })
+
   test('a script tag somebody types stays text', async () => {
     const engine = engineFor(schema)
     const view = await renderForm(engine)
