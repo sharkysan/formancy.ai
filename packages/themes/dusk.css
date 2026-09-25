@@ -58,6 +58,16 @@
   color: var(--fm-signal);
 }
 
+/* A grouped field says the same thing with a real element rather than with
+   generated content, because `role="group"` cannot carry `aria-required` and
+   the requirement has to be announced through the group's description. Styled
+   to match the marker above, so the two read as one idea. */
+[data-formancy-theme='dusk'] [data-formancy-part='required-hint'] {
+  margin-inline-start: 0.5em;
+  font-size: 0.6875rem;
+  color: var(--fm-signal);
+}
+
 /* No outer border: the control is a well cut into the surface. */
 [data-formancy-theme='dusk'] [data-formancy-part='field'] :is(input, select, textarea) {
   font: inherit;

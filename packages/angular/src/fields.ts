@@ -283,6 +283,14 @@ export class FormancySelectField extends FieldComponentBase {
       [attr.aria-describedby]="control()['aria-describedby']"
     >
       <legend data-formancy-part="label">{{ context.label }}</legend>
+      @if (field.snapshot().required) {
+        <!-- A real element rather than the aria-required attribute, which
+             role=group does not support: assistive technology ignores it
+             there and an auditor reports it as invalid ARIA. The engine puts
+             this id into the group's aria-describedby, so it is announced
+             after the legend. Visible too, because WCAG 1.4.1. -->
+        <span data-formancy-part="required-hint" [id]="field.snapshot().ids.hint">required</span>
+      }
       @for (option of options(); track option.value) {
         <span data-formancy-part="radio-option">
           <input
@@ -345,9 +353,11 @@ export class FormancyStaticField {
  * relationship is the same one: several controls answering a single question.
  * What differs is only that more than one may be chosen.
  *
- * `aria-required` sits on the group, not on each box: "at least one" is a
- * property of the question, and on every box it would announce each option as
- * required, which is the opposite of what it means.
+ * "At least one" is a property of the QUESTION, not of any one box, so it
+ * belongs to the group — but not as `aria-required`, which `role="group"`
+ * does not support and assistive technology therefore ignores. The group's
+ * description carries it instead. On every box it would announce each option
+ * as required, which is the opposite of what it means.
  */
 @Component({
   selector: 'formancy-select-boxes-field',
@@ -358,9 +368,16 @@ export class FormancyStaticField {
       [attr.data-formancy-field-path]="context.path"
       [attr.data-state]="showError() ? 'invalid' : 'valid'"
       [attr.aria-describedby]="control()['aria-describedby']"
-      [attr.aria-required]="field.snapshot().required ? 'true' : null"
     >
       <legend data-formancy-part="label">{{ context.label }}</legend>
+      @if (field.snapshot().required) {
+        <!-- A real element rather than the aria-required attribute, which
+             role=group does not support: assistive technology ignores it
+             there and an auditor reports it as invalid ARIA. The engine puts
+             this id into the group's aria-describedby, so it is announced
+             after the legend. Visible too, because WCAG 1.4.1. -->
+        <span data-formancy-part="required-hint" [id]="field.snapshot().ids.hint">required</span>
+      }
       @for (option of options(); track option.value) {
         <span data-formancy-part="checkbox-option">
           <input

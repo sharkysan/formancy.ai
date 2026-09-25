@@ -1,4 +1,5 @@
 import type {
+  AccessibilityViolation,
   ConformanceMessage,
   MountOptions,
   RendererDriver,
@@ -25,6 +26,15 @@ export interface FakeDriverOptions {
   readonly visibleWhen?: Readonly<Record<string, { readonly path: string; readonly equals: JsonValue }>>
   /** Driver methods that throw instead of answering, to exercise crash reporting. */
   readonly crashOn?: readonly FakeDriverMethod[]
+  /**
+   * What `audit()` reports, by the number of times it has been called — so a
+   * case can make the form audit clean on arrival and dirty two steps later,
+   * which is the interesting shape and the one a fixed answer cannot express.
+   *
+   * Absent means the driver has NO `audit` method at all, which is its own
+   * case: a driver with no DOM must not be forced to pretend it has one.
+   */
+  readonly auditReports?: readonly (readonly AccessibilityViolation[])[]
 }
 
 export type FakeDriverMethod =
@@ -38,12 +48,14 @@ export type FakeDriverMethod =
   | 'ariaSnapshot'
   | 'submit'
   | 'unmount'
+  | 'audit'
 
 export function createFakeDriver(options: FakeDriverOptions = {}): RendererDriver {
   let schema: ConformanceSchema | undefined
   let values: Record<string, JsonValue> = {}
   let messages: ConformanceMessage[] = []
   let pageIndex = 0
+  let audits = 0
 
   const crashOn = new Set<FakeDriverMethod>(options.crashOn ?? [])
 
@@ -157,6 +169,17 @@ export function createFakeDriver(options: FakeDriverOptions = {}): RendererDrive
       guard('unmount')
       schema = undefined
     },
+
+    ...(options.auditReports === undefined
+      ? {}
+      : {
+          async audit(): Promise<readonly AccessibilityViolation[]> {
+            guard('audit')
+            // Past the end reports clean: a case says what it cares about and
+            // is not made to enumerate every later state.
+            return options.auditReports?.[audits++] ?? []
+          },
+        }),
   }
 }
 

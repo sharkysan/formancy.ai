@@ -19,7 +19,14 @@
 
 export { builtinFixtures } from './builtin-fixtures.js'
 
+export {
+  ACCESSIBILITY_EXCLUSIONS,
+  ACCESSIBILITY_TAGS,
+  ACCESSIBILITY_UNMEASURABLE_IN_JSDOM,
+} from './accessibility.js'
+
 export type {
+  AccessibilityViolation,
   ConformanceMessage,
   DriverFactory,
   MountOptions,
@@ -68,8 +75,15 @@ export type {
 export { loadFixtures } from './loader.js'
 export type { FixtureSource } from './loader.js'
 
-export { ConformanceAssertionError, assertFixtureResult, runFixture, runSuite } from './runner.js'
+export {
+  AccessibilityAssertionError,
+  ConformanceAssertionError,
+  assertFixtureResult,
+  runFixture,
+  runSuite,
+} from './runner.js'
 export type {
+  AccessibilityFailure,
   DriverCrash,
   FixtureResult,
   FixtureStatus,

@@ -9,6 +9,10 @@ import * as api from './index.js'
 describe('the public API', () => {
   test('exports exactly the conformance contract', () => {
     expect(Object.keys(api).sort()).toEqual([
+      'ACCESSIBILITY_EXCLUSIONS',
+      'ACCESSIBILITY_TAGS',
+      'ACCESSIBILITY_UNMEASURABLE_IN_JSDOM',
+      'AccessibilityAssertionError',
       'BACK_COMMAND',
       'COMMAND_SEPARATOR',
       'ConformanceAssertionError',
