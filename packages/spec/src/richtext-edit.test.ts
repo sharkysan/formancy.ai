@@ -21,7 +21,9 @@ const at = (marked: string): TextSelection => {
     return { value: marked.replace('[', '').replace(']', ''), start, end }
   }
   const start = marked.indexOf('|')
-  return { value: marked.replace('|', ''), start, end: start }
+  if (start === -1) throw new Error('Fixture needs a caret or selection marker')
+  // Remove the caret marker at its recorded position; later pipes are text.
+  return { value: marked.slice(0, start) + marked.slice(start + 1), start, end: start }
 }
 
 const show = (result: { value: string; start: number; end: number }): string =>
