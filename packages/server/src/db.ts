@@ -95,6 +95,17 @@ export const deliveries = pgTable('deliveries', {
   lastError: text('last_error'),
 })
 
+export const auditLog = pgTable('audit_log', {
+  id: uuid('id').primaryKey(),
+  at: timestamp('at', { withTimezone: true }).notNull(),
+  action: text('action').notNull(),
+  actorKind: text('actor_kind'),
+  actorId: text('actor_id'),
+  subject: text('subject'),
+  requestId: text('request_id'),
+  detail: jsonb('detail'),
+})
+
 export const files = pgTable('files', {
   id: uuid('id').primaryKey(),
   formId: uuid('form_id').notNull(),
@@ -246,6 +257,27 @@ export async function bootstrapSchema(sql: postgres.Sql): Promise<void> {
     )`
   await sql`CREATE INDEX IF NOT EXISTS api_keys_prefix ON api_keys (prefix)`
   await sql`
+    CREATE TABLE IF NOT EXISTS audit_log (
+      id uuid PRIMARY KEY,
+      at timestamptz NOT NULL,
+      action text NOT NULL,
+      -- Null for an anonymous public submission, which is an answer rather
+      -- than a gap: the form was open and nobody was signed in.
+      actor_kind text CHECK (actor_kind IN ('user', 'apiKey')),
+      actor_id text,
+      subject text,
+      request_id text,
+      -- Identifiers and counts. NEVER a submission's answers: an audit log is
+      -- read by more people and kept longer than the data it describes, so
+      -- data inside it is a second copy of the thing being protected.
+      detail jsonb
+    )`
+  // Reading the log is the common query and it is always "recently, and
+  // usually about one thing".
+  await sql`CREATE INDEX IF NOT EXISTS audit_log_at ON audit_log (at DESC)`
+  await sql`CREATE INDEX IF NOT EXISTS audit_log_subject ON audit_log (subject, at DESC)`
+
+  await sql`
     CREATE TABLE IF NOT EXISTS drafts (
       id text NOT NULL,
       form_id uuid NOT NULL REFERENCES forms(id),
@@ -268,4 +300,25 @@ export async function bootstrapSchema(sql: postgres.Sql): Promise<void> {
     CREATE TRIGGER form_versions_immutable
     BEFORE UPDATE ON form_versions
     FOR EACH ROW EXECUTE FUNCTION refuse_version_update()`
+
+  // Append-only, in the database rather than by application discipline — for
+  // the same reason the version rows are immutable there. An audit log the
+  // application can rewrite is a log that says whatever the person who got
+  // into the application wants it to say, and the one moment it matters is
+  // exactly the moment somebody has a reason to edit it.
+  //
+  // A deployment should ALSO give the application's role INSERT and SELECT and
+  // nothing else. This trigger is the belt: the grant is the braces, and it is
+  // the one a self-hoster has to do themselves.
+  await sql`
+    CREATE OR REPLACE FUNCTION refuse_audit_change() RETURNS trigger AS $$
+    BEGIN
+      RAISE EXCEPTION 'audit_log is append-only';
+    END
+    $$ LANGUAGE plpgsql`
+  await sql`DROP TRIGGER IF EXISTS audit_log_append_only ON audit_log`
+  await sql`
+    CREATE TRIGGER audit_log_append_only
+    BEFORE UPDATE OR DELETE ON audit_log
+    FOR EACH ROW EXECUTE FUNCTION refuse_audit_change()`
 }

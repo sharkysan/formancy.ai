@@ -1,3 +1,4 @@
+import type { AuditEntry } from '../audit.js'
 import type {
   DeliveryRecord,
   WebhookRecord, ApiKeyRecord, DraftRecord, FileRecord, FormRecord, FormVersionRecord, Storage, SubmissionRecord, UserRecord } from '../ports.js'
@@ -13,6 +14,7 @@ export function createMemoryStorage(): Storage {
   const deliveries = new Map<string, DeliveryRecord>()
   const versions = new Map<string, FormVersionRecord>()
   const submissions: SubmissionRecord[] = []
+  const audits: AuditEntry[] = []
   const drafts = new Map<string, DraftRecord>()
   const users = new Map<string, UserRecord>()
   const apiKeys = new Map<string, ApiKeyRecord>()
@@ -40,6 +42,17 @@ export function createMemoryStorage(): Storage {
 
     insertVersion: async (record) => {
       versions.set(record.id, { ...record })
+    },
+
+    publishVersion: async ({ form, version, audit }) => {
+      // One step, like the transaction it stands in for. A form whose pointer
+      // was never set resolves to nothing, so all of this lands or none does.
+      if (form !== undefined) forms.set(form.id, { ...form })
+      const target = forms.get(version.formId)
+      if (target === undefined) throw new Error(`No form "${version.formId}"`)
+      versions.set(version.id, { ...version })
+      target.currentVersionId = version.id
+      if (audit !== undefined) audits.push({ ...audit })
     },
 
     getVersionById: async (id) => versions.get(id),
@@ -116,7 +129,7 @@ export function createMemoryStorage(): Storage {
       for (const id of ids) files.delete(id)
     },
 
-    insertSubmission: async (record, queued, claimFileIds) => {
+    insertSubmission: async (record, queued, claimFileIds, audit) => {
       // One step, like the real transaction it stands in for: both land or
       // neither does.
       submissions.push({ ...record })
@@ -129,7 +142,16 @@ export function createMemoryStorage(): Storage {
           files.set(id, { ...file, state: 'claimed', submissionId: record.id })
         }
       }
+      // Same commit again: a submission that rolled back must leave no trace
+      // saying it happened.
+      if (audit !== undefined) audits.push({ ...audit })
     },
+
+    recordAudit: async (entry) => {
+      audits.push({ ...entry })
+    },
+
+    listAudit: async (limit) => [...audits].reverse().slice(0, limit),
 
     listSubmissions: async () => [...submissions],
 

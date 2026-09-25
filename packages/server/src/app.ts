@@ -4,6 +4,7 @@ import type { FileStore } from './file-store.js'
 import rateLimit from '@fastify/rate-limit'
 import type { FastifyInstance, FastifyRequest, preHandlerHookHandler } from 'fastify'
 import {
+  auditedBy,
   authenticateApiKey,
   authenticateLocal,
   can,
@@ -21,7 +22,15 @@ import {
   saveDraft,
   setFormAccess,
 } from '@formancy/server-core'
-import type { Action, Actor, AuthDeps, Role, ServerDeps, Storage } from '@formancy/server-core'
+import type {
+  Action,
+  Actor,
+  AuditDraft,
+  AuthDeps,
+  Role,
+  ServerDeps,
+  Storage,
+} from '@formancy/server-core'
 import { createSessionTokens, realRandomToken, realSecretHashing } from './auth-runtime.js'
 
 export const SCHEMA_HASH_HEADER = 'x-formancy-schema-hash'
@@ -165,6 +174,32 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
     }
   }
 
+  /**
+   * Append an audit row for something that has already happened.
+   *
+   * Never throws. An export that succeeded and an audit row that did not is
+   * bad; an export that 500s because the audit row failed, after the rows have
+   * already been written to the response, is worse and helps nobody. So the
+   * failure is logged loudly at error level and the request stands.
+   *
+   * For a mutation that HAS a transaction, do not use this — pass the entry
+   * into that call so the two commit together. `insertSubmission` is currently
+   * the only one.
+   */
+  async function audit(request: FastifyRequest, draft: AuditDraft): Promise<void> {
+    const actor = (request as FastifyRequest & { actor?: Actor }).actor
+    try {
+      await deps.storage.recordAudit({
+        id: deps.newId(),
+        at: deps.nowIso(),
+        requestId: request.id,
+        ...auditedBy(actor, draft),
+      })
+    } catch (error) {
+      request.log.error({ err: error, action: draft.action }, 'audit row could not be written')
+    }
+  }
+
   // -------------------------------------------------------------------- auth
 
   app.post(
@@ -187,7 +222,20 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
         email: body.email,
         password: body.password,
       })
-      if (!outcome.ok) return reply.code(401).send({ error: 'invalid_credentials' })
+      if (!outcome.ok) {
+        // Failures too, and this is the pair that matters: a hundred failures
+        // then one success is the shape of an attack, and recording only the
+        // success hides it. The email is the subject because that is what was
+        // tried — there may be no such user.
+        await audit(request, { action: 'auth.login.failed', subject: body.email })
+        return reply.code(401).send({ error: 'invalid_credentials' })
+      }
+      await audit(request, {
+        action: 'auth.login',
+        subject: body.email,
+        actorKind: 'user',
+        actorId: outcome.actor.id,
+      })
       return reply.send({ token: await sessions.issue(outcome.actor), role: outcome.actor.role })
     },
   )
@@ -236,7 +284,14 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
       return reply.code(400).send({ error: 'bad_request', message: 'Body needs { path, schema }.' })
     }
 
-    const outcome = await publishForm(deps, { path: body.path, schema: body.schema })
+    const outcome = await publishForm(deps, {
+      path: body.path,
+      schema: body.schema,
+      // Passed in so the audit row can be written INSIDE the publish's
+      // transaction. Appended here afterwards, it would record a publish that
+      // half-applied as having happened.
+      actor: (request as FastifyRequest & { actor: Actor }).actor,
+    })
     if (!outcome.ok) {
       // A switch rather than a ternary chain, so adding a refusal kind to
       // PublishOutcome fails to compile here until it is given a shape.
@@ -280,7 +335,28 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
       ...(origins === undefined ? {} : { allowedOrigins: origins as string[] }),
     })
     if (!outcome.ok) return reply.code(404).send({ error: 'unknown_form' })
+    // A permission change is the event a security review looks for first.
+    await audit(request, {
+      action: 'form.access.changed',
+      subject: path,
+      detail: { submit, allowedOrigins: origins === undefined ? 'unchanged' : (origins as string[]).join(' ') },
+    })
     return reply.code(204).send()
+  })
+
+  /**
+   * The log itself.
+   *
+   * Admin only, and reading it is NOT audited. A log that records its own
+   * reads grows without bound from a dashboard that polls it, and the entry
+   * would say nothing an access log does not — the events worth recording
+   * are the ones that touch somebody else's data.
+   */
+  app.get('/audit', { preHandler: requires('user.create') }, async (request, reply) => {
+    const raw = (request.query as { limit?: unknown } | undefined)?.limit
+    const asked = typeof raw === 'string' ? Number.parseInt(raw, 10) : 100
+    const limit = Number.isFinite(asked) ? Math.min(Math.max(asked, 1), 500) : 100
+    return reply.send({ entries: await deps.storage.listAudit(limit) })
   })
 
   app.get('/forms', { preHandler: requires('form.read') }, async (_request, reply) => {
@@ -301,6 +377,14 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
       const { path } = request.params as { path: string }
       const listed = await listSubmissions(deps, path)
       if (listed === undefined) return reply.code(404).send({ error: 'unknown_form' })
+      // The event a data protection officer asks about, and the one an audit
+      // log that covers only mutations cannot answer: who read other people's
+      // answers. The count, never the answers.
+      await audit(request, {
+        action: 'submission.read',
+        subject: path,
+        detail: { count: listed.length },
+      })
       return reply.send({ submissions: listed })
     },
   )
@@ -312,6 +396,13 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
       const { path } = request.params as { path: string }
       const csv = await exportCsv(deps, path)
       if (csv === undefined) return reply.code(404).send({ error: 'unknown_form' })
+      // An export leaves the building. Bytes rather than rows, because that is
+      // what was actually handed over.
+      await audit(request, {
+        action: 'submission.exported',
+        subject: path,
+        detail: { bytes: Buffer.byteLength(csv, 'utf8') },
+      })
       return reply
         .header('content-type', 'text/csv; charset=utf-8')
         .header('content-disposition', `attachment; filename="${path}-submissions.csv"`)

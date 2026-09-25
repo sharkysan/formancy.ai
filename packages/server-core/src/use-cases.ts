@@ -4,6 +4,8 @@ import { validateSchema } from '@formancy/spec/validate'
 import type { SchemaError } from '@formancy/spec/validate'
 import { createFormEngine, expressionProblems } from '@formancy/core'
 import type { CapabilitySource } from '@formancy/core'
+import type { AuditEntry } from './audit.js'
+import type { Actor } from './auth.js'
 import { maySubmit } from './access.js'
 import { filesToClaim } from './uploads.js'
 import type { FormRecord, Storage } from './ports.js'
@@ -42,7 +44,7 @@ export type PublishOutcome =
  */
 export async function publishForm(
   deps: ServerDeps,
-  input: { path: string; schema: unknown },
+  input: { path: string; schema: unknown; actor?: Actor },
 ): Promise<PublishOutcome> {
   const validated = validateSchema(input.schema)
   if (!validated.valid) return { ok: false, kind: 'invalid_schema', errors: validated.errors }
@@ -103,31 +105,54 @@ export async function publishForm(
 
     const version = (await deps.storage.latestVersionNumber(existing.id)) + 1
     const versionId = deps.newId()
-    await deps.storage.insertVersion({
-      id: versionId,
-      formId: existing.id,
-      version,
-      schema,
-      schemaHash: hash,
+    await deps.storage.publishVersion({
+      version: { id: versionId, formId: existing.id, version, schema, schemaHash: hash },
+      audit: publishAudit(deps, input, { path: input.path, version, hash }),
     })
-    await deps.storage.setCurrentVersion(existing.id, versionId)
     return { ok: true, formId: existing.id, versionId, version, schemaHash: hash }
   }
 
   const formId = deps.newId()
   const versionId = deps.newId()
-  await deps.storage.createForm({
-    id: formId,
-    path: input.path,
-    currentVersionId: null,
-    // A newly published form is private. Opening it is a separate, deliberate
-    // act through setFormAccess.
-    accessSubmit: 'authenticated',
-    allowedOrigins: null,
+  await deps.storage.publishVersion({
+    form: {
+      id: formId,
+      path: input.path,
+      currentVersionId: null,
+      // A newly published form is private. Opening it is a separate,
+      // deliberate act through setFormAccess.
+      accessSubmit: 'authenticated',
+      allowedOrigins: null,
+    },
+    version: { id: versionId, formId, version: 1, schema, schemaHash: hash },
+    audit: publishAudit(deps, input, { path: input.path, version: 1, hash }),
   })
-  await deps.storage.insertVersion({ id: versionId, formId, version: 1, schema, schemaHash: hash })
-  await deps.storage.setCurrentVersion(formId, versionId)
   return { ok: true, formId, versionId, version: 1, schemaHash: hash }
+}
+
+/**
+ * The audit row for a publish, built here so it can travel INSIDE the
+ * transaction rather than being appended after it.
+ *
+ * Before this it was written by the route once all three storage calls had
+ * returned, which meant a publish could half-apply and still be recorded as
+ * having happened. Now it rolls back with everything else.
+ */
+function publishAudit(
+  deps: ServerDeps,
+  input: { actor?: Actor },
+  about: { path: string; version: number; hash: string },
+): AuditEntry {
+  return {
+    id: deps.newId(),
+    at: deps.nowIso(),
+    action: 'form.published',
+    subject: about.path,
+    ...(input.actor === undefined
+      ? {}
+      : { actorKind: input.actor.kind, actorId: input.actor.id }),
+    detail: { version: about.version, schemaHash: about.hash },
+  }
 }
 
 export interface ResolvedForm {
@@ -267,13 +292,39 @@ export async function createSubmission(
     }
   }
 
-  await deps.storage.insertSubmission({
-    id,
-    formId: current.formId,
-    formVersionId: current.versionId,
-    data: engine.value(),
-    submittedAt: deps.nowIso(),
-  }, queued, claimable.ids)
+  const at = deps.nowIso()
+  await deps.storage.insertSubmission(
+    {
+      id,
+      formId: current.formId,
+      formVersionId: current.versionId,
+      data: engine.value(),
+      submittedAt: at,
+    },
+    queued,
+    claimable.ids,
+    // In the transaction, not after it: a submission that rolled back must
+    // leave nothing behind saying it happened, and an audit row for a
+    // submission nobody can find is worse than no row at all.
+    //
+    // No actor id — this route accepts anonymous submissions, and who
+    // submitted is the form's own data rather than the audit log's business.
+    // `actor` says only whether anybody was signed in.
+    {
+      id: deps.newId(),
+      at,
+      action: 'submission.created',
+      subject: input.path,
+      // The version, so a reader can tell which schema this answered without
+      // joining; the count, so an unusual submission is visible. Never the
+      // answers.
+      detail: {
+        submissionId: id,
+        version: current.version,
+        authenticated: input.actor === 'authenticated',
+      },
+    },
+  )
   return { ok: true, id, canonicalData: engine.value() }
 }
 

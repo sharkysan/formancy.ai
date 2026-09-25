@@ -196,6 +196,7 @@ community-maintained and behind
 ([0052](./docs/decisions/0052-richtext-is-not-html.md) has the full reasoning).
 A host that wants TipTap can still put it in through the component registry.
 
+<<<<<<< HEAD
 **The documentation is deployed, and describes what actually shipped.** The
 landing page's footer has linked to `/docs` since the page existed, and nothing
 ever built the docs site into the deployment — the link has been dead in
@@ -214,6 +215,47 @@ to finish if a nested app's assets point outside its own base, and it refuses
 if a Markdown link is root-absolute without `/docs/` — which builds cleanly
 and 404s against the landing page. The second one caught a link on its first
 run.
+=======
+**A publish is one transaction.** It was three storage calls — create the
+form when it is new, insert the version, point the form at it — and the
+middle failure is the one that hurts: a form row whose `currentVersionId` is
+still null resolves to nothing, so the form is in the list, answers its URL and
+has no schema to render. `GET /f/:path` 404s for a form that is right there.
+
+`publishVersion` does all of it in one commit, with the audit row inside, and
+refuses to leave a version pointing at a form that is not there — an UPDATE
+matching no rows is not an error in SQL, so the row count is checked. An
+integration test asserts no form anywhere is left pointing at nothing.
+
+Found by writing the audit log: recording a publish meant asking when a publish
+is finished, and the answer was "after three calls that could stop in the
+middle".
+
+**Audit logging.** Who did what, to which thing, and when — written
+append-only, and enforced there by a trigger rather than by application
+discipline, because the one moment it matters is the moment somebody has a
+reason to edit it.
+
+Two things it does that the usual audit log does not. It records **reads**:
+`submission.read` and `submission.exported` alongside `submission.created`, so
+"who downloaded four thousand people's answers" is answerable — which is the
+question actually asked and the one a mutation-only log is silent about. And it
+records **failed logins**, because a hundred failures then one success is the
+shape of an attack and recording only the success hides it.
+
+It never contains the data. `detail` carries identifiers and counts, and there
+is a test asserting the submitted values appear nowhere in the row that
+describes them — an audit log is read by more people and kept longer than the
+data it describes, so answers inside it are a second copy of the thing being
+protected.
+
+The row joins the submission's own transaction, so a submission that rolled
+back leaves nothing saying it happened. Reads and publishes are appended after
+the fact, for two different reasons, and
+[0057](./docs/decisions/0057-the-audit-log-records-reads.md) says which and
+why rather than leaving it to be discovered. `GET /audit` reads it back;
+reading is deliberately not itself audited.
+>>>>>>> publish-one-transaction
 
 **The website deploys as one static site.** The landing page at `/` and the
 playground at `/playground/`, built by `pnpm build:web`. The playground is

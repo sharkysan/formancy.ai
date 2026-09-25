@@ -1,3 +1,4 @@
+import type { AuditEntry } from './audit.js'
 import type { FormSchema } from '@formancy/spec'
 import type { Role } from './auth.js'
 
@@ -156,6 +157,30 @@ export interface Storage {
   ): Promise<void>
   setCurrentVersion(formId: string, versionId: string): Promise<void>
   insertVersion(record: FormVersionRecord): Promise<void>
+
+  /**
+   * A publish, as ONE commit.
+   *
+   * The three steps it replaces — create the form when it is new, insert the
+   * version, point the form at it — used to be three calls, and the middle
+   * failure is the one that hurts: a form row whose `currentVersionId` is
+   * still null resolves to nothing, so the form exists, answers its URL, and
+   * has no schema to render. `GET /f/:path` 404s for a form that is right
+   * there in the list.
+   *
+   * The audit row travels with them for the same reason it travels with a
+   * submission: a publish that rolled back must leave nothing saying it
+   * happened, and a publish that happened must leave something.
+   *
+   * `form` is present only when the form is new. An existing form is not
+   * touched apart from its pointer, because its access settings are not the
+   * publisher's business.
+   */
+  publishVersion(input: {
+    form?: FormRecord
+    version: FormVersionRecord
+    audit?: AuditEntry
+  }): Promise<void>
   getVersionById(id: string): Promise<FormVersionRecord | undefined>
   findVersionByHash(formId: string, schemaHash: string): Promise<FormVersionRecord | undefined>
   latestVersionNumber(formId: string): Promise<number>
@@ -179,7 +204,26 @@ export interface Storage {
     record: SubmissionRecord,
     deliveries?: readonly DeliveryRecord[],
     claimFileIds?: readonly string[],
+    audit?: AuditEntry,
   ): Promise<void>
+
+  /**
+   * Append one audit row.
+   *
+   * Append-only by contract, and the deployment is expected to back that with
+   * a database role holding INSERT and SELECT and nothing else — an audit
+   * log the application can edit is a log that says whatever the person who
+   * broke in wants it to say. There is deliberately no update and no delete
+   * on this port for anything to call.
+   *
+   * For a mutation that HAS a transaction, pass the entry to that call
+   * instead, so the row and the thing it describes commit together. See
+   * `insertSubmission`.
+   */
+  recordAudit(entry: AuditEntry): Promise<void>
+
+  /** Newest first. Reading the log is itself a management-plane action. */
+  listAudit(limit: number): Promise<AuditEntry[]>
 
   insertFile(record: FileRecord): Promise<void>
   getFile(id: string): Promise<FileRecord | undefined>

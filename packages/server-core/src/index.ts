@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 export { replayDelivery } from './outbox.js'
 export type { ReplayOutcome } from './outbox.js'
 export {
@@ -9,6 +10,10 @@ export {
   mayAttempt,
 } from './breaker.js'
 export type { BreakerState, WebhookHealth } from './breaker.js'
+=======
+export { AUDIT_ACTIONS, auditedBy } from './audit.js'
+export type { AuditAction, AuditDraft, AuditEntry } from './audit.js'
+>>>>>>> publish-one-transaction
 export {
   createSubmission,
   exportCsv,

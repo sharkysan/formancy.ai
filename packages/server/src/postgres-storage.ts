@@ -2,8 +2,8 @@ import { and, desc, eq, inArray, lt, lte, max, ne } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import type postgres from 'postgres'
 import type { FormSchema } from '@formancy/spec'
-import type { FileRecord, Role, Storage } from '@formancy/server-core'
-import { apiKeys, deliveries, drafts, files, forms, formVersions, submissions, webhooks } from './db.js'
+import type { AuditEntry, FileRecord, Role, Storage } from '@formancy/server-core'
+import { apiKeys, auditLog, deliveries, drafts, files, forms, formVersions, submissions, webhooks } from './db.js'
 import { users } from './db.js'
 
 /** The Storage port over Postgres — the mirror of server-core's in-memory one. */
@@ -66,6 +66,48 @@ export function createPostgresStorage(sql: postgres.Sql): Storage {
       })
     },
 
+    async publishVersion({ form, version, audit }) {
+      // ONE transaction. Three calls left a window where the form row existed
+      // with a null pointer, which is a form that answers its URL and has no
+      // schema to render — present in the list, 404 when opened.
+      await db.transaction(async (tx) => {
+        if (form !== undefined) {
+          await tx.insert(forms).values({
+            id: form.id,
+            path: form.path,
+            currentVersionId: form.currentVersionId,
+            accessSubmit: form.accessSubmit,
+            allowedOrigins: form.allowedOrigins,
+          })
+        }
+
+        await tx.insert(formVersions).values({
+          id: version.id,
+          formId: version.formId,
+          version: version.version,
+          schema: version.schema,
+          schemaHash: version.schemaHash,
+        })
+
+        const pointed = await tx
+          .update(forms)
+          .set({ currentVersionId: version.id })
+          .where(eq(forms.id, version.formId))
+          .returning({ id: forms.id })
+
+        // An UPDATE that matched nothing is not an error in SQL, so it has to
+        // be looked at: without this, publishing to a form that has been
+        // deleted underneath would insert an orphan version and report success.
+        if (pointed.length !== 1) {
+          throw new Error(
+            `Publishing to form ${version.formId} matched no form row. Rolling back, so there is no version pointing at a form that is not there.`,
+          )
+        }
+
+        if (audit !== undefined) await tx.insert(auditLog).values(auditRow(audit))
+      })
+    },
+
     async getVersionById(id) {
       const rows = await db.select().from(formVersions).where(eq(formVersions.id, id)).limit(1)
       const row = rows[0]
@@ -103,7 +145,7 @@ export function createPostgresStorage(sql: postgres.Sql): Storage {
       return rows[0]?.latest ?? 0
     },
 
-    async insertSubmission(record, queued, claimFileIds) {
+    async insertSubmission(record, queued, claimFileIds, audit) {
       // ONE transaction. The submission and the deliveries it triggers commit
       // together or not at all — the requirement that chose this database
       // (docs/decisions/0024-postgres-over-mongodb.md).
@@ -150,7 +192,31 @@ export function createPostgresStorage(sql: postgres.Sql): Storage {
             )
           }
         }
+
+        // Last, and inside: a submission that rolled back must leave nothing
+        // behind saying it happened.
+        if (audit !== undefined) await tx.insert(auditLog).values(auditRow(audit))
       })
+    },
+
+    async recordAudit(entry) {
+      await db.insert(auditLog).values(auditRow(entry))
+    },
+
+    async listAudit(limit) {
+      const rows = await db.select().from(auditLog).orderBy(desc(auditLog.at)).limit(limit)
+      return rows.map((row) => ({
+        id: row.id,
+        at: row.at.toISOString(),
+        action: row.action as AuditEntry['action'],
+        ...(row.actorKind === null ? {} : { actorKind: row.actorKind as 'user' | 'apiKey' }),
+        ...(row.actorId === null ? {} : { actorId: row.actorId }),
+        ...(row.subject === null ? {} : { subject: row.subject }),
+        ...(row.requestId === null ? {} : { requestId: row.requestId }),
+        ...(row.detail === null
+          ? {}
+          : { detail: row.detail as NonNullable<AuditEntry['detail']> }),
+      }))
     },
 
     async insertFile(record) {
@@ -450,5 +516,24 @@ function toWebhookRecord(row: typeof webhooks.$inferSelect) {
     secret: row.secret,
     consecutiveFailures: row.consecutiveFailures,
     openedAt: row.openedAt === null ? null : row.openedAt.toISOString(),
+  }
+}
+
+/**
+ * An entry as the table holds it.
+ *
+ * Absent and null are the same thing here, and the conversion is in one place
+ * so two call sites cannot disagree about which they write.
+ */
+function auditRow(entry: AuditEntry) {
+  return {
+    id: entry.id,
+    at: new Date(entry.at),
+    action: entry.action,
+    actorKind: entry.actorKind ?? null,
+    actorId: entry.actorId ?? null,
+    subject: entry.subject ?? null,
+    requestId: entry.requestId ?? null,
+    detail: entry.detail ?? null,
   }
 }
