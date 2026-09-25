@@ -82,6 +82,8 @@ describe('drainOutbox', () => {
       formId: 'f1',
       url: 'https://example.ch/hook',
       secret: 'whsec_x',
+      consecutiveFailures: 0,
+      openedAt: null,
     })
   })
 

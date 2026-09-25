@@ -1,4 +1,13 @@
 export {
+  BREAKER_COOLDOWN_MS,
+  BREAKER_THRESHOLD,
+  afterWebhookAttempt,
+  breakerState,
+  healthOf,
+  mayAttempt,
+} from './breaker.js'
+export type { BreakerState, WebhookHealth } from './breaker.js'
+export {
   createSubmission,
   exportCsv,
   listForms,

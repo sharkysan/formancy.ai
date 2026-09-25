@@ -1,5 +1,6 @@
 import type { DeliveryRecord, Storage, WebhookRecord } from './ports.js'
 import { MAX_ATTEMPTS, retryDelayMs } from './webhook.js'
+import { BREAKER_COOLDOWN_MS, afterWebhookAttempt, mayAttempt } from './breaker.js'
 
 /**
  * What to do with a delivery once an attempt has finished.
@@ -65,9 +66,15 @@ export interface OutboxDeps {
  * forever: the thing that decides *when* to run belongs to the host, and a
  * function that never returns cannot be tested.
  */
+/**
+ * Returns how many were ATTEMPTED — deliveries skipped because their
+ * destination's breaker is open do not count, so a caller polling until the
+ * queue is quiet does not spin on a dead endpoint.
+ */
 export async function drainOutbox(deps: OutboxDeps, limit = 20): Promise<number> {
   const now = deps.now()
   const due = await deps.storage.claimDueDeliveries(now.toISOString(), limit)
+  let skipped = 0
 
   for (const delivery of due) {
     // A webhook deleted since the row was queued leaves nothing to deliver to.
@@ -83,6 +90,23 @@ export async function drainOutbox(deps: OutboxDeps, limit = 20): Promise<number>
       continue
     }
 
+    // The breaker is per DESTINATION, where the retry schedule is per
+    // delivery. A form taking a submission a minute otherwise produces a
+    // minute's worth of deliveries all independently hammering an endpoint
+    // that has been returning 502 since Tuesday.
+    if (!mayAttempt(webhook, now)) {
+      skipped += 1
+      // Pushed out rather than left due, so the next batch is not the same
+      // rows again. The delivery keeps its attempt count: being skipped is
+      // not a failed attempt, and charging it one would use up a delivery's
+      // eight tries on a destination it never reached.
+      await deps.storage.updateDelivery({
+        ...delivery,
+        nextAttemptAt: new Date(now.getTime() + BREAKER_COOLDOWN_MS).toISOString(),
+      })
+      continue
+    }
+
     let outcome: AttemptOutcome
     try {
       outcome = await deps.send(delivery, webhook, Math.floor(now.getTime() / 1000))
@@ -93,9 +117,13 @@ export async function drainOutbox(deps: OutboxDeps, limit = 20): Promise<number>
     }
 
     await deps.storage.updateDelivery(afterAttempt(delivery, outcome, now, deps.random))
+    // The destination's health, which outlives this delivery. Written every
+    // time rather than only on a change: a success has to clear the count,
+    // and the write is one row.
+    await deps.storage.updateWebhook(afterWebhookAttempt(webhook, outcome.ok, now))
   }
 
-  return due.length
+  return due.length - skipped
 }
 
 async function findWebhook(storage: Storage, id: string): Promise<WebhookRecord | undefined> {

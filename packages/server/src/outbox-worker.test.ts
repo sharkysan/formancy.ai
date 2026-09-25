@@ -44,6 +44,8 @@ async function seed(storage: Storage, deliveries: DeliveryRecord[]): Promise<voi
     // somebody else's DNS.
     url: 'https://127.0.0.1/hook',
     secret: 'whsec_test',
+    consecutiveFailures: 0,
+    openedAt: null,
   })
   await storage.insertSubmission(
     { id: 's1', formId: 'f1', formVersionId: 'v1', data: {}, submittedAt: NOW },
