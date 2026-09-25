@@ -295,6 +295,19 @@ Found by writing the audit log: recording a publish meant asking when a publish
 is finished, and the answer was "after three calls that could stop in the
 middle".
 
+**The container was broken, and nothing noticed.** Adding `@formancy/challenge`
+as a dependency did not add it to the Dockerfile's COPY list, so the image
+built cleanly, passed every test, and exited on startup with
+`ERR_MODULE_NOT_FOUND`. The build says nothing because the package is only
+needed at runtime; the suite says nothing because it never ran the container.
+
+Two guards now. `dockerfile.test.ts` derives the server's workspace dependency
+closure from the manifests and fails if the COPY list has forgotten one — it
+runs in milliseconds and names the package. And CI builds the image and runs
+it, which catches what a static check cannot: a dependency needing a
+postinstall, a file the runtime stage drops, a Node version that stops
+resolving something.
+
 **`@formancy/challenge`: the challenge scheme, in one isomorphic package.** It
 is used in two places that cannot share server code — the server mints and
 verifies, a browser solves — and a solver written separately would be a

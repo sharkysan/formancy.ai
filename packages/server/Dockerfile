@@ -19,6 +19,7 @@ RUN npm install -g corepack@latest && corepack enable pnpm
 # invalidate the dependency layer. This is most of the build time.
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY packages/spec/package.json          packages/spec/
+COPY packages/challenge/package.json     packages/challenge/
 COPY packages/expressions/package.json   packages/expressions/
 COPY packages/core/package.json          packages/core/
 COPY packages/server-core/package.json   packages/server-core/
@@ -33,6 +34,7 @@ RUN pnpm install --frozen-lockfile --ignore-scripts \
 COPY LICENSE NOTICE tsconfig.base.json ./
 COPY scripts/ scripts/
 COPY packages/spec/        packages/spec/
+COPY packages/challenge/   packages/challenge/
 COPY packages/expressions/ packages/expressions/
 COPY packages/core/        packages/core/
 COPY packages/server-core/ packages/server-core/
