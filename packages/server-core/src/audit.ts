@@ -27,12 +27,10 @@ import type { Actor } from './auth.js'
  *   are appended after the rows are handed over, because there is nothing to
  *   be atomic with. The risk is an export that succeeds and an audit row that
  *   does not, which is why the failure is logged loudly rather than swallowed.
- * - A **publish** is three storage calls — insert the version, point the form
- *   at it, and sometimes create the form — and they are not yet one
- *   transaction. Making them one is a separate piece of work; until it
- *   happens, the audit row is appended after they all succeed and this comment
- *   is the honest account of that. It is recorded here rather than left to be
- *   discovered.
+ * A **publish** used to be here too, as three storage calls that were not one
+ * transaction. It is now `publishVersion`: the form when it is new, the
+ * version, the pointer that makes it current and the audit row, in one commit.
+ * The gap this comment used to describe is closed.
  *
  * ── WHAT IS NOT IN IT ───────────────────────────────────────────────────────
  *

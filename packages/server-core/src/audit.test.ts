@@ -117,7 +117,12 @@ describe('a submission', () => {
     })
 
     expect(outcome.ok).toBe(false)
-    expect(await d.storage.listAudit(10)).toHaveLength(0)
+    // Scoped to the submission: the fixture's own publish is audited too, now
+    // that a publish writes its row inside its transaction.
+    const created = (await d.storage.listAudit(50)).filter(
+      (entry) => entry.action === 'submission.created',
+    )
+    expect(created).toHaveLength(0)
   })
 
   test('records that nobody was signed in, rather than inventing an actor', async () => {
@@ -178,5 +183,86 @@ describe('the log', () => {
     // enforces it with a trigger as well.
     expect(Object.keys(storage)).not.toContain('updateAudit')
     expect(Object.keys(storage)).not.toContain('deleteAudit')
+  })
+})
+
+/**
+ * A publish is one commit.
+ *
+ * It used to be three storage calls, and the middle failure is the one that
+ * hurts: a form row whose pointer was never set resolves to nothing, so the
+ * form is in the list, answers its URL, and has no schema to render.
+ */
+describe('publishing', () => {
+  test('writes its audit row, with the actor who did it', async () => {
+    const d = deps()
+
+    await publishForm(d, {
+      path: 'survey',
+      schema: SCHEMA,
+      actor: { kind: 'user', id: 'u-ada', role: 'admin' },
+    })
+
+    const [entry] = await d.storage.listAudit(10)
+    expect(entry).toMatchObject({
+      action: 'form.published',
+      subject: 'survey',
+      actorKind: 'user',
+      actorId: 'u-ada',
+    })
+  })
+
+  test('leaves nothing behind when a step fails', async () => {
+    const d = deps()
+    // The failure that motivated the transaction: the version lands and the
+    // pointer never does.
+    d.storage.publishVersion = () => Promise.reject(new Error('lost the connection'))
+
+    await expect(publishForm(d, { path: 'survey', schema: SCHEMA })).rejects.toThrow()
+
+    // No form, no version, no audit row claiming any of it happened.
+    expect(await d.storage.getFormByPath('survey')).toBeUndefined()
+    expect(await d.storage.listAudit(10)).toHaveLength(0)
+  })
+
+  test('a republish of the same schema is not a new version, and not a new row', async () => {
+    const d = deps()
+    await publishForm(d, { path: 'survey', schema: SCHEMA })
+    const before = (await d.storage.listAudit(50)).length
+
+    const again = await publishForm(d, { path: 'survey', schema: SCHEMA })
+
+    // Nothing changed, so nothing is recorded as having changed. An audit log
+    // full of no-op publishes is one nobody reads.
+    expect(again).toMatchObject({ ok: true, version: 1 })
+    expect(await d.storage.listAudit(50)).toHaveLength(before)
+  })
+
+  test('a second, different schema publishes a version 2 and records it', async () => {
+    const d = deps()
+    await publishForm(d, { path: 'survey', schema: SCHEMA })
+
+    await publishForm(d, {
+      path: 'survey',
+      schema: {
+        ...SCHEMA,
+        model: { fields: [...SCHEMA.model.fields, { key: 'note', type: 'text', label: 'Note' }] },
+      },
+    })
+
+    const [entry] = await d.storage.listAudit(10)
+    expect(entry?.detail).toMatchObject({ version: 2 })
+  })
+
+  test('the form points at the version it just published', async () => {
+    const d = deps()
+
+    const published = await publishForm(d, { path: 'survey', schema: SCHEMA })
+    if (!published.ok) throw new Error('did not publish')
+
+    // The property the three calls could break: a form whose pointer is null
+    // is present in the list and 404s when opened.
+    const form = await d.storage.getFormByPath('survey')
+    expect(form?.currentVersionId).toBe(published.versionId)
   })
 })

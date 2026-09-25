@@ -284,7 +284,14 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
       return reply.code(400).send({ error: 'bad_request', message: 'Body needs { path, schema }.' })
     }
 
-    const outcome = await publishForm(deps, { path: body.path, schema: body.schema })
+    const outcome = await publishForm(deps, {
+      path: body.path,
+      schema: body.schema,
+      // Passed in so the audit row can be written INSIDE the publish's
+      // transaction. Appended here afterwards, it would record a publish that
+      // half-applied as having happened.
+      actor: (request as FastifyRequest & { actor: Actor }).actor,
+    })
     if (!outcome.ok) {
       // A switch rather than a ternary chain, so adding a refusal kind to
       // PublishOutcome fails to compile here until it is given a shape.
@@ -299,11 +306,6 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
           return reply.code(422).send({ error: outcome.kind, message: outcome.message })
       }
     }
-    await audit(request, {
-      action: 'form.published',
-      subject: body.path,
-      detail: { version: outcome.version, schemaHash: outcome.schemaHash },
-    })
     return reply.code(201).send({ version: outcome.version, schemaHash: outcome.schemaHash })
   })
 

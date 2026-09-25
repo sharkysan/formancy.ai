@@ -66,6 +66,48 @@ export function createPostgresStorage(sql: postgres.Sql): Storage {
       })
     },
 
+    async publishVersion({ form, version, audit }) {
+      // ONE transaction. Three calls left a window where the form row existed
+      // with a null pointer, which is a form that answers its URL and has no
+      // schema to render — present in the list, 404 when opened.
+      await db.transaction(async (tx) => {
+        if (form !== undefined) {
+          await tx.insert(forms).values({
+            id: form.id,
+            path: form.path,
+            currentVersionId: form.currentVersionId,
+            accessSubmit: form.accessSubmit,
+            allowedOrigins: form.allowedOrigins,
+          })
+        }
+
+        await tx.insert(formVersions).values({
+          id: version.id,
+          formId: version.formId,
+          version: version.version,
+          schema: version.schema,
+          schemaHash: version.schemaHash,
+        })
+
+        const pointed = await tx
+          .update(forms)
+          .set({ currentVersionId: version.id })
+          .where(eq(forms.id, version.formId))
+          .returning({ id: forms.id })
+
+        // An UPDATE that matched nothing is not an error in SQL, so it has to
+        // be looked at: without this, publishing to a form that has been
+        // deleted underneath would insert an orphan version and report success.
+        if (pointed.length !== 1) {
+          throw new Error(
+            `Publishing to form ${version.formId} matched no form row. Rolling back, so there is no version pointing at a form that is not there.`,
+          )
+        }
+
+        if (audit !== undefined) await tx.insert(auditLog).values(auditRow(audit))
+      })
+    },
+
     async getVersionById(id) {
       const rows = await db.select().from(formVersions).where(eq(formVersions.id, id)).limit(1)
       const row = rows[0]

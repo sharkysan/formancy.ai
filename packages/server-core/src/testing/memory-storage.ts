@@ -44,6 +44,17 @@ export function createMemoryStorage(): Storage {
       versions.set(record.id, { ...record })
     },
 
+    publishVersion: async ({ form, version, audit }) => {
+      // One step, like the transaction it stands in for. A form whose pointer
+      // was never set resolves to nothing, so all of this lands or none does.
+      if (form !== undefined) forms.set(form.id, { ...form })
+      const target = forms.get(version.formId)
+      if (target === undefined) throw new Error(`No form "${version.formId}"`)
+      versions.set(version.id, { ...version })
+      target.currentVersionId = version.id
+      if (audit !== undefined) audits.push({ ...audit })
+    },
+
     getVersionById: async (id) => versions.get(id),
 
     findVersionByHash: async (formId, hash) =>

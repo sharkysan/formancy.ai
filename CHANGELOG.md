@@ -196,6 +196,21 @@ community-maintained and behind
 ([0052](./docs/decisions/0052-richtext-is-not-html.md) has the full reasoning).
 A host that wants TipTap can still put it in through the component registry.
 
+**A publish is one transaction.** It was three storage calls — create the
+form when it is new, insert the version, point the form at it — and the
+middle failure is the one that hurts: a form row whose `currentVersionId` is
+still null resolves to nothing, so the form is in the list, answers its URL and
+has no schema to render. `GET /f/:path` 404s for a form that is right there.
+
+`publishVersion` does all of it in one commit, with the audit row inside, and
+refuses to leave a version pointing at a form that is not there — an UPDATE
+matching no rows is not an error in SQL, so the row count is checked. An
+integration test asserts no form anywhere is left pointing at nothing.
+
+Found by writing the audit log: recording a publish meant asking when a publish
+is finished, and the answer was "after three calls that could stop in the
+middle".
+
 **Audit logging.** Who did what, to which thing, and when — written
 append-only, and enforced there by a trigger rather than by application
 discipline, because the one moment it matters is the moment somebody has a
