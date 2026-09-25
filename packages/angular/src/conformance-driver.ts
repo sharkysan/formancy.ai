@@ -2,12 +2,22 @@ import { provideZonelessChangeDetection } from '@angular/core'
 import type { ComponentFixture } from '@angular/core/testing'
 import { TestBed } from '@angular/core/testing'
 import { fireEvent, render, screen, within } from '@testing-library/angular'
-import { createFormEngine } from '@formancy/core'
+import axe from 'axe-core'
+import { createFormEngine, parsePath } from '@formancy/core'
 import type { FormEngine } from '@formancy/core'
 import { resolveText } from '@formancy/spec'
 import type { FormSchema, Text } from '@formancy/spec'
-import { BACK_COMMAND, COMMAND_SEPARATOR, NEXT_COMMAND, fieldAtPath } from '@formancy/conformance'
+import {
+  ACCESSIBILITY_EXCLUSIONS,
+  ACCESSIBILITY_TAGS,
+  ACCESSIBILITY_UNMEASURABLE_IN_JSDOM,
+  BACK_COMMAND,
+  COMMAND_SEPARATOR,
+  NEXT_COMMAND,
+  fieldAtPath,
+} from '@formancy/conformance'
 import type {
+  AccessibilityViolation,
   ConformanceMessage,
   ConformanceSchema,
   JsonValue,
@@ -258,7 +268,13 @@ export function createAngularDriver(): RendererDriver {
         })()
         const describedBy = control?.getAttribute('aria-describedby')
         if (describedBy == null) continue
+        // The ERROR target only. aria-describedby also carries the hint — a
+        // required group says so there, because role=group cannot carry
+        // aria-required — and reading every target would report the word
+        // "required" as a second error code on a field with one error.
+        const errorId = engine.getFieldSnapshot(parsePath(candidate)).ids.error
         for (const id of describedBy.split(/\s+/)) {
+          if (id !== errorId) continue
           const text = document.getElementById(id)?.textContent?.trim()
           if (text == null || text === '') continue
           for (const code of text.split(', ')) messages.push({ path: candidate, code, text })
@@ -310,6 +326,11 @@ export function createAngularDriver(): RendererDriver {
       return { status: 'rejected', messages }
     },
 
+    async audit(): Promise<readonly AccessibilityViolation[]> {
+      requireMounted()
+      return auditRendered()
+    },
+
     async unmount() {
       TestBed.resetTestingModule()
       document.body.innerHTML = ''
@@ -319,6 +340,43 @@ export function createAngularDriver(): RendererDriver {
       lastOutcome = undefined
     },
   }
+}
+
+/**
+ * Run axe over the mounted form.
+ *
+ * `document.body`, not the component's host: the error summary and the live
+ * region are siblings of the form rather than children of it, and auditing the
+ * form element alone would skip the parts that are hardest to get right.
+ *
+ * The rule set comes from `@formancy/conformance`, the same one the React
+ * driver uses. Two renderers audited against two rule sets are not held to the
+ * same standard, and both suites would be green while they drifted.
+ */
+async function auditRendered(): Promise<readonly AccessibilityViolation[]> {
+  const disabled = {
+    ...ACCESSIBILITY_EXCLUSIONS,
+    ...ACCESSIBILITY_UNMEASURABLE_IN_JSDOM,
+  }
+  const rules = Object.fromEntries(
+    Object.keys(disabled).map((id) => [id, { enabled: false }] as const),
+  )
+
+  const results = await axe.run(document.body, {
+    runOnly: { type: 'tag', values: [...ACCESSIBILITY_TAGS] },
+    rules,
+    resultTypes: ['violations'],
+  })
+
+  return results.violations.map((violation) => ({
+    id: violation.id,
+    ...(violation.impact === undefined || violation.impact === null
+      ? {}
+      : { impact: violation.impact }),
+    help: violation.help,
+    helpUrl: violation.helpUrl,
+    nodes: violation.nodes.map((node) => node.html),
+  }))
 }
 
 function escapeRegExp(value: string): string {

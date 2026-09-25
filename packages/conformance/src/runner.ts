@@ -1,4 +1,5 @@
 import type {
+  AccessibilityViolation,
   ConformanceMessage,
   DriverFactory,
   MountOptions,
@@ -44,12 +45,37 @@ export interface DriverCrash {
    * — and `runSuite` reports it this way rather than letting one broken case
    * abort the whole run.
    */
-  readonly phase: 'mount' | 'step' | 'unmount' | 'fixture'
+  readonly phase: 'mount' | 'step' | 'audit' | 'unmount' | 'fixture'
   /** Absent when the driver never reached a step. */
   readonly stepIndex?: number
   readonly message: string
   /** The value the driver threw, rethrown verbatim by `assertFixtureResult`. */
   readonly error: unknown
+}
+
+/**
+ * The markup was wrong, whatever the behaviour did.
+ *
+ * Separate from `StepFailure` because it is a different kind of statement: a
+ * step failure says the renderer behaved differently from the specification,
+ * this says the renderer produced markup somebody cannot use. A case can pass
+ * every assertion in the fixture and still fail here, which is the entire
+ * point — the fixtures cannot see a missing label, and an audit cannot see a
+ * conditional that fires backwards.
+ */
+export interface AccessibilityFailure {
+  readonly fixture: string
+  /**
+   * The step the audit ran after. Absent when it ran on the freshly mounted
+   * form, which is a meaningfully different report: markup that is wrong
+   * before anybody touches it is wrong in the renderer, not in a state
+   * transition.
+   */
+  readonly afterStep?: number
+  readonly violations: readonly AccessibilityViolation[]
+  /** The whole story, formatted for a test runner's output. */
+  readonly message: string
+  readonly ariaSnapshot?: string
 }
 
 export interface StepOutcome {
@@ -66,6 +92,17 @@ export interface FixtureResult {
   readonly steps: readonly StepOutcome[]
   /** At most one: the run stops at the first failure. */
   readonly failure?: StepFailure
+  /**
+   * At most one: auditing stops after the first, because the states that follow
+   * report the same missing label over and over and the state that introduced
+   * it is the only one worth naming.
+   *
+   * The STEPS do not stop. A behaviour assertion is the fixture's primary
+   * claim, and letting unusable markup suppress it would mean one bug hides
+   * another — so a case can report both, and `assertFixtureResult` raises the
+   * behaviour failure first because it is the more actionable of the two.
+   */
+  readonly accessibility?: AccessibilityFailure
   readonly crash?: DriverCrash
   /**
    * An unmount that threw AFTER a step had already failed or crashed. Kept
@@ -115,6 +152,14 @@ export async function runFixture(fixture: Fixture, driver: RendererDriver): Prom
   const context: RunContext = { driver }
   let failure: StepFailure | undefined
   let crash: DriverCrash | undefined
+  let accessibility: AccessibilityFailure | undefined
+
+  // The form as it arrives, before anybody has touched it.
+  try {
+    accessibility = await auditNow(fixture, driver, undefined)
+  } catch (error) {
+    crash = { phase: 'audit', message: messageOf(error), error }
+  }
 
   for (const [index, step] of fixture.steps.entries()) {
     const kind = stepKind(step)
@@ -138,6 +183,22 @@ export async function runFixture(fixture: Fixture, driver: RendererDriver): Prom
       crash = { phase: 'step', stepIndex: index, message: messageOf(error), error }
       outcomes.push({ index, kind, step, status: 'crashed' })
     }
+
+    // After the step, not before: the states worth auditing are the ones the
+    // form reaches — an error appearing, a row arriving, a page turning.
+    //
+    // Only until the first one is found. Re-auditing afterwards reports the
+    // same missing label at every state that follows it, and the state that
+    // introduced it is the only one worth naming. The STEPS keep running
+    // though: markup that nobody can use must not hide a conditional that
+    // fires backwards, and one run should tell you about both.
+    if (failure === undefined && crash === undefined && accessibility === undefined && MUTATES[kind]) {
+      try {
+        accessibility = await auditNow(fixture, driver, index)
+      } catch (error) {
+        crash = { phase: 'audit', stepIndex: index, message: messageOf(error), error }
+      }
+    }
   }
 
   let teardownError: DriverCrash | undefined
@@ -157,9 +218,15 @@ export async function runFixture(fixture: Fixture, driver: RendererDriver): Prom
 
   return {
     fixture: fixture.name,
-    status: crash !== undefined ? 'crashed' : failure !== undefined ? 'failed' : 'passed',
+    status:
+      crash !== undefined
+        ? 'crashed'
+        : failure !== undefined || accessibility !== undefined
+          ? 'failed'
+          : 'passed',
     steps: outcomes,
     ...(failure === undefined ? {} : { failure }),
+    ...(accessibility === undefined ? {} : { accessibility }),
     ...(crash === undefined ? {} : { crash }),
     ...(teardownError === undefined ? {} : { teardownError }),
   }
@@ -243,6 +310,11 @@ function withoutRowIds(value: unknown): unknown {
 export function assertFixtureResult(result: FixtureResult): void {
   if (result.crash !== undefined) throw result.crash.error
   if (result.failure !== undefined) throw new ConformanceAssertionError(result.failure)
+  // After the step failure, because a form that behaves wrongly usually also
+  // audits wrongly, and the behaviour is the more actionable of the two.
+  if (result.accessibility !== undefined) {
+    throw new AccessibilityAssertionError(result.accessibility)
+  }
 }
 
 export class ConformanceAssertionError extends Error {
@@ -252,6 +324,18 @@ export class ConformanceAssertionError extends Error {
     super(failure.message)
     this.name = 'ConformanceAssertionError'
     this.failure = failure
+  }
+}
+
+/** Its own class, so a CI log can tell the two kinds of failure apart without
+ *  parsing a message. */
+export class AccessibilityAssertionError extends Error {
+  readonly accessibility: AccessibilityFailure
+
+  constructor(accessibility: AccessibilityFailure) {
+    super(accessibility.message)
+    this.name = 'AccessibilityAssertionError'
+    this.accessibility = accessibility
   }
 }
 
@@ -416,6 +500,82 @@ async function describeFailure(
   }
 }
 
+/**
+ * Which steps can change the DOM, and therefore what is worth auditing after.
+ *
+ * A total record rather than a list, so the day a step kind is added the
+ * compiler asks whether it mutates instead of quietly answering no — and a
+ * new interactive step that silently stopped being audited is precisely the
+ * hole this table exists to keep shut.
+ *
+ * The `expect*` kinds are reads. Auditing after one would audit the same DOM
+ * twice and report the same violation twice.
+ */
+const MUTATES: Record<StepKind, boolean> = {
+  set: true,
+  activate: true,
+  addItem: true,
+  removeItem: true,
+  next: true,
+  back: true,
+  submit: true,
+  expectVisible: false,
+  expectHidden: false,
+  expectValue: false,
+  expectErrors: false,
+  expectNoErrors: false,
+  expectSubmit: false,
+  expectPage: false,
+}
+
+/**
+ * Audit the form as it stands, if the driver can.
+ *
+ * Returns undefined when there is nothing to report OR when the driver has no
+ * auditor. Those are different situations and the second one is deliberately
+ * not an error: a driver with no DOM (the engine in Node, the server's
+ * revalidation endpoint) has nothing to audit, and demanding a stub from it
+ * would be asking for a lie.
+ */
+async function auditNow(
+  fixture: Fixture,
+  driver: RendererDriver,
+  afterStep: number | undefined,
+): Promise<AccessibilityFailure | undefined> {
+  if (driver.audit === undefined) return undefined
+
+  const violations = await driver.audit()
+  if (violations.length === 0) return undefined
+
+  const snapshot = await snapshotQuietly(driver)
+  const where =
+    afterStep === undefined ? 'as first rendered' : `after step ${String(afterStep)}`
+  const lines = [
+    `${fixture.name} - ${violations.length} accessibility violation(s) ${where}:`,
+    ...violations.map(describeViolation),
+  ]
+  if (snapshot !== undefined && snapshot !== '') {
+    lines.push('  accessible tree:', indent(snapshot))
+  }
+
+  return {
+    fixture: fixture.name,
+    ...(afterStep === undefined ? {} : { afterStep }),
+    violations,
+    message: lines.join('\n'),
+    ...(snapshot === undefined ? {} : { ariaSnapshot: snapshot }),
+  }
+}
+
+function describeViolation(violation: AccessibilityViolation): string {
+  const impact = violation.impact === undefined ? '' : ` [${violation.impact}]`
+  const help = violation.helpUrl === undefined ? '' : `\n      ${violation.helpUrl}`
+  // Every node, not the first: "label is missing" on one of four unlabelled
+  // inputs sends somebody to fix one quarter of the problem.
+  const nodes = violation.nodes.map((node) => `\n      ${node}`).join('')
+  return `  ${violation.id}${impact}: ${violation.help}${nodes}${help}`
+}
+
 /** A snapshot is diagnostics. A driver that cannot produce one has already
  *  failed the case being reported, and must not mask it with a second error. */
 async function snapshotQuietly(driver: RendererDriver): Promise<string | undefined> {
@@ -511,6 +671,7 @@ function formatSuite(
   const lines = [`${passed} passed, ${failed} failed, ${crashed} crashed`]
   for (const result of results) {
     if (result.failure !== undefined) lines.push('', result.failure.message)
+    if (result.accessibility !== undefined) lines.push('', result.accessibility.message)
     if (result.crash !== undefined) {
       lines.push('', `${result.fixture} - driver crashed during ${result.crash.phase}: ${result.crash.message}`)
     }

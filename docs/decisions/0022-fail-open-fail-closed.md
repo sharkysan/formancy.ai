@@ -53,6 +53,22 @@ unknown identifiers, type errors and computed cycles are rejected when the
 engine is built, and never reach a user. Mostly is not entirely, which is why
 this record exists.
 
+**One instance of that cost, found and removed.** A `visible` rule reading a
+`selectboxes` or `file` field hid nothing until the first tick or the first
+attachment. The engine declared every non-container leaf `dyn` and seeded an
+absent one with null, so `'migration' in topics` was `in` against null — no
+overload, a runtime failure, and by this record's own rule the field was shown.
+The form looked like the rule was inverted rather than broken, which is the
+silence described above doing exactly what it says it does.
+
+The fix is not to the failure policy but to the premise: an empty list answer is
+`[]`, so `LIST_VALUED_FIELD_TYPES` in `@formancy/spec` names the types that
+carry one and the engine declares them `list`. It lives in the spec rather than
+in the engine because two readers that disagree about it disagree about whether
+a form is showing a field. Pinned by the `an untouched list answer is an empty
+list, not nothing` block in `packages/core/src/list-fields.test.ts`, which fails
+in all three directions against the previous declaration.
+
 ## Alternatives considered
 
 **Fail closed everywhere.** Rejected: consistent, and it converts a broken rule

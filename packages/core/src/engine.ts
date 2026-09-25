@@ -1,5 +1,5 @@
 import type { FieldDef, FieldType, FormSchema, LogicRule, Text } from '@formancy/spec'
-import { ROW_ID, ROW_ID_PREFIX, resolveText } from '@formancy/spec'
+import { LIST_VALUED_FIELD_TYPES, ROW_ID, ROW_ID_PREFIX, resolveText } from '@formancy/spec'
 import { captureCapabilities, compile, evaluate } from '@formancy/expressions'
 import type {
   Capabilities,
@@ -192,6 +192,16 @@ function otherSide(mode: 'client' | 'server'): 'client' | 'server' {
   return mode === 'client' ? 'server' : 'client'
 }
 
+/**
+ * The field types a renderer draws as a fieldset and a legend.
+ *
+ * Several controls answering one question, which is a `group` to assistive
+ * technology — and `role="group"` does not support `aria-required`, so these
+ * say they are required in their description instead. See
+ * `FieldPropsInput.grouped`.
+ */
+const GROUPED_TYPES: ReadonlySet<string> = new Set(['radio', 'selectboxes'])
+
 export function createFormEngine(options: FormEngineOptions): FormEngine {
   const { schema } = options
 
@@ -377,13 +387,20 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
     )
   }
 
-  /** Top-level declarations: leaves are dyn because any field can be empty
-   *  while the user types; containers keep their shape. Nested reads go
-   *  through the container dynamically. */
+  /** Top-level declarations: scalar leaves are dyn because any field can be
+   *  empty while the user types; containers and list answers keep their shape.
+   *  Nested reads go through the container dynamically.
+   *
+   *  A list answer is declared so that `buildBag` seeds it with `[]` rather
+   *  than null. `'a' in topics` is false against an empty list and an ERROR
+   *  against null, and a visibility rule that errors fails OPEN — so
+   *  declaring a selectboxes field `dyn` shows every field it was meant to
+   *  hide, right up until the first tick. */
+  const listValued: readonly FieldType[] = LIST_VALUED_FIELD_TYPES
   const declarations: VariableDeclarations = Object.fromEntries(
     topLevelDataFields(schema.model.fields).map((def): [string, DeclaredType] => [
       def.key,
-      def.type === 'group' ? 'map' : def.type === 'repeater' ? 'list' : 'dyn',
+      def.type === 'group' ? 'map' : listValued.includes(def.type) ? 'list' : 'dyn',
     ]),
   )
 
@@ -934,7 +951,15 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
         touched,
         errors,
         ids,
-        props: buildFieldProps({ wire, ids, required, disabled, touched, errors }),
+        props: buildFieldProps({
+          wire,
+          ids,
+          required,
+          disabled,
+          touched,
+          errors,
+          grouped: GROUPED_TYPES.has(node.def.type),
+        }),
       })
       snapshotCache.set(wire, snapshot)
       return snapshot

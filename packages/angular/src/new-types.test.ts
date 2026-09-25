@@ -89,7 +89,16 @@ describe('selectboxes', () => {
   test('required is announced on the question, not on every box', async () => {
     await renderForm(engineFor(schema))
 
-    expect(screen.getByRole('group', { name: 'Topics' }).getAttribute('aria-required')).toBe('true')
+    // In the description, not as aria-required: role=group does not support
+    // that attribute, so assistive technology ignores it and an auditor calls
+    // it invalid ARIA. The conformance run's axe pass is what found this.
+    const group = screen.getByRole('group', { name: 'Topics' })
+    const described = (group.getAttribute('aria-describedby') ?? '')
+      .split(/\s+/)
+      .map((id) => document.getElementById(id)?.textContent?.trim())
+
+    expect(described).toContain('required')
+    expect(group.getAttribute('aria-required')).toBeNull()
     for (const box of screen.getAllByRole('checkbox')) {
       expect(box.getAttribute('aria-required')).toBeNull()
     }

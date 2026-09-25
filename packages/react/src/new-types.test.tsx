@@ -96,10 +96,25 @@ describe('selectboxes', () => {
 
     // "At least one" is a property of the question. On each box it would
     // announce every option as required, which is the opposite of what it says.
-    expect(screen.getByRole('group', { name: 'Topics' }).getAttribute('aria-required')).toBe('true')
+    const group = screen.getByRole('group', { name: 'Topics' })
+    const described = (group.getAttribute('aria-describedby') ?? '')
+      .split(/\s+/)
+      .map((id) => document.getElementById(id)?.textContent?.trim())
+
+    expect(described).toContain('required')
     for (const box of screen.getAllByRole('checkbox')) {
       expect(box.getAttribute('aria-required')).toBeNull()
     }
+  })
+
+  test('and not with aria-required, which a group may not carry', () => {
+    mount(schema)
+
+    // `role="group"` does not support `aria-required`. Assistive technology
+    // ignores it and an auditor reports it as invalid ARIA, so a requirement
+    // expressed that way is a requirement nobody is told about. The
+    // conformance run's axe pass is what found this.
+    expect(screen.getByRole('group', { name: 'Topics' }).getAttribute('aria-required')).toBeNull()
   })
 })
 

@@ -27,9 +27,12 @@ data loss wearing the word "conversion".
 - **`selectboxes`** — several answers from one list. A fieldset and a legend,
   like the radio group, because the relationship is the same one; the answer is
   stored in the options' own order, so two people who choose the same answers
-  produce the same submission.
+  produce the same submission. Nothing ticked is `[]`, never null
+  (see below) — an empty list is an answer, and treating it as the absence of
+  one is the mistake every implementation makes first.
 - **`file`** — attachments, now with a server behind them. The submission
-  stores what each file is and where it went, never its bytes. `accept` and `maxFileSize` are enforced by the
+  stores what each file is and where it went, never its bytes. `accept` and
+  `maxFileSize` are enforced by the
   engine as well as by the picker, because a picker's filter means nothing to
   somebody posting to the endpoint directly. The renderers take an uploader
   from the host and say so plainly when there is none.
@@ -61,9 +64,59 @@ Set `FORMANCY_FILES_DIR` to turn uploads on. Leaving it unset is a supported
 state, not a misconfiguration: a form with a file field still renders and still
 submits, and the field says plainly that there is nowhere to put one.
 
+**A rule reading a list field now hides what it was told to hide.** An
+untouched `selectboxes` or `file` field reached expressions as null rather than
+as `[]`, so `'migration' in topics` was `in` against null: no overload, a
+runtime failure, and a `visible` rule that fails is shown rather than hidden
+([0022](./docs/decisions/0022-fail-open-fail-closed.md)). Every field whose
+visibility depended on a tick was therefore visible until the first tick, which
+reads as an inverted rule rather than a broken one. `LIST_VALUED_FIELD_TYPES`
+now names the types whose answer is a list, in `@formancy/spec` rather than in
+the engine, because two readers disagreeing about it disagree about whether a
+form is showing a field.
+
+**The conformance run audits accessibility, and it found a bug on its first
+pass.** axe-core now runs on every mounted form and after every step that can
+change the DOM — an error appearing, a row arriving, a page turning — which
+are the states a hand-written audit never visits. The rule set lives in
+`@formancy/conformance` rather than in a driver, because two renderers audited
+against two rule sets are not held to one standard and both suites would stay
+green while they drifted. The auditor itself belongs to the driver: the
+published package stays framework-free, and a third party may certify with a
+different tool.
+
+The bug: a required `radio` or `selectboxes` group carried `aria-required` on
+its `<fieldset>`. `role="group"` does not support that attribute, so assistive
+technology ignored it — a required group said nothing about being required,
+and the attribute was invalid ARIA besides. Requiredness for a grouped field is
+now announced through the group's description, which the engine composes, and
+is visible as well as announced. A required radio group never announced it at
+all, which no test could have told you, because the wrong answer and no answer
+look identical from the outside.
+
+Two documents already described axe as running in the conformance suite. It
+was not. That is the second time writing something down has been what found it
+missing.
+
+**The website deploys as one static site.** The landing page at `/` and the
+playground at `/playground/`, built by `pnpm build:web`. The playground is
+built with `base: '/playground/'`, without which Vite's absolute asset URLs
+point at the site's asset directory instead of its own — the page loads, the
+script 404s, and the deployment is a blank screen while the build log says
+everything succeeded. The build script reads the built HTML back and refuses
+to finish if that has happened, because a check that only runs when somebody
+remembers to look is not a check. The site also has a favicon now; it had been
+asking for one that was never there.
+
 **The website.** `apps/site` is formancy.ai, and the form halfway down it is a
 real document handed to `@formancy/react` rather than a screenshot
-([0053](./docs/decisions/0053-the-page-is-the-product.md)).
+([0053](./docs/decisions/0053-the-page-is-the-product.md)). It exercises every
+type spec 2 added — `selectboxes`, `richtext` and `file`, arranged in `tabs`
+over a `table` — which is how the list-field bug above was found. Its file
+field uploads nowhere and says so in the storage key, because the page is
+static and a demo that looks like it stored something makes the product look
+like it silently drops files. The playground is one click away from the bar,
+from the demo and from the end of the page.
 
 ### Fixed
 

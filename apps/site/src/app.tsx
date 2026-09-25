@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactElement, ReactNode } from 'react'
 import { createFormEngine } from '@formancy/core'
-import { FormancyForm, FormancyProvider } from '@formancy/react'
+import { FormancyForm, FormancyProvider, UploaderProvider } from '@formancy/react'
 import '@formancy/themes/dusk.css'
 import './site.css'
 import { DEMO_SCHEMA, DEMO_SOURCE } from './demo-schema.js'
+import { demoUploader } from './demo-uploader.js'
 import { useJourney } from './use-journey.js'
 
 /**
@@ -22,6 +23,22 @@ import { useJourney } from './use-journey.js'
  */
 
 const REPO = 'https://github.com/sharkysan/formancy.ai'
+
+/**
+ * Where the playground lives.
+ *
+ * One origin in production, where the site and the playground are served from
+ * the same host — and two Vite servers in development, where a relative path
+ * would land on whichever app is being worked on rather than the playground. A
+ * link that is broken for everybody developing the site is a link nobody
+ * notices is broken in production either.
+ *
+ * The trailing slash is load-bearing. `/playground` is a directory, and
+ * whether it resolves to `/playground/index.html` depends on the static host:
+ * some redirect, some 404. Asking for the address we actually mean costs
+ * nothing and removes the host from the question.
+ */
+const PLAYGROUND = import.meta.env.DEV ? 'http://localhost:4381/' : '/playground/'
 
 export function App(): ReactElement {
   const journey = useJourney()
@@ -54,7 +71,10 @@ export function App(): ReactElement {
           <a className="optional" href="#build">
             Build
           </a>
-          <a href="#run">Run it</a>
+          <a className="optional" href="#run">
+            Run it
+          </a>
+          <a href={PLAYGROUND}>Playground</a>
           <a href={REPO} rel="noreferrer noopener">
             GitHub
           </a>
@@ -156,7 +176,9 @@ export function App(): ReactElement {
           <h2>A document on the left. A working form on the right.</h2>
           <p className="lede" style={{ marginBlockStart: '1.25rem' }}>
             This one is live. Choose the managed plan and watch a field appear, because the
-            document says it should.
+            document says it should. The second tab holds the types spec 2 added: tick boxes
+            whose answer is a list, formatted text that is parsed rather than trusted, and an
+            attachment.
           </p>
 
           <div className="demo">
@@ -175,11 +197,24 @@ export function App(): ReactElement {
               </header>
               <div className="sheet">
                 <FormancyProvider engine={engine}>
-                  <FormancyForm layout="web" onSubmit={() => undefined} />
+                  {/* The file field wants somewhere to put bytes before it
+                      will accept one. This page has no server, so the
+                      uploader keeps them here and says so. */}
+                  <UploaderProvider value={demoUploader}>
+                    <FormancyForm layout="web" onSubmit={() => undefined} />
+                  </UploaderProvider>
                 </FormancyProvider>
               </div>
             </div>
           </div>
+
+          <p className="note" style={{ marginBlockStart: '1.75rem' }}>
+            Nothing here is sent anywhere — the page is a static site, and a file you attach
+            stays in this tab, which the submission says out loud rather than pretending
+            otherwise.{' '}
+            <a href={PLAYGROUND}>Open the playground</a> to edit the document itself and watch
+            React and Angular render the same change.
+          </p>
         </Section>
 
         <Section id="access" className="wide" journey={journey} section="access">
@@ -409,7 +444,7 @@ function Finale({ journey }: { journey: ReturnType<typeof useJourney> }): ReactE
       </p>
 
       <div className="actions" style={{ justifyContent: 'center' }}>
-        <a className="action primary" href="/playground">
+        <a className="action primary" href={PLAYGROUND}>
           Open the playground
         </a>
         <a className="action" href={REPO} rel="noreferrer noopener">

@@ -422,6 +422,26 @@ function SelectField({ path, label }: FieldComponentProps) {
   )
 }
 
+/**
+ * How a grouped field says it is required.
+ *
+ * A real element rather than an attribute, because the attribute that would
+ * mean this — `aria-required` — is not supported on `role="group"`. The
+ * engine puts this element's id into the group's `aria-describedby`, so it is
+ * announced after the legend; rendering it is all a renderer has to do.
+ *
+ * Visible as well as announced: WCAG 1.4.1 means a requirement carried only by
+ * a red asterisk is a requirement some people cannot perceive.
+ */
+function RequiredHint({ field }: { field: ReturnType<typeof useField> }) {
+  if (!field.required) return null
+  return (
+    <span data-formancy-part="required-hint" id={field.props.hint.id}>
+      required
+    </span>
+  )
+}
+
 function RadioGroupField({ path, label }: FieldComponentProps) {
   const field = useField(path)
   const options = useResolvedOptions(field)
@@ -434,6 +454,7 @@ function RadioGroupField({ path, label }: FieldComponentProps) {
       aria-describedby={field.controlProps['aria-describedby']}
     >
       <legend data-formancy-part="label">{label}</legend>
+      <RequiredHint field={field} />
       {options.map((option) => {
         const optionId = `${field.ids.control}:${option.value}`
         return (
@@ -482,9 +503,12 @@ function StaticField({ label }: FieldComponentProps) {
  * `type="checkbox"` and an array — not a different structure and not a
  * different way of being announced.
  *
- * `aria-required` sits on the group rather than on each box: requiring "at
- * least one" is a property of the question, and putting it on every box would
- * announce each one as required, which is the opposite of what it means.
+ * Requiring "at least one" is a property of the QUESTION, not of any one box,
+ * so it belongs to the group — but not as `aria-required`, which
+ * `role="group"` does not support and assistive technology therefore ignores.
+ * It is announced through the group's description instead, which the engine
+ * composes. Putting it on every box would announce each one as required,
+ * which is the opposite of what it means.
  */
 function SelectBoxesField({ path, label }: FieldComponentProps) {
   const field = useField(path)
@@ -508,9 +532,9 @@ function SelectBoxesField({ path, label }: FieldComponentProps) {
       data-formancy-field-path={path}
       data-state={showError ? 'invalid' : 'valid'}
       aria-describedby={field.controlProps['aria-describedby']}
-      aria-required={field.required ? true : undefined}
     >
       <legend data-formancy-part="label">{label}</legend>
+      <RequiredHint field={field} />
       {options.map((option) => {
         const optionId = `${field.ids.control}:${option.value}`
         return (

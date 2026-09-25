@@ -114,8 +114,56 @@ export interface RendererDriver {
   /** Submit the form as a person would: press the submit control. */
   submit(): Promise<SubmitResult>
 
+  /**
+   * Audit the rendered form and report every accessibility violation in it.
+   *
+   * Called on the freshly mounted form and again after every step that can
+   * change the DOM, because the interesting failures are not in the initial
+   * render — they are in the state a form reaches after an error appears, a
+   * row is added or a tab is opened, which is exactly where a hand-written
+   * audit never looks.
+   *
+   * **The auditor belongs to the driver, not to this package.** Three reasons,
+   * and the first is sufficient: this package is published and framework-free,
+   * and adding axe-core to it would put a browser dependency in the tree of
+   * every consumer including the Node engine driver. The second is that only
+   * the driver has a DOM to audit. The third is that a third party certifying
+   * a renderer may well have standardised on a different auditor, and the
+   * contract here is *zero violations*, not *axe specifically*.
+   *
+   * Optional, because a driver with no DOM has nothing to audit: the in-process
+   * engine driver and the server's revalidation driver both leave it out. A
+   * driver that DOES render markup and omits it is not audited, which is a
+   * choice its author is making in the open rather than one this package can
+   * make for them.
+   */
+  audit?(): Promise<readonly AccessibilityViolation[]>
+
   /** Tear down. Optional: an in-process engine driver has nothing to tear down. */
   unmount?(): Promise<void>
+}
+
+/**
+ * One thing wrong with the rendered markup.
+ *
+ * Shaped after axe-core's result because that is what nearly every
+ * implementation will have to hand, but deliberately not axe's own type: a
+ * published contract that imported one auditor's types would make that auditor
+ * part of the contract.
+ */
+export interface AccessibilityViolation {
+  /** The rule that failed, e.g. `label` or `aria-valid-attr-value`. Stable. */
+  readonly id: string
+  readonly impact?: 'minor' | 'moderate' | 'serious' | 'critical'
+  /** One line the renderer's author can act on. */
+  readonly help: string
+  readonly helpUrl?: string
+  /**
+   * The offending markup, one entry per node, as a selector or an HTML
+   * fragment. Never empty: a violation nobody can locate is a violation nobody
+   * will fix.
+   */
+  readonly nodes: readonly string[]
 }
 
 export interface MountOptions {
