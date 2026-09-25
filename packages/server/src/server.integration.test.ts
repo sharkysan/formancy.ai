@@ -882,6 +882,45 @@ describe('the audit log', () => {
     expect(JSON.stringify(rows)).not.toContain('wrong-on-purpose')
   })
 
+  test('a publish and its audit row commit together', async () => {
+    const published = await app.inject({
+      method: 'POST',
+      url: '/forms',
+      headers: asAdmin(),
+      payload: {
+        path: 'atomic',
+        schema: {
+          specVersion: '2',
+          id: 'atomic',
+          title: 'Atomic',
+          model: { fields: [{ key: 'a', type: 'text', label: 'A' }] },
+        },
+      },
+    })
+    expect(published.statusCode).toBe(201)
+
+    // The form, its version, the pointer that makes it current and the audit
+    // row: one commit. Before, these were three calls, and a form whose
+    // pointer was never set is present in the list and 404s when opened.
+    const rows = await sql`
+      SELECT f.current_version_id, v.id AS version_id, a.id AS audit_id
+      FROM forms f
+      JOIN form_versions v ON v.form_id = f.id
+      LEFT JOIN audit_log a ON a.subject = f.path AND a.action = 'form.published'
+      WHERE f.path = 'atomic'`
+
+    expect(rows).toHaveLength(1)
+    expect(rows[0]?.['current_version_id']).toBe(rows[0]?.['version_id'])
+    expect(rows[0]?.['audit_id']).not.toBeNull()
+  })
+
+  test('no form is left pointing at nothing', async () => {
+    // The specific corruption the transaction prevents, asserted across every
+    // form the suite has published rather than one.
+    const orphans = await sql`SELECT path FROM forms WHERE current_version_id IS NULL`
+    expect(orphans).toHaveLength(0)
+  })
+
   test('the table refuses to be rewritten', async () => {
     // Append-only in the database rather than by application discipline, for
     // the same reason version rows are immutable there: the one moment it

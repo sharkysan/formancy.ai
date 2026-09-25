@@ -146,6 +146,30 @@ export interface Storage {
   ): Promise<void>
   setCurrentVersion(formId: string, versionId: string): Promise<void>
   insertVersion(record: FormVersionRecord): Promise<void>
+
+  /**
+   * A publish, as ONE commit.
+   *
+   * The three steps it replaces — create the form when it is new, insert the
+   * version, point the form at it — used to be three calls, and the middle
+   * failure is the one that hurts: a form row whose `currentVersionId` is
+   * still null resolves to nothing, so the form exists, answers its URL, and
+   * has no schema to render. `GET /f/:path` 404s for a form that is right
+   * there in the list.
+   *
+   * The audit row travels with them for the same reason it travels with a
+   * submission: a publish that rolled back must leave nothing saying it
+   * happened, and a publish that happened must leave something.
+   *
+   * `form` is present only when the form is new. An existing form is not
+   * touched apart from its pointer, because its access settings are not the
+   * publisher's business.
+   */
+  publishVersion(input: {
+    form?: FormRecord
+    version: FormVersionRecord
+    audit?: AuditEntry
+  }): Promise<void>
   getVersionById(id: string): Promise<FormVersionRecord | undefined>
   findVersionByHash(formId: string, schemaHash: string): Promise<FormVersionRecord | undefined>
   latestVersionNumber(formId: string): Promise<number>

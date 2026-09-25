@@ -49,8 +49,8 @@ application's role `INSERT` and `SELECT` only — the trigger is the belt, the
 grant is the braces, and the grant is the part a self-hoster has to do
 themselves.
 
-**The row joins the transaction wherever there is one.** Today that is exactly
-one place and it is the one that matters: `insertSubmission` already commits
+**The row joins the transaction wherever there is one.** That is
+`insertSubmission` and `publishVersion`. `insertSubmission` already commits
 the submission, its webhook deliveries and its file claims together, and the
 audit row commits with them. A submission that rolled back leaves nothing
 behind saying it happened.
@@ -65,12 +65,11 @@ different reasons:
   residual risk is an export that succeeds and an audit row that does not;
   the failure is logged at error level and the request stands, because a 500
   after the rows have already been written to the response helps nobody.
-- A **publish** is three storage calls — create the form, insert the version,
-  point the form at it — and they are not yet one transaction. That is a
-  pre-existing gap this record does not close. Until it is closed, the publish
-  audit row is appended after all three succeed, so the failure mode is a
-  publish with no audit row rather than an audit row with no publish. The
-  better of the two, and still not the promise.
+- A **publish** was three storage calls when this record was written, and the
+  audit row was appended after all three. It is now `publishVersion`: the form
+  when it is new, the version, the pointer that makes it current and the audit
+  row, in one commit. The gap named here is closed, and the reason it is
+  recorded rather than deleted is that naming it is what got it fixed.
 
 **Reading the log is not itself audited.** A log that records its own reads
 grows without bound from any dashboard that polls it, and the entry would say
