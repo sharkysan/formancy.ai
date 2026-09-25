@@ -484,12 +484,16 @@ describe('the readings', () => {
     // the same and mean nothing to anything reading the page but a browser.
     const values = document.querySelectorAll('.reading dt')
     expect(values).toHaveLength(5)
-    expect([...values].map((value) => value.textContent)).toEqual([
+    // The first four only. The fifth counts decision records, and the test
+    // below derives it from the files rather than repeating it — a second
+    // literal here is a second thing to forget, which is exactly how it went
+    // stale: one branch added a record, another set the number, and neither
+    // touched the other's line.
+    expect([...values].slice(0, 4).map((value) => value.textContent)).toEqual([
       '1',
       '0',
       '15',
       '7',
-      '57',
     ])
   })
 
