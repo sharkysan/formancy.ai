@@ -98,7 +98,6 @@ Two documents already described axe as running in the conformance suite. It
 was not. That is the second time writing something down has been what found it
 missing.
 
-<<<<<<< HEAD
 **The playground is a version 2 document, and works on a phone.** Two reports,
 one cause each.
 
@@ -118,7 +117,7 @@ item's default `min-width` is its content, so those six set a floor under the
 whole document and the three-pane grid below never got a say. It wraps now, and
 the strap line stands down on a narrow screen because the controls are what
 somebody came for.
-=======
+
 **The stack, in three dimensions.** formancy is a layer cake, so the landing
 page draws one: the shared layers deep and carrying both accents, the two
 per-framework layers near the reader and split violet from teal. Where the
@@ -129,7 +128,6 @@ of the content and never the only one. Built with `timeline-scope` and
 `animation-composition`, so the depth readout in the heading follows a list in
 a different branch of the document and nothing needs a frame loop. The mark
 from the favicon is now in the bar.
->>>>>>> origin/main
 
 **The website deploys as one static site.** The landing page at `/` and the
 playground at `/playground/`, built by `pnpm build:web`. The playground is
