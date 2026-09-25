@@ -61,7 +61,12 @@ history, submissions and export).
 - **Conditions combining more than one comparison** in the builder's editor.
   The expression language handles them; the authoring UI does not yet, and you
   can still write the CEL directly.
-- **File uploads** and form actions.
+- **Virus scanning** of uploaded files, and **resumable uploads**. Files
+  themselves work; a stored file is trusted the moment its bytes land, and the
+  deployment's byte ceiling is also the largest single file.
+- **An S3 file store.** Local disk is the only one, and it does not survive
+  more than one replica.
+- **Form actions** beyond webhooks.
 - **A per-action circuit breaker and dead-letter replay.** A dead delivery is
   kept and findable, but re-queueing one is a SQL statement.
 - **OIDC / SAML.** Local users and API keys only for now.

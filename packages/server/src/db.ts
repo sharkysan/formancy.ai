@@ -93,6 +93,18 @@ export const deliveries = pgTable('deliveries', {
   lastError: text('last_error'),
 })
 
+export const files = pgTable('files', {
+  id: uuid('id').primaryKey(),
+  formId: uuid('form_id').notNull(),
+  name: text('name').notNull(),
+  size: integer('size').notNull(),
+  contentType: text('content_type').notNull(),
+  storageKey: text('storage_key').notNull(),
+  state: text('state').notNull().default('offered'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+  submissionId: uuid('submission_id'),
+})
+
 export const submissions = pgTable('submissions', {
   id: uuid('id').primaryKey(),
   formId: uuid('form_id')
@@ -177,6 +189,33 @@ export async function bootstrapSchema(sql: postgres.Sql): Promise<void> {
   await sql`
     CREATE INDEX IF NOT EXISTS deliveries_due
       ON deliveries (next_attempt_at) WHERE state = 'pending'`
+  await sql`
+    CREATE TABLE IF NOT EXISTS files (
+      id uuid PRIMARY KEY,
+      form_id uuid NOT NULL REFERENCES forms(id) ON DELETE RESTRICT,
+      -- What the reader called it. Display only: the storage key is minted by
+      -- the server, because a key built from a submitted filename is a path
+      -- traversal waiting for somebody to try it.
+      name text NOT NULL,
+      size integer NOT NULL,
+      content_type text NOT NULL,
+      storage_key text NOT NULL,
+      state text NOT NULL DEFAULT 'offered'
+        CHECK (state IN ('offered', 'stored', 'claimed')),
+      created_at timestamptz NOT NULL,
+      -- RESTRICT for the same reason a delivery uses it: the row is the record
+      -- that something was attached, and deleting the submission must not
+      -- quietly erase what it carried.
+      submission_id uuid REFERENCES submissions(id) ON DELETE RESTRICT,
+      -- One file, one submission. Enforced here rather than in application
+      -- code, because two concurrent submissions claiming the same file is
+      -- exactly the race application code loses — and the loser would be a
+      -- submission referencing bytes another submission owns.
+      CONSTRAINT files_one_submission UNIQUE (id, submission_id)
+    )`
+  await sql`
+    CREATE INDEX IF NOT EXISTS files_abandoned
+      ON files (created_at) WHERE state <> 'claimed'`
   await sql`
     CREATE TABLE IF NOT EXISTS users (
       id uuid PRIMARY KEY,

@@ -1,5 +1,6 @@
 import { PostgreSqlContainer } from '@testcontainers/postgresql'
 import type { StartedPostgreSqlContainer } from '@testcontainers/postgresql'
+import { Readable } from 'node:stream'
 import postgres from 'postgres'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 import type { FastifyInstance } from 'fastify'
@@ -7,6 +8,7 @@ import type { FormSchema } from '@formancy/spec'
 import { bootstrapSchema } from './db.js'
 import { createApp, SCHEMA_HASH_HEADER } from './app.js'
 import { createPostgresStorage } from './postgres-storage.js'
+import type { FileStore } from './file-store.js'
 
 /**
  * The walking skeleton's proof, against REAL Postgres — versioning and
@@ -46,6 +48,26 @@ function asAdmin(headers: Record<string, string> = {}): Record<string, string> {
   return { authorization: `Bearer ${adminToken}`, ...headers }
 }
 
+/**
+ * A file store in memory. What is under test here is the lifecycle and the
+ * transaction, not the filesystem; the part that touches a disk has its own
+ * tests.
+ */
+const bytes = new Map<string, Buffer>()
+const fileStore: FileStore = {
+  put: async (key, body) => {
+    bytes.set(key, body)
+  },
+  open: async (key) => {
+    const found = bytes.get(key)
+    return found === undefined ? undefined : Readable.from(found)
+  },
+  remove: async (key) => {
+    bytes.delete(key)
+  },
+  sizeOf: async (key) => bytes.get(key)?.byteLength,
+}
+
 beforeAll(async () => {
   container = await new PostgreSqlContainer('postgres:17-alpine').start()
   sql = postgres(container.getConnectionUri())
@@ -57,6 +79,7 @@ beforeAll(async () => {
     // limit has its own app below, with its own budget.
     submissionRateLimit: { max: 10_000, timeWindowMs: 60_000 },
     loginRateLimit: { max: 10_000, timeWindowMs: 60_000 },
+    fileStore,
   })
   const login = await app.inject({
     method: 'POST',
@@ -551,5 +574,193 @@ describe('the webhook outbox', () => {
     await expect(
       sql`DELETE FROM submissions WHERE id = ${submission[0]!['id'] as string}`,
     ).rejects.toThrow()
+  })
+})
+
+
+/**
+ * The file lifecycle against real SQL.
+ *
+ * The claim is a transaction and the race is a race, so both need a database
+ * that behaves like one. Two concurrent submissions naming the same file both
+ * pass the check made outside the transaction; only the UPDATE can decide
+ * which of them is right, and only Postgres can show that it does.
+ */
+describe('uploaded files', () => {
+  const withFiles: FormSchema = {
+    specVersion: '2',
+    id: 'claim',
+    title: 'Claim',
+    model: {
+      fields: [
+        { key: 'reference', type: 'text', label: 'Reference', required: true },
+        { key: 'evidence', type: 'file', label: 'Evidence', accept: ['application/pdf'] },
+      ],
+    },
+  }
+
+  let hash = ''
+
+  beforeAll(async () => {
+    const published = await app.inject({
+      method: 'POST',
+      url: '/forms',
+      headers: asAdmin(),
+      payload: { path: 'claim', schema: withFiles },
+    })
+    hash = (published.json() as { schemaHash: string }).schemaHash
+    const opened = await app.inject({
+      method: 'PUT',
+      url: '/f/claim/access',
+      headers: asAdmin(),
+      payload: { submit: 'public' },
+    })
+    expect(opened.statusCode).toBe(204)
+  })
+
+  /** Offer, then upload. Returns what a submission would reference. */
+  async function upload(
+    name = 'report.pdf',
+    body = Buffer.from('%PDF-1.4 pretend'),
+  ): Promise<Record<string, unknown>> {
+    const offered = await app.inject({
+      method: 'POST',
+      url: '/f/claim/files',
+      payload: { field: 'evidence', name, size: body.byteLength, contentType: 'application/pdf' },
+    })
+    expect(offered.statusCode).toBe(201)
+    const file = offered.json() as { id: string; uploadUrl: string }
+
+    const put = await app.inject({
+      method: 'PUT',
+      url: file.uploadUrl,
+      headers: { 'content-type': 'application/pdf' },
+      payload: body,
+    })
+    expect(put.statusCode).toBe(204)
+    return file as unknown as Record<string, unknown>
+  }
+
+  test('a file is offered, uploaded and then claimed by a submission', async () => {
+    const file = await upload()
+
+    const submitted = await app.inject({
+      method: 'POST',
+      url: '/f/claim/submissions',
+      headers: { [SCHEMA_HASH_HEADER]: hash },
+      payload: { reference: 'A-1', evidence: [file] },
+    })
+
+    expect(submitted.statusCode).toBe(201)
+    const id = file['id'] as string
+    const rows = await sql`SELECT state, submission_id FROM files WHERE id = ${id}`
+    expect(rows[0]?.['state']).toBe('claimed')
+    expect(rows[0]?.['submission_id']).toBe((submitted.json() as { id: string }).id)
+  })
+
+  test('a submission naming a file nobody uploaded is refused, and stores nothing', async () => {
+    const before = await sql`SELECT count(*)::int AS n FROM submissions`
+
+    const submitted = await app.inject({
+      method: 'POST',
+      url: '/f/claim/submissions',
+      headers: { [SCHEMA_HASH_HEADER]: hash },
+      payload: { reference: 'A-2', evidence: [{ id: '00000000-0000-4000-8000-000000000000' }] },
+    })
+
+    expect(submitted.statusCode).toBe(422)
+    const after = await sql`SELECT count(*)::int AS n FROM submissions`
+    expect(after[0]?.['n']).toBe(before[0]?.['n'])
+  })
+
+  test('one file, one submission: the second one loses and rolls back', async () => {
+    const file = await upload()
+    const send = (reference: string) =>
+      app.inject({
+        method: 'POST',
+        url: '/f/claim/submissions',
+        headers: { [SCHEMA_HASH_HEADER]: hash },
+        payload: { reference, evidence: [file] },
+      })
+
+    const [first, second] = await Promise.all([send('B-1'), send('B-2')])
+
+    // Exactly one. The check outside the transaction passes for both, and the
+    // UPDATE inside it is what decides - which is why this needs a real
+    // database rather than a stub that cannot race.
+    const accepted = [first, second].filter((reply) => reply.statusCode === 201)
+    expect(accepted).toHaveLength(1)
+
+    const id = file['id'] as string
+    const rows = await sql`SELECT submission_id FROM files WHERE id = ${id}`
+    expect(rows[0]?.['submission_id']).toBe((accepted[0]!.json() as { id: string }).id)
+  })
+
+  test('the bytes come back as an attachment, never inline', async () => {
+    const file = await upload('notes.pdf')
+
+    const downloaded = await app.inject({
+      method: 'GET',
+      url: `/f/claim/files/${file['id'] as string}`,
+      headers: asAdmin(),
+    })
+
+    expect(downloaded.statusCode).toBe(200)
+    // Stored XSS through an uploaded file is the most exploited vulnerability
+    // in this product category, and a single-container deployment has no
+    // second hostname to serve from. Forcing a download is the accommodation.
+    expect(downloaded.headers['content-disposition']).toContain('attachment')
+    expect(downloaded.headers['x-content-type-options']).toBe('nosniff')
+    expect(String(downloaded.headers['content-type'])).toContain('application/octet-stream')
+  })
+
+  test('the bytes are not public, even when the form is', async () => {
+    const file = await upload()
+
+    const anonymous = await app.inject({
+      method: 'GET',
+      url: `/f/claim/files/${file['id'] as string}`,
+    })
+
+    // Anybody may submit to this form. That is not the same as reading what
+    // everybody else attached to it.
+    expect(anonymous.statusCode).toBe(401)
+  })
+
+  test('an upload of a different size than was offered is refused', async () => {
+    const offered = await app.inject({
+      method: 'POST',
+      url: '/f/claim/files',
+      payload: { field: 'evidence', name: 'a.pdf', size: 10, contentType: 'application/pdf' },
+    })
+    const file = offered.json() as { uploadUrl: string }
+
+    const put = await app.inject({
+      method: 'PUT',
+      url: file.uploadUrl,
+      headers: { 'content-type': 'application/pdf' },
+      payload: Buffer.alloc(5000),
+    })
+
+    // The offer's size is what was checked against the field's limit, so
+    // accepting a different number of bytes would make that check a
+    // suggestion.
+    expect(put.statusCode).toBe(400)
+  })
+
+  test('a type the field does not accept is refused before any bytes are sent', async () => {
+    const offered = await app.inject({
+      method: 'POST',
+      url: '/f/claim/files',
+      payload: {
+        field: 'evidence',
+        name: 'a.exe',
+        size: 10,
+        contentType: 'application/x-msdownload',
+      },
+    })
+
+    expect(offered.statusCode).toBe(400)
+    expect((offered.json() as { error: string }).error).toBe('not_accepted')
   })
 })
