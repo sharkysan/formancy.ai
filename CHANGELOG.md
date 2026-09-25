@@ -177,6 +177,25 @@ community-maintained and behind
 ([0052](./docs/decisions/0052-richtext-is-not-html.md) has the full reasoning).
 A host that wants TipTap can still put it in through the component registry.
 
+**The documentation is deployed, and describes what actually shipped.** The
+landing page's footer has linked to `/docs` since the page existed, and nothing
+ever built the docs site into the deployment — the link has been dead in
+production the whole time. `pnpm build:web` now composes three apps rather than
+two, and the docs are built with `base: '/docs'` so their asset URLs and
+navigation point at themselves.
+
+Three things that had shipped with no documentation at all now have some:
+`@formancy/mcp` (a quickstart of its own), file uploads on both sides — the
+renderer's `UploaderProvider` and the server's `FORMANCY_FILES_DIR` — and the
+rich text field's toolbar. The sidebar also stopped calling the spec reference
+"v0"; it has been v2 for a while.
+
+Two guards went in with it, because both failures are silent. The build refuses
+to finish if a nested app's assets point outside its own base, and it refuses
+if a Markdown link is root-absolute without `/docs/` — which builds cleanly
+and 404s against the landing page. The second one caught a link on its first
+run.
+
 **The website deploys as one static site.** The landing page at `/` and the
 playground at `/playground/`, built by `pnpm build:web`. The playground is
 built with `base: '/playground/'`, without which Vite's absolute asset URLs

@@ -82,6 +82,27 @@ A link may use `http:`, `https:` or `mailto:`. Anything else renders as the
 literal text somebody typed: visible, harmless and honest, where dropping it
 would leave a reader wondering where their link went.
 
+### The editor over it
+
+Nobody has to type the markers. The field renders a toolbar — **bold**,
+*italic*, link, bulleted and numbered lists, with <kbd>Ctrl</kbd>+<kbd>B</kbd>
+and <kbd>Ctrl</kbd>+<kbd>I</kbd> — and it toggles: pressing **Bold** on text
+that is already bold takes the markers off again. Underneath the box is a live
+preview, rendered by the same parser that will render the stored answer.
+
+It is a toolbar over a `<textarea>`, not a contenteditable surface, and that is
+a choice rather than a shortcut. The control stays something every assistive
+technology already understands, the value cannot express anything the grammar
+cannot, and both renderers run the same transformation — it lives in
+`@formancy/spec`, so a **Bold** button cannot mean one thing in React and
+another in Angular.
+
+An editor library would have meant an HTML-first document model to keep
+restricted forever, formatting the grammar has no way to store, and Angular
+support that is community-maintained and behind. If you want one anyway, the
+component registry replaces any field's component, so you can render `richtext`
+with whatever you like and serialise to this grammar yourself.
+
 ```ts
 import { parseRichText, richTextToPlain } from '@formancy/spec'
 

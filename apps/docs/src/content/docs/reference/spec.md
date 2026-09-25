@@ -11,7 +11,7 @@ the source of truth — edit it, not this page.
 
 :::note
 Spec version 1 is **frozen**: a document that validates today keeps validating.
-See [Versioning](/concepts/versioning/) for how that relates to package
+See [Versioning](/docs/concepts/versioning/) for how that relates to package
 versions, and for what happens when the spec eventually moves to 2.
 :::
 

@@ -106,7 +106,7 @@ Roughly in order, and subject to change:
 Pre-1.0, breaking changes may land in minor releases and are documented in
 `MIGRATIONS.md`. The spec version is separate from package versions and is the
 one we treat as load-bearing. Submissions never migrate — see
-[Versioning](/concepts/versioning/).
+[Versioning](/docs/concepts/versioning/).
 
 ## Contributing
 
