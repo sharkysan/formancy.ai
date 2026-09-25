@@ -148,4 +148,4 @@ providers: [
 
 The Angular renderer passes the **same conformance fixtures** as the React one,
 driven only by accessible name and role. That suite is what keeps the two from
-drifting apart — see [Conformance](/concepts/conformance/).
+drifting apart — see [Conformance](/docs/concepts/conformance/).

@@ -3,6 +3,12 @@ import { defineConfig } from 'astro/config'
 import starlight from '@astrojs/starlight'
 
 export default defineConfig({
+  // Where these pages actually live. formancy.ai is one static deployment: the
+  // landing page at `/`, the playground at `/playground/`, these at `/docs/`.
+  // Without `base` every link Starlight generates points at the landing page's
+  // root, and without `site` the sitemap is silently skipped.
+  site: 'https://formancy.ai',
+  base: '/docs',
   integrations: [
     starlight({
       title: 'formancy.ai',
@@ -17,6 +23,7 @@ export default defineConfig({
             { label: 'Quickstart: React', slug: 'start/react' },
             { label: 'Quickstart: Angular', slug: 'start/angular' },
             { label: 'Quickstart: self-hosting', slug: 'start/self-hosting' },
+            { label: 'Quickstart: coding agents', slug: 'start/agents' },
           ],
         },
         {
@@ -25,12 +32,13 @@ export default defineConfig({
             { label: 'The schema', slug: 'concepts/schema' },
             { label: 'Logic and expressions', slug: 'concepts/logic' },
             { label: 'Versioning', slug: 'concepts/versioning' },
+            { label: 'Files', slug: 'concepts/files' },
             { label: 'Conformance', slug: 'concepts/conformance' },
           ],
         },
         {
           label: 'Reference',
-          items: [{ label: 'Spec reference (v0)', slug: 'reference/spec' }],
+          items: [{ label: 'Spec reference (v2)', slug: 'reference/spec' }],
         },
         {
           label: 'Project',

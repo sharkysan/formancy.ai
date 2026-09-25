@@ -190,6 +190,12 @@ loads, the script 404s, and the deployment is a blank screen while every build
 log says it succeeded. `scripts/build-web.mjs` reads the built HTML back and
 refuses to finish if that has happened.
 
+Three apps, one directory: the landing page at `/`, the playground at
+`/playground/`, the documentation at `/docs/`. Each is built knowing where it
+is served from, and the script refuses to finish if one of them is not — an
+app built at the wrong base asks for another app's files, which 404 while the
+build log says everything succeeded.
+
 Deploying is whatever serves a directory. With Cloudflare:
 
 ```bash

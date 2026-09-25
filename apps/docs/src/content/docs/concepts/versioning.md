@@ -36,7 +36,7 @@ a dropped field would make two different schemas share one hash.
 
 ## 3. Field keys are identity; renames are declared
 
-Covered in [The schema](/concepts/schema/): `renamedFrom` is how an answer
+Covered in [The schema](/docs/concepts/schema/): `renamedFrom` is how an answer
 follows a field to a new key. Without it, a key change reads as a delete plus an
 add, because that is what it is.
 

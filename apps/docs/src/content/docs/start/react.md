@@ -37,7 +37,7 @@ pnpm --filter @formancy/playground dev
 A form is a plain JSON document: a `model` (what the form collects) and
 optional `logic` (how it behaves). Display text rides on the model as `label`,
 either as a literal string or as a reference into the form's [`i18n`
-catalogue](/concepts/schema/#words-i18n).
+catalogue](/docs/concepts/schema/#words-i18n).
 
 ```tsx
 import { useState } from 'react'
@@ -173,5 +173,5 @@ Note that `errors` on a field are **codes** (`"required"`, `"minLength"`,
 `"pattern"`…), not sentences: message text belongs to your message catalog, not
 to the engine.
 
-Next: [self-host the backend](/start/self-hosting/) and post the form's
-submissions to it, or read [how the schema is structured](/concepts/schema/).
+Next: [self-host the backend](/docs/start/self-hosting/) and post the form's
+submissions to it, or read [how the schema is structured](/docs/concepts/schema/).

@@ -39,6 +39,8 @@ wrong database — a confusing ten minutes. The compose file maps 5439 instead.
 | `DATABASE_URL` | yes | Postgres connection string |
 | `FORMANCY_AUTH_SECRET` | in production | Signs session tokens; ≥ 32 characters. If unset, an ephemeral one is generated and every session dies on restart — the server warns when it does this. |
 | `FORMANCY_ADMIN_EMAIL` / `..._PASSWORD` | first run | Creates the first admin, and **only** while no such user exists. It cannot re-seed an admin into a running installation. |
+| `FORMANCY_FILES_DIR` | no | Where uploaded bytes go. Unset means this deployment accepts no files, which is a supported state — see [Files](/docs/concepts/files/). |
+| `FORMANCY_MAX_FILE_BYTES` | no | The operator's ceiling over every form's own `maxFileSize`. Defaults to 10 MB. |
 | `PORT` / `HOST` | no | Defaults `4380` / `0.0.0.0` |
 
 ## Two planes
@@ -140,7 +142,7 @@ curl localhost:4380/f/contact-us/drafts/draft-1
 ```
 
 Resuming a draft after the form was republished migrates it **lazily** — see
-[Versioning](/concepts/versioning/) for the severity rules.
+[Versioning](/docs/concepts/versioning/) for the severity rules.
 
 ### Submissions and export (management)
 
@@ -180,6 +182,20 @@ for lookup and a hash for verification. Present it as `x-formancy-api-key`.
 | `GET` | `/f/:path` | public | — |
 | `POST` | `/f/:path/submissions` | public | — |
 | `PUT` `GET` | `/f/:path/drafts/:draftId` | public | — |
+| `POST` | `/f/:path/files` | public | — (same gate as submitting) |
+| `PUT` | `/f/:path/files/:fileId` | public | — (the address the offer returned) |
+| `GET` | `/f/:path/files/:fileId` | management | `submission.read` |
+
+## Files
+
+Uploads are off until `FORMANCY_FILES_DIR` names somewhere to put bytes. A form
+with a file field still renders and still submits without it; the field says
+plainly that there is nowhere to put one.
+
+In a container that directory has to be a mounted volume, or the files
+disappear on the next deploy — `compose.yaml` wires one up. [Files](/docs/concepts/files/)
+covers the lifecycle, what is refused and where, and why a file is *claimed*
+inside the submission's transaction rather than simply uploaded.
 
 ## The audit log
 
