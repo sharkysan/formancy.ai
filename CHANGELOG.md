@@ -139,6 +139,11 @@ refused because an untouched box is null, and the message now ends with
 own hints, the decimal ones, used to be attached to the error and dropped by
 the engine; they are carried through now.
 
+**The spec reference keeps its link.** Its generator still wrote the old
+root-absolute link to *Versioning*, so every docs build undid the fix
+committed by hand — and `pnpm build:web` then refused to finish, because it
+checks for exactly that link.
+
 **The landing page, made to excite.** It still read as plain, and its one
 example — a quote request — was the form nobody has ever wanted to fill in.
 There are three now, behind a tab strip: a conference ticket that prices
