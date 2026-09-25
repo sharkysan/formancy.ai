@@ -764,3 +764,137 @@ describe('uploaded files', () => {
     expect((offered.json() as { error: string }).error).toBe('not_accepted')
   })
 })
+
+
+/**
+ * The audit log, against real SQL.
+ *
+ * Two of these need a real database and cannot be faked: that the row commits
+ * with the submission rather than beside it, and that the table refuses to be
+ * rewritten. The second is a trigger, so only Postgres can demonstrate it.
+ */
+describe('the audit log', () => {
+  const audited: FormSchema = {
+    specVersion: '2',
+    id: 'audited',
+    title: 'Audited',
+    model: { fields: [{ key: 'note', type: 'text', label: 'Note', required: true }] },
+  }
+
+  let hash = ''
+
+  beforeAll(async () => {
+    const published = await app.inject({
+      method: 'POST',
+      url: '/forms',
+      headers: asAdmin(),
+      payload: { path: 'audited', schema: audited },
+    })
+    hash = (published.json() as { schemaHash: string }).schemaHash
+    await app.inject({
+      method: 'PUT',
+      url: '/f/audited/access',
+      headers: asAdmin(),
+      payload: { submit: 'public' },
+    })
+  })
+
+  test('publishing and opening a form are both recorded', async () => {
+    const rows = await sql`
+      SELECT action, subject FROM audit_log
+      WHERE subject = 'audited' AND action IN ('form.published', 'form.access.changed')`
+
+    const actions = rows.map((row) => row['action'])
+    expect(actions).toContain('form.published')
+    // The event a security review looks for first.
+    expect(actions).toContain('form.access.changed')
+  })
+
+  test('a submission and its audit row commit together', async () => {
+    const submitted = await app.inject({
+      method: 'POST',
+      url: '/f/audited/submissions',
+      headers: { [SCHEMA_HASH_HEADER]: hash },
+      payload: { note: 'hello' },
+    })
+    expect(submitted.statusCode).toBe(201)
+    const id = (submitted.json() as { id: string }).id
+
+    const rows = await sql`
+      SELECT detail FROM audit_log WHERE action = 'submission.created'
+      AND detail->>'submissionId' = ${id}`
+    expect(rows).toHaveLength(1)
+  })
+
+  test('a refused submission leaves no row saying it happened', async () => {
+    const before = await sql`SELECT count(*)::int AS n FROM audit_log WHERE action = 'submission.created'`
+
+    // `note` is required.
+    const refused = await app.inject({
+      method: 'POST',
+      url: '/f/audited/submissions',
+      headers: { [SCHEMA_HASH_HEADER]: hash },
+      payload: {},
+    })
+
+    expect(refused.statusCode).toBe(422)
+    const after = await sql`SELECT count(*)::int AS n FROM audit_log WHERE action = 'submission.created'`
+    expect(after[0]?.['n']).toBe(before[0]?.['n'])
+  })
+
+  test('reading and exporting submissions are recorded, with counts and not answers', async () => {
+    await app.inject({ method: 'GET', url: '/f/audited/submissions', headers: asAdmin() })
+    await app.inject({
+      method: 'GET',
+      url: '/f/audited/submissions/export.csv',
+      headers: asAdmin(),
+    })
+
+    const rows = await sql`
+      SELECT action, detail FROM audit_log
+      WHERE subject = 'audited' AND action IN ('submission.read', 'submission.exported')`
+
+    const actions = rows.map((row) => row['action'])
+    // The question a data protection officer asks, and the one an audit log
+    // of mutations alone cannot answer.
+    expect(actions).toContain('submission.read')
+    expect(actions).toContain('submission.exported')
+    // Counts and sizes. Never what anybody wrote.
+    expect(JSON.stringify(rows)).not.toContain('hello')
+  })
+
+  test('a failed login is recorded as well as a successful one', async () => {
+    await app.inject({
+      method: 'POST',
+      url: '/auth/login',
+      payload: { email: 'root@example.com', password: 'wrong-on-purpose' },
+    })
+
+    const rows = await sql`SELECT count(*)::int AS n FROM audit_log WHERE action = 'auth.login.failed'`
+    // A hundred failures then one success is the shape of an attack, and
+    // recording only the success hides it.
+    expect(rows[0]?.['n']).toBeGreaterThan(0)
+  })
+
+  test('the password is nowhere in the log', async () => {
+    const rows = await sql`SELECT * FROM audit_log WHERE action LIKE 'auth.login%'`
+
+    expect(JSON.stringify(rows)).not.toContain('wrong-on-purpose')
+  })
+
+  test('the table refuses to be rewritten', async () => {
+    // Append-only in the database rather than by application discipline, for
+    // the same reason version rows are immutable there: the one moment it
+    // matters is the moment somebody has a reason to edit it.
+    await expect(
+      sql`UPDATE audit_log SET action = 'auth.login' WHERE action = 'form.published'`,
+    ).rejects.toThrow(/append-only/)
+
+    await expect(sql`DELETE FROM audit_log`).rejects.toThrow(/append-only/)
+  })
+
+  test('and the rows survive the attempt', async () => {
+    const rows = await sql`SELECT count(*)::int AS n FROM audit_log`
+    expect(rows[0]?.['n']).toBeGreaterThan(0)
+  })
+})

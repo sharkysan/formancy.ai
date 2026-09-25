@@ -5,9 +5,9 @@ description: Run the formancy backend locally with Docker and Postgres, and walk
 
 :::caution[Pre-alpha]
 This backend is pre-alpha. It has authentication, role-based authorization,
-per-IP rate limiting, a per-form origin allowlist, a request body cap and file
-uploads — but no proof-of-work challenge, no submission tokens, no audit
-logging and no virus scanning of what people attach. Treat it as something to evaluate, not something to expose to the
+per-IP rate limiting, a per-form origin allowlist, a request body cap, file
+uploads and audit logging — but no proof-of-work challenge, no submission
+tokens and no virus scanning of what people attach. Treat it as something to evaluate, not something to expose to the
 public internet.
 :::
 
@@ -196,6 +196,27 @@ In a container that directory has to be a mounted volume, or the files
 disappear on the next deploy — `compose.yaml` wires one up. [Files](/docs/concepts/files/)
 covers the lifecycle, what is refused and where, and why a file is *claimed*
 inside the submission's transaction rather than simply uploaded.
+
+## The audit log
+
+Every publish, permission change, login (including the failures), submission,
+**submission read and export** is recorded. `GET /audit` reads it back, newest
+first, and needs an admin.
+
+The reads are the point: a log of mutations tells you who changed the form, not
+who downloaded four thousand people's answers. What it never holds is the
+answers themselves — identifiers and counts only, because a log read by more
+people and kept longer than the data it describes should not be a second copy
+of it.
+
+The table is append-only, enforced by a trigger. **Give the application's
+database role `INSERT` and `SELECT` on `audit_log` and nothing else**: the
+trigger is the belt, the grant is the braces, and the grant is the part only
+you can do.
+
+```sql
+REVOKE UPDATE, DELETE, TRUNCATE ON audit_log FROM formancy;
+```
 
 ## The admin app
 
