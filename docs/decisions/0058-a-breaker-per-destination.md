@@ -3,7 +3,10 @@
 - **Status:** accepted
 - **Date:** 2026-09-25
 - **Deciders:** Daniel Bacher
-- **Verified by:** `packages/server-core/src/breaker.test.ts` (13 cases: when it
+- **Verified by:** `apps/admin/src/webhooks-pane.test.tsx` (8 cases, including
+  that a failing destination is named in words rather than by colour alone and
+  that a refused replay is shown rather than swallowed),
+  `packages/server-core/src/breaker.test.ts` (13 cases: when it
   opens, that a success clears it completely, that the cool-down earns one probe
   rather than a return to normal, and that the health shown to a person never
   carries the signing secret), the `a destination that has stopped listening`
@@ -51,7 +54,9 @@ it one would spend a delivery's eight tries on a destination it never reached.
 
 **The counters live on the webhook row, not in the worker.** Memory does not
 survive a restart and cannot be shown on a screen, and being shown on a screen
-is the point: a self-hoster has no operations team watching a dashboard, so a
+is the point — the admin has a **Webhooks** tab that lists which destinations
+are failing, since when, and what died on the way to them, with a button to
+send a dead delivery again: a self-hoster has no operations team watching a dashboard, so a
 destination refusing deliveries since Tuesday has to be answerable from the
 product. Otherwise it is discovered when somebody asks why the CRM has no leads
 this week.

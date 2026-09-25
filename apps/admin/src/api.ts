@@ -141,6 +141,64 @@ export async function fetchSubmissions(path: string): Promise<SubmissionEntry[]>
   return ((await response.json()) as { submissions: SubmissionEntry[] }).submissions
 }
 
+/**
+ * A webhook's health, as the server reports it.
+ *
+ * No secret and no url beyond the destination: this is shown on a screen, and
+ * a signing secret is not a health indicator.
+ */
+export interface WebhookHealthEntry {
+  id: string
+  url: string
+  state: 'closed' | 'half-open' | 'open'
+  consecutiveFailures: number
+  failingSince: string | null
+}
+
+export interface DeadDeliveryEntry {
+  id: string
+  webhookId: string
+  submissionId: string
+  eventId: string
+  attempt: number
+  lastError: string | null
+}
+
+export async function fetchWebhookHealth(): Promise<WebhookHealthEntry[]> {
+  const response = await authed(`${BASE}/webhooks`)
+  if (!response.ok) throw new Error(`webhooks failed: ${response.status}`)
+  return ((await response.json()) as { webhooks: WebhookHealthEntry[] }).webhooks
+}
+
+export async function fetchDeadDeliveries(): Promise<DeadDeliveryEntry[]> {
+  const response = await authed(`${BASE}/deliveries/dead`)
+  if (!response.ok) throw new Error(`dead deliveries failed: ${response.status}`)
+  return ((await response.json()) as { deliveries: DeadDeliveryEntry[] }).deliveries
+}
+
+/**
+ * Send a dead delivery again.
+ *
+ * The refusal is a real answer rather than an error: a 409 means somebody
+ * already replayed it, or it went through on its own — and both are worth
+ * telling the operator plainly instead of showing a stack trace.
+ */
+export async function replayDelivery(id: string): Promise<{ ok: boolean; message?: string }> {
+  const response = await authed(`${BASE}/deliveries/${encodeURIComponent(id)}/replay`, {
+    method: 'POST',
+  })
+  if (response.ok) return { ok: true }
+
+  const body = (await response.json().catch(() => ({}))) as { message?: string; error?: string }
+  return {
+    ok: false,
+    message:
+      body.message ??
+      body.error ??
+      `The server refused the replay (${String(response.status)}).`,
+  }
+}
+
 export function exportUrl(path: string): string {
   return `${BASE}/f/${encodeURIComponent(path)}/submissions/export.csv`
 }
