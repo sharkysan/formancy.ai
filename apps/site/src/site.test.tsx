@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
+import { FIELD_TYPES } from '@formancy/spec'
 import { App } from './app.js'
 import { JOURNEY, isComplete, submissionFor } from './scroll.js'
 
@@ -363,5 +364,42 @@ describe('the mark', () => {
     // inline so it takes the page's accents rather than repeating them.
     expect(mark?.getAttribute('aria-hidden')).toBe('true')
     expect(screen.getAllByText('formancy.ai').length).toBeGreaterThan(0)
+  })
+})
+
+describe('the readings', () => {
+  test('are a description list, because they are data', () => {
+    render(<App />)
+
+    // Five figures, each a term and its definition. A row of divs would look
+    // the same and mean nothing to anything reading the page but a browser.
+    const values = document.querySelectorAll('.reading dt')
+    expect(values).toHaveLength(5)
+    expect([...values].map((value) => value.textContent)).toEqual([
+      '1',
+      '0',
+      '15',
+      '1,435',
+      '56',
+    ])
+  })
+
+  test('the zero is a claim something else already proves', () => {
+    render(<App />)
+
+    // "0 uses of eval" is the reading that earns its space, and it is only
+    // worth printing because `packages/spec/src/csp.test.ts` fails if it ever
+    // stops being true. A number on a landing page that nothing checks is an
+    // adjective with extra steps.
+    expect(screen.getByText(/uses of eval/)).toBeTruthy()
+  })
+
+  test('the field-type count matches the spec rather than a guess', () => {
+    render(<App />)
+
+    // The one figure that drifts on its own: the spec grows a type and the
+    // page keeps saying fifteen.
+    const shown = document.querySelectorAll('.reading dt')[2]?.textContent
+    expect(shown).toBe(String(FIELD_TYPES.length))
   })
 })

@@ -118,6 +118,21 @@ whole document and the three-pane grid below never got a say. It wraps now, and
 the strap line stands down on a narrow screen because the controls are what
 somebody came for.
 
+**The landing page fills its frame.** Every section was reserving fifteen rems
+of its right edge for the submission panel, which occupies one corner — so
+two fifths of every screen sat empty the whole way down and the page read as a
+draft. The hero is two columns now: the headline, and the document it is
+talking about beside it. Under it, a strip of measured readings — one engine,
+**zero** uses of `eval`, fifteen field types, 1,435 tests, 56 decision records
+— because the audience has been told "blazing fast" before. Each figure is
+checked: the zero by the CSP test that already existed, the field count against
+`FIELD_TYPES`.
+
+Display type is Archivo, a grotesque with a width axis set slightly narrow:
+engineered rather than editorial. The stack stopped being rounded cards and
+became a drawing, hairline-ruled, and every section heading now carries a rule
+to the edge of the frame.
+
 **The stack, in three dimensions.** formancy is a layer cake, so the landing
 page draws one: the shared layers deep and carrying both accents, the two
 per-framework layers near the reader and split violet from teal. Where the

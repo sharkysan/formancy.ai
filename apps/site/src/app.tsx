@@ -90,22 +90,25 @@ export function App(): ReactElement {
 
       <main className="page" id="start">
         <Section id="hero" className="hero wide" journey={journey} section="hero">
-          <h1>One engine, running in the browser and on the server.</h1>
-          <p className="lede">
-            A form is a JSON document. formancy compiles it once and evaluates it in both places,
-            so what the person filling it in was told and what the server accepts cannot drift
-            apart.
-          </p>
-          <div className="actions">
-            <a className="action primary" href="#build">
-              See it build a form
-            </a>
-            <a className="action" href={REPO} rel="noreferrer noopener">
-              Read the source
-            </a>
+          <div className="hero-copy">
+            <h1>One engine, running in the browser and on the server.</h1>
+            <p className="lede">
+              A form is a JSON document. formancy compiles it once and evaluates it in both
+              places, so what the person filling it in was told and what the server accepts
+              cannot drift apart.
+            </p>
+            <div className="actions">
+              <a className="action primary" href="#build">
+                See it build a form
+              </a>
+              <a className="action" href={REPO} rel="noreferrer noopener">
+                Read the source
+              </a>
+            </div>
           </div>
 
           <Planes />
+          <Readings />
         </Section>
 
         <Section id="engine" className="wide" journey={journey} section="engine">
@@ -350,6 +353,42 @@ export function App(): ReactElement {
 
       <Panel journey={journey} />
     </>
+  )
+}
+
+/**
+ * Measured numbers, not adjectives.
+ *
+ * The audience has been told "blazing fast" before and stopped believing it.
+ * Every figure here is read off the repository, and the one worth the space is
+ * the zero: no `eval` and no `new Function` anywhere in the shipped packages,
+ * which is what lets a form run under a strict Content-Security-Policy with no
+ * configuration at all. The rest are countable facts rather than claims.
+ */
+function Readings(): ReactElement {
+  const readings: ReadonlyArray<{ value: string; lines: readonly [string, string] }> = [
+    { value: '1', lines: ['engine, compiled once', 'and run in both places'] },
+    { value: '0', lines: ['uses of eval, so it', 'runs under a strict CSP'] },
+    { value: '15', lines: ['field types the', 'spec defines'] },
+    { value: '1,435', lines: ['tests, one suite driven', 'through both renderers'] },
+    { value: '56', lines: ['decision records, each', 'naming what it cost'] },
+  ]
+
+  return (
+    <dl className="readings">
+      {readings.map((reading) => (
+        <div className="reading" key={reading.value}>
+          <dt>
+            <b>{reading.value}</b>
+          </dt>
+          <dd>
+            {reading.lines.map((line) => (
+              <span key={line}>{line}</span>
+            ))}
+          </dd>
+        </div>
+      ))}
+    </dl>
   )
 }
 

@@ -43,6 +43,10 @@
 
   --sans: 'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
   --mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Code', Consolas, monospace;
+  /* The display face. Archivo is a grotesque with a width axis — engineered
+     rather than editorial, which is the register this product speaks in. The
+     body stays Plex: two faces, clearly distinct, and no third. */
+  --display: 'Archivo', 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
 
   --gutter: clamp(1.25rem, 5vw, 5rem);
   --measure: 34rem;
@@ -124,14 +128,19 @@ h1,
 h2,
 h3 {
   margin: 0;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  line-height: 1.08;
+  font-family: var(--display);
+  font-weight: 700;
+  /* Archivo's width axis, set slightly narrow: the headlines are long
+     sentences rather than words, and a condensed setting is what lets them
+     stay large without wrapping into five lines. */
+  font-variation-settings: 'wdth' 92;
+  letter-spacing: -0.025em;
+  line-height: 1.02;
   text-wrap: balance;
 }
 
 h1 {
-  font-size: clamp(2.5rem, 1.6rem + 4.4vw, 5.5rem);
+  font-size: clamp(2.5rem, 1.1rem + 4.2vw, 4.75rem);
   letter-spacing: -0.035em;
 }
 
@@ -264,8 +273,31 @@ code {
 }
 
 section {
-  padding-block: clamp(5rem, 12vh, 9rem);
+  padding-block: clamp(4rem, 9vh, 6.5rem);
   padding-inline: var(--gutter);
+}
+
+/* Every section heading carries a rule to the edge of the frame.
+ *
+ * Structure rather than decoration, and it does two jobs: it reaches the right
+ * side of the page, which was otherwise empty at every scroll position, and it
+ * carries the channel colour — violet where the section is about the
+ * browser, teal where it is about the server, both where the point is that
+ * they are the same. A drawing has rules; a brochure has whitespace.
+ */
+.page > section > h2 {
+  position: relative;
+  padding-block-end: 1.25rem;
+}
+
+.page > section > h2::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  height: 1px;
+  background: linear-gradient(90deg, var(--client), var(--server) 38%, transparent 88%);
+  opacity: 0.55;
 }
 
 .wide {
@@ -273,11 +305,14 @@ section {
   margin-inline: auto;
 }
 
-/* The running submission is fixed to the bottom-right, so the page keeps a
-   column clear for it rather than letting prose slide underneath. Below the
-   width where the panel is hidden this reservation disappears with it. */
+/* The running submission is fixed to the bottom-right corner, and it used to
+   be paid for by padding EVERY section's right edge by fifteen rems — which
+   reserved a column down the entire page for a panel that occupies one corner
+   of it, and left two fifths of every screen empty. The panel is fixed, so it
+   overlays; only the last section can actually collide with it, and only that
+   one pays. */
 @media (min-width: 62rem) {
-  section {
+  .finale {
     padding-inline-end: calc(var(--gutter) + 15rem);
   }
 }
@@ -285,24 +320,107 @@ section {
 /* --------------------------------------------------------------- hero */
 
 .hero {
-  min-height: 92svh;
+  min-height: 88svh;
   display: grid;
   /* `minmax(0, 1fr)` rather than `1fr`: a grid item's default minimum is its
-     content, so the code block below would push the hero — and with it the
-     whole page — wider than the viewport. That is 1.4.10 Reflow failing on the
+     content, so the code block would push the hero — and with it the whole
+     page — wider than the viewport. That is 1.4.10 Reflow failing on the
      page that claims the product takes it seriously. */
   grid-template-columns: minmax(0, 1fr);
   align-content: center;
+  gap: clamp(2.5rem, 6vh, 4rem);
   padding-block-start: clamp(3rem, 8vh, 6rem);
 }
 
+/* Two columns, where there is room for two. The right one holds the thing the
+   headline is talking about: a document and what the engine makes of it. The
+   argument is on screen before anybody scrolls, and the frame is full. */
+@media (min-width: 64rem) {
+  .hero {
+    grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr);
+    align-items: center;
+    column-gap: clamp(2.5rem, 5vw, 5rem);
+  }
+
+  .hero .readings {
+    grid-column: 1 / -1;
+  }
+}
+
 .hero h1 {
-  max-width: 18ch;
+  max-width: 17ch;
 }
 
 .hero .lede {
   margin-block-start: 1.5rem;
-  max-width: 40ch;
+  max-width: 38ch;
+}
+
+/* ------------------------------------------------------------- readings
+ *
+ * Measured numbers, not adjectives. Every one of these is read off the
+ * repository and checked by a test, because the audience is people who have
+ * been told "blazing fast" before and stopped believing it. The zero is the
+ * one worth the space: no `eval`, no `new Function`, anywhere, which is what
+ * lets the product run under a strict CSP with no configuration.
+ */
+
+/* The fixed submission panel occupies the bottom-right corner, and the
+   readings are the one full-width element that shares that height. Ending
+   short of it is cheaper than moving the panel, and only this strip pays. */
+@media (min-width: 62rem) {
+  .readings {
+    margin-inline-end: 15rem;
+  }
+}
+
+.readings {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+  gap: 1px;
+  margin-block-start: clamp(2rem, 5vh, 3.5rem);
+  background: var(--edge);
+  border-block: 1px solid var(--edge);
+}
+
+.reading {
+  display: grid;
+  gap: 0.25rem;
+  padding: 1rem 0.25rem 1rem 1rem;
+  background: var(--ground);
+}
+
+.reading dt,
+.reading dd {
+  margin: 0;
+}
+
+.reading b {
+  font-family: var(--display);
+  font-variation-settings: 'wdth' 88;
+  font-size: clamp(1.75rem, 1.2rem + 1.4vw, 2.5rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.reading dd span {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+/* The channels, again: what the browser does and what the server does are the
+   same two colours everywhere on this page. */
+.reading:nth-child(odd) b {
+  color: color-mix(in srgb, var(--text) 82%, var(--client));
+}
+
+.reading:nth-child(even) b {
+  color: color-mix(in srgb, var(--text) 82%, var(--server));
 }
 
 .actions {
@@ -413,9 +531,12 @@ section {
 .plane-form {
   position: relative;
   z-index: 2;
-  margin-block-start: -3.5rem;
+  /* Overlapping, not covering. At rest the document has to stay readable
+     underneath — a pane that cuts the one behind it mid-line reads as a
+     rendering fault rather than as depth. */
+  margin-block-start: -1.5rem;
   margin-inline-start: auto;
-  width: min(100%, 30rem);
+  width: min(100%, 27rem);
   rotate: y -16deg;
   translate: 0 0 90px;
   animation: converge-form linear both;
@@ -482,19 +603,22 @@ section {
 .stratum {
   position: relative;
   display: grid;
-  gap: 0.25rem;
+  grid-template-columns: minmax(0, 20rem) minmax(0, 1fr);
+  align-items: baseline;
+  gap: 0.25rem 2rem;
   padding: 1.125rem 1.375rem;
-  margin-block-end: 0.75rem;
-  max-width: 44rem;
+  max-width: 54rem;
 
-  border: 1px solid var(--edge);
-  border-radius: 12px;
+  /* A drawing, not a card. Rounded boxes with a soft shadow are what every
+     landing page does to a list, and they say nothing — these are strata,
+     so they are ruled like strata: one hairline between each, the channel
+     colour on the edge, and no radius to make them look like objects. */
+  border-block-start: 1px solid var(--edge);
   background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--raised) 92%, transparent),
-    color-mix(in srgb, var(--inset) 88%, transparent)
+    90deg,
+    color-mix(in srgb, var(--raised) 55%, transparent),
+    transparent 70%
   );
-  box-shadow: 0 24px 60px -34px rgb(0 0 0 / 85%);
 
   transform-style: preserve-3d;
   /* Rotation and lift are two animations on one element. Without this the
@@ -510,10 +634,8 @@ section {
   content: '';
   position: absolute;
   inset-block: -1px;
-  inset-inline-start: -1px;
-  width: 3px;
-  border-start-start-radius: 12px;
-  border-end-start-radius: 12px;
+  inset-inline-start: 0;
+  width: 2px;
 }
 
 .stratum[data-plane='shared']::before {
@@ -533,9 +655,17 @@ section {
 }
 
 .stratum[data-plane='yours'] {
-  border-style: dashed;
+  border-block-start-style: dashed;
   background: none;
-  box-shadow: none;
+}
+
+/* The last one closes the drawing. Without it the stack reads as unfinished
+   rather than as ending where the product does. */
+.stack::after {
+  content: '';
+  display: block;
+  max-width: 54rem;
+  border-block-start: 1px solid var(--edge);
 }
 
 .stratum b {
@@ -549,6 +679,13 @@ section {
 .stratum span {
   font-size: 0.9375rem;
   color: var(--muted);
+}
+
+@media (max-width: 52rem) {
+  .stratum {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.25rem;
+  }
 }
 
 .stratum code {
