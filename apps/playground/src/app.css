@@ -380,6 +380,22 @@ body {
   color-scheme: dark;
 }
 
+/* Pop and Paper each declare the ground they are drawn for; the sheet is it. */
+.sheet[data-formancy-theme='pop'] {
+  background: #fff6e0;
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 12%),
+    0 30px 80px -30px rgb(255 210 63 / 45%);
+}
+
+.sheet[data-formancy-theme='paper'] {
+  background: #f6f1e7;
+  border-radius: 4px;
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 12%),
+    0 30px 80px -30px rgb(0 0 0 / 80%);
+}
+
 /* --------------------------------------------------------------- inspector */
 
 .inspect h3 {

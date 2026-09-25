@@ -1,0 +1,827 @@
+/*
+ * Pop — loud on purpose.
+ *
+ * Neo-brutalist: black outlines, hard offset shadows with no blur, saturated
+ * colour and heavy type. Every control is an object you could pick up; it
+ * lifts when pointed at and presses in when used. Choices are chips rather
+ * than a column of dots, and an error is a sticker rather than a line of red.
+ *
+ * The third answer to the question Blueprint and Dusk ask: can the same
+ * markup, from the same engine, look like a product neither of them would be
+ * mistaken for? It changed nothing in a component to get here.
+ *
+ * Put the form on the cream ground (`--fm-ground`) or on white; both work.
+ * Scoped under [data-formancy-theme='pop'].
+ */
+
+[data-formancy-theme='pop'] {
+  --fm-ground: #fff6e0;
+  --fm-paper: #ffffff;
+  --fm-ink: #111111;
+  --fm-muted: #4a4a4a;
+  --fm-yellow: #ffd23f;
+  --fm-pink: #ff5c8a;
+  --fm-blue: #3d5afe;
+  --fm-mint: #2ee6a6;
+  --fm-invalid: #d6003a;
+  --fm-invalid-wash: #ffe4ec;
+
+  --fm-sans: 'Archivo', 'Space Grotesk', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --fm-line: 2.5px solid var(--fm-ink);
+  --fm-radius: 12px;
+  --fm-lift: 4px 4px 0 var(--fm-ink);
+  --fm-step: 1.5rem;
+
+  color: var(--fm-ink);
+  font-family: var(--fm-sans);
+  color-scheme: light;
+}
+
+/* The theme sizes its own subtree, rather than hoping the host resets it. */
+[data-formancy-theme='pop'],
+[data-formancy-theme='pop'] *,
+[data-formancy-theme='pop'] *::before,
+[data-formancy-theme='pop'] *::after {
+  box-sizing: border-box;
+}
+
+/* ------------------------------------------------------------------ fields */
+
+[data-formancy-theme='pop'] [data-formancy-part='field'] {
+  display: grid;
+  gap: 0.5rem;
+  margin-block-end: var(--fm-step);
+  font-family: var(--fm-sans);
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='label'] {
+  font-size: 0.9375rem;
+  font-weight: 800;
+  letter-spacing: 0.005em;
+  line-height: 1.3;
+}
+
+/* A pink star for a required field. Decorative: `aria-required` already says
+   it to a screen reader, and the empty alternative keeps it from being read
+   twice. */
+[data-formancy-theme='pop'] [data-formancy-part='field']:has([aria-required='true']) [data-formancy-part='label']::after {
+  content: '★' / '';
+  margin-inline-start: 0.375em;
+  color: var(--fm-pink);
+  -webkit-text-stroke: 1px var(--fm-ink);
+}
+
+/* A grouped field's requirement is a real element, because the group has to
+   announce it through its description. It comes after the legend, so in a
+   row of chips it gets a line of its own rather than passing for a chip — in
+   ink, with the pink star in front, because pink text on cream is too faint
+   to read at this size. */
+[data-formancy-theme='pop'] [data-formancy-part='required-hint'] {
+  flex-basis: 100%;
+  margin-block: -0.25rem 0.125rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='required-hint']::before {
+  content: '★ ' / '';
+  color: var(--fm-pink);
+  -webkit-text-stroke: 1px var(--fm-ink);
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='field'] :is(input, select, textarea) {
+  font: inherit;
+  font-family: var(--fm-sans);
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--fm-ink);
+  background-color: var(--fm-paper);
+  border: var(--fm-line);
+  border-radius: var(--fm-radius);
+  box-shadow: var(--fm-lift);
+  padding: 0.625rem 0.875rem;
+  min-height: 3rem;
+  width: 100%;
+  min-width: 0;
+  transition:
+    translate 120ms ease,
+    box-shadow 120ms ease;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='field'] textarea {
+  min-height: 7rem;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+/* Pointed at, it lifts; focused, it lifts further and its shadow turns blue.
+   The shadow is the focus indicator as well as the outline, so it is big. */
+[data-formancy-theme='pop'] [data-formancy-part='field'] :is(input, select, textarea):hover:not(:disabled, :focus-visible) {
+  translate: -1px -1px;
+  box-shadow: 5px 5px 0 var(--fm-ink);
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='field'] :is(input, select, textarea):focus-visible {
+  outline: none;
+  translate: -2px -2px;
+  box-shadow: 6px 6px 0 var(--fm-blue);
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='field'] :is(input, select, textarea):disabled {
+  background-color: #f1ede3;
+  color: var(--fm-muted);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='field'] select {
+  appearance: none;
+  padding-inline-end: 2.75rem;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--fm-ink) 50%),
+    linear-gradient(-45deg, transparent 50%, var(--fm-ink) 50%);
+  background-position:
+    calc(100% - 1.375rem) 52%,
+    calc(100% - 1rem) 52%;
+  background-size: 0.375rem 0.375rem;
+  background-repeat: no-repeat;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='field'] input[type='file'] {
+  padding: 0.4375rem;
+  cursor: pointer;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='field'] input[type='file']::file-selector-button {
+  font: inherit;
+  font-weight: 800;
+  margin-inline-end: 0.875rem;
+  padding: 0.375rem 0.875rem;
+  border: 2px solid var(--fm-ink);
+  border-radius: 999px;
+  background: var(--fm-mint);
+  color: var(--fm-ink);
+  cursor: pointer;
+}
+
+/* ------------------------------------------------ boxes, dots and chips */
+
+/* A single checkbox field: the box, then its label. */
+[data-formancy-theme='pop'] [data-formancy-part='field']:has(> input[type='checkbox']) {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 0.75rem;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='field'] > input[type='checkbox'] {
+  order: -1;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='field']:has(> input[type='checkbox']) [data-formancy-part='error'] {
+  grid-column: 1 / -1;
+}
+
+/* Drawn rather than borrowed. `appearance: none` changes how the input looks,
+   not what it is: the keyboard and the accessibility tree are the browser's. */
+[data-formancy-theme='pop'] [data-formancy-part='field'] input:is([type='checkbox'], [type='radio']) {
+  appearance: none;
+  flex: none;
+  display: inline-grid;
+  place-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: var(--fm-line);
+  border-radius: 7px;
+  background-color: var(--fm-paper);
+  box-shadow: 2px 2px 0 var(--fm-ink);
+  cursor: pointer;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='field'] input[type='radio'] {
+  border-radius: 50%;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='field'] input:is([type='checkbox'], [type='radio']):checked {
+  background-color: var(--fm-yellow);
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='field'] input[type='checkbox']::before {
+  content: '';
+  width: 0.625rem;
+  height: 0.375rem;
+  border: solid var(--fm-ink);
+  border-width: 0 0 3px 3px;
+  rotate: -45deg;
+  translate: 0 -2px;
+  scale: 0;
+  transition: scale 120ms ease;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='field'] input[type='checkbox']:checked::before {
+  scale: 1;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='field'] input[type='radio']::before {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--fm-ink);
+  scale: 0;
+  transition: scale 120ms ease;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='field'] input[type='radio']:checked::before {
+  scale: 1;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='field'] input:is([type='checkbox'], [type='radio']):focus-visible {
+  outline: 3px solid var(--fm-blue);
+  outline-offset: 3px;
+  translate: none;
+  box-shadow: 2px 2px 0 var(--fm-ink);
+}
+
+/* A set of choices is a row of chips, not a column of dots: the whole chip is
+   the target, and the chosen one turns yellow. */
+[data-formancy-theme='pop'] fieldset[data-formancy-part='field'] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+  margin-inline: 0;
+  padding: 0;
+  border: 0;
+}
+
+[data-formancy-theme='pop'] fieldset[data-formancy-part='field'] > legend {
+  float: left;
+  width: 100%;
+  margin-block-end: 0.625rem;
+  padding: 0;
+}
+
+[data-formancy-theme='pop'] fieldset[data-formancy-part='field'] > [data-formancy-part='error'] {
+  flex-basis: 100%;
+}
+
+[data-formancy-theme='pop'] :is([data-formancy-part='radio-option'], [data-formancy-part='checkbox-option']) {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.375rem 1rem 0.375rem 0.625rem;
+  border: var(--fm-line);
+  border-radius: 999px;
+  background: var(--fm-paper);
+  box-shadow: 3px 3px 0 var(--fm-ink);
+  font-weight: 700;
+  transition:
+    translate 120ms ease,
+    box-shadow 120ms ease,
+    background-color 120ms ease;
+}
+
+[data-formancy-theme='pop'] :is([data-formancy-part='radio-option'], [data-formancy-part='checkbox-option']):hover {
+  translate: -1px -1px;
+  box-shadow: 4px 4px 0 var(--fm-ink);
+}
+
+[data-formancy-theme='pop'] :is([data-formancy-part='radio-option'], [data-formancy-part='checkbox-option']):has(input:checked) {
+  background: var(--fm-yellow);
+}
+
+/* Inside a chip the box loses its own shadow: the chip carries it. */
+[data-formancy-theme='pop'] :is([data-formancy-part='radio-option'], [data-formancy-part='checkbox-option']) input {
+  box-shadow: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-width: 2px;
+}
+
+[data-formancy-theme='pop'] :is([data-formancy-part='radio-option'], [data-formancy-part='checkbox-option']) input:checked {
+  background-color: var(--fm-paper);
+}
+
+[data-formancy-theme='pop'] :is([data-formancy-part='radio-option'], [data-formancy-part='checkbox-option']) label {
+  cursor: pointer;
+}
+
+/* The label is stretched over the whole chip, so the chip is the target. */
+[data-formancy-theme='pop'] :is([data-formancy-part='radio-option'], [data-formancy-part='checkbox-option']) label::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+/* ------------------------------------------------------------------- state */
+
+/* An invalid control keeps its outline and gets a pink shadow and wash, and
+   its message is a sticker. Colour is never alone: the sticker carries a mark
+   and the words. */
+[data-formancy-theme='pop'] [data-formancy-part='field'][data-state='invalid'] :is(input, select, textarea) {
+  background-color: var(--fm-invalid-wash);
+  box-shadow: 4px 4px 0 var(--fm-pink);
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='error'] {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin: 0.25rem 0 0;
+  padding: 0.1875rem 0.75rem 0.1875rem 0.3125rem;
+  border: 2px solid var(--fm-ink);
+  border-radius: 999px;
+  background: var(--fm-pink);
+  color: var(--fm-ink);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  rotate: -1deg;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='error']::before {
+  content: '!' / '';
+  display: inline-grid;
+  place-items: center;
+  width: 1.125rem;
+  height: 1.125rem;
+  border-radius: 50%;
+  background: var(--fm-ink);
+  color: var(--fm-yellow);
+  font-size: 0.75rem;
+}
+
+/* --------------------------------------------------------------- repeaters */
+
+[data-formancy-theme='pop'] [data-formancy-part='repeater'] {
+  margin: 0 0 var(--fm-step);
+  padding: 1.25rem 1.25rem 1.375rem;
+  border: var(--fm-line);
+  border-radius: 18px;
+  background: var(--fm-paper);
+  box-shadow: 6px 6px 0 var(--fm-ink);
+}
+
+/* The legend is a black tag hung on the card's edge. */
+[data-formancy-theme='pop'] [data-formancy-part='repeater-legend'] {
+  padding: 0.25rem 0.875rem;
+  border-radius: 999px;
+  background: var(--fm-ink);
+  color: var(--fm-yellow);
+  font-size: 0.875rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='row'] {
+  display: grid;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='row'] + [data-formancy-part='row'] {
+  margin-block-start: 1.25rem;
+  padding-block-start: 1.25rem;
+  border-block-start: 2.5px dashed var(--fm-ink);
+}
+
+/* ----------------------------------------------------------------- buttons */
+
+[data-formancy-theme='pop'] [data-formancy-part='repeater'] button,
+[data-formancy-theme='pop'] [data-formancy-part='wizard-nav'] button,
+[data-formancy-theme='pop'] [data-formancy-part='submit'] {
+  font: inherit;
+  font-family: var(--fm-sans);
+  font-size: 0.9375rem;
+  font-weight: 800;
+  min-height: 2.75rem;
+  padding: 0.5rem 1.25rem;
+  border: var(--fm-line);
+  border-radius: 999px;
+  background: var(--fm-paper);
+  color: var(--fm-ink);
+  box-shadow: 3px 3px 0 var(--fm-ink);
+  cursor: pointer;
+  transition:
+    translate 100ms ease,
+    box-shadow 100ms ease;
+}
+
+[data-formancy-theme='pop'] :is([data-formancy-part='repeater'] button, [data-formancy-part='wizard-nav'] button, [data-formancy-part='submit']):hover {
+  translate: -2px -2px;
+  box-shadow: 5px 5px 0 var(--fm-ink);
+}
+
+/* Pressed: the shadow is the distance to the page, and pressing closes it. */
+[data-formancy-theme='pop'] :is([data-formancy-part='repeater'] button, [data-formancy-part='wizard-nav'] button, [data-formancy-part='submit']):active {
+  translate: 3px 3px;
+  box-shadow: 0 0 0 var(--fm-ink);
+}
+
+[data-formancy-theme='pop'] :is([data-formancy-part='repeater'] button, [data-formancy-part='wizard-nav'] button, [data-formancy-part='submit']):focus-visible {
+  outline: 3px solid var(--fm-blue);
+  outline-offset: 4px;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='repeater'] > button {
+  margin-block-start: 1.125rem;
+  background: var(--fm-mint);
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='repeater'] > button::before {
+  content: '+' / '';
+  margin-inline-end: 0.375rem;
+  font-weight: 900;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='row'] > button {
+  justify-self: start;
+  min-height: 2.25rem;
+  padding: 0.25rem 0.875rem;
+  font-size: 0.8125rem;
+  box-shadow: 2px 2px 0 var(--fm-ink);
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='row'] > button:hover {
+  background: var(--fm-pink);
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='submit'] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-height: 3.25rem;
+  padding-inline: 1.875rem;
+  border-radius: 14px;
+  background: var(--fm-yellow);
+  box-shadow: 5px 5px 0 var(--fm-ink);
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='submit']::after {
+  content: '→' / '';
+  font-size: 1.125rem;
+}
+
+/* ------------------------------------------------------------------ wizard */
+
+/* Numbered badges; the current one is yellow and the rest are outlines. */
+[data-formancy-theme='pop'] [data-formancy-part='stepper'] ol {
+  counter-reset: fm-step;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  list-style: none;
+  margin: 0 0 1.75rem;
+  padding: 0;
+  font-weight: 700;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='stepper'] li {
+  counter-increment: fm-step;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--fm-muted);
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='stepper'] li::before {
+  content: counter(fm-step) / '';
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: var(--fm-line);
+  border-radius: 50%;
+  background: var(--fm-paper);
+  color: var(--fm-ink);
+  font-weight: 900;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='stepper'] li[aria-current='step'] {
+  color: var(--fm-ink);
+  font-weight: 900;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='stepper'] li[aria-current='step']::before {
+  background: var(--fm-yellow);
+  box-shadow: 3px 3px 0 var(--fm-ink);
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='wizard-nav'] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.875rem;
+  margin-block-start: 1.75rem;
+  padding-block-start: 1.5rem;
+  border-block-start: 2.5px dashed var(--fm-ink);
+}
+
+/* ----------------------------------------------------------- error summary */
+
+[data-formancy-theme='pop'] [data-formancy-part='error-summary'] {
+  margin-block-end: 2rem;
+  padding: 1.125rem 1.25rem;
+  border: var(--fm-line);
+  border-radius: 18px;
+  background: var(--fm-paper);
+  box-shadow: 6px 6px 0 var(--fm-pink);
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='error-summary']:focus-visible {
+  outline: 3px solid var(--fm-blue);
+  outline-offset: 4px;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='error-summary-heading'] {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.75rem;
+  font-size: 1.125rem;
+  font-weight: 900;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='error-summary-heading']::before {
+  content: '!' / '';
+  display: inline-grid;
+  place-items: center;
+  width: 1.625rem;
+  height: 1.625rem;
+  border: 2px solid var(--fm-ink);
+  border-radius: 50%;
+  background: var(--fm-pink);
+  font-size: 0.9375rem;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='error-summary'] ul {
+  margin: 0;
+  padding-inline-start: 1.25rem;
+  font-weight: 600;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='error-summary'] li + li {
+  margin-block-start: 0.25rem;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='error-summary'] a {
+  color: var(--fm-ink);
+  text-decoration-color: var(--fm-pink);
+  text-decoration-thickness: 3px;
+  text-underline-offset: 3px;
+}
+
+/* ----------------------------------------------------------------- layouts
+ *
+ * Placed by source order only, never by `order` or `grid-column`, so the
+ * reading order is the visual order (WCAG 1.3.2, 2.4.3); `auto-fit` with a
+ * floor reflows to one column without scrolling (1.4.10).
+ */
+
+[data-formancy-theme='pop'] [data-formancy-part='layout-row'] {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 0 1.25rem;
+  align-items: start;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='layout-column'] {
+  display: grid;
+  align-content: start;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='layout-section'] {
+  margin-block-end: calc(var(--fm-step) * 1.5);
+}
+
+/* A heading with a highlighter stroke through its lower half. */
+[data-formancy-theme='pop'] [data-formancy-part='layout-section-heading'] {
+  justify-self: start;
+  width: fit-content;
+  margin: 0 0 1.125rem;
+  padding-inline: 0.125em;
+  font-size: 1.5rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  background: linear-gradient(transparent 58%, var(--fm-yellow) 58%, var(--fm-yellow) 92%, transparent 92%);
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='static'] {
+  margin: 0 0 1.75rem;
+  max-width: 55ch;
+  font-size: 1.1875rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='layout-table'] {
+  display: grid;
+  grid-template-columns: repeat(var(--fm-columns, 2), minmax(0, 1fr));
+  gap: 0 1.25rem;
+  align-items: start;
+  margin-block-end: var(--fm-step);
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='layout-table'][data-columns='1'] { --fm-columns: 1; }
+[data-formancy-theme='pop'] [data-formancy-part='layout-table'][data-columns='2'] { --fm-columns: 2; }
+[data-formancy-theme='pop'] [data-formancy-part='layout-table'][data-columns='3'] { --fm-columns: 3; }
+[data-formancy-theme='pop'] [data-formancy-part='layout-table'][data-columns='4'] { --fm-columns: 4; }
+[data-formancy-theme='pop'] [data-formancy-part='layout-table'][data-columns='5'] { --fm-columns: 5; }
+[data-formancy-theme='pop'] [data-formancy-part='layout-table'][data-columns='6'] { --fm-columns: 6; }
+
+@media (max-width: 40rem) {
+  [data-formancy-theme='pop'] [data-formancy-part='layout-table'] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='layout-table'] > [data-formancy-part='layout-section-heading'] {
+  grid-column: 1 / -1;
+}
+
+/* Tabs: chips again, the open one yellow. A closed panel is hidden by the
+   renderer's `hidden` attribute, not by this file. */
+[data-formancy-theme='pop'] [data-formancy-part='tablist'] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+  margin-block-end: var(--fm-step);
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='tab'] {
+  font: inherit;
+  font-weight: 800;
+  min-height: 2.5rem;
+  padding: 0.375rem 1.125rem;
+  border: var(--fm-line);
+  border-radius: 999px;
+  background: var(--fm-paper);
+  color: var(--fm-ink);
+  box-shadow: 3px 3px 0 var(--fm-ink);
+  cursor: pointer;
+}
+
+/* 1.4.1: the open tab differs by fill, by shadow and by being pressed in,
+   not by colour alone. */
+[data-formancy-theme='pop'] [data-formancy-part='tab'][aria-selected='true'] {
+  background: var(--fm-yellow);
+  translate: 2px 2px;
+  box-shadow: 1px 1px 0 var(--fm-ink);
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='tab']:focus-visible {
+  outline: 3px solid var(--fm-blue);
+  outline-offset: 3px;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='tabpanel'][hidden] {
+  display: none;
+}
+
+/* ------------------------------------------------------- rich text, files */
+
+[data-formancy-theme='pop'] [data-formancy-part='richtext-toolbar'] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin-block-end: 0.25rem;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='richtext-button'] {
+  display: inline-grid;
+  place-items: center;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  font: inherit;
+  font-weight: 900;
+  border: 2px solid var(--fm-ink);
+  border-radius: 9px;
+  background: var(--fm-paper);
+  color: var(--fm-ink);
+  box-shadow: 2px 2px 0 var(--fm-ink);
+  cursor: pointer;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='richtext-button']:hover:not(:disabled) {
+  background: var(--fm-yellow);
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='richtext-button']:focus-visible {
+  outline: 3px solid var(--fm-blue);
+  outline-offset: 2px;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='richtext-button']:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='richtext-preview'] {
+  margin-block-start: 0.5rem;
+  padding: 0.75rem 0.875rem;
+  border: 2.5px dashed var(--fm-ink);
+  border-radius: var(--fm-radius);
+  background: #fffbe8;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='richtext-preview']:has([data-formancy-part='richtext']:empty),
+[data-formancy-theme='pop'] [data-formancy-part='richtext-preview']:not(:has(*)) {
+  display: none;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='richtext'] > :first-child { margin-block-start: 0; }
+[data-formancy-theme='pop'] [data-formancy-part='richtext'] > :last-child { margin-block-end: 0; }
+
+[data-formancy-theme='pop'] [data-formancy-part='richtext'] a {
+  color: var(--fm-blue);
+  text-decoration-thickness: 2px;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='file-list'] {
+  list-style: none;
+  margin: 0.625rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='file-item'] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.5rem 0.5rem 0.875rem;
+  border: 2px solid var(--fm-ink);
+  border-radius: var(--fm-radius);
+  background: var(--fm-paper);
+  font-weight: 700;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='file-item'] button {
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  padding: 0.25rem 0.75rem;
+  border: 2px solid var(--fm-ink);
+  border-radius: 999px;
+  background: var(--fm-paper);
+  cursor: pointer;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='file-item'] button:hover {
+  background: var(--fm-pink);
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='file-unavailable'] {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--fm-muted);
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='file-status']:empty {
+  display: none;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='file-status'] {
+  margin: 0.375rem 0 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+/* The word a toolbar button is named by: off screen, never removed, because
+   `display: none` would take the button's only name with it. */
+[data-formancy-theme='pop'] [data-formancy-part='visually-hidden'] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-formancy-theme='pop'] *,
+  [data-formancy-theme='pop'] *::before,
+  [data-formancy-theme='pop'] *::after {
+    transition: none !important;
+  }
+
+  [data-formancy-theme='pop'] [data-formancy-part='error'] {
+    rotate: none;
+  }
+}
