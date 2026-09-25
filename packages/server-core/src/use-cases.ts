@@ -267,13 +267,39 @@ export async function createSubmission(
     }
   }
 
-  await deps.storage.insertSubmission({
-    id,
-    formId: current.formId,
-    formVersionId: current.versionId,
-    data: engine.value(),
-    submittedAt: deps.nowIso(),
-  }, queued, claimable.ids)
+  const at = deps.nowIso()
+  await deps.storage.insertSubmission(
+    {
+      id,
+      formId: current.formId,
+      formVersionId: current.versionId,
+      data: engine.value(),
+      submittedAt: at,
+    },
+    queued,
+    claimable.ids,
+    // In the transaction, not after it: a submission that rolled back must
+    // leave nothing behind saying it happened, and an audit row for a
+    // submission nobody can find is worse than no row at all.
+    //
+    // No actor id — this route accepts anonymous submissions, and who
+    // submitted is the form's own data rather than the audit log's business.
+    // `actor` says only whether anybody was signed in.
+    {
+      id: deps.newId(),
+      at,
+      action: 'submission.created',
+      subject: input.path,
+      // The version, so a reader can tell which schema this answered without
+      // joining; the count, so an unusual submission is visible. Never the
+      // answers.
+      detail: {
+        submissionId: id,
+        version: current.version,
+        authenticated: input.actor === 'authenticated',
+      },
+    },
+  )
   return { ok: true, id, canonicalData: engine.value() }
 }
 

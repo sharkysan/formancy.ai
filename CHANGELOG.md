@@ -196,6 +196,31 @@ community-maintained and behind
 ([0052](./docs/decisions/0052-richtext-is-not-html.md) has the full reasoning).
 A host that wants TipTap can still put it in through the component registry.
 
+**Audit logging.** Who did what, to which thing, and when — written
+append-only, and enforced there by a trigger rather than by application
+discipline, because the one moment it matters is the moment somebody has a
+reason to edit it.
+
+Two things it does that the usual audit log does not. It records **reads**:
+`submission.read` and `submission.exported` alongside `submission.created`, so
+"who downloaded four thousand people's answers" is answerable — which is the
+question actually asked and the one a mutation-only log is silent about. And it
+records **failed logins**, because a hundred failures then one success is the
+shape of an attack and recording only the success hides it.
+
+It never contains the data. `detail` carries identifiers and counts, and there
+is a test asserting the submitted values appear nowhere in the row that
+describes them — an audit log is read by more people and kept longer than the
+data it describes, so answers inside it are a second copy of the thing being
+protected.
+
+The row joins the submission's own transaction, so a submission that rolled
+back leaves nothing saying it happened. Reads and publishes are appended after
+the fact, for two different reasons, and
+[0057](./docs/decisions/0057-the-audit-log-records-reads.md) says which and
+why rather than leaving it to be discovered. `GET /audit` reads it back;
+reading is deliberately not itself audited.
+
 **The website deploys as one static site.** The landing page at `/` and the
 playground at `/playground/`, built by `pnpm build:web`. The playground is
 built with `base: '/playground/'`, without which Vite's absolute asset URLs

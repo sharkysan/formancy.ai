@@ -1,3 +1,4 @@
+import type { AuditEntry } from './audit.js'
 import type { FormSchema } from '@formancy/spec'
 import type { Role } from './auth.js'
 
@@ -168,7 +169,26 @@ export interface Storage {
     record: SubmissionRecord,
     deliveries?: readonly DeliveryRecord[],
     claimFileIds?: readonly string[],
+    audit?: AuditEntry,
   ): Promise<void>
+
+  /**
+   * Append one audit row.
+   *
+   * Append-only by contract, and the deployment is expected to back that with
+   * a database role holding INSERT and SELECT and nothing else — an audit
+   * log the application can edit is a log that says whatever the person who
+   * broke in wants it to say. There is deliberately no update and no delete
+   * on this port for anything to call.
+   *
+   * For a mutation that HAS a transaction, pass the entry to that call
+   * instead, so the row and the thing it describes commit together. See
+   * `insertSubmission`.
+   */
+  recordAudit(entry: AuditEntry): Promise<void>
+
+  /** Newest first. Reading the log is itself a management-plane action. */
+  listAudit(limit: number): Promise<AuditEntry[]>
 
   insertFile(record: FileRecord): Promise<void>
   getFile(id: string): Promise<FileRecord | undefined>

@@ -157,3 +157,4 @@ listed under the sections they belong to above.
 | [0054](0054-expressions-that-never-work.md) | Refuse an expression that compiles and then never works | accepted |
 | [0055](0055-files-are-claimed.md) | A file belongs to a submission, or it is rubbish | accepted |
 | [0056](0056-agents-get-the-checks.md) | An agent gets the checks, not just the API | accepted |
+| [0057](0057-the-audit-log-records-reads.md) | The audit log records reads, and never the data | accepted |

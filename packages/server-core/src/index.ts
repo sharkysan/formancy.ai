@@ -1,3 +1,5 @@
+export { AUDIT_ACTIONS, auditedBy } from './audit.js'
+export type { AuditAction, AuditDraft, AuditEntry } from './audit.js'
 export {
   createSubmission,
   exportCsv,
