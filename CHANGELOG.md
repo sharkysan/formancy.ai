@@ -118,6 +118,21 @@ whole document and the three-pane grid below never got a say. It wraps now, and
 the strap line stands down on a narrow screen because the controls are what
 somebody came for.
 
+**The landing page fills its frame.** Every section was reserving fifteen rems
+of its right edge for the submission panel, which occupies one corner — so
+two fifths of every screen sat empty the whole way down and the page read as a
+draft. The hero is two columns now: the headline, and the document it is
+talking about beside it. Under it, a strip of measured readings — one engine,
+**zero** uses of `eval`, fifteen field types, 1,435 tests, 56 decision records
+— because the audience has been told "blazing fast" before. Each figure is
+checked: the zero by the CSP test that already existed, the field count against
+`FIELD_TYPES`.
+
+Display type is Archivo, a grotesque with a width axis set slightly narrow:
+engineered rather than editorial. The stack stopped being rounded cards and
+became a drawing, hairline-ruled, and every section heading now carries a rule
+to the edge of the frame.
+
 **The stack, in three dimensions.** formancy is a layer cake, so the landing
 page draws one: the shared layers deep and carrying both accents, the two
 per-framework layers near the reader and split violet from teal. Where the
@@ -196,26 +211,6 @@ community-maintained and behind
 ([0052](./docs/decisions/0052-richtext-is-not-html.md) has the full reasoning).
 A host that wants TipTap can still put it in through the component registry.
 
-<<<<<<< HEAD
-**The documentation is deployed, and describes what actually shipped.** The
-landing page's footer has linked to `/docs` since the page existed, and nothing
-ever built the docs site into the deployment — the link has been dead in
-production the whole time. `pnpm build:web` now composes three apps rather than
-two, and the docs are built with `base: '/docs'` so their asset URLs and
-navigation point at themselves.
-
-Three things that had shipped with no documentation at all now have some:
-`@formancy/mcp` (a quickstart of its own), file uploads on both sides — the
-renderer's `UploaderProvider` and the server's `FORMANCY_FILES_DIR` — and the
-rich text field's toolbar. The sidebar also stopped calling the spec reference
-"v0"; it has been v2 for a while.
-
-Two guards went in with it, because both failures are silent. The build refuses
-to finish if a nested app's assets point outside its own base, and it refuses
-if a Markdown link is root-absolute without `/docs/` — which builds cleanly
-and 404s against the landing page. The second one caught a link on its first
-run.
-=======
 **A publish is one transaction.** It was three storage calls — create the
 form when it is new, insert the version, point the form at it — and the
 middle failure is the one that hurts: a form row whose `currentVersionId` is
@@ -276,7 +271,25 @@ the fact, for two different reasons, and
 [0057](./docs/decisions/0057-the-audit-log-records-reads.md) says which and
 why rather than leaving it to be discovered. `GET /audit` reads it back;
 reading is deliberately not itself audited.
->>>>>>> publish-one-transaction
+
+**The documentation is deployed, and describes what actually shipped.** The
+landing page's footer has linked to `/docs` since the page existed, and nothing
+ever built the docs site into the deployment — the link has been dead in
+production the whole time. `pnpm build:web` now composes three apps rather than
+two, and the docs are built with `base: '/docs'` so their asset URLs and
+navigation point at themselves.
+
+Three things that had shipped with no documentation at all now have some:
+`@formancy/mcp` (a quickstart of its own), file uploads on both sides — the
+renderer's `UploaderProvider` and the server's `FORMANCY_FILES_DIR` — and the
+rich text field's toolbar. The sidebar also stopped calling the spec reference
+"v0"; it has been v2 for a while.
+
+Two guards went in with it, because both failures are silent. The build refuses
+to finish if a nested app's assets point outside its own base, and it refuses
+if a Markdown link is root-absolute without `/docs/` — which builds cleanly
+and 404s against the landing page. The second one caught a link on its first
+run.
 
 **The website deploys as one static site.** The landing page at `/` and the
 playground at `/playground/`, built by `pnpm build:web`. The playground is

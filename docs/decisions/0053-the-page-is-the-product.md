@@ -56,6 +56,34 @@ drops files.
 own tokens. A landing page for a theming system that invents a palette is
 arguing against itself.
 
+**The frame is filled, and that was a bug rather than a taste.** Every section
+reserved fifteen rems of its right edge for the submission panel, which sits in
+one corner — so two fifths of every screen was empty the whole way down and
+the page read as a draft. Only the last section can collide with the panel, and
+only that one pays now. The hero is two columns: the headline, and the document
+it is talking about with what the engine makes of it.
+
+**Numbers, not adjectives.** A strip of measured readings under the hero:
+one engine, **zero** uses of `eval`, fifteen field types, 1,435 tests, 56
+decision records. The audience has been told "blazing fast" before and stopped
+believing it. The zero earns its place because
+[0040](0040-no-eval.md) has a test that fails if it ever stops being true, and
+the field-type count is asserted against `FIELD_TYPES` so it cannot quietly
+drift — a number on a landing page that nothing checks is an adjective with
+extra steps.
+
+**Archivo for display.** A grotesque with a width axis, set slightly narrow:
+engineered rather than editorial, which is the register this product speaks in.
+The body stays IBM Plex Sans and data stays IBM Plex Mono. Two faces, clearly
+distinct, no third.
+
+**The stack is a drawing, not cards.** Rounded boxes with a soft shadow are
+what every landing page does to a list and they say nothing. These are strata,
+so they are ruled like strata: a hairline between each, the channel colour on
+the edge, no radius. Every section heading carries a rule to the edge of the
+frame for the same reason — a drawing has rules where a brochure has
+whitespace.
+
 **Two accents, carrying information.** Violet is the browser, teal is the
 server. They appear together where the pairing is the point and nowhere else,
 so the colour scheme is the argument rather than a decoration.
