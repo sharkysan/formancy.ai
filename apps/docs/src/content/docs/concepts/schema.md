@@ -101,7 +101,7 @@ TipTap editor configured from this grammar, so it cannot produce a construct the
 grammar has no way to store — and because ProseMirror's document is JSON rather
 than markup, nothing ever holds a string of HTML. It is a separate package you
 opt into, because ProseMirror is larger than the renderer and most forms have no
-rich-text field. See **[Rich text](/concepts/rich-text/)** for the two lines that
+rich-text field. See **[Rich text](/docs/concepts/rich-text/)** for the two lines that
 switch it on, and for the interface if you would rather supply your own editor.
 
 ```ts

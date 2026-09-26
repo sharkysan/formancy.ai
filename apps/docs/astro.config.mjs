@@ -13,6 +13,15 @@ export default defineConfig({
     starlight({
       title: 'formancy.ai',
       favicon: '/favicon.svg',
+      // Starlight writes the title, description and URL for each page; the
+      // preview image is the landing page's, so a shared docs link looks like
+      // the rest of formancy.ai rather than a bare text card.
+      head: [
+        { tag: 'meta', attrs: { property: 'og:image', content: 'https://formancy.ai/og.png' } },
+        { tag: 'meta', attrs: { property: 'og:image:width', content: '1200' } },
+        { tag: 'meta', attrs: { property: 'og:image:height', content: '630' } },
+        { tag: 'meta', attrs: { name: 'twitter:image', content: 'https://formancy.ai/og.png' } },
+      ],
       description:
         'A self-hostable form engine and backend for React and Angular: one engine in browser and server, headless renderers, Apache-2.0.',
       sidebar: [

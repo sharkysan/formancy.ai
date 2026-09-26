@@ -8,8 +8,69 @@
       name="description"
       content="A self-hostable form engine, renderers and backend for React and Angular. One engine in the browser and on the server, your design system's markup, Apache-2.0."
     />
-    <meta name="colour-scheme" content="dark light" />
-    <link rel="icon" href="/favicon.svg" />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#080a12" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <link rel="canonical" href="https://formancy.ai/" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+
+    <!-- How the page looks when it is shared: Open Graph, then Twitter/X. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="formancy.ai" />
+    <meta property="og:locale" content="en" />
+    <meta property="og:url" content="https://formancy.ai/" />
+    <meta property="og:title" content="formancy.ai — a form engine that runs in both places" />
+    <meta
+      property="og:description"
+      content="One engine in the browser and on the server, so what the person filling a form was told and what your server accepts can never drift apart. React and Angular, self-hosted, Apache-2.0."
+    />
+    <meta property="og:image" content="https://formancy.ai/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="formancy.ai: one engine, in the browser and on the server. A form shown in two of its themes."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="formancy.ai — a form engine that runs in both places" />
+    <meta
+      name="twitter:description"
+      content="One engine in the browser and on the server. React and Angular, self-hosted, Apache-2.0."
+    />
+    <meta name="twitter:image" content="https://formancy.ai/og.png" />
+
+    <!-- What the page is, for search engines. Nothing here that the page or the
+         repository does not also say: no ratings, no prices beyond the licence. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://formancy.ai/#website",
+            "url": "https://formancy.ai/",
+            "name": "formancy.ai",
+            "inLanguage": "en"
+          },
+          {
+            "@type": "SoftwareSourceCode",
+            "@id": "https://formancy.ai/#software",
+            "name": "formancy",
+            "description": "A self-hostable form engine, renderers and backend for React and Angular. The same compiled engine runs in the browser and on the server.",
+            "url": "https://formancy.ai/",
+            "codeRepository": "https://github.com/sharkysan/formancy.ai",
+            "license": "https://www.apache.org/licenses/LICENSE-2.0",
+            "programmingLanguage": "TypeScript",
+            "runtimePlatform": "Node.js",
+            "keywords": "form engine, form builder, React forms, Angular forms, JSON forms, CEL, self-hosted, accessibility",
+            "isAccessibleForFree": true,
+            "image": "https://formancy.ai/og.png"
+          }
+        ]
+      }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
