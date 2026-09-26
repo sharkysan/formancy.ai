@@ -87,6 +87,17 @@ inside a rich region) and half of one is worse than a textarea every assistive
 technology already understands. A live preview, from the same parser, is what
 teaches the grammar in the meantime.
 
+> **Revisited in [0061](0061-tiptap-over-the-closed-grammar.md), and the
+> storage decision below is unchanged.** This paragraph's argument turned out to
+> be narrower than it reads: everything above is about a string of *HTML*
+> crossing the boundary, and none of it reaches contenteditable. A ProseMirror
+> document is JSON and its schema is closed by construction, so an editor built
+> from exactly this grammar cannot produce a construct the grammar has no way to
+> store. 0061 admits one as an optional, host-supplied package. **The textarea
+> remains the default and the fallback**, and remains the surface the conformance
+> drivers drive — the accessibility caution in this paragraph was right, and is
+> why the other path had to be additive rather than a replacement.
+
 ## The editor over it
 
 A **toolbar over a `<textarea>`**, not a contenteditable surface: Bold, Italic,

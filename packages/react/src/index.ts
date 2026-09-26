@@ -12,4 +12,10 @@ export { ErrorSummary } from './error-summary.js'
 export type { ErrorSummaryProps } from './error-summary.js'
 export { RichText } from './rich-text.js'
 export { UploaderProvider, useUploader } from './uploads.js'
+export { RichTextEditorProvider, useRichTextEditorFactory } from './rich-text-editor.js'
+export type {
+  RichTextEditorFactory,
+  RichTextEditorHandle,
+  RichTextEditorMount,
+} from './rich-text-editor.js'
 export type { StoredFile, Uploader } from './uploads.js'

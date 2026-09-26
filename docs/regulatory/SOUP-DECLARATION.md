@@ -72,12 +72,15 @@ What it does **not** do, and must not be assumed to do:
 
 ## Composition and third-party dependencies
 
-Thirteen published packages, layered so that the isomorphic ones cannot
-acquire a platform dependency ([0008](../decisions/0008-layered-packages.md)):
+Fourteen published packages, layered so that the isomorphic ones cannot
+acquire a platform dependency ([0008](../decisions/0008-layered-packages.md)).
+Workspace dependencies between them are not listed: the whole repository is
+delivered as one version under one licence, so assessing `@formancy/server` is
+not separately assessing `@formancy/spec`.
 
 | Package | Runtime dependencies outside the project |
 |---|---|
-| `@formancy/spec` | `ajv ^8.20.0`, `@noble/hashes ^2.4.0` |
+| `@formancy/spec` | `@noble/hashes ^2.4.0`, `ajv ^8.20.0` |
 | `@formancy/expressions` | `@marcbachmann/cel-js ^8.0.0` |
 | `@formancy/core` | none |
 | `@formancy/challenge` | `@noble/hashes ^2.4.0` |
@@ -90,6 +93,15 @@ acquire a platform dependency ([0008](../decisions/0008-layered-packages.md)):
 | `@formancy/server` | `@fastify/rate-limit ^11.2.0`, `@node-rs/argon2 ^2.2.1`, `drizzle-orm ^0.45.2`, `fastify ^5.12.5`, `jose ^6.2.12`, `postgres ^3.4.9`, `undici ^8.10.2` |
 | `@formancy/mcp` | `@modelcontextprotocol/sdk ^1.30.1`, `zod ^4.6.5` |
 | `@formancy/themes` | none (CSS only) |
+| `@formancy/tiptap` | `@tiptap/core ^3.31.3`, `@tiptap/extension-bold ^3.31.3`, `@tiptap/extension-bullet-list ^3.31.3`, `@tiptap/extension-document ^3.31.3`, `@tiptap/extension-italic ^3.31.3`, `@tiptap/extension-link ^3.31.3`, `@tiptap/extension-list-item ^3.31.3`, `@tiptap/extension-ordered-list ^3.31.3`, `@tiptap/extension-paragraph ^3.31.3`, `@tiptap/extension-text ^3.31.3`, `@tiptap/pm ^3.31.3` |
+
+`@formancy/tiptap`'s nine extensions are listed one by one, in the table and in
+the package's own source, rather than taken from `@tiptap/starter-kit` — which
+is one line and would bring six more constructs the stored grammar cannot hold
+([0061](../decisions/0061-tiptap-over-the-closed-grammar.md)). Summarising them
+here as "and the nine extensions" is what the first version of this row did, and
+`apps/docs/src/soup.test.ts` rejected it: a range a manufacturer cannot read is
+not a declared range.
 
 **This table is derived from the manifests by `apps/docs/src/soup.test.ts`,
 not maintained by hand.** It had drifted three packages and four dependencies
@@ -100,7 +112,10 @@ version range that does not match `package.json`.
 
 The dependency count is deliberately small, and the engine — the part that
 decides whether a submission is valid — has **no third-party runtime
-dependency at all**.
+dependency at all**. So does `@formancy/core`'s whole layer: a manufacturer whose
+product renders forms and validates them, without the server or the rich-text
+editor, is assessing `ajv`, `@noble/hashes` and `@marcbachmann/cel-js` and
+nothing else.
 
 ### The dependencies to look at closely
 
@@ -133,6 +148,30 @@ Crypto in the challenge after measurement: a hundred thousand hashes cost
 269ms synchronously against about 4,800ms through `crypto.subtle`, and the
 overhead fell on the legitimate visitor rather than on an attacker, who
 writes the fast loop ([0059](../decisions/0059-proof-of-work-not-a-captcha.md)).
+
+**ProseMirror, through TipTap**, is the largest dependency in the tree by an
+order of magnitude and the newest. Two things bound what it can do. It is
+**optional**: it lives in its own package, the renderers take an editor from the
+host rather than importing one, and a deployment that does not provide one gets a
+textarea and never loads it — so a manufacturer who does not want this
+dependency simply does not have it. And its schema is **closed by
+construction**: the editor is built from exactly the nodes and marks the stored
+grammar has, so it cannot produce a document the grammar has no way to store,
+which is asserted against a real ProseMirror rather than assumed
+([0061](../decisions/0061-tiptap-over-the-closed-grammar.md)).
+
+What it does **not** get is trust. Its output is converted through
+`@formancy/spec` and every link is re-checked against the same scheme list the
+parser uses, because the editor runs in the browser and a document really does
+arrive carrying a `javascript:` href if one is put there. The server re-parses
+the stored string regardless. Nothing anywhere calls TipTap's `getHTML`, and no
+stored answer is ever markup — which is what keeps the rich-text field out of
+the stored-XSS class entirely
+([0052](../decisions/0052-richtext-is-not-html.md)).
+
+`@tiptap/core`, `@tiptap/pm` and the nine extensions are MIT. TipTap also sells
+commercial extensions; none is used, and depending on one would contradict the
+project's open-core line.
 
 ## Known anomalies and limitations
 
