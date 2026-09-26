@@ -10,6 +10,21 @@ later.
 
 ## Unreleased
 
+**Every third-party action in the release workflow is pinned to a commit hash**,
+with the tag in a comment. That workflow holds an npm token, an OIDC identity that
+can sign on the project's behalf, and push rights to the registry; a tag is a
+mutable pointer, so whoever controls an action's repository can move `v3` to
+different code and that code would run here with all three. CodeQL flagged the
+three added with the image work, and the two that were already there are pinned in
+the same commit because the argument does not distinguish them. Updating one now
+means reading what changed and writing a new hash, which is the cost and also the
+point.
+
+CodeQL also caught a real defect **in the guard itself**: `/:latest|latest\s*$/`
+anchors only its second alternative, so the first half matched `:latest` anywhere
+including inside a longer word. Grouped, and `` rather than `$` so it also
+catches a tag with something after it on the line.
+
 **The server image is published and signed.** CI built it on every pull request
 and proved it starts, and the release threw it away — so a self-hosted,
 security-adjacent product whose npm packages carry provenance and a signed SBOM

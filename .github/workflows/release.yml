@@ -8,6 +8,17 @@ on:
   push:
     tags: ['v*']
 
+# Third-party actions are pinned to commit hashes, with the tag in a comment.
+#
+# This workflow holds an npm token, an OIDC identity that can sign on the
+# project's behalf, and push rights to the registry. A tag is a mutable pointer:
+# whoever controls an action's repository can move `v3` to different code, and
+# that code would run here with all three. CodeQL flagged the three added with
+# the image work; the two that were already here are pinned in the same commit,
+# because the argument does not distinguish them.
+#
+# Updating one means reading what changed and writing a new hash. That is the
+# cost, and it is also the point.
 permissions:
   contents: read
 
@@ -117,7 +128,7 @@ jobs:
             console.log('SBOM: ' + String((s.components ?? []).length) + ' components');
           "
 
-      - uses: sigstore/cosign-installer@v3
+      - uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3
 
       # Keyless: the signature is bound to this workflow's OIDC identity rather
       # than to a private key somebody has to keep. There is no key to leak and
@@ -139,10 +150,10 @@ jobs:
       # produced by the workflow that signs it, at the commit the tag names, and
       # not carried between jobs where the thing signed and the thing built could
       # drift apart.
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
       - name: Log in to the registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -154,7 +165,7 @@ jobs:
       # contradicting its own advice in the most convenient place to do it.
       - name: Build and push the server image
         id: image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: .
           file: packages/server/Dockerfile
@@ -195,7 +206,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Create the GitHub release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
           body_path: CHANGELOG.md
           files: |

@@ -72,9 +72,15 @@ describe('the release workflow', () => {
     // The SOUP declaration tells a manufacturer to pin an exact version and says
     // `latest` is not characterised software. Publishing one anyway would be the
     // project contradicting its own advice in the most convenient place to do it.
-    const tags = /tags:[^\n]*\n?/g
-    for (const match of release.match(tags) ?? []) {
-      expect(match).not.toMatch(/:latest|latest\s*$/)
+    //
+    // The first version matched /:latest|latest\s*$/, where the $ binds only to
+    // the second alternative -- so the first half matched ':latest' anywhere,
+    // including inside a longer word. CodeQL flagged the precedence as a missing
+    // anchor and was right. Grouped now, with \b rather than $, so it also
+    // catches a tag that has something after it on the line.
+    const tagLines = release.match(new RegExp('tags:[^' + '\\n' + ']*', 'g')) ?? []
+    for (const line of tagLines) {
+      expect(line).not.toMatch(/(?::latest|\blatest)\b/)
     }
   })
 
