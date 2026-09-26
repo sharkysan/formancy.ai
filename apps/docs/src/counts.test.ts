@@ -49,8 +49,16 @@ describe('the decision-record count', () => {
     // a pattern for "looks like a number" — the first attempt at that flagged
     // "The". Both `60 decision records` and `Sixty decision records` are caught,
     // and the second is the one that actually happened.
+    //
+    // The capture is letters, digits and hyphens only, so the `[` of a Markdown
+    // link never lands in it. An earlier version captured non-whitespace and
+    // stripped the bracket afterwards, which CodeQL correctly flagged: a
+    // single-argument `replace` removes only the first one, so the guard would
+    // have misread `[[The` as a count.
     const ALLOWED = ['The', 'the']
-    const words = [...readme.matchAll(/(\S+) decision records/g)].map((match) => match[1]!.replace('[', ''))
+    const words = [...readme.matchAll(/([A-Za-z0-9-]+) decision records/g)].map(
+      (match) => match[1]!,
+    )
 
     expect(
       words.filter((word) => !ALLOWED.includes(word)),
