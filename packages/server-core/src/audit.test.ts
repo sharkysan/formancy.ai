@@ -31,6 +31,7 @@ let counter = 0
 const deps = (): ServerDeps => ({
   storage: createMemoryStorage(),
   newId: () => `id-${String(++counter)}`,
+  draftSecret: 'a-test-signing-key-of-adequate-length',
   nowIso: () => '2026-09-25T10:00:00.000Z',
   capabilities: {
     now: () => 0,

@@ -10,6 +10,47 @@ later.
 
 ## Unreleased
 
+### Security
+
+**A draft now carries its own key. Before this, anybody could read or overwrite
+anybody's part-filled form.** `PUT` and `GET /f/:path/drafts/:draftId` were both
+unauthenticated and the id came from the caller — no ownership check, no rate
+limit, no origin check. A draft holds whatever the form asks for: a name, an
+address, a complaint, a medical history.
+
+Reading it was an unauthenticated disclosure to anybody who knew or guessed an id,
+and guessing was not hard, because a client that numbered its ids made every other
+draft on that deployment readable. **Overwriting it is worse**: the person resumes
+what they believe is their own form, does not re-read the fields they had already
+filled in, and submits the substituted content under their own name. Nothing in
+the submission, the audit log or the draft says the content was not theirs.
+
+`POST /f/:path/drafts` now starts a draft and returns an id the caller did not
+choose plus a token over it — HMAC over form and id, required in
+`X-Formancy-Draft-Token` on both other routes, verified before the write and
+before the lookup, compared in constant time. Stateless, the same shape the
+proof-of-work challenge uses: no second table, and starting a draft stays a
+read. A wrong token is answered exactly like a draft that is not there, so the
+reply cannot be used to discover which ids exist
+([0062](./docs/decisions/0062-a-draft-carries-its-own-key.md)).
+
+**This is a breaking change to a published API and deliberately not softened.** A
+compatibility window in which the old routes keep working is a window in which the
+hole is open, and anybody relying on the old shape is relying on being able to read
+other people's drafts. See [`MIGRATIONS.md`](./MIGRATIONS.md).
+
+**The hazard analysis did not have this either.** `SAFETY-ANALYSIS.md` section C
+had four entries and none was about drafts — C2 covers a *submission* read by
+somebody not entitled to it, and a draft is not a submission and took a different
+route with no check on it. C5 records the hazard, its constraint, and that the
+document was missing it, because an analysis that misses a live hole is a worse
+artefact than the code was.
+
+Two residuals are recorded rather than fixed: the token does not expire, so a
+leaked one is good until the draft is swept, and the draft routes still have no
+rate limit of their own.
+
+
 **Formatted text no longer looks double-spaced.** Nothing controlled the space
 between paragraphs, so the browser's default `margin: 1em 0` applied: three short
 paragraphs sat **36px apart on a 21px line**, a full blank line between each. It

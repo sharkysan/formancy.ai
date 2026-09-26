@@ -232,6 +232,34 @@ result is that formancy runs under a strict CSP with no configuration.
 *Residual:* renderers emit the application's own markup. A consuming
 application that injects unsanitised HTML into a form is outside this boundary.
 
+### C5. A part-filled form is read or altered by a stranger
+
+*How it arises:* the public plane is anonymous, so a draft has no account behind
+it. It was addressed by an id the **caller** supplied, on two routes with no
+ownership check, no rate limit and no origin check — so knowing or guessing an
+id was enough to read a stranger's part-filled answers, and to overwrite them.
+Guessing was not hard, because a client that numbered its ids made every other
+draft on that deployment readable.
+
+The altering half is the worse one. The person resumes what they believe is their
+own form, does not re-read the fields they had already filled in, and submits the
+substituted content **under their own name**. Nothing in the submission, the
+audit log or the draft records that the content was not theirs.
+
+*Constraint:* the server picks the draft id and signs it, and both routes require
+the signature ([0062](../decisions/0062-a-draft-carries-its-own-key.md)). HMAC
+over form and id, verified before the write and before the lookup, compared in
+constant time. A wrong token is answered exactly like a draft that is not there,
+so the reply cannot be used to discover which ids exist.
+
+*Residual:* **the token does not expire.** A leaked one is good until the draft
+is swept, which is a weaker bound than an expiry. The two routes also still have
+no rate limit of their own, unlike the submission route. And this hazard was
+absent from this document until the code was fixed — C2 covers a *submission*
+read by somebody not entitled to it, and a draft is not a submission and took a
+different route. An analysis that misses a live hole is a worse artefact than the
+code was, and the omission is recorded here rather than quietly filled in.
+
 ---
 
 ## D — The form cannot be completed
