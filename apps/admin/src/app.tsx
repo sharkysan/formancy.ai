@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Editor from '@monaco-editor/react'
+import type { Monaco } from '@monaco-editor/react'
 import { BuildPane } from './build-pane.js'
 import { WebhooksPane } from './webhooks-pane.js'
 import { SignIn } from './sign-in.js'
 import '@formancy/themes/workbench.css'
 import '@formancy/themes/blueprint.css'
+import './admin.css'
+import { Mark } from './mark.js'
 import { createFormEngine } from '@formancy/core'
 import { validateSchema } from '@formancy/spec/validate'
 import { CURRENT_SPEC_VERSION } from '@formancy/spec'
@@ -53,7 +56,13 @@ export function App() {
   return (
     <div className="wb-app">
       <nav className="wb-nav">
-        <h1>formancy.ai</h1>
+        <div className="wb-brand">
+          <h1>
+            <Mark />
+            formancy.ai
+          </h1>
+          <span className="wb-badge">admin</span>
+        </div>
         <button
           className="wb-quiet"
           onClick={() => {
@@ -63,7 +72,10 @@ export function App() {
         >
           Sign out
         </button>
-        <ul>
+        <p className="wb-nav-heading" id="wb-forms-heading">
+          Forms
+        </p>
+        <ul aria-labelledby="wb-forms-heading">
           {forms.map((form) => (
             <li key={form.path}>
               <button
@@ -90,9 +102,12 @@ export function App() {
           </label>
         </form>
       </nav>
-      <main style={{ overflow: 'hidden' }}>
+      <main>
         {selected === undefined ? (
-          <p style={{ padding: '1rem' }}>Pick a form, or type a new path on the left.</p>
+          <div className="wb-empty-state">
+            <p className="wb-empty-title">No form open</p>
+            <p>Pick a form, or type a new path on the left.</p>
+          </div>
         ) : (
           <FormWorkspace key={selected} path={selected} onPublished={reloadForms} />
         )}
@@ -155,7 +170,7 @@ function FormWorkspace({ path, onPublished }: { path: string; onPublished: () =>
     }
   }
 
-  if (source === undefined) return <p style={{ padding: '1rem' }}>Loading…</p>
+  if (source === undefined) return <p className="wb-loading">Loading…</p>
 
   return (
     <div className="wb-main">
@@ -168,7 +183,7 @@ function FormWorkspace({ path, onPublished }: { path: string; onPublished: () =>
           </button>
         ))}
         </div>
-        <span className="wb-published">
+        <span className="wb-published" data-published={serverHash !== undefined}>
           {serverHash === undefined ? 'never published' : `published ${serverHash.slice(0, 12)}…`}
         </span>
       </div>
@@ -229,38 +244,49 @@ function EditorPane({
   }, [source])
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', flex: 1, minHeight: 0 }}>
-      <div style={{ display: 'flex', flexDirection: 'column', borderRight: '1px solid #ccc' }}>
-        <div style={{ padding: '0.5rem' }}>
-          <button onClick={() => void onPublish()} disabled={'problems' in preview}>
+    <div className="wb-split">
+      <div className="wb-split-source">
+        <div className="wb-split-tools">
+          <button className="wb-primary" onClick={() => void onPublish()} disabled={'problems' in preview}>
             Publish
-          </button>{' '}
+          </button>
           {publishState !== undefined &&
             (publishState.ok ? (
-              <span>published as v{publishState.version}</span>
+              <span className="wb-ok">published as v{publishState.version}</span>
             ) : (
-              <span style={{ color: '#a00' }}>{publishState.message}</span>
+              <span className="wb-problem">{publishState.message}</span>
             ))}
         </div>
         <Editor
           language="json"
           value={source}
           onChange={(next) => onChange(next ?? '')}
-          options={{ minimap: { enabled: false }, scrollBeyondLastLine: false }}
+          beforeMount={defineNightTheme}
+          theme="formancy-night"
+          options={{
+            minimap: { enabled: false },
+            scrollBeyondLastLine: false,
+            fontSize: 13,
+            fontFamily: "'IBM Plex Mono', ui-monospace, Consolas, monospace",
+          }}
         />
       </div>
-      <div style={{ padding: '1rem', overflow: 'auto' }}>
+      <div className="wb-split-preview">
         {'problems' in preview ? (
-          <ul>
+          <ul className="wb-problems">
             {preview.problems.map((problem, index) => (
               <li key={index}>{problem}</li>
             ))}
           </ul>
         ) : (
-          <FormancyProvider engine={preview.engine} key={source}>
-            <ErrorSummary />
-            <FormancyForm />
-          </FormancyProvider>
+          // In a theme, as the builder's canvas is: a preview in no theme at
+          // all looked like a broken page rather than like the form.
+          <div className="wb-sheet" data-formancy-theme="blueprint">
+            <FormancyProvider engine={preview.engine} key={source}>
+              <ErrorSummary />
+              <FormancyForm />
+            </FormancyProvider>
+          </div>
         )}
       </div>
     </div>
@@ -273,26 +299,33 @@ function VersionsPane({ path }: { path: string }) {
     fetchVersions(path).then(setVersions).catch(() => setVersions([]))
   }, [path])
   return (
-    <table style={{ margin: '1rem', borderCollapse: 'collapse' }}>
-      <thead>
-        <tr>
-          <th style={{ textAlign: 'left', padding: '0.3rem 1rem' }}>Version</th>
-          <th style={{ textAlign: 'left', padding: '0.3rem 1rem' }}>Title</th>
-          <th style={{ textAlign: 'left', padding: '0.3rem 1rem' }}>Schema hash</th>
-        </tr>
-      </thead>
-      <tbody>
-        {versions.map((version) => (
-          <tr key={version.version}>
-            <td style={{ padding: '0.3rem 1rem' }}>v{version.version}</td>
-            <td style={{ padding: '0.3rem 1rem' }}>{version.title}</td>
-            <td style={{ padding: '0.3rem 1rem' }}>
-              <code>{version.schemaHash.slice(0, 16)}…</code>
-            </td>
+    <div className="wb-page">
+      <table className="wb-table">
+        <thead>
+          <tr>
+            <th>Version</th>
+            <th>Title</th>
+            <th>Schema hash</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {versions.map((version) => (
+            <tr key={version.version}>
+              <td>
+                <span className="wb-version">v{version.version}</span>
+              </td>
+              <td>{version.title}</td>
+              <td>
+                <code>{version.schemaHash.slice(0, 16)}…</code>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {versions.length === 0 ? (
+        <p className="wb-empty-note">Nothing published yet. The first publish is version 1.</p>
+      ) : null}
+    </div>
   )
 }
 
@@ -302,30 +335,62 @@ function SubmissionsPane({ path }: { path: string }) {
     fetchSubmissions(path).then(setSubmissions).catch(() => setSubmissions([]))
   }, [path])
   return (
-    <div style={{ padding: '1rem', overflow: 'auto' }}>
-      <p>
-        <a href={exportUrl(path)}>Download CSV (columns unioned across versions)</a>
+    <div className="wb-page">
+      <p className="wb-page-actions">
+        <a className="wb-button" href={exportUrl(path)}>
+          Download CSV (columns unioned across versions)
+        </a>
       </p>
-      <table style={{ borderCollapse: 'collapse' }}>
+      <table className="wb-table">
         <thead>
           <tr>
-            <th style={{ textAlign: 'left', padding: '0.3rem 1rem' }}>Submitted</th>
-            <th style={{ textAlign: 'left', padding: '0.3rem 1rem' }}>Version</th>
-            <th style={{ textAlign: 'left', padding: '0.3rem 1rem' }}>Data</th>
+            <th>Submitted</th>
+            <th>Version</th>
+            <th>Data</th>
           </tr>
         </thead>
         <tbody>
           {submissions.map((submission) => (
             <tr key={submission.id}>
-              <td style={{ padding: '0.3rem 1rem', whiteSpace: 'nowrap' }}>{submission.submittedAt}</td>
-              <td style={{ padding: '0.3rem 1rem' }}>v{submission.version}</td>
-              <td style={{ padding: '0.3rem 1rem' }}>
-                <code>{JSON.stringify(submission.data)}</code>
+              <td className="wb-nowrap">{submission.submittedAt}</td>
+              <td>
+                <span className="wb-version">v{submission.version}</span>
+              </td>
+              <td>
+                <code className="wb-data">{JSON.stringify(submission.data)}</code>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
+      {submissions.length === 0 ? (
+        <p className="wb-empty-note">No submissions yet.</p>
+      ) : null}
     </div>
   )
+}
+
+/**
+ * The JSON editor, in the admin's colours: Monaco draws its own surface, and
+ * a stock light editor inside a dark workbench reads as two products.
+ */
+function defineNightTheme(monaco: Monaco): void {
+  monaco.editor.defineTheme('formancy-night', {
+    base: 'vs-dark',
+    inherit: true,
+    rules: [
+      { token: 'string.key.json', foreground: 'c3b9ff' },
+      { token: 'string.value.json', foreground: '9ee8c9' },
+      { token: 'number', foreground: 'ff9ecf' },
+      { token: 'keyword.json', foreground: 'ff9ecf' },
+    ],
+    colors: {
+      'editor.background': '#0b0f18',
+      'editor.lineHighlightBackground': '#141a29',
+      'editorLineNumber.foreground': '#3a445a',
+      'editorLineNumber.activeForeground': '#95a0b4',
+      'editor.selectionBackground': '#3b3470',
+      'editorCursor.foreground': '#3fe0d5',
+    },
+  })
 }

@@ -71,10 +71,10 @@ export function BuildPane({
 
   if (session === null) {
     return (
-      <div className="wb-pane" style={{ padding: '1.5rem' }}>
-        <h2 style={{ fontSize: '1rem', margin: 0 }}>This form cannot be opened in the builder</h2>
+      <div className="wb-pane wb-notice">
+        <h2>This form cannot be opened in the builder</h2>
         <p className="wb-problem">{openError}</p>
-        <p style={{ fontSize: '0.8125rem' }}>Fix it in the editor tab, then come back.</p>
+        <p className="wb-hint">Fix it in the editor tab, then come back.</p>
       </div>
     )
   }
@@ -266,7 +266,7 @@ function BuilderWorkspace({
         <header>Properties</header>
         <div className="wb-body">
           {editing === null ? (
-            <p style={{ fontSize: '0.8125rem', color: 'var(--wb-muted)' }}>
+            <p className="wb-hint">
               Press <kbd>a</kbd> in the structure pane to add a field.
             </p>
           ) : (

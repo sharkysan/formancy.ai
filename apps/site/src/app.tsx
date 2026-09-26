@@ -3,7 +3,10 @@ import type { KeyboardEvent, PointerEvent, ReactElement, ReactNode } from 'react
 import { createFormEngine } from '@formancy/core'
 import type { FormEngine } from '@formancy/core'
 import { FormancyForm, FormancyProvider, UploaderProvider } from '@formancy/react'
+import '@formancy/themes/blueprint.css'
 import '@formancy/themes/dusk.css'
+import '@formancy/themes/paper.css'
+import '@formancy/themes/pop.css'
 import './site.css'
 import { EXAMPLES } from './examples.js'
 import { demoUploader } from './demo-uploader.js'
@@ -165,7 +168,8 @@ export function App(): ReactElement {
           <p className="lede">
             Three real formancy documents, rendered by <code>@formancy/react</code> right here.
             Answer a question and watch the rules underneath light up — that is the engine
-            thinking, the same one your server would run.
+            thinking, the same one your server would run. Then switch the theme: the same
+            markup, four products that do not look related.
           </p>
 
           <Examples />
@@ -411,8 +415,25 @@ function Marquee(): ReactElement {
  * the page, so switching away and back does not throw away what somebody
  * typed.
  */
+/**
+ * The themes the live form can be shown in — the same markup, four products.
+ *
+ * Switching one changes one attribute on the sheet and nothing else: no
+ * remount, no new engine, so what somebody typed stays typed. That is the
+ * headless claim, made where a visitor can press a button and watch it.
+ */
+const FORM_THEMES = [
+  { id: 'dusk', label: 'Dusk' },
+  { id: 'blueprint', label: 'Blueprint' },
+  { id: 'pop', label: 'Pop' },
+  { id: 'paper', label: 'Paper' },
+] as const
+
+type FormTheme = (typeof FORM_THEMES)[number]['id']
+
 function Examples(): ReactElement {
   const [selected, setSelected] = useState(0)
+  const [theme, setTheme] = useState<FormTheme>('dusk')
   const tabs = useRef<Array<HTMLButtonElement | null>>([])
 
   const engines = useMemo<readonly FormEngine[]>(
@@ -493,13 +514,25 @@ function Examples(): ReactElement {
             </div>
           </div>
 
-          <div className="window form-window" data-formancy-theme="dusk">
+          <div className="window form-window">
             <header>
               <span className="dot" aria-hidden="true" />
-              rendered by @formancy/react
+              <span className="form-window-title">rendered by @formancy/react</span>
+              <span className="themes" role="group" aria-label="Theme">
+                {FORM_THEMES.map((each) => (
+                  <button
+                    key={each.id}
+                    type="button"
+                    aria-pressed={theme === each.id}
+                    onClick={() => setTheme(each.id)}
+                  >
+                    {each.label}
+                  </button>
+                ))}
+              </span>
             </header>
             <p className="hint">{example.hint}</p>
-            <div className="sheet">
+            <div className="sheet" data-formancy-theme={theme}>
               {/* The file fields want somewhere to put bytes before they will
                   accept one. This page has no server, so the uploader keeps
                   them here and says so. */}
@@ -650,7 +683,7 @@ function Readings(): ReactElement {
     { value: '0', lines: ['uses of eval, so it', 'runs under a strict CSP'] },
     { value: '15', lines: ['field types the', 'spec defines'] },
     { value: '7', lines: ['tools for your', 'coding agent'] },
-    { value: '58', lines: ['decision records, each', 'naming what it cost'] },
+    { value: String(__DECISION_RECORDS__), lines: ['decision records, each', 'naming what it cost'] },
   ]
 
   return (

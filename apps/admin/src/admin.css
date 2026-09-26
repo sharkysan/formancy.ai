@@ -1,0 +1,809 @@
+/*
+ * The admin's own chrome, over workbench.css.
+ *
+ * The same room as formancy.ai and the playground: a dark bench, glass
+ * panels, violet for what you act on and teal for what the server did. The
+ * builder's panes come from workbench.css and are re-coloured entirely through
+ * its variables — not one of its rules is overridden for colour — so the tool
+ * and the playground stay one tool in two places.
+ *
+ * The form previews stay in the Blueprint theme on white paper: an admin
+ * previews what the people filling the form in will see, not the admin.
+ */
+
+:root {
+  --ground: #080a12;
+  --glass: rgb(17 22 36 / 74%);
+  --text: #eef1f8;
+  --muted: #95a0b4;
+  --edge: rgb(255 255 255 / 9%);
+  --edge-strong: rgb(255 255 255 / 15%);
+  --client: #8b7bff;
+  --server: #3fe0d5;
+  --invalid: #ff7a8a;
+  --ok: #4fdc8a;
+  --warn: #ffd27a;
+
+  --display: 'Archivo', 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+
+  --wb-ink: var(--text);
+  --wb-bench: #0b0f18;
+  --wb-panel: #0f1422;
+  --wb-surface: #151b2b;
+  --wb-rule: rgb(255 255 255 / 12%);
+  --wb-muted: var(--muted);
+  --wb-signal: var(--client);
+  --wb-derived: var(--server);
+  --wb-invalid: var(--invalid);
+  --wb-ok: var(--ok);
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--ground);
+  color: var(--text);
+  font-family: var(--wb-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* The light behind the bench: still, because somebody works here for hours. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(50rem 30rem at 8% -8rem, rgb(139 123 255 / 15%), transparent 70%),
+    radial-gradient(40rem 26rem at 96% 0%, rgb(63 224 213 / 9%), transparent 70%),
+    linear-gradient(rgb(255 255 255 / 3%) 1px, transparent 1px) 0 0 / 56px 56px,
+    linear-gradient(90deg, rgb(255 255 255 / 3%) 1px, transparent 1px) 0 0 / 56px 56px;
+  mask-image: linear-gradient(black, transparent 85%);
+}
+
+::selection {
+  background: color-mix(in srgb, var(--client) 45%, transparent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--server);
+  outline-offset: 2px;
+}
+
+.wb-mark {
+  display: block;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex: none;
+  border-radius: 7px;
+  filter: drop-shadow(0 0 8px rgb(139 123 255 / 45%));
+}
+
+.wb-badge {
+  padding: 0.0625rem 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--server) 45%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--server) 12%, transparent);
+  color: #bff7f2;
+  font-family: var(--wb-mono);
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* A primary action, wherever it is: the violet-to-teal of the site. */
+.wb-primary {
+  background: linear-gradient(100deg, var(--client), #6e5cf0 45%, var(--server)) !important;
+  border-color: transparent !important;
+  color: #06050d !important;
+  font-weight: 600;
+  border-radius: 999px !important;
+  box-shadow: 0 8px 26px -12px rgb(139 123 255 / 80%);
+}
+
+.wb-primary:disabled {
+  background: rgb(255 255 255 / 8%) !important;
+  color: var(--muted) !important;
+  box-shadow: none;
+}
+
+/* ------------------------------------------------------------ the shell */
+
+.wb-app {
+  grid-template-columns: 16.5rem minmax(0, 1fr);
+  gap: 0.75rem;
+  height: 100dvh;
+  padding: 0.75rem;
+  background: transparent;
+}
+
+.wb-nav,
+.wb-app > main {
+  border: 1px solid var(--edge-strong);
+  border-radius: 16px;
+  background: var(--glass);
+  backdrop-filter: blur(14px);
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 5%) inset,
+    0 30px 70px -40px rgb(0 0 0 / 90%);
+}
+
+.wb-nav {
+  gap: 1rem;
+  padding: 1rem 0.875rem;
+  border-inline-end: 1px solid var(--edge-strong);
+}
+
+.wb-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.wb-nav h1 {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--display);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.wb-nav .wb-quiet {
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--edge-strong);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 4%);
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.wb-nav .wb-quiet:hover {
+  border-color: var(--client);
+  color: var(--text);
+}
+
+.wb-nav-heading {
+  margin: 0.25rem 0 -0.5rem;
+  font-family: var(--wb-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.wb-nav ul {
+  gap: 0.25rem;
+}
+
+.wb-nav li button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background 140ms ease;
+}
+
+.wb-nav li button:hover {
+  background: rgb(255 255 255 / 5%);
+}
+
+.wb-nav li button[aria-current='true'] {
+  border-color: color-mix(in srgb, var(--client) 40%, transparent);
+  background: linear-gradient(100deg, rgb(139 123 255 / 20%), rgb(63 224 213 / 8%));
+  box-shadow: none;
+}
+
+.wb-nav small {
+  padding: 0.0625rem 0.4375rem;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 7%);
+}
+
+.wb-nav form {
+  margin-block-start: auto;
+  padding-block-start: 0.875rem;
+  border-block-start: 1px solid var(--edge);
+}
+
+.wb-nav label {
+  gap: 0.375rem;
+  font-size: 0.75rem;
+}
+
+.wb-nav input {
+  min-height: 2.25rem;
+  padding: 0.375rem 0.625rem;
+  border-radius: 9px;
+  background: rgb(5 7 14 / 60%);
+  font-size: 0.875rem;
+}
+
+.wb-app > main {
+  overflow: hidden;
+}
+
+/* One column that may shrink. A grid with no declared columns sizes its one
+   implicit track to its widest content — here the property panel's rows —
+   so on a phone the whole workspace was wider than the screen and clipped. */
+.wb-app > main,
+.wb-main {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.wb-titlebar {
+  flex-wrap: wrap;
+  gap: 0.5rem 0.875rem;
+  height: auto;
+  min-height: 3.25rem;
+  padding: 0.5rem 1rem;
+  background: rgb(255 255 255 / 2%);
+  border-block-end: 1px solid var(--edge);
+}
+
+.wb-titlebar strong {
+  font-size: 0.9375rem;
+  color: var(--text);
+}
+
+/* A segmented pill, the same device as the playground's pane switch. */
+.wb-tabs {
+  gap: 0.125rem;
+  margin-inline-start: 0.25rem;
+  padding: 0.1875rem;
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  background: rgb(5 7 14 / 45%);
+}
+
+.wb-tabs button {
+  min-height: 1.875rem;
+  padding: 0.25rem 0.875rem;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.8125rem;
+  text-transform: capitalize;
+  cursor: pointer;
+}
+
+.wb-tabs button:hover {
+  color: var(--text);
+}
+
+.wb-tabs button[aria-pressed='true'] {
+  margin: 0;
+  border: 0;
+  background: linear-gradient(100deg, rgb(139 123 255 / 85%), rgb(63 224 213 / 70%));
+  color: #06050d;
+}
+
+/* Published or not, as a badge with a dot: teal once the server has it. */
+.wb-titlebar .wb-published {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4375rem;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 3%);
+}
+
+.wb-titlebar .wb-published::before {
+  content: '';
+  width: 0.4375rem;
+  height: 0.4375rem;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.wb-titlebar .wb-published[data-published='true']::before {
+  background: var(--server);
+  box-shadow: 0 0 8px var(--server);
+}
+
+/* ------------------------------------------------------------ the panes */
+
+.wb {
+  background: transparent;
+}
+
+.wb-pane {
+  background: transparent;
+}
+
+.wb-pane > header {
+  /* The structure pane's header carries two switches and three buttons; in a
+     narrow column they wrap rather than run into the next pane. */
+  flex-wrap: wrap;
+  row-gap: 0.375rem;
+  font-family: var(--wb-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: rgb(255 255 255 / 2%);
+}
+
+/* The canvas is a drafting table: a faint dot grid under the sheet. */
+.wb-pane.wb-canvas,
+.wb-split-preview {
+  background-color: rgb(5 7 14 / 40%);
+  background-image: radial-gradient(rgb(255 255 255 / 7%) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+
+.wb-sheet {
+  max-width: 38rem;
+  border: 0;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 12%),
+    0 30px 80px -30px rgb(139 123 255 / 45%);
+  color-scheme: light;
+}
+
+.wb-pane button,
+.wb-tools button,
+.wb-page button {
+  border-radius: 999px;
+}
+
+.wb-notice {
+  padding: 1.5rem;
+}
+
+.wb-notice h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.wb-hint {
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+/* The schema editor and its preview, side by side. */
+.wb-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  min-height: 0;
+}
+
+.wb-split-source {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-inline-end: 1px solid var(--edge);
+}
+
+.wb-split-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  border-block-end: 1px solid var(--edge);
+}
+
+.wb-split-tools button {
+  min-height: 2rem;
+  padding: 0 1rem;
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.wb-split-tools .wb-ok,
+.wb-split-tools .wb-problem {
+  margin: 0;
+}
+
+.wb-split-preview {
+  overflow: auto;
+  padding: 1.5rem;
+}
+
+.wb-problems {
+  max-width: 38rem;
+  margin: 0 auto;
+  padding: 1rem 1rem 1rem 2rem;
+  border: 1px solid color-mix(in srgb, var(--invalid) 40%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--invalid) 8%, transparent);
+  color: #ffd9de;
+  font-family: var(--wb-mono);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+/* ------------------------------------------------ pages: tables and lists */
+
+.wb-page {
+  overflow: auto;
+  padding: 1.25rem 1.5rem 2rem;
+}
+
+.wb-page-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.wb-page h3 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 1.0625rem;
+  font-weight: 700;
+}
+
+.wb-page .wb-page-subhead {
+  margin-block: 2.25rem 0.25rem;
+}
+
+.wb-page-actions {
+  margin: 0 0 1rem;
+}
+
+.wb-button,
+.wb-page-header button,
+.wb-table button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.125rem;
+  padding: 0 0.875rem;
+  border: 1px solid var(--edge-strong);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 4%);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.8125rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.wb-button:hover,
+.wb-page-header button:hover,
+.wb-table button:hover:not(:disabled) {
+  border-color: var(--client);
+}
+
+.wb-table {
+  width: 100%;
+  margin-block-start: 0.75rem;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--edge);
+  border-radius: 12px;
+  overflow: hidden;
+  font-size: 0.875rem;
+}
+
+.wb-table th {
+  padding: 0.625rem 1rem;
+  text-align: start;
+  font-family: var(--wb-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: rgb(255 255 255 / 3%);
+  border-block-end: 1px solid var(--edge);
+}
+
+.wb-table td {
+  padding: 0.625rem 1rem;
+  vertical-align: top;
+  border-block-end: 1px solid var(--edge);
+}
+
+.wb-table tr:last-child td {
+  border-block-end: 0;
+}
+
+.wb-table tbody tr:hover td {
+  background: rgb(255 255 255 / 2.5%);
+}
+
+.wb-table code {
+  font-family: var(--wb-mono);
+  font-size: 0.8125rem;
+  color: #c4ccdc;
+}
+
+.wb-data {
+  display: block;
+  max-width: 48rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.wb-nowrap {
+  white-space: nowrap;
+}
+
+.wb-version {
+  padding: 0.0625rem 0.5rem;
+  border-radius: 999px;
+  background: rgb(139 123 255 / 16%);
+  color: #d6d0ff;
+  font-family: var(--wb-mono);
+  font-size: 0.75rem;
+}
+
+/* A webhook's state: the word, in a pill whose colour agrees with it — the
+   word carries it, the colour only repeats it (WCAG 1.4.1). */
+.wb-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.125rem 0.625rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: rgb(79 220 138 / 12%);
+  color: #b9f5d3;
+}
+
+.wb-state::before {
+  content: '';
+  width: 0.4375rem;
+  height: 0.4375rem;
+  border-radius: 50%;
+  background: var(--ok);
+}
+
+.wb-state[data-state='half-open'] {
+  background: rgb(255 210 122 / 12%);
+  color: #ffe6b3;
+}
+
+.wb-state[data-state='half-open']::before {
+  background: var(--warn);
+}
+
+.wb-state[data-state='open'] {
+  background: rgb(255 122 138 / 14%);
+  color: #ffc2ca;
+}
+
+.wb-state[data-state='open']::before {
+  background: var(--invalid);
+}
+
+.wb-empty-note {
+  margin: 0.75rem 0 0;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.wb-empty-state {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0.375rem;
+  height: 100%;
+  min-height: 16rem;
+  padding: 2rem;
+  text-align: center;
+  color: var(--muted);
+}
+
+.wb-empty-state p {
+  margin: 0;
+}
+
+.wb-empty-title {
+  font-family: var(--display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.wb-loading {
+  padding: 1.5rem;
+  color: var(--muted);
+}
+
+/* -------------------------------------------------------------- sign in */
+
+.wb-signin {
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  padding: 1.5rem;
+}
+
+.wb-signin-card {
+  display: grid;
+  gap: 0.625rem;
+  width: min(100%, 24rem);
+  padding: 2rem 1.75rem 1.75rem;
+  border: 1px solid var(--edge-strong);
+  border-radius: 20px;
+  background: var(--glass);
+  backdrop-filter: blur(16px);
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 6%) inset,
+    0 40px 100px -40px rgb(139 123 255 / 55%);
+}
+
+.wb-signin-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-block-end: 0.75rem;
+  font-family: var(--display);
+  font-weight: 700;
+}
+
+.wb-signin-card h1 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.wb-signin-lede {
+  margin: 0 0 0.75rem;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.wb-signin-card label {
+  margin-block-start: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.wb-signin-card input {
+  min-height: 2.75rem;
+  padding: 0.5rem 0.875rem;
+  border: 1px solid var(--edge-strong);
+  border-radius: 10px;
+  background: rgb(5 7 14 / 60%);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9375rem;
+}
+
+.wb-signin-card input:focus-visible {
+  outline: none;
+  border-color: var(--client);
+  box-shadow: 0 0 0 4px rgb(139 123 255 / 22%);
+}
+
+.wb-signin-submit {
+  min-height: 2.875rem;
+  margin-block-start: 1rem;
+  font: inherit;
+  font-size: 0.9375rem;
+  cursor: pointer;
+}
+
+.wb-signin-alert {
+  margin: 0.25rem 0 0;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid color-mix(in srgb, var(--invalid) 45%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--invalid) 10%, transparent);
+  color: #ffc2ca;
+  font-size: 0.875rem;
+}
+
+/* ------------------------------------------------------- narrow screens
+ *
+ * The form list becomes a bar across the top, the workspace fills the rest,
+ * and the builder's three panes stack — each at a useful height, with the
+ * page scrolling rather than three panes each scrolling inside a sliver.
+ */
+@media (max-width: 64rem) {
+  .wb-app {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    height: auto;
+    min-height: 100dvh;
+  }
+
+  .wb-nav {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .wb-nav-heading {
+    display: none;
+  }
+
+  .wb-nav ul {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 0.375rem;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .wb-nav li button {
+    white-space: nowrap;
+  }
+
+  .wb-nav form {
+    grid-column: 1 / -1;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .wb-app > main {
+    min-height: 70dvh;
+  }
+
+  .wb {
+    grid-template-columns: minmax(0, 1fr);
+    height: auto;
+  }
+
+  .wb-pane {
+    min-height: 22rem;
+    border-inline: 0;
+    border-block-end: 1px solid var(--edge);
+  }
+
+  .wb-split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .wb-split-source {
+    min-height: 60svh;
+    border-inline-end: 0;
+    border-block-end: 1px solid var(--edge);
+  }
+
+  .wb-tabs {
+    order: 1;
+    width: 100%;
+    margin-inline-start: 0;
+    overflow-x: auto;
+  }
+
+  .wb-table {
+    display: block;
+    overflow-x: auto;
+  }
+
+  /* A submission's data keeps a readable width and the table scrolls, rather
+     than the column shrinking to a few characters a line. */
+  .wb-data {
+    min-width: 18rem;
+  }
+}

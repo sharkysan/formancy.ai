@@ -1,0 +1,751 @@
+/*
+ * Paper — quiet on purpose.
+ *
+ * Editorial: a serif for what a person reads and writes, small spaced
+ * capitals for the labels, and controls that are a line to write on rather
+ * than a box to fill. Sections are numbered like the parts of an essay, the
+ * introduction opens with a drop capital, and a long answer is written on
+ * ruled lines. One accent, a vermilion, used for what needs attention and
+ * for nothing else.
+ *
+ * The fourth answer to the question the other three ask, and the furthest
+ * from all of them: no fills, no radii, no shadows. It changed nothing in a
+ * component to get here.
+ *
+ * Put the form on the paper ground (`--fm-ground`) or on white.
+ * Scoped under [data-formancy-theme='paper'].
+ */
+
+[data-formancy-theme='paper'] {
+  --fm-ground: #f6f1e7;
+  --fm-ink: #1c1917;
+  --fm-muted: #6b6255;
+  --fm-hair: #d8cfbf;
+  --fm-accent: #b4432a;
+  --fm-invalid: #a8201a;
+
+  --fm-serif: 'Fraunces', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+  --fm-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --fm-step: 1.75rem;
+
+  counter-reset: fm-section;
+  color: var(--fm-ink);
+  font-family: var(--fm-serif);
+  color-scheme: light;
+}
+
+/* The theme sizes its own subtree, rather than hoping the host resets it. */
+[data-formancy-theme='paper'],
+[data-formancy-theme='paper'] *,
+[data-formancy-theme='paper'] *::before,
+[data-formancy-theme='paper'] *::after {
+  box-sizing: border-box;
+}
+
+/* ------------------------------------------------------------------ fields */
+
+[data-formancy-theme='paper'] [data-formancy-part='field'] {
+  display: grid;
+  gap: 0.25rem;
+  margin-block-end: var(--fm-step);
+}
+
+/* Labels are the small print: spaced capitals in a sans, so the serif is left
+   for what a person reads and writes. */
+[data-formancy-theme='paper'] [data-formancy-part='label'] {
+  font-family: var(--fm-sans);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fm-muted);
+}
+
+/* A footnote asterisk for a required field. Decorative: `aria-required`
+   already says it to a screen reader. */
+[data-formancy-theme='paper'] [data-formancy-part='field']:has([aria-required='true']) [data-formancy-part='label']::after {
+  content: '*' / '';
+  margin-inline-start: 0.2em;
+  color: var(--fm-accent);
+  font-size: 1.1em;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='required-hint'] {
+  margin-inline-start: 0.5em;
+  font-family: var(--fm-serif);
+  font-size: 0.8125rem;
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--fm-accent);
+}
+
+/* A line to write on. */
+[data-formancy-theme='paper'] [data-formancy-part='field'] :is(input, select, textarea) {
+  font: inherit;
+  font-family: var(--fm-serif);
+  font-size: 1.1875rem;
+  color: var(--fm-ink);
+  background-color: transparent;
+  border: 0;
+  border-block-end: 1.5px solid var(--fm-ink);
+  border-radius: 0;
+  padding: 0.3125rem 0 0.4375rem;
+  min-height: 2.75rem;
+  width: 100%;
+  min-width: 0;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='field'] :is(input, select, textarea):hover:not(:disabled, :focus-visible) {
+  border-block-end-color: var(--fm-accent);
+}
+
+/* Focus is the line thickening in the accent, and a wash behind it — a line
+   alone changing colour would be too little to see. */
+[data-formancy-theme='paper'] [data-formancy-part='field'] :is(input, select, textarea):focus-visible {
+  outline: none;
+  border-block-end: 2.5px solid var(--fm-accent);
+  background-color: color-mix(in srgb, var(--fm-accent) 7%, transparent);
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='field'] :is(input, select, textarea):disabled {
+  color: var(--fm-muted);
+  border-block-end-style: dotted;
+  cursor: not-allowed;
+}
+
+/* A long answer is written on ruled lines. The rules are a background the
+   height of one line, so they stay under the text however much is written. */
+[data-formancy-theme='paper'] [data-formancy-part='field'] textarea {
+  --fm-line-height: 2rem;
+  min-height: calc(var(--fm-line-height) * 4 + 0.5rem);
+  resize: vertical;
+  line-height: var(--fm-line-height);
+  padding-block: 0 0.5rem;
+  border-block-end: 0;
+  background-image: linear-gradient(transparent calc(var(--fm-line-height) - 1px), var(--fm-hair) 0);
+  background-size: 100% var(--fm-line-height);
+  background-attachment: local;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='field'] select {
+  appearance: none;
+  padding-inline-end: 1.75rem;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--fm-ink) 50%),
+    linear-gradient(-45deg, transparent 50%, var(--fm-ink) 50%);
+  background-position:
+    calc(100% - 0.6875rem) 55%,
+    calc(100% - 0.375rem) 55%;
+  background-size: 0.3125rem 0.3125rem;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='field'] input[type='file'] {
+  border-block-end-style: dashed;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='field'] input[type='file']::file-selector-button {
+  font-family: var(--fm-sans);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-inline-end: 1rem;
+  padding: 0.5rem 0.875rem;
+  border: 1px solid var(--fm-ink);
+  border-radius: 0;
+  background: transparent;
+  color: var(--fm-ink);
+  cursor: pointer;
+}
+
+/* ------------------------------------------------------- boxes and circles */
+
+[data-formancy-theme='paper'] [data-formancy-part='field']:has(> input[type='checkbox']) {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 0.75rem;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='field'] > input[type='checkbox'] {
+  order: -1;
+}
+
+/* A single checkbox's label is a sentence someone agrees to, so it is set as
+   one rather than as small print. */
+[data-formancy-theme='paper'] [data-formancy-part='field']:has(> input[type='checkbox']) > [data-formancy-part='label'] {
+  font-family: var(--fm-serif);
+  font-size: 1.0625rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--fm-ink);
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='field']:has(> input[type='checkbox']) [data-formancy-part='error'] {
+  grid-column: 1 / -1;
+}
+
+/* Drawn in a hairline of ink. `appearance: none` changes how the input looks,
+   not what it is. */
+[data-formancy-theme='paper'] [data-formancy-part='field'] input:is([type='checkbox'], [type='radio']) {
+  appearance: none;
+  flex: none;
+  display: inline-grid;
+  place-content: center;
+  width: 1.125rem;
+  height: 1.125rem;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 1.5px solid var(--fm-ink);
+  border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='field'] input[type='radio'] {
+  border-radius: 50%;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='field'] input[type='checkbox']::before {
+  content: '';
+  width: 0.5625rem;
+  height: 0.3125rem;
+  border: solid var(--fm-ink);
+  border-width: 0 0 2px 2px;
+  rotate: -45deg;
+  translate: 0 -1px;
+  scale: 0;
+  transition: scale 140ms ease;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='field'] input[type='radio']::before {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--fm-ink);
+  scale: 0;
+  transition: scale 140ms ease;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='field'] input:is([type='checkbox'], [type='radio']):checked::before {
+  scale: 1;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='field'] input:is([type='checkbox'], [type='radio']):focus-visible {
+  outline: 2px solid var(--fm-accent);
+  outline-offset: 3px;
+  background: transparent;
+}
+
+/* A set of choices: no box around it, the options set in the serif. */
+[data-formancy-theme='paper'] fieldset[data-formancy-part='field'] {
+  display: block;
+  margin-inline: 0;
+  padding: 0;
+  border: 0;
+}
+
+[data-formancy-theme='paper'] fieldset[data-formancy-part='field'] > legend {
+  margin-block-end: 0.5rem;
+  padding: 0;
+}
+
+[data-formancy-theme='paper'] :is([data-formancy-part='radio-option'], [data-formancy-part='checkbox-option']) {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 2.25rem;
+  font-size: 1.0625rem;
+}
+
+[data-formancy-theme='paper'] :is([data-formancy-part='radio-option'], [data-formancy-part='checkbox-option']) label {
+  cursor: pointer;
+}
+
+/* The chosen option is set in italics as well as marked. */
+[data-formancy-theme='paper'] :is([data-formancy-part='radio-option'], [data-formancy-part='checkbox-option']):has(input:checked) label {
+  font-style: italic;
+}
+
+/* ------------------------------------------------------------------- state */
+
+/* An invalid line turns vermilion, and the message beneath it is set in
+   italics after a dash — like a correction in the margin. */
+[data-formancy-theme='paper'] [data-formancy-part='field'][data-state='invalid'] :is(input, select, textarea) {
+  border-block-end-color: var(--fm-invalid);
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='field'][data-state='invalid'] textarea {
+  box-shadow: inset 0 -1.5px 0 var(--fm-invalid);
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='error'] {
+  margin: 0.25rem 0 0;
+  font-size: 0.9375rem;
+  font-style: italic;
+  color: var(--fm-invalid);
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='error']::before {
+  content: '— ' / '';
+}
+
+/* --------------------------------------------------------------- repeaters */
+
+/* A repeated group sits between two rules, like a table in a report. */
+[data-formancy-theme='paper'] [data-formancy-part='repeater'] {
+  margin: 0 0 var(--fm-step);
+  padding: 0.25rem 0 1rem;
+  border: 0;
+  border-block: 1.5px solid var(--fm-ink);
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='repeater-legend'] {
+  padding: 0 0.625rem 0 0;
+  font-size: 1.375rem;
+  font-style: italic;
+  font-weight: 500;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='row'] {
+  display: grid;
+  padding-block-start: 1rem;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='row'] + [data-formancy-part='row'] {
+  border-block-start: 1px solid var(--fm-hair);
+}
+
+/* ----------------------------------------------------------------- buttons */
+
+/* The quiet ones are text: spaced capitals, underlined. */
+[data-formancy-theme='paper'] [data-formancy-part='repeater'] button,
+[data-formancy-theme='paper'] [data-formancy-part='wizard-nav'] button {
+  justify-self: start;
+  min-height: 2.25rem;
+  padding: 0.25rem 0;
+  font-family: var(--fm-sans);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fm-ink);
+  background: none;
+  border: 0;
+  text-decoration: underline;
+  text-decoration-color: var(--fm-hair);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 5px;
+  cursor: pointer;
+}
+
+[data-formancy-theme='paper'] :is([data-formancy-part='repeater'] button, [data-formancy-part='wizard-nav'] button):hover {
+  color: var(--fm-accent);
+  text-decoration-color: var(--fm-accent);
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='repeater'] > button {
+  margin-block-start: 0.75rem;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='repeater'] > button::before {
+  content: '+ ' / '';
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='row'] > button {
+  color: var(--fm-muted);
+}
+
+/* The one that sends is the only solid thing on the page. */
+[data-formancy-theme='paper'] [data-formancy-part='submit'] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.875rem;
+  min-height: 3.25rem;
+  padding: 0 1.875rem;
+  font-family: var(--fm-sans);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fm-ground);
+  background: var(--fm-ink);
+  border: 0;
+  border-radius: 0;
+  cursor: pointer;
+  transition: background-color 160ms ease;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='submit']::after {
+  content: '→' / '';
+  font-size: 1rem;
+  letter-spacing: 0;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='submit']:hover {
+  background: var(--fm-accent);
+}
+
+[data-formancy-theme='paper'] :is([data-formancy-part='repeater'] button, [data-formancy-part='wizard-nav'] button, [data-formancy-part='submit']):focus-visible {
+  outline: 2px solid var(--fm-accent);
+  outline-offset: 4px;
+}
+
+/* ------------------------------------------------------------------ wizard */
+
+/* Parts numbered in lower-case roman, the current one in the accent and
+   underlined; the numbers are decorative, the list is already ordered. */
+[data-formancy-theme='paper'] [data-formancy-part='stepper'] ol {
+  counter-reset: fm-step;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.75rem;
+  list-style: none;
+  margin: 0 0 2rem;
+  padding: 0 0 0.875rem;
+  border-block-end: 1px solid var(--fm-hair);
+  font-size: 1.0625rem;
+  color: var(--fm-muted);
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='stepper'] li {
+  counter-increment: fm-step;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='stepper'] li::before {
+  content: counter(fm-step, lower-roman) '. ' / '';
+  font-style: italic;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='stepper'] li[aria-current='step'] {
+  color: var(--fm-accent);
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 6px;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='wizard-nav'] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.5rem;
+  margin-block-start: 2rem;
+  padding-block-start: 1.5rem;
+  border-block-start: 1px solid var(--fm-hair);
+}
+
+/* ----------------------------------------------------------- error summary */
+
+[data-formancy-theme='paper'] [data-formancy-part='error-summary'] {
+  margin-block-end: 2.25rem;
+  padding: 1rem 0 1.125rem;
+  border-block: 1.5px solid var(--fm-invalid);
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='error-summary']:focus-visible {
+  outline: 2px solid var(--fm-accent);
+  outline-offset: 4px;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='error-summary-heading'] {
+  margin: 0 0 0.5rem;
+  font-size: 1.375rem;
+  font-style: italic;
+  font-weight: 500;
+  color: var(--fm-invalid);
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='error-summary'] ul {
+  margin: 0;
+  padding-inline-start: 1.25rem;
+  font-size: 1rem;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='error-summary'] li + li {
+  margin-block-start: 0.25rem;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='error-summary'] a {
+  color: var(--fm-ink);
+  text-decoration-color: var(--fm-invalid);
+  text-underline-offset: 4px;
+}
+
+/* ----------------------------------------------------------------- layouts
+ *
+ * Placed by source order only (WCAG 1.3.2, 2.4.3); `auto-fit` with a floor
+ * reflows to one column without scrolling (1.4.10).
+ */
+
+[data-formancy-theme='paper'] [data-formancy-part='layout-row'] {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 0 1.75rem;
+  align-items: start;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='layout-column'] {
+  display: grid;
+  align-content: start;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='layout-section'] {
+  counter-increment: fm-section;
+  margin-block-end: calc(var(--fm-step) * 1.5);
+}
+
+/* Sections are numbered like the parts of an essay. The numeral is
+   decorative, so it is given an empty alternative and not read out. */
+[data-formancy-theme='paper'] [data-formancy-part='layout-section-heading'] {
+  display: flex;
+  align-items: baseline;
+  gap: 0.625rem;
+  margin: 0 0 1.25rem;
+  padding-block-end: 0.5rem;
+  border-block-end: 1px solid var(--fm-hair);
+  font-size: 1.75rem;
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='layout-section'] > [data-formancy-part='layout-section-heading']::before {
+  content: counter(fm-section, upper-roman) '.' / '';
+  font-style: normal;
+  font-size: 0.875rem;
+  font-family: var(--fm-sans);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--fm-accent);
+}
+
+/* The introduction opens with a drop capital. */
+[data-formancy-theme='paper'] [data-formancy-part='static'] {
+  margin: 0 0 2.25rem;
+  max-width: 58ch;
+  font-size: 1.25rem;
+  line-height: 1.55;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='static']::first-letter {
+  float: left;
+  margin: 0.08em 0.1em 0 0;
+  font-size: 3.4em;
+  line-height: 0.8;
+  font-weight: 600;
+  color: var(--fm-accent);
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='layout-table'] {
+  display: grid;
+  grid-template-columns: repeat(var(--fm-columns, 2), minmax(0, 1fr));
+  gap: 0 1.75rem;
+  align-items: start;
+  margin-block-end: var(--fm-step);
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='layout-table'][data-columns='1'] { --fm-columns: 1; }
+[data-formancy-theme='paper'] [data-formancy-part='layout-table'][data-columns='2'] { --fm-columns: 2; }
+[data-formancy-theme='paper'] [data-formancy-part='layout-table'][data-columns='3'] { --fm-columns: 3; }
+[data-formancy-theme='paper'] [data-formancy-part='layout-table'][data-columns='4'] { --fm-columns: 4; }
+[data-formancy-theme='paper'] [data-formancy-part='layout-table'][data-columns='5'] { --fm-columns: 5; }
+[data-formancy-theme='paper'] [data-formancy-part='layout-table'][data-columns='6'] { --fm-columns: 6; }
+
+@media (max-width: 40rem) {
+  [data-formancy-theme='paper'] [data-formancy-part='layout-table'] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='layout-table'] > [data-formancy-part='layout-section-heading'] {
+  grid-column: 1 / -1;
+}
+
+/* Tabs are words in a line, the open one underlined in the accent. A closed
+   panel is hidden by the renderer's `hidden` attribute, not by this file. */
+[data-formancy-theme='paper'] [data-formancy-part='tablist'] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1.75rem;
+  margin-block-end: var(--fm-step);
+  border-block-end: 1px solid var(--fm-hair);
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='tab'] {
+  font: inherit;
+  font-family: var(--fm-serif);
+  font-size: 1.125rem;
+  min-height: 2.5rem;
+  margin-block-end: -1px;
+  padding: 0.25rem 0 0.375rem;
+  border: 0;
+  border-block-end: 2px solid transparent;
+  background: none;
+  color: var(--fm-muted);
+  cursor: pointer;
+}
+
+/* 1.4.1: the open tab is italic and underlined, not only another colour. */
+[data-formancy-theme='paper'] [data-formancy-part='tab'][aria-selected='true'] {
+  color: var(--fm-ink);
+  font-style: italic;
+  border-block-end-color: var(--fm-accent);
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='tab']:focus-visible {
+  outline: 2px solid var(--fm-accent);
+  outline-offset: 2px;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='tabpanel'][hidden] {
+  display: none;
+}
+
+/* ------------------------------------------------------- rich text, files */
+
+[data-formancy-theme='paper'] [data-formancy-part='richtext-toolbar'] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-block-end: 0.25rem;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='richtext-button'] {
+  display: inline-grid;
+  place-items: center;
+  min-width: 2rem;
+  min-height: 2rem;
+  font: inherit;
+  font-family: var(--fm-serif);
+  font-size: 0.9375rem;
+  color: var(--fm-muted);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 0;
+  cursor: pointer;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='richtext-button']:hover:not(:disabled) {
+  color: var(--fm-ink);
+  border-color: var(--fm-hair);
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='richtext-button']:focus-visible {
+  outline: 2px solid var(--fm-accent);
+  outline-offset: 1px;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='richtext-button']:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+/* What the formatting will look like, set as a pull quote. */
+[data-formancy-theme='paper'] [data-formancy-part='richtext-preview'] {
+  margin-block-start: 0.75rem;
+  padding: 0.25rem 0 0.25rem 1rem;
+  border-inline-start: 2px solid var(--fm-accent);
+  font-size: 1.0625rem;
+  font-style: italic;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='richtext-preview']:has([data-formancy-part='richtext']:empty),
+[data-formancy-theme='paper'] [data-formancy-part='richtext-preview']:not(:has(*)) {
+  display: none;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='richtext'] > :first-child { margin-block-start: 0; }
+[data-formancy-theme='paper'] [data-formancy-part='richtext'] > :last-child { margin-block-end: 0; }
+
+[data-formancy-theme='paper'] [data-formancy-part='richtext'] a {
+  color: var(--fm-accent);
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='file-list'] {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: grid;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='file-item'] {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  border-block-end: 1px solid var(--fm-hair);
+  font-size: 1.0625rem;
+  font-style: italic;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='file-item'] button {
+  font-family: var(--fm-sans);
+  font-size: 0.6875rem;
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  background: none;
+  border: 0;
+  color: var(--fm-muted);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='file-item'] button:hover {
+  color: var(--fm-accent);
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='file-unavailable'] {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-style: italic;
+  color: var(--fm-muted);
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='file-status']:empty {
+  display: none;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='file-status'] {
+  margin: 0.375rem 0 0;
+  font-size: 0.9375rem;
+  font-style: italic;
+  color: var(--fm-muted);
+}
+
+/* The word a toolbar button is named by: off screen, never removed, because
+   `display: none` would take the button's only name with it. */
+[data-formancy-theme='paper'] [data-formancy-part='visually-hidden'] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-formancy-theme='paper'] *,
+  [data-formancy-theme='paper'] *::before,
+  [data-formancy-theme='paper'] *::after {
+    transition: none !important;
+  }
+}

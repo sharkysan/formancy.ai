@@ -20,6 +20,8 @@ import {
 } from '@formancy/builder-react'
 import '@formancy/themes/blueprint.css'
 import '@formancy/themes/dusk.css'
+import '@formancy/themes/pop.css'
+import '@formancy/themes/paper.css'
 import '@formancy/themes/workbench.css'
 import './app.css'
 import { STARTER_SCHEMA } from './starter.js'
@@ -28,7 +30,7 @@ import { STARTER_SCHEMA } from './starter.js'
  * The playground: the whole thesis on one screen. A schema on the left, the
  * live rendered form in the middle, the engine's actual state on the right.
  *
- * The theme switcher is not decoration. The renderers ship no CSS, and the two
+ * The theme switcher is not decoration. The renderers ship no CSS, and the four
  * themes are scoped stylesheets over the same `data-formancy-part` hooks — so
  * switching between them, live, with no remount and no component change, is
  * the claim being demonstrated rather than asserted.
@@ -36,6 +38,8 @@ import { STARTER_SCHEMA } from './starter.js'
 const THEMES = [
   { id: 'blueprint', label: 'Blueprint — light, technical' },
   { id: 'dusk', label: 'Dusk — dark, rounded' },
+  { id: 'pop', label: 'Pop — loud, playful' },
+  { id: 'paper', label: 'Paper — quiet, editorial' },
 ] as const
 
 type ThemeId = (typeof THEMES)[number]['id']

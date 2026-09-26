@@ -1186,15 +1186,87 @@ pre {
   content: '→ ';
 }
 
+/* The form's own surface. Each theme is shown on the ground it was drawn for:
+   Dusk on the window's glass, the three light ones on a sheet of their own
+   paper inside it — a dark form on a white card, or a light one on glass,
+   reads as broken rather than themed. */
+.sheet {
+  margin: 1rem 1.125rem 1.25rem;
+  padding: 1.5rem 1.5rem 1.75rem;
+  border-radius: 14px;
+  transition: background-color 240ms ease;
+}
+
 /* The dusk theme, lifted onto glass: the same theme a consumer gets, with
    its ground made translucent so the window reads as one surface. */
-.sheet {
+.sheet[data-formancy-theme='dusk'] {
+  margin: 0;
   padding: 1.25rem 1.375rem 1.5rem;
+  border-radius: 0;
   --fm-raised: rgb(255 255 255 / 4%);
   --fm-inset: rgb(5 7 14 / 60%);
   --fm-edge: rgb(255 255 255 / 10%);
   --fm-signal: var(--client);
   --fm-sans: var(--sans);
+  --fm-control: rgb(255 255 255 / 5%);
+  --fm-control-hover: rgb(255 255 255 / 8%);
+}
+
+.sheet[data-formancy-theme='blueprint'] {
+  background: #fff;
+}
+
+.sheet[data-formancy-theme='pop'] {
+  background: #fff6e0;
+}
+
+.sheet[data-formancy-theme='paper'] {
+  background: #f6f1e7;
+  border-radius: 4px;
+}
+
+/* The theme switch in the form window's title bar. */
+.form-window > header {
+  flex-wrap: wrap;
+}
+
+.form-window-title {
+  margin-inline-end: auto;
+}
+
+.themes {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding: 0.1875rem;
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 3%);
+}
+
+.themes button {
+  min-height: 1.75rem;
+  padding: 0 0.75rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    color 160ms ease;
+}
+
+.themes button:hover {
+  color: var(--text);
+}
+
+.themes button[aria-pressed='true'] {
+  background: linear-gradient(100deg, rgb(139 123 255 / 85%), rgb(63 224 213 / 70%));
+  color: #06050d;
+  font-weight: 600;
 }
 
 /* The rules, lighting up as the engine evaluates them. */
