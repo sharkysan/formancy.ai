@@ -47,6 +47,7 @@ it.
 | The official CEL corpus, counts pinned | `pnpm test` | The expression evaluator has not regressed, and its gaps are known rather than assumed |
 | Performance benchmarks | `pnpm bench` | The budgets in [§9](09-quality-requirements.md) |
 | `publint` + `attw` + `size-limit` | `pnpm check:pkg` | The commonest cause of "it doesn't work in my app" for a multi-framework library |
+| The site as the host composes it, with the documentation link check | `pnpm build:web` | A root-absolute documentation link resolves against the landing page rather than `/docs/`, builds cleanly and 404s in production |
 | Typecheck with no `@types/node` in the isomorphic packages | `pnpm typecheck` | The layer boundary holds |
 
 There was a table of per-package test counts here, and it is gone for the reason

@@ -80,6 +80,7 @@ frozen lockfile:
 ```
 pnpm install --frozen-lockfile
 pnpm build
+pnpm build:web
 pnpm typecheck
 pnpm test
 pnpm check:pkg
@@ -91,6 +92,12 @@ Each gate exists for a reason that was paid for at least once:
   Angular Package Format requires partial-Ivy compilation; the TypeScript
   packages are built with `tsdown`. Two toolchains, budgeted deliberately
   ([0037](../decisions/0037-turborepo-over-nx.md)).
+- **`build:web`** — composes the landing page, the playground and the docs under
+  one origin, which `build` does not do, and carries the check for root-absolute
+  documentation links. Added as a gate after it had existed for a while as a
+  script nothing ran: two links resolving against the landing page instead of
+  `/docs/` reached production, built cleanly all the way through, and were found
+  in a deploy log. A guard that is not a gate is a comment.
 - **`typecheck`** — carries part of the architecture. The isomorphic packages
   have no `@types/node`, so a Node import is a compile error rather than a
   review finding ([0008](../decisions/0008-layered-packages.md)).

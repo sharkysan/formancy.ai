@@ -10,6 +10,17 @@ later.
 
 ## Unreleased
 
+**Fixed: two documentation links 404ed in production.** `Drafts` was linked as
+`/concepts/drafts/` from the versioning page and the roadmap. The docs are served
+under `/docs/`, so a root-absolute link resolves against the landing page instead
+— it builds cleanly and fails only when somebody clicks it.
+
+The check for exactly this already existed in `scripts/build-web.mjs`, and
+**nothing ran it**: `pnpm build:web` was in `package.json` and in no workflow, so
+the guard fired on the hosting provider after merge rather than on the pull
+request before it. It is a CI gate now. A guard that is not a gate is a comment,
+and this one had been one for long enough to let two links through.
+
 **A compose file for the published image.** The release workflow builds, pushes
 and signs the server image by digest, and nothing consumed it: the only compose
 file declared `build: context: .`, so the documented way to run formancy was to

@@ -78,7 +78,7 @@ history, submissions and export).
 - **A worked example of saving a partly-filled form.** The parts all exist now —
   the three public routes, the token that addresses a draft, and the notice both
   renderers ship for a resume that lost answers, documented in
-  [Drafts](/concepts/drafts/). What is missing is a host that puts them together:
+  [Drafts](/docs/concepts/drafts/). What is missing is a host that puts them together:
   the playground and the marketing site are client-only, and the admin is the
   authoring tool rather than a form-filling surface. So the debounce, the stored
   token and the read-only path are described and not demonstrated.
