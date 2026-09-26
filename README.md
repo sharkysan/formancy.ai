@@ -1,6 +1,7 @@
 # formancy.ai
 
 <p>
+  <a href="https://formancy.ai"><img src="https://img.shields.io/badge/website-formancy.ai-8b7bff?style=flat&amp;labelColor=102b29" alt="Website: formancy.ai" /></a>
   <a href="https://github.com/sharkysan/formancy.ai/actions/workflows/ci.yml"><img src="https://github.com/sharkysan/formancy.ai/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
   <a href="https://codecov.io/gh/sharkysan/formancy.ai"><img src="https://codecov.io/gh/sharkysan/formancy.ai/branch/main/graph/badge.svg" alt="Codecov coverage" /></a>
   <a href="https://www.npmjs.com/package/@formancy/core"><img src="https://img.shields.io/npm/v/%40formancy%2Fcore?style=flat&amp;label=npm&amp;color=a8f5ca&amp;labelColor=102b29" alt="npm version: @formancy/core" /></a>
@@ -11,8 +12,14 @@
 
 A modern, self-hostable form engine and backend — for React and Angular.
 
+<h3 align="center">
+  <a href="https://formancy.ai">formancy.ai</a>
+  &nbsp;·&nbsp;
+  <a href="https://formancy.ai/playground/">Try the playground</a>
+</h3>
+
 <p align="center">
-  <img src="./docs/images/readme/hero.jpg" alt="The formancy landing page: a form written as JSON on the right, its rules evaluated the same way in the browser and on the server" width="100%" />
+  <a href="https://formancy.ai"><img src="./docs/images/readme/hero.jpg" alt="The formancy landing page: a form written as JSON on the right, its rules evaluated the same way in the browser and on the server" width="100%" /></a>
 </p>
 
 **A form is a JSON document. formancy compiles it once and runs it in both
