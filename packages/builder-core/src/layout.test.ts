@@ -240,6 +240,140 @@ describe('unwrapLayoutNode', () => {
   })
 })
 
+describe('wrapLayoutNodes', () => {
+  /**
+   * The inverse of `unwrapLayoutNode`, and the command behind "drop this field
+   * beside that one to make a row".
+   *
+   * Dragging a field onto another field's SIDE is the gesture a builder is
+   * expected to have and this one did not: you had to add a row, then move two
+   * fields into it — three steps and three undos for one intention.
+   *
+   * It takes several addresses rather than one because the gesture needs two,
+   * and it does NOT require them to be siblings: the field being dragged is
+   * usually somewhere else entirely. That is also what makes it one command and
+   * therefore one undo, which matters more than the API being minimal — a
+   * gesture that takes three presses of undo to reverse is one people stop
+   * trusting.
+   */
+  test('wraps two top-level fields in a row where the first one stood', () => {
+    const session = createBuilderSession(base())
+
+    const outcome = session.wrapLayoutNodes('web', [[1], [0]], row())
+
+    expect(outcome.ok).toBe(true)
+    // Order follows the addresses given, not the document: the drop side is
+    // what decides which field ends up on the left.
+    expect(layoutOf(session.document())).toEqual([
+      {
+        kind: 'row',
+        children: [
+          { kind: 'field', path: 'email' },
+          { kind: 'row', children: [{ kind: 'field', path: 'first' }, { kind: 'field', path: 'last' }] },
+        ],
+      },
+    ])
+  })
+
+  test('puts the new container where the earliest node stood', () => {
+    const session = createBuilderSession(base())
+
+    // Given out of order, so this pins the position rather than the argument
+    // order: the row belongs where the topmost of them was.
+    session.wrapLayoutNodes('web', [[1], [0]], row())
+
+    expect(layoutOf(session.document()).length).toBe(1)
+  })
+
+  test('takes nodes out of different containers', () => {
+    const session = createBuilderSession(base())
+
+    // `first` is inside the row at [0]; `email` is at top level.
+    const outcome = session.wrapLayoutNodes('web', [[0, 0], [1]], row())
+
+    expect(outcome.ok).toBe(true)
+
+    // The new row lands where the EARLIEST address stood, and [0, 0] stood
+    // inside the existing row — so the wrapper goes in there, beside `last`,
+    // rather than at the top level. Worth pinning, because the first version of
+    // this expectation assumed the top level and the implementation was right:
+    // "where the earliest node stood" means its container as well as its index.
+    expect(layoutOf(session.document())).toEqual([
+      {
+        kind: 'row',
+        children: [
+          {
+            kind: 'row',
+            children: [{ kind: 'field', path: 'first' }, { kind: 'field', path: 'email' }],
+          },
+          { kind: 'field', path: 'last' },
+        ],
+      },
+    ])
+  })
+
+  test('is one undo, not one per node moved', () => {
+    const session = createBuilderSession(base())
+    const before = layoutOf(session.document())
+
+    session.wrapLayoutNodes('web', [[0], [1]], row())
+    expect(session.undo()).toBe(true)
+
+    // A gesture that takes three undos to reverse is one people stop trusting.
+    expect(layoutOf(session.document())).toEqual(before)
+  })
+
+  test('refuses to wrap a node inside one of the others', () => {
+    const session = createBuilderSession(base())
+
+    // [0] is the row that CONTAINS [0, 0]. Wrapping both would have to put the
+    // row inside a container that also holds its own child.
+    const outcome = session.wrapLayoutNodes('web', [[0], [0, 0]], row())
+
+    expect(outcome.ok).toBe(false)
+  })
+
+  test('refuses fewer than two nodes, which is what insert is for', () => {
+    const session = createBuilderSession(base())
+
+    expect(session.wrapLayoutNodes('web', [[0]], row()).ok).toBe(false)
+    expect(session.wrapLayoutNodes('web', [], row()).ok).toBe(false)
+  })
+
+  test('refuses the same node twice', () => {
+    const session = createBuilderSession(base())
+
+    // Otherwise the node is spliced out once and inserted twice, which would
+    // place one field in two positions and quietly invalidate the document.
+    expect(session.wrapLayoutNodes('web', [[0], [0]], row()).ok).toBe(false)
+  })
+
+  test('refuses a container that is not one', () => {
+    const session = createBuilderSession(base())
+
+    expect(
+      session.wrapLayoutNodes('web', [[0], [1]], { kind: 'field', path: 'email' }).ok,
+    ).toBe(false)
+  })
+
+  test('refuses an address that is not there', () => {
+    const session = createBuilderSession(base())
+
+    expect(session.wrapLayoutNodes('web', [[0], [9]], row()).ok).toBe(false)
+  })
+
+  test('leaves the document valid, so it can still be published', () => {
+    const session = createBuilderSession(base())
+
+    session.wrapLayoutNodes('web', [[0], [1]], row())
+
+    // The guard that matters: a layout edit that places a field twice, or loses
+    // one, stays syntactically fine and fails at publish. This asserts it does
+    // not happen rather than trusting the splices above.
+    expect(session.canPublish().valid).toBe(true)
+  })
+})
+
 describe('setLayoutNodeLabel', () => {
   test('sets and clears', () => {
     const session = createBuilderSession(base())

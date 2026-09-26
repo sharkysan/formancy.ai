@@ -10,6 +10,42 @@ later.
 
 ## Unreleased
 
+**`wrapLayoutNodes`: put several arrangement nodes inside a new container.** The
+inverse of `unwrapLayoutNode`, and the command behind the gesture a builder is
+expected to have and this one does not yet — dropping a field beside another
+to make a row. Until now that took three steps and three undos: add a row, move
+one field in, move the other.
+
+Three decisions in it worth knowing:
+
+- **The addresses need not be siblings.** The field being dragged is usually
+  somewhere else entirely, so requiring siblings would rule out the gesture it
+  exists for.
+- **The children follow the order the addresses are given in**, not document
+  order, because the side somebody drops on is what decides which field ends up
+  on the left.
+- **It is one command, so one gesture is one undo.** A gesture that takes three
+  presses of undo to reverse is one people stop trusting.
+
+The new container lands where the **earliest** address stood — its container as
+well as its index, so wrapping a node that lives inside a row puts the new row in
+there beside its siblings rather than at the top level. The first version of that
+test assumed the top level and the implementation was right; the case now pins the
+real behaviour and says why.
+
+It refuses what would quietly invalidate the document rather than letting publish
+catch it later: fewer than two nodes, the same node twice (spliced out once and
+inserted twice places one field in two positions), a node together with something
+inside it, a wrapper that is not a container, and an address that is not there.
+Removal runs deepest-last so that taking one node out cannot invalidate the
+address of another — the whole difficulty of editing a document whose nodes
+have no keys.
+
+The pointer gesture that uses it is still to come, and the keyboard route comes
+first: WCAG 2.2 SC 2.5.7 needs a complete keyboard path for every drag, and a
+builder that grows one afterwards never quite gets it.
+
+
 **Files can be dropped on the field, and removing one can be undone.** The field
 was an `<input type="file">` and a list: no drop zone, and removing an attachment
 was a button with no way back.

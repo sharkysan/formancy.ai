@@ -101,6 +101,24 @@ export interface BuilderSession {
   removeLayoutNode(address: LayoutAddress): CommandOutcome
   /** Replace a container with its children, in order, where it stood. */
   unwrapLayoutNode(address: LayoutAddress): CommandOutcome
+  /**
+   * Put several nodes inside a new container, where the earliest of them stood.
+   *
+   * The inverse of `unwrapLayoutNode`, and what "drop this field beside that
+   * one" compiles to. The addresses need NOT be siblings — the field being
+   * dragged is usually somewhere else — and the new container's children follow
+   * the order the addresses are given in, because the side somebody dropped on
+   * is what decides which field ends up on the left.
+   *
+   * One command rather than a move plus a wrap, so one gesture is one undo. A
+   * gesture that takes three presses of undo to reverse is one people stop
+   * trusting.
+   */
+  wrapLayoutNodes(
+    layout: string,
+    addresses: ReadonlyArray<readonly number[]>,
+    container: LayoutNode,
+  ): CommandOutcome
   moveLayoutNode(from: LayoutAddress, to: LayoutLocation): CommandOutcome
   setLayoutNodeLabel(address: LayoutAddress, label: Text | undefined): CommandOutcome
 
@@ -125,6 +143,19 @@ export interface BuilderSession {
 }
 
 const CONTAINER_TYPES = new Set(['group', 'page', 'repeater'])
+
+function samePathOf(a: readonly number[], b: readonly number[]): boolean {
+  return a.length === b.length && a.every((step, at) => b[at] === step)
+}
+
+/** Document order: earlier position first, and a parent before its child. */
+function comparePaths(a: readonly number[], b: readonly number[]): number {
+  const depth = Math.min(a.length, b.length)
+  for (let at = 0; at < depth; at += 1) {
+    if (a[at] !== b[at]) return a[at]! - b[at]!
+  }
+  return a.length - b.length
+}
 
 export function createBuilderSession(initial: FormSchema): BuilderSession {
   const opened = deepFreeze(copy(initial))
@@ -402,6 +433,75 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
           )
         }
         found.siblings.splice(found.index, 1, ...node.children)
+        return undefined
+      })
+    },
+
+    wrapLayoutNodes(layout, addresses, container) {
+      if (addresses.length < 2) {
+        return refuse(
+          `/layouts/${layout}`,
+          'Wrapping needs at least two nodes. Use insertLayoutNode for one.',
+        )
+      }
+
+      if (!isLayoutContainer(container)) {
+        return refuse(
+          `/layouts/${layout}`,
+          'The wrapper has to be a container. A field node cannot hold anything.',
+        )
+      }
+
+      for (let outer = 0; outer < addresses.length; outer += 1) {
+        for (let inner = 0; inner < addresses.length; inner += 1) {
+          if (outer === inner) continue
+          const a = addresses[outer]!
+          const b = addresses[inner]!
+          if (samePathOf(a, b)) {
+            // Spliced out once and inserted twice would place one field in two
+            // positions, which stays syntactically fine and fails at publish.
+            return refuse(
+              layoutPointer({ layout, path: a }),
+              'That node is listed twice. Each one can only go in once.',
+            )
+          }
+          if (encloses(a, b)) {
+            return refuse(
+              layoutPointer({ layout, path: a }),
+              'Cannot wrap a container together with something inside it.',
+            )
+          }
+        }
+      }
+
+      return attempt((draft) => {
+        // Collected before anything is removed, because every removal renumbers
+        // the addresses after it -- the whole difficulty of editing a document
+        // whose nodes have no keys.
+        const taken: LayoutNode[] = []
+        for (const path of addresses) {
+          const found = locateLayout(draft, { layout, path })
+          if (found === undefined) return noSuchNode({ layout, path })
+          taken.push(found.siblings[found.index]!)
+        }
+
+        // Where the wrapper goes: the position of the earliest address, read
+        // now, while the addresses still mean what the caller meant.
+        const earliest = [...addresses].sort(comparePaths)[0]!
+        const home = locateLayout(draft, { layout, path: earliest })
+        if (home === undefined) return noSuchNode({ layout, path: earliest })
+        const parent = home.siblings
+        const at = home.index
+
+        // Removed deepest-last so that removing one cannot invalidate the
+        // address of another still to be removed.
+        for (const path of [...addresses].sort(comparePaths).reverse()) {
+          const found = locateLayout(draft, { layout, path })
+          if (found === undefined) return noSuchNode({ layout, path })
+          found.siblings.splice(found.index, 1)
+        }
+
+        parent.splice(Math.min(at, parent.length), 0, { ...container, children: taken })
         return undefined
       })
     },
