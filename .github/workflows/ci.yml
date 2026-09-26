@@ -35,6 +35,15 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - run: pnpm build
+      # `pnpm build` does not build the site the way the host builds it, and the
+      # difference was not academic: `build:web` composes the landing page, the
+      # playground and the docs under one origin, and it carries the check for
+      # root-absolute documentation links -- which resolve against the landing
+      # page rather than `/docs/`, build cleanly, and 404 in production. That
+      # check lived here for a while as a script nothing ran, so two links
+      # shipped and were found by the deploy log instead of by CI. A guard that
+      # is not a gate is a comment.
+      - run: pnpm build:web
       - run: pnpm typecheck
       - run: pnpm test:coverage
       - name: Upload coverage to Codecov

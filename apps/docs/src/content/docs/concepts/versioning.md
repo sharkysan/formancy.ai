@@ -71,7 +71,7 @@ persisted, so the work happens once rather than on every resume.
 **The report is only useful if somebody sees it.** A `lossy` rebind keeps the
 answers and takes them off the form, so a host that ignores `migration` leaves
 people submitting in the belief that everything they typed is included. See
-[Drafts](/concepts/drafts/) for the three calls, why a draft carries a token
+[Drafts](/docs/concepts/drafts/) for the three calls, why a draft carries a token
 rather than an id, and the notice both renderers ship for this.
 
 ## Two version lines
