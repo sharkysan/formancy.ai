@@ -58,11 +58,6 @@ history, submissions and export).
 - **A pointer gesture that creates a row.** You add one and move fields into
   it. Dropping *between* two elements rather than onto one would need gap
   targets the renderers do not emit.
-- **A formatting toolbar when the WYSIWYG editor is mounted.** The editor
-  registers the usual keyboard shortcuts, but `@tiptap/core` brings no toolbar UI
-  and the field hides its own one on the reasoning that the editor would supply
-  it. It does not. Bold is reachable with <kbd>Ctrl</kbd>+<kbd>B</kbd> and by no
-  visible control, which is a regression against the textarea it replaced.
 - **Conditions combining more than one comparison** in the builder's editor.
   The expression language handles them; the authoring UI does not yet, and you
   can still write the CEL directly.
@@ -127,20 +122,18 @@ left out as v2-era omissions.
 Roughly in order, and subject to change. The ordering is argued below rather
 than asserted.
 
-1. **A formatting toolbar for the WYSIWYG editor**, which is a regression rather
-   than a gap and therefore jumps the queue.
-2. **A file field worth using** — a drop zone, per-file progress and a removal
+1. **A file field worth using** — a drop zone, per-file progress and a removal
    somebody can undo. The storage half is done; the control is not.
-3. **A pointer gesture that creates a row**, closing the last gap between the
+2. **A pointer gesture that creates a row**, closing the last gap between the
    keyboard route and the drag route in the builder.
-4. **Saving a partly-filled form and coming back to it.** The expensive half is
+3. **Saving a partly-filled form and coming back to it.** The expensive half is
    built: drafts migrate lazily against `diffSchemas` severity, and answers whose
    field disappeared move to `data.__orphaned` rather than being deleted. What is
    missing is the public endpoint and a resume token.
-5. **`signature` and `datagrid`**, in that order — signature is smaller and more
+4. **`signature` and `datagrid`**, in that order — signature is smaller and more
    asked for; datagrid is mostly a control over a data model that already exists.
-6. **Translated form content**, while the reservation is still fresh.
-7. **A published container image**, signed, alongside the npm releases.
+5. **Translated form content**, while the reservation is still fresh.
+6. **A published container image**, signed, alongside the npm releases.
 
 ## Measured against the competition
 

@@ -1,5 +1,5 @@
 import { fromEditorDoc, parseRichText, serialiseRichText, toEditorDoc } from '@formancy/spec'
-import type { EditorNode } from '@formancy/spec'
+import type { EditorNode, RichCommand } from '@formancy/spec'
 import { Editor } from '@tiptap/core'
 import type { Extensions, JSONContent } from '@tiptap/core'
 import Bold from '@tiptap/extension-bold'
@@ -123,13 +123,47 @@ export interface RichTextEditorOptions {
  * reach past it without meaning to.
  */
 export interface RichTextEditor {
-  /** For mounting, focus, and the toolbar's commands. */
+  /** For mounting and focus. */
   readonly editor: Editor
   /** The stored answer, converted from the editor's document. */
   value: () => string
   /** Replace the content, e.g. when the form's value changes underneath. */
   setValue: (value: string) => void
+  /**
+   * Run one of the grammar's formatting commands.
+   *
+   * This exists so the FIELD's toolbar keeps working. TipTap registers the usual
+   * keyboard shortcuts and brings no toolbar UI, so an editor mounted without
+   * this leaves Bold reachable by Ctrl+B and by no visible control — worse
+   * than the textarea it replaced, and unusable for anybody who does not already
+   * know the shortcut.
+   *
+   * Deliberately the same `RichCommand` values the textarea's toolbar uses, so
+   * one toolbar drives either surface and the two cannot come to offer different
+   * things.
+   */
+  run: (command: RichCommand, href?: string) => void
+  /** Whether the command is on at the caret, for the toolbar's pressed state. */
+  isActive: (command: RichCommand) => boolean
   destroy: () => void
+}
+
+/**
+ * The grammar's commands, in TipTap's vocabulary.
+ *
+ * One mapping, in one place: a second one anywhere would be the drift this
+ * package exists to prevent, and the mark names are already pinned to the
+ * grammar by `EDITOR_MARKS`.
+ */
+const MARK_OF: Readonly<Record<string, string>> = {
+  strong: 'bold',
+  emphasis: 'italic',
+  link: 'link',
+}
+
+const NODE_OF: Readonly<Record<string, string>> = {
+  bulletList: 'bulletList',
+  orderedList: 'orderedList',
 }
 
 export function createRichTextEditor(options: RichTextEditorOptions): RichTextEditor {
@@ -163,6 +197,28 @@ export function createRichTextEditor(options: RichTextEditorOptions): RichTextEd
   return {
     editor,
     value: () => storedValueOf(editor),
+    run: (command, href) => {
+      // Focus first: a toolbar button takes focus from the surface, and a
+      // command applied without a selection to apply it to silently does
+      // nothing, which reads as a broken button.
+      const chain = editor.chain().focus()
+
+      if (command === 'strong') chain.toggleBold()
+      else if (command === 'emphasis') chain.toggleItalic()
+      else if (command === 'bulletList') chain.toggleBulletList()
+      else if (command === 'orderedList') chain.toggleOrderedList()
+      else if (href === undefined || href === '') chain.unsetLink()
+      else chain.setLink({ href })
+
+      chain.run()
+    },
+    isActive: (command) => {
+      const mark = MARK_OF[command]
+      const node = NODE_OF[command]
+      if (mark !== undefined) return editor.isActive(mark)
+      if (node !== undefined) return editor.isActive(node)
+      return false
+    },
     setValue: (value) => {
       // `emitUpdate: false` so loading a value does not read back as somebody
       // having edited it, which would mark a pristine form dirty.

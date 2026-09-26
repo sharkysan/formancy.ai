@@ -470,9 +470,32 @@ export class FormancySelectBoxesField extends FieldComponentBase {
   template: `
     <formancy-field-shell [field]="field" [label]="context.label" [path]="context.path">
       @if (make !== null) {
-        <!-- No toolbar of ours and no preview: the editor brings its own
-             commands, and the surface IS the preview, which is the whole reason
-             somebody wanted it. -->
+        <!-- The toolbar stays. An editor library brings keyboard shortcuts and
+             no toolbar UI, so leaving ours out left Bold reachable by Ctrl+B and
+             by no visible control. One toolbar drives either surface, over the
+             same RichCommand values. The preview does go: the surface IS the
+             preview, which is the whole reason somebody wanted it. -->
+        <div
+          role="toolbar"
+          [attr.aria-label]="toolbarLabel()"
+          data-formancy-part="richtext-toolbar"
+          (keydown)="onToolbarKey($event)"
+        >
+          @for (entry of commands; track entry.command; let i = $index) {
+            <button
+              type="button"
+              #toolbarButton
+              [disabled]="field.snapshot().disabled"
+              [attr.tabindex]="i === active() ? 0 : -1"
+              data-formancy-part="richtext-button"
+              (focus)="active.set(i)"
+              (click)="press(entry.command)"
+            >
+              <span aria-hidden="true">{{ entry.glyph }}</span>
+              <span data-formancy-part="visually-hidden">{{ entry.name }}</span>
+            </button>
+          }
+        </div>
         <div #editorHost data-formancy-part="richtext-editor" (blur)="field.touch()"></div>
       } @else {
       <!-- The ARIA toolbar pattern: ONE tab stop for the row, arrows within
@@ -577,6 +600,21 @@ export class FormancyRichTextField extends FieldComponentBase {
     }
 
     if (this.handle.value() === next) return
+
+    // And never while the person is in the editor.
+    //
+    // Without this the editor reverts its own change. Pressing Bold updates the
+    // document, reports the new answer, and the signal re-runs this effect — but
+    // for one run `next` is still the answer from BEFORE the command. That run
+    // sees a difference, pushes the stale answer back, un-bolds the word and
+    // reports THAT. Observed in the playground: the stored value went to
+    // `**hello**` and back to `hello` on its own.
+    //
+    // A value arriving from elsewhere while somebody is typing is rare; losing
+    // what they just did is not recoverable. So the sync waits for them to leave,
+    // and the comparison above catches it then.
+    if (element.contains(document.activeElement)) return
+
     this.handle.setValue(next)
   })
 
@@ -663,6 +701,14 @@ export class FormancyRichTextField extends FieldComponentBase {
   }
 
   private run(command: RichCommand, href?: string): void {
+    // With a WYSIWYG surface mounted the markers are not what somebody
+    // typed, so inserting them would put literal asterisks into their
+    // answer. The command goes to the editor instead.
+    if (this.handle !== undefined) {
+      this.handle.run(command, href)
+      return
+    }
+
     const element = this.box()?.nativeElement
     if (element === undefined) return
 

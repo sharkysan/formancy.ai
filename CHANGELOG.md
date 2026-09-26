@@ -40,11 +40,28 @@ directly (angle brackets stay characters) rather than through a preview that the
 WYSIWYG surface replaces, and jsdom's missing layout APIs are stubbed in one
 place with the reason, because ProseMirror asks for all three and jsdom has none.
 
-**A known gap, recorded rather than quietly shipped:** with the editor mounted
-there is no formatting toolbar. `@tiptap/core` brings keyboard shortcuts and no
-UI, and the field hides its own toolbar on the assumption that the editor
-supplies one. Bold is reachable with Ctrl+B and by no visible control, which is a
-regression against the textarea. It is first on the roadmap.
+**The toolbar stays when the editor is mounted.** The first version dropped it,
+on the reasoning that the editor brings its own commands. It brings keyboard
+shortcuts and no toolbar UI, so Bold was reachable with Ctrl+B and by no visible
+control — worse than the `<textarea>` it replaced, and useless to anybody who
+does not already know the shortcut.
+
+One toolbar now drives either surface over the same `RichCommand` values, so the
+two cannot come to offer different things: with the editor mounted a command runs
+against the document, and without it the same command edits the markup as before.
+Against the editor rather than the text, because with a WYSIWYG surface the
+markers are not what somebody typed — inserting them would put literal
+asterisks into the answer. The ARIA toolbar pattern is unchanged: one tab stop
+for the row, arrows within it.
+
+Wiring the toolbar exposed a second bug, in a browser and not in jsdom: **the
+editor reverted its own change.** Pressing Bold updated the document and reported
+the new answer, and for one render the form still held the old one — that
+render pushed the old answer back, un-bolded the word and reported *that*. The
+stored value went to `**hello**` and back to `hello` with nobody touching it. A
+value arriving from elsewhere is no longer pushed into an editor that has focus:
+losing what somebody just did is not recoverable, and a late sync is. Both
+renderers, both tested, and the test fails when the guard is removed.
 
 **The roadmap is honest again.** It listed the per-destination breaker, the
 proof-of-work challenge and audit logging as missing; all three shipped. It now
