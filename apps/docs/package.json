@@ -8,11 +8,18 @@
     "dev": "astro dev",
     "prebuild": "node scripts/generate-spec-reference.mjs",
     "build": "astro build",
-    "test": "echo \"docs: no tests\"",
-    "typecheck": "astro check || echo \"astro check unavailable\""
+    "test": "vitest run",
+    "typecheck": "astro sync && tsc --noEmit",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@astrojs/starlight": "^0.42.2",
     "astro": "^7.3.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@vitest/coverage-v8": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

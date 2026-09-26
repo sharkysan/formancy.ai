@@ -49,9 +49,10 @@ solution being replayed, because a correct solution stays correct. The
 IS the claim — two requests arriving with one solution both pass every
 stateless check, and only the database can decide which of them spends it.
 
-**A hundred thousand hashes**, about a tenth of a second, and unnoticeable
-beside the time somebody spent filling the form in. Raising it punishes the
-slowest device far more than the attacker, who has the fastest one.
+**A hundred thousand hashes**, measured at 269ms rather than guessed at, and
+unnoticeable beside the time somebody spent filling the form in. Raising it
+punishes the slowest device far more than the attacker, who has the fastest
+one.
 
 **Only for visitors who are not signed in.** Somebody with a session has
 already paid a cost this stands in for.
@@ -74,13 +75,26 @@ places that cannot share server code: the server mints and verifies, a browser
 solves. A solver written separately would be a second description of one
 protocol, and the day the two disagreed the symptom would be submissions the
 server rejects for no visible reason — which reads as an attack rather than
-as a bug. So `@formancy/challenge` is zero-dependency and isomorphic, built on
-Web Crypto because that is in every browser and in Node, and
+as a bug. So `@formancy/challenge` is one isomorphic module and
 `@formancy/server-core` re-exports it rather than restating it.
 
-Everything is asynchronous as a result. A synchronous hash would mean shipping
-an implementation of SHA-256, and an implementation is a thing to keep correct
-forever.
+**The hash is synchronous, and that was a correction.** It was `crypto.subtle`
+first, which needs nothing from npm and is in every browser. Measuring it
+killed the idea: a hundred thousand hashes cost **269ms synchronously and
+about 4,800ms through `crypto.subtle`**, because every candidate pays an await
+and a call boundary rather than the hash itself.
+
+That is not merely slow, it is the wrong way round. An attacker writes the
+fast synchronous loop, so the only person paying the 18x overhead is the
+visitor using the solver we published — and **a proof of work where the
+defender pays more than the attacker is worse than none**, because it buys
+nothing and charges the wrong person for it. The overhead also made the test
+suite time out under parallel load, which is how it was noticed at all.
+
+So the hash is `@noble/hashes`: audited, no dependencies of its own, and
+already in this repository's tree. `solveChallenge` stays asynchronous, but
+only so it can yield to the event loop between batches; the hashing inside it
+does not wait for anything.
 
 **Spent challenges are swept hourly** by `startChallengeSweeper`, on its own
 timer rather than as a job on the file collector: the two are configured
@@ -104,3 +118,11 @@ script fetches the form.
 **Storing a nonce per challenge at mint time.** Rejected: it would make minting
 a write, and minting is public and unauthenticated. An attacker would fill the
 table by asking for challenges they never solve.
+
+**Hashing with Web Crypto to keep the package dependency-free.** Tried, then
+reverted on the measurement above. A dependency was the cheaper of the two
+costs: the alternative was charging every legitimate visitor 18x what the
+attacker pays, which is the one outcome this feature must not have. Shipping
+our own SHA-256 to avoid both was rejected in turn — an implementation is a
+thing to keep correct forever, and `@noble/hashes` is audited and we already
+depend on it elsewhere.

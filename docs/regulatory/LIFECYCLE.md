@@ -94,10 +94,14 @@ Each gate exists for a reason that was paid for at least once:
 - **`typecheck`** — carries part of the architecture. The isomorphic packages
   have no `@types/node`, so a Node import is a compile error rather than a
   review finding ([0008](../decisions/0008-layered-packages.md)).
-- **`test`** — 808 tests plus, locally and in the integration job, 21 against a
-  real PostgreSQL instance through Testcontainers. Versioning defects only
-  manifest against real SQL semantics, so a mocked database would not find
-  them.
+- **`test`** — 1,659 tests, of which 62 run against a real PostgreSQL
+  instance through Testcontainers. Versioning defects only manifest against
+  real SQL semantics, so a mocked database would not find them. The figure is
+  a measurement taken on 2026-09-26 and is re-measured per release rather than
+  incremented — it is deliberately not printed anywhere a reader would trust
+  it without that date, which is why the landing page counts decision records
+  and agent tools instead
+  ([0060](../decisions/0060-documentation-is-checked.md)).
 - **`check:pkg`** — `publint` and `@arethetypeswrong/cli` with
   `--profile esm-only`, because broken exports maps are the commonest way a
   multi-framework library fails in somebody else's application

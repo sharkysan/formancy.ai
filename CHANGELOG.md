@@ -10,6 +10,35 @@ later.
 
 ## Unreleased
 
+**The SOUP declaration's composition table is now derived from the manifests.**
+`docs/regulatory/SOUP-DECLARATION.md` is written for a manufacturer
+incorporating formancy under IEC 62304, who builds their own dependency
+assessment on that table. It had drifted three packages — `challenge`,
+`builder-react` and `mcp` — and four dependencies: `server-core` acquired
+`@noble/hashes` and `recheck` while the table still said "none", and `server`
+grew `undici`. None of it was visible in a diff, because the table did not
+change. The code did.
+
+`apps/docs/src/soup.test.ts` now checks the table against every published
+package's `package.json`, names and version ranges both, and fails on a row that
+is missing, extra or stale. It also checks the claims the table's prose makes
+about the repository: that the engine really has no third-party runtime
+dependency, that a package with a peer says so, and that the version the
+document characterises is the version the packages carry — because a
+characterisation describes one version and no other. The same document's list of
+things "not implemented in v0.1" had gone stale in the other direction: uploads,
+webhook delivery, rate limiting and the challenge all exist now, which for a
+pinned-version characterisation is a different statement, not a better one.
+
+**`CLAUDE.md`** records the conventions that were being carried in conversation
+rather than in the repository: that documentation is part of the change and not
+a follow-up, with the table of which document each kind of change makes untrue;
+that a claim in prose is backed by a test that has been watched to fail; and
+that numbers are measured rather than estimated — the one that prompted it
+being the challenge's "around a tenth of a second", which was 3,408 ms and was
+hiding a design error rather than a typo.
+
+
 **Spec version 2.** Five constructs form.io has and formancy did not:
 `selectboxes`, `file` and `richtext` field types, and `tabs` and `table` layout
 kinds. Adding them is a version bump rather than a quiet addition, because the
@@ -358,10 +387,15 @@ second description of one protocol. The day the two disagreed, the symptom
 would be submissions the server rejects for no visible reason, which reads as
 an attack rather than as a bug.
 
-So it is one zero-dependency module on Web Crypto, running in both places, and
-`@formancy/server-core` re-exports it rather than restating it. `solveChallenge`
-takes an optional progress callback so a page can yield rather than freeze; the
-advice is still a Web Worker. Spent challenges are swept hourly, on their own
+So it is one module running in both places, and `@formancy/server-core`
+re-exports it rather than restating it. The hash is `@noble/hashes` and
+synchronous, which was a correction: `crypto.subtle` needs nothing from npm,
+but a hundred thousand hashes cost 269ms synchronously against about 4,800ms
+through it, and the only person paying that 18x is the visitor using the
+solver we published — a proof of work where the defender pays more than the
+attacker is worse than none. `solveChallenge` takes an optional progress
+callback and yields every `progressEvery` candidates so a page does not
+freeze; the advice is still a Web Worker. Spent challenges are swept hourly, on their own
 timer rather than the file collector's, because the two are configured
 independently.
 

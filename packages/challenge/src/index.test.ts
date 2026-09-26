@@ -38,7 +38,7 @@ describe('solving one', () => {
     const number = await solveChallenge(challenge)
     expect(number).toBeTypeOf('number')
 
-    expect(await verifySolution(SECRET, { ...challenge, number: number as number }, NOW)).toMatchObject(
+    expect(verifySolution(SECRET, { ...challenge, number: number as number }, NOW)).toMatchObject(
       { ok: true },
     )
   })
@@ -50,7 +50,7 @@ describe('solving one', () => {
     for (const seed of [1, 42, 99]) {
       const challenge = await mint(seed)
       const number = await solveChallenge(challenge)
-      expect((await verifySolution(SECRET, { ...challenge, number: number as number }, NOW)).ok).toBe(
+      expect((verifySolution(SECRET, { ...challenge, number: number as number }, NOW)).ok).toBe(
         true,
       )
     }
@@ -58,9 +58,14 @@ describe('solving one', () => {
 
   test('progress is reported, so a page can stay responsive', async () => {
     const seen: number[] = []
-    await solveChallenge(await mint(5, 6_000), (tried) => {
-      seen.push(tried)
-    })
+    // A challenge with no answer, so the loop runs to the end, and a small
+    // interval so proving the callback fires costs fifty hashes rather than
+    // six thousand. The previous version did the six thousand and timed out
+    // on a loaded machine.
+    await solveChallenge(
+      { salt: 'x.1', challenge: 'no-answer-here', maxNumber: 50 },
+      { onProgress: (tried) => void seen.push(tried), progressEvery: 10 },
+    )
 
     // A caller that ignores this gets a busy loop, which is why the advice is
     // a Web Worker — but it has to be offered.
@@ -87,15 +92,15 @@ describe('the ways past it', () => {
       number: 4,
       // Arithmetically correct on purpose: only the provenance is wrong, so
       // the test proves the signature check and not the hash check.
-      challenge: await hashOf(salt, 4),
+      challenge: hashOf(salt, 4),
       signature: 'f'.repeat(64),
     }
 
-    expect(await verifySolution(SECRET, forged, NOW)).toMatchObject({ ok: false, reason: 'forged' })
+    expect(verifySolution(SECRET, forged, NOW)).toMatchObject({ ok: false, reason: 'forged' })
   })
 
   test('a solution signed with another key is refused', async () => {
-    expect(await verifySolution('a-different-key', await valid(), NOW)).toMatchObject({
+    expect(verifySolution('a-different-key', await valid(), NOW)).toMatchObject({
       ok: false,
       reason: 'forged',
     })
@@ -104,7 +109,7 @@ describe('the ways past it', () => {
   test('the wrong number is refused before the key is consulted', async () => {
     const solution = await valid()
 
-    const outcome = await verifySolution(SECRET, { ...solution, number: solution.number + 1 }, NOW)
+    const outcome = verifySolution(SECRET, { ...solution, number: solution.number + 1 }, NOW)
 
     // `wrong`, not `forged`: no reason to do the key's work for a submission
     // that was never going to be accepted.
@@ -112,14 +117,14 @@ describe('the ways past it', () => {
   })
 
   test('a stale challenge is refused without a lookup', async () => {
-    const outcome = await verifySolution(SECRET, await valid(), NOW + CHALLENGE_TTL_SECONDS + 1)
+    const outcome = verifySolution(SECRET, await valid(), NOW + CHALLENGE_TTL_SECONDS + 1)
 
     // The expiry rides in the salt, so an old one costs nothing to reject.
     expect(outcome).toMatchObject({ ok: false, reason: 'expired' })
   })
 
   test('and is still good a second before it is not', async () => {
-    expect((await verifySolution(SECRET, await valid(), NOW + CHALLENGE_TTL_SECONDS)).ok).toBe(true)
+    expect((verifySolution(SECRET, await valid(), NOW + CHALLENGE_TTL_SECONDS)).ok).toBe(true)
   })
 
   test('rubbish is malformed rather than a crash', async () => {
@@ -131,7 +136,7 @@ describe('the ways past it', () => {
     ]
 
     for (const candidate of cases) {
-      expect((await verifySolution(SECRET, candidate as Solution, NOW)).ok).toBe(false)
+      expect((verifySolution(SECRET, candidate as Solution, NOW)).ok).toBe(false)
     }
   })
 })
@@ -147,7 +152,7 @@ describe('minting', () => {
     const challenge = await mint()
     const number = (await solveChallenge(challenge)) as number
 
-    const outcome = await verifySolution(SECRET, { ...challenge, number }, NOW)
+    const outcome = verifySolution(SECRET, { ...challenge, number }, NOW)
 
     // Handed back so the caller can store the spend with the right lifetime
     // rather than inventing one.

@@ -1,0 +1,20 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "declaration": false,
+    "declarationMap": false,
+    "types": [
+      "node"
+    ],
+    "lib": [
+      "ES2023"
+    ],
+    "module": "preserve",
+    "moduleResolution": "bundler"
+  },
+  "include": [
+    "src/**/*.ts",
+    ".astro/types.d.ts"
+  ]
+}
