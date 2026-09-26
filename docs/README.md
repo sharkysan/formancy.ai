@@ -39,7 +39,7 @@ a reader who knows it can find things without being told.
 
 ## Decisions
 
-Forty records in [`decisions/`](decisions/), grouped in that directory's index
+The records in [`decisions/`](decisions/) are grouped in that directory's index
 by product, architecture, spec, engine, server, verification and tooling.
 
 Every record carries a **Verified by** line naming the test, lint rule, CI gate

@@ -308,7 +308,7 @@ from the JSON Schema.
 
 - [Architecture](./docs/README.md#architecture), arc42-shaped. Start with
   [the five ideas everything else follows from](./docs/architecture/04-solution-strategy.md).
-- [Forty-eight decision records](./docs/decisions/), each naming what would
+- [The decision records](./docs/decisions/), each naming what would
   fail if the decision were violated — or saying plainly that nothing would.
 - [Regulatory material](./docs/regulatory/MDR-CONTEXT.md) for anyone
   incorporating formancy into a product that has to answer to a regulator.

@@ -35,10 +35,10 @@ in the same pull request as the code, not in a follow-up:
 Keep the voice of the existing documents: say what it costs and what it does
 not do, and never claim more than a test shows.
 
-Counts written into prose go stale ("Forty records", "Forty-eight decision
-records"). When the number of decision records, packages or tests changes,
-search for it in `README.md`, `docs/README.md` and the site, or better, derive
-it the way `apps/site/decision-records.ts` does.
+Counts written into prose go stale: the README once said "Forty-eight
+decision records" when there were fifty-eight. Prefer wording without a number.
+Where a number is the point, derive it from the repository at build time rather
+than typing it.
 
 ## Checks before pushing
 
