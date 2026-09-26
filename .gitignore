@@ -23,3 +23,4 @@ packages/*/NOTICE
 
 # Astro generates these from the content config on `astro sync`.
 .astro/
+/.claude

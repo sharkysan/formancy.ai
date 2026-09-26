@@ -602,6 +602,10 @@ export class FormancyRichTextField extends FieldComponentBase {
     const attributes: Record<string, string> = {
       id: control.id,
       'aria-labelledby': props.label.id,
+      // The editing surface is a CHILD of the mount point, so it is the element
+      // a theme has to style. Named here rather than left as the editor
+      // library's own class, so a theme is not coupled to TipTap.
+      'data-formancy-part': 'richtext-surface',
     }
     const describedby = control['aria-describedby']
     if (describedby !== undefined) attributes['aria-describedby'] = describedby

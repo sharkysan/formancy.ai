@@ -82,7 +82,7 @@
 }
 
 /* A line to write on. */
-[data-formancy-theme='paper'] [data-formancy-part='field'] :is(input, select, textarea) {
+[data-formancy-theme='paper'] [data-formancy-part='field'] :is(input, select, textarea, [data-formancy-part='richtext-surface']) {
   font: inherit;
   font-family: var(--fm-serif);
   font-size: 1.1875rem;
@@ -100,19 +100,19 @@
     background-color 160ms ease;
 }
 
-[data-formancy-theme='paper'] [data-formancy-part='field'] :is(input, select, textarea):hover:not(:disabled, :focus-visible) {
+[data-formancy-theme='paper'] [data-formancy-part='field'] :is(input, select, textarea, [data-formancy-part='richtext-surface']):hover:not(:disabled, :focus-visible) {
   border-block-end-color: var(--fm-accent);
 }
 
 /* Focus is the line thickening in the accent, and a wash behind it — a line
    alone changing colour would be too little to see. */
-[data-formancy-theme='paper'] [data-formancy-part='field'] :is(input, select, textarea):focus-visible {
+[data-formancy-theme='paper'] [data-formancy-part='field'] :is(input, select, textarea, [data-formancy-part='richtext-surface']):focus-visible {
   outline: none;
   border-block-end: 2.5px solid var(--fm-accent);
   background-color: color-mix(in srgb, var(--fm-accent) 7%, transparent);
 }
 
-[data-formancy-theme='paper'] [data-formancy-part='field'] :is(input, select, textarea):disabled {
+[data-formancy-theme='paper'] [data-formancy-part='field'] :is(input, select, textarea, [data-formancy-part='richtext-surface']):disabled {
   color: var(--fm-muted);
   border-block-end-style: dotted;
   cursor: not-allowed;
@@ -282,7 +282,7 @@
 
 /* An invalid line turns vermilion, and the message beneath it is set in
    italics after a dash — like a correction in the margin. */
-[data-formancy-theme='paper'] [data-formancy-part='field'][data-state='invalid'] :is(input, select, textarea) {
+[data-formancy-theme='paper'] [data-formancy-part='field'][data-state='invalid'] :is(input, select, textarea, [data-formancy-part='richtext-surface']) {
   border-block-end-color: var(--fm-invalid);
 }
 
@@ -748,4 +748,40 @@
   [data-formancy-theme='paper'] *::after {
     transition: none !important;
   }
+}
+
+/* The WYSIWYG editing surface, when the host supplies one. It inherits the
+   box above with the other controls; what it needs on top is a height, the
+   caret affordances a textarea gets for free, and paragraph spacing that
+   matches the preview — otherwise the two disagree about what the answer
+   will look like. */
+[data-formancy-theme='paper'] [data-formancy-part='field'] [data-formancy-part='richtext-surface'] {
+  min-height: calc(var(--fm-line-height, 2rem) * 4 + 0.5rem);
+  cursor: text;
+  overflow-wrap: anywhere;
+}
+
+/* Focus lands on the surface itself, so the wrapper needs no ring — but the
+   wrapper is what the grid sizes, so it must not add one of its own. */
+[data-formancy-theme='paper'] [data-formancy-part='field'] [data-formancy-part='richtext-editor'] {
+  display: grid;
+  min-width: 0;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='field'] [data-formancy-part='richtext-surface'] > :first-child { margin-block-start: 0; }
+[data-formancy-theme='paper'] [data-formancy-part='field'] [data-formancy-part='richtext-surface'] > :last-child { margin-block-end: 0; }
+
+/* A paragraph somebody has not typed into yet still has to occupy a line,
+   or the caret sits in a box with no visible row to sit on. */
+[data-formancy-theme='paper'] [data-formancy-part='field'] [data-formancy-part='richtext-surface'] p:empty::before {
+  content: '';
+  display: inline-block;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='field'] [data-formancy-part='richtext-surface']:focus-visible {
+  outline: none;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='field'] [data-formancy-part='richtext-surface'][contenteditable='false'] {
+  cursor: not-allowed;
 }

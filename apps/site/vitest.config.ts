@@ -10,6 +10,7 @@ export default defineConfig({
     coverage,
     include: ['src/**/*.test.{ts,tsx}'],
     environment: 'jsdom',
+    setupFiles: ['./src/test-setup.ts'],
     passWithNoTests: true,
   },
 })
