@@ -89,6 +89,17 @@ their own to disagree about.
 
 ## Consequences
 
+**The field keeps its toolbar, and this was got wrong first.** The initial
+version hid it when an editor was mounted, reasoning that the editor brings its
+own commands. `@tiptap/core` brings keyboard shortcuts and no toolbar UI, so the
+result was a field whose only formatting control was a shortcut — a regression
+against the `<textarea>`, and invisible to anybody who did not know it. One
+toolbar now drives either surface through the same `RichCommand` values, which is
+also what stops the two paths offering different things. With an editor mounted a
+command runs against the document rather than against the text, because the
+markers are not what somebody typed and inserting them would put literal
+asterisks into their answer.
+
 **The textarea stays, and is not a second-class path.** It is what a host without
 an editor gets, and it remains the surface the conformance driver drives, because
 a `<textarea>` is a control every assistive technology already knows. Two ways to

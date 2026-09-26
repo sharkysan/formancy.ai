@@ -35,11 +35,18 @@ const SCHEMA: FormSchema = {
 interface Spy {
   readonly mounts: RichTextEditorMount[]
   readonly setValues: string[]
+  readonly commands: Array<{ command: string; href?: string }>
   readonly destroys: { count: number }
   current: string
 }
 
-const fresh = (): Spy => ({ mounts: [], setValues: [], destroys: { count: 0 }, current: '' })
+const fresh = (): Spy => ({
+  mounts: [],
+  setValues: [],
+  commands: [],
+  destroys: { count: 0 },
+  current: '',
+})
 
 /**
  * What a real editor does when somebody types.
@@ -65,6 +72,10 @@ function spyFactory(spy: Spy): RichTextEditorFactory {
         spy.current = value
         spy.setValues.push(value)
       },
+      run: (command, href) => {
+        spy.commands.push(href === undefined ? { command } : { command, href })
+      },
+      isActive: () => false,
       destroy: () => {
         spy.destroys.count += 1
       },
@@ -101,16 +112,36 @@ describe('without a host editor', () => {
 })
 
 describe('with a host editor', () => {
-  test('it is mounted, and our toolbar and preview step aside', async () => {
+  test('it is mounted, and the toolbar stays', async () => {
     const spy = fresh()
     await renderForm(engineFor(SCHEMA), spyFactory(spy))
 
     expect(spy.mounts.length).toBe(1)
-    // Two toolbars over one value is how they come to disagree, and the surface
-    // is its own preview — the whole reason somebody asked for it.
-    expect(screen.queryByRole('toolbar')).toBeNull()
-    expect(document.querySelector('[data-formancy-part="richtext-preview"]')).toBeNull()
     expect(document.querySelector('[data-formancy-part="richtext-editor"]')).toBeTruthy()
+
+    // NOT dropped: an editor library brings keyboard shortcuts and no toolbar
+    // UI, so leaving ours out left Bold reachable by Ctrl+B and by no visible
+    // control. The first version of this shipped exactly that.
+    expect(screen.getByRole('toolbar', { name: /Notes/ })).toBeTruthy()
+
+    // The preview does go: the surface IS the preview.
+    expect(document.querySelector('[data-formancy-part="richtext-preview"]')).toBeNull()
+  })
+
+  test('the toolbar drives the editor rather than editing the text itself', async () => {
+    const spy = fresh()
+    const engine = engineFor(SCHEMA)
+    const view = await renderForm(engine, spyFactory(spy))
+
+    const bold = screen.getAllByRole('button').find((b) => b.textContent?.includes('Bold'))!
+    bold.click()
+    await view.fixture.whenStable()
+
+    // Against the editor, not against the value: with a WYSIWYG surface mounted
+    // the markers are not what somebody typed, so inserting them would put
+    // literal asterisks into their answer.
+    expect(spy.commands).toEqual([{ command: 'strong' }])
+    expect(engine.getFieldSnapshot(['notes']).value).toBe(undefined)
   })
 
   test('the engine’s ids reach the editing surface', async () => {
@@ -186,6 +217,26 @@ describe('with a host editor', () => {
 
     // Pushing it back would move the caret to the end after every keystroke,
     // which is the difference between an editor and a box that fights you.
+    expect(spy.setValues).toEqual([])
+  })
+
+  test('a value arriving while somebody is typing is not pushed in', async () => {
+    const spy = fresh()
+    const engine = engineFor(SCHEMA)
+    const view = await renderForm(engine, spyFactory(spy))
+    const mount = spy.mounts[0]!
+
+    mount.element.setAttribute('tabindex', '-1')
+    ;(mount.element as HTMLElement).focus()
+
+    engine.setValue(['notes'], 'from somewhere else')
+    await view.fixture.whenStable()
+
+    // What stops the editor reverting its OWN change: a toolbar command updates
+    // the document and reports the new answer, and for one effect run the form
+    // still holds the old one. That run would push the old answer back and then
+    // report it. Observed in a browser: the stored value went to `**hello**` and
+    // back to `hello` on its own.
     expect(spy.setValues).toEqual([])
   })
 
