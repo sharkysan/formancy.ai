@@ -118,6 +118,20 @@ export interface BuilderSession {
     layout: string,
     addresses: ReadonlyArray<readonly number[]>,
     container: LayoutNode,
+    /**
+     * Which of the addresses the new container takes the position of.
+     *
+     * Defaults to the earliest in document order, which is right when there is
+     * no reason to prefer one. A DROP has one: the new row belongs where the
+     * thing dropped ON was, not where the thing being dragged came from --
+     * otherwise dragging a field out of a row and onto a top-level field nests
+     * the new row inside the old one, which is not what anybody aimed at.
+     *
+     * Separate from the order of `addresses` because the two are independent:
+     * dropping on the left makes the dragged node the first child while the
+     * position still comes from the target, which is the second address.
+     */
+    positionOf?: readonly number[],
   ): CommandOutcome
   moveLayoutNode(from: LayoutAddress, to: LayoutLocation): CommandOutcome
   setLayoutNodeLabel(address: LayoutAddress, label: Text | undefined): CommandOutcome
@@ -437,7 +451,7 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
       })
     },
 
-    wrapLayoutNodes(layout, addresses, container) {
+    wrapLayoutNodes(layout, addresses, container, positionOf) {
       if (addresses.length < 2) {
         return refuse(
           `/layouts/${layout}`,
@@ -485,11 +499,16 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
           taken.push(found.siblings[found.index]!)
         }
 
-        // Where the wrapper goes: the position of the earliest address, read
-        // now, while the addresses still mean what the caller meant.
-        const earliest = [...addresses].sort(comparePaths)[0]!
-        const home = locateLayout(draft, { layout, path: earliest })
-        if (home === undefined) return noSuchNode({ layout, path: earliest })
+        // Where the wrapper goes, read now while the addresses still mean what
+        // the caller meant. `at` when given -- a drop wants the target's place,
+        // not the dragged node's -- and otherwise the earliest in document
+        // order, which is the sensible default when nothing prefers one.
+        const anchorPath =
+          positionOf !== undefined && addresses.some((path) => samePathOf(path, positionOf))
+            ? positionOf
+            : [...addresses].sort(comparePaths)[0]!
+        const home = locateLayout(draft, { layout, path: anchorPath })
+        if (home === undefined) return noSuchNode({ layout, path: anchorPath })
         const parent = home.siblings
         const at = home.index
 

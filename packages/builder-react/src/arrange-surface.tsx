@@ -41,6 +41,23 @@ const LAYOUT_ATTR = 'data-formancy-layout-path'
 const FIELD_ATTR = 'data-formancy-field-path'
 const SELECTOR = `[${LAYOUT_ATTR}],[${FIELD_ATTR}]`
 
+/**
+ * What a drop would do: move the dragged node, or put it in a new row with what
+ * it was dropped on.
+ */
+type DropTarget =
+  | { kind: 'move'; location: LayoutLocation; element: HTMLElement; edge: 'before' | 'after' }
+  | { kind: 'wrap'; side: 'start' | 'end'; element: HTMLElement; over: readonly number[] }
+
+/** Whether `outer` is an ancestor of `inner`. */
+function enclosesPath(outer: readonly number[], inner: readonly number[]): boolean {
+  return outer.length < inner.length && outer.every((step, at) => inner[at] === step)
+}
+
+function samePath(a: readonly number[], b: readonly number[]): boolean {
+  return a.length === b.length && a.every((step, at) => b[at] === step)
+}
+
 export function FormancyArrangeSurface({
   session,
   layout,
@@ -119,9 +136,17 @@ export function FormancyArrangeSurface({
     return <div ref={surface}>{children}</div>
   }
 
-  const targetFor = (
-    event: React.DragEvent<HTMLDivElement>,
-  ): { location: LayoutLocation; element: HTMLElement; edge: 'before' | 'after' } | undefined => {
+  /**
+   * How wide an element has to be before its sides are worth aiming at.
+   *
+   * A side zone on a narrow control is one nobody can hit, and the whole element
+   * would be side zones. Below this the sides are not offered at all and the drop
+   * stays a move, which is also what keeps a zero-sized element — every element,
+   * under jsdom — from being treated as all edge.
+   */
+  const SIDE_ZONE_MINIMUM = 80
+
+  const targetFor = (event: React.DragEvent<HTMLDivElement>): DropTarget | undefined => {
     if (dragging === null) return undefined
     const element = (event.target as Element | null)?.closest<HTMLElement>(SELECTOR) ?? null
     if (element === null) return undefined
@@ -130,10 +155,38 @@ export function FormancyArrangeSurface({
     if (over === undefined) return undefined
 
     const box = element.getBoundingClientRect()
-    // Horizontal for a field already inside a row: the two halves a person
-    // aims at there are left and right, not top and bottom.
-    const horizontal = element.parentElement?.dataset['formancyPart'] === 'layout-row'
-    const edge = horizontal
+    const insideRow = element.parentElement?.dataset['formancyPart'] === 'layout-row'
+
+    // ── Making a row, by aiming at a side ────────────────────────────────────
+    //
+    // Only for something NOT already in a row: inside one, left and right
+    // already mean "before" and "after" among its siblings, and giving them a
+    // second meaning would make the commonest drag there ambiguous.
+    if (!insideRow && box.width >= SIDE_ZONE_MINIMUM) {
+      // A quarter of the element, capped: a very wide field should not have a
+      // 300px side zone swallowing the middle.
+      const zone = Math.min(box.width / 4, 64)
+      const side =
+        event.clientX < box.left + zone
+          ? 'start'
+          : event.clientX > box.right - zone
+            ? 'end'
+            : undefined
+
+      if (side !== undefined) {
+        // Refused here rather than by the session, so the indicator never
+        // offers a drop that would snap back with no explanation.
+        if (samePath(dragging, over)) return undefined
+        if (enclosesPath(dragging, over) || enclosesPath(over, dragging)) return undefined
+        return { kind: 'wrap', side, element, over }
+      }
+    }
+
+    // ── Moving, exactly as before ───────────────────────────────────────────
+    //
+    // Horizontal for a field already inside a row: the two halves a person aims
+    // at there are left and right, not top and bottom.
+    const edge = insideRow
       ? event.clientX < box.left + box.width / 2
         ? 'before'
         : 'after'
@@ -142,7 +195,7 @@ export function FormancyArrangeSurface({
         : 'after'
 
     const location = layoutDropLocation(view.document, layout, dragging, over, edge)
-    return location === undefined ? undefined : { location, element, edge }
+    return location === undefined ? undefined : { kind: 'move', location, element, edge }
   }
 
   return (
@@ -172,7 +225,10 @@ export function FormancyArrangeSurface({
         if (target === undefined) return
         event.preventDefault()
         event.dataTransfer.dropEffect = 'move'
-        target.element.dataset['drop'] = target.edge
+        // Distinct from before/after, so somebody aiming for a row does not see
+        // the same line they get for a move.
+        target.element.dataset['drop'] =
+          target.kind === 'wrap' ? `wrap-${target.side}` : target.edge
       }}
       onDragLeave={() => clearIndicators()}
       onDrop={(event) => {
@@ -183,10 +239,33 @@ export function FormancyArrangeSurface({
         clearIndicators()
         if (target === undefined || from === null) return
 
+        // Announced through a live region either way, because a drag that
+        // changes the document silently is a change somebody using a screen
+        // reader with a pointer never hears about.
+        if (target.kind === 'wrap') {
+          // The side aimed at decides the order, which is the whole point of
+          // having two zones rather than one. The same command the `w` key in
+          // the arrangement pane calls.
+          const outcome = session.wrapLayoutNodes(
+            layout,
+            // The side aimed at decides the order.
+            target.side === 'start' ? [from, target.over] : [target.over, from],
+            { kind: 'row', children: [] },
+            // And the row belongs where the thing dropped ON was, not where the
+            // dragged node came from. Without this, dragging a field out of a
+            // row onto a top-level field nests the new row inside the old one,
+            // which is not what anybody aimed at.
+            target.over,
+          )
+          setAnnouncement(
+            outcome.ok
+              ? `Put them side by side in a row.`
+              : `Cannot put them side by side: ${outcome.message}`,
+          )
+          return
+        }
+
         const outcome = session.moveLayoutNode({ layout, path: from }, target.location)
-        // Announced through a live region, because a drag that changes the
-        // document silently is a change somebody using a screen reader with a
-        // pointer never hears about.
         setAnnouncement(
           outcome.ok
             ? `Moved to ${describeLayoutTarget(view.document, target.location, from)}.`

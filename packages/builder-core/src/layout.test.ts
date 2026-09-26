@@ -323,6 +323,47 @@ describe('wrapLayoutNodes', () => {
     expect(layoutOf(session.document())).toEqual(before)
   })
 
+  test('takes the position of whichever address is named, not the earliest', () => {
+    const session = createBuilderSession(base())
+
+    // `first` is inside the row at [0]; `email` is at top level. Naming email's
+    // address puts the new row where EMAIL was, at the top level.
+    const outcome = session.wrapLayoutNodes('web', [[0, 0], [1]], row(), [1])
+
+    expect(outcome.ok).toBe(true)
+    expect(layoutOf(session.document())).toEqual([
+      { kind: 'row', children: [{ kind: 'field', path: 'last' }] },
+      {
+        kind: 'row',
+        children: [{ kind: 'field', path: 'first' }, { kind: 'field', path: 'email' }],
+      },
+    ])
+  })
+
+  test('the position is independent of the child order', () => {
+    const session = createBuilderSession(base())
+
+    // Dropping on the LEFT of email: the dragged field is the first child, and
+    // the row still belongs where email was. Those two are why the position is a
+    // separate argument rather than "the first address".
+    session.wrapLayoutNodes('web', [[0, 0], [1]], row(), [1])
+
+    const nodes = layoutOf(session.document())
+    expect(JSON.stringify(nodes[1])).toContain('"first"')
+    expect(nodes.length).toBe(2)
+  })
+
+  test('an address that is not one of them is ignored, not obeyed', () => {
+    const session = createBuilderSession(base())
+
+    // Otherwise a caller could place the wrapper somewhere unrelated to
+    // anything being wrapped, which has no meaning.
+    const outcome = session.wrapLayoutNodes('web', [[0], [1]], row(), [9])
+
+    expect(outcome.ok).toBe(true)
+    expect(layoutOf(session.document()).length).toBe(1)
+  })
+
   test('refuses to wrap a node inside one of the others', () => {
     const session = createBuilderSession(base())
 

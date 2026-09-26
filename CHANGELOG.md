@@ -10,6 +10,37 @@ later.
 
 ## Unreleased
 
+**Dropping a field on another field's side puts both in a row**, on the form
+itself. The pointer route for what `w` already does in the arrangement pane, and
+it calls the same command — the keyboard path is what satisfies WCAG 2.2
+SC 2.5.7, and it existed first on purpose.
+
+The side zones are the outer quarter of the element, capped at 64px so a wide
+field does not get a 300px zone swallowing its middle, and they are only offered
+on something **at least 80px wide**: a side zone on a narrow control is one nobody
+can aim at. They are also not offered on a field already inside a row, where left
+and right already mean "before" and "after" among its siblings — giving them a
+second meaning would make the commonest drag there ambiguous.
+
+**The gesture found a gap in the command it uses.** `wrapLayoutNodes` placed the
+new container where the *earliest* node stood, which is right when nothing prefers
+one — and wrong for a drop, where the row belongs where the thing dropped ON
+was. Dragging a field out of a row onto a top-level field nested the new row inside
+the old one. It now takes an optional position argument, kept separate from the
+order of the addresses because the two are independent: dropping on the left makes
+the dragged node the first child while the position still comes from the target,
+which is the second address.
+
+**The drop indicator on the form was never styled at all.** The arrange surface
+sets `data-drop` on the rendered form's own elements and no stylesheet dressed
+them, so a drag on the preview gave no indication of where anything would land. Now
+in `workbench.css` rather than in a form theme — the indicator is an affordance
+of the tool, a form's own theme should not have to know somebody is editing it, and
+a form in production carries those attributes with nothing reading them. A side
+drop draws down the side rather than across the edge, because the two gestures have
+to be told apart before the drop and not after it.
+
+
 **`w` puts two arrangement items side by side in a row**, which is the keyboard
 route for the gesture the builder was missing. Press it on an item, choose what to
 pair it with, and both go into a new row — the two-step shape the move command
