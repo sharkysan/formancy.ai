@@ -18,8 +18,15 @@ Two ways in, and which one you want depends on whether you have the repository.
 
 ### From the published image
 
-No checkout, no build toolchain, no Node on the host — the server image is
-published to GitHub Container Registry and signed by digest:
+:::caution[Not in the registry yet]
+The release workflow builds, pushes and signs the image, and **no release has run
+it yet** — `v0.1.0` predates those steps and signed only the SBOM. This path
+works from the next release onward; today, use [a checkout](#from-a-checkout).
+Stated rather than left to be discovered as a `manifest unknown` error.
+:::
+
+No checkout, no build toolchain, no Node on the host — the release publishes the
+server image to GitHub Container Registry and signs it by digest:
 
 ```bash
 curl -O https://raw.githubusercontent.com/sharkysan/formancy.ai/main/compose.published.yaml
@@ -29,8 +36,9 @@ cp .env.example .env          # then follow what it says
 FORMANCY_VERSION=v0.2.0 docker compose -f compose.published.yaml up -d
 ```
 
-`FORMANCY_VERSION` has no default and compose stops without it, because there is
-no `latest` tag to fall back on. That is deliberate: the
+The version above is the shape, not a tag that exists. `FORMANCY_VERSION` has no
+default and compose stops without it, because there is no `latest` tag to fall
+back on. That is deliberate: the
 [SOUP declaration](https://github.com/sharkysan/formancy.ai/blob/main/docs/regulatory/SOUP-DECLARATION.md)
 tells a manufacturer to pin an exact version and says `latest` is not
 characterised software, so a compose file that quietly defaulted to one would be

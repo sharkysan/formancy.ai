@@ -4,6 +4,12 @@
 # when you have the repository and wrong when you do not: a self-hoster who wants
 # to run the product should not need a checkout and a build toolchain to do it.
 #
+# NOTHING IS IN THE REGISTRY YET. The release workflow builds, pushes and signs
+# the image, and no release has run it: v0.1.0 predates those steps and only
+# signed the SBOM. So this file works from the NEXT release onward, and the
+# version below is the shape rather than a tag you can pull today (checked
+# 2026-09-26). Until then, use `compose.yaml` and a checkout.
+#
 #   curl -O https://raw.githubusercontent.com/sharkysan/formancy.ai/main/compose.published.yaml
 #   curl -O https://raw.githubusercontent.com/sharkysan/formancy.ai/main/.env.example
 #   cp .env.example .env      # then follow what it says

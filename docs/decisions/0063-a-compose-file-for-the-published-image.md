@@ -85,7 +85,20 @@ that actually drift: the mandatory secrets, the loopback database bind, and the
 pass-through list. It does not cover them being *identical*, because they are
 deliberately not — one builds and one pins a version.
 
-**The published path is the one that gets a signature to check.** A self-hoster
+**The file precedes the artefact, and says so.** No release has run the push
+steps — `v0.1.0` predates them and signed only the SBOM — so at the time of
+writing the registry holds nothing and this compose file cannot pull anything.
+That is deliberate rather than overlooked: the release that publishes the first
+image should not also be the release that discovers nobody can run it, and the
+alternative is writing the quickstart under time pressure against an artefact
+that already exists. Both the file and the quickstart carry the caveat with a
+date, because the repository cannot check what a registry contains — CI clones
+without tags, so a guard that asked "has a release pushed an image" would answer
+differently in CI than locally, which is not a gate. What *is* guarded is that the
+next release pushes and signs one, which is
+`packages/server/src/release-image.test.ts`.
+
+**The published path is the one that will get a signature to check.** A self-hoster
 following `compose.yaml` builds their own bytes and has nothing to verify; one
 following `compose.published.yaml` pulls bytes that cosign can attest to, and the
 file says so with a pointer to the commands. That is the first time the signing

@@ -10,12 +10,19 @@ later.
 
 ## Unreleased
 
-**The published image is runnable without a checkout.** The server image has been
-built, pushed and signed by digest for a release now, and nothing consumed it: the
-only compose file declared `build: context: .`, so the documented way to run
-formancy was to clone the repository and rebuild the image that had just been
-signed for nobody. `compose.published.yaml` pulls it instead
+**A compose file for the published image.** The release workflow builds, pushes
+and signs the server image by digest, and nothing consumed it: the only compose
+file declared `build: context: .`, so the documented way to run formancy was to
+clone the repository and rebuild the image the release had just signed.
+`compose.published.yaml` pulls it instead
 ([0063](docs/decisions/0063-a-compose-file-for-the-published-image.md)).
+
+**It is usable from the next release, not today**, and both the file and the
+quickstart say so. No release has run the push — `v0.1.0` predates those steps
+and signed only the SBOM — so the registry is empty and the version in the
+example is the shape rather than a tag anybody can pull. Shipping the file first
+is deliberate: the release that publishes the first image should not also be the
+one that finds out nobody can run it.
 
 `FORMANCY_VERSION` has no default and compose stops without it, because no
 `latest` tag is published — the SOUP declaration tells a manufacturer to pin an
