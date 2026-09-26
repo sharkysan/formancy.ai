@@ -135,8 +135,21 @@ removed fields move to `data.__orphaned` and are **never deleted**. A breaking
 change leaves the draft read-only against its original version rather than
 guessing.
 
+*Constraint, added later:* **the person is told.** The migration report the
+server returns was not shown anywhere, so somebody resumed a draft, found some
+answers no longer on the form, and submitted believing everything they had typed
+was in it. The answers were never lost from storage — they were lost from view,
+with no notice. Both renderers now ship a `resume-notice` component that names
+what was set aside, says the answers are still kept, and takes focus so it is not
+missed on a form somebody has scrolled.
+
 *Residual:* orphaned data persists indefinitely, which is a data-retention
-question a deployment must answer.
+question a deployment must answer. And **a library cannot make a host render the
+notice**: resuming a draft is the host's call, because the host holds the
+transport. The component exists and is documented, and showing it is the
+deployment's responsibility. That is weaker than a guarantee, and this sentence
+is the honest version of it — the earlier residual mentioned only retention,
+which read as though the person being told was already handled.
 
 ### B3. A published form version changes after submissions were bound to it
 

@@ -34,6 +34,8 @@ export {
 export type { SubmitOutcome } from './form.js'
 export { FormancyErrorSummary } from './error-summary.js'
 export { FormancyRichInline, FormancyRichText } from './rich-text.js'
+export { FormancyResumeNotice } from './resume-notice.js'
+export type { ResumeMigration } from './resume-notice.js'
 export {
   FORMANCY_RICH_TEXT_EDITOR,
   injectRichTextEditorFactory,
