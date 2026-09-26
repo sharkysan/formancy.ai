@@ -10,6 +10,41 @@ later.
 
 ## Unreleased
 
+**A condition can combine more than one comparison.** "Country is Switzerland and
+total is more than 100" is the thing a form author reaches for second, and the
+editor could not express it — the expression language handled `a && b` all
+along, so anybody wanting two comparisons had to write CEL by hand. Fine for a
+developer, and the whole difficulty for the audience this builder exists for.
+
+A rule draft now holds any number of comparisons with one join, **all** or
+**any**, and the join only appears once there is something to join — a control
+that does nothing is a control somebody has to work out is irrelevant. Rows are
+numbered from 1 in their labels, and only when there is more than one, so a screen
+reader user can tell "Field 2" from "Field". The first comparison has no remove
+button, because `compileGroup` refuses an empty group rather than compiling to an
+expression that always passes, and the UI must not be able to ask for one.
+
+**Groups are flat: one cannot contain another.** Nesting is where a condition
+editor stops being readable — three levels in, nobody can tell what the
+parentheses do — and it is the same reason the repeater refuses to nest. Someone
+who genuinely needs it can still eject to raw CEL, which is the escape hatch that
+makes the restriction affordable rather than a limitation. One join per group also
+means the compiled expression needs no parentheses, because there is no precedence
+to get wrong; a test asserts the output contains none, so adding nesting later
+fails it and forces the question.
+
+**A single comparison compiles byte-for-byte to what it did before** — no join,
+no parentheses — so no existing form reads as changed the moment somebody opens
+it. The `editor` metadata does change shape, from a bare condition to the group.
+It is documented as regenerated and never evaluated, nothing reads it back yet, and
+one shape for one comparison and for many is worth more than keeping that object
+unchanged.
+
+No spec version is involved: `editor` is `unknown` in the types and free-form in
+the JSON Schema, which was checked before any of this was written rather than
+assumed.
+
+
 **Every third-party action in the release workflow is pinned to a commit hash**,
 with the tag in a comment. That workflow holds an npm token, an OIDC identity that
 can sign on the project's behalf, and push rights to the registry; a tag is a

@@ -26,6 +26,23 @@ export interface Condition {
   value?: string | number | boolean | null
 }
 
+/**
+ * Several comparisons, joined one way.
+ *
+ * **Flat, deliberately: a group cannot contain another group.** Nesting is where
+ * a condition editor stops being readable — three levels in, nobody can tell
+ * what the parentheses do — and it is the same reason the repeater refuses to
+ * nest. Somebody who genuinely needs it can eject to CEL, and that escape hatch
+ * is what makes the restriction affordable rather than a limitation.
+ *
+ * One join per group also means the compiled expression needs no parentheses,
+ * because there is no precedence to get wrong.
+ */
+export interface ConditionGroup {
+  join: 'all' | 'any'
+  conditions: readonly Condition[]
+}
+
 export const OPERATORS: ReadonlyArray<{ id: Operator; label: string; takesValue: boolean }> = [
   { id: 'is', label: 'is', takesValue: true },
   { id: 'isNot', label: 'is not', takesValue: true },
@@ -98,4 +115,24 @@ export function compileCondition(condition: Condition): string {
     case 'is':
       return `${target} == ${celLiteral(condition.value)}`
   }
+}
+
+/**
+ * The CEL for a group of comparisons.
+ *
+ * A group of one compiles to exactly what `compileCondition` produces on its own
+ * — no join, no parentheses — so a rule written before groups existed keeps
+ * its expression byte for byte. Otherwise every form would read as changed the
+ * moment somebody opened it, and a diff that always shows a difference is one
+ * nobody reads.
+ */
+export function compileGroup(group: ConditionGroup): string {
+  if (group.conditions.length === 0) {
+    // An empty group would compile to nothing, and a rule whose expression is
+    // empty passes silently. An authoring mistake has to be visible as one.
+    throw new Error('A condition needs at least one comparison.')
+  }
+
+  const operator = group.join === 'all' ? ' && ' : ' || '
+  return group.conditions.map((condition) => compileCondition(condition)).join(operator)
 }
