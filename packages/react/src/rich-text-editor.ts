@@ -1,4 +1,5 @@
 import { createContext, useContext } from 'react'
+import type { RichCommand } from '@formancy/spec'
 
 /**
  * A rich-text editing surface, supplied by the host.
@@ -23,6 +24,21 @@ export interface RichTextEditorHandle {
   value: () => string
   /** Replace the content when the form's value changes underneath the editor. */
   setValue: (value: string) => void
+  /**
+   * Run a formatting command, so the field's own toolbar keeps working.
+   *
+   * Needed because an editor library brings keyboard shortcuts and no toolbar
+   * UI. Leaving the field's toolbar out made Bold reachable by Ctrl+B and by no
+   * visible control, which is a regression against the `<textarea>` it replaced
+   * and unusable for anybody who does not know the shortcut.
+   *
+   * The commands are the grammar's whole surface — the same `RichCommand`
+   * values the textarea's toolbar uses — so one toolbar drives either surface
+   * and the two cannot offer different things.
+   */
+  run: (command: RichCommand, href?: string) => void
+  /** Whether the command is on at the caret, for the toolbar's pressed state. */
+  isActive: (command: RichCommand) => boolean
   destroy: () => void
 }
 

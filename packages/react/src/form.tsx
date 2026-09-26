@@ -693,10 +693,12 @@ function MountedRichText({
   field,
   value,
   make,
+  onReady,
 }: {
   field: ReturnType<typeof useField>
   value: string
   make: RichTextEditorFactory
+  onReady: (handle: RichTextEditorHandle | undefined) => void
 }) {
   const host = useRef<HTMLDivElement | null>(null)
   const handle = useRef<RichTextEditorHandle | undefined>(undefined)
@@ -738,13 +740,16 @@ function MountedRichText({
     })
 
     handle.current = editor
+    onReady(editor)
     return () => {
       editor.destroy()
       handle.current = undefined
+      onReady(undefined)
     }
     // Mount once. Everything that changes afterwards is pushed in below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [make])
+
 
   useEffect(() => {
     const editor = handle.current
@@ -753,6 +758,21 @@ function MountedRichText({
     // a draft being resumed, a reset. Comparing first is what stops the editor
     // resetting its own caret on every keystroke it just reported.
     if (editor.value() === value) return
+
+    // And never while the person is in the editor.
+    //
+    // Without this the editor reverts its own change. Pressing Bold updates the
+    // document, reports the new answer, and React re-renders — but for one
+    // render `value` is still the answer from BEFORE the command. That render
+    // reaches here, sees a difference, and pushes the stale answer back, which
+    // un-bolds the word and then reports THAT. Observed in the playground: the
+    // stored value went to `**hello**` and back to `hello` on its own.
+    //
+    // A value arriving from elsewhere while somebody is typing is rare; losing
+    // what they just did is not recoverable. So the sync waits for them to leave,
+    // and the comparison above catches it then.
+    if (host.current?.contains(document.activeElement) === true) return
+
     editor.setValue(value)
   }, [value])
 
@@ -770,6 +790,9 @@ function RichTextField({ path, label }: FieldComponentProps) {
   const value = typeof field.value === 'string' ? field.value : ''
   const box = useRef<HTMLTextAreaElement | null>(null)
   const make = useRichTextEditorFactory()
+  // State rather than a ref: the toolbar has to re-render once the editor
+  // exists, or its buttons are wired to nothing on the first paint.
+  const [editor, setEditor] = useState<RichTextEditorHandle | undefined>(undefined)
 
   /**
    * Run a toolbar command against the live selection and put the caret back.
@@ -797,13 +820,22 @@ function RichTextField({ path, label }: FieldComponentProps) {
   }
 
   if (make !== undefined) {
-    // No toolbar of ours: the editor brings its own commands and its own
-    // keyboard shortcuts, and two toolbars over one value is how they disagree.
-    // No preview either — the surface IS the preview, which is the whole reason
+    // The toolbar stays. An editor library brings keyboard shortcuts and no
+    // toolbar UI, so leaving ours out made Bold reachable by Ctrl+B and by no
+    // visible control — worse than the textarea it replaced. One toolbar drives
+    // either surface, over the same `RichCommand` values, so the two cannot come
+    // to offer different things.
+    //
+    // No preview, though: the surface IS the preview, which is the whole reason
     // somebody wanted this.
     return (
       <FieldShell path={path} field={field} label={label}>
-        <MountedRichText field={field} value={value} make={make} />
+        <RichTextToolbar
+          disabled={field.disabled}
+          label={label}
+          onCommand={(command, href) => editor?.run(command, href)}
+        />
+        <MountedRichText field={field} value={value} make={make} onReady={setEditor} />
       </FieldShell>
     )
   }
