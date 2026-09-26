@@ -15,6 +15,7 @@ export function createMemoryStorage(): Storage {
   const versions = new Map<string, FormVersionRecord>()
   const submissions: SubmissionRecord[] = []
   const audits: AuditEntry[] = []
+  const spentChallenges = new Map<string, string>()
   const drafts = new Map<string, DraftRecord>()
   const users = new Map<string, UserRecord>()
   const apiKeys = new Map<string, ApiKeyRecord>()
@@ -145,6 +146,25 @@ export function createMemoryStorage(): Storage {
       // Same commit again: a submission that rolled back must leave no trace
       // saying it happened.
       if (audit !== undefined) audits.push({ ...audit })
+    },
+
+    spendChallenge: async (challenge, expiresAtIso) => {
+      // One map operation, standing in for the unique constraint the real
+      // storage relies on: both callers cannot win.
+      if (spentChallenges.has(challenge)) return false
+      spentChallenges.set(challenge, expiresAtIso)
+      return true
+    },
+
+    forgetExpiredChallenges: async (beforeIso) => {
+      let dropped = 0
+      for (const [challenge, expires] of [...spentChallenges]) {
+        if (expires < beforeIso) {
+          spentChallenges.delete(challenge)
+          dropped += 1
+        }
+      }
+      return dropped
     },
 
     recordAudit: async (entry) => {

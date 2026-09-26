@@ -338,6 +338,57 @@ Found by writing the audit log: recording a publish meant asking when a publish
 is finished, and the answer was "after three calls that could stop in the
 middle".
 
+**The container was broken, and nothing noticed.** Adding `@formancy/challenge`
+as a dependency did not add it to the Dockerfile's COPY list, so the image
+built cleanly, passed every test, and exited on startup with
+`ERR_MODULE_NOT_FOUND`. The build says nothing because the package is only
+needed at runtime; the suite says nothing because it never ran the container.
+
+Two guards now. `dockerfile.test.ts` derives the server's workspace dependency
+closure from the manifests and fails if the COPY list has forgotten one — it
+runs in milliseconds and names the package. And CI builds the image and runs
+it, which catches what a static check cannot: a dependency needing a
+postinstall, a file the runtime stage drops, a Node version that stops
+resolving something.
+
+**`@formancy/challenge`: the challenge scheme, in one isomorphic package.** It
+is used in two places that cannot share server code — the server mints and
+verifies, a browser solves — and a solver written separately would be a
+second description of one protocol. The day the two disagreed, the symptom
+would be submissions the server rejects for no visible reason, which reads as
+an attack rather than as a bug.
+
+So it is one zero-dependency module on Web Crypto, running in both places, and
+`@formancy/server-core` re-exports it rather than restating it. `solveChallenge`
+takes an optional progress callback so a page can yield rather than freeze; the
+advice is still a Web Worker. Spent challenges are swept hourly, on their own
+timer rather than the file collector's, because the two are configured
+independently.
+
+**A proof-of-work challenge for anonymous submissions, and no third party in
+it.** Turnstile and reCAPTCHA round-trip every visitor through somebody else's
+service before that visitor may speak to a form — which, for a self-hosted
+deployment, turns a form on your own server into a data transfer to a third
+party on every visit, whether or not anybody submits. A Tor or VPN user gets a
+puzzle or a refusal on the strength of their address, with no override.
+
+So the default is arithmetic the browser does by itself. The server publishes
+`sha256(salt + number)` and signs it with its own key; the browser searches for
+the number. Verification recomputes the hash and checks the signature, so a
+challenge nobody minted cannot be solved into a valid one, and the expiry rides
+in the salt so a stale one costs nothing to refuse.
+
+Spending is separate and storage-backed, because a correct solution stays
+correct: `spent_challenges` has the challenge as its primary key and the insert
+is the claim, so two requests racing one solution are adjudicated by the
+database rather than by whichever check ran first. There is an integration test
+that races them.
+
+Set `FORMANCY_CHALLENGE_SECRET` to turn it on. Unset is supported: a deployment
+whose forms all need a session has no anonymous surface, and the challenge
+route says 404 rather than failing. Signed-in submitters are never asked
+([0059](./docs/decisions/0059-proof-of-work-not-a-captcha.md)).
+
 **The admin has a Webhooks tab.** Which destinations are failing, since when,
 and what died on the way to them — with a button to send a dead delivery
 again. This is the reason the breaker's counters live on the webhook row rather

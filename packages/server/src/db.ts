@@ -95,6 +95,11 @@ export const deliveries = pgTable('deliveries', {
   lastError: text('last_error'),
 })
 
+export const spentChallenges = pgTable('spent_challenges', {
+  challenge: text('challenge').primaryKey(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+})
+
 export const auditLog = pgTable('audit_log', {
   id: uuid('id').primaryKey(),
   at: timestamp('at', { withTimezone: true }).notNull(),
@@ -256,6 +261,18 @@ export async function bootstrapSchema(sql: postgres.Sql): Promise<void> {
       revoked_at timestamptz
     )`
   await sql`CREATE INDEX IF NOT EXISTS api_keys_prefix ON api_keys (prefix)`
+  await sql`
+    CREATE TABLE IF NOT EXISTS spent_challenges (
+      -- The primary key IS the mechanism. Two requests arriving with one
+      -- solution both pass every stateless check — the signature is ours
+      -- and the hash is right — and only the database can decide which of
+      -- them spends it. A read-then-write would race exactly where somebody
+      -- is looking.
+      challenge text PRIMARY KEY,
+      expires_at timestamptz NOT NULL
+    )`
+  await sql`CREATE INDEX IF NOT EXISTS spent_challenges_expiry ON spent_challenges (expires_at)`
+
   await sql`
     CREATE TABLE IF NOT EXISTS audit_log (
       id uuid PRIMARY KEY,

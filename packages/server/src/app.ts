@@ -6,6 +6,9 @@ import type { FastifyInstance, FastifyRequest, preHandlerHookHandler } from 'fas
 import {
   auditedBy,
   authenticateApiKey,
+  decodeSolution,
+  mintChallenge,
+  verifySolution,
   healthOf,
   replayDelivery,
   authenticateLocal,
@@ -36,6 +39,8 @@ import type {
 import { createSessionTokens, realRandomToken, realSecretHashing } from './auth-runtime.js'
 
 export const SCHEMA_HASH_HEADER = 'x-formancy-schema-hash'
+/** Base64 JSON, the shape an ALTCHA client already produces. */
+export const CHALLENGE_HEADER = 'x-formancy-challenge'
 export const API_KEY_HEADER = 'x-formancy-api-key'
 
 export interface AppOptions {
@@ -47,6 +52,16 @@ export interface AppOptions {
    * into a running installation.
    */
   bootstrapAdmin?: { email: string; password: string }
+  /**
+   * Turns the proof-of-work challenge on, and signs the challenges it mints.
+   *
+   * Absent means anonymous submissions are defended by the rate limits, the
+   * origin allowlist and the body cap alone. That is a supported state rather
+   * than a broken one — a deployment whose forms all require a session has
+   * no anonymous surface to protect — and the challenge route says so with a
+   * 404 rather than failing.
+   */
+  challengeSecret?: string
   /**
    * Anonymous submissions allowed per IP per minute. Off in tests by setting
    * it high; a real deployment should leave the default.
@@ -113,6 +128,7 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
 
   const submissionLimit = options.submissionRateLimit ?? { max: 30, timeWindowMs: 60_000 }
   const loginLimit = options.loginRateLimit ?? { max: 10, timeWindowMs: 60_000 }
+  const challengeSecret = options.challengeSecret
   await app.register(rateLimit, {
     global: false, // opted into per route: the management plane is authenticated
     max: submissionLimit.max,
@@ -426,6 +442,81 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
     },
   )
 
+  /**
+   * A puzzle for an anonymous visitor to solve before submitting.
+   *
+   * Public because the form is: requiring a session to obtain a challenge for
+   * an unauthenticated submission would be a circle. It is cheap to mint and
+   * stateless, so handing one out costs this server a hash.
+   */
+  app.get('/f/:path/challenge', async (request, reply) => {
+    if (challengeSecret === undefined) {
+      // Not configured is not an error: a deployment may decide its forms are
+      // not public enough to need one, and the field should say so rather
+      // than fail.
+      return reply.code(404).send({ error: 'challenge_not_enabled' })
+    }
+    const { path } = request.params as { path: string }
+    const form = await deps.storage.getFormByPath(path)
+    if (form === undefined) return reply.code(404).send({ error: 'unknown_form' })
+
+    return reply.send(
+      await mintChallenge({
+        secret: challengeSecret,
+        nowSeconds: Math.floor(new Date(deps.nowIso()).getTime() / 1000),
+      }),
+    )
+  })
+
+  /**
+   * Check a submitted solution, and spend it.
+   *
+   * Returns the refusal to send, or undefined when it passed. The spend is
+   * separate from the verification and comes last: the stateless checks say
+   * the solution is correct, and only the database can say it has not been
+   * used — a correct solution stays correct, so without this one puzzle
+   * would buy a thousand submissions.
+   */
+  async function checkChallenge(
+    request: FastifyRequest,
+  ): Promise<{ error: string; message: string } | undefined> {
+    const header = request.headers[CHALLENGE_HEADER]
+    if (typeof header !== 'string' || header === '') {
+      return {
+        error: 'challenge_required',
+        message: `This form needs a solved challenge. Ask GET /f/:path/challenge for one and return it in ${CHALLENGE_HEADER}.`,
+      }
+    }
+
+    const solution = decodeSolution(header)
+    if (solution === undefined) {
+      return { error: 'challenge_malformed', message: 'The challenge header is not base64 JSON.' }
+    }
+
+    const nowSeconds = Math.floor(new Date(deps.nowIso()).getTime() / 1000)
+    const verified = await verifySolution(challengeSecret!, solution, nowSeconds)
+    if (!verified.ok) {
+      return {
+        error: `challenge_${verified.reason}`,
+        message: 'The challenge was not solved. Ask for a new one and try again.',
+      }
+    }
+
+    // The expiry comes back from verification rather than being parsed out of
+     // the salt a second time — one place reads that format.
+    const spent = await deps.storage.spendChallenge(
+      verified.challenge,
+      new Date(verified.expiresAtSeconds * 1000).toISOString(),
+    )
+    if (!spent) {
+      return {
+        error: 'challenge_spent',
+        message: 'That challenge has already been used. Each one is good for one submission.',
+      }
+    }
+    return undefined
+  }
+
   app.get('/forms', { preHandler: requires('form.read') }, async (_request, reply) => {
     return reply.send({ forms: await listForms(deps) })
   })
@@ -688,6 +779,16 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
     // this route's job is to accept submissions, not to adjudicate logins.
     const actor = await actorOf(request)
     const origin = request.headers.origin
+
+    // Before the engine runs, and only for a visitor who is not signed in.
+    // Somebody with a session has already paid a cost the challenge is a
+    // substitute for, and making them solve a puzzle as well would be
+    // ceremony — while an anonymous submission is the surface this exists
+    // to protect.
+    if (challengeSecret !== undefined && actor === undefined) {
+      const refusal = await checkChallenge(request)
+      if (refusal !== undefined) return reply.code(400).send(refusal)
+    }
 
     const outcome = await createSubmission(deps, {
       path,

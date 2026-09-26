@@ -5,6 +5,7 @@ import { bootstrapSchema } from './db.js'
 import { createPostgresStorage } from './postgres-storage.js'
 import { startOutboxWorker } from './outbox-worker.js'
 import { startFileCollector } from './file-collector.js'
+import { startChallengeSweeper } from './challenge-sweeper.js'
 import { createLocalFileStore } from './file-store.js'
 
 // recheck ships a 23 MB JVM jar and a native binary per platform as OPTIONAL
@@ -63,6 +64,25 @@ if (!Number.isFinite(maxFileBytes) || maxFileBytes <= 0) {
   throw new Error('FORMANCY_MAX_FILE_BYTES must be a positive number of bytes.')
 }
 
+/**
+ * Turns the proof-of-work challenge on for anonymous submissions.
+ *
+ * Unset is a supported state rather than a misconfiguration: a deployment
+ * whose forms all require a session has no anonymous surface to protect, and
+ * the challenge route says so with a 404 rather than failing. A deployment
+ * with public forms should set it — the other layers are rate limits, an
+ * origin allowlist and a body cap, all of which an attacker with a few
+ * addresses walks past.
+ *
+ * Separate from FORMANCY_AUTH_SECRET so that rotating one does not invalidate
+ * the other: rotating this one costs an unsolved puzzle, rotating that one
+ * costs everybody their session.
+ */
+const challengeSecret = process.env['FORMANCY_CHALLENGE_SECRET']
+if (challengeSecret !== undefined && challengeSecret.length < 32) {
+  throw new Error('FORMANCY_CHALLENGE_SECRET must be at least 32 characters, or unset.')
+}
+
 await bootstrapSchema(sql)
 const storage = createPostgresStorage(sql)
 const app = await createApp(storage, {
@@ -71,6 +91,7 @@ const app = await createApp(storage, {
     ? { bootstrapAdmin: { email: adminEmail, password: adminPassword } }
     : {}),
   ...(fileStore === undefined ? {} : { fileStore }),
+  ...(challengeSecret === undefined ? {} : { challengeSecret }),
   maxFileBytes,
 })
 
@@ -89,10 +110,15 @@ const outbox = startOutboxWorker(storage, {
 const collector =
   fileStore === undefined ? undefined : startFileCollector(storage, fileStore)
 
+// Independent of the collector: a deployment can have public forms and no
+// uploads, and that deployment still accumulates spent challenges.
+const sweeper = challengeSecret === undefined ? undefined : startChallengeSweeper(storage)
+
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.once(signal, () => {
     outbox.stop()
     collector?.stop()
+    sweeper?.stop()
     void app.close().then(() => process.exit(0))
   })
 }

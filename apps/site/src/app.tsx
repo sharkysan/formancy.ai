@@ -683,7 +683,7 @@ function Readings(): ReactElement {
     { value: '0', lines: ['uses of eval, so it', 'runs under a strict CSP'] },
     { value: '15', lines: ['field types the', 'spec defines'] },
     { value: '7', lines: ['tools for your', 'coding agent'] },
-    { value: '58', lines: ['decision records, each', 'naming what it cost'] },
+    { value: String(__DECISION_RECORDS__), lines: ['decision records, each', 'naming what it cost'] },
   ]
 
   return (

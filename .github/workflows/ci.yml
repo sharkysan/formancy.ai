@@ -46,3 +46,50 @@ jobs:
       # broken exports maps are the top cause of "doesn't work in my app" for
       # multi-framework libraries.
       - run: pnpm check:pkg
+
+  # The image is the product for a self-hoster, and nothing else here touches
+  # it. The static check in `dockerfile.test.ts` catches a workspace package
+  # the COPY list forgot; this catches everything it cannot — a dependency
+  # that needs a postinstall, a file the runtime stage drops, a Node version
+  # that stops resolving something. It has already been needed once: the image
+  # built cleanly, passed every test, and exited on startup with
+  # ERR_MODULE_NOT_FOUND.
+  container:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the server image
+        run: docker build -f packages/server/Dockerfile -t formancy/server:ci .
+
+      - name: It has to actually start
+        run: |
+          # Pointed at a database that is not there. What is being proved is
+          # that the process gets as far as TRYING to connect: a module it
+          # cannot find, or a missing file, fails earlier and differently.
+          output=$(docker run --rm             -e DATABASE_URL=postgres://u:p@127.0.0.1:1/db             -e FORMANCY_AUTH_SECRET=0123456789012345678901234567890123             formancy/server:ci 2>&1 || true)
+
+          echo "$output"
+
+          if echo "$output" | grep -q 'ERR_MODULE_NOT_FOUND\|Cannot find module\|MODULE_NOT_FOUND'; then
+            echo "::error::The image is missing a module at runtime. The build said nothing."
+            exit 1
+          fi
+
+          if ! echo "$output" | grep -q 'ECONNREFUSED'; then
+            echo "::error::The server did not reach the database connection. It failed earlier than expected."
+            exit 1
+          fi
+
+      - name: And say so loudly when there is no signing key
+        run: |
+          # It does not refuse — it generates an ephemeral key and warns, so
+          # `docker compose up` works for somebody trying the product. The
+          # warning is the contract: sessions die on restart, and an operator
+          # who never sees it will not know why people keep getting logged out.
+          if docker run --rm -e DATABASE_URL=postgres://u:p@127.0.0.1:1/db formancy/server:ci 2>&1               | grep -q 'sessions will not survive a restart'; then
+            exit 0
+          fi
+          echo "::error::The image no longer warns about a missing FORMANCY_AUTH_SECRET."
+          exit 1
