@@ -7,7 +7,8 @@ import { validateSchema } from '@formancy/spec/validate'
 import type { SchemaError } from '@formancy/spec/validate'
 import formancySchemaJson from '@formancy/spec/schema.json'
 import type { FormSchema } from '@formancy/spec'
-import { ErrorSummary, FormancyForm, FormancyProvider } from '@formancy/react'
+import { ErrorSummary, FormancyForm, FormancyProvider, RichTextEditorProvider } from '@formancy/react'
+import { createRichTextEditor } from '@formancy/tiptap'
 import { createBuilderSession } from '@formancy/builder-core'
 import type { BuilderSession } from '@formancy/builder-core'
 import {
@@ -308,10 +309,17 @@ export function App() {
                 enabled={session !== null && pane === 'build' && builderTab === 'arrangement'}
               >
                 <div className="sheet" data-formancy-theme={theme}>
-                  <FormancyProvider engine={built.engine} key={source}>
-                    <ErrorSummary />
-                    <FormancyForm layout="web" />
-                  </FormancyProvider>
+                  {/* The playground provides the editor, so the richtext
+                      field here is the one a visitor would actually use rather
+                      than the textarea fallback. `createRichTextEditor` matches
+                      the factory interface exactly, which is the point of it
+                      being an interface. */}
+                  <RichTextEditorProvider value={createRichTextEditor}>
+                    <FormancyProvider engine={built.engine} key={source}>
+                      <ErrorSummary />
+                      <FormancyForm layout="web" />
+                    </FormancyProvider>
+                  </RichTextEditorProvider>
                 </div>
               </FormancyArrangeSurface>
             ) : null}

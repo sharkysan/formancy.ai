@@ -1,7 +1,10 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   computed,
+  effect,
+  inject,
   input,
   signal,
   viewChild,
@@ -15,6 +18,8 @@ import type { FieldBinding } from './field.js'
 import { injectEngine } from './provide.js'
 import { injectFieldContext } from './registry.js'
 import { FormancyRichText } from './rich-text.js'
+import { injectRichTextEditorFactory } from './rich-text-editor.js'
+import type { RichTextEditorHandle } from './rich-text-editor.js'
 import { injectUploader } from './uploads.js'
 import type { StoredFile } from './uploads.js'
 
@@ -444,11 +449,19 @@ export class FormancySelectBoxesField extends FieldComponentBase {
 /**
  * Formatted text, written as the restricted markup the spec defines.
  *
- * A toolbar over a textarea, not a contenteditable surface. Deliberate, and
- * the same decision the React renderer makes — the transformations live in
- * `@formancy/spec` so a Bold button cannot mean one thing here and something
- * else there. A contenteditable is a large accessibility surface of its own,
- * and it could produce markup the grammar has no way to store.
+ * **Two surfaces over one value.** By default a toolbar over a textarea, whose
+ * transformations live in `@formancy/spec` so a Bold button cannot mean one
+ * thing here and something else in React. When the host provides an editor
+ * factory, a contenteditable surface instead — which was refused in
+ * [0052](../../../docs/decisions/0052-richtext-is-not-html.md) and admitted in
+ * [0061](../../../docs/decisions/0061-tiptap-over-the-closed-grammar.md) once
+ * the reason was read properly: 0052's argument was against a string of HTML
+ * crossing the boundary, not against contenteditable, and a ProseMirror schema
+ * built from the grammar cannot produce markup the grammar has no way to store.
+ *
+ * The factory is the host's because ProseMirror is larger than this whole
+ * package and most forms have no rich-text field. Its absence is the default and
+ * costs only the WYSIWYG surface.
  */
 @Component({
   selector: 'formancy-rich-text-field',
@@ -456,6 +469,12 @@ export class FormancySelectBoxesField extends FieldComponentBase {
   imports: [FormancyFieldShell, FormancyRichText],
   template: `
     <formancy-field-shell [field]="field" [label]="context.label" [path]="context.path">
+      @if (make !== null) {
+        <!-- No toolbar of ours and no preview: the editor brings its own
+             commands, and the surface IS the preview, which is the whole reason
+             somebody wanted it. -->
+        <div #editorHost data-formancy-part="richtext-editor" (blur)="field.touch()"></div>
+      } @else {
       <!-- The ARIA toolbar pattern: ONE tab stop for the row, arrows within
            it. Five buttons that each took a tab press would put five stops
            between a keyboard user and the box they came to type in. -->
@@ -497,6 +516,7 @@ export class FormancySelectBoxesField extends FieldComponentBase {
       <div data-formancy-part="richtext-preview">
         <formancy-rich-text [source]="text()" />
       </div>
+      }
     </formancy-field-shell>
   `,
 })
@@ -522,6 +542,73 @@ export class FormancyRichTextField extends FieldComponentBase {
 
   private readonly box = viewChild<ElementRef<HTMLTextAreaElement>>('box')
   private readonly toolbarButtons = viewChildren<ElementRef<HTMLButtonElement>>('toolbarButton')
+
+  protected readonly make = injectRichTextEditorFactory()
+  private readonly editorHost = viewChild<ElementRef<HTMLDivElement>>('editorHost')
+  private handle: RichTextEditorHandle | undefined
+
+  /**
+   * Mount once, then feed.
+   *
+   * A contenteditable rebuilt when the value changes loses the caret, the
+   * selection and the undo stack, which is the difference between an editor and
+   * a box that fights you. So the effect mounts on its first run and afterwards
+   * only pushes a value that came from somewhere other than this editor —
+   * comparing first, because pushing back the change it just reported would move
+   * the caret to the end after every keystroke.
+   */
+  private readonly mounted = effect(() => {
+    const next = this.text()
+    const element = this.editorHost()?.nativeElement
+    const make = this.make
+    if (element === undefined || make === null) return
+
+    if (this.handle === undefined) {
+      this.handle = make({
+        element,
+        value: next,
+        onChange: (value) => {
+          this.field.setValue(value)
+        },
+        editable: this.field.snapshot().disabled !== true,
+        attributes: this.editorAttributes(),
+      })
+      return
+    }
+
+    if (this.handle.value() === next) return
+    this.handle.setValue(next)
+  })
+
+  private readonly cleanup = inject(DestroyRef).onDestroy(() => {
+    // ProseMirror holds DOM listeners and a plugin state. One left per mounted
+    // form is a leak that only shows up in a long-lived admin app.
+    this.handle?.destroy()
+    this.handle = undefined
+  })
+
+  /**
+   * The engine's wiring, passed to the surface rather than invented on it.
+   *
+   * Byte-identical to what the React binding passes, which is the point: the ids
+   * and the describedby composition are computed once in `@formancy/core`, and a
+   * renderer that assembled its own would be the implementation that drifts.
+   * `aria-labelledby` rather than a `<label for>` because the surface is a div,
+   * and `for` does not reach one.
+   */
+  private editorAttributes(): Record<string, string> {
+    const control = this.control()
+    const props = this.field.snapshot().props
+    const attributes: Record<string, string> = {
+      id: control.id,
+      'aria-labelledby': props.label.id,
+    }
+    const describedby = control['aria-describedby']
+    if (describedby !== undefined) attributes['aria-describedby'] = describedby
+    if (control['aria-invalid'] !== undefined) attributes['aria-invalid'] = 'true'
+    if (control['aria-required'] !== undefined) attributes['aria-required'] = 'true'
+    return attributes
+  }
 
   /** Named with the field: a form may have several of these, and "toolbar"
    *  five times says nothing about which question is being answered. */

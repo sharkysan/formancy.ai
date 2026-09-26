@@ -34,5 +34,15 @@ export {
 export type { SubmitOutcome } from './form.js'
 export { FormancyErrorSummary } from './error-summary.js'
 export { FormancyRichInline, FormancyRichText } from './rich-text.js'
+export {
+  FORMANCY_RICH_TEXT_EDITOR,
+  injectRichTextEditorFactory,
+  provideFormancyRichTextEditor,
+} from './rich-text-editor.js'
+export type {
+  RichTextEditorFactory,
+  RichTextEditorHandle,
+  RichTextEditorMount,
+} from './rich-text-editor.js'
 export { FORMANCY_UPLOADER, injectUploader, provideFormancyUploader } from './uploads.js'
 export type { StoredFile, Uploader } from './uploads.js'

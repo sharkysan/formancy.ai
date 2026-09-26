@@ -17,6 +17,14 @@ export { isSafeHref, parseRichText, richTextToPlain } from './richtext.js'
 export type { RichBlock, RichInline } from './richtext.js'
 export { applyRichCommand } from './richtext-edit.js'
 export type { EditResult, RichCommand, TextSelection } from './richtext-edit.js'
+export {
+  EDITOR_MARKS,
+  EDITOR_NODES,
+  fromEditorDoc,
+  serialiseRichText,
+  toEditorDoc,
+} from './richtext-doc.js'
+export type { EditorMark, EditorNode, EditorText } from './richtext-doc.js'
 export type {
   Change,
   ContainerFieldType,

@@ -17,6 +17,7 @@
     "@formancy/react": "workspace:*",
     "@formancy/spec": "workspace:*",
     "@formancy/themes": "workspace:*",
+    "@formancy/tiptap": "workspace:*",
     "@monaco-editor/react": "^4.7.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"

@@ -10,6 +10,68 @@ later.
 
 ## Unreleased
 
+**A real rich-text editor, and the stored answer does not change.** A `richtext`
+answer was edited in a textarea, with a toolbar that inserted the grammar's own
+markup and a live preview underneath. That taught the grammar, and it also meant
+somebody filling in a public form saw `**bold**` and had to work out what the
+asterisks were for — which, for the field type whose whole purpose is that the
+writer sees the result, is close to not having the feature.
+
+`@formancy/tiptap` is a TipTap editor **configured from the grammar**, so it
+cannot produce anything the grammar cannot store. ProseMirror's document is JSON
+rather than markup and its schema is closed by construction: the editor is built
+from exactly six nodes and three marks, and there is no button, shortcut or
+console call that puts a heading into it because the document model has no
+heading. `StarterKit` was refused for that reason — one line, and six
+constructs with nowhere to go. Nothing calls `getHTML`, no stored answer is ever
+markup, and the rich-text field stays out of the stored-XSS class entirely
+([0061](./docs/decisions/0061-tiptap-over-the-closed-grammar.md) revisits
+[0052](./docs/decisions/0052-richtext-is-not-html.md), whose argument turned out
+to be about HTML rather than about contenteditable).
+
+**The host supplies it, and the textarea stays.** ProseMirror is larger than the
+React renderer and most forms have no rich-text field, so the renderers take an
+editor factory — the same shape the `file` field already uses for its uploader
+— and fall back to the textarea and toolbar when there is none. That fallback
+is not a degraded mode: the answer is still editable, still valid and still the
+same grammar, and it remains the surface the conformance drivers drive, because a
+`<textarea>` is a control every assistive technology already knows. A deployment
+that wants neither pays for neither. Both renderers implement the identical
+interface and both are tested against it, because what the *host* passes in is
+the one thing a conformance driver structurally cannot see.
+
+Two conversions in `@formancy/spec` do the work — `toEditorDoc` and
+`fromEditorDoc`, pure functions between two JSON trees — plus
+`serialiseRichText`, the counterpart `parseRichText` never needed until now.
+Three things worth knowing about them:
+
+- **Mark nesting is canonicalised, and this was the near-miss.** Marks are flat
+  on a text node in an editor and nested in the grammar. Rebuilding them
+  run-by-run is the obvious implementation, and it turns `**a *b* c**` into
+  `**a***b*** c**` — same meaning, different string. An answer opened and saved
+  without being touched would come back **rewritten**, which shows up as a
+  spurious revision on every form somebody merely looked at. The longest adjacent
+  stretch sharing a mark is grouped instead, which is what makes the round trip
+  an equality rather than an equivalence.
+- **Shapes the grammar cannot hold degrade rather than fail.** A list item with
+  two paragraphs is joined with a space, a nested list is flattened into its
+  parent, an unknown node becomes a paragraph and an unknown mark is dropped with
+  its text kept. Every function is total: an editor that rejects a paste is worse
+  than one that flattens it, because the person pasting cannot tell which part
+  offended it.
+- **The editor's output is untrusted.** It runs in the browser, so a document
+  really does arrive carrying a `javascript:` href if one is put there —
+  measured, not assumed. Two independent checks refuse it on the way out and the
+  server re-parses the stored string regardless.
+
+The engine keeps owning the accessibility wiring: the ids and the
+`aria-describedby` composition are passed to the editing surface rather than
+invented on it, so the two renderers cannot drift in what they announce, and the
+surface carries `aria-multiline` because a contenteditable without it is
+announced as a single-line field. No manual screen-reader audit of the
+contenteditable has been done, and the SOUP declaration says so — which is part
+of why the textarea remains the default.
+
 **formancy.ai tells search engines and link previews what it is.** The site
 had a title and a description and nothing else: a shared link showed a bare
 text card, and a crawler had no sitemap to start from. It now has:

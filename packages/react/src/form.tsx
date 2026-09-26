@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ComponentType, ReactNode } from 'react'
 import { parsePath } from '@formancy/core'
 import { applyRichCommand } from '@formancy/spec'
@@ -11,6 +11,10 @@ import { useRepeater } from './use-repeater.js'
 import { useSubmit } from './use-submit.js'
 import { useWizard } from './use-wizard.js'
 import { RichText } from './rich-text.js'
+import {
+  useRichTextEditorFactory,
+} from './rich-text-editor.js'
+import type { RichTextEditorFactory, RichTextEditorHandle } from './rich-text-editor.js'
 import { useUploader } from './uploads.js'
 import type { StoredFile } from './uploads.js'
 
@@ -674,10 +678,94 @@ function RichTextToolbar({
   )
 }
 
+/**
+ * The host's editor, mounted over the same value the textarea would have edited.
+ *
+ * Mounted once and fed afterwards, rather than re-created when the value
+ * changes: a contenteditable rebuilt on every keystroke loses the caret, the
+ * selection and the undo stack, which is the difference between an editor and a
+ * box that fights you.
+ *
+ * What crosses the boundary is the stored grammar in both directions, never
+ * markup ([0061](../../../docs/decisions/0061-tiptap-over-the-closed-grammar.md)).
+ */
+function MountedRichText({
+  field,
+  value,
+  make,
+}: {
+  field: ReturnType<typeof useField>
+  value: string
+  make: RichTextEditorFactory
+}) {
+  const host = useRef<HTMLDivElement | null>(null)
+  const handle = useRef<RichTextEditorHandle | undefined>(undefined)
+  // The value at mount time, read through a ref so the mount effect does not
+  // depend on it and therefore does not re-run when it changes.
+  const opening = useRef(value)
+  const commit = useRef(field.setValue)
+  commit.current = field.setValue
+
+  useEffect(() => {
+    const element = host.current
+    if (element === null) return undefined
+
+    const editor = make({
+      element,
+      value: opening.current,
+      onChange: (next) => commit.current(next),
+      editable: field.disabled !== true,
+      // The engine owns the ids and the describedby composition, so they are
+      // passed in rather than invented here. `aria-labelledby` rather than a
+      // `<label for>`: the surface is a div, and `for` does not reach one.
+      attributes: {
+        ...(field.controlProps['aria-describedby'] === undefined
+          ? {}
+          : { 'aria-describedby': field.controlProps['aria-describedby'] }),
+        ...(field.controlProps['aria-invalid'] === undefined
+          ? {}
+          : { 'aria-invalid': 'true' }),
+        ...(field.controlProps['aria-required'] === undefined
+          ? {}
+          : { 'aria-required': 'true' }),
+        'aria-labelledby': field.labelProps.id,
+        id: field.controlProps.id,
+      },
+    })
+
+    handle.current = editor
+    return () => {
+      editor.destroy()
+      handle.current = undefined
+    }
+    // Mount once. Everything that changes afterwards is pushed in below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [make])
+
+  useEffect(() => {
+    const editor = handle.current
+    if (editor === undefined) return
+    // Only when the form changed the value from somewhere else — a calculation,
+    // a draft being resumed, a reset. Comparing first is what stops the editor
+    // resetting its own caret on every keystroke it just reported.
+    if (editor.value() === value) return
+    editor.setValue(value)
+  }, [value])
+
+  return (
+    <div
+      data-formancy-part="richtext-editor"
+      ref={host}
+      onBlur={() => field.touch()}
+    />
+  )
+}
+
 function RichTextField({ path, label }: FieldComponentProps) {
   const field = useField(path)
   const value = typeof field.value === 'string' ? field.value : ''
   const box = useRef<HTMLTextAreaElement | null>(null)
+  const make = useRichTextEditorFactory()
 
   /**
    * Run a toolbar command against the live selection and put the caret back.
@@ -702,6 +790,18 @@ function RichTextField({ path, label }: FieldComponentProps) {
       element.focus()
       element.setSelectionRange(next.start, next.end)
     })
+  }
+
+  if (make !== undefined) {
+    // No toolbar of ours: the editor brings its own commands and its own
+    // keyboard shortcuts, and two toolbars over one value is how they disagree.
+    // No preview either — the surface IS the preview, which is the whole reason
+    // somebody wanted this.
+    return (
+      <FieldShell path={path} field={field} label={label}>
+        <MountedRichText field={field} value={value} make={make} />
+      </FieldShell>
+    )
   }
 
   return (
