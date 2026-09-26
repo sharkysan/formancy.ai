@@ -896,6 +896,15 @@ function FileField({ path, label }: FieldComponentProps) {
   const files = Array.isArray(field.value) ? (field.value as StoredFile[]) : []
   const [busy, setBusy] = useState(false)
   const [failure, setFailure] = useState<string | undefined>(undefined)
+  const [over, setOver] = useState(false)
+  /**
+   * Attachments taken out of the answer but not yet forgotten.
+   *
+   * Held with the position they came from, so undoing puts a file BACK where it
+   * was rather than on the end — the order matters to somebody who numbered
+   * their attachments in a covering note.
+   */
+  const [removed, setRemoved] = useState<ReadonlyArray<{ at: number; file: StoredFile }>>([])
 
   const accept = field.def.accept
   const multiple = field.def.maxItems === undefined || field.def.maxItems > 1
@@ -949,20 +958,48 @@ function FileField({ path, label }: FieldComponentProps) {
           This form cannot accept files here, because no upload destination has been configured.
         </p>
       ) : (
-        <input
-          {...field.controlProps}
-          type="file"
-          multiple={multiple}
-          {...(accept === undefined ? {} : { accept: accept.join(',') })}
-          disabled={field.disabled || busy}
-          onChange={(event) => {
-            void onPick(event.target.files)
-            event.target.value = ''
+        /*
+         * The picker inside a drop target, not instead of one.
+         *
+         * Dropping is a pointer gesture with no keyboard equivalent, so it can
+         * only ever be a SECOND route (WCAG 2.1.1). The input stays exactly as
+         * it was and keeps the field's label and ARIA wiring; the region around
+         * it accepts a drop and hands the files to the same function. Two routes,
+         * one implementation.
+         */
+        <div
+          data-formancy-part="file-dropzone"
+          {...(over ? { 'data-state': 'over' } : {})}
+          onDragOver={(event) => {
+            // Without preventDefault the browser navigates to the file instead
+            // of letting the page have it, which looks like the form vanishing.
+            event.preventDefault()
+            if (field.disabled || busy) return
+            setOver(true)
           }}
-        />
+          onDragLeave={() => setOver(false)}
+          onDrop={(event) => {
+            event.preventDefault()
+            setOver(false)
+            if (field.disabled || busy) return
+            void onPick(event.dataTransfer.files)
+          }}
+        >
+          <input
+            {...field.controlProps}
+            type="file"
+            multiple={multiple}
+            {...(accept === undefined ? {} : { accept: accept.join(',') })}
+            disabled={field.disabled || busy}
+            onChange={(event) => {
+              void onPick(event.target.files)
+              event.target.value = ''
+            }}
+          />
+        </div>
       )}
 
-      {files.length === 0 ? null : (
+      {files.length === 0 && removed.length === 0 ? null : (
         <ul data-formancy-part="file-list">
           {files.map((file) => (
             <li key={file.id} data-formancy-part="file-item">
@@ -970,12 +1007,48 @@ function FileField({ path, label }: FieldComponentProps) {
               <button
                 type="button"
                 disabled={field.disabled}
-                onClick={() => field.setValue(files.filter((other) => other.id !== file.id))}
+                onClick={() => {
+                  // Out of the answer immediately, so a submit in between is
+                  // correct, and remembered so it can come back.
+                  setRemoved((before) => [
+                    ...before,
+                    { at: files.findIndex((other) => other.id === file.id), file },
+                  ])
+                  field.setValue(files.filter((other) => other.id !== file.id))
+                }}
               >
                 {/* Named with the file, so a screen reader user hears which
                     attachment a button removes rather than "remove" six
                     times over. */}
                 Remove {file.name}
+              </button>
+            </li>
+          ))}
+
+          {/*
+           * A removed attachment stays visible with a way back.
+           *
+           * The bytes are still in storage until the unclaimed collector runs, so
+           * the removal is recoverable for free — and a misclick on the wrong row
+           * of six is the ordinary way somebody loses the evidence they came to
+           * attach. A row that simply disappears offers no way to notice.
+           */}
+          {removed.map(({ at, file }) => (
+            <li key={file.id} data-formancy-part="file-item" data-state="removed">
+              <span>{file.name}</span>
+              <button
+                type="button"
+                disabled={field.disabled}
+                onClick={() => {
+                  setRemoved((before) => before.filter((other) => other.file.id !== file.id))
+                  // Back where it was, not on the end: the order matters to
+                  // somebody who numbered their attachments in a covering note.
+                  const next = [...files]
+                  next.splice(Math.min(at, next.length), 0, file)
+                  field.setValue(next)
+                }}
+              >
+                Undo removing {file.name}
               </button>
             </li>
           ))}

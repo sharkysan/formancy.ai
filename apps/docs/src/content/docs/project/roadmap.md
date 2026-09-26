@@ -64,10 +64,10 @@ history, submissions and export).
 - **Virus scanning** of uploaded files, and **resumable uploads**. Files
   themselves work; a stored file is trusted the moment its bytes land, and the
   deployment's byte ceiling is also the largest single file.
-- **A file field worth using.** It is an `<input type="file">` and a list. No
-  drop zone, no per-file progress, no thumbnail, no reordering, and removing one
-  is a button with no undo. The *data* model is right and the storage is
-  pluggable; the control is the thinnest thing that works.
+- **Per-file upload progress.** The field reports that an upload is happening,
+  not how far along each file is. Reporting it needs the `Uploader` interface to
+  emit progress, which is a wider change than the control — so it is the one
+  part of the file field still outstanding, along with thumbnails and reordering.
 - **An S3 file store.** Local disk is the only one, and it does not survive
   more than one replica.
 - **Form actions** beyond webhooks.
@@ -122,18 +122,16 @@ left out as v2-era omissions.
 Roughly in order, and subject to change. The ordering is argued below rather
 than asserted.
 
-1. **A file field worth using** — a drop zone, per-file progress and a removal
-   somebody can undo. The storage half is done; the control is not.
-2. **A pointer gesture that creates a row**, closing the last gap between the
+1. **A pointer gesture that creates a row**, closing the last gap between the
    keyboard route and the drag route in the builder.
-3. **Saving a partly-filled form and coming back to it.** The expensive half is
+2. **Saving a partly-filled form and coming back to it.** The expensive half is
    built: drafts migrate lazily against `diffSchemas` severity, and answers whose
    field disappeared move to `data.__orphaned` rather than being deleted. What is
    missing is the public endpoint and a resume token.
-4. **`signature` and `datagrid`**, in that order — signature is smaller and more
+3. **`signature` and `datagrid`**, in that order — signature is smaller and more
    asked for; datagrid is mostly a control over a data model that already exists.
-5. **Translated form content**, while the reservation is still fresh.
-6. **A published container image**, signed, alongside the npm releases.
+4. **Translated form content**, while the reservation is still fresh.
+5. **A published container image**, signed, alongside the npm releases.
 
 ## Measured against the competition
 

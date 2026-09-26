@@ -386,6 +386,76 @@ describe('file', () => {
     expect(engine.value()).toEqual({ evidence: [stored('first.pdf')] })
   })
 
+  test('a file dropped on the field is uploaded, the same as one picked', async () => {
+    const upload = vi.fn<Uploader>(async (file) => stored(file.name))
+    const engine = mount(schema, upload)
+
+    const zone = document.querySelector('[data-formancy-part="file-dropzone"]')!
+    const file = new File(['x'], 'dropped.pdf', { type: 'application/pdf' })
+    fireEvent.drop(zone, { dataTransfer: { files: [file], types: ['Files'] } })
+
+    // A second route to the same upload, not a second implementation of it.
+    await waitFor(() => expect(engine.value()).toEqual({ evidence: [stored('dropped.pdf')] }))
+  })
+
+  test('the drop zone is an addition, not a replacement for the picker', () => {
+    mount(schema, async (file) => stored(file.name))
+
+    // A drop target is a pointer gesture with no keyboard equivalent, so the
+    // input has to stay: dropping cannot be the only way to attach a file.
+    expect(screen.getByLabelText('Evidence')).toBeTruthy()
+    expect(document.querySelector('[data-formancy-part="file-dropzone"]')).toBeTruthy()
+  })
+
+  test('dragging over says so, and says it again when the file leaves', () => {
+    mount(schema, async (file) => stored(file.name))
+    const zone = document.querySelector('[data-formancy-part="file-dropzone"]')!
+
+    fireEvent.dragOver(zone, { dataTransfer: { types: ['Files'] } })
+    expect(zone.getAttribute('data-state')).toBe('over')
+
+    // Cleared on leave, or the field claims a file is hovering over it forever.
+    fireEvent.dragLeave(zone)
+    expect(zone.getAttribute('data-state')).toBe(null)
+  })
+
+  test('removing an attachment can be undone', async () => {
+    const user = userEvent.setup()
+    const engine = mount(schema, async (file) => stored(file.name))
+    await pick(user, 'report.pdf')
+    await screen.findByRole('button', { name: 'Remove report.pdf' })
+
+    await user.click(screen.getByRole('button', { name: 'Remove report.pdf' }))
+
+    // Gone from the answer straight away, so a submit in between is correct.
+    await waitFor(() => expect(engine.value()).toEqual({ evidence: [] }))
+
+    // But recoverable. The bytes are still in storage until the unclaimed
+    // collector runs, and a misclick on the wrong row of six is the ordinary
+    // way somebody loses the evidence they came to attach.
+    await user.click(screen.getByRole('button', { name: 'Undo removing report.pdf' }))
+
+    await waitFor(() => expect(engine.value()).toEqual({ evidence: [stored('report.pdf')] }))
+  })
+
+  test('an undone removal puts the file back where it was', async () => {
+    const user = userEvent.setup()
+    const engine = mount(schema, async (file) => stored(file.name))
+    await pick(user, 'first.pdf')
+    await pick(user, 'second.pdf')
+    await screen.findByRole('button', { name: 'Remove second.pdf' })
+
+    await user.click(screen.getByRole('button', { name: 'Remove first.pdf' }))
+    await user.click(screen.getByRole('button', { name: 'Undo removing first.pdf' }))
+
+    // Order matters for a list somebody numbered in their covering note.
+    await waitFor(() =>
+      expect(engine.value()).toEqual({
+        evidence: [stored('first.pdf'), stored('second.pdf')],
+      }),
+    )
+  })
+
   test('an upload that fails is said out loud', async () => {
     const user = userEvent.setup()
     mount(schema, async () => {

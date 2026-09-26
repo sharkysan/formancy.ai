@@ -861,3 +861,34 @@
 [data-formancy-theme='pop'] [data-formancy-part='field'] [data-formancy-part='richtext-surface'][contenteditable='false'] {
   cursor: not-allowed;
 }
+
+/* The drop target around the file picker. A dashed edge says "put it here"
+   without competing with the solid boxes the real controls have, and it
+   only firms up while something is actually over it. */
+[data-formancy-theme='pop'] [data-formancy-part='field'] [data-formancy-part='file-dropzone'] {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px dashed currentColor;
+  border-radius: var(--fm-radius, 0);
+  color: inherit;
+  opacity: 0.999; /* own a paint layer, so the transition does not flash */
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='field'] [data-formancy-part='file-dropzone'][data-state='over'] {
+  border-style: solid;
+  /* Not colour alone: the border also changes STYLE, so the state is
+     perceivable without seeing the hue (WCAG 1.4.1). */
+  background: color-mix(in srgb, currentColor 6%, transparent);
+}
+
+/* A removed attachment still has a row, with the way back in it. Struck
+   through as well as faded, so "removed" is not carried by opacity alone. */
+[data-formancy-theme='pop'] [data-formancy-part='field'] [data-formancy-part='file-item'][data-state='removed'] {
+  opacity: 0.65;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='field'] [data-formancy-part='file-item'][data-state='removed'] > span:first-child {
+  text-decoration: line-through;
+}
