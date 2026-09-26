@@ -730,6 +730,10 @@ function MountedRichText({
           : { 'aria-required': 'true' }),
         'aria-labelledby': field.labelProps.id,
         id: field.controlProps.id,
+        // The editing surface is a CHILD of the mount point, so it is the
+        // element a theme has to style. Named here rather than left as the
+        // editor library's own class, so a theme is not coupled to TipTap.
+        'data-formancy-part': 'richtext-surface',
       },
     })
 

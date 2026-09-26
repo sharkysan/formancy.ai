@@ -361,6 +361,9 @@ importers:
       '@formancy/themes':
         specifier: workspace:*
         version: link:../../packages/themes
+      '@formancy/tiptap':
+        specifier: workspace:*
+        version: link:../../packages/tiptap
       react:
         specifier: ^19.3.0
         version: 19.3.0

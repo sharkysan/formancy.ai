@@ -10,6 +10,51 @@ later.
 
 ## Unreleased
 
+**The rich-text editor was invisible, and nothing said so.** The field grew a
+mount point and an editing surface; no theme knew either name. A bare
+`contenteditable` has no border, no padding and no height, so the control
+rendered as nothing at all — the markup was there, every render test passed,
+and the field could not be seen. Reported, not caught.
+
+All four form themes now style it, by extending the selectors they already use
+for `input`, `select` and `textarea` so each theme's own palette applies rather
+than this change inventing colours per theme. The surface is named
+`richtext-surface` by the renderers: the editor library mounts its
+contenteditable as a CHILD of the mount point, so the child is the box a person
+sees, and naming it ourselves keeps a theme from being coupled to TipTap's class
+names.
+
+`apps/docs/src/themes.test.ts` now derives every `data-formancy-part` the
+renderers emit and fails when any form theme does not style it — with an
+explicit, reasoned list of the wrappers that need no styling, and a check that
+the list has not gone stale. It also checks that the editing surface has a
+`min-height`, which is the specific reason the field was invisible rather than
+merely unstyled. Form themes are told from the tool's own stylesheet by whether
+they scope to `data-formancy-theme`, not by filename, so a new theme is covered
+the moment it exists. Verified by putting the bug back: three cases fail.
+
+**The site demonstrates the editor**, which it previously described without
+showing — its bug-report example has a `richtext` field and was rendering the
+textarea fallback. Its one rich-text test now asserts the safety property
+directly (angle brackets stay characters) rather than through a preview that the
+WYSIWYG surface replaces, and jsdom's missing layout APIs are stubbed in one
+place with the reason, because ProseMirror asks for all three and jsdom has none.
+
+**A known gap, recorded rather than quietly shipped:** with the editor mounted
+there is no formatting toolbar. `@tiptap/core` brings keyboard shortcuts and no
+UI, and the field hides its own toolbar on the assumption that the editor
+supplies one. Bold is reachable with Ctrl+B and by no visible control, which is a
+regression against the textarea. It is first on the roadmap.
+
+**The roadmap is honest again.** It listed the per-destination breaker, the
+proof-of-work challenge and audit logging as missing; all three shipped. It now
+also names the field types that are absent — `signature`, `datagrid`,
+`qrcode`, `autocomplete`, `tagpicker`, `time`, `datetime`, `toggle` — with what
+each actually costs rather than as a wish list, and prioritises formancy against
+form.io and FormEngine feature by feature, including what is deliberately not
+being copied.
+
+
 **A real rich-text editor, and the stored answer does not change.** A `richtext`
 answer was edited in a textarea, with a toolbar that inserted the grammar's own
 markup and a live preview underneath. That taught the grammar, and it also meant

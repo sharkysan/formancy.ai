@@ -16,6 +16,7 @@
     "@formancy/react": "workspace:*",
     "@formancy/spec": "workspace:*",
     "@formancy/themes": "workspace:*",
+    "@formancy/tiptap": "workspace:*",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },

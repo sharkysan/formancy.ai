@@ -409,13 +409,18 @@ describe('the types spec 2 added', () => {
     render(<App />)
     await openDetails(user)
 
-    await user.type(screen.getByLabelText('Steps to reproduce'), '**urgent**')
+    const field = screen.getByRole('textbox', { name: /Steps to reproduce/ })
+    await user.click(field)
+    await user.keyboard('<script>alert(1)</script>')
 
-    // The preview is the proof: what was typed came back as a `strong`
-    // element, which means it went through the parser rather than through a
-    // sanitiser somebody has to keep correct forever.
-    const preview = document.querySelector('[data-formancy-part="richtext"]')
-    await waitFor(() => expect(preview?.querySelector('strong')?.textContent).toBe('urgent'))
+    // The property, asserted directly rather than through whichever surface is
+    // mounted: the site now supplies the WYSIWYG editor, so there is no preview
+    // to read the answer back out of. What matters either way is that angle
+    // brackets stay characters -- no element was created from what was typed,
+    // because nothing on this path ever reaches `innerHTML`.
+    await waitFor(() => expect(field.textContent).toContain('alert(1)'))
+    expect(field.querySelector('script')).toBeNull()
+    expect(document.querySelector('script[src*="alert"]')).toBeNull()
   })
 
   test('the file field accepts a file, and the page does not pretend it went anywhere', async () => {

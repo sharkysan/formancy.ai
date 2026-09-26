@@ -130,6 +130,18 @@ describe('with a host editor', () => {
     expect(mount.attributes['aria-labelledby']).toBeTruthy()
   })
 
+
+  test('names the editing surface so a theme can style it', () => {
+    const spy = fresh()
+    mountForm(spyFactory(spy))
+
+    // The renderers ship no CSS, so this attribute is the whole contract with a
+    // theme. Without it the editor library's own class name is the only hook,
+    // which couples every theme to TipTap -- and when no theme knows the name at
+    // all, the field renders as an invisible box. That happened.
+    expect(spy.mounts[0]!.attributes['data-formancy-part']).toBe('richtext-surface')
+  })
+
   test('a required field says so on the surface', () => {
     const spy = fresh()
     mountForm(spyFactory(spy))

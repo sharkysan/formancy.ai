@@ -84,7 +84,7 @@
   color: var(--fm-signal);
 }
 
-[data-formancy-theme='blueprint'] [data-formancy-part='field'] :is(input, select, textarea) {
+[data-formancy-theme='blueprint'] [data-formancy-part='field'] :is(input, select, textarea, [data-formancy-part='richtext-surface']) {
   font: inherit;
   font-size: 0.9375rem;
   color: var(--fm-ink);
@@ -99,7 +99,7 @@
   transition: border-color 120ms ease, box-shadow 120ms ease;
 }
 
-[data-formancy-theme='blueprint'] [data-formancy-part='field'] :is(input, select, textarea):hover:not(:disabled, :focus-visible) {
+[data-formancy-theme='blueprint'] [data-formancy-part='field'] :is(input, select, textarea, [data-formancy-part='richtext-surface']):hover:not(:disabled, :focus-visible) {
   border-color: color-mix(in srgb, var(--fm-ink) 40%, var(--fm-rule));
 }
 
@@ -143,13 +143,13 @@
   resize: vertical;
 }
 
-[data-formancy-theme='blueprint'] [data-formancy-part='field'] :is(input, select, textarea):focus-visible {
+[data-formancy-theme='blueprint'] [data-formancy-part='field'] :is(input, select, textarea, [data-formancy-part='richtext-surface']):focus-visible {
   outline: none;
   border-color: var(--fm-signal);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--fm-signal) 22%, transparent);
 }
 
-[data-formancy-theme='blueprint'] [data-formancy-part='field'] :is(input, select, textarea):disabled {
+[data-formancy-theme='blueprint'] [data-formancy-part='field'] :is(input, select, textarea, [data-formancy-part='richtext-surface']):disabled {
   background: var(--fm-chrome);
   color: var(--fm-muted);
   cursor: not-allowed;
@@ -234,7 +234,7 @@
   margin-inline-start: -0.875rem;
 }
 
-[data-formancy-theme='blueprint'] [data-formancy-part='field'][data-state='invalid'] :is(input, select, textarea) {
+[data-formancy-theme='blueprint'] [data-formancy-part='field'][data-state='invalid'] :is(input, select, textarea, [data-formancy-part='richtext-surface']) {
   border-color: var(--fm-invalid);
   background-color: var(--fm-invalid-wash);
 }
@@ -790,4 +790,40 @@
 [data-formancy-theme='blueprint'] [data-formancy-part='richtext-button']:focus-visible {
   outline: 2px solid var(--fm-signal);
   outline-offset: -2px;
+}
+
+/* The WYSIWYG editing surface, when the host supplies one. It inherits the
+   box above with the other controls; what it needs on top is a height, the
+   caret affordances a textarea gets for free, and paragraph spacing that
+   matches the preview — otherwise the two disagree about what the answer
+   will look like. */
+[data-formancy-theme='blueprint'] [data-formancy-part='field'] [data-formancy-part='richtext-surface'] {
+  min-height: 5.5rem;
+  cursor: text;
+  overflow-wrap: anywhere;
+}
+
+/* Focus lands on the surface itself, so the wrapper needs no ring — but the
+   wrapper is what the grid sizes, so it must not add one of its own. */
+[data-formancy-theme='blueprint'] [data-formancy-part='field'] [data-formancy-part='richtext-editor'] {
+  display: grid;
+  min-width: 0;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='field'] [data-formancy-part='richtext-surface'] > :first-child { margin-block-start: 0; }
+[data-formancy-theme='blueprint'] [data-formancy-part='field'] [data-formancy-part='richtext-surface'] > :last-child { margin-block-end: 0; }
+
+/* A paragraph somebody has not typed into yet still has to occupy a line,
+   or the caret sits in a box with no visible row to sit on. */
+[data-formancy-theme='blueprint'] [data-formancy-part='field'] [data-formancy-part='richtext-surface'] p:empty::before {
+  content: '';
+  display: inline-block;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='field'] [data-formancy-part='richtext-surface']:focus-visible {
+  outline: none;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='field'] [data-formancy-part='richtext-surface'][contenteditable='false'] {
+  cursor: not-allowed;
 }

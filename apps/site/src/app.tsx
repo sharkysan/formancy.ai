@@ -2,7 +2,13 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { KeyboardEvent, PointerEvent, ReactElement, ReactNode } from 'react'
 import { createFormEngine } from '@formancy/core'
 import type { FormEngine } from '@formancy/core'
-import { FormancyForm, FormancyProvider, UploaderProvider } from '@formancy/react'
+import {
+  FormancyForm,
+  FormancyProvider,
+  RichTextEditorProvider,
+  UploaderProvider,
+} from '@formancy/react'
+import { createRichTextEditor } from '@formancy/tiptap'
 import '@formancy/themes/blueprint.css'
 import '@formancy/themes/dusk.css'
 import '@formancy/themes/paper.css'
@@ -536,8 +542,14 @@ function Examples(): ReactElement {
               {/* The file fields want somewhere to put bytes before they will
                   accept one. This page has no server, so the uploader keeps
                   them here and says so. */}
+              {/* Both host-supplied capabilities the fields need: somewhere to
+                  put bytes, and a WYSIWYG surface for the richtext field. The
+                  bug-report example has one, and without this it would show the
+                  textarea fallback here while the docs describe an editor. */}
               <UploaderProvider value={demoUploader}>
-                <FormancyForm layout="web" onSubmit={() => undefined} />
+                <RichTextEditorProvider value={createRichTextEditor}>
+                  <FormancyForm layout="web" onSubmit={() => undefined} />
+                </RichTextEditorProvider>
               </UploaderProvider>
             </div>
           </div>
