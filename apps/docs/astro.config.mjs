@@ -41,6 +41,7 @@ export default defineConfig({
             { label: 'The schema', slug: 'concepts/schema' },
             { label: 'Logic and expressions', slug: 'concepts/logic' },
             { label: 'Versioning', slug: 'concepts/versioning' },
+            { label: 'Drafts', slug: 'concepts/drafts' },
             { label: 'Files', slug: 'concepts/files' },
             { label: 'Rich text', slug: 'concepts/rich-text' },
             { label: 'Conformance', slug: 'concepts/conformance' },

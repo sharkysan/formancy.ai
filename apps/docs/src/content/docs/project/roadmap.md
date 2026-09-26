@@ -74,9 +74,13 @@ history, submissions and export).
   more than one replica.
 - **Form actions** beyond webhooks.
 - **OIDC / SAML.** Local users and API keys only for now.
-- **Saving a partly-filled form and coming back to it.** Drafts exist in the
-  data model and migrate lazily; what is missing is the public-plane endpoint and
-  the resume token that would let a visitor use them.
+- **A worked example of saving a partly-filled form.** The parts all exist now —
+  the three public routes, the token that addresses a draft, and the notice both
+  renderers ship for a resume that lost answers, documented in
+  [Drafts](/concepts/drafts/). What is missing is a host that puts them together:
+  the playground and the marketing site are client-only, and the admin is the
+  authoring tool rather than a form-filling surface. So the debounce, the stored
+  token and the read-only path are described and not demonstrated.
 - **Translated form content.** The key structure is reserved
   (`label: { $t: "..." }`) and the engine resolves it, but there is no catalogue
   management and no authoring for it.
@@ -124,10 +128,10 @@ left out as v2-era omissions.
 Roughly in order, and subject to change. The ordering is argued below rather
 than asserted.
 
-1. **Saving a partly-filled form and coming back to it.** The expensive half is
-   built: drafts migrate lazily against `diffSchemas` severity, and answers whose
-   field disappeared move to `data.__orphaned` rather than being deleted. What is
-   missing is the public endpoint and a resume token.
+1. **A host that actually saves and resumes a draft**, so the flow is
+   demonstrated rather than only documented. Everything it needs is built; what it
+   wants is somewhere to live, since no app in this repository fills in a form
+   against a server.
 2. **`signature` and `datagrid`**, in that order — signature is smaller and more
    asked for; datagrid is mostly a control over a data model that already exists.
 3. **Translated form content**, while the reservation is still fresh.
