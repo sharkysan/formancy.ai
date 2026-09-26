@@ -48,8 +48,11 @@ versioning, deployable with Docker.
 **Explicitly out of v1.** Multi-tenancy, PDF generation, e-signatures,
 analytics, a hosted developer portal.
 
-**Out of v0.1 specifically**, with the type name and value shape reserved so
-adding each is a compatible change rather than a breaking one: file upload,
+**Out of v0.1 specifically**, with the type name and value shape reserved so that
+adding each is additive rather than a rewrite — though additive is not free: a
+new field type is a spec version bump, because a reader on the older version
+drops an answer it cannot understand
+([0051](../decisions/0051-spec-2-adds-types.md)). The list: file upload,
 remote and cascading option sources, async validators, date-time and timezone
 handling, currency and masking, multi-select and combobox, rich text,
 signature, address, rating, slider, tabs and accordions, and conditional page
