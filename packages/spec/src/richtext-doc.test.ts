@@ -298,3 +298,25 @@ describe('back from an editor document', () => {
     ).toEqual([])
   })
 })
+
+describe('an empty answer still needs a block', () => {
+  test('an empty document carries one paragraph, not nothing', () => {
+    // A ProseMirror `doc` is `block+`: one or more. A doc with no children is
+    // not an empty document, it is an INVALID one — and the editor built from
+    // it renders a contenteditable with no `<p>` inside, which has no block for
+    // Enter to split. The visible symptom is that newlines do nothing.
+    const doc = toEditorDoc([])
+
+    expect(doc.content?.length).toBe(1)
+    expect(doc.content?.[0] && 'type' in doc.content[0] ? doc.content[0].type : undefined).toBe(
+      'paragraph',
+    )
+  })
+
+  test('and that paragraph maps back to no blocks, not to a blank one', () => {
+    // The round trip has to survive the concession: an empty answer and an
+    // answer containing a blank paragraph must not become the same stored value,
+    // or every untouched field grows one.
+    expect(fromEditorDoc(toEditorDoc([]))).toEqual([])
+  })
+})

@@ -207,3 +207,56 @@ describe('the grammar is still the only stored form', () => {
     expect(serialiseRichText(parseRichText(stored))).toBe(stored)
   })
 })
+
+describe('newlines', () => {
+  test('a fresh editor contains a paragraph, so there is a block to split', () => {
+    const handle = createRichTextEditor({ value: '' })
+    const dom = handle.editor.view.dom
+
+    // This was the bug, found live in the playground: `innerHTML` was exactly
+    // `""`. A ProseMirror `doc` is `block+`, an empty answer was being converted
+    // to a doc with no children, and the editor rendered a contenteditable with
+    // no `<p>` in it. Nothing for Enter to split, so **newlines did nothing**.
+    //
+    // Asserted against the DOM rather than against the value, because that is
+    // where it shows: with the fix reverted, every value-level case below still
+    // passes under jsdom and only this one fails. A browser is stricter than
+    // jsdom about an invalid document, which is why the bug reached the
+    // playground while the suite was green.
+    expect(dom.querySelector('p')).not.toBeNull()
+    handle.destroy()
+  })
+
+  test('Enter starts a new paragraph, and that is a blank line in the grammar', () => {
+    const handle = createRichTextEditor({ value: 'one' })
+    handle.editor.commands.focus('end')
+    handle.editor.commands.splitBlock()
+    handle.editor.commands.insertContent('two')
+
+    const after = handle.value()
+    handle.destroy()
+
+    // A blank line IS the block separator in this grammar, so two paragraphs
+    // round-trip as one blank line between them.
+    expect(after).toBe('one\n\ntwo')
+  })
+
+  test('typing into an empty editor produces the text, not nothing', () => {
+    const handle = createRichTextEditor({ value: '' })
+    handle.editor.commands.insertContent('hello')
+
+    const after = handle.value()
+    handle.destroy()
+
+    expect(after).toBe('hello')
+  })
+
+  test('several paragraphs survive a round trip in order', () => {
+    const handle = createRichTextEditor({ value: 'one\n\ntwo\n\nthree' })
+
+    const after = handle.value()
+    handle.destroy()
+
+    expect(after).toBe('one\n\ntwo\n\nthree')
+  })
+})

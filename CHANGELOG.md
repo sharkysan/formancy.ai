@@ -63,6 +63,14 @@ Three things worth knowing about them:
   really does arrive carrying a `javascript:` href if one is put there —
   measured, not assumed. Two independent checks refuse it on the way out and the
   server re-parses the stored string regardless.
+- **An empty answer is one empty paragraph, not an empty document.** A
+  ProseMirror `doc` is `block+`, so a doc with no children is invalid rather than
+  empty, and the editor built from one contained no `<p>` at all — no block for
+  Enter to split, so newlines did nothing. It shipped to the playground and was
+  reported as newlines not working. Now asserted against the editor's DOM,
+  because with the fix reverted every value-level case still passes under jsdom
+  and only the DOM assertion fails: a browser is stricter about an invalid
+  document than jsdom is, which is why a green suite missed it.
 
 The engine keeps owning the accessibility wiring: the ids and the
 `aria-describedby` composition are passed to the editing surface rather than
