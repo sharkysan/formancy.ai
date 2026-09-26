@@ -20,3 +20,6 @@ playwright-report/
 # tarballs carry them. The root LICENSE and NOTICE are the only real ones.
 packages/*/LICENSE
 packages/*/NOTICE
+
+# Astro generates these from the content config on `astro sync`.
+.astro/

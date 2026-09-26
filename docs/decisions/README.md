@@ -160,3 +160,4 @@ listed under the sections they belong to above.
 | [0057](0057-the-audit-log-records-reads.md) | The audit log records reads, and never the data | accepted |
 | [0058](0058-a-breaker-per-destination.md) | A breaker per destination, and a way to replay what died | accepted |
 | [0059](0059-proof-of-work-not-a-captcha.md) | Proof of work, not a captcha service | accepted |
+| [0060](0060-documentation-is-checked.md) | Documentation claims are checked by tests, not by care | accepted |
