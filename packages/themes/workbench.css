@@ -1038,3 +1038,34 @@ kbd {
 [data-formancy-field-path][data-drop='wrap-end'] {
   box-shadow: inset -3px 0 0 var(--wb-signal);
 }
+
+/* One comparison inside a rule draft.
+ *
+ * Grouped visibly, because a rule with three of them is otherwise nine
+ * unlabelled controls in a column and nobody can see which value belongs to
+ * which field. The left edge is what does the grouping — cheaper than a box,
+ * and it does not compete with the draft's own border. */
+[data-formancy-part='logic-comparison'] {
+  display: grid;
+  gap: 0.375rem;
+  padding-inline-start: 0.5rem;
+  border-inline-start: 2px solid var(--wb-rule);
+}
+
+/* The remove button sits with its comparison rather than in a row of its own,
+   and is quiet: taking a comparison out is not the primary action here. */
+[data-formancy-part='logic-comparison'] > button {
+  justify-self: start;
+  font-size: 0.6875rem;
+  color: var(--wb-muted);
+  background: none;
+  border: 1px solid var(--wb-rule);
+  border-radius: 3px;
+  padding: 0.125rem 0.375rem;
+  cursor: pointer;
+}
+
+[data-formancy-part='logic-comparison'] > button:hover {
+  color: var(--wb-ink);
+  border-color: var(--wb-signal);
+}

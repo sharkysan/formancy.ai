@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { createFormEngine } from '@formancy/core'
 import type { FormSchema } from '@formancy/spec'
-import { celLiteral, compileCondition } from './conditions.js'
+import { celLiteral, compileCondition, compileGroup } from './conditions.js'
 import type { Condition } from './conditions.js'
 
 describe('celLiteral', () => {
@@ -158,5 +158,96 @@ describe('what it produces actually runs', () => {
 
     expect(visible(condition, { country: nasty })).toBe(true)
     expect(visible(condition, { country: 'other' })).toBe(false)
+  })
+})
+
+describe('combining more than one comparison', () => {
+  /**
+   * "Country is Switzerland AND total is more than 100" — the thing a form
+   * author reaches for second, and the thing the editor could not express.
+   *
+   * The expression language handled it all along; only the authoring side could
+   * not, so somebody wanting two comparisons had to write CEL by hand. That is
+   * fine for a developer and is the whole difficulty for the audience this
+   * builder exists for.
+   *
+   * **Flat, deliberately.** A group joins comparisons with all or any and cannot
+   * contain another group. Nesting is where a condition editor stops being
+   * readable — three levels in, nobody can tell what the parentheses do — and
+   * the repeater refuses nesting for the same reason. Somebody who genuinely
+   * needs it can still eject to CEL, which is the escape hatch that makes the
+   * restriction affordable.
+   */
+  test('all of them becomes &&', () => {
+    const cel = compileGroup({
+      join: 'all',
+      conditions: [
+        { field: 'country', operator: 'is', value: 'CH' },
+        { field: 'total', operator: 'isMoreThan', value: 100 },
+      ],
+    })
+
+    // `100.0`, not `100`: CEL does not convert implicitly and every number a
+    // form collects is a double, so the integer literal would be a type error at
+    // check time. My first expectation here said `100` and the code was right.
+    expect(cel).toBe('country == "CH" && total > 100.0')
+  })
+
+  test('any of them becomes ||', () => {
+    const cel = compileGroup({
+      join: 'any',
+      conditions: [
+        { field: 'country', operator: 'is', value: 'CH' },
+        { field: 'country', operator: 'is', value: 'AT' },
+      ],
+    })
+
+    expect(cel).toBe('country == "CH" || country == "AT"')
+  })
+
+  test('one comparison compiles to exactly what it did before', () => {
+    const one: Condition = { field: 'country', operator: 'is', value: 'CH' }
+
+    // No parentheses, no join, nothing to migrate: a rule written before groups
+    // existed must produce a byte-identical expression, or every existing form
+    // would show as changed the moment it was opened.
+    expect(compileGroup({ join: 'all', conditions: [one] })).toBe(compileCondition(one))
+  })
+
+  test('mixing all and any is not possible, so no parentheses are needed', () => {
+    // Stated as a test because it is the reason the output has none. A flat
+    // group has one join, so precedence cannot surprise anybody -- and if
+    // nesting is ever added, this case fails and forces the question.
+    const cel = compileGroup({
+      join: 'any',
+      conditions: [
+        { field: 'a', operator: 'isAnswered' },
+        { field: 'b', operator: 'isAnswered' },
+        { field: 'c', operator: 'isAnswered' },
+      ],
+    })
+
+    expect(cel).toBe('a != null || b != null || c != null')
+    expect(cel).not.toContain('(')
+  })
+
+  test('an empty group is refused rather than compiled to nothing', () => {
+    // `''` would be a rule that always passes, silently. A rule with no
+    // comparisons is an authoring mistake and has to be visible as one.
+    expect(() => compileGroup({ join: 'all', conditions: [] })).toThrow(/at least one/i)
+  })
+
+  test('a row-scoped field still resolves against the row', () => {
+    const cel = compileGroup({
+      join: 'all',
+      conditions: [
+        { field: 'items[].qty', operator: 'isMoreThan', value: 0 },
+        { field: 'items[].name', operator: 'isAnswered' },
+      ],
+    })
+
+    // `item.` is what a rule inside a repeater scopes to, and it has to survive
+    // being combined -- it would be easy to prefix only the first.
+    expect(cel).toBe('item.qty > 0.0 && item.name != null')
   })
 })

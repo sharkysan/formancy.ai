@@ -2,8 +2,8 @@ import { useState } from 'react'
 import type { ReactElement } from 'react'
 import type { BuilderSession } from '@formancy/builder-core'
 import type { LogicRule } from '@formancy/spec'
-import { OPERATORS, compileCondition } from './conditions.js'
-import type { Condition, Operator } from './conditions.js'
+import { OPERATORS, compileGroup } from './conditions.js'
+import type { Condition, ConditionGroup, Operator } from './conditions.js'
 import { nameOf } from './tree.js'
 import { useBuilder } from './use-builder.js'
 
@@ -81,15 +81,18 @@ export function LogicPanel({ session, keyPath }: LogicPanelProps): ReactElement 
               label: nameOf(view.document, node.def),
             }))}
           onCancel={() => setDrafting(false)}
-          onAdd={(kind, condition) => {
+          onAdd={(kind, group) => {
             setDrafting(false)
             session.addRule({
               target,
               kind,
-              cel: compileCondition(condition),
+              cel: compileGroup(group),
               // Regenerated metadata, never evaluated: it exists so this panel
-              // can reopen the condition instead of parsing CEL back.
-              editor: condition,
+              // can reopen the condition instead of parsing CEL back. It holds
+              // the GROUP now rather than a bare condition -- one shape, and the
+              // field is documented as regenerated, so there is nothing to
+              // migrate and nothing reads it yet.
+              editor: group,
               ...(kind === 'validate' ? { code: 'condition' } : {}),
             } as LogicRule)
           }}
@@ -109,24 +112,49 @@ function RuleDraft({
   onCancel,
 }: {
   fields: ReadonlyArray<{ path: string; label: string }>
-  onAdd: (kind: LogicRule['kind'], condition: Condition) => void
+  onAdd: (kind: LogicRule['kind'], group: ConditionGroup) => void
   onCancel: () => void
 }): ReactElement {
   const [kind, setKind] = useState<LogicRule['kind']>('visible')
-  const [field, setField] = useState(fields[0]?.path ?? '')
-  const [operator, setOperator] = useState<Operator>('is')
-  const [text, setText] = useState('')
+  const [join, setJoin] = useState<ConditionGroup['join']>('all')
+  /**
+   * One row per comparison.
+   *
+   * Flat, because a group cannot nest -- see `ConditionGroup`. The text is kept
+   * per row rather than the narrowed value, so what somebody typed survives
+   * switching the comparison to one that takes no value and back.
+   */
+  const [rows, setRows] = useState<ReadonlyArray<{ field: string; operator: Operator; text: string }>>(
+    [{ field: fields[0]?.path ?? '', operator: 'is', text: '' }],
+  )
 
-  const takesValue = OPERATORS.find((candidate) => candidate.id === operator)?.takesValue ?? true
   const hint = KINDS.find((candidate) => candidate.id === kind)?.hint ?? ''
 
-  // A number typed into a box is still a string. Comparing a number field to
-  // "5" is a type error CEL catches at save time, so the value is narrowed
-  // here where the author can still see what happened.
-  const value: Condition['value'] =
-    text === 'true' ? true : text === 'false' ? false : text !== '' && !Number.isNaN(Number(text)) ? Number(text) : text
+  const conditionOf = (row: { field: string; operator: Operator; text: string }): Condition => {
+    const takesValue = OPERATORS.find((candidate) => candidate.id === row.operator)?.takesValue ?? true
+    // A number typed into a box is still a string. Comparing a number field to
+    // "5" is a type error CEL catches at save time, so the value is narrowed
+    // here where the author can still see what happened.
+    const value: Condition['value'] =
+      row.text === 'true'
+        ? true
+        : row.text === 'false'
+          ? false
+          : row.text !== '' && !Number.isNaN(Number(row.text))
+            ? Number(row.text)
+            : row.text
+    return { field: row.field, operator: row.operator, ...(takesValue ? { value } : {}) }
+  }
 
-  const condition: Condition = { field, operator, ...(takesValue ? { value } : {}) }
+  const group: ConditionGroup = { join, conditions: rows.map(conditionOf) }
+
+  const update = (at: number, change: Partial<(typeof rows)[number]>): void => {
+    setRows((before) => before.map((row, index) => (index === at ? { ...row, ...change } : row)))
+  }
+
+  // Numbered from 1, and only when there is more than one: "Field 1" on a form
+  // with a single comparison is a number somebody has to wonder about.
+  const suffix = (at: number): string => (rows.length > 1 ? ` ${String(at + 1)}` : '')
 
   return (
     <div data-formancy-part="logic-draft">
@@ -141,43 +169,97 @@ function RuleDraft({
         </select>
       </label>
 
-      <label>
-        Field
-        <select value={field} onChange={(event) => setField(event.target.value)}>
-          {fields.map((candidate) => (
-            <option key={candidate.path} value={candidate.path}>
-              {candidate.label}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <label>
-        Comparison
-        <select value={operator} onChange={(event) => setOperator(event.target.value as Operator)}>
-          {OPERATORS.map((candidate) => (
-            <option key={candidate.id} value={candidate.id}>
-              {candidate.label}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      {takesValue ? (
+      {/* Only once there is something to join. A control that does nothing is a
+          control somebody has to work out is irrelevant. */}
+      {rows.length > 1 ? (
         <label>
-          Value
-          <input type="text" value={text} onChange={(event) => setText(event.target.value)} />
+          Match
+          <select
+            value={join}
+            onChange={(event) => setJoin(event.target.value as ConditionGroup['join'])}
+          >
+            <option value="all">all of these</option>
+            <option value="any">any of these</option>
+          </select>
         </label>
       ) : null}
+
+      {rows.map((row, at) => {
+        const takesValue =
+          OPERATORS.find((candidate) => candidate.id === row.operator)?.takesValue ?? true
+        return (
+          <div key={at} data-formancy-part="logic-comparison">
+            <label>
+              {`Field${suffix(at)}`}
+              <select value={row.field} onChange={(event) => update(at, { field: event.target.value })}>
+                {fields.map((candidate) => (
+                  <option key={candidate.path} value={candidate.path}>
+                    {candidate.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              {`Comparison${suffix(at)}`}
+              <select
+                value={row.operator}
+                onChange={(event) => update(at, { operator: event.target.value as Operator })}
+              >
+                {OPERATORS.map((candidate) => (
+                  <option key={candidate.id} value={candidate.id}>
+                    {candidate.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            {takesValue ? (
+              <label>
+                {`Value${suffix(at)}`}
+                <input
+                  type="text"
+                  value={row.text}
+                  onChange={(event) => update(at, { text: event.target.value })}
+                />
+              </label>
+            ) : null}
+
+            {/* The first one has no remove button: compileGroup refuses an empty
+                group rather than compiling to an expression that always passes,
+                so the UI must not be able to ask for one. */}
+            {at === 0 ? null : (
+              <button
+                type="button"
+                onClick={() => setRows((before) => before.filter((_, index) => index !== at))}
+              >
+                {`Remove comparison ${String(at + 1)}`}
+              </button>
+            )}
+          </div>
+        )
+      })}
+
+      <button
+        type="button"
+        onClick={() =>
+          setRows((before) => [
+            ...before,
+            { field: fields[0]?.path ?? '', operator: 'is', text: '' },
+          ])
+        }
+      >
+        Add a comparison
+      </button>
 
       <p data-formancy-part="logic-hint">{hint}</p>
 
       {/* Shown before it is added, not after. Somebody who can read CEL can
           check the condition means what they chose. */}
-      <code data-formancy-part="logic-preview">{compileCondition(condition)}</code>
+      <code data-formancy-part="logic-preview">{compileGroup(group)}</code>
 
       <div data-formancy-part="logic-actions">
-        <button type="button" onClick={() => onAdd(kind, condition)} disabled={field === ''}>
+        <button type="button" onClick={() => onAdd(kind, group)} disabled={rows.some((row) => row.field === '')}>
           Add rule
         </button>
         <button type="button" onClick={onCancel}>

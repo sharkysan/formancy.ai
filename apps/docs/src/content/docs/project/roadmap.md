@@ -60,9 +60,10 @@ history, submissions and export).
   and dropping onto its top or bottom moves it, so the gap is narrower than it
   was — what is missing is inserting between two siblings without aiming at
   either.
-- **Conditions combining more than one comparison** in the builder's editor.
-  The expression language handles them; the authoring UI does not yet, and you
-  can still write the CEL directly.
+- **Nested condition groups** in the builder's editor. Combining comparisons with
+  `all` or `any` works; a group inside a group does not, deliberately — nesting
+  is where a condition editor stops being readable, and ejecting to raw CEL is the
+  escape hatch that makes the restriction affordable.
 - **Virus scanning** of uploaded files, and **resumable uploads**. Files
   themselves work; a stored file is trusted the moment its bytes land, and the
   deployment's byte ceiling is also the largest single file.

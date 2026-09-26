@@ -64,12 +64,113 @@ describe('authoring a rule', () => {
       {
         target: 'canton',
         kind: 'visible',
+        // Byte-identical to what a single comparison produced before groups
+        // existed: no join, no parentheses. Otherwise every form would read as
+        // changed the moment somebody opened it.
         cel: 'country == "CH"',
         // Never evaluated — it exists so the panel can reopen the condition
         // rather than parse CEL back. CEL stays the single source of truth.
-        editor: { field: 'country', operator: 'is', value: 'CH' },
+        //
+        // The GROUP now, rather than a bare condition. One shape for one and for
+        // many, which is worth more than keeping this object unchanged: the field
+        // is documented as regenerated metadata, nothing reads it yet, and two
+        // shapes for one field is the kind of thing that rots.
+        editor: { join: 'all', conditions: [{ field: 'country', operator: 'is', value: 'CH' }] },
       },
     ])
+  })
+
+  test('a second comparison can be added, and both are previewed', async () => {
+    const user = userEvent.setup()
+    mount()
+    await user.click(screen.getByRole('button', { name: 'Add a rule' }))
+    await user.selectOptions(screen.getByLabelText('Field'), 'country')
+    await user.type(screen.getByLabelText('Value'), 'CH')
+
+    await user.click(screen.getByRole('button', { name: 'Add a comparison' }))
+
+    // The second row's controls are named so they are distinguishable: "Field"
+    // three times over tells a screen-reader user nothing about which row they
+    // are in.
+    await user.selectOptions(screen.getByLabelText('Field 2'), 'qty')
+    await user.selectOptions(screen.getByLabelText('Comparison 2'), 'isMoreThan')
+    await user.type(screen.getByLabelText('Value 2'), '5')
+
+    expect(screen.getByText('country == "CH" && qty > 5.0')).toBeTruthy()
+  })
+
+  test('the join can be any instead of all', async () => {
+    const user = userEvent.setup()
+    mount()
+    await user.click(screen.getByRole('button', { name: 'Add a rule' }))
+    await user.selectOptions(screen.getByLabelText('Field'), 'country')
+    await user.type(screen.getByLabelText('Value'), 'CH')
+    await user.click(screen.getByRole('button', { name: 'Add a comparison' }))
+    await user.selectOptions(screen.getByLabelText('Field 2'), 'canton')
+    await user.type(screen.getByLabelText('Value 2'), 'ZH')
+
+    await user.selectOptions(screen.getByLabelText('Match'), 'any')
+
+    expect(screen.getByText('country == "CH" || canton == "ZH"')).toBeTruthy()
+  })
+
+  test('the join is only offered once there is something to join', async () => {
+    const user = userEvent.setup()
+    mount()
+    await user.click(screen.getByRole('button', { name: 'Add a rule' }))
+
+    // One comparison has nothing to match "all" or "any" against, and a control
+    // that does nothing is a control somebody has to work out is irrelevant.
+    expect(screen.queryByLabelText('Match')).toBeNull()
+
+    await user.click(screen.getByRole('button', { name: 'Add a comparison' }))
+    expect(screen.getByLabelText('Match')).toBeTruthy()
+  })
+
+  test('a comparison can be taken back out, naming which one', async () => {
+    const user = userEvent.setup()
+    mount()
+    await user.click(screen.getByRole('button', { name: 'Add a rule' }))
+    await user.selectOptions(screen.getByLabelText('Field'), 'country')
+    await user.type(screen.getByLabelText('Value'), 'CH')
+    await user.click(screen.getByRole('button', { name: 'Add a comparison' }))
+    await user.selectOptions(screen.getByLabelText('Field 2'), 'qty')
+
+    await user.click(screen.getByRole('button', { name: 'Remove comparison 2' }))
+
+    // Back to one, and the join goes with it.
+    expect(screen.getByText('country == "CH"')).toBeTruthy()
+    expect(screen.queryByLabelText('Match')).toBeNull()
+    expect(screen.queryByLabelText('Field 2')).toBeNull()
+  })
+
+  test('the first comparison cannot be removed, because a rule needs one', async () => {
+    const user = userEvent.setup()
+    mount()
+    await user.click(screen.getByRole('button', { name: 'Add a rule' }))
+
+    // compileGroup throws on an empty group rather than compiling to an
+    // expression that always passes. The UI should not be able to ask for that.
+    expect(screen.queryByRole('button', { name: /Remove comparison 1/ })).toBeNull()
+  })
+
+  test('a two-comparison rule is written as one expression the engine accepts', async () => {
+    const user = userEvent.setup()
+    const session = mount()
+    await user.click(screen.getByRole('button', { name: 'Add a rule' }))
+    await user.selectOptions(screen.getByLabelText('Field'), 'country')
+    await user.type(screen.getByLabelText('Value'), 'CH')
+    await user.click(screen.getByRole('button', { name: 'Add a comparison' }))
+    await user.selectOptions(screen.getByLabelText('Field 2'), 'qty')
+    await user.selectOptions(screen.getByLabelText('Comparison 2'), 'isMoreThan')
+    await user.type(screen.getByLabelText('Value 2'), '5')
+    await user.click(screen.getByRole('button', { name: 'Add rule' }))
+
+    const rules = rulesOf(session)
+    expect(rules[0]?.cel).toBe('country == "CH" && qty > 5.0')
+    // The session accepted it, which means the engine type-checked the whole
+    // expression -- the point of compiling rather than concatenating.
+    expect(session.canPublish().valid).toBe(true)
   })
 
   test('a number typed into the box compares as a number', async () => {
