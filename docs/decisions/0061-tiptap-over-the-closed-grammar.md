@@ -105,6 +105,20 @@ spurious revision on every form anybody merely looked at. `fromEditorDoc` groups
 the longest adjacent stretch sharing a mark instead, which is what makes the
 round trip an equality rather than an equivalence.
 
+**An empty answer is one empty paragraph, not an empty document.** A
+ProseMirror `doc` is `block+`, so a doc with no children is not an empty document
+but an invalid one — and the editor built from it renders a contenteditable
+containing no `<p>` at all. It looks like an empty box and behaves like a broken
+one: there is no block for Enter to split, so **newlines do nothing**. The first
+version of the conversion did exactly that, it reached the playground, and it was
+reported as newlines not working rather than as an empty document, which is how
+this class of bug always arrives.
+
+It is asserted against the editor's DOM rather than against a value, because that
+is where it shows: with the fix reverted every value-level case still passes under
+jsdom, and only the DOM assertion fails. A browser is stricter than jsdom about an
+invalid document, which is precisely why a green suite did not catch it.
+
 **Shapes the grammar cannot hold degrade instead of failing.** A list item with
 two paragraphs is joined with a space; a nested list is flattened into its
 parent; an unknown node becomes a paragraph and an unknown mark is dropped with

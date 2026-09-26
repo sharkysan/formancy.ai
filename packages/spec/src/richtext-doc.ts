@@ -117,7 +117,20 @@ function inlineToSource(runs: readonly RichInline[]): string {
 // ── Grammar → editor ────────────────────────────────────────────────────────
 
 export function toEditorDoc(blocks: readonly RichBlock[]): EditorNode {
-  return { type: 'doc', content: blocks.map(blockToNode) }
+  // An empty answer is one EMPTY PARAGRAPH, never zero children.
+  //
+  // A ProseMirror `doc` is `block+`: one or more. A doc with no children is not
+  // an empty document, it is an invalid one, and the editor built from it renders
+  // a contenteditable containing no `<p>` at all. It looks like an empty box and
+  // behaves like one that is broken: there is no block for Enter to split, so
+  // **newlines do nothing**. That is how this was found — the editor was live in
+  // the playground with `innerHTML` exactly `""`.
+  //
+  // `fromEditorDoc` maps that lone empty paragraph back to no blocks, so an
+  // empty answer still stores as the empty string rather than growing a blank
+  // paragraph.
+  const content = blocks.length === 0 ? [{ type: 'paragraph' }] : blocks.map(blockToNode)
+  return { type: 'doc', content }
 }
 
 function blockToNode(block: RichBlock): EditorNode {
