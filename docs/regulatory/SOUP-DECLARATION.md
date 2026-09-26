@@ -191,8 +191,15 @@ expressions should read that file rather than this summary.
 - Nested repeaters are rejected ([0012](../decisions/0012-pages-scope-nothing.md)).
 - Pages below the top level are rejected.
 - Async validators, remote option sources, signature
-  and date-time types are **not implemented**; the type names are reserved so
-  that adding them later is a compatible change, not a breaking one.
+  and date-time types are **not implemented**. The type names are reserved, which
+  means adding them removes nothing and leaves every existing document valid —
+  but it does **not** mean a manufacturer can pick them up without a change of
+  version. A new field type raises the spec version, because a reader that speaks
+  the older one drops an answer it has never heard of rather than failing loudly
+  ([0051](../decisions/0051-spec-2-adds-types.md)). A pinned deployment therefore
+  keeps working untouched, and acquiring one of these types is a new spec version
+  and a re-characterisation. An earlier version of this line said "a compatible
+  change, not a breaking one", which read as though the second half were free.
 - Multi-tenancy is absent entirely.
 
 **Implemented since v0.1 and therefore NOT characterised by this document**:

@@ -94,8 +94,21 @@ history, submissions and export).
   commitment yet.
 
 Field **type names** for several of these are reserved — `file`, `datetime`,
-`multiselect` and the rest are simply absent from the type list, and adding a
-value to that list is a compatible change.
+`multiselect` and the rest are simply absent from the type list.
+
+**Reserving a name costs nothing; adding the type costs a spec version.** Those
+are different things, and an earlier version of this page ran them together. The
+format is additive — a new type removes nothing, every older document stays
+valid, and `upgradeSpecVersion` stays one line — but the version line is a
+contract for *readers*, and a reader that speaks the older version does not
+half-understand a type it has never heard of: it renders nothing, collects
+nothing, and drops the answer, which looks exactly like a field somebody left
+blank ([0051](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0051-spec-2-adds-types.md)).
+
+The practical consequence is that **field types should arrive in batches, not one
+at a time.** Each bump is an event for every consumer: a pinned reader, a
+regulatory characterisation, a line in `MIGRATIONS.md`. Shipping `signature` on
+its own and `datagrid` a fortnight later spends two of those where one would do.
 
 Rule-level properties are **not** reserved, and this is a real gap: `runsOn`
 and `async` were meant to be, but `logicRule` is `additionalProperties: false`,
@@ -105,9 +118,10 @@ the spec freezes rather than after.
 
 ## Field types that are not here yet
 
-Named because a type name is a promise: adding a value to the type list is a
-compatible change, so reserving the name costs nothing and renaming later costs
-everybody.
+Named because a type name is a promise: reserving one costs nothing and renaming
+it later costs everybody. Note what reserving does **not** buy — adding any of
+these to the spec is a version bump, for the reason under *What does not exist
+yet* above, so they are worth grouping into one.
 
 | Type | What it is | Why it is not trivial |
 |---|---|---|

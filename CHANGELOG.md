@@ -10,6 +10,37 @@ later.
 
 ## Unreleased
 
+**Four documents said adding a field type is "a compatible change". The decision
+record that governs the version line says it is a version bump.** Found before
+building `signature`, by checking what it would cost rather than assuming.
+
+The format half of the claim is true — a new type removes nothing, every older
+document stays valid, and `upgradeSpecVersion` stays one line. But the version
+line is a contract for *readers*, and a reader on the older version does not
+half-understand a type it has never heard of: it renders nothing, collects
+nothing, and drops the answer, which looks exactly like a field somebody left
+blank ([0051](./docs/decisions/0051-spec-2-adds-types.md)).
+
+The claim was written before spec 2 existed, was true of the plan at the time, and
+nobody went back to it when 0051 settled the rule. It was in the roadmap twice, in
+the architecture goals, and — worst — in the **SOUP declaration**, where it
+read as though a manufacturer could pick up a reserved type without a change of
+version. That one now says what is actually true: a pinned deployment keeps
+working untouched, and acquiring one of these types is a new spec version and a
+re-characterisation.
+
+**The practical consequence, now written down: field types should arrive in
+batches.** Each bump is an event for every consumer — a pinned reader, a
+regulatory characterisation, a line in `MIGRATIONS.md`. Shipping `signature` on
+its own and `datagrid` a fortnight later spends two of those where one would do,
+which is why neither has been started yet.
+
+`apps/docs/src/claims.test.ts` fails if any live document says it again. The
+changelog is excluded deliberately: it records what was said at the time, and
+rewriting an old entry to agree with a later decision would be falsifying the
+record — a worse fault than the stale sentence.
+
+
 **Drafts are documented.** There was no page for them, which is a poor state for a
 feature whose API changed in a breaking way this week and which has a security
 story worth reading before you use it. The new
