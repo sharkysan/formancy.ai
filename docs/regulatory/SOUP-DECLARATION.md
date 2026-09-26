@@ -68,6 +68,7 @@ What it does **not** do, and must not be assumed to do:
 | Renderer (React) | React `^19.0.0` (peer dependency) |
 | Renderer (Angular) | `@angular/core` `^22.0.0` (peer dependency), zoneless change detection |
 | Database (server only) | PostgreSQL 17 or 18 |
+| Deployment (server only) | Two compose files are supplied: `compose.yaml` builds from a checkout, `compose.published.yaml` runs the signed published image and requires `FORMANCY_VERSION` to be pinned, because no `latest` tag is published. Every variable `.env.example` documents is passed through by both, checked by `packages/server/src/compose.test.ts` |
 | Module format | ESM only; no CommonJS build is published ([0038](../decisions/0038-esm-only.md)) |
 
 ## Composition and third-party dependencies
@@ -227,7 +228,7 @@ requiring an accessibility conformance statement must perform that work.
 
 | Evidence | Where |
 |---|---|
-| 1,155 automated tests across ten packages, all passing at this commit | `pnpm test` |
+| Every automated test in the repository passing at this commit, across ten packages and two applications | `pnpm test`, which prints the count |
 | 29 of those run against a real PostgreSQL instance via Testcontainers, rather than a stub | `packages/server/src/server.integration.test.ts` |
 | One behavioural conformance suite executed against the engine, both renderers and the server | `packages/conformance` ([0033](../decisions/0033-one-suite-n-drivers.md)) |
 | Property-based invariants over hide/unhide, repeater identity and evaluation order | `packages/core` |
@@ -237,10 +238,20 @@ requiring an accessibility conformance statement must perform that work.
 | Line coverage, reported per package and uploaded per commit | `pnpm turbo run test:coverage`, and Codecov |
 | Build provenance for every published tarball | `npm audit signatures` against the installed version |
 
-Per-package counts at this commit: core 225, expressions 189, builder-react
-160, conformance 115, spec 112, builder-core 96, server-core 75, server 61,
-react 64, angular 42. A further 45 cover the two applications, which are not
-distributed as packages and are listed separately for that reason.
+A per-package breakdown used to be transcribed here, package by package. It is
+not any more, and the reason is worth stating because it applies to every number
+in this set: those ten figures changed on almost every commit, nothing failed
+when they stopped matching, and a reader cannot tell a figure that is one release
+old from one that was never right. **The suite prints its own counts**, per
+package, in a form nobody has to keep in step — so the command is the evidence
+and this paragraph is only the pointer to it.
+
+What is worth writing by hand is the shape, which does not drift: the largest
+suites are the engine and the expression language, every distributed package has
+one, and the two applications are counted separately because they are not
+distributed. Where a figure in this document is load-bearing it is measured and
+dated rather than incremented — the performance budgets above are the example
+— and where it is mere inventory it now names the command instead.
 
 Coverage is reported rather than targeted, and what it counts is stated in
 `vitest.coverage.ts`: barrels and composition roots are excluded, with the

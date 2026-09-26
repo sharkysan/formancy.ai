@@ -2,23 +2,36 @@
 
 ## What exists today
 
+Two paths, and which one somebody takes depends on whether they have a checkout.
+
 ```
-developer machine
-├─ docker compose up -d
-│    └─ postgres:17-alpine   host port 5439 → container 5432
-│                            healthcheck: pg_isready
-│                            volume: formancy-pg
-└─ pnpm --filter @formancy/server dev
-     └─ Fastify on Node 22
+from a checkout                      from the published image
+compose.yaml                         compose.published.yaml
+├─ postgres:17-alpine                ├─ postgres:17-alpine
+│    host 5439 → container 5432      │    host 5439 → container 5432
+│    healthcheck: pg_isready        │    healthcheck: pg_isready
+│    volume: formancy-pg            │    volume: formancy-pg
+└─ server, build: context .          └─ ghcr.io/…/formancy-server:$FORMANCY_VERSION
+     Fastify on Node 22                    signed by digest, no latest tag
+                                           volume: formancy-files
 ```
+
+The second is the one the signing work was for: a self-hoster who builds their own
+bytes has nothing to verify, and one who pulls them can check the cosign signature
+and the CycloneDX attestation before starting anything
+([0063](../decisions/0063-a-compose-file-for-the-published-image.md)).
 
 Host port **5439**, not 5432, and the reason is written in the compose file: a
 locally installed PostgreSQL on 5432 produces a silent collision that presents
 as a wrong-password error, which costs an hour the first time.
 
-**There is no server container image yet.** It arrives with the distribution
-work, along with the cosign signature and the CycloneDX SBOM. Recorded here
-rather than drawn as though it exists.
+`FORMANCY_VERSION` has no default in the published file, so compose stops rather
+than starting a version nobody chose — there is no `latest` tag, because
+`SOUP-DECLARATION.md` calls one uncharacterised software.
+
+**Neither file has an object store.** Both give the server a local volume where
+the design below calls for Garage, so uploaded bytes do not survive a second
+replica. Drawn as it is rather than as intended.
 
 ## The intended deployment
 
@@ -116,3 +129,10 @@ form is not publicly submittable unless it says so.
 Environment variables only; no configuration file. Secrets — the session
 signing key and the database URL — have no defaults, so a deployment that
 forgets one fails at startup rather than running with a well-known value.
+
+`.env.example` is the documentation of them, and both compose files have to deliver
+every one it mentions or the documentation is a description of something else.
+That had already come apart once: `FORMANCY_CHALLENGE_SECRET` was documented at
+length and passed through by neither file, so the proof-of-work challenge stayed
+off on a deployment whose operator had set it and believed otherwise.
+`packages/server/src/compose.test.ts` compares the two directions now.

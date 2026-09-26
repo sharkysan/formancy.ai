@@ -1,13 +1,21 @@
-# `docker compose up -d` gives you the whole product: a database and the server.
+# Run formancy from the published image, without cloning anything.
 #
-# It will refuse to start until you have secrets. That is deliberate — see
-# .env.example, which explains how to make them in one command. A form platform
-# that boots with a signing key printed in its own repository is a form platform
-# anyone who has read the repository can sign a session for.
+# `compose.yaml` beside this one builds the server from source, which is right
+# when you have the repository and wrong when you do not: a self-hoster who wants
+# to run the product should not need a checkout and a build toolchain to do it.
 #
-# For development against the source instead, run only the database
-# (`docker compose up -d postgres`) and start the server with
-# `pnpm --filter @formancy/server dev`.
+#   curl -O https://raw.githubusercontent.com/sharkysan/formancy.ai/main/compose.published.yaml
+#   curl -O https://raw.githubusercontent.com/sharkysan/formancy.ai/main/.env.example
+#   cp .env.example .env      # then follow what it says
+#   FORMANCY_VERSION=v0.2.0 docker compose -f compose.published.yaml up -d
+#
+# THE VERSION HAS NO DEFAULT, deliberately. There is no `latest` tag to fall back
+# on: the SOUP declaration tells a manufacturer to pin an exact version and says
+# `latest` is not characterised software, so defaulting to one here would be this
+# file quietly undoing that advice. Compose stops and tells you instead.
+#
+# Verify what you are about to run first — the image is signed by digest, and the
+# commands are in RELEASING.md. A signature nobody checks is decoration.
 services:
   postgres:
     image: postgres:17-alpine
@@ -16,12 +24,10 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-formancy}
       POSTGRES_DB: formancy
     ports:
-      # Bound to loopback, not to every interface. The default `5439:5432`
-      # publishes the database to the whole network, which on a laptop on a
-      # café network is a database on a café network.
-      #
-      # 5439 rather than 5432 because a locally installed Postgres usually has
-      # 5432, and a silent collision looks exactly like a wrong password.
+      # Loopback, not every interface. Publishing the database to the whole
+      # network is how a laptop on a café network becomes a database on a café
+      # network. 5439 because a locally installed Postgres usually holds 5432,
+      # and a silent collision looks exactly like a wrong password.
       - "127.0.0.1:5439:5432"
     volumes:
       - formancy-pg:/var/lib/postgresql/data
@@ -32,9 +38,7 @@ services:
       retries: 10
 
   server:
-    build:
-      context: .
-      dockerfile: packages/server/Dockerfile
+    image: ghcr.io/sharkysan/formancy-server:${FORMANCY_VERSION:?pin a version, e.g. FORMANCY_VERSION=v0.2.0 — there is no latest tag, on purpose}
     ports:
       - "4380:4380"
     environment:
@@ -49,9 +53,6 @@ services:
       FORMANCY_ADMIN_EMAIL: ${FORMANCY_ADMIN_EMAIL:?set it in .env — see .env.example}
       FORMANCY_ADMIN_PASSWORD: ${FORMANCY_ADMIN_PASSWORD:?set it in .env — see .env.example}
 
-      # Webhook delivery refuses plain http and private addresses by default,
-      # which is what stops a form author pointing the server at the cloud
-      # metadata service. Both are opt-in, for a receiver on a trusted network.
       # Passed through only if you set it, which is why there is no `${...}` here.
       # The challenge is opt-in and the server refuses to start on a secret
       # shorter than 32 characters — so `${FORMANCY_CHALLENGE_SECRET:-}`, the
@@ -61,13 +62,15 @@ services:
       # variable genuinely absent when it is not.
       FORMANCY_CHALLENGE_SECRET:
 
+      # Webhook delivery refuses plain http and private addresses by default,
+      # which is what stops a form author pointing the server at the cloud
+      # metadata service. Both are opt-in, for a receiver on a trusted network.
       FORMANCY_WEBHOOK_ALLOW_HTTP: ${FORMANCY_WEBHOOK_ALLOW_HTTP:-false}
       FORMANCY_WEBHOOK_ALLOW_PRIVATE: ${FORMANCY_WEBHOOK_ALLOW_PRIVATE:-false}
 
       # Uploads are off until there is somewhere to put bytes. Pointed at the
-      # volume below, so they survive the container — a files directory
-      # inside a container's own filesystem is a directory that is deleted on
-      # the next deploy.
+      # volume below so they survive the container — a files directory inside a
+      # container's own filesystem is a directory deleted on the next deploy.
       FORMANCY_FILES_DIR: /var/lib/formancy/files
       FORMANCY_MAX_FILE_BYTES: ${FORMANCY_MAX_FILE_BYTES:-10485760}
     volumes:

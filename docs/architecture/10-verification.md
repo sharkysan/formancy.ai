@@ -49,10 +49,17 @@ it.
 | `publint` + `attw` + `size-limit` | `pnpm check:pkg` | The commonest cause of "it doesn't work in my app" for a multi-framework library |
 | Typecheck with no `@types/node` in the isomorphic packages | `pnpm typecheck` | The layer boundary holds |
 
-At the commit these documents describe: **808 automated tests** across eight
-packages, plus 21 integration tests against PostgreSQL. Per package — spec 112,
-expressions 189, core 222, conformance 115, react 52, builder-core 51, angular
-34, server-core 33.
+There was a table of per-package test counts here, and it is gone for the reason
+it was wrong: the figures were transcribed by hand, they moved on almost every
+commit, nothing failed when they stopped matching, and they ended up disagreeing
+with the same figures in `SOUP-DECLARATION.md`. Two documents in one repository
+giving different counts for one suite is worse than neither giving any — a reader
+has no way to tell which was maintained.
+
+`pnpm test` prints the counts, per package, and is the evidence. What is written
+by hand here is the part that does not drift: every distributed package has a
+suite, the largest are the engine and the expression language, and the server's
+integration tests run against real PostgreSQL rather than a stub.
 
 ## 10.3 The driver interface is the accessibility contract
 

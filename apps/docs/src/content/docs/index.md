@@ -11,9 +11,10 @@ pre-alpha and their APIs will change. They are **on npm** under the
 [`@formancy`](https://www.npmjs.com/org/formancy) scope at `0.1.0`, published
 from CI with provenance — except `@formancy/builder-react`, which lands in
 the next release. The server has authentication, role-based authorization,
-per-IP rate limiting and a per-form origin allowlist, but no proof-of-work
-challenge, no submission tokens and no audit logging. Do not build on it yet,
-and do not deploy it anywhere public.
+per-IP rate limiting, a per-form origin allowlist, audit logging and an opt-in
+proof-of-work challenge for anonymous submissions. What it does not have is a
+submission token bound to the form version, and no virus scanning of what people
+attach. Do not build on it yet, and do not deploy it anywhere public.
 :::
 
 formancy is a modern, self-hostable form platform for React and Angular. It is
