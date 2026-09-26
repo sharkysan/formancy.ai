@@ -67,6 +67,15 @@ services:
       # Measured both: a bare key reads `.env` when it is there and leaves the
       # variable genuinely absent when it is not.
       FORMANCY_CHALLENGE_SECRET:
+      # An S3-compatible object store instead of the volume below, for a
+      # deployment with more than one replica. Bare keys, so each is passed
+      # through only when it is set: the endpoint being absent is how the server
+      # knows to use local disk, and an empty string is not absent.
+      FORMANCY_S3_ENDPOINT:
+      FORMANCY_S3_BUCKET:
+      FORMANCY_S3_REGION:
+      FORMANCY_S3_ACCESS_KEY_ID:
+      FORMANCY_S3_SECRET_ACCESS_KEY:
 
       # Webhook delivery refuses plain http and private addresses by default,
       # which is what stops a form author pointing the server at the cloud

@@ -10,6 +10,43 @@ later.
 
 ## Unreleased
 
+**Uploaded bytes can live in an S3-compatible object store.** Local disk was the
+only implementation of `FileStore`, and its ceiling is one replica: two containers
+with two volumes each accept uploads the other cannot serve, so a file is
+intermittently missing depending on which container answered. Set
+`FORMANCY_S3_ENDPOINT` and the four settings beside it and that ceiling is gone
+([0064](docs/decisions/0064-an-object-store-behind-the-same-interface.md)).
+
+Garage is what it is tested against — a real one, in a container, on every run.
+The same code path serves MinIO, Backblaze B2, Cloudflare R2 and Amazon S3.
+
+**None of the settings is defaulted, and configuring both stores is refused.** A
+guessed bucket uploads into nothing; guessed credentials make every file read as
+missing; two stores means files land in one and are looked for in the other. All
+three fail at startup, which is the only point at which they are cheap.
+
+**The request signer is ours, and no runtime dependency was added.** SigV4 for four
+operations is sixty lines against a frozen specification; `@aws-sdk/client-s3`
+would have been dozens of packages to characterise in the SOUP declaration for a
+PUT and a GET. That is only defensible with an oracle, which is why the tests run
+against a real Garage and why one of them asserts a **wrong** secret is refused —
+without that case the others would prove nothing.
+
+Two defects the tests found and reading the code would not have. A 403 was treated
+as "no such object", on reasoning that holds for a restricted caller and not for
+this one — so wrong credentials would have looked like a store where every file
+had vanished, and the collector would have deleted every row while every object was
+still there. And `content-length` can be neither set nor signed, because undici
+computes its own; nothing is lost, since the signed body hash constrains the bytes
+exactly rather than just their length.
+
+**Still going through the server.** A presigned upload straight from the browser is
+the remaining piece, and it is the only thing that would lift the request body cap
+off the largest single file. Neither compose file runs a store either: a fresh
+Garage node accepts no data until a layout is assigned, which is four commands
+after start rather than anything compose can declare, so a shipped Garage service
+would look configured and silently store nothing.
+
 **Fixed: two documentation links 404ed in production.** `Drafts` was linked as
 `/concepts/drafts/` from the versioning page and the roadmap. The docs are served
 under `/docs/`, so a root-absolute link resolves against the landing page instead

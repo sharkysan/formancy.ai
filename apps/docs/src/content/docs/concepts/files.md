@@ -55,11 +55,43 @@ is nowhere to put one. It is deliberately not defaulted, because in a container
 it has to be a mounted volume, and that is the one thing a self-hoster has to
 think about.
 
-:::caution[One replica]
-The local store does not survive more than one replica: two containers with two
-volumes each accept uploads the other cannot serve. `FileStore` is four
-methods, so an S3 adapter replaces one file — but it is not written yet.
+:::caution[The local store is for one replica]
+It does not survive more than one: two containers with two volumes each accept
+uploads the other cannot serve. Point the deployment at an object store instead
+— see below — and that ceiling is gone.
 :::
+
+## An object store instead of a directory
+
+Set `FORMANCY_S3_ENDPOINT` and the four settings beside it, and bytes go to an
+S3-compatible store rather than a local directory:
+
+```bash
+FORMANCY_S3_ENDPOINT=http://garage:3900
+FORMANCY_S3_BUCKET=formancy
+FORMANCY_S3_REGION=garage
+FORMANCY_S3_ACCESS_KEY_ID=GK…
+FORMANCY_S3_SECRET_ACCESS_KEY=…
+```
+
+**None of the four is defaulted.** A guessed bucket is a deployment that uploads
+into nothing; guessed credentials are a deployment where every file reads as
+missing. Both fail at startup instead. Setting this and `FORMANCY_FILES_DIR`
+together is also refused, because two stores means files land in one and are
+looked for in the other.
+
+The region is part of the request signature rather than a label: a wrong one is a
+signature the store computes differently and rejects. Garage answers to whatever
+its own `s3_region` says.
+
+**Garage is what this is tested against** — a real one, in a container, on every
+run. The same code path serves MinIO, Backblaze B2, Cloudflare R2 and Amazon S3,
+because the only thing they need in common is SigV4 and path-style addressing.
+
+**Bytes still pass through the server.** A presigned upload straight from the
+browser is the eventual shape and is the only way to accept a file larger than
+the request body cap; this replaces where the bytes land without changing how
+they arrive, which is what a second replica needs.
 
 ## What is refused, and where
 
@@ -134,4 +166,10 @@ would turn a form that mostly works into a blank page.
   limited to whoever deliberately downloads one.
 - **Resumable or multipart uploads.** The deployment ceiling is also the
   largest single file.
-- **An S3 store.** See the note above about replicas.
+- **A presigned upload path.** Bytes go through the server on their way to the
+  object store. Removing it from the data path changes the upload flow end to
+  end, including both renderers, and is what would lift the request-body ceiling.
+- **Garage in the supplied compose files.** They pass the settings through, and
+  neither runs a store: a fresh Garage node accepts no data until a layout is
+  assigned, which is four commands after the container starts rather than
+  anything a compose file can declare. Point it at a store you run.

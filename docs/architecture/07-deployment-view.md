@@ -36,9 +36,14 @@ as a wrong-password error, which costs an hour the first time.
 than starting a version nobody chose — there is no `latest` tag, because
 `SOUP-DECLARATION.md` calls one uncharacterised software.
 
-**Neither file has an object store.** Both give the server a local volume where
-the design below calls for Garage, so uploaded bytes do not survive a second
-replica. Drawn as it is rather than as intended.
+**Neither file runs an object store, and both can point at one.** The server
+speaks S3 as of
+[0064](../decisions/0064-an-object-store-behind-the-same-interface.md) and the
+compose files pass the settings through; what they do not do is *host* a store,
+because a fresh Garage node accepts no data until a layout is assigned, and that
+is four commands after the container starts rather than anything compose can
+declare. So the drawn default is still a local volume, and a deployment wanting
+more than one replica runs Garage itself.
 
 ## The intended deployment
 

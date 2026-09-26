@@ -38,12 +38,13 @@
     "@arethetypeswrong/cli": "catalog:",
     "@testcontainers/postgresql": "^12.1.0",
     "@types/node": "^22.10.0",
+    "@vitest/coverage-v8": "catalog:",
     "publint": "catalog:",
+    "testcontainers": "^12.1.0",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "unrun": "^0.3.1",
-    "vitest": "catalog:",
-    "@vitest/coverage-v8": "catalog:"
+    "vitest": "catalog:"
   },
   "publishConfig": {
     "access": "public"

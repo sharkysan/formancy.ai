@@ -211,8 +211,11 @@ pinning `0.1.0` does not have these; one pinning a later version needs a
 re-characterisation, which is what the version statement at the top of this
 document is for.
 
-**Still absent and designed only**: an S3 file store (local disk is the one
-implemented adapter), virus scanning, and resumable uploads.
+**Still absent and designed only**: virus scanning, resumable and multipart
+uploads, and presigned uploads that would keep bytes out of the server's own
+data path. An S3-compatible file store is implemented as of this commit and
+verified against a real Garage instance in a container; local disk remains the
+default and is the only one that needs no external service.
 
 **Accessibility**, stated precisely because vague claims here are worse than
 none: the conformance suite structurally requires that every control be

@@ -31,9 +31,18 @@ const composeFiles = ['compose.yaml', 'compose.published.yaml'] as const
 /**
  * Every `FORMANCY_*` name `.env.example` mentions, commented out or not — a
  * commented line is how that file spells "optional", not "not documented".
+ *
+ * **Digits are in the class deliberately.** The first version matched
+ * `/FORMANCY_[A-Z_]+/`, which stops at the `3` in `FORMANCY_S3_BUCKET` and
+ * reports the name as `FORMANCY_S`. It happened to fail on the commit that added
+ * those variables, for the wrong reason: every one of the five collapsed to one
+ * meaningless name, so a compose file passing `FORMANCY_S3_ENDPOINT` and
+ * forgetting the other four would have satisfied it. The nth regex in this
+ * repository to be the thing at fault; the lesson each time is to match the whole
+ * property rather than the shape it usually has.
  */
 function documented(): readonly string[] {
-  return [...new Set(example.match(/FORMANCY_[A-Z_]+/g) ?? [])].sort()
+  return [...new Set(example.match(/FORMANCY_[A-Z0-9_]+/g) ?? [])].sort()
 }
 
 describe('.env.example and the compose files', () => {
