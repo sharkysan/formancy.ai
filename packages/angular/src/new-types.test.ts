@@ -283,6 +283,71 @@ describe('file', () => {
     expect(screen.getByRole('status').textContent).toContain('second.pdf')
   })
 
+  test('a file dropped on the field is uploaded, the same as one picked', async () => {
+    const engine = engineFor(schema)
+    const view = await renderForm(engine, [
+      provideFormancyUploader(async (file) => ({ ...stored, id: `id-${file.name}`, name: file.name })),
+    ])
+
+    const zone = document.querySelector('[data-formancy-part="file-dropzone"]')!
+    fireEvent.drop(zone, {
+      dataTransfer: { files: [new File(['x'], 'dropped.pdf', { type: 'application/pdf' })] },
+    })
+    await view.fixture.whenStable()
+
+    // A second route to the same upload, not a second implementation of it.
+    await waitFor(() =>
+      expect(engine.value()).toEqual({
+        evidence: [{ ...stored, id: 'id-dropped.pdf', name: 'dropped.pdf' }],
+      }),
+    )
+  })
+
+  test('the drop zone is an addition, not a replacement for the picker', async () => {
+    await renderForm(engineFor(schema), [provideFormancyUploader(async () => stored)])
+
+    // A drop target is a pointer gesture with no keyboard equivalent, so the
+    // input has to stay: dropping cannot be the only way to attach a file.
+    expect(screen.getByLabelText('Evidence')).toBeTruthy()
+    expect(document.querySelector('[data-formancy-part="file-dropzone"]')).toBeTruthy()
+  })
+
+  test('dragging over says so, and says it again when the file leaves', async () => {
+    const view = await renderForm(engineFor(schema), [
+      provideFormancyUploader(async () => stored),
+    ])
+    const zone = document.querySelector('[data-formancy-part="file-dropzone"]')!
+
+    fireEvent.dragOver(zone)
+    await view.fixture.whenStable()
+    expect(zone.getAttribute('data-state')).toBe('over')
+
+    fireEvent.dragLeave(zone)
+    await view.fixture.whenStable()
+    // Cleared on leave, or the field claims a file is hovering over it forever.
+    expect(zone.getAttribute('data-state')).toBe(null)
+  })
+
+  test('removing an attachment can be undone, and it goes back in place', async () => {
+    const engine = engineFor(schema)
+    const first = { ...stored, id: 'id-first', name: 'first.pdf' }
+    const second = { ...stored, id: 'id-second', name: 'second.pdf' }
+    engine.setValue(['evidence'], [first, second])
+    const view = await renderForm(engine, [provideFormancyUploader(async () => stored)])
+    await view.fixture.whenStable()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove first.pdf' }))
+    await view.fixture.whenStable()
+    expect(engine.value()).toEqual({ evidence: [second] })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Undo removing first.pdf' }))
+    await view.fixture.whenStable()
+
+    // Back where it was, not on the end: the order matters to somebody who
+    // numbered their attachments in a covering note.
+    expect(engine.value()).toEqual({ evidence: [first, second] })
+  })
+
   test('an attachment gets a remove control named after it', async () => {
     const engine = engineFor(schema)
     engine.setValue(['evidence'], [stored])

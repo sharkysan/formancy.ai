@@ -10,6 +10,34 @@ later.
 
 ## Unreleased
 
+**Files can be dropped on the field, and removing one can be undone.** The field
+was an `<input type="file">` and a list: no drop zone, and removing an attachment
+was a button with no way back.
+
+Dropping is a **second** route rather than a replacement. It is a pointer gesture
+with no keyboard equivalent, so the input stays exactly as it was, keeps the
+field's label and ARIA wiring, and the region around it hands dropped files to
+the same function the picker uses — two routes, one implementation. The drag
+state is announced through `data-state`, and the themes change the border's
+*style* as well as its colour so the state does not depend on seeing a hue.
+
+A removed attachment keeps its row with an **Undo** beside it. It leaves the
+answer immediately, so a submit in between is correct, and it goes back in the
+position it came from rather than on the end — the order matters to somebody
+who numbered their attachments in a covering note. The bytes are still in storage
+until the unclaimed collector runs, so this costs nothing but the row, and a
+misclick on the wrong row of six is the ordinary way somebody loses the evidence
+they came to attach.
+
+`apps/docs/src/themes.test.ts` earned its place immediately: it failed on
+`file-dropzone` in all four themes on the first commit after it merged, which is
+the invisible-control bug it was written for, caught before anybody saw it.
+
+Per-file progress is still missing. Reporting it needs the `Uploader` interface to
+emit it, which is a wider change than the control, and it is on the roadmap with
+thumbnails and reordering.
+
+
 **A file that uploaded is no longer thrown away because a later one failed.**
 Both renderers collected a batch into an array and set the value once, so a
 throw on the third of five discarded the two that had **already** uploaded:
