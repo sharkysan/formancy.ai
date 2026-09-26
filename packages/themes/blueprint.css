@@ -591,8 +591,6 @@
   display: none;
 }
 
-[data-formancy-theme='blueprint'] [data-formancy-part='richtext'] > :first-child { margin-block-start: 0; }
-[data-formancy-theme='blueprint'] [data-formancy-part='richtext'] > :last-child { margin-block-end: 0; }
 
 [data-formancy-theme='blueprint'] [data-formancy-part='richtext'] a {
   color: var(--fm-signal);
@@ -810,8 +808,6 @@
   min-width: 0;
 }
 
-[data-formancy-theme='blueprint'] [data-formancy-part='field'] [data-formancy-part='richtext-surface'] > :first-child { margin-block-start: 0; }
-[data-formancy-theme='blueprint'] [data-formancy-part='field'] [data-formancy-part='richtext-surface'] > :last-child { margin-block-end: 0; }
 
 /* A paragraph somebody has not typed into yet still has to occupy a line,
    or the caret sits in a box with no visible row to sit on. */
@@ -857,4 +853,39 @@
 
 [data-formancy-theme='blueprint'] [data-formancy-part='field'] [data-formancy-part='file-item'][data-state='removed'] > span:first-child {
   text-decoration: line-through;
+}
+
+/* ── Paragraph spacing in formatted text ──────────────────────────────────
+ *
+ * Set for BOTH the editing surface and the read-only rendering, and set to
+ * the same thing, because the surface is meant to be the preview: if they
+ * space paragraphs differently then what somebody writes is not what they
+ * are shown afterwards.
+ *
+ * Left to the browser this was `margin: 1em 0` on every paragraph, so three
+ * short paragraphs sat 36px apart on a 21px line — a blank line between
+ * each, which reads as double spacing and as though Enter had inserted two
+ * newlines. Reported as exactly that.
+ *
+ * Written as `* + *` rather than as margins on every child, so the first and
+ * last have no outer margin to cancel and nothing collapses through the
+ * box's padding.
+ */
+[data-formancy-theme='blueprint'] [data-formancy-part='richtext'] > *,
+[data-formancy-theme='blueprint'] [data-formancy-part='richtext-surface'] > * {
+  margin-block-end: 0;
+  margin-block-start: 0;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='richtext'] > * + *,
+[data-formancy-theme='blueprint'] [data-formancy-part='richtext-surface'] > * + * {
+  margin-block-start: 0.5em;
+}
+
+/* A list keeps its own indentation but not a browser's block margins, for
+   the same reason. */
+[data-formancy-theme='blueprint'] [data-formancy-part='richtext'] :is(ul, ol),
+[data-formancy-theme='blueprint'] [data-formancy-part='richtext-surface'] :is(ul, ol) {
+  margin-block: 0;
+  padding-inline-start: 1.5em;
 }
