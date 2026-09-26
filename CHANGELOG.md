@@ -10,6 +10,66 @@ later.
 
 ## Unreleased
 
+**The SOUP declaration's composition table is now derived from the manifests.**
+`docs/regulatory/SOUP-DECLARATION.md` is written for a manufacturer
+incorporating formancy under IEC 62304, who builds their own dependency
+assessment on that table. It had drifted three packages — `challenge`,
+`builder-react` and `mcp` — and four dependencies: `server-core` acquired
+`@noble/hashes` and `recheck` while the table still said "none", and `server`
+grew `undici`. None of it was visible in a diff, because the table did not
+change. The code did.
+
+`apps/docs/src/soup.test.ts` now checks the table against every published
+package's `package.json`, names and version ranges both, and fails on a row that
+is missing, extra or stale. It also checks the claims the table's prose makes
+about the repository: that the engine really has no third-party runtime
+dependency, that a package with a peer says so, and that the version the
+document characterises is the version the packages carry — because a
+characterisation describes one version and no other. The same document's list of
+things "not implemented in v0.1" had gone stale in the other direction: uploads,
+webhook delivery, rate limiting and the challenge all exist now, which for a
+pinned-version characterisation is a different statement, not a better one.
+
+`apps/docs/src/counts.test.ts` does the same for the decision records: the
+README said "Forty-eight" when there were sixty, and a spelled-out number
+survives twelve additions because it does not read as a number. It now says
+"the decision records" and carries no figure, and the test fails if one is put
+back. It also holds the set's own rules — no gaps or repeats in the numbering,
+and every record carrying a status, a date, a title matching its number, a
+**Verified by** line and an entry in the index.
+
+`docs/regulatory/LIFECYCLE.md` said 808 tests and 21 against PostgreSQL;
+measured, 1,661 and 62. It now states a floor — "over 1,600" — with the
+measurement and its date beside it, because an exact count there goes stale on
+the next commit that adds a test, which happened twice while this line was being
+corrected.
+
+**`CLAUDE.md` gains the enforcement half of the documentation rule.** It already
+said which documents a change must keep true; it now also says that a claim in
+prose is backed by something that fails, in three shapes — derive it, check
+it, measure it — and that a guard is watched to fail before it is trusted,
+because guards are the tests most likely to be written green and to stay that way
+for the wrong reason. Plus two things that were being carried in conversation
+rather than in the repository: that a branch targets `main` and that a commit
+pushed to an already-merged branch goes nowhere, which had stranded work three
+times.
+
+**The proof-of-work challenge hashes synchronously.** `@formancy/challenge` was
+built on Web Crypto to keep it dependency-free. Measuring it killed that: a
+hundred thousand hashes — the default ceiling — cost 269ms synchronously
+against about 4,800ms through `crypto.subtle`, because every candidate pays an
+await and a call boundary rather than the hash itself. The overhead fell on the
+wrong person. An attacker writes the fast synchronous loop, so the only visitor
+paying 18x was the one using the solver we published, and **a proof of work
+where the defender pays more than the attacker is worse than none**. The hash is
+`@noble/hashes` now: audited, no dependencies of its own, and already in the
+tree for the canonical schema hash. `solveChallenge` stays asynchronous, but
+only so it can yield to the event loop every `progressEvery` candidates — a
+new option, because a page that freezes for three seconds was the other symptom.
+The documented figure had been "around a tenth of a second"; it was 3,408 ms,
+and the wrong number was hiding the design error rather than being a typo.
+
+
 **Spec version 2.** Five constructs form.io has and formancy did not:
 `selectboxes`, `file` and `richtext` field types, and `tabs` and `table` layout
 kinds. Adding them is a version bump rather than a quiet addition, because the
@@ -358,10 +418,15 @@ second description of one protocol. The day the two disagreed, the symptom
 would be submissions the server rejects for no visible reason, which reads as
 an attack rather than as a bug.
 
-So it is one zero-dependency module on Web Crypto, running in both places, and
-`@formancy/server-core` re-exports it rather than restating it. `solveChallenge`
-takes an optional progress callback so a page can yield rather than freeze; the
-advice is still a Web Worker. Spent challenges are swept hourly, on their own
+So it is one module running in both places, and `@formancy/server-core`
+re-exports it rather than restating it. The hash is `@noble/hashes` and
+synchronous, which was a correction: `crypto.subtle` needs nothing from npm,
+but a hundred thousand hashes cost 269ms synchronously against about 4,800ms
+through it, and the only person paying that 18x is the visitor using the
+solver we published — a proof of work where the defender pays more than the
+attacker is worse than none. `solveChallenge` takes an optional progress
+callback and yields every `progressEvery` candidates so a page does not
+freeze; the advice is still a Web Worker. Spent challenges are swept hourly, on their own
 timer rather than the file collector's, because the two are configured
 independently.
 

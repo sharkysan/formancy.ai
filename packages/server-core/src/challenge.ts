@@ -7,8 +7,8 @@
  * symptom would be submissions the server rejects for no visible reason —
  * which reads as an attack rather than as a bug.
  *
- * So the scheme is one zero-dependency, isomorphic module and this file only
- * says where it went. Re-exported rather than removed so that a consumer of
+ * So the scheme is one isomorphic module and this file only says where it
+ * went. Re-exported rather than removed so that a consumer of
  * `@formancy/server-core` does not have to learn about a second package to
  * verify a solution.
  */

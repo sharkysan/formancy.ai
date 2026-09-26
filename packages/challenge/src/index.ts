@@ -1,3 +1,7 @@
+import { hmac } from '@noble/hashes/hmac.js'
+import { sha256 } from '@noble/hashes/sha2.js'
+import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js'
+
 /**
  * @formancy/challenge — the proof-of-work challenge, in one place.
  *
@@ -10,17 +14,28 @@
  * server rejects for no visible reason — which reads as an attack rather than
  * as a bug.
  *
- * So there is one description, it has no dependencies, and it runs in both
- * places. That is the same argument the engine makes about validation, applied
- * to a smaller thing.
+ * So there is one description, one implementation of the hash, and it runs in
+ * both places. That is the same argument the engine makes about validation,
+ * applied to a smaller thing.
  *
- * ── WHY WEB CRYPTO ──────────────────────────────────────────────────────────
+ * ── WHY NOT WEB CRYPTO ──────────────────────────────────────────────────────
  *
- * `crypto.subtle` is in every browser and in Node, so the package needs
- * nothing from npm and adds nothing to a page's bundle beyond this file. It is
- * asynchronous, which is why everything here is — a synchronous hash would
- * mean shipping an implementation, and an implementation is a thing to keep
- * correct forever.
+ * It was `crypto.subtle` first, which needs nothing from npm and is in every
+ * browser. Measuring it killed the idea: **100,000 hashes take 269ms
+ * synchronously and about 4,800ms through `crypto.subtle`**, because every
+ * candidate pays an await and a call boundary rather than the hash itself.
+ *
+ * That is not merely slow, it is the wrong way round. The cost is supposed to
+ * fall on somebody submitting a thousand forms; an attacker writes the fast
+ * synchronous loop, so the only person paying the 18x overhead is the visitor
+ * using the solver we published. **A proof of work where the defender pays
+ * more than the attacker is worse than none**, because it buys nothing and
+ * charges the wrong person for it.
+ *
+ * So the hash is `@noble/hashes`: audited, no dependencies of its own, works
+ * in a browser, and already in this repository's tree. `solveChallenge` stays
+ * asynchronous, but only so it can yield — the hashing inside it does not
+ * wait for anything.
  *
  * ── WHAT THE SCHEME IS ──────────────────────────────────────────────────────
  *
@@ -60,8 +75,10 @@ export interface Solution {
 /**
  * How hard the puzzle is.
  *
- * A hundred thousand hashes: around a tenth of a second, and unnoticeable
- * beside the time somebody spent filling the form in. Raising it punishes the
+ * A hundred thousand hashes, measured at 269ms rather than guessed at. That is
+ * unnoticeable beside the time somebody spent filling the form in, and it is
+ * only true of the synchronous hash — the same ceiling took about 4,800ms
+ * through `crypto.subtle`, which is why that went. Raising it punishes the
  * slowest device far more than the attacker, who has the fastest one — the
  * trap every difficulty knob in this category falls into.
  */
@@ -71,9 +88,8 @@ export const DEFAULT_MAX_NUMBER = 100_000
 export const CHALLENGE_TTL_SECONDS = 600
 
 /** `sha256(salt + number)` as hex. The one definition of the scheme's hash. */
-export async function hashOf(salt: string, number: number): Promise<string> {
-  const bytes = new TextEncoder().encode(`${salt}${String(number)}`)
-  return hex(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)))
+export function hashOf(salt: string, number: number): string {
+  return bytesToHex(sha256(utf8ToBytes(`${salt}${String(number)}`)))
 }
 
 export interface MintOptions {
@@ -85,23 +101,23 @@ export interface MintOptions {
   readonly randomBytes?: (length: number) => Uint8Array
 }
 
-export async function mintChallenge(options: MintOptions): Promise<Challenge> {
+export function mintChallenge(options: MintOptions): Challenge {
   const maxNumber = options.maxNumber ?? DEFAULT_MAX_NUMBER
   const random = options.randomBytes ?? realRandomBytes
   const expires = options.nowSeconds + CHALLENGE_TTL_SECONDS
-  const salt = `${hex(random(16))}.${String(expires)}`
+  const salt = `${bytesToHex(random(16))}.${String(expires)}`
 
   // From real entropy rather than `Math.random`, for the same reason the salt
   // is: a predictable secret number is a challenge already solved.
   const number = numberFrom(random(8), maxNumber)
-  const challenge = await hashOf(salt, number)
+  const challenge = hashOf(salt, number)
 
   return {
     algorithm: 'SHA-256',
     salt,
     challenge,
     maxNumber,
-    signature: await sign(options.secret, challenge),
+    signature: sign(options.secret, challenge),
   }
 }
 
@@ -117,11 +133,11 @@ export type VerifyOutcome =
  * there is no reason to do that work for a submission that was never going to
  * be accepted.
  */
-export async function verifySolution(
+export function verifySolution(
   secret: string,
   solution: Solution,
   nowSeconds: number,
-): Promise<VerifyOutcome> {
+): VerifyOutcome {
   if (
     typeof solution.salt !== 'string' ||
     typeof solution.challenge !== 'string' ||
@@ -136,13 +152,13 @@ export async function verifySolution(
   if (!Number.isFinite(expires)) return { ok: false, reason: 'malformed' }
   if (nowSeconds > expires) return { ok: false, reason: 'expired' }
 
-  if ((await hashOf(solution.salt, solution.number)) !== solution.challenge) {
+  if (hashOf(solution.salt, solution.number) !== solution.challenge) {
     return { ok: false, reason: 'wrong' }
   }
 
   // Last, and the one that matters: without it, anybody could invent a salt,
   // hash a number of their choosing and present the pair as a solution.
-  if (!timingSafeEqual(await sign(secret, solution.challenge), solution.signature)) {
+  if (!timingSafeEqual(sign(secret, solution.challenge), solution.signature)) {
     return { ok: false, reason: 'forged' }
   }
 
@@ -160,11 +176,26 @@ export async function verifySolution(
  */
 export async function solveChallenge(
   challenge: Pick<Challenge, 'salt' | 'challenge' | 'maxNumber'>,
-  onProgress?: (tried: number) => void | Promise<void>,
+  options: {
+    readonly onProgress?: (tried: number) => void | Promise<void>
+    /**
+     * How often to call back. Configurable rather than a constant because a
+     * test should not have to do two thousand hashes to prove the callback
+     * fires — which is how the tests here became slow enough to time out
+     * under a loaded machine.
+     */
+    readonly progressEvery?: number
+  } = {},
 ): Promise<number | undefined> {
+  const every = options.progressEvery ?? 2_000
   for (let candidate = 0; candidate <= challenge.maxNumber; candidate += 1) {
-    if ((await hashOf(challenge.salt, candidate)) === challenge.challenge) return candidate
-    if (onProgress !== undefined && candidate % 2_000 === 0) await onProgress(candidate)
+    if (hashOf(challenge.salt, candidate) === challenge.challenge) return candidate
+    // The hashing is synchronous; this await is the only thing that gives the
+    // page back to the browser. Without it a hundred thousand hashes freeze
+    // the tab for the whole quarter second.
+    if (options.onProgress !== undefined && candidate % every === 0) {
+      await options.onProgress(candidate)
+    }
   }
   // Not an exception: a caller handed a challenge this scheme did not mint
   // deserves an answer rather than a throw.
@@ -189,23 +220,12 @@ export function decodeSolution(header: string): Solution | undefined {
   }
 }
 
-async function sign(secret: string, challenge: string): Promise<string> {
-  const key = await crypto.subtle.importKey(
-    'raw',
-    new TextEncoder().encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign'],
-  )
-  return hex(new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(challenge))))
+function sign(secret: string, challenge: string): string {
+  return bytesToHex(hmac(sha256, utf8ToBytes(secret), utf8ToBytes(challenge)))
 }
 
 function realRandomBytes(length: number): Uint8Array {
   return crypto.getRandomValues(new Uint8Array(length))
-}
-
-function hex(bytes: Uint8Array): string {
-  return [...bytes].map((byte) => byte.toString(16).padStart(2, '0')).join('')
 }
 
 /** A number below `max`, drawn from bytes rather than from a float. */

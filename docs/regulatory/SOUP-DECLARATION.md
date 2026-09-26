@@ -19,7 +19,7 @@ software, and neither is `latest`.
 | Source | this repository, in full, including tests |
 | Package version | `0.1.0`, published to npm under the `@formancy` scope |
 | Spec version | `"2"` ([0051](../decisions/0051-spec-2-adds-types.md)). Version `"1"` is frozen and stays readable ([0042](../decisions/0042-freeze-the-spec.md)) |
-| Development stage | v0.1 released; pre-alpha. `@formancy/builder-react` is the one package not yet published |
+| Development stage | v0.1 released; pre-alpha. `@formancy/builder-react`, `@formancy/challenge` and `@formancy/mcp` are built and tested but not yet published |
 | Integrity | each tarball carries a SLSA v1 provenance attestation issued by GitHub's OIDC identity for the workflow run that built it, plus a registry signature. Verify with `npm audit signatures`; the pipeline is described in [`RELEASING.md`](../../RELEASING.md) |
 
 The two version lines are independent and both matter. The package version
@@ -72,27 +72,37 @@ What it does **not** do, and must not be assumed to do:
 
 ## Composition and third-party dependencies
 
-Ten packages, layered so that the isomorphic ones cannot acquire a platform
-dependency ([0008](../decisions/0008-layered-packages.md)):
+Thirteen published packages, layered so that the isomorphic ones cannot
+acquire a platform dependency ([0008](../decisions/0008-layered-packages.md)):
 
 | Package | Runtime dependencies outside the project |
 |---|---|
 | `@formancy/spec` | `ajv ^8.20.0`, `@noble/hashes ^2.4.0` |
 | `@formancy/expressions` | `@marcbachmann/cel-js ^8.0.0` |
 | `@formancy/core` | none |
+| `@formancy/challenge` | `@noble/hashes ^2.4.0` |
 | `@formancy/builder-core` | none |
+| `@formancy/builder-react` | none (React is a peer) |
 | `@formancy/conformance` | none |
 | `@formancy/react` | none (React is a peer) |
-| `@formancy/angular` | `tslib` (Angular is a peer) |
-| `@formancy/server-core` | none |
-| `@formancy/server` | `fastify ^5.12.5`, `@fastify/rate-limit ^11.2.0`, `drizzle-orm ^0.45.2`, `postgres ^3.4.9`, `jose ^6.2.12`, `@node-rs/argon2 ^2.2.1` |
+| `@formancy/angular` | `tslib ^2.8.0` (Angular is a peer) |
+| `@formancy/server-core` | `@noble/hashes ^2.4.0`, `recheck ^4.5.0` |
+| `@formancy/server` | `@fastify/rate-limit ^11.2.0`, `@node-rs/argon2 ^2.2.1`, `drizzle-orm ^0.45.2`, `fastify ^5.12.5`, `jose ^6.2.12`, `postgres ^3.4.9`, `undici ^8.10.2` |
+| `@formancy/mcp` | `@modelcontextprotocol/sdk ^1.30.1`, `zod ^4.6.5` |
 | `@formancy/themes` | none (CSS only) |
+
+**This table is derived from the manifests by `apps/docs/src/soup.test.ts`,
+not maintained by hand.** It had drifted three packages and four dependencies
+before that test existed — a composition list is the one part of this
+document a manufacturer builds their own dependency assessment on, and a
+wrong one is worse than an absent one. The test fails on any package, name or
+version range that does not match `package.json`.
 
 The dependency count is deliberately small, and the engine — the part that
 decides whether a submission is valid — has **no third-party runtime
 dependency at all**.
 
-### The one dependency to look at closely
+### The dependencies to look at closely
 
 `@marcbachmann/cel-js` evaluates every conditional and validation expression.
 It is MIT-licensed, zero-dependency and fast, and it has roughly 190 GitHub
@@ -106,6 +116,23 @@ than assumed**, because the library's own claim is the unquantified phrase
 "most of the CEL spec". The result is pinned in a test and written up in
 `packages/expressions/CEL-CONFORMANCE.md`
 ([0036](../decisions/0036-pin-the-cel-corpus.md)).
+
+`recheck` decides whether a form's `pattern` may be published. It statically
+analyses each expression for catastrophic backtracking, which is the only
+moment that cost can be refused — a JavaScript regular expression cannot be
+timed out once it has started, so a bad pattern published once turns every
+later submission into unbounded CPU for anyone who can reach the form. It
+found a polynomial case in formancy's own built-in email format before it was
+ever pointed at a user's. Which engine it uses is chosen by the host:
+`@formancy/server` pins `RECHECK_BACKEND=pure`, and absent that recheck falls
+back to the pure engine itself.
+
+`@noble/hashes` computes the canonical schema hash and the proof-of-work
+challenge. It is audited, has no dependencies of its own, and replaced Web
+Crypto in the challenge after measurement: a hundred thousand hashes cost
+269ms synchronously against about 4,800ms through `crypto.subtle`, and the
+overhead fell on the legitimate visitor rather than on an attacker, who
+writes the fast loop ([0059](../decisions/0059-proof-of-work-not-a-captcha.md)).
 
 ## Known anomalies and limitations
 
@@ -129,8 +156,16 @@ expressions should read that file rather than this summary.
   that adding them later is a compatible change, not a breaking one.
 - Multi-tenancy is absent entirely.
 
-**Not implemented in v0.1 but designed**: file storage, webhook delivery and
-actions, rate limiting and challenge on the public submission plane.
+**Implemented since v0.1 and therefore NOT characterised by this document**:
+file uploads with a claim-and-collect lifecycle, webhook delivery through a
+transactional outbox with a per-destination circuit breaker, rate limiting,
+and a proof-of-work challenge on the public submission plane. A manufacturer
+pinning `0.1.0` does not have these; one pinning a later version needs a
+re-characterisation, which is what the version statement at the top of this
+document is for.
+
+**Still absent and designed only**: an S3 file store (local disk is the one
+implemented adapter), virus scanning, and resumable uploads.
 
 **Accessibility**, stated precisely because vague claims here are worse than
 none: the conformance suite structurally requires that every control be

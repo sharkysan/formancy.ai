@@ -1,7 +1,7 @@
 {
   "name": "@formancy/challenge",
   "version": "0.1.0",
-  "description": "The formancy proof-of-work challenge: mint, solve and verify. Isomorphic, zero dependencies.",
+  "description": "The formancy proof-of-work challenge: mint, solve and verify. Isomorphic.",
   "license": "Apache-2.0",
   "type": "module",
   "sideEffects": false,
@@ -40,5 +40,8 @@
     "directory": "packages/challenge"
   },
   "homepage": "https://github.com/sharkysan/formancy.ai",
-  "bugs": "https://github.com/sharkysan/formancy.ai/issues"
+  "bugs": "https://github.com/sharkysan/formancy.ai/issues",
+  "dependencies": {
+    "@noble/hashes": "^2.4.0"
+  }
 }
