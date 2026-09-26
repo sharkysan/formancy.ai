@@ -8,6 +8,17 @@ on:
   push:
     tags: ['v*']
 
+# Third-party actions are pinned to commit hashes, with the tag in a comment.
+#
+# This workflow holds an npm token, an OIDC identity that can sign on the
+# project's behalf, and push rights to the registry. A tag is a mutable pointer:
+# whoever controls an action's repository can move `v3` to different code, and
+# that code would run here with all three. CodeQL flagged the three added with
+# the image work; the two that were already here are pinned in the same commit,
+# because the argument does not distinguish them.
+#
+# Updating one means reading what changed and writing a new hash. That is the
+# cost, and it is also the point.
 permissions:
   contents: read
 
@@ -18,6 +29,7 @@ jobs:
     permissions:
       contents: write # create the GitHub release
       id-token: write # OIDC, for npm provenance and keyless signing
+      packages: write # push the server image to GHCR
     steps:
       - uses: actions/checkout@v4
         with:
@@ -116,7 +128,7 @@ jobs:
             console.log('SBOM: ' + String((s.components ?? []).length) + ' components');
           "
 
-      - uses: sigstore/cosign-installer@v3
+      - uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3
 
       # Keyless: the signature is bound to this workflow's OIDC identity rather
       # than to a private key somebody has to keep. There is no key to leak and
@@ -127,15 +139,77 @@ jobs:
             --bundle "formancy-${GITHUB_REF_NAME}-sbom.cdx.json.sigstore" \
             "formancy-${GITHUB_REF_NAME}-sbom.cdx.json"
 
+      # ── The server image ────────────────────────────────────────────────
+      #
+      # CI builds this image on every pull request and proves it starts. Until
+      # now the release threw it away, so a self-hosted product whose npm
+      # packages carry provenance had no published image at all — which asks
+      # people to build it themselves and calls that a supply chain.
+      #
+      # Built here rather than reusing CI's: an image somebody deploys should be
+      # produced by the workflow that signs it, at the commit the tag names, and
+      # not carried between jobs where the thing signed and the thing built could
+      # drift apart.
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - name: Log in to the registry
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # No `latest`, deliberately. The SOUP declaration tells a manufacturer to
+      # pin an exact version and says in as many words that `latest` is not
+      # characterised software; publishing one anyway would be this project
+      # contradicting its own advice in the most convenient place to do it.
+      - name: Build and push the server image
+        id: image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          file: packages/server/Dockerfile
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/formancy-server:${{ github.ref_name }}
+          # GitHub's own build provenance, which is the same statement the npm
+          # tarballs carry: this workflow, at this commit, produced these bytes.
+          provenance: mode=max
+
+      # By DIGEST, never by tag. A tag is mutable, so signing `:v1.2.3` says
+      # nothing about the bytes anybody later pulls under that name — and being
+      # about the bytes is the entire point of the signature.
+      - name: Sign the image
+        run: |
+          cosign sign --yes \
+            "ghcr.io/${{ github.repository_owner }}/formancy-server@${{ steps.image.outputs.digest }}"
+
+      # The SBOM is already built and signed as a file on the release page. A
+      # file beside a download is a file somebody has to know to look for; an
+      # attestation travels with the image, and `cosign verify-attestation` finds
+      # it without being told where.
+      - name: Attach the SBOM to the image
+        run: |
+          cosign attest --yes \
+            --type cyclonedx \
+            --predicate "formancy-${GITHUB_REF_NAME}-sbom.cdx.json" \
+            "ghcr.io/${{ github.repository_owner }}/formancy-server@${{ steps.image.outputs.digest }}"
+
+      - name: Say which image this release is
+        run: |
+          {
+            echo "### Container image"
+            echo
+            echo '```'
+            echo "ghcr.io/${{ github.repository_owner }}/formancy-server:${GITHUB_REF_NAME}"
+            echo "digest: ${{ steps.image.outputs.digest }}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Create the GitHub release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
           body_path: CHANGELOG.md
           files: |
             formancy-*-sbom.cdx.json
             formancy-*-sbom.cdx.json.sigstore
           fail_on_unmatched_files: true
-
-  # Container image signing lands with the container image. There is no server
-  # image yet (see CHANGELOG), and a job that signs nothing is worse than an
-  # absent one because it reads as coverage.

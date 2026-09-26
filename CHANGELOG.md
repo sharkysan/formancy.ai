@@ -10,6 +10,58 @@ later.
 
 ## Unreleased
 
+**Every third-party action in the release workflow is pinned to a commit hash**,
+with the tag in a comment. That workflow holds an npm token, an OIDC identity that
+can sign on the project's behalf, and push rights to the registry; a tag is a
+mutable pointer, so whoever controls an action's repository can move `v3` to
+different code and that code would run here with all three. CodeQL flagged the
+three added with the image work, and the two that were already there are pinned in
+the same commit because the argument does not distinguish them. Updating one now
+means reading what changed and writing a new hash, which is the cost and also the
+point.
+
+CodeQL also caught a real defect **in the guard itself**: `/:latest|latest\s*$/`
+anchors only its second alternative, so the first half matched `:latest` anywhere
+including inside a longer word. Grouped, and `` rather than `$` so it also
+catches a tag with something after it on the line.
+
+**The server image is published and signed.** CI built it on every pull request
+and proved it starts, and the release threw it away — so a self-hosted,
+security-adjacent product whose npm packages carry provenance and a signed SBOM
+had no published image at all, which asks people to build it themselves and calls
+that a supply chain.
+
+Releases now push `ghcr.io/sharkysan/formancy-server:<tag>`, **signed by digest**
+rather than by tag: a tag is mutable, so signing `:v1.2.3` says nothing about the
+bytes anybody later pulls under that name, and being about the bytes is the entire
+point. The SBOM that was already generated and signed as a file on the release page
+is now also **attached to the image** as a CycloneDX attestation — a file beside a
+download is a file somebody has to know to look for, whereas
+`cosign verify-attestation` finds an attestation without being told where it is.
+The image carries GitHub's build provenance too, which is the same statement the
+npm tarballs make.
+
+Built in the release workflow rather than carried from CI: an image somebody
+deploys should be produced by the workflow that signs it, at the commit the tag
+names, and not passed between jobs where the thing built and the thing signed
+could drift apart.
+
+**There is deliberately no `latest`.** The SOUP declaration tells a manufacturer to
+pin an exact version and says in as many words that `latest` is not characterised
+software; publishing one anyway would be this project contradicting its own advice
+in the most convenient place to do it. `RELEASING.md` has the verification
+commands — against the digest, with `crane digest` to get it — and the SOUP
+declaration's integrity row now says what the image carries.
+
+`packages/server/src/release-image.test.ts` fails if the release pushes without
+signing, signs by tag instead of digest, stops attaching the SBOM, or starts
+publishing a `latest` tag. Its first version failed against a workflow that was
+**correct**: it looked for `--push` where the workflow says `push: true`, and for
+the digest on the same line as `cosign sign` where the command is written across a
+line continuation. That is the third guard here whose regex was the thing at fault,
+so each assertion now spells out the alternatives instead of assuming one.
+
+
 **Four documents said adding a field type is "a compatible change". The decision
 record that governs the version line says it is a version bump.** Found before
 building `signature`, by checking what it would cost rather than assuming.
