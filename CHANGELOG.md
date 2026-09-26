@@ -10,6 +10,36 @@ later.
 
 ## Unreleased
 
+**Drafts are documented.** There was no page for them, which is a poor state for a
+feature whose API changed in a breaking way this week and which has a security
+story worth reading before you use it. The new
+[Drafts](https://formancy.ai/docs/concepts/drafts/) page covers the three calls,
+why the server picks the id and signs it rather than accepting one, and the three
+things a host has to get right:
+
+- **Debounce the save.** The obvious implementation writes a database row per
+  keystroke. The routes are rate-limited, so an undebounced save starts returning
+  429 rather than quietly costing anything — but a form that hits its own limit
+  while somebody types stops saving exactly when they are working hardest.
+- **Show the migration report**, and the plain statement that nothing forces a host
+  to. Resuming is the host's call because the host holds the transport, so this is
+  the one part of the draft story the library cannot guarantee.
+- **Handle the read-only outcome**, where the draft comes back against its own
+  version and cannot be submitted.
+
+It also says what a draft is *not*: not validated on the way in, not private from
+the deployment, and not expiring — the token stays good until the draft is
+swept. `versioning.md` now sends the reader there, since it described the
+migration severities without mentioning that the report is only useful if somebody
+sees it.
+
+The roadmap entry for this is corrected rather than ticked off. Every part exists
+and none of them is demonstrated: the playground and the marketing site are
+client-only, and the admin is the authoring tool rather than a form-filling
+surface. So what remains is a host, and saying "described and not demonstrated" is
+more useful than calling it done.
+
+
 **A resumed draft now says what changed while you were away.** The server already
 did the careful half — a republished form migrates a draft lazily, and answers
 whose field is gone move to `data.__orphaned` rather than being deleted — and

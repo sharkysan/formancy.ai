@@ -68,6 +68,12 @@ Migration is lazy because most drafts are abandoned — migrating eagerly on eve
 publish multiplies every publish by every draft. A successful rebind is
 persisted, so the work happens once rather than on every resume.
 
+**The report is only useful if somebody sees it.** A `lossy` rebind keeps the
+answers and takes them off the form, so a host that ignores `migration` leaves
+people submitting in the belief that everything they typed is included. See
+[Drafts](/concepts/drafts/) for the three calls, why a draft carries a token
+rather than an id, and the notice both renderers ship for this.
+
 ## Two version lines
 
 **Package versions** move together as one number. Before 1.0, breaking changes
