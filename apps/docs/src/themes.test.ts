@@ -129,6 +129,24 @@ describe('the theme contract', () => {
     expect(gaps).toEqual([])
   })
 
+  test('the editor and the read-only rendering space paragraphs the same way', () => {
+    // The editing surface is meant to BE the preview, so the two have to agree.
+    // Left to the browser they did not agree with anything: every paragraph got
+    // `margin: 1em 0`, so three short ones sat 36px apart on a 21px line -- a
+    // blank line between each, which reads as double spacing and as though Enter
+    // had inserted two newlines. Reported as exactly that.
+    const gaps = themes()
+      .filter(({ css }) => {
+        // One rule has to name both parts, which is what makes them equal by
+        // construction rather than by two numbers somebody keeps in step.
+        const together = /richtext'\]\s*>\s*\*\s*\+\s*\*\s*,\s*[^{]*richtext-surface'\]\s*>\s*\*\s*\+\s*\*\s*\{/
+        return !together.test(css)
+      })
+      .map(({ name }) => name)
+
+    expect(gaps).toEqual([])
+  })
+
   test('a themed control has a height, so it is visible before it has content', () => {
     // The specific reason the field was invisible rather than merely unstyled:
     // an empty contenteditable collapses to nothing without one.

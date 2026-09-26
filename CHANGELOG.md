@@ -10,6 +10,27 @@ later.
 
 ## Unreleased
 
+**Formatted text no longer looks double-spaced.** Nothing controlled the space
+between paragraphs, so the browser's default `margin: 1em 0` applied: three short
+paragraphs sat **36px apart on a 21px line**, a full blank line between each. It
+reads as double spacing, and it makes pressing Enter once look like it inserted
+two newlines — which is how it was reported. Now 28px, clearly a paragraph
+break and not a blank line.
+
+Set for the **editing surface and the read-only rendering together, in one rule**,
+because the surface is meant to *be* the preview: if the two space paragraphs
+differently then what somebody writes is not what they are shown afterwards.
+`apps/docs/src/themes.test.ts` fails if a theme stops naming both parts in the same
+rule, which is what keeps them equal by construction rather than by two numbers
+somebody has to remember to keep in step. Lists get the same treatment, keeping
+their indentation and losing their block margins.
+
+The first version of this cancelled itself — the reset was written after the
+sibling rule, same specificity, so paragraphs came out completely flush and two of
+them were indistinguishable from one that had wrapped. Caught by measuring it in a
+browser rather than by reading the CSS.
+
+
 **Dropping a field on another field's side puts both in a row**, on the form
 itself. The pointer route for what `w` already does in the arrangement pane, and
 it calls the same command — the keyboard path is what satisfies WCAG 2.2
