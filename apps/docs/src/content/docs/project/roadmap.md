@@ -71,8 +71,9 @@ history, submissions and export).
   not how far along each file is. Reporting it needs the `Uploader` interface to
   emit progress, which is a wider change than the control — so it is the one
   part of the file field still outstanding, along with thumbnails and reordering.
-- **An S3 file store.** Local disk is the only one, and it does not survive
-  more than one replica.
+- **A presigned upload path.** The object store landed, so bytes survive more
+  than one replica — but they still travel through the server, so the request
+  body cap is also the largest file anybody can send.
 - **Form actions** beyond webhooks.
 - **OIDC / SAML.** Local users and API keys only for now.
 - **A worked example of saving a partly-filled form.** The parts all exist now —

@@ -76,7 +76,10 @@ wrong database — a confusing ten minutes. The compose file maps 5439 instead.
 | `DATABASE_URL` | yes | Postgres connection string |
 | `FORMANCY_AUTH_SECRET` | in production | Signs session tokens; ≥ 32 characters. If unset, an ephemeral one is generated and every session dies on restart — the server warns when it does this. |
 | `FORMANCY_ADMIN_EMAIL` / `..._PASSWORD` | first run | Creates the first admin, and **only** while no such user exists. It cannot re-seed an admin into a running installation. |
-| `FORMANCY_FILES_DIR` | no | Where uploaded bytes go. Unset means this deployment accepts no files, which is a supported state — see [Files](/docs/concepts/files/). |
+| `FORMANCY_FILES_DIR` | no | Where uploaded bytes go on local disk. Unset means this deployment accepts no files, which is a supported state — see [Files](/docs/concepts/files/). One replica only. |
+| `FORMANCY_S3_ENDPOINT` | no | An S3-compatible object store instead of a directory, which is what more than one replica needs. Setting it makes the four below required and refuses `FORMANCY_FILES_DIR` alongside it. |
+| `FORMANCY_S3_BUCKET` / `..._REGION` | with the endpoint | No defaults: a guessed bucket uploads into nothing, and the region is part of the request signature rather than a label — a wrong one is rejected. |
+| `FORMANCY_S3_ACCESS_KEY_ID` / `..._SECRET_ACCESS_KEY` | with the endpoint | No defaults. Wrong credentials would otherwise look like a store where every file is missing. |
 | `FORMANCY_MAX_FILE_BYTES` | no | The operator's ceiling over every form's own `maxFileSize`. Defaults to 10 MB. |
 | `FORMANCY_CHALLENGE_SECRET` | no | Turns the proof-of-work challenge on for anonymous submissions; ≥ 32 characters. Unset means public forms are defended by the rate limits, the origin allowlist and the body cap alone. Separate from `FORMANCY_AUTH_SECRET` so that rotating one does not cost everybody their session. |
 | `FORMANCY_WEBHOOK_ALLOW_HTTP` / `..._ALLOW_PRIVATE` | no | Opt out of the webhook SSRF guard, per deployment and never per form. `ALLOW_PRIVATE` gives it up entirely. |

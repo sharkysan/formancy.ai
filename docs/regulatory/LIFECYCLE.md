@@ -92,6 +92,13 @@ Each gate exists for a reason that was paid for at least once:
   Angular Package Format requires partial-Ivy compilation; the TypeScript
   packages are built with `tsdown`. Two toolchains, budgeted deliberately
   ([0037](../decisions/0037-turborepo-over-nx.md)).
+- **Container-backed integration tests** — the server's suite runs against a real
+  PostgreSQL and, since the object store landed, a real Garage. Both exist for the
+  same reason: the defects only appear against a real implementation. The S3 case
+  is sharper than the database one, because the signing code is ours and Garage is
+  the only thing in the repository that can say the signature is *right* rather
+  than merely self-consistent — so that suite carries a case asserting a wrong
+  secret is refused, without which the rest of it would prove nothing.
 - **`build:web`** — composes the landing page, the playground and the docs under
   one origin, which `build` does not do, and carries the check for root-absolute
   documentation links. Added as a gate after it had existed for a while as a
