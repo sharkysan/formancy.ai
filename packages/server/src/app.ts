@@ -603,25 +603,43 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
    * once. Losing it means losing the draft, which is the correct trade for the
    * alternative.
    */
-  app.post('/f/:path/drafts', async (request, reply) => {
-    const { path } = request.params as { path: string }
-    const started = await startDraft(deps, { path })
-    if (started === undefined) return reply.code(404).send({ error: 'unknown_form' })
-    return reply.code(201).send(started)
-  })
+  app.post(
+    '/f/:path/drafts',
+    {
+      // Unauthenticated, like the submission route, and every call hands out a
+      // key. Cheap per call, but nothing should be free on the public plane.
+      config: { rateLimit: { max: submissionLimit.max, timeWindow: submissionLimit.timeWindowMs } },
+    },
+    async (request, reply) => {
+      const { path } = request.params as { path: string }
+      const started = await startDraft(deps, { path })
+      if (started === undefined) return reply.code(404).send({ error: 'unknown_form' })
+      return reply.code(201).send(started)
+    },
+  )
 
-  app.put('/f/:path/drafts/:draftId', async (request, reply) => {
-    const { path, draftId } = request.params as { path: string; draftId: string }
-    const token = request.headers[DRAFT_TOKEN_HEADER]
-    if (typeof token !== 'string') {
-      return reply.code(401).send({ error: 'draft_token_required' })
-    }
+  app.put(
+    '/f/:path/drafts/:draftId',
+    {
+      // A database row per request, reachable without an account. The submission
+      // route used to be described as "the one unauthenticated write in the
+      // product"; that stopped being true when drafts were exposed here, and
+      // nobody moved the limit across.
+      config: { rateLimit: { max: submissionLimit.max, timeWindow: submissionLimit.timeWindowMs } },
+    },
+    async (request, reply) => {
+      const { path, draftId } = request.params as { path: string; draftId: string }
+      const token = request.headers[DRAFT_TOKEN_HEADER]
+      if (typeof token !== 'string') {
+        return reply.code(401).send({ error: 'draft_token_required' })
+      }
 
-    const saved = await saveDraft(deps, { path, draftId, token, data: request.body ?? {} })
-    if (saved === undefined) return reply.code(404).send({ error: 'unknown_form' })
-    if (!saved.saved) return reply.code(403).send({ error: 'draft_token_invalid' })
-    return reply.send({ version: saved.version })
-  })
+      const saved = await saveDraft(deps, { path, draftId, token, data: request.body ?? {} })
+      if (saved === undefined) return reply.code(404).send({ error: 'unknown_form' })
+      if (!saved.saved) return reply.code(403).send({ error: 'draft_token_invalid' })
+      return reply.send({ version: saved.version })
+    },
+  )
 
   app.get('/f/:path/drafts/:draftId', async (request, reply) => {
     const { path, draftId } = request.params as { path: string; draftId: string }
@@ -645,7 +663,7 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
    * submission will reference and the URL to PUT the bytes to.
    */
   app.post('/f/:path/files', {
-    config: { rateLimit: { max: submissionLimit.max, timeWindowMs: submissionLimit.timeWindowMs } },
+    config: { rateLimit: { max: submissionLimit.max, timeWindow: submissionLimit.timeWindowMs } },
   }, async (request, reply) => {
     if (fileStore === undefined) {
       return reply.code(501).send({
@@ -800,9 +818,9 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
   app.post(
     '/f/:path/submissions',
     {
-      // The one unauthenticated write in the product, so the one that needs
-      // this most. Keyed by IP, which is the only identity an anonymous
-      // submitter has.
+      // The unauthenticated write that matters most, and no longer the only
+      // one: drafts write too, and are limited the same way. Keyed by IP, which
+      // is the only identity an anonymous submitter has.
       config: { rateLimit: { max: submissionLimit.max, timeWindow: submissionLimit.timeWindowMs } },
     },
     async (request, reply) => {

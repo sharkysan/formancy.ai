@@ -253,12 +253,17 @@ constant time. A wrong token is answered exactly like a draft that is not there,
 so the reply cannot be used to discover which ids exist.
 
 *Residual:* **the token does not expire.** A leaked one is good until the draft
-is swept, which is a weaker bound than an expiry. The two routes also still have
-no rate limit of their own, unlike the submission route. And this hazard was
-absent from this document until the code was fixed — C2 covers a *submission*
-read by somebody not entitled to it, and a draft is not a submission and took a
-different route. An analysis that misses a live hole is a worse artefact than the
-code was, and the omission is recorded here rather than quietly filled in.
+is swept, which is a weaker bound than an expiry. And this hazard was absent from
+this document until the code was fixed — C2 covers a *submission* read by
+somebody not entitled to it, and a draft is not a submission and took a different
+route. An analysis that misses a live hole is a worse artefact than the code was,
+and the omission is recorded here rather than quietly filled in.
+
+Both draft routes are rate-limited on the same terms as the submission route,
+keyed by IP. That was a second residual when this hazard was first written up and
+is no longer one: a draft write is a database row per request and reachable
+without an account, and the limiter was only ever pointed at submissions because
+they used to be the only unauthenticated write.
 
 ---
 
