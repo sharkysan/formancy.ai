@@ -87,8 +87,10 @@ history, submissions and export).
 - **Concurrent editing of one form.** Published versions are immutable and a
   submission carries the hash it was rendered from, so the pieces are there; two
   people editing one draft still last-write-wins.
-- **A published container image**, signed. The npm releases carry provenance and
-  a signed SBOM; the image is built and tested in CI but not pushed.
+- **Somewhere to run the image without writing a compose file.** It is published
+  and signed now; what is missing is the one-command path a self-hoster expects,
+  and the Garage object store the design calls for is still not in a compose file
+  anybody can copy.
 - **Multi-tenancy, PDF output, e-signatures, analytics.**
 - **A Vue renderer.** The engine protocol is designed for one; it is not a
   commitment yet.
@@ -149,7 +151,6 @@ than asserted.
 2. **`signature` and `datagrid`**, in that order — signature is smaller and more
    asked for; datagrid is mostly a control over a data model that already exists.
 3. **Translated form content**, while the reservation is still fresh.
-4. **A published container image**, signed, alongside the npm releases.
 
 ## Measured against the competition
 

@@ -20,7 +20,7 @@ software, and neither is `latest`.
 | Package version | `0.1.0`, published to npm under the `@formancy` scope |
 | Spec version | `"2"` ([0051](../decisions/0051-spec-2-adds-types.md)). Version `"1"` is frozen and stays readable ([0042](../decisions/0042-freeze-the-spec.md)) |
 | Development stage | v0.1 released; pre-alpha. `@formancy/builder-react`, `@formancy/challenge` and `@formancy/mcp` are built and tested but not yet published |
-| Integrity | each tarball carries a SLSA v1 provenance attestation issued by GitHub's OIDC identity for the workflow run that built it, plus a registry signature. Verify with `npm audit signatures`; the pipeline is described in [`RELEASING.md`](../../RELEASING.md) |
+| Integrity | each tarball carries a SLSA v1 provenance attestation issued by GitHub's OIDC identity for the workflow run that built it, plus a registry signature. Verify with `npm audit signatures`. The server image is published to GHCR and **signed by digest**, with the SBOM attached as a CycloneDX attestation — verify with `cosign verify` and `cosign verify-attestation` against the digest rather than the tag, since a tag is mutable. There is deliberately no `latest`, for the reason this table gives two rows down. The pipeline is described in [`RELEASING.md`](../../RELEASING.md) |
 
 The two version lines are independent and both matter. The package version
 governs the code; the spec version governs the *documents and stored

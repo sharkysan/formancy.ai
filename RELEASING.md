@@ -135,6 +135,46 @@ cosign verify-blob \
   formancy-v0.2.0-sbom.cdx.json
 ```
 
+## The server image
+
+Published to GHCR on every release, signed by digest, with the SBOM attached as
+an attestation:
+
+```
+ghcr.io/sharkysan/formancy-server:v0.2.0
+```
+
+**There is deliberately no `latest`.** The SOUP declaration tells a manufacturer
+to pin an exact version and says in as many words that `latest` is not
+characterised software. Publishing one anyway would be this project
+contradicting its own advice in the most convenient place to do it — so a
+deployment names a version, and finds out about a new one by reading the
+changelog rather than by restarting.
+
+Verifying the image. Note the **digest**: the signature is about the bytes, and a
+tag is mutable, so verifying `:v0.2.0` would only ever tell you what that name
+pointed at when you asked.
+
+```bash
+digest=$(crane digest ghcr.io/sharkysan/formancy-server:v0.2.0)
+
+cosign verify   --certificate-identity-regexp 'https://github.com/sharkysan/formancy\.ai/.*'   --certificate-oidc-issuer https://token.actions.githubusercontent.com   "ghcr.io/sharkysan/formancy-server@${digest}"
+```
+
+And reading the SBOM out of the image itself, rather than finding the file on the
+release page:
+
+```bash
+cosign verify-attestation   --type cyclonedx   --certificate-identity-regexp 'https://github.com/sharkysan/formancy\.ai/.*'   --certificate-oidc-issuer https://token.actions.githubusercontent.com   "ghcr.io/sharkysan/formancy-server@${digest}"
+```
+
+The image also carries GitHub's own build provenance — the same statement the
+npm tarballs make, that this workflow at this commit produced these bytes:
+
+```bash
+gh attestation verify --owner sharkysan   "oci://ghcr.io/sharkysan/formancy-server@${digest}"
+```
+
 ## Licences
 
 Apache-2.0 section 4(a) requires a copy of the licence to travel with the work,
