@@ -95,7 +95,10 @@ async function openForm(stub: Stub): Promise<ReturnType<typeof userEvent.setup>>
   const user = userEvent.setup()
   serve(stub)
   render(<App />)
-  await user.click(await screen.findByRole('button', { name: /Contact us/ }))
+  // The first test in the file also pays for a cold jsdom and the lazy
+  // imports behind the list, which on a loaded CI runner can outlast the
+  // default one-second wait even though nothing is wrong.
+  await user.click(await screen.findByRole('button', { name: /Contact us/ }, { timeout: 5000 }))
   return user
 }
 
