@@ -49,4 +49,12 @@ gh repo edit sharkysan/formancy.ai \
   --add-topic monorepo --add-topic form-engine
 ```
 
-Website field, once the docs site is deployed: the Starlight build in `apps/docs`.
+## Website
+
+`https://formancy.ai`, in the repository's *About* panel. The README links it
+too, but the About field is what GitHub shows beside the description and in
+search results.
+
+```bash
+gh repo edit sharkysan/formancy.ai --homepage https://formancy.ai
+```
