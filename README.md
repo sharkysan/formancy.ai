@@ -11,6 +11,14 @@
 
 A modern, self-hostable form engine and backend — for React and Angular.
 
+<p align="center">
+  <img src="./docs/images/readme/hero.jpg" alt="The formancy landing page: a form written as JSON on the right, its rules evaluated the same way in the browser and on the server" width="100%" />
+</p>
+
+**A form is a JSON document. formancy compiles it once and runs it in both
+places**, so what the person filling it in was told and what your server
+accepts can never drift apart.
+
 > **Status: pre-alpha, version 0.1.0.**
 >
 > **Spec version 2.** A form document written against version 1 keeps working
@@ -24,9 +32,59 @@ A modern, self-hostable form engine and backend — for React and Angular.
 >
 > The server is not ready for a public deployment. It has authentication,
 > role-based authorization, forms that are private until opened, per-IP rate
-> limits, a request body cap and a publish-time check that refuses regular
-> expressions which can be made to backtrack — but no challenge, no submission
-> tokens and no audit logging.
+> limits, a request body cap, a publish-time check that refuses regular
+> expressions which can be made to backtrack, an audit log and a proof-of-work
+> challenge for anonymous submissions — but no submission tokens yet.
+
+## See it
+
+### Same markup, four products
+
+<p align="center">
+  <img src="./docs/images/readme/themes.png" alt="The same conference-ticket form rendered four times, in the Dusk, Blueprint, Pop and Paper themes" width="100%" />
+</p>
+
+One form, one renderer, the same answers typed in: four themes that do not look
+related. The renderers ship no CSS at all. Each theme is a scoped stylesheet
+over the same `data-formancy-part` hooks, so your design system can be the
+fifth. The total says **1050** in every one of them because the engine worked
+it out, not the page: two hotel nights plus the workshop ticket, a `computed`
+rule in CEL that the server replays and recomputes on submit.
+
+### A builder that edits a document, not a canvas
+
+<p align="center">
+  <img src="./docs/images/readme/builder.png" alt="The self-hosted admin: a list of forms, the structure tree, a live preview and a property panel explaining every setting" width="100%" />
+</p>
+
+The self-hosted admin opens any published form in the builder: the structure
+on the left, the real renderer in the middle, and every property on the right
+with a sentence saying what it does to the data. Everything works from the
+keyboard first, and drag second. Publishing tells you when a change would
+break the submissions you already have.
+
+### A playground that shows the engine thinking
+
+<p align="center">
+  <img src="./docs/images/readme/playground.png" alt="The playground: the builder, the live form in the Blueprint theme, and the engine's submission value and tracked fields side by side" width="100%" />
+</p>
+
+Edit the schema, and the form and the engine follow as you type: the
+submission value as it would be sent, the errors a person can actually see,
+and which fields the rules have hidden. Switch language or theme without
+reloading. `pnpm --filter @formancy/playground dev` runs it locally.
+
+### And also
+
+- **Validation that cannot drift.** The rule that shows a field in the browser
+  is the rule the server checks, compiled from the same document.
+- **Accessible by construction.** The engine owns the ARIA wiring, and the
+  conformance suite runs axe-core after every change, in both renderers.
+- **Your coding agent writes the forms.** `@formancy/mcp` gives it the same
+  checks a person gets, and refuses to publish a form the engine would reject.
+- **No third party in the loop.** Spam protection is proof of work computed in
+  the visitor's browser and verified with your own key, not a captcha service.
+- **Apache-2.0, all of it.** The spec, engine, renderers, builder and backend.
 
 ## Install
 
