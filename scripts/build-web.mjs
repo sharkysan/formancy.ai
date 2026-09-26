@@ -21,7 +21,7 @@
 // of being wrong is a silently broken deployment and the check is one regex.
 
 import { spawnSync } from 'node:child_process'
-import { cpSync, existsSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, readFileSync, readdirSync, rmSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -124,21 +124,24 @@ if (stray.length > 0) {
 }
 
 /**
- * One sitemap for the whole deployment, at the root where `robots.txt` says it is.
+ * The sitemap, checked rather than written.
  *
- * Astro writes the documentation's own sitemap under /docs/, but nothing lists
- * the landing page or the playground, and a crawler told about
- * /sitemap.xml finds nothing there unless it is written here. The root file is
- * an index over a small sitemap of the two Vite pages and the documentation's
- * sitemaps. It names Astro's children rather than its index, because a sitemap
- * index may not list another index.
+ * `/sitemap.xml` and `/sitemap-pages.xml` are static files in
+ * `apps/site/public`, so they ship with any build of the site. They were
+ * written here at first, and the deployment never ran this script: the site
+ * went live with `robots.txt` pointing at a sitemap that was not there. So the
+ * files live where every build copies them, and this checks that what they say
+ * is still true: the pages are the landing page and each app nested under it
+ * except the documentation, and the documentation's entries are exactly the
+ * sitemaps Astro wrote. The index names Astro's children rather than its
+ * index, because a sitemap index may not list another index.
  *
  * Astro skips its sitemap without a word when `site` is missing from its
- * config, so an absent one fails the build rather than shipping a sitemap that
- * leaves out every documentation page.
+ * config, so an absent one fails the build too.
  */
 const ORIGIN = 'https://formancy.ai'
-const PAGES = ['/', ...NESTED.filter((app) => app.name !== 'docs').map((app) => app.base)]
+const locs = (file) =>
+  [...readFileSync(file, 'utf8').matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1])
 
 const docsIndex = join(siteDist, 'docs', 'sitemap-index.xml')
 if (!existsSync(docsIndex)) {
@@ -147,30 +150,27 @@ if (!existsSync(docsIndex)) {
       `\`site\` is not set in apps/docs/astro.config.mjs.`,
   )
 }
-const docsSitemaps = [...readFileSync(docsIndex, 'utf8').matchAll(/<loc>([^<]+)<\/loc>/g)].map(
-  (match) => match[1],
-)
-if (docsSitemaps.length === 0 || docsSitemaps.some((url) => !url.startsWith(`${ORIGIN}/docs/`))) {
-  throw new Error(
-    `The documentation sitemap lists ${docsSitemaps.join(', ') || 'nothing'}, which is not ` +
-      `under ${ORIGIN}/docs/. Check \`site\` and \`base\` in apps/docs/astro.config.mjs.`,
-  )
-}
 
-const XML = '<?xml version="1.0" encoding="UTF-8"?>\n'
-const NS = 'xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"'
-writeFileSync(
-  join(siteDist, 'sitemap-pages.xml'),
-  `${XML}<urlset ${NS}>\n${PAGES.map((path) => `  <url><loc>${ORIGIN}${path}</loc></url>`).join('\n')}\n</urlset>\n`,
-)
-writeFileSync(
-  join(siteDist, 'sitemap.xml'),
-  `${XML}<sitemapindex ${NS}>\n${[`${ORIGIN}/sitemap-pages.xml`, ...docsSitemaps]
-    .map((url) => `  <sitemap><loc>${url}</loc></sitemap>`)
-    .join('\n')}\n</sitemapindex>\n`,
-)
+const expectedPages = [
+  `${ORIGIN}/`,
+  ...NESTED.filter((app) => app.name !== 'docs').map((app) => `${ORIGIN}${app.base}`),
+]
+const expectedIndex = [`${ORIGIN}/sitemap-pages.xml`, ...locs(docsIndex)]
+
+for (const [file, expected] of [
+  ['sitemap-pages.xml', expectedPages],
+  ['sitemap.xml', expectedIndex],
+]) {
+  const actual = locs(join(siteDist, file))
+  if (actual.join('\n') !== expected.join('\n')) {
+    throw new Error(
+      `apps/site/public/${file} lists ${actual.join(', ') || 'nothing'}, and the build says it ` +
+        `should list ${expected.join(', ')}. Update the file: it is served as it is.`,
+    )
+  }
+}
 
 console.log(
   `formancy.ai built: apps/site/dist, with ${NESTED.map((app) => app.base).join(' and ')}, ` +
-    `and a sitemap over ${PAGES.length} pages and ${docsSitemaps.length} documentation sitemap(s)`,
+    `and a sitemap that matches them`,
 )
