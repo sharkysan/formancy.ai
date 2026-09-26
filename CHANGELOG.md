@@ -10,6 +10,25 @@ later.
 
 ## Unreleased
 
+**formancy.ai tells search engines and link previews what it is.** The site
+had a title and a description and nothing else: a shared link showed a bare
+text card, and a crawler had no sitemap to start from. It now has:
+
+- **A sitemap for the whole deployment.** `pnpm build:web` writes
+  `/sitemap.xml`, an index over the landing page and the playground and over
+  the documentation's own sitemaps, and `/robots.txt` points at it. The build
+  fails if the documentation built no sitemap, because Astro skips it without
+  a word when `site` is missing, and a sitemap that leaves out every
+  documentation page would look fine.
+- **Link previews.** Open Graph and Twitter/X tags on the landing page and the
+  playground, and a 1200×630 preview image the documentation uses as well.
+- **Canonical URLs, a touch icon and structured data.** The landing page
+  describes formancy as `SoftwareSourceCode` in JSON-LD: name, repository,
+  licence, language. It carries no rating and no price, because there is
+  nothing honest to put there.
+- **A fix.** The colour-scheme hint was spelt `colour-scheme`, which no browser
+  reads. It is `color-scheme` now.
+
 **The SOUP declaration's composition table is now derived from the manifests.**
 `docs/regulatory/SOUP-DECLARATION.md` is written for a manufacturer
 incorporating formancy under IEC 62304, who builds their own dependency

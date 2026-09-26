@@ -21,7 +21,7 @@
 // of being wrong is a silently broken deployment and the check is one regex.
 
 import { spawnSync } from 'node:child_process'
-import { cpSync, existsSync, readFileSync, readdirSync, rmSync } from 'node:fs'
+import { cpSync, existsSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -123,6 +123,54 @@ if (stray.length > 0) {
   )
 }
 
+/**
+ * One sitemap for the whole deployment, at the root where `robots.txt` says it is.
+ *
+ * Astro writes the documentation's own sitemap under /docs/, but nothing lists
+ * the landing page or the playground, and a crawler told about
+ * /sitemap.xml finds nothing there unless it is written here. The root file is
+ * an index over a small sitemap of the two Vite pages and the documentation's
+ * sitemaps. It names Astro's children rather than its index, because a sitemap
+ * index may not list another index.
+ *
+ * Astro skips its sitemap without a word when `site` is missing from its
+ * config, so an absent one fails the build rather than shipping a sitemap that
+ * leaves out every documentation page.
+ */
+const ORIGIN = 'https://formancy.ai'
+const PAGES = ['/', ...NESTED.filter((app) => app.name !== 'docs').map((app) => app.base)]
+
+const docsIndex = join(siteDist, 'docs', 'sitemap-index.xml')
+if (!existsSync(docsIndex)) {
+  throw new Error(
+    `The documentation built no sitemap at ${docsIndex}. Astro skips it silently when ` +
+      `\`site\` is not set in apps/docs/astro.config.mjs.`,
+  )
+}
+const docsSitemaps = [...readFileSync(docsIndex, 'utf8').matchAll(/<loc>([^<]+)<\/loc>/g)].map(
+  (match) => match[1],
+)
+if (docsSitemaps.length === 0 || docsSitemaps.some((url) => !url.startsWith(`${ORIGIN}/docs/`))) {
+  throw new Error(
+    `The documentation sitemap lists ${docsSitemaps.join(', ') || 'nothing'}, which is not ` +
+      `under ${ORIGIN}/docs/. Check \`site\` and \`base\` in apps/docs/astro.config.mjs.`,
+  )
+}
+
+const XML = '<?xml version="1.0" encoding="UTF-8"?>\n'
+const NS = 'xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"'
+writeFileSync(
+  join(siteDist, 'sitemap-pages.xml'),
+  `${XML}<urlset ${NS}>\n${PAGES.map((path) => `  <url><loc>${ORIGIN}${path}</loc></url>`).join('\n')}\n</urlset>\n`,
+)
+writeFileSync(
+  join(siteDist, 'sitemap.xml'),
+  `${XML}<sitemapindex ${NS}>\n${[`${ORIGIN}/sitemap-pages.xml`, ...docsSitemaps]
+    .map((url) => `  <sitemap><loc>${url}</loc></sitemap>`)
+    .join('\n')}\n</sitemapindex>\n`,
+)
+
 console.log(
-  `formancy.ai built: apps/site/dist, with ${NESTED.map((app) => app.base).join(' and ')}`,
+  `formancy.ai built: apps/site/dist, with ${NESTED.map((app) => app.base).join(' and ')}, ` +
+    `and a sitemap over ${PAGES.length} pages and ${docsSitemaps.length} documentation sitemap(s)`,
 )
