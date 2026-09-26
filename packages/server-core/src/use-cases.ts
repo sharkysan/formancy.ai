@@ -1,3 +1,6 @@
+import { hmac } from '@noble/hashes/hmac.js'
+import { sha256 } from '@noble/hashes/sha2.js'
+import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js'
 import { diffSchemas, schemaHash } from '@formancy/spec'
 import type { Change, FormSchema } from '@formancy/spec'
 import { validateSchema } from '@formancy/spec/validate'
@@ -25,6 +28,16 @@ export interface ServerDeps {
   nowIso(): string
   /** The clock/randomness the ENGINE sees during replay. */
   capabilities: CapabilitySource
+  /**
+   * Signs the token that proves somebody started a draft.
+   *
+   * The public plane is anonymous, so a draft has no account behind it — which
+   * is exactly why it needs a secret of its own. The host's own signing key is
+   * reused rather than a second one being configured: a draft token is a
+   * server-signed bearer token, which is what that key is already for, and an
+   * optional secret would mean drafts are unprotected whenever nobody set it.
+   */
+  draftSecret: string
 }
 
 export type PublishOutcome =
@@ -439,12 +452,66 @@ function csvCell(value: string): string {
 
 /** Save (or re-save) a partial form, bound to the CURRENT version. Undefined
  *  for an unknown form. */
-export async function saveDraft(
+/**
+ * The token that proves the bearer started this draft.
+ *
+ * HMAC over the form and the draft id, the same stateless shape the
+ * proof-of-work challenge uses
+ * ([0059](../../../docs/decisions/0059-proof-of-work-not-a-captcha.md)): no
+ * second table, and no lookup before the check. Bound to the FORM as well as the
+ * id so a token cannot be carried to a draft of another form that happens to
+ * share an id.
+ */
+function draftToken(secret: string, formId: string, draftId: string): string {
+  return bytesToHex(hmac(sha256, utf8ToBytes(secret), utf8ToBytes(`${formId}:${draftId}`)))
+}
+
+/**
+ * Compared in constant time.
+ *
+ * A byte-at-a-time comparison that returns early leaks how much of a guess was
+ * right, and a token is guessed one byte at a time by exactly that signal.
+ */
+function sameToken(a: string, b: string): boolean {
+  if (a.length !== b.length) return false
+  let differences = 0
+  for (let at = 0; at < a.length; at += 1) {
+    differences |= a.charCodeAt(at) ^ b.charCodeAt(at)
+  }
+  return differences === 0
+}
+
+/**
+ * Start a draft: the server picks the id, and signs it.
+ *
+ * The id is the server's because an id a caller supplies is an id a caller can
+ * enumerate — and enumerating them was enough to read other people's
+ * part-filled answers.
+ */
+export async function startDraft(
   deps: ServerDeps,
-  input: { path: string; draftId: string; data: unknown },
-): Promise<{ version: number } | undefined> {
+  input: { path: string },
+): Promise<{ draftId: string; token: string } | undefined> {
   const current = await resolveForm(deps, input.path)
   if (current === undefined) return undefined
+
+  const draftId = deps.newId()
+  return { draftId, token: draftToken(deps.draftSecret, current.formId, draftId) }
+}
+
+export async function saveDraft(
+  deps: ServerDeps,
+  input: { path: string; draftId: string; token: string; data: unknown },
+): Promise<{ version: number; saved: boolean } | undefined> {
+  const current = await resolveForm(deps, input.path)
+  if (current === undefined) return undefined
+
+  // Refused before the write, not after it. Overwriting is the worse half of
+  // this: the person whose draft it is then submits the substituted content
+  // under their own name, and nothing anywhere says otherwise.
+  if (!sameToken(input.token, draftToken(deps.draftSecret, current.formId, input.draftId))) {
+    return { version: current.version, saved: false }
+  }
 
   await deps.storage.upsertDraft({
     id: input.draftId,
@@ -453,7 +520,7 @@ export async function saveDraft(
     data: input.data,
     updatedAt: deps.nowIso(),
   })
-  return { version: current.version }
+  return { version: current.version, saved: true }
 }
 
 export interface DraftMigration {
@@ -494,10 +561,16 @@ export type ResumeOutcome =
  */
 export async function resumeDraft(
   deps: ServerDeps,
-  input: { path: string; draftId: string },
+  input: { path: string; draftId: string; token: string },
 ): Promise<ResumeOutcome | undefined> {
   const current = await resolveForm(deps, input.path)
   if (current === undefined) return undefined
+
+  // Checked before the lookup, and answered identically to a draft that is not
+  // there: replying differently would confirm which ids exist.
+  if (!sameToken(input.token, draftToken(deps.draftSecret, current.formId, input.draftId))) {
+    return undefined
+  }
 
   const draft = await deps.storage.getDraft(current.formId, input.draftId)
   if (draft === undefined) return undefined

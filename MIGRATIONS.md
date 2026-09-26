@@ -65,3 +65,36 @@ again.
   kind, which is a spec 2 change — the version line exists for exactly that,
   and `runsOn` is already in place so the ordering question can be answered
   without restructuring anything.
+
+## Drafts need a token (unreleased)
+
+**Why you cannot skip this.** The previous draft routes let anybody read or
+overwrite anybody's part-filled form: both were unauthenticated and the id came
+from the caller. If you autosave drafts on a public form, treat any draft written
+before this change as having been readable
+([0062](docs/decisions/0062-a-draft-carries-its-own-key.md)).
+
+**What changes.** Start a draft instead of inventing an id:
+
+```
+POST /f/:path/drafts   ->  201 { draftId, token }
+```
+
+Then send the token on both of the routes you already use:
+
+```
+PUT /f/:path/drafts/:draftId    X-Formancy-Draft-Token: <token>
+GET /f/:path/drafts/:draftId    X-Formancy-Draft-Token: <token>
+```
+
+Without the header both answer **401**. With a token that does not match, the
+`GET` answers **404** — the same as a draft that is not there, on purpose, so the
+reply cannot be used to find out which ids exist — and the `PUT` answers **403**.
+
+**Keep the token wherever you kept the id**, and keep it instead of the id rather
+than as well: the id is no longer a secret and the token is the only way back into
+the draft. Losing it loses the draft, and there is no recovery path, because a
+recovery path that works for whoever asks is the hole again.
+
+**Drafts written before the change cannot be resumed**, since no token was ever
+minted for them. They are swept on the usual schedule.

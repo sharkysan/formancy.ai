@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test } from 'vitest'
 import type { FormSchema } from '@formancy/spec'
 import { MIXED_NUMERIC_LITERAL_EXAMPLE } from '@formancy/core'
-import { createSubmission, exportCsv, setFormAccess, listForms, listSubmissions, listVersions, publishForm, resolveForm, resumeDraft, saveDraft } from './use-cases.js'
+import { createSubmission, exportCsv, setFormAccess, listForms, listSubmissions, listVersions, publishForm, resolveForm, resumeDraft, saveDraft, startDraft } from './use-cases.js'
 import type { ServerDeps } from './use-cases.js'
 import { createMemoryStorage } from './testing/memory-storage.js'
 
@@ -33,6 +33,7 @@ beforeEach(() => {
   deps = {
     storage: createMemoryStorage(),
     newId: () => `id-${++counter}`,
+    draftSecret: 'a-test-signing-key-of-adequate-length',
     capabilities: { now: () => 1_726_000_000_000, today: () => '2026-09-19', random: () => 0.5 },
     nowIso: () => '2026-09-19T12:00:00Z',
   }
@@ -359,13 +360,130 @@ describe('exportCsv', () => {
   })
 })
 
+describe('a draft belongs to whoever started it', () => {
+  /**
+   * The public plane is anonymous, so a draft has no account behind it — and
+   * that is precisely why it needs a secret of its own.
+   *
+   * A draft holds whatever the form asks for: a name, an address, a complaint,
+   * medical history. Addressing one by an id the CLIENT chose meant anybody who
+   * knew or guessed an id could read it, and — worse — overwrite it. The
+   * person then submits the substituted content under their own name and the
+   * server has no way to tell.
+   *
+   * So the server mints the id and a token over it, and both saving and
+   * resuming require the token. Stateless, the same shape the proof-of-work
+   * challenge uses ([0059](../../../docs/decisions/0059-proof-of-work-not-a-captcha.md)):
+   * HMAC over the id with an expiry inside, so no second table and no lookup
+   * before the check.
+   */
+  test('starting one returns an id nobody chose and a token over it', async () => {
+    const published = await publishForm(deps, { path: 'contact-us', schema })
+    if (!published.ok) throw new Error('publish failed')
+
+    const first = await startDraft(deps, { path: 'contact-us' })
+    const second = await startDraft(deps, { path: 'contact-us' })
+
+    expect(first?.draftId).toBeTruthy()
+    expect(first?.token).toBeTruthy()
+
+    // Two starts are two drafts, each with its own token. Asserted rather than
+    // the id's length: how unguessable the id is belongs to the host's `newId`,
+    // and it is no longer what protects the draft -- the TOKEN is, which is the
+    // point of having one. An id a caller supplies is an id a caller can
+    // enumerate, and enumerating them used to be enough.
+    expect(first?.draftId).not.toBe(second?.draftId)
+    expect(first?.token).not.toBe(second?.token)
+  })
+
+  test('saving with the token works, and without it does not', async () => {
+    const published = await publishForm(deps, { path: 'contact-us', schema })
+    if (!published.ok) throw new Error('publish failed')
+    const started = await startDraft(deps, { path: 'contact-us' })
+    if (started === undefined) throw new Error('start failed')
+
+    const ok = await saveDraft(deps, {
+      path: 'contact-us',
+      draftId: started.draftId,
+      token: started.token,
+      data: { email: 'wip@b.ch' },
+    })
+    expect(ok?.saved).toBe(true)
+
+    const forged = await saveDraft(deps, {
+      path: 'contact-us',
+      draftId: started.draftId,
+      token: 'not-the-token',
+      data: { email: 'attacker@b.ch' },
+    })
+    // Overwriting is the worse half: the person submits the substituted
+    // content under their own name and nothing says otherwise.
+    expect(forged?.saved).toBe(false)
+  })
+
+  test('resuming without the token does not return the answers', async () => {
+    const published = await publishForm(deps, { path: 'contact-us', schema })
+    if (!published.ok) throw new Error('publish failed')
+    const started = await startDraft(deps, { path: 'contact-us' })
+    if (started === undefined) throw new Error('start failed')
+    await saveDraft(deps, {
+      path: 'contact-us',
+      draftId: started.draftId,
+      token: started.token,
+      data: { email: 'private@b.ch' },
+    })
+
+    const withToken = await resumeDraft(deps, {
+      path: 'contact-us',
+      draftId: started.draftId,
+      token: started.token,
+    })
+    expect(withToken).toMatchObject({ outcome: 'resumed', data: { email: 'private@b.ch' } })
+
+    const without = await resumeDraft(deps, {
+      path: 'contact-us',
+      draftId: started.draftId,
+      token: 'not-the-token',
+    })
+    // Refused, and told apart from "no such draft" nowhere a caller can see:
+    // answering differently would confirm which ids exist.
+    expect(without).toBeUndefined()
+  })
+
+  test("a token for one draft does not open another", async () => {
+    const published = await publishForm(deps, { path: 'contact-us', schema })
+    if (!published.ok) throw new Error('publish failed')
+    const mine = await startDraft(deps, { path: 'contact-us' })
+    const theirs = await startDraft(deps, { path: 'contact-us' })
+    if (mine === undefined || theirs === undefined) throw new Error('start failed')
+    await saveDraft(deps, {
+      path: 'contact-us',
+      draftId: theirs.draftId,
+      token: theirs.token,
+      data: { email: 'theirs@b.ch' },
+    })
+
+    const crossed = await resumeDraft(deps, {
+      path: 'contact-us',
+      draftId: theirs.draftId,
+      token: mine.token,
+    })
+
+    // A token that opened any draft would make one leaked token a key to all
+    // of them, which is the same hole wearing a signature.
+    expect(crossed).toBeUndefined()
+  })
+})
+
 describe('drafts', () => {
   test('an autosaved draft comes back bound to the version it was written under', async () => {
     const published = await publishForm(deps, { path: 'contact-us', schema })
     if (!published.ok) throw new Error('publish failed')
 
-    await saveDraft(deps, { path: 'contact-us', draftId: 'd1', data: { email: 'wip@b.ch' } })
-    const resumed = await resumeDraft(deps, { path: 'contact-us', draftId: 'd1' })
+    const started = await startDraft(deps, { path: 'contact-us' })
+    if (started === undefined) throw new Error('start failed')
+    await saveDraft(deps, { ...started, path: 'contact-us', data: { email: 'wip@b.ch' } })
+    const resumed = await resumeDraft(deps, { ...started, path: 'contact-us' })
 
     expect(resumed).toMatchObject({
       outcome: 'resumed',
@@ -377,7 +495,9 @@ describe('drafts', () => {
   test('a compatible republish rebinds the draft silently', async () => {
     const v1 = await publishForm(deps, { path: 'contact-us', schema })
     if (!v1.ok) throw new Error('publish failed')
-    await saveDraft(deps, { path: 'contact-us', draftId: 'd1', data: { email: 'wip@b.ch' } })
+    const started = await startDraft(deps, { path: 'contact-us' })
+    if (started === undefined) throw new Error('start failed')
+    await saveDraft(deps, { ...started, path: 'contact-us', data: { email: 'wip@b.ch' } })
 
     // Adding an optional field is compatible.
     const evolved = {
@@ -386,7 +506,7 @@ describe('drafts', () => {
     } as typeof schema
     await publishForm(deps, { path: 'contact-us', schema: evolved })
 
-    const resumed = await resumeDraft(deps, { path: 'contact-us', draftId: 'd1' })
+    const resumed = await resumeDraft(deps, { ...started, path: 'contact-us' })
 
     expect(resumed).toMatchObject({ outcome: 'resumed', version: 2 })
     expect(resumed && 'migration' in resumed ? resumed.migration : undefined).toBeUndefined()
@@ -395,9 +515,11 @@ describe('drafts', () => {
   test('a lossy republish rebinds with a migration report, orphaning rather than deleting', async () => {
     const v1 = await publishForm(deps, { path: 'contact-us', schema })
     if (!v1.ok) throw new Error('publish failed')
+    const started = await startDraft(deps, { path: 'contact-us' })
+    if (started === undefined) throw new Error('start failed')
     await saveDraft(deps, {
+      ...started,
       path: 'contact-us',
-      draftId: 'd1',
       data: { email: 'wip@b.ch', country: 'CH' },
     })
 
@@ -409,7 +531,7 @@ describe('drafts', () => {
     } as typeof schema
     await publishForm(deps, { path: 'contact-us', schema: evolved })
 
-    const resumed = await resumeDraft(deps, { path: 'contact-us', draftId: 'd1' })
+    const resumed = await resumeDraft(deps, { ...started, path: 'contact-us' })
 
     expect(resumed).toMatchObject({ outcome: 'resumed', version: 2 })
     if (resumed?.outcome !== 'resumed') throw new Error('unexpected outcome')
@@ -430,7 +552,9 @@ describe('drafts', () => {
     // that any bump must be breaking. Spec 2 exists now and that was wrong.)
     const v1 = await publishForm(deps, { path: 'contact-us', schema: { ...schema, specVersion: '2' } })
     if (!v1.ok) throw new Error('publish failed')
-    await saveDraft(deps, { path: 'contact-us', draftId: 'd1', data: { email: 'wip@b.ch' } })
+    const started = await startDraft(deps, { path: 'contact-us' })
+    if (started === undefined) throw new Error('start failed')
+    await saveDraft(deps, { ...started, path: 'contact-us', data: { email: 'wip@b.ch' } })
 
     const breaking = { ...schema, specVersion: '1' as const }
     const form = await deps.storage.getFormByPath('contact-us')
@@ -443,15 +567,22 @@ describe('drafts', () => {
     })
     await deps.storage.setCurrentVersion(form!.id, 'v-breaking')
 
-    const resumed = await resumeDraft(deps, { path: 'contact-us', draftId: 'd1' })
+    const resumed = await resumeDraft(deps, { ...started, path: 'contact-us' })
 
     expect(resumed).toMatchObject({ outcome: 'readOnly', version: 1 })
   })
 
   test('an unknown draft or form is undefined', async () => {
-    expect(await resumeDraft(deps, { path: 'ghost', draftId: 'x' })).toBeUndefined()
+    expect(
+      await resumeDraft(deps, { path: 'ghost', draftId: 'x', token: 'anything' }),
+    ).toBeUndefined()
     await publishForm(deps, { path: 'contact-us', schema })
-    expect(await resumeDraft(deps, { path: 'contact-us', draftId: 'nope' })).toBeUndefined()
+    // An id that was never minted has no valid token either, so this is the
+    // same answer a wrong token gets -- deliberately, because telling them
+    // apart would confirm which ids exist.
+    expect(
+      await resumeDraft(deps, { path: 'contact-us', draftId: 'nope', token: 'anything' }),
+    ).toBeUndefined()
   })
 })
 

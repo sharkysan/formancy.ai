@@ -281,10 +281,79 @@ describe('listing and export', () => {
 })
 
 describe('drafts over HTTP', () => {
+  /** Start one and keep the key, which is now the only way in. */
+  const start = async (): Promise<{ draftId: string; token: string }> => {
+    const created = await app.inject({ method: 'POST', url: '/f/contact-us/drafts' })
+    expect(created.statusCode).toBe(201)
+    return created.json() as { draftId: string; token: string }
+  }
+
+  test('without the token, a draft can be neither read nor written', async () => {
+    const { draftId, token } = await start()
+    await app.inject({
+      method: 'PUT',
+      url: `/f/contact-us/drafts/${draftId}`,
+      headers: { 'x-formancy-draft-token': token },
+      payload: { email: 'private@b.ch' },
+    })
+
+    // This is the hole that was here: both routes were unauthenticated and the
+    // id came from the caller, so knowing or guessing one was enough to read a
+    // stranger's part-filled form and to overwrite it.
+    const readNaked = await app.inject({ method: 'GET', url: `/f/contact-us/drafts/${draftId}` })
+    expect(readNaked.statusCode).toBe(401)
+
+    const writeNaked = await app.inject({
+      method: 'PUT',
+      url: `/f/contact-us/drafts/${draftId}`,
+      payload: { email: 'attacker@b.ch' },
+    })
+    expect(writeNaked.statusCode).toBe(401)
+
+    // And the answers are untouched.
+    const mine = await app.inject({
+      method: 'GET',
+      url: `/f/contact-us/drafts/${draftId}`,
+      headers: { 'x-formancy-draft-token': token },
+    })
+    expect((mine.json() as { data: Record<string, unknown> }).data['email']).toBe('private@b.ch')
+  })
+
+  test('a wrong token is answered like a draft that is not there', async () => {
+    const { draftId } = await start()
+
+    const wrong = await app.inject({
+      method: 'GET',
+      url: `/f/contact-us/drafts/${draftId}`,
+      headers: { 'x-formancy-draft-token': 'deadbeef' },
+    })
+
+    // 404 rather than 403: answering differently would confirm which ids exist,
+    // which is the enumeration this closed.
+    expect(wrong.statusCode).toBe(404)
+  })
+
+  test("one draft's token does not open another", async () => {
+    const mine = await start()
+    const theirs = await start()
+
+    const crossed = await app.inject({
+      method: 'GET',
+      url: `/f/contact-us/drafts/${theirs.draftId}`,
+      headers: { 'x-formancy-draft-token': mine.token },
+    })
+
+    // A token that opened any draft would make one leaked token a key to all of
+    // them, which is the same hole wearing a signature.
+    expect(crossed.statusCode).toBe(404)
+  })
+
   test('autosave, republish, resume: the draft migrates lazily with a report', async () => {
+    const { draftId, token } = await start()
     const put = await app.inject({
       method: 'PUT',
-      url: '/f/contact-us/drafts/draft-1',
+      url: `/f/contact-us/drafts/${draftId}`,
+      headers: { 'x-formancy-draft-token': token },
       payload: { email: 'wip@b.ch', qty: 3 },
     })
     expect(put.statusCode).toBe(200)
@@ -299,7 +368,11 @@ describe('drafts over HTTP', () => {
     const publish = await app.inject({ method: 'POST', url: '/forms', headers: asAdmin(), payload: { path: 'contact-us', schema: evolved } })
     expect(publish.statusCode).toBe(201)
 
-    const resumed = await app.inject({ method: 'GET', url: '/f/contact-us/drafts/draft-1' })
+    const resumed = await app.inject({
+      method: 'GET',
+      url: `/f/contact-us/drafts/${draftId}`,
+      headers: { 'x-formancy-draft-token': token },
+    })
     expect(resumed.statusCode).toBe(200)
     const body = resumed.json() as {
       outcome: string
@@ -313,7 +386,16 @@ describe('drafts over HTTP', () => {
   })
 
   test('an unknown draft 404s', async () => {
-    expect((await app.inject({ method: 'GET', url: '/f/contact-us/drafts/nope' })).statusCode).toBe(404)
+    const naked = await app.inject({ method: 'GET', url: '/f/contact-us/drafts/nope' })
+    // No token at all is 401: the request cannot be judged, let alone answered.
+    expect(naked.statusCode).toBe(401)
+
+    const withToken = await app.inject({
+      method: 'GET',
+      url: '/f/contact-us/drafts/nope',
+      headers: { 'x-formancy-draft-token': 'anything' },
+    })
+    expect(withToken.statusCode).toBe(404)
   })
 })
 
@@ -403,9 +485,16 @@ describe('the two planes', () => {
     expect(ghost.json()).toEqual(wrong.json())
   })
 
-  test('the public plane needs no identity: resolve, submit, drafts', async () => {
+  test('the public plane needs no account, which is not the same as no key', async () => {
     const resolved = await app.inject({ method: 'GET', url: '/f/contact-us' })
     expect(resolved.statusCode).toBe(200)
+
+    // Drafts need no IDENTITY either -- there is no account behind an anonymous
+    // draft -- but they do need the key the server handed out when the draft was
+    // started. The two are different things, and the old title here said
+    // "drafts" in a way that read as "drafts need nothing".
+    const started = await app.inject({ method: 'POST', url: '/f/contact-us/drafts' })
+    expect(started.statusCode).toBe(201)
   })
 })
 

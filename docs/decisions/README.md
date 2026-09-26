@@ -162,3 +162,4 @@ listed under the sections they belong to above.
 | [0059](0059-proof-of-work-not-a-captcha.md) | Proof of work, not a captcha service | accepted |
 | [0060](0060-documentation-is-checked.md) | Documentation claims are checked by tests, not by care | accepted |
 | [0061](0061-tiptap-over-the-closed-grammar.md) | A TipTap editor over the closed grammar, not instead of it | accepted |
+| [0062](0062-a-draft-carries-its-own-key.md) | A draft carries its own key | accepted |

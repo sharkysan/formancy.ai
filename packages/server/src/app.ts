@@ -25,6 +25,7 @@ import {
   resolveForm,
   resumeDraft,
   saveDraft,
+  startDraft,
   setFormAccess,
 } from '@formancy/server-core'
 import type {
@@ -41,6 +42,9 @@ import { createSessionTokens, realRandomToken, realSecretHashing } from './auth-
 export const SCHEMA_HASH_HEADER = 'x-formancy-schema-hash'
 /** Base64 JSON, the shape an ALTCHA client already produces. */
 export const CHALLENGE_HEADER = 'x-formancy-challenge'
+
+/** Proves the bearer started this draft. Lower-case: Fastify normalises. */
+const DRAFT_TOKEN_HEADER = 'x-formancy-draft-token'
 export const API_KEY_HEADER = 'x-formancy-api-key'
 
 export interface AppOptions {
@@ -139,6 +143,10 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
     storage,
     newId: () => randomUUID(),
     nowIso: () => new Date().toISOString(),
+    // The host's own signing key. A draft token is a server-signed bearer
+    // token, which is what that key is already for, and a separate optional
+    // secret would mean drafts are unprotected whenever nobody set one.
+    draftSecret: options.authSecret,
     capabilities: {
       now: () => Date.now(),
       today: () => new Date().toISOString().slice(0, 10),
@@ -581,16 +589,50 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
     })
   })
 
+  /**
+   * Start a draft, and get the only key to it.
+   *
+   * The public plane is anonymous, so a draft has no account behind it. It was
+   * previously addressed by an id the CALLER chose, with no check on either
+   * route: anybody who knew or guessed an id could read a stranger's part-filled
+   * form, and overwrite it — after which that person submits the substituted
+   * content under their own name and nothing says otherwise
+   * ([0062](../../../docs/decisions/0062-a-draft-carries-its-own-key.md)).
+   *
+   * So the server picks the id and signs it, and the token comes back exactly
+   * once. Losing it means losing the draft, which is the correct trade for the
+   * alternative.
+   */
+  app.post('/f/:path/drafts', async (request, reply) => {
+    const { path } = request.params as { path: string }
+    const started = await startDraft(deps, { path })
+    if (started === undefined) return reply.code(404).send({ error: 'unknown_form' })
+    return reply.code(201).send(started)
+  })
+
   app.put('/f/:path/drafts/:draftId', async (request, reply) => {
     const { path, draftId } = request.params as { path: string; draftId: string }
-    const saved = await saveDraft(deps, { path, draftId, data: request.body ?? {} })
+    const token = request.headers[DRAFT_TOKEN_HEADER]
+    if (typeof token !== 'string') {
+      return reply.code(401).send({ error: 'draft_token_required' })
+    }
+
+    const saved = await saveDraft(deps, { path, draftId, token, data: request.body ?? {} })
     if (saved === undefined) return reply.code(404).send({ error: 'unknown_form' })
-    return reply.send(saved)
+    if (!saved.saved) return reply.code(403).send({ error: 'draft_token_invalid' })
+    return reply.send({ version: saved.version })
   })
 
   app.get('/f/:path/drafts/:draftId', async (request, reply) => {
     const { path, draftId } = request.params as { path: string; draftId: string }
-    const resumed = await resumeDraft(deps, { path, draftId })
+    const token = request.headers[DRAFT_TOKEN_HEADER]
+    if (typeof token !== 'string') {
+      return reply.code(401).send({ error: 'draft_token_required' })
+    }
+
+    const resumed = await resumeDraft(deps, { path, draftId, token })
+    // 404 for a wrong token as well as a missing draft. Answering differently
+    // would confirm which ids exist, which is the enumeration this closed.
     if (resumed === undefined) return reply.code(404).send({ error: 'unknown_draft' })
     return reply.send(resumed)
   })
