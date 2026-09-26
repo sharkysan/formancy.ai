@@ -40,6 +40,13 @@ decision records" when there were fifty-eight. Prefer wording without a number.
 Where a number is the point, derive it from the repository at build time rather
 than typing it.
 
+## Branch names
+
+Name a branch after what it changes, with a prefix for the kind of change:
+`feat/proof-of-work`, `fix/admin-test-timeout`, `docs/readme-showcase`. Not a
+generated name: the branch is what a reviewer sees first in the pull request
+list.
+
 ## Checks before pushing
 
 CI runs `pnpm build`, `pnpm typecheck`, `pnpm test:coverage` and
