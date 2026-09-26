@@ -566,6 +566,63 @@ describe('rate limiting the public plane', () => {
     }
   })
 
+  test('reading a draft is limited, because that is where a token would be guessed', async () => {
+    const throttled = await createApp(createPostgresStorage(sql), {
+      authSecret: 'integration-test-secret-with-length',
+      submissionRateLimit: { max: 2, timeWindowMs: 60_000 },
+    })
+
+    try {
+      const started = await throttled.inject({ method: 'POST', url: '/f/contact-us/drafts' })
+      const { draftId } = started.json() as { draftId: string }
+
+      const guess = async (): Promise<number> =>
+        (
+          await throttled.inject({
+            method: 'GET',
+            url: `/f/contact-us/drafts/${draftId}`,
+            headers: { 'x-formancy-draft-token': 'a-wrong-guess' },
+          })
+        ).statusCode
+
+      await guess()
+      await guess()
+
+      // The write was limited and the read was not, which is the wrong way
+      // round: the read is where somebody would try tokens one after another.
+      // An HMAC is not realistically guessable, but a limit that stops at the
+      // write and leaves the guess surface open is not a position worth
+      // defending.
+      expect(await guess()).toBe(429)
+    } finally {
+      await throttled.close()
+    }
+  })
+
+  test('minting a challenge is limited, so demanding them is not free', async () => {
+    const throttled = await createApp(createPostgresStorage(sql), {
+      authSecret: 'integration-test-secret-with-length',
+      challengeSecret: 'a-challenge-secret-of-adequate-length',
+      submissionRateLimit: { max: 2, timeWindowMs: 60_000 },
+    })
+
+    try {
+      const mint = async (): Promise<number> =>
+        (await throttled.inject({ method: 'GET', url: '/f/contact-us/challenge' })).statusCode
+
+      await mint()
+      await mint()
+
+      // One per submission attempt is the legitimate rate, so the submission
+      // limit is the right one. The point of a proof of work is that the
+      // attacker pays; handing out unlimited puzzles for free is the one part
+      // of it that costs us instead.
+      expect(await mint()).toBe(429)
+    } finally {
+      await throttled.close()
+    }
+  })
+
   test('login is limited too, because a wrong guess costs a full argon2 verification', async () => {
     const throttled = await createApp(createPostgresStorage(sql), {
       authSecret: 'integration-test-secret-with-length',

@@ -457,24 +457,34 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
    * an unauthenticated submission would be a circle. It is cheap to mint and
    * stateless, so handing one out costs this server a hash.
    */
-  app.get('/f/:path/challenge', async (request, reply) => {
-    if (challengeSecret === undefined) {
-      // Not configured is not an error: a deployment may decide its forms are
-      // not public enough to need one, and the field should say so rather
-      // than fail.
-      return reply.code(404).send({ error: 'challenge_not_enabled' })
-    }
-    const { path } = request.params as { path: string }
-    const form = await deps.storage.getFormByPath(path)
-    if (form === undefined) return reply.code(404).send({ error: 'unknown_form' })
+  app.get(
+    '/f/:path/challenge',
+    {
+      // One per submission attempt is the legitimate rate, so the submission
+      // limit is the right one. The point of a proof of work is that the
+      // ATTACKER pays; handing out unlimited puzzles for free is the one part
+      // of it that costs us instead.
+      config: { rateLimit: { max: submissionLimit.max, timeWindow: submissionLimit.timeWindowMs } },
+    },
+    async (request, reply) => {
+      if (challengeSecret === undefined) {
+        // Not configured is not an error: a deployment may decide its forms are
+        // not public enough to need one, and the field should say so rather
+        // than fail.
+        return reply.code(404).send({ error: 'challenge_not_enabled' })
+      }
+      const { path } = request.params as { path: string }
+      const form = await deps.storage.getFormByPath(path)
+      if (form === undefined) return reply.code(404).send({ error: 'unknown_form' })
 
-    return reply.send(
-      await mintChallenge({
-        secret: challengeSecret,
-        nowSeconds: Math.floor(new Date(deps.nowIso()).getTime() / 1000),
-      }),
-    )
-  })
+      return reply.send(
+        await mintChallenge({
+          secret: challengeSecret,
+          nowSeconds: Math.floor(new Date(deps.nowIso()).getTime() / 1000),
+        }),
+      )
+    },
+  )
 
   /**
    * Check a submitted solution, and spend it.
@@ -578,6 +588,22 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
 
   // ------------------------------------------------------------------ public
 
+  /**
+   * Fetch a published form. The one public route deliberately NOT rate-limited.
+   *
+   * Every other unauthenticated route is: submitting, starting a draft, writing
+   * one, reading one, minting a challenge, asking for an upload target. Those are
+   * writes, or guesses, or work somebody can demand of the server. This is the
+   * read every visitor has to make before they can do anything at all.
+   *
+   * Limiting it by IP would refuse the form to real people sharing an address —
+   * an office, a school, a phone network behind CGNAT — and the failure would
+   * look like the form being broken rather than like a limit. That is a worse
+   * outcome than the cheap read it would prevent, and the read is cached by
+   * `schemaHash` anyway.
+   *
+   * Written down because the asymmetry is deliberate and looks like an omission.
+   */
   app.get('/f/:path', async (request, reply) => {
     const { path } = request.params as { path: string }
     const resolved = await resolveForm(deps, path)
@@ -641,19 +667,28 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
     },
   )
 
-  app.get('/f/:path/drafts/:draftId', async (request, reply) => {
-    const { path, draftId } = request.params as { path: string; draftId: string }
-    const token = request.headers[DRAFT_TOKEN_HEADER]
-    if (typeof token !== 'string') {
-      return reply.code(401).send({ error: 'draft_token_required' })
-    }
+  app.get(
+    '/f/:path/drafts/:draftId',
+    {
+      // Limited because this is where a token would be tried one after another.
+      // An HMAC is not realistically guessable, but limiting the write and
+      // leaving the guess surface open is not a position worth defending.
+      config: { rateLimit: { max: submissionLimit.max, timeWindow: submissionLimit.timeWindowMs } },
+    },
+    async (request, reply) => {
+      const { path, draftId } = request.params as { path: string; draftId: string }
+      const token = request.headers[DRAFT_TOKEN_HEADER]
+      if (typeof token !== 'string') {
+        return reply.code(401).send({ error: 'draft_token_required' })
+      }
 
-    const resumed = await resumeDraft(deps, { path, draftId, token })
-    // 404 for a wrong token as well as a missing draft. Answering differently
-    // would confirm which ids exist, which is the enumeration this closed.
-    if (resumed === undefined) return reply.code(404).send({ error: 'unknown_draft' })
-    return reply.send(resumed)
-  })
+      const resumed = await resumeDraft(deps, { path, draftId, token })
+      // 404 for a wrong token as well as a missing draft. Answering differently
+      // would confirm which ids exist, which is the enumeration this closed.
+      if (resumed === undefined) return reply.code(404).send({ error: 'unknown_draft' })
+      return reply.send(resumed)
+    },
+  )
 
   /**
    * Ask where to put a file.

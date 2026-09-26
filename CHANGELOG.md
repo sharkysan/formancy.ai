@@ -12,6 +12,31 @@ later.
 
 ### Security
 
+**Every unauthenticated route was enumerated and checked**, after the draft hole
+turned out to be one of two problems in the same area. The sweep found the limits
+were applied inconsistently rather than any second hole: the file routes are
+sound — downloading requires an actor, and uploading needs a server-minted id
+in `offered` state, writable once, with the byte count checked against the offer.
+
+Two limits were missing and are now in place:
+
+- **Reading a draft.** The write was limited and the read was not, which is the
+  wrong way round: the read is where somebody would try tokens one after another.
+  An HMAC is not realistically guessable, but limiting the write and leaving the
+  guess surface open is not a position worth defending.
+- **Minting a challenge.** One per submission attempt is the legitimate rate. The
+  point of a proof of work is that the *attacker* pays; handing out unlimited
+  puzzles for free is the one part of it that costs us instead.
+
+**One public route is deliberately still unlimited**, and now says so in the
+source: fetching a published form. Every other anonymous route is a write, a
+guess, or work somebody can demand — this is the read every visitor has to make
+before they can do anything at all. Limiting it by IP would refuse the form to
+real people sharing an address, an office or a phone network behind CGNAT, and the
+failure would look like the form being broken rather than like a limit. The
+asymmetry is deliberate and was written down because it looks like an omission.
+
+
 **Both draft routes are rate-limited now**, on the same terms as submissions and
 keyed by IP. A draft write is a database row per request and reachable without an
 account; the limiter had only ever been pointed at submissions, because they used
