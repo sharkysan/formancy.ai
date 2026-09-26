@@ -1,6 +1,6 @@
 import { provideZonelessChangeDetection } from '@angular/core'
 import { TestBed } from '@angular/core/testing'
-import { fireEvent, render, screen, within } from '@testing-library/angular'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/angular'
 import { afterEach, describe, expect, test } from 'vitest'
 import { createFormEngine } from '@formancy/core'
 import type { FormEngine } from '@formancy/core'
@@ -249,6 +249,38 @@ describe('file', () => {
     await renderForm(engineFor(schema), [provideFormancyUploader(async () => stored)])
 
     expect(screen.getByLabelText('Evidence').getAttribute('accept')).toBe('application/pdf')
+  })
+
+  test('a file that uploaded is kept even when a later one fails', async () => {
+    const engine = engineFor(schema)
+    const view = await renderForm(engine, [
+      provideFormancyUploader(async (file) => {
+        if (file.name === 'second.pdf') throw new Error('the object store is full')
+        return { ...stored, id: `id-${file.name}`, name: file.name }
+      }),
+    ])
+
+    const input = screen.getByLabelText<HTMLInputElement>('Evidence')
+    fireEvent.change(input, {
+      target: {
+        files: [
+          new File(['x'], 'first.pdf', { type: 'application/pdf' }),
+          new File(['x'], 'second.pdf', { type: 'application/pdf' }),
+        ],
+      },
+    })
+    await view.fixture.whenStable()
+
+    // The same assertion the React suite makes, because the bug was the same in
+    // both: discarding the file that DID upload leaves bytes in storage the
+    // submission never mentions, collected as unclaimed within the day, while
+    // telling somebody the upload failed when half of it did not.
+    await waitFor(() =>
+      expect(engine.value()).toEqual({
+        evidence: [{ ...stored, id: 'id-first.pdf', name: 'first.pdf' }],
+      }),
+    )
+    expect(screen.getByRole('status').textContent).toContain('second.pdf')
   })
 
   test('an attachment gets a remove control named after it', async () => {

@@ -776,18 +776,42 @@ export class FormancyFileField extends FieldComponentBase {
   private async store(picked: readonly File[]): Promise<void> {
     this.busy.set(true)
     this.failure.set(undefined)
-    try {
-      const stored: StoredFile[] = []
-      for (const file of picked) stored.push(await this.upload!(file))
-      this.field.setValue([...this.files(), ...stored])
-    } catch (error) {
-      // Said out loud rather than swallowed: a file that silently failed is a
-      // submission somebody believes they attached evidence to.
-      this.failure.set(error instanceof Error ? error.message : String(error))
-    } finally {
-      this.busy.set(false)
-      this.field.touch()
+
+    // Each file succeeds or fails on its own.
+    //
+    // The first version collected them into an array and set the value once, so
+    // a throw on the third of five discarded the two that had ALREADY uploaded:
+    // their bytes were in storage, the submission never mentioned them, the
+    // collector reclaimed them within the day, and the person was told the
+    // upload failed when half of it had not. Whose fault the failure is does not
+    // change who loses the file. The React binding does exactly the same thing.
+    const uploaded: StoredFile[] = []
+    const refused: string[] = []
+
+    for (const file of picked) {
+      try {
+        uploaded.push(await this.upload!(file))
+      } catch (error) {
+        refused.push(`${file.name} (${error instanceof Error ? error.message : String(error)})`)
+      }
     }
+
+    // Recorded before the failure is reported, so nothing that reached storage
+    // is left unclaimed while somebody reads the message.
+    if (uploaded.length > 0) this.field.setValue([...this.files(), ...uploaded])
+
+    if (refused.length > 0) {
+      // Named, because "the upload failed" over a list of five attachments does
+      // not say which one to try again.
+      this.failure.set(
+        refused.length === 1
+          ? `${refused[0]!} was not attached.`
+          : `${String(refused.length)} files were not attached: ${refused.join(', ')}.`,
+      )
+    }
+
+    this.busy.set(false)
+    this.field.touch()
   }
 }
 
