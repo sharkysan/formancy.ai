@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, test } from 'vitest'
@@ -55,6 +55,52 @@ function liveDocuments(): Array<{ name: string; text: string }> {
   out.push({ name: 'README.md', text: readFileSync(join(repo, 'README.md'), 'utf8') })
   return out
 }
+
+/**
+ * Capabilities the server has, and the words a document uses to deny them.
+ *
+ * The second failure of the same kind, found the same way. Two pages said the
+ * server had "no proof-of-work challenge", and one of them went on to say "no
+ * audit logging" while its sibling page correctly listed audit logging as
+ * present. Both were written before those things shipped, both were true then,
+ * and neither changed in the diff that made them false.
+ *
+ * A pre-alpha notice is the most load-bearing paragraph in the documentation:
+ * it is the one a reader uses to decide whether to deploy. `CLAUDE.md` puts it
+ * plainly — an absent statement prompts a question, a wrong one answers it
+ * incorrectly — and a notice that under-claims is not the safe direction. It
+ * tells somebody to leave off a defence the software already has.
+ *
+ * `evidence` is a file that would have to be deleted for the denial to become
+ * true again, so the pair cannot rot in the other direction either: remove the
+ * challenge and this test stops asserting anything about it.
+ */
+const capabilities = [
+  {
+    what: 'the proof-of-work challenge',
+    evidence: join(repo, 'packages', 'server-core', 'src', 'challenge.ts'),
+    denied: /no proof-of-work|no\s+challenge\b/i,
+  },
+  {
+    what: 'audit logging',
+    evidence: join(repo, 'packages', 'server-core', 'src', 'audit.ts'),
+    denied: /no audit logging/i,
+  },
+] as const
+
+describe('what the documents say the server cannot do', () => {
+  test.each(capabilities)('$what exists, so nothing denies it', ({ evidence, denied }) => {
+    // The guard on the guard, per capability: an assertion about a file that is
+    // not there is an assertion about nothing.
+    expect(existsSync(evidence)).toBe(true)
+
+    const offending = liveDocuments()
+      .filter(({ text }) => denied.test(text))
+      .map(({ name }) => name)
+
+    expect(offending).toEqual([])
+  })
+})
 
 describe('the documents a reader is expected to trust', () => {
   test('are actually being read', () => {

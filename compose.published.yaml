@@ -1,0 +1,91 @@
+# Run formancy from the published image, without cloning anything.
+#
+# `compose.yaml` beside this one builds the server from source, which is right
+# when you have the repository and wrong when you do not: a self-hoster who wants
+# to run the product should not need a checkout and a build toolchain to do it.
+#
+# NOTHING IS IN THE REGISTRY YET. The release workflow builds, pushes and signs
+# the image, and no release has run it: v0.1.0 predates those steps and only
+# signed the SBOM. So this file works from the NEXT release onward, and the
+# version below is the shape rather than a tag you can pull today (checked
+# 2026-09-26). Until then, use `compose.yaml` and a checkout.
+#
+#   curl -O https://raw.githubusercontent.com/sharkysan/formancy.ai/main/compose.published.yaml
+#   curl -O https://raw.githubusercontent.com/sharkysan/formancy.ai/main/.env.example
+#   cp .env.example .env      # then follow what it says
+#   FORMANCY_VERSION=v0.2.0 docker compose -f compose.published.yaml up -d
+#
+# THE VERSION HAS NO DEFAULT, deliberately. There is no `latest` tag to fall back
+# on: the SOUP declaration tells a manufacturer to pin an exact version and says
+# `latest` is not characterised software, so defaulting to one here would be this
+# file quietly undoing that advice. Compose stops and tells you instead.
+#
+# Verify what you are about to run first — the image is signed by digest, and the
+# commands are in RELEASING.md. A signature nobody checks is decoration.
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: formancy
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-formancy}
+      POSTGRES_DB: formancy
+    ports:
+      # Loopback, not every interface. Publishing the database to the whole
+      # network is how a laptop on a café network becomes a database on a café
+      # network. 5439 because a locally installed Postgres usually holds 5432,
+      # and a silent collision looks exactly like a wrong password.
+      - "127.0.0.1:5439:5432"
+    volumes:
+      - formancy-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U formancy"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  server:
+    image: ghcr.io/sharkysan/formancy-server:${FORMANCY_VERSION:?pin a version, e.g. FORMANCY_VERSION=v0.2.0 — there is no latest tag, on purpose}
+    ports:
+      - "4380:4380"
+    environment:
+      DATABASE_URL: postgres://formancy:${POSTGRES_PASSWORD:-formancy}@postgres:5432/formancy
+
+      # `:?` means compose stops with this message rather than starting an
+      # insecure server. There is no default, here or in the image.
+      FORMANCY_AUTH_SECRET: ${FORMANCY_AUTH_SECRET:?set it in .env — see .env.example}
+
+      # The first admin, created only while no user exists. Also no default: an
+      # admin password that ships in a repository is not a password.
+      FORMANCY_ADMIN_EMAIL: ${FORMANCY_ADMIN_EMAIL:?set it in .env — see .env.example}
+      FORMANCY_ADMIN_PASSWORD: ${FORMANCY_ADMIN_PASSWORD:?set it in .env — see .env.example}
+
+      # Passed through only if you set it, which is why there is no `${...}` here.
+      # The challenge is opt-in and the server refuses to start on a secret
+      # shorter than 32 characters — so `${FORMANCY_CHALLENGE_SECRET:-}`, the
+      # obvious spelling, resolves to the empty string when unset and takes the
+      # whole deployment down for everybody who did not want a challenge.
+      # Measured both: a bare key reads `.env` when it is there and leaves the
+      # variable genuinely absent when it is not.
+      FORMANCY_CHALLENGE_SECRET:
+
+      # Webhook delivery refuses plain http and private addresses by default,
+      # which is what stops a form author pointing the server at the cloud
+      # metadata service. Both are opt-in, for a receiver on a trusted network.
+      FORMANCY_WEBHOOK_ALLOW_HTTP: ${FORMANCY_WEBHOOK_ALLOW_HTTP:-false}
+      FORMANCY_WEBHOOK_ALLOW_PRIVATE: ${FORMANCY_WEBHOOK_ALLOW_PRIVATE:-false}
+
+      # Uploads are off until there is somewhere to put bytes. Pointed at the
+      # volume below so they survive the container — a files directory inside a
+      # container's own filesystem is a directory deleted on the next deploy.
+      FORMANCY_FILES_DIR: /var/lib/formancy/files
+      FORMANCY_MAX_FILE_BYTES: ${FORMANCY_MAX_FILE_BYTES:-10485760}
+    volumes:
+      - formancy-files:/var/lib/formancy/files
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  formancy-pg:
+  formancy-files:

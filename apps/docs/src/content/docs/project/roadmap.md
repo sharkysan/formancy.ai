@@ -88,10 +88,12 @@ history, submissions and export).
 - **Concurrent editing of one form.** Published versions are immutable and a
   submission carries the hash it was rendered from, so the pieces are there; two
   people editing one draft still last-write-wins.
-- **Somewhere to run the image without writing a compose file.** It is published
-  and signed now; what is missing is the one-command path a self-hoster expects,
-  and the Garage object store the design calls for is still not in a compose file
-  anybody can copy.
+- **An object store in the compose file.** The design calls for Garage and the
+  compose files give a local files volume instead, so uploads do not survive more
+  than one replica. (An earlier version of this entry said the one-command path
+  was missing, which was simply wrong — `compose.yaml` has given
+  `docker compose up -d` for some time, and `compose.published.yaml` now does it
+  from the signed image without a checkout.)
 - **Multi-tenancy, PDF output, e-signatures, analytics.**
 - **A Vue renderer.** The engine protocol is designed for one; it is not a
   commitment yet.

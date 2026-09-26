@@ -6,15 +6,52 @@ description: Run the formancy backend locally with Docker and Postgres, and walk
 :::caution[Pre-alpha]
 This backend is pre-alpha. It has authentication, role-based authorization,
 per-IP rate limiting, a per-form origin allowlist, a request body cap, file
-uploads and audit logging — but no proof-of-work challenge, no submission
-tokens and no virus scanning of what people attach. Treat it as something to evaluate, not something to expose to the
-public internet.
+uploads, audit logging and an opt-in proof-of-work challenge
+(`FORMANCY_CHALLENGE_SECRET`, below) — but no submission tokens and no virus
+scanning of what people attach. Treat it as something to evaluate, not something
+to expose to the public internet.
 :::
 
 ## Run it
 
+Two ways in, and which one you want depends on whether you have the repository.
+
+### From the published image
+
+:::caution[Not in the registry yet]
+The release workflow builds, pushes and signs the image, and **no release has run
+it yet** — `v0.1.0` predates those steps and signed only the SBOM. This path
+works from the next release onward; today, use [a checkout](#from-a-checkout).
+Stated rather than left to be discovered as a `manifest unknown` error.
+:::
+
+No checkout, no build toolchain, no Node on the host — the release publishes the
+server image to GitHub Container Registry and signs it by digest:
+
 ```bash
-docker compose up -d          # Postgres on host port 5439
+curl -O https://raw.githubusercontent.com/sharkysan/formancy.ai/main/compose.published.yaml
+curl -O https://raw.githubusercontent.com/sharkysan/formancy.ai/main/.env.example
+cp .env.example .env          # then follow what it says
+
+FORMANCY_VERSION=v0.2.0 docker compose -f compose.published.yaml up -d
+```
+
+The version above is the shape, not a tag that exists. `FORMANCY_VERSION` has no
+default and compose stops without it, because there is no `latest` tag to fall
+back on. That is deliberate: the
+[SOUP declaration](https://github.com/sharkysan/formancy.ai/blob/main/docs/regulatory/SOUP-DECLARATION.md)
+tells a manufacturer to pin an exact version and says `latest` is not
+characterised software, so a compose file that quietly defaulted to one would be
+this project contradicting its own advice in the most convenient place to do it.
+
+**Verify the image before you run it.** A signature nobody checks is decoration,
+and the commands are in
+[`RELEASING.md`](https://github.com/sharkysan/formancy.ai/blob/main/RELEASING.md).
+
+### From a checkout
+
+```bash
+docker compose up -d          # builds the server; Postgres on host port 5439
 
 DATABASE_URL=postgres://formancy:formancy@localhost:5439/formancy \
 FORMANCY_AUTH_SECRET=$(openssl rand -base64 33) \
@@ -41,6 +78,8 @@ wrong database — a confusing ten minutes. The compose file maps 5439 instead.
 | `FORMANCY_ADMIN_EMAIL` / `..._PASSWORD` | first run | Creates the first admin, and **only** while no such user exists. It cannot re-seed an admin into a running installation. |
 | `FORMANCY_FILES_DIR` | no | Where uploaded bytes go. Unset means this deployment accepts no files, which is a supported state — see [Files](/docs/concepts/files/). |
 | `FORMANCY_MAX_FILE_BYTES` | no | The operator's ceiling over every form's own `maxFileSize`. Defaults to 10 MB. |
+| `FORMANCY_CHALLENGE_SECRET` | no | Turns the proof-of-work challenge on for anonymous submissions; ≥ 32 characters. Unset means public forms are defended by the rate limits, the origin allowlist and the body cap alone. Separate from `FORMANCY_AUTH_SECRET` so that rotating one does not cost everybody their session. |
+| `FORMANCY_WEBHOOK_ALLOW_HTTP` / `..._ALLOW_PRIVATE` | no | Opt out of the webhook SSRF guard, per deployment and never per form. `ALLOW_PRIVATE` gives it up entirely. |
 | `PORT` / `HOST` | no | Defaults `4380` / `0.0.0.0` |
 
 ## Two planes

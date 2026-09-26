@@ -10,6 +10,67 @@ later.
 
 ## Unreleased
 
+**A compose file for the published image.** The release workflow builds, pushes
+and signs the server image by digest, and nothing consumed it: the only compose
+file declared `build: context: .`, so the documented way to run formancy was to
+clone the repository and rebuild the image the release had just signed.
+`compose.published.yaml` pulls it instead
+([0063](docs/decisions/0063-a-compose-file-for-the-published-image.md)).
+
+**It is usable from the next release, not today**, and both the file and the
+quickstart say so. No release has run the push — `v0.1.0` predates those steps
+and signed only the SBOM — so the registry is empty and the version in the
+example is the shape rather than a tag anybody can pull. Shipping the file first
+is deliberate: the release that publishes the first image should not also be the
+one that finds out nobody can run it.
+
+`FORMANCY_VERSION` has no default and compose stops without it, because no
+`latest` tag is published — the SOUP declaration tells a manufacturer to pin an
+exact version and calls `latest` uncharacterised software, so defaulting to one
+here would be the project contradicting its own advice in the most convenient
+place to do it.
+
+**Fixed: `FORMANCY_CHALLENGE_SECRET` did nothing under docker compose.**
+`.env.example` documents it in fourteen lines and neither compose file passed it
+through, so somebody who put a public form on the internet, read that the
+proof-of-work challenge defends it and set the secret as instructed got a server
+with the challenge off and no indication of it. A documented switch that is inert
+is worse than an undocumented one.
+
+The spelling is a bare key rather than `${FORMANCY_CHALLENGE_SECRET:-}`, and that
+was measured: the interpolated form resolves to the empty string when unset, which
+is not `undefined`, which trips the server's 32-character minimum and refuses to
+boot every deployment that never wanted a challenge. A test asserts the spelling
+for that reason.
+
+**Fixed: two pages denied capabilities the server has.** The landing page said the
+server had "no proof-of-work challenge, no submission tokens and no audit
+logging", of which only the middle one was true — while the self-hosting page,
+two clicks away, correctly listed audit logging as present. Both sentences were
+written before those things shipped and neither changed in the diff that made them
+false. A pre-alpha notice is the paragraph a reader uses to decide whether to
+deploy, and one that under-claims is not the safe direction: it tells somebody to
+leave off a defence the software already has. `apps/docs/src/claims.test.ts` now
+pairs a capability with a file that would have to be deleted for the denial to be
+true again.
+
+The self-hosting page gained the published-image quickstart, and rows for
+`FORMANCY_CHALLENGE_SECRET` and the two webhook opt-outs, which its environment
+table had never listed.
+
+**The SOUP declaration stopped transcribing test counts.** Ten per-package figures
+were written into it by hand, they changed on almost every commit, and nothing
+failed when they stopped matching — so a reader could not tell a figure one
+release old from one that was never right. The suite prints its own counts; the
+document now points at the command and keeps by hand only the shape, which does
+not drift.
+
+**Corrected in the roadmap:** the remaining deployment gap was described as the
+missing one-command path, and `docker compose up -d` had been that path for some
+time. The real gap was that it built from source. The gap that is actually left is
+the object store — both compose files give a local volume where the design calls
+for Garage, which does not survive more than one replica.
+
 **A condition can combine more than one comparison.** "Country is Switzerland and
 total is more than 100" is the thing a form author reaches for second, and the
 editor could not express it — the expression language handled `a && b` all

@@ -15,7 +15,7 @@ quality management system, and this is not a claim of IEC 62304 conformity.**
 | §5.2 Software requirements analysis | Partially | Requirements exist as the spec, the conformance fixtures and the quality budgets; not as a numbered requirements list |
 | §5.3 Software architectural design | **Yes** | [the architecture documents](../architecture/01-introduction-and-goals.md) and [`../decisions/`](../decisions/) |
 | §5.4 Software detailed design | Partially | In code and in comments, which are unusually dense about *why*; no separate detailed design documents |
-| §5.5 Unit implementation and verification | **Yes** | Test-first development; 1,155 automated tests, with per-package coverage reported |
+| §5.5 Unit implementation and verification | **Yes** | Test-first development, with per-package coverage reported; the suite size is stated as a dated floor under [Verification gates](#verification-gates) rather than transcribed twice — this row said 1,155 while that one said 1,661, both written on one day |
 | §5.6 Software integration and integration testing | **Yes** | Conformance suite across five implementations; integration tests against real PostgreSQL |
 | §5.7 Software system testing | Partially | End-to-end verification performed manually and recorded; not automated end-to-end |
 | §5.8 Software release | Partially | `0.1.0` released to npm from CI with provenance and a signed SBOM; the gates are mechanical and no human sign-off is recorded against a checklist |

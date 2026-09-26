@@ -95,3 +95,56 @@ describe('the release workflow', () => {
     expect(releasing).toMatch(/formancy-server@|verify-attestation/)
   })
 })
+
+describe('the published compose file', () => {
+  const compose = readFileSync(join(repo, 'compose.published.yaml'), 'utf8')
+
+  test('names the image the release actually pushes', () => {
+    // Two files naming one image is a drift the next rename would cause
+    // silently: the workflow would push somewhere the compose file does not
+    // pull from, and the symptom is a manifest-unknown error for whoever tried
+    // to follow the instructions.
+    //
+    // A substring, not a pattern. My first attempt matched
+    // /ghcr\.io\/[^\s:"]*formancy-server/, which cannot span the
+    // `${{ github.repository_owner }}` expression in the middle because that
+    // contains spaces -- so it failed on a workflow that was correct. The fifth
+    // regex in this repository to be the thing at fault; the name is the whole
+    // property, so match the name.
+    expect(release).toContain('formancy-server')
+    expect(compose).toContain('formancy-server:')
+  })
+
+  test('refuses to run without a pinned version', () => {
+    // No `latest` exists to fall back on, and defaulting to one would be this
+    // file quietly undoing the advice the SOUP declaration gives. Compose's
+    // `:?` stops instead of starting something nobody chose.
+    expect(compose).toMatch(/FORMANCY_VERSION:\?/)
+    expect(compose).not.toMatch(/FORMANCY_VERSION:-/)
+  })
+
+  test('does not build, because the point is not needing a checkout', () => {
+    // `compose.yaml` builds from source and is right for somebody with the
+    // repository. This one exists for somebody who has neither the repository
+    // nor a build toolchain.
+    expect(compose).not.toMatch(/^\s*build:/m)
+  })
+
+  test('keeps the secrets mandatory, as the source compose file does', () => {
+    // The easiest mistake in a second copy of a compose file is relaxing what
+    // the first one refused to default.
+    for (const required of [
+      'FORMANCY_AUTH_SECRET',
+      'FORMANCY_ADMIN_EMAIL',
+      'FORMANCY_ADMIN_PASSWORD',
+    ]) {
+      expect(compose).toContain(`${required}: \${${required}:?`)
+    }
+  })
+
+  test('does not publish the database to every interface', () => {
+    // The same reasoning as the source compose file: a default bind is a
+    // database on whatever network the machine is on.
+    expect(compose).toContain('127.0.0.1:5439:5432')
+  })
+})
