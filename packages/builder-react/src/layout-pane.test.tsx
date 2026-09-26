@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
 import { createBuilderSession } from '@formancy/builder-core'
 import type { BuilderSession } from '@formancy/builder-core'
@@ -210,6 +210,108 @@ describe('removing and unwrapping', () => {
     await user.keyboard('{ArrowDown}u')
 
     expect(screen.getByRole('status').textContent).toContain('Cannot unwrap')
+  })
+})
+
+describe('wrapping two items into a row, by keyboard', () => {
+  /**
+   * The keyboard route for "put these two side by side", built BEFORE the
+   * pointer gesture for it.
+   *
+   * That order is the repository's rule and WCAG 2.2 SC 2.5.7's requirement: a
+   * drag has to have a complete keyboard equivalent, and a builder that grows
+   * one afterwards never quite gets it. So the drag edge is not in this change
+   * at all — this is the whole feature until it is.
+   */
+  test('w then a target makes a row of both, in one undo', async () => {
+    const user = userEvent.setup()
+    const session = open()
+    render(<FormancyLayoutPane session={session} />)
+
+    await user.tab()
+    // Down to Email, which sits at the top level beside the row.
+    await user.keyboard('{ArrowDown}{ArrowDown}{ArrowDown}w')
+
+    // A dialog of what it can be wrapped with, the same shape the move
+    // command uses rather than a second idiom to learn.
+    const dialog = await screen.findByRole('dialog', { name: /Wrap Email/ })
+    // Exact, not a pattern: the row is named "Row with First name and Last
+    // name", so a substring match finds two buttons.
+    await user.click(within(dialog).getByRole('button', { name: 'First name' }))
+
+    const nodes = session.document().layouts?.[0]?.nodes
+    expect(JSON.stringify(nodes)).toContain('email')
+    expect(session.canPublish().valid).toBe(true)
+
+    // One gesture, one undo.
+    expect(session.undo()).toBe(true)
+    expect(session.document().layouts?.[0]?.nodes).toEqual([
+      {
+        kind: 'row',
+        children: [
+          { kind: 'field', path: 'first' },
+          { kind: 'field', path: 'last' },
+        ],
+      },
+      { kind: 'field', path: 'email' },
+    ])
+  })
+
+  test('the focused item comes first, so the order is predictable', async () => {
+    const user = userEvent.setup()
+    const session = open()
+    render(<FormancyLayoutPane session={session} />)
+
+    await user.tab()
+    await user.keyboard('{ArrowDown}{ArrowDown}{ArrowDown}w')
+    const dialog = await screen.findByRole('dialog', { name: /Wrap Email/ })
+    // Exact, not a pattern: the row is named "Row with First name and Last
+    // name", so a substring match finds two buttons.
+    await user.click(within(dialog).getByRole('button', { name: 'First name' }))
+
+    // Email was focused, so Email is the first child. Without a stated rule
+    // the order would depend on document position, which is not something
+    // somebody choosing from a list can predict.
+    const flat = JSON.stringify(session.document().layouts?.[0]?.nodes)
+    expect(flat.indexOf('email')).toBeLessThan(flat.indexOf('first'))
+  })
+
+  test('it will not offer to wrap something with itself', async () => {
+    const user = userEvent.setup()
+    render(<FormancyLayoutPane session={open()} />)
+
+    await user.tab()
+    await user.keyboard('w')
+
+    const dialog = await screen.findByRole('dialog', { name: /Wrap/ })
+    // The focused node is the row at [0]; its own children are inside it, and
+    // wrapping a container with its own child is refused by the session. Not
+    // offering it beats offering it and explaining afterwards.
+    const offered = within(dialog)
+      .getAllByRole('button')
+      .map((button) => button.textContent)
+    expect(offered.some((text) => text?.includes('First name'))).toBe(false)
+  })
+
+  test('Escape leaves the arrangement alone', async () => {
+    const user = userEvent.setup()
+    const session = open()
+    const before = JSON.stringify(session.document().layouts)
+    render(<FormancyLayoutPane session={session} />)
+
+    await user.tab()
+    await user.keyboard('w{Escape}')
+
+    expect(screen.queryByRole('dialog', { name: /Wrap/ })).toBeNull()
+    expect(JSON.stringify(session.document().layouts)).toBe(before)
+  })
+
+  test('the key is in the help, or nobody finds it', async () => {
+    render(<FormancyLayoutPane session={open()} />)
+
+    // A keyboard-only command that is not listed is a command that does not
+    // exist for the person who needs it most.
+    expect(screen.getByText('w')).toBeTruthy()
   })
 })
 

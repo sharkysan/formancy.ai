@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { ReactElement } from 'react'
+import type { KeyboardEvent as ReactKeyboardEvent, ReactElement } from 'react'
 import type { BuilderSession, LayoutLocation } from '@formancy/builder-core'
 import type { LayoutNode } from '@formancy/spec'
 import { layoutDropLocation } from './layout-drop.js'
@@ -34,11 +34,17 @@ const KEY_HELP = [
   ['a', 'add a row, column, section or field'],
   ['m', 'move the focused item'],
   ['u', 'unwrap a row or column, keeping what is in it'],
+  ['w', 'wrap it and another item into a row, side by side'],
   ['Delete', 'take it out of the arrangement'],
   ['Ctrl+Z / Ctrl+Y', 'undo / redo'],
 ] as const
 
 type Adding = { what: '' } | { what: 'row' | 'column' | 'section' } | { what: 'field'; path: string }
+
+/** Whether `outer` is `inner` or one of its ancestors. */
+function enclosesPath(outer: readonly number[], inner: readonly number[]): boolean {
+  return outer.length < inner.length && outer.every((step, at) => inner[at] === step)
+}
 
 export function FormancyLayoutPane({
   session,
@@ -51,6 +57,15 @@ export function FormancyLayoutPane({
 
   const [focusedIndex, setFocusedIndex] = useState(0)
   const [moving, setMoving] = useState<LayoutTreeNode | null>(null)
+  /**
+   * The item waiting to be paired into a row.
+   *
+   * The same two-step shape the move command uses — press the key, then choose
+   * from a list — rather than a second idiom to learn. The focused item is the
+   * one that ends up FIRST in the row, because a rule somebody can state beats
+   * an order that depends on document position.
+   */
+  const [wrapping, setWrapping] = useState<LayoutTreeNode | null>(null)
   const [adding, setAdding] = useState<Adding | null>(null)
   const [announcement, setAnnouncement] = useState('')
   const [dragging, setDragging] = useState<readonly number[] | null>(null)
@@ -75,12 +90,12 @@ export function FormancyLayoutPane({
   // mount takes it from wherever the person actually was, which on this screen
   // is the structure tree or the preview.
   useEffect(() => {
-    if (moving !== null || adding !== null) return
+    if (moving !== null || adding !== null || wrapping !== null) return
     const active = document.activeElement
     const inside = treeRef.current !== null && active !== null && treeRef.current.contains(active)
     if (inside || keepFocus.current) itemRefs.current[index]?.focus()
     keepFocus.current = false
-  }, [index, moving, adding, view.document])
+  }, [index, moving, adding, wrapping, view.document])
 
   const announce = useCallback((message: string) => setAnnouncement(message), [])
 
@@ -107,6 +122,15 @@ export function FormancyLayoutPane({
         event.preventDefault()
         announce(session.redo() ? 'Redone.' : 'Nothing to redo.')
       }
+      return
+    }
+
+    // Escape closes an open dialog wherever focus happens to be. Pressing
+    // `w` leaves focus on the tree item, so the dialog's own handler never
+    // sees the key -- which is the whole reason this is here as well.
+    if (event.key === 'Escape' && (wrapping !== null || moving !== null || adding !== null)) {
+      event.preventDefault()
+      cancelDialog()
       return
     }
 
@@ -151,6 +175,18 @@ export function FormancyLayoutPane({
         setMoving(focused)
         return
       }
+      case 'w':
+      case 'W': {
+        event.preventDefault()
+        // Saying so beats opening an empty dialog: a form with one item in its
+        // arrangement has nothing to pair with.
+        if (wrapCandidates(focused).length === 0) {
+          announce(`There is nothing to put beside ${focused.name}.`)
+          return
+        }
+        setWrapping(focused)
+        return
+      }
       case 'u':
       case 'U': {
         event.preventDefault()
@@ -183,8 +219,24 @@ export function FormancyLayoutPane({
   const cancelDialog = (): void => {
     setAdding(null)
     setMoving(null)
+    setWrapping(null)
     keepFocus.current = true
     itemRefs.current[index]?.focus()
+  }
+
+  /**
+   * Escape closes whichever dialog is open.
+   *
+   * It was not handled for any of them, which leaves the Cancel button as the
+   * only way out — and Escape is the first thing somebody tries in a dialog.
+   * Put on the dialog rather than on the document so it cannot swallow the key
+   * from anything else on the page.
+   */
+  const onDialogKey = (event: ReactKeyboardEvent<HTMLDivElement>): void => {
+    if (event.key !== 'Escape') return
+    event.preventDefault()
+    event.stopPropagation()
+    cancelDialog()
   }
 
   const nodeBeingAdded = (what: Adding): LayoutNode | undefined => {
@@ -209,6 +261,41 @@ export function FormancyLayoutPane({
     )
     keepFocus.current = true
     itemRefs.current[index]?.focus()
+  }
+
+  /**
+   * Which items the focused one may be put in a row with.
+   *
+   * Its own descendants and its own ancestors are left out: the session refuses
+   * to wrap a container together with something inside it, and not offering a
+   * choice beats offering it and explaining afterwards.
+   */
+  const wrapCandidates = (subject: LayoutTreeNode): LayoutTreeNode[] =>
+    rows.filter(
+      (candidate) =>
+        !samePath(candidate.path, subject.path) &&
+        !enclosesPath(subject.path, candidate.path) &&
+        !enclosesPath(candidate.path, subject.path),
+    )
+
+  const completeWrap = (partner: LayoutTreeNode): void => {
+    const subject = wrapping
+    setWrapping(null)
+    if (subject === null || name === undefined) return
+
+    // The focused item first, so the order is the one the person chose rather
+    // than the one the document happened to have.
+    const outcome = session.wrapLayoutNodes(name, [subject.path, partner.path], {
+      kind: 'row',
+      children: [],
+    })
+    announce(
+      outcome.ok
+        ? `Put ${subject.name} and ${partner.name} side by side in a row.`
+        : `Cannot wrap: ${outcome.message}`,
+    )
+    keepFocus.current = true
+    treeRef.current?.focus()
   }
 
   const completeMove = (target: { location: LayoutLocation; label: string }): void => {
@@ -341,7 +428,7 @@ export function FormancyLayoutPane({
       )}
 
       {adding === null ? null : adding.what === '' ? (
-        <div role="dialog" aria-label="Add to the arrangement" data-formancy-part="layout-add">
+        <div role="dialog" aria-label="Add to the arrangement" data-formancy-part="layout-add" onKeyDown={onDialogKey}>
           <ul>
             <li>
               <button type="button" onClick={() => setAdding({ what: 'row' })}>
@@ -400,8 +487,29 @@ export function FormancyLayoutPane({
         </div>
       )}
 
+      {wrapping === null ? null : (
+        <div role="dialog" aria-label={`Wrap ${wrapping.name}`} data-formancy-part="layout-wrap" onKeyDown={onDialogKey}>
+          <p>
+            Choose the item to put beside {wrapping.name}. Both go into a new row, with{' '}
+            {wrapping.name} first.
+          </p>
+          <ul>
+            {wrapCandidates(wrapping).map((candidate) => (
+              <li key={candidate.path.join('.')}>
+                <button type="button" onClick={() => completeWrap(candidate)}>
+                  {candidate.name}
+                </button>
+              </li>
+            ))}
+          </ul>
+          <button type="button" onClick={() => cancelDialog()}>
+            Cancel
+          </button>
+        </div>
+      )}
+
       {moving === null ? null : (
-        <div role="dialog" aria-label={`Move ${moving.name}`} data-formancy-part="layout-move">
+        <div role="dialog" aria-label={`Move ${moving.name}`} data-formancy-part="layout-move" onKeyDown={onDialogKey}>
           <ul>
             {targetsFor(moving.path).map((target) => (
               <li key={`${target.location.parent.join('.')}:${String(target.location.index)}`}>

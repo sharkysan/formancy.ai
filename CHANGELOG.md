@@ -10,6 +10,30 @@ later.
 
 ## Unreleased
 
+**`w` puts two arrangement items side by side in a row**, which is the keyboard
+route for the gesture the builder was missing. Press it on an item, choose what to
+pair it with, and both go into a new row — the two-step shape the move command
+already uses rather than a second idiom to learn. The focused item becomes the
+first child, because a rule somebody can state beats an order that depends on
+document position.
+
+**Built before the pointer gesture, deliberately.** WCAG 2.2 SC 2.5.7 requires a
+complete keyboard path for every drag operation, and a builder that grows one
+afterwards never quite gets it. The side-edge drop comes next and will call the
+same command.
+
+Items it cannot legally pair with are left out of the list rather than offered and
+refused afterwards: a container's own children and its own ancestors, since
+`wrapLayoutNodes` will not wrap a node together with something inside it. An item
+with nothing to pair with says so instead of opening an empty dialog.
+
+**Escape now closes a dialog in the arrangement pane** — all three of them. It
+was not handled for any, which left the Cancel button as the only way out, and
+Escape is the first thing somebody tries. It is handled on the tree as well as on
+the dialog, because pressing `w` leaves focus on the tree item and the dialog's own
+handler never sees the key.
+
+
 **`wrapLayoutNodes`: put several arrangement nodes inside a new container.** The
 inverse of `unwrapLayoutNode`, and the command behind the gesture a builder is
 expected to have and this one does not yet — dropping a field beside another
