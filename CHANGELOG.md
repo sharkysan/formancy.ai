@@ -14,12 +14,15 @@ later.
 had a title and a description and nothing else: a shared link showed a bare
 text card, and a crawler had no sitemap to start from. It now has:
 
-- **A sitemap for the whole deployment.** `pnpm build:web` writes
-  `/sitemap.xml`, an index over the landing page and the playground and over
-  the documentation's own sitemaps, and `/robots.txt` points at it. The build
-  fails if the documentation built no sitemap, because Astro skips it without
-  a word when `site` is missing, and a sitemap that leaves out every
-  documentation page would look fine.
+- **A sitemap for the whole deployment.** `/sitemap.xml` is an index over the
+  landing page and the playground and over the documentation's own sitemaps,
+  and `/robots.txt` points at it. Both sitemap files are static, in
+  `apps/site/public`. They were first written by `pnpm build:web`, and the live
+  site 404'd on them because its deployment still ran the older shell
+  one-liner, which never calls that script. `build:web` now checks the files
+  instead: it fails if they no longer name the pages and the documentation
+  sitemaps the build produced, or if the documentation built no sitemap at
+  all, which Astro skips without a word when `site` is missing.
 - **Link previews.** Open Graph and Twitter/X tags on the landing page and the
   playground, and a 1200×630 preview image the documentation uses as well.
 - **Canonical URLs, a touch icon and structured data.** The landing page
