@@ -13,6 +13,8 @@ export type { ErrorSummaryProps } from './error-summary.js'
 export { RichText } from './rich-text.js'
 export { UploaderProvider, useUploader } from './uploads.js'
 export { RichTextEditorProvider, useRichTextEditorFactory } from './rich-text-editor.js'
+export { ResumeNotice } from './resume-notice.js'
+export type { ResumeMigration, ResumeNoticeProps } from './resume-notice.js'
 export type {
   RichTextEditorFactory,
   RichTextEditorHandle,

@@ -10,6 +10,40 @@ later.
 
 ## Unreleased
 
+**A resumed draft now says what changed while you were away.** The server already
+did the careful half — a republished form migrates a draft lazily, and answers
+whose field is gone move to `data.__orphaned` rather than being deleted — and
+reported it as a severity and a list of changes. **Nothing showed that to
+anybody.** Somebody resumed a draft, found some answers no longer on the form, and
+submitted believing everything they had typed was in it. The answers were never
+lost from storage; they were lost from view, with no notice.
+
+`ResumeNotice` in React and `formancy-resume-notice` in Angular, with the same
+wording in both — two renderers agreeing about what a form *tells* somebody
+matters as much as them agreeing about what it collects, and this is a case the
+conformance fixtures cannot catch, because they drive a form rather than a resume.
+
+It names what was set aside, **says the answers are still kept** rather than
+implying they are gone, and uses a caller-supplied label where there is one,
+because a field key is not what the question asked. The semantics are copied from
+the error summary rather than reinvented: the container takes focus through
+`tabindex="-1"` and is deliberately *not* `role="alert"` and carries no
+`aria-live`, because focusing it already announces it and doing both announces it
+twice. An unchanged draft renders nothing, since a form that opens by announcing
+that nothing happened teaches people to dismiss the notice unread.
+
+The themes shape it like the error summary and deliberately do not colour it like
+one: nothing is wrong, and answers that were kept safely should not arrive looking
+like a failure. Only the breaking case — where the draft genuinely cannot be
+submitted — borrows the invalid edge.
+
+`SAFETY-ANALYSIS.md` B2 gains this as a constraint, and its residual is corrected:
+it mentioned only the retention question that orphaning raises, which read as
+though the person being told was already handled. It also now states plainly that
+a library cannot make a host render the notice — resuming is the host's call,
+because the host holds the transport.
+
+
 ### Security
 
 **Every unauthenticated route was enumerated and checked**, after the draft hole
