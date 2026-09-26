@@ -208,6 +208,134 @@ describe('dropping', () => {
   })
 })
 
+describe('dropping on the side to make a row', () => {
+  /**
+   * The pointer route for what `w` does in the arrangement pane, added after it
+   * rather than before — WCAG 2.2 SC 2.5.7 is satisfied by that keyboard path
+   * existing, and this calls the same `wrapLayoutNodes` command.
+   *
+   * These tests give the target a real rectangle. jsdom reports every element as
+   * zero-sized, and a side zone measured as a fraction of zero width covers
+   * everything except one exact coordinate — which would also have quietly
+   * turned every existing drop above into a side drop. The surface therefore
+   * requires a MINIMUM WIDTH before it offers side zones at all, which is a real
+   * rule and not a test accommodation: a 20px-wide side zone is one nobody can
+   * aim at.
+   */
+  const withBox = (element: HTMLElement, box: { left: number; width: number }): void => {
+    element.getBoundingClientRect = () =>
+      ({
+        left: box.left,
+        right: box.left + box.width,
+        width: box.width,
+        top: 0,
+        bottom: 40,
+        height: 40,
+        x: box.left,
+        y: 0,
+        toJSON: () => ({}),
+      }) as DOMRect
+  }
+
+  test('dropping on the left of a field puts both in a row, dragged one first', () => {
+    const session = open()
+    surfaceWith(session)
+    const target = fieldNamed('Email')
+    withBox(target, { left: 0, width: 400 })
+
+    // x = 10 is inside the left zone of a 400px box.
+    drag(fieldNamed('First name'), target, { clientX: 10, clientY: 20 })
+
+    expect(session.document().layouts?.[0]?.nodes).toEqual([
+      { kind: 'row', children: [{ kind: 'field', path: 'last' }] },
+      {
+        kind: 'row',
+        children: [
+          { kind: 'field', path: 'first' },
+          { kind: 'field', path: 'email' },
+        ],
+      },
+    ])
+  })
+
+  test('dropping on the right puts the dragged one second', () => {
+    const session = open()
+    surfaceWith(session)
+    const target = fieldNamed('Email')
+    withBox(target, { left: 0, width: 400 })
+
+    drag(fieldNamed('First name'), target, { clientX: 390, clientY: 20 })
+
+    const nodes = JSON.stringify(session.document().layouts?.[0]?.nodes)
+    // The side aimed at is what decides the order, which is the whole point of
+    // having two zones rather than one.
+    expect(nodes.indexOf('email')).toBeLessThan(nodes.indexOf('first'))
+  })
+
+  test('the middle still moves it above or below, as it did', () => {
+    const session = open()
+    surfaceWith(session)
+    const target = fieldNamed('Email')
+    withBox(target, { left: 0, width: 400 })
+
+    // x = 200 is the middle; y above the midpoint means "before".
+    drag(fieldNamed('First name'), target, { clientX: 200, clientY: 5 })
+
+    // A move, not a wrap: the existing gesture is unchanged by the new one.
+    expect(screen.getByRole('status').textContent).toContain('Moved to')
+  })
+
+  test('a narrow element offers no side zone at all', () => {
+    const session = open()
+    surfaceWith(session)
+    const target = fieldNamed('Email')
+    withBox(target, { left: 0, width: 40 })
+
+    drag(fieldNamed('First name'), target, { clientX: 1, clientY: 5 })
+
+    // 40px wide leaves no zone anybody could aim at, so it stays a move. This
+    // is also what keeps jsdom's zero-sized rectangles from turning every drop
+    // in this file into a side drop.
+    expect(screen.getByRole('status').textContent).toContain('Moved to')
+  })
+
+  test('the row it makes is announced, not silent', () => {
+    surfaceWith(open())
+    const target = fieldNamed('Email')
+    withBox(target, { left: 0, width: 400 })
+
+    drag(fieldNamed('First name'), target, { clientX: 10, clientY: 20 })
+
+    expect(screen.getByRole('status').textContent).toContain('side by side')
+  })
+
+  test('the indicator says which side, so it is not a guess', () => {
+    surfaceWith(open())
+    const target = fieldNamed('Email')
+    withBox(target, { left: 0, width: 400 })
+    const dataTransfer = transfer()
+
+    fireEvent(fieldNamed('First name'), dragEvent('dragstart', NOWHERE, dataTransfer))
+    fireEvent(target, dragEvent('dragover', { clientX: 10, clientY: 20 }, dataTransfer))
+
+    // Distinct from 'before'/'after', or somebody aiming for a row sees the
+    // same line they get for a move.
+    expect(target.dataset['drop']).toBe('wrap-start')
+  })
+
+  test('it will not wrap something with itself', () => {
+    const session = open()
+    surfaceWith(session)
+    const before = JSON.stringify(session.document().layouts)
+    const target = fieldNamed('Email')
+    withBox(target, { left: 0, width: 400 })
+
+    drag(target, target, { clientX: 10, clientY: 20 })
+
+    expect(JSON.stringify(session.document().layouts)).toBe(before)
+  })
+})
+
 describe('the indicator', () => {
   test('is drawn only where the session would accept a drop', () => {
     surfaceWith(open())

@@ -55,9 +55,11 @@ history, submissions and export).
 
 ## What does not exist yet
 
-- **A pointer gesture that creates a row.** You add one and move fields into
-  it. Dropping *between* two elements rather than onto one would need gap
-  targets the renderers do not emit.
+- **Dropping *between* two elements** rather than onto one, which would need gap
+  targets the renderers do not emit. Dropping onto an element's side makes a row
+  and dropping onto its top or bottom moves it, so the gap is narrower than it
+  was — what is missing is inserting between two siblings without aiming at
+  either.
 - **Conditions combining more than one comparison** in the builder's editor.
   The expression language handles them; the authoring UI does not yet, and you
   can still write the CEL directly.
@@ -122,16 +124,14 @@ left out as v2-era omissions.
 Roughly in order, and subject to change. The ordering is argued below rather
 than asserted.
 
-1. **A pointer gesture that creates a row**, closing the last gap between the
-   keyboard route and the drag route in the builder.
-2. **Saving a partly-filled form and coming back to it.** The expensive half is
+1. **Saving a partly-filled form and coming back to it.** The expensive half is
    built: drafts migrate lazily against `diffSchemas` severity, and answers whose
    field disappeared move to `data.__orphaned` rather than being deleted. What is
    missing is the public endpoint and a resume token.
-3. **`signature` and `datagrid`**, in that order — signature is smaller and more
+2. **`signature` and `datagrid`**, in that order — signature is smaller and more
    asked for; datagrid is mostly a control over a data model that already exists.
-4. **Translated form content**, while the reservation is still fresh.
-5. **A published container image**, signed, alongside the npm releases.
+3. **Translated form content**, while the reservation is still fresh.
+4. **A published container image**, signed, alongside the npm releases.
 
 ## Measured against the competition
 
