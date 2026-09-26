@@ -533,6 +533,39 @@ describe('rate limiting the public plane', () => {
     }
   })
 
+  test('writing a draft is limited too, because it is also an unauthenticated write', async () => {
+    const throttled = await createApp(createPostgresStorage(sql), {
+      authSecret: 'integration-test-secret-with-length',
+      submissionRateLimit: { max: 2, timeWindowMs: 60_000 },
+    })
+
+    try {
+      const started = await throttled.inject({ method: 'POST', url: '/f/contact-us/drafts' })
+      const { draftId, token } = started.json() as { draftId: string; token: string }
+
+      const save = async (): Promise<number> =>
+        (
+          await throttled.inject({
+            method: 'PUT',
+            url: `/f/contact-us/drafts/${draftId}`,
+            headers: { 'x-formancy-draft-token': token },
+            payload: { email: 'a@b.ch' },
+          })
+        ).statusCode
+
+      await save()
+      await save()
+
+      // A draft write is a database row per request, and the route is reachable
+      // without an account. The submission route was described as "the one
+      // unauthenticated write in the product", which stopped being true when
+      // drafts were exposed on the public plane and nobody updated the limit.
+      expect(await save()).toBe(429)
+    } finally {
+      await throttled.close()
+    }
+  })
+
   test('login is limited too, because a wrong guess costs a full argon2 verification', async () => {
     const throttled = await createApp(createPostgresStorage(sql), {
       authSecret: 'integration-test-secret-with-length',

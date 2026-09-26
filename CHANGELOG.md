@@ -12,6 +12,24 @@ later.
 
 ### Security
 
+**Both draft routes are rate-limited now**, on the same terms as submissions and
+keyed by IP. A draft write is a database row per request and reachable without an
+account; the limiter had only ever been pointed at submissions, because they used
+to be the only unauthenticated write. That stopped being true when drafts were
+exposed on the public plane and nobody moved the limit across — it was recorded
+as a residual when the draft token landed, and is now closed.
+
+**And one rate limit was silently inert.** The upload-target route passed
+`timeWindowMs` on its per-route config, where `@fastify/rate-limit` reads
+`timeWindow`. The plugin ignored it and the route fell back to the *global*
+window. It had no visible effect only because the global registration happens to
+use the same numbers, so a deployment that set a different window for that route
+would have found it quietly ignored with nothing saying so. A configuration key
+that does nothing is worse than a missing one, because it reads as configured.
+`packages/server/src/rate-limit-config.test.ts` now fails on any per-route limit
+that uses the wrong key.
+
+
 **A draft now carries its own key. Before this, anybody could read or overwrite
 anybody's part-filled form.** `PUT` and `GET /f/:path/drafts/:draftId` were both
 unauthenticated and the id came from the caller — no ownership check, no rate
