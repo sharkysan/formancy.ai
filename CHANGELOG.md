@@ -10,6 +10,22 @@ later.
 
 ## Unreleased
 
+**A file that uploaded is no longer thrown away because a later one failed.**
+Both renderers collected a batch into an array and set the value once, so a
+throw on the third of five discarded the two that had **already** uploaded:
+their bytes were in storage, the submission never mentioned them, the unclaimed
+collector reclaimed them within the day, and the person was told the upload
+failed when half of it had not. Whose fault the failure is does not change who
+loses the file.
+
+Each file now succeeds or fails on its own. What reached storage is recorded
+*before* the failure is reported, so nothing sits unclaimed while somebody reads
+the message, and the message names the files that did not make it — "the
+upload failed" over a list of five attachments does not say which one to try
+again. Identical in both renderers, tested in both, and both tests fail when the
+all-or-nothing behaviour is put back.
+
+
 **The rich-text editor was invisible, and nothing said so.** The field grew a
 mount point and an editing surface; no theme knew either name. A bare
 `contenteditable` has no border, no padding and no height, so the control

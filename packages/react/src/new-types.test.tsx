@@ -360,6 +360,32 @@ describe('file', () => {
     expect(screen.getByLabelText('Evidence').getAttribute('accept')).toBe('application/pdf')
   })
 
+  test('a file that uploaded is kept even when a later one fails', async () => {
+    const user = userEvent.setup()
+    // Two files, the second of which fails. The first one's bytes ARE in
+    // storage by then.
+    const upload = vi.fn<Uploader>(async (file) => {
+      if (file.name === 'second.pdf') throw new Error('the object store is full')
+      return stored(file.name)
+    })
+    const engine = mount(schema, upload)
+
+    const files = [
+      new File(['x'], 'first.pdf', { type: 'application/pdf' }),
+      new File(['x'], 'second.pdf', { type: 'application/pdf' }),
+    ]
+    await user.upload(screen.getByLabelText('Evidence'), files)
+
+    // The failure is reported, and the file that DID upload is recorded.
+    // Discarding it would leave bytes in storage that the submission never
+    // mentions -- collected as unclaimed within the day -- while telling
+    // somebody their upload failed when half of it did not.
+    await waitFor(() =>
+      expect(screen.getByRole('status').textContent).toContain('second.pdf'),
+    )
+    expect(engine.value()).toEqual({ evidence: [stored('first.pdf')] })
+  })
+
   test('an upload that fails is said out loud', async () => {
     const user = userEvent.setup()
     mount(schema, async () => {
