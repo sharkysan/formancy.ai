@@ -99,8 +99,8 @@ history, submissions and export).
 - **A Vue renderer.** The engine protocol is designed for one; it is not a
   commitment yet.
 
-Field **type names** for several of these are reserved — `file`, `datetime`,
-`multiselect` and the rest are simply absent from the type list.
+Field **type names** for several of these are reserved — `multiselect`, `combobox`,
+`signature` and the rest are simply absent from the type list.
 
 **Reserving a name costs nothing; adding the type costs a spec version.** Those
 are different things, and an earlier version of this page ran them together. The
@@ -135,7 +135,7 @@ yet* above, so they are worth grouping into one.
 | ~~`datagrid`~~ | **Not a type.** `widget: "datagrid"` on a repeater, with `columns` configuring the arrangement ([0066](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0066-a-widget-may-be-configured.md)) | The repeater's data model already handled it, as this row said. What is still missing is the grid *control*: column headers, tab-through-cells, row reordering, and a row count that does not become part of the accessible name of every field inside it |
 | `qrcode` | A code rendered from another field's value, or scanned into one | Two features wearing one name. Rendering is a computed display node. *Scanning* needs a camera, a permission prompt and a fallback, which is a different kind of thing and should be a separate type rather than a flag |
 | `autocomplete` / `tagpicker` | Type-ahead against a list, one or many | Needs `optionsSource` — remote options — which is reserved and unbuilt. The combobox pattern is also the most-failed ARIA pattern there is, so it gets built once, here, rather than per renderer |
-| `time`, `datetime` | The other two thirds of a date | Reserved deliberately. Time zones are where form platforms lose data, and `date` is date-only on purpose until the semantics are written down |
+| ~~`time`, `datetime`~~ | **Shipped.** One canonical fixed-width string each, with `earliest`/`latest` bounds ([0067](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0067-a-temporal-answer-is-one-fixed-width-string.md)) | This row said time zones are where form platforms lose data, and the semantics are written down now: a `datetime` is an instant in UTC, a `time` is a wall clock with no zone, and there is deliberately no per-field `timezone` — a zone *name* would put the host's IANA data into the replay contract |
 | `toggle` | A switch | A checkbox with different paint, *unless* it commits immediately — and in a form it must not, so it is a checkbox with different paint |
 
 `signature`, `datagrid` and `qrcode` are the three

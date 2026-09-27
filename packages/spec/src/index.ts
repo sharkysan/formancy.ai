@@ -12,6 +12,8 @@ export {
   SPEC_1_FIELD_TYPES,
   SPEC_1_LAYOUT_KINDS,
   SPEC_VERSIONS,
+  TEMPORAL_FIELD_TYPES,
+  TEMPORAL_SHAPES,
   WIDGETS_BY_FIELD_TYPE,
 } from './types.js'
 export { upgradeSpecVersion } from './upgrade.js'
@@ -37,6 +39,7 @@ export type {
   FieldOption,
   FieldType,
   FieldWidget,
+  TemporalFieldType,
   FormLogic,
   FormI18n,
   FormLayout,

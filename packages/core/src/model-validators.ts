@@ -1,3 +1,4 @@
+import { TEMPORAL_SHAPES } from '@formancy/spec'
 import type { FieldDef, FieldFormat } from '@formancy/spec'
 
 /**
@@ -45,6 +46,29 @@ export function modelViolations(def: FieldDef, value: unknown): string[] {
 
   const text = typeof value === 'string' ? value : undefined
 
+  // A temporal answer, bounded by comparing strings.
+  //
+  // That is only correct because the format fixes one canonical, zero-padded,
+  // fixed-width shape per type: measured, `'9:30' < '10:00'` is FALSE while
+  // `'09:30' < '10:00'` is true, and
+  // `'2026-09-19T10:00:00+03:00' < '2026-09-19T08:00:00Z'` is FALSE although the
+  // first instant is earlier. So the SHAPE is checked before the bound, and a value
+  // of the wrong shape fails rather than being compared — a malformed answer
+  // compared against a bound gives an ordering nobody predicted, which on the server
+  // is the hostile-payload path.
+  //
+  // `shape` rather than `pattern` as the code: `pattern` is the author's own regular
+  // expression, and a message catalogue needs to tell these two apart.
+  const shape = TEMPORAL_SHAPE_CHECKS[def.type]
+  if (shape !== undefined) {
+    if (text === undefined || !shape.test(text)) {
+      codes.push('shape')
+    } else {
+      if (def.earliest !== undefined && text < def.earliest) codes.push('earliest')
+      if (def.latest !== undefined && text > def.latest) codes.push('latest')
+    }
+  }
+
   if (def.minLength !== undefined && text !== undefined && text.length < def.minLength) {
     codes.push('minLength')
   }
@@ -71,6 +95,27 @@ export function modelViolations(def: FieldDef, value: unknown): string[] {
  * see an opaque array.
  */
 const LIST_VALUED = new Set(['selectboxes', 'file'])
+
+/**
+ * The shape each temporal answer must take, compiled once from the format's own
+ * declaration.
+ *
+ * Read from `TEMPORAL_SHAPES` rather than written again here: two closed
+ * descriptions of one rule is the drift this repository keeps finding, and a shape
+ * that disagreed with the schema's would accept on the server what the document
+ * refuses, or the reverse.
+ *
+ * **`date` is included, and that is a behaviour change to a frozen type.** Version 1
+ * fixed `date` as a date-only ISO 8601 string and nothing ever checked it, so a
+ * deployment posting `19/09/2026` has been accepted until now and will start failing.
+ * Taken deliberately: the freeze promises a version 1 *document* keeps validating, not
+ * that a malformed *answer* keeps being accepted — and an unchecked date is one that
+ * cannot be bounded, sorted or exported without the reader guessing. Called out in
+ * the changelog rather than slipped in.
+ */
+const TEMPORAL_SHAPE_CHECKS: Partial<Record<string, RegExp>> = Object.fromEntries(
+  Object.entries(TEMPORAL_SHAPES).map(([type, source]) => [type, new RegExp(source)]),
+)
 
 /** One attached file, as the submission stores it. Never the bytes. */
 interface StoredFile {

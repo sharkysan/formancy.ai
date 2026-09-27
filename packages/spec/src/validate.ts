@@ -80,6 +80,21 @@ function versionErrors(
       })
     }
 
+    // `earliest`/`latest` land on `date` too, which IS a version 1 type -- and that
+    // is not a contradiction. The freeze promises a version 1 DOCUMENT keeps
+    // validating, and an optional property only a version 2 document may carry takes
+    // nothing from any version 1 document. It is not additive *within* version 1,
+    // because the schema is closed: a version 1 reader answers `Unknown property
+    // "earliest"` and refuses everything.
+    for (const bound of ['earliest', 'latest'] as const) {
+      if (field[bound] !== undefined) {
+        errors.push({
+          path: `${path}/${bound}`,
+          message: `A "${bound}" bound needs specVersion "2". This document says "1". Change it to "2" — everything already in the document keeps working, because version 2 only adds.`,
+        })
+      }
+    }
+
     if (spec1Types.has(field.type)) continue
     errors.push({
       path: `${path}/type`,
@@ -162,6 +177,21 @@ function semanticErrors(schema: FormSchema): SchemaError[] {
         }
         seen.add(column.field)
       }
+    }
+
+    // A range no answer can satisfy is a published field nobody can fill in. Safe as
+    // a plain string comparison precisely because the shapes are fixed-width and
+    // zero-padded: that is the property TEMPORAL_SHAPES exists to guarantee, and it
+    // is why this rule can be three lines rather than a date parser.
+    if (
+      field.earliest !== undefined &&
+      field.latest !== undefined &&
+      field.earliest > field.latest
+    ) {
+      errors.push({
+        path: `${path}/earliest`,
+        message: `The earliest allowed value "${field.earliest}" is after the latest allowed "${field.latest}", so no answer could be accepted. Swap them, or remove one.`,
+      })
     }
 
     if (claimed.has(field.key)) {

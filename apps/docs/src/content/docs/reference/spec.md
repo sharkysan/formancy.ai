@@ -129,6 +129,8 @@ What kind of answer the field collects, or — for a group, a page or a repeater
 - `"radio"` — **Radio buttons.** One answer picked from a list, with every option visible at once. Best for a handful of options.
 - `"selectboxes"` — **Checkboxes.** Several answers picked from a list, every option visible at once. The answer is the list of values chosen, so an option removed later leaves the submissions that chose it unchanged.
 - `"date"` — **Date.** A calendar date, with no time of day.
+- `"time"` — **Time.** A time of day, with no date and no time zone: opening hours, an appointment slot. Stored as "HH:MM" on a 24-hour clock, zero-padded, so that comparing two answers as text gives the same order as comparing them as times. Because it carries no zone it is not an instant and cannot be compared with the current time.
+- `"datetime"` — **Date and time.** One moment in time, stored as "YYYY-MM-DDTHH:MM:SSZ" — always UTC, always with seconds. A reader types and reads it in their own zone; the answer records the instant. Numeric offsets are refused because "…10:00:00+03:00" sorts after "…08:00:00Z" as text while being earlier in fact, and the ordering is what makes an earliest or latest bound mean anything.
 - `"file"` — **File upload.** One or more attached files. The submission stores what each file is and where it went — never its bytes — so a submission stays small and readable on its own.
 - `"richtext"` — **Formatted text.** Several lines of text the reader can emphasise, link and list. Stored as a restricted markup, not as HTML: nothing a reader writes is ever parsed as markup by the renderer, which is what keeps a submitted answer from becoming a script on the page that displays it.
 - `"hidden"` — **Hidden value.** Travels with the submission but is never shown to the reader, such as a campaign code or a referral source.
@@ -341,6 +343,48 @@ Each item:
 - `width` — optional · **Relative width.** How much of the available width this column takes, relative to the others. A ratio rather than a measurement: a length in a document is one no renderer can honour on a narrow screen, and it would decide your design system for you. Zero is refused — a column nobody can see still holds a field that is collected and required-checked.
 - `align` — optional · **Alignment.** Which edge the values line up against. Numbers usually want the end.
 - `header` — optional · **Column heading.** A shorter heading for the column when the field's own label is too long to sit above it. The field's label is still what a screen reader announces for the control in the cell, so this shortens the heading without renaming the question.
+
+#### `date`
+
+##### `earliest`
+
+optional · string · pattern `^\d{4}-\d{2}-\d{2}$`
+
+**Earliest allowed.** The earliest date this field accepts, inclusive, written exactly as an answer is: 2026-09-19. A fixed value, not an expression and not the current date — a bound that moved with the clock would let the same submission pass in the browser and fail on the server. For "must be in the future", write a rule.
+
+##### `latest`
+
+optional · string · pattern `^\d{4}-\d{2}-\d{2}$`
+
+**Latest allowed.** The latest date this field accepts, inclusive, written exactly as an answer is: 2026-09-19. A fixed value, not an expression and not the current date — a bound that moved with the clock would let the same submission pass in the browser and fail on the server. For "must be in the future", write a rule.
+
+#### `time`
+
+##### `earliest`
+
+optional · string · pattern `^(?:[01]\d|2[0-3]):[0-5]\d$`
+
+**Earliest allowed.** The earliest time this field accepts, inclusive, written exactly as an answer is: 09:30. A fixed value, not an expression and not the current time — a bound that moved with the clock would let the same submission pass in the browser and fail on the server. For "must be in the future", write a rule.
+
+##### `latest`
+
+optional · string · pattern `^(?:[01]\d|2[0-3]):[0-5]\d$`
+
+**Latest allowed.** The latest time this field accepts, inclusive, written exactly as an answer is: 09:30. A fixed value, not an expression and not the current time — a bound that moved with the clock would let the same submission pass in the browser and fail on the server. For "must be in the future", write a rule.
+
+#### `datetime`
+
+##### `earliest`
+
+optional · string · pattern `^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\dZ$`
+
+**Earliest allowed.** The earliest date and time this field accepts, inclusive, written exactly as an answer is: 2026-09-19T08:00:00Z. A fixed value, not an expression and not the current date and time — a bound that moved with the clock would let the same submission pass in the browser and fail on the server. For "must be in the future", write a rule.
+
+##### `latest`
+
+optional · string · pattern `^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\dZ$`
+
+**Latest allowed.** The latest date and time this field accepts, inclusive, written exactly as an answer is: 2026-09-19T08:00:00Z. A fixed value, not an expression and not the current date and time — a bound that moved with the clock would let the same submission pass in the browser and fail on the server. For "must be in the future", write a rule.
 
 ## Logic rules
 

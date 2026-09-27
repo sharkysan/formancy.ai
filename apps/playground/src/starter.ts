@@ -57,6 +57,16 @@ export const STARTER_SCHEMA = {
       },
       { key: 'wantedBy', type: 'date', label: { $t: 'wantedBy' } },
 
+      // A time of day carries no zone, so it is not an instant: `09:00`–`17:00`
+      // means those hours wherever the reader is. The bounds are here so the demo
+      // shows what a bound does, not merely that the control exists.
+      { key: 'deliveryWindow', type: 'time', label: { $t: 'deliveryWindow' }, earliest: '09:00', latest: '17:00' },
+
+      // A datetime IS an instant, stored as UTC. The control shows the reader their
+      // own wall clock and the answer records the moment — which is why the two
+      // types are separate rather than one with a flag.
+      { key: 'confirmedAt', type: 'datetime', label: { $t: 'confirmedAt' } },
+
       {
         key: 'items',
         type: 'repeater',
@@ -254,6 +264,8 @@ export const STARTER_SCHEMA = {
         'delivery.standard': 'Standard',
         'delivery.express': 'Express',
         wantedBy: 'Wanted by',
+        deliveryWindow: 'Delivery window',
+        confirmedAt: 'Confirmed at',
         items: 'Items',
         'items.name': 'Name',
         'items.qty': 'Quantity',
@@ -290,6 +302,8 @@ export const STARTER_SCHEMA = {
         'delivery.standard': 'Standard',
         'delivery.express': 'Express',
         wantedBy: 'Gewünscht bis',
+        deliveryWindow: 'Lieferfenster',
+        confirmedAt: 'Bestätigt am',
         items: 'Positionen',
         'items.name': 'Bezeichnung',
         'items.qty': 'Menge',

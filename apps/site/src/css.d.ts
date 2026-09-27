@@ -6,3 +6,4 @@
 
 /** The number of decision records, counted at build time (see decision-records.ts). */
 declare const __DECISION_RECORDS__: number
+declare const __FIELD_TYPES__: number
