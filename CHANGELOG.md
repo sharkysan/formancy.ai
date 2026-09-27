@@ -10,6 +10,28 @@ later.
 
 ## Unreleased
 
+**Fixed: four documents claimed a bundle-size gate that does not exist.** The budgets table
+in the architecture document carried "gate configured" in its Actual column for both
+bundles; the verification view and the **regulatory evidence table** both listed
+`size-limit` as running under `pnpm check:pkg`. Nothing in the repository runs it — and
+[0038](docs/decisions/0038-esm-only.md) said so plainly in its own *Verified by* line all
+along, which is three documents contradicting a fourth.
+
+Measured instead, and dated: `@formancy/core` is **14.8 kB** brotli against an 18 kB
+budget; `@formancy/react`'s whole barrel is **12.1 kB** against a 4 kB budget.
+
+**The React figure is not reported as a breach, because it is not known to be one.** 4 kB
+was written for a tree-shaken entry — the per-entry `exports` map exists so that
+`@formancy/react/fields/date` pulls only what it needs — and 12.1 kB is every field type,
+the error summary, the resume notice and the wizard together. Which number the budget meant
+cannot be settled without running a bundler over a realistic import, and nothing here does.
+So it is **unverified, neither met nor missed**, and listed as debt.
+
+No threshold was added, deliberately: a number chosen today would be chosen to pass, which
+is a guard written green. `apps/docs/src/bundles.test.ts` instead recomputes the sizes and
+fails when the document's figures no longer match them — so the prose cannot go stale even
+though the gate is absent.
+
 **A `qrcode` layout node** — a machine-readable code drawn from an answer the form already
 holds, rendering in both renderers and shown in the playground demo
 ([0070](docs/decisions/0070-a-code-is-an-arrangement-not-a-field.md)).

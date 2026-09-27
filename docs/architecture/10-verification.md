@@ -46,7 +46,8 @@ it.
 | Server integration on real PostgreSQL via Testcontainers | `pnpm test` | Versioning and submission defects only manifest against real SQL semantics |
 | The official CEL corpus, counts pinned | `pnpm test` | The expression evaluator has not regressed, and its gaps are known rather than assumed |
 | Performance benchmarks | `pnpm bench` | The budgets in [§9](09-quality-requirements.md) |
-| `publint` + `attw` + `size-limit` | `pnpm check:pkg` | The commonest cause of "it doesn't work in my app" for a multi-framework library |
+| `publint` + `attw` | `pnpm check:pkg` | The commonest cause of "it doesn't work in my app" for a multi-framework library |
+| ~~`size-limit`~~ | — | **Not wired up.** This row claimed it ran under `check:pkg` and nothing in the repository runs it; the byte budgets in [§9.3](09-quality-requirements.md) are measured by hand and dated. |
 | The site as the host composes it, with the documentation link check | `pnpm build:web` | A root-absolute documentation link resolves against the landing page rather than `/docs/`, builds cleanly and 404s in production |
 | Typecheck with no `@types/node` in the isomorphic packages | `pnpm typecheck` | The layer boundary holds |
 
