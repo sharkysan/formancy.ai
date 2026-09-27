@@ -1,7 +1,7 @@
 
 import { flushSync } from 'react-dom'
 import { useEffect, useId, useRef, useState } from 'react'
-import type { ReactElement } from 'react'
+import type { CSSProperties, ReactElement } from 'react'
 import type { FormSchema, LayoutNode } from '@formancy/spec'
 import { resolveText, LAYOUT_LEAF_KINDS, layoutChildren } from '@formancy/spec'
 import { encode } from 'uqr'
@@ -58,18 +58,47 @@ export function LayoutTree({
 }: LayoutTreeProps): ReactElement {
   return (
     <>
-      {nodes.map((node, index) => (
-        <LayoutNodeView
-          // Position is the only identity a layout node has, and a layout does
-          // not reorder while a form is being filled in.
-          key={index}
-          schema={schema}
-          node={node}
-          locale={locale}
-          renderField={renderField}
-          at={[...at, index]}
-        />
-      ))}
+      {nodes.map((node, index) => {
+        const view = (
+          <LayoutNodeView
+            // Position is the only identity a layout node has, and a layout does
+            // not reorder while a form is being filled in.
+            key={index}
+            schema={schema}
+            node={node}
+            locale={locale}
+            renderField={renderField}
+            at={[...at, index]}
+          />
+        )
+
+        // A node that spans gets a cell to span WITH, and one that does not is left
+        // exactly as it was -- a direct child of the container, so nothing about the
+        // markup of a form that uses no span changes at all.
+        //
+        // The cell is the grid item rather than the node itself, because the node's own
+        // element is produced further down (a field's control, a nested table, a code)
+        // and a renderer cannot reach into a component a consumer registered.
+        //
+        // Two channels for one fact, and the reason is arithmetic: `data-span` is the
+        // authored value, which a selector can match; `--fm-span` is the same number
+        // where CSS can COUNT with it, because `grid-column: span attr(data-span)` is not
+        // a thing. `all` needs no number -- it is `1 / -1`, whatever the column count --
+        // so it carries no property, and the theme's fallback covers the rest.
+        if (node.span === undefined) return view
+        return (
+          <div
+            key={index}
+            data-formancy-part="layout-cell"
+            data-span={String(node.span)}
+            {...(node.span === 'all'
+              ? {}
+              : { style: { '--fm-span': String(node.span) } as CSSProperties })}
+          >
+            {view}
+          </div>
+        )
+      })}
     </>
   )
 }

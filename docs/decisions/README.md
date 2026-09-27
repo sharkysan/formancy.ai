@@ -173,3 +173,5 @@ listed under the sections they belong to above.
 | [0070](0070-a-code-is-an-arrangement-not-a-field.md) | A code is an arrangement, not a field | accepted |
 | [0071](0071-a-scanner-is-supplied-not-built.md) | A scanner is supplied, not built | accepted |
 | [0072](0072-a-typeahead-is-a-combobox-over-the-same-answer.md) | A typeahead is a combobox over the same answer | accepted |
+| [0073](0073-a-host-element-is-not-a-layout.md) | A host element is not a layout | accepted |
+| [0074](0074-a-table-child-may-span.md) | A table child may span | accepted |

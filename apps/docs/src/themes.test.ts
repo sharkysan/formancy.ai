@@ -309,6 +309,48 @@ describe('the theme contract', () => {
     expect(wrong).toEqual([])
   })
 
+  test('lets the narrow-screen reflow win over a column span', () => {
+    // The bug this exists for, and I wrote it: a node that spans two columns must stop
+    // spanning when the grid collapses to one, or the span creates an IMPLICIT second
+    // column and the page scrolls sideways -- the WCAG 1.4.10 reflow the media query
+    // exists for, undone by a feature written after it.
+    //
+    // The reset and the base rule have the same weight, so the cascade decides on
+    // ORDER, and the first version of this had the base rule last. Measured in a
+    // browser before and after: at 320px a `span 2` cell computed `span 2` with the
+    // rules in the wrong order and `auto` with them in the right one.
+    //
+    // Checked as order rather than as a box, because a box is what jsdom cannot give.
+    // `all` is deliberately not covered: `1 / -1` is one column when there is one
+    // column, so it needs no reset and keeps its own more specific rule.
+    const wrong = themes().flatMap(({ name, css }) => {
+      const bare = css.replace(/\/\*[\s\S]*?\*\//g, '')
+
+      // The base rule: `layout-cell` with no further attribute, declaring grid-column.
+      const base = bare.search(
+        /\[data-formancy-part='layout-cell'\]\s*\{[^}]*grid-column/,
+      )
+      // The reset: the same part, inside a narrow-screen query, back to auto.
+      const reset = bare.search(
+        /\[data-formancy-part='layout-cell'\]\s*\{[^}]*grid-column:\s*auto/,
+      )
+
+      if (base === -1) return [`${name}: nothing gives layout-cell a grid-column, so a span does nothing`]
+      if (reset === -1) {
+        return [
+          `${name}: nothing resets layout-cell's grid-column at narrow width, so a numeric span survives the collapse to one column and the page scrolls sideways`,
+        ]
+      }
+      return reset > base
+        ? []
+        : [
+            `${name}: the narrow-screen reset for layout-cell comes BEFORE the rule it has to beat. They weigh the same, so the later one wins and the span survives the reflow.`,
+          ]
+    })
+
+    expect(wrong).toEqual([])
+  })
+
   test('a themed control has a height, so it is visible before it has content', () => {
     // The specific reason the field was invisible rather than merely unstyled:
     // an empty contenteditable collapses to nothing without one.

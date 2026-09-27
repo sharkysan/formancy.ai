@@ -66,7 +66,7 @@ What it does **not** do, and must not be assumed to do:
 | Runtime (engine, spec, expressions, builder-core) | Any ECMAScript 2023 environment. **No DOM and no Node APIs are used** ([0008](../decisions/0008-layered-packages.md)) |
 | Runtime (server) | Node.js `>=22.12.0`; developed and tested against Node 22.12 |
 | Renderer (React) | React `^19.0.0` (peer dependency) |
-| Renderer (Angular) | `@angular/core` `^22.0.0` (peer dependency), zoneless change detection |
+| Renderer (Angular) | `@angular/core` `^22.0.0` (peer dependency), zoneless change detection. **Under a strict `style-src` Content Security Policy this package needs Angular's `ngCspNonce`**: it ships one component stylesheet, `:host { display: contents }`, which takes the recursing layout component's host element out of the box tree so a consumer's grid sees the same children it sees in React ([0073](../decisions/0073-a-host-element-is-not-a-layout.md)). Without it a table layout collapses to one column |
 | Database (server only) | PostgreSQL 17 or 18 |
 | Deployment (server only) | Two compose files are supplied: `compose.yaml` builds from a checkout, `compose.published.yaml` runs the signed published image and requires `FORMANCY_VERSION` to be pinned, because no `latest` tag is published. Every variable `.env.example` documents is passed through by both, checked by `packages/server/src/compose.test.ts` |
 | Module format | ESM only; no CommonJS build is published ([0038](../decisions/0038-esm-only.md)) |

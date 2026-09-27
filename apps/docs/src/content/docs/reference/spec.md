@@ -545,6 +545,12 @@ required · string · min length 1 · max length 512
 
 **Field path.** The data path of the field to place here, e.g. "email" or "address.city".
 
+##### `span`
+
+optional · value
+
+**Column span.** How many of the surrounding table's columns this takes. Only inside a table: elsewhere it is refused rather than ignored. Use "all" for the full width — it is what somebody means and it survives a change to the column count, where a number does not. Anything a person works inside rather than answers in a word — a rich text editor, a file dropzone, a long text area — usually wants the full width.
+
 #### Grouping
 
 ##### `kind`
@@ -565,6 +571,12 @@ required · array of Layout node
 
 **Children.** The nodes inside this group.
 
+##### `span`
+
+optional · value
+
+**Column span.** How many of the surrounding table's columns this takes. Only inside a table: elsewhere it is refused rather than ignored. Use "all" for the full width — it is what somebody means and it survives a change to the column count, where a number does not. Anything a person works inside rather than answers in a word — a rich text editor, a file dropzone, a long text area — usually wants the full width.
+
 #### Tabs
 
 ##### `kind`
@@ -584,6 +596,12 @@ optional · Text (see below)
 required · array of Layout node · at least 1 item
 
 **Tabs.** One section per tab. Each section’s heading is its tab’s name, so every one of them needs a heading — a tab with no name is a tab nobody can choose.
+
+##### `span`
+
+optional · value
+
+**Column span.** How many of the surrounding table's columns this takes. Only inside a table: elsewhere it is refused rather than ignored. Use "all" for the full width — it is what somebody means and it survives a change to the column count, where a number does not. Anything a person works inside rather than answers in a word — a rich text editor, a file dropzone, a long text area — usually wants the full width.
 
 #### Table
 
@@ -611,6 +629,12 @@ required · array of Layout node
 
 **Cells.** The nodes to place, filling the columns in order.
 
+##### `span`
+
+optional · value
+
+**Column span.** How many of the surrounding table's columns this takes. Only inside a table: elsewhere it is refused rather than ignored. Use "all" for the full width — it is what somebody means and it survives a change to the column count, where a number does not. Anything a person works inside rather than answers in a word — a rich text editor, a file dropzone, a long text area — usually wants the full width.
+
 #### Code
 
 A machine-readable code drawn from a value the form already holds — a booking reference as a QR code, say. It collects nothing: there is no answer and no key, which is why it is an arrangement rather than a field. A reader that cannot draw a code shows the value as text rather than a broken picture.
@@ -632,6 +656,12 @@ required · string
 optional · Text (see below)
 
 **Label.** What a reader is told the code is. A picture of a code says nothing to a screen reader, so this and the value behind it are the accessible content. Optional: a code beside the field it encodes needs no second name.
+
+##### `span`
+
+optional · value
+
+**Column span.** How many of the surrounding table's columns this takes. Only inside a table: elsewhere it is refused rather than ignored. Use "all" for the full width — it is what somebody means and it survives a change to the column count, where a number does not. Anything a person works inside rather than answers in a word — a rich text editor, a file dropzone, a long text area — usually wants the full width.
 
 ### Layout
 

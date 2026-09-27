@@ -354,6 +354,41 @@ markup is not navigable fails the test suite
 *Residual:* automated checking is a floor. **No manual screen-reader audit has
 been performed.** See [`SOUP-DECLARATION.md`](SOUP-DECLARATION.md).
 
+### D4a. A form is laid out differently by the two renderers, and nothing reports it
+
+*How it arises:* the renderers emit their own markup on purpose, and a consumer's
+stylesheet acts on it. A difference that changes no role, no accessible name and no
+value therefore changes no test result — while changing what a person can see. Two
+have occurred and both were found by somebody opening a page rather than by a gate.
+A two-column table layout produced **one** column in Angular from the day it
+shipped, because the layout component recurses and its host element was the grid's
+only item ([0073](../decisions/0073-a-host-element-is-not-a-layout.md)); and the
+typeahead popup opened over its own label and box, because an absolutely positioned
+child of a grid container takes the container's origin and not its place in the flow
+([0072](../decisions/0072-a-typeahead-is-a-combobox-over-the-same-answer.md)).
+
+*Severity:* a control that is covered or missing is a control that cannot be
+operated, so this reaches the same outcome as D4 by a route D4's constraint does not
+watch.
+
+*Constraint:* each cause is replaced by a **structural** contract a test can hold
+rather than by a promise: every element between a grid and the cells inside it takes
+no part in layout, asserted in `packages/angular/src/layout.test.ts`; the typeahead
+popup is positioned against an anchor that wraps the control and nothing else,
+asserted in both renderers' widget tests; and every theme positions that anchor,
+gives the popup an explicit offset, and lets the narrow-screen reflow beat a column
+span, asserted in `apps/docs/src/themes.test.ts`. Each was reverted and watched to
+fail.
+
+*Residual, and it is the honest centre of this entry:* **those are proxies, and
+appearance is reviewed rather than verified.** jsdom implements no layout, so no
+test in this repository can ask where a box is; the measurements quoted in the
+records above were taken by hand in a browser. **No application in this repository
+renders the Angular bindings at all**, so that renderer's appearance has never been
+seen by anything but review. A manufacturer relying on visual correctness must
+verify it in the browsers it ships to. Listed as debt in
+[§11](../architecture/11-risks-and-debt.md).
+
 ### D5. A repeater shows the wrong number of rows
 
 *How it arises:* `minItems` was originally seeded by each renderer in a mount
