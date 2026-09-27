@@ -54,7 +54,12 @@ describe('paletteEntries', () => {
     // `time` and `datetime` -- correctly, but for no useful reason: this test is
     // about the builder NAMING what is missing, not about which types happen to be
     // version 2 today. Every branch that adds a type would otherwise edit this line.
-    const expected = FIELD_TYPES.filter((type) => !SPEC_1_FIELD_TYPES.includes(type))
+    // Widened to `readonly string[]` for the membership test: `SPEC_1_FIELD_TYPES`
+    // is a narrower tuple than `FIELD_TYPES`, so `includes` refuses the wider type --
+    // which is the tuple types doing their job, since a version 1 type is a subset by
+    // construction.
+    const spec1: readonly string[] = SPEC_1_FIELD_TYPES
+    const expected = FIELD_TYPES.filter((type) => !spec1.includes(type))
     expect(typesNeedingUpgrade('1').map((entry) => entry.type)).toEqual([...expected])
     // A guard on the guard: an empty expectation would pass forever.
     expect(expected.length).toBeGreaterThan(0)
