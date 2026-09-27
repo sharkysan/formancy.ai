@@ -263,3 +263,48 @@ describe('a repeater with the datagrid widget', () => {
     expect(parts('datagrid-head')).toHaveLength(0)
   })
 })
+
+describe('the row buttons as marks', () => {
+  test('keep the whole sentence as their accessible name', async () => {
+    // What makes an icon legal here: WCAG 2.5.3 binds the accessible name to the
+    // VISIBLE text, and an icon-only control has none -- so the name stays the sentence
+    // 0068 put the row's position into, and 1.1.1 is satisfied by that same name.
+    //
+    // The theme clips the text rather than removing it, because `display: none` and
+    // `visibility: hidden` both compute the name to "". This asserts the half the
+    // renderer owns: the text is still THERE, in an element a theme can clip.
+    mount('datagrid')
+
+    const remove = screen.getByRole('button', { name: 'Remove item 1 of 2' })
+    expect(remove.getAttribute('data-formancy-part')).toBe('row-remove')
+
+    // The name comes from a child a theme can clip, not from a bare text node it
+    // cannot reach without also removing the name.
+    const text = remove.querySelector('[data-formancy-part="row-action-text"]')
+    expect(text?.textContent?.trim()).toBe('Remove item 1 of 2')
+
+    expect(screen.getByRole('button', { name: 'Move Items 1 of 2 down' })
+      .getAttribute('data-formancy-part')).toBe('row-down')
+    expect(screen.getByRole('button', { name: 'Move Items 2 of 2 up' })
+      .getAttribute('data-formancy-part')).toBe('row-up')
+  })
+
+  test('the renderer draws no mark of its own', () => {
+    // An icon is appearance, and appearance belongs to the consumer: a renderer that
+    // shipped a glyph would be choosing one for every design system at once. So the
+    // button holds text and a hook, and nothing else.
+    mount('datagrid')
+
+    const remove = screen.getByRole('button', { name: 'Remove item 1 of 2' })
+    expect(remove.querySelector('svg')).toBeNull()
+    expect(remove.querySelector('img')).toBeNull()
+    expect(remove.getAttribute('style')).toBeNull()
+    // And the same button in the block rendering, which a theme leaves as a sentence.
+    cleanup()
+    mount(undefined)
+    expect(
+      screen.getByRole('button', { name: 'Remove item 1 of 2' })
+        .querySelector('[data-formancy-part="row-action-text"]'),
+    ).not.toBeNull()
+  })
+})

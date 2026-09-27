@@ -298,13 +298,25 @@ function RepeaterSection({
 
   /** A row's own controls, identical in both arrangements down to the names, because
    *  0068 put the row's position in those names and a grid does not change where a person
-   *  is. */
+   *  is.
+   *
+   *  The text sits in its own element so a THEME can clip it and draw a mark instead,
+   *  which is what a grid wants -- "Remove recipient 1 of 1" on three wrapped lines took
+   *  more room than the answers beside it, measured in the playground. Clipped and never
+   *  removed: `display: none` and `visibility: hidden` both compute the button's name to
+   *  the empty string, and a button called nothing is worse than a wide one.
+   *
+   *  The renderer draws no mark of its own. An icon is appearance, appearance belongs to
+   *  the consumer ([0004](../../../docs/decisions/0004-headless-core.md)), and a renderer
+   *  that shipped a glyph would be choosing one for every design system at once. */
   const rowButtons = (index: number): ReactNode => (
     <>
       {/* Position context in the NAME, so a screen-reader user knows which
           row this button kills without walking the tree. */}
-      <button type="button" onClick={() => repeater.removeRow(index)}>
-        {`${removeLabel} ${index + 1} of ${repeater.rowCount}`}
+      <button type="button" data-formancy-part="row-remove" onClick={() => repeater.removeRow(index)}>
+        <span data-formancy-part="row-action-text">
+          {`${removeLabel} ${index + 1} of ${repeater.rowCount}`}
+        </span>
       </button>
       {/* Reordering by button, which is the KEYBOARD route and therefore the
           primary one: WCAG 2.5.7 requires a non-drag equivalent for any drag, so
@@ -317,13 +329,17 @@ function RepeaterSection({
           the tab order in some browsers and announces a control that does
           nothing; a row that cannot move up simply has no such button. */}
       {index > 0 ? (
-        <button type="button" onClick={() => repeater.moveRow(index, index - 1)}>
-          {`Move ${label} ${index + 1} of ${repeater.rowCount} up`}
+        <button type="button" data-formancy-part="row-up" onClick={() => repeater.moveRow(index, index - 1)}>
+          <span data-formancy-part="row-action-text">
+            {`Move ${label} ${index + 1} of ${repeater.rowCount} up`}
+          </span>
         </button>
       ) : null}
       {index < repeater.rowCount - 1 ? (
-        <button type="button" onClick={() => repeater.moveRow(index, index + 1)}>
-          {`Move ${label} ${index + 1} of ${repeater.rowCount} down`}
+        <button type="button" data-formancy-part="row-down" onClick={() => repeater.moveRow(index, index + 1)}>
+          <span data-formancy-part="row-action-text">
+            {`Move ${label} ${index + 1} of ${repeater.rowCount} down`}
+          </span>
         </button>
       ) : null}
     </>

@@ -1432,3 +1432,122 @@
     text-align: start;
   }
 }
+
+/* The row buttons as marks rather than sentences, inside a grid only.
+
+   WHY IT IS ALLOWED TO BE AN ICON. WCAG 2.5.3 (Label in Name) binds the accessible name
+   to the VISIBLE text, and an icon-only control has none -- so the name stays the whole
+   sentence the renderer wrote, "Remove recipient 1 of 1", which is what 0068 put the
+   row's position into. 1.1.1 is satisfied by that same name.
+
+   WHY THE TEXT IS CLIPPED AND NOT REMOVED. `display: none` and `visibility: hidden` both
+   compute the button's accessible name to the empty string -- measured, the same
+   measurement the cell labels rest on. A button called nothing is worse than a wide one.
+
+   WHY THE MARK IS DRAWN IN currentColor. A background-image disappears in forced-colours
+   mode and the button becomes blank; borders and backgrounds that inherit the text
+   colour are re-coloured by the system instead, so the mark survives. Nothing here is a
+   character either: generated text content can reach the accessible name, and this name
+   is already correct.
+
+   Only inside a datagrid. Stacked rows have the room for the sentence, and a form that
+   showed a bare cross where a line of text would fit is harder to use, not easier. */
+[data-formancy-theme='pop'] [data-formancy-part='datagrid-actions'] [data-formancy-part='row-action-text'] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+[data-formancy-theme='pop']
+  [data-formancy-part='datagrid-actions']
+  :is(
+    [data-formancy-part='row-remove'],
+    [data-formancy-part='row-up'],
+    [data-formancy-part='row-down']
+  ) {
+  position: relative;
+  /* 2.5.8 Target Size (Minimum) is 24 by 24 CSS pixels, and this is the AA floor rather
+     than a taste: these three sit next to each other, so the spacing exception does not
+     rescue a smaller one. */
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  /* 1.4.11 Non-text Contrast wants 3:1 for the mark against what is behind it. The mark
+     is currentColor, so it is the button's own text colour, which every theme here
+     already sets against its own surface for readable text -- a stricter ratio than
+     3:1. */
+  color: var(--fm-muted);
+  background: none;
+  border: 1px solid currentColor;
+  border-radius: var(--fm-radius, 0.25rem);
+  cursor: pointer;
+}
+
+[data-formancy-theme='pop']
+  [data-formancy-part='datagrid-actions']
+  :is(
+    [data-formancy-part='row-remove'],
+    [data-formancy-part='row-up'],
+    [data-formancy-part='row-down']
+  ):hover {
+  color: var(--fm-ink, currentColor);
+}
+
+/* A cross, as two bars crossing. `content: ''` on purpose: a character here would be
+   generated text, and generated text can reach the accessible name -- which is already
+   the right sentence and must not gain a glyph in front of it. */
+[data-formancy-theme='pop'] [data-formancy-part='datagrid-actions'] [data-formancy-part='row-remove']::before,
+[data-formancy-theme='pop'] [data-formancy-part='datagrid-actions'] [data-formancy-part='row-remove']::after {
+  content: '';
+  position: absolute;
+  inline-size: 0.625rem;
+  block-size: 1px;
+  background: currentColor;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='datagrid-actions'] [data-formancy-part='row-remove']::before {
+  transform: rotate(45deg);
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='datagrid-actions'] [data-formancy-part='row-remove']::after {
+  transform: rotate(-45deg);
+}
+
+/* A chevron, as two sides of a square turned on its corner. Same reasoning: no glyph,
+   no image, currentColor so forced colours re-colour it rather than erase it. */
+[data-formancy-theme='pop'] [data-formancy-part='datagrid-actions'] :is([data-formancy-part='row-up'], [data-formancy-part='row-down'])::before {
+  content: '';
+  inline-size: 0.4375rem;
+  block-size: 0.4375rem;
+  border-inline-start: 1px solid currentColor;
+  border-block-start: 1px solid currentColor;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='datagrid-actions'] [data-formancy-part='row-up']::before {
+  transform: translateY(1px) rotate(45deg);
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='datagrid-actions'] [data-formancy-part='row-down']::before {
+  transform: translateY(-2px) rotate(-135deg);
+}
+
+/* Forced colours: the system repaints text and borders and drops backgrounds, so a mark
+   made of borders and currentColor survives on its own. Said out loud rather than
+   assumed, because it is the property that made borders the right choice. */
+@media (forced-colors: active) {
+  [data-formancy-theme='pop']
+    [data-formancy-part='datagrid-actions']
+    :is(
+      [data-formancy-part='row-remove'],
+      [data-formancy-part='row-up'],
+      [data-formancy-part='row-down']
+    ) {
+    color: ButtonText;
+    border-color: ButtonText;
+  }
+}

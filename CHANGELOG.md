@@ -32,6 +32,26 @@ the block rendering and learns a row's position on reaching that row's buttons.
 paint — and because the arrow keys are already owned cell by cell: a `select` with
 `widget: "typeahead"` is legal in a row and claims Up, Down, Home, End, Enter and Escape.
 
+**A row's buttons are marks rather than sentences inside a grid**, and the accessible name
+is untouched. Measured in the playground: "Remove recipient 1 of 1" wrapped onto three
+lines and took 180px of a 446px grid — more room than the answers beside it. The buttons
+are now 28px square and the answer fields went from 138/46/46 to **229/76/76**.
+
+The renderer draws no mark of its own: an icon is appearance, and appearance belongs to
+the consumer. What it adds is a hook — each button's text moves into its own element so a
+theme can **clip** it. Clipped and never removed, because `display: none` and
+`visibility: hidden` both compute a button's accessible name to the empty string, and a
+button called nothing is worse than a wide one. Confirmed in a browser: the control is
+still `button "Remove recipient 1 of 1"` in the accessibility tree.
+
+The WCAG position, stated rather than assumed: **2.5.3** binds the accessible name to the
+*visible* text and an icon-only control has none, so the name stays the whole sentence
+0068 put the row's position into; **1.1.1** is satisfied by that same name; **2.5.8** wants
+24×24 CSS pixels and these are 28, which matters because three of them sit together and
+the spacing exception does not apply; and the marks are drawn in `currentColor` from
+borders rather than as images, so **forced-colours mode re-colours them instead of erasing
+them**.
+
 **Six new parts for a theme to style**, and two contracts that come with them. The cell
 labels are **clipped**, never `display: none` or `visibility: hidden`: both of those
 compute a control's accessible name to `""`, so a theme tidying them away that way would

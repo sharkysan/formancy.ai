@@ -151,12 +151,19 @@ interface RepeaterRow {
       <fieldset data-formancy-part="repeater">
         <legend data-formancy-part="repeater-legend">{{ s.label }}</legend>
         <!-- The buttons a row carries, written once and used by both arrangements.
+             Each one's text sits in its own element so a THEME can clip it and draw a
+             mark instead, which is what a grid wants: "Remove recipient 1 of 1" on
+             three wrapped lines took more room than the answers beside it. Clipped and
+             never removed -- display: none and visibility: hidden both compute the
+             button's name to the empty string, and a button called nothing is worse
+             than a wide one. The renderer draws no mark of its own, because an icon is
+             appearance and appearance belongs to the consumer.
              Their NAMES are identical in each, because 0068 put the row's position in
              them and a grid does not change where a person is. -->
         <ng-template #rowButtons let-row let-count="count">
           <!-- Position context in the NAME, so a screen-reader user knows
                which row this button kills without walking the tree. -->
-          <button type="button" (click)="state!.repeater.removeRow(row.index)">{{ state!.removeLabel }} {{ row.index + 1 }} of {{ count }}</button>
+          <button type="button" data-formancy-part="row-remove" (click)="state!.repeater.removeRow(row.index)"><span data-formancy-part="row-action-text">{{ state!.removeLabel }} {{ row.index + 1 }} of {{ count }}</span></button>
           <!-- Reordering by button, which is the KEYBOARD route and therefore the
                primary one: WCAG 2.5.7 requires a non-drag equivalent for any drag,
                so a drag affordance can only ever be a second route to these.
@@ -164,10 +171,10 @@ interface RepeaterRow {
                the tab order in some browsers and announces a control that does
                nothing. -->
           @if (row.index > 0) {
-            <button type="button" (click)="state!.repeater.moveRow(row.index, row.index - 1)">Move {{ state!.label }} {{ row.index + 1 }} of {{ count }} up</button>
+            <button type="button" data-formancy-part="row-up" (click)="state!.repeater.moveRow(row.index, row.index - 1)"><span data-formancy-part="row-action-text">Move {{ state!.label }} {{ row.index + 1 }} of {{ count }} up</span></button>
           }
           @if (row.index < count - 1) {
-            <button type="button" (click)="state!.repeater.moveRow(row.index, row.index + 1)">Move {{ state!.label }} {{ row.index + 1 }} of {{ count }} down</button>
+            <button type="button" data-formancy-part="row-down" (click)="state!.repeater.moveRow(row.index, row.index + 1)"><span data-formancy-part="row-action-text">Move {{ state!.label }} {{ row.index + 1 }} of {{ count }} down</span></button>
           }
         </ng-template>
 
