@@ -362,6 +362,87 @@ describe('file', () => {
   })
 })
 
+describe('time', () => {
+  // Near-copies of the React cases on purpose: two renderers agreeing is the claim
+  // this repository rests on, and the way it stops being true is a shared helper
+  // reporting that both implemented something when one had not.
+  const schema = base({
+    model: {
+      fields: [{ key: 'slot', type: 'time', label: 'Slot', earliest: '09:00', latest: '17:00' }],
+    },
+  } as Partial<FormSchema>)
+
+  test('is a control a person can find and fill in', async () => {
+    const engine = engineFor(schema)
+    const view = await renderForm(engine)
+    const input = screen.getByLabelText('Slot')
+    fireEvent.input(input, { target: { value: '10:30' } })
+    await view.fixture.whenStable()
+    expect(engine.value()).toEqual({ slot: '10:30' })
+  })
+
+  test('hands its bounds to the browser as well as to the engine', async () => {
+    await renderForm(engineFor(schema))
+    const input = screen.getByLabelText('Slot')
+    expect(input.getAttribute('min')).toBe('09:00')
+    expect(input.getAttribute('max')).toBe('17:00')
+  })
+
+  test('stores null rather than an empty string when cleared', async () => {
+    const engine = engineFor(schema)
+    const view = await renderForm(engine)
+    const input = screen.getByLabelText('Slot')
+    fireEvent.input(input, { target: { value: '10:30' } })
+    fireEvent.input(input, { target: { value: '' } })
+    await view.fixture.whenStable()
+    expect(engine.value()).toEqual({ slot: null })
+  })
+})
+
+describe('datetime', () => {
+  const schema = base({
+    model: { fields: [{ key: 'at', type: 'datetime', label: 'Starts' }] },
+  } as Partial<FormSchema>)
+
+  test('converts the local wall clock the control shows into a stored instant', async () => {
+    const engine = engineFor(schema)
+    const view = await renderForm(engine)
+    fireEvent.input(screen.getByLabelText('Starts'), { target: { value: '2026-09-19T10:30' } })
+    await view.fixture.whenStable()
+    const stored = (engine.value() as { at?: string }).at
+    expect(stored).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/)
+    // Compared as instants, because the test's own zone is not the assertion.
+    expect(new Date(stored ?? '').getTime()).toBe(new Date('2026-09-19T10:30').getTime())
+  })
+
+  test('shows a stored instant back as the reader’s own local time', async () => {
+    const local = new Date('2026-09-19T10:30')
+    const engine = engineFor(schema)
+    engine.setValue(['at'], `${local.toISOString().slice(0, 19)}Z`)
+    const view = await renderForm(engine)
+    await view.fixture.whenStable()
+    const pad = (part: number): string => String(part).padStart(2, '0')
+    const expected =
+      `${String(local.getFullYear())}-${pad(local.getMonth() + 1)}-${pad(local.getDate())}` +
+      `T${pad(local.getHours())}:${pad(local.getMinutes())}`
+    expect((screen.getByLabelText('Starts') as HTMLInputElement).value).toBe(expected)
+  })
+
+  test('never stores a malformed string, whatever the control hands back', async () => {
+    // The same property React asserts, and deliberately not the same exact object:
+    // jsdom rejects an invalid `datetime-local` value differently under `input` than
+    // under `change`, so one path calls setValue(null) and the other never fires.
+    // What must hold in both, and does, is that the stored answer is empty or
+    // canonical -- never a string the engine's shape check would have to reject.
+    const engine = engineFor(schema)
+    const view = await renderForm(engine)
+    fireEvent.input(screen.getByLabelText('Starts'), { target: { value: 'not a date' } })
+    await view.fixture.whenStable()
+    const stored = (engine.value() as { at?: unknown }).at
+    expect(stored === undefined || stored === null).toBe(true)
+  })
+})
+
 describe('tabs', () => {
   const schema = base({
     model: {

@@ -563,6 +563,90 @@
        }
       }
      }
+    },
+    {
+     "if": {
+      "required": [
+       "type"
+      ],
+      "properties": {
+       "type": {
+        "const": "date"
+       }
+      }
+     },
+     "then": {
+      "properties": {
+       "earliest": {
+        "title": "Earliest allowed",
+        "description": "The earliest date this field accepts, inclusive, written exactly as an answer is: 2026-09-19. A fixed value, not an expression and not the current date — a bound that moved with the clock would let the same submission pass in the browser and fail on the server. For \"must be in the future\", write a rule.",
+        "type": "string",
+        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+       },
+       "latest": {
+        "title": "Latest allowed",
+        "description": "The latest date this field accepts, inclusive, written exactly as an answer is: 2026-09-19. A fixed value, not an expression and not the current date — a bound that moved with the clock would let the same submission pass in the browser and fail on the server. For \"must be in the future\", write a rule.",
+        "type": "string",
+        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+       }
+      }
+     }
+    },
+    {
+     "if": {
+      "required": [
+       "type"
+      ],
+      "properties": {
+       "type": {
+        "const": "time"
+       }
+      }
+     },
+     "then": {
+      "properties": {
+       "earliest": {
+        "title": "Earliest allowed",
+        "description": "The earliest time this field accepts, inclusive, written exactly as an answer is: 09:30. A fixed value, not an expression and not the current time — a bound that moved with the clock would let the same submission pass in the browser and fail on the server. For \"must be in the future\", write a rule.",
+        "type": "string",
+        "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$"
+       },
+       "latest": {
+        "title": "Latest allowed",
+        "description": "The latest time this field accepts, inclusive, written exactly as an answer is: 09:30. A fixed value, not an expression and not the current time — a bound that moved with the clock would let the same submission pass in the browser and fail on the server. For \"must be in the future\", write a rule.",
+        "type": "string",
+        "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$"
+       }
+      }
+     }
+    },
+    {
+     "if": {
+      "required": [
+       "type"
+      ],
+      "properties": {
+       "type": {
+        "const": "datetime"
+       }
+      }
+     },
+     "then": {
+      "properties": {
+       "earliest": {
+        "title": "Earliest allowed",
+        "description": "The earliest date and time this field accepts, inclusive, written exactly as an answer is: 2026-09-19T08:00:00Z. A fixed value, not an expression and not the current date and time — a bound that moved with the clock would let the same submission pass in the browser and fail on the server. For \"must be in the future\", write a rule.",
+        "type": "string",
+        "pattern": "^\\d{4}-\\d{2}-\\d{2}T(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\dZ$"
+       },
+       "latest": {
+        "title": "Latest allowed",
+        "description": "The latest date and time this field accepts, inclusive, written exactly as an answer is: 2026-09-19T08:00:00Z. A fixed value, not an expression and not the current date and time — a bound that moved with the clock would let the same submission pass in the browser and fail on the server. For \"must be in the future\", write a rule.",
+        "type": "string",
+        "pattern": "^\\d{4}-\\d{2}-\\d{2}T(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\dZ$"
+       }
+      }
+     }
     }
    ],
    "unevaluatedProperties": false
@@ -638,6 +722,16 @@
      "const": "date",
      "title": "Date",
      "description": "A calendar date, with no time of day."
+    },
+    {
+     "const": "time",
+     "title": "Time",
+     "description": "A time of day, with no date and no time zone: opening hours, an appointment slot. Stored as \"HH:MM\" on a 24-hour clock, zero-padded, so that comparing two answers as text gives the same order as comparing them as times. Because it carries no zone it is not an instant and cannot be compared with the current time."
+    },
+    {
+     "const": "datetime",
+     "title": "Date and time",
+     "description": "One moment in time, stored as \"YYYY-MM-DDTHH:MM:SSZ\" — always UTC, always with seconds. A reader types and reads it in their own zone; the answer records the instant. Numeric offsets are refused because \"…10:00:00+03:00\" sorts after \"…08:00:00Z\" as text while being earlier in fact, and the ordering is what makes an earliest or latest bound mean anything."
     },
     {
      "const": "file",

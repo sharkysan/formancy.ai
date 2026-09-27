@@ -10,6 +10,47 @@ later.
 
 ## Unreleased
 
+**`time` and `datetime` field types, with `earliest`/`latest` bounds.** Both render in
+React and Angular, both appear in the playground demo, and the bounds are handed to the
+browser as well as checked by the engine
+([0067](docs/decisions/0067-a-temporal-answer-is-one-fixed-width-string.md)).
+
+**One canonical form per type, at one fixed width**, because CEL has no time type: an
+answer binds as a string, so the only ordering a bound can use is lexicographic — and
+that equals chronological order only under conditions the format has to guarantee.
+Measured: `'9:30' < '10:00'` is **false** while `'09:30' < '10:00'` is true, so an
+unpadded hour turns every bound into a coin toss; and
+`'2026-09-19T10:00:00+03:00' < '2026-09-19T08:00:00Z'` is **false** although the first
+instant is 07:00Z, which is why a `datetime` stores `Z` and never a numeric offset.
+
+**A `datetime` is an instant; a `time` is a wall clock** and carries no zone, so it
+cannot be compared with `now()` — which is what a time of day is rather than a gap.
+**There is no per-field `timezone` property**, and the absence is the decision: an
+instant already carries its zone, a wall-clock commitment's zone belongs to the answer
+rather than the field, and a zone *name* would put the host's IANA data into the replay
+contract, so two runtimes with different ICU versions would disagree about one answer.
+
+**Bounds are `earliest`/`latest` rather than `min`/`max`**, which are `number` and
+gated to number fields — widening them would let TypeScript accept `min: "5"` on a
+field the schema refuses. A bound is a literal, never the clock: `now()` inside one
+would let the same submission pass in the browser and fail on the server by the width
+of the trip.
+
+**Behaviour change: a `date` answer's shape is now checked.** Version 1 fixed `date` as
+a date-only ISO 8601 string and **nothing ever enforced it**, so a deployment posting
+`19/09/2026` has been accepted until now and will start failing with `shape`. Taken
+deliberately: the freeze promises a version 1 *document* keeps validating, not that a
+malformed *answer* keeps being accepted — and an unchecked date cannot be bounded,
+sorted or exported without the reader guessing which of `03/04` is the month.
+
+`date` also gains the bounds, in version 2. An optional property only a version 2
+document may carry takes nothing from any version 1 document.
+
+**The landing page's field-type count is derived now.** It carried a literal `15` with
+a test guarding it; the test worked and the literal was the mistake, so it is counted
+from the spec's own list like the decision-record count beside it — rather than
+corrected to 17 for somebody to correct again.
+
 **Both renderers draw a `toggle` as a switch, and it is still a checkbox.** React and
 Angular emit `data-formancy-part="toggle"`, all four themes style it, and the
 playground's consent field uses it so the widget is shown rather than only described.

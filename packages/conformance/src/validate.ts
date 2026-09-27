@@ -91,6 +91,8 @@ const FIELD_TYPES: Record<FieldType, true> = {
   radio: true,
   selectboxes: true,
   date: true,
+  time: true,
+  datetime: true,
   file: true,
   richtext: true,
   hidden: true,

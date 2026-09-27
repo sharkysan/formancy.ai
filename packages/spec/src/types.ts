@@ -150,8 +150,8 @@ export const ROW_ID_PREFIX = 'r'
  * `specVersion: "2"`, and `validateSchema` refuses one in a version 1 document
  * by name rather than by a schema error nobody can read.
  *
- * Still reserved, unimplemented: datetime, time, multiselect, combobox,
- * signature, address, rating, slider.
+ * Still reserved, unimplemented: multiselect, combobox, signature, address,
+ * rating, slider.
  *
  * Four things that arrived as requests for types are NOT here and will not be:
  * toggle, datagrid, autocomplete and the scanning half of qrcode. None of them
@@ -170,6 +170,8 @@ export const FIELD_TYPES = [
   'radio',
   'selectboxes',
   'date',
+  'time',
+  'datetime',
   'file',
   'richtext',
   'hidden',
@@ -209,6 +211,51 @@ export const LIST_VALUED_FIELD_TYPES = [
 ] as const satisfies readonly FieldType[]
 
 export type ListValuedFieldType = (typeof LIST_VALUED_FIELD_TYPES)[number]
+
+/**
+ * The exact shape each temporal answer takes, as a regular-expression source.
+ *
+ * Here rather than in an engine because it is a property of the FORMAT. A renderer
+ * writing an answer, a validator bounding one, and a consumer reading a submission
+ * years later all have to agree on the shape — and that agreement is the only thing
+ * that makes a string comparison a chronological one.
+ *
+ * **Fixed width, zero-padded, big-endian, no abbreviation.** Not tidiness. Measured:
+ * `'9:30' < '10:00'` is **false** while `'09:30' < '10:00'` is true, so an unpadded
+ * hour turns every bound into a coin toss. And
+ * `'2026-09-19T10:00:00+03:00' < '2026-09-19T08:00:00Z'` is **false** although the
+ * first instant is 07:00Z and therefore earlier — which is why `datetime` stores
+ * `Z` and never a numeric offset. Widen any of these and a bound stops meaning what
+ * it says.
+ *
+ * **A `time` is a wall clock and not an instant.** It carries no zone, so it cannot
+ * be compared with `now()`, and that is what a time of day *is* rather than a gap.
+ * A `datetime` is the opposite: an instant, with no wall clock of its own, displayed
+ * in whatever zone the reader is in. `bindTimestamp` in `@formancy/expressions`
+ * already refuses a zoneless string for the same reason, and says so.
+ *
+ * **`date` and `datetime` are not comparable**, and the shapes are why: measured,
+ * `'2026-09-19' < '2026-09-19T00:00:00Z'` is true, because the shorter string is a
+ * prefix — so a date sorts before every instant on its own day, midnight included.
+ *
+ * Sources rather than compiled patterns so `formancy.schema.json` can carry the
+ * identical string and a test can compare the two. Two closed descriptions of one
+ * rule is the drift this repository keeps finding.
+ */
+export const TEMPORAL_SHAPES = {
+  /** `YYYY-MM-DD`, ten characters. Unchanged — version 1 fixed it. */
+  date: '^\\d{4}-\\d{2}-\\d{2}$',
+  /** `HH:MM`, five characters, 24-hour. No seconds, no zone, no `24:00`. */
+  time: '^(?:[01]\\d|2[0-3]):[0-5]\\d$',
+  /** `YYYY-MM-DDTHH:MM:SSZ`, twenty characters. Seconds and `Z` mandatory. */
+  datetime: '^\\d{4}-\\d{2}-\\d{2}T(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\dZ$',
+} as const satisfies Partial<Record<FieldType, string>>
+
+/** The field types whose answer is one of the shapes above. */
+export const TEMPORAL_FIELD_TYPES = ['date', 'time', 'datetime'] as const satisfies readonly FieldType[]
+
+export type TemporalFieldType = (typeof TEMPORAL_FIELD_TYPES)[number]
+
 
 /**
  * One column of a repeater arranged as a grid.
@@ -372,6 +419,22 @@ export interface FieldDef {
    */
   accept?: string[]
   maxFileSize?: number
+  /**
+   * `date`, `time` and `datetime`: the earliest and latest answer allowed,
+   * inclusive, written in exactly the form that type's answer takes.
+   *
+   * A LITERAL, never an expression and never the clock. `now()` inside a bound
+   * would let the same submission pass in the browser and fail on the server by the
+   * width of the trip — so "must be in the future" stays a `validate` rule, where
+   * the race belongs to the author and is visible to them.
+   *
+   * Not `min`/`max`: those are `number` and gated to number fields, and widening
+   * them would let TypeScript accept `min: "5"` on a field the schema refuses. One
+   * pair per meaning is the habit here — `minLength`/`maxLength`,
+   * `minItems`/`maxItems`.
+   */
+  earliest?: string
+  latest?: string
   /** number fields: the valid range. */
   min?: number
   max?: number

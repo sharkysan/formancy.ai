@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
 import { createFormEngine } from '@formancy/core'
 import type { FormSchema } from '@formancy/spec'
@@ -469,6 +469,102 @@ describe('file', () => {
     await waitFor(() =>
       expect(screen.getByRole('status').textContent).toContain('the object store is full'),
     )
+  })
+})
+
+describe('time', () => {
+  const schema = base({
+    model: {
+      fields: [{ key: 'slot', type: 'time', label: 'Slot', earliest: '09:00', latest: '17:00' }],
+    },
+  } as Partial<FormSchema>)
+
+  test('is a control a person can find and fill in', async () => {
+    // By accessible name, like everything else here: a control a screen reader
+    // cannot find is a control no test can drive.
+    const engine = mount(schema)
+    const input = screen.getByLabelText('Slot')
+    await userEvent.clear(input)
+    fireEvent.change(input, { target: { value: '10:30' } })
+    expect(engine.value()).toEqual({ slot: '10:30' })
+  })
+
+  test('hands its bounds to the browser as well as to the engine', () => {
+    // The engine's check is the truth and runs again on the server. These let the
+    // platform grey out what it will not accept, which beats a message afterwards.
+    mount(schema)
+    const input = screen.getByLabelText('Slot')
+    expect(input.getAttribute('min')).toBe('09:00')
+    expect(input.getAttribute('max')).toBe('17:00')
+  })
+
+  test('stores null rather than an empty string when cleared', () => {
+    // `''` is not a time, and the shape check would reject it. Null is what the
+    // engine treats as empty, so `required` still speaks and no bound is compared.
+    //
+    // Null rather than the key VANISHING, which is what this test first asserted: a
+    // field somebody cleared has been answered, and the engine is right to keep
+    // saying so.
+    const engine = mount(schema)
+    const input = screen.getByLabelText('Slot')
+    fireEvent.change(input, { target: { value: '10:30' } })
+    fireEvent.change(input, { target: { value: '' } })
+    expect(engine.value()).toEqual({ slot: null })
+  })
+})
+
+describe('datetime', () => {
+  const schema = base({
+    model: { fields: [{ key: 'at', type: 'datetime', label: 'Starts' }] },
+  } as Partial<FormSchema>)
+
+  test('converts the local wall clock the control shows into a stored instant', () => {
+    // No browser has a zoned datetime input, so the control is local and this
+    // converts. The stored answer must be canonical -- `Z`, with seconds -- because
+    // ordering a bound depends on the width being fixed.
+    const engine = mount(schema)
+    fireEvent.change(screen.getByLabelText('Starts'), {
+      target: { value: '2026-09-19T10:30' },
+    })
+    const stored = (engine.value() as { at?: string }).at
+    expect(stored).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/)
+    // The same instant the reader chose, in their own zone -- compared as instants
+    // rather than as text, because the test's zone is not the assertion.
+    expect(new Date(stored ?? '').getTime()).toBe(new Date('2026-09-19T10:30').getTime())
+  })
+
+  test('shows a stored instant back as the reader’s own local time', () => {
+    // `toISOString()` in the control would show UTC in a box the browser labels
+    // local, so the reader would see an hour they did not type.
+    const local = new Date('2026-09-19T10:30')
+    const engine = mount(
+      base({
+        model: { fields: [{ key: 'at', type: 'datetime', label: 'Starts' }] },
+      } as Partial<FormSchema>),
+    )
+    // Inside `act`, because a write straight to the engine is an external-store
+    // update React has to be given the chance to flush before the DOM is read.
+    act(() => {
+      engine.setValue(['at'], `${local.toISOString().slice(0, 19)}Z`)
+    })
+    const pad = (part: number): string => String(part).padStart(2, '0')
+    const expected =
+      `${String(local.getFullYear())}-${pad(local.getMonth() + 1)}-${pad(local.getDate())}` +
+      `T${pad(local.getHours())}:${pad(local.getMinutes())}`
+    expect((screen.getByLabelText('Starts') as HTMLInputElement).value).toBe(expected)
+  })
+
+  test('never stores a malformed string, whatever the control hands back', () => {
+    // Asserted as the PROPERTY rather than as one exact object, because the two
+    // renderers legitimately differ in whether the key appears at all: jsdom rejects
+    // an invalid `datetime-local` value differently under `change` than under
+    // `input`, so one path calls setValue(null) and the other never fires. What must
+    // hold in both, and does, is that the stored answer is empty or canonical --
+    // never a string the engine's shape check would have to reject.
+    const engine = mount(schema)
+    fireEvent.change(screen.getByLabelText('Starts'), { target: { value: 'not a date' } })
+    const stored = (engine.value() as { at?: unknown }).at
+    expect(stored === undefined || stored === null).toBe(true)
   })
 })
 

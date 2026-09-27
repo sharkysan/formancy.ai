@@ -693,7 +693,7 @@ function Readings(): ReactElement {
   const readings: ReadonlyArray<{ value: string; lines: readonly [string, string] }> = [
     { value: '1', lines: ['engine, compiled once', 'and run in both places'] },
     { value: '0', lines: ['uses of eval, so it', 'runs under a strict CSP'] },
-    { value: '15', lines: ['field types the', 'spec defines'] },
+    { value: String(__FIELD_TYPES__), lines: ['field types the', 'spec defines'] },
     { value: '7', lines: ['tools for your', 'coding agent'] },
     { value: String(__DECISION_RECORDS__), lines: ['decision records, each', 'naming what it cost'] },
   ]
