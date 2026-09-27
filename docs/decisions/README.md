@@ -171,3 +171,4 @@ listed under the sections they belong to above.
 | [0068](0068-a-row-keeps-its-own-state.md) | A row keeps its own state | accepted |
 | [0069](0069-contributions-under-a-cla.md) | Contributions under a CLA | accepted |
 | [0070](0070-a-code-is-an-arrangement-not-a-field.md) | A code is an arrangement, not a field | accepted |
+| [0071](0071-a-scanner-is-supplied-not-built.md) | A scanner is supplied, not built | accepted |

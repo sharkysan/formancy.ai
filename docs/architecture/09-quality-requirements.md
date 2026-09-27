@@ -52,7 +52,7 @@ formancy
 | Keystroke, large conditional form | 1 ms | ≈0.38 ms |
 | Cold graph compile | 30 ms | ≈1.7 ms |
 | `@formancy/core` bundle | 18 kB brotli | 14.8 kB, measured 2026-09-27 |
-| `@formancy/react` bundle | 4 kB brotli | **12.5 kB** for the whole barrel, measured 2026-09-27 |
+| `@formancy/react` bundle | 4 kB brotli | **13.2 kB** for the whole barrel, measured 2026-09-27 |
 | `uqr`, the QR encoder | — | 6.6 kB brotli, **external** rather than bundled, measured 2026-09-27 |
 
 The performance gate is written to fail on a regression greater than 15%,
@@ -66,7 +66,7 @@ regulatory evidence table. The figures above are `brotliCompressSync` over each 
 
 **The React figure needs reading carefully rather than reporting as a breach.** 4 kB was
 written for a tree-shaken entry — the design is per-entry `exports` so that
-`@formancy/react/fields/date` pulls only what it needs — and 12.5 kB is the *whole barrel*,
+`@formancy/react/fields/date` pulls only what it needs — and 13.2 kB is the *whole barrel*,
 every field type, the error summary, the resume notice and the wizard included. Those are
 not the same number, and which one the budget meant cannot be settled without running a
 bundler over a realistic import, which nothing here does.

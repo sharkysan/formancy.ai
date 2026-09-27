@@ -85,6 +85,14 @@ export const STARTER_SCHEMA = {
         ],
       },
 
+      // `widget: 'scanner'` on a text field: a camera route to a value somebody could
+      // otherwise type. The playground supplies the scanner — see `app.tsx` — because a
+      // widget nobody can see working is a widget that is only documented. The
+      // `pattern` is here for the same reason a `time` field carries a bound: scan
+      // something that does not match it and the engine refuses it exactly as it
+      // refuses a typed answer, which is the whole claim about what a widget may do.
+      { key: 'voucher', type: 'text', widget: 'scanner', label: { $t: 'voucher' }, pattern: '[A-Z0-9]{6}' },
+
       { key: 'notes', type: 'textarea', label: { $t: 'notes' }, maxLength: 500 },
       // selectboxes: several answers from one list. The answer is the list of
       // values ticked, in the options' own order.
@@ -182,6 +190,7 @@ export const STARTER_SCHEMA = {
               ],
             },
             { kind: 'field', path: 'items' },
+            { kind: 'field', path: 'voucher' },
           ],
         },
         {
@@ -286,6 +295,7 @@ export const STARTER_SCHEMA = {
         'items.qty': 'Quantity',
         'items.unitPrice': 'Unit price',
         'items.lineTotal': 'Line total',
+        voucher: 'Voucher code',
         notes: 'Notes',
         tabs: 'Extras and anything else',
         'tab.extras': 'Extras',
@@ -325,6 +335,7 @@ export const STARTER_SCHEMA = {
         'items.qty': 'Menge',
         'items.unitPrice': 'Einzelpreis',
         'items.lineTotal': 'Zeilensumme',
+        voucher: 'Gutscheincode',
         notes: 'Bemerkungen',
         tabs: 'Extras und Sonstiges',
         'tab.extras': 'Extras',
