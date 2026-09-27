@@ -98,13 +98,6 @@ another say "supersedes #N" in the description rather than stacking on it.
 Before pushing to a branch you have been away from, check that its pull request
 is still open — a commit pushed onto an already-merged branch goes nowhere.
 
-**Commit as `Daniel Bacher <dbacher@gmail.com>`**, never
-`daniel.bacher@ergon.ch`.
-
-**No tool attribution.** No "Generated with Claude Code" line or session link in
-pull request descriptions, and no `Co-Authored-By: Claude` or `Claude-Session`
-trailers in commits. The author is the person above.
-
 ## Checks before pushing
 
 CI runs `pnpm build`, `pnpm typecheck`, `pnpm test:coverage` and
