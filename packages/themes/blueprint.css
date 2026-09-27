@@ -1023,3 +1023,34 @@
   [data-formancy-part='code-value'] {
   color: var(--fm-muted);
 }
+
+/* The code itself. The renderer draws the modules with `fill="currentColor"` and omits the
+   light ones, so the colour is `color` here and whatever is behind shows through — a
+   renderer that chose white and black would be shipping appearance, which is the thing this
+   project exists to avoid.
+
+   The quiet zone is padding rather than part of the picture: the specification wants four
+   modules of clear space around a code, and baking it into the SVG would be whitespace a
+   design system cannot remove. */
+[data-formancy-theme='blueprint'] [data-formancy-part='code-drawing'] {
+  display: block;
+  width: 100%;
+  max-width: 12rem;
+  height: auto;
+  padding: 1rem;
+  color: var(--fm-ink);
+  /* A scanner needs light space around the modules and reads a transparent gap over a dark
+     page as noise, so the quiet zone is opaque even when the card behind it is not. */
+  background: white;
+}
+
+/* Forced colours: a code has to stay high-contrast dark-on-light whatever the palette says,
+   because a scanner is not reading the palette. `forced-color-adjust: none` is the one place
+   overriding the user's colours is correct — an inverted code does not scan. */
+@media (forced-colors: active) {
+  [data-formancy-theme='blueprint'] [data-formancy-part='code-drawing'] {
+    forced-color-adjust: none;
+    color: black;
+    background: white;
+  }
+}

@@ -10,6 +10,41 @@ later.
 
 ## Unreleased
 
+**A `qrcode` node draws an actual code.** Reversing the position taken one change ago, which
+argued the encoder was not worth its cost — an argument about cost rather than about value,
+and a code node that shows no code is a feature named after something it does not do.
+
+`uqr` is MIT, has **no dependencies**, and measures **6.6 kB brotli** rather than the ~10 kB
+the earlier reasoning guessed. The build leaves it **external**, so a consumer with no code
+node pays nothing for it in their bundle; `@formancy/react`'s barrel grew 0.4 kB, which is
+the drawing component and not the encoder.
+
+**Only `encode` is used, never the library's own `renderSVG`**, which emits `fill="white"`
+and `fill="black"`. A renderer choosing colours is what
+[0004](docs/decisions/0004-headless-core.md) exists to prevent, so the modules are drawn from
+the boolean matrix with `fill="currentColor"` and the light ones are simply absent — a theme
+sets `color` and whatever is behind shows through.
+
+**The picture is decoration and the value is the content**, unchanged: the SVG is
+`aria-hidden` and the value stays on the page as real text, because a picture of a code says
+nothing to a screen reader and an `alt` of "QR code" says nothing either.
+
+**Nothing is drawn for an empty answer.** An empty string encodes to a perfectly valid code,
+and a scannable picture of nothing is worse than no picture, because somebody would scan it.
+
+Under `forced-colors` the code overrides the user's palette to stay dark-on-light — the one
+place doing that is correct, because a scanner is not reading the palette and an inverted
+code does not scan.
+
+**Stated because no test here covers it:** a mis-encoded code is a picture that looks right
+and does not scan. The tests assert the matrix is drawn, its colours and its accessibility —
+not that a scanner reads it. A deployment whose codes are load-bearing should scan one.
+
+**My own guard from the previous change caught this one.** The bundle figures in §9.3 are
+checked against a fresh measurement, and adding the drawing component failed it with
+"says @formancy/react is 12.1 kB; it measures 12.5 kB" — one pull request after it was
+written.
+
 **Fixed: four documents claimed a bundle-size gate that does not exist.** The budgets table
 in the architecture document carried "gate configured" in its Actual column for both
 bundles; the verification view and the **regulatory evidence table** both listed
