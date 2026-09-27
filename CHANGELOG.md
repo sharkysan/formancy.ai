@@ -10,6 +10,27 @@ later.
 
 ## Unreleased
 
+**A code can be added from the builder, which it could not be.** The `qrcode` layout kind
+reached the spec and both renderers with **no way to insert one** — the arrangement palette
+offered Row, Column, Section and unplaced fields, so an author's only route was editing the
+schema JSON. The construct existed, worked, and had no door.
+
+It takes a step the other entries do not: a container needs no path and a field placement
+takes one from the *unplaced* list, but a code offers **every** answer, because it is a
+second view of an answer rather than a placement of it — and showing a code beside the field
+it encodes is the ordinary case, which the unplaced list would have excluded.
+
+**And it nearly shipped as a three-click dead end.** `validLayoutTargets` decides legality by
+trying the edit against the validator, which refuses a code in a version 1 document — so the
+button worked, the answer chooser worked, and the final step offered no targets at all. In a
+version 1 document the palette now says the version and offers the one-step upgrade, which is
+the shape the field palette already used. A test asserts the entry appears afterwards, so
+saying yes gets what was asked for rather than an unchanged palette.
+
+The key legend said `a` adds "a row, column, section or field". It names the code too, and a
+test checks the legend against what the palette actually offers — the palette opens only by
+pressing `a` on the tree, so the legend is how anybody finds it.
+
 **Fixed: a code node sat flush against whatever followed it.** A field gets its spacing from
 `[data-formancy-part='field']`, which ends with `margin-block-end: var(--fm-step)`, and a
 code node is not a field — so it inherited none. It now ends with the same step in all four

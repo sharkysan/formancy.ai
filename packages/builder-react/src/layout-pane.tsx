@@ -1,3 +1,4 @@
+import { modelDataPaths } from '@formancy/spec'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent, ReactElement } from 'react'
 import type { BuilderSession, LayoutLocation } from '@formancy/builder-core'
@@ -31,7 +32,7 @@ export interface LayoutPaneProps {
 
 const KEY_HELP = [
   ['↑ ↓', 'move between items'],
-  ['a', 'add a row, column, section or field'],
+  ['a', 'add a row, column, section, code or field'],
   ['m', 'move the focused item'],
   ['u', 'unwrap a row or column, keeping what is in it'],
   ['w', 'wrap it and another item into a row, side by side'],
@@ -39,7 +40,20 @@ const KEY_HELP = [
   ['Ctrl+Z / Ctrl+Y', 'undo / redo'],
 ] as const
 
-type Adding = { what: '' } | { what: 'row' | 'column' | 'section' } | { what: 'field'; path: string }
+type Adding =
+  | { what: '' }
+  | { what: 'row' | 'column' | 'section' }
+  | { what: 'field'; path: string }
+  /**
+   * A code, before an answer has been chosen for it.
+   *
+   * A third step, which nothing else here needs: a container needs no path and a field
+   * placement takes one from the UNPLACED list, but a code can encode an answer that is
+   * already placed — it is a second view of one rather than the placement of it — so it has
+   * to offer every answer and cannot reuse that list.
+   */
+  | { what: 'qrcode-which' }
+  | { what: 'qrcode'; path: string }
 
 /** Whether `outer` is `inner` or one of its ancestors. */
 function enclosesPath(outer: readonly number[], inner: readonly number[]): boolean {
@@ -240,13 +254,18 @@ export function FormancyLayoutPane({
   }
 
   const nodeBeingAdded = (what: Adding): LayoutNode | undefined => {
-    if (what.what === '') return undefined
+    if (what.what === '' || what.what === 'qrcode-which') return undefined
     if (what.what === 'field') return { kind: 'field', path: what.path }
+    if (what.what === 'qrcode') return { kind: 'qrcode', path: what.path }
     return { kind: what.what, children: [] }
   }
 
-  const describeAdding = (what: Adding): string =>
-    what.what === '' ? '' : what.what === 'field' ? nameOfPath(view.document, what.path) : what.what
+  const describeAdding = (what: Adding): string => {
+    if (what.what === '' || what.what === 'qrcode-which') return ''
+    if (what.what === 'field') return nameOfPath(view.document, what.path)
+    if (what.what === 'qrcode') return `code for ${nameOfPath(view.document, what.path)}`
+    return what.what
+  }
 
   const completeAdd = (what: Adding, target: { location: LayoutLocation; label: string }): void => {
     setAdding(null)
@@ -427,7 +446,29 @@ export function FormancyLayoutPane({
         </div>
       )}
 
-      {adding === null ? null : adding.what === '' ? (
+      {adding !== null && adding.what === 'qrcode-which' ? (
+        <div
+          role="dialog"
+          aria-label="Which answer should the code hold?"
+          data-formancy-part="layout-add-which"
+          onKeyDown={onDialogKey}
+        >
+          <ul>
+            {modelDataPaths(view.document.model).map((path) => (
+              <li key={path}>
+                <button type="button" onClick={() => setAdding({ what: 'qrcode', path })}>
+                  {nameOfPath(view.document, path)}
+                </button>
+              </li>
+            ))}
+          </ul>
+          <button type="button" onClick={() => cancelDialog()}>
+            Cancel
+          </button>
+        </div>
+      ) : null}
+
+      {adding === null || adding.what === 'qrcode-which' ? null : adding.what === '' ? (
         <div role="dialog" aria-label="Add to the arrangement" data-formancy-part="layout-add" onKeyDown={onDialogKey}>
           <ul>
             <li>
@@ -453,6 +494,50 @@ export function FormancyLayoutPane({
                 A named group of items, announced as one.
               </span>
             </li>
+            {/* A code needs an answer to encode, so it takes a step the others do not —
+                and it offers EVERY answer rather than the unplaced ones, because it is a
+                second view of an answer rather than a placement of it. Showing a code
+                beside the field it encodes is the ordinary case.
+
+                In a version 1 document it is offered with the upgrade instead of being
+                offered as a dead end. Without this the button worked, the answer chooser
+                worked, and the final step had NO valid targets — because
+                `validLayoutTargets` decides legality by trying the edit against the
+                validator, which refuses a code in a version 1 document. Three clicks to
+                nothing is worse than a sentence, and the field palette already says so in
+                exactly this shape. */}
+            {view.document.specVersion === '1' ? (
+              <li>
+                <span data-formancy-part="palette-locked">Code</span>
+                <span data-formancy-part="palette-hint">
+                  A scannable code needs spec version 2. This form says version{' '}
+                  {view.document.specVersion}.{' '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const outcome = session.upgradeSpec()
+                      announce(
+                        outcome.ok
+                          ? 'Moved this form to spec version 2. Nothing else changed.'
+                          : `Cannot upgrade: ${outcome.message}`,
+                      )
+                    }}
+                  >
+                    Move it to version 2
+                  </button>
+                </span>
+              </li>
+            ) : (
+              <li>
+                <button type="button" onClick={() => setAdding({ what: 'qrcode-which' })}>
+                  Code
+                </button>
+                <span data-formancy-part="palette-hint">
+                  A scannable code drawn from an answer. Collects nothing itself, and shows the
+                  answer as text beside it.
+                </span>
+              </li>
+            )}
             {unplaced.map((path) => (
               <li key={path}>
                 <button type="button" onClick={() => setAdding({ what: 'field', path })}>

@@ -4,6 +4,7 @@ import { userEvent } from '@testing-library/user-event'
 import { createBuilderSession } from '@formancy/builder-core'
 import type { BuilderSession } from '@formancy/builder-core'
 import type { FormSchema } from '@formancy/spec'
+import { validateSchema } from '@formancy/spec/validate'
 import { FormancyLayoutPane } from './layout-pane.js'
 
 afterEach(cleanup)
@@ -48,6 +49,132 @@ const open = (document: FormSchema = schema()): BuilderSession => createBuilderS
 
 const rowNames = (): string[] =>
   screen.getAllByRole('treeitem').map((item) => item.textContent ?? '')
+
+describe('adding a code to the arrangement', () => {
+  /**
+   * Reported as "how can I add a new qr field in the playground" — and the answer was that
+   * you could not. The `qrcode` layout kind reached the spec and both renderers with no way
+   * to insert one, so an author's only route was editing the schema JSON. That is the
+   * documented-but-unreachable failure, one step removed: the construct existed, worked, and
+   * had no door.
+   *
+   * It takes a step the other entries do not. A container needs no path; a field placement
+   * takes one from the UNPLACED list. A code offers EVERY answer, because it is a second
+   * view of an answer rather than a placement of it — showing a code beside the field it
+   * encodes is the ordinary case, and the unplaced list would have excluded exactly that.
+   */
+  /** The fixture is spec 1; a code needs spec 2, so these use an upgraded copy. */
+  const spec2 = (): FormSchema => ({ ...schema(), specVersion: '2' })
+
+  const openPalette = async (session = open(spec2())) => {
+    // Focus the tree and press `a`, which is how every other adding test here does it and
+    // how a person does it: the keyboard is the primary route, and the drag surface is a
+    // second route to the same commands.
+    const user = userEvent.setup()
+    render(<FormancyLayoutPane session={session} />)
+    await user.tab()
+    await user.keyboard('a')
+    return user
+  }
+
+  test('the key legend names what the palette actually offers', async () => {
+    // The palette opens only by pressing `a` on the tree, so the legend is how anybody
+    // finds it — and a legend that lists four things when the palette offers five is the
+    // discoverability equivalent of an undocumented feature. Checked against the palette
+    // rather than against a literal.
+    const user = await openPalette()
+    const offered = screen
+      .getByRole('dialog', { name: 'Add to the arrangement' })
+      .querySelectorAll('li > button, li > [data-formancy-part="palette-locked"]')
+    expect(offered.length).toBeGreaterThan(3)
+
+    const legend = document.querySelector('[data-formancy-part="layout-keys"]')?.textContent ?? ''
+    for (const word of ['row', 'column', 'section', 'code']) {
+      expect(legend.toLowerCase(), `the legend does not mention ${word}`).toContain(word)
+    }
+    void user
+  })
+
+  test('in a version 1 document offers the upgrade instead of a dead end', async () => {
+    // The dead end this nearly shipped with. `validLayoutTargets` decides legality by
+    // TRYING the edit against the validator, which refuses a code in a version 1 document
+    // -- so the button worked, the answer chooser worked, and the final step had no targets
+    // at all. Three clicks to nothing is worse than a sentence.
+    //
+    // Said rather than silently omitted, which is the shape the field palette already uses:
+    // a shorter palette with no explanation reads as a broken builder when what is true is
+    // that the document can move forward in one step.
+    const session = open()
+    const user = await openPalette(session)
+
+    expect(screen.queryByRole('button', { name: 'Code' })).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Move it to version 2' }))
+    expect(session.document().specVersion).toBe('2')
+  })
+
+  test('is offered once the document allows it', async () => {
+    // And the upgrade is not cosmetic: the entry appears afterwards, so somebody who says
+    // yes gets what they asked for rather than an unchanged palette.
+    const session = open()
+    const user = await openPalette(session)
+    await user.click(screen.getByRole('button', { name: 'Move it to version 2' }))
+
+    expect(screen.getByRole('button', { name: 'Code' })).toBeDefined()
+  })
+
+  test('is offered, and says what it does', async () => {
+    await openPalette()
+    expect(screen.getByRole('button', { name: 'Code' })).toBeDefined()
+  })
+
+  test('asks which answer it should hold, and offers the placed ones too', async () => {
+    // The unplaced list would have hidden every answer already on the form, which is the
+    // one an author most wants a code of.
+    const user = await openPalette()
+    await user.click(screen.getByRole('button', { name: 'Code' }))
+
+    const which = screen.getByRole('dialog', { name: 'Which answer should the code hold?' })
+    // `email` is placed in this fixture's arrangement, so it must still be offered.
+    expect(within(which).getByRole('button', { name: 'Email' })).toBeDefined()
+  })
+
+  test('inserts a code that names the answer it holds', async () => {
+    const session = open(spec2())
+    const user = await openPalette(session)
+    await user.click(screen.getByRole('button', { name: 'Code' }))
+    await user.click(
+      within(
+        screen.getByRole('dialog', { name: 'Which answer should the code hold?' }),
+      ).getByRole('button', { name: 'Email' }),
+    )
+
+    // Then the ordinary where-should-it-go step every other entry uses.
+    const where = screen.getByRole('dialog', { name: /Where should the code for Email go\?/ })
+    await user.click(within(where).getAllByRole('button')[0]!)
+
+    expect(rowNames()).toContain('Code for Email')
+  })
+
+  test('produces a document the validator accepts', async () => {
+    // The insert goes through `insertLayoutNode`, which refuses a command that would make
+    // the document invalid rather than applying it -- so a code whose path did not exist
+    // could never be inserted. Asserted because the palette hands it a path from the model
+    // and that is the only reason it holds.
+    const session = open(spec2())
+    const user = await openPalette(session)
+    await user.click(screen.getByRole('button', { name: 'Code' }))
+    await user.click(
+      within(
+        screen.getByRole('dialog', { name: 'Which answer should the code hold?' }),
+      ).getByRole('button', { name: 'Email' }),
+    )
+    const where = screen.getByRole('dialog', { name: /Where should the code for Email go\?/ })
+    await user.click(within(where).getAllByRole('button')[0]!)
+
+    const result = validateSchema(session.document())
+    expect(result.valid).toBe(true)
+  })
+})
 
 describe('a code node in the arrangement', () => {
   /**
