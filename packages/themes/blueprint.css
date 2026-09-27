@@ -1148,12 +1148,30 @@
   background-repeat: no-repeat;
 }
 
-[data-formancy-theme='blueprint'] [data-formancy-part='field']:has([data-formancy-part='typeahead']) {
+/* The popup is positioned against the CONTROL, never against the field.
+
+   It used to be `position: relative` on the field with `top` left at `auto`, on the
+   reasoning that the list would then land at its static position -- under the box.
+   Inside a grid container, which is what a field is here, the static position of an
+   absolutely positioned child is the container's own content-box origin: the list
+   opened over its own label and box. Measured in the playground before the fix, the
+   field's top edge was 457px, an in-flow child would have sat at 537px, and the popup
+   sat at 459px.
+
+   `top: 100%` on an anchor that wraps the box and the list is what makes it land
+   under the box whatever the label does -- one line, two lines, or none.
+
+   There is still no positioning library and so still no collision detection: a list
+   opened near the bottom of the window runs past it and the page scrolls, rather than
+   flipping above the box. */
+[data-formancy-theme='blueprint'] [data-formancy-part='typeahead-anchor'] {
   position: relative;
+  display: block;
 }
 
 [data-formancy-theme='blueprint'] [data-formancy-part='typeahead-listbox'] {
   position: absolute;
+  top: 100%;
   z-index: 20;
   inset-inline: 0;
   margin: 0.125rem 0 0;

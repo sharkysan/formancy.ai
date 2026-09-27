@@ -539,41 +539,60 @@ export class FormancyDateTimeField extends FieldComponentBase {
   imports: [FormancyFieldShell],
   template: `
     <formancy-field-shell [field]="field" [label]="context.label" [path]="context.path">
-      <input
-        type="text"
-        role="combobox"
-        [id]="control().id"
-        [attr.name]="control().name"
-        [attr.aria-invalid]="control()['aria-invalid']"
-        [attr.aria-required]="control()['aria-required']"
-        [attr.aria-describedby]="control()['aria-describedby']"
-        [disabled]="control().disabled === true"
-        data-formancy-part="typeahead"
-        autocomplete="off"
-        aria-autocomplete="list"
-        [attr.aria-expanded]="expanded()"
-        [attr.aria-controls]="listboxId()"
-        [attr.aria-activedescendant]="activeId()"
-        [value]="text()"
-        (input)="onInput($event)"
-        (click)="open.set(true)"
-        (keydown)="onKeyDown($event)"
-        (blur)="onBlur()"
-      />
-      <!-- Named, because the listbox role is one whose accessible name is required.
-           Not with the name the field already has: two elements answering to the
-           same accessible name make every query by that name ambiguous. -->
-      <ul
-        [id]="listboxId()"
-        role="listbox"
-        [attr.aria-label]="popupLabel()"
-        data-formancy-part="typeahead-listbox"
-        [hidden]="!expanded()"
-      >
-        @for (option of matches(); track option.value) {
-          <li [id]="optionId(option.value)" role="option" data-formancy-part="typeahead-option" [attr.data-active]="option.value === activeValue() ? 'true' : null" [attr.aria-selected]="chosen()?.value === option.value ? 'true' : null" (mousedown)="$event.preventDefault()" (click)="choose(option.value)">{{ option.label }}</li>
-        }
-      </ul>
+      <!-- The popup's containing block, and the reason it is an element rather than
+           nothing at all.
+
+           The popup was absolutely positioned with 'top: auto', on the reasoning that
+           it would then land at its STATIC position -- where it would have sat in the
+           flow, directly under the box. That holds inside a block container and NOT
+           inside a grid or flex one, and every theme lays a field out with
+           'display: grid'. For an absolutely positioned child of a grid container the
+           static position is the container's own content-box origin, so the list opened
+           over its own label and box rather than under them. Measured in the playground
+           before the fix: the field's top edge was 457px, an in-flow child would have
+           sat at 537px, and the popup sat at 459px.
+
+           So the popup is given a containing block that wraps the control and nothing
+           else, and every theme positions it against that explicitly. The status region
+           stays OUTSIDE it, because it is a row of the field's grid exactly as the
+           error region is. The React binding does the same, for the same reason. -->
+      <div data-formancy-part="typeahead-anchor">
+        <input
+          type="text"
+          role="combobox"
+          [id]="control().id"
+          [attr.name]="control().name"
+          [attr.aria-invalid]="control()['aria-invalid']"
+          [attr.aria-required]="control()['aria-required']"
+          [attr.aria-describedby]="control()['aria-describedby']"
+          [disabled]="control().disabled === true"
+          data-formancy-part="typeahead"
+          autocomplete="off"
+          aria-autocomplete="list"
+          [attr.aria-expanded]="expanded()"
+          [attr.aria-controls]="listboxId()"
+          [attr.aria-activedescendant]="activeId()"
+          [value]="text()"
+          (input)="onInput($event)"
+          (click)="open.set(true)"
+          (keydown)="onKeyDown($event)"
+          (blur)="onBlur()"
+        />
+        <!-- Named, because the listbox role is one whose accessible name is required.
+             Not with the name the field already has: two elements answering to the
+             same accessible name make every query by that name ambiguous. -->
+        <ul
+          [id]="listboxId()"
+          role="listbox"
+          [attr.aria-label]="popupLabel()"
+          data-formancy-part="typeahead-listbox"
+          [hidden]="!expanded()"
+        >
+          @for (option of matches(); track option.value) {
+            <li [id]="optionId(option.value)" role="option" data-formancy-part="typeahead-option" [attr.data-active]="option.value === activeValue() ? 'true' : null" [attr.aria-selected]="chosen()?.value === option.value ? 'true' : null" (mousedown)="$event.preventDefault()" (click)="choose(option.value)">{{ option.label }}</li>
+          }
+        </ul>
+      </div>
       <!-- Present from the start and empty until there is something to say: a live
            region created at the moment it gets its text is one several screen
            readers never announce. -->
