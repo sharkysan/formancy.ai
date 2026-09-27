@@ -177,3 +177,4 @@ listed under the sections they belong to above.
 | [0074](0074-a-table-child-may-span.md) | A table child may span | accepted |
 | [0075](0075-a-datagrid-is-drawn-not-tabulated.md) | A datagrid is drawn, not tabulated | accepted |
 | [0076](0076-an-answer-is-one-of-the-options.md) | An answer is one of the options | accepted |
+| [0077](0077-options-may-come-from-a-named-source.md) | Options may come from a named source | accepted |

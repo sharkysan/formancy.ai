@@ -140,6 +140,45 @@ own component, and the engine validates the value rather than its provenance.
 
 ---
 
+### A7. An answer is accepted that the list it came from does not offer
+
+*How it arises:* `optionsSource` lets a `select` name a list the deployment resolves
+rather than carrying its answers in the document
+([0077](../decisions/0077-options-may-come-from-a-named-source.md)). The legal set is
+then **not in the frozen document**, so the check A6 relies on has nothing to compare
+against — deliberately, because a list living outside the document cannot be checked
+against the document.
+
+*Constraint:* the server asks the deployment. `ServerDeps.optionsSources[name].members`
+is given the submitted values and returns the ones it does not offer; a non-member is
+refused with the same `option` code a document option produces, after the engine has run
+and **before anything is written**. At publish time a document naming a source the
+deployment has never configured is refused outright, so a form cannot be frozen with a
+list nobody can resolve. A source that throws fails the submission **closed** — 503 and
+retryable — because an accepted bogus value is undetectable afterwards while a refusal
+leaves the draft holding the answers.
+
+*Residual, and it is the point of the hazard rather than a footnote:*
+
+- **`members` is optional.** A deployment may declare a source and not supply one, which
+  means *this source exists and I cannot check membership*. Then nothing checks, and the
+  stored value is whatever was sent.
+- **Membership NOW, never membership THEN.** A value legal when it was chosen can be
+  refused minutes later; there is no re-offer path, because a published version is frozen
+  and `staleVersionPolicy` does not negotiate.
+- **A stored answer cannot be re-judged.** `schemaHash` no longer determines what a valid
+  answer was for such a field, so an auditor cannot reconstruct the legal set of the day.
+- **The answer may stop being readable.** A document with `options` carries value→label
+  forever in an immutable record; a source is under no such obligation, and recording the
+  label would change what the field collects.
+
+A manufacturer incorporating formancy should treat `optionsSource` as an explicit,
+per-field weakening of A6's guarantee — greppable in every published version, and
+enumerable from the publish audit detail — rather than as an equivalent alternative to a
+listed `select`.
+
+---
+
 ## B — Correct data is lost or altered
 
 ### B1. Answers are orphaned when a field is renamed

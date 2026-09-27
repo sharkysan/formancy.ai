@@ -1,3 +1,5 @@
+export { checkMembership, sourceNamesIn, sourcedAnswers } from './options-membership.js'
+export type { MembershipOutcome, ServerOptionsSource, ServerOptionsSources } from './options-membership.js'
 export {
   CHALLENGE_TTL_SECONDS,
   DEFAULT_MAX_NUMBER,

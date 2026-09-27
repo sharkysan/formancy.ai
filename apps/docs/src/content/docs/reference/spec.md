@@ -392,6 +392,12 @@ optional · string · pattern `^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5
 
 **Latest allowed.** The latest date and time this field accepts, inclusive, written exactly as an answer is: 2026-09-19T08:00:00Z. A fixed value, not an expression and not the current date and time — a bound that moved with the clock would let the same submission pass in the browser and fail on the server. For "must be in the future", write a rule.
 
+#### `select`
+
+##### `options`
+
+optional · value
+
 ## Logic rules
 
 Every rule of the form, in one flat list. A rule names the field it applies to; the order here does not matter, because evaluation order comes from what depends on what.

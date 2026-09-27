@@ -12,10 +12,11 @@ import {
   FormancyForm,
   FormancyProvider,
   RichTextEditorProvider,
+  OptionsSourcesProvider,
   ScannerProvider,
   UploaderProvider,
 } from '@formancy/react'
-import type { Scanner } from '@formancy/react'
+import type { OptionsSources, Scanner } from '@formancy/react'
 import { createRichTextEditor } from '@formancy/tiptap'
 import { playgroundUploader } from './demo-uploader.js'
 import { createBuilderSession } from '@formancy/builder-core'
@@ -96,6 +97,63 @@ const SITE = import.meta.env.DEV ? 'http://localhost:4384/' : '/'
  * it refuses typing. `window.prompt` even has the contract's own shape: a string, or
  * `null` when somebody cancels.
  */
+/**
+ * A stand-in for a deployment's own list, so the demo shows the real behaviour.
+ *
+ * This is the half a form document deliberately does NOT carry: the document says
+ * `optionsSource: "pickup-points"` and this says what that name means. In a real
+ * deployment `resolve` is a call to whatever already holds the list — an internal
+ * API, a database, a directory — and nothing in formancy ever makes a request of
+ * its own.
+ *
+ * Slow on purpose, by a quarter of a second: the busy state, the debounce and the
+ * "searching" announcement are the parts of this that only exist under latency, and a
+ * demo that answered instantly would show none of them.
+ */
+const PICKUP_POINTS = [
+  'Zürich Hauptbahnhof',
+  'Zürich Oerlikon',
+  'Bern Bahnhof',
+  'Basel SBB',
+  'Genève Cornavin',
+  'Lausanne Flon',
+  'Luzern Bahnhof',
+  'St. Gallen Bahnhof',
+  'Lugano Centro',
+  'Winterthur Altstadt',
+].map((label, index) => ({ value: `p${String(index + 1)}`, label }))
+
+const DEMO_OPTIONS_SOURCES: OptionsSources = {
+  'pickup-points': {
+    minQueryLength: 0,
+    maxRows: 6,
+    resolve: ({ kind, query, values, signal }) =>
+      new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+          if (kind === 'labels') {
+            resolve(PICKUP_POINTS.filter((point) => values.includes(point.value)))
+            return
+          }
+          // The narrowing is the SOURCE's, not the control's: it was handed the
+          // query, and a control that re-filtered its answer would drop rows the
+          // source matched on data the person cannot see.
+          const folded = query.trim().toLowerCase()
+          resolve(
+            folded === ''
+              ? PICKUP_POINTS
+              : PICKUP_POINTS.filter((point) => point.label.toLowerCase().includes(folded)),
+          )
+        }, 250)
+        // Honouring the signal is the point of it: a keystroke that supersedes an
+        // earlier one should cancel the work, not just ignore the answer.
+        signal.addEventListener('abort', () => {
+          clearTimeout(timer)
+          reject(new DOMException('Superseded', 'AbortError'))
+        })
+      }),
+  },
+}
+
 const DEMO_SCANNER: Scanner = async ({ label }) =>
   window.prompt(`Stand-in for a camera. What does the code for "${label}" read?`)
 
@@ -351,10 +409,12 @@ export function App() {
                         storage key says so. */}
                     <UploaderProvider value={playgroundUploader}>
                       <ScannerProvider value={DEMO_SCANNER}>
+                      <OptionsSourcesProvider value={DEMO_OPTIONS_SOURCES}>
                       <FormancyProvider engine={built.engine} key={source}>
                         <ErrorSummary />
                         <FormancyForm layout="web" />
                       </FormancyProvider>
+                      </OptionsSourcesProvider>
                       </ScannerProvider>
                     </UploaderProvider>
                   </RichTextEditorProvider>

@@ -10,6 +10,54 @@ later.
 
 ## Unreleased
 
+**A `select` may take its answers from the deployment** —
+`optionsSource: "pickup-points"` ([0077](docs/decisions/0077-options-may-come-from-a-named-source.md)).
+Asked for as "connect an external data source"; delivered as a **name**, never a URL.
+
+A URL in a form document is three problems at once: a deployment detail in a portable
+format, so the same form copied from staging to production points at the wrong system;
+unfixable, because a published version is frozen forever; and attacker-influenceable, on
+an instance that sits inside a private network. A name costs one line of deployment
+configuration and removes all three.
+
+**Nothing in formancy fetches anything.** In the browser the host supplies a map of
+sources — the third instance of the inversion the uploader and the scanner already are,
+with one deliberate difference: a **map** rather than one resolver, because the control
+has to know *synchronously* whether a name resolves. A select whose options come only
+from a source collects nothing, so an unconfigured name renders a message where the
+chooser would be, exactly as the file field does without an uploader.
+
+On the server it is an injected port and **no HTTP client**: `members(values)` returns
+the values a source does *not* offer, so an adapter answers from a SQL `IN` clause
+without materialising a list. A source that cannot answer fails the submission **closed**
+— 503 and retryable, because an accepted bogus value is undetectable afterwards while a
+refusal leaves the draft holding the answers.
+
+**The guarantee, stated plainly because it is weaker:**
+
+> A `select` with `optionsSource` stores a string the deployment's own source confirmed
+> was a member **at the instant the submission was accepted** — or, where the deployment
+> supplied no `members` function, that nothing checked at all.
+
+`schemaHash` no longer determines what a valid answer is for such a field, and a stored
+submission cannot be re-judged later. `optionsSource` in the document is exactly what
+declares that: greppable, enumerable per published version, and visible in the builder.
+Recorded as hazard **A7** in `SAFETY-ANALYSIS.md`.
+
+**What a source returns is unchecked input.** A bad row refuses the *whole* list rather
+than being filtered out — a partial list silently lacks the row somebody came for, and
+they cannot tell that from a source that does not have it.
+
+**Accessibility:** `aria-busy` and never `disabled`, because disabling the element
+somebody just typed into blurs it and the browser resets focus to the document body. One
+status region saying four things and **never** the error region — a source being down is
+not a wrong answer. A `labels` request names what a draft already holds, so a resumed
+form is not an empty box over a stored answer.
+
+`typeahead-empty` is now **`typeahead-status`**, because it says four things rather than
+one, and a sourced plain select gains `select-status`. A theme styling the typeahead
+needs the new names.
+
 **Fixed: a generated property control could not be typed in.** Found by writing the tests
 the coverage report said were missing — the two new panels were at zero, and two of the
 first cases written against them failed.
