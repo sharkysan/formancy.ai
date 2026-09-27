@@ -18,6 +18,8 @@ export {
   TEMPORAL_SHAPES,
   WIDGETS_BY_FIELD_TYPE,
 } from './types.js'
+export { acceptRemoteOptions, capRemoteOptions } from './options-source.js'
+export type { RemoteOption } from './options-source.js'
 export { belongsToColumn, datagridColumns } from './datagrid.js'
 export type { DataGridColumnPlan } from './datagrid.js'
 export { foldForMatch, narrowOptionsByLabel } from './typeahead.js'

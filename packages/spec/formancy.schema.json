@@ -481,6 +481,14 @@
         "enum": [
          "typeahead"
         ]
+       },
+       "optionsSource": {
+        "title": "Options source",
+        "description": "Where this field's answers come from, when there are too many to write into the form or they change too often. This is a NAME the deployment resolves to a list — never an address: the form never says where to look, so moving it between staging and production changes nothing here. The value that gets stored is a code only that source can decode, and a published version is frozen forever, so it has to still mean the same thing in a year. Leave it out and the field offers the options written above.",
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64,
+        "pattern": "^[a-z][a-z0-9-]*$"
        }
       }
      }
@@ -645,6 +653,27 @@
         "type": "string",
         "pattern": "^\\d{4}-\\d{2}-\\d{2}T(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\dZ$"
        }
+      }
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "type": {
+        "const": "select"
+       },
+       "optionsSource": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "type",
+       "optionsSource"
+      ]
+     },
+     "then": {
+      "properties": {
+       "options": false
       }
      }
     }

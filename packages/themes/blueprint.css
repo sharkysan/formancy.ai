@@ -1237,7 +1237,7 @@
   color: var(--fm-signal);
 }
 
-[data-formancy-theme='blueprint'] [data-formancy-part='typeahead-empty'] {
+[data-formancy-theme='blueprint'] [data-formancy-part='typeahead-status'] {
   margin: 0.25rem 0 0;
   font-family: var(--fm-sans);
   font-size: 0.8125rem;
@@ -1253,7 +1253,7 @@
    the region is created at the moment it gets its text — the failure the always-rendered
    element exists to avoid. An empty block box has no line box and therefore no height, so
    only the margin has to go. */
-[data-formancy-theme='blueprint'] [data-formancy-part='typeahead-empty']:empty {
+[data-formancy-theme='blueprint'] [data-formancy-part='typeahead-status']:empty {
   margin: 0;
 }
 
@@ -1517,4 +1517,39 @@
     color: ButtonText;
     border-color: ButtonText;
   }
+}
+
+/* A field whose answers come from a source this deployment did not provide.
+
+   The file field's branch, not the scanner's: a text field with no scanner still
+   collects by typing, but a select whose options come only from a source collects
+   nothing at all — so it says so where the chooser would be rather than rendering an
+   empty one somebody would stare at. Styled like `file-unavailable`, because it is
+   the same sentence about a different capability. */
+[data-formancy-theme='blueprint'] [data-formancy-part='options-unavailable'] {
+  margin: 0;
+  font-family: var(--fm-sans);
+  font-size: 0.875rem;
+  color: var(--fm-muted);
+}
+
+/* What a sourced select says out loud: how many rows were left out, or that the
+   source could not be reached. Never the error region — a source being down is not a
+   wrong answer. */
+[data-formancy-theme='blueprint'] [data-formancy-part='select-status'] {
+  margin: 0.25rem 0 0;
+  font-family: var(--fm-sans);
+  font-size: 0.8125rem;
+  color: var(--fm-muted);
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='select-status']:empty {
+  /* `margin: 0` and never `display: none`: the latter prunes the node from the
+     accessibility tree, so the region would be CREATED at the moment it got its text
+     — the announcement failure an always-rendered live region exists to avoid. */
+  margin: 0;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='typeahead-status'][data-state='failed'] {
+  color: var(--fm-invalid, currentColor);
 }

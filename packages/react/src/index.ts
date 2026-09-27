@@ -11,6 +11,8 @@ export type { FieldComponent, FieldComponentProps, FormancyFormProps, Registry, 
 export { ErrorSummary } from './error-summary.js'
 export type { ErrorSummaryProps } from './error-summary.js'
 export { RichText } from './rich-text.js'
+export { OptionsSourcesProvider, useOptionsSources } from './options-source.js'
+export type { OptionsRequest, OptionsSource, OptionsSources } from './options-source.js'
 export { ScannerProvider, useScanner } from './scanning.js'
 export type { ScanRequest, Scanner } from './scanning.js'
 export { UploaderProvider, useUploader } from './uploads.js'

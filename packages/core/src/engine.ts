@@ -170,6 +170,15 @@ export interface FormEngine {
    * page titles — in the same locale the snapshots used.
    */
   text(value: Text | undefined): string | undefined
+  /**
+   * The locale this engine resolves text in, which is fixed for its lifetime.
+   *
+   * Exposed because a renderer asking a deployment's own source for options has to
+   * say which language to answer in, and the schema's `i18n.defaultLocale` is the
+   * wrong answer whenever a host passed a `locale` of its own. It was computed here
+   * and never handed out.
+   */
+  locale(): string
 }
 
 interface FieldNode {
@@ -1100,6 +1109,10 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
         if (errorsByWire.has(node.wire) || serverErrorsByWire.has(node.wire)) return node.wire
       }
       return null
+    },
+
+    locale() {
+      return locale
     },
 
     text(value) {
