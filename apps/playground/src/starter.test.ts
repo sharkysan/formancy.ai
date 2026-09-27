@@ -78,6 +78,7 @@ describe('the starter schema', () => {
     // So the list cannot outlive the widget it excuses.
     const real = new Set<string>(FIELD_WIDGETS)
     expect(Object.keys(NOT_DEMONSTRATED_YET).filter((widget) => !real.has(widget))).toEqual([])
+  })
 
   test('places every field it declares, in every layout it offers', () => {
     // The bug this exists for, reported by somebody looking at the running playground:
