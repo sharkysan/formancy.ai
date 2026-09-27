@@ -275,6 +275,38 @@ optional · integer · minimum 1 · maximum 1000000
 
 **Longest answer.** The cap on the answer, counted in characters of the stored markup rather than of the text a reader sees.
 
+#### `checkbox`
+
+##### `widget`
+
+optional · one of `"toggle"`
+
+**Widget.** How this field should look. Presentation only: it never changes what the field collects or what is stored. Leave it out for the default control. Show the tick-box as a switch. The answer is unchanged: still true, false, or untouched.
+
+#### `repeater`
+
+##### `widget`
+
+optional · one of `"datagrid"`
+
+**Widget.** How this field should look. Presentation only: it never changes what the field collects or what is stored. Leave it out for the default control. Show the rows as a table with aligned columns instead of stacked blocks. The answer is unchanged.
+
+#### `select`
+
+##### `widget`
+
+optional · one of `"typeahead"`
+
+**Widget.** How this field should look. Presentation only: it never changes what the field collects or what is stored. Leave it out for the default control. Let somebody type to narrow the options instead of scrolling them. The answer is still one of the options offered.
+
+#### `text`
+
+##### `widget`
+
+optional · one of `"scanner"`
+
+**Widget.** How this field should look. Presentation only: it never changes what the field collects or what is stored. Leave it out for the default control. Offer a camera route to a value somebody could otherwise type, such as reading a QR code. The answer is still the same string, and typing it must stay possible.
+
 ## Logic rules
 
 Every rule of the form, in one flat list. A rule names the field it applies to; the order here does not matter, because evaluation order comes from what depends on what.

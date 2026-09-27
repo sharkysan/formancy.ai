@@ -165,3 +165,4 @@ listed under the sections they belong to above.
 | [0062](0062-a-draft-carries-its-own-key.md) | A draft carries its own key | accepted |
 | [0063](0063-a-compose-file-for-the-published-image.md) | A compose file for the published image, and no default version | accepted |
 | [0064](0064-an-object-store-behind-the-same-interface.md) | An object store behind the same interface, and our own signer | accepted |
+| [0065](0065-a-widget-is-authored-not-registered.md) | A widget is authored, not registered | accepted |

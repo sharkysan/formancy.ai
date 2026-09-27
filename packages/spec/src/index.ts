@@ -7,10 +7,12 @@ export {
   CONTAINER_FIELD_TYPES,
   CURRENT_SPEC_VERSION,
   FIELD_TYPES,
+  FIELD_WIDGETS,
   LIST_VALUED_FIELD_TYPES,
   SPEC_1_FIELD_TYPES,
   SPEC_1_LAYOUT_KINDS,
   SPEC_VERSIONS,
+  WIDGETS_BY_FIELD_TYPE,
 } from './types.js'
 export { upgradeSpecVersion } from './upgrade.js'
 export { isSafeHref, parseRichText, richTextToPlain } from './richtext.js'
@@ -33,6 +35,7 @@ export type {
   FieldFormat,
   FieldOption,
   FieldType,
+  FieldWidget,
   FormLogic,
   FormI18n,
   FormLayout,
