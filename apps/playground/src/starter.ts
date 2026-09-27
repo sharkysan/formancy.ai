@@ -1,3 +1,5 @@
+import type { FormSchema } from '@formancy/spec'
+
 /**
  * The schema the playground opens with.
  *
@@ -349,4 +351,4 @@ export const STARTER_SCHEMA = {
       },
     },
   },
-}
+} satisfies FormSchema
