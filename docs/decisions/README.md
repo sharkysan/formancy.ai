@@ -169,3 +169,4 @@ listed under the sections they belong to above.
 | [0066](0066-a-widget-may-be-configured.md) | A widget may be configured, and `datagrid` stays one | accepted |
 | [0067](0067-a-temporal-answer-is-one-fixed-width-string.md) | A temporal answer is one fixed-width string | accepted |
 | [0068](0068-a-row-keeps-its-own-state.md) | A row keeps its own state | accepted |
+| [0069](0069-contributions-under-a-cla.md) | Contributions under a CLA | accepted |
