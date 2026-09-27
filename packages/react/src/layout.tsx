@@ -396,6 +396,7 @@ function CodeNode({
   locale: string
 }): ReactElement {
   const label = resolveText(schema, node.label, locale)
+  const labelId = useId()
   // `useField`, not `engine.getFieldSnapshot`. Reading the snapshot directly renders the
   // value once and never again: measured, the code stayed `data-state="empty"` after the
   // answer was typed. A code is a live view of an answer, so it subscribes like any other
@@ -406,7 +407,17 @@ function CodeNode({
 
   return (
     <div data-formancy-part="code" data-state={text === '' ? 'empty' : 'ready'}>
-      {label === undefined ? null : <span data-formancy-part="code-label">{label}</span>}
+      {/* Named, and the name is ATTACHED. It was a loose span beside the value, and
+          measured, the value's accessible name was the empty string: a screen reader
+          announced a booking reference with nothing to say what it was. A label that
+          only looks like a label is the failure this whole repository's `describedby`
+          composition exists to prevent, in the one place a layout node does its own
+          wiring. */}
+      {label === undefined ? null : (
+        <span id={labelId} data-formancy-part="code-label">
+          {label}
+        </span>
+      )}
       {/* The drawing. Decorative: `aria-hidden`, because a picture of a code says nothing
           to a screen reader and an `alt` of "QR code" says nothing either — the value
           below is the content.
@@ -421,8 +432,17 @@ function CodeNode({
           somebody would scan it. */}
       {text === '' ? null : <CodeDrawing value={text} />}
       {/* The value, as text, always. A reader who cannot see the code reads this; a
-          reader who can see one still has something to copy. */}
-      <output data-formancy-part="code-value">{text}</output>
+          reader who can see one still has something to copy.
+
+          `<output>` is a live region, so its text is announced when the answer changes
+          — which is exactly right for a second view of an answer — and that is also why
+          it must be named: an unnamed live region reads a string out of nowhere. */}
+      <output
+        data-formancy-part="code-value"
+        {...(label === undefined ? {} : { 'aria-labelledby': labelId })}
+      >
+        {text}
+      </output>
     </div>
   )
 }

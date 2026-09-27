@@ -1,7 +1,8 @@
 import { useId } from 'react'
 import type { ReactElement } from 'react'
-import type { FieldOption } from '@formancy/spec'
+import type { DataGridColumn, FieldDef, FieldOption } from '@formancy/spec'
 import type { BuilderSession } from '@formancy/builder-core'
+import { ColumnsEditor } from './columns-editor.js'
 import { OptionsEditor } from './options-editor.js'
 import { editablePropertiesFor } from './properties.js'
 import type { EditableProperty } from './properties.js'
@@ -38,7 +39,7 @@ export function PropertyPanel({ session, keyPath }: PropertyPanelProps): ReactEl
   if (node === undefined) return null
 
   const def = node.def
-  const properties = editablePropertiesFor(def.type)
+  const properties = editablePropertiesFor(def.type, def.widget)
   const current = def as unknown as Record<string, unknown>
 
   return (
@@ -51,6 +52,10 @@ export function PropertyPanel({ session, keyPath }: PropertyPanelProps): ReactEl
           key={property.name}
           property={property}
           value={current[property.name]}
+          // A datagrid's columns name this field's own children, so the editor needs
+          // them. Nothing else in the panel does, which is why it is passed rather
+          // than reached for.
+          childFields={def.fields ?? []}
           onChange={(value) => {
             // An empty box means "no value", not "the empty string". Writing ''
             // would put a property into the document that the author just
@@ -67,13 +72,22 @@ export function PropertyPanel({ session, keyPath }: PropertyPanelProps): ReactEl
   )
 }
 
-function PropertyField({
+/**
+ * One property's control, shared by the field panel and the layout panel.
+ *
+ * Exported inside the package rather than copied: two renderings of "a property from
+ * the schema" would drift, and the drift would be invisible — both panels would look
+ * fine and one of them would quietly stop offering a kind the schema grew.
+ */
+export function PropertyField({
   property,
   value,
+  childFields,
   onChange,
 }: {
   property: EditableProperty
   value: unknown
+  childFields: readonly FieldDef[]
   onChange: (value: unknown) => void
 }): ReactElement | null {
   const id = useId()
@@ -85,6 +99,18 @@ function PropertyField({
     return (
       <OptionsEditor
         options={Array.isArray(value) ? (value as FieldOption[]) : []}
+        onChange={(next) => onChange(next.length === 0 ? undefined : next)}
+      />
+    )
+  }
+
+  // A datagrid's columns are an array of objects, one of which names a sibling
+  // field — the generic path would render that as JSON too.
+  if (property.kind === 'columns') {
+    return (
+      <ColumnsEditor
+        columns={Array.isArray(value) ? (value as DataGridColumn[]) : []}
+        children={childFields}
         onChange={(next) => onChange(next.length === 0 ? undefined : next)}
       />
     )
@@ -157,6 +183,17 @@ function PropertyField({
           onChange={(event) => {
             const raw = event.target.value
             if (property.kind !== 'number') {
+              // A property the format writes as "a number or a word" — `span` is
+              // `anyOf: [integer, const "all"]` — needs the number handed over AS a
+              // number. Measured: the string form is refused outright, so typing a
+              // numeric span used to do nothing and say nothing.
+              //
+              // Read from the schema, never from the property's name, so the next one
+              // written that way works without anybody remembering this.
+              if (property.numericAlternative === true && /^-?\d+(\.\d+)?$/.test(raw)) {
+                onChange(Number(raw))
+                return
+              }
               onChange(raw)
               return
             }

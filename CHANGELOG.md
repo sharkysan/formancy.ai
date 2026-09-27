@@ -10,6 +10,46 @@ later.
 
 ## Unreleased
 
+**Everything the format has is configurable from the builder, and a guard now says so.**
+The question was asked out loud — "is it all settable?" — so it is answered by a check
+that keeps answering rather than by a look. `packages/builder-react/src/properties.test.ts`
+walks the JSON Schema itself and refuses any property that no panel offers, unless it is
+named in a short list with the reason. It found two gaps on its first run.
+
+**No layout node property could be set at all.** Not a table's `columns`, not a section's
+`label` — since the day layouts existed — and not `span`, from the moment the format grew
+it. The format validated them, both renderers honoured them, and the only way to write one
+was to edit the JSON. There is a layout property panel now, generated from the same schema
+the field panel reads, writing through one generic `setLayoutNodeProperty` command that is
+attempted against the validator like every other.
+
+**A datagrid's `columns` could not be set either**, because the schema hangs that branch on
+`widget: "datagrid"` rather than on the field's type, and the derivation only ever matched
+types. It matches both now, and there is a columns editor beside the options editor — a
+column *names* a child field, so the choice is a list of the children that exist rather
+than a text box.
+
+**And a span typed as a number did nothing.** `span` is `anyOf: [integer, const "all"]`, so
+the generated control is a text box — and the string `"2"` is refused by the schema while
+`2` is accepted. The panel now hands over a number when the text is one, decided from the
+schema rather than from the property's name.
+
+**Fixed: the QR code's value had no accessible name.** Reported by somebody looking at the
+running playground. The label was a `<span>` beside the value rather than attached to it,
+so `computeAccessibleName` of the `<output>` holding the value was the **empty string** —
+and `<output>` is a live region, so a screen reader announced a booking reference with
+nothing to say what it was. The label carries an id now and the value points at it, in both
+renderers.
+
+**The playground audits itself.** The forms this tool produces have been audited since the
+beginning; the tool never was, which is the more embarrassing half. `apps/playground/src/accessible.test.tsx`
+computes the accessible name of every control on the page with a real implementation and
+refuses an empty one, and runs axe in the same configuration the renderers are held to.
+
+Live regions are deliberately **not** required to carry a name: `role="status"` does not
+need one, and every region on the page says a whole sentence — "No options match" — that
+explains itself. `<output>` is the one exception, because what it announces is a bare value.
+
 **An answer is now checked against the options offered, and it never was**
 ([0076](docs/decisions/0076-an-answer-is-one-of-the-options.md)). This format's own schema
 documented `widget: "typeahead"` with "The answer is still one of the options offered" and

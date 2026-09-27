@@ -28,6 +28,15 @@ export interface LayoutPaneProps {
   /** Which arrangement to edit. Defaults to the first one the form has. */
   layout?: string
   label?: string
+  /**
+   * The node the person is on, whenever that changes, as its index path — or `null`
+   * when the arrangement is empty.
+   *
+   * The pane keeps owning its own focus; this only reports it. A consumer uses it to
+   * show a property panel beside the tree, which is how a layout node's `span`,
+   * `columns` and `label` became settable at all.
+   */
+  onSelect?: (path: readonly number[] | null) => void
 }
 
 const KEY_HELP = [
@@ -64,6 +73,7 @@ export function FormancyLayoutPane({
   session,
   layout,
   label = 'Arrangement',
+  onSelect,
 }: LayoutPaneProps): ReactElement {
   const view = useBuilder(session)
   const layouts = view.document.layouts ?? []
@@ -98,6 +108,17 @@ export function FormancyLayoutPane({
   const count = rows.length
   const index = count === 0 ? 0 : Math.min(focusedIndex, count - 1)
   const focused = rows[index]
+  // Report the focused node outward, so a consumer can show a property panel beside
+  // the tree without reading our DOM. Keyed on the PATH rather than the index: an edit
+  // that reorders the arrangement leaves the index pointing at a different node.
+  const selectedPath = focused === undefined ? null : focused.path.join('.')
+  useEffect(() => {
+    onSelect?.(selectedPath === null ? null : selectedPath.split('.').map(Number))
+    // `onSelect` is deliberately absent: a consumer passing an inline arrow would
+    // otherwise make this fire on every render of theirs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPath])
+
   const unplaced = name === undefined ? [] : session.unplacedFields(name)
 
   // Move focus WITHIN the tree, never INTO it: a pane that grabs focus on

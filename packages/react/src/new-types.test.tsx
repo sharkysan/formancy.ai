@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
+import { computeAccessibleName } from 'dom-accessibility-api'
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
 import { createFormEngine } from '@formancy/core'
@@ -581,6 +582,32 @@ describe('qrcode', () => {
       },
     ],
   } as Partial<FormSchema>)
+
+  test('says what the code IS, with a name attached rather than a label beside it', () => {
+    // The bug this exists for, reported by somebody looking at the running playground:
+    // "der qr code hat zb kein label". The label WAS there -- a span next to the value
+    // -- and it named nothing. Measured before the fix, with a real accessible-name
+    // implementation: `computeAccessibleName(<output>)` was the empty string.
+    //
+    // It matters more here than for a loose caption elsewhere. `<output>` is a live
+    // region, so a screen reader announces the text when the answer changes, and an
+    // unnamed live region reads a booking reference out of nowhere with nothing to say
+    // what it is.
+    const engine = mount(schema)
+    act(() => {
+      engine.setValue(['reference'], 'AB-1234')
+    })
+
+    const value = document.querySelector('[data-formancy-part="code-value"]')!
+    expect(computeAccessibleName(value)).toBe('Your pass')
+
+    // And the name comes from the document's own words, never from a string this
+    // renderer invented -- an English caption baked into a renderer is one no
+    // catalogue can translate.
+    expect(document.querySelector('[data-formancy-part="code-label"]')?.textContent).toBe(
+      'Your pass',
+    )
+  })
 
   test('shows the value of the answer it encodes, as text', () => {
     // The accessible content is the VALUE, not the picture. A picture of a code says
