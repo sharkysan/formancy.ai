@@ -46,6 +46,12 @@ export type {
   RichTextEditorHandle,
   RichTextEditorMount,
 } from './rich-text-editor.js'
+export {
+  FORMANCY_OPTIONS_SOURCES,
+  injectOptionsSources,
+  provideFormancyOptionsSources,
+} from './options-source.js'
+export type { OptionsRequest, OptionsSource, OptionsSources } from './options-source.js'
 export { FORMANCY_SCANNER, injectScanner, provideFormancyScanner } from './scanning.js'
 export type { ScanRequest, Scanner } from './scanning.js'
 export { FORMANCY_UPLOADER, injectUploader, provideFormancyUploader } from './uploads.js'

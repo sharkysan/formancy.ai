@@ -469,6 +469,33 @@ export interface FieldDef {
    */
   label?: Text
   options?: FieldOption[]
+  /**
+   * The NAME of a list the deployment resolves, for a `select` with too many answers
+   * to write down or answers that change too often.
+   *
+   * **A name and never an address.** A URL in a form document is a deployment detail
+   * in a portable format: the same form moved from staging to production would point
+   * at the wrong system, and a published version is frozen forever, so it could never
+   * be corrected. It is also attacker-influenceable — a self-hosted instance sits
+   * inside a private network, and an address a form author typed is the SSRF surface
+   * `SAFETY-ANALYSIS.md` treats as the most under-appreciated risk in this product.
+   *
+   * So the document says *which* list, the deployment says *where*, and nothing in
+   * `@formancy/spec` or `@formancy/core` ever fetches anything — the isomorphic
+   * packages have no `fetch` to reach for
+   * ([0008](../../../docs/decisions/0008-layered-packages.md)).
+   *
+   * **Mutually exclusive with `options`.** A field offers a list or names a source; a
+   * field with both would have two answers to "what may be chosen" and no rule for
+   * which wins.
+   *
+   * **And it weakens a guarantee, which is why it is a property you can grep for.** A
+   * sourced answer's legal set is not in the frozen document, so `schemaHash` no longer
+   * determines what a valid answer is and a stored submission cannot be re-judged
+   * later. That is the trade being asked for, and naming it in the document is what
+   * makes it enumerable per published version.
+   */
+  optionsSource?: string
   minItems?: number
   maxItems?: number
   addLabel?: string

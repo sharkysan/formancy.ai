@@ -6,6 +6,8 @@ import type { Change, FormSchema } from '@formancy/spec'
 import { validateSchema } from '@formancy/spec/validate'
 import type { SchemaError } from '@formancy/spec/validate'
 import { createFormEngine, expressionProblems } from '@formancy/core'
+import { checkMembership, sourceNamesIn } from './options-membership.js'
+import type { ServerOptionsSources } from './options-membership.js'
 import type { CapabilitySource } from '@formancy/core'
 import type { AuditEntry } from './audit.js'
 import type { Actor } from './auth.js'
@@ -38,6 +40,21 @@ export interface ServerDeps {
    * optional secret would mean drafts are unprotected whenever nobody set it.
    */
   draftSecret: string
+  /**
+   * The lists a form document may name with `optionsSource`, and how to check a
+   * value against one.
+   *
+   * A function and never an address: for a real source this is a database query, not
+   * a request to somewhere a form author typed. Shipping an HTTP adapter here would
+   * add outbound-request and confused-deputy surface to a regulatory set that
+   * currently claims neither — for a convenience nobody asked for.
+   *
+   * Absent entirely means this deployment has no vocabulary: publishing cannot be
+   * judged against it, and no submission is checked. Present but without `members`
+   * for a name means *this source exists and I cannot check membership* — a
+   * legitimate configuration, and the reason the guarantee is written down.
+   */
+  optionsSources?: ServerOptionsSources
 }
 
 export type PublishOutcome =
@@ -45,6 +62,8 @@ export type PublishOutcome =
   | { ok: false; kind: 'invalid_schema'; errors?: SchemaError[] }
   | { ok: false; kind: 'invalid_logic'; message: string }
   | { ok: false; kind: 'unsafe_pattern'; patterns: UnsafePattern[] }
+  /** The document names a list this deployment has never heard of. */
+  | { ok: false; kind: 'unknown_options_source'; sources: string[] }
 
 /**
  * Publish a schema as a form's next version.
@@ -96,6 +115,19 @@ export async function publishForm(
       kind: 'unsafe_pattern',
       patterns: unsafe,
     }
+  }
+
+  // The source names a document uses, checked against the vocabulary this deployment
+  // actually has — but only when it HAS one. With no `optionsSources` configured the
+  // server cannot judge, so publishing is allowed and the audit detail records the
+  // names, which is what lets an operator compare them with their configuration.
+  //
+  // Caught here rather than at the first submission, because a published version is
+  // frozen forever: a form naming a list nobody can resolve is a form whose select
+  // renders a message instead of a chooser, and nothing would have said so.
+  if (deps.optionsSources !== undefined) {
+    const unknown = sourceNamesIn(schema).filter((name) => deps.optionsSources?.[name] === undefined)
+    if (unknown.length > 0) return { ok: false, kind: 'unknown_options_source', sources: unknown }
   }
 
   const hash = schemaHash(schema)
@@ -197,6 +229,14 @@ export type SubmissionOutcome =
   | { ok: false; kind: 'invalid'; errors: Record<string, string[]> }
   /** The caller may not submit this form: not public, or not from this origin. */
   | { ok: false; kind: 'forbidden' }
+  /**
+   * A source that should have vouched for an answer could not.
+   *
+   * Failed closed and never accepted unchecked: a bogus value that is stored is
+   * undetectable afterwards, while a refusal is retryable and the draft still holds
+   * the answers.
+   */
+  | { ok: false; kind: 'source_unavailable'; source: string }
 
 /**
  * Accept one submission: resolve the version the client says it rendered,
@@ -263,6 +303,17 @@ export async function createSubmission(
   })
   const outcome = engine.submit()
   if (!outcome.ok) return { ok: false, kind: 'invalid', errors: outcome.errors }
+
+  // Asked AFTER the engine and BEFORE anything is written, so a refusal stores
+  // nothing. The engine cannot do this itself: a `optionsSource` field has no
+  // document options to compare against, which is exactly what naming a source
+  // means.
+  const membership = await checkMembership(current.schema, engine.value(), deps.optionsSources)
+  if (!membership.ok) {
+    return membership.kind === 'invalid'
+      ? { ok: false, kind: 'invalid', errors: membership.errors }
+      : { ok: false, kind: 'source_unavailable', source: membership.source }
+  }
 
   const id = deps.newId()
 

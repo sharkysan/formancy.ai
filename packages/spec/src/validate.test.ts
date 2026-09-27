@@ -458,3 +458,116 @@ describe('span, which places a node across a table\u2019s columns', () => {
     expect(validateSchema(withTable(() => {})).valid).toBe(true)
   })
 })
+
+/**
+ * `optionsSource` — a select whose answers come from the deployment.
+ *
+ * The document says WHICH list; the deployment says WHERE. Never an address: a
+ * URL in a form document is a deployment detail in a portable format, so the
+ * same form moved from staging to production would point at the wrong system —
+ * and a published version is frozen forever, so it could never be corrected. It
+ * is also attacker-influenceable, and a self-hosted instance sits inside a
+ * private network.
+ */
+describe('optionsSource', () => {
+  const sourced = (edit: (field: Record<string, unknown>) => void): FormSchema =>
+    revise((draft) => {
+      draft.specVersion = '2'
+      const field: Record<string, unknown> = {
+        key: 'canton',
+        type: 'select',
+        label: 'Canton',
+        optionsSource: 'cantons',
+      }
+      edit(field)
+      draft.model.fields = [field as unknown as FieldDef]
+    })
+
+  test('a select may name a source instead of listing its answers', () => {
+    expect(validateSchema(sourced(() => {})).valid).toBe(true)
+  })
+
+  test('refuses a field that both lists options and names a source', () => {
+    // Two answers to "what may be chosen" and no rule for which wins. The schema
+    // refuses it with `not: { required: [options, optionsSource] }`; this message
+    // exists because ajv's phrasing for a failed `not` is "must NOT be valid", which
+    // tells an author nothing about what they did.
+    const error = onlyError(
+      validateSchema(
+        sourced((field) => {
+          field['options'] = [{ value: 'ZH', label: 'Zürich' }]
+        }),
+      ),
+    )
+    expect(error.message).toContain('remove the list')
+  })
+
+  test('refuses a name that is not a name', () => {
+    // A bounded, lower-case, hyphenated word: enumerable in a deployment's
+    // configuration, greppable across published versions, and unmistakably not an
+    // address — which is the property the whole design rests on.
+    for (const bad of ['https://example.test/cantons', 'Cantons', '', 'a b']) {
+      expect(validateSchema(sourced((field) => (field['optionsSource'] = bad))).valid, bad).toBe(
+        false,
+      )
+    }
+  })
+
+  test('accepts the shapes a deployment would actually configure', () => {
+    for (const good of ['cantons', 'sap-cost-centres', 'people2']) {
+      expect(validateSchema(sourced((field) => (field['optionsSource'] = good))).valid, good).toBe(
+        true,
+      )
+    }
+  })
+
+  test('only a select, because the other choosers have nothing to narrow', () => {
+    // A source returning a thousand rows renders a thousand radios. The multi-answer
+    // picker is foreclosed separately, and this does not un-foreclose it.
+    for (const type of ['radio', 'selectboxes', 'text']) {
+      const result = validateSchema(
+        sourced((field) => {
+          field['type'] = type
+          if (type !== 'text') field['options'] = undefined
+        }),
+      )
+      expect(result.valid, type).toBe(false)
+    }
+  })
+
+  test('needs version 2, and a version 1 reader refuses the whole document', () => {
+    // The schema is closed, so a version 1 reader answers `Unknown property
+    // "optionsSource"` and rejects everything rather than rendering a select with no
+    // options — which would be the same field quietly collecting nothing. Saying so
+    // here is the only place the author finds out: they cannot see that reader.
+    const error = onlyError(
+      validateSchema(
+        revise((draft) => {
+          draft.model.fields = [
+            { key: 'canton', type: 'select', optionsSource: 'cantons' } as unknown as FieldDef,
+          ]
+        }),
+      ),
+    )
+    expect(error.path).toBe('/model/fields/0/optionsSource')
+    expect(error.message).toContain('specVersion "2"')
+  })
+
+  test('a select that lists its options is exactly as valid as before', () => {
+    // The guard on the guard: a rule that refused the ordinary case would be caught
+    // here rather than by every other test going red at once.
+    expect(
+      validateSchema(
+        revise((draft) => {
+          draft.model.fields = [
+            {
+              key: 'canton',
+              type: 'select',
+              options: [{ value: 'ZH', label: 'Zürich' }],
+            } as unknown as FieldDef,
+          ]
+        }),
+      ).valid,
+    ).toBe(true)
+  })
+})

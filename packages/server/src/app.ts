@@ -330,6 +330,12 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
           return reply.code(422).send({ error: outcome.kind, patterns: outcome.patterns })
         case 'invalid_logic':
           return reply.code(422).send({ error: outcome.kind, message: outcome.message })
+        case 'unknown_options_source':
+          // The names, so an author can see which list this deployment has never
+          // heard of rather than being told no. A published version is frozen
+          // forever, so a form naming an unresolvable list would render a message
+          // instead of a chooser with nothing ever having said so.
+          return reply.code(422).send({ error: outcome.kind, sources: outcome.sources })
       }
     }
     return reply.code(201).send({ version: outcome.version, schemaHash: outcome.schemaHash })
@@ -920,6 +926,14 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
         // Deliberately says nothing about WHICH rule refused. "Not public" and
         // "not from your origin" are the same answer to someone probing.
         return reply.code(403).send({ error: 'forbidden' })
+      case 'source_unavailable':
+        // 503 and not 422: nothing about the submission is wrong, a list this
+        // deployment owns could not vouch for it. Retryable, and the draft still
+        // holds the answers — where accepting the value unchecked would store
+        // something nobody can detect afterwards.
+        return reply
+          .code(503)
+          .send({ error: 'source_unavailable', source: outcome.source })
     }
     },
   )

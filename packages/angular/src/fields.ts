@@ -21,6 +21,7 @@ import { FormancyRichText } from './rich-text.js'
 import { injectRichTextEditorFactory } from './rich-text-editor.js'
 import type { RichTextEditorHandle } from './rich-text-editor.js'
 import { injectScanner } from './scanning.js'
+import { injectSourcedOptions } from './sourced-options.js'
 import { injectUploader } from './uploads.js'
 import type { StoredFile } from './uploads.js'
 
@@ -74,7 +75,7 @@ abstract class FieldComponentBase {
   protected readonly context = injectFieldContext()
   protected readonly field = injectField(this.context.path)
   protected readonly control = computed(() => this.field.snapshot().props.control)
-  private readonly engine = injectEngine()
+  protected readonly engine = injectEngine()
 
   /**
    * Option labels resolved to strings, since a label may be a reference into
@@ -87,6 +88,45 @@ abstract class FieldComponentBase {
       label: this.engine.text(option.label) ?? option.value,
     })),
   )
+
+  /**
+   * What the control types into, when it has something to type into.
+   *
+   * A plain `<select>` never writes to it, so its source is asked for everything and
+   * shows what fits; the typeahead writes every keystroke.
+   */
+  protected readonly sourceQuery = signal('')
+
+  /** The remote half, or an inert one for the ordinary field that lists its options. */
+  protected readonly remote = injectSourcedOptions(
+    computed(() => {
+      const def = this.field.snapshot().def
+      return { key: def.key, ...(def.optionsSource === undefined ? {} : { optionsSource: def.optionsSource }) }
+    }),
+    computed(() => {
+      const value = this.field.snapshot().value
+      return typeof value === 'string' && value !== '' ? value : undefined
+    }),
+    this.sourceQuery,
+    () => this.engine.locale(),
+  )
+
+  /**
+   * The options to offer: the document's, or the deployment's.
+   *
+   * The stored answer is always offerable even when the current query does not match
+   * it — a control that dropped it would show an empty box over an answer the form
+   * holds, and the next blur would look like the person cleared it.
+   */
+  protected readonly offered = computed<ReadonlyArray<{ value: string; label: string }>>(() => {
+    if (!this.remote.sourced()) return this.options()
+    const rows = [...this.remote.rows()]
+    const stored = this.field.snapshot().value
+    if (typeof stored === 'string' && stored !== '' && !rows.some((row) => row.value === stored)) {
+      rows.unshift({ value: stored, label: this.remote.named().get(stored) ?? stored })
+    }
+    return rows
+  })
 }
 
 /**
@@ -515,6 +555,11 @@ export class FormancyDateTimeField extends FieldComponentBase {
  * the person's behalf, and `"both"` announces an inline completion that does not
  * exist. No `aria-haspopup`: `listbox` is the role's implicit popup.
  *
+ * While a source is being asked, the box carries `aria-busy` and is never disabled:
+ * disabling the element somebody just typed into blurs it, and the browser then
+ * resets focus to the document body — the same reason the scanner's button stays
+ * enabled while a scan is in flight.
+ *
  * `aria-selected` is on the CHOSEN option and nothing else. Following the arrow
  * keys with it tells a screen reader the answer changed every time somebody
  * pressed Down to read the next row.
@@ -569,6 +614,7 @@ export class FormancyDateTimeField extends FieldComponentBase {
           data-formancy-part="typeahead"
           autocomplete="off"
           aria-autocomplete="list"
+          [attr.aria-busy]="remote.busy() ? 'true' : null"
           [attr.aria-expanded]="expanded()"
           [attr.aria-controls]="listboxId()"
           [attr.aria-activedescendant]="activeId()"
@@ -596,7 +642,10 @@ export class FormancyDateTimeField extends FieldComponentBase {
       <!-- Present from the start and empty until there is something to say: a live
            region created at the moment it gets its text is one several screen
            readers never announce. -->
-      <p role="status" data-formancy-part="typeahead-empty">{{ emptyMessage() }}</p>
+      <!-- ONE region, four things it may say, and never the error region: a source
+           being down is not a wrong answer, and the error region is the control's
+           describedby target carrying the engine's verdict. -->
+      <p role="status" data-formancy-part="typeahead-status" [attr.data-state]="statusState()">{{ statusMessage() }}</p>
     </formancy-field-shell>
   `,
 })
@@ -620,8 +669,16 @@ export class FormancyTypeaheadSelect extends FieldComponentBase {
     return this.options().find((option) => option.value === value)
   })
 
+  /**
+   * A source is the AUTHORITY on what matches: it was handed the query, and
+   * re-folding its rows here would drop ones it matched on data the person cannot
+   * see. A host wanting fetch-once-filter-locally composes `narrowOptionsByLabel` in
+   * its own resolver, which is why that function lives in `@formancy/spec`.
+   */
   protected readonly matches = computed(() =>
-    narrowOptionsByLabel(this.options(), this.query() ?? ''),
+    this.remote.sourced()
+      ? this.offered()
+      : narrowOptionsByLabel(this.options(), this.query() ?? ''),
   )
 
   /** Collapsed whenever there is nothing on the screen, so `aria-expanded` never
@@ -647,9 +704,26 @@ export class FormancyTypeaheadSelect extends FieldComponentBase {
     return this.optionId(this.matches()[index]!.value)
   })
 
-  protected readonly emptyMessage = computed(() =>
-    this.open() && this.matches().length === 0 ? 'No options match' : '',
-  )
+  /**
+   * A source's own words win over "no options match": while a request is in flight,
+   * "nothing matched" is not yet true.
+   */
+  protected readonly statusMessage = computed(() => {
+    const fromSource = this.remote.status()
+    if (fromSource !== '') return fromSource
+    return this.open() && this.matches().length === 0 && !this.remote.busy()
+      ? 'No options match'
+      : ''
+  })
+
+  /** What the region is saying, as a word a theme can select on. */
+  protected readonly statusState = computed(() => {
+    if (this.remote.busy()) return 'busy'
+    const message = this.remote.status()
+    if (message.startsWith('The options could not')) return 'failed'
+    if (message !== '') return 'hint'
+    return this.open() && this.matches().length === 0 ? 'empty' : null
+  })
 
   /** One option's element id, in the shape the radio group already uses. */
   protected optionId(value: string): string {
@@ -657,7 +731,11 @@ export class FormancyTypeaheadSelect extends FieldComponentBase {
   }
 
   protected onInput(event: Event): void {
-    this.query.set((event.target as HTMLInputElement).value)
+    const typed = (event.target as HTMLInputElement).value
+    this.query.set(typed)
+    // What a source is asked for. A plain select never writes to this, so its source
+    // is asked for everything and shows what fits.
+    this.sourceQuery.set(typed)
     this.open.set(true)
     // Nothing is active on a keystroke: aria-activedescendant is ABSENT rather
     // than pointing at a row the person has not moved to.
@@ -758,6 +836,14 @@ export class FormancyTypeaheadSelect extends FieldComponentBase {
            accessible name, same stored answer. The registry still wins over both
            branches, because it replaces the component. -->
       <formancy-typeahead-select />
+    } @else if (remote.unavailable()) {
+      <!-- The document names a source this deployment does not have. Unlike a missing
+           scanner this costs the whole field -- a select with no options collects
+           nothing -- so it says so where the chooser would be, exactly as the file
+           field does without an uploader. -->
+      <formancy-field-shell [field]="field" [label]="context.label" [path]="context.path">
+        <p data-formancy-part="options-unavailable">This field's answers come from "{{ sourceName() }}", which this application has not provided.</p>
+      </formancy-field-shell>
     } @else {
     <formancy-field-shell [field]="field" [label]="context.label" [path]="context.path">
       <select
@@ -775,16 +861,25 @@ export class FormancyTypeaheadSelect extends FieldComponentBase {
              heard about. Selectedness is bound per option because a select's
              value property is only settable once its options exist. -->
         <option value="" [selected]="selected() === ''"></option>
-        @for (option of options(); track option.value) {
+        @for (option of offered(); track option.value) {
           <option [value]="option.value" [selected]="selected() === option.value">{{ option.label }}</option>
         }
       </select>
+      <!-- Only a sourced select has anything to say: how many rows were left out, or
+           that the source could not be reached. Never the error region, which carries
+           the engine's verdict -- a source being down is not a wrong answer. -->
+      @if (remote.sourced()) {
+        <p role="status" data-formancy-part="select-status">{{ remote.status() }}</p>
+      }
     </formancy-field-shell>
     }
   `,
 })
 export class FormancySelectField extends FieldComponentBase {
   protected readonly typeahead = computed(() => this.field.snapshot().def.widget === 'typeahead')
+
+  /** The name the document gave, for the message when this deployment has no such source. */
+  protected readonly sourceName = computed(() => this.field.snapshot().def.optionsSource ?? '')
 
   protected readonly selected = computed(() => {
     const value = this.field.snapshot().value

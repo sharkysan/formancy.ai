@@ -354,7 +354,7 @@ describe('a select with the typeahead widget', () => {
 
     // The status region is a sibling of the anchor, not a child of it.
     const field = control.closest('[data-formancy-part="field"]')
-    expect(field?.querySelector('[data-formancy-part="typeahead-empty"]')?.parentElement).toBe(field)
+    expect(field?.querySelector('[data-formancy-part="typeahead-status"]')?.parentElement).toBe(field)
   })
 
   test('marks the chosen option selected and the arrowed-over one only active', () => {

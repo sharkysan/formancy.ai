@@ -16,6 +16,7 @@ import {
 } from './rich-text-editor.js'
 import type { RichTextEditorFactory, RichTextEditorHandle } from './rich-text-editor.js'
 import { useScanner } from './scanning.js'
+import { useSourcedOptions } from './use-sourced-options.js'
 import { useUploader } from './uploads.js'
 import type { StoredFile } from './uploads.js'
 
@@ -789,13 +790,35 @@ function useResolvedOptions(field: { def: FieldDef }): Array<{ value: string; la
 
 function SelectField({ path, label }: FieldComponentProps) {
   const field = useField(path)
-  const options = useResolvedOptions(field)
-  // Both hooks run before the branch on purpose: the builder can set a widget on
+  // The query the plain control searches with is the empty one: a native select has
+  // nothing to type into, so it offers whatever the source returns for "everything",
+  // capped. A source with more rows than that is a source whose field wants the
+  // typeahead widget, and the status region says how many were left out.
+  // One hook, unconditionally: it hands back the document's own options when the
+  // field names no source, so there is no branch above a hook to reorder React's
+  // list the moment the builder sets one on a live document.
+  const sourced = useSourcedOptions(field, '', field.def.widget !== 'typeahead')
+  const options = sourced.options
+  // Every hook runs before the branch on purpose: the builder can set a widget on
   // a live document, and a branch above a hook would reorder React's hook list
   // the moment it did.
   if (field.def.widget === 'typeahead') {
-    return <TypeaheadSelectField path={path} label={label} field={field} options={options} />
+    return <TypeaheadSelectField path={path} label={label} field={field} />
   }
+
+  // The document names a source this deployment does not have. Unlike a missing
+  // scanner this costs the whole field -- a select with no options collects nothing
+  // -- so it says so where the chooser would be, exactly as the file field does.
+  if (sourced.remote?.unavailable === true) {
+    return (
+      <FieldShell path={path} field={field} label={label}>
+        <p data-formancy-part="options-unavailable">
+          {`This field's answers come from "${field.def.optionsSource ?? ''}", which this application has not provided.`}
+        </p>
+      </FieldShell>
+    )
+  }
+
   return (
     <FieldShell path={path} field={field} label={label}>
       {/* Setting `value` on the select works only because React applies it
@@ -818,6 +841,14 @@ function SelectField({ path, label }: FieldComponentProps) {
           </option>
         ))}
       </select>
+      {/* Only a sourced select has anything to say: how many rows were left out, or
+          that the source could not be reached. Never the error region, which carries
+          the engine's verdict — a source being down is not a wrong answer. */}
+      {sourced.remote === null ? null : (
+        <p role="status" data-formancy-part="select-status">
+          {sourced.remote.status}
+        </p>
+      )}
     </FieldShell>
   )
 }
@@ -857,14 +888,34 @@ function SelectField({ path, label }: FieldComponentProps) {
  * un-answering is always available, and a widget may not take it away. Clearing the
  * box and leaving clears the answer.
  */
+/**
+ * What the status region is saying, as a word a theme can select on.
+ *
+ * Not the text: a theme that keyed off English prose would break in every other
+ * language the form is offered in.
+ */
+function statusState({
+  sourced,
+  open,
+  matches,
+}: {
+  sourced: { remote: { busy: boolean; status: string } | null }
+  open: boolean
+  matches: number
+}): string | undefined {
+  if (sourced.remote === null) return open && matches === 0 ? 'empty' : undefined
+  if (sourced.remote.busy) return 'busy'
+  if (sourced.remote.status.startsWith('The options could not')) return 'failed'
+  if (sourced.remote.status !== '') return 'hint'
+  return open && matches === 0 ? 'empty' : undefined
+}
+
 function TypeaheadSelectField({
   path,
   label,
   field,
-  options,
 }: FieldComponentProps & {
   field: FieldBinding
-  options: Array<{ value: string; label: string }>
 }) {
   /**
    * What is in the box while somebody types, or null when the box is simply
@@ -880,8 +931,18 @@ function TypeaheadSelectField({
    *  every keystroke and an index would point at a different row after one. */
   const [activeValue, setActiveValue] = useState<string | null>(null)
 
+  // The options, from the document or from the deployment. The query goes in so a
+  // source is asked what somebody is looking for rather than for everything.
+  const sourced = useSourcedOptions(field, query ?? '')
+  const options = sourced.options
+
   const chosen = options.find((option) => option.value === field.value)
-  const matches = narrowOptionsByLabel(options, query ?? '')
+  // A source is the authority on what matches: it was handed the query, and
+  // re-folding its rows here would drop ones it matched on data the person cannot
+  // see. A host that wants fetch-once-filter-locally composes `narrowOptionsByLabel`
+  // in its own resolver, which is why that function lives in `@formancy/spec`.
+  const matches =
+    sourced.remote === null ? narrowOptionsByLabel(options, query ?? '') : options
   /** Collapsed whenever there is nothing on the screen, so `aria-expanded` never
    *  claims a popup a person cannot see. */
   const expanded = open && matches.length > 0
@@ -994,6 +1055,12 @@ function TypeaheadSelectField({
           aria-expanded={expanded}
           aria-controls={listboxId}
           aria-autocomplete="list"
+          {...(sourced.remote?.busy === true
+            ? // Busy, never disabled: disabling the element somebody just typed into
+              // blurs it and the browser resets focus to the document body -- the same
+              // reason the scanner's button stays enabled while a scan is in flight.
+              { 'aria-busy': true }
+            : {})}
           {...(activeId === undefined ? {} : { 'aria-activedescendant': activeId })}
           value={query ?? chosen?.label ?? ''}
           onChange={(event) => {
@@ -1044,9 +1111,26 @@ function TypeaheadSelectField({
       </div>
       {/* Present from the start and empty until there is something to say: a live
           region created at the moment it gets its text is one several screen
-          readers never announce. */}
-      <p role="status" data-formancy-part="typeahead-empty">
-        {open && matches.length === 0 ? 'No options match' : ''}
+          readers never announce.
+
+          ONE region, and never the error region. A source being down is not a wrong
+          answer, and the error region is the control's `aria-describedby` target
+          carrying the engine's verdict — the same line the scanner draws.
+
+          A source's own words win over "no options match": while a request is in
+          flight, "nothing matched" is not yet true. */}
+      <p
+        role="status"
+        data-formancy-part="typeahead-status"
+        {...(statusState({ sourced, open, matches: matches.length }) === undefined
+          ? {}
+          : { 'data-state': statusState({ sourced, open, matches: matches.length }) })}
+      >
+        {sourced.remote !== null && sourced.remote.status !== ''
+          ? sourced.remote.status
+          : open && matches.length === 0 && sourced.remote?.busy !== true
+            ? 'No options match'
+            : ''}
       </p>
     </FieldShell>
   )

@@ -97,6 +97,17 @@ function versionErrors(
       }
     }
 
+    // Same reasoning as `widget` above: a property, not a type, and the schema is
+    // closed, so a version 1 reader answers `Unknown property "optionsSource"` and
+    // refuses the whole document rather than rendering a select with no options --
+    // which would be the same field quietly collecting nothing.
+    if (field.optionsSource !== undefined) {
+      errors.push({
+        path: `${path}/optionsSource`,
+        message: `An "optionsSource" needs specVersion "2". This document says "1". Change it to "2" — everything already in the document keeps working, because version 2 only adds.`,
+      })
+    }
+
     if (spec1Types.has(field.type)) continue
     errors.push({
       path: `${path}/type`,
@@ -595,6 +606,18 @@ function pathOf(error: ErrorObject): string {
 
 function messageFor(error: ErrorObject, allErrors: ErrorObject[], document: unknown): string {
   switch (error.keyword) {
+    case 'false schema':
+      // ajv says "Boolean schema is false", which tells an author nothing. The one
+      // forbidden property in this schema is `options` on a field that also names an
+      // `optionsSource`: two answers to "what may be chosen", with no rule for which
+      // wins. Expressed that way rather than as a `not` around the pair, because a
+      // `not` inside the branch that DECLARES `optionsSource` makes the branch fail as
+      // a whole -- and `unevaluatedProperties` then reports the property as unknown,
+      // telling the author to check the spelling of a word they spelled correctly.
+      return error.instancePath.endsWith('/options')
+        ? 'This field both lists its options and names a source for them, and there is no rule for which wins. Keep the list, or keep the source and remove the list.'
+        : 'This is not allowed here.'
+
     case 'type': {
       const type = stringParam(error, 'type') ?? 'something else'
       return `Must be ${READABLE_TYPES[type] ?? type}.`

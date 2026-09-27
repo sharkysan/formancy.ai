@@ -321,6 +321,12 @@ optional · one of `"typeahead"`
 
 **Widget.** How this field should look. Presentation only: it never changes what the field collects or what is stored. Leave it out for the default control. Let somebody type to narrow the options instead of scrolling them. The answer is still one of the options offered.
 
+##### `optionsSource`
+
+optional · string · min length 1 · max length 64 · pattern `^[a-z][a-z0-9-]*$`
+
+**Options source.** Where this field's answers come from, when there are too many to write into the form or they change too often. This is a NAME the deployment resolves to a list — never an address: the form never says where to look, so moving it between staging and production changes nothing here. The value that gets stored is a code only that source can decode, and a published version is frozen forever, so it has to still mean the same thing in a year. Leave it out and the field offers the options written above.
+
 #### `text`
 
 ##### `widget`
@@ -385,6 +391,12 @@ optional · string · pattern `^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5
 optional · string · pattern `^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\dZ$`
 
 **Latest allowed.** The latest date and time this field accepts, inclusive, written exactly as an answer is: 2026-09-19T08:00:00Z. A fixed value, not an expression and not the current date and time — a bound that moved with the clock would let the same submission pass in the browser and fail on the server. For "must be in the future", write a rule.
+
+#### `select`
+
+##### `options`
+
+optional · value
 
 ## Logic rules
 

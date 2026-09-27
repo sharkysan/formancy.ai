@@ -91,6 +91,22 @@ export const STARTER_SCHEMA = {
         ],
       },
 
+      // `optionsSource`: a select whose answers come from the DEPLOYMENT rather than
+      // from the document. The form says WHICH list — a name, never an address — and
+      // `app.tsx` says what that name means. A URL here would be a deployment detail
+      // in a portable format, unfixable once a version is published, and an SSRF
+      // surface on an instance inside a private network.
+      //
+      // With the typeahead, because that is the case it exists for: a list too long
+      // to write down and too long to scroll.
+      {
+        key: 'deliveryPoint',
+        type: 'select',
+        label: { $t: 'deliveryPoint' },
+        widget: 'typeahead',
+        optionsSource: 'pickup-points',
+      },
+
       // The same construct as `items` above, with `widget: 'datagrid'`. Three short
       // answers per row, deliberately: a grid earns its keep when the columns line up
       // and the values are narrow enough to scan down, and it earns nothing when four
@@ -292,6 +308,7 @@ export const STARTER_SCHEMA = {
                   children: [
                     { kind: 'field', path: 'extras' },
                     { kind: 'field', path: 'cardLanguage' },
+                    { kind: 'field', path: 'deliveryPoint' },
                     { kind: 'field', path: 'message', span: 'all' },
                     { kind: 'field', path: 'artwork', span: 'all' },
                   ],
@@ -372,6 +389,7 @@ export const STARTER_SCHEMA = {
         emailCode: 'Your email as a code',
         confirmedAt: 'Confirmed at',
         items: 'Items',
+        deliveryPoint: 'Where to collect it',
         recipients: 'Who the cards are for',
         'recipients.who': 'Recipient',
         'recipients.amount': 'Amount',
@@ -417,6 +435,7 @@ export const STARTER_SCHEMA = {
         emailCode: 'Ihre E-Mail als Code',
         confirmedAt: 'Bestätigt am',
         items: 'Positionen',
+        deliveryPoint: 'Wo abholen',
         recipients: 'Für wen die Karten sind',
         'recipients.who': 'Empfängerin',
         'recipients.amount': 'Betrag',
@@ -457,6 +476,7 @@ export const STARTER_SCHEMA = {
         postcode: 'Code postal',
         city: 'Localité',
         items: 'Postes',
+        deliveryPoint: 'Où le retirer',
         recipients: 'Pour qui sont les cartes',
         'recipients.who': 'Destinataire',
         'recipients.amount': 'Montant',
