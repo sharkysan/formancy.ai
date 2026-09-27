@@ -88,6 +88,43 @@ const capabilities = [
   },
 ] as const
 
+describe('the spec version the documents name', () => {
+  test('is the one the code implements', () => {
+    // The landing page said "The schema spec is at `specVersion: \"2\"`" beside
+    // "They are on npm ... at `0.1.0`", while both quickstarts said the schema is
+    // frozen at version 1. The quickstarts were right: the released 0.1.0 predates
+    // spec versioning and its schema pins specVersion to `{ "const": "1" }`, so it
+    // does not ignore a version 2 document, it refuses it. A reader following the
+    // landing page installed from npm and could not write the version it named.
+    //
+    // What is guarded is the half that IS derivable. Whether a version has been
+    // released depends on npm and on git tags, which CI does not fetch -- a check
+    // of that would answer differently in CI than locally, which is not a gate. But
+    // the version the code implements is right here, and a landing page naming a
+    // different one is always wrong. Bump CURRENT_SPEC_VERSION without touching the
+    // page and this fails.
+    const types = readFileSync(
+      join(repo, 'packages', 'spec', 'src', 'types.ts'),
+      'utf8',
+    )
+    const current = /CURRENT_SPEC_VERSION: SpecVersion = '(\d+)'/.exec(types)?.[1]
+    expect(current, 'could not read CURRENT_SPEC_VERSION').toBeDefined()
+
+    const landing = liveDocuments().find(({ name }) => name.endsWith(join('docs', 'index.md')))
+    expect(landing, 'the landing page was not found').toBeDefined()
+
+    const named = [...(landing?.text ?? '').matchAll(/specVersion: ?.?"(\d+)"/g)].map((m) => m[1])
+    // A guard on the guard: a page that named no version would pass forever.
+    expect(named.length).toBeGreaterThan(0)
+    // `toContain`, not equality: the page legitimately names two versions right
+    // now -- the one the code implements, and the one a reader must actually write
+    // because the released package refuses the newer one. What must hold is that
+    // the implemented version appears at all, so bumping the code without touching
+    // the page fails here.
+    expect(named).toContain(current)
+  })
+})
+
 describe('what the documents say the server cannot do', () => {
   test.each(capabilities)('$what exists, so nothing denies it', ({ evidence, denied }) => {
     // The guard on the guard, per capability: an assertion about a file that is

@@ -10,6 +10,23 @@ later.
 
 ## Unreleased
 
+**Fixed: the landing page offered a spec version no released package speaks.** It
+said the schema spec is at `specVersion: "2"` in the same paragraph as "They are on
+npm … at `0.1.0`", while both quickstarts said the schema is frozen at version 1.
+The quickstarts were right. `0.1.0` predates spec versioning entirely — its
+`formancy.schema.json` pins `"specVersion"` to `{ "const": "1" }` — so it does not
+ignore a version 2 document, it **refuses** it. A reader who followed the landing
+page installed from npm and could not write the version it named.
+
+The page now says version 2 is implemented here and arrives with the next release,
+and points at the quickstarts for what to write today.
+
+`apps/docs/src/claims.test.ts` guards the half that is derivable: the landing page
+must name the version `CURRENT_SPEC_VERSION` implements, so bumping the code without
+touching the page fails. Whether a version has been *released* depends on npm and on
+git tags, which CI does not fetch — a check of that would answer differently in CI
+than locally, which is not a gate.
+
 **Uploaded bytes can live in an S3-compatible object store.** Local disk was the
 only implementation of `FileStore`, and its ceiling is one replica: two containers
 with two volumes each accept uploads the other cannot serve, so a file is
