@@ -74,6 +74,20 @@ test anything — the repository's ordinary test-first rule
 ([`LIFECYCLE.md`](docs/regulatory/LIFECYCLE.md)) — and guards are the tests most
 likely to be written green and to stay that way for the wrong reason.
 
+Watching it fail once is necessary and not sufficient. Both of these have happened
+here:
+
+- **A guard that passes for the wrong reason.** A documentation check matched the
+  prose for a phrase like "not released". Reverting the fix left that phrase
+  elsewhere in the paragraph, so it passed — green, and asserting nothing.
+  **Derive the fact from the code or the data, never from wording.**
+- **A guard that cannot run where it matters.** The documentation link check sat for
+  weeks in a script no workflow ran, so it fired on the hosting provider after merge
+  instead of on the pull request before it. **A guard that is not a gate is a
+  comment.** Equally, a check needing git tags or the network answers differently in
+  CI than locally, because `actions/checkout` fetches neither — also not a gate, and
+  there the honest move is prose with a date rather than a test that lies.
+
 ## Measure before you write a number
 
 Numbers here are measured, not estimated. The proof-of-work challenge was
@@ -98,18 +112,82 @@ another say "supersedes #N" in the description rather than stacking on it.
 Before pushing to a branch you have been away from, check that its pull request
 is still open — a commit pushed onto an already-merged branch goes nowhere.
 
+**Commit as `Daniel Bacher <dbacher@gmail.com>`**, never
+`daniel.bacher@ergon.ch`.
+
+**No tool attribution.** No "Generated with Claude Code" line or session link in
+pull request descriptions, and no `Co-Authored-By: Claude` or `Claude-Session`
+trailers in commits. The author is the person above.
+
+## Tests, and what the bar actually is
+
+**Coverage is reported, not gated.** There is no threshold in
+`vitest.coverage.ts` and none is wanted: a percentage is a number somebody can
+raise without raising confidence, and the exclusions in that file — barrels,
+composition roots, generated code — exist so the figure means something rather
+than so it looks good. The bar is not a number. It is this:
+
+- **New behaviour arrives with a test that fails without it.** Test-first, and the
+  failure observed — [`LIFECYCLE.md`](docs/regulatory/LIFECYCLE.md) is the rule,
+  this is the reminder.
+- **Every case says which failure it prevents**, in a comment, in the same voice as
+  the code. "tests the happy path" is not that; "a rule that errors fails open and
+  shows the field it was meant to hide" is.
+- **A code path no test reaches is a claim nobody checked.** If it is hard to
+  reach, that is usually the design saying something — listen to it before
+  reaching for a mock.
+- Run `pnpm test:coverage` for what you changed and read the report. A file whose
+  number dropped is the question, not the failure.
+
+### When the test is wrong and the code is right
+
+It happens often enough to expect it. Six times here the defect was the guard's own
+regular expression, not the thing it guarded — most recently `[A-Z_]+`, which stops
+at the digit in `FORMANCY_S3_BUCKET` and collapsed five variable names into one
+meaningless match. **Match the whole property, not the shape it usually has**, and
+when a test disagrees with the code, work out which is wrong before changing either.
+
+## Some files are generated, and editing them is silently undone
+
+Prose written into a generated file survives until the next build. It has happened:
+a hand-written table in the spec reference was overwritten, and the change looked
+merged.
+
+- **`apps/docs/src/content/docs/reference/spec.md`** — generated from
+  `packages/spec/formancy.schema.json` by `apps/docs/scripts/generate-spec-reference.mjs`.
+  The durable place for that prose is the schema's own `title` and `description`,
+  which is also where the builder's property panel reads it from. Two readers, one
+  source.
+- **`packages/spec/src/generated/document-validator.js`** — compiled from the schema
+  by `packages/spec/scripts/generate-validator.mjs`, because ajv compiling at runtime
+  needs code generation and the product documents a strict CSP. Run it after every
+  schema change; `csp.test.ts` fails on a stale stamp.
+
+If a generated page cannot express something, teach the generator — and make it
+**throw** on input it has no vocabulary for rather than emit something malformed. A
+block gated on a widget rather than a field type published an empty heading for
+exactly that reason.
+
 ## Checks before pushing
 
-CI runs `pnpm build`, `pnpm typecheck`, `pnpm test:coverage` and
-`pnpm check:pkg`. Run the ones for the packages you changed. The server's
-integration tests need Docker and run in CI.
+CI runs `pnpm build`, `pnpm build:web`, `pnpm typecheck`, `pnpm test:coverage`
+and `pnpm check:pkg`. Run the ones for the packages you changed.
+
+`build:web` is not redundant with `build`: it composes the landing page, the
+playground and the docs under one origin, and it carries the check for
+root-absolute documentation links, which resolve against the landing page rather
+than `/docs/`, build cleanly and 404 in production.
+
+The server's integration tests need Docker and run in CI — real PostgreSQL, and
+real Garage for the object store.
 
 ## Conventions that live elsewhere
 
 Do not restate these here; go and read them.
 
 - **Test-first, failure observed**, and the verification gates —
-  [`LIFECYCLE.md`](docs/regulatory/LIFECYCLE.md).
+  [`LIFECYCLE.md`](docs/regulatory/LIFECYCLE.md). What that means in practice is
+  above, under *Tests*.
 - **Layering: what may import what**, and why the isomorphic packages have no
   `@types/node`, so a Node import in `core` is a compile error rather than a
   review finding — [0008](docs/decisions/0008-layered-packages.md).
