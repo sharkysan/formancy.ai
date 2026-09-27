@@ -49,11 +49,15 @@ describe('paletteEntries', () => {
   test('what a version 1 document is missing is named, so the builder can offer the upgrade', () => {
     // A shorter palette with no explanation reads as a broken builder. The
     // document needs upgrading, and that is something the builder can do.
-    expect(typesNeedingUpgrade('1').map((entry) => entry.type)).toEqual([
-      'selectboxes',
-      'file',
-      'richtext',
-    ])
+    // Derived from the spec's own lists rather than transcribed. The literal was
+    // `['selectboxes', 'file', 'richtext']`, and it broke on the branch that added
+    // `time` and `datetime` -- correctly, but for no useful reason: this test is
+    // about the builder NAMING what is missing, not about which types happen to be
+    // version 2 today. Every branch that adds a type would otherwise edit this line.
+    const expected = FIELD_TYPES.filter((type) => !SPEC_1_FIELD_TYPES.includes(type))
+    expect(typesNeedingUpgrade('1').map((entry) => entry.type)).toEqual([...expected])
+    // A guard on the guard: an empty expectation would pass forever.
+    expect(expected.length).toBeGreaterThan(0)
     expect(typesNeedingUpgrade('2')).toEqual([])
   })
 })
