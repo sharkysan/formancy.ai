@@ -10,6 +10,40 @@ later.
 
 ## Unreleased
 
+**`widget: "datagrid"` on a repeater is built** — rows drawn as a grid whose columns line
+up, in both renderers ([0075](docs/decisions/0075-a-datagrid-is-drawn-not-tabulated.md)).
+It was the last widget the spec named and no renderer honoured, and the playground's
+"not demonstrated yet" list is now **empty** for the first time.
+
+**Generic elements and CSS grid, not a `<table>` and not `role="grid"`**, and the first
+half of that was measured rather than argued: against the accessible-name implementation
+this repository installs, a `<th scope="col">` contributes **nothing** to the name of a
+control in its column, and neither does a `headers=` target. A clipped `<label>` does. So
+the table earns no name for its cells, the per-cell label has to stay either way, and the
+table would only add a header echo on every cell plus obligations this repository's axe
+configuration does not even check — `td-has-header` is tagged `experimental` and does not
+run under the tag list in use.
+
+What the table would have bought is real and is not pretended away: coordinates, and the
+heading announced on cell navigation. A screen reader user hears the same sequence as in
+the block rendering and learns a row's position on reaching that row's buttons.
+
+`role="grid"` is refused for the reason `toggle` is not `role="switch"` — a role is not
+paint — and because the arrow keys are already owned cell by cell: a `select` with
+`widget: "typeahead"` is legal in a row and claims Up, Down, Home, End, Enter and Escape.
+
+**Six new parts for a theme to style**, and two contracts that come with them. The cell
+labels are **clipped**, never `display: none` or `visibility: hidden`: both of those
+compute a control's accessible name to `""`, so a theme tidying them away that way would
+silently unname every control in the grid. And rows take the container's tracks with
+`subgrid`, which is what keeps the columns true across rows; verified in Chrome, **not
+verified in Firefox or Safari here**.
+
+**The column plan lives in `@formancy/spec`**, not in each renderer, for the reason the
+typeahead's filter does: a grid that ordered its columns one way in React and another in
+Angular would be two forms from one document, and each renderer's tests would be green
+against its own ordering.
+
 **A table child may span its grid** — `span: 'all'` or `span: <n>` on a layout node inside a
 `table` ([0074](docs/decisions/0074-a-table-child-may-span.md)). Reported against the
 playground, where a rich text editor and a file dropzone sat at **266px against 548px** for

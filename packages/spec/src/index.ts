@@ -18,6 +18,8 @@ export {
   TEMPORAL_SHAPES,
   WIDGETS_BY_FIELD_TYPE,
 } from './types.js'
+export { belongsToColumn, datagridColumns } from './datagrid.js'
+export type { DataGridColumnPlan } from './datagrid.js'
 export { foldForMatch, narrowOptionsByLabel } from './typeahead.js'
 export { upgradeSpecVersion } from './upgrade.js'
 export { isSafeHref, parseRichText, richTextToPlain } from './richtext.js'

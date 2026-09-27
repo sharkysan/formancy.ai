@@ -41,6 +41,7 @@
     "@types/react-dom": "^19.3.0",
     "@vitest/coverage-v8": "catalog:",
     "axe-core": "catalog:",
+    "dom-accessibility-api": "^0.5.16",
     "jsdom": "^30.1.0",
     "publint": "catalog:",
     "react": "^19.3.0",

@@ -175,3 +175,4 @@ listed under the sections they belong to above.
 | [0072](0072-a-typeahead-is-a-combobox-over-the-same-answer.md) | A typeahead is a combobox over the same answer | accepted |
 | [0073](0073-a-host-element-is-not-a-layout.md) | A host element is not a layout | accepted |
 | [0074](0074-a-table-child-may-span.md) | A table child may span | accepted |
+| [0075](0075-a-datagrid-is-drawn-not-tabulated.md) | A datagrid is drawn, not tabulated | accepted |
