@@ -25,7 +25,8 @@
   },
   "dependencies": {
     "@formancy/core": "workspace:*",
-    "@formancy/spec": "workspace:*"
+    "@formancy/spec": "workspace:*",
+    "uqr": "^0.1.3"
   },
   "peerDependencies": {
     "react": "^19.0.0",

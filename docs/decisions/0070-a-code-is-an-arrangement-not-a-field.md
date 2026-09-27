@@ -1,5 +1,21 @@
 # 0070 — A code is an arrangement, not a field
 
+> **Partly reversed: a code node now draws a code.** This record argued that shipping no
+> encoder was the right trade, and the argument was about cost rather than about value —
+> which meant it lost the moment a visible code was asked for. `uqr` is MIT, has no
+> dependencies, is 6.6 kB brotli, and the build leaves it external so a consumer without a
+> code node pays nothing for it in their bundle.
+>
+> What survives unchanged is the part that was never about the encoder: **the picture is
+> decoration and the value is the content.** The SVG is `aria-hidden` and the value stays on
+> the page as real text, because a picture of a code says nothing to a screen reader and an
+> `alt` of "QR code" says nothing either. And the drawing is built from the encoder's matrix
+> rather than with its own `renderSVG`, which emits `fill="white"` and `fill="black"` — a
+> renderer choosing colours is what [0004](0004-headless-core.md) exists to prevent.
+>
+> The mechanism decision — a layout node rather than a field type or a widget — is
+> untouched, and is what the rest of this record is about.
+
 - **Status:** accepted
 - **Date:** 2026-09-27
 - **Deciders:** Daniel Bacher
@@ -72,16 +88,17 @@ next childless node is a one-line change. That refactor is the only reason it be
 same commit as the feature: shipping the node without it would leave thirteen latent
 `undefined` reads for somebody else to find.
 
-**There is no QR encoder, and the renderers say so by showing the value.** Encoding a code
-is a matrix, mask patterns and Reed–Solomon error correction — about 10 kB minified for the
-smallest honest implementation, in a package whose budget is 4 kB brotli, and a row in
-`SOUP-DECLARATION.md` for every consumer including the Node engine, to draw something a
-design system may want to draw its own way.
+~~**There is no QR encoder, and the renderers say so by showing the value.**~~ **Reversed;
+see the note at the top.** The cost was real and was priced correctly — an encoder is a
+dependency, and one that draws something a design system may want to draw itself. What this
+paragraph got wrong was treating that as decisive: a code node that shows no code is a
+feature named after something it does not do, and the whole point of the construct is that
+somebody can scan it.
 
-So the renderer emits the value as real text plus `data-formancy-part` hooks, and a consumer
-who wants the picture registers a component — the registry already replaces any part of a
-form. **Out of the box a code node shows the value and no code.** That is a usable form with
-a visible gap, which is the right way round; drawing a broken picture would be neither.
+Measured rather than estimated, which is what changed the answer: `uqr` is 6.6 kB brotli,
+not the ~10 kB this paragraph guessed, has **no dependencies**, and is left external by the
+build — so the barrel grew 0.4 kB for the drawing component and a consumer with no code node
+pays nothing. The registry still replaces the drawing for anybody who wants their own.
 
 **The accessible content is the value, not the picture**, and that is not a workaround for
 the missing encoder — it is the correct design either way. A picture of a code says nothing

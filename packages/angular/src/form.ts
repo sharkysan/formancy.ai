@@ -18,6 +18,7 @@ import {
   viewChildren,
 } from '@angular/core'
 import type { ComponentRef, OnChanges, OnDestroy, OnInit, Signal, Type } from '@angular/core'
+import { encode } from 'uqr'
 import { parsePath } from '@formancy/core'
 import type { FieldSnapshot } from '@formancy/core'
 import { resolveText, LAYOUT_LEAF_KINDS, layoutChildren} from '@formancy/spec'
@@ -426,6 +427,27 @@ export class FormancyTabs {
       @if (label(); as caption) {
         <span data-formancy-part="code-label">{{ caption }}</span>
       }
+      <!-- The drawing. Decorative: aria-hidden, because a picture of a code says nothing
+           to a screen reader and an alt of "QR code" says nothing either. The value below
+           is the content.
+           Drawn from the encoder's matrix rather than with its own renderSVG, which emits
+           white and black fills: a renderer shipping colours is the thing this project
+           exists to avoid, so the modules use currentColor and the light ones are absent.
+           Nothing is drawn for an empty answer -- an empty string encodes to a valid code,
+           and a scannable picture of nothing is worse than no picture. -->
+      @if (drawing(); as code) {
+        <svg
+          data-formancy-part="code-drawing"
+          [attr.viewBox]="'0 0 ' + code.size + ' ' + code.size"
+          aria-hidden="true"
+          focusable="false"
+          shape-rendering="crispEdges"
+        >
+          @for (module of code.modules; track module.key) {
+            <rect [attr.x]="module.x" [attr.y]="module.y" width="1" height="1" fill="currentColor" />
+          }
+        </svg>
+      }
       <output data-formancy-part="code-value">{{ text() }}</output>
     </div>
   `,
@@ -477,6 +499,27 @@ export class FormancyCode implements OnInit {
     const value = this.value()
     if (typeof value === 'string') return value
     return value === null || value === undefined ? '' : String(value)
+  })
+
+  /**
+   * The modules of the code, or undefined when there is nothing to encode.
+   *
+   * One rect per dark module rather than one path: a rect carries its own fill, so a theme
+   * can address them, and the count is bounded by the version (a version 1 code is 23×23).
+   * `track module.key` so Angular reuses rects across a redraw rather than rebuilding the
+   * whole picture on every keystroke.
+   */
+  protected readonly drawing = computed(() => {
+    const value = this.text()
+    if (value === '') return undefined
+    const { size, data } = encode(value)
+    const modules: Array<{ key: string; x: number; y: number }> = []
+    for (const [row, cells] of data.entries()) {
+      for (const [column, dark] of cells.entries()) {
+        if (dark) modules.push({ key: `${String(row)}.${String(column)}`, x: column, y: row })
+      }
+    }
+    return { size, modules }
   })
 }
 

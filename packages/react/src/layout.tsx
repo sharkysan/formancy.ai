@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
 import type { FormSchema, LayoutNode } from '@formancy/spec'
 import { resolveText, LAYOUT_LEAF_KINDS, layoutChildren } from '@formancy/spec'
+import { encode } from 'uqr'
 import { useField } from './use-field.js'
 
 /**
@@ -377,10 +378,62 @@ function CodeNode({
   return (
     <div data-formancy-part="code" data-state={text === '' ? 'empty' : 'ready'}>
       {label === undefined ? null : <span data-formancy-part="code-label">{label}</span>}
+      {/* The drawing. Decorative: `aria-hidden`, because a picture of a code says nothing
+          to a screen reader and an `alt` of "QR code" says nothing either — the value
+          below is the content.
+
+          Built here rather than with `uqr.renderSVG`, which emits `fill="white"` and
+          `fill="black"`. A renderer shipping colours is the thing this project exists to
+          avoid, so the modules are drawn with `currentColor` and the light ones are simply
+          absent: a theme sets `color` and whatever is behind shows through.
+
+          Nothing is drawn for an empty answer. An empty string encodes to a perfectly
+          valid code, and a scannable picture of nothing is worse than no picture because
+          somebody would scan it. */}
+      {text === '' ? null : <CodeDrawing value={text} />}
       {/* The value, as text, always. A reader who cannot see the code reads this; a
           reader who can see one still has something to copy. */}
       <output data-formancy-part="code-value">{text}</output>
     </div>
+  )
+}
+
+/**
+ * The modules of a QR code as one SVG.
+ *
+ * `viewBox` in module units with a one-module quiet zone — four is the specification's
+ * recommendation and is drawn by the theme's padding instead, because a quiet zone baked
+ * into the picture is whitespace a design system cannot remove.
+ *
+ * One `<rect>` per dark module rather than one path: a rect carries its own `fill`, so a
+ * theme can address them, and the node count is bounded by the version (a version 1 code is
+ * 23×23).
+ */
+function CodeDrawing({ value }: { value: string }): ReactElement {
+  const { size, data } = encode(value)
+  const modules: ReactElement[] = []
+  for (const [row, cells] of data.entries()) {
+    for (const [column, dark] of cells.entries()) {
+      if (!dark) continue
+      modules.push(
+        <rect key={`${String(row)}.${String(column)}`} x={column} y={row} width={1} height={1} fill="currentColor" />,
+      )
+    }
+  }
+
+  return (
+    <svg
+      data-formancy-part="code-drawing"
+      viewBox={`0 0 ${String(size)} ${String(size)}`}
+      // Decoration. The value beside it is the content.
+      aria-hidden="true"
+      focusable="false"
+      // `shape-rendering` because a code scaled to a non-integer size gets antialiased
+      // seams between modules, and a scanner reads those as noise.
+      shapeRendering="crispEdges"
+    >
+      {modules}
+    </svg>
   )
 }
 

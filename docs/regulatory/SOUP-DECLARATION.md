@@ -88,8 +88,8 @@ not separately assessing `@formancy/spec`.
 | `@formancy/builder-core` | none |
 | `@formancy/builder-react` | none (React is a peer) |
 | `@formancy/conformance` | none |
-| `@formancy/react` | none (React is a peer) |
-| `@formancy/angular` | `tslib ^2.8.0` (Angular is a peer) |
+| `@formancy/react` | `uqr ^0.1.3` (React is a peer) |
+| `@formancy/angular` | `tslib ^2.8.0`, `uqr ^0.1.3` (Angular is a peer) |
 | `@formancy/server-core` | `@noble/hashes ^2.4.0`, `recheck ^4.5.0` |
 | `@formancy/server` | `@fastify/rate-limit ^11.2.0`, `@node-rs/argon2 ^2.2.1`, `drizzle-orm ^0.45.2`, `fastify ^5.12.5`, `jose ^6.2.12`, `postgres ^3.4.9`, `undici ^8.10.2` |
 | `@formancy/mcp` | `@modelcontextprotocol/sdk ^1.30.1`, `zod ^4.6.5` |
@@ -115,10 +115,29 @@ The dependency count is deliberately small, and the engine — the part that
 decides whether a submission is valid — has **no third-party runtime
 dependency at all**. So does `@formancy/core`'s whole layer: a manufacturer whose
 product renders forms and validates them, without the server or the rich-text
-editor, is assessing `ajv`, `@noble/hashes` and `@marcbachmann/cel-js` and
+editor, is assessing `ajv`, `@noble/hashes`, `uqr` and `@marcbachmann/cel-js` and
 nothing else.
 
 ### The dependencies to look at closely
+
+`uqr` draws a QR code. MIT, **zero dependencies**, 6.6 kB brotli measured
+2026-09-27, and it is reached only when a form contains a `qrcode` layout node — it is
+left external by the build rather than bundled, so a consumer with no code nodes pays
+for it in install size and not in their application bundle.
+
+**What is used of it is `encode` alone**, which returns a boolean matrix; its own
+`renderSVG` is deliberately not called, because it emits `fill="white"` and
+`fill="black"` and a renderer choosing colours is what
+[0004](../decisions/0004-headless-core.md) exists to prevent. That narrows the exposure
+to one pure function over a string, which is also the part a manufacturer can most
+easily satisfy themselves about.
+
+**The anomaly to be aware of is a wrong code rather than a crash.** A mis-encoded QR
+code is a picture that looks correct and does not scan, or scans to the wrong string.
+Nothing in this repository can detect that — the tests assert the matrix is drawn,
+its colours and its accessibility, not that a scanner reads it — so a deployment whose
+codes are load-bearing should scan one before relying on them. Stated because no test
+here covers it.
 
 `@marcbachmann/cel-js` evaluates every conditional and validation expression.
 It is MIT-licensed, zero-dependency and fast, and it has roughly 190 GitHub
