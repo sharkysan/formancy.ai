@@ -4,13 +4,19 @@ description: A self-hostable form engine, renderers and backend for React and An
 ---
 
 :::caution[Status: pre-alpha]
-formancy is pre-alpha software. The schema spec is at `specVersion: "2"`.
+formancy is pre-alpha software. **`specVersion: "2"` is implemented here and is
+not in any released package.** The packages on npm are at `0.1.0`, and that
+release predates spec versioning entirely: its schema pins `"specVersion"` to
+`{ "const": "1" }`, so `0.1.0` does not merely ignore a version 2 document — it
+refuses it. Version 2 arrives with the next release; until then, install from npm
+and write `specVersion: "1"`, which is what the
+[React](/docs/start/react/) and [Angular](/docs/start/angular/) quickstarts say.
+
 Version 1 is frozen and every version 1 document still validates — version 2
-only adds, so upgrading is one line and nothing rebinds. The *packages* are still
-pre-alpha and their APIs will change. They are **on npm** under the
-[`@formancy`](https://www.npmjs.com/org/formancy) scope at `0.1.0`, published
-from CI with provenance — except `@formancy/builder-react`, which lands in
-the next release. The server has authentication, role-based authorization,
+only adds, so upgrading will be one line and nothing rebinds. The *packages* are
+still pre-alpha and their APIs will change. They are **on npm** under the
+[`@formancy`](https://www.npmjs.com/org/formancy) scope, published from CI with
+provenance — except `@formancy/builder-react`, which lands in the next release. The server has authentication, role-based authorization,
 per-IP rate limiting, a per-form origin allowlist, audit logging and an opt-in
 proof-of-work challenge for anonymous submissions. What it does not have is a
 submission token bound to the form version, and no virus scanning of what people
