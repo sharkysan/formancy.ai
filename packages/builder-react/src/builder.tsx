@@ -26,6 +26,16 @@ export interface BuilderProps {
   session: BuilderSession
   /** Announced as the tree's accessible name. */
   label?: string
+  /**
+   * The field the person is on, whenever that changes, as its key path — or `null`
+   * when the form has none.
+   *
+   * The tree keeps owning its own focus; this only reports it. It replaces the
+   * arrangement a consumer would otherwise have to improvise: the playground read the
+   * focused row's POSITION among its siblings and indexed the flattened node list with
+   * it, which is right only while the two lists agree about nesting.
+   */
+  onSelect?: (keyPath: readonly string[] | null) => void
 }
 
 const KEY_HELP = [
@@ -36,7 +46,11 @@ const KEY_HELP = [
   ['Ctrl+Z / Ctrl+Y', 'undo / redo'],
 ] as const
 
-export function FormancyBuilder({ session, label = 'Form structure' }: BuilderProps): ReactElement {
+export function FormancyBuilder({
+  session,
+  label = 'Form structure',
+  onSelect,
+}: BuilderProps): ReactElement {
   const view = useBuilder(session)
   const [focusedIndex, setFocusedIndex] = useState(0)
   const [moving, setMoving] = useState<{ node: TreeNode; targets: MoveTarget[] } | null>(null)
@@ -66,6 +80,18 @@ export function FormancyBuilder({ session, label = 'Form structure' }: BuilderPr
   const count = view.nodes.length
   const index = count === 0 ? 0 : Math.min(focusedIndex, count - 1)
   const focused = view.nodes[index]
+  // Report the focused field outward, so a consumer can show a property panel beside
+  // the tree without reading our DOM. Keyed on the key path rather than the index,
+  // because an edit that reorders the list leaves the index pointing at a different
+  // field and would announce a selection nobody made.
+  const selectedKey = focused === undefined ? null : focused.keyPath.join('.')
+  useEffect(() => {
+    onSelect?.(selectedKey === null ? null : selectedKey.split('.'))
+    // `onSelect` is deliberately absent: a consumer passing an inline arrow would
+    // otherwise make this fire on every render of theirs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedKey])
+
 
   // Move focus WITHIN the tree, never INTO it. A component that grabs focus
   // when it mounts takes it from wherever the person actually was, and on a

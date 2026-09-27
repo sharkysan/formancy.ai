@@ -1,4 +1,5 @@
 import { provideZonelessChangeDetection } from '@angular/core'
+import { computeAccessibleName } from 'dom-accessibility-api'
 import { TestBed } from '@angular/core/testing'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/angular'
 import { afterEach, describe, expect, test } from 'vitest'
@@ -457,6 +458,25 @@ describe('qrcode', () => {
       },
     ],
   } as Partial<FormSchema>)
+
+  test('says what the code IS, with a name attached rather than a label beside it', async () => {
+    // The bug this exists for, reported against the running playground: the label was a
+    // span next to the value and named nothing. Measured before the fix with a real
+    // accessible-name implementation, the value's name was the empty string.
+    //
+    // `<output>` is a live region, so a screen reader announces the text when the answer
+    // changes — an unnamed one reads a booking reference out of nowhere.
+    const engine = engineFor(schema)
+    const view = await renderForm(engine)
+    engine.setValue(['reference'], 'AB-1234')
+    await view.fixture.whenStable()
+
+    const value = document.querySelector('[data-formancy-part="code-value"]')!
+    expect(computeAccessibleName(value)).toBe('Your pass')
+    expect(document.querySelector('[data-formancy-part="code-label"]')?.textContent?.trim()).toBe(
+      'Your pass',
+    )
+  })
 
   test('shows the value of the answer it encodes, as text', async () => {
     // The accessible content is the VALUE, not the picture: a picture of a code says

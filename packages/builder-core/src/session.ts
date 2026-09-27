@@ -135,6 +135,27 @@ export interface BuilderSession {
   ): CommandOutcome
   moveLayoutNode(from: LayoutAddress, to: LayoutLocation): CommandOutcome
   setLayoutNodeLabel(address: LayoutAddress, label: Text | undefined): CommandOutcome
+  /**
+   * Set any property the format gives a layout node, or remove it with `undefined`.
+   *
+   * Generic on purpose: the builder's panel is generated from the JSON Schema, so a
+   * command per property would have to be remembered every time the format grows one.
+   * `span` arrived and had no way to be set at all
+   * ([0074](../../../docs/decisions/0074-a-table-child-may-span.md)); so had a table's
+   * `columns` and a section's `label`, since the day layouts existed.
+   *
+   * `kind`, `children` and `path` are refused: the first is what the node IS, the
+   * second is structure the tree edits, and the third is which answer a placement
+   * places — all three have their own commands that keep the document consistent.
+   *
+   * Like every command here it is attempted against the validator, so an illegal value
+   * leaves the document where it was rather than requiring the panel to know the rules.
+   */
+  setLayoutNodeProperty(
+    address: LayoutAddress,
+    property: string,
+    value: unknown,
+  ): CommandOutcome
 
   /**
    * Every position a layout node may legally occupy: a new node (pass it) or
@@ -573,6 +594,36 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
       })
     },
 
+    setLayoutNodeProperty(address, property, value) {
+      return attempt((draft) => {
+        const found = locateLayout(draft, address)
+        if (found === undefined) return noSuchNode(address)
+        if (STRUCTURAL_LAYOUT_PROPERTIES.has(property)) {
+          return refuse(
+            `${layoutPointer(address)}/${property}`,
+            `"${property}" is not a setting. It is what the node is, or where it sits, and the arrangement's own commands change it.`,
+          )
+        }
+        if (property === '__proto__' || property === 'prototype' || property === 'constructor') {
+          return refuse(
+            `${layoutPointer(address)}/${property}`,
+            `"${property}" is not allowed as a layout node setting name.`,
+          )
+        }
+        const node = found.siblings[found.index]! as unknown as Record<string, unknown>
+        if (value === undefined) Reflect.deleteProperty(node, property)
+        else {
+          Object.defineProperty(node, property, {
+            value: copy(value) as unknown,
+            writable: true,
+            enumerable: true,
+            configurable: true,
+          })
+        }
+        return undefined
+      })
+    },
+
     validLayoutTargets(layout, what) {
       const movingPath = Array.isArray(what) ? (what as readonly number[]) : undefined
       const probe =
@@ -742,6 +793,16 @@ function containerPaths(document: FormSchema): string[][] {
  * `page1.email` is not what the engine calls that answer. Undefined when the
  * key path reaches nothing, or passes through something that holds no fields.
  */
+/**
+ * Layout node properties that are not settings.
+ *
+ * `kind` is what the node IS — writing a new one would turn a table into a section
+ * without moving its children. `children` is structure, which the tree edits. `path`
+ * is which answer a placement places, chosen when the placement is added and governed
+ * by the one-place-per-field rule.
+ */
+const STRUCTURAL_LAYOUT_PROPERTIES = new Set(['kind', 'children', 'path'])
+
 function dataPathOf(document: FormSchema, keyPath: readonly string[]): string | undefined {
   const segments: string[] = []
   let fields: readonly FieldDef[] = document.model.fields

@@ -1,5 +1,11 @@
 import { describe, expect, test } from 'vitest'
-import { editablePropertiesFor } from './properties.js'
+import rawSchema from '@formancy/spec/schema.json' with { type: 'json' }
+import { FIELD_TYPES, WIDGETS_BY_FIELD_TYPE } from '@formancy/spec'
+import {
+  editableLayoutPropertiesFor,
+  editablePropertiesFor,
+  layoutKinds,
+} from './properties.js'
 
 const names = (type: string): string[] =>
   editablePropertiesFor(type).map((property) => property.name)
@@ -112,5 +118,168 @@ describe('the spec 2 types', () => {
         expect(property.description.length, `${type}.${property.name}`).toBeGreaterThan(10)
       }
     }
+  })
+})
+
+/**
+ * Is everything in the format actually configurable?
+ *
+ * Asked as a guard rather than answered once, because the answer changes every
+ * time the format grows. It has already been "no" twice without anybody
+ * noticing: `span` arrived in [0074] with the format validating it, both
+ * renderers honouring it and the builder unable to set it at all, and every
+ * other layout property — a table's `columns`, a section's `label` — had never
+ * been settable either.
+ *
+ * The schema is walked HERE, independently of the walk `properties.ts` does. A
+ * test that asked the same function the same question would agree with itself
+ * whatever either of them got wrong.
+ */
+const schemaRoot = rawSchema as unknown as {
+  $defs: Record<string, Record<string, unknown>>
+}
+
+const resolve = (node: Record<string, unknown> | undefined): Record<string, unknown> => {
+  const ref = node?.['$ref']
+  if (typeof ref !== 'string') return node ?? {}
+  return (schemaRoot.$defs[ref.replace('#/$defs/', '')] ?? {}) as Record<string, unknown>
+}
+
+const propertyNames = (node: Record<string, unknown> | undefined): string[] =>
+  Object.keys((node?.['properties'] ?? {}) as Record<string, unknown>)
+
+/** Every property name the schema lets ANY field carry, however it is branched. */
+function everyFieldProperty(): Set<string> {
+  const names = new Set<string>()
+  const walk = (node: Record<string, unknown>): void => {
+    for (const name of propertyNames(node)) names.add(name)
+    for (const key of ['allOf', 'anyOf', 'oneOf']) {
+      for (const branch of (node[key] ?? []) as Array<Record<string, unknown>>) {
+        walk(resolve(branch))
+        for (const side of ['then', 'else']) {
+          const nested = branch[side] as Record<string, unknown> | undefined
+          if (nested !== undefined) walk(resolve(nested))
+        }
+      }
+    }
+  }
+  walk(schemaRoot.$defs['field'] ?? {})
+  return names
+}
+
+/** Every property name the schema lets ANY layout node carry. */
+function everyLayoutProperty(): Set<string> {
+  const union = schemaRoot.$defs['layoutNode'] ?? {}
+  const branches = ((union['oneOf'] ?? union['anyOf'] ?? []) as Array<Record<string, unknown>>).map(
+    resolve,
+  )
+  return new Set(branches.flatMap(propertyNames))
+}
+
+/**
+ * Properties no panel offers, each with the reason.
+ *
+ * A list rather than a silence: an exception nobody writes down is an exception
+ * nobody removes. The test below fails on a name that is no longer a property at
+ * all, so it cannot rot in the other direction either.
+ */
+const NOT_CONFIGURABLE: Readonly<Record<string, string>> = {
+  key: 'a rename, with `renamedFrom` semantics and its own command — typing over it in a text box is how answers get orphaned',
+  type: 'a different type is a different field, and the tree adds fields',
+  fields: 'structure, which the tree edits',
+  renamedFrom: 'written by the session when a rename happens, never by a person',
+  kind: 'what a layout node IS; changing it in a box would turn a table into a section without moving its children',
+  children: 'structure, which the arrangement tree edits',
+  path: 'which answer a placement places, chosen when the placement is added — and governed by the one-place-per-field rule',
+}
+
+describe('everything the format has is configurable, or says why not', () => {
+  test('every property a field can carry is offered for the types that can carry it', () => {
+    // Types AND widgets: some branches of the schema are conditioned on one and some
+    // on the other, and a walk that only knew about types skipped `columns` entirely.
+    const offered = new Set(
+      FIELD_TYPES.flatMap((type) => [
+        ...editablePropertiesFor(type).map((property) => property.name),
+        ...((WIDGETS_BY_FIELD_TYPE as Record<string, readonly string[]>)[type] ?? []).flatMap((widget: string) =>
+          editablePropertiesFor(type, widget).map((property) => property.name),
+        ),
+      ]),
+    )
+    const missing = [...everyFieldProperty()]
+      .filter((name) => !offered.has(name) && NOT_CONFIGURABLE[name] === undefined)
+      .sort()
+
+    expect(missing).toEqual([])
+    // A guard on the guard: an empty walk would pass forever.
+    expect(everyFieldProperty().size).toBeGreaterThan(15)
+  })
+
+  test('every property a layout node can carry is offered for the kinds that can carry it', () => {
+    const offered = new Set(
+      layoutKinds().flatMap((kind) =>
+        editableLayoutPropertiesFor(kind).map((property) => property.name),
+      ),
+    )
+    const missing = [...everyLayoutProperty()]
+      .filter((name) => !offered.has(name) && NOT_CONFIGURABLE[name] === undefined)
+      .sort()
+
+    expect(missing).toEqual([])
+    expect(layoutKinds().length).toBeGreaterThan(3)
+  })
+
+  test('the not-configurable list names only real properties', () => {
+    // So an excuse cannot outlive the property it excuses.
+    const real = new Set([...everyFieldProperty(), ...everyLayoutProperty()])
+    expect(Object.keys(NOT_CONFIGURABLE).filter((name) => !real.has(name))).toEqual([])
+  })
+
+  test('a layout node offers exactly what its own branch declares', () => {
+    // The specific gaps this was written after: a table sizes its grid, anything in a
+    // table may span it, and a section is named. None of the three was settable.
+    expect(editableLayoutPropertiesFor('table').map((p) => p.name)).toEqual(
+      expect.arrayContaining(['columns', 'label', 'span']),
+    )
+    expect(editableLayoutPropertiesFor('section').map((p) => p.name)).toEqual(
+      expect.arrayContaining(['label', 'span']),
+    )
+    expect(editableLayoutPropertiesFor('field').map((p) => p.name)).toEqual(['span'])
+    // And a kind that does not exist offers nothing, rather than everything.
+    expect(editableLayoutPropertiesFor('nonsense')).toEqual([])
+  })
+
+  test('a span is offered as the format writes it, a number or the word all', () => {
+    // `span` is `anyOf: [integer, const 'all']`, which is neither a plain number nor a
+    // plain enum. A panel that rendered it as a number box could not express `all`, and
+    // `all` is the value an author almost always wants.
+    const span = editableLayoutPropertiesFor('table').find((p) => p.name === 'span')
+    expect(span).toBeDefined()
+    expect(span?.description).toContain('all')
+  })
+})
+
+describe('a property the format writes as a number OR a word', () => {
+  test('is marked so the panel hands over a number and not a string', () => {
+    // `span` is `anyOf: [{type: "integer"}, {const: "all"}]`. It cannot be a number
+    // box — that could not express `all`, which is the value an author almost always
+    // wants — and it cannot be an enum, which could not express 2.
+    //
+    // So it is a text box, and the box has to know to send `2` rather than `"2"`.
+    // Measured in packages/builder-core/src/layout.test.ts: the string form is
+    // refused outright, so typing a numeric span did nothing and said nothing.
+    const span = editableLayoutPropertiesFor('table').find((p) => p.name === 'span')
+
+    expect(span?.kind).toBe('string')
+    expect(span?.numericAlternative).toBe(true)
+  })
+
+  test('and a plain number property is NOT marked, because it never needed to be', () => {
+    // The guard on the guard: a flag that were true everywhere would be no flag.
+    const columns = editableLayoutPropertiesFor('table').find((p) => p.name === 'columns')
+    expect(columns?.kind).toBe('number')
+    expect(columns?.numericAlternative).toBeUndefined()
+
+    const label = editableLayoutPropertiesFor('section').find((p) => p.name === 'label')
+    expect(label?.numericAlternative).toBeUndefined()
   })
 })

@@ -665,3 +665,149 @@ describe('the model and the arrangement stay in step', () => {
     expect(layoutOf(session.document(), 'print')).toEqual([])
   })
 })
+
+describe('setLayoutNodeProperty', () => {
+  /** A two-column table with both name fields in it, which `span` is about. */
+  const tabled = (): FormSchema => {
+    const draft = base()
+    draft.specVersion = '2'
+    draft.layouts = [
+      {
+        name: 'web',
+        nodes: [
+          {
+            kind: 'table',
+            columns: 2,
+            children: [
+              { kind: 'field', path: 'first' },
+              { kind: 'field', path: 'last' },
+              { kind: 'field', path: 'email' },
+            ],
+          },
+        ],
+      },
+    ] as NonNullable<FormSchema['layouts']>
+    return draft
+  }
+
+  test('sets a property the format gives the node, and clears it again', () => {
+    // The gap this closes: the builder's panel is generated from the JSON Schema, and
+    // every layout property was unsettable — a table's `columns` and a section's
+    // `label` since layouts existed, `span` since 0074. A command per property would
+    // have to be remembered each time the format grows one.
+    const session = createBuilderSession(tabled())
+
+    expect(session.setLayoutNodeProperty({ layout: 'web', path: [0, 2] }, 'span', 'all').ok).toBe(
+      true,
+    )
+    const spanned = layoutOf(session.document())[0]
+    expect(spanned?.kind === 'table' ? spanned.children[2]?.span : undefined).toBe('all')
+
+    session.setLayoutNodeProperty({ layout: 'web', path: [0, 2] }, 'span', undefined)
+    const cleared = layoutOf(session.document())[0]
+    expect(cleared?.kind === 'table' ? 'span' in (cleared.children[2] ?? {}) : true).toBe(false)
+  })
+
+  test('sets a container property too, not only a leaf one', () => {
+    const session = createBuilderSession(tabled())
+
+    expect(session.setLayoutNodeProperty({ layout: 'web', path: [0] }, 'columns', 3).ok).toBe(true)
+    const table = layoutOf(session.document())[0]
+    expect(table?.kind === 'table' ? table.columns : undefined).toBe(3)
+  })
+
+  test('refuses a value the format refuses, rather than writing it', () => {
+    // Attempted against the validator like every other command, so the panel does not
+    // have to know the rules and cannot drift from the ones publish enforces. A span
+    // wider than its table is the case 0074 refuses by name.
+    const session = createBuilderSession(tabled())
+
+    expect(session.setLayoutNodeProperty({ layout: 'web', path: [0, 0] }, 'span', 9).ok).toBe(false)
+    const untouched = layoutOf(session.document())[0]
+    expect(untouched?.kind === 'table' ? 'span' in (untouched.children[0] ?? {}) : true).toBe(false)
+  })
+
+  test('refuses the three that are not settings', () => {
+    // `kind` is what the node IS, `children` is structure, `path` is which answer a
+    // placement places. All three have commands of their own that keep the document
+    // consistent; writing them here would move a table's children into a section.
+    const session = createBuilderSession(tabled())
+
+    for (const property of ['kind', 'children', 'path']) {
+      const outcome = session.setLayoutNodeProperty({ layout: 'web', path: [0] }, property, 'x')
+      expect(outcome.ok, property).toBe(false)
+    }
+    expect(layoutOf(session.document())[0]?.kind).toBe('table')
+  })
+
+  test('refuses an address that is not there', () => {
+    const session = createBuilderSession(tabled())
+
+    expect(session.setLayoutNodeProperty({ layout: 'web', path: [9] }, 'span', 'all').ok).toBe(false)
+  })
+
+  test('leaves the document publishable', () => {
+    const session = createBuilderSession(tabled())
+
+    session.setLayoutNodeProperty({ layout: 'web', path: [0, 2] }, 'span', 'all')
+
+    expect(session.canPublish().valid).toBe(true)
+  })
+})
+
+describe('the shape a value has to arrive in', () => {
+  const tabled = (): FormSchema => {
+    const draft = base()
+    draft.specVersion = '2'
+    draft.layouts = [
+      {
+        name: 'web',
+        nodes: [
+          {
+            kind: 'table',
+            columns: 2,
+            children: [
+              { kind: 'field', path: 'first' },
+              { kind: 'field', path: 'last' },
+              { kind: 'field', path: 'email' },
+            ],
+          },
+        ],
+      },
+    ] as NonNullable<FormSchema['layouts']>
+    return draft
+  }
+
+  test('a numeric span has to be a number, and the string form is refused', () => {
+    // The trap a generated panel walks straight into: `span` is
+    // `anyOf: [integer, const "all"]`, so a text box hands over "2" and the schema
+    // refuses it — the author types a span, nothing happens, and nothing says why.
+    // Pinned here so the panel's own coercion has something to be right about.
+    const session = createBuilderSession(tabled())
+
+    expect(session.setLayoutNodeProperty({ layout: 'web', path: [0, 0] }, 'span', '2').ok).toBe(
+      false,
+    )
+    expect(session.setLayoutNodeProperty({ layout: 'web', path: [0, 0] }, 'span', 2).ok).toBe(true)
+  })
+
+  test('the word all is a string, and the number form of it does not exist', () => {
+    const session = createBuilderSession(tabled())
+
+    expect(session.setLayoutNodeProperty({ layout: 'web', path: [0, 1] }, 'span', 'all').ok).toBe(
+      true,
+    )
+    expect(session.setLayoutNodeProperty({ layout: 'web', path: [0, 2] }, 'span', 'ALL').ok).toBe(
+      false,
+    )
+  })
+
+  test('a table column count has to be a number too', () => {
+    const session = createBuilderSession(tabled())
+
+    expect(session.setLayoutNodeProperty({ layout: 'web', path: [0] }, 'columns', '3').ok).toBe(
+      false,
+    )
+    expect(session.setLayoutNodeProperty({ layout: 'web', path: [0] }, 'columns', 3).ok).toBe(true)
+  })
+})

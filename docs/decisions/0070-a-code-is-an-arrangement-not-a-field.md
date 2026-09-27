@@ -16,6 +16,23 @@
 > The mechanism decision — a layout node rather than a field type or a widget — is
 > untouched, and is what the rest of this record is about.
 
+> **The accessible content was right and it was not attached.** This record says the value
+> is the accessible content, not the picture — and both renderers put the label in a loose
+> `<span>` beside the value rather than naming it. Measured with a real accessible-name
+> implementation, `computeAccessibleName` of the `<output>` holding the value was the
+> **empty string**, so a screen reader announced a booking reference with nothing to say
+> what it was. Reported by somebody looking at the running playground.
+>
+> It matters more here than a loose caption elsewhere: `<output>` is a live region, so the
+> text is announced whenever the answer changes, and an unnamed live region reads a value
+> out of nowhere. The label now carries an id and the value points at it, in both
+> renderers, asserted with `computeAccessibleName` in each and shown to fail by removing
+> the association. `apps/playground/src/accessible.test.tsx` catches it too, which is the
+> guard that did not exist when this shipped.
+>
+> The decision is untouched. The value is still the content and the picture is still
+> `aria-hidden`.
+
 - **Status:** accepted
 - **Date:** 2026-09-27
 - **Deciders:** Daniel Bacher

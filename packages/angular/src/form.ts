@@ -555,13 +555,22 @@ export class FormancyTabs {
   }
 }
 
+/** One per `formancy-code` on the page, so two codes never share a label id. */
+let codeInstances = 0
+
 @Component({
   selector: 'formancy-code',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div data-formancy-part="code" [attr.data-state]="text() === '' ? 'empty' : 'ready'">
+      <!-- Named, and the name is ATTACHED. It was a loose span beside the value, and
+           measured, the value's accessible name was the empty string: a screen reader
+           announced a booking reference with nothing to say what it was. A label that
+           only looks like a label is the failure this repository's describedby
+           composition exists to prevent, in the one place a layout node wires its own.
+           The React binding does the same. -->
       @if (label(); as caption) {
-        <span data-formancy-part="code-label">{{ caption }}</span>
+        <span [id]="labelId" data-formancy-part="code-label">{{ caption }}</span>
       }
       <!-- The drawing. Decorative: aria-hidden, because a picture of a code says nothing
            to a screen reader and an alt of "QR code" says nothing either. The value below
@@ -584,7 +593,10 @@ export class FormancyTabs {
           }
         </svg>
       }
-      <output data-formancy-part="code-value">{{ text() }}</output>
+      <!-- output is a live region, so its text is announced when the answer changes --
+           right for a second view of an answer, and exactly why it must be named: an
+           unnamed live region reads a string out of nowhere. -->
+      <output data-formancy-part="code-value" [attr.aria-labelledby]="label() ? labelId : null">{{ text() }}</output>
     </div>
   `,
 })
@@ -607,6 +619,15 @@ export class FormancyTabs {
 export class FormancyCode implements OnInit {
   readonly path = input.required<string>()
   readonly label = input<string>()
+
+  /**
+   * The label's own id, so the value can point at it.
+   *
+   * From Angular's `inject(...)`-free counter rather than from the engine: the engine
+   * mints ids for FIELDS, and a code is a layout node with no field of its own. Unique
+   * per component instance, which is what two codes on one page need.
+   */
+  protected readonly labelId = `formancy-code-${String((codeInstances += 1))}`
 
   private readonly engine = injectEngine()
   private readonly destroyRef = inject(DestroyRef)

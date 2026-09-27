@@ -24,6 +24,7 @@ import {
   FormancyArrangeSurface,
   FormancyBuilder,
   FormancyLayoutPane,
+  LayoutPropertyPanel,
   LogicPanel,
   PropertyPanel,
   useBuilder,
@@ -524,6 +525,8 @@ function BuilderBody({
 }) {
   const view = useBuilder(session)
   const [selected, setSelected] = useState<readonly string[] | null>(null)
+  /** Which node the arrangement pane is on, so its property panel has something to show. */
+  const [arranging, setArranging] = useState<readonly number[] | null>(null)
 
   useEffect(() => {
     onChange(JSON.stringify(view.document, null, 2))
@@ -554,22 +557,26 @@ function BuilderBody({
       </div>
 
       {tab === 'arrangement' ? (
-        // Outside the focus-capture wrapper below on purpose: that one reads
-        // a tree item's position as an index into the MODEL, and a layout node
-        // at the same position is a different thing entirely.
-        <FormancyLayoutPane session={session} layout="web" />
+        <>
+          <FormancyLayoutPane session={session} layout="web" onSelect={setArranging} />
+
+          {/* Until this existed, NO property of a layout node could be set from the
+              builder at all: a table's `columns` and a section's `label` since the
+              day layouts existed, and `span` from the moment the format grew it.
+              The panel is generated from the JSON Schema, so the next one arrives
+              with an editor rather than needing somebody to remember. */}
+          {arranging === null ? null : (
+            <LayoutPropertyPanel session={session} address={{ layout: 'web', path: arranging }} />
+          )}
+        </>
       ) : (
         <>
-          <div
-            onFocusCapture={(event) => {
-              const item = (event.target as HTMLElement).closest('[role="treeitem"]')
-              const at = item === null ? -1 : [...(item.parentElement?.children ?? [])].indexOf(item)
-              const node = at < 0 ? undefined : view.nodes[at]
-              if (node !== undefined) setSelected(node.keyPath)
-            }}
-          >
-            <FormancyBuilder session={session} />
-          </div>
+          {/* The tree reports which field it is on, rather than this app reading its
+              DOM. What was here before took the focused row's POSITION among its
+              siblings and indexed the flattened node list with it — right only while
+              those two lists agree about nesting, which they stop doing the moment a
+              container is collapsed. */}
+          <FormancyBuilder session={session} onSelect={setSelected} />
 
           {editing === null ? null : (
             <>

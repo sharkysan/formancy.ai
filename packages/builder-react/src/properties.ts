@@ -12,7 +12,14 @@ import schema from '@formancy/spec/schema.json' with { type: 'json' }
  * the only version that cannot drift.
  */
 
-export type PropertyKind = 'string' | 'number' | 'boolean' | 'enum' | 'options' | 'strings'
+export type PropertyKind =
+  | 'string'
+  | 'number'
+  | 'boolean'
+  | 'enum'
+  | 'options'
+  | 'columns'
+  | 'strings'
 
 export interface EditableProperty {
   name: string
@@ -25,6 +32,19 @@ export interface EditableProperty {
   default?: unknown
   minimum?: number
   maximum?: number
+  /**
+   * Whether a bare NUMBER is also a legal value here, alongside text.
+   *
+   * `span` is the case: `anyOf: [{ type: "integer" }, { const: "all" }]`. It is not a
+   * number property — a number box could not express `all`, which is the value an
+   * author almost always wants — and it is not an enum either. So it is a text box
+   * that has to hand over `2` rather than `"2"`, and the schema is what says so.
+   *
+   * Measured before this existed: `setLayoutNodeProperty(..., 'span', '2')` is refused
+   * and `..., 2` is accepted, so typing a numeric span did nothing at all and nothing
+   * said why. Pinned in `packages/builder-core/src/layout.test.ts`.
+   */
+  numericAlternative?: boolean
 }
 
 /**
@@ -54,6 +74,7 @@ interface JsonSchemaNode {
   then?: JsonSchemaNode
   else?: JsonSchemaNode
   allOf?: JsonSchemaNode[]
+  anyOf?: JsonSchemaNode[]
 }
 
 const root = schema as unknown as JsonSchemaNode & { $defs: Record<string, JsonSchemaNode> }
@@ -84,6 +105,10 @@ function kindOf(node: JsonSchemaNode, name: string): PropertyKind {
   // Options are a list of value/label pairs and need their own editor; the
   // generic renderer would produce a textarea full of JSON.
   if (name === 'options') return 'options'
+  // A datagrid's columns are the same shape of problem: an array of objects, one of
+  // which names a sibling field. Found missing by the guard in properties.test.ts
+  // rather than by anybody using the builder.
+  if (name === 'columns' && node.type === 'array') return 'columns'
   if (choicesOf(node) !== undefined) return 'enum'
   if (node.type === 'boolean') return 'boolean'
   if (node.type === 'number' || node.type === 'integer') return 'number'
@@ -109,15 +134,34 @@ function describe(name: string, raw: JsonSchemaNode): EditableProperty {
     ...(raw.default === undefined ? {} : { default: raw.default }),
     ...(resolved.minimum === undefined ? {} : { minimum: resolved.minimum }),
     ...(resolved.maximum === undefined ? {} : { maximum: resolved.maximum }),
+    ...(allowsANumber(resolved) ? { numericAlternative: true } : {}),
   }
 }
 
 /**
- * Every property the panel should offer for a field of this type, in the order
- * the schema declares them: the ones all fields share, then the ones this type
- * adds.
+ * Whether one of a property's alternative branches is a plain number.
+ *
+ * Read from the schema rather than from the property's name, so the next property the
+ * format writes as "a number or a word" is handled without anybody remembering.
  */
-export function editablePropertiesFor(type: string): EditableProperty[] {
+function allowsANumber(node: JsonSchemaNode): boolean {
+  if (node.type === 'number' || node.type === 'integer') return false
+  const branches = [...(node.anyOf ?? []), ...(node.oneOf ?? [])]
+  return branches.some((branch) => branch.type === 'number' || branch.type === 'integer')
+}
+
+/**
+ * Every property the panel should offer for a field, in the order the schema
+ * declares them: the ones all fields share, then the ones this type adds, then the
+ * ones its WIDGET adds.
+ *
+ * The widget is the second half and it was missing. Some branches are conditioned on
+ * `type` and some on `widget` — `columns` is `if: { widget: { const: "datagrid" } }`
+ * — so a walk that matched only the type silently skipped them, and the builder could
+ * not configure a datagrid's columns at all. Found by the coverage guard in
+ * properties.test.ts rather than by anybody using it.
+ */
+export function editablePropertiesFor(type: string, widget?: string): EditableProperty[] {
   const field = root.$defs['field']
   if (field === undefined) return []
 
@@ -133,10 +177,71 @@ export function editablePropertiesFor(type: string): EditableProperty[] {
   take(field.properties)
 
   for (const branch of field.allOf ?? []) {
-    const applies = matches(branch.if?.properties?.['type'], type)
+    const condition = branch.if?.properties
+    // A branch conditions on the type or on the widget, and the schema uses both.
+    const applies =
+      condition?.['widget'] === undefined
+        ? matches(condition?.['type'], type)
+        : widget !== undefined && matches(condition['widget'], widget)
     const taken = applies ? branch.then : branch.else
     take(deref(taken)?.properties)
   }
 
   return [...collected.values()]
+}
+
+/**
+ * Properties a LAYOUT node deliberately does not offer.
+ *
+ * `kind` is what the node IS — changing it in a text box would turn a table into a
+ * section without moving its children, which the arrangement's own commands do
+ * properly. `children` is structure, which the arrangement tree edits. `path` names
+ * the answer a field node places, and a node pointed at a different answer is a
+ * different placement, with the one-place-per-field rule to enforce; the tree moves
+ * and adds placements, and that is where a path is chosen.
+ */
+const NOT_OURS_IN_A_LAYOUT = new Set(['kind', 'children', 'path'])
+
+/** The branches of the layout node union, each with the kinds it covers. */
+function layoutBranches(): Array<{ kinds: string[]; properties: Record<string, JsonSchemaNode> }> {
+  const union = root.$defs['layoutNode']
+  const branches = union?.oneOf ?? union?.anyOf ?? []
+  return branches.map((branch) => {
+    const resolved = deref(branch) ?? branch
+    const properties = resolved.properties ?? {}
+    const kind = properties['kind']
+    const kinds =
+      kind?.const !== undefined
+        ? [String(kind.const)]
+        : (kind?.enum ?? []).map(String)
+    return { kinds, properties }
+  })
+}
+
+/**
+ * Every property the panel should offer for a layout node of this kind.
+ *
+ * Generated from the same JSON Schema the field panel reads, for the same reason: a
+ * hand-written panel per node kind rots the moment somebody adds a property to the
+ * format. `span` arrived that way and had no editor at all
+ * ([0074](../../../docs/decisions/0074-a-table-child-may-span.md)) — a property the
+ * format validated, the renderers honoured, and the builder could not set.
+ */
+export function editableLayoutPropertiesFor(kind: string): EditableProperty[] {
+  const collected = new Map<string, EditableProperty>()
+
+  for (const branch of layoutBranches()) {
+    if (!branch.kinds.includes(kind)) continue
+    for (const [name, node] of Object.entries(branch.properties)) {
+      if (NOT_OURS_IN_A_LAYOUT.has(name) || collected.has(name)) continue
+      collected.set(name, describe(name, node))
+    }
+  }
+
+  return [...collected.values()]
+}
+
+/** Every layout kind the format has, derived rather than listed. */
+export function layoutKinds(): string[] {
+  return [...new Set(layoutBranches().flatMap((branch) => branch.kinds))]
 }
