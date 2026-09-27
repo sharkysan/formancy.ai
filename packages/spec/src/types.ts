@@ -211,6 +211,60 @@ export const LIST_VALUED_FIELD_TYPES = [
 export type ListValuedFieldType = (typeof LIST_VALUED_FIELD_TYPES)[number]
 
 /**
+ * One column of a repeater arranged as a grid.
+ *
+ * ── WHY A WIDGET CARRIES CONFIGURATION ──────────────────────────────────────
+ *
+ * [0065](../../../docs/decisions/0065-a-widget-is-authored-not-registered.md) said a
+ * widget is a single name. The argument for promoting `datagrid` to a field type
+ * once the columns needed configuring was that a name cannot carry an object — and
+ * it was wrong: the document schema gates a property on `widget: "datagrid"` as
+ * readily as on a type, so the coupling is enforceable either way.
+ *
+ * What settled it was building the type version first and watching it produce a bug.
+ * A second type holding the repeater's row model made `walkFields` wrong — it opened
+ * its row scope on `type === 'repeater'` alone, so a grid nested in a repeater passed
+ * a rule that exists because the engine cannot count rows two levels deep. One row
+ * model, one type ([0066](../../../docs/decisions/0066-a-widget-may-be-configured.md)).
+ *
+ * The line from 0065 still holds and is worth restating, because this is the edge of
+ * it: **none of this changes what is collected.** Columns decide which answers are
+ * shown where, never which answers exist. A field left out of the list is still
+ * collected and still shown, after the configured ones.
+ */
+export interface DataGridColumn {
+  /** The key of one of this grid's own child fields. */
+  field: string
+  /**
+   * How much of the available width this column takes, relative to the others. A
+   * ratio, not a measurement, and greater than zero.
+   *
+   * **Not a CSS length, deliberately.** `width: "12rem"` in a document is the format
+   * deciding the consumer's design system for them, which is the thing this project
+   * exists to avoid — and a fixed length is one no renderer can honour on a narrow
+   * screen. A unitless weight is a ratio a renderer spends however it likes, or
+   * ignores entirely when it stacks the rows instead.
+   *
+   * Zero is refused rather than treated as hidden: a column nobody can see holds a
+   * field that is still collected and still required-checked, which is the same harm
+   * as a field left out of the only layout a form uses.
+   */
+  width?: number
+  /** Which edge the values line up against. Numbers usually want `end`. */
+  align?: 'start' | 'center' | 'end'
+  /**
+   * A shorter heading for the column when the field's own label is too long to sit
+   * above it.
+   *
+   * The field's label is still what a screen reader announces for the control in the
+   * cell, so this shortens the heading without renaming the question — which is the
+   * distinction that keeps a visible column heading from becoming the accessible
+   * name of every answer beneath it.
+   */
+  header?: Text
+}
+
+/**
  * How a field should LOOK, chosen by the author, never changing what it collects.
  *
  * A developer could already do this: `registry.byType` and `registry.byPath` swap
@@ -299,6 +353,14 @@ export interface FieldDef {
   maxItems?: number
   addLabel?: string
   removeLabel?: string
+  /**
+   * `widget: "datagrid"` only: which child fields become columns, in which order.
+   *
+   * Optional — leaving it out arranges every child field in model order, which is
+   * what the repeater already does. Refused without the widget, because columns
+   * nothing will apply are an author who believes they configured an arrangement.
+   */
+  columns?: DataGridColumn[]
   /**
    * `file` fields: which files may be attached, and how many.
    *

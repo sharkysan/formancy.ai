@@ -507,6 +507,62 @@
        }
       }
      }
+    },
+    {
+     "if": {
+      "required": [
+       "widget"
+      ],
+      "properties": {
+       "widget": {
+        "const": "datagrid"
+       }
+      }
+     },
+     "then": {
+      "properties": {
+       "columns": {
+        "title": "Columns",
+        "description": "Which of this grid's fields become columns, and in what order. Leave it out to arrange every field in the order they are defined. A field left out is still collected and still shown, after the configured columns — a column list is an ordering, not a choice of which answers to keep.",
+        "type": "array",
+        "minItems": 1,
+        "items": {
+         "type": "object",
+         "required": [
+          "field"
+         ],
+         "additionalProperties": false,
+         "properties": {
+          "field": {
+           "title": "Field",
+           "description": "The key of one of this grid's own fields.",
+           "type": "string"
+          },
+          "width": {
+           "title": "Relative width",
+           "description": "How much of the available width this column takes, relative to the others. A ratio rather than a measurement: a length in a document is one no renderer can honour on a narrow screen, and it would decide your design system for you. Zero is refused — a column nobody can see still holds a field that is collected and required-checked.",
+           "type": "number",
+           "exclusiveMinimum": 0
+          },
+          "align": {
+           "title": "Alignment",
+           "description": "Which edge the values line up against. Numbers usually want the end.",
+           "enum": [
+            "start",
+            "center",
+            "end"
+           ]
+          },
+          "header": {
+           "title": "Column heading",
+           "description": "A shorter heading for the column when the field's own label is too long to sit above it. The field's label is still what a screen reader announces for the control in the cell, so this shortens the heading without renaming the question.",
+           "$ref": "#/$defs/text"
+          }
+         }
+        }
+       }
+      }
+     }
     }
    ],
    "unevaluatedProperties": false

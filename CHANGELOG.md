@@ -10,6 +10,50 @@ later.
 
 ## Unreleased
 
+**A grid's columns can be configured, and `datagrid` stayed a widget.** `columns`
+says which of a repeater's fields become columns and in what order, with a relative
+width, an alignment and an optional shorter heading
+([0066](docs/decisions/0066-a-widget-may-be-configured.md)).
+
+[0065](docs/decisions/0065-a-widget-is-authored-not-registered.md) said a widget is a
+single name, so configuring the columns looked like it forced `datagrid` to become a
+field type. **That was built, and the build refuted it.** A widget can carry
+configuration — the document schema gates `columns` on `widget: "datagrid"` exactly
+as readily as on a type name. And the type version produced a defect on the way:
+`walkFields` opened its row scope on `type === 'repeater'` alone, so a grid nested
+inside a repeater walked through a rule that exists because the engine cannot count
+rows two levels deep. Correct for every type that existed when it was written; wrong
+the moment a second type held the same row model. One row model, one type.
+
+The rule from 0065 that mattered is unchanged: **a widget may change how a field
+looks and may not change what it collects.** Columns decide which answers appear
+where, never which exist — so a field left out of the list is still collected and
+still shown, after the configured ones.
+
+A width is a unitless ratio and zero is refused. A CSS length in a document is the
+format deciding your design system, and a fixed length is one no renderer can honour
+on a narrow screen; a zero-width column still holds a field that is collected and
+required-checked, which is the same harm as a field missing from the only layout a
+form uses.
+
+**Fixed: the spec reference published an empty heading, and called itself v1.** That
+page is generated from the JSON Schema, and the generator read conditional blocks by
+field type only — so the block gating `columns` on a widget produced a `####` with
+nothing after it. It also hard-coded "Spec reference (v1)" and "the JSON Schema for
+spec version 1" while the page documented `selectboxes`, `file`, `richtext` and
+`widget`, all version 2: a title contradicting the body of its own page. The version
+is read from the schema now, and a block gated on something the page has no
+vocabulary for throws rather than publishing a heading nobody can interpret.
+
+The generator also renders the keys of an array-valued property, so a reader learns
+what a column contains rather than only that `columns` exists — which is where the
+guidance lives.
+
+**A stale message, found in passing:** the nested-repeater error said "in version 0
+of the spec" long after the spec reached 2. It names no version now. Which version
+forbids it is not what the author needs, and a number in a message goes stale
+silently.
+
 **An author can say how a field should look: `widget`.** Four names to begin with —
 `toggle` on a checkbox, `datagrid` on a repeater, `typeahead` on a select, `scanner`
 on a text field — each gated to the type it belongs to, with a typo refused at

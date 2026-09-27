@@ -128,8 +128,40 @@ function semanticErrors(schema: FormSchema): SchemaError[] {
     if (field.type === 'repeater' && insideRepeater) {
       errors.push({
         path: `${path}/type`,
-        message: `A repeater cannot sit inside another repeater in version 0 of the spec. Move it out of the outer repeater, or make it a group.`,
+        // Named no version since the spec reached 2: which version forbids it is not
+        // what the author needs, and a number in a message goes stale silently.
+        message: `A repeater cannot sit inside another repeater. Move it out of the outer repeater, or make it a group.`,
       })
+    }
+
+    // A column pointing at a field the grid does not have shows an empty column,
+    // which reads as a field that collects nothing rather than as a configuration
+    // mistake -- and the likeliest way to get there is renaming or deleting a child
+    // field and leaving the arrangement behind. Two columns over one field is worse:
+    // whatever is typed in one appears in the other.
+    //
+    // Here rather than in the schema because neither rule is expressible there: both
+    // compare a column against its siblings.
+    if (field.columns !== undefined) {
+      const childKeys = new Set((field.fields ?? []).map((child) => child.key))
+      const seen = new Set<string>()
+      for (const [index, column] of field.columns.entries()) {
+        const at = `${path}/columns/${String(index)}/field`
+        if (!childKeys.has(column.field)) {
+          errors.push({
+            path: at,
+            message: `No field of this grid has the key "${column.field}", so the column would show nothing. Name one of its own fields.`,
+          })
+          continue
+        }
+        if (seen.has(column.field)) {
+          errors.push({
+            path: at,
+            message: `Two columns both show "${column.field}". One answer cannot fill two columns.`,
+          })
+        }
+        seen.add(column.field)
+      }
     }
 
     if (claimed.has(field.key)) {

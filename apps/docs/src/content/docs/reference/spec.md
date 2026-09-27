@@ -1,18 +1,19 @@
 ---
-title: Spec reference (v1)
+title: Spec reference (v2)
 description: Every property of a formancy form document, generated from the JSON Schema in packages/spec.
 ---
 
 :::note[This page is generated]
-Generated from `packages/spec/formancy.schema.json` (the JSON Schema for spec
-version 1) by `apps/docs/scripts/generate-spec-reference.mjs`. The schema is
+Generated from `packages/spec/formancy.schema.json` by `apps/docs/scripts/generate-spec-reference.mjs`. The schema is
 the source of truth — edit it, not this page.
 :::
 
 :::note
-Spec version 1 is **frozen**: a document that validates today keeps validating.
-See [Versioning](/docs/concepts/versioning/) for how that relates to package
-versions, and for what happens when the spec eventually moves to 2.
+This page describes spec version 2. Earlier versions are **frozen**: a
+document that validates against one keeps validating. A newer version only adds, and
+a reader of an older one refuses a document it cannot fully understand rather than
+dropping an answer from it. See [Versioning](/docs/concepts/versioning/) for how that
+relates to package versions.
 :::
 
 ## The form document
@@ -64,6 +65,11 @@ optional · Translations (see below)
 optional · array of Layout
 
 **Layouts.** Named arrangements of the model. Without any, fields appear in the order the model declares them.
+
+Each item:
+
+- `name` — required · **Name.** How this arrangement is asked for, e.g. "web" or "print". Unique within the form.
+- `nodes` — required · **Nodes.** What this arrangement places, in the order a person meets it.
 
 ## Fields
 
@@ -145,6 +151,15 @@ optional · Fields (see below)
 
 **Child fields.** The fields held inside this container. Their keys are unique across the whole form, not just within the container.
 
+Each item:
+
+- `key` — required · **Key.** The name this field's answer is stored under, and the field's identity for as long as the form exists. It becomes a column in exported data and a variable in logic expressions, so it has to read like an identifier: a letter or an underscore, then letters, digits or underscores. Changing a key is a data migration rather than an edit, so say where it came from with "renamedFrom".
+- `type` — required · **Field type.** What kind of answer the field collects, or — for a group, a page or a repeater — how it holds the fields inside it. The type decides which control the reader sees and how the answer is stored, so changing it on a live form may leave existing answers unreadable.
+- `required` — optional · **Required.** Whether the form can be sent without an answer to this field. Turning this on for a field that already exists invalidates the submissions that left it empty, so publishing reports it as a lossy change.
+- `renamedFrom` — optional · **Renamed from.** The key this field used to be called. Set it in the same edit that changes the key and the answers already collected follow the field across. The old key must be gone from this form: if a field still uses it, you have made a copy rather than a rename, and the two would fight over the same answers.
+- `clearOnHide` — optional · **Clear when hidden.** What happens to an answer when a rule hides its field. On (the default), the answer is removed from the submission, so a hidden branch cannot carry data. Off, the answer is kept and comes back when the field reappears.
+- `label` — optional · **Label.** What the person filling the form in reads next to this field, or a reference to it in the message catalogue.
+
 Every other type is an answer field: a field that collects one answer and holds no other fields.
 
 #### `select`, `radio`, `selectboxes`
@@ -154,6 +169,11 @@ Every other type is an answer field: a field that collects one answer and holds 
 optional · array of Option · at least 1 item
 
 **Options.** The answers this field offers, in the order they appear.
+
+Each item:
+
+- `value` — required · **Value.** What is stored in the submission when this option is chosen. Stable like a field key: changing it detaches the answers already collected.
+- `label` — required · **Label.** What the person choosing reads.
 
 #### `repeater`
 
@@ -307,6 +327,21 @@ optional · one of `"scanner"`
 
 **Widget.** How this field should look. Presentation only: it never changes what the field collects or what is stored. Leave it out for the default control. Offer a camera route to a value somebody could otherwise type, such as reading a QR code. The answer is still the same string, and typing it must stay possible.
 
+#### With `widget: "datagrid"`
+
+##### `columns`
+
+optional · array · at least 1 item
+
+**Columns.** Which of this grid's fields become columns, and in what order. Leave it out to arrange every field in the order they are defined. A field left out is still collected and still shown, after the configured columns — a column list is an ordering, not a choice of which answers to keep.
+
+Each item:
+
+- `field` — required · **Field.** The key of one of this grid's own fields.
+- `width` — optional · **Relative width.** How much of the available width this column takes, relative to the others. A ratio rather than a measurement: a length in a document is one no renderer can honour on a narrow screen, and it would decide your design system for you. Zero is refused — a column nobody can see still holds a field that is collected and required-checked.
+- `align` — optional · **Alignment.** Which edge the values line up against. Numbers usually want the end.
+- `header` — optional · **Column heading.** A shorter heading for the column when the field's own label is too long to sit above it. The field's label is still what a screen reader announces for the control in the cell, so this shortens the heading without renaming the question.
+
 ## Logic rules
 
 Every rule of the form, in one flat list. A rule names the field it applies to; the order here does not matter, because evaluation order comes from what depends on what.
@@ -380,6 +415,15 @@ The data contract of the form: its fields, and the names their answers are store
 required · Fields (see below)
 
 **Fields.** The fields of the form, in the order the reader meets them. Order is presentation: a field is identified by its key, so moving one up or down does not change the data you have already collected.
+
+Each item:
+
+- `key` — required · **Key.** The name this field's answer is stored under, and the field's identity for as long as the form exists. It becomes a column in exported data and a variable in logic expressions, so it has to read like an identifier: a letter or an underscore, then letters, digits or underscores. Changing a key is a data migration rather than an edit, so say where it came from with "renamedFrom".
+- `type` — required · **Field type.** What kind of answer the field collects, or — for a group, a page or a repeater — how it holds the fields inside it. The type decides which control the reader sees and how the answer is stored, so changing it on a live form may leave existing answers unreadable.
+- `required` — optional · **Required.** Whether the form can be sent without an answer to this field. Turning this on for a field that already exists invalidates the submissions that left it empty, so publishing reports it as a lossy change.
+- `renamedFrom` — optional · **Renamed from.** The key this field used to be called. Set it in the same edit that changes the key and the answers already collected follow the field across. The old key must be gone from this form: if a field still uses it, you have made a copy rather than a rename, and the two would fight over the same answers.
+- `clearOnHide` — optional · **Clear when hidden.** What happens to an answer when a rule hides its field. On (the default), the answer is removed from the submission, so a hidden branch cannot carry data. Off, the answer is kept and comes back when the field reappears.
+- `label` — optional · **Label.** What the person filling the form in reads next to this field, or a reference to it in the message catalogue.
 
 ### Fields
 
