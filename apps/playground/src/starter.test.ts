@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { validateSchema } from '@formancy/spec/validate'
-import { CONTAINER_FIELD_TYPES, FIELD_TYPES } from '@formancy/spec'
+import { CONTAINER_FIELD_TYPES, FIELD_TYPES, FIELD_WIDGETS } from '@formancy/spec'
 import type { FieldDef, FieldType } from '@formancy/spec'
 import { STARTER_SCHEMA } from './starter.js'
 
@@ -31,6 +31,53 @@ describe('the starter schema', () => {
     walk(fields)
     return seen
   }
+
+  /**
+   * Widgets the demo does not show yet, and why.
+   *
+   * A list rather than a silence, on the same reasoning as the deliberately-unstyled
+   * parts in `apps/docs/src/themes.test.ts`: an exception nobody records is an
+   * exception nobody removes. Putting a widget in the demo before its control exists
+   * would be worse than leaving it out — the document would be valid, the renderer
+   * would fall back to the default control, and a visitor could not tell which they
+   * were looking at. That is the documented-but-inert failure this repository has
+   * shipped once already.
+   *
+   * Delete an entry when its control lands. The test below fails on a name that is no
+   * longer a widget at all, so the list cannot rot in the other direction.
+   */
+  const NOT_DEMONSTRATED_YET: Readonly<Record<string, string>> = {
+    datagrid: 'The grid control is not built: a repeater with this widget still renders as stacked rows.',
+    typeahead: 'No combobox yet: a select with this widget still renders as a plain select.',
+    scanner: 'No camera route yet: a text field with this widget still renders as a plain input.',
+  }
+
+  test('demonstrates every widget, or says why not', () => {
+    // A widget the playground does not show is a widget nobody sees working, which is
+    // the whole reason the demo exists.
+    const widgetsUsed = new Set<string>()
+    const walk = (fields: readonly FieldDef[]): void => {
+      for (const field of fields) {
+        if (typeof field.widget === 'string') widgetsUsed.add(field.widget)
+        if (field.fields !== undefined) walk(field.fields)
+      }
+    }
+    walk(STARTER_SCHEMA.model.fields as readonly FieldDef[])
+
+    const missing = FIELD_WIDGETS.filter(
+      (widget) => !widgetsUsed.has(widget) && NOT_DEMONSTRATED_YET[widget] === undefined,
+    )
+    expect(missing).toEqual([])
+
+    // A guard on the guard: an empty widget list would pass forever.
+    expect(FIELD_WIDGETS.length).toBeGreaterThan(0)
+  })
+
+  test('the not-yet-demonstrated list names only real widgets', () => {
+    // So the list cannot outlive the widget it excuses.
+    const real = new Set<string>(FIELD_WIDGETS)
+    expect(Object.keys(NOT_DEMONSTRATED_YET).filter((widget) => !real.has(widget))).toEqual([])
+  })
 
   test('contains every field type it claims to', () => {
     const seen = typesUsed(STARTER_SCHEMA.model.fields as readonly FieldDef[])

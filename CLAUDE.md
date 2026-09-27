@@ -147,6 +147,33 @@ at the digit in `FORMANCY_S3_BUCKET` and collapsed five variable names into one
 meaningless match. **Match the whole property, not the shape it usually has**, and
 when a test disagrees with the code, work out which is wrong before changing either.
 
+## A new feature is demonstrated, not only documented
+
+Prose that says a feature exists and a build where nobody can see it working are two
+different claims, and the second is the one an evaluator checks. So:
+
+- **The playground shows it.** `apps/playground/src/starter.ts` is the schema somebody
+  opens to find out what this does. A field type, a widget, a layout kind or a bound
+  belongs in it — with the property set to something that actually demonstrates the
+  behaviour rather than merely present. A `time` field with no `earliest` shows a
+  control; one with a bound shows what a bound does.
+- **The site shows it when it changes the argument.** `apps/site` is the landing page,
+  and it makes a case rather than listing features. Something that strengthens or
+  weakens that case belongs there; a fourth field type does not. When it is a number,
+  derive it — `apps/site/decision-records.ts` counts both the decision records and the
+  field types at build time, because both literals went stale.
+- **The docs describe it**, under the rules above — and remember that the spec
+  reference is generated, so the prose belongs in the JSON Schema's own `title` and
+  `description`.
+
+`apps/playground/src/starter.test.ts` enforces the first of these. The demo must use
+every field type the spec defines, minus the two that nest, **and every widget** — or
+name the widget in a short list saying why not, which is how a control that does not
+exist yet is handled. Putting a widget in the demo before its control is built would be
+worse than leaving it out: the document validates, the renderer falls back to the
+default control, and a visitor cannot tell which they are looking at. That is the
+documented-but-inert failure this repository has already shipped once.
+
 ## Some files are generated, and editing them is silently undone
 
 Prose written into a generated file survives until the next build. It has happened:
