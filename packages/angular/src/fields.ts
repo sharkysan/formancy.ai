@@ -197,6 +197,7 @@ export class FormancyNumberField extends FieldComponentBase {
         [attr.aria-invalid]="control()['aria-invalid']"
         [attr.aria-required]="control()['aria-required']"
         [attr.aria-describedby]="control()['aria-describedby']"
+        [attr.data-formancy-part]="part()"
         [disabled]="control().disabled === true"
         [checked]="checked()"
         (change)="onChange($event)"
@@ -207,6 +208,24 @@ export class FormancyNumberField extends FieldComponentBase {
 })
 export class FormancyCheckboxField extends FieldComponentBase {
   protected readonly checked = computed(() => this.field.snapshot().value === true)
+
+  /**
+   * `widget: "toggle"` is a part name and NOT `role="switch"`.
+   *
+   * ARIA's switch means a control that takes effect when you operate it, and a form
+   * field sets a value submitted later or never — so announcing "switch" describes
+   * it incorrectly to the people who rely on the description. A role is also not
+   * paint: changing it would make this the first widget to change what a control
+   * claims to be, which is the line the widget mechanism exists to hold. The switch
+   * is CSS, and conformance keeps finding this by role `checkbox` either way.
+   *
+   * Null rather than absent when there is no widget, because Angular omits an
+   * attribute bound to null — which is what keeps an ordinary checkbox's markup
+   * exactly as it was.
+   */
+  protected readonly part = computed(() =>
+    this.field.snapshot().def.widget === 'toggle' ? 'toggle' : null,
+  )
 
   protected onChange(event: Event): void {
     this.field.setValue((event.target as HTMLInputElement).checked)

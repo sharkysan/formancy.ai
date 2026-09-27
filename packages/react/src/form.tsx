@@ -362,6 +362,15 @@ function CheckboxField({ path, label }: FieldComponentProps) {
       <input
         type="checkbox"
         {...field.controlProps}
+        /* `widget: "toggle"` is a part name and NOT `role="switch"`. ARIA's switch
+           means a control that takes effect when you operate it, and a form field
+           sets a value submitted later or never — so announcing "switch" describes
+           it incorrectly to the people who rely on the description. A role is also
+           not paint: changing it would make this the first widget to change what a
+           control claims to be, which is the line the widget mechanism exists to
+           hold. The switch is CSS, and conformance keeps finding this by role
+           `checkbox` either way. */
+        {...(field.def.widget === 'toggle' ? { 'data-formancy-part': 'toggle' } : {})}
         checked={field.value === true}
         onChange={(event) => field.setValue(event.target.checked)}
         onBlur={() => field.touch()}

@@ -10,6 +10,33 @@ later.
 
 ## Unreleased
 
+**Both renderers draw a `toggle` as a switch, and it is still a checkbox.** React and
+Angular emit `data-formancy-part="toggle"`, all four themes style it, and the
+playground's consent field uses it so the widget is shown rather than only described.
+
+**Deliberately not `role="switch"`**, which resolves the question
+[0065](docs/decisions/0065-a-widget-is-authored-not-registered.md) left open. ARIA's
+switch means a control that takes effect when you operate it; a form field sets a
+value submitted later, possibly never, possibly after somebody changes their mind
+twice — so announcing "switch" describes it incorrectly to exactly the people who
+depend on the description. And a role is not paint: changing it would make `toggle`
+the first widget to change what a control *claims to be*, which is the line the
+widget mechanism exists to hold. The happy consequence is that conformance is
+untouched, because every fixture finds the control by role `checkbox` either way.
+
+**The themes guard caught the widget, then failed to catch a broken one.** It reported
+all four themes missing `toggle`, as designed. What it could not see is that the first
+CSS used `--fm-ink`, `--fm-paper` and `--fm-signal` in every theme, and **three of the
+four do not define them** — so the switch was styled, guarded, green, and invisible.
+A `var()` that resolves nowhere is not a soft failure: the declaration is discarded
+and an `appearance: none` input falls back to nothing at all, which is the invisible
+field that guard was written for in the first place.
+
+`apps/docs/src/themes.test.ts` now checks that every custom property a theme uses is
+one that theme defines. Its first run found a pre-existing use of `--fm-radius` in
+`paper.css` — which turned out to be correct, because it supplies a fallback, so the
+check was narrowed to uses without one rather than left to report a false finding.
+
 **A grid's columns can be configured, and `datagrid` stayed a widget.** `columns`
 says which of a repeater's fields become columns and in what order, with a relative
 width, an alignment and an optional shorter heading
