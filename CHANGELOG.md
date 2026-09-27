@@ -10,6 +10,32 @@ later.
 
 ## Unreleased
 
+**Two bugs an adversarial review found before the beta, and neither was catchable by
+the guards in place.**
+
+**A datagrid with no authored column widths rendered as one column.** Eight rules per
+theme — every definition of `--fm-datagrid-count` — were scoped to a placeholder a
+script had failed to substitute, so the selector matched nothing and the variable was
+never set. A grid whose author sized no column fell through to `repeat(1, …)`: one
+content track for a grid the renderer had just declared to have four, with every cell
+label still clipped, because the media query that un-clips them applies only below
+40rem. A column of unlabelled controls.
+
+The existing guards could not see it. The parts check asks whether a rule *names* a
+part, and a dead rule names it; the scope check asks whether a `var(--fm-x)` with no
+fallback resolves, and this use carries one. "Is it defined?" cannot distinguish a
+definition in a rule that can never apply. There is a guard for that now: every rule in
+a theme is scoped to that theme's own name, derived from the file rather than from its
+filename.
+
+**A control asked for the same name forever.** When a source did not know a stored
+value — a resumed form holding one the list no longer offers, or a host implementing
+only `kind: 'search'` — the answer still replaced the map, a new map was a new
+dependency identity, the effect re-ran, and it asked again. Measured: **602 requests in
+300 milliseconds** in React and 101 in Angular, with no "maximum update depth" to notice
+it by, because every turn went through a promise. Both renderers remember what they have
+*asked for* now, rather than inferring it from what came back.
+
 **A `select` may take its answers from the deployment** —
 `optionsSource: "pickup-points"` ([0077](docs/decisions/0077-options-may-come-from-a-named-source.md)).
 Asked for as "connect an external data source"; delivered as a **name**, never a URL.

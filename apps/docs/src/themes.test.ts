@@ -351,6 +351,37 @@ describe('the theme contract', () => {
     expect(wrong).toEqual([])
   })
 
+  test('scopes every rule to its own theme, so none of them is dead', () => {
+    // The bug this exists for, and the guards above all missed it: eight rules per
+    // theme were scoped to a placeholder a script had failed to substitute, so the
+    // selector matched nothing and `--fm-datagrid-count` was never set anywhere.
+    //
+    // A datagrid whose author sized no column then fell all the way through to
+    // `repeat(1, …)` — ONE content track for a grid the renderer had just declared to
+    // have four — with every cell label still clipped, because the media query that
+    // un-clips them only applies below 40rem. A column of unlabelled controls.
+    //
+    // Why the others could not see it: the parts check asks whether a rule NAMES a
+    // part, and a dead rule names it. The scope check asks whether a `var(--fm-x)`
+    // with no fallback resolves, and this use carries `, 1`. The definition was there,
+    // in a rule that could never apply — which is the one shape "is it defined?"
+    // cannot distinguish from "does it work?".
+    const wrong = themes().flatMap(({ name, css }) => {
+      const bare = css.replace(/\/\*[\s\S]*?\*\//g, '')
+      const scopes = new Set(
+        [...bare.matchAll(/\[data-formancy-theme=['"]([^'"\]]+)['"]\]/g)].map((match) => match[1]!),
+      )
+      // Every theme scopes everything to exactly one name: its own. Which one that is
+      // comes from the file rather than from its filename, so a renamed file is not a
+      // silent exemption — and more than one name is the defect, whatever they are.
+      return scopes.size <= 1
+        ? []
+        : [`${name} scopes rules to more than one theme: ${[...scopes].sort().join(', ')}`]
+    })
+
+    expect(wrong).toEqual([])
+  })
+
   test('a themed control has a height, so it is visible before it has content', () => {
     // The specific reason the field was invisible rather than merely unstyled:
     // an empty contenteditable collapses to nothing without one.

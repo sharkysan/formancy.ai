@@ -139,10 +139,19 @@ export function injectSourcedOptions(
   // The names of what is already stored. Without this, a resumed draft, a wizard page
   // change or a datagrid row move — which remounts every control in the row by design
   // — renders an empty box over an answer the form holds.
+  //
+  // Asked at most ONCE per value, and remembered as "asked" rather than inferred from
+  // the answer. A source is entitled not to know a value: a resumed form may hold one
+  // the list no longer offers, and a host may implement only `kind: 'search'`. Inferring
+  // from the answer meant the map was replaced, the signal changed, the effect re-ran
+  // and it asked again — measured in the React binding at 602 requests in 300ms.
+  const askedFor = new Set<string>()
   effect(() => {
     const resolver = source()
     const value = storedValue()
-    if (resolver === undefined || value === undefined || named().has(value)) return
+    if (resolver === undefined || value === undefined) return
+    if (named().has(value) || askedFor.has(value)) return
+    askedFor.add(value)
 
     const controller = new AbortController()
     void resolver

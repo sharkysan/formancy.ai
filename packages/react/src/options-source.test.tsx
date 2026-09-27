@@ -331,3 +331,68 @@ describe('a typeahead whose options come from a source', () => {
     }, WAITING)
   })
 })
+
+describe('asking for a name at most once', () => {
+  test('does not ask again when the answer does not contain the stored value', async () => {
+    // The loop this prevents, and it is unbounded. A resumed form holds a value the
+    // source no longer offers — or a host implements only `kind: 'search'` and answers
+    // `[]` to a labels request. The guard is "do we already know this name?", which
+    // stays false; the answer still replaced the map with a new one; a new map is a new
+    // dependency identity; the effect re-runs and asks again.
+    //
+    // Each turn waits for a round trip, so React never reports "maximum update depth"
+    // — the control just streams requests at the source's answer rate for as long as
+    // the form is open. Nothing in the earlier tests could see it: they all used a
+    // source that DID know the value.
+    const labelRequests: string[][] = []
+    mount({
+      sources: {
+        cantons: {
+          debounceMs: 0,
+          resolve: (request) => {
+            if (request.kind === 'labels') labelRequests.push([...request.values])
+            // Knows nothing about this value, which is a legitimate answer.
+            return Promise.resolve([])
+          },
+        },
+      },
+      initialValue: { canton: 'XX' },
+    })
+
+    await waitFor(() => {
+      expect(labelRequests.length).toBeGreaterThan(0)
+    }, WAITING)
+
+    // Long enough for several more round trips, if it were going to make them.
+    await new Promise((resolve) => setTimeout(resolve, 300))
+    expect(labelRequests).toEqual([['XX']])
+  })
+
+  test('asks once more when the stored value changes, which is a different question', async () => {
+    const labelRequests: string[][] = []
+    const engine = mount({
+      sources: {
+        cantons: {
+          debounceMs: 0,
+          resolve: (request) => {
+            if (request.kind === 'labels') labelRequests.push([...request.values])
+            return Promise.resolve([])
+          },
+        },
+      },
+      initialValue: { canton: 'XX' },
+    })
+
+    await waitFor(() => {
+      expect(labelRequests).toEqual([['XX']])
+    }, WAITING)
+
+    act(() => {
+      engine.setValue(['canton'], 'YY')
+    })
+
+    await waitFor(() => {
+      expect(labelRequests).toEqual([['XX'], ['YY']])
+    }, WAITING)
+  })
+})

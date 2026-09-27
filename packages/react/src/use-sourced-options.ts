@@ -145,12 +145,22 @@ export function useSourcedOptions(
   }, [enabled, source, name, path, query, minQueryLength, maxRows, debounceMs, engine])
 
   /*
-   * The names of what is already stored. Asked once per value, because the answer
-   * cannot change while the form is open and asking again on every render would make
-   * a control that reads a draft hammer a deployment's source.
+   * The names of what is already stored. Asked at most ONCE per value, and remembered
+   * as "asked" rather than inferred from the answer.
+   *
+   * That distinction is the whole of it. The first version asked again unless the
+   * answer contained the value — and a source is entitled not to know it: a resumed
+   * form may hold a value the list no longer offers, and a host may implement only
+   * `kind: 'search'`. The answer still replaced the map, a new map is a new dependency
+   * identity, the effect re-ran, and it asked again. Measured: **602 requests in 300
+   * milliseconds**, with no "maximum update depth" to notice it by, because every turn
+   * went through a promise.
    */
+  const askedFor = useRef<Set<string>>(new Set())
   useEffect(() => {
-    if (!enabled || source === undefined || stored === undefined || named.has(stored)) return
+    if (!enabled || source === undefined || stored === undefined) return
+    if (named.has(stored) || askedFor.current.has(stored)) return
+    askedFor.current.add(stored)
 
     const controller = new AbortController()
     void source

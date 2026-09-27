@@ -264,3 +264,33 @@ describe('a typeahead whose options come from a source', () => {
     expect(asked.filter((request) => request.kind === 'search')).toHaveLength(0)
   })
 })
+
+describe('asking for a name at most once', () => {
+  test('does not ask again when the answer does not contain the stored value', async () => {
+    // The unbounded loop this prevents, measured in the React binding at 602 requests
+    // in 300ms: the guard was "do we already know this name?", which stays false when
+    // a source does not know it — and the answer still replaced the map, which changed
+    // the signal, which re-ran the effect.
+    const labelRequests: string[][] = []
+    const { settle } = await mount({
+      sources: {
+        cantons: {
+          debounceMs: 0,
+          resolve: (request) => {
+            if (request.kind === 'labels') labelRequests.push([...request.values])
+            return Promise.resolve([])
+          },
+        },
+      },
+      initialValue: { canton: 'XX' },
+    })
+
+    await until(settle, () => {
+      expect(labelRequests.length).toBeGreaterThan(0)
+    })
+
+    await new Promise((resolve) => setTimeout(resolve, 300))
+    await settle()
+    expect(labelRequests).toEqual([['XX']])
+  })
+})
