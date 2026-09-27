@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common'
 import {
   DestroyRef,
   ChangeDetectionStrategy,
@@ -526,9 +527,61 @@ export class FormancyCode implements OnInit {
 @Component({
   selector: 'formancy-layout',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormancyFieldSlot, FormancyRepeaterSection, FormancyTabs, FormancyCode],
+  imports: [NgTemplateOutlet, FormancyFieldSlot, FormancyRepeaterSection, FormancyTabs, FormancyCode],
+  /**
+   * The one stylesheet this package ships, and it exists to UNDO an element rather
+   * than to style one.
+   *
+   * Angular gives every component a host element. This one recurses, so a container's
+   * children arrive wrapped in a `<formancy-layout>` that React does not emit — and a
+   * wrapper that participates in layout is the only grid item its parent has. Measured
+   * in a browser against `blueprint.css`, with the two renderers' exact markup side by
+   * side: React put two fields at the same top and 442px apart; Angular stacked them,
+   * 86px apart at the same left edge. A two-column table layout has therefore never
+   * produced two columns in Angular, and nothing failed, because jsdom has no layout
+   * and no application in this repository renders the Angular bindings.
+   *
+   * `display: contents` removes the box and keeps the children, so the consumer's grid
+   * sees what it sees in React. It also removes the element from the accessibility
+   * tree, which is right: it has no role and names nothing.
+   *
+   * This is a deliberate amendment to [0008](../../../docs/decisions/0008-layered-packages.md)'s
+   * "nothing below the component kit ships a CSS file", argued in
+   * [0073](../../../docs/decisions/0073-a-host-element-is-not-a-layout.md). The rule is
+   * about who owns APPEARANCE; this declaration owns none of it and a theme cannot fix
+   * it, because a consumer styling their own design system never reads our themes.
+   */
+  styles: ':host { display: contents }',
   template: `
     @for (node of nodes(); track $index; let i = $index) {
+      <!-- A node that spans gets a cell to span WITH, and one that does not is left
+           exactly as it was: a direct child of the container, so the markup of a form
+           using no span is unchanged.
+
+           The body is an ng-template rather than the same @if chain written twice,
+           because two copies of a nine-branch chain is two places for them to drift.
+
+           Two channels for one fact, and the reason is arithmetic: data-span is the
+           authored value, which a selector can match, and --fm-span is the same number
+           where CSS can COUNT with it, because 'grid-column: span attr(data-span)' is
+           not a thing. 'all' needs no number -- it is 1 / -1 whatever the column count
+           -- so it carries no property and the theme's fallback covers the rest.
+
+           The React binding does the same, for the same reasons. -->
+      @if (node.span !== undefined) {
+        <div
+          data-formancy-part="layout-cell"
+          [attr.data-span]="node.span"
+          [style]="spanStyle(node)"
+        >
+          <ng-container *ngTemplateOutlet="nodeBody; context: { $implicit: node, i: i }" />
+        </div>
+      } @else {
+        <ng-container *ngTemplateOutlet="nodeBody; context: { $implicit: node, i: i }" />
+      }
+    }
+
+    <ng-template #nodeBody let-node let-i="i">
       @if (node.kind === 'field') {
         @if (isRepeater(node.path)) {
           <formancy-repeater [wire]="node.path" [labels]="labels()" />
@@ -606,7 +659,7 @@ export class FormancyCode implements OnInit {
           <formancy-layout [nodes]="node.children" [labels]="labels()" [at]="pathOf(i)" />
         </div>
       }
-    }
+    </ng-template>
   `,
 })
 export class FormancyLayout {
@@ -617,6 +670,15 @@ export class FormancyLayout {
 
   private readonly engine = injectEngine()
 
+
+  /** The span as a number CSS can count with, and nothing at all for `all`.
+   *
+   *  A style OBJECT rather than `[style.--fm-span]`: both set a custom property --
+   *  measured, both work -- and the object form lets this return nothing for `all`
+   *  without binding an empty string. */
+  protected spanStyle(node: LayoutNode): Record<string, string> {
+    return typeof node.span === 'number' ? { '--fm-span': String(node.span) } : {}
+  }
   /** This node's index path, as the dotted string the attribute carries. */
   protected pathOf(index: number): string {
     const prefix = this.at()

@@ -689,6 +689,28 @@
 [data-formancy-theme='dusk'] [data-formancy-part='layout-table'][data-columns='5'] { --fm-columns: 5; }
 [data-formancy-theme='dusk'] [data-formancy-part='layout-table'][data-columns='6'] { --fm-columns: 6; }
 
+/* A node that spans more than one column.
+
+   The cell exists only around a node that asked to span, so a form using none has the
+   markup it always had. `--fm-span` carries the number because `grid-column: span
+   attr(data-span)` is not a thing, and `all` needs no number at all -- it is the same
+   `1 / -1` a heading in this grid uses, and it stays right when the column count
+   changes.
+
+   ABOVE the reflow query below, deliberately: at one column a numeric span must lose,
+   and two rules of equal weight are decided by which comes last. */
+[data-formancy-theme='dusk'] [data-formancy-part='layout-cell'] {
+  grid-column: span var(--fm-span, 1);
+  /* A grid item's default `min-width: auto` lets a long word push the grid wider than
+     its container, exactly as `minmax(0, 1fr)` prevents for the tracks. */
+  min-width: 0;
+}
+
+[data-formancy-theme='dusk'] [data-formancy-part='layout-cell'][data-span='all'] {
+  grid-column: 1 / -1;
+}
+
+
 /* 1.4.10 Reflow. A grid with a fixed column count does not collapse on its
    own the way `auto-fit` does, so it is told to — in a media query rather
    than from a measurement, because a layout that reflows only after scripts
@@ -696,6 +718,14 @@
 @media (max-width: 40rem) {
   [data-formancy-theme='dusk'] [data-formancy-part='layout-table'] {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* And nothing spans a second column, because there is no second column. Left in, a
+     numeric span here would create an IMPLICIT one and put the page back to scrolling
+     sideways -- the reflow this query exists for, undone by a feature written after it.
+     `all` keeps its own rule: 1 / -1 is one column when there is one column. */
+  [data-formancy-theme='dusk'] [data-formancy-part='layout-cell'] {
+    grid-column: auto;
   }
 }
 

@@ -10,6 +10,47 @@ later.
 
 ## Unreleased
 
+**A table child may span its grid** — `span: 'all'` or `span: <n>` on a layout node inside a
+`table` ([0074](docs/decisions/0074-a-table-child-may-span.md)). Reported against the
+playground, where a rich text editor and a file dropzone sat at **266px against 548px** for
+a field in the flow.
+
+The answer "put the wide thing outside the table" was wrong, and not only because it is
+clumsy: a `table` carries its own `label`, and that label names a real group, so a field
+moved out for the width is out of the group too. It was a layout the format could not
+express. `span` lands in **spec version 2, which has never been released**, so it costs no
+version bump now and would have cost one after the first release.
+
+`'all'` rather than a number is the one to reach for: `span: 2` in a two-column table
+silently becomes two thirds when somebody makes it three columns. A span outside a table is
+refused rather than ignored, and a span wider than its table is refused naming the actual
+column count.
+
+**Only a spanning node is wrapped**, in a new `layout-cell` part, so a form that uses no span
+has exactly the markup it had before. A theme that styles the table layout needs a rule for
+that part, and its narrow-screen reset must come **after** the rule it beats — at one column
+a numeric span would otherwise create an implicit second column and put the page back to
+scrolling sideways. That ordering is guarded, and the guard was written because the first
+version of this got it wrong.
+
+**Fixed: a two-column table layout never produced two columns in Angular**
+([0073](docs/decisions/0073-a-host-element-is-not-a-layout.md)). Angular gives every
+component a host element and the layout component recurses, so a container's children
+arrived wrapped in a `<formancy-layout>` that React does not emit — and that wrapper was
+the grid's only item. Measured with both renderers' markup on one page: React put two
+fields side by side, 442px apart; Angular stacked them.
+
+`@formancy/angular` now ships one declaration, `:host { display: contents }`, which is a
+deliberate narrow amendment to [0008](docs/decisions/0008-layered-packages.md) — it owns no
+appearance, it undoes an element the framework forces the renderer to emit. **A deployment
+under a strict `style-src` needs Angular's `ngCspNonce`**, which is the first such cost in
+this repository and smaller than a layout that is wrong everywhere.
+
+Worth saying plainly: **nothing could have caught it.** jsdom has no layout, conformance
+queries by role and accessible name, axe had nothing to report, and no application here
+renders the Angular bindings. It is the second CSS bug in a week found by a person looking
+at a running page, and there is no gate for that.
+
 **Fixed: the typeahead popup opened over its own label and box.** Reported against the
 running playground. The list was absolutely positioned with `top` left at `auto`, on the
 reasoning that it would then take its static position — where it would have sat in the

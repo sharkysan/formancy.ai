@@ -218,3 +218,117 @@ describe('static text', () => {
     expect(engine.validate().valid).toBe(true)
   })
 })
+
+/**
+ * `span` — a node taking more than one of a table's columns.
+ *
+ * The report this exists for: a rich text editor and a file dropzone sat in a
+ * two-column table in the playground and measured 266px against 548px for a
+ * field in the flow. The answer "put the wide thing outside the table" is a
+ * workaround with a cost the format cannot pay: a table carries its own
+ * `label`, and that label names a real group, so a field placed outside the
+ * table is outside that group too.
+ */
+const spanning: FormSchema = {
+  specVersion: '2',
+  id: 'address',
+  title: 'Address',
+  model: {
+    fields: [
+      { key: 'postcode', type: 'text', label: 'Postcode' },
+      { key: 'city', type: 'text', label: 'City' },
+      { key: 'notes', type: 'textarea', label: 'Notes' },
+    ],
+  },
+  layouts: [
+    {
+      name: 'web',
+      nodes: [
+        {
+          kind: 'table',
+          columns: 2,
+          children: [
+            { kind: 'field', path: 'postcode' },
+            { kind: 'field', path: 'city' },
+            { kind: 'field', path: 'notes', span: 'all' },
+          ],
+        },
+      ],
+    },
+  ],
+} as FormSchema
+
+const cellOf = (label: string): HTMLElement | null =>
+  screen.getByRole('textbox', { name: label }).closest('[data-formancy-part="layout-cell"]')
+
+describe('a node that spans a table\u2019s columns', () => {
+  test('gets a cell to span with, and the others are left exactly as they were', () => {
+    // The whole design in one assertion: only the spanning node is wrapped, so a
+    // form that uses no span has byte-identical markup to before this existed.
+    render(
+      <FormancyProvider engine={createFormEngine({ schema: spanning })}>
+        <FormancyForm layout="web" onSubmit={() => undefined} />
+      </FormancyProvider>,
+    )
+
+    expect(cellOf('Notes')?.getAttribute('data-span')).toBe('all')
+    expect(cellOf('Postcode')).toBeNull()
+    expect(cellOf('City')).toBeNull()
+
+    // And the cell is a child of the table, so it is the grid item the theme sizes.
+    const table = document.querySelector('[data-formancy-part="layout-table"]')
+    expect(cellOf('Notes')?.parentElement).toBe(table)
+  })
+
+  test('carries the number where CSS can count with it, and nothing for `all`', () => {
+    // Two channels for one fact, and the reason is arithmetic: a selector can match
+    // `data-span`, but `grid-column: span attr(data-span)` is not a thing. `all` is
+    // `1 / -1` whatever the column count, so it needs no number at all.
+    render(
+      <FormancyProvider
+        engine={createFormEngine({
+          schema: {
+            ...spanning,
+            layouts: [
+              {
+                name: 'web',
+                nodes: [
+                  {
+                    kind: 'table',
+                    columns: 3,
+                    children: [
+                      { kind: 'field', path: 'postcode', span: 2 },
+                      { kind: 'field', path: 'city' },
+                      { kind: 'field', path: 'notes', span: 'all' },
+                    ],
+                  },
+                ],
+              },
+            ],
+          } as FormSchema,
+        })}
+      >
+        <FormancyForm layout="web" onSubmit={() => undefined} />
+      </FormancyProvider>,
+    )
+
+    expect(cellOf('Postcode')?.style.getPropertyValue('--fm-span')).toBe('2')
+    expect(cellOf('Notes')?.style.getPropertyValue('--fm-span')).toBe('')
+    expect(cellOf('Notes')?.getAttribute('data-span')).toBe('all')
+  })
+
+  test('changes nothing about what any control is called', () => {
+    // The line a layout may not cross. A cell is a box around a control, and a box
+    // that joined the accessible name would make the arrangement change what the
+    // form asks -- which is what 0034 restricts every lookup to role and name for.
+    render(
+      <FormancyProvider engine={createFormEngine({ schema: spanning })}>
+        <FormancyForm layout="web" onSubmit={() => undefined} />
+      </FormancyProvider>,
+    )
+
+    expect(screen.getByRole('textbox', { name: 'Notes' })).toBeTruthy()
+    expect(screen.getByRole('textbox', { name: 'Postcode' })).toBeTruthy()
+    expect(screen.getByRole('textbox', { name: 'City' })).toBeTruthy()
+  })
+})

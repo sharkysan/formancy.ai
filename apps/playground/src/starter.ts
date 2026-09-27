@@ -235,16 +235,26 @@ export const STARTER_SCHEMA = {
               kind: 'section',
               label: { $t: 'tab.extras' },
               children: [
-                { kind: 'field', path: 'extras' },
-                { kind: 'field', path: 'cardLanguage' },
                 {
                   // table: columns that line up across rows, which stacked
                   // rows cannot do because each row sizes itself.
+                  //
+                  // And `span`, which is the other half of a grid. Two short answers
+                  // take a column each; the rich-text editor and the file dropzone take
+                  // the whole width, because a control somebody works INSIDE is not a
+                  // control they answer in a word. Measured before `span` existed: both
+                  // sat at 266px against 548px for a field in the flow.
+                  //
+                  // `'all'` rather than `2`, and the demo says so on purpose: change
+                  // `columns` to 3 and these two stay full width, where a number would
+                  // silently have become two thirds.
                   kind: 'table',
                   columns: 2,
                   children: [
-                    { kind: 'field', path: 'message' },
-                    { kind: 'field', path: 'artwork' },
+                    { kind: 'field', path: 'extras' },
+                    { kind: 'field', path: 'cardLanguage' },
+                    { kind: 'field', path: 'message', span: 'all' },
+                    { kind: 'field', path: 'artwork', span: 'all' },
                   ],
                 },
                 // A code node: a second VIEW of an answer placed elsewhere, collecting

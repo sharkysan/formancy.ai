@@ -978,6 +978,20 @@
        "type": "string",
        "minLength": 1,
        "maxLength": 512
+      },
+      "span": {
+       "title": "Column span",
+       "description": "How many of the surrounding table's columns this takes. Only inside a table: elsewhere it is refused rather than ignored. Use \"all\" for the full width — it is what somebody means and it survives a change to the column count, where a number does not. Anything a person works inside rather than answers in a word — a rich text editor, a file dropzone, a long text area — usually wants the full width.",
+       "anyOf": [
+        {
+         "type": "integer",
+         "minimum": 1,
+         "maximum": 12
+        },
+        {
+         "const": "all"
+        }
+       ]
       }
      }
     },
@@ -1011,6 +1025,20 @@
        "items": {
         "$ref": "#/$defs/layoutNode"
        }
+      },
+      "span": {
+       "title": "Column span",
+       "description": "How many of the surrounding table's columns this takes. Only inside a table: elsewhere it is refused rather than ignored. Use \"all\" for the full width — it is what somebody means and it survives a change to the column count, where a number does not. Anything a person works inside rather than answers in a word — a rich text editor, a file dropzone, a long text area — usually wants the full width.",
+       "anyOf": [
+        {
+         "type": "integer",
+         "minimum": 1,
+         "maximum": 12
+        },
+        {
+         "const": "all"
+        }
+       ]
       }
      }
     },
@@ -1041,6 +1069,20 @@
        "items": {
         "$ref": "#/$defs/layoutNode"
        }
+      },
+      "span": {
+       "title": "Column span",
+       "description": "How many of the surrounding table's columns this takes. Only inside a table: elsewhere it is refused rather than ignored. Use \"all\" for the full width — it is what somebody means and it survives a change to the column count, where a number does not. Anything a person works inside rather than answers in a word — a rich text editor, a file dropzone, a long text area — usually wants the full width.",
+       "anyOf": [
+        {
+         "type": "integer",
+         "minimum": 1,
+         "maximum": 12
+        },
+        {
+         "const": "all"
+        }
+       ]
       }
      }
     },
@@ -1078,6 +1120,20 @@
        "items": {
         "$ref": "#/$defs/layoutNode"
        }
+      },
+      "span": {
+       "title": "Column span",
+       "description": "How many of the surrounding table's columns this takes. Only inside a table: elsewhere it is refused rather than ignored. Use \"all\" for the full width — it is what somebody means and it survives a change to the column count, where a number does not. Anything a person works inside rather than answers in a word — a rich text editor, a file dropzone, a long text area — usually wants the full width.",
+       "anyOf": [
+        {
+         "type": "integer",
+         "minimum": 1,
+         "maximum": 12
+        },
+        {
+         "const": "all"
+        }
+       ]
       }
      }
     },
@@ -1105,6 +1161,20 @@
        "title": "Label",
        "description": "What a reader is told the code is. A picture of a code says nothing to a screen reader, so this and the value behind it are the accessible content. Optional: a code beside the field it encodes needs no second name.",
        "$ref": "#/$defs/text"
+      },
+      "span": {
+       "title": "Column span",
+       "description": "How many of the surrounding table's columns this takes. Only inside a table: elsewhere it is refused rather than ignored. Use \"all\" for the full width — it is what somebody means and it survives a change to the column count, where a number does not. Anything a person works inside rather than answers in a word — a rich text editor, a file dropzone, a long text area — usually wants the full width.",
+       "anyOf": [
+        {
+         "type": "integer",
+         "minimum": 1,
+         "maximum": 12
+        },
+        {
+         "const": "all"
+        }
+       ]
       }
      }
     }

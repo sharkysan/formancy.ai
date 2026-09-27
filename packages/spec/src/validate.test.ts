@@ -338,3 +338,123 @@ describe('error folding with several broken fields', () => {
     }
   })
 })
+
+describe('span, which places a node across a table\u2019s columns', () => {
+  /** The contact form with a two-column table around both its fields, which is the
+   *  arrangement every case here varies. */
+  function withTable(edit: (table: { columns: number; children: unknown[] }) => void): FormSchema {
+    return revise((draft) => {
+      const table = { kind: 'table', columns: 2, children: [
+        { kind: 'field', path: 'email' },
+        { kind: 'field', path: 'message' },
+      ] }
+      edit(table as unknown as { columns: number; children: unknown[] })
+      draft.specVersion = '2'
+      draft.layouts = [{ name: 'default', nodes: [table] }] as NonNullable<FormSchema['layouts']>
+    })
+  }
+
+  test('a child may take the whole width', () => {
+    // The report this exists for: a rich text editor and a file dropzone at half
+    // width inside a two-column table, because a table child took one column and
+    // there was no way to say otherwise.
+    const result = validateSchema(
+      withTable((table) => {
+        ;(table.children[1] as { span?: unknown }).span = 'all'
+      }),
+    )
+    expect(result.valid).toBe(true)
+  })
+
+  test('a child may take some of the columns', () => {
+    const result = validateSchema(
+      withTable((table) => {
+        table.columns = 3
+        ;(table.children[0] as { span?: unknown }).span = 2
+      }),
+    )
+    expect(result.valid).toBe(true)
+  })
+
+  test('refuses a span wider than the table it is in', () => {
+    // Not clamped, because an author who writes 4 in a two-column table believes
+    // they configured something. Silently narrowing it is the shape of failure
+    // this format refuses everywhere else.
+    const error = onlyError(
+      validateSchema(
+        withTable((table) => {
+          ;(table.children[0] as { span?: unknown }).span = 4
+        }),
+      ),
+    )
+    expect(error.path).toBe('/layouts/0/nodes/0/children/0/span')
+    expect(error.message).toContain('2')
+  })
+
+  test('refuses a span on a node that is not in a table', () => {
+    // The whole reason the property is allowed to exist: a span outside a table
+    // validated and did nothing would be the documented-but-inert failure this
+    // repository has shipped once already.
+    const error = onlyError(
+      validateSchema(
+        revise((draft) => {
+          draft.specVersion = '2'
+            draft.layouts = [
+            {
+              name: 'default',
+              nodes: [
+                {
+                  kind: 'section',
+                  label: 'About',
+                  children: [{ kind: 'field', path: 'email', span: 'all' }],
+                },
+                { kind: 'field', path: 'message' },
+              ],
+            },
+          ] as unknown as NonNullable<FormSchema['layouts']>
+        }),
+      ),
+    )
+    expect(error.path).toBe('/layouts/0/nodes/0/children/0/span')
+    expect(error.message).toContain('table')
+  })
+
+  test('a table may itself span, when it is inside another table', () => {
+    // Nesting is legal, so the rule is about the PARENT and not about the kind of
+    // the node carrying the property.
+    const result = validateSchema(
+      revise((draft) => {
+        draft.specVersion = '2'
+        draft.layouts = [
+          {
+            name: 'default',
+            nodes: [
+              {
+                kind: 'table',
+                columns: 2,
+                children: [
+                  {
+                    kind: 'table',
+                    columns: 2,
+                    span: 'all',
+                    children: [
+                      { kind: 'field', path: 'email' },
+                      { kind: 'field', path: 'message' },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ] as unknown as NonNullable<FormSchema['layouts']>
+      }),
+    )
+    expect(result.valid).toBe(true)
+  })
+
+  test('a document with no span is exactly as valid as before', () => {
+    // The guard on the guard: a rule that refused something it should not would
+    // be caught here rather than by every other case going red at once.
+    expect(validateSchema(withTable(() => {})).valid).toBe(true)
+  })
+})

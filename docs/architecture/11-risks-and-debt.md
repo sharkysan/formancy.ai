@@ -32,6 +32,20 @@ forced the engine's subscription API to be framework-neutral rather than
 React-shaped while there was still time to change it. Both renderers now pass
 the same fixtures with no skips.
 
+*Residual, and larger than the paragraph above suggests:* **parity is verified by markup
+and never by rendering.** A two-column table layout produced one column in Angular from
+the day it shipped — the recursing component's host element was the grid's only item —
+and every gate this project runs was blind to it: jsdom has no layout, conformance queries
+by role and accessible name, and axe had nothing to report. Fixed in
+[0073](../decisions/0073-a-host-element-is-not-a-layout.md), found by a person looking at
+a running page.
+
+**No application in this repository renders the Angular bindings.** The playground and the
+admin app are React; the docs quote Angular without executing it. That is the actual hole,
+and closing it — an Angular app in the repository, rendered and measured — is the remedy
+this section is here to name. Until then the Angular half of "one suite, N drivers" holds
+for behaviour and not for appearance.
+
 *Residual:* Angular users will demand a position on Signal Forms. The position
 is interop, not inheritance — Signal Forms' schema is authored statically in
 TypeScript and formancy's is dynamic runtime JSON — via a Standard Schema v1
@@ -74,6 +88,25 @@ defect would be most costly.
 | **No manual accessibility audit, no VPAT** | Requires assistive-technology testing that has not been done | The accessibility claim rests on automated checking, which covers roughly 57% |
 | **`@marcbachmann/cel-js`: 118 known corpus failures** | The library implements most, not all, of CEL | Enumerated in `CEL-CONFORMANCE.md`; a form using an affected construct behaves incorrectly |
 | **No requirements traceability matrix** | Requirements live as fixtures and budgets, not as a numbered list | A regulated consumer must construct traceability themselves |
+
+### There is no gate for what it looks like
+
+Two CSS bugs shipped in one week and both were found by a person opening a page: the
+typeahead popup opened over its own label because `top: auto` means something different
+inside a grid ([0072](../decisions/0072-a-typeahead-is-a-combobox-over-the-same-answer.md)),
+and Angular's table layout never had more than one column
+([0073](../decisions/0073-a-host-element-is-not-a-layout.md)).
+
+Neither was a careless mistake and neither was catchable here. **jsdom implements no
+layout**, so no unit test in this repository can ask where a box is. What replaced each
+assumption is a structural contract a test *can* hold — the popup is positioned against an
+anchor that wraps the control; every element between a grid and its cells is
+`display: contents` — and those are proxies, honestly labelled as proxies.
+
+A real gate is a browser: Playwright over the reference theme at a fixed viewport, which
+[§10](10-verification.md) already describes as the narrow use for pixel testing and which
+is not configured. Until it is, the accurate statement is that appearance is reviewed and
+not verified.
 
 ## 11.3 Accepted architectural risks
 

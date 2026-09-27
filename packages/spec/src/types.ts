@@ -80,6 +80,35 @@ export interface FormI18n {
 }
 
 /**
+ * How many of a table's columns a node takes.
+ *
+ * Only inside a `table`, and `validateSchema` refuses it anywhere else rather than
+ * ignoring it: a `span` that validated and did nothing is the documented-but-inert
+ * shape this format has shipped once already.
+ *
+ * **Why it exists at all**, rather than telling an author to put the wide thing outside
+ * the grid. A `table` can carry its own `label`, and that label names a real group. A
+ * full-width field placed outside the table is outside that group too — so "put it
+ * outside" is not a workaround with a cost, it is a layout the format could not express.
+ * Reported by somebody looking at the playground, where a rich text editor and a file
+ * dropzone sat at 266px against 548px for a field in the flow.
+ *
+ * `'all'` rather than the column count, for the common case. An author who writes
+ * `span: 2` in a two-column table and later makes it three columns has silently lost the
+ * full width; `'all'` is the thing they meant and it survives the edit. A number is still
+ * there for "two of three", and a number wider than the table is refused — an author who
+ * writes 4 in a two-column table believes they configured something.
+ *
+ * A renderer that ignores this is still correct in the sense 0065 means: every answer is
+ * still collected and still placed. It is a measurement of width, and the narrow-screen
+ * collapse overrides it anyway, because WCAG 1.4.10 is a media query rather than a
+ * property of the document.
+ */
+export interface LayoutPlacement {
+  span?: number | 'all'
+}
+
+/**
  * One arrangement of a model. A form may have several — `web`, `print`,
  * `mobile` — over the same data, which is the point of keeping layout out of
  * the model in the first place.
@@ -90,8 +119,8 @@ export interface FormLayout {
 }
 
 export type LayoutNode =
-  | { kind: 'field'; path: string }
-  | { kind: 'section' | 'row' | 'column'; label?: Text; children: LayoutNode[] }
+  | ({ kind: 'field'; path: string } & LayoutPlacement)
+  | ({ kind: 'section' | 'row' | 'column'; label?: Text; children: LayoutNode[] } & LayoutPlacement)
   /**
    * One panel shown at a time, each child section supplying a tab and its
    * label supplying the tab's name.
@@ -111,7 +140,7 @@ export type LayoutNode =
    * one form are otherwise both announced as "tab list" and a screen-reader
    * user cannot tell which is which.
    */
-  | { kind: 'tabs'; label?: Text; children: LayoutNode[] }
+  | ({ kind: 'tabs'; label?: Text; children: LayoutNode[] } & LayoutPlacement)
   /**
    * A grid whose columns line up across rows, which is the one thing stacked
    * `row` nodes cannot do — each row sizes itself independently.
@@ -120,7 +149,7 @@ export type LayoutNode =
    * like every other container here, because WCAG 1.4.10 is a media query and
    * not a measurement.
    */
-  | { kind: 'table'; columns: number; label?: Text; children: LayoutNode[] }
+  | ({ kind: 'table'; columns: number; label?: Text; children: LayoutNode[] } & LayoutPlacement)
   /**
    * A machine-readable code drawn from a value the form already holds.
    *
@@ -140,7 +169,7 @@ export type LayoutNode =
    * the code is — a picture says nothing to a screen reader, so the label and the
    * value behind it are the accessible content.
    */
-  | { kind: 'qrcode'; path: string; label?: Text }
+  | ({ kind: 'qrcode'; path: string; label?: Text } & LayoutPlacement)
 
 /**
  * The layout kinds that hold no children.

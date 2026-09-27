@@ -361,9 +361,37 @@ function presentationErrors(schema: FormSchema): SchemaError[] {
     // twice, bound to the same answer, which no form means.
     const placed = new Set<string>()
     const duplicates = new Set<string>()
-    const walkNodes = (nodes: readonly LayoutNode[], nodeBase: string): void => {
+    const walkNodes = (
+      nodes: readonly LayoutNode[],
+      nodeBase: string,
+      parent?: LayoutNode,
+    ): void => {
       for (const [nodeIndex, node] of nodes.entries()) {
         const nodePath = `${nodeBase}/${String(nodeIndex)}`
+
+        // `span` is about a node's PLACE and not about its kind, so it is checked here
+        // rather than inside any of the branches below -- a table nested in a table may
+        // span, and so may a field, a section or a code.
+        //
+        // Refused outside a table rather than ignored. A property that validated and did
+        // nothing is what this format has shipped once already, and the author who wrote
+        // it believes the arrangement they described is the one they will get.
+        if (node.span !== undefined) {
+          if (parent?.kind !== 'table') {
+            errors.push({
+              path: `${nodePath}/span`,
+              message: `"span" says how many of a table's columns to take, and this node is not in a table. Put it in a table node, or remove the span.`,
+            })
+          } else if (typeof node.span === 'number' && node.span > parent.columns) {
+            // Refused rather than clamped: an author who writes 4 in a two-column table
+            // believes they configured something, and silently narrowing it is the
+            // failure this rule exists to make loud.
+            errors.push({
+              path: `${nodePath}/span`,
+              message: `This spans ${String(node.span)} columns in a table that has ${String(parent.columns)}. Use "all" for the full width, so it stays right if the column count changes.`,
+            })
+          }
+        }
         if (node.kind === 'qrcode') {
           // A code needs its path to exist, exactly as a placement does: a node
           // encoding nothing draws an empty box, which reads as a broken form rather
@@ -431,7 +459,7 @@ function presentationErrors(schema: FormSchema): SchemaError[] {
             })
           }
 
-          walkNodes(layoutChildren(node), `${nodePath}/children`)
+          walkNodes(layoutChildren(node), `${nodePath}/children`, node)
         }
       }
     }
