@@ -419,6 +419,22 @@ function presentationErrors(schema: FormSchema): SchemaError[] {
               message: `No field has the data path "${node.path}", so this code would encode nothing.`,
             })
           }
+          // A code says what it IS, or it says nothing anybody can use. The picture is
+          // decoration a screen reader cannot read, and the value beneath it sits in an
+          // `<output>` -- a live region, announced whenever the answer changes. Without
+          // a label that announcement is a bare booking reference from nowhere.
+          //
+          // Here rather than as `required` in the schema: the layout node union reports
+          // a failed branch as "is not one of the allowed values", which tells an author
+          // nothing about which property is missing. The same reason the column rules
+          // live here, and the same cost -- a third-party validator reading the raw
+          // JSON Schema will not catch it.
+          if (node.label === undefined) {
+            errors.push({
+              path: `${nodePath}/label`,
+              message: `This code needs a label saying what it is. The picture cannot be read aloud and the value under it is a bare string, so the label is the only thing a screen reader has to go on.`,
+            })
+          }
         } else if (node.kind === 'field') {
           if (!placeable.has(node.path)) {
             errors.push({

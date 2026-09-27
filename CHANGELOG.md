@@ -10,6 +10,49 @@ later.
 
 ## Unreleased
 
+**A code node must say what it is.** [0070](docs/decisions/0070-a-code-is-an-arrangement-not-a-field.md)
+has always said the picture is decoration and "the label and the value behind it are the
+accessible content" — and `label` was optional, which made the accessible content
+optional. The builder was the worst offender: it inserted `{ kind: 'qrcode', path }` with
+no label at all, so every code node made that way was an unnamed live region announcing a
+bare string.
+
+`validateSchema` refuses a code with no label now, the builder supplies one named after the
+answer it shows, and a code node added without one is refused outright rather than left to
+fail at publish.
+
+**A chooser stores a string.** A `select` or `radio` answer that is not one — an object, an
+array, a number — is refused with `type`. It had to be: a field whose options live
+elsewhere has no list to compare against, and the server's membership check walks only
+strings, so `{"canton": {"$gt": ""}}` was stored with nothing having looked at it.
+
+**Fixed: the server's membership check could not run.** `AppOptions` had no
+`optionsSources` and `createApp` never set it, so in the shipped HTTP server the whole
+server half of `optionsSource` was unreachable — while `SAFETY-ANALYSIS.md`'s A7 stated the
+constraint unconditionally.
+
+**Fixed: the "this source is missing" message was unreachable for the typeahead** — the
+widget the feature was built for. Both renderers dispatched to the widget before checking,
+so what somebody got was a working-looking combobox that returned nothing and announced "No
+options match": that says the list has no such row, when the truth is there is no list.
+
+**Fixed, in Angular only, three ways the two renderers had become two different controls.**
+It looked the stored answer up in the document's options, which a sourced field does not
+have, so the box rendered empty over an answer the form was holding. It asked every source
+twice, because a select carrying the widget delegates to another component and both extend
+the same base. And its labels request was never registered for abort, so it outlived the
+component that asked for it.
+
+**Fixed: a resolver was told the field key, not the field's path.** `OptionsRequest.path` is
+documented as "the field's data path, e.g. `canton` or `people[1].canton`" in both
+renderers, and both sent `def.key` — so a resolver could not tell two same-named sourced
+fields apart, and never saw which row of a repeater it was answering for.
+
+**Fixed: backspacing under the minimum query length reported the source as broken.** The
+generation counter was bumped only on the path that sends a request, so the abort arrived at
+a handler that still believed it was current — and the box stayed marked busy with nothing
+in flight.
+
 **Two bugs an adversarial review found before the beta, and neither was catchable by
 the guards in place.**
 

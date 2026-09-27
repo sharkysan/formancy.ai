@@ -667,7 +667,7 @@ required · string
 
 optional · Text (see below)
 
-**Label.** What a reader is told the code is. A picture of a code says nothing to a screen reader, so this and the value behind it are the accessible content. Optional: a code beside the field it encodes needs no second name.
+**Label.** What a reader is told this code IS. Required, because it is the code's accessible content: the picture is decoration a screen reader cannot use, and the value beneath it is a bare string — a booking reference announced with nothing to say what it is. Not the field's own label, which names the control somewhere else on the page.
 
 ##### `span`
 

@@ -76,14 +76,16 @@ describe('the leaf kinds', () => {
 
 describe('a qrcode node', () => {
   test('encodes a path the model has', () => {
-    expect(errorsFor(documentWith([{ kind: 'qrcode', path: 'code' }]))).toEqual([])
+    expect(errorsFor(documentWith([{ kind: 'qrcode', path: 'code', label: 'Your pass' }]))).toEqual(
+      [],
+    )
   })
 
   test('is refused when the path names nothing', () => {
     // The same rule a field placement already gets, and for the same reason: a node
     // that places nothing renders an empty box, which reads as a broken form rather
     // than as a typo in the layout.
-    const errors = errorsFor(documentWith([{ kind: 'qrcode', path: 'nope' }]))
+    const errors = errorsFor(documentWith([{ kind: 'qrcode', path: 'nope', label: 'A code' }]))
     expect(errors.join('\n')).toMatch(/nope/)
   })
 
@@ -91,13 +93,15 @@ describe('a qrcode node', () => {
     // The union's invariant, enforced rather than trusted: a childless node that
     // accepted children would be a node fourteen walkers disagree about.
     const errors = errorsFor(
-      documentWith([{ kind: 'qrcode', path: 'code', children: [{ kind: 'field', path: 'code' }] }]),
+      documentWith([
+        { kind: 'qrcode', path: 'code', label: 'A code', children: [{ kind: 'field', path: 'code' }] },
+      ]),
     )
     expect(errors).not.toEqual([])
   })
 
   test('in a version 1 document is refused by name, with the fix in the message', () => {
-    const errors = errorsFor(documentWith([{ kind: 'qrcode', path: 'code' }], '1'))
+    const errors = errorsFor(documentWith([{ kind: 'qrcode', path: 'code', label: 'A code' }], '1'))
     expect(errors.join('\n')).toMatch(/qrcode/)
     expect(errors.join('\n')).toMatch(/specVersion "2"/)
   })
@@ -115,9 +119,29 @@ describe('a qrcode node', () => {
     // The whole reason it is a layout node. If this ever fails, the construct has
     // become a field type by accident and every consequence in the file header
     // applies: a CSV column nobody filled in, a diff entry, a computed-rule target.
-    const result = validateSchema(documentWith([{ kind: 'qrcode', path: 'code' }]) as never)
+    const result = validateSchema(
+      documentWith([{ kind: 'qrcode', path: 'code', label: 'Your pass' }]) as never,
+    )
     expect(result.valid).toBe(true)
     if (!result.valid) return
     expect(result.schema.model.fields.map((field) => field.key)).toEqual(['code'])
+  })
+})
+
+describe('a code says what it is', () => {
+  test('refuses a code with no label, because the label IS its accessible content', () => {
+    // 0070 says the picture is decoration and the value is the content — and a bare
+    // value is a booking reference announced with nothing to say what it is. The value
+    // sits in an `<output>`, which is a live region, so it is announced whenever the
+    // answer changes.
+    //
+    // Found by review before the beta, and the builder was the worst offender: it
+    // inserted `{ kind: 'qrcode', path }` with no label at all, so every code node
+    // anybody made this way was unnamed.
+    const errors = errorsFor(documentWith([{ kind: 'qrcode', path: 'code' }]))
+
+    expect(errors).toHaveLength(1)
+    expect(errors[0]).toContain('/layouts/0/nodes/0/label')
+    expect(errors[0]).toContain('read aloud')
   })
 })
