@@ -237,7 +237,8 @@ requiring an accessibility conformance statement must perform that work.
 | Property-based invariants over hide/unhide, repeater identity and evaluation order | `packages/core` |
 | The official CEL corpus, with results pinned | `packages/expressions/CEL-CONFORMANCE.md` |
 | Performance budgets, measured: keystroke ≈0.38 ms against a <1 ms budget; graph compile ≈1.7 ms against a <30 ms budget | `packages/core/bench/perf.mjs` |
-| Package-publication gates: `publint`, `@arethetypeswrong/cli`, `size-limit` | `pnpm check:pkg` |
+| Package-publication gates: `publint`, `@arethetypeswrong/cli` | `pnpm check:pkg` |
+| Bundle sizes, measured by hand and dated rather than gated — `size-limit` is **not** wired up, and this table named it as a gate until 2026-09-27 | [§9.3](../architecture/09-quality-requirements.md) |
 | Line coverage, reported per package and uploaded per commit | `pnpm turbo run test:coverage`, and Codecov |
 | Build provenance for every published tarball | `npm audit signatures` against the installed version |
 

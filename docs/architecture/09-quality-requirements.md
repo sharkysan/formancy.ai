@@ -51,11 +51,29 @@ formancy
 |---|---|---|
 | Keystroke, large conditional form | 1 ms | ≈0.38 ms |
 | Cold graph compile | 30 ms | ≈1.7 ms |
-| `@formancy/core` bundle | 18 kB brotli | gate configured |
-| `@formancy/react` bundle | 4 kB brotli | gate configured |
+| `@formancy/core` bundle | 18 kB brotli | 14.8 kB, measured 2026-09-27 |
+| `@formancy/react` bundle | 4 kB brotli | **12.1 kB** for the whole barrel, measured 2026-09-27 |
 
 The performance gate is written to fail on a regression greater than 15%,
 which converts "fast on large conditional forms" from a claim into a test.
+
+**There is no bundle gate, and this column said "gate configured".** Nothing in the
+repository runs `size-limit` — [0038](../decisions/0038-esm-only.md) says so plainly in
+its *Verified by* line, and three other documents said the opposite, including the
+regulatory evidence table. The figures above are `brotliCompressSync` over each built
+`dist/index.mjs`, dated because they are re-measured rather than incremented.
+
+**The React figure needs reading carefully rather than reporting as a breach.** 4 kB was
+written for a tree-shaken entry — the design is per-entry `exports` so that
+`@formancy/react/fields/date` pulls only what it needs — and 12.1 kB is the *whole barrel*,
+every field type, the error summary, the resume notice and the wizard included. Those are
+not the same number, and which one the budget meant cannot be settled without running a
+bundler over a realistic import, which nothing here does.
+
+So the honest position is: **the budget is unverified, not met and not missed.** Writing a
+`size-limit` threshold now would mean choosing a number that passes, which is a guard
+written green — the one shape this repository refuses. It is listed as debt in
+[§11](11-risks-and-debt.md) instead.
 
 ## 9.4 Quality attributes deliberately not pursued in v0.1
 
