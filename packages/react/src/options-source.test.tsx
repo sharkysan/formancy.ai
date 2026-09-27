@@ -419,3 +419,46 @@ describe('a typeahead whose source the deployment does not have', () => {
     expect(screen.getByRole('combobox', { name: 'Canton' })).toBeDefined()
   })
 })
+
+describe('what a resolver is told', () => {
+  test('sends the field’s DATA PATH, which is what the contract promises', async () => {
+    // `OptionsRequest.path` is documented in both renderers as "the field's data path,
+    // e.g. `canton` or `people[1].canton`", and both sent `def.key`. A resolver could
+    // not tell two same-named sourced fields apart, and never saw which row of a
+    // repeater it was answering for — so a host metering or logging per field was
+    // metering the wrong thing.
+    const { sources, asked } = answering()
+    mount({ sources })
+
+    await waitFor(() => {
+      expect(asked.length).toBeGreaterThan(0)
+    }, WAITING)
+    expect(asked[0]?.path).toBe('canton')
+  })
+
+  test('backspacing under the minimum does not report the source as broken', async () => {
+    // The state machine bug this fixes: the generation was bumped only on the path
+    // that SENDS a request, so deleting characters back under the minimum aborted
+    // whatever was in flight while leaving the generation unchanged — and the abort
+    // arrived at a handler that still believed it was current. Backspacing announced
+    // "The options could not be loaded" for a source that was working perfectly, and
+    // left the box marked busy with nothing in flight.
+    const { sources } = answering()
+    const withMinimum: OptionsSources = { cantons: { ...sources['cantons']!, minQueryLength: 3 } }
+    mount({ widget: 'typeahead', sources: withMinimum })
+
+    const box = screen.getByRole('combobox', { name: 'Canton' })
+    fireEvent.change(box, { target: { value: 'ber' } })
+    await waitFor(() => {
+      expect(screen.queryByText(/Type at least 3/)).toBeNull()
+    }, WAITING)
+
+    fireEvent.change(box, { target: { value: 'be' } })
+
+    await waitFor(() => {
+      expect(screen.getByText(/Type at least 3 characters/)).toBeDefined()
+    }, WAITING)
+    expect(screen.queryByText(/could not be loaded/)).toBeNull()
+    expect(box.getAttribute('aria-busy')).toBeNull()
+  })
+})

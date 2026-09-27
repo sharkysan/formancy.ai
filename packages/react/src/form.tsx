@@ -797,7 +797,7 @@ function SelectField({ path, label }: FieldComponentProps) {
   // One hook, unconditionally: it hands back the document's own options when the
   // field names no source, so there is no branch above a hook to reorder React's
   // list the moment the builder sets one on a live document.
-  const sourced = useSourcedOptions(field, '', field.def.widget !== 'typeahead')
+  const sourced = useSourcedOptions({ ...field, path }, '', field.def.widget !== 'typeahead')
   const options = sourced.options
   // Every hook runs before the branch on purpose: the builder can set a widget on
   // a live document, and a branch above a hook would reorder React's hook list
@@ -940,7 +940,7 @@ function TypeaheadSelectField({
 
   // The options, from the document or from the deployment. The query goes in so a
   // source is asked what somebody is looking for rather than for everything.
-  const sourced = useSourcedOptions(field, query ?? '')
+  const sourced = useSourcedOptions({ ...field, path }, query ?? '')
   const options = sourced.options
 
   const chosen = options.find((option) => option.value === field.value)

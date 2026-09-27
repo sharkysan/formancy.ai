@@ -45,6 +45,14 @@ const MAX_ROWS = 50
  */
 export function injectSourcedOptions(
   definition: Signal<{ optionsSource?: string; key: string }>,
+  /**
+   * The field's DATA PATH — `canton`, or `people[1].canton` inside a repeater.
+   *
+   * Which is what `OptionsRequest.path` promises. Both renderers sent the field KEY,
+   * so a resolver could not tell two same-named sourced fields apart and never saw
+   * which row it was answering for.
+   */
+  dataPath: () => string,
   storedValue: Signal<string | undefined>,
   query: Signal<string>,
   locale: () => string,
@@ -96,20 +104,27 @@ export function injectSourcedOptions(
     const resolver = source()
     const text = query()
     const name = definition().optionsSource ?? ''
-    const path = definition().key
+    const path = dataPath()
     if (!enabled() || resolver === undefined) return
 
     const minQueryLength = resolver.minQueryLength ?? MIN_QUERY
     const maxRows = resolver.maxRows ?? MAX_ROWS
 
     stop()
+    // Bumped BEFORE the early return, not after it. Deleting characters back under the
+    // minimum aborts whatever is in flight, and with the generation unchanged that
+    // abort arrived at a handler that still believed it was current -- so backspacing
+    // reported the source as broken, and left the box marked busy with nothing in
+    // flight.
+    const mine = (generation += 1)
+
     if (text.trim().length < minQueryLength) {
       rows.set([])
       capped.set(null)
+      busy.set(false)
       return
     }
 
-    const mine = (generation += 1)
     const controller = new AbortController()
     inFlight = controller
     timer = setTimeout(() => {
@@ -178,7 +193,7 @@ export function injectSourcedOptions(
       .resolve({
         kind: 'labels',
         source: definition().optionsSource ?? '',
-        path: definition().key,
+        path: dataPath(),
         query: '',
         values: [value],
         locale: locale(),

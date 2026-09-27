@@ -351,3 +351,18 @@ describe('asking once, not twice', () => {
     })
   })
 })
+
+describe('what a resolver is told', () => {
+  test('sends the field’s DATA PATH, which is what the contract promises', async () => {
+    // Both renderers sent `def.key` while documenting "the field's data path, e.g.
+    // `canton` or `people[1].canton`". A resolver could not tell two same-named
+    // sourced fields apart and never saw which row it answered for.
+    const { sources, asked } = answering()
+    await mount({ sources })
+
+    await waitFor(() => {
+      expect(asked.length).toBeGreaterThan(0)
+    })
+    expect(asked[0]?.path).toBe('canton')
+  })
+})

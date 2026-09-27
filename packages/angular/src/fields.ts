@@ -103,6 +103,7 @@ abstract class FieldComponentBase {
       const def = this.field.snapshot().def
       return { key: def.key, ...(def.optionsSource === undefined ? {} : { optionsSource: def.optionsSource }) }
     }),
+    () => this.context.path,
     computed(() => {
       const value = this.field.snapshot().value
       return typeof value === 'string' && value !== '' ? value : undefined

@@ -53,7 +53,7 @@ const MIN_QUERY = 0
 const MAX_ROWS = 50
 
 export function useSourcedOptions(
-  field: { def: FieldDef; value: unknown },
+  field: { def: FieldDef; value: unknown; path: string },
   query: string,
   /**
    * Whether this instance is the one that will render.
@@ -81,7 +81,11 @@ export function useSourcedOptions(
   const minQueryLength = source?.minQueryLength ?? MIN_QUERY
   const maxRows = source?.maxRows ?? MAX_ROWS
   const stored = typeof field.value === 'string' && field.value !== '' ? field.value : undefined
-  const path = field.def.key
+  // The field's DATA PATH, which is what `OptionsRequest.path` promises — `canton`, or
+  // `people[1].canton` inside a repeater. It sent `def.key` before, so a resolver could
+  // not tell two same-named sourced fields apart and never saw which row it was
+  // answering for. The contract said one thing and the code did another.
+  const path = field.path
 
   /*
    * The search. Debounced, and superseded by aborting rather than by ignoring: a
@@ -91,13 +95,22 @@ export function useSourcedOptions(
   const asked = useRef(0)
   useEffect(() => {
     if (!enabled || source === undefined) return
+
+    // Bumped BEFORE the early return, not after it. Deleting characters back under the
+    // minimum aborts whatever is in flight, and with the generation unchanged that
+    // abort arrived at a `.catch` that still believed it was current — so backspacing
+    // reported "The options could not be loaded" for a source that was working. It
+    // also left `busy` set, because the `.finally` that clears it is guarded the same
+    // way and the superseding request never started.
+    const generation = (asked.current += 1)
+
     if (query.trim().length < minQueryLength) {
       setRows([])
       setCapped(null)
+      setBusy(false)
       return
     }
 
-    const generation = (asked.current += 1)
     const controller = new AbortController()
     const timer = setTimeout(() => {
       setBusy(true)
