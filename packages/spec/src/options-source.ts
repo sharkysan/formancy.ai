@@ -1,5 +1,3 @@
-import schema from '../formancy.schema.json' with { type: 'json' }
-
 /**
  * What a deployment's own source is allowed to hand a control.
  *
@@ -31,20 +29,19 @@ export interface RemoteOption {
 }
 
 /**
- * The longest value the format lets an option carry, read from the schema rather
- * than retyped — so a change there cannot leave this behind.
+ * The longest value the format lets an option carry.
+ *
+ * Written here and CHECKED against the schema by `options-source.test.ts`, rather than
+ * read from it at runtime. The first version imported `formancy.schema.json` for this
+ * one integer, and the bundler inlined all 40.6 kB of it: measured, `@formancy/spec`
+ * went from 8.7 kB brotli to 16.4 kB — the package nearly doubled so that one number
+ * could be derived.
+ *
+ * The derivation is not lost, it moved to where it is free. The test reads the schema
+ * and fails if these disagree, which is the shape this repository prefers for a fact
+ * that cannot be derived at build time without a cost.
  */
-const VALUE_MAX_LENGTH: number = (() => {
-  const defs = (schema as { $defs?: Record<string, unknown> }).$defs ?? {}
-  const option = defs['fieldOption'] as { properties?: Record<string, { maxLength?: number }> }
-  const max = option?.properties?.['value']?.maxLength
-  if (typeof max !== 'number') {
-    // Derived, and the derivation says so when it stops working. A silent fallback
-    // would cap remote values at a number nobody chose while the schema said another.
-    throw new Error('formancy.schema.json no longer declares a maxLength for an option value')
-  }
-  return max
-})()
+const VALUE_MAX_LENGTH = 200
 
 /**
  * The rows, if every one of them is usable — and `undefined` if any is not.

@@ -51,8 +51,9 @@ formancy
 |---|---|---|
 | Keystroke, large conditional form | 1 ms | ≈0.38 ms |
 | Cold graph compile | 30 ms | ≈1.7 ms |
-| `@formancy/core` bundle | 18 kB brotli | 14.8 kB, measured 2026-09-27 |
-| `@formancy/react` bundle | 4 kB brotli | **17.6 kB** for the whole barrel, measured 2026-09-27 |
+| `@formancy/core` bundle | 18 kB brotli | 15.0 kB, measured 2026-09-28 |
+| `@formancy/spec` bundle | — | 9.8 kB, measured 2026-09-28 |
+| `@formancy/react` bundle | 4 kB brotli | **17.7 kB** for the whole barrel, measured 2026-09-28 |
 | `uqr`, the QR encoder | — | 6.6 kB brotli, **external** rather than bundled, measured 2026-09-27 |
 
 The performance gate is written to fail on a regression greater than 15%,
@@ -66,7 +67,7 @@ regulatory evidence table. The figures above are `brotliCompressSync` over each 
 
 **The React figure needs reading carefully rather than reporting as a breach.** 4 kB was
 written for a tree-shaken entry — the design is per-entry `exports` so that
-`@formancy/react/fields/date` pulls only what it needs — and 17.6 kB is the *whole barrel*,
+`@formancy/react/fields/date` pulls only what it needs — and 17.7 kB is the *whole barrel*,
 every field type, the error summary, the resume notice and the wizard included. Those are
 not the same number, and which one the budget meant cannot be settled without running a
 bundler over a realistic import, which nothing here does.
@@ -83,6 +84,13 @@ is for. It has now failed on two consecutive changes before the number was updat
 second time it failed **in CI rather than locally**, because it measures the built output and
 CI builds before it tests. Run `pnpm build` before `pnpm test:coverage` or the figure you
 check is the one from last time.
+
+**`@formancy/spec` is listed because it nearly doubled without anybody noticing.** One
+module imported `formancy.schema.json` to read a single integer — the longest value an
+option may carry — and the bundler inlined all 40.6 kB of it: the package went from 8.7 kB
+brotli to **16.4**, then back to 9.8 once the constant was written down and the derivation
+moved into a test, where reading the schema costs nothing. Found by review rather than by a
+gate, which is why the figure is now tracked here with the others.
 
 **The QR encoder is listed separately because it is not in the bundle.** Drawing a code
 needs `uqr`, and the build leaves it external — so a consumer with no `qrcode` node pays
