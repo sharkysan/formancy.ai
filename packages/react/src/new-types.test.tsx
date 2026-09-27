@@ -568,6 +568,70 @@ describe('datetime', () => {
   })
 })
 
+describe('qrcode', () => {
+  const schema = base({
+    model: { fields: [{ key: 'reference', type: 'text', label: 'Booking reference' }] },
+    layouts: [
+      {
+        name: 'web',
+        nodes: [
+          { kind: 'field', path: 'reference' },
+          { kind: 'qrcode', path: 'reference', label: 'Your pass' },
+        ],
+      },
+    ],
+  } as Partial<FormSchema>)
+
+  test('shows the value of the answer it encodes, as text', () => {
+    // The accessible content is the VALUE, not the picture. A picture of a code says
+    // nothing to a screen reader, and an alt of "QR code" says nothing either — what
+    // somebody needs is the value, which they can read, copy or dictate.
+    const engine = mount(schema)
+    // Inside `act`: a write straight to the engine is an external-store update React has
+    // to be given the chance to flush before the DOM is read.
+    act(() => {
+      engine.setValue(['reference'], 'AB-1234')
+    })
+    expect(screen.getByText('AB-1234')).toBeDefined()
+  })
+
+  test('collects nothing, so it adds no control and no answer', () => {
+    // The whole reason it is a layout node rather than a field type. One text box on the
+    // page, not two, and one key in the value.
+    const engine = mount(schema)
+    expect(screen.getAllByRole('textbox')).toHaveLength(1)
+    engine.setValue(['reference'], 'AB-1234')
+    expect(engine.value()).toEqual({ reference: 'AB-1234' })
+  })
+
+  test('says whether there is anything to encode yet', () => {
+    // In the markup as `data-state`, so a theme can show the difference between "no
+    // answer yet" and "here is the answer" without the renderer choosing words for it.
+    const engine = mount(schema)
+    const node = document.querySelector('[data-formancy-part="code"]')
+    expect(node?.getAttribute('data-state')).toBe('empty')
+    act(() => {
+      engine.setValue(['reference'], 'AB-1234')
+    })
+    expect(
+      document.querySelector('[data-formancy-part="code"]')?.getAttribute('data-state'),
+    ).toBe('ready')
+  })
+
+  test('does not count as placing the field, so the control still appears', () => {
+    // A code is a second VIEW of an answer, not a placement of it. If it counted, a
+    // layout whose only mention of a field was a code would report the field as placed
+    // and render no control — an answer nobody can give.
+    mount(
+      base({
+        model: { fields: [{ key: 'reference', type: 'text', label: 'Booking reference' }] },
+        layouts: [{ name: 'web', nodes: [{ kind: 'qrcode', path: 'reference' }] }],
+      } as Partial<FormSchema>),
+    )
+    expect(document.querySelector('[data-formancy-part="code"]')).not.toBeNull()
+  })
+})
+
 describe('tabs', () => {
   const schema = base({
     model: {

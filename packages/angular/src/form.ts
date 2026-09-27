@@ -1,4 +1,5 @@
 import {
+  DestroyRef,
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
@@ -19,7 +20,7 @@ import {
 import type { ComponentRef, OnChanges, OnDestroy, OnInit, Signal, Type } from '@angular/core'
 import { parsePath } from '@formancy/core'
 import type { FieldSnapshot } from '@formancy/core'
-import { resolveText } from '@formancy/spec'
+import { resolveText, LAYOUT_LEAF_KINDS, layoutChildren} from '@formancy/spec'
 import type { FieldDef, LayoutNode } from '@formancy/spec'
 import { DEFAULT_FIELD_COMPONENTS } from './fields.js'
 import { injectField } from './field.js'
@@ -382,7 +383,9 @@ export class FormancyTabs {
   }
 
   protected childrenOf(node: LayoutNode): readonly LayoutNode[] {
-    return node.kind === 'field' ? [node] : node.children
+    // `LAYOUT_LEAF_KINDS`, not `kind === 'field'`: a `qrcode` node is childless and is
+    // not a field, so the old spelling read `children` off it and got `undefined`.
+    return LAYOUT_LEAF_KINDS.has(node.kind) ? [node] : layoutChildren(node)
   }
 
   /** A tab's name is its section's heading. The validator insists it has one. */
@@ -416,9 +419,71 @@ export class FormancyTabs {
 }
 
 @Component({
+  selector: 'formancy-code',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div data-formancy-part="code" [attr.data-state]="text() === '' ? 'empty' : 'ready'">
+      @if (label(); as caption) {
+        <span data-formancy-part="code-label">{{ caption }}</span>
+      }
+      <output data-formancy-part="code-value">{{ text() }}</output>
+    </div>
+  `,
+})
+/**
+ * A machine-readable code drawn from an answer the form already holds.
+ *
+ * A component with its OWN field binding rather than a method on the layout: reading the
+ * snapshot from the layout rendered the value once and never again, because a plain method
+ * call is not a signal an OnPush component re-runs for. Measured — the code stayed
+ * `data-state="empty"` after the answer was typed.
+ *
+ * **The accessible content is the value, not the picture.** A picture of a code says
+ * nothing to a screen reader and an alt of "QR code" says nothing either; what somebody
+ * needs is the value, which they can read, copy or dictate. There is no picture at all:
+ * encoding one is a dependency for something a design system may want to draw its own way,
+ * so the renderer emits the value and the hooks and a consumer registers a component for
+ * the drawing. Out of the box a code node shows the value as text and no code — a usable
+ * form with a visible gap, which is the right way round.
+ */
+export class FormancyCode implements OnInit {
+  readonly path = input.required<string>()
+  readonly label = input<string>()
+
+  private readonly engine = injectEngine()
+  private readonly destroyRef = inject(DestroyRef)
+
+  /**
+   * Subscribed, not computed.
+   *
+   * The first version was `computed(() => engine.getFieldSnapshot(...))`, which has no
+   * reactive dependency at all -- `getFieldSnapshot` is a plain call, not a signal -- so
+   * it ran once and never again. Measured twice now, in both renderers: the code stayed
+   * `data-state="empty"` after the answer was typed. A code is a live view of an answer
+   * and has to subscribe like any other reader of one.
+   */
+  private readonly value = signal<unknown>(undefined)
+
+  ngOnInit(): void {
+    const parsed = parsePath(this.path())
+    this.value.set(this.engine.getFieldSnapshot(parsed).value)
+    const unsubscribe = this.engine.subscribeField(parsed, () => {
+      this.value.set(this.engine.getFieldSnapshot(parsed).value)
+    })
+    this.destroyRef.onDestroy(unsubscribe)
+  }
+
+  protected readonly text = computed(() => {
+    const value = this.value()
+    if (typeof value === 'string') return value
+    return value === null || value === undefined ? '' : String(value)
+  })
+}
+
+@Component({
   selector: 'formancy-layout',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormancyFieldSlot, FormancyRepeaterSection, FormancyTabs],
+  imports: [FormancyFieldSlot, FormancyRepeaterSection, FormancyTabs, FormancyCode],
   template: `
     @for (node of nodes(); track $index; let i = $index) {
       @if (node.kind === 'field') {
@@ -448,6 +513,21 @@ export class FormancyTabs {
           [labels]="labels()"
           [at]="pathOf(i)"
           [stripLabel]="stripLabelFor(node)"
+        />
+      } @else if (node.kind === 'qrcode') {
+        <!-- The accessible content is the VALUE, not the picture. A picture of a code
+             says nothing to a screen reader and an alt of "QR code" says nothing
+             either; what somebody needs is the value, which they can read, copy or
+             dictate. And there is no picture: encoding one is a dependency (a matrix,
+             mask patterns, Reed-Solomon) for something a design system may want to draw
+             its own way, so the renderer emits the value and the hooks and a consumer
+             registers a component for the drawing. Out of the box a code node shows the
+             value as text and no code -- a usable form with a visible gap, which is the
+             right way round. -->
+        <formancy-code
+          [path]="node.path"
+          [label]="headingFor(node)?.text"
+          [attr.data-formancy-layout-path]="pathOf(i)"
         />
       } @else if (node.kind === 'table') {
         <!-- A grid, not a <table>. Laying fields out in columns is not

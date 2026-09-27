@@ -206,6 +206,13 @@ export const STARTER_SCHEMA = {
                     { kind: 'field', path: 'artwork' },
                   ],
                 },
+                // A code node: a second VIEW of an answer placed elsewhere, collecting
+                // nothing of its own. Out of the box it shows the value as text and no
+                // picture — encoding one is a dependency for something a design system
+                // may want to draw its own way, so a consumer registers a component for
+                // the drawing. Here so the demo shows the node rather than only
+                // documenting it.
+                { kind: 'qrcode', path: 'email', label: { $t: 'emailCode' } },
               ],
             },
             {
@@ -272,6 +279,7 @@ export const STARTER_SCHEMA = {
         'delivery.express': 'Express',
         wantedBy: 'Wanted by',
         deliveryWindow: 'Delivery window',
+        emailCode: 'Your email as a code',
         confirmedAt: 'Confirmed at',
         items: 'Items',
         'items.name': 'Name',
@@ -310,6 +318,7 @@ export const STARTER_SCHEMA = {
         'delivery.express': 'Express',
         wantedBy: 'Gewünscht bis',
         deliveryWindow: 'Lieferfenster',
+        emailCode: 'Ihre E-Mail als Code',
         confirmedAt: 'Bestätigt am',
         items: 'Positionen',
         'items.name': 'Bezeichnung',

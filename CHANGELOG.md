@@ -10,6 +10,44 @@ later.
 
 ## Unreleased
 
+**A `qrcode` layout node** — a machine-readable code drawn from an answer the form already
+holds, rendering in both renderers and shown in the playground demo
+([0070](docs/decisions/0070-a-code-is-an-arrangement-not-a-field.md)).
+
+**Not a field type, because it collects nothing.** A field type would put a non-answering
+entry in the model: a key that is an identity forever, a path in the data, a row in every
+diff, a CSV column nobody filled in, and a target a computed rule could aim at. Not a
+widget either, for the opposite reason to `scanner`: a widget sits on a field that
+collects, and replacing an input with a picture changes what somebody may enter.
+
+**It is not a placement.** A code is a second view of an answer a field node places
+elsewhere, so it is exempt from the one-place-per-field rule and ignored by `placedPaths`
+— counting it would report a field as placed when no control for it exists.
+
+**The union's two-shape assumption is now named once.** `LayoutNode` had exactly two
+shapes — `field`, childless, and everything else, with children — and **fourteen** places
+encoded that as `node.kind === 'field' ? … : node.children`. `qrcode` is the first
+childless node that is not a field, so all fourteen were about to be wrong: the compiler
+caught most, and two walkers instead read `undefined` at runtime. `LAYOUT_LEAF_KINDS` and
+`layoutChildren` say it once, so the next childless node is a one-line change.
+
+**There is no QR encoder, and that is stated rather than hidden.** Encoding one is a
+matrix, mask patterns and Reed–Solomon error correction — about 10 kB for the smallest
+honest implementation, in a package budgeted at 4 kB brotli, and a SOUP row for every
+consumer including the Node engine. So the renderer emits the value as real text plus the
+part hooks, and a consumer who wants the picture registers a component. **Out of the box a
+code node shows the value and no code**: a usable form with a visible gap, which is the
+right way round.
+
+The accessible content is the value rather than the picture in any case — a picture of a
+code says nothing to a screen reader, and neither does an alt of "QR code". What somebody
+needs is the value, which they can read, copy or dictate.
+
+**The same bug was written twice and caught twice:** both renderers first read the field
+snapshot without subscribing, so the value rendered once and never again — in React because
+nothing subscribed, in Angular because a method call is not a signal an OnPush component
+re-runs for. Measured in both: the node stayed empty after the answer was typed.
+
 **Rows can be reordered while a form is being filled in.** `engine.moveRow`, with Move up
 and Move down buttons in both renderers
 ([0068](docs/decisions/0068-a-row-keeps-its-own-state.md)).

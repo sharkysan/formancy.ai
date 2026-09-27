@@ -1,5 +1,5 @@
 import type { FieldDef, FormSchema, LayoutNode, LogicRule, SpecVersion, Text } from '@formancy/spec'
-import { CURRENT_SPEC_VERSION, unreferencedPaths } from '@formancy/spec'
+import { CURRENT_SPEC_VERSION, unreferencedPaths, LAYOUT_LEAF_KINDS, layoutChildren} from '@formancy/spec'
 import { validateSchema } from '@formancy/spec/validate'
 import type { SchemaError } from '@formancy/spec/validate'
 import {
@@ -771,13 +771,16 @@ function unplaceEverywhere(draft: FormSchema, dataPath: string): void {
 function pruned(nodes: readonly LayoutNode[], dataPath: string): LayoutNode[] {
   const kept: LayoutNode[] = []
   for (const node of nodes) {
-    if (node.kind === 'field') {
+    if (node.kind === 'field' || node.kind === 'qrcode') {
+      // A code goes when the answer it encodes goes, exactly as its placement does:
+      // what would remain is a node drawing a picture of nothing, and the validator
+      // would then refuse the document the builder had just produced.
       if (!underPath(node.path, dataPath)) kept.push(node)
       continue
     }
     // The container stays even when it empties. Removing one field should not
     // silently take a row with it and rearrange everything beside it.
-    kept.push({ ...node, children: pruned(node.children, dataPath) })
+    kept.push({ ...node, children: pruned(layoutChildren(node) as LayoutNode[], dataPath) })
   }
   return kept
 }
@@ -786,13 +789,16 @@ function pruned(nodes: readonly LayoutNode[], dataPath: string): LayoutNode[] {
 function repathEverywhere(draft: FormSchema, before: string, after: string): void {
   const walk = (nodes: LayoutNode[]): void => {
     for (const [index, node] of nodes.entries()) {
-      if (node.kind === 'field') {
+      if (node.kind === 'field' || node.kind === 'qrcode') {
+        // A code follows a rename. A declared rename keeps the answer, so a code of it
+        // must keep encoding the same answer -- leaving the old path behind would turn
+        // a rename into a silently broken code.
         if (underPath(node.path, before)) {
           nodes[index] = { ...node, path: after + node.path.slice(before.length) }
         }
         continue
       }
-      walk(node.children)
+      walk(layoutChildren(node) as LayoutNode[])
     }
   }
   for (const layout of draft.layouts ?? []) walk(layout.nodes)

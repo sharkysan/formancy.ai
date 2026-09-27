@@ -611,6 +611,28 @@ required · array of Layout node
 
 **Cells.** The nodes to place, filling the columns in order.
 
+#### Code
+
+A machine-readable code drawn from a value the form already holds — a booking reference as a QR code, say. It collects nothing: there is no answer and no key, which is why it is an arrangement rather than a field. A reader that cannot draw a code shows the value as text rather than a broken picture.
+
+##### `kind`
+
+required · the constant `"qrcode"`
+
+**Kind.** Marks this node as a code drawn from an answer.
+
+##### `path`
+
+required · string
+
+**Path.** The data path of the answer to encode. The field must exist — a node that encodes nothing draws an empty box, which reads as a broken form rather than a typo in the arrangement.
+
+##### `label`
+
+optional · Text (see below)
+
+**Label.** What a reader is told the code is. A picture of a code says nothing to a screen reader, so this and the value behind it are the accessible content. Optional: a code beside the field it encodes needs no second name.
+
 ### Layout
 
 One arrangement of the model. A form may have several over the same data — a web layout and a print layout collect identical answers.
