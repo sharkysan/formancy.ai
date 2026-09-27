@@ -10,6 +10,31 @@ later.
 
 ## Unreleased
 
+**Fixed: the playground's file field could not accept a file.** Reported from the running
+playground, and there were two reasons rather than one.
+
+The app provided a rich-text editor and **no uploader**, so the field rendered read-only
+and said there was nowhere to put a file — correct behaviour for a missing uploader and
+the wrong thing for a demo, where the file field is the one a visitor most wants to try.
+The landing page had had an uploader all along, which is why it worked there and not here.
+
+And the field is **hidden until gift wrapping is chosen**: there is a visibility rule on
+it. That is the demo working as intended, and it also means anybody looking for the
+uploader had to find the conditional first.
+
+The playground's uploader keeps the bytes for the session and says so —
+`playground:in-this-tab/…`, which is not a location any server would recognise. It
+deliberately differs from the landing page's, which records that the bytes went nowhere:
+that page is a pitch and a plausible-looking storage key would make the product look like
+it silently drops files, while the playground is a tool and somebody there wants to see
+the round trip.
+
+**The test for it was vacuous twice before it worked.** It first waited for the message "no
+upload destination has been configured" to be absent — which it is while the form has not
+rendered, and again while the field is hidden. Both passes would have survived removing the
+uploader. It ticks the option and waits for the control now, and removing the provider
+fails it.
+
 **A `qrcode` node draws an actual code.** Reversing the position taken one change ago, which
 argued the encoder was not worth its cost — an argument about cost rather than about value,
 and a code node that shows no code is a feature named after something it does not do.

@@ -35,6 +35,62 @@ const arrangementTree = (): HTMLElement => screen.getByRole('tree', { name: /Arr
 const form = (): HTMLElement =>
   screen.getByRole('heading', { name: 'Form' }).closest('section') as HTMLElement
 
+describe('the file field', () => {
+  test('can actually accept a file, because the app provides an uploader', async () => {
+    // The bug this exists for: the playground provided a rich-text editor and no uploader,
+    // so the one field a visitor most wants to try rendered read-only and said there was
+    // nowhere to put a file. It was correct behaviour for a missing uploader and the wrong
+    // thing for a demo.
+    render(<App />)
+    await waitFor(() => {
+      expect(screen.queryAllByRole('textbox').length).toBeGreaterThan(0)
+    })
+
+    // The file field is HIDDEN until gift wrapping is chosen -- there is a visibility rule
+    // on it, which is the second reason it looked broken. Ticking the option is therefore
+    // part of the test rather than setup noise: it exercises the conditional and gets to
+    // the field in one go.
+    //
+    // The first version of this test waited for the message "no upload destination has been
+    // configured" to be ABSENT, which it is while the field is hidden and while the form has
+    // not rendered at all. A vacuous pass that would have survived removing the uploader
+    // again, which is exactly the bug it was written for.
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Gift wrapping' }))
+
+    const picker = await waitFor(() => {
+      const found = document.querySelector('input[type="file"]')
+      expect(found, 'the file field did not appear').not.toBeNull()
+      return found
+    })
+    expect(picker).not.toBeNull()
+
+    // And the read-only message is gone, which is the thing the uploader changes.
+    expect(screen.queryByText(/no upload destination has been configured/i)).toBeNull()
+  })
+
+  test('records where the bytes went, and does not pretend they left the tab', async () => {
+    // The landing page's uploader says the bytes went nowhere because it is a pitch; this
+    // one keeps them for the session and says so. Either way the storage key must be
+    // something no server would recognise — a plausible-looking key would make the demo
+    // read better and make the product look like it silently drops files.
+    const { playgroundUploader } = await import('./demo-uploader.js')
+    const stored = await playgroundUploader(
+      new File(['hello'], 'note.txt', { type: 'text/plain' }),
+    )
+    expect(stored.storageKey).toMatch(/^playground:in-this-tab\//)
+    expect(stored.name).toBe('note.txt')
+    expect(stored.size).toBe(5)
+  })
+
+  test('says what an unrecognised file is rather than nothing at all', async () => {
+    // A browser leaves `type` empty for a type it does not know, and a submission that says
+    // nothing about what was attached is worse than one saying it could not tell.
+    const { playgroundUploader } = await import('./demo-uploader.js')
+    const stored = await playgroundUploader(new File(['x'], 'mystery.qqq', { type: '' }))
+    expect(stored.contentType).toBe('application/octet-stream')
+  })
+})
+
 describe('the page', () => {
   test('renders the starter form from its schema', () => {
     render(<App />)
