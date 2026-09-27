@@ -604,6 +604,12 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
             `"${property}" is not a setting. It is what the node is, or where it sits, and the arrangement's own commands change it.`,
           )
         }
+        if (property === '__proto__' || property === 'prototype' || property === 'constructor') {
+          return refuse(
+            `${layoutPointer(address)}/${property}`,
+            `"${property}" is not allowed as a layout node setting name.`,
+          )
+        }
         const node = found.siblings[found.index]! as unknown as Record<string, unknown>
         if (value === undefined) delete node[property]
         else node[property] = copy(value) as unknown
