@@ -10,6 +10,20 @@ later.
 
 ## Unreleased
 
+**Fixed: a code node sat flush against whatever followed it.** A field gets its spacing from
+`[data-formancy-part='field']`, which ends with `margin-block-end: var(--fm-step)`, and a
+code node is not a field — so it inherited none. It now ends with the same step in all four
+themes.
+
+**A code node appears in the Arrangement tree and not the Fields tree, and that is
+correct.** Reported as missing from "the tree": the playground has two, and a code collects
+nothing and has no key, which is the whole reason it is a layout node rather than a field
+type. It is listed as "Code for <the answer>" rather than "Code", because a tree of several
+rows needs each one to say which is which.
+
+That was true already and had no test, so two now assert it — that the pane lists it by that
+name, and that it is a leaf nothing tries to look inside.
+
 **Fixed: the playground's file field could not accept a file.** Reported from the running
 playground, and there were two reasons rather than one.
 

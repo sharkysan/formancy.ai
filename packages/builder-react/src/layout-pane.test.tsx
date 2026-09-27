@@ -49,6 +49,50 @@ const open = (document: FormSchema = schema()): BuilderSession => createBuilderS
 const rowNames = (): string[] =>
   screen.getAllByRole('treeitem').map((item) => item.textContent ?? '')
 
+describe('a code node in the arrangement', () => {
+  /**
+   * Reported as "I do not see the qrcode element in the tree".
+   *
+   * It was in the arrangement tree all along; the playground has TWO trees, a Fields tab
+   * and an Arrangement tab, and a code node is not a field so it only ever appears under
+   * Arrangement. That is correct — a code collects nothing and has no key, which is the
+   * whole reason it is a layout node rather than a field type
+   * ([0070](../../../docs/decisions/0070-a-code-is-an-arrangement-not-a-field.md)) — and
+   * it is also a reasonable thing to be confused by, so it is now asserted rather than
+   * reasoned about.
+   */
+  const withCode = (): FormSchema => ({
+    ...schema(),
+    specVersion: '2',
+    layouts: [
+      {
+        name: 'web',
+        nodes: [
+          { kind: 'field', path: 'email' },
+          { kind: 'qrcode', path: 'email' },
+        ],
+      },
+    ],
+  })
+
+  test('is listed, and named by the answer it encodes', () => {
+    // "Code for Email", not "Code": a tree of six rows needs each one to say which is
+    // which, the same reasoning that names a row by what it holds.
+    render(<FormancyLayoutPane session={open(withCode())} layout="web" />)
+    expect(rowNames()).toEqual(['Email', 'Code for Email'])
+  })
+
+  test('is a leaf, so nothing tries to look inside it', () => {
+    // A code has no children. The tree asks `isLayoutContainer`, which reads the spec's
+    // LAYOUT_LEAF_KINDS -- when that said `kind !== 'field'` it claimed a code was a
+    // container and the walker read `children` off it.
+    render(<FormancyLayoutPane session={open(withCode())} layout="web" />)
+    const items = screen.getAllByRole('treeitem')
+    expect(items).toHaveLength(2)
+    for (const item of items) expect(item.getAttribute('aria-expanded')).toBeNull()
+  })
+})
+
 describe('reading the arrangement', () => {
   test('shows every node, naming containers by what they hold', () => {
     render(<FormancyLayoutPane session={open()} />)

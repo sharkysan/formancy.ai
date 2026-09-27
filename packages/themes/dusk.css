@@ -968,6 +968,10 @@
 [data-formancy-theme='dusk'] [data-formancy-part='code'] {
   display: grid;
   gap: 0.25rem;
+  /* The same `--fm-step` every field ends with. Without it the code sat flush against
+     whatever followed: a field gets its spacing from `[data-formancy-part='field']` and a
+     code node is not a field, so it inherited nothing. */
+  margin-block-end: var(--fm-step);
   padding: 0.75rem;
   border: 1px solid var(--fm-edge);
   border-radius: var(--fm-radius, 0);
