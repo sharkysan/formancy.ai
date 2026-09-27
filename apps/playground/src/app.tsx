@@ -7,8 +7,15 @@ import { validateSchema } from '@formancy/spec/validate'
 import type { SchemaError } from '@formancy/spec/validate'
 import formancySchemaJson from '@formancy/spec/schema.json'
 import type { FormSchema } from '@formancy/spec'
-import { ErrorSummary, FormancyForm, FormancyProvider, RichTextEditorProvider } from '@formancy/react'
+import {
+  ErrorSummary,
+  FormancyForm,
+  FormancyProvider,
+  RichTextEditorProvider,
+  UploaderProvider,
+} from '@formancy/react'
 import { createRichTextEditor } from '@formancy/tiptap'
+import { playgroundUploader } from './demo-uploader.js'
 import { createBuilderSession } from '@formancy/builder-core'
 import type { BuilderSession } from '@formancy/builder-core'
 import {
@@ -315,10 +322,16 @@ export function App() {
                       the factory interface exactly, which is the point of it
                       being an interface. */}
                   <RichTextEditorProvider value={createRichTextEditor}>
-                    <FormancyProvider engine={built.engine} key={source}>
-                      <ErrorSummary />
-                      <FormancyForm layout="web" />
-                    </FormancyProvider>
+                    {/* And an uploader, for the same reason: without one the file field
+                        renders read-only and says there is nowhere to put a file, so the
+                        field a visitor most wants to try was the one they could not. The
+                        bytes stay in this tab and the storage key says so. */}
+                    <UploaderProvider value={playgroundUploader}>
+                      <FormancyProvider engine={built.engine} key={source}>
+                        <ErrorSummary />
+                        <FormancyForm layout="web" />
+                      </FormancyProvider>
+                    </UploaderProvider>
                   </RichTextEditorProvider>
                 </div>
               </FormancyArrangeSurface>
