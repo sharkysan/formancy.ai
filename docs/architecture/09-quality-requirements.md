@@ -52,7 +52,7 @@ formancy
 | Keystroke, large conditional form | 1 ms | ≈0.38 ms |
 | Cold graph compile | 30 ms | ≈1.7 ms |
 | `@formancy/core` bundle | 18 kB brotli | 14.8 kB, measured 2026-09-27 |
-| `@formancy/react` bundle | 4 kB brotli | **14.8 kB** for the whole barrel, measured 2026-09-27 |
+| `@formancy/react` bundle | 4 kB brotli | **16.2 kB** for the whole barrel, measured 2026-09-27 |
 | `uqr`, the QR encoder | — | 6.6 kB brotli, **external** rather than bundled, measured 2026-09-27 |
 
 The performance gate is written to fail on a regression greater than 15%,
@@ -66,17 +66,21 @@ regulatory evidence table. The figures above are `brotliCompressSync` over each 
 
 **The React figure needs reading carefully rather than reporting as a breach.** 4 kB was
 written for a tree-shaken entry — the design is per-entry `exports` so that
-`@formancy/react/fields/date` pulls only what it needs — and 14.8 kB is the *whole barrel*,
+`@formancy/react/fields/date` pulls only what it needs — and 16.2 kB is the *whole barrel*,
 every field type, the error summary, the resume notice and the wizard included. Those are
 not the same number, and which one the budget meant cannot be settled without running a
 bundler over a realistic import, which nothing here does.
 
-**The React figure moves when a control is added, and it just did.** It was 13.2 kB before
-`widget: "typeahead"` and is 14.8 kB after: an editable combobox is keyboard handling, ARIA
-and markup, and it is in the barrel because it is the control for a `select`. The figure is
-re-measured here rather than incremented, which is what `apps/docs/src/bundles.test.ts` is
-for — it failed on this change before the number was updated, which is the only reason this
-paragraph exists rather than a stale figure.
+**The React figure moves when a control is added, and it has twice in a day.** 13.2 kB
+before `widget: "typeahead"`, 14.8 kB after it, and 16.2 kB after `widget: "datagrid"`. Both
+are in the barrel because both are the control for a type somebody already uses, and a
+combobox or a grid is keyboard handling, ARIA and markup rather than a wrapper.
+
+The figure is re-measured rather than incremented, which is what `apps/docs/src/bundles.test.ts`
+is for. It has now failed on two consecutive changes before the number was updated — and the
+second time it failed **in CI rather than locally**, because it measures the built output and
+CI builds before it tests. Run `pnpm build` before `pnpm test:coverage` or the figure you
+check is the one from last time.
 
 **The QR encoder is listed separately because it is not in the bundle.** Drawing a code
 needs `uqr`, and the build leaves it external — so a consumer with no `qrcode` node pays
