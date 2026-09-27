@@ -18,6 +18,7 @@ export {
   TEMPORAL_SHAPES,
   WIDGETS_BY_FIELD_TYPE,
 } from './types.js'
+export { foldForMatch, narrowOptionsByLabel } from './typeahead.js'
 export { upgradeSpecVersion } from './upgrade.js'
 export { isSafeHref, parseRichText, richTextToPlain } from './richtext.js'
 export type { RichBlock, RichInline } from './richtext.js'

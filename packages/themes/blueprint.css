@@ -1120,5 +1120,100 @@
 @media (prefers-reduced-motion: reduce) {
   [data-formancy-theme='blueprint'] [data-formancy-part='scanner-button'] {
     transition: none;
+
+  }
+}
+/* `widget: "typeahead"` -- a select narrowed by typing, drawn the drawing way.
+ *
+ * Still one answer from the options the author offered: this is paint over a
+ * control that collects exactly what the plain select collects.
+ *
+ * The popup is positioned by CSS alone. `top` is left at `auto`, so the list
+ * lands where it WOULD have been in the flow and overlays instead of pushing the
+ * rest of the form down. There is no positioning library, so there is no
+ * collision detection either: a list opened near the bottom of the window runs
+ * past it and the page scrolls, rather than flipping above the box. */
+/* The text box says there is a list, with the same drawn pair of triangles the
+   select gets. A combobox that looked like a plain text input would hide its own
+   popup. */
+[data-formancy-theme='blueprint'] [data-formancy-part='typeahead'] {
+  padding-inline-end: 2.25rem;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--fm-muted) 50%),
+    linear-gradient(-45deg, transparent 50%, var(--fm-muted) 50%);
+  background-position:
+    calc(100% - 1.125rem) 52%,
+    calc(100% - 0.8125rem) 52%;
+  background-size: 0.3125rem 0.3125rem;
+  background-repeat: no-repeat;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='field']:has([data-formancy-part='typeahead']) {
+  position: relative;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='typeahead-listbox'] {
+  position: absolute;
+  z-index: 20;
+  inset-inline: 0;
+  margin: 0.125rem 0 0;
+  padding: 0.1875rem;
+  list-style: none;
+  max-height: 14rem;
+  overflow-y: auto;
+  background: var(--fm-paper);
+  border: 1px solid var(--fm-rule);
+  border-radius: var(--fm-radius);
+  box-shadow: 0 6px 16px rgb(23 34 46 / 12%);
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='typeahead-option'] {
+  padding: 0.375rem 0.5rem;
+  border-radius: var(--fm-radius);
+  font-family: var(--fm-sans);
+  font-size: 0.9375rem;
+  line-height: 1.35;
+  cursor: pointer;
+}
+
+/* Two different facts, drawn differently on purpose. The arrowed-over row is
+   where the person is LOOKING; the chosen one is what the form HOLDS. A theme
+   that drew them the same way would make Down read as an answer changing. */
+[data-formancy-theme='blueprint'] [data-formancy-part='typeahead-option'][data-active='true'] {
+  background: var(--fm-chrome);
+  box-shadow: inset 0 0 0 1px var(--fm-signal);
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='typeahead-option'][aria-selected='true'] {
+  font-weight: 600;
+  color: var(--fm-signal);
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='typeahead-empty'] {
+  margin: 0.25rem 0 0;
+  font-family: var(--fm-sans);
+  font-size: 0.8125rem;
+  color: var(--fm-muted);
+}
+
+/* The element is in the markup from the start, so a screen reader announces it
+   when it gets text rather than missing a region that appeared with its message
+   already in it. With nothing to say it takes no space. */
+/* The element is in the markup from the start, so a screen reader announces it when it gets
+   text rather than missing a region that appeared with its message already in it.
+   `display: none` undoes exactly that: it prunes the node from the accessibility tree, so
+   the region is created at the moment it gets its text — the failure the always-rendered
+   element exists to avoid. An empty block box has no line box and therefore no height, so
+   only the margin has to go. */
+[data-formancy-theme='blueprint'] [data-formancy-part='typeahead-empty']:empty {
+  margin: 0;
+}
+
+/* Under forced colours the system's own pair carries the active row: a
+   background nobody renders is a row nobody can see. */
+@media (forced-colors: active) {
+  [data-formancy-theme='blueprint'] [data-formancy-part='typeahead-option'][data-active='true'] {
+    background: Highlight;
+    color: HighlightText;
   }
 }

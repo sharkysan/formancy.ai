@@ -105,6 +105,29 @@ consequential residual risk in this document. In a context where a hidden field
 must stay hidden for reasons other than tidiness, a manufacturer should not
 rely on `visible` expressions alone.
 
+### A6. A presentation hint changes what the field collects
+
+*How it arises:* a widget replaces a control with one that can express more than the
+field can store. The concrete case is `widget: "typeahead"`, where the control is an
+editable text box over a `select`: the obvious handling of "somebody leaves the field
+with `ital` typed in it" is to keep the text, and the submission then carries a string
+no offered option produced, which every reader downstream will treat as an answer.
+
+*Constraint:* the rule is stated as a format rule — a widget may change how a field
+looks and may not change what it collects
+([0065](../decisions/0065-a-widget-is-authored-not-registered.md)) — and it is made
+structural in the controls rather than remembered: in both renderers the typeahead
+reaches `setValue` from two places, with an option's own value or with `null`
+([0072](../decisions/0072-a-typeahead-is-a-combobox-over-the-same-answer.md)). Each
+renderer's widget test asserts a submission byte-identical to the default control's,
+and asserts that typing, Escape, and leaving with an unmatched query store nothing.
+
+*Residual:* the guarantee covers the controls this repository ships. A component
+supplied through `registry.byType` or `registry.byPath` renders in the same slot and
+can store anything the engine accepts; nothing in the renderers constrains a
+consumer's own component, and the engine validates the value rather than its
+provenance.
+
 ---
 
 ## B — Correct data is lost or altered

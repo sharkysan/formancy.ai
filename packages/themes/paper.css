@@ -1074,4 +1074,91 @@
   font-size: 0.9375rem;
   font-style: italic;
   color: var(--fm-muted);
+
+}
+/* `widget: "typeahead"` -- a select narrowed by typing, drawn the editorial way.
+ *
+ * Still one answer from the options the author offered: this is paint over a
+ * control that collects exactly what the plain select collects.
+ *
+ * The popup is positioned by CSS alone. `top` is left at `auto`, so the list
+ * lands where it WOULD have been in the flow and overlays instead of pushing the
+ * rest of the form down. There is no positioning library, so there is no
+ * collision detection either: a list opened near the bottom of the window runs
+ * past it and the page scrolls, rather than flipping above the box. */
+/* No fill and no drawn arrow: here a control is a line to write on, and the list
+   is a footnote under it rather than a panel over it. */
+[data-formancy-theme='paper'] [data-formancy-part='typeahead'] {
+  font-family: var(--fm-serif);
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='field']:has([data-formancy-part='typeahead']) {
+  position: relative;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='typeahead-listbox'] {
+  position: absolute;
+  z-index: 20;
+  inset-inline: 0;
+  margin: 0.125rem 0 0;
+  padding: 0.25rem 0;
+  list-style: none;
+  max-height: 14rem;
+  overflow-y: auto;
+  background: var(--fm-ground);
+  border-block: 1px solid var(--fm-hair);
+  /* Square, like everything else on this paper -- with a fallback rather than a
+     variable, because this theme deliberately defines no radius. */
+  border-radius: var(--fm-radius, 0);
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='typeahead-option'] {
+  padding: 0.25rem 0.375rem;
+  font-family: var(--fm-serif);
+  /* A literal, not `var(--fm-line-height)`. That property is defined on this theme's
+     TEXTAREA and nowhere else, so outside the textarea the reference resolves to nothing,
+     the declaration is dropped at computed-value time and the row silently inherits.
+     The themes guard now catches this: 'resolves every custom property it uses, in the
+     scope that uses it' in apps/docs/src/themes.test.ts. It did not before -- its check
+     greps the file for a definition rather than asking about scope. */
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+/* A rule in the margin for where the person is, and the accent in italic for
+   what the form holds. Two marks, and neither of them colour alone. */
+[data-formancy-theme='paper'] [data-formancy-part='typeahead-option'][data-active='true'] {
+  box-shadow: inset 0.1875rem 0 0 var(--fm-ink);
+  background: color-mix(in srgb, var(--fm-ink) 6%, transparent);
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='typeahead-option'][aria-selected='true'] {
+  font-style: italic;
+  color: var(--fm-accent);
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='typeahead-empty'] {
+  margin: 0.25rem 0 0;
+  font-family: var(--fm-sans);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fm-muted);
+}
+
+/* The element is in the markup from the start, so a screen reader announces it when it gets
+   text rather than missing a region that appeared with its message already in it.
+   `display: none` undoes exactly that: it prunes the node from the accessibility tree, so
+   the region is created at the moment it gets its text — the failure the always-rendered
+   element exists to avoid. An empty block box has no line box and therefore no height, so
+   only the margin has to go. */
+[data-formancy-theme='paper'] [data-formancy-part='typeahead-empty']:empty {
+  margin: 0;
+}
+
+@media (forced-colors: active) {
+  [data-formancy-theme='paper'] [data-formancy-part='typeahead-option'][data-active='true'] {
+    background: Highlight;
+    color: HighlightText;
+  }
 }

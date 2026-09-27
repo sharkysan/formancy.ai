@@ -180,6 +180,57 @@ describe('the theme contract', () => {
     expect(orphans).toEqual([])
   })
 
+  test('resolves every custom property it uses, in the scope that uses it', () => {
+    // The hole the check above leaves, found by review rather than by the guard.
+    //
+    // That one asks whether the file defines a property ANYWHERE, which is not the question
+    // CSS asks. `--fm-line-height` was defined on paper's TEXTAREA and used on a typeahead
+    // option, which is not a descendant of one -- so the reference resolved to nothing, the
+    // declaration was dropped at computed-value time, and the row silently inherited its
+    // line height. Scoped exactly like a variable that does not exist, and passing.
+    //
+    // Real cascade scope needs a parser and a document tree. What is checkable without one
+    // is the discipline these themes actually keep: a variable is either defined at the
+    // theme root, or defined in the same rule as the use, or the use carries a fallback.
+    // A variable deliberately scoped somewhere else is still allowed -- it just has to say
+    // so with a fallback, which is what makes the narrower use safe.
+    const orphans = themes().flatMap(({ name, css }) => {
+      // Comments go first, for two reasons. A comment before a rule lands in the captured
+      // selector, which defeated the root test below; and a comment that *mentions* a
+      // variable is not a use of one -- the note on paper's typeahead option says
+      // `var(--fm-line-height)` in prose precisely to explain why it does not use it.
+      const bare = css.replace(/\/\*[\s\S]*?\*\//g, '')
+      // Innermost rules only, so a nested `@media` yields its rules and not itself.
+      const rules = [...bare.matchAll(/([^{}]*)\{([^{}]*)\}/g)].map((match) => ({
+        selector: (match[1] ?? '').trim(),
+        body: match[2] ?? '',
+      }))
+      const defined = (body: string): Set<string> =>
+        new Set([...body.matchAll(/(--fm-[a-z0-9-]+)\s*:/g)].map((match) => match[1]!))
+      // The theme root, and only it: a selector that IS `:root` or `[data-formancy-theme=x]`,
+      // or a comma list of those. Asking whether the selector CONTAINS the theme attribute
+      // is what made the first version of this check vacuous -- every rule in the file
+      // contains it, so paper's textarea counted as the root and the defect passed.
+      const ROOT = /^(?::root|\[data-formancy-theme=[^\]]+\])(?:\s*,\s*(?::root|\[data-formancy-theme=[^\]]+\]))*$/
+      const atRoot = new Set(
+        rules.filter(({ selector }) => ROOT.test(selector)).flatMap(({ body }) => [...defined(body)]),
+      )
+
+      return rules.flatMap(({ selector, body }) => {
+        const here = defined(body)
+        return [...new Set([...body.matchAll(/var\((--fm-[a-z0-9-]+)\s*\)/g)].map((m) => m[1]!))]
+          .filter((variable) => !atRoot.has(variable) && !here.has(variable))
+          .sort()
+          .map(
+            (variable) =>
+              `${name}: \`${selector}\` uses ${variable} with no fallback, and it is defined neither at the theme root nor on this rule`,
+          )
+      })
+    })
+
+    expect(orphans).toEqual([])
+  })
+
   test('a themed control has a height, so it is visible before it has content', () => {
     // The specific reason the field was invisible rather than merely unstyled:
     // an empty contenteditable collapses to nothing without one.
