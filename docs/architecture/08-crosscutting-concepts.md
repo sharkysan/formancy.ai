@@ -101,15 +101,23 @@ Three concentric mechanisms, each usable without the next:
 
 1. **Prop getters.** A consumer who wants none of formancy's markup spreads
    `engine.props(path)` onto their own elements and still gets correct wiring.
-2. **A component registry**, resolving `(type, widget)` to a component with
-   precedence per-path > per-widget > per-type > default. Layout nodes resolve
-   through the *same* registry, so the grid system belongs to the consumer too.
+2. **A component registry**, resolving a field to a component with precedence
+   per-path > per-type > default. Layout nodes resolve through the *same*
+   registry, so the grid system belongs to the consumer too. There is **no
+   per-widget entry**: a `widget` is the author's statement of intent in the
+   document ([0065](../decisions/0065-a-widget-is-authored-not-registered.md)),
+   honoured by the default control for that type — `toggle` is a part name on the
+   checkbox, `typeahead` is a combobox the select renders instead of itself
+   ([0072](../decisions/0072-a-typeahead-is-a-combobox-over-the-same-answer.md)) —
+   and a registry entry replaces the component either way, which is what keeps the
+   two mechanisms from contradicting each other. An earlier version of this
+   sentence described a per-widget precedence step that no renderer has ever had.
 3. **The unstyled kit** — semantic HTML, zero CSS files, and stable
    `data-formancy-part` and `data-state` hooks, so a Tailwind user writes
    `data-[state=invalid]:border-red-500`.
 
-Themes are strictly downstream and are never a dependency. The two shipped
-themes are deliberately *different design languages* rather than two palettes —
+Themes are strictly downstream and are never a dependency. The shipped themes
+are deliberately *different design languages* rather than palette swaps —
 different radii, typefaces, spacing, and different devices for showing an
 invalid field — because that is what falsifies the headless claim. If either
 had required a component change, the claim would be false.

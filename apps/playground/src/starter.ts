@@ -106,6 +106,37 @@ export const STARTER_SCHEMA = {
           { value: 'signature', label: { $t: 'extras.signature' } },
         ],
       },
+      // `widget: 'typeahead'` on a select: type to narrow a long list. Twelve
+      // options rather than two, because a type-ahead over a list somebody can
+      // read at a glance demonstrates nothing -- the widget exists for the list
+      // that is too long to scroll.
+      //
+      // The option labels are literals and every other piece of text here is a
+      // `$t` reference. That is deliberate and it is the one honest exception: a
+      // language's own name is the same in every locale, which is what an endonym
+      // is for. They also carry the diacritics the filter has to fold, so typing
+      // `francais` or `turkce` finds a row on a keyboard that cannot produce
+      // either -- which is the behaviour, not the decoration.
+      {
+        key: 'cardLanguage',
+        type: 'select',
+        widget: 'typeahead',
+        label: { $t: 'cardLanguage' },
+        options: [
+          { value: 'de', label: 'Deutsch' },
+          { value: 'fr', label: 'Français' },
+          { value: 'it', label: 'Italiano' },
+          { value: 'rm', label: 'Rumantsch' },
+          { value: 'en', label: 'English' },
+          { value: 'es', label: 'Español' },
+          { value: 'pt', label: 'Português' },
+          { value: 'nl', label: 'Nederlands' },
+          { value: 'pl', label: 'Polski' },
+          { value: 'tr', label: 'Türkçe' },
+          { value: 'cs', label: 'Čeština' },
+          { value: 'sv', label: 'Svenska' },
+        ],
+      },
       // richtext: formatted text stored as a closed grammar, never HTML. The
       // field shows a live preview from the same parser that will render it.
       { key: 'message', type: 'richtext', label: { $t: 'message' }, maxLength: 500 },
@@ -205,6 +236,7 @@ export const STARTER_SCHEMA = {
               label: { $t: 'tab.extras' },
               children: [
                 { kind: 'field', path: 'extras' },
+                { kind: 'field', path: 'cardLanguage' },
                 {
                   // table: columns that line up across rows, which stacked
                   // rows cannot do because each row sizes itself.
@@ -304,6 +336,7 @@ export const STARTER_SCHEMA = {
         'extras.giftwrap': 'Gift wrapping',
         'extras.insurance': 'Insurance',
         'extras.signature': 'Signature on delivery',
+        cardLanguage: 'Language on the gift card',
         message: 'A message on the gift card',
         artwork: 'Artwork for the gift wrap',
         terms: 'I accept the terms',
@@ -344,6 +377,7 @@ export const STARTER_SCHEMA = {
         'extras.giftwrap': 'Geschenkverpackung',
         'extras.insurance': 'Versicherung',
         'extras.signature': 'Unterschrift bei Zustellung',
+        cardLanguage: 'Sprache der Geschenkkarte',
         message: 'Eine Nachricht auf der Geschenkkarte',
         artwork: 'Motiv für die Geschenkverpackung',
         terms: 'Ich akzeptiere die Bedingungen',

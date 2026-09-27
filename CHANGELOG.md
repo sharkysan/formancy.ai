@@ -10,6 +10,80 @@ later.
 
 ## Unreleased
 
+**`widget: "typeahead"` on a select is built** — an editable combobox in both renderers,
+shown in the playground demo
+([0072](docs/decisions/0072-a-typeahead-is-a-combobox-over-the-same-answer.md)). Until now
+the property validated and nothing happened, which is the documented-but-inert failure this
+repository has shipped once already.
+
+**No conformance fixture changes, and that was measured rather than hoped for.** A plain
+`<select>` with no `multiple` and no `size` already maps to `role="combobox"` — `aria-query`
+5.3.2's `comboboxRole.relatedConcepts` says so, and `elementRoles` maps the element — so
+`getByRole('combobox', { name })` finds the plain control and the widgeted one alike, and no
+fixture holding a select behaves differently ([0034](docs/decisions/0034-accessible-name-only.md)).
+Each renderer's first test case asserts it, because that is the claim the widget rests on.
+
+**It cannot store what somebody typed.** `setValue` is reached from two places in each
+control, with an option's own value or with `null`, and the text goes nowhere but the filter
+— so Escape abandons the query and keeps the answer, leaving the field with a partial or
+unmatched query stores nothing, and an emptied box clears the answer, because a select's
+empty option means un-answering is always available and a widget may not take it away
+([0065](docs/decisions/0065-a-widget-is-authored-not-registered.md)).
+
+**The ARIA the pattern is usually got wrong on:** the listbox element exists while the popup
+is collapsed, because `aria-expanded` and `aria-controls` are required properties of the role
+and an `aria-controls` pointing at nothing is an unresolvable IDREF;
+`aria-activedescendant` is absent rather than empty when nothing is active;
+`aria-autocomplete="list"` and not `"both"`, because nothing is ever written into the box for
+you; no `aria-haspopup`; and `aria-selected` marks the chosen option and never the
+arrowed-over one — following the arrow keys with it tells a screen reader the answer changed
+on every press of Down. axe runs over all three states of the popup in both renderers, and
+the guard was checked by deleting `aria-controls` and watching it report
+`aria-required-attr`.
+
+**One filter, in `@formancy/spec`.** `narrowOptionsByLabel` folds case and diacritics with
+`normalize('NFD')` and no dependency, reads the **label only** — the value is not on the
+screen, so matching it would behave on data the person cannot see — and returns the
+document's order rather than a ranking, because re-ranking moves the row somebody is already
+reaching for. It lives there for the reason `applyRichCommand` does: a filter may not narrow
+one way in React and another way in Angular. It is folding and not collation, so `strasse`
+does not find `Straße`; the limits are tests rather than a sentence.
+
+**Three corrections to the typeahead before it landed, and one of them fixed a guard.**
+
+The empty-result region is hidden with `margin: 0` on `:empty` and no longer with
+`display: none`. `display: none` prunes the node from the accessibility tree, so the region
+would have been *created* at the moment it got its text -- which is the announcement failure
+an always-rendered live region exists to avoid.
+
+Paper's typeahead option asked for `var(--fm-line-height)`, which that theme defines on its
+textarea and nowhere else. Outside a textarea the reference resolved to nothing, the
+declaration was dropped at computed-value time, and the row silently inherited its line
+height -- scoped exactly like a variable that does not exist. `apps/docs/src/themes.test.ts`
+did not catch it, because its orphan check grepped the file for a definition rather than
+asking about scope; it now checks that every `var(--fm-*)` without a fallback is defined
+either at the theme root or on the rule that uses it. Shown to fail by putting the defect
+back, and its first version was *itself* vacuous -- it tested whether a selector contained
+`[data-formancy-theme=`, which every rule in the file does, so paper's textarea counted as
+the theme root.
+
+And the `aria-selected` case in both renderers now arrows three rows rather than two.
+`Français` is the second of five options, so two presses landed on the row that was also the
+chosen one, the two facts coincided, and a control whose `aria-selected` followed the arrow
+keys passed -- measured, by inverting the binding in each renderer and watching all 24 cases
+stay green. It fails in both now.
+
+**No combobox library and no positioning library.** The popup is placed in CSS and therefore
+has no collision detection: a list opened near the bottom of the window runs past it and the
+page scrolls rather than the popup flipping above the box, and the active option is not
+scrolled into view. Both are stated in the record rather than discovered.
+
+**A documentation claim that was already wrong, found while writing this:**
+`docs/architecture/08-crosscutting-concepts.md` described the component registry as resolving
+`(type, widget)` with a per-widget precedence step. There is no per-widget registry entry in
+either renderer — the registry resolves per-path then per-type, and a widget is honoured by
+the control for that type. It now says what the code does.
+
 **Two corrections to the scanner before it landed**, both about the rule that a widget never
 changes what a field collects.
 

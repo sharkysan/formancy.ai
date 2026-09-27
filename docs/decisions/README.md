@@ -172,3 +172,4 @@ listed under the sections they belong to above.
 | [0069](0069-contributions-under-a-cla.md) | Contributions under a CLA | accepted |
 | [0070](0070-a-code-is-an-arrangement-not-a-field.md) | A code is an arrangement, not a field | accepted |
 | [0071](0071-a-scanner-is-supplied-not-built.md) | A scanner is supplied, not built | accepted |
+| [0072](0072-a-typeahead-is-a-combobox-over-the-same-answer.md) | A typeahead is a combobox over the same answer | accepted |

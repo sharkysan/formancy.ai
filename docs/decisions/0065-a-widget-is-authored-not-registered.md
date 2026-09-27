@@ -1,5 +1,19 @@
 # 0065 — A widget is authored, not registered
 
+> **Where the renderers got to.** This record deliberately landed the names ahead of the
+> controls, and said the guarantee stays weaker than it looks until both renderers honour
+> each one. Two now do: `scanner` in [0071](0071-a-scanner-is-supplied-not-built.md) and
+> `typeahead` in [0072](0072-a-typeahead-is-a-combobox-over-the-same-answer.md), each with
+> the renderer decision this record said was not being made here. `toggle` is honoured too,
+> and the renderer decision this record anticipated went the other way: it is a part name and
+> **not** `role="switch"`, because ARIA's switch means a control that takes effect when you
+> operate it while a form field sets a value submitted later or never. So the accessible role
+> stays `checkbox`, the switch is CSS, and conformance finds the field either way — the
+> opposite of the `role="switch"` case this record raised as the one that would change the
+> fixtures. **`datagrid` is the one still outstanding** — a repeater carrying
+> it renders as stacked rows, which `apps/playground/src/starter.test.ts` records as the
+> reason the demo does not show it. The argument below is unchanged.
+
 - **Status:** accepted
 - **Date:** 2026-09-27
 - **Deciders:** Daniel Bacher
