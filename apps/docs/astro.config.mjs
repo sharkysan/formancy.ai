@@ -44,6 +44,7 @@ export default defineConfig({
             { label: 'Drafts', slug: 'concepts/drafts' },
             { label: 'Files', slug: 'concepts/files' },
             { label: 'Rich text', slug: 'concepts/rich-text' },
+            { label: 'Scanning', slug: 'concepts/scanning' },
             { label: 'Conformance', slug: 'concepts/conformance' },
           ],
         },

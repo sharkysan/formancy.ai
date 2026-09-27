@@ -10,6 +10,55 @@ later.
 
 ## Unreleased
 
+**Two corrections to the scanner before it landed**, both about the rule that a widget never
+changes what a field collects.
+
+A scanned answer is sanitised the way the control would sanitise it: `<input type="text">`
+strips CR and LF from everything typed or pasted, and a scanned code payload can be several
+lines — storing it verbatim put a value in the answer that typing could not produce. jsdom
+does not implement that sanitiser, so nothing noticed until a case asserted it.
+
+And the scan button no longer disables itself while scanning. Disabling the element somebody
+just pressed blurs it and the browser resets focus to the document body, so a keyboard user
+is returned to the top of the page and told to type instead into a field they must find
+again. Busy is said with `aria-busy`; a re-entrancy guard does what `disabled` was doing.
+**Not covered by a test**, and said so: jsdom does not blur a focused element that becomes
+disabled, which is why it was written the other way round first.
+
+**`widget: "scanner"` on a text field** — a camera route to a value somebody could
+otherwise type, in both renderers and shown in the playground demo
+([0071](docs/decisions/0071-a-scanner-is-supplied-not-built.md)). The widget name has
+validated since spec 2 and no renderer did anything with it, which is the
+documented-but-inert state this repository has shipped once already.
+
+**The host supplies the scanner, exactly as it supplies the uploader.**
+`ScannerProvider` in React, `provideFormancyScanner` in Angular, and one function:
+`(request) => Promise<string | null>`. A renderer cannot own camera permission policy,
+cannot own a decoder without putting one in every consumer's dependency closure, and has
+no business owning a full-screen viewfinder in a design system it knows nothing about. So
+it owns none of them, and **no decoder ships** — a consumer who wants one supplies it.
+
+**Without a scanner there is no button, and the field is the ordinary text input.**
+Unlike the file field there is no message, because nothing is unavailable: typing was
+always this field's primary route, and it is also the fallback for a refused permission, a
+damaged code and a person who would rather type. A `Scan` button that opens nothing is a
+promise the form cannot keep, and worst for the people who cannot see that nothing
+happened.
+
+**A device failure goes in the field's own `role="status"` region, never in its error
+region.** That region is the control's `aria-describedby` target and holds the engine's
+verdict on the answer; a refused camera put there would describe a hardware problem as a
+wrong answer, and would have a renderer writing content the engine owns. Rejecting means
+the device failed and is said out loud; resolving with `null` means somebody closed the
+camera, which is not a failure and is said with silence.
+
+**What the camera read is stored, then judged like anything typed.** A scan the field's
+`pattern` refuses becomes the value and the error, rather than being dropped — dropping it
+would discard the only record of what the camera saw and leave the field looking
+untouched. Both renderers have exactly one `setValue` call site for a text answer, taking
+a `string`, so the guarantee that a widget cannot change what a field collects is
+structural rather than careful.
+
 **A code can be added from the builder, which it could not be.** The `qrcode` layout kind
 reached the spec and both renderers with **no way to insert one** — the arrangement palette
 offered Row, Column, Section and unplaced fields, so an author's only route was editing the

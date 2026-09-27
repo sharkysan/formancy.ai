@@ -33,9 +33,11 @@ L0  spec                         types · JSON Schema · diff · canonical hash
 **`tiptap` is at L4 and nothing depends on it.** It is the only package a
 renderer uses without importing: the renderers declare an interface and the HOST
 passes an implementation in, the same arrangement the `file` field uses for its
-uploader. That inversion is what keeps ProseMirror — larger than the renderer
-that would have held it — out of the default path for the forms that have no
-rich-text field, which is most of them
+uploader and the `scanner` widget for its camera
+([0071](../decisions/0071-a-scanner-is-supplied-not-built.md)). That inversion
+is what keeps ProseMirror — larger than the renderer that would have held it —
+out of the default path for the forms that have no rich-text field, which is
+most of them
 ([0061](../decisions/0061-tiptap-over-the-closed-grammar.md)). It depends on
 `spec` and not on `core`, because converting between the stored grammar and an
 editor document is a function of the format, not of a running form.

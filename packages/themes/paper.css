@@ -1016,3 +1016,62 @@
     background: white;
   }
 }
+
+/* `widget: "scanner"` — the camera route BESIDE the input, never instead of it. Set as
+   this theme sets every other action: small spaced capitals on a ruled underline, no
+   fill and no box, because a second route to an answer is an aside rather than an
+   object. Typing is the primary route and the fallback at once. */
+[data-formancy-theme='paper'] [data-formancy-part='scanner-button'] {
+  justify-self: start;
+  /* 2.5.8 Target Size, on a button somebody presses while holding a phone. */
+  min-height: 2.25rem;
+  padding: 0.25rem 0;
+  font-family: var(--fm-sans);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fm-ink);
+  background: none;
+  border: 0;
+  text-decoration: underline;
+  text-decoration-color: var(--fm-hair);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 5px;
+  cursor: pointer;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='scanner-button']:hover:not(:disabled):not([aria-busy='true']) {
+  color: var(--fm-accent);
+  text-decoration-color: var(--fm-accent);
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='scanner-button']:focus-visible {
+  outline: 2px solid var(--fm-accent);
+  outline-offset: 3px;
+}
+
+/* Scanning, or disabled with the field. The cursor changes as well as the colour, so
+   the state is not carried by hue alone (WCAG 1.4.1). */
+/* Scanning, or disabled with the field. `aria-busy` is named as well as `:disabled`
+   because the button is no longer disabled while a scan is in flight -- disabling the
+   element somebody just pressed sends focus to the document body. */
+[data-formancy-theme='paper'] [data-formancy-part='scanner-button']:disabled,
+[data-formancy-theme='paper'] [data-formancy-part='scanner-button'][aria-busy='true'] {
+  color: var(--fm-muted);
+  text-decoration-color: var(--fm-hair);
+  cursor: not-allowed;
+}
+
+/* The camera's own progress and its failures. NOT the validation error, which has its
+   own region — a refused permission there would read as a wrong answer. */
+[data-formancy-theme='paper'] [data-formancy-part='scanner-status']:empty {
+  display: none;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='scanner-status'] {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-style: italic;
+  color: var(--fm-muted);
+}

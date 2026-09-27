@@ -1058,3 +1058,67 @@
     background: white;
   }
 }
+
+/* `widget: "scanner"` — the camera route BESIDE the input, never instead of it.
+   Typing is the field's primary route and its fallback at once, so the button is a
+   secondary one in the field's own grid: `justify-self: start` because a block-level
+   button spanning the column would read as the control rather than as an alternative
+   to it. */
+[data-formancy-theme='blueprint'] [data-formancy-part='scanner-button'] {
+  justify-self: start;
+  font: inherit;
+  font-family: var(--fm-sans);
+  font-size: 0.875rem;
+  font-weight: 500;
+  /* 2.5.8 Target Size: 24 by 24 is the floor, and this is a button somebody presses
+     while holding a phone at a label. */
+  min-height: 2.25rem;
+  padding: 0.4375rem 0.875rem;
+  border: 1px solid var(--fm-rule);
+  border-radius: var(--fm-radius);
+  background: var(--fm-paper);
+  color: var(--fm-ink);
+  cursor: pointer;
+  transition: border-color 120ms ease, color 120ms ease;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='scanner-button']:hover:not(:disabled):not([aria-busy='true']) {
+  border-color: var(--fm-signal);
+  color: var(--fm-signal);
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='scanner-button']:focus-visible {
+  outline: 2px solid var(--fm-signal);
+  outline-offset: 2px;
+}
+
+/* Scanning, or disabled with the field. The cursor changes as well as the colour, so
+   the state is not carried by hue alone (WCAG 1.4.1). */
+/* Scanning, or disabled with the field. `aria-busy` is named as well as `:disabled`
+   because the button is no longer disabled while a scan is in flight -- disabling the
+   element somebody just pressed sends focus to the document body. */
+[data-formancy-theme='blueprint'] [data-formancy-part='scanner-button']:disabled,
+[data-formancy-theme='blueprint'] [data-formancy-part='scanner-button'][aria-busy='true'] {
+  color: var(--fm-muted);
+  border-color: var(--fm-rule);
+  cursor: not-allowed;
+}
+
+/* The camera's own progress and its failures. NOT the validation error, which has its
+   own region — a refused permission there would read as a wrong answer. Hidden while
+   empty, exactly like the file field's status line. */
+[data-formancy-theme='blueprint'] [data-formancy-part='scanner-status']:empty {
+  display: none;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='scanner-status'] {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--fm-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-formancy-theme='blueprint'] [data-formancy-part='scanner-button'] {
+    transition: none;
+  }
+}

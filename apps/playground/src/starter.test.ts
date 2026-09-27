@@ -50,7 +50,6 @@ describe('the starter schema', () => {
   const NOT_DEMONSTRATED_YET: Readonly<Record<string, string>> = {
     datagrid: 'The grid control is not built: a repeater with this widget still renders as stacked rows.',
     typeahead: 'No combobox yet: a select with this widget still renders as a plain select.',
-    scanner: 'No camera route yet: a text field with this widget still renders as a plain input.',
   }
 
   test('demonstrates every widget, or says why not', () => {

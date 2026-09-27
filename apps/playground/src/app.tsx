@@ -12,8 +12,10 @@ import {
   FormancyForm,
   FormancyProvider,
   RichTextEditorProvider,
+  ScannerProvider,
   UploaderProvider,
 } from '@formancy/react'
+import type { Scanner } from '@formancy/react'
 import { createRichTextEditor } from '@formancy/tiptap'
 import { playgroundUploader } from './demo-uploader.js'
 import { createBuilderSession } from '@formancy/builder-core'
@@ -76,6 +78,25 @@ const REPO = 'https://github.com/sharkysan/formancy.ai'
  * site's link to this page.
  */
 const SITE = import.meta.env.DEV ? 'http://localhost:4384/' : '/'
+
+/**
+ * The playground's stand-in for a camera.
+ *
+ * `widget: "scanner"` needs a host to supply the camera, the permission prompt and the
+ * decoder, because no renderer may own any of the three
+ * ([0071](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0071-a-scanner-is-supplied-not-built.md)).
+ * This page has none of them and is not going to grow a decoder to demonstrate a
+ * widget, so it supplies the honest version: a prompt, exactly as the rich-text link
+ * button asks for an address rather than building a dialog this project would then own
+ * the accessibility of.
+ *
+ * It demonstrates everything about the widget except the decoding — the button, its
+ * name, the value landing in the engine, and the `pattern` refusing a scan the same way
+ * it refuses typing. `window.prompt` even has the contract's own shape: a string, or
+ * `null` when somebody cancels.
+ */
+const DEMO_SCANNER: Scanner = async ({ label }) =>
+  window.prompt(`Stand-in for a camera. What does the code for "${label}" read?`)
 
 /**
  * The three panes, for a screen too narrow to show them side by side.
@@ -322,15 +343,18 @@ export function App() {
                       the factory interface exactly, which is the point of it
                       being an interface. */}
                   <RichTextEditorProvider value={createRichTextEditor}>
-                    {/* And an uploader, for the same reason: without one the file field
-                        renders read-only and says there is nowhere to put a file, so the
-                        field a visitor most wants to try was the one they could not. The
-                        bytes stay in this tab and the storage key says so. */}
+                    {/* And an uploader, and a scanner, for the same reason in both cases:
+                        each control's real behaviour only exists where a host supplies the
+                        capability, so a playground without them would show the fallback and
+                        call it the feature. The uploader keeps the bytes in this tab and its
+                        storage key says so. */}
                     <UploaderProvider value={playgroundUploader}>
+                      <ScannerProvider value={DEMO_SCANNER}>
                       <FormancyProvider engine={built.engine} key={source}>
                         <ErrorSummary />
                         <FormancyForm layout="web" />
                       </FormancyProvider>
+                      </ScannerProvider>
                     </UploaderProvider>
                   </RichTextEditorProvider>
                 </div>

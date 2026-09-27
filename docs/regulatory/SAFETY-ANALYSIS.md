@@ -344,6 +344,28 @@ screenshotting the playground, not by a test — recorded because it illustrates
 the general rule that a property enforced in two renderers will eventually be
 enforced differently in two renderers.
 
+### D6. A device failure is presented as a wrong answer
+
+*How it arises:* a field offers a camera route to its answer
+([0071](../decisions/0071-a-scanner-is-supplied-not-built.md)) and the camera does not
+work — permission refused, no camera, a stream that dies. The naive rendering puts that
+message where the field's validation errors go, so somebody reads "camera permission was
+refused" as a verdict on what they entered, and an error summary built from the engine's
+errors sends them to a field whose value is fine.
+
+*Constraint:* the message is rendered in the field's own `role="status"` region and never
+in its error region, which is the control's `aria-describedby` target and carries the
+engine's verdict only. A renderer has no way to write into it: the text comes from the
+snapshot. The message names the recovery — type the value — and typing is always
+available, because the scanner widget adds a button beside the default control rather than
+replacing it. Verified by a case in each renderer's scanner test asserting the message in
+the status region **and** the absence of an error region.
+
+*Residual:* the two regions are distinguished by their content and their ARIA roles, not
+by anything that stops a *theme* styling them identically. A consumer whose stylesheet
+draws the status line like an error has reintroduced the confusion, and nothing here
+detects that.
+
 ---
 
 ## E — Provenance is lost

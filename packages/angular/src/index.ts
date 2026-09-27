@@ -46,5 +46,7 @@ export type {
   RichTextEditorHandle,
   RichTextEditorMount,
 } from './rich-text-editor.js'
+export { FORMANCY_SCANNER, injectScanner, provideFormancyScanner } from './scanning.js'
+export type { ScanRequest, Scanner } from './scanning.js'
 export { FORMANCY_UPLOADER, injectUploader, provideFormancyUploader } from './uploads.js'
 export type { StoredFile, Uploader } from './uploads.js'

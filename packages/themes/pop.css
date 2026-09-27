@@ -1092,3 +1092,68 @@
     background: white;
   }
 }
+
+/* `widget: "scanner"` — the camera route BESIDE the input, never instead of it. An
+   object you could pick up, like everything else here, but a smaller one than Submit:
+   typing is the field's primary route and its fallback at once, so `justify-self: start`
+   keeps the button from spanning the column and reading as the control itself. */
+[data-formancy-theme='pop'] [data-formancy-part='scanner-button'] {
+  justify-self: start;
+  font: inherit;
+  font-family: var(--fm-sans);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  /* 2.5.8 Target Size, on a button somebody presses while holding a phone. */
+  min-height: 2.5rem;
+  padding: 0.375rem 1rem;
+  border: var(--fm-line);
+  border-radius: 999px;
+  background: var(--fm-yellow);
+  color: var(--fm-ink);
+  box-shadow: 3px 3px 0 var(--fm-ink);
+  cursor: pointer;
+  transition: translate 100ms ease, box-shadow 100ms ease;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='scanner-button']:hover:not(:disabled):not([aria-busy='true']) {
+  translate: -2px -2px;
+  box-shadow: 5px 5px 0 var(--fm-ink);
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='scanner-button']:focus-visible {
+  outline: 3px solid var(--fm-ink);
+  outline-offset: 3px;
+}
+
+/* Scanning, or disabled with the field. The shadow closes and the cursor changes, so
+   the state is not carried by colour alone (WCAG 1.4.1). */
+/* Scanning, or disabled with the field. `aria-busy` is named as well as `:disabled`
+   because the button is no longer disabled while a scan is in flight -- disabling the
+   element somebody just pressed sends focus to the document body. */
+[data-formancy-theme='pop'] [data-formancy-part='scanner-button']:disabled,
+[data-formancy-theme='pop'] [data-formancy-part='scanner-button'][aria-busy='true'] {
+  background: var(--fm-paper);
+  color: var(--fm-muted);
+  translate: 0 0;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* The camera's own progress and its failures. NOT the validation error, which has its
+   own region — a refused permission there would read as a wrong answer. */
+[data-formancy-theme='pop'] [data-formancy-part='scanner-status']:empty {
+  display: none;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='scanner-status'] {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--fm-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-formancy-theme='pop'] [data-formancy-part='scanner-button'] {
+    transition: none;
+  }
+}
