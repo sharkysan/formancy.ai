@@ -611,8 +611,15 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
           )
         }
         const node = found.siblings[found.index]! as unknown as Record<string, unknown>
-        if (value === undefined) delete node[property]
-        else node[property] = copy(value) as unknown
+        if (value === undefined) Reflect.deleteProperty(node, property)
+        else {
+          Object.defineProperty(node, property, {
+            value: copy(value) as unknown,
+            writable: true,
+            enumerable: true,
+            configurable: true,
+          })
+        }
         return undefined
       })
     },
