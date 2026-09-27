@@ -1,7 +1,7 @@
 import { Ajv2020 } from 'ajv/dist/2020.js'
 import { describe, expect, test } from 'vitest'
 import schemaDocument from '../formancy.schema.json' with { type: 'json' }
-import { CONTAINER_FIELD_TYPES, FIELD_TYPES } from './types.js'
+import { CONTAINER_FIELD_TYPES, FIELD_TYPES, WIDGETS_BY_FIELD_TYPE } from './types.js'
 
 describe('formancy.schema.json', () => {
   test('is itself a valid JSON Schema 2020-12 document', () => {
@@ -10,6 +10,46 @@ describe('formancy.schema.json', () => {
 
     expect(metaSchema).toBeDefined()
     expect(metaSchema!(schemaDocument)).toBe(true)
+  })
+
+  test('gates every widget to the same field types the code does', () => {
+    // Two closed lists describing one rule, in two files, is exactly the drift
+    // this repository keeps finding. `WIDGETS_BY_FIELD_TYPE` decides what a
+    // TypeScript caller may write; the schema's `if`/`then` branches decide what a
+    // document may contain. A widget added to one and not the other is either a
+    // name the validator refuses and the types allow, or the reverse -- and the
+    // reverse is the dangerous one, because it validates and no renderer honours
+    // it.
+    //
+    // Derived from the schema rather than restated: the expected value is the
+    // code's own map, so there is no third list to keep in step.
+    // The JSON import is precisely typed from the file's own literals, so the
+    // branches are read through one `unknown` hop rather than a cast TypeScript
+    // rightly refuses -- this reads the document as data, which is what it is.
+    interface WidgetBranch {
+      if?: { properties?: { type?: { const?: string } } }
+      then?: { properties?: { widget?: { enum?: string[] } } }
+    }
+    const branches = schemaDocument.$defs.field.allOf as unknown as readonly WidgetBranch[]
+
+    const fromSchema: Record<string, readonly string[]> = {}
+    for (const branch of branches) {
+      const widgets = branch.then?.properties?.widget?.enum
+      if (widgets === undefined) continue
+      const gatedType = branch.if?.properties?.type?.const
+      // A widget gated to an `enum` of types rather than one `const` would land
+      // here as undefined, and silently contribute nothing to the comparison.
+      expect(gatedType, 'a widget branch that is not gated to exactly one field type').toBeDefined()
+      fromSchema[gatedType as string] = widgets
+    }
+
+    // A guard on the guard: no branches found would pass forever.
+    expect(Object.keys(fromSchema).length).toBeGreaterThan(0)
+    expect(fromSchema).toEqual(
+      Object.fromEntries(
+        Object.entries(WIDGETS_BY_FIELD_TYPE).map(([type, widgets]) => [type, [...widgets]]),
+      ),
+    )
   })
 
   test('has the stable $id the published spec reference is served from', () => {

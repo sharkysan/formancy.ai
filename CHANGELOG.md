@@ -10,6 +10,41 @@ later.
 
 ## Unreleased
 
+**An author can say how a field should look: `widget`.** Four names to begin with —
+`toggle` on a checkbox, `datagrid` on a repeater, `typeahead` on a select, `scanner`
+on a text field — each gated to the type it belongs to, with a typo refused at
+authoring time rather than falling back differently in each renderer
+([0065](docs/decisions/0065-a-widget-is-authored-not-registered.md)).
+
+All four arrived as requests for new *field types*, and none of them changes what is
+collected: a toggle stores `true | false | null` like the checkbox it is. Four types
+whose data is indistinguishable from four existing ones is not what the type list is
+for. **A widget may change how a field looks and may not change what it collects** —
+the moment a hint alters the value, the validation, or what somebody may enter, it is
+a field type, and a test asserts the set rather than trusting it.
+
+**A developer could already do this, and that was the problem.** `registry.byType`
+and `registry.byPath` swap the component for any field at no cost to the format —
+for anybody who writes code. The builder exists for people who do not, and a choice
+only a developer can make is a theming feature rather than an authoring one.
+
+**It is in version 2, and needed no version 3.** The first reasoning here was that a
+presentation hint is safely ignorable, so an older reader drops it and renders the
+default control. Measured against the real validator, false: the document schema is
+closed, so a reader that has never heard of `widget` answers `Unknown property
+"widget"` and refuses the whole document. But version 2 has never been released —
+the published `0.1.0` pins `"specVersion"` to `{ "const": "1" }` — so no pinned
+version 2 reader exists and a construct added before it ships costs nobody anything.
+
+`versionErrors` therefore gates a property for the first time, not only a field type
+and a layout kind: a version 1 document carrying a widget would otherwise validate
+here and be refused by every conforming version 1 reader.
+
+**Renderers still ignore it**, and a form is correct while they do, because the
+default control collects the right answer. React and Angular honouring each name is
+separate work — and not merely cosmetic there: a toggle rendered as `role="switch"`
+changes the accessible role, so the conformance suite has something to say about it.
+
 **Fixed: the landing page offered a spec version no released package speaks.** It
 said the schema spec is at `specVersion: "2"` in the same paragraph as "They are on
 npm … at `0.1.0`", while both quickstarts said the schema is frozen at version 1.

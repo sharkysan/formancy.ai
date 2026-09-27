@@ -153,6 +153,11 @@ export const ROW_ID_PREFIX = 'r'
  * Still reserved, unimplemented: datetime, time, multiselect, combobox,
  * signature, address, rating, slider.
  *
+ * Four things that arrived as requests for types are NOT here and will not be:
+ * toggle, datagrid, autocomplete and the scanning half of qrcode. None of them
+ * changes what a field collects, so each is a `widget` on an existing type
+ * ([0065](../../../docs/decisions/0065-a-widget-is-authored-not-registered.md)).
+ *
  * A list rather than a bare union because formancy.schema.json has to offer
  * the same values, and a test can only compare two lists.
  */
@@ -205,6 +210,57 @@ export const LIST_VALUED_FIELD_TYPES = [
 
 export type ListValuedFieldType = (typeof LIST_VALUED_FIELD_TYPES)[number]
 
+/**
+ * How a field should LOOK, chosen by the author, never changing what it collects.
+ *
+ * A developer could already do this: `registry.byType` and `registry.byPath` swap
+ * the component for any field, per deployment, at no cost to the format. What that
+ * does not do is let the person the builder exists for choose — a non-technical
+ * author cannot register a component, and a choice only a developer can make is
+ * not an authoring feature. So the intent lives in the document and every renderer
+ * decides how to honour it.
+ *
+ * **The line: a widget may change how a field looks, never what it collects.** The
+ * moment a hint alters the stored value, the validation, or what somebody may
+ * enter, it is a field type and belongs in `FIELD_TYPES` with all the cost that
+ * carries. Each name here sits on a type whose value shape it leaves exactly alone.
+ *
+ * **Closed, not an open string.** An open one would cost nothing to extend and be
+ * worth nothing: two renderers would guess differently at `widget: "togle"`, one
+ * falling back silently and the other not, so a form would look right in the build
+ * that knew the name and wrong everywhere else with nothing failing anywhere.
+ * Closed makes a typo an authoring-time error, and makes each new name a format
+ * change — which is the price of the guarantee.
+ *
+ * `autocomplete` is deliberately NOT the name for the type-ahead. That word is
+ * owed to the HTML autofill token, which WCAG 1.3.5 asks for and the spec still
+ * does not have; spending it on presentation would leave nothing to call the real
+ * thing.
+ */
+export const FIELD_WIDGETS = ['toggle', 'datagrid', 'typeahead', 'scanner'] as const
+
+export type FieldWidget = (typeof FIELD_WIDGETS)[number]
+
+/**
+ * Which widgets each field type accepts.
+ *
+ * A map rather than a flat list because `widget: "datagrid"` on a text field is an
+ * author who believes they configured a grid, and a document that validates is a
+ * document nobody tells them about. The JSON Schema gates the same way, through
+ * the `if`/`then` branches it already uses for per-type properties, so the two
+ * cannot drift — a test compares them.
+ */
+export const WIDGETS_BY_FIELD_TYPE = {
+  /** A switch instead of a tick-box. Still `true | false | null`. */
+  checkbox: ['toggle'],
+  /** Rows as a table instead of stacked blocks. Still rows carrying `_id`. */
+  repeater: ['datagrid'],
+  /** Type to narrow a long option list. Still one offered option value. */
+  select: ['typeahead'],
+  /** A camera route to a string somebody could otherwise type. Still a string. */
+  text: ['scanner'],
+} as const satisfies Partial<Record<FieldType, readonly FieldWidget[]>>
+
 export interface FieldDef {
   /**
    * The field's identity, forever. Renaming a key is a data migration, not an
@@ -212,6 +268,11 @@ export interface FieldDef {
    */
   key: string
   type: FieldType
+  /**
+   * Presentation only, and only the widgets `WIDGETS_BY_FIELD_TYPE` allows for
+   * this type. Absent means the renderer's default control.
+   */
+  widget?: FieldWidget
   required?: boolean
   renamedFrom?: string
   /**

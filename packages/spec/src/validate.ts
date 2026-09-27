@@ -65,6 +65,21 @@ function versionErrors(
   const spec1Kinds = new Set<string>(SPEC_1_LAYOUT_KINDS)
 
   for (const { field, path } of fields) {
+    // A PROPERTY, not only a type. This function gated field types and layout
+    // kinds and nothing else, which was enough while every version 2 construct
+    // was one of those two. `widget` is neither, and it cannot be waved through:
+    // the document schema is closed, so a version 1 reader answers `Unknown
+    // property "widget"` and refuses the whole document rather than ignoring the
+    // hint and rendering the default control. A version 1 document carrying one
+    // is therefore not a version 1 document, and saying so here is the only place
+    // the author finds out — they cannot see the reader that would refuse it.
+    if (field.widget !== undefined) {
+      errors.push({
+        path: `${path}/widget`,
+        message: `A "${field.widget}" widget needs specVersion "2". This document says "1". Change it to "2" — everything already in the document keeps working, because version 2 only adds.`,
+      })
+    }
+
     if (spec1Types.has(field.type)) continue
     errors.push({
       path: `${path}/type`,

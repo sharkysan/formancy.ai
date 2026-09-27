@@ -415,6 +415,98 @@
        }
       }
      }
+    },
+    {
+     "if": {
+      "required": [
+       "type"
+      ],
+      "properties": {
+       "type": {
+        "const": "checkbox"
+       }
+      }
+     },
+     "then": {
+      "properties": {
+       "widget": {
+        "title": "Widget",
+        "description": "How this field should look. Presentation only: it never changes what the field collects or what is stored. Leave it out for the default control. Show the tick-box as a switch. The answer is unchanged: still true, false, or untouched.",
+        "enum": [
+         "toggle"
+        ]
+       }
+      }
+     }
+    },
+    {
+     "if": {
+      "required": [
+       "type"
+      ],
+      "properties": {
+       "type": {
+        "const": "repeater"
+       }
+      }
+     },
+     "then": {
+      "properties": {
+       "widget": {
+        "title": "Widget",
+        "description": "How this field should look. Presentation only: it never changes what the field collects or what is stored. Leave it out for the default control. Show the rows as a table with aligned columns instead of stacked blocks. The answer is unchanged.",
+        "enum": [
+         "datagrid"
+        ]
+       }
+      }
+     }
+    },
+    {
+     "if": {
+      "required": [
+       "type"
+      ],
+      "properties": {
+       "type": {
+        "const": "select"
+       }
+      }
+     },
+     "then": {
+      "properties": {
+       "widget": {
+        "title": "Widget",
+        "description": "How this field should look. Presentation only: it never changes what the field collects or what is stored. Leave it out for the default control. Let somebody type to narrow the options instead of scrolling them. The answer is still one of the options offered.",
+        "enum": [
+         "typeahead"
+        ]
+       }
+      }
+     }
+    },
+    {
+     "if": {
+      "required": [
+       "type"
+      ],
+      "properties": {
+       "type": {
+        "const": "text"
+       }
+      }
+     },
+     "then": {
+      "properties": {
+       "widget": {
+        "title": "Widget",
+        "description": "How this field should look. Presentation only: it never changes what the field collects or what is stored. Leave it out for the default control. Offer a camera route to a value somebody could otherwise type, such as reading a QR code. The answer is still the same string, and typing it must stay possible.",
+        "enum": [
+         "scanner"
+        ]
+       }
+      }
+     }
     }
    ],
    "unevaluatedProperties": false
