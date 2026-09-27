@@ -122,11 +122,21 @@ reaches `setValue` from two places, with an option's own value or with `null`
 renderer's widget test asserts a submission byte-identical to the default control's,
 and asserts that typing, Escape, and leaving with an unmatched query store nothing.
 
-*Residual:* the guarantee covers the controls this repository ships. A component
-supplied through `registry.byType` or `registry.byPath` renders in the same slot and
-can store anything the engine accepts; nothing in the renderers constrains a
-consumer's own component, and the engine validates the value rather than its
-provenance.
+*And the same constraint made structural in the ENGINE, which is the half that was
+missing.* Until [0076](../decisions/0076-an-answer-is-one-of-the-options.md) the
+guarantee was a property of the controls only: measured against the built engine, a
+`select` offering CH and DE accepted `XX`, a `radio` offering only `red` accepted
+`plaid`, and `validate()` returned `{"valid":true,"errors":{}}` — while this format's
+own schema documented "The answer is still one of the options offered". `modelViolations`
+now refuses a value no option offers, with the code `option`, in the one function the
+browser and the server both run.
+
+*Residual:* the engine checks a value against the options **the document carries**. A
+field that carries none has nothing to be outside of, by design — it is the seam remote
+options will need. And a component supplied through `registry.byType` or
+`registry.byPath` renders in the same slot and can still store whatever the engine
+accepts for every other kind of field; nothing in the renderers constrains a consumer's
+own component, and the engine validates the value rather than its provenance.
 
 ---
 

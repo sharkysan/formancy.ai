@@ -30,8 +30,36 @@ export function modelViolations(def: FieldDef, value: unknown): string[] {
     if (def.minItems !== undefined && value.length < def.minItems) codes.push('minItems')
     if (def.maxItems !== undefined && value.length > def.maxItems) codes.push('maxItems')
     if (def.type === 'file') codes.push(...fileViolations(def, value))
+    // Every tick is one of the offered options, or the list is not an answer. One code
+    // for the list rather than one per bad member: the field is wrong, and naming which
+    // index would describe a payload rather than the question.
+    if (offersOptions(def) && !value.every((tick) => offers(def, tick))) codes.push('option')
     return codes
   }
+
+  // A chosen answer is one of the options offered.
+  //
+  // This was documented before it was true: `formancy.schema.json` says of
+  // `widget: "typeahead"` that "The answer is still one of the options offered", and
+  // `types.ts` says "Still one offered option value". Nothing enforced either. Measured
+  // against the built engine, which is the same build the server runs:
+  //
+  //     validate(): {"valid":true,"errors":{}}
+  //     value:      {"country":"XX","colour":"plaid","extras":["nope"]}
+  //
+  // The controls this repository ships cannot produce those -- each reaches `setValue`
+  // with an option's own value or with `null` -- but a payload posted straight at the
+  // server is not a control, and the engine validates the value rather than its
+  // provenance. So it is checked here, in the one function both sides run.
+  //
+  // The VALUE and never the label: what somebody sees is not what the form stores, and
+  // a check that matched labels would accept "Switzerland" and refuse "CH".
+  //
+  // Only when the document carries options. A `select` may have none -- the schema adds
+  // `options` in an `if`/`then` branch and requires only `key` and `type` -- and a field
+  // with none has nothing to be outside of. That is also the seam remote options need:
+  // a list that lives outside the document cannot be checked against the document.
+  if (offersOptions(def) && !offers(def, value)) codes.push('option')
 
   if (def.min !== undefined || def.max !== undefined) {
     if (typeof value !== 'number' || Number.isNaN(value)) {
@@ -95,6 +123,16 @@ export function modelViolations(def: FieldDef, value: unknown): string[] {
  * see an opaque array.
  */
 const LIST_VALUED = new Set(['selectboxes', 'file'])
+
+/** Whether this field's document carries a list of options to be one of. */
+function offersOptions(def: FieldDef): boolean {
+  return Array.isArray(def.options) && def.options.length > 0
+}
+
+/** Whether one value is an offered option's own value. */
+function offers(def: FieldDef, value: unknown): boolean {
+  return (def.options ?? []).some((option) => option.value === value)
+}
 
 /**
  * The shape each temporal answer must take, compiled once from the format's own

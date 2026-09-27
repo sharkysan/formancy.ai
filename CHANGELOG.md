@@ -10,6 +10,33 @@ later.
 
 ## Unreleased
 
+**An answer is now checked against the options offered, and it never was**
+([0076](docs/decisions/0076-an-answer-is-one-of-the-options.md)). This format's own schema
+documented `widget: "typeahead"` with "The answer is still one of the options offered" and
+`types.ts` said "Still one offered option value". Neither was enforced anywhere. Measured
+against the built engine — the same build the server runs:
+
+```
+validate(): {"valid":true,"errors":{}}
+value:      {"country":"XX","colour":"plaid","extras":["nope"]}
+```
+
+A `select` offering CH and DE accepted `XX`; a `radio` offering only `red` accepted
+`plaid`; a `selectboxes` offering only `gift` accepted `["nope"]`. The controls could not
+produce any of it — each reaches `setValue` with an option's own value or with `null` — but
+a payload posted straight at the server is not a control.
+
+`modelViolations` refuses it now, with the code `option`, in the one function the browser
+and the server both run. The **value** and never the label, and only when the document
+carries options — a field with none has nothing to be outside of, which is also the seam
+remote options will need.
+
+**This can refuse data that was accepted before, which is worth knowing before you
+upgrade.** Stored submissions are never revalidated, so nothing already collected changes.
+A **draft** is different: resume one holding a value whose option the author has since
+deleted, and it now reports `option` where it used to say nothing. That is the honest
+outcome — the draft holds an answer the form no longer offers.
+
 **`widget: "datagrid"` on a repeater is built** — rows drawn as a grid whose columns line
 up, in both renderers ([0075](docs/decisions/0075-a-datagrid-is-drawn-not-tabulated.md)).
 It was the last widget the spec named and no renderer honoured, and the playground's

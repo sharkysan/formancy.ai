@@ -148,3 +148,99 @@ describe('format checks are cheap on hostile input', () => {
     expect(Date.now() - started).toBeLessThan(250)
   })
 })
+
+/**
+ * A chosen answer is one of the options offered.
+ *
+ * The claim existed before the check did, in two places a reader trusts:
+ * `formancy.schema.json` documents `widget: "typeahead"` with "The answer is
+ * still one of the options offered", and `types.ts` says "Still one offered
+ * option value." Nothing enforced either. Measured against the built engine —
+ * which is the same build the server runs, so this is the hostile-payload path
+ * and not a question about the UI:
+ *
+ *     submit() returns: {"ok":true,"errors":{}}
+ *     validate():       {"valid":true,"errors":{}}
+ *     value:            {"country":"XX","colour":"plaid","extras":["nope"]}
+ *
+ * A `select` offering CH and DE accepted `XX`; a `radio` offering only `red`
+ * accepted `plaid`; a `selectboxes` offering only `gift` accepted `["nope"]`.
+ * The controls this repository ships cannot produce any of those — each reaches
+ * `setValue` with an option's own value or with `null` — but a payload posted
+ * straight at the server is not a control.
+ */
+const chooser: FormSchema = {
+  specVersion: '1',
+  id: 'chooser',
+  title: 'Chooser',
+  model: {
+    fields: [
+      {
+        key: 'country',
+        type: 'select',
+        options: [
+          { value: 'CH', label: 'Switzerland' },
+          { value: 'DE', label: 'Germany' },
+        ],
+      },
+      { key: 'colour', type: 'radio', options: [{ value: 'red', label: 'Red' }] },
+      { key: 'extras', type: 'selectboxes', options: [{ value: 'gift', label: 'Gift wrap' }] },
+      // No options at all, which the schema permits: `options` is added by an
+      // `if`/`then` branch and `$defs.field` requires only `key` and `type`.
+      { key: 'open', type: 'select' },
+    ],
+  },
+}
+
+const chosen = (initialValue: Record<string, unknown>): Record<string, string[]> =>
+  createFormEngine({ schema: chooser, initialValue }).validate().errors
+
+describe('an answer is one of the options offered', () => {
+  test('refuses a value no option offers, on every type that offers options', () => {
+    // One code, `option`, in the shape the other model validators use: a stable
+    // machine word a message catalogue can translate.
+    expect(chosen({ country: 'XX' })).toEqual({ country: ['option'] })
+    expect(chosen({ colour: 'plaid' })).toEqual({ colour: ['option'] })
+    expect(chosen({ extras: ['nope'] })).toEqual({ extras: ['option'] })
+  })
+
+  test('accepts every value an option does offer', () => {
+    // The other half, and the half that makes the case discriminate: a check that
+    // refused everything would pass the case above and break every form.
+    expect(chosen({ country: 'CH' })).toEqual({})
+    expect(chosen({ country: 'DE', colour: 'red', extras: ['gift'] })).toEqual({})
+  })
+
+  test('refuses a list where ONE tick is not offered', () => {
+    // The failure a length check alone would miss: the array is the right shape and
+    // the right size, and one member of it is not an answer.
+    expect(chosen({ extras: ['gift', 'nope'] })).toEqual({ extras: ['option'] })
+  })
+
+  test('says nothing about a field that offers no options', () => {
+    // `options` is optional in the schema, and a field with none has nothing to be
+    // outside of. This is also the seam a future `optionsSource` needs: options that
+    // live outside the document cannot be checked against the document.
+    expect(chosen({ open: 'anything at all' })).toEqual({})
+  })
+
+  test('leaves emptiness to required, like every other model validator', () => {
+    // An empty optional field trips nothing here, so an author never has to write
+    // "unless it is empty" into a list of options.
+    expect(chosen({})).toEqual({})
+    expect(chosen({ country: '', extras: [] })).toEqual({})
+  })
+
+  test('refuses a scalar where a list of ticks belongs, before comparing anything', () => {
+    // The hostile-payload path the list branch already guards: a `type` code rather
+    // than a crash on `.includes` of a string, which would have quietly matched a
+    // substring.
+    expect(chosen({ extras: 'gift' })).toEqual({ extras: ['type'] })
+  })
+
+  test('compares the value and never the label', () => {
+    // What somebody sees is not what the form stores. A check that matched labels
+    // would accept "Switzerland" and refuse "CH", which is the answer inverted.
+    expect(chosen({ country: 'Switzerland' })).toEqual({ country: ['option'] })
+  })
+})
