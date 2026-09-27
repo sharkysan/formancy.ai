@@ -10,6 +10,33 @@ later.
 
 ## Unreleased
 
+**Fixed: the typeahead popup opened over its own label and box.** Reported against the
+running playground. The list was absolutely positioned with `top` left at `auto`, on the
+reasoning that it would then take its static position — where it would have sat in the
+flow, directly under the box. That holds inside a block container and **not** inside a grid
+one, and every theme lays a field out with `display: grid`: for an absolutely positioned
+child of a grid container the static position is the container's own content-box origin, so
+`auto` resolved to the top of the field. Measured in the playground before the fix, the
+field's top edge was 457px, an in-flow child would have sat at 537px, and the popup sat at
+459px.
+
+Both renderers now emit a `typeahead-anchor` that wraps the box and the list and nothing
+else, and every theme positions the popup against it with an explicit `top: 100%`. The
+status region deliberately stays outside the anchor, because it is a row of the field's grid
+exactly as the error region is.
+
+**A theme that styles this widget needs one new part**, `typeahead-anchor`, and the popup's
+offset is no longer optional. `apps/docs/src/themes.test.ts` fails if a theme leaves the
+anchor unpositioned, leaves the popup without an explicit block offset, or positions the
+field itself — which is the arrangement the bug was. Each of the three was reverted in turn
+and watched to fail.
+
+**And the decision record was wrong rather than incomplete**, which is worse, so
+[0072](docs/decisions/0072-a-typeahead-is-a-combobox-over-the-same-answer.md) carries the
+correction at the top rather than an edit in place. Nothing could have failed on the original
+claim: jsdom has no layout, so no renderer test can see where a box lands. What replaced it
+is a structural contract a test can hold.
+
 **`widget: "typeahead"` on a select is built** — an editable combobox in both renderers,
 shown in the playground demo
 ([0072](docs/decisions/0072-a-typeahead-is-a-combobox-over-the-same-answer.md)). Until now

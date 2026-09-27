@@ -320,6 +320,43 @@ describe('a select with the typeahead widget', () => {
     expect(combobox().getAttribute('aria-expanded')).toBe('false')
   })
 
+  test('gives the popup a containing block that wraps the control and nothing else', () => {
+    // The bug this prevents, reported against the running playground: the list opened
+    // OVER its own label and box instead of under them.
+    //
+    // The popup was absolutely positioned with `top: auto`, which takes the element's
+    // STATIC position -- where it would have sat in the flow. That is true inside a block
+    // container and false inside a grid one, and every theme lays a field out with
+    // `display: grid`: for an absolutely positioned child of a grid container the static
+    // position is the container's own content-box origin. Measured in the playground, the
+    // field's top edge was 457px, an in-flow child would have sat at 537px, and the popup
+    // sat at 459px.
+    //
+    // jsdom has no layout, so this cannot check where the popup LANDS. What it checks is
+    // the structure the themes position against: an anchor that holds the box and the
+    // list and nothing else. The status region stays outside it, because it is a row of
+    // the field's grid exactly as the error region is. The matching half of the contract
+    // -- that every theme positions that anchor and gives the popup an explicit offset --
+    // is in `apps/docs/src/themes.test.ts`.
+    mount('typeahead')
+    const control = screen.getByRole('combobox', { name: 'Card language' })
+    const anchor = control.parentElement
+
+    expect(anchor?.getAttribute('data-formancy-part')).toBe('typeahead-anchor')
+    expect(anchor?.querySelector('[data-formancy-part="typeahead-listbox"]')).not.toBeNull()
+
+    // And nothing else in it: an anchor that also wrapped the label would put the popup
+    // back where it started, under the whole field rather than under the box.
+    const parts = [...(anchor?.children ?? [])].map((child) =>
+      child.getAttribute('data-formancy-part'),
+    )
+    expect(parts).toEqual(['typeahead', 'typeahead-listbox'])
+
+    // The status region is a sibling of the anchor, not a child of it.
+    const field = control.closest('[data-formancy-part="field"]')
+    expect(field?.querySelector('[data-formancy-part="typeahead-empty"]')?.parentElement).toBe(field)
+  })
+
   test('marks the chosen option selected and the arrowed-over one only active', () => {
     // The failure this prevents, and it is the commonest defect in this pattern:
     // aria-selected following the arrow keys, so a screen reader hears the answer

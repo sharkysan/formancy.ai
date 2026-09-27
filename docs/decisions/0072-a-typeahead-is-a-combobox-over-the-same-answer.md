@@ -5,6 +5,26 @@
 > number is cited from other documents, and a silently renumbered record is a broken link
 > somebody has to chase.
 
+> **One paragraph of this record was wrong, and it shipped.** The *Consequences* section
+> said the popup takes its static position, "where the list would have been in the flow".
+> That is true inside a block container and false inside a grid one, and every theme lays a
+> field out with `display: grid` — where the static position of an absolutely positioned
+> child is the container's own content-box origin. So the list opened **over its own label
+> and box**, which is what it did in the playground until somebody looked at it.
+>
+> Measured there before the fix: the field's top edge 457px, an in-flow child would have sat
+> at 537px, the popup sat at 459px. The control now renders a `typeahead-anchor` that wraps
+> the box and the list and nothing else, and every theme positions the popup against it with
+> an explicit offset.
+>
+> Recorded rather than edited away, because the mistake is the useful part: the claim was
+> plausible, it was about CSS rather than about this repository, and **nothing could have
+> failed on it** — jsdom has no layout, so no renderer test can see where a box lands. What
+> replaced it is a structural contract that a test *can* hold: the anchor wraps the control
+> (both renderer test files) and every theme positions that anchor and gives the popup an
+> explicit offset (`apps/docs/src/themes.test.ts`). The decision itself — an editable
+> combobox, no combobox library, no positioning library — is untouched.
+
 - **Status:** accepted
 - **Date:** 2026-09-27
 - **Deciders:** Daniel Bacher
@@ -96,9 +116,11 @@ claim, paid again here. The two test files are near-copies on purpose: a shared 
 would report that both renderers implemented this when one had not, and a renderer's
 markup is exactly the thing that must not be shared.
 
-The popup is positioned in CSS with `top: auto`, so it lands where the list would have
-been in the flow and overlays rather than pushing the form down. With no positioning
-library there is **no collision detection**: a list opened near the bottom of the
+~~The popup is positioned in CSS with `top: auto`, so it lands where the list would have
+been in the flow and overlays rather than pushing the form down.~~ **Wrong, and see the
+note at the top.** The popup is positioned against an anchor that wraps the box and the
+list, with an explicit `top: 100%`. With no positioning library there is still **no
+collision detection**: a list opened near the bottom of the
 window runs past it and the page scrolls instead of the popup flipping above the box.
 The active option is **not scrolled into view**, so a long narrowed list can hold the
 active row outside the visible part of the popup — the popup's own `max-height` limits

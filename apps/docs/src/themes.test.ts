@@ -231,6 +231,84 @@ describe('the theme contract', () => {
     expect(orphans).toEqual([])
   })
 
+  test('positions the typeahead popup against the control, not against the field', () => {
+    // The bug this exists for, reported by somebody looking at the running playground:
+    // "das dropdown beim autocomplete klappt komisch auf". The popup opened OVER its own
+    // label and box instead of under them.
+    //
+    // The cause was a CSS rule that is true in one kind of container and false in the
+    // other. Every theme lays a field out with `display: grid`. The popup was
+    // `position: absolute` with `top` left at `auto`, on the reasoning that it would then
+    // take its STATIC position -- where it would have sat in the flow, directly under the
+    // box. For an absolutely positioned child of a GRID container the static position is
+    // the container's own content-box origin, so `auto` resolved to the top of the field.
+    // Measured in the playground: the field's top edge was 457px, an in-flow child would
+    // have sat at 537px, and the popup sat at 459px.
+    //
+    // Nothing could catch that: jsdom has no layout, so no renderer test can see where a
+    // box lands, and the four themes each looked reasonable on their own. What IS
+    // checkable is the contract that replaced the assumption -- the popup is positioned
+    // against an anchor that wraps the control, with an explicit offset -- and that is
+    // what this asserts, per theme.
+    const OFFSETS = ['top', 'bottom', 'inset-block-start', 'inset-block-end', 'inset-block', 'inset']
+
+    const wrong = themes().flatMap(({ name, css }) => {
+      const bare = css.replace(/\/\*[\s\S]*?\*\//g, '')
+      const rules = [...bare.matchAll(/([^{}]*)\{([^{}]*)\}/g)].map((match) => ({
+        selector: (match[1] ?? '').trim(),
+        body: match[2] ?? '',
+      }))
+      const declaring = (part: string, property: RegExp): boolean =>
+        rules.some(
+          ({ selector, body }) =>
+            selector.includes(`[data-formancy-part='${part}']`) &&
+            !selector.includes('::') &&
+            property.test(body),
+        )
+
+      const problems: string[] = []
+
+      // Half one: something establishes a containing block, and it is the anchor.
+      if (!declaring('typeahead-anchor', /position:\s*(relative|absolute|sticky)/)) {
+        problems.push(`${name}: nothing gives typeahead-anchor a position, so the popup falls back to the field as its containing block`)
+      }
+
+      // Half two: the popup says where it goes rather than taking the static position,
+      // which is the assumption that was wrong.
+      // The declared property names, parsed rather than matched: a regex over the body
+      // finds `top` inside `inset-block-start` and inside a value, and getting that
+      // wrong is how a guard here passes for the wrong reason.
+      const propertiesOf = (body: string): string[] =>
+        body
+          .split(';')
+          .map((declaration) => declaration.split(':')[0]?.trim() ?? '')
+          .filter((property) => property !== '')
+
+      const popupOffsets = rules.filter(
+        ({ selector, body }) =>
+          selector.includes(`[data-formancy-part='typeahead-listbox']`) &&
+          propertiesOf(body).some((property) => OFFSETS.includes(property)),
+      )
+      if (popupOffsets.length === 0) {
+        problems.push(`${name}: typeahead-listbox has no explicit block offset, so it takes its static position -- which inside a grid field is the field's own top edge`)
+      }
+
+      // Half three: the FIELD must not be the containing block, which is what it was.
+      const fieldAnchored = rules.some(
+        ({ selector, body }) =>
+          /\[data-formancy-part='field'\][^{]*:has\([^)]*typeahead/.test(selector) &&
+          /position:\s*(relative|absolute|sticky)/.test(body),
+      )
+      if (fieldAnchored) {
+        problems.push(`${name}: the field is positioned, so it is the popup's containing block again -- that is the arrangement the popup opened over its own label in`)
+      }
+
+      return problems
+    })
+
+    expect(wrong).toEqual([])
+  })
+
   test('a themed control has a height, so it is visible before it has content', () => {
     // The specific reason the field was invisible rather than merely unstyled:
     // an empty contenteditable collapses to nothing without one.
