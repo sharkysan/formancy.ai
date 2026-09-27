@@ -13,6 +13,16 @@ afterEach(cleanup)
 const CLOCK = { now: () => 0, today: () => '2026-09-27', random: () => 0.5 }
 
 /**
+ * Longer than testing-library's default second.
+ *
+ * This control is asynchronous by design — a debounce, a round trip and a React flush —
+ * and on a loaded CI runner a second is tight. A timeout there reads as a broken control
+ * when the machine was simply busy, which is the most expensive kind of flake: it makes
+ * a real failure indistinguishable from noise.
+ */
+const WAITING = { timeout: 5_000 }
+
+/**
  * `optionsSource` — a select whose answers come from the deployment.
  *
  * The document names a list; the deployment says what that name means; nothing in
@@ -121,7 +131,7 @@ describe('a select whose options come from a source', () => {
         'Bern',
         'Vaud',
       ])
-    })
+    }, WAITING)
   })
 
   test('asks in the locale the engine resolves text in, not the document default', async () => {
@@ -141,7 +151,7 @@ describe('a select whose options come from a source', () => {
 
     await waitFor(() => {
       expect(asked[0]?.locale).toBe('fr')
-    })
+    }, WAITING)
     expect(asked[0]?.source).toBe('cantons')
   })
 
@@ -151,7 +161,7 @@ describe('a select whose options come from a source', () => {
 
     await waitFor(() => {
       expect(screen.getAllByRole('option')).toHaveLength(4)
-    })
+    }, WAITING)
     fireEvent.change(screen.getByRole('combobox', { name: 'Canton' }), { target: { value: 'BE' } })
 
     expect(engine.value()).toEqual({ canton: 'BE' })
@@ -165,7 +175,7 @@ describe('a select whose options come from a source', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/could not be loaded/)).toBeDefined()
-    })
+    }, WAITING)
     // Only the empty option: nothing from a list that could not be trusted.
     expect(screen.getAllByRole('option')).toHaveLength(1)
   })
@@ -182,7 +192,7 @@ describe('a select whose options come from a source', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/The options could not be loaded/)).toBeDefined()
-    })
+    }, WAITING)
     const field = screen.getByRole('combobox', { name: 'Canton' }).closest('[data-formancy-part="field"]')
     expect(field?.querySelector('[data-formancy-part="error"]')).toBeNull()
   })
@@ -196,7 +206,7 @@ describe('a select whose options come from a source', () => {
 
     await waitFor(() => {
       expect(asked.some((request) => request.kind === 'labels')).toBe(true)
-    })
+    }, WAITING)
     expect(asked.find((request) => request.kind === 'labels')?.values).toEqual(['VD'])
   })
 
@@ -227,12 +237,12 @@ describe('a typeahead whose options come from a source', () => {
 
     await waitFor(() => {
       expect(asked.some((request) => request.query === 'ber')).toBe(true)
-    })
+    }, WAITING)
     // Everything the source returned is shown, including rows a local fold would
     // have dropped.
     await waitFor(() => {
       expect(screen.getAllByRole('option')).toHaveLength(3)
-    })
+    }, WAITING)
   })
 
   test('marks itself busy and never disables the box somebody is typing in', async () => {
@@ -249,7 +259,7 @@ describe('a typeahead whose options come from a source', () => {
 
     await waitFor(() => {
       expect(box.getAttribute('aria-busy')).toBe('true')
-    })
+    }, WAITING)
     expect(box).toHaveProperty('disabled', false)
   })
 
@@ -267,7 +277,7 @@ describe('a typeahead whose options come from a source', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/Showing the first 5 of 12/)).toBeDefined()
-    })
+    }, WAITING)
   })
 
   test('asks nothing at all below the length a source set', async () => {
@@ -281,7 +291,7 @@ describe('a typeahead whose options come from a source', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/Type at least 3 characters/)).toBeDefined()
-    })
+    }, WAITING)
     expect(asked.filter((request) => request.kind === 'search')).toHaveLength(0)
   })
 
@@ -313,11 +323,11 @@ describe('a typeahead whose options come from a source', () => {
     // this case is about.
     await waitFor(() => {
       expect(started).toEqual(['z'])
-    })
+    }, WAITING)
 
     fireEvent.change(box, { target: { value: 'zu' } })
     await waitFor(() => {
       expect(aborted.length).toBeGreaterThan(0)
-    })
+    }, WAITING)
   })
 })

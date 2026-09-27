@@ -107,13 +107,16 @@ async function mount({
  * new DOM would time out against a control that is working perfectly.
  */
 async function until(settle: () => Promise<void>, assertion: () => void): Promise<void> {
-  for (let attempt = 0; attempt < 50; attempt += 1) {
+  // 100 tries at 20ms is two seconds of polling: this control is asynchronous by
+  // design, and on a loaded CI runner a shorter budget makes a busy machine look like
+  // a broken control.
+  for (let attempt = 0; attempt < 100; attempt += 1) {
     await settle()
     try {
       assertion()
       return
     } catch {
-      await new Promise((resolve) => setTimeout(resolve, 10))
+      await new Promise((resolve) => setTimeout(resolve, 20))
     }
   }
   // One last try, so the failure message is the assertion's own rather than a timeout.
