@@ -1,4 +1,4 @@
-import { useId } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
 import type { DataGridColumn, FieldDef, FieldOption } from '@formancy/spec'
 import type { BuilderSession } from '@formancy/builder-core'
@@ -93,6 +93,42 @@ export function PropertyField({
   const id = useId()
   const hintId = `${id}-hint`
 
+  /*
+   * A local draft of the text, for the reason the options editor keeps one: the
+   * document refuses invalid states and a person typing passes through them.
+   *
+   * Measured, and it made two properties unsettable. `span` is `anyOf: [integer,
+   * const "all"]`, so typing "all" offers "a", then "al", then "all" — the first two
+   * are refused, the document does not change, and a purely controlled box re-renders
+   * empty, so the next keystroke lands in an empty box. The word could not be typed at
+   * all. Clearing a table's `columns` to retype it is the same shape: a table must have
+   * one, so the empty moment is refused and the old number snaps back mid-edit.
+   *
+   * So the box shows the draft, every edit is offered to the session, and a refusal
+   * simply leaves the document where it was. The form still cannot be PUBLISHED in an
+   * invalid state — `canPublish` says no — but it can be typed in.
+   */
+  const asText = (raw: unknown): string =>
+    typeof raw === 'string' || typeof raw === 'number' ? String(raw) : ''
+  const [draft, setDraft] = useState(() => asText(value))
+  const pushed = useRef(asText(value))
+
+  useEffect(() => {
+    const incoming = asText(value)
+    // Only adopt a change that came from somewhere else — an undo, or another node
+    // being selected. Adopting our own echo would undo the draft.
+    if (incoming !== pushed.current) {
+      pushed.current = incoming
+      setDraft(incoming)
+    }
+  }, [value])
+
+  const offer = (text: string, parsed: unknown): void => {
+    setDraft(text)
+    pushed.current = asText(parsed)
+    onChange(parsed)
+  }
+
   // Options are value/label pairs, and the generic path would render them as
   // a textarea full of JSON. They get an editor of their own.
   if (property.kind === 'options') {
@@ -179,7 +215,7 @@ export function PropertyField({
         <input
           {...shared}
           type={property.kind === 'number' ? 'number' : 'text'}
-          value={typeof value === 'string' || typeof value === 'number' ? String(value) : ''}
+          value={draft}
           onChange={(event) => {
             const raw = event.target.value
             if (property.kind !== 'number') {
@@ -191,17 +227,17 @@ export function PropertyField({
               // Read from the schema, never from the property's name, so the next one
               // written that way works without anybody remembering this.
               if (property.numericAlternative === true && /^-?\d+(\.\d+)?$/.test(raw)) {
-                onChange(Number(raw))
+                offer(raw, Number(raw))
                 return
               }
-              onChange(raw)
+              offer(raw, raw === '' ? undefined : raw)
               return
             }
             // A half-typed number is not a number. Sending NaN would fail
             // validation on every keystroke of "1e", so an unparseable box
             // reads as cleared until it parses.
             const parsed = Number(raw)
-            onChange(raw === '' || Number.isNaN(parsed) ? undefined : parsed)
+            offer(raw, raw === '' || Number.isNaN(parsed) ? undefined : parsed)
           }}
         />
       )}

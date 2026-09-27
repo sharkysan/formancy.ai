@@ -10,6 +10,22 @@ later.
 
 ## Unreleased
 
+**Fixed: a generated property control could not be typed in.** Found by writing the tests
+the coverage report said were missing — the two new panels were at zero, and two of the
+first cases written against them failed.
+
+`span` is `anyOf: [integer, const "all"]`, so typing `all` offers `a`, then `al`, then
+`all`. The first two are refused by the schema, the document does not change, and a purely
+controlled box re-renders empty — so the next keystroke lands in an empty box and **the
+word could not be typed at all**. Clearing a table's `columns` to retype it is the same
+shape: a table must have one, the empty moment is refused, and the old number snaps back
+mid-edit.
+
+The generated control now keeps a local draft and offers every edit to the session, exactly
+as the options editor has always done; a refusal simply leaves the document where it was.
+The form still cannot be *published* in an invalid state — `canPublish` says no — but it
+can be typed in.
+
 **Everything the format has is configurable from the builder, and a guard now says so.**
 The question was asked out loud — "is it all settable?" — so it is answered by a check
 that keeps answering rather than by a look. `packages/builder-react/src/properties.test.ts`
