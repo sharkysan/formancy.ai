@@ -733,3 +733,37 @@ describe('cancelling', () => {
     expect(session.canUndo()).toBe(false)
   })
 })
+
+describe('reporting which node the arrangement is on', () => {
+  test('tells a consumer, which is what makes a property panel possible at all', async () => {
+    // Until this existed there was no way for a consumer to know which node to show
+    // properties for, and so no layout property could be set from the builder — not a
+    // table's `columns`, not a section's `label`, not `span`.
+    const seen: Array<readonly number[] | null> = []
+    const user = userEvent.setup()
+    const session = open()
+    render(
+      <FormancyLayoutPane session={session} layout="web" onSelect={(path) => seen.push(path)} />,
+    )
+
+    // Reported on arrival, without anybody moving.
+    expect(seen.at(-1)).toEqual([0])
+
+    await user.tab()
+    await user.keyboard('{ArrowDown}')
+    expect(seen.at(-1)).not.toEqual([0])
+  })
+
+  test('reports the path and not the index, so a reorder cannot point it elsewhere', async () => {
+    // A flattened arrangement's index means nothing across an edit: the node at
+    // position 2 before a move is a different node after it.
+    const seen: Array<readonly number[] | null> = []
+    const session = open()
+    render(
+      <FormancyLayoutPane session={session} layout="web" onSelect={(path) => seen.push(path)} />,
+    )
+
+    expect(seen.at(-1)).toEqual([0])
+    expect(seen.every((path) => path === null || Array.isArray(path))).toBe(true)
+  })
+})

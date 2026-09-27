@@ -363,3 +363,42 @@ describe('dragging', () => {
     expect(keys()).toEqual(['Customer', 'Billing address', 'Street', 'City'])
   })
 })
+
+describe('reporting which field the tree is on', () => {
+  test('tells a consumer, so they do not have to read our DOM', async () => {
+    // What this replaces: the playground took the focused row's POSITION among its
+    // siblings and indexed the flattened node list with it. Right only while those two
+    // lists agree about nesting, which they stop doing the moment a container is
+    // collapsed — and wrong silently, by editing a different field than the one showing.
+    const seen: Array<readonly string[] | null> = []
+    const user = userEvent.setup()
+    const session = createBuilderSession(schema)
+    render(<FormancyBuilder session={session} onSelect={(keyPath) => seen.push(keyPath)} />)
+
+    // The first report is the field the tree starts on, without anybody moving.
+    expect(seen.at(-1)).toEqual(['customer'])
+
+    await user.tab()
+    await user.keyboard('{ArrowDown}')
+    expect(seen.at(-1)).toEqual(['billing'])
+  })
+
+  test('reports a key path and not a position, so a reorder cannot point it elsewhere', async () => {
+    // Keyed on the path rather than the index: an edit that reorders the list leaves
+    // an index pointing at a different field, and would announce a selection nobody
+    // made.
+    const seen: Array<readonly string[] | null> = []
+    const user = userEvent.setup()
+    const session = createBuilderSession(schema)
+    render(<FormancyBuilder session={session} onSelect={(keyPath) => seen.push(keyPath)} />)
+
+    await user.tab()
+    await user.keyboard('{ArrowDown}')
+    expect(seen.at(-1)).toEqual(['billing'])
+
+    // Move it to the top: the same field, at a different position. A report keyed on
+    // the index would now name `customer`, which nobody selected.
+    session.moveField(['billing'], { parent: [], index: 0 })
+    expect(seen.at(-1)).toEqual(['billing'])
+  })
+})
