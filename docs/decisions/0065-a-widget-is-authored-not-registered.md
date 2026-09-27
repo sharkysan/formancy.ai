@@ -61,6 +61,12 @@ closed set of names gated per field type.**
 Four names to begin with: `toggle` on `checkbox`, `datagrid` on `repeater`,
 `typeahead` on `select`, `scanner` on `text`.
 
+> **Amended by [0066](0066-a-widget-may-be-configured.md).** This record says below
+> that a hint is a single name and anything needing more is a field type. The second
+> half of that is wrong: a widget can carry configuration, and `datagrid` gained a
+> `columns` array without becoming a type. The rule immediately following survives
+> unchanged and is the one that mattered all along.
+
 **The line, and it is the whole decision: a widget may change how a field looks and
 may not change what it collects.** The moment a hint alters the stored value, the
 validation, or what somebody is allowed to enter, it is a field type and belongs in

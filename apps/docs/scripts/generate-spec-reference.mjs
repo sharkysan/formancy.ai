@@ -79,6 +79,28 @@ function renderProperty(name, rawNode, requiredNames) {
     lines.push('')
     lines.push(`Examples: ${examples.map((example) => `\`${JSON.stringify(example)}\``).join(', ')}`)
   }
+
+  // An array of objects documented only by the array's own description tells a
+  // reader that `columns` exists and nothing about what a column contains — which
+  // is where the guidance actually is: that a width is a ratio rather than a CSS
+  // length, that zero is refused, that a heading does not rename the question.
+  const items = deref(node.items ?? {}).node
+  if (items.properties !== undefined) {
+    const itemRequired = items.required ?? []
+    lines.push('')
+    lines.push('Each item:')
+    lines.push('')
+    for (const [itemName, itemChild] of Object.entries(items.properties)) {
+      const { node: resolved } = deref(itemChild)
+      const itemTitle = itemChild.title ?? resolved.title ?? itemName
+      const itemDescription = itemChild.description ?? resolved.description ?? ''
+      const need = itemRequired.includes(itemName) ? 'required' : 'optional'
+      lines.push(
+        `- \`${itemName}\` — ${need} · **${itemTitle}.** ${itemDescription}`.trimEnd(),
+      )
+    }
+  }
+
   lines.push('')
   return lines.join('\n')
 }
@@ -99,21 +121,29 @@ function renderConstants(oneOf) {
 
 const out = []
 
+// Read from the schema rather than typed here. The page called itself "Spec
+// reference (v1)" and said it documented the schema for spec version 1 long after
+// the schema had grown version 2 constructs — selectboxes, file, richtext, widget —
+// so its title contradicted the body of its own page.
+const specVersions = schema.properties.specVersion.enum ?? []
+const newestSpec = specVersions[specVersions.length - 1]
+
 out.push(`---
-title: Spec reference (v1)
+title: Spec reference (v${newestSpec})
 description: Every property of a formancy form document, generated from the JSON Schema in packages/spec.
 ---
 
 :::note[This page is generated]
-Generated from \`packages/spec/formancy.schema.json\` (the JSON Schema for spec
-version 1) by \`apps/docs/scripts/generate-spec-reference.mjs\`. The schema is
+Generated from \`packages/spec/formancy.schema.json\` by \`apps/docs/scripts/generate-spec-reference.mjs\`. The schema is
 the source of truth — edit it, not this page.
 :::
 
 :::note
-Spec version 1 is **frozen**: a document that validates today keeps validating.
-See [Versioning](/docs/concepts/versioning/) for how that relates to package
-versions, and for what happens when the spec eventually moves to 2.
+This page describes spec version ${newestSpec}. Earlier versions are **frozen**: a
+document that validates against one keeps validating. A newer version only adds, and
+a reader of an older one refuses a document it cannot fully understand rather than
+dropping an answer from it. See [Versioning](/docs/concepts/versioning/) for how that
+relates to package versions.
 :::
 `)
 
@@ -144,7 +174,31 @@ out.push(
 for (const block of field.allOf ?? []) {
   const condition = block.if?.properties?.type
   const types = condition?.enum ?? (condition?.const !== undefined ? [condition.const] : [])
-  const label = types.map((type) => `\`${type}\``).join(', ')
+  let label = types.map((type) => `\`${type}\``).join(', ')
+
+  // A block may be gated on the WIDGET rather than the type: `columns` exists only
+  // on a repeater arranged as a grid. Reading only `type` gave those blocks an empty
+  // heading -- a `####` with nothing after it, published, which is how this was
+  // found. There is no sensible fallback to a type name here, because the whole
+  // point of such a block is that the type alone does not decide it.
+  if (label === '') {
+    const widget = block.if?.properties?.widget
+    const widgets = widget?.enum ?? (widget?.const !== undefined ? [widget.const] : [])
+    if (widgets.length > 0) {
+      label = `With \`widget: ${widgets.map((name) => `"${name}"`).join(' | ')}\``
+    }
+  }
+
+  // Still nothing to call it: a gate on something this page has no vocabulary for.
+  // Skipping silently would hide a property from the reference, so say so loudly
+  // rather than publishing a heading nobody can interpret.
+  if (label === '' && block.then?.properties !== undefined) {
+    throw new Error(
+      `A conditional block in formancy.schema.json is gated on something other than ` +
+        `type or widget, so this page cannot label it: ${JSON.stringify(block.if)}. ` +
+        `Teach generate-spec-reference.mjs about it.`,
+    )
+  }
 
   const { node: thenNode, refName } = deref(block.then ?? {})
   if (refName === 'containerField') {

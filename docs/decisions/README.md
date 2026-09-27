@@ -166,3 +166,4 @@ listed under the sections they belong to above.
 | [0063](0063-a-compose-file-for-the-published-image.md) | A compose file for the published image, and no default version | accepted |
 | [0064](0064-an-object-store-behind-the-same-interface.md) | An object store behind the same interface, and our own signer | accepted |
 | [0065](0065-a-widget-is-authored-not-registered.md) | A widget is authored, not registered | accepted |
+| [0066](0066-a-widget-may-be-configured.md) | A widget may be configured, and `datagrid` stays one | accepted |

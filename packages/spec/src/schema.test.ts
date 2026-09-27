@@ -57,9 +57,21 @@ describe('formancy.schema.json', () => {
   })
 
   test('lets exactly the container types the types module declares hold child fields', () => {
-    const fromSchema = schemaDocument.$defs.field.allOf[0]?.if.properties.type.enum
+    // Found by shape rather than by index. This read `allOf[0]` until a branch was
+    // appended for the grid columns, at which point the inferred type of element
+    // zero changed and the test stopped compiling -- an index into a hand-maintained
+    // list is a dependency on the order somebody wrote it in.
+    interface TypeBranch {
+      if?: { properties?: { type?: { enum?: string[] } } }
+      then?: { $ref?: string }
+    }
+    const branches = schemaDocument.$defs.field.allOf as unknown as readonly TypeBranch[]
+    const containerBranch = branches.find(
+      (branch) => branch.then?.$ref === '#/$defs/containerField',
+    )
 
-    expect(fromSchema).toEqual([...CONTAINER_FIELD_TYPES])
+    expect(containerBranch, 'no branch routes to containerField').toBeDefined()
+    expect(containerBranch?.if?.properties?.type?.enum).toEqual([...CONTAINER_FIELD_TYPES])
   })
 
   test('offers exactly the field types the types module declares', () => {

@@ -30,6 +30,7 @@ export type { EditorMark, EditorNode, EditorText } from './richtext-doc.js'
 export type {
   Change,
   ContainerFieldType,
+  DataGridColumn,
   ChangeSeverity,
   FieldDef,
   FieldFormat,
