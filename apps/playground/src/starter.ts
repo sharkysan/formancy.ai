@@ -1,3 +1,5 @@
+import type { FormSchema } from '@formancy/spec'
+
 /**
  * The schema the playground opens with.
  *
@@ -172,6 +174,11 @@ export const STARTER_SCHEMA = {
               children: [
                 { kind: 'field', path: 'delivery' },
                 { kind: 'field', path: 'wantedBy' },
+                // Placed here as well as declared in the model. Adding the two
+                // temporal fields to the model alone made them INVISIBLE: this form
+                // renders a named layout, and a layout places what it names.
+                { kind: 'field', path: 'deliveryWindow' },
+                { kind: 'field', path: 'confirmedAt' },
               ],
             },
             { kind: 'field', path: 'items' },
@@ -344,4 +351,4 @@ export const STARTER_SCHEMA = {
       },
     },
   },
-}
+} satisfies FormSchema

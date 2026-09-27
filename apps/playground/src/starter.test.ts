@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest'
+import { unreferencedPaths } from '@formancy/spec'
 import { validateSchema } from '@formancy/spec/validate'
 import { CONTAINER_FIELD_TYPES, FIELD_TYPES, FIELD_WIDGETS } from '@formancy/spec'
 import type { FieldDef, FieldType } from '@formancy/spec'
@@ -77,6 +78,40 @@ describe('the starter schema', () => {
     // So the list cannot outlive the widget it excuses.
     const real = new Set<string>(FIELD_WIDGETS)
     expect(Object.keys(NOT_DEMONSTRATED_YET).filter((widget) => !real.has(widget))).toEqual([])
+  })
+
+  test('places every field it declares, in every layout it offers', () => {
+    // The bug this exists for, reported by somebody looking at the running playground:
+    // two temporal fields were added to the model and to the message catalogue and NOT
+    // to the layout, so the form rendered without them and nothing failed. A field
+    // missing from the one layout a form uses is invisible to everyone filling it in —
+    // which is why `unreferencedPaths` was written, and it had no caller anywhere.
+    //
+    // A layout is allowed to leave fields out in general: a print layout that omits the
+    // consent checkbox is doing its job. The demo is not that case — it exists to show
+    // every field — so here the rule is total.
+    // A `hidden` field is the one legitimate exception, and the guard found it on its
+    // first run: `source` travels with the submission and is never shown, and
+    // `DEFAULT_COMPONENTS.hidden` is null in both renderers, so there is nothing to
+    // place. Excluded by TYPE rather than by name, so the next hidden field needs no
+    // edit here and a non-hidden field can never be waved through.
+    const hidden = new Set(
+      (STARTER_SCHEMA.model.fields as readonly FieldDef[])
+        .filter((field) => field.type === 'hidden')
+        .map((field) => field.key),
+    )
+    const gaps = (STARTER_SCHEMA.layouts ?? []).flatMap((layout) => {
+      const missing = unreferencedPaths(STARTER_SCHEMA, layout.name) ?? []
+      return missing
+        .filter((path) => !hidden.has(path))
+        .map((path) => `${layout.name} does not place ${path}`)
+    })
+
+    expect(gaps).toEqual([])
+
+    // A guard on the guard: no layouts at all would make the above vacuous, and this
+    // form HAVING a layout is the whole reason the bug was possible.
+    expect((STARTER_SCHEMA.layouts ?? []).length).toBeGreaterThan(0)
   })
 
   test('contains every field type it claims to', () => {
