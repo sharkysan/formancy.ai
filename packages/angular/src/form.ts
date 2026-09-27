@@ -128,7 +128,9 @@ interface RepeaterRow {
   index: number
   /** The row's stable identity, which `@for` tracks instead of its position. */
   id: string
-  wires: readonly string[]
+  /** Each field of the row: its key within the row, and its positional wire.
+   *  Tracked by `key`, bound by `wire`. */
+  children: ReadonlyArray<{ key: string; wire: string }>
 }
 
 /**
@@ -147,12 +149,32 @@ interface RepeaterRow {
         <legend data-formancy-part="repeater-legend">{{ s.label }}</legend>
         @for (row of s.rows(); track row.id) {
           <div data-formancy-part="row">
-            @for (instanceWire of row.wires; track instanceWire) {
-              <formancy-field [path]="instanceWire" [fallbackLabel]="fallbackFor(instanceWire)" />
+            <!-- Tracked by the POSITIONAL WIRE, which recreates every control in a
+                 row whenever the row moves, so focus is lost on a reorder.
+                 Deliberate, and the obstacle is named so the next attempt starts from
+                 it: tracking by the field's key instead would let Angular reuse the
+                 component, and this component reads its path once in ngOnInit and
+                 never rebinds -- so after a removal it would keep the old wire and
+                 show the wrong row's answer. A conformance fixture caught exactly
+                 that. Reactive path binding has to come first. -->
+            @for (child of row.children; track child.wire) {
+              <formancy-field [path]="child.wire" [fallbackLabel]="fallbackFor(child.wire)" />
             }
             <!-- Position context in the NAME, so a screen-reader user knows
                  which row this button kills without walking the tree. -->
             <button type="button" (click)="s.repeater.removeRow(row.index)">{{ s.removeLabel }} {{ row.index + 1 }} of {{ s.rows().length }}</button>
+            <!-- Reordering by button, which is the KEYBOARD route and therefore the
+                 primary one: WCAG 2.5.7 requires a non-drag equivalent for any drag,
+                 so a drag affordance can only ever be a second route to these.
+                 Absent at the ends rather than disabled: a disabled button is still in
+                 the tab order in some browsers and announces a control that does
+                 nothing. -->
+            @if (row.index > 0) {
+              <button type="button" (click)="s.repeater.moveRow(row.index, row.index - 1)">Move {{ s.label }} {{ row.index + 1 }} of {{ s.rows().length }} up</button>
+            }
+            @if (row.index < s.rows().length - 1) {
+              <button type="button" (click)="s.repeater.moveRow(row.index, row.index + 1)">Move {{ s.label }} {{ row.index + 1 }} of {{ s.rows().length }} down</button>
+            }
           </div>
         }
         <button type="button" (click)="s.repeater.addRow()">{{ s.addLabel }}</button>
@@ -205,7 +227,13 @@ export class FormancyRepeaterSection implements OnInit {
           // it, and tracking by index would make Angular reuse the wrong DOM
           // nodes — moving focus and animating the wrong element.
           id: repeater.rowIds()[index] ?? String(index),
-          wires: this.engine.fieldPaths().filter((candidate) => candidate.startsWith(`${wire}[${index}]`)),
+          children: this.engine
+            .fieldPaths()
+            .filter((candidate) => candidate.startsWith(`${wire}[${index}]`))
+            .map((candidate) => ({
+              key: candidate.slice(`${wire}[${index}]`.length),
+              wire: candidate,
+            })),
         })),
       ),
     }

@@ -130,6 +130,18 @@ export interface FormEngine {
   addRow(path: Path): void
   removeRow(path: Path, index: number): void
   /**
+   * Move a row from one position to another, taking its state with it.
+   *
+   * Reordering is a VALUE change, so it notifies like any other and anything derived
+   * from `items[0]` recomputes. Moving a row to where it already is changes nothing and
+   * says nothing — a cancelled drag should not re-render every row of every subscriber.
+   *
+   * An index that is not a row throws, as `removeRow` does. A silent clamp would move a
+   * row somewhere the caller did not ask for, and a drag ending off the end of the list
+   * is exactly how that gets called.
+   */
+  moveRow(path: Path, from: number, to: number): void
+  /**
    * The stable identity of a row, which is NOT its position — removing a row
    * renumbers everything after it. Renderers key on this so that focus and
    * animation follow the row a person was working in.
@@ -877,6 +889,37 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
   // The first pass: initial visibility and computed values, before anyone asks.
   applyRules()
 
+  /**
+   * Rewrite the row index in every piece of position-keyed state under one repeater.
+   *
+   * Touched-ness is the only such state today: errors are recomputed from values, so a
+   * row that moved is re-validated where it lands. If a second wire-keyed store is ever
+   * added, it belongs here rather than in each caller.
+   *
+   * `newIndexOf` returns the row's new index, or undefined when the row is gone.
+   */
+  function remapRowState(
+    repeaterWire: string,
+    newIndexOf: (index: number) => number | undefined,
+  ): void {
+    // `items[3].name` under `items`, and only directly under it: a nested repeater's
+    // wires carry their own bracket and are remapped by their own call.
+    const rowOf = new RegExp(`^${escapeForPattern(repeaterWire)}\\[(\\d+)\\]`)
+    interaction.remap((wire) => {
+      const match = rowOf.exec(wire)
+      if (match === null) return wire
+      const index = Number(match[1])
+      const moved = newIndexOf(index)
+      if (moved === undefined) return undefined
+      return `${repeaterWire}[${String(moved)}]${wire.slice(match[0].length)}`
+    })
+  }
+
+  /** A wire is a literal here, not a pattern: `items[0].name` has brackets and a dot. */
+  function escapeForPattern(value: string): string {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  }
+
   return {
     schema: () => schema,
     fieldPaths: () => activeNodes().map((node) => node.wire),
@@ -917,6 +960,41 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
         repeater.path,
         rows.filter((_, i) => i !== index),
       )
+      // The row's own touched-ness goes with it, and everything after it shifts down.
+      // Without this the state stays with the POSITION: measured, visiting the first of
+      // two required empty rows and removing it left the surviving row -- which nobody
+      // had visited -- reporting touched, invalid, and "required".
+      remapRowState(repeater.wire, (row) =>
+        row === index ? undefined : row > index ? row - 1 : row,
+      )
+    },
+
+    moveRow(path, from, to) {
+      const repeater = requireRepeater(path)
+      const rows = store.get(repeater.path)
+      if (!Array.isArray(rows)) {
+        throw new RangeError(`"${repeater.wire}" holds no rows`)
+      }
+      for (const index of [from, to]) {
+        if (index < 0 || index >= rows.length) {
+          throw new RangeError(`Cannot move row ${index} of "${repeater.wire}"`)
+        }
+      }
+      if (from === to) return
+
+      const moved = [...rows]
+      const [row] = moved.splice(from, 1)
+      moved.splice(to, 0, row)
+      store.set(repeater.path, moved)
+
+      // Each row's touched-ness follows the row. Removing shifts a suffix by one;
+      // moving shifts the whole span between the two positions, so every row it passes
+      // would otherwise inherit a stranger's state.
+      remapRowState(repeater.wire, (index) => {
+        if (index === from) return to
+        if (from < to) return index > from && index <= to ? index - 1 : index
+        return index >= to && index < from ? index + 1 : index
+      })
     },
 
     pageOf(path) {

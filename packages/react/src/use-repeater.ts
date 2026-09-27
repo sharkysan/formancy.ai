@@ -9,6 +9,8 @@ export interface RepeaterBinding {
   rowIds: readonly string[]
   addRow(): void
   removeRow(index: number): void
+  /** Move a row. The keyboard route to reordering; a drag is a second route to this. */
+  moveRow(from: number, to: number): void
 }
 
 /**
@@ -31,17 +33,31 @@ export function useRepeater(path: string | Path): RepeaterBinding {
 
   const addRow = useCallback(() => engine.addRow(parsed), [engine, parsed])
   const removeRow = useCallback((index: number) => engine.removeRow(parsed, index), [engine, parsed])
-
-  // Derived from rowCount rather than subscribed separately: the engine mints
-  // an id when a row is created, so the count changing is exactly when the ids
-  // change.
-  const rowIds = useMemo(
-    () => Array.from({ length: rowCount }, (_, index) => engine.rowId(parsed, index)),
-    [engine, parsed, rowCount],
+  const moveRow = useCallback(
+    (from: number, to: number) => engine.moveRow(parsed, from, to),
+    [engine, parsed],
   )
 
+  // Subscribed, not derived from rowCount.
+  //
+  // This read `useMemo(..., [rowCount])`, on the reasoning that "the engine mints an id
+  // when a row is created, so the count changing is exactly when the ids change". That
+  // was true until rows could be REORDERED: a move leaves the count alone and changes
+  // the order, so the memo held stale ids and React would key rows by them -- reusing
+  // the wrong DOM nodes, which is the exact failure keying by identity exists to
+  // prevent, and worse than keying by index because it looks correct.
+  //
+  // Joined into one string for the snapshot because `useSyncExternalStore` compares by
+  // identity and a fresh array every read would loop for ever.
+  const getRowIdList = useCallback(
+    () => Array.from({ length: engine.rowCount(parsed) }, (_, index) => engine.rowId(parsed, index)).join(' '),
+    [engine, parsed],
+  )
+  const rowIdList = useSyncExternalStore(subscribe, getRowIdList, getRowIdList)
+  const rowIds = useMemo(() => (rowIdList === '' ? [] : rowIdList.split(' ')), [rowIdList])
+
   return useMemo(
-    () => ({ rowCount, rowIds, addRow, removeRow }),
-    [rowCount, rowIds, addRow, removeRow],
+    () => ({ rowCount, rowIds, addRow, removeRow, moveRow }),
+    [rowCount, rowIds, addRow, removeRow, moveRow],
   )
 }

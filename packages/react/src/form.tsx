@@ -255,6 +255,16 @@ function RepeaterSection({
             .filter((candidate) => candidate.startsWith(`${wire}[${index}]`))
             .map((instanceWire) => (
               <FieldSlot
+                /* Keyed by the POSITIONAL WIRE, so every control in a row is remounted
+                   when the row moves and focus is lost on a reorder.
+                   Keying by the field's key within the row fixes that here, and was
+                   reverted to keep the two renderers identical: the same change in
+                   Angular lets it REUSE a component whose path is read once in
+                   ngOnInit, so after a removal it binds to the old wire and shows the
+                   wrong row's answer -- caught by a conformance fixture. One renderer
+                   keeping focus and the other not is the framework-specific divergence
+                   this architecture exists to prevent, so both wait for reactive path
+                   binding in Angular. */
                 key={instanceWire}
                 path={instanceWire}
                 fallbackLabel={fallbackFor(instanceWire)}
@@ -266,6 +276,28 @@ function RepeaterSection({
           <button type="button" onClick={() => repeater.removeRow(index)}>
             {`${removeLabel} ${index + 1} of ${repeater.rowCount}`}
           </button>
+          {/* Reordering by button, which is the KEYBOARD route and therefore the
+              primary one: WCAG 2.5.7 requires a non-drag equivalent for any drag, so
+              a drag affordance can only ever be a second route to these. The builder
+              built its move palette before its drag surface for the same reason.
+
+              Position is in the name here too, and the name says where the row goes
+              rather than which direction it travels: "Move item 2 of 3 up" is a
+              sentence somebody can act on without counting rows first.
+
+              Absent at the ends rather than disabled. A disabled button is still in
+              the tab order in some browsers and announces a control that does
+              nothing; a row that cannot move up simply has no such button. */}
+          {index > 0 ? (
+            <button type="button" onClick={() => repeater.moveRow(index, index - 1)}>
+              {`Move ${label} ${index + 1} of ${repeater.rowCount} up`}
+            </button>
+          ) : null}
+          {index < repeater.rowCount - 1 ? (
+            <button type="button" onClick={() => repeater.moveRow(index, index + 1)}>
+              {`Move ${label} ${index + 1} of ${repeater.rowCount} down`}
+            </button>
+          ) : null}
         </div>
       ))}
       <button type="button" onClick={() => repeater.addRow()}>

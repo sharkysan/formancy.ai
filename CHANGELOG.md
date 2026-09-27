@@ -10,6 +10,42 @@ later.
 
 ## Unreleased
 
+**Rows can be reordered while a form is being filled in.** `engine.moveRow`, with Move up
+and Move down buttons in both renderers
+([0068](docs/decisions/0068-a-row-keeps-its-own-state.md)).
+
+Buttons rather than a drag, and that ordering is the point: WCAG 2.5.7 requires a non-drag
+equivalent for any drag operation, so a drag affordance can only ever be a second route to
+these. The accessible name carries the position and says where the row goes — "Move Item 2
+of 3 up" is a sentence somebody can act on without counting rows first — and the buttons
+are absent at the ends rather than disabled, because a disabled button is still in the tab
+order in some browsers and announces a control that does nothing.
+
+**Fixed: removing a row showed an error on a row nobody had visited.** Touched-ness gates
+error presentation and was stored against a row's POSITION. Measured: two required empty
+rows, visit the first, try to submit, remove the first — and the surviving row, which
+nobody had visited, reported `touched: true`, `errors: ['required']` and
+`aria-invalid="true"`. `removeRow` had always done this. It was found by adding `moveRow`,
+which is the same defect with a bigger blast radius: a removal shifts a suffix by one, a
+move shifts a whole span.
+
+State is remapped with the rows now, in `interaction.ts` where the set lives rather than in
+the engine. Errors need no remapping because they are recomputed from values — a row that
+moves is re-validated where it lands.
+
+**Fixed in both renderers: a reordered row did not redraw.** Each memoised its row ids on
+the row COUNT, with the same comment — "the engine mints an id when a row is created, so
+the count changing is exactly when the ids change" — true until rows could be reordered. A
+move leaves the count alone, so both held stale ids and would have keyed rows by them,
+reusing the wrong DOM. Both read through a subscription now.
+
+**Known limitation: focus is lost on a reorder.** A row's container travels, but the
+controls inside it are keyed by their positional wire, so they are recreated. Keying them by
+the field's key fixes it and was **reverted** to keep the renderers identical: in Angular
+that lets the framework reuse a component whose path is read once in `ngOnInit`, so after a
+row removal it shows the previous row's answer — caught by an existing conformance fixture.
+A test in each renderer pins the limitation so that fixing it fails them.
+
 **`time` and `datetime` field types, with `earliest`/`latest` bounds.** Both render in
 React and Angular, both appear in the playground demo, and the bounds are handed to the
 browser as well as checked by the engine

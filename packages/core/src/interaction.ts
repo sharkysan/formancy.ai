@@ -16,6 +16,22 @@ export interface InteractionState {
   isTouched(path: Path): boolean
   touch(path: Path): void
   touchMany(paths: readonly Path[]): void
+  /**
+   * Rewrite the wires touched-ness is stored under.
+   *
+   * Touched-ness is a set of wires — `items[1].name` — so it is keyed by a row's
+   * POSITION, and a position is not an identity. When the rows of a repeater shift, the
+   * state has to shift with them or it describes the wrong row: measured, visiting the
+   * first of two required empty rows and then removing it left the surviving row, which
+   * nobody had visited, reporting `touched: true` and showing a "required" error.
+   *
+   * Here rather than in the engine because this is where the set is. The engine decides
+   * WHICH rows moved; it should not have to know how touched-ness is stored to say so.
+   *
+   * `transform` returns the wire's new name, or undefined to drop it — which is what a
+   * removed row's own fields need.
+   */
+  remap(transform: (wire: string) => string | undefined): void
   reset(): void
   subscribe(listener: (changedPaths: ReadonlySet<string>) => void): () => void
 }
@@ -48,6 +64,26 @@ export function createInteractionState(): InteractionState {
           changed.add(wire)
         }
       }
+      notify(changed)
+    },
+
+    remap(transform) {
+      if (touched.size === 0) return
+      const next = new Set<string>()
+      for (const wire of touched) {
+        const moved = transform(wire)
+        if (moved !== undefined) next.add(moved)
+      }
+
+      // Everything that entered or left is a change, so a subscriber re-reads exactly
+      // the fields whose presentation can differ. A symmetric difference rather than
+      // the union: a wire in both sets is one nothing happened to.
+      const changed = new Set<string>()
+      for (const wire of touched) if (!next.has(wire)) changed.add(wire)
+      for (const wire of next) if (!touched.has(wire)) changed.add(wire)
+
+      touched.clear()
+      for (const wire of next) touched.add(wire)
       notify(changed)
     },
 
