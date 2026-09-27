@@ -904,3 +904,58 @@
   margin-block: 0.5rem 0;
   padding-inline-start: 1.25rem;
 }
+
+/* `widget: "toggle"` — the same checkbox, drawn as a switch.
+   Still `input[type=checkbox]` and still role `checkbox`: ARIA's switch means a
+   control that takes effect when you operate it, and a form field sets a value
+   submitted later. So this is paint, which is the only thing a widget may be. */
+[data-formancy-theme='dusk'] [data-formancy-part='toggle'] {
+  appearance: none;
+  flex: none;
+  box-sizing: content-box;
+  display: block;
+  place-content: unset;
+  width: 2.375rem;
+  height: 1.25rem;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 1.5px solid color-mix(in srgb, var(--fm-text) 28%, transparent);
+  border-radius: 1rem;
+  background-color: var(--fm-control);
+  cursor: pointer;
+  /* The knob is a background gradient rather than a pseudo-element: the checkbox
+     rules above already spend ::before on the tick, and a switch has no tick. */
+  background-image: radial-gradient(circle at 0.625rem 50%, var(--fm-text) 0.4375rem, transparent 0.4375rem);
+  background-repeat: no-repeat;
+  transition: background-color 120ms ease, background-position 120ms ease, border-color 120ms ease;
+}
+
+[data-formancy-theme='dusk'] [data-formancy-part='toggle']::before {
+  content: none;
+}
+
+[data-formancy-theme='dusk'] [data-formancy-part='toggle']:checked {
+  border-color: var(--fm-signal);
+  background-color: var(--fm-signal);
+  background-position: 1.125rem 0;
+}
+
+/* On or off said by position as well as colour, because a switch that says it only
+   in colour is one a person who cannot see the colour cannot read. Under
+   forced-colors the system's own pair carries it. */
+@media (forced-colors: active) {
+  [data-formancy-theme='dusk'] [data-formancy-part='toggle'] {
+    border-color: ButtonBorder;
+    background-image: radial-gradient(circle at 0.625rem 50%, ButtonText 0.4375rem, transparent 0.4375rem);
+  }
+  [data-formancy-theme='dusk'] [data-formancy-part='toggle']:checked {
+    background-color: Highlight;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-formancy-theme='dusk'] [data-formancy-part='toggle'] {
+    transition: none;
+  }
+}

@@ -100,7 +100,10 @@ export const STARTER_SCHEMA = {
         maxFileSize: 5 * 1024 * 1024,
       },
 
-      { key: 'terms', type: 'checkbox', label: { $t: 'terms' }, required: true },
+      // `widget: 'toggle'` is the author saying how it should look, and nothing
+      // more: still a checkbox, still role `checkbox`, still true/false/untouched.
+      // Here so the demo shows the widget rather than only documenting it.
+      { key: 'terms', type: 'checkbox', widget: 'toggle', label: { $t: 'terms' }, required: true },
       // hidden: travels with the submission, never shown.
       { key: 'source', type: 'hidden', label: { $t: 'source' } },
     ],

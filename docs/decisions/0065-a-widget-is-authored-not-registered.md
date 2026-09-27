@@ -61,6 +61,13 @@ closed set of names gated per field type.**
 Four names to begin with: `toggle` on `checkbox`, `datagrid` on `repeater`,
 `typeahead` on `select`, `scanner` on `text`.
 
+> **The ARIA question below is answered: `toggle` is NOT `role="switch"`.** ARIA's
+> switch means a control that takes effect when operated, and a form field sets a
+> value submitted later — and a role is not paint, so changing it would make this the
+> first widget to change what a control claims to be. The control stays a checkbox and
+> gains `data-formancy-part="toggle"`, which every theme styles. Conformance is
+> therefore untouched: fixtures find it by role `checkbox` either way.
+>
 > **Amended by [0066](0066-a-widget-may-be-configured.md).** This record says below
 > that a hint is a single name and anything needing more is a field type. The second
 > half of that is wrong: a widget can carry configuration, and `datagrid` gained a

@@ -147,6 +147,39 @@ describe('the theme contract', () => {
     expect(gaps).toEqual([])
   })
 
+  test('every custom property a theme uses is one that theme defines', () => {
+    // The gap that let a broken switch through. The part-name check above passes as
+    // soon as a theme MENTIONS a part, and says nothing about whether the
+    // declarations resolve -- so a toggle written with blueprint's variables was
+    // styled, guarded, green, and invisible in the three themes that do not define
+    // `--fm-ink`, `--fm-paper` or `--fm-signal`.
+    //
+    // A variable that resolves nowhere is not a soft failure in CSS: the declaration
+    // is thrown away and the control falls back to whatever it inherited, which for
+    // an `appearance: none` input is usually nothing at all -- the same invisible
+    // field this file was written for.
+    //
+    // Each theme is self-contained by design, so the check is per file. A theme
+    // layering on top of another would need this relaxed, and would also need to say
+    // so somewhere.
+    const orphans = themes().flatMap(({ name, css }) => {
+      // Only a `var()` with NO fallback. `var(--fm-radius, 0)` is correct by
+      // construction -- paper does that deliberately for square corners -- and the
+      // first version of this flagged it, which would have made the guard's first
+      // finding a false one.
+      const used = new Set(
+        [...css.matchAll(/var\((--fm-[a-z0-9-]+)\s*\)/g)].map((match) => match[1]),
+      )
+      const defined = new Set([...css.matchAll(/(--fm-[a-z0-9-]+)\s*:/g)].map((match) => match[1]))
+      return [...used]
+        .filter((variable) => !defined.has(variable))
+        .sort()
+        .map((variable) => `${name} uses ${variable} and does not define it`)
+    })
+
+    expect(orphans).toEqual([])
+  })
+
   test('a themed control has a height, so it is visible before it has content', () => {
     // The specific reason the field was invisible rather than merely unstyled:
     // an empty contenteditable collapses to nothing without one.
