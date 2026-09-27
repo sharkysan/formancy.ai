@@ -50,6 +50,47 @@ describe('publishForm', () => {
     expect(resolved?.version).toBe(1)
   })
 
+  test('records the lists a version needs the deployment to resolve', async () => {
+    // `SAFETY-ANALYSIS.md` A7 tells a manufacturer to treat `optionsSource` as a
+    // per-field weakening of the "an answer is one of the options" guarantee,
+    // "enumerable from the publish audit detail". It was not: the detail held the
+    // version and the hash, so the document described a record that did not exist.
+    //
+    // An operator comparing a form's sources against their own configuration is exactly
+    // the use that sentence names, and the publish record is the only place the pairing
+    // is frozen -- so this is the assertion that keeps the sentence honest.
+    await publishForm(deps, {
+      path: 'sourced',
+      schema: {
+        specVersion: '2',
+        id: 'sourced',
+        title: 'Sourced',
+        model: {
+          fields: [
+            { key: 'canton', type: 'select', label: 'Canton', optionsSource: 'cantons' },
+            { key: 'town', type: 'select', label: 'Town', optionsSource: 'towns' },
+            { key: 'again', type: 'select', label: 'Again', optionsSource: 'cantons' },
+          ],
+        },
+      } as unknown as FormSchema,
+    })
+
+    const entry = (await deps.storage.listAudit(10)).find((row) => row.subject === 'sourced')
+    // Sorted and once each, so two forms naming the same lists produce the same string
+    // and a reader can compare them without parsing.
+    expect(entry?.detail?.['optionsSources']).toBe('cantons, towns')
+  })
+
+  test('says nothing about sources when a form names none', async () => {
+    // An audit row that grew a field saying "none" would make every form look like it
+    // had something to check.
+    await publishForm(deps, { path: 'contact-us', schema })
+
+    const entry = (await deps.storage.listAudit(10)).find((row) => row.subject === 'contact-us')
+    expect(entry?.detail).toBeDefined()
+    expect(entry?.detail && 'optionsSources' in entry.detail).toBe(false)
+  })
+
   test('republishing the identical schema is idempotent: no new version', async () => {
     await publishForm(deps, { path: 'contact-us', schema })
     const second = await publishForm(deps, { path: 'contact-us', schema })

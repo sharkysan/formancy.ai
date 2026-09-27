@@ -52,7 +52,21 @@ export function FormancyBuilder({
   onSelect,
 }: BuilderProps): ReactElement {
   const view = useBuilder(session)
+  /**
+   * Where focus is, remembered as a POSITION and corrected to the FIELD.
+   *
+   * The position is what the arrow keys move, and it is the right state for that. It
+   * is the wrong state to survive an edit: move the focused field up and the list
+   * reorders under the index, so focus lands on whatever is now at that number. Moving
+   * `billing` to the top left focus on `billing.street` — a field nobody chose, in a
+   * builder whose whole premise is the keyboard.
+   *
+   * So the key path of the focused field is remembered alongside, and after an edit the
+   * index is corrected to wherever that field went. A field that is gone — deleted —
+   * has no position to return to, and the clamped index is then the right answer.
+   */
   const [focusedIndex, setFocusedIndex] = useState(0)
+  const focusedKey = useRef<string | null>(null)
   const [moving, setMoving] = useState<{ node: TreeNode; targets: MoveTarget[] } | null>(null)
   // Adding is two choices: what, then where. Kept as one piece of state so the
   // second question cannot be asked without an answer to the first.
@@ -78,6 +92,33 @@ export function FormancyBuilder({
   // Clamping here rather than at each call site means there is one place where
   // focus cannot end up past the end of the list.
   const count = view.nodes.length
+
+  /*
+   * Keep focus on the FIELD across an edit, not on the number.
+   *
+   * Only when the list itself changed, which is the whole subtlety: correcting on
+   * every render would override the arrow keys, because the key remembered a moment
+   * ago is the key the arrows just moved away from. The arrows own the index between
+   * edits; an edit hands it back to the field.
+   *
+   * During render, and not in an effect. An effect runs after the commit, so the pass
+   * in between would report the field that slid into that position to `onSelect` — a
+   * consumer's property panel flashing a field nobody chose, which is the bug this
+   * fixes, one frame shorter. Adjusting state during render is React's own answer to
+   * this: the output is discarded and the component runs again before anything is
+   * committed.
+   */
+  const listing = view.nodes.map((node) => node.keyPath.join('.')).join('|')
+  const listed = useRef(listing)
+  if (listed.current !== listing) {
+    listed.current = listing
+    const wanted = focusedKey.current
+    const at =
+      wanted === null ? -1 : view.nodes.findIndex((node) => node.keyPath.join('.') === wanted)
+    // Gone — deleted — and the clamped index below is then the right answer.
+    if (at !== -1 && at !== focusedIndex) setFocusedIndex(at)
+  }
+
   const index = count === 0 ? 0 : Math.min(focusedIndex, count - 1)
   const focused = view.nodes[index]
   // Report the focused field outward, so a consumer can show a property panel beside
@@ -85,6 +126,12 @@ export function FormancyBuilder({
   // because an edit that reorders the list leaves the index pointing at a different
   // field and would announce a selection nobody made.
   const selectedKey = focused === undefined ? null : focused.keyPath.join('.')
+
+  // Remembered on the way out, so the next edit has a field to return to. A ref
+  // rather than state: this records where focus already is, and setting state to say
+  // so would render again to say it.
+  focusedKey.current = selectedKey
+
   useEffect(() => {
     onSelect?.(selectedKey === null ? null : selectedKey.split('.'))
     // `onSelect` is deliberately absent: a consumer passing an inline arrow would

@@ -220,4 +220,36 @@ describe('a repeater with the datagrid widget', () => {
     expect(screen.getByRole('button', { name: 'Move Items 1 of 2 down' })).toBeDefined()
     expect(screen.queryByRole('button', { name: 'Move Items 1 of 2 up' })).toBeNull()
   })
+
+  test('heads the grid only once there is a row to head', async () => {
+    // A heading strip over nothing is a set of column names for columns that hold no
+    // answers, which reads as a form that failed to load. The React file has asserted
+    // this since the widget shipped and this file did not -- so the arrangement each
+    // renderer shows for an empty grid was checked in one of them, which is the
+    // divergence the two files exist to prevent.
+    await mount('datagrid')
+    expect(parts('datagrid-head')).toHaveLength(1)
+
+    reset()
+    const empty = schema('datagrid')
+    const grid = empty.model.fields[0] as unknown as Record<string, unknown>
+    const view = await render(FormancyForm, {
+      providers: [
+        provideZonelessChangeDetection(),
+        provideFormancy(
+          createFormEngine({
+            schema: {
+              ...empty,
+              model: { fields: [{ ...grid, minItems: 0 }] },
+            } as unknown as FormSchema,
+            capabilities: CLOCK,
+          }),
+        ),
+      ],
+    })
+    await view.fixture.whenStable()
+
+    expect(parts('datagrid-row')).toHaveLength(0)
+    expect(parts('datagrid-head')).toHaveLength(0)
+  })
 })

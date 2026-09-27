@@ -53,14 +53,3 @@ export function datagridColumns(
   ]
 }
 
-/**
- * The leaves inside one row that belong to one column.
- *
- * Matched on a segment boundary and never with a bare `startsWith`: a child called
- * `name` must not swallow `nameOnCard`, and a grouped child owns everything beneath
- * it. The renderers share this for the same reason they share the plan above.
- */
-export function belongsToColumn(leaf: string, rowPrefix: string, key: string): boolean {
-  const prefix = `${rowPrefix}.${key}`
-  return leaf === prefix || leaf.startsWith(`${prefix}.`) || leaf.startsWith(`${prefix}[`)
-}

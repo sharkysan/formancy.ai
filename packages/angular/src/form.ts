@@ -320,18 +320,18 @@ export class FormancyRepeaterSection implements OnInit {
    * The controls in one cell: every leaf inside the row that belongs to that column's
    * child field.
    *
-   * Matched on a segment boundary rather than with a bare `startsWith`, because a child
-   * called `name` must not swallow `nameOnCard` and a grouped child owns everything under
-   * it. A column names a DIRECT CHILD, while the row's children are leaves.
+   * One child, because a grid's rows are FLAT: a child holding fields of its own is
+   * refused when the document is saved (0078). This walked the whole subtree under the
+   * child while a group could be a column, and every clause that made that walk safe is
+   * gone with the arrangement it served.
+   *
+   * Still a filter over the children that EXIST rather than the wire the column implies,
+   * so a document nobody validated renders an empty cell rather than a field the engine
+   * does not have.
    */
   protected cellChildren(row: RepeaterRow, key: string): readonly RepeaterRow['children'][number][] {
-    const prefix = `${this.wire()}[${String(row.index)}].${key}`
-    return row.children.filter(
-      (child) =>
-        child.wire === prefix ||
-        child.wire.startsWith(`${prefix}.`) ||
-        child.wire.startsWith(`${prefix}[`),
-    )
+    const wanted = `${this.wire()}[${String(row.index)}].${key}`
+    return row.children.filter((child) => child.wire === wanted)
   }
 
   ngOnInit(): void {
@@ -685,8 +685,7 @@ export class FormancyCode implements OnInit {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [NgTemplateOutlet, FormancyFieldSlot, FormancyRepeaterSection, FormancyTabs, FormancyCode],
   /**
-   * The one stylesheet this package ships, and it exists to UNDO an element rather
-   * than to style one.
+   * Undoing an element rather than styling one.
    *
    * Angular gives every component a host element. This one recurses, so a container's
    * children arrive wrapped in a `<formancy-layout>` that React does not emit — and a
@@ -701,13 +700,23 @@ export class FormancyCode implements OnInit {
    * sees what it sees in React. It also removes the element from the accessibility
    * tree, which is right: it has no role and names nothing.
    *
-   * This is a deliberate amendment to [0008](../../../docs/decisions/0008-layered-packages.md)'s
-   * "nothing below the component kit ships a CSS file", argued in
-   * [0073](../../../docs/decisions/0073-a-host-element-is-not-a-layout.md). The rule is
-   * about who owns APPEARANCE; this declaration owns none of it and a theme cannot fix
-   * it, because a consumer styling their own design system never reads our themes.
+   * Set in the CONSTRUCTOR through CSSOM, so this package ships no stylesheet after all.
+   * It arrived as `styles: ':host { display: contents }'`, and Angular emits a component
+   * style as a `<style>` element injected at runtime: under `style-src 'self'` with no
+   * nonce that element is blocked, the host keeps `display: block`, and the bug above
+   * comes back with nothing failing anywhere.
+   * [0073](../../../docs/decisions/0073-a-host-element-is-not-a-layout.md) weighed a
+   * stylesheet against a style ATTRIBUTE on exactly this question and missed the third
+   * option — CSP governs parsed markup, not CSSOM, so a property set on the element needs
+   * no directive and no nonce.
+   * [0079](../../../docs/decisions/0079-a-host-is-undone-without-a-stylesheet.md)
+   * supersedes it, and `layout.test.ts` asserts both halves: the display is `contents`,
+   * and no `<style>` is what says so.
+   *
+   * It also restores [0008](../../../docs/decisions/0008-layered-packages.md)'s "nothing
+   * below the component kit ships a CSS file" rather than amending it, which is the better
+   * outcome for a rule about who owns appearance.
    */
-  styles: ':host { display: contents }',
   template: `
     @for (node of nodes(); track $index; let i = $index) {
       <!-- A node that spans gets a cell to span WITH, and one that does not is left
@@ -825,6 +834,13 @@ export class FormancyLayout {
   readonly at = input<string>('')
 
   private readonly engine = injectEngine()
+
+  constructor() {
+    // The host takes no part in layout. Through CSSOM rather than a stylesheet, for the
+    // reason written above the template: a component style is a `<style>` element a
+    // strict `style-src` blocks, and this has to hold with no CSP configuration at all.
+    inject(ElementRef<HTMLElement>).nativeElement.style.setProperty('display', 'contents')
+  }
 
 
   /** The span as a number CSS can count with, and nothing at all for `all`.

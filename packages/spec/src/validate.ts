@@ -164,6 +164,36 @@ function semanticErrors(schema: FormSchema): SchemaError[] {
       })
     }
 
+    /*
+     * A grid's row is FLAT, and this is where that is enforced.
+     *
+     * Measured in both renderers: a cell is built from the LEAVES under a row, so a
+     * child holding fields of its own is flattened. The group's own name never reaches
+     * the page, and its controls land in one cell under one heading that names the
+     * group and none of them -- with no labels of their own, because a theme clips a
+     * cell's label on the grounds that the heading says it. Rendering the group
+     * properly instead puts a `fieldset` in the cell whose `legend` the heading then
+     * repeats.
+     *
+     * Neither is worth publishing, and what an author wants is a column per answer,
+     * which the format already has. Refused while version 2 is unreleased, where
+     * refusing costs nobody anything -- 0078.
+     *
+     * Conditioned on what the child HOLDS rather than on the type it is: `group` is the
+     * only type this has to catch today, because a repeater child is already refused as
+     * a nested repeater and a page child as a page inside a repeater. A future type
+     * holding fields would arrive caught by none of the three.
+     */
+    if (field.widget === 'datagrid') {
+      for (const [index, child] of (field.fields ?? []).entries()) {
+        if (child.fields === undefined) continue
+        errors.push({
+          path: `${path}/fields/${String(index)}`,
+          message: `A grid's rows are flat, and "${child.key}" holds fields of its own. Give each of those fields a column of its own, or take the grid off this repeater and its rows will be stacked.`,
+        })
+      }
+    }
+
     // A column pointing at a field the grid does not have shows an empty column,
     // which reads as a field that collects nothing rather than as a configuration
     // mistake -- and the likeliest way to get there is renaming or deleting a child

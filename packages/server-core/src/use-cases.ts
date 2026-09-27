@@ -152,7 +152,12 @@ export async function publishForm(
     const versionId = deps.newId()
     await deps.storage.publishVersion({
       version: { id: versionId, formId: existing.id, version, schema, schemaHash: hash },
-      audit: publishAudit(deps, input, { path: input.path, version, hash }),
+      audit: publishAudit(deps, input, {
+        path: input.path,
+        version,
+        hash,
+        sources: sourceNamesIn(schema),
+      }),
     })
     return { ok: true, formId: existing.id, versionId, version, schemaHash: hash }
   }
@@ -170,7 +175,12 @@ export async function publishForm(
       allowedOrigins: null,
     },
     version: { id: versionId, formId, version: 1, schema, schemaHash: hash },
-    audit: publishAudit(deps, input, { path: input.path, version: 1, hash }),
+    audit: publishAudit(deps, input, {
+      path: input.path,
+      version: 1,
+      hash,
+      sources: sourceNamesIn(schema),
+    }),
   })
   return { ok: true, formId, versionId, version: 1, schemaHash: hash }
 }
@@ -186,7 +196,7 @@ export async function publishForm(
 function publishAudit(
   deps: ServerDeps,
   input: { actor?: Actor },
-  about: { path: string; version: number; hash: string },
+  about: { path: string; version: number; hash: string; sources: readonly string[] },
 ): AuditEntry {
   return {
     id: deps.newId(),
@@ -196,7 +206,26 @@ function publishAudit(
     ...(input.actor === undefined
       ? {}
       : { actorKind: input.actor.kind, actorId: input.actor.id }),
-    detail: { version: about.version, schemaHash: about.hash },
+    detail: {
+      version: about.version,
+      schemaHash: about.hash,
+      /*
+       * The lists this version needs the deployment to resolve, named in the record that
+       * freezes it -- and only when there are any, so an ordinary form's audit row does
+       * not grow a field saying "none".
+       *
+       * `SAFETY-ANALYSIS.md` A7 tells a manufacturer to treat `optionsSource` as a
+       * per-field weakening of A6's guarantee, "enumerable from the publish audit
+       * detail". It was not: this recorded the version and the hash and nothing else, so
+       * the document described a record that did not exist. Written here rather than the
+       * sentence being softened, because an operator comparing a form's sources with
+       * their own configuration is exactly the use the sentence names.
+       *
+       * Joined into a string because an audit detail is flat by design -- one level, no
+       * nesting, so a reader never has to walk it.
+       */
+      ...(about.sources.length === 0 ? {} : { optionsSources: [...about.sources].sort().join(', ') }),
+    },
   }
 }
 

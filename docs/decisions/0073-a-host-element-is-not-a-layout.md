@@ -1,6 +1,8 @@
 # 0073 — A host element is not a layout
 
-- **Status:** accepted
+- **Status:** accepted; the MECHANISM is superseded by [0079](0079-a-host-is-undone-without-a-stylesheet.md) — the host still takes no part in
+  layout, and it is no longer a component style, because a `<style>` element is blocked
+  under the strict CSP this product claims to need no configuration for
 - **Date:** 2026-09-27
 - **Deciders:** Daniel Bacher
 - **Verified by:** `packages/angular/src/layout.test.ts` (2 cases: every `formancy-layout`

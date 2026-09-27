@@ -173,8 +173,10 @@ listed under the sections they belong to above.
 | [0070](0070-a-code-is-an-arrangement-not-a-field.md) | A code is an arrangement, not a field | accepted |
 | [0071](0071-a-scanner-is-supplied-not-built.md) | A scanner is supplied, not built | accepted |
 | [0072](0072-a-typeahead-is-a-combobox-over-the-same-answer.md) | A typeahead is a combobox over the same answer | accepted |
-| [0073](0073-a-host-element-is-not-a-layout.md) | A host element is not a layout | accepted |
+| [0073](0073-a-host-element-is-not-a-layout.md) | A host element is not a layout | mechanism superseded by 0079 |
 | [0074](0074-a-table-child-may-span.md) | A table child may span | accepted |
 | [0075](0075-a-datagrid-is-drawn-not-tabulated.md) | A datagrid is drawn, not tabulated | accepted |
 | [0076](0076-an-answer-is-one-of-the-options.md) | An answer is one of the options | accepted |
 | [0077](0077-options-may-come-from-a-named-source.md) | Options may come from a named source | accepted |
+| [0078](0078-a-grid-row-is-flat.md) | A grid row is flat | accepted |
+| [0079](0079-a-host-is-undone-without-a-stylesheet.md) | A host element is undone without a stylesheet | accepted |

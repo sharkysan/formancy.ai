@@ -177,6 +177,56 @@ function everyLayoutProperty(): Set<string> {
 }
 
 /**
+ * The property names the schema lets ONE field type — optionally with one widget —
+ * carry. Each branch's `if` is evaluated against that pair.
+ *
+ * The first version of this unioned every branch instead and compared the union with the
+ * union of every panel, which says only that SOME type offers a property. A `min` offered
+ * on `text` and missing from `number` satisfied it, and the panel a person opens belongs
+ * to one type.
+ */
+function propertiesFor(type: string, widget?: string): Set<string> {
+  const field = schemaRoot.$defs['field'] ?? {}
+  const names = new Set(propertyNames(field))
+
+  /** What this probe carries, and `undefined` for anything it cannot express. */
+  const carried = (name: string): string | undefined =>
+    name === 'type' ? type : name === 'widget' ? widget : undefined
+
+  const holds = (when: Record<string, unknown> | undefined): boolean => {
+    if (when === undefined) return false
+    const required = (when['required'] ?? []) as string[]
+    // A branch requiring something a (type, widget) pair cannot express -- a select
+    // with an `optionsSource`, say -- is a branch this probe must not claim.
+    for (const name of required) if (carried(name) === undefined) return false
+    for (const [name, rule] of Object.entries(
+      (when['properties'] ?? {}) as Record<string, Record<string, unknown>>,
+    )) {
+      const given = carried(name)
+      if (given === undefined) continue
+      if ('const' in rule && rule['const'] !== given) return false
+      const allowed = rule['enum'] as string[] | undefined
+      if (allowed !== undefined && !allowed.includes(given)) return false
+    }
+    return true
+  }
+
+  for (const branch of (field['allOf'] ?? []) as Array<Record<string, unknown>>) {
+    const side = holds(branch['if'] as Record<string, unknown> | undefined) ? 'then' : 'else'
+    const taken = branch[side] as Record<string, unknown> | undefined
+    if (taken === undefined) continue
+    const properties = (resolve(taken)['properties'] ?? {}) as Record<string, unknown>
+    for (const [name, rule] of Object.entries(properties)) {
+      // `false` FORBIDS the property rather than offering it: a select with a source may
+      // not also carry `options`. Counting that as offered is how a prohibition becomes a
+      // panel.
+      if (rule !== false) names.add(name)
+    }
+  }
+  return names
+}
+
+/**
  * Properties no panel offers, each with the reason.
  *
  * A list rather than a silence: an exception nobody writes down is an exception
@@ -194,24 +244,32 @@ const NOT_CONFIGURABLE: Readonly<Record<string, string>> = {
 }
 
 describe('everything the format has is configurable, or says why not', () => {
-  test('every property a field can carry is offered for the types that can carry it', () => {
-    // Types AND widgets: some branches of the schema are conditioned on one and some
-    // on the other, and a walk that only knew about types skipped `columns` entirely.
-    const offered = new Set(
-      FIELD_TYPES.flatMap((type) => [
-        ...editablePropertiesFor(type).map((property) => property.name),
-        ...((WIDGETS_BY_FIELD_TYPE as Record<string, readonly string[]>)[type] ?? []).flatMap((widget: string) =>
+  test('every property a field can carry is offered by the panel for THAT type', () => {
+    // Per type and per widget, not unioned. Some branches of the schema are conditioned
+    // on a type and some on a widget -- a walk that only knew about types skipped
+    // `columns` entirely -- and a union over both would be satisfied by a property
+    // offered somewhere, which is not where a person is looking for it.
+    const gaps: string[] = []
+    for (const type of FIELD_TYPES) {
+      const widgets: Array<string | undefined> = [
+        undefined,
+        ...((WIDGETS_BY_FIELD_TYPE as Record<string, readonly string[]>)[type] ?? []),
+      ]
+      for (const widget of widgets) {
+        const offered = new Set(
           editablePropertiesFor(type, widget).map((property) => property.name),
-        ),
-      ]),
-    )
-    const missing = [...everyFieldProperty()]
-      .filter((name) => !offered.has(name) && NOT_CONFIGURABLE[name] === undefined)
-      .sort()
+        )
+        for (const name of propertiesFor(type, widget)) {
+          if (offered.has(name) || NOT_CONFIGURABLE[name] !== undefined) continue
+          gaps.push(`${type}${widget === undefined ? '' : ` as ${widget}`} cannot set ${name}`)
+        }
+      }
+    }
 
-    expect(missing).toEqual([])
+    expect(gaps.sort()).toEqual([])
     // A guard on the guard: an empty walk would pass forever.
     expect(everyFieldProperty().size).toBeGreaterThan(15)
+    expect(propertiesFor('number').has('min')).toBe(true)
   })
 
   test('every property a layout node can carry is offered for the kinds that can carry it', () => {

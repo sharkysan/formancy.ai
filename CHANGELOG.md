@@ -10,6 +10,47 @@ later.
 
 ## Unreleased
 
+**A grid's rows are flat.** A `datagrid` column could name a `group`, and measured in both
+renderers what that produces is the group flattened: its own name never reaches the page,
+and its controls land in one cell under one heading that names the group and none of them —
+with no labels of their own, because a theme clips a cell's label on the grounds that the
+heading says it. Two date controls side by side with nothing to tell them apart, and it
+looks finished rather than broken.
+
+`validateSchema` refuses a grid whose child holds fields of its own, naming the child and
+saying to give each of those fields a column instead. A stacked repeater is untouched — the
+restriction is on the arrangement, which is the only thing that cannot express it.
+[0078](docs/decisions/0078-a-grid-row-is-flat.md) has the CSS fix that was tried first and
+why it was wrong. `belongsToColumn` is gone from `@formancy/spec` with the nesting it
+existed for; a column is one answer, so the renderers compare a wire.
+
+**A strict CSP really needs no configuration now, including `style-src`.**
+`@formancy/angular` shipped one component style, `:host { display: contents }`, and Angular
+emits a component style as a `<style>` element that `style-src 'self'` blocks without a
+nonce — undoing the grid layout of a whole renderer, silently, since nothing in a browser
+renders those bindings. It is set through CSSOM instead, which no directive governs, so the
+package ships no stylesheet at all and 0008's "nothing below the kit ships CSS" is restored
+rather than amended. [0079](docs/decisions/0079-a-host-is-undone-without-a-stylesheet.md)
+supersedes 0073's mechanism; the decision itself stands.
+
+**The publish audit row names the lists a form needs resolving.** `form.published` gained
+an `optionsSources` detail — the `optionsSource` names the version uses, sorted and once
+each, and absent when there are none. `SAFETY-ANALYSIS.md` A7 already told a manufacturer
+to read them there; the record held only the version and the hash, so it described
+something that did not exist.
+
+**`SAFETY-ANALYSIS.md` C3 said the server does structured logging with configurable PII
+redaction. It does neither.** Fastify is constructed with `logger: false` and nothing in
+the repository redacts anything. The entry now says what is true — there is no log, so
+submission content cannot reach one — with the larger residual spelled out: no log means no
+diagnostics, and a deployment that adds one owns the redaction question alone.
+
+**Focus in the builder tree follows the field, not the row number.** Move a field and the
+tree reported whichever field slid into that position — for `billing` moved to the top,
+`billing.street`, a field nobody chose, in a builder whose whole premise is the keyboard.
+The test that should have caught it called `moveField` outside `act`, so it could not fail.
+
+
 **A code node must say what it is.** [0070](docs/decisions/0070-a-code-is-an-arrangement-not-a-field.md)
 has always said the picture is decoration and "the label and the value behind it are the
 accessible content" — and `label` was optional, which made the accessible content

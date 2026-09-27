@@ -1407,3 +1407,189 @@ describe('the proof-of-work challenge', () => {
     expect((minted.json() as { error: string }).error).toBe('challenge_not_enabled')
   })
 })
+
+/**
+ * A sourced answer, checked against the deployment's own list.
+ *
+ * The half of `optionsSource` that no test reached. The engine refuses a value no
+ * DOCUMENT option offers and runs on both sides; a field naming a source has no document
+ * options, deliberately, because a list living outside the document cannot be checked
+ * against it. So the server asks the deployment — and `checkMembership` had unit tests
+ * while `AppOptions.optionsSources` reached the use-cases through nothing at all, which
+ * made the whole guarantee dead code until a review found it
+ * ([0077](../../../docs/decisions/0077-options-may-come-from-a-named-source.md)).
+ *
+ * Its own app, because the option only exists at construction — and a real source rather
+ * than a stub of the server: a stub asked the question would answer about the stub.
+ */
+describe('a sourced answer, checked against the deployment’s own list', () => {
+  const OFFERED = new Set(['ZH', 'BE', 'VD'])
+  let sourced: FastifyInstance
+  let hash = ''
+  /** Every batch the deployment was asked about, so "one query per source" is visible. */
+  const asked: Array<readonly string[]> = []
+  let breaks = false
+
+  beforeAll(async () => {
+    sourced = await createApp(createPostgresStorage(sql), {
+      authSecret: 'integration-test-secret-with-length',
+      submissionRateLimit: { max: 10_000, timeWindowMs: 60_000 },
+      optionsSources: {
+        cantons: {
+          members: (values) => {
+            asked.push(values)
+            if (breaks) return Promise.reject(new Error('the list is down'))
+            return Promise.resolve(values.filter((value) => !OFFERED.has(value)))
+          },
+        },
+      },
+    })
+
+    const published = await sourced.inject({
+      method: 'POST',
+      url: '/forms',
+      headers: asAdmin(),
+      payload: {
+        path: 'sourced',
+        schema: {
+          specVersion: '2',
+          id: 'sourced',
+          title: 'Sourced',
+          model: {
+            fields: [
+              { key: 'canton', type: 'select', label: 'Canton', optionsSource: 'cantons' },
+              {
+                key: 'people',
+                type: 'repeater',
+                label: 'People',
+                fields: [
+                  { key: 'home', type: 'select', label: 'Home canton', optionsSource: 'cantons' },
+                ],
+              },
+            ],
+          },
+        },
+      },
+    })
+    hash = (published.json() as { schemaHash: string }).schemaHash
+    await sourced.inject({
+      method: 'PUT',
+      url: '/f/sourced/access',
+      headers: asAdmin(),
+      payload: { submit: 'public' },
+    })
+  })
+
+  afterAll(async () => {
+    await sourced.close()
+  })
+
+  const submit = (payload: unknown) =>
+    sourced.inject({
+      method: 'POST',
+      url: '/f/sourced/submissions',
+      headers: { [SCHEMA_HASH_HEADER]: hash },
+      payload: payload as never,
+    })
+
+  test('stores an answer the source offers', async () => {
+    asked.length = 0
+    const response = await submit({ canton: 'ZH', people: [{ home: 'BE' }] })
+
+    expect(response.statusCode).toBe(201)
+    // One call, carrying every value submitted for that source: a source with two
+    // million rows is the case this feature exists for, and a query per answer would
+    // make a ten-row repeater ten round trips.
+    expect(asked).toEqual([['ZH', 'BE']])
+  })
+
+  test('refuses an answer it does not offer, in the shape the client already renders', async () => {
+    const response = await submit({ canton: 'XX' })
+
+    expect(response.statusCode).toBe(422)
+    // The same code word a document option produces, so a catalogue learns one word for
+    // one idea -- and the path names the field, never the source.
+    expect(response.json()).toEqual({ error: 'invalid', errors: { canton: ['option'] } })
+  })
+
+  test('names the row that carried it, not the field inside the template', async () => {
+    const response = await submit({ canton: 'ZH', people: [{ home: 'ZH' }, { home: 'XX' }] })
+
+    expect(response.statusCode).toBe(422)
+    expect(response.json()).toEqual({
+      error: 'invalid',
+      errors: { 'people[1].home': ['option'] },
+    })
+  })
+
+  test('fails CLOSED with 503 when the source cannot answer', async () => {
+    // 503 and not 422: nothing about the submission is wrong. Retryable, and the draft
+    // still holds the answers -- where accepting the value unchecked would store
+    // something nobody can detect afterwards.
+    breaks = true
+    try {
+      const response = await submit({ canton: 'ZH' })
+
+      expect(response.statusCode).toBe(503)
+      expect(response.json()).toEqual({ error: 'source_unavailable', source: 'cantons' })
+    } finally {
+      breaks = false
+    }
+  })
+
+  test('refuses to PUBLISH a form naming a source this deployment does not have', async () => {
+    // Caught at publish rather than at the first submission, because a published version
+    // is frozen forever: a form naming a list nobody can resolve renders a message
+    // instead of a chooser, and nothing would have said so.
+    const response = await sourced.inject({
+      method: 'POST',
+      url: '/forms',
+      headers: asAdmin(),
+      payload: {
+        path: 'unknown-source',
+        schema: {
+          specVersion: '2',
+          id: 'unknown',
+          title: 'Unknown',
+          model: {
+            fields: [{ key: 'town', type: 'select', label: 'Town', optionsSource: 'towns' }],
+          },
+        },
+      },
+    })
+
+    expect(response.statusCode).toBe(422)
+    expect(JSON.stringify(response.json())).toContain('towns')
+  })
+})
+
+/**
+ * What reaches a log.
+ *
+ * `SAFETY-ANALYSIS.md` C3 claimed "structured logging with configurable PII redaction".
+ * The server constructs Fastify with `logger: false` and nothing in this repository
+ * redacts anything — a wrong statement in a document a manufacturer builds an assessment
+ * on, which is worse than an absent one. C3 now says what is true: there is no log, so
+ * submission content cannot reach one. This is the assertion that keeps that sentence
+ * honest.
+ *
+ * The first version of this guard captured `process.stdout.write` around a submission
+ * carrying a marker string and asserted the marker never appeared. **Measured with
+ * `logger: true`: it still passed.** pino writes to the file descriptor through its own
+ * destination stream and never touches `process.stdout.write`, so the guard was green
+ * over exactly the configuration it existed to refuse. It is recorded here because a
+ * guard that cannot see the thing it watches is indistinguishable from one that works.
+ */
+describe('submission content and the logs', () => {
+  test('the server is built with no logger, so there is no request log to leak into', () => {
+    // Asserted on the CONSTRUCTED app rather than on the call that built it: `logger:
+    // false` gives Fastify an abstract no-op logger, which carries no level, while any
+    // pino carries one. Enable a logger and this fails, which is the point -- a
+    // deployment that wants logs owns the redaction question, and C3 says so.
+    expect((app.log as { level?: string }).level).toBeUndefined()
+
+    // And the no-op is real: a call that would print an answer prints nothing, because
+    // there is nothing behind it.
+    expect(app.log.info('marker-3f9c1d-never-in-a-log')).toBeUndefined()
+  })
+})

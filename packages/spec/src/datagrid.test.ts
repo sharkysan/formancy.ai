@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 
-import { belongsToColumn, datagridColumns } from './datagrid.js'
+import { datagridColumns } from './datagrid.js'
 import { CONTAINER_FIELD_TYPES, FIELD_TYPES, LIST_VALUED_FIELD_TYPES } from './types.js'
 import type { FieldDef } from './types.js'
 import { validateSchema } from './validate.js'
@@ -242,20 +242,121 @@ describe('datagridColumns', () => {
   })
 })
 
-describe('belongsToColumn', () => {
-  test('matches the column’s own leaf and everything under it', () => {
-    expect(belongsToColumn('items[0].name', 'items[0]', 'name')).toBe(true)
-    expect(belongsToColumn('items[0].name.first', 'items[0]', 'name')).toBe(true)
-    expect(belongsToColumn('items[0].name[2]', 'items[0]', 'name')).toBe(true)
+describe('a grid’s row is flat', () => {
+  /*
+   * MEASURED, and the reason this is a format rule rather than a CSS one.
+   *
+   * Both renderers build a cell from the LEAVES under a row, so a child holding fields
+   * of its own is flattened: the group's own name never reaches the page, and its two
+   * or three controls land in one cell under one heading that names the group and none
+   * of them. Worse, a theme clips a cell's label on the grounds that the heading says
+   * it — so those controls arrive with no visible label at all, and the cell looks
+   * finished.
+   *
+   * Rendering the group properly instead puts a `fieldset` in the cell whose `legend`
+   * the heading strip then repeats. Neither arrangement is worth publishing, and what
+   * an author actually wants is a column per answer — which the format already has.
+   *
+   * So it is refused, while version 2 is unreleased and refusing costs nobody
+   * anything. [0078](../../../docs/decisions/0078-a-grid-row-is-flat.md) records it.
+   */
+  test('refuses a child that holds fields of its own, naming it', () => {
+    const errors = errorsFor(
+      documentWith([
+        grid({
+          fields: [
+            { key: 'item', type: 'text', label: 'Item' },
+            {
+              key: 'period',
+              type: 'group',
+              label: 'Period',
+              fields: [
+                { key: 'from', type: 'date', label: 'From' },
+                { key: 'to', type: 'date', label: 'To' },
+              ],
+            },
+          ],
+        }),
+      ]),
+    )
+
+    expect(errors).toHaveLength(1)
+    expect(errors[0]).toContain('period')
+    // The fix is in the message, because the author cannot see either rendering.
+    expect(errors[0]).toMatch(/column/i)
   })
 
-  test('does not let one child swallow another whose key starts the same way', () => {
-    // The bug a bare `startsWith` would have: `name` taking `nameOnCard` with it, so one
-    // column holds two answers and the column after it is short by one.
-    expect(belongsToColumn('items[0].nameOnCard', 'items[0]', 'name')).toBe(false)
+  test('is a rule about the ARRANGEMENT: the same repeater stacked is fine', () => {
+    // The restriction has to cost exactly what it claims. A group in a stacked
+    // repeater renders as a fieldset with its own legend and is a perfectly good
+    // form, so refusing it everywhere would be paying for a grid nobody asked for.
+    const stacked = grid({
+      fields: [
+        { key: 'item', type: 'text', label: 'Item' },
+        {
+          key: 'period',
+          type: 'group',
+          label: 'Period',
+          fields: [{ key: 'from', type: 'date', label: 'From' }],
+        },
+      ],
+    })
+    delete stacked.widget
+
+    expect(errorsFor(documentWith([stacked]))).toEqual([])
   })
 
-  test('does not reach into another row', () => {
-    expect(belongsToColumn('items[1].name', 'items[0]', 'name')).toBe(false)
+  test('refuses EVERY type that holds fields, whatever the reason', () => {
+    // Derived from the type list rather than written out, because the rule above only
+    // has to catch `group`: a repeater child is already refused as a nested repeater
+    // and a page child as a page inside a repeater. A new container type would arrive
+    // caught by none of the three, and this is what fails then.
+    //
+    // That is not hypothetical here -- the nesting guard broke exactly once, when a
+    // second type came to hold the same row model.
+    for (const type of CONTAINER_FIELD_TYPES) {
+      const errors = errorsFor(
+        documentWith([
+          grid({
+            fields: [
+              { key: 'item', type: 'text', label: 'Item' },
+              { key: 'nested', type, label: 'Nested', fields: [{ key: 'a', type: 'text', label: 'A' }] },
+            ],
+          }),
+        ]),
+      )
+      expect(errors, `a ${type} child of a grid is accepted`).not.toEqual([])
+    }
   })
 })
+
+describe('the column list, checked against its own grid', () => {
+  // Both rules existed and neither had a test, which is how a guard survives being
+  // wrong. They are here rather than beside the walk because both compare a column
+  // against its SIBLINGS, which is what the document schema cannot express.
+  test('refuses a column naming a field the grid does not have', () => {
+    // The likeliest way to get here is renaming or deleting a child and leaving the
+    // arrangement behind: the column then shows nothing, which reads as a field that
+    // collects nothing rather than as a mistake in the document.
+    const errors = errorsFor(documentWith([grid({ columns: [{ field: 'quantity' }] })]))
+
+    expect(errors).toHaveLength(1)
+    expect(errors[0]).toContain('quantity')
+  })
+
+  test('refuses two columns over one field, because one answer cannot fill both', () => {
+    const errors = errorsFor(
+      documentWith([grid({ columns: [{ field: 'item' }, { field: 'item' }] })]),
+    )
+
+    expect(errors).toHaveLength(1)
+    expect(errors[0]).toMatch(/item/)
+  })
+
+  test('accepts a column list that names some of the fields and not others', () => {
+    // A column list is an ORDERING, not a choice of which answers to keep: the field
+    // no column names still collects and still gets a column after the named ones.
+    expect(errorsFor(documentWith([grid({ columns: [{ field: 'qty' }] })]))).toEqual([])
+  })
+})
+

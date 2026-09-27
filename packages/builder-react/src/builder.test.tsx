@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'vitest'
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 // Named, not default: the package exports both, and under NodeNext the
 // default resolves to the module namespace rather than the object with setup().
 import { userEvent } from '@testing-library/user-event'
@@ -398,7 +398,13 @@ describe('reporting which field the tree is on', () => {
 
     // Move it to the top: the same field, at a different position. A report keyed on
     // the index would now name `customer`, which nobody selected.
-    session.moveField(['billing'], { parent: [], index: 0 })
+    // Move it to the top. The field is the same field; only its position changed, and
+    // focus follows the FIELD. Keyed on the index, this reported `billing.street` --
+    // the child that slid into position 1 -- which is a field nobody chose, in a
+    // builder whose whole premise is the keyboard.
+    act(() => {
+      session.moveField(['billing'], { parent: [], index: 0 })
+    })
     expect(seen.at(-1)).toEqual(['billing'])
   })
 })

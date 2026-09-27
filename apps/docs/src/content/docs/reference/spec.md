@@ -345,7 +345,7 @@ optional · array · at least 1 item
 
 Each item:
 
-- `field` — required · **Field.** The key of one of this grid's own fields.
+- `field` — required · **Field.** The key of one of this grid's own fields. A grid's rows are flat, so it names a field that collects an answer — never a group holding more fields, which would put several controls in one cell under one heading that names none of them. Give each of those fields a column of its own, or take the grid off and the rows are stacked instead.
 - `width` — optional · **Relative width.** How much of the available width this column takes, relative to the others. A ratio rather than a measurement: a length in a document is one no renderer can honour on a narrow screen, and it would decide your design system for you. Zero is refused — a column nobody can see still holds a field that is collected and required-checked.
 - `align` — optional · **Alignment.** Which edge the values line up against. Numbers usually want the end.
 - `header` — optional · **Column heading.** A shorter heading for the column when the field's own label is too long to sit above it. The field's label is still what a screen reader announces for the control in the cell, so this shortens the heading without renaming the question.

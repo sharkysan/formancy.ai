@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, test } from 'vitest'
@@ -326,22 +326,39 @@ describe('the theme contract', () => {
     const wrong = themes().flatMap(({ name, css }) => {
       const bare = css.replace(/\/\*[\s\S]*?\*\//g, '')
 
-      // The base rule: `layout-cell` with no further attribute, declaring grid-column.
-      const base = bare.search(
-        /\[data-formancy-part='layout-cell'\]\s*\{[^}]*grid-column/,
-      )
-      // The reset: the same part, inside a narrow-screen query, back to auto.
-      const reset = bare.search(
+      // Inside a media query and outside one, told apart rather than assumed. The first
+      // version of this searched the whole file for the reset, so a `grid-column: auto`
+      // written into the BASE rule would have satisfied it -- a guard green over a theme
+      // with no narrow-screen behaviour at all, which is the thing it exists to check.
+      const queries = [...bare.matchAll(/@media[^{]*\{((?:[^{}]*\{[^{}]*\})*[^{}]*)\}/g)]
+      const narrow = queries.map((match) => match[1] ?? '').join(' ')
+      const wide = bare.replace(/@media[^{]*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\}/g, '')
+
+      // The base rule: `layout-cell` declaring grid-column, at full width.
+      const base = wide.search(/\[data-formancy-part='layout-cell'\]\s*\{[^}]*grid-column/)
+      // The reset: the same part, back to auto, inside a query.
+      const reset = narrow.search(
         /\[data-formancy-part='layout-cell'\]\s*\{[^}]*grid-column:\s*auto/,
       )
 
+      if (queries.length === 0) {
+        return [`${name}: has no media query at all, so there is no narrow-screen reflow to win`]
+      }
       if (base === -1) return [`${name}: nothing gives layout-cell a grid-column, so a span does nothing`]
       if (reset === -1) {
         return [
           `${name}: nothing resets layout-cell's grid-column at narrow width, so a numeric span survives the collapse to one column and the page scrolls sideways`,
         ]
       }
-      return reset > base
+      // Order, in the file as a whole: the two rules weigh the same, so the cascade
+      // decides on which comes last. Measured in `bare` and not across the two extracts
+      // above, because a position in one string cannot be compared with a position in
+      // another -- which is how a comparison can look like a check and be arithmetic.
+      const baseAt = bare.search(/\[data-formancy-part='layout-cell'\]\s*\{[^}]*grid-column:\s*(?!auto)/)
+      const resetAt = bare.search(
+        /\[data-formancy-part='layout-cell'\]\s*\{[^}]*grid-column:\s*auto/,
+      )
+      return resetAt > baseAt
         ? []
         : [
             `${name}: the narrow-screen reset for layout-cell comes BEFORE the rule it has to beat. They weigh the same, so the later one wins and the span survives the reflow.`,
@@ -349,6 +366,74 @@ describe('the theme contract', () => {
     })
 
     expect(wrong).toEqual([])
+  })
+
+  test('no package below the theme layer ships CSS, in a file or in a decorator', () => {
+    /*
+     * Two claims meet here and one of them was false.
+     *
+     * [0008](../../../docs/decisions/0008-layered-packages.md): nothing below the
+     * component kit ships a CSS file, because the consumer's design system owns
+     * appearance. And the product headline: formancy runs under a strict CSP with no
+     * configuration.
+     *
+     * `@formancy/angular` carried `styles: ':host { display: contents }'` — not a `.css`
+     * file, so the first claim's wording did not cover it, and Angular emits a component
+     * style as a `<style>` element injected at runtime, which `style-src 'self'` without a
+     * nonce blocks. So the second claim was false too, in the one declaration a whole
+     * renderer's grid layout depends on
+     * ([0079](../../../docs/decisions/0079-a-host-is-undone-without-a-stylesheet.md)).
+     *
+     * Derived from the tree rather than listed, because a list would be maintained by
+     * whoever forgot. A decorator counts as shipping CSS, which is the wording the first
+     * version lacked.
+     */
+    const BELOW_THE_KIT = [
+      'core',
+      'spec',
+      'expressions',
+      'react',
+      'angular',
+      'builder-core',
+      'builder-react',
+      'server',
+      'server-core',
+      'conformance',
+    ]
+
+    const offenders: string[] = []
+    for (const name of BELOW_THE_KIT) {
+      const src = join(repo, 'packages', name, 'src')
+      if (!existsSync(src)) continue
+
+      const walk = (at: string): void => {
+        for (const entry of readdirSync(at, { withFileTypes: true })) {
+          const full = join(at, entry.name)
+          if (entry.isDirectory()) {
+            walk(full)
+            continue
+          }
+          if (entry.name.endsWith('.css')) {
+            offenders.push(`${name}/${entry.name}: a stylesheet`)
+            continue
+          }
+          if (entry.name.includes('.test.') || !/\.(ts|tsx)$/.test(entry.name)) continue
+          const source = readFileSync(full, 'utf8')
+          // The decorator property, not the word: a comment explaining why there is no
+          // stylesheet must not read as one.
+          for (const property of ['styles', 'styleUrls']) {
+            if (new RegExp(`^\\s*${property}:`, 'm').test(source)) {
+              offenders.push(`${name}/${entry.name}: a component ${property}`)
+            }
+          }
+        }
+      }
+      walk(src)
+    }
+
+    expect(offenders.sort()).toEqual([])
+    // A guard on the guard: a wrong path would walk nothing and pass forever.
+    expect(existsSync(join(repo, 'packages', 'angular', 'src'))).toBe(true)
   })
 
   test('scopes every rule to its own theme, so none of them is dead', () => {

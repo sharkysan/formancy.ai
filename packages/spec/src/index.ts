@@ -20,7 +20,7 @@ export {
 } from './types.js'
 export { acceptRemoteOptions, capRemoteOptions } from './options-source.js'
 export type { RemoteOption } from './options-source.js'
-export { belongsToColumn, datagridColumns } from './datagrid.js'
+export { datagridColumns } from './datagrid.js'
 export type { DataGridColumnPlan } from './datagrid.js'
 export { foldForMatch, narrowOptionsByLabel } from './typeahead.js'
 export { upgradeSpecVersion } from './upgrade.js'

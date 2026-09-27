@@ -267,19 +267,20 @@ function RepeaterSection({
         .join(' ')
     : undefined
 
-  /** The leaves inside one row that belong to one column's child field.
+  /** The control in one cell: the leaf the column's child field collects into.
    *
-   *  Matched on a segment boundary rather than with a bare `startsWith`: a child called
-   *  `name` must not swallow `nameOnCard`, and a grouped child owns everything under it.
-   *  A column names a DIRECT CHILD, while `fieldPaths()` returns leaves, because a group
-   *  child is flattened into the fields inside it. */
+   *  One leaf, because a grid's rows are FLAT -- a child holding fields of its own is
+   *  refused when the document is saved
+   *  ([0078](../../../docs/decisions/0078-a-grid-row-is-flat.md)). This walked the whole
+   *  subtree under the child while a group could be a column, and every clause that made
+   *  that walk safe is gone with the arrangement it served.
+   *
+   *  Still a filter over the paths that EXIST rather than the path the column implies, so
+   *  a document nobody validated renders an empty cell instead of asking the engine about
+   *  a field it does not have. */
   const leavesOf = (index: number, key: string): string[] => {
-    const prefix = `${wire}[${String(index)}].${key}`
-    return engine
-      .fieldPaths()
-      .filter(
-        (leaf) => leaf === prefix || leaf.startsWith(`${prefix}.`) || leaf.startsWith(`${prefix}[`),
-      )
+    const wanted = `${wire}[${String(index)}].${key}`
+    return engine.fieldPaths().filter((leaf) => leaf === wanted)
   }
 
   /** A column's visible heading: the author's shortening, else the child's own label,

@@ -543,7 +543,7 @@
          "properties": {
           "field": {
            "title": "Field",
-           "description": "The key of one of this grid's own fields.",
+           "description": "The key of one of this grid's own fields. A grid's rows are flat, so it names a field that collects an answer — never a group holding more fields, which would put several controls in one cell under one heading that names none of them. Give each of those fields a column of its own, or take the grid off and the rows are stacked instead.",
            "type": "string"
           },
           "width": {
