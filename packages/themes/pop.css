@@ -1018,3 +1018,42 @@
     transition: none;
   }
 }
+
+/* A `qrcode` layout node: the value of an answer, shown so it can be read, copied or
+   dictated. There is no picture — encoding one is a dependency for something a design
+   system may want to draw its own way, so the renderer emits the value and these hooks
+   and a consumer registers a component for the drawing. Styled as what it is: a value
+   worth reading accurately, which is what the monospace face is for. */
+[data-formancy-theme='pop'] [data-formancy-part='code'] {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  border: 1px solid var(--fm-line);
+  border-radius: var(--fm-radius, 0);
+  background: var(--fm-paper);
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='code-label'] {
+  color: var(--fm-muted);
+  font-size: 0.875em;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='code-value'] {
+  color: var(--fm-ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* Breaks anywhere: a reference is not a word, and one that overflows its box is one
+     nobody can read the end of. */
+  overflow-wrap: anywhere;
+}
+
+/* Nothing to encode yet. Said in the markup as `data-state`, so a theme can show the
+   difference between "no answer yet" and "here is the answer" without the renderer
+   choosing words for it. */
+[data-formancy-theme='pop'] [data-formancy-part='code'][data-state='empty'] {
+  border-style: dashed;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='code'][data-state='empty']
+  [data-formancy-part='code-value'] {
+  color: var(--fm-muted);
+}

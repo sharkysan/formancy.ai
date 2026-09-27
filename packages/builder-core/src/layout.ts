@@ -1,3 +1,4 @@
+import { LAYOUT_LEAF_KINDS, layoutChildren } from '@formancy/spec'
 import type { FormSchema, LayoutNode } from '@formancy/spec'
 
 /**
@@ -38,7 +39,10 @@ export type LayoutContainerKind = (typeof LAYOUT_CONTAINER_KINDS)[number]
 export function isLayoutContainer(
   node: LayoutNode,
 ): node is Extract<LayoutNode, { children: LayoutNode[] }> {
-  return node.kind !== 'field'
+  // `!LAYOUT_LEAF_KINDS.has(kind)`, not `kind !== 'field'`. The old spelling was true
+  // while `field` was the only childless node, and `qrcode` is the second — so it
+  // claimed a code has children and every caller of this predicate believed it.
+  return !LAYOUT_LEAF_KINDS.has(node.kind)
 }
 
 /** The named layout's top-level node list, or undefined if there is no such layout. */
@@ -114,6 +118,10 @@ export function samePath(a: readonly number[], b: readonly number[]): boolean {
  */
 export function describeNode(node: LayoutNode, nameOfPath: (path: string) => string): string {
   if (node.kind === 'field') return nameOfPath(node.path)
+  // A code is named by what it encodes, not by being a code: "Code for Booking
+  // reference" is findable in a tree and "Code" is not — the same reasoning a row is
+  // named by what it holds.
+  if (node.kind === 'qrcode') return `Code for ${nameOfPath(node.path)}`
 
   const label = typeof node.label === 'string' ? node.label : undefined
   const kind = node.kind[0]!.toUpperCase() + node.kind.slice(1)
@@ -123,13 +131,14 @@ export function describeNode(node: LayoutNode, nameOfPath: (path: string) => str
   // with Row with First name and Last name and Email", where the reader has
   // no way to tell which "and" separates what. A nested container is named as
   // what it is; its own row in the tree says what is in it.
-  const inside = node.children.map((child) => shortNameOf(child, nameOfPath))
+  const inside = layoutChildren(node).map((child) => shortNameOf(child, nameOfPath))
   if (inside.length === 0) return `Empty ${node.kind}`
   return `${kind} with ${listOf(inside)}`
 }
 
 function shortNameOf(node: LayoutNode, nameOfPath: (path: string) => string): string {
   if (node.kind === 'field') return nameOfPath(node.path)
+  if (node.kind === 'qrcode') return `code for ${nameOfPath(node.path)}`
   const label = typeof node.label === 'string' ? node.label : undefined
   return label === undefined ? `a ${node.kind}` : `the “${label}” ${node.kind}`
 }

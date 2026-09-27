@@ -170,3 +170,4 @@ listed under the sections they belong to above.
 | [0067](0067-a-temporal-answer-is-one-fixed-width-string.md) | A temporal answer is one fixed-width string | accepted |
 | [0068](0068-a-row-keeps-its-own-state.md) | A row keeps its own state | accepted |
 | [0069](0069-contributions-under-a-cla.md) | Contributions under a CLA | accepted |
+| [0070](0070-a-code-is-an-arrangement-not-a-field.md) | A code is an arrangement, not a field | accepted |

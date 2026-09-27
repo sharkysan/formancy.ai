@@ -1,3 +1,4 @@
+import { layoutChildren } from './types.js'
 import type { FieldDef, FormI18n, FormSchema, LayoutNode, MessageRef, Text } from './types.js'
 
 /**
@@ -68,7 +69,9 @@ export function unreferencedPaths(schema: FormSchema, layoutName: string): strin
 export function collectFieldPaths(nodes: readonly LayoutNode[], into: Set<string>): void {
   for (const node of nodes) {
     if (node.kind === 'field') into.add(node.path)
-    else collectFieldPaths(node.children, into)
+    // `layoutChildren`, not `node.children`: a `qrcode` node is childless and is not a
+    // field, so reading `children` here walked into `undefined`.
+    else collectFieldPaths(layoutChildren(node), into)
   }
 }
 

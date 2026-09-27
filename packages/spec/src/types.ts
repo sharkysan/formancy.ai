@@ -121,6 +121,50 @@ export type LayoutNode =
    * not a measurement.
    */
   | { kind: 'table'; columns: number; label?: Text; children: LayoutNode[] }
+  /**
+   * A machine-readable code drawn from a value the form already holds.
+   *
+   * **Collects nothing**, which is why it is here and not a field type. A field type
+   * would put a non-answering entry in the model: a key that is an identity forever, a
+   * path in the data, a row in every diff, a column in an exported CSV nobody filled
+   * in, and a target a computed rule could aim at.
+   *
+   * It is not a widget either. A widget sits on a field that collects, and
+   * `widget: "qrcode"` on a text field would replace the input with a picture — which
+   * changes what somebody may enter, and is over the line
+   * [0065](../../../docs/decisions/0065-a-widget-is-authored-not-registered.md) draws.
+   * The scanning half of the request IS a widget, for the opposite reason: reading a
+   * code writes an answer.
+   *
+   * `path` names the field whose answer is encoded. `label` is what a reader is told
+   * the code is — a picture says nothing to a screen reader, so the label and the
+   * value behind it are the accessible content.
+   */
+  | { kind: 'qrcode'; path: string; label?: Text }
+
+/**
+ * The layout kinds that hold no children.
+ *
+ * `LayoutNode` had exactly two shapes — `field`, with a path and no children, and
+ * everything else, with children — and fourteen places in this repository encoded that
+ * as `node.kind === 'field' ? … : node.children`. `qrcode` is the first childless node
+ * that is not a field, so every one of those was about to be wrong: most as a compile
+ * error, which is the good case, and some as a silent walk into `undefined`.
+ *
+ * So the assumption lives here, once. The next childless node is a one-line change.
+ */
+export const LAYOUT_LEAF_KINDS = new Set<LayoutNode['kind']>(['field', 'qrcode'])
+
+/**
+ * A layout node's children, or none if it has none.
+ *
+ * The safe replacement for `node.kind === 'field' ? [] : node.children`. Use it rather
+ * than testing the kind: a walker written against the kind is a walker that has to be
+ * found again next time a leaf is added.
+ */
+export function layoutChildren(node: LayoutNode): readonly LayoutNode[] {
+  return LAYOUT_LEAF_KINDS.has(node.kind) ? [] : (node as { children: LayoutNode[] }).children
+}
 
 export interface FormModel {
   fields: FieldDef[]

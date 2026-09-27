@@ -1,8 +1,10 @@
+
 import { flushSync } from 'react-dom'
 import { useEffect, useId, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
 import type { FormSchema, LayoutNode } from '@formancy/spec'
-import { resolveText } from '@formancy/spec'
+import { resolveText, LAYOUT_LEAF_KINDS, layoutChildren } from '@formancy/spec'
+import { useField } from './use-field.js'
 
 /**
  * Rendering a named `layouts` entry: fields side by side, in sections, in the
@@ -87,13 +89,16 @@ function LayoutNodeView({
   const headingId = useId()
 
   if (node.kind === 'field') return renderField(node.path)
+  if (node.kind === 'qrcode') {
+    return <CodeNode schema={schema} node={node} locale={locale} />
+  }
 
   const label = resolveText(schema, node.label, locale)
   const here = at.join('.')
   const children = (
     <LayoutTree
       schema={schema}
-      nodes={node.children}
+      nodes={layoutChildren(node)}
       locale={locale}
       renderField={renderField}
       at={at}
@@ -316,7 +321,7 @@ function Tabs({
         >
           <LayoutTree
             schema={schema}
-            nodes={child.kind === 'field' ? [child] : child.children}
+            nodes={LAYOUT_LEAF_KINDS.has(child.kind) ? [child] : layoutChildren(child)}
             locale={locale}
             renderField={renderField}
             at={[...at, index]}
@@ -327,11 +332,66 @@ function Tabs({
   )
 }
 
+/**
+ * A machine-readable code drawn from an answer the form already holds.
+ *
+ * ── THE ACCESSIBLE CONTENT IS THE VALUE, NOT THE PICTURE ────────────────────
+ *
+ * A picture of a code says nothing to a screen reader, and an `alt` describing it ("QR
+ * code") says nothing either — what somebody needs is the value it encodes, which they
+ * can then read, copy or dictate. So the value is real text in the document and the
+ * drawing, when there is one, is decorative.
+ *
+ * ── AND THERE IS NO DRAWING, DELIBERATELY ───────────────────────────────────
+ *
+ * Encoding a QR code is a dependency: a matrix, four mask patterns, Reed–Solomon error
+ * correction, and about 10 kB minified for the smallest honest implementation. That is a
+ * row in `SOUP-DECLARATION.md` for every consumer including the Node engine, in a package
+ * whose budget is 4 kB brotli, to draw something the consumer's design system may want to
+ * draw its own way.
+ *
+ * So the renderer emits the value and the hooks, and a consumer who wants the picture
+ * registers a component for it — the registry already replaces any part of the form. What
+ * this costs is stated rather than hidden: **out of the box a `qrcode` node shows the
+ * value as text and no code.** That is a usable form and a visible gap, which is the right
+ * way round; drawing a broken picture would be neither.
+ */
+function CodeNode({
+  schema,
+  node,
+  locale,
+}: {
+  schema: FormSchema
+  node: Extract<LayoutNode, { kind: 'qrcode' }>
+  locale: string
+}): ReactElement {
+  const label = resolveText(schema, node.label, locale)
+  // `useField`, not `engine.getFieldSnapshot`. Reading the snapshot directly renders the
+  // value once and never again: measured, the code stayed `data-state="empty"` after the
+  // answer was typed. A code is a live view of an answer, so it subscribes like any other
+  // reader of one.
+  const field = useField(node.path)
+  const value = field.value
+  const text = typeof value === 'string' ? value : value === null || value === undefined ? '' : String(value)
+
+  return (
+    <div data-formancy-part="code" data-state={text === '' ? 'empty' : 'ready'}>
+      {label === undefined ? null : <span data-formancy-part="code-label">{label}</span>}
+      {/* The value, as text, always. A reader who cannot see the code reads this; a
+          reader who can see one still has something to copy. */}
+      <output data-formancy-part="code-value">{text}</output>
+    </div>
+  )
+}
+
 /** Every data path a layout places, in the order it places them. */
 export function placedPaths(nodes: readonly LayoutNode[], into: string[] = []): string[] {
   for (const node of nodes) {
+    // A `qrcode` node is deliberately NOT a placement: it draws a second view of an
+    // answer that a field node places elsewhere, so counting it here would report a
+    // field as placed when no control for it exists.
     if (node.kind === 'field') into.push(node.path)
-    else placedPaths(node.children, into)
+    else placedPaths(layoutChildren(node), into)
   }
   return into
 }

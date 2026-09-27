@@ -443,6 +443,56 @@ describe('datetime', () => {
   })
 })
 
+describe('qrcode', () => {
+  // The same assertions React makes, deliberately not sharing a helper.
+  const schema = base({
+    model: { fields: [{ key: 'reference', type: 'text', label: 'Booking reference' }] },
+    layouts: [
+      {
+        name: 'web',
+        nodes: [
+          { kind: 'field', path: 'reference' },
+          { kind: 'qrcode', path: 'reference', label: 'Your pass' },
+        ],
+      },
+    ],
+  } as Partial<FormSchema>)
+
+  test('shows the value of the answer it encodes, as text', async () => {
+    // The accessible content is the VALUE, not the picture: a picture of a code says
+    // nothing to a screen reader, and neither does an alt of "QR code".
+    const engine = engineFor(schema)
+    const view = await renderForm(engine)
+    engine.setValue(['reference'], 'AB-1234')
+    await view.fixture.whenStable()
+    expect(screen.getByText('AB-1234')).toBeDefined()
+  })
+
+  test('collects nothing, so it adds no control and no answer', async () => {
+    const engine = engineFor(schema)
+    await renderForm(engine)
+    expect(screen.getAllByRole('textbox')).toHaveLength(1)
+    engine.setValue(['reference'], 'AB-1234')
+    expect(engine.value()).toEqual({ reference: 'AB-1234' })
+  })
+
+  test('says whether there is anything to encode yet', async () => {
+    // Live, which is what the component exists for: reading the snapshot from the layout
+    // rendered the value once and never again, because a method call is not a signal an
+    // OnPush component re-runs for.
+    const engine = engineFor(schema)
+    const view = await renderForm(engine)
+    expect(document.querySelector('[data-formancy-part="code"]')?.getAttribute('data-state')).toBe(
+      'empty',
+    )
+    engine.setValue(['reference'], 'AB-1234')
+    await view.fixture.whenStable()
+    expect(document.querySelector('[data-formancy-part="code"]')?.getAttribute('data-state')).toBe(
+      'ready',
+    )
+  })
+})
+
 describe('tabs', () => {
   const schema = base({
     model: {

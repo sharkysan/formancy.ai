@@ -2,7 +2,9 @@ import type { ErrorObject, ValidateFunction } from 'ajv/dist/2020.js'
 import documentValidatorFn from './generated/document-validator.js'
 import { modelDataPaths } from './paths.js'
 import { collectFieldPaths, isMessageRef, modelPathsForLayout } from './presentation.js'
-import { ROW_ID, SPEC_1_FIELD_TYPES, SPEC_1_LAYOUT_KINDS } from './types.js'
+import { ROW_ID, SPEC_1_FIELD_TYPES, SPEC_1_LAYOUT_KINDS,
+  layoutChildren,
+} from './types.js'
 import type { FieldDef, FormSchema, LayoutNode, Text } from './types.js'
 
 /** One reason a document is not a valid formancy form. */
@@ -112,7 +114,9 @@ function versionErrors(
             message: `A "${node.kind}" layout node needs specVersion "2". This document says "1". Change it to "2" — everything already in the document keeps working, because version 2 only adds.`,
           })
         }
-        if (node.kind !== 'field') walk(node.children, `${at}/children`)
+        // `layoutChildren` rather than a kind test: `qrcode` is childless and is not a
+        // field, so `kind !== 'field'` walked straight into `undefined`.
+        walk(layoutChildren(node), `${at}/children`)
       }
     }
     walk(layout.nodes, `/layouts/${String(layoutIndex)}/nodes`)
@@ -360,7 +364,23 @@ function presentationErrors(schema: FormSchema): SchemaError[] {
     const walkNodes = (nodes: readonly LayoutNode[], nodeBase: string): void => {
       for (const [nodeIndex, node] of nodes.entries()) {
         const nodePath = `${nodeBase}/${String(nodeIndex)}`
-        if (node.kind === 'field') {
+        if (node.kind === 'qrcode') {
+          // A code needs its path to exist, exactly as a placement does: a node
+          // encoding nothing draws an empty box, which reads as a broken form rather
+          // than a typo in the arrangement.
+          //
+          // It does NOT take part in the duplicate rule, and that is the difference
+          // between the two. A field has one place in an arrangement because it is one
+          // control; a code is a second VIEW of an answer that is placed elsewhere, so
+          // a form showing a booking reference as a field and again as a code is doing
+          // what it meant to.
+          if (!placeable.has(node.path)) {
+            errors.push({
+              path: `${nodePath}/path`,
+              message: `No field has the data path "${node.path}", so this code would encode nothing.`,
+            })
+          }
+        } else if (node.kind === 'field') {
           if (!placeable.has(node.path)) {
             errors.push({
               path: `${nodePath}/path`,
@@ -411,7 +431,7 @@ function presentationErrors(schema: FormSchema): SchemaError[] {
             })
           }
 
-          walkNodes(node.children, `${nodePath}/children`)
+          walkNodes(layoutChildren(node), `${nodePath}/children`)
         }
       }
     }
