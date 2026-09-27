@@ -802,13 +802,16 @@ function SelectField({ path, label }: FieldComponentProps) {
   // Every hook runs before the branch on purpose: the builder can set a widget on
   // a live document, and a branch above a hook would reorder React's hook list
   // the moment it did.
-  if (field.def.widget === 'typeahead') {
-    return <TypeaheadSelectField path={path} label={label} field={field} />
-  }
 
   // The document names a source this deployment does not have. Unlike a missing
   // scanner this costs the whole field -- a select with no options collects nothing
   // -- so it says so where the chooser would be, exactly as the file field does.
+  //
+  // BEFORE the widget, and the order is the fix: dispatching to the typeahead first
+  // made this message unreachable for the very widget the feature was built for. What
+  // somebody got instead was a working-looking combobox that returned nothing and
+  // announced "No options match" -- which says the list has no such row, when the
+  // truth is that there is no list.
   if (sourced.remote?.unavailable === true) {
     return (
       <FieldShell path={path} field={field} label={label}>
@@ -817,6 +820,10 @@ function SelectField({ path, label }: FieldComponentProps) {
         </p>
       </FieldShell>
     )
+  }
+
+  if (field.def.widget === 'typeahead') {
+    return <TypeaheadSelectField path={path} label={label} field={field} />
   }
 
   return (

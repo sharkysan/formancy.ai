@@ -37,6 +37,20 @@ export function modelViolations(def: FieldDef, value: unknown): string[] {
     return codes
   }
 
+  // A chooser stores ONE OPTION'S VALUE, which is a string. Anything else is the
+  // hostile-payload path, and refusing it here is what stops it from being invisible:
+  // a field whose options live elsewhere (`optionsSource`) has no list to compare
+  // against, and the server's own membership check walks only strings — so an object or
+  // an array produced no answer to ask about and was stored unexamined. Measured before
+  // this existed: `sourcedAnswers` returned `[]` for `{"canton": {"$gt": ""}}`.
+  //
+  // Before the type, because "not a string" is a better answer than "not an offered
+  // option" for a value that could never have been one.
+  if (CHOOSER_TYPES.has(def.type) && typeof value !== 'string') {
+    codes.push('type')
+    return codes
+  }
+
   // A chosen answer is one of the options offered.
   //
   // This was documented before it was true: `formancy.schema.json` says of
@@ -122,6 +136,14 @@ export function modelViolations(def: FieldDef, value: unknown): string[] {
  * the engine bounds them where it manages them, not here where it would only
  * see an opaque array.
  */
+/**
+ * Field types whose answer is ONE option's value.
+ *
+ * `selectboxes` is absent because its answer is a list; the branch above already
+ * refuses a scalar there, and each tick is checked against the options separately.
+ */
+const CHOOSER_TYPES = new Set(['select', 'radio'])
+
 const LIST_VALUED = new Set(['selectboxes', 'file'])
 
 /** Whether this field's document carries a list of options to be one of. */

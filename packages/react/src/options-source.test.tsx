@@ -396,3 +396,26 @@ describe('asking for a name at most once', () => {
     }, WAITING)
   })
 })
+
+describe('a typeahead whose source the deployment does not have', () => {
+  test('says so, rather than offering a combobox that can never answer', () => {
+    // The branch order this fixes, found by review: the widget was dispatched BEFORE
+    // the unavailable check, so the message was unreachable for the very widget the
+    // feature was built for. What a person got instead was a working-looking combobox
+    // that returned nothing and announced "No options match" — which says the list has
+    // no such row, when the truth is there is no list.
+    mount({ widget: 'typeahead' })
+
+    expect(screen.queryByRole('combobox')).toBeNull()
+    expect(screen.getByText(/answers come from "cantons"/)).toBeDefined()
+  })
+
+  test('and a typeahead WITH its source still renders the combobox', () => {
+    // The guard on the guard: a check that fired unconditionally would take the
+    // control away from every sourced typeahead in the world.
+    const { sources } = answering()
+    mount({ widget: 'typeahead', sources })
+
+    expect(screen.getByRole('combobox', { name: 'Canton' })).toBeDefined()
+  })
+})

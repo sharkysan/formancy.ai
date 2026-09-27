@@ -48,6 +48,15 @@ export function injectSourcedOptions(
   storedValue: Signal<string | undefined>,
   query: Signal<string>,
   locale: () => string,
+  /**
+   * Whether this instance is the one that will render.
+   *
+   * A select that carries `widget: "typeahead"` delegates to another component, and
+   * both extend the same base — so both wire this up and both ask. React added the
+   * same flag for the same reason; without it a sourced typeahead sent every request
+   * twice, and one set of answers was read by nobody.
+   */
+  enabled: Signal<boolean>,
 ): SourcedOptionsState {
   const sources = injectOptionsSources()
   const destroyRef = inject(DestroyRef)
@@ -67,11 +76,18 @@ export function injectSourcedOptions(
   let inFlight: AbortController | undefined
   let timer: ReturnType<typeof setTimeout> | undefined
 
+  /** Every labels request still in the air, so a destroy can abort all of them. */
+  const labelRequests = new Set<AbortController>()
+
   const stop = (): void => {
     if (timer !== undefined) clearTimeout(timer)
     inFlight?.abort()
   }
-  destroyRef.onDestroy(stop)
+  destroyRef.onDestroy(() => {
+    stop()
+    for (const controller of labelRequests) controller.abort()
+    labelRequests.clear()
+  })
 
   // The search, debounced and superseded by ABORTING rather than by ignoring: a
   // request nobody wants any more is one a host should be able to cancel, and the
@@ -81,7 +97,7 @@ export function injectSourcedOptions(
     const text = query()
     const name = definition().optionsSource ?? ''
     const path = definition().key
-    if (resolver === undefined) return
+    if (!enabled() || resolver === undefined) return
 
     const minQueryLength = resolver.minQueryLength ?? MIN_QUERY
     const maxRows = resolver.maxRows ?? MAX_ROWS
@@ -149,11 +165,15 @@ export function injectSourcedOptions(
   effect(() => {
     const resolver = source()
     const value = storedValue()
-    if (resolver === undefined || value === undefined) return
+    if (!enabled() || resolver === undefined || value === undefined) return
     if (named().has(value) || askedFor.has(value)) return
     askedFor.add(value)
 
+    // Registered, so a destroy aborts it. The search request was; this one was not,
+    // which left a request outliving the component that asked for it -- and a host
+    // honouring the signal had no way to know nobody was listening any more.
     const controller = new AbortController()
+    labelRequests.add(controller)
     void resolver
       .resolve({
         kind: 'labels',
@@ -175,6 +195,7 @@ export function injectSourcedOptions(
       // A name that does not arrive is not an error anybody can act on: the control
       // shows the raw value, exactly as it does for an option with no label.
       .catch(() => undefined)
+      .finally(() => labelRequests.delete(controller))
   })
 
   return {

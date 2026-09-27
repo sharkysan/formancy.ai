@@ -294,3 +294,60 @@ describe('asking for a name at most once', () => {
     expect(labelRequests).toEqual([['XX']])
   })
 })
+
+describe('a typeahead whose source the deployment does not have', () => {
+  test('says so, rather than offering a combobox that can never answer', async () => {
+    // The branch order this fixes: the widget was dispatched BEFORE the unavailable
+    // check, so the message was unreachable for the very widget the feature was built
+    // for. What a person got was a combobox that returned nothing and announced "No
+    // options match" -- which says the list has no such row, when there is no list.
+    await mount({ widget: 'typeahead' })
+
+    expect(screen.queryByRole('combobox')).toBeNull()
+    expect(screen.getByText(/answers come from "cantons"/)).toBeDefined()
+  })
+
+  test('and a typeahead WITH its source still renders the combobox', async () => {
+    const { sources } = answering()
+    await mount({ widget: 'typeahead', sources })
+
+    expect(screen.getByRole('combobox', { name: 'Canton' })).toBeDefined()
+  })
+})
+
+describe('a sourced typeahead showing the answer it holds', () => {
+  test('shows the stored answer in the box, not an empty string', async () => {
+    // The divergence this fixes: Angular looked the stored value up in the DOCUMENT's
+    // options, and a field with `optionsSource` has none — the schema forbids both —
+    // so `chosen` was permanently undefined and the box rendered empty over an answer
+    // the form was holding. React looked it up in the offered list from the start.
+    const { sources } = answering()
+    const { settle } = await mount({
+      widget: 'typeahead',
+      sources,
+      initialValue: { canton: 'VD' },
+    })
+
+    await until(settle, () => {
+      expect(screen.getByRole('combobox', { name: 'Canton' })).toHaveProperty('value', 'Vaud')
+    })
+  })
+})
+
+describe('asking once, not twice', () => {
+  test('a sourced typeahead sends one search, not one per component', async () => {
+    // A select carrying `widget: "typeahead"` delegates to another component, and both
+    // extend the same base — so both wired the source up and both asked, and one set
+    // of answers was read by nobody. React stands its parent down explicitly; this
+    // binding did not, which made the same document cost twice as many requests here.
+    const { sources, asked } = answering()
+    const { settle } = await mount({ widget: 'typeahead', sources })
+
+    fireEvent.input(screen.getByRole('combobox', { name: 'Canton' }), { target: { value: 'be' } })
+    await settle()
+
+    await until(settle, () => {
+      expect(asked.filter((request) => request.query === 'be')).toHaveLength(1)
+    })
+  })
+})

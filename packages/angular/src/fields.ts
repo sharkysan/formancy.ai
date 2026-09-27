@@ -109,7 +109,19 @@ abstract class FieldComponentBase {
     }),
     this.sourceQuery,
     () => this.engine.locale(),
+    computed(() => this.sourceEnabled()),
   )
+
+  /**
+   * Whether THIS component is the one that will render the field.
+   *
+   * True for every control but the select that hands over to the typeahead, which
+   * overrides it. Both extend this base, so without the distinction a sourced
+   * typeahead asked its source twice and read one set of answers.
+   */
+  protected sourceEnabled(): boolean {
+    return true
+  }
 
   /**
    * The options to offer: the document's, or the deployment's.
@@ -664,9 +676,18 @@ export class FormancyTypeaheadSelect extends FieldComponentBase {
    *  every keystroke and an index would point at a different row after one. */
   protected readonly activeValue = signal<string | null>(null)
 
+  /**
+   * The option the form currently holds, looked up in what is OFFERED.
+   *
+   * `options()` is the document's list alone, and a field with `optionsSource` has
+   * none — the schema forbids both — so looking there made `chosen` permanently
+   * undefined for a sourced field, and the box showed an empty string over a stored
+   * answer. React looked it up in the offered list from the start; this is the
+   * divergence that made them two different controls.
+   */
   protected readonly chosen = computed(() => {
     const value = this.field.snapshot().value
-    return this.options().find((option) => option.value === value)
+    return this.offered().find((option) => option.value === value)
   })
 
   /**
@@ -730,12 +751,23 @@ export class FormancyTypeaheadSelect extends FieldComponentBase {
     return `${this.control().id}:option:${value}`
   }
 
+  /**
+   * The one place the query changes, because it is two facts that must never disagree:
+   * what the box shows, and what the source is asked for.
+   *
+   * They were separate signals and only typing wrote the second, so after choosing a
+   * row or leaving the field the source kept answering the abandoned query while the
+   * box showed the answer — and the popup on the next click held rows for a word
+   * nobody had typed. React derives both from one piece of state, which is why it
+   * never had this.
+   */
+  private setQuery(next: string | null): void {
+    this.query.set(next)
+    this.sourceQuery.set(next ?? '')
+  }
+
   protected onInput(event: Event): void {
-    const typed = (event.target as HTMLInputElement).value
-    this.query.set(typed)
-    // What a source is asked for. A plain select never writes to this, so its source
-    // is asked for everything and shows what fits.
-    this.sourceQuery.set(typed)
+    this.setQuery((event.target as HTMLInputElement).value)
     this.open.set(true)
     // Nothing is active on a keystroke: aria-activedescendant is ABSENT rather
     // than pointing at a row the person has not moved to.
@@ -790,13 +822,13 @@ export class FormancyTypeaheadSelect extends FieldComponentBase {
       // is abandoned and the ANSWER is untouched.
       this.open.set(false)
       this.activeValue.set(null)
-      this.query.set(null)
+      this.setQuery(null)
     }
   }
 
   protected choose(value: string): void {
     this.field.setValue(value)
-    this.query.set(null)
+    this.setQuery(null)
     this.open.set(false)
     this.activeValue.set(null)
   }
@@ -809,7 +841,7 @@ export class FormancyTypeaheadSelect extends FieldComponentBase {
       // An emptied box is the empty option, and the only route to null. Anything
       // else typed is abandoned - it was never an answer.
       if (typed.trim() === '') this.field.setValue(null)
-      this.query.set(null)
+      this.setQuery(null)
     }
     this.field.touch()
   }
@@ -831,19 +863,25 @@ export class FormancyTypeaheadSelect extends FieldComponentBase {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormancyFieldShell, FormancyTypeaheadSelect],
   template: `
-    @if (typeahead()) {
-      <!-- A widget changes the CONTROL and nothing else: same field, same
-           accessible name, same stored answer. The registry still wins over both
-           branches, because it replaces the component. -->
-      <formancy-typeahead-select />
-    } @else if (remote.unavailable()) {
+    @if (remote.unavailable()) {
       <!-- The document names a source this deployment does not have. Unlike a missing
            scanner this costs the whole field -- a select with no options collects
            nothing -- so it says so where the chooser would be, exactly as the file
-           field does without an uploader. -->
+           field does without an uploader.
+
+           BEFORE the widget, and the order is the fix: dispatching to the typeahead
+           first made this message unreachable for the very widget the feature was
+           built for, leaving a working-looking combobox that returned nothing and
+           announced "No options match" -- which says the list has no such row, when
+           the truth is that there is no list. The React binding orders it the same. -->
       <formancy-field-shell [field]="field" [label]="context.label" [path]="context.path">
         <p data-formancy-part="options-unavailable">This field's answers come from "{{ sourceName() }}", which this application has not provided.</p>
       </formancy-field-shell>
+    } @else if (typeahead()) {
+      <!-- A widget changes the CONTROL and nothing else: same field, same
+           accessible name, same stored answer. The registry still wins over every
+           branch, because it replaces the component. -->
+      <formancy-typeahead-select />
     } @else {
     <formancy-field-shell [field]="field" [label]="context.label" [path]="context.path">
       <select
@@ -880,6 +918,11 @@ export class FormancySelectField extends FieldComponentBase {
 
   /** The name the document gave, for the message when this deployment has no such source. */
   protected readonly sourceName = computed(() => this.field.snapshot().def.optionsSource ?? '')
+
+  /** This one hands over to the typeahead, which does its own asking. */
+  protected override sourceEnabled(): boolean {
+    return !this.typeahead()
+  }
 
   protected readonly selected = computed(() => {
     const value = this.field.snapshot().value
