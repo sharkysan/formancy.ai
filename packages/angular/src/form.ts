@@ -22,7 +22,7 @@ import type { ComponentRef, OnChanges, OnDestroy, OnInit, Signal, Type } from '@
 import { encode } from 'uqr'
 import { parsePath } from '@formancy/core'
 import type { FieldSnapshot } from '@formancy/core'
-import { resolveText, LAYOUT_LEAF_KINDS, layoutChildren} from '@formancy/spec'
+import { datagridColumns, resolveText, LAYOUT_LEAF_KINDS, layoutChildren } from '@formancy/spec'
 import type { FieldDef, LayoutNode } from '@formancy/spec'
 import { DEFAULT_FIELD_COMPONENTS } from './fields.js'
 import { injectField } from './field.js'
@@ -145,40 +145,101 @@ interface RepeaterRow {
 @Component({
   selector: 'formancy-repeater',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormancyFieldSlot],
+  imports: [NgTemplateOutlet, FormancyFieldSlot],
   template: `
     @if (state; as s) {
       <fieldset data-formancy-part="repeater">
         <legend data-formancy-part="repeater-legend">{{ s.label }}</legend>
-        @for (row of s.rows(); track row.id) {
-          <div data-formancy-part="row">
-            <!-- Tracked by the POSITIONAL WIRE, which recreates every control in a
-                 row whenever the row moves, so focus is lost on a reorder.
-                 Deliberate, and the obstacle is named so the next attempt starts from
-                 it: tracking by the field's key instead would let Angular reuse the
-                 component, and this component reads its path once in ngOnInit and
-                 never rebinds -- so after a removal it would keep the old wire and
-                 show the wrong row's answer. A conformance fixture caught exactly
-                 that. Reactive path binding has to come first. -->
-            @for (child of row.children; track child.wire) {
-              <formancy-field [path]="child.wire" [fallbackLabel]="fallbackFor(child.wire)" />
+        <!-- The buttons a row carries, written once and used by both arrangements.
+             Each one's text sits in its own element so a THEME can clip it and draw a
+             mark instead, which is what a grid wants: "Remove recipient 1 of 1" on
+             three wrapped lines took more room than the answers beside it. Clipped and
+             never removed -- display: none and visibility: hidden both compute the
+             button's name to the empty string, and a button called nothing is worse
+             than a wide one. The renderer draws no mark of its own, because an icon is
+             appearance and appearance belongs to the consumer.
+             Their NAMES are identical in each, because 0068 put the row's position in
+             them and a grid does not change where a person is. -->
+        <ng-template #rowButtons let-row let-count="count">
+          <!-- Position context in the NAME, so a screen-reader user knows
+               which row this button kills without walking the tree. -->
+          <button type="button" data-formancy-part="row-remove" (click)="state!.repeater.removeRow(row.index)"><span data-formancy-part="row-action-text">{{ state!.removeLabel }} {{ row.index + 1 }} of {{ count }}</span></button>
+          <!-- Reordering by button, which is the KEYBOARD route and therefore the
+               primary one: WCAG 2.5.7 requires a non-drag equivalent for any drag,
+               so a drag affordance can only ever be a second route to these.
+               Absent at the ends rather than disabled: a disabled button is still in
+               the tab order in some browsers and announces a control that does
+               nothing. -->
+          @if (row.index > 0) {
+            <button type="button" data-formancy-part="row-up" (click)="state!.repeater.moveRow(row.index, row.index - 1)"><span data-formancy-part="row-action-text">Move {{ state!.label }} {{ row.index + 1 }} of {{ count }} up</span></button>
+          }
+          @if (row.index < count - 1) {
+            <button type="button" data-formancy-part="row-down" (click)="state!.repeater.moveRow(row.index, row.index + 1)"><span data-formancy-part="row-action-text">Move {{ state!.label }} {{ row.index + 1 }} of {{ count }} down</span></button>
+          }
+        </ng-template>
+
+        @if (plan().length > 0) {
+          <!-- A container inside the fieldset rather than the fieldset itself, so the
+               legend and the Add button do not become grid items.
+
+               No role anywhere in here, and that is the decision rather than an
+               omission. role="grid" would take the arrow keys, which the controls in
+               the cells already own -- a select with widget: "typeahead" is legal in a
+               row and claims Up, Down, Home, End, Enter and Escape -- and it would
+               replace twenty tab stops with one. A role is not paint, which is the
+               line 0065 draws. -->
+          <div data-formancy-part="datagrid" [attr.data-columns]="plan().length" [style]="trackStyle()">
+            <!-- Only once there is a row to head, and plain static text. A heading here
+                 names nothing, so a theme may delete it at phone width without changing
+                 what any control announces -- which is what makes the narrow-screen
+                 reflow possible at all. -->
+            @if (s.rows().length > 0) {
+              <div data-formancy-part="datagrid-head">
+                @for (entry of plan(); track entry.key) {
+                  <span data-formancy-part="datagrid-heading" [attr.data-align]="entry.align">{{ entry.heading }}</span>
+                }
+              </div>
             }
-            <!-- Position context in the NAME, so a screen-reader user knows
-                 which row this button kills without walking the tree. -->
-            <button type="button" (click)="s.repeater.removeRow(row.index)">{{ s.removeLabel }} {{ row.index + 1 }} of {{ s.rows().length }}</button>
-            <!-- Reordering by button, which is the KEYBOARD route and therefore the
-                 primary one: WCAG 2.5.7 requires a non-drag equivalent for any drag,
-                 so a drag affordance can only ever be a second route to these.
-                 Absent at the ends rather than disabled: a disabled button is still in
-                 the tab order in some browsers and announces a control that does
-                 nothing. -->
-            @if (row.index > 0) {
-              <button type="button" (click)="s.repeater.moveRow(row.index, row.index - 1)">Move {{ s.label }} {{ row.index + 1 }} of {{ s.rows().length }} up</button>
-            }
-            @if (row.index < s.rows().length - 1) {
-              <button type="button" (click)="s.repeater.moveRow(row.index, row.index + 1)">Move {{ s.label }} {{ row.index + 1 }} of {{ s.rows().length }} down</button>
+            @for (row of s.rows(); track row.id) {
+              <div data-formancy-part="datagrid-row">
+                @for (entry of plan(); track entry.key) {
+                  <!-- Always emitted, even when every field in it renders nothing. A
+                       rule that hides one answer must not shift that row's remaining
+                       columns out of line with the heading strip and with every other
+                       row, which is the whole reason this arrangement exists. -->
+                  <div data-formancy-part="datagrid-cell" [attr.data-align]="entry.align">
+                    @for (child of cellChildren(row, entry.key); track child.wire) {
+                      <formancy-field [path]="child.wire" [fallbackLabel]="fallbackFor(child.wire)" />
+                    }
+                  </div>
+                }
+                <!-- One cell for all of a row's buttons, because there are two on the
+                     first and last rows and three in between. A track whose cell count
+                     varied per row is exactly what a table cannot express without a
+                     cell that announces a blank. -->
+                <div data-formancy-part="datagrid-actions">
+                  <ng-container *ngTemplateOutlet="rowButtons; context: { $implicit: row, count: s.rows().length }" />
+                </div>
+              </div>
             }
           </div>
+        } @else {
+          @for (row of s.rows(); track row.id) {
+            <div data-formancy-part="row">
+              <!-- Tracked by the POSITIONAL WIRE, which recreates every control in a
+                   row whenever the row moves, so focus is lost on a reorder.
+                   Deliberate, and the obstacle is named so the next attempt starts from
+                   it: tracking by the field's key instead would let Angular reuse the
+                   component, and this component reads its path once in ngOnInit and
+                   never rebinds -- so after a removal it would keep the old wire and
+                   show the wrong row's answer. A conformance fixture caught exactly
+                   that. Reactive path binding has to come first. -->
+              @for (child of row.children; track child.wire) {
+                <formancy-field [path]="child.wire" [fallbackLabel]="fallbackFor(child.wire)" />
+              }
+              <ng-container *ngTemplateOutlet="rowButtons; context: { $implicit: row, count: s.rows().length }" />
+            </div>
+          }
         }
         <button type="button" (click)="s.repeater.addRow()">{{ s.addLabel }}</button>
       </fieldset>
@@ -192,6 +253,10 @@ export class FormancyRepeaterSection implements OnInit {
   readonly wire = input.required<string>()
   readonly labels = input<Record<string, string>>()
 
+  /** The repeater's own definition, kept because the column plan reads `widget`,
+   *  `columns` and the child labels off it on every render. */
+  protected definition: FieldDef | undefined
+
   protected state?: {
     repeater: RepeaterBinding
     label: string
@@ -200,9 +265,79 @@ export class FormancyRepeaterSection implements OnInit {
     rows: Signal<readonly RepeaterRow[]>
   }
 
+  /**
+   * The columns the grid shows, in the order it shows them, or an empty list when the
+   * widget was not asked for.
+   *
+   * `columns` without the widget stays inert on purpose: 0066 lets an author write the
+   * arrangement before a renderer honours it, and a repeater that silently became a grid
+   * because somebody sized its columns would be the opposite of that.
+   *
+   * The React binding computes the same list with the same helper, for the same reasons.
+   */
+  protected readonly plan = computed(
+    (): ReadonlyArray<{ key: string; heading: string; align: string | null; width?: number }> => {
+      const def = this.definition
+      if (def?.widget !== 'datagrid') return []
+      return datagridColumns(def, def.columns ?? []).map((entry) => ({
+        key: entry.key,
+        // The author's shortening, else the child's own label, else the labels input,
+        // else the key. Visible text and NOTHING else -- never an id target and never an
+        // aria-label, because a heading that named the answers beneath it is the failure
+        // 0066 separates `header` from `label` to prevent.
+        heading:
+          this.engine.text(entry.column?.header) ??
+          this.engine.text(entry.child?.label) ??
+          this.fallbackFor(`${this.wire()}[0].${entry.key}`) ??
+          entry.key,
+        align: entry.column?.align ?? null,
+        ...(entry.column?.width === undefined ? {} : { width: entry.column.width }),
+      }))
+    },
+  )
+
+  /**
+   * The authored ratios, as ONE custom property rather than as `grid-template-columns`.
+   *
+   * A property lays nothing out by itself, so a theme's narrow-screen media query
+   * replaces its own declaration and wins rather than losing to an inline one it cannot
+   * outrank. It also carries a value space no attribute could enumerate: `width` is a
+   * number with `exclusiveMinimum: 0`, so 1.5 is legal and nothing bounds it from above.
+   *
+   * Nothing at all when no column was sized, so the theme's fallback is live code.
+   */
+  protected trackStyle(): Record<string, string> {
+    const plan = this.plan()
+    if (!plan.some((entry) => entry.width !== undefined)) return {}
+    return {
+      '--fm-datagrid-columns': plan
+        .map((entry) => (entry.width === undefined ? '1fr' : `${String(entry.width)}fr`))
+        .join(' '),
+    }
+  }
+
+  /**
+   * The controls in one cell: every leaf inside the row that belongs to that column's
+   * child field.
+   *
+   * Matched on a segment boundary rather than with a bare `startsWith`, because a child
+   * called `name` must not swallow `nameOnCard` and a grouped child owns everything under
+   * it. A column names a DIRECT CHILD, while the row's children are leaves.
+   */
+  protected cellChildren(row: RepeaterRow, key: string): readonly RepeaterRow['children'][number][] {
+    const prefix = `${this.wire()}[${String(row.index)}].${key}`
+    return row.children.filter(
+      (child) =>
+        child.wire === prefix ||
+        child.wire.startsWith(`${prefix}.`) ||
+        child.wire.startsWith(`${prefix}[`),
+    )
+  }
+
   ngOnInit(): void {
     const wire = this.wire()
     const def = this.engine.repeaters().find((candidate) => candidate.wire === wire)?.def
+    this.definition = def
     const label = this.engine.text(def?.label) ?? this.labels()?.[wire] ?? wire
     const minItems = def?.minItems ?? 0
 

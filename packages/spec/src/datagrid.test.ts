@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'vitest'
 
+import { belongsToColumn, datagridColumns } from './datagrid.js'
 import { CONTAINER_FIELD_TYPES, FIELD_TYPES, LIST_VALUED_FIELD_TYPES } from './types.js'
+import type { FieldDef } from './types.js'
 import { validateSchema } from './validate.js'
 
 /**
@@ -177,5 +179,83 @@ describe('a configured grid in a version 1 document', () => {
     // be told about both rather than fixing one and hitting the other.
     const errors = errorsFor(documentWith([grid({ columns: [{ field: 'item' }] })], '1'))
     expect(errors.join('\n')).toMatch(/specVersion "2"/)
+  })
+})
+
+describe('datagridColumns', () => {
+  const repeater = {
+    key: 'items',
+    type: 'repeater',
+    fields: [
+      { key: 'name', type: 'text', label: 'Item name' },
+      { key: 'qty', type: 'number', label: 'Quantity' },
+      { key: 'note', type: 'text', label: 'Note' },
+    ],
+  } as unknown as FieldDef
+
+  test('puts the configured columns first, in the order they were written', () => {
+    // The plan lives here rather than in each renderer for the reason
+    // `narrowOptionsByLabel` does: a grid that ordered its columns one way in React and
+    // another in Angular would be two different forms from one document, and nothing
+    // would fail -- each renderer's tests would be green against its own ordering.
+    const plan = datagridColumns(repeater, [{ field: 'qty' }, { field: 'name' }])
+
+    expect(plan.map((entry) => entry.key)).toEqual(['qty', 'name', 'note'])
+  })
+
+  test('appends a child no column names, rather than dropping it', () => {
+    // 0066: a column list is an ordering, not a choice of which answers to keep. A child
+    // left out of the grid would be an answer nobody can give, which is the failure
+    // `unreferencedPaths` exists for.
+    const plan = datagridColumns(repeater, [{ field: 'name' }])
+
+    expect(plan.map((entry) => entry.key)).toEqual(['name', 'qty', 'note'])
+    expect(plan[1]?.column).toBeUndefined()
+    expect(plan[2]?.column).toBeUndefined()
+  })
+
+  test('hands back the column and the child together, so a renderer looks nothing up', () => {
+    const plan = datagridColumns(repeater, [{ field: 'qty', width: 2, align: 'end' }])
+
+    expect(plan[0]?.column).toEqual({ field: 'qty', width: 2, align: 'end' })
+    expect(plan[0]?.child?.label).toBe('Quantity')
+  })
+
+  test('survives a column naming a child that is gone', () => {
+    // `validateSchema` refuses this, but a renderer is handed documents it did not
+    // validate -- the builder edits one between keystrokes. A column with no child keeps
+    // its place and carries `undefined`, so the renderer draws an empty cell rather than
+    // reading a property of nothing.
+    const plan = datagridColumns(repeater, [{ field: 'deleted' }])
+
+    expect(plan[0]?.key).toBe('deleted')
+    expect(plan[0]?.child).toBeUndefined()
+    expect(plan.map((entry) => entry.key)).toEqual(['deleted', 'name', 'qty', 'note'])
+  })
+
+  test('a repeater with no columns still shows every child', () => {
+    expect(datagridColumns(repeater, []).map((entry) => entry.key)).toEqual([
+      'name',
+      'qty',
+      'note',
+    ])
+  })
+})
+
+describe('belongsToColumn', () => {
+  test('matches the column’s own leaf and everything under it', () => {
+    expect(belongsToColumn('items[0].name', 'items[0]', 'name')).toBe(true)
+    expect(belongsToColumn('items[0].name.first', 'items[0]', 'name')).toBe(true)
+    expect(belongsToColumn('items[0].name[2]', 'items[0]', 'name')).toBe(true)
+  })
+
+  test('does not let one child swallow another whose key starts the same way', () => {
+    // The bug a bare `startsWith` would have: `name` taking `nameOnCard` with it, so one
+    // column holds two answers and the column after it is short by one.
+    expect(belongsToColumn('items[0].nameOnCard', 'items[0]', 'name')).toBe(false)
+  })
+
+  test('does not reach into another row', () => {
+    expect(belongsToColumn('items[1].name', 'items[0]', 'name')).toBe(false)
   })
 })

@@ -76,12 +76,50 @@ export const STARTER_SCHEMA = {
         minItems: 1,
         addLabel: 'Add item',
         removeLabel: 'Remove item',
+        // No widget, on purpose: this is the repeater as STACKED ROWS, and the
+        // `recipients` repeater below is the same construct with
+        // `widget: 'datagrid'`. Two of them, side by side in one form, because the
+        // widget's whole claim is that it changes how a repeater LOOKS and nothing
+        // about what it collects -- and that claim is worth being able to see rather
+        // than only read.
         fields: [
           { key: 'name', type: 'text', label: { $t: 'items.name' }, required: true },
           { key: 'qty', type: 'number', label: { $t: 'items.qty' }, min: 1 },
           { key: 'unitPrice', type: 'number', label: { $t: 'items.unitPrice' } },
           // Computed per row, and never typed into.
           { key: 'lineTotal', type: 'number', label: { $t: 'items.lineTotal' } },
+        ],
+      },
+
+      // The same construct as `items` above, with `widget: 'datagrid'`. Three short
+      // answers per row, deliberately: a grid earns its keep when the columns line up
+      // and the values are narrow enough to scan down, and it earns nothing when four
+      // wide answers are squeezed into a pane. `items` stays stacked so both readings
+      // are on the page at once.
+      {
+        key: 'recipients',
+        type: 'repeater',
+        label: { $t: 'recipients' },
+        minItems: 1,
+        addLabel: 'Add recipient',
+        removeLabel: 'Remove recipient',
+        widget: 'datagrid',
+        // `width` is a ratio, never a length: a length in a document would be the format
+        // choosing the consumer's design system for them. A name needs the room; an
+        // amount does not, and `align: 'end'` lines the figures up on their last digit.
+        //
+        // `note` is in no column at all, and that is the demonstration: a child a column
+        // does not name still collects, so it still gets a column, appended in
+        // declaration order. Delete a column here and the answer keeps its place rather
+        // than vanishing.
+        columns: [
+          { field: 'who', width: 3 },
+          { field: 'amount', width: 1, align: 'end', header: 'CHF' },
+        ],
+        fields: [
+          { key: 'who', type: 'text', label: { $t: 'recipients.who' }, required: true },
+          { key: 'amount', type: 'number', label: { $t: 'recipients.amount' }, min: 10 },
+          { key: 'note', type: 'text', label: { $t: 'recipients.note' } },
         ],
       },
 
@@ -221,6 +259,7 @@ export const STARTER_SCHEMA = {
               ],
             },
             { kind: 'field', path: 'items' },
+        { kind: 'field', path: 'recipients' },
             { kind: 'field', path: 'voucher' },
           ],
         },
@@ -333,6 +372,10 @@ export const STARTER_SCHEMA = {
         emailCode: 'Your email as a code',
         confirmedAt: 'Confirmed at',
         items: 'Items',
+        recipients: 'Who the cards are for',
+        'recipients.who': 'Recipient',
+        'recipients.amount': 'Amount',
+        'recipients.note': 'Note',
         'items.name': 'Name',
         'items.qty': 'Quantity',
         'items.unitPrice': 'Unit price',
@@ -374,6 +417,10 @@ export const STARTER_SCHEMA = {
         emailCode: 'Ihre E-Mail als Code',
         confirmedAt: 'Bestätigt am',
         items: 'Positionen',
+        recipients: 'Für wen die Karten sind',
+        'recipients.who': 'Empfängerin',
+        'recipients.amount': 'Betrag',
+        'recipients.note': 'Notiz',
         'items.name': 'Bezeichnung',
         'items.qty': 'Menge',
         'items.unitPrice': 'Einzelpreis',
@@ -410,6 +457,10 @@ export const STARTER_SCHEMA = {
         postcode: 'Code postal',
         city: 'Localité',
         items: 'Postes',
+        recipients: 'Pour qui sont les cartes',
+        'recipients.who': 'Destinataire',
+        'recipients.amount': 'Montant',
+        'recipients.note': 'Note',
         extras: 'Ajouter à votre commande',
         'extras.giftwrap': 'Emballage cadeau',
       },

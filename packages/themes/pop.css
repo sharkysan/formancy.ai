@@ -1298,3 +1298,256 @@
     color: HighlightText;
   }
 }
+
+
+/* `widget: "datagrid"` -- a repeater's rows drawn as a grid instead of as blocks.
+
+   Divs and CSS grid, not a <table>. Measured against the accessible-name
+   implementation this repository installs: a `<th scope="col">` contributes NOTHING to
+   the name of a control in its column, and neither does a `headers=` target. So the
+   table earns no name for its cells, the per-cell label has to stay either way, and the
+   table would only add a header echo on every cell. The reasoning is in
+   0075-a-datagrid-is-drawn-not-tabulated.md. */
+[data-formancy-theme='pop'] [data-formancy-part='datagrid'] {
+  display: grid;
+  /* The document's ratios when it gave any, else an even share each. A custom property
+     rather than an enumerated attribute, because a column's `width` is a number with
+     `exclusiveMinimum: 0` -- 1.5 is legal and nothing bounds it from above, so no
+     attribute could enumerate the value space. The trailing `auto` is this theme's own
+     track for the row buttons; the document never describes it. */
+  grid-template-columns:
+    var(--fm-datagrid-columns, repeat(var(--fm-datagrid-count, 1), minmax(0, 1fr)))
+    auto;
+  gap: 0.25rem 0.75rem;
+  align-items: start;
+  margin-block-end: var(--fm-step);
+}
+
+/* The count, for a grid whose author sized nothing. Enumerated the way the table
+   layout's columns already are. Past the last one it falls back to a single column and
+   stacks, which is a degradation rather than a break. */
+[data-formancy-theme='%(t)s'] [data-formancy-part='datagrid'][data-columns='1'] { --fm-datagrid-count: 1; }
+[data-formancy-theme='%(t)s'] [data-formancy-part='datagrid'][data-columns='2'] { --fm-datagrid-count: 2; }
+[data-formancy-theme='%(t)s'] [data-formancy-part='datagrid'][data-columns='3'] { --fm-datagrid-count: 3; }
+[data-formancy-theme='%(t)s'] [data-formancy-part='datagrid'][data-columns='4'] { --fm-datagrid-count: 4; }
+[data-formancy-theme='%(t)s'] [data-formancy-part='datagrid'][data-columns='5'] { --fm-datagrid-count: 5; }
+[data-formancy-theme='%(t)s'] [data-formancy-part='datagrid'][data-columns='6'] { --fm-datagrid-count: 6; }
+[data-formancy-theme='%(t)s'] [data-formancy-part='datagrid'][data-columns='7'] { --fm-datagrid-count: 7; }
+[data-formancy-theme='%(t)s'] [data-formancy-part='datagrid'][data-columns='8'] { --fm-datagrid-count: 8; }
+
+/* Every row and the heading strip land on the CONTAINER's tracks, which is what keeps
+   the columns true across rows -- the one thing stacked rows cannot do. Measured in a
+   browser: the heading strip's columns and a row's columns at identical x positions. */
+[data-formancy-theme='pop'] [data-formancy-part='datagrid-head'],
+[data-formancy-theme='pop'] [data-formancy-part='datagrid-row'] {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+}
+
+/* A column heading is static text that names nothing, which is what lets this whole
+   strip be deleted at phone width without changing what any control announces. */
+[data-formancy-theme='pop'] [data-formancy-part='datagrid-heading'] {
+  font-family: var(--fm-sans);
+  font-size: 0.8125rem;
+  line-height: 1.3;
+  color: var(--fm-muted);
+  padding-block-end: 0.25rem;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='datagrid-cell'] {
+  /* A grid item's default `min-width: auto` lets a long answer push the grid wider than
+     its container, exactly as `minmax(0, 1fr)` prevents for the tracks. */
+  min-width: 0;
+}
+
+/* The author's alignment, on the cell and its heading together: `end` means the
+   column's values line up against the end, so the control, its error and its hidden
+   label all have to move. */
+[data-formancy-theme='pop']
+  :is([data-formancy-part='datagrid-cell'], [data-formancy-part='datagrid-heading'])[data-align='end'] {
+  text-align: end;
+}
+
+[data-formancy-theme='pop']
+  :is([data-formancy-part='datagrid-cell'], [data-formancy-part='datagrid-heading'])[data-align='center'] {
+  text-align: center;
+}
+
+/* The label is CLIPPED and never removed. Measured: `display: none` and
+   `visibility: hidden` both compute the control's accessible name to "" -- the label
+   stops naming it -- while clipping keeps the name and takes only the box. The heading
+   above cannot take over, because a heading names nothing. */
+[data-formancy-theme='pop'] [data-formancy-part='datagrid-cell'] [data-formancy-part='label'] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* One cell for all of a row's buttons, because a row has two of them at the ends and
+   three in between -- a count a column track cannot hold without announcing a blank. */
+[data-formancy-theme='pop'] [data-formancy-part='datagrid-actions'] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  align-items: start;
+  /* Wrapping rather than a wide track, because the NAMES cannot shrink: they carry the
+     row's position so a screen-reader user knows which row a button acts on without
+     walking the tree (0068), and the visible text has to stay inside the accessible
+     name (WCAG 2.5.3). Measured in the playground's narrow preview: the buttons on one
+     line took 180px of a 446px grid -- 40 per cent of the width, for three controls
+     nobody reads down a column. */
+  max-width: 12ch;
+}
+
+/* 1.4.10 Reflow, the same 40rem this theme's table layout uses, so a form holding both
+   does not collapse in two places. The grid becomes one column, the heading strip goes
+   -- it named nothing, so nothing is lost to a screen reader -- and every label comes
+   back, which is why the label was clipped rather than removed. */
+@media (max-width: 40rem) {
+  [data-formancy-theme='pop'] [data-formancy-part='datagrid'],
+  [data-formancy-theme='pop'] [data-formancy-part='datagrid-row'] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  [data-formancy-theme='pop'] [data-formancy-part='datagrid-head'] {
+    display: none;
+  }
+
+  [data-formancy-theme='pop'] [data-formancy-part='datagrid-cell'] [data-formancy-part='label'] {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+    white-space: normal;
+  }
+
+  /* Alignment is a column thing. With one column there are no columns to line up
+     against, and a right-aligned answer over a left-aligned label reads as a mistake. */
+  [data-formancy-theme='pop'] [data-formancy-part='datagrid-cell'][data-align] {
+    text-align: start;
+  }
+}
+
+/* The row buttons as marks rather than sentences, inside a grid only.
+
+   WHY IT IS ALLOWED TO BE AN ICON. WCAG 2.5.3 (Label in Name) binds the accessible name
+   to the VISIBLE text, and an icon-only control has none -- so the name stays the whole
+   sentence the renderer wrote, "Remove recipient 1 of 1", which is what 0068 put the
+   row's position into. 1.1.1 is satisfied by that same name.
+
+   WHY THE TEXT IS CLIPPED AND NOT REMOVED. `display: none` and `visibility: hidden` both
+   compute the button's accessible name to the empty string -- measured, the same
+   measurement the cell labels rest on. A button called nothing is worse than a wide one.
+
+   WHY THE MARK IS DRAWN IN currentColor. A background-image disappears in forced-colours
+   mode and the button becomes blank; borders and backgrounds that inherit the text
+   colour are re-coloured by the system instead, so the mark survives. Nothing here is a
+   character either: generated text content can reach the accessible name, and this name
+   is already correct.
+
+   Only inside a datagrid. Stacked rows have the room for the sentence, and a form that
+   showed a bare cross where a line of text would fit is harder to use, not easier. */
+[data-formancy-theme='pop'] [data-formancy-part='datagrid-actions'] [data-formancy-part='row-action-text'] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+[data-formancy-theme='pop']
+  [data-formancy-part='datagrid-actions']
+  :is(
+    [data-formancy-part='row-remove'],
+    [data-formancy-part='row-up'],
+    [data-formancy-part='row-down']
+  ) {
+  position: relative;
+  /* 2.5.8 Target Size (Minimum) is 24 by 24 CSS pixels, and this is the AA floor rather
+     than a taste: these three sit next to each other, so the spacing exception does not
+     rescue a smaller one. */
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  /* 1.4.11 Non-text Contrast wants 3:1 for the mark against what is behind it. The mark
+     is currentColor, so it is the button's own text colour, which every theme here
+     already sets against its own surface for readable text -- a stricter ratio than
+     3:1. */
+  color: var(--fm-muted);
+  background: none;
+  border: 1px solid currentColor;
+  border-radius: var(--fm-radius, 0.25rem);
+  cursor: pointer;
+}
+
+[data-formancy-theme='pop']
+  [data-formancy-part='datagrid-actions']
+  :is(
+    [data-formancy-part='row-remove'],
+    [data-formancy-part='row-up'],
+    [data-formancy-part='row-down']
+  ):hover {
+  color: var(--fm-ink, currentColor);
+}
+
+/* A cross, as two bars crossing. `content: ''` on purpose: a character here would be
+   generated text, and generated text can reach the accessible name -- which is already
+   the right sentence and must not gain a glyph in front of it. */
+[data-formancy-theme='pop'] [data-formancy-part='datagrid-actions'] [data-formancy-part='row-remove']::before,
+[data-formancy-theme='pop'] [data-formancy-part='datagrid-actions'] [data-formancy-part='row-remove']::after {
+  content: '';
+  position: absolute;
+  inline-size: 0.625rem;
+  block-size: 1px;
+  background: currentColor;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='datagrid-actions'] [data-formancy-part='row-remove']::before {
+  transform: rotate(45deg);
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='datagrid-actions'] [data-formancy-part='row-remove']::after {
+  transform: rotate(-45deg);
+}
+
+/* A chevron, as two sides of a square turned on its corner. Same reasoning: no glyph,
+   no image, currentColor so forced colours re-colour it rather than erase it. */
+[data-formancy-theme='pop'] [data-formancy-part='datagrid-actions'] :is([data-formancy-part='row-up'], [data-formancy-part='row-down'])::before {
+  content: '';
+  inline-size: 0.4375rem;
+  block-size: 0.4375rem;
+  border-inline-start: 1px solid currentColor;
+  border-block-start: 1px solid currentColor;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='datagrid-actions'] [data-formancy-part='row-up']::before {
+  transform: translateY(1px) rotate(45deg);
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='datagrid-actions'] [data-formancy-part='row-down']::before {
+  transform: translateY(-2px) rotate(-135deg);
+}
+
+/* Forced colours: the system repaints text and borders and drops backgrounds, so a mark
+   made of borders and currentColor survives on its own. Said out loud rather than
+   assumed, because it is the property that made borders the right choice. */
+@media (forced-colors: active) {
+  [data-formancy-theme='pop']
+    [data-formancy-part='datagrid-actions']
+    :is(
+      [data-formancy-part='row-remove'],
+      [data-formancy-part='row-up'],
+      [data-formancy-part='row-down']
+    ) {
+    color: ButtonText;
+    border-color: ButtonText;
+  }
+}

@@ -48,7 +48,9 @@ describe('the starter schema', () => {
    * longer a widget at all, so the list cannot rot in the other direction.
    */
   const NOT_DEMONSTRATED_YET: Readonly<Record<string, string>> = {
-    datagrid: 'The grid control is not built: a repeater with this widget still renders as stacked rows.',
+    // Empty, and it has been every entry in turn: `toggle`, then `scanner`, then
+    // `typeahead`, and `datagrid` last. Kept rather than deleted, because the next
+    // widget to be named before its control exists needs somewhere honest to sit.
   }
 
   test('demonstrates every widget, or says why not', () => {
