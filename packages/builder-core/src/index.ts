@@ -7,7 +7,14 @@ export type {
   AuthoringResult,
 } from './authoring.js'
 export { createBuilderSession } from './session.js'
-export type { BuilderSession, CommandOutcome, Location, Refusal } from './session.js'
+export type {
+  BuilderSession,
+  CatalogueFile,
+  CommandOutcome,
+  ImportReport,
+  Location,
+  Refusal,
+} from './session.js'
 export {
   LAYOUT_CONTAINER_KINDS,
   childrenAt as layoutChildrenAt,

@@ -1,6 +1,7 @@
 import type { FieldDef, FormSchema } from '@formancy/spec'
 import { describe, expect, test } from 'vitest'
 import { createBuilderSession } from './session.js'
+import type { BuilderSession } from './session.js'
 
 /** A form with every structural situation the builder has to handle: pages,
  *  a group, a repeater, choice options and a logic rule. */
@@ -643,5 +644,157 @@ describe('extracting every text in a document', () => {
     expect(session.extractAllText().ok).toBe(true)
 
     expect(session.document()).toEqual(after)
+  })
+})
+
+describe('handing a catalogue to somebody outside the builder', () => {
+  /*
+   * The last of translation, and the one a team with a vendor actually needs: a
+   * translator with a translation memory works in a file, not in a table in
+   * somebody's admin.
+   *
+   * What a file has to carry is the SOURCE as well as the target. A catalogue of
+   * ids and blanks tells a translator nothing — `country.option.CH` is the
+   * schema's name for a thing, not the thing — and a vendor's memory matches on
+   * the source text. So an export carries both, and an import reads back only
+   * what it is asked to.
+   */
+  const translated = (): BuilderSession => {
+    const session = createBuilderSession({
+      specVersion: '3',
+      id: 'trip',
+      title: 'Trip',
+      model: {
+        fields: [
+          { key: 'email', type: 'text', label: 'Work email' },
+          { key: 'note', type: 'textarea', label: 'Anything else?' },
+        ],
+      },
+    })
+    session.extractAllText('en')
+    session.addLocale('fr')
+    session.setMessage('fr', 'email.label', 'Adresse professionnelle')
+    return session
+  }
+
+  test('an export carries the source beside the target, or it is unusable', () => {
+    const file = translated().exportCatalogue('fr')
+
+    expect(file.locale).toBe('fr')
+    expect(file.defaultLocale).toBe('en')
+    expect(file.messages).toEqual([
+      { id: 'email.label', source: 'Work email', target: 'Adresse professionnelle' },
+      // Present with an empty target rather than absent: a translator needs the
+      // list of what is left, and a file that omits them is a file that says the
+      // language is finished.
+      { id: 'note.label', source: 'Anything else?', target: '' },
+    ])
+  })
+
+  test('an import writes the targets and touches nothing else', () => {
+    const session = translated()
+
+    const outcome = session.importCatalogue({
+      locale: 'fr',
+      defaultLocale: 'en',
+      messages: [
+        { id: 'email.label', source: 'Work email', target: 'Courriel professionnel' },
+        { id: 'note.label', source: 'Anything else?', target: 'Autre chose ?' },
+      ],
+    })
+
+    expect(outcome.ok).toBe(true)
+    const document = session.document()
+    expect(document.i18n?.messages['fr']).toEqual({
+      'email.label': 'Courriel professionnel',
+      'note.label': 'Autre chose ?',
+    })
+    // The default locale is the source of truth for what the form says, and an
+    // import is a translation rather than an edit to the form.
+    expect(document.i18n?.messages['en']?.['email.label']).toBe('Work email')
+  })
+
+  test('an empty target does not erase a translation that is already there', () => {
+    // A vendor returning a partial file is normal. Writing its blanks over work
+    // already done is the kind of loss nobody notices until the form is live.
+    const session = translated()
+
+    session.importCatalogue({
+      locale: 'fr',
+      defaultLocale: 'en',
+      messages: [{ id: 'email.label', source: 'Work email', target: '' }],
+    })
+
+    expect(session.document().i18n?.messages['fr']?.['email.label']).toBe(
+      'Adresse professionnelle',
+    )
+  })
+
+  test('a message the form no longer has is reported rather than written', () => {
+    // The file was exported before somebody deleted a field. Writing it back
+    // would resurrect a message as an orphan and make the count of what is left
+    // to translate wrong forever.
+    const session = translated()
+
+    const outcome = session.importCatalogue({
+      locale: 'fr',
+      defaultLocale: 'en',
+      messages: [
+        { id: 'email.label', source: 'Work email', target: 'Courriel' },
+        { id: 'gone.label', source: 'Removed question', target: 'Question supprimée' },
+      ],
+    })
+
+    expect(outcome.ok).toBe(true)
+    expect(session.document().i18n?.messages['fr']?.['gone.label']).toBeUndefined()
+    expect(session.lastImportReport()?.unknown).toEqual(['gone.label'])
+    expect(session.lastImportReport()?.written).toBe(1)
+  })
+
+  test('a source that has changed since the export is reported, and still written', () => {
+    // The question was reworded while the file was out. The translation is of the
+    // OLD wording, so it is written -- something is better than nothing and the
+    // translator may be right -- and named, because it is the one a reviewer has
+    // to look at.
+    const session = translated()
+    session.setMessage('en', 'email.label', 'Email at work')
+
+    session.importCatalogue({
+      locale: 'fr',
+      defaultLocale: 'en',
+      messages: [{ id: 'email.label', source: 'Work email', target: 'Courriel' }],
+    })
+
+    expect(session.document().i18n?.messages['fr']?.['email.label']).toBe('Courriel')
+    expect(session.lastImportReport()?.stale).toEqual(['email.label'])
+  })
+
+  test('an import is one undoable step', () => {
+    const session = translated()
+    const before = session.document()
+
+    session.importCatalogue({
+      locale: 'fr',
+      defaultLocale: 'en',
+      messages: [
+        { id: 'email.label', source: 'Work email', target: 'Courriel' },
+        { id: 'note.label', source: 'Anything else?', target: 'Autre chose ?' },
+      ],
+    })
+    session.undo()
+
+    expect(session.document()).toEqual(before)
+  })
+
+  test('a file for a locale the form does not have yet starts it', () => {
+    const session = translated()
+
+    session.importCatalogue({
+      locale: 'it',
+      defaultLocale: 'en',
+      messages: [{ id: 'email.label', source: 'Work email', target: 'Email di lavoro' }],
+    })
+
+    expect(session.document().i18n?.messages['it']?.['email.label']).toBe('Email di lavoro')
   })
 })

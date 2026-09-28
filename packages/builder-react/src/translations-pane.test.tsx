@@ -195,3 +195,63 @@ describe('seeing the language being translated', () => {
     expect(session.document()).toBe(before)
   })
 })
+
+describe('taking a catalogue out and bringing it back', () => {
+  /*
+   * A team with a translation vendor works in a file. The pane's table is for
+   * somebody translating in the product; this is for somebody who is not in the
+   * product at all.
+   *
+   * jsdom has no download and no file picker worth driving, so what these hold is
+   * the part that is ours: the file the pane produces, and what it does with one
+   * handed back. The click that saves it is one line of DOM and is not what goes
+   * wrong.
+   */
+  const ready = (): ReturnType<typeof createBuilderSession> => {
+    const session = createBuilderSession(untranslated)
+    session.extractAllText('en')
+    session.addLocale('fr')
+    render(<TranslationsPane session={session} />)
+    return session
+  }
+
+  test('the file offered carries the source beside every target', async () => {
+    const user = userEvent.setup()
+    const session = ready()
+    await user.selectOptions(screen.getByRole('combobox', { name: /language/i }), 'fr')
+
+    // Read off the session rather than off a download: the button hands this
+    // exact object to the browser, and asserting the object is asserting what
+    // leaves the building.
+    const file = session.exportCatalogue('fr')
+
+    expect(screen.getByRole('button', { name: /download/i })).toBeTruthy()
+    expect(file.messages.map((message) => message.source)).toEqual([
+      'Work email',
+      'Anything else?',
+    ])
+  })
+
+  test('a returned file is applied, and what was odd about it is shown', async () => {
+    const user = userEvent.setup()
+    const session = ready()
+    await user.selectOptions(screen.getByRole('combobox', { name: /language/i }), 'fr')
+
+    // The same call the file input makes once it has read the bytes.
+    session.importCatalogue({
+      locale: 'fr',
+      defaultLocale: 'en',
+      messages: [
+        { id: 'email.label', source: 'Work email', target: 'Courriel' },
+        { id: 'gone.label', source: 'Gone', target: 'Parti' },
+      ],
+    })
+    render(<TranslationsPane session={session} />)
+
+    expect(session.document().i18n?.messages['fr']?.['email.label']).toBe('Courriel')
+    // Shown rather than counted silently: an id the form no longer has means the
+    // file was exported before somebody deleted a field, and a reviewer has to
+    // know which one.
+    expect(screen.getAllByText(/gone\.label/).length).toBeGreaterThan(0)
+  })
+})
