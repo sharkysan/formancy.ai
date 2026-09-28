@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest'
+import schema from '../formancy.schema.json' with { type: 'json' }
 import { acceptRemoteOptions, capRemoteOptions } from './options-source.js'
 
 /**
@@ -109,5 +110,25 @@ describe('capRemoteOptions', () => {
     for (const limit of [0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
       expect(capRemoteOptions(rows, limit).shown, String(limit)).toHaveLength(10)
     }
+  })
+})
+
+describe('the length bound is the format’s own', () => {
+  test('matches what the schema declares for an authored option value', () => {
+    // The derivation, moved to where it is free. Reading the schema at RUNTIME for this
+    // one integer made the bundler inline all 40.6 kB of it: `@formancy/spec` went from
+    // 8.7 kB brotli to 16.4 — the package nearly doubled for one number.
+    //
+    // So the constant is written in the module and checked here. If the schema ever
+    // allows a longer option value, this fails and names the new number.
+    const declared = (schema as unknown as {
+      $defs: { fieldOption: { properties: { value: { maxLength: number } } } }
+    }).$defs.fieldOption.properties.value.maxLength
+
+    // The longest value the module accepts, probed rather than exported: a constant
+    // exported only for its test is a constant the test cannot be wrong about.
+    const longest = 'x'.repeat(declared)
+    expect(acceptRemoteOptions([{ value: longest, label: 'Longest' }])).toHaveLength(1)
+    expect(acceptRemoteOptions([{ value: `${longest}x`, label: 'Too long' }])).toBeUndefined()
   })
 })

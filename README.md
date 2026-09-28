@@ -7,7 +7,7 @@
   <a href="https://www.npmjs.com/package/@formancy/core"><img src="https://img.shields.io/npm/v/%40formancy%2Fcore?style=flat&amp;label=npm&amp;color=a8f5ca&amp;labelColor=102b29" alt="npm version: @formancy/core" /></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-a8f5ca?style=flat&amp;labelColor=102b29" alt="License: Apache-2.0" /></a>
   <a href="#development"><img src="https://img.shields.io/badge/node-%3E%3D22.12.0-a8f5ca?style=flat&amp;labelColor=102b29" alt="Node.js: >=22.12.0" /></a>
-  <a href="#formancy"><img src="https://img.shields.io/badge/status-pre--alpha-a8f5ca?style=flat&amp;labelColor=102b29" alt="Status: pre-alpha" /></a>
+  <a href="#formancy"><img src="https://img.shields.io/badge/status-beta-a8f5ca?style=flat&amp;labelColor=102b29" alt="Status: beta" /></a>
 </p>
 
 A modern, self-hostable form engine and backend — for React and Angular.
@@ -26,22 +26,28 @@ A modern, self-hostable form engine and backend — for React and Angular.
 places**, so what the person filling it in was told and what your server
 accepts can never drift apart.
 
-> **Status: pre-alpha, version 0.1.0.**
+> **Status: beta, version 0.2.0.**
 >
-> **Spec version 2.** A form document written against version 1 keeps working
-> and its submissions keep their shape — version 2 only adds, so upgrading is
-> one line and nothing rebinds
-> ([0051](./docs/decisions/0051-spec-2-adds-types.md)). The
-> **package APIs are not frozen** — they will change before 1.0.
-> Ten packages are on npm under the
-> [`@formancy`](https://www.npmjs.com/org/formancy) scope at `0.1.0`, published
-> from CI with provenance.
+> **Both spec versions are frozen.** Version 2 only adds, so a version 1 document
+> keeps working and its submissions keep their shape — upgrading is one line and
+> nothing rebinds ([0051](./docs/decisions/0051-spec-2-adds-types.md)).
+> [`MIGRATIONS.md`](./MIGRATIONS.md) lists what version 2 added and what freezing
+> it costs: an async validator and a `signature` type are now spec 3.
+>
+> **The package APIs are not frozen** — they will change before 1.0. They are
+> published to npm from CI with provenance under the
+> [`@formancy`](https://www.npmjs.com/org/formancy) scope. `0.2.0` is the first
+> release that reads version 2: `0.1.0` predates spec versioning and pins
+> documents to `{ "const": "1" }`, so it refuses a version 2 document rather than
+> ignoring the property. If npm gives you `0.1.0`, write `specVersion: "1"`.
 >
 > The server is not ready for a public deployment. It has authentication,
 > role-based authorization, forms that are private until opened, per-IP rate
 > limits, a request body cap, a publish-time check that refuses regular
-> expressions which can be made to backtrack, an audit log and a proof-of-work
-> challenge for anonymous submissions — but no submission tokens yet.
+> expressions which can be made to backtrack, an audit log, drafts that carry
+> their own key and a proof-of-work challenge for anonymous submissions — but no
+> submission tokens yet, and it writes no log at all, so nothing tells you why a
+> request failed.
 
 ## See it
 
@@ -389,23 +395,28 @@ cut, and what the pipeline signs and attests.
 Releases are published from CI with npm provenance, and each one carries a
 CycloneDX SBOM signed with cosign.
 
-**0.1.0 is on npm.** Ten packages under the
-[`@formancy`](https://www.npmjs.com/org/formancy) scope —
-`@formancy/spec`, `@formancy/expressions`, `@formancy/core`,
-`@formancy/react`, `@formancy/angular`, `@formancy/conformance`,
-`@formancy/builder-core`, `@formancy/server-core`, `@formancy/server` and
-`@formancy/themes` — each carrying a SLSA v1 provenance attestation that
-binds the tarball to the workflow run, commit and repository that built it.
-There is no signing key, so there is none to leak. Check one yourself:
+**`0.2.0` is the beta.** Every package under the
+[`@formancy`](https://www.npmjs.com/org/formancy) scope moves on one version
+number, so any two of them at the same version are known to work together — which
+is what makes the support matrix size one
+([0009](./docs/decisions/0009-independent-spec-version.md)). Each tarball carries
+a SLSA v1 provenance attestation binding it to the workflow run, commit and
+repository that built it. There is no signing key, so there is none to leak.
+Check one yourself:
 
 ```bash
 npm install @formancy/core
 npm audit signatures
 ```
 
-`@formancy/builder-react` is the one exception: it was written after 0.1.0 was
-cut and lands in the next release. Until then the builder is reachable by
-cloning the repository.
+The list of packages is not repeated here, because a list in prose goes stale and
+this one did: it said ten, and `@formancy/builder-react` — the package a
+prospective adopter most wants to see — was the exception that "lands in the next
+release". It lands in this one, along with `@formancy/challenge`,
+`@formancy/mcp` and `@formancy/tiptap`. The authoritative list is the composition
+table in
+[`SOUP-DECLARATION.md`](./docs/regulatory/SOUP-DECLARATION.md), which
+`apps/docs/src/soup.test.ts` checks against the manifests on every run.
 
 ## License
 

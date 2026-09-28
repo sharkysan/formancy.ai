@@ -29,10 +29,12 @@ yet, so for now the agreement is stated and unverified. If you want to contribut
 that exists, open an issue first and we will sort the paperwork out by hand rather than
 leave you guessing.
 
-## The project is pre-alpha, and that changes what is useful
+## The project is pre-1.0, and that changes what is useful
 
-The packages are on npm at `0.1.0` and their APIs will change. `specVersion: "2"` is
-implemented here and is not in a released package yet.
+The packages are published from CI and their APIs will change before 1.0. **Both spec
+versions are frozen**, so a change that would alter what a form document may contain is a
+new spec version and not a patch — see [`MIGRATIONS.md`](MIGRATIONS.md) before proposing
+one.
 
 Before writing code, **open an issue**. A pull request that arrives unannounced is likely
 to collide with something in flight or to solve a problem in a way a decision record

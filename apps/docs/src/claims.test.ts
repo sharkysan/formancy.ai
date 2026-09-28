@@ -161,3 +161,87 @@ describe('the documents a reader is expected to trust', () => {
     expect(offending).toEqual([])
   })
 })
+
+/**
+ * The spec-2 freeze, enforced rather than announced.
+ *
+ * `MIGRATIONS.md` says version 2 is frozen and lists what it added. A list in prose is
+ * the kind of claim this file exists for — except this one cannot rot by being *added
+ * to*, because after a freeze nothing is added. Which is exactly what makes it a gate:
+ * a new field type, layout kind or widget that reaches version 2 without appearing in
+ * that list is the freeze being broken, and this is what fails then.
+ *
+ * Derived from the code and the schema on one side and from the document on the other,
+ * so neither can be edited into agreement on its own.
+ */
+describe('the spec version 2 freeze', () => {
+  /** What version 2 adds to version 1, read out of the code and the document schema. */
+  const additions = (): { types: string[]; kinds: string[]; widgets: string[] } => {
+    const types = readFileSync(join(repo, 'packages', 'spec', 'src', 'types.ts'), 'utf8')
+    const list = (name: string): string[] => {
+      const found = new RegExp(`export const ${name}[^=]*=\\s*\\[([^\\]]*)\\]`, 's').exec(types)
+      return [...(found?.[1] ?? '').matchAll(/'([^']+)'/g)].map((match) => match[1] ?? '')
+    }
+
+    const inOne = new Set(list('SPEC_1_FIELD_TYPES'))
+    const kindsInOne = new Set(list('SPEC_1_LAYOUT_KINDS'))
+
+    // The layout kinds come from the document schema, which is where they are exhaustive:
+    // each branch of `layoutNode` declares its own `kind` as a const.
+    const schema = JSON.parse(
+      readFileSync(join(repo, 'packages', 'spec', 'formancy.schema.json'), 'utf8'),
+    ) as { $defs: Record<string, { oneOf?: Array<{ properties?: { kind?: { const?: string } } }> }> }
+    const kinds = (schema.$defs['layoutNode']?.oneOf ?? [])
+      .map((branch) => branch.properties?.kind?.const)
+      .filter((kind): kind is string => kind !== undefined)
+
+    return {
+      types: list('FIELD_TYPES').filter((type) => !inOne.has(type)),
+      kinds: kinds.filter((kind) => !kindsInOne.has(kind)),
+      widgets: list('FIELD_WIDGETS'),
+    }
+  }
+
+  /**
+   * One heading's worth of the document, and no more.
+   *
+   * The first version of this read the whole freeze section, and it PASSED with a sixth
+   * field type added to the code -- because that section's closing paragraph says
+   * `signature` is a spec 3 feature, which is the same word in the opposite claim. A
+   * substring search over a long enough section finds every word it looks for.
+   */
+  const under = (heading: string): string => {
+    const text = readFileSync(join(repo, 'MIGRATIONS.md'), 'utf8')
+    const start = text.indexOf(heading)
+    expect(start, `MIGRATIONS.md has no "${heading}" section`).toBeGreaterThan(-1)
+    // The next heading at the same level or above, so a `###` slice ends at the next one
+    // rather than at the end of the document.
+    const rest = text.slice(start + heading.length)
+    const next = /\n#{1,3} /.exec(rest)
+    return next === null ? rest : rest.slice(0, next.index)
+  }
+
+  test('names every field type, layout kind and widget that version 2 added', () => {
+    const { types, kinds, widgets } = additions()
+    // A guard on the guard: empty lists would pass forever, and version 2 added all three.
+    expect(types.length).toBeGreaterThan(0)
+    expect(kinds.length).toBeGreaterThan(0)
+    expect(widgets.length).toBeGreaterThan(0)
+
+    const text = under('### What version 2 added')
+    const missing = [...types, ...kinds, ...widgets].filter(
+      (name) => !text.includes(`\`${name}\``),
+    )
+    expect(missing).toEqual([])
+  })
+
+  test('says the version is frozen and what a version 1 document may not carry', () => {
+    // The properties, which are the half that caught people out: `widget`, a temporal
+    // bound and `optionsSource` are not types, and a version 1 reader refuses the whole
+    // document over any of them rather than ignoring it.
+    const text = under('### A property is as much a version as a type')
+    for (const property of ['widget', 'earliest', 'latest', 'optionsSource', 'span', 'columns']) {
+      expect(text, `the freeze does not mention \`${property}\``).toContain(`\`${property}\``)
+    }
+  })
+})

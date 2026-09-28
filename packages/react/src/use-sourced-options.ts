@@ -53,7 +53,7 @@ const MIN_QUERY = 0
 const MAX_ROWS = 50
 
 export function useSourcedOptions(
-  field: { def: FieldDef; value: unknown },
+  field: { def: FieldDef; value: unknown; path: string },
   query: string,
   /**
    * Whether this instance is the one that will render.
@@ -81,7 +81,11 @@ export function useSourcedOptions(
   const minQueryLength = source?.minQueryLength ?? MIN_QUERY
   const maxRows = source?.maxRows ?? MAX_ROWS
   const stored = typeof field.value === 'string' && field.value !== '' ? field.value : undefined
-  const path = field.def.key
+  // The field's DATA PATH, which is what `OptionsRequest.path` promises — `canton`, or
+  // `people[1].canton` inside a repeater. It sent `def.key` before, so a resolver could
+  // not tell two same-named sourced fields apart and never saw which row it was
+  // answering for. The contract said one thing and the code did another.
+  const path = field.path
 
   /*
    * The search. Debounced, and superseded by aborting rather than by ignoring: a
@@ -91,13 +95,22 @@ export function useSourcedOptions(
   const asked = useRef(0)
   useEffect(() => {
     if (!enabled || source === undefined) return
+
+    // Bumped BEFORE the early return, not after it. Deleting characters back under the
+    // minimum aborts whatever is in flight, and with the generation unchanged that
+    // abort arrived at a `.catch` that still believed it was current — so backspacing
+    // reported "The options could not be loaded" for a source that was working. It
+    // also left `busy` set, because the `.finally` that clears it is guarded the same
+    // way and the superseding request never started.
+    const generation = (asked.current += 1)
+
     if (query.trim().length < minQueryLength) {
       setRows([])
       setCapped(null)
+      setBusy(false)
       return
     }
 
-    const generation = (asked.current += 1)
     const controller = new AbortController()
     const timer = setTimeout(() => {
       setBusy(true)
@@ -145,12 +158,22 @@ export function useSourcedOptions(
   }, [enabled, source, name, path, query, minQueryLength, maxRows, debounceMs, engine])
 
   /*
-   * The names of what is already stored. Asked once per value, because the answer
-   * cannot change while the form is open and asking again on every render would make
-   * a control that reads a draft hammer a deployment's source.
+   * The names of what is already stored. Asked at most ONCE per value, and remembered
+   * as "asked" rather than inferred from the answer.
+   *
+   * That distinction is the whole of it. The first version asked again unless the
+   * answer contained the value — and a source is entitled not to know it: a resumed
+   * form may hold a value the list no longer offers, and a host may implement only
+   * `kind: 'search'`. The answer still replaced the map, a new map is a new dependency
+   * identity, the effect re-ran, and it asked again. Measured: **602 requests in 300
+   * milliseconds**, with no "maximum update depth" to notice it by, because every turn
+   * went through a promise.
    */
+  const askedFor = useRef<Set<string>>(new Set())
   useEffect(() => {
-    if (!enabled || source === undefined || stored === undefined || named.has(stored)) return
+    if (!enabled || source === undefined || stored === undefined) return
+    if (named.has(stored) || askedFor.current.has(stored)) return
+    askedFor.current.add(stored)
 
     const controller = new AbortController()
     void source

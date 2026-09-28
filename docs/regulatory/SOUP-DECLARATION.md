@@ -5,7 +5,7 @@ developed under IEC 62304, and who therefore has to record what this software
 is, what it needs, what it is known to get wrong, and what evidence exists that
 it works. Read [`MDR-CONTEXT.md`](MDR-CONTEXT.md) first.
 
-**This document describes version `0.1.0`.** Everything below is true of that
+**This document describes version `0.2.0`.** Everything below is true of that
 version and of no other. Pin an exact version; a range is not characterised
 software, and neither is `latest`.
 
@@ -17,9 +17,9 @@ software, and neither is `latest`.
 | Supplier | the formancy project (open source) |
 | Licence | Apache-2.0 for every package ([0002](../decisions/0002-apache-2-0.md)) |
 | Source | this repository, in full, including tests |
-| Package version | `0.1.0`, published to npm under the `@formancy` scope |
-| Spec version | `"2"` ([0051](../decisions/0051-spec-2-adds-types.md)). Version `"1"` is frozen and stays readable ([0042](../decisions/0042-freeze-the-spec.md)) |
-| Development stage | v0.1 released; pre-alpha. `@formancy/builder-react`, `@formancy/challenge` and `@formancy/mcp` are built and tested but not yet published |
+| Package version | `0.2.0`, published to npm under the `@formancy` scope |
+| Spec version | `"2"`, **frozen as of 0.2.0** ([0051](../decisions/0051-spec-2-adds-types.md)). Version `"1"` is frozen too and stays readable ([0042](../decisions/0042-freeze-the-spec.md)); what version 2 added and what freezing it costs are in [`MIGRATIONS.md`](../../MIGRATIONS.md) |
+| Development stage | beta. 0.1.0 was the first release and predates spec versioning: it pins documents to version 1 and refuses a version 2 document rather than ignoring the property. 0.2.0 is the first release that reads version 2 |
 | Integrity | each tarball carries a SLSA v1 provenance attestation issued by GitHub's OIDC identity for the workflow run that built it, plus a registry signature. Verify with `npm audit signatures`. The server image is published to GHCR and **signed by digest**, with the SBOM attached as a CycloneDX attestation — verify with `cosign verify` and `cosign verify-attestation` against the digest rather than the tag, since a tag is mutable. There is deliberately no `latest`, for the reason this table gives two rows down. The pipeline is described in [`RELEASING.md`](../../RELEASING.md) |
 
 The two version lines are independent and both matter. The package version
@@ -33,9 +33,9 @@ submissions*, which is the artefact with real switching costs.
 > document, and the failure is a validation error rather than a silent one
 > ([0051](../decisions/0051-spec-2-adds-types.md)).
 >
-> **The data format is stable; the code is not.** Spec version 1 is frozen, so
+> **The data format is stable; the code is not.** Both spec versions are frozen, so
 > a form document and the submissions stored against it keep their shape. The
-> *packages* are pre-release and their APIs will still change. A manufacturer
+> *packages* are pre-1.0 and their APIs will still change. A manufacturer
 > should read the two version lines separately: the one that governs stored
 > data is settled, the one that governs the software is not.
 
@@ -195,9 +195,10 @@ project's open-core line.
 
 ## Known anomalies and limitations
 
-IEC 62304 §7.1.2 asks for the supplier's published anomaly list. There is no
-released version and therefore no release-notes anomaly list yet; what follows
-is the honest equivalent.
+IEC 62304 §7.1.2 asks for the supplier's published anomaly list.
+[`CHANGELOG.md`](../../CHANGELOG.md) is it: every entry says what changed and why, and the
+defects found by review are named there rather than summarised away. What follows is what a
+manufacturer characterising `0.2.0` needs on one page.
 
 **Measured functional gaps.** Against the official CEL corpus: 2,344 cases
 total, 704 in scope and run, **586 passed and 118 failed**, 2 refused
@@ -210,31 +211,63 @@ expressions should read that file rather than this summary.
 
 - Nested repeaters are rejected ([0012](../decisions/0012-pages-scope-nothing.md)).
 - Pages below the top level are rejected.
-- Async validators, remote option sources, signature
-  and date-time types are **not implemented**. The type names are reserved, which
-  means adding them removes nothing and leaves every existing document valid —
-  but it does **not** mean a manufacturer can pick them up without a change of
-  version. A new field type raises the spec version, because a reader that speaks
-  the older one drops an answer it has never heard of rather than failing loudly
-  ([0051](../decisions/0051-spec-2-adds-types.md)). A pinned deployment therefore
-  keeps working untouched, and acquiring one of these types is a new spec version
-  and a re-characterisation. An earlier version of this line said "a compatible
-  change, not a breaking one", which read as though the second half were free.
+- A `datagrid` column may not name a group: a grid's rows are flat, because one heading
+  over several answers names none of them ([0078](../decisions/0078-a-grid-row-is-flat.md)).
 - Multi-tenancy is absent entirely.
 
-**Implemented since v0.1 and therefore NOT characterised by this document**:
-file uploads with a claim-and-collect lifecycle, webhook delivery through a
-transactional outbox with a per-destination circuit breaker, rate limiting,
-and a proof-of-work challenge on the public submission plane. A manufacturer
-pinning `0.1.0` does not have these; one pinning a later version needs a
-re-characterisation, which is what the version statement at the top of this
-document is for.
+### Reserved, and not implemented
 
-**Still absent and designed only**: virus scanning, resumable and multipart
-uploads, and presigned uploads that would keep bytes out of the server's own
-data path. An S3-compatible file store is implemented as of this commit and
-verified against a real Garage instance in a container; local disk remains the
-default and is the only one that needs no external service.
+Each name is reserved in the sense that nothing else may take it, and **reserving is not
+the same as being free to adopt.** Acquiring any of them is a new spec version and a
+re-characterisation: the document schema is closed, so a reader on the older version
+refuses a document carrying one rather than ignoring it
+([0051](../decisions/0051-spec-2-adds-types.md)). A pinned deployment therefore keeps
+working untouched.
+
+- `signature` — a drawn mark, stored as points rather than as a picture.
+- `async` — an asynchronous validator. `runsOn` already says *where* a check runs, so the
+  ordering question is answered; the property that would make a check asynchronous is not
+  in `logicRule`, which is `additionalProperties: false`.
+- `tagpicker` — several answers chosen from a list the document does not carry.
+
+An earlier version of this section listed remote option sources and the date-time types
+here. Both shipped — `time`, `datetime` and `optionsSource` are in spec 2 — and the
+sentence stayed, which would have told a manufacturer to leave out three features the
+software has. `apps/docs/src/soup.test.ts` now checks every name in this list against the
+format's own vocabulary, so it cannot happen again in that direction.
+
+### Characterised by this document, and new since 0.1.0
+
+`0.2.0` is the first release that reads `specVersion: "2"`. Everything version 2 added is
+listed in [`MIGRATIONS.md`](../../MIGRATIONS.md); the parts that change what a
+*deployment* has to think about are:
+
+- **File uploads** with a claim-and-collect lifecycle, and an S3-compatible store verified
+  against a real Garage instance in a container. Local disk remains the default and is the
+  only one that needs no external service.
+- **Webhook delivery** through a transactional outbox with a per-destination circuit
+  breaker, and SSRF defence that validates the resolved address and connects to it.
+- **Rate limiting** at four scopes, and a **proof-of-work challenge** on the public
+  submission plane. The rate limiter's default store is per process, so it is wrong behind
+  more than one replica — stated here because it is silent.
+- **Drafts carry their own key** ([0062](../decisions/0062-a-draft-carries-its-own-key.md)).
+  A draft written under 0.1.0 cannot be resumed, because no token was ever minted for it.
+- **`optionsSource`**: a select whose answers come from the deployment rather than the
+  document. The server asks the deployment whether a submitted value is offered and fails
+  **closed** if it cannot answer — and a source that declares no `members` function checks
+  nothing, which weakens the "an answer is one of the options" guarantee for that field.
+  Hazard A7 in [`SAFETY-ANALYSIS.md`](SAFETY-ANALYSIS.md) is the one to read.
+
+### Still absent, and designed only
+
+Virus scanning, resumable and multipart uploads, and presigned uploads that would keep
+bytes out of the server's own data path. Also a submission token bound to the form version,
+which is the gap that keeps the public plane off a public deployment.
+
+**The server writes no log.** Fastify is constructed with the logger off, so no submission
+content can reach a log — and nothing can tell an operator why a request failed either.
+There is no redaction configuration, so a deployment that adds a logger owns that question
+alone. Hazard C3 has the detail.
 
 **Accessibility**, stated precisely because vague claims here are worse than
 none: the conformance suite structurally requires that every control be
@@ -245,6 +278,12 @@ machine-detectable issues by Deque's own published figure, and only about 30%
 of WCAG 2.2 criteria are machine-testable at all. **No manual screen-reader
 audit has been performed, and no VPAT has been published.** A manufacturer
 requiring an accessibility conformance statement must perform that work.
+
+**Appearance is reviewed, not verified.** jsdom implements no layout, so no test here can
+ask where a box is, and no application in this repository renders the Angular bindings in a
+browser at all. Three layout defects have shipped and been found by somebody opening a page
+— hazards D4a and D4b have them by name. A manufacturer relying on visual correctness must
+verify it in the browsers it ships to.
 
 ## Verification evidence
 

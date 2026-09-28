@@ -14,9 +14,12 @@ work inside the monorepo instead, clone
 [the repository](https://github.com/sharkysan/formancy.ai) and run
 `pnpm install && pnpm build`.
 
-:::note[Pre-alpha]
-`0.1.0` is on npm with provenance, but the package APIs will change before 1.0.
-The *schema* is frozen at `specVersion: "1"`; the code around it is not.
+:::note[Beta]
+The packages are published with provenance, and their APIs will change before 1.0. The
+*document format* is frozen: `specVersion: "1"` and `"2"` both are, and version 2 only
+adds. `0.2.0` is the first release that reads version 2, so if npm gives you `0.1.0`,
+write `specVersion: "1"` — it refuses a version 2 document rather than ignoring the
+property.
 :::
 
 formancy's Angular binding targets **Angular 22** and is **zoneless**: it never

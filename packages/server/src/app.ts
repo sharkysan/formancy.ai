@@ -35,6 +35,7 @@ import type {
   AuthDeps,
   Role,
   ServerDeps,
+  ServerOptionsSources,
   Storage,
 } from '@formancy/server-core'
 import { createSessionTokens, realRandomToken, realSecretHashing } from './auth-runtime.js'
@@ -66,6 +67,20 @@ export interface AppOptions {
    * 404 rather than failing.
    */
   challengeSecret?: string
+  /**
+   * The lists a form document may name with `optionsSource`, and how to check a value
+   * against one.
+   *
+   * Without this the membership check in `server-core` is unreachable, which is how it
+   * shipped: the port existed, the use-case called it, and the HTTP server never passed
+   * anything — so `SAFETY-ANALYSIS.md`'s A7 stated a constraint that could not run.
+   * Found by review before the beta.
+   *
+   * Absent is still a supported state, and it means what A7 says it means: the server
+   * has no vocabulary, so it cannot refuse a publish for naming an unknown list and
+   * cannot check a submitted value. A deployment with no sourced field never needs one.
+   */
+  optionsSources?: ServerOptionsSources
   /**
    * Anonymous submissions allowed per IP per minute. Off in tests by setting
    * it high; a real deployment should leave the default.
@@ -147,6 +162,7 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
     // token, which is what that key is already for, and a separate optional
     // secret would mean drafts are unprotected whenever nobody set one.
     draftSecret: options.authSecret,
+    ...(options.optionsSources === undefined ? {} : { optionsSources: options.optionsSources }),
     capabilities: {
       now: () => Date.now(),
       today: () => new Date().toISOString().slice(0, 10),

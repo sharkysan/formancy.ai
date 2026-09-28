@@ -45,9 +45,26 @@ const MAX_ROWS = 50
  */
 export function injectSourcedOptions(
   definition: Signal<{ optionsSource?: string; key: string }>,
+  /**
+   * The field's DATA PATH — `canton`, or `people[1].canton` inside a repeater.
+   *
+   * Which is what `OptionsRequest.path` promises. Both renderers sent the field KEY,
+   * so a resolver could not tell two same-named sourced fields apart and never saw
+   * which row it was answering for.
+   */
+  dataPath: () => string,
   storedValue: Signal<string | undefined>,
   query: Signal<string>,
   locale: () => string,
+  /**
+   * Whether this instance is the one that will render.
+   *
+   * A select that carries `widget: "typeahead"` delegates to another component, and
+   * both extend the same base — so both wire this up and both ask. React added the
+   * same flag for the same reason; without it a sourced typeahead sent every request
+   * twice, and one set of answers was read by nobody.
+   */
+  enabled: Signal<boolean>,
 ): SourcedOptionsState {
   const sources = injectOptionsSources()
   const destroyRef = inject(DestroyRef)
@@ -67,11 +84,18 @@ export function injectSourcedOptions(
   let inFlight: AbortController | undefined
   let timer: ReturnType<typeof setTimeout> | undefined
 
+  /** Every labels request still in the air, so a destroy can abort all of them. */
+  const labelRequests = new Set<AbortController>()
+
   const stop = (): void => {
     if (timer !== undefined) clearTimeout(timer)
     inFlight?.abort()
   }
-  destroyRef.onDestroy(stop)
+  destroyRef.onDestroy(() => {
+    stop()
+    for (const controller of labelRequests) controller.abort()
+    labelRequests.clear()
+  })
 
   // The search, debounced and superseded by ABORTING rather than by ignoring: a
   // request nobody wants any more is one a host should be able to cancel, and the
@@ -80,20 +104,27 @@ export function injectSourcedOptions(
     const resolver = source()
     const text = query()
     const name = definition().optionsSource ?? ''
-    const path = definition().key
-    if (resolver === undefined) return
+    const path = dataPath()
+    if (!enabled() || resolver === undefined) return
 
     const minQueryLength = resolver.minQueryLength ?? MIN_QUERY
     const maxRows = resolver.maxRows ?? MAX_ROWS
 
     stop()
+    // Bumped BEFORE the early return, not after it. Deleting characters back under the
+    // minimum aborts whatever is in flight, and with the generation unchanged that
+    // abort arrived at a handler that still believed it was current -- so backspacing
+    // reported the source as broken, and left the box marked busy with nothing in
+    // flight.
+    const mine = (generation += 1)
+
     if (text.trim().length < minQueryLength) {
       rows.set([])
       capped.set(null)
+      busy.set(false)
       return
     }
 
-    const mine = (generation += 1)
     const controller = new AbortController()
     inFlight = controller
     timer = setTimeout(() => {
@@ -139,17 +170,30 @@ export function injectSourcedOptions(
   // The names of what is already stored. Without this, a resumed draft, a wizard page
   // change or a datagrid row move — which remounts every control in the row by design
   // — renders an empty box over an answer the form holds.
+  //
+  // Asked at most ONCE per value, and remembered as "asked" rather than inferred from
+  // the answer. A source is entitled not to know a value: a resumed form may hold one
+  // the list no longer offers, and a host may implement only `kind: 'search'`. Inferring
+  // from the answer meant the map was replaced, the signal changed, the effect re-ran
+  // and it asked again — measured in the React binding at 602 requests in 300ms.
+  const askedFor = new Set<string>()
   effect(() => {
     const resolver = source()
     const value = storedValue()
-    if (resolver === undefined || value === undefined || named().has(value)) return
+    if (!enabled() || resolver === undefined || value === undefined) return
+    if (named().has(value) || askedFor.has(value)) return
+    askedFor.add(value)
 
+    // Registered, so a destroy aborts it. The search request was; this one was not,
+    // which left a request outliving the component that asked for it -- and a host
+    // honouring the signal had no way to know nobody was listening any more.
     const controller = new AbortController()
+    labelRequests.add(controller)
     void resolver
       .resolve({
         kind: 'labels',
         source: definition().optionsSource ?? '',
-        path: definition().key,
+        path: dataPath(),
         query: '',
         values: [value],
         locale: locale(),
@@ -166,6 +210,7 @@ export function injectSourcedOptions(
       // A name that does not arrive is not an error anybody can act on: the control
       // shows the raw value, exactly as it does for an option with no label.
       .catch(() => undefined)
+      .finally(() => labelRequests.delete(controller))
   })
 
   return {

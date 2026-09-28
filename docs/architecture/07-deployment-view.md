@@ -21,12 +21,12 @@ bytes has nothing to verify, and one who pulls them can check the cosign signatu
 and the CycloneDX attestation before starting anything
 ([0063](../decisions/0063-a-compose-file-for-the-published-image.md)).
 
-**The right-hand column has never run.** The release workflow builds, pushes and
-signs the image; no release has executed those steps, because `v0.1.0` predates
-them. The file exists ahead of the artefact deliberately — the first release to
-publish an image should not also be the release that discovers nobody can run it
-— and a reader should treat the right-hand path as available from the next
-release rather than today (2026-09-26).
+**The right-hand column runs for the first time with `0.2.0`.** The release workflow
+builds, pushes and signs the image; `v0.1.0` predates those steps, so no `v0.1.0` image
+exists. The file was written ahead of the artefact deliberately — the first release to
+publish an image should not also be the release that discovers nobody can run it — and a
+reader who gets `manifest unknown` from `docker pull` is looking at a release that has not
+landed rather than at a mistake in this document.
 
 Host port **5439**, not 5432, and the reason is written in the compose file: a
 locally installed PostgreSQL on 5432 produces a silent collision that presents

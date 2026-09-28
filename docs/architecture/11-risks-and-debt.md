@@ -79,11 +79,11 @@ defect would be most costly.
 | **No code decoder ships with `widget: "scanner"`** | A locator pass, a perspective transform and Reed–Solomon decoding is a dependency in a 4 kB-brotli budget and a SOUP row for every consumer, including the Node engine ([0071](../decisions/0071-a-scanner-is-supplied-not-built.md)) | A deployment that wants a camera route supplies the scanner itself. Without one the renderers show **no** scan button, so the field is the ordinary text input rather than a broken promise — the answer is still collectable by typing, which is what keeps this debt rather than a defect |
 | **No resumable or multipart upload** | Deferred | The deployment's byte ceiling is also the largest single file, and a dropped connection restarts the whole thing |
 | **Bytes pass through the server on their way to the object store** | A presigned upload changes the flow end to end, both renderers included | The request body cap is also the largest single file, and the server is in the data path for every upload and download. The S3 store removed the one-replica ceiling; it did not remove this one |
-| **Async validators do not exist** | Deferred; they need a new rule kind, which is a spec 2 change | The version line exists for it, and `runsOn` is in place so the ordering question can be answered without restructuring ([0043](../decisions/0043-runs-on.md)) |
+| **Async validators do not exist** | Deferred; they need a new rule kind and an `async` property, which is a **spec 3** change now that 2 is frozen | The version line exists for it, and `runsOn` is in place so the ordering question can be answered without restructuring ([0043](../decisions/0043-runs-on.md)). Deliberately not reserved ahead of use: a property nothing reads validates and does nothing, and reserving it would not have saved the version bump |
 | **A `recheck` verdict of `unknown` is accepted** | Refusing on undecidable would reject patterns that are fine | Every `pattern` is analysed at publish time and a vulnerable one refused — the check found a polynomial case in formancy's own email format the first time it ran — but an analysis that times out lets the pattern through ([0045](../decisions/0045-reject-backtracking-patterns.md)) |
 | **Rate limiter store is per-process** | `@fastify/rate-limit`'s default | Wrong behind more than one replica; documented rather than fixed |
 | **Neither compose file runs an object store** | A fresh Garage node accepts no data until a layout is assigned, which is four commands after start rather than anything compose can declare | Both pass the settings through and point at nothing, so the default is still a local volume and a self-hoster wanting more than one replica runs the store themselves ([0064](../decisions/0064-an-object-store-behind-the-same-interface.md)) |
-| **`@formancy/builder-react` is not on npm** | Written after 0.1.0 was cut | Ten packages are published with provenance; the builder is reachable only by cloning, which is the package a prospective adopter most wants to see |
+| **No post-publish verification** | Every gate runs inside the workflow that publishes, against the tree it built from | Nothing installs the published tarballs from the registry and runs them, so "it works from npm" rests on `check:pkg`. `pnpm test:e2e:install` through a local Verdaccio is the intended answer and is not built |
 | **No bundle-size gate** | A threshold chosen today would be chosen to pass, which is a guard written green | The budgets in [§9.3](09-quality-requirements.md) are measured by hand and dated. `@formancy/core` is 14.8 kB against 18 kB; `@formancy/react`'s whole barrel is 12.1 kB against a 4 kB budget written for a tree-shaken entry, and which number the budget meant cannot be settled without running a bundler over a realistic import |
 | **No manual accessibility audit, no VPAT** | Requires assistive-technology testing that has not been done | The accessibility claim rests on automated checking, which covers roughly 57% |
 | **`@marcbachmann/cel-js`: 118 known corpus failures** | The library implements most, not all, of CEL | Enumerated in `CEL-CONFORMANCE.md`; a form using an affected construct behaves incorrectly |
@@ -173,8 +173,7 @@ Genuinely undecided, and recorded as such rather than quietly defaulted:
   retrofitting a CLA is effectively impossible.
 - **Trademark registration.** Cheap now, effectively impossible after adoption,
   and it is what preserves the commercial hosted option without relicensing.
-- **`@formancy/builder-react` is not published.** The scope is claimed and ten
-  packages are on npm at `0.1.0` with provenance; this one was written after
-  that release was cut. It is the package a prospective adopter most wants to
-  *see*, so the gap is worth closing in the next release rather than the one
-  after.
+- **The container image's SBOM covers npm only.** `cosign attest` attaches the
+  CycloneDX document generated from the workspace manifests, so it names every runtime
+  npm dependency and nothing about the base image or its system packages. A
+  manufacturer characterising the container needs both.

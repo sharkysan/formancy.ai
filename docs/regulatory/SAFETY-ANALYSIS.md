@@ -173,9 +173,13 @@ leaves the draft holding the answers.
   label would change what the field collects.
 
 A manufacturer incorporating formancy should treat `optionsSource` as an explicit,
-per-field weakening of A6's guarantee — greppable in every published version, and
-enumerable from the publish audit detail — rather than as an equivalent alternative to a
-listed `select`.
+per-field weakening of A6's guarantee — greppable in every published version, and named in
+the `form.published` audit row's `optionsSources` detail, sorted and once each — rather
+than as an equivalent alternative to a listed `select`. That detail was claimed here before
+it existed: the record held the version and the hash and nothing else, so an operator told
+to compare a form's lists against their configuration had nowhere to read them. It is now
+written, and asserted in `packages/server-core/src/use-cases.test.ts` both ways round — a
+form naming sources records them, a form naming none records no such field.
 
 ---
 
@@ -296,12 +300,27 @@ organisation must provide that boundary itself.
 
 ### C3. Submission content is written to logs
 
-*Constraint:* structured logging with configurable PII redaction; submission
-`data` is not logged by default.
+*Constraint:* **there is no log.** `@formancy/server` constructs Fastify with
+`logger: false`, so the server emits no request line, no error line and no output of any
+kind — submission content cannot reach a log that does not exist. Asserted on the
+constructed app in `packages/server/src/server.integration.test.ts`, which fails if a
+logger is enabled.
 
-*Residual:* a deployment that raises the log level, or an unhandled exception
-carrying a payload, can defeat this. Log configuration is a deployment
-responsibility.
+*Corrected 2026-09-28.* This entry previously said "structured logging with configurable
+PII redaction; submission `data` is not logged by default". **Neither half was true:**
+`logger: false` has been there since the server was written, and nothing in this repository
+redacts anything — the word `redact` appears in no source file. The characterisation
+described a design that was planned and never built, which is the failure this document's
+own preamble warns about, found by review rather than by a gate. The guard above is the
+gate it lacked.
+
+*Residual, and it is larger than the constraint:* **no log means no diagnostics.** A
+self-hoster debugging a failed webhook or a 500 has the audit log — which records
+mutations, in the same transaction, including submission reads — and nothing else. A
+deployment that adds a logger takes on the redaction question itself, and formancy offers
+it no help: there is no redaction configuration to set, and an unhandled exception carrying
+a payload would then be printed. A manufacturer needing operational logging must build it,
+and must treat submission content as reaching it.
 
 ### C4. Arbitrary script executes in the page
 
@@ -311,11 +330,33 @@ Content-Security-Policy on every page that embeds it.
 
 *Constraint:* no `eval` and no dynamic function construction anywhere
 ([0040](../decisions/0040-no-eval.md)). CEL is interpreted over its own AST and
-the schema validator is generated ahead of time as a committed artefact. The
-result is that formancy runs under a strict CSP with no configuration.
+the schema validator is generated ahead of time as a committed artefact, asserted in
+`packages/spec/src/csp.test.ts`. The result is that formancy runs under a strict CSP with
+no configuration.
+
+**"No configuration" covers `style-src` too, and it did not until 2026-09-28.**
+`@formancy/angular` carried one component style — `:host { display: contents }` — which
+Angular emits as a `<style>` element injected at runtime and `style-src 'self'` blocks
+without a nonce. A nonce is configuration, and what the blocked declaration undid was the
+grid layout of a whole renderer, silently
+([0079](../decisions/0079-a-host-is-undone-without-a-stylesheet.md)). It is now set through
+CSSOM, which no directive governs, and two guards hold it: the Angular layout test asserts
+that no injected `<style>` says so while the host still computes `display: contents`, and
+`apps/docs/src/themes.test.ts` asserts that no package below the component kit ships CSS in
+a file **or in a decorator** — the wording the rule lacked, which is why the exception went
+unnoticed.
+
+Nothing else needs a directive: the renderers set styles through framework bindings, which
+are CSSOM; a `qrcode` node is inline SVG built element by element rather than a `data:` URL,
+so `img-src 'self'` suffices; and there is no worker, no font and no outbound request the
+library makes on its own.
 
 *Residual:* renderers emit the application's own markup. A consuming
-application that injects unsanitised HTML into a form is outside this boundary.
+application that injects unsanitised HTML into a form is outside this boundary. The
+directives above are reasoned from what the code emits and asserted where a test can see
+it; **no browser in this repository has been served a strict CSP and observed**, because
+nothing here renders the Angular bindings in a browser at all ([§11](../architecture/11-risks-and-debt.md)).
+A manufacturer shipping under a policy should verify it against their own page.
 
 ### C5. A part-filled form is read or altered by a stranger
 
@@ -437,6 +478,39 @@ renders the Angular bindings at all**, so that renderer's appearance has never b
 seen by anything but review. A manufacturer relying on visual correctness must
 verify it in the browsers it ships to. Listed as debt in
 [§11](../architecture/11-risks-and-debt.md).
+
+### D4b. A control keeps its accessible name and loses its visible label
+
+*How it arises:* a datagrid clips a cell's `<label>` rather than removing it, deliberately
+— measured, `display: none` and `visibility: hidden` both compute the control's accessible
+name to `""`, while clipping keeps the name and takes only the box
+([0075](../decisions/0075-a-datagrid-is-drawn-not-tabulated.md)). The heading strip above
+the column supplies the visible text instead. That trade is sound for a column holding one
+answer and **false for a column holding several**: a `group` as a column was flattened into
+its leaves by both renderers, so one heading named two controls and the clip took both of
+their labels. Two date controls side by side with nothing to tell them apart.
+
+*Severity:* a control nobody can identify is filled in wrongly rather than not at all,
+which is worse than D4's outcome — the form is submitted and the answer is in the wrong
+field. It is also invisible to every gate here: the accessible name is intact, so the
+conformance drivers, the axe runs and the name-comparison test all pass. Sighted use is
+what breaks, and WCAG 3.3.2 is what it fails.
+
+*Constraint:* the arrangement is refused when the document is saved. `validateSchema`
+rejects a grid whose child holds fields of its own, so a heading always names exactly one
+answer and the clip's premise holds by construction
+([0078](../decisions/0078-a-grid-row-is-flat.md)). Asserted in
+`packages/spec/src/datagrid.test.ts`, including over every container type rather than the
+one type it has to catch today. The first fix attempted was a CSS rule restoring a nested
+label, guarded per theme and observed failing on all four themes before it — and it was
+still wrong, because the markup it selected does not exist. That is recorded here because
+it is the shape of mistake this section is for: a guard can fail for the right reason and
+still assert nothing.
+
+*Residual:* the clipping technique remains, and so does the reasoning it rests on — that a
+heading names a column and a label names a control. Nothing checks that a theme's clip is
+applied only where a heading exists; four themes each carry the rule and a fifth could get
+it wrong. Appearance is reviewed rather than verified, as D4a's residual says at length.
 
 ### D5. A repeater shows the wrong number of rows
 

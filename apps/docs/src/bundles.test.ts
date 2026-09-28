@@ -42,6 +42,9 @@ describe('the bundle figures in §9.3', () => {
     for (const [packageName, shown] of [
       ['core', /`@formancy\/core` bundle \| 18 kB brotli \| ([\d.]+) kB/],
       ['react', /`@formancy\/react` bundle \| 4 kB brotli \| \*\*([\d.]+) kB\*\*/],
+      // Tracked because it nearly doubled without anybody noticing: one module imported
+      // the whole 40.6 kB JSON Schema to read one integer, and the bundler inlined it.
+      ['spec', /`@formancy\/spec` bundle \| — \| ([\d.]+) kB/],
     ] as const) {
       const quoted = shown.exec(quality)?.[1]
       expect(quoted, `no figure for @formancy/${packageName} in §9.3`).toBeDefined()

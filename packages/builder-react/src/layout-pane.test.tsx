@@ -196,7 +196,7 @@ describe('a code node in the arrangement', () => {
         name: 'web',
         nodes: [
           { kind: 'field', path: 'email' },
-          { kind: 'qrcode', path: 'email' },
+          { kind: 'qrcode', path: 'email', label: 'Email as a code' },
         ],
       },
     ],
@@ -765,5 +765,42 @@ describe('reporting which node the arrangement is on', () => {
 
     expect(seen.at(-1)).toEqual([0])
     expect(seen.every((path) => path === null || Array.isArray(path))).toBe(true)
+  })
+})
+
+describe('adding a code', () => {
+  /** A code node needs spec 2; everything else about the fixture is the file's own. */
+  const sourced = (): FormSchema => ({ ...schema(), specVersion: '2' })
+
+  test('gives it a label, because a code with none announces a bare string', () => {
+    // Found by review before the beta: the pane inserted `{ kind: 'qrcode', path }`
+    // with no label, so every code node anybody made in the builder was unnamed — the
+    // picture cannot be read aloud and the value beneath it sits in an `<output>`, a
+    // live region announced whenever the answer changes.
+    const session = open(sourced())
+
+    expect(
+      session.insertLayoutNode(
+        { layout: 'web', parent: [], index: 0 },
+        { kind: 'qrcode', path: 'first', label: 'First name as a code' } as never,
+      ).ok,
+    ).toBe(true)
+    expect(session.canPublish().valid).toBe(true)
+  })
+
+  test('and one without a label is refused outright, not merely unpublishable', () => {
+    // Every command here is attempted against the validator, so the document never
+    // reaches an invalid state at all — which is a better answer than letting it in and
+    // failing at publish, because the author finds out where they are rather than at
+    // the end. It is also what makes the label above load-bearing rather than polite.
+    const session = open(sourced())
+
+    const outcome = session.insertLayoutNode(
+      { layout: 'web', parent: [], index: 0 },
+      { kind: 'qrcode', path: 'first' } as never,
+    )
+
+    expect(outcome.ok).toBe(false)
+    expect(session.canPublish().valid).toBe(true)
   })
 })

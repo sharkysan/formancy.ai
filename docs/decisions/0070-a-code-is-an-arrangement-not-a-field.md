@@ -33,6 +33,20 @@
 > The decision is untouched. The value is still the content and the picture is still
 > `aria-hidden`.
 
+> **And the label is required now, because this record says it is the content.** "A
+> picture of a code says nothing to a screen reader, so the label and the value behind it
+> are the accessible content" — and `label` was optional, which made the accessible
+> content optional. Worse, the builder inserted `{ kind: 'qrcode', path }` with no label
+> at all, so every code node anybody made that way was an unnamed live region announcing
+> a bare string.
+>
+> `validateSchema` refuses a code with no label, and the builder supplies one named after
+> the answer it shows. The rule lives in the semantic pass rather than as `required` in
+> the schema for the reason the column rules do: the layout node union reports a failed
+> branch as "is not one of the allowed values", which tells an author nothing about which
+> property is missing. The cost is the same one — a third-party validator reading the raw
+> JSON Schema will not catch it.
+
 - **Status:** accepted
 - **Date:** 2026-09-27
 - **Deciders:** Daniel Bacher

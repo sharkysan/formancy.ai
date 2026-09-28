@@ -277,7 +277,21 @@ export function FormancyLayoutPane({
   const nodeBeingAdded = (what: Adding): LayoutNode | undefined => {
     if (what.what === '' || what.what === 'qrcode-which') return undefined
     if (what.what === 'field') return { kind: 'field', path: what.path }
-    if (what.what === 'qrcode') return { kind: 'qrcode', path: what.path }
+    if (what.what === 'qrcode') {
+      // With a label, because a code's label IS its accessible content: the picture
+      // cannot be read aloud and the value beneath it sits in a live region, so an
+      // unlabelled code announces a bare string from nowhere. This inserted one
+      // without a label until a review found it — every code anybody made this way.
+      //
+      // Named after the answer it shows, which is the only thing this can honestly
+      // say. An author who wants better words changes them in the panel, and now has
+      // a panel to change them in.
+      return {
+        kind: 'qrcode',
+        path: what.path,
+        label: `${nameOfPath(view.document, what.path)} as a code`,
+      }
+    }
     return { kind: what.what, children: [] }
   }
 

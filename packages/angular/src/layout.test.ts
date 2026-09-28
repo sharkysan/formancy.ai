@@ -241,6 +241,38 @@ describe('the recursion\u2019s own host element', () => {
     }
   })
 
+  test('and it needs no stylesheet to do it, so a strict style-src needs no nonce', async () => {
+    /*
+     * The declaration above arrived as a component style — `styles: ':host { display:
+     * contents }'` — and Angular emits a component style as a `<style>` element injected
+     * into the document at runtime. Under `style-src 'self'` with no nonce, that element
+     * is **blocked**, the host keeps its default `display: block`, and the layout bug
+     * 0073 exists to fix comes back with nothing failing anywhere.
+     *
+     * Which makes the product's own headline — "runs under a strict CSP with no
+     * configuration" — false for this renderer, in exactly the directive 0073 argued
+     * about while choosing a stylesheet over an inline style. It compared a *parsed*
+     * style attribute with a stylesheet and never considered the third option: CSSOM.
+     * CSP does not govern CSSOM, so setting the property on the element needs no
+     * directive and no nonce.
+     *
+     * Asserted as the absence of the element rather than as a property of the source,
+     * because what a strict CSP blocks is the element.
+     */
+    await mountSpanning()
+
+    const injected = [...document.querySelectorAll('style')].map(
+      (element) => element.textContent ?? '',
+    )
+    expect(injected.filter((text) => text.includes('display') || text.includes('contents'))).toEqual(
+      [],
+    )
+    // And the fact above still holds without one, which is the whole point.
+    for (const host of document.querySelectorAll('formancy-layout')) {
+      expect(getComputedStyle(host).display).toBe('contents')
+    }
+  })
+
   test('and the cells really are the container\u2019s own children', async () => {
     // The structural half: with the host out of the way the grid items are the cells
     // and the fields, which is what a theme's `grid-template-columns` acts on. Asserted

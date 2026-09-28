@@ -267,19 +267,20 @@ function RepeaterSection({
         .join(' ')
     : undefined
 
-  /** The leaves inside one row that belong to one column's child field.
+  /** The control in one cell: the leaf the column's child field collects into.
    *
-   *  Matched on a segment boundary rather than with a bare `startsWith`: a child called
-   *  `name` must not swallow `nameOnCard`, and a grouped child owns everything under it.
-   *  A column names a DIRECT CHILD, while `fieldPaths()` returns leaves, because a group
-   *  child is flattened into the fields inside it. */
+   *  One leaf, because a grid's rows are FLAT -- a child holding fields of its own is
+   *  refused when the document is saved
+   *  ([0078](../../../docs/decisions/0078-a-grid-row-is-flat.md)). This walked the whole
+   *  subtree under the child while a group could be a column, and every clause that made
+   *  that walk safe is gone with the arrangement it served.
+   *
+   *  Still a filter over the paths that EXIST rather than the path the column implies, so
+   *  a document nobody validated renders an empty cell instead of asking the engine about
+   *  a field it does not have. */
   const leavesOf = (index: number, key: string): string[] => {
-    const prefix = `${wire}[${String(index)}].${key}`
-    return engine
-      .fieldPaths()
-      .filter(
-        (leaf) => leaf === prefix || leaf.startsWith(`${prefix}.`) || leaf.startsWith(`${prefix}[`),
-      )
+    const wanted = `${wire}[${String(index)}].${key}`
+    return engine.fieldPaths().filter((leaf) => leaf === wanted)
   }
 
   /** A column's visible heading: the author's shortening, else the child's own label,
@@ -797,18 +798,21 @@ function SelectField({ path, label }: FieldComponentProps) {
   // One hook, unconditionally: it hands back the document's own options when the
   // field names no source, so there is no branch above a hook to reorder React's
   // list the moment the builder sets one on a live document.
-  const sourced = useSourcedOptions(field, '', field.def.widget !== 'typeahead')
+  const sourced = useSourcedOptions({ ...field, path }, '', field.def.widget !== 'typeahead')
   const options = sourced.options
   // Every hook runs before the branch on purpose: the builder can set a widget on
   // a live document, and a branch above a hook would reorder React's hook list
   // the moment it did.
-  if (field.def.widget === 'typeahead') {
-    return <TypeaheadSelectField path={path} label={label} field={field} />
-  }
 
   // The document names a source this deployment does not have. Unlike a missing
   // scanner this costs the whole field -- a select with no options collects nothing
   // -- so it says so where the chooser would be, exactly as the file field does.
+  //
+  // BEFORE the widget, and the order is the fix: dispatching to the typeahead first
+  // made this message unreachable for the very widget the feature was built for. What
+  // somebody got instead was a working-looking combobox that returned nothing and
+  // announced "No options match" -- which says the list has no such row, when the
+  // truth is that there is no list.
   if (sourced.remote?.unavailable === true) {
     return (
       <FieldShell path={path} field={field} label={label}>
@@ -817,6 +821,10 @@ function SelectField({ path, label }: FieldComponentProps) {
         </p>
       </FieldShell>
     )
+  }
+
+  if (field.def.widget === 'typeahead') {
+    return <TypeaheadSelectField path={path} label={label} field={field} />
   }
 
   return (
@@ -933,7 +941,7 @@ function TypeaheadSelectField({
 
   // The options, from the document or from the deployment. The query goes in so a
   // source is asked what somebody is looking for rather than for everything.
-  const sourced = useSourcedOptions(field, query ?? '')
+  const sourced = useSourcedOptions({ ...field, path }, query ?? '')
   const options = sourced.options
 
   const chosen = options.find((option) => option.value === field.value)

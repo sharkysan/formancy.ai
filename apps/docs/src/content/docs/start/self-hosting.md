@@ -3,13 +3,18 @@ title: "Quickstart: self-hosting"
 description: Run the formancy backend locally with Docker and Postgres, and walk its two HTTP planes end to end.
 ---
 
-:::caution[Pre-alpha]
-This backend is pre-alpha. It has authentication, role-based authorization,
-per-IP rate limiting, a per-form origin allowlist, a request body cap, file
-uploads, audit logging and an opt-in proof-of-work challenge
-(`FORMANCY_CHALLENGE_SECRET`, below) — but no submission tokens and no virus
-scanning of what people attach. Treat it as something to evaluate, not something
-to expose to the public internet.
+:::caution[Beta, and not for a public deployment]
+This backend has authentication, role-based authorization, per-IP rate limiting, a
+per-form origin allowlist, a request body cap, file uploads, drafts that carry their own
+key, audit logging and an opt-in proof-of-work challenge
+(`FORMANCY_CHALLENGE_SECRET`, below) — but no submission tokens and no virus scanning of
+what people attach.
+
+It also writes **no log**: Fastify is constructed with the logger off, which is why no
+submission content can leak into one and also why nothing will tell you why a request
+failed. The audit log records mutations, including submission reads, and is all you get.
+
+Treat it as something to evaluate, not something to expose to the public internet.
 :::
 
 ## Run it
@@ -18,11 +23,11 @@ Two ways in, and which one you want depends on whether you have the repository.
 
 ### From the published image
 
-:::caution[Not in the registry yet]
-The release workflow builds, pushes and signs the image, and **no release has run
-it yet** — `v0.1.0` predates those steps and signed only the SBOM. This path
-works from the next release onward; today, use [a checkout](#from-a-checkout).
-Stated rather than left to be discovered as a `manifest unknown` error.
+:::caution[From 0.2.0 onward]
+The release workflow builds, pushes and signs the image. `v0.1.0` predates those steps
+and signed only the SBOM, so there is no `v0.1.0` image — if `docker pull` answers
+`manifest unknown`, the release has not landed yet and [a checkout](#from-a-checkout) is
+the way in. Stated rather than left to be discovered as an error.
 :::
 
 No checkout, no build toolchain, no Node on the host — the release publishes the

@@ -8,7 +8,136 @@ Loosely [Keep a Changelog](https://keepachangelog.com), with reasons attached �
 a line that says only *what* changed is rarely the line you need six months
 later.
 
-## Unreleased
+## 0.2.0 — 2026-09-28
+
+**The beta, and the release that freezes spec version 2.** A document written against
+version 2 will validate against every future release that speaks it; what version 2 added
+and what freezing it costs are in [`MIGRATIONS.md`](./MIGRATIONS.md). The short of the cost:
+an async validator and a `signature` field type are now spec 3 features.
+
+`0.2.0` is also the first release that **reads** version 2. `0.1.0` predates spec
+versioning and pins documents to `{ "const": "1" }`, so it refuses a version 2 document
+rather than ignoring the property — which is the loud failure rather than the silent one,
+and still a failure.
+
+Four packages reach npm for the first time: `@formancy/builder-react` — the embeddable
+builder, and the package a prospective adopter most wants to see — along with
+`@formancy/challenge`, `@formancy/mcp` and `@formancy/tiptap`. The server image is
+published and signed by digest for the first time as well; `v0.1.0` predated those steps,
+so there is no `v0.1.0` image.
+
+Everything below was written under *Unreleased* as it landed.
+
+
+**A grid's rows are flat.** A `datagrid` column could name a `group`, and measured in both
+renderers what that produces is the group flattened: its own name never reaches the page,
+and its controls land in one cell under one heading that names the group and none of them —
+with no labels of their own, because a theme clips a cell's label on the grounds that the
+heading says it. Two date controls side by side with nothing to tell them apart, and it
+looks finished rather than broken.
+
+`validateSchema` refuses a grid whose child holds fields of its own, naming the child and
+saying to give each of those fields a column instead. A stacked repeater is untouched — the
+restriction is on the arrangement, which is the only thing that cannot express it.
+[0078](docs/decisions/0078-a-grid-row-is-flat.md) has the CSS fix that was tried first and
+why it was wrong. `belongsToColumn` is gone from `@formancy/spec` with the nesting it
+existed for; a column is one answer, so the renderers compare a wire.
+
+**A strict CSP really needs no configuration now, including `style-src`.**
+`@formancy/angular` shipped one component style, `:host { display: contents }`, and Angular
+emits a component style as a `<style>` element that `style-src 'self'` blocks without a
+nonce — undoing the grid layout of a whole renderer, silently, since nothing in a browser
+renders those bindings. It is set through CSSOM instead, which no directive governs, so the
+package ships no stylesheet at all and 0008's "nothing below the kit ships CSS" is restored
+rather than amended. [0079](docs/decisions/0079-a-host-is-undone-without-a-stylesheet.md)
+supersedes 0073's mechanism; the decision itself stands.
+
+**The publish audit row names the lists a form needs resolving.** `form.published` gained
+an `optionsSources` detail — the `optionsSource` names the version uses, sorted and once
+each, and absent when there are none. `SAFETY-ANALYSIS.md` A7 already told a manufacturer
+to read them there; the record held only the version and the hash, so it described
+something that did not exist.
+
+**`SAFETY-ANALYSIS.md` C3 said the server does structured logging with configurable PII
+redaction. It does neither.** Fastify is constructed with `logger: false` and nothing in
+the repository redacts anything. The entry now says what is true — there is no log, so
+submission content cannot reach one — with the larger residual spelled out: no log means no
+diagnostics, and a deployment that adds one owns the redaction question alone.
+
+**Focus in the builder tree follows the field, not the row number.** Move a field and the
+tree reported whichever field slid into that position — for `billing` moved to the top,
+`billing.street`, a field nobody chose, in a builder whose whole premise is the keyboard.
+The test that should have caught it called `moveField` outside `act`, so it could not fail.
+
+
+**A code node must say what it is.** [0070](docs/decisions/0070-a-code-is-an-arrangement-not-a-field.md)
+has always said the picture is decoration and "the label and the value behind it are the
+accessible content" — and `label` was optional, which made the accessible content
+optional. The builder was the worst offender: it inserted `{ kind: 'qrcode', path }` with
+no label at all, so every code node made that way was an unnamed live region announcing a
+bare string.
+
+`validateSchema` refuses a code with no label now, the builder supplies one named after the
+answer it shows, and a code node added without one is refused outright rather than left to
+fail at publish.
+
+**A chooser stores a string.** A `select` or `radio` answer that is not one — an object, an
+array, a number — is refused with `type`. It had to be: a field whose options live
+elsewhere has no list to compare against, and the server's membership check walks only
+strings, so `{"canton": {"$gt": ""}}` was stored with nothing having looked at it.
+
+**Fixed: the server's membership check could not run.** `AppOptions` had no
+`optionsSources` and `createApp` never set it, so in the shipped HTTP server the whole
+server half of `optionsSource` was unreachable — while `SAFETY-ANALYSIS.md`'s A7 stated the
+constraint unconditionally.
+
+**Fixed: the "this source is missing" message was unreachable for the typeahead** — the
+widget the feature was built for. Both renderers dispatched to the widget before checking,
+so what somebody got was a working-looking combobox that returned nothing and announced "No
+options match": that says the list has no such row, when the truth is there is no list.
+
+**Fixed, in Angular only, three ways the two renderers had become two different controls.**
+It looked the stored answer up in the document's options, which a sourced field does not
+have, so the box rendered empty over an answer the form was holding. It asked every source
+twice, because a select carrying the widget delegates to another component and both extend
+the same base. And its labels request was never registered for abort, so it outlived the
+component that asked for it.
+
+**Fixed: a resolver was told the field key, not the field's path.** `OptionsRequest.path` is
+documented as "the field's data path, e.g. `canton` or `people[1].canton`" in both
+renderers, and both sent `def.key` — so a resolver could not tell two same-named sourced
+fields apart, and never saw which row of a repeater it was answering for.
+
+**Fixed: backspacing under the minimum query length reported the source as broken.** The
+generation counter was bumped only on the path that sends a request, so the abort arrived at
+a handler that still believed it was current — and the box stayed marked busy with nothing
+in flight.
+
+**Two bugs an adversarial review found before the beta, and neither was catchable by
+the guards in place.**
+
+**A datagrid with no authored column widths rendered as one column.** Eight rules per
+theme — every definition of `--fm-datagrid-count` — were scoped to a placeholder a
+script had failed to substitute, so the selector matched nothing and the variable was
+never set. A grid whose author sized no column fell through to `repeat(1, …)`: one
+content track for a grid the renderer had just declared to have four, with every cell
+label still clipped, because the media query that un-clips them applies only below
+40rem. A column of unlabelled controls.
+
+The existing guards could not see it. The parts check asks whether a rule *names* a
+part, and a dead rule names it; the scope check asks whether a `var(--fm-x)` with no
+fallback resolves, and this use carries one. "Is it defined?" cannot distinguish a
+definition in a rule that can never apply. There is a guard for that now: every rule in
+a theme is scoped to that theme's own name, derived from the file rather than from its
+filename.
+
+**A control asked for the same name forever.** When a source did not know a stored
+value — a resumed form holding one the list no longer offers, or a host implementing
+only `kind: 'search'` — the answer still replaced the map, a new map was a new
+dependency identity, the effect re-ran, and it asked again. Measured: **602 requests in
+300 milliseconds** in React and 101 in Angular, with no "maximum update depth" to notice
+it by, because every turn went through a promise. Both renderers remember what they have
+*asked for* now, rather than inferring it from what came back.
 
 **A `select` may take its answers from the deployment** —
 `optionsSource: "pickup-points"` ([0077](docs/decisions/0077-options-may-come-from-a-named-source.md)).

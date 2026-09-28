@@ -84,54 +84,55 @@ const unnamed = (): string[] =>
       }> near "${(element.closest('section, div')?.textContent ?? '').trim().slice(0, 60)}"`
     })
 
-/** Open every pane the page has, so the audit sees the whole tool and not a third of it. */
-async function openEverything(): Promise<void> {
-  render(<App />)
-  const user = userEvent.setup()
+/**
+ * The panes, audited one at a time.
+ *
+ * They SWAP rather than stack, so only one is in the document at once — and the first
+ * version of this opened the arrangement, clicked back to the fields and then ran axe,
+ * which audited the fields twice and the arrangement never. The name check beside it did
+ * open the arrangement, so the gap was invisible: one of the two checks covered both panes
+ * and the other covered one, and nothing said which.
+ *
+ * `Fields` is what the tool opens on, so it needs no click.
+ */
+const PANES = ['Fields', 'Arrangement'] as const
 
-  // The arrangement pane and its property panel, which is where the newest controls
-  // are: until recently no layout node property could be set at all.
-  await user.click(screen.getByRole('button', { name: 'Arrangement' }))
-  // And back to the fields, whose panel holds the generated controls and the
-  // options and columns editors.
-  await user.click(screen.getByRole('button', { name: 'Fields' }))
+async function showing(pane: (typeof PANES)[number]): Promise<void> {
+  render(<App />)
+  if (pane === 'Fields') return
+  const user = userEvent.setup()
+  await user.click(screen.getByRole('button', { name: pane }))
 }
 
 describe('the playground itself is operable by name', () => {
-  test('every control a person can reach has an accessible name', async () => {
-    await openEverything()
+  test.each(PANES)('every control in the %s pane has an accessible name', async (pane) => {
+    await showing(pane)
 
     // A guard on the guard: a query that found nothing would pass forever.
-    expect(operable().length).toBeGreaterThan(20)
-    expect(unnamed()).toEqual([])
-  })
-
-  test('and still does with the arrangement open, where the newest controls are', async () => {
-    render(<App />)
-    const user = userEvent.setup()
-    await user.click(screen.getByRole('button', { name: 'Arrangement' }))
-
     expect(operable().length).toBeGreaterThan(10)
     expect(unnamed()).toEqual([])
   })
 
-  test('axe finds nothing, in the same configuration the renderers are held to', async () => {
-    await openEverything()
+  test.each(PANES)(
+    'axe finds nothing in the %s pane, in the configuration the renderers are held to',
+    async (pane) => {
+      await showing(pane)
 
-    const results = await axe.run(document.body, {
-      runOnly: { type: 'tag', values: [...ACCESSIBILITY_TAGS] },
-      // Both are `Record<rule, why>`: the reason is the point of them, so the exclusion
-      // cannot be a bare list somebody adds to without saying why.
-      rules: Object.fromEntries(
-        [
-          ...Object.keys(ACCESSIBILITY_EXCLUSIONS),
-          ...Object.keys(ACCESSIBILITY_UNMEASURABLE_IN_JSDOM),
-        ].map((rule) => [rule, { enabled: false }]),
-      ),
-    })
+      const results = await axe.run(document.body, {
+        runOnly: { type: 'tag', values: [...ACCESSIBILITY_TAGS] },
+        // Both are `Record<rule, why>`: the reason is the point of them, so the exclusion
+        // cannot be a bare list somebody adds to without saying why.
+        rules: Object.fromEntries(
+          [
+            ...Object.keys(ACCESSIBILITY_EXCLUSIONS),
+            ...Object.keys(ACCESSIBILITY_UNMEASURABLE_IN_JSDOM),
+          ].map((rule) => [rule, { enabled: false }]),
+        ),
+      })
 
-    expect(
-      results.violations.map((violation) => `${violation.id}: ${violation.nodes[0]?.html ?? ''}`),
-    ).toEqual([])
-  })
+      expect(
+        results.violations.map((violation) => `${violation.id}: ${violation.nodes[0]?.html ?? ''}`),
+      ).toEqual([])
+    },
+  )
 })

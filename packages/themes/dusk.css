@@ -1257,14 +1257,14 @@
 /* The count, for a grid whose author sized nothing. Enumerated the way the table
    layout's columns already are. Past the last one it falls back to a single column and
    stacks, which is a degradation rather than a break. */
-[data-formancy-theme='%(t)s'] [data-formancy-part='datagrid'][data-columns='1'] { --fm-datagrid-count: 1; }
-[data-formancy-theme='%(t)s'] [data-formancy-part='datagrid'][data-columns='2'] { --fm-datagrid-count: 2; }
-[data-formancy-theme='%(t)s'] [data-formancy-part='datagrid'][data-columns='3'] { --fm-datagrid-count: 3; }
-[data-formancy-theme='%(t)s'] [data-formancy-part='datagrid'][data-columns='4'] { --fm-datagrid-count: 4; }
-[data-formancy-theme='%(t)s'] [data-formancy-part='datagrid'][data-columns='5'] { --fm-datagrid-count: 5; }
-[data-formancy-theme='%(t)s'] [data-formancy-part='datagrid'][data-columns='6'] { --fm-datagrid-count: 6; }
-[data-formancy-theme='%(t)s'] [data-formancy-part='datagrid'][data-columns='7'] { --fm-datagrid-count: 7; }
-[data-formancy-theme='%(t)s'] [data-formancy-part='datagrid'][data-columns='8'] { --fm-datagrid-count: 8; }
+[data-formancy-theme='dusk'] [data-formancy-part='datagrid'][data-columns='1'] { --fm-datagrid-count: 1; }
+[data-formancy-theme='dusk'] [data-formancy-part='datagrid'][data-columns='2'] { --fm-datagrid-count: 2; }
+[data-formancy-theme='dusk'] [data-formancy-part='datagrid'][data-columns='3'] { --fm-datagrid-count: 3; }
+[data-formancy-theme='dusk'] [data-formancy-part='datagrid'][data-columns='4'] { --fm-datagrid-count: 4; }
+[data-formancy-theme='dusk'] [data-formancy-part='datagrid'][data-columns='5'] { --fm-datagrid-count: 5; }
+[data-formancy-theme='dusk'] [data-formancy-part='datagrid'][data-columns='6'] { --fm-datagrid-count: 6; }
+[data-formancy-theme='dusk'] [data-formancy-part='datagrid'][data-columns='7'] { --fm-datagrid-count: 7; }
+[data-formancy-theme='dusk'] [data-formancy-part='datagrid'][data-columns='8'] { --fm-datagrid-count: 8; }
 
 /* Every row and the heading strip land on the CONTAINER's tracks, which is what keeps
    the columns true across rows -- the one thing stacked rows cannot do. Measured in a

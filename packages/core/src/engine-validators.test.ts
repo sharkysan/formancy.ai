@@ -244,3 +244,57 @@ describe('an answer is one of the options offered', () => {
     expect(chosen({ country: 'Switzerland' })).toEqual({ country: ['option'] })
   })
 })
+
+describe('a chooser stores a string, or it stores nothing', () => {
+  const chooser: FormSchema = {
+    specVersion: '2',
+    id: 'chooser',
+    title: 'Chooser',
+    model: {
+      fields: [
+        { key: 'canton', type: 'select', optionsSource: 'cantons' },
+        { key: 'colour', type: 'radio', options: [{ value: 'red', label: 'Red' }] },
+      ],
+    },
+  } as unknown as FormSchema
+
+  const errorsOf = (initialValue: Record<string, unknown>): Record<string, string[]> =>
+    createFormEngine({ schema: chooser, initialValue }).validate().errors
+
+  test('refuses a value that is not a string, on a field whose options live elsewhere', () => {
+    // The hole this closes, found by review before the beta. A field with
+    // `optionsSource` carries no document options, so the membership check above has
+    // nothing to compare against — by design. And the server's own check walks only
+    // STRINGS, so an object or an array produced no answer to ask about and was
+    // stored unexamined. Measured: `sourcedAnswers` returned `[]` for
+    // `{ canton: { $gt: '' } }`, `{ canton: ['ZH'] }` and `{ canton: 42 }`.
+    //
+    // A select stores one option's value, which is a string. Anything else is the
+    // hostile-payload path, and it is refused here — in the one function the browser
+    // and the server both run — rather than in either of them.
+    expect(errorsOf({ canton: { $gt: '' } })).toEqual({ canton: ['type'] })
+    expect(errorsOf({ canton: ['ZH'] })).toEqual({ canton: ['type'] })
+    expect(errorsOf({ canton: 42 })).toEqual({ canton: ['type'] })
+    expect(errorsOf({ canton: true })).toEqual({ canton: ['type'] })
+  })
+
+  test('accepts a string, which is what a chooser collects', () => {
+    // The guard on the guard: a rule that refused everything would pass the case above
+    // and break every select in the world.
+    expect(errorsOf({ canton: 'ZH' })).toEqual({})
+    expect(errorsOf({ colour: 'red' })).toEqual({})
+  })
+
+  test('leaves emptiness to required, like every other model validator', () => {
+    expect(errorsOf({})).toEqual({})
+    expect(errorsOf({ canton: '' })).toEqual({})
+  })
+
+  test('a non-string on a LISTED chooser was already refused, and still is', () => {
+    // Not a regression test for nothing: a listed chooser compares the value against
+    // its options, and no option equals an object — so it produced `option` rather
+    // than `type`. The more precise code wins now, which is the honest answer to
+    // "what is wrong with it".
+    expect(errorsOf({ colour: { $gt: '' } })).toEqual({ colour: ['type'] })
+  })
+})

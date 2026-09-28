@@ -11,6 +11,78 @@ of package versions, because it is the artifact with real switching costs:
 your forms and your submissions are written against it. Packages 0.9 and 1.4
 can both speak spec `"1"`.
 
+## Spec version 2 is FROZEN
+
+Spec `"2"` is frozen as of 2026-09-28, with the `0.2.0` beta. A document that validates
+today will validate against every future release that speaks spec 2.
+
+**Version 2 is a superset of version 1 and removes nothing.** Upgrading a document is one
+line — `specVersion: "1"` becomes `"2"` — and nothing rebinds: no key changes, no answer
+moves, no submission is touched ([0051](docs/decisions/0051-spec-2-adds-types.md)).
+`upgradeSpecVersion` does exactly that one line and is tested to change nothing else.
+
+### What version 2 added
+
+Five field types:
+
+| Type | What it collects |
+|---|---|
+| `selectboxes` | Several answers from one list, in the options' own order |
+| `time` | A wall clock with no zone, `HH:MM`, with `earliest`/`latest` bounds ([0067](docs/decisions/0067-a-temporal-answer-is-one-fixed-width-string.md)) |
+| `datetime` | An instant in UTC, with the same bounds |
+| `file` | Uploads, claimed inside the submission's transaction ([0055](docs/decisions/0055-files-are-claimed.md)) |
+| `richtext` | A structured document, never HTML ([0052](docs/decisions/0052-richtext-is-not-html.md)) |
+
+Three layout kinds — `table`, whose columns line up across every row and collapse to one
+below 40rem; `tabs`; and `qrcode`, which shows a value and collects nothing
+([0070](docs/decisions/0070-a-code-is-an-arrangement-not-a-field.md)).
+
+Four widgets, under the `widget` property — the author says how a field should look and
+nothing else, so each sits on a type whose stored value it leaves exactly alone
+([0065](docs/decisions/0065-a-widget-is-authored-not-registered.md)): `toggle` on a
+checkbox, `typeahead` on a select, `scanner` on a text field, and `datagrid` on a repeater,
+configured by `columns` ([0066](docs/decisions/0066-a-widget-may-be-configured.md)).
+
+And four properties: `earliest` and `latest` on the temporal types, `optionsSource` for a
+list the deployment resolves rather than the document carrying it
+([0077](docs/decisions/0077-options-may-come-from-a-named-source.md)), `span` on a node
+inside a `table` ([0074](docs/decisions/0074-a-table-child-may-span.md)), and `columns`
+beside a `datagrid`.
+
+### A property is as much a version as a type
+
+This is the part that catches people, and it caught us. `formancy.schema.json` is closed at
+every level — `additionalProperties: false` at the root, `unevaluatedProperties: false` on
+a field — so a reader that has never heard of `widget` does **not** ignore it. It answers
+`Unknown property "widget"` and refuses the whole document: no field renders and nothing is
+collected.
+
+So a version 1 document may not carry `widget`, `optionsSource`, `earliest`, `latest`,
+`span` or `columns`, even though every one of them is optional and adding one takes nothing
+away. `validateSchema` says so by name, with the fix in the message, because the author
+cannot see the reader that would refuse it.
+
+The consolation is that the failure is **loud**. A reader on the older version refuses the
+document rather than rendering a field it does not understand and dropping the answer, which
+is what would look like a field somebody left blank.
+
+### What freezing 2 costs
+
+**An async validator is now a spec 3 feature.** `runsOn` is in the format and enforced, so
+*where* a check runs is answered; `async` is not, and `logicRule` is
+`additionalProperties: false`, so a document carrying it is refused. It was deliberately not
+reserved ahead of use: a property nothing reads validates and does nothing, and reserving it
+would not have saved the bump anyway, for the reason in the section above.
+
+**`signature` and a many-answer tag picker are spec 3 too**, along with any other field
+type. Types should arrive in batches for that reason — each bump is an event for every
+consumer, and shipping two types a fortnight apart spends two of them where one would do.
+
+**A grid's rows are flat**, and that restriction landed *before* the freeze on purpose: a
+`datagrid` column may not name a group ([0078](docs/decisions/0078-a-grid-row-is-flat.md)).
+Refusing something costs nobody anything while a version is unreleased and is a breaking
+change afterwards. Relaxing it later is allowed and would be spec 3.
+
 ## Spec version 1 is FROZEN
 
 Spec `"1"` is frozen as of 2026-09-20. A document that validates today will
@@ -59,14 +131,14 @@ again.
 
 ## Known pre-1.0 caveats
 
-- The spec is frozen; the PACKAGES are not. Their APIs will still change before
-  1.0, and those changes are documented here.
-- Async validators do not exist. When they arrive they will need a new rule
-  kind, which is a spec 2 change — the version line exists for exactly that,
-  and `runsOn` is already in place so the ordering question can be answered
-  without restructuring anything.
+- Both spec versions are frozen; the PACKAGES are not. Their APIs will still change
+  before 1.0, and those changes are documented here.
+- Async validators do not exist. When they arrive they will need a new rule kind and an
+  `async` property, which is a **spec 3** change now that 2 is frozen — the version line
+  exists for exactly that, and `runsOn` is already in place so the ordering question can
+  be answered without restructuring anything.
 
-## Drafts need a token (unreleased)
+## Drafts need a token (0.2.0)
 
 **Why you cannot skip this.** The previous draft routes let anybody read or
 overwrite anybody's part-filled form: both were unauthenticated and the id came

@@ -143,3 +143,28 @@ describe('every decision record', () => {
     expect(unlisted).toEqual([])
   })
 })
+
+describe('the package version on the landing page', () => {
+  test('is derived at build time, not written into the page', () => {
+    // It was a literal -- `packages 0.1.0, pre-alpha` -- and a release is exactly the
+    // branch that changes it while the page is never the branch that shows it. The same
+    // mistake the two counts above were written for, made a third time.
+    expect(read('apps', 'site', 'src', 'app.tsx')).toContain('__PACKAGE_VERSION__')
+    expect(read('apps', 'site', 'decision-records.ts')).toContain('packageVersion')
+    for (const config of ['vite.config.ts', 'vitest.config.ts']) {
+      // Both, because a define missing from the test config makes the page throw in
+      // tests only -- which is a build that passes and a suite that cannot run.
+      expect(read('apps', 'site', config), config).toContain('__PACKAGE_VERSION__')
+    }
+  })
+
+  test('is not a literal anywhere in the page, under any version', () => {
+    // Derived from the manifests rather than looking for one known string: whatever
+    // version the repository is on must not appear in the page source, whichever it is.
+    const version = (
+      JSON.parse(read('package.json')) as { version: string }
+    ).version
+    expect(version).toMatch(/^\d+\.\d+\.\d+/)
+    expect(read('apps', 'site', 'src', 'app.tsx')).not.toContain(version)
+  })
+})
