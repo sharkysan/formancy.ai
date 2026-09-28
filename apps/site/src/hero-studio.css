@@ -62,13 +62,22 @@
 .studio-theme .studio-label { margin-block-end: 0.25rem; }
 .studio-theme button { min-height: 36px; padding: 0.5rem; display: flex; align-items: center; gap: 0.5rem; color: #b5bfd3; background: transparent; border: 1px solid transparent; border-radius: 6px; cursor: pointer; text-align: start; font: inherit; font-size: 0.72rem; }
 .studio-theme button[aria-pressed='true'] { border-color: #535c79; color: #fff; background: #232d42; }
+/* Four across rather than four stacked: the point of the control is that the four are
+   different, and a column of them reads as a list of settings instead. */
+.studio-swatches { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.25rem; }
 .swatch { width: 12px; height: 12px; border-radius: 50%; border: 1px solid #8b93a7; flex: none; }
-.swatch.light { background: #f5f1e9; } .swatch.dark { background: #171b2c; }
+/* Each swatch is its own theme's page colour, so the control shows what it does. */
+.swatch.paper { background: #faf8f2; }
+.swatch.blueprint { background: #eef3fb; }
+.swatch.dusk { background: #171b2c; }
+.swatch.pop { background: #fff3b0; }
 .studio-editor-link { margin-block-start: auto; font-size: 0.72rem; color: #c2b9ff; text-underline-offset: 4px; }
 .studio-editor-link span { float: right; }
 .studio-canvas { margin: 1rem 1rem 1rem 0; padding: clamp(1rem, 2vw, 1.75rem); border-radius: 10px; min-width: 0; }
 .studio-canvas[data-formancy-theme='paper'] { background: #faf8f2; color: #252b29; }
+.studio-canvas[data-formancy-theme='blueprint'] { background: #f4f7fd; color: #1d2433; }
 .studio-canvas[data-formancy-theme='dusk'] { background: #181e2e; color: #eef1f8; }
+.studio-canvas[data-formancy-theme='pop'] { background: #fffaf0; color: #241c08; }
 .studio-event-tag { display: block; font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.1em; margin-block-end: 1.15rem; opacity: 0.8; }
 .studio-canvas h1, .studio-canvas h2, .studio-canvas h3 { font-size: 1.65rem; line-height: 1.1; max-width: none; letter-spacing: -0.04em; color: inherit; background: none; }
 .studio-canvas [data-formancy-part='field'] { margin-block: 1rem; }
@@ -99,6 +108,7 @@
   .studio-tools > p, .studio-tools > .studio-label { display: none; }
   .studio-theme { display: flex; align-items: center; flex-wrap: wrap; margin-block: 0; }
   .studio-theme .studio-label { margin: 0; }
+  .studio-swatches { display: flex; flex-wrap: wrap; gap: 0.25rem; }
   .studio-canvas { margin: 0 0.75rem 0.75rem; padding: 1.25rem; }
   .studio-editor-link { margin-block-start: 0.25rem; }
   .studio-orbit { inset: 0; }

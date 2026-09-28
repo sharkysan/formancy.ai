@@ -80,6 +80,27 @@ its height. Chromium was never affected and still keeps its picker button.
 Nothing in CI runs WebKit, so the guard in `apps/docs/src/themes.test.ts`
 checks the stylesheets rather than a rendered box.
 
+## Unreleased
+
+**The landing page shows all four themes, and a form the engine is visibly working on.**
+The hero preview offered a light one and a dark one while the packages ship four, which
+made a smaller claim than the product supports. It now switches between Paper, Blueprint,
+Dusk and Pop, and the form it switches has a radio that decides both what the form asks —
+a workshops field appears — and what it totals, computed in the browser as the radio is
+clicked.
+
+**The lower half of the page is laid out rather than stacked.** Accessibility and
+self-hosting sit side by side from 62rem, the licence section gained the three things
+Apache-2.0 actually gives and became two columns instead of a centred paragraph with a
+screen of air around it, and the closing section follows the licence directly rather than
+after an empty viewport. The hero's text starts at the top of the page instead of centred
+against the preview beside it.
+
+**The README's four screenshots are current again.** All four were taken from the built
+site and the running admin: the landing page, the same form in all four themes with the
+same answers and the same calculated total, the admin's builder over a real published
+form, and the playground.
+
 ## 0.2.0 — 2026-09-28
 
 **The beta, and the release that freezes spec version 2.** A document written against

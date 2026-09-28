@@ -31,14 +31,54 @@ test('checks required answers without pretending to submit them', async () => {
   expect(await screen.findByText('Looks good. Nothing was sent.')).toBeTruthy()
 })
 
-test('the appearance controls select an actual renderer theme', async () => {
-  // A pressed state alone would make a convincing but inert theme switch.
+test('every appearance the packages ship selects an actual renderer theme', async () => {
+  // A pressed state alone would make a convincing but inert theme switch — and the
+  // claim the page makes is about FOUR stylesheets over one markup, so offering two
+  // of them would be making a smaller claim than the product supports.
   const user = userEvent.setup()
   render(<HeroStudio playground="/playground/" />)
-  await user.click(screen.getByRole('button', { name: 'Dark preview' }))
   const field = screen.getByRole('textbox', { name: 'Your name' })
-  expect(field.closest('[data-formancy-theme]')?.getAttribute('data-formancy-theme')).toBe('dusk')
-  await user.click(screen.getByRole('button', { name: 'Light preview' }))
-  expect(field.closest('[data-formancy-theme]')?.getAttribute('data-formancy-theme')).toBe('paper')
+
+  for (const [name, theme] of [
+    ['Blueprint', 'blueprint'],
+    ['Dusk', 'dusk'],
+    ['Pop', 'pop'],
+    ['Paper', 'paper'],
+  ]) {
+    await user.click(screen.getByRole('button', { name: name as string }))
+    expect(
+      field.closest('[data-formancy-theme]')?.getAttribute('data-formancy-theme'),
+      name as string,
+    ).toBe(theme)
+  }
+
   expect(screen.getByRole('link', { name: /Open full editor/ }).getAttribute('href')).toBe('/playground/')
+})
+
+test('the pass decides what the form asks and what it totals', async () => {
+  // The two engine behaviours the page is about, in the form it opens with: a rule
+  // that shows a field and a rule that computes a value. Both run in the browser with
+  // nothing sent anywhere, which is the claim underneath the whole page.
+  const user = userEvent.setup()
+  render(<HeroStudio playground="/playground/" />)
+
+  expect(screen.queryByRole('group', { name: 'Workshops' })).toBeNull()
+  expect((screen.getByRole('spinbutton', { name: 'Total, CHF' }) as HTMLInputElement).value).toBe(
+    '490',
+  )
+
+  await user.click(screen.getByRole('radio', { name: 'Conference and workshops' }))
+
+  expect(screen.getByRole('group', { name: 'Workshops' })).toBeTruthy()
+  expect((screen.getByRole('spinbutton', { name: 'Total, CHF' }) as HTMLInputElement).value).toBe(
+    '790',
+  )
+})
+
+test('the total is the engine’s, not something a visitor can type over', async () => {
+  render(<HeroStudio playground="/playground/" />)
+
+  expect((screen.getByRole('spinbutton', { name: 'Total, CHF' }) as HTMLInputElement).disabled).toBe(
+    true,
+  )
 })
