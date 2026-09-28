@@ -23,7 +23,7 @@ export default defineConfig({
         { tag: 'meta', attrs: { name: 'twitter:image', content: 'https://formancy.ai/og.png' } },
       ],
       description:
-        'A self-hostable form engine and backend for React and Angular: one engine in browser and server, headless renderers, Apache-2.0.',
+        'A visual form builder for Angular and React. Conditional fields, validation and your own styling. Open source, with an optional self-hosted backend.',
       sidebar: [
         {
           label: 'Start here',

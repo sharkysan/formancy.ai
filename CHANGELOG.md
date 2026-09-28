@@ -39,6 +39,15 @@ told about was below the sentence telling them. Side by side from 62rem, and the
 close reads in one screen. The footer's version line came out from under the running
 submission panel while I was there — it had been half covered.
 
+**The card a shared link shows is a route, not a picture nobody can regenerate.**
+`public/og.png` was an export that outlived two rewrites of the headline: every shared
+link, search result and chat preview still read "One engine, in the browser and on the
+server" long after the page stopped saying it. It is rendered from
+`apps/site/src/og-card.tsx` at `?og` now — same fonts, same colours, same renderer — and
+`counts.test.ts` fails when its headline and the page's disagree. Its `og:image:alt`
+described the old image too, and the docs' own description still called the product a
+self-hostable form engine.
+
 ### What 0.2.0 knowingly does not have
 
 `RELEASING.md` asks a release entry to say this, because the absence a reader discovers

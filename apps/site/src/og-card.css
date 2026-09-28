@@ -1,0 +1,146 @@
+/*
+ * The social card, at exactly the size Open Graph asks for.
+ *
+ * Reached with `?og`, never by a visitor. Fixed pixel sizes throughout on purpose: the
+ * output is one image at one size, so nothing here should respond to anything.
+ */
+
+.og-card {
+  position: relative;
+  width: 1200px;
+  height: 630px;
+  overflow: hidden;
+  background: #080a12;
+  color: var(--text);
+  font-family: var(--sans);
+  display: grid;
+  grid-template-columns: 560px 640px;
+  align-items: center;
+}
+
+/* The page's own glow, at the card's scale. Behind everything and clipped by the card,
+   so it cannot decide the image's size. */
+.og-backdrop {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(60% 90% at 8% 0%, rgb(139 123 255 / 38%), transparent 70%),
+    radial-gradient(55% 80% at 100% 100%, rgb(45 212 191 / 26%), transparent 70%);
+}
+
+.og-words {
+  position: relative;
+  padding: 0 0 0 64px;
+  display: grid;
+  gap: 22px;
+  justify-items: start;
+}
+
+.og-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+
+.og-mark {
+  display: block;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  flex: none;
+  filter: drop-shadow(0 0 12px rgb(139 123 255 / 45%));
+}
+
+.og-mark .stem {
+  fill: var(--client);
+}
+
+.og-mark .arm {
+  fill: var(--server);
+}
+
+.og-card h1 {
+  margin: 0;
+  max-width: none;
+  font-family: var(--display);
+  font-size: 60px;
+  line-height: 1.02;
+  letter-spacing: -0.045em;
+  font-weight: 700;
+  color: #fff;
+  background: none;
+}
+
+.og-glow {
+  background: linear-gradient(96deg, #59e7d2, #8b7bff 55%, #e879f9);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.og-lede {
+  margin: 0;
+  max-width: 30ch;
+  font-size: 21px;
+  line-height: 1.5;
+  color: #aab3c6;
+}
+
+.og-tags {
+  display: flex;
+  gap: 10px;
+  margin: 6px 0 0;
+}
+
+.og-tags span {
+  padding: 8px 16px;
+  border: 1px solid rgb(255 255 255 / 16%);
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 15px;
+  color: #c6cede;
+}
+
+/* Two of the four themes, the near one square to the card and the far one behind it.
+   The claim the picture makes is that one form renders two ways. */
+.og-stack {
+  position: relative;
+  height: 100%;
+}
+
+.og-panel {
+  position: absolute;
+  inset-block-start: 132px;
+  inset-inline-start: 44px;
+  width: 400px;
+  padding: 24px 26px;
+  border-radius: 16px;
+  transform-origin: 50% 50%;
+  box-shadow: 0 30px 70px rgb(0 0 0 / 45%);
+}
+
+.og-panel[data-formancy-theme='pop'] {
+  background: #fffaf0;
+  color: #241c08;
+}
+
+.og-panel[data-formancy-theme='dusk'] {
+  background: #181e2e;
+  color: #eef1f8;
+}
+
+/* The one behind is a second theme, not a shadow: it keeps its own contrast so the
+   picture says "one form, two appearances" rather than "a card with a drop shadow". */
+.og-panel[data-formancy-theme='dusk'] {
+  box-shadow: 0 24px 60px rgb(0 0 0 / 55%);
+}
+
+/* The submit button is chrome the card does not need: the picture is about the fields. */
+.og-panel [data-formancy-part='submit'] {
+  display: none;
+}
