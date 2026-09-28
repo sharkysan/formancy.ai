@@ -160,10 +160,28 @@ than asserted.
    demonstrated rather than only documented. Everything it needs is built; what it
    wants is somewhere to live, since no app in this repository fills in a form
    against a server.
-2. **`signature`** — the last of the three "special components" still unbuilt, and the
+2. **A wizard somebody can build.** Every part of a multi-page form exists except the
+   way to make one. The format has `page`; the engine walks the pages, validates the one
+   being left and refuses to advance past a problem; both renderers draw a stepper with
+   the pages named and the current one marked; and `insertField` would take a page
+   quite happily. What is missing is a route to it in the builder — the palette leaves
+   `page` out on purpose, because a page may only sit at the top level and offering one
+   from a palette that can target any container would offer a choice refused most of the
+   time. The comment there says "adding a page is its own command", and that command has
+   never been written.
+
+   So a wizard is a thing a developer can write by hand and an author cannot make. That
+   is the wrong way round for the audience the builder exists for, and it is the
+   cheapest of these three to fix: one command, its place in the tree, and the keyboard
+   path that every other command already has.
+
+   Not in it: **conditional page routing** — skipping a page on an answer. That is a new
+   rule kind, so it is a spec version, and the pages a form has should stop being a
+   developer-only feature before they start branching.
+3. **`signature`** — the last of the three "special components" still unbuilt, and the
    smallest. `datagrid` was the other, and it shipped: a control over a data model that
    already existed, which is why it went first.
-3. **Translated form content**, while the reservation is still fresh.
+4. **Translated form content**, while the reservation is still fresh.
 
 ## Measured against the competition
 
