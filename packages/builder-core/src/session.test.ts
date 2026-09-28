@@ -511,3 +511,137 @@ describe('authoring translations', () => {
     )
   })
 })
+
+describe('extracting every text in a document', () => {
+  /*
+   * `Text` appears in exactly four places in the format: a field's label, an
+   * option's label, a datagrid column's heading, and a layout node's label. The
+   * first version of this reached one of them, and the sentence recording that
+   * said it left "options, placeholders and help text" for later — naming two
+   * properties the format does not have. It was written from a memory of other
+   * form builders rather than from this one's schema.
+   *
+   * So this case is derived from the format rather than from a list: every string
+   * that can be a reference is one afterwards.
+   *
+   * Ids do not have to be stable, and that is worth saying because it looks like
+   * they should be. The reference lives INSIDE the thing it names — an option's
+   * `$t` travels with the option, a node's with the node — so reordering options
+   * or moving a section carries the reference along and nothing is orphaned. What
+   * an id has to be is unique and readable.
+   */
+  const everything: FormSchema = {
+    specVersion: '3',
+    id: 'trip',
+    title: 'Trip',
+    model: {
+      fields: [
+        {
+          key: 'country',
+          type: 'select',
+          label: 'Country',
+          options: [
+            { value: 'CH', label: 'Switzerland' },
+            { value: 'DE', label: 'Germany' },
+          ],
+        },
+        {
+          key: 'people',
+          type: 'repeater',
+          label: 'Travellers',
+          widget: 'datagrid',
+          columns: [{ field: 'name', header: 'Full name' }],
+          fields: [{ key: 'name', type: 'text', label: 'Name' }],
+        },
+      ],
+    },
+    layouts: [
+      {
+        name: 'web',
+        nodes: [
+          {
+            kind: 'section',
+            label: 'Where to',
+            children: [{ kind: 'field', path: 'country' }],
+          },
+          { kind: 'field', path: 'people' },
+        ],
+      },
+    ] as unknown as NonNullable<FormSchema['layouts']>,
+  }
+
+  test('leaves no literal behind, in any of the four places text lives', () => {
+    const session = createBuilderSession(everything)
+
+    expect(session.extractAllText().ok).toBe(true)
+
+    const document = session.document()
+    const literals: string[] = []
+    const walk = (value: unknown, at: string): void => {
+      if (Array.isArray(value)) {
+        value.forEach((item, index) => { walk(item, `${at}[${String(index)}]`) })
+        return
+      }
+      if (typeof value !== 'object' || value === null) return
+      for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
+        // The two properties that carry display text, wherever they appear.
+        if ((key === 'label' || key === 'header') && typeof item === 'string') {
+          literals.push(`${at}.${key}`)
+        }
+        walk(item, `${at}.${key}`)
+      }
+    }
+    walk(document.model, 'model')
+    walk(document.layouts, 'layouts')
+
+    expect(literals).toEqual([])
+  })
+
+  test('and every one of them still says what it said', () => {
+    const session = createBuilderSession(everything)
+    session.extractAllText()
+
+    const document = session.document()
+    const messages = document.i18n?.messages[document.i18n.defaultLocale] ?? {}
+    const said = Object.values(messages)
+
+    expect(said).toContain('Country')
+    expect(said).toContain('Switzerland')
+    expect(said).toContain('Full name')
+    expect(said).toContain('Where to')
+  })
+
+  test('an option keeps its own reference when the options are reordered', () => {
+    // Why ids need not be stable: the `$t` lives inside the option, so it travels.
+    const session = createBuilderSession(everything)
+    session.extractAllText()
+    const before = session.document().model.fields[0]?.options?.[1]?.label
+
+    session.setFieldProperty(['country'], 'options', [
+      session.document().model.fields[0]?.options?.[1],
+      session.document().model.fields[0]?.options?.[0],
+    ])
+
+    expect(session.document().model.fields[0]?.options?.[0]?.label).toEqual(before)
+    expect(session.orphanedMessages()).toEqual([])
+  })
+
+  test('is one undoable step, however many strings it touched', () => {
+    const session = createBuilderSession(everything)
+
+    session.extractAllText()
+    session.undo()
+
+    expect(session.document()).toEqual(everything)
+  })
+
+  test('says so rather than failing when there is nothing to extract', () => {
+    const session = createBuilderSession(everything)
+    session.extractAllText()
+    const after = session.document()
+
+    expect(session.extractAllText().ok).toBe(true)
+
+    expect(session.document()).toEqual(after)
+  })
+})

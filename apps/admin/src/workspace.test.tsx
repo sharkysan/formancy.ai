@@ -185,7 +185,7 @@ describe('the tabs', () => {
     await user.click(await screen.findByRole('button', { name: 'translations' }))
 
     expect(
-      await screen.findByRole('button', { name: /make every label translatable/i }),
+      await screen.findByRole('button', { name: /make this form translatable/i }),
     ).toBeTruthy()
   })
 

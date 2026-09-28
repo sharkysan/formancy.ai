@@ -31,9 +31,21 @@ An untranslated message is **marked** rather than shown as its fallback, because
 fine in the preview" is how a language ships half-finished. The default locale cannot be
 removed, and the refusal says why.
 
-Not built, and named rather than implied: extraction of options, placeholders and help
-text — the one-press button does labels — catalogue import and export, and a per-locale
-preview.
+Not built, and named rather than implied: catalogue import and export, and a per-locale
+preview — seeing a translated form still means switching the document's default locale.
+
+**The one press reaches every text the format has**: a field's label, an option's label, a
+grid column's heading and a layout node's label. `Text` appears in exactly those four
+places, and the ids it mints need not be stable — a reference lives *inside* the thing it
+names, so reordering options or moving a section carries it along.
+
+*An earlier draft of this entry said the button leaves "options, placeholders and help
+text" for later. The format has no `placeholder` and no help text at all, so two of those
+three named nothing: the sentence was written from a memory of other form builders rather
+than from this one's schema, in a changelog whose subject is this one's schema. Recorded
+rather than quietly corrected, because it is the failure this repository's documentation
+rules exist for, and it got past me three times in one afternoon — into the roadmap, the
+changelog and a decision record.*
 
 **`signature`, and the spec version 3 that carries it.** The last of the three components
 form.io and FormEngine both charge for, and the only one still unbuilt. A signature is
