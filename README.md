@@ -10,21 +10,49 @@
   <a href="#formancy"><img src="https://img.shields.io/badge/status-beta-a8f5ca?style=flat&amp;labelColor=102b29" alt="Status: beta" /></a>
 </p>
 
-A modern, self-hostable form engine and backend — for React and Angular.
+## Build the form. Ship your product.
+
+**The open-source visual form builder for Angular and React.**
+
+From a simple signup to a multi-step application: build it visually, add rules,
+and make it yours. Embed your form in Angular or React with your own design
+system. Conditional questions, live validation and calculated totals are already
+part of the toolkit.
+
+**Your forms. Your design. Your infrastructure.** Use the renderer in your app,
+then add the optional backend for submissions, file uploads and workflows.
+Apache-2.0 throughout.
 
 <h3 align="center">
   <a href="https://formancy.ai">formancy.ai</a>
   &nbsp;·&nbsp;
-  <a href="https://formancy.ai/playground/">Try the playground</a>
+  <a href="https://formancy.ai/playground/">Build your first form</a>
+  &nbsp;·&nbsp;
+  <a href="https://formancy.ai/docs/">Read the documentation</a>
 </h3>
 
 <p align="center">
   <a href="https://formancy.ai"><img src="./docs/images/readme/hero.jpg" alt="The formancy landing page: a form written as JSON on the right, its rules evaluated the same way in the browser and on the server" width="100%" /></a>
 </p>
 
-**A form is a JSON document. formancy compiles it once and runs it in both
-places**, so what the person filling it in was told and what your server
-accepts can never drift apart.
+## Design it. Add rules. Put it to work.
+
+1. **Build your form.** Choose fields, arrange them in rows, sections or pages,
+   and preview the result. Use drag and drop or keyboard controls, with undo.
+2. **Set the rules.** Show follow-up questions based on previous answers,
+   make fields required when relevant, and calculate values such as totals.
+3. **Use it in Angular or React.** Save the form definition as JSON and render
+   it with the native framework components. Start with a theme or connect your
+   own design system.
+4. **Collect answers on your infrastructure.** The optional backend checks
+   submissions with the same rules, stores them in PostgreSQL, and provides
+   drafts, file attachments, CSV export, webhooks and an audit log.
+
+The visual editor is built in React; the forms it creates work in **both
+Angular and React**. You can also author the JSON directly or use a coding
+agent through MCP. The shared engine handles validation and calculations, so
+you do not need to implement each rule separately in your UI and the formancy
+backend.
 
 > **Status: beta, version 0.2.0.**
 >
@@ -49,57 +77,91 @@ accepts can never drift apart.
 > submission tokens yet, and it writes no log at all, so nothing tells you why a
 > request failed.
 
-## See it
+## What you can build
 
-### Same markup, four products
+### Your form should look like your product
 
 <p align="center">
   <img src="./docs/images/readme/themes.png" alt="The same conference-ticket form rendered four times, in the Dusk, Blueprint, Pop and Paper themes" width="100%" />
 </p>
 
-One form, one renderer, the same answers typed in: four themes that do not look
-related. The renderers ship no CSS at all. Each theme is a scoped stylesheet
-over the same `data-formancy-part` hooks, so your design system can be the
-fifth. The total says **1050** in every one of them because the engine worked
-it out, not the page: two hotel nights plus the workshop ticket, a `computed`
-rule in CEL that the server replays and recomputes on submit.
+The same conference registration form in four themes. Change its appearance
+without rewriting its fields or rules. The renderers are unstyled by default;
+use a supplied theme, your own CSS or your own components.
 
-### A builder that edits a document, not a canvas
+The total is calculated from the selected workshop ticket and two hotel nights.
+With the formancy backend, that total is recalculated on submission rather than
+trusting a value sent by the browser.
+
+### Add a field. Set a rule. See it work.
 
 <p align="center">
   <img src="./docs/images/readme/builder.png" alt="The self-hosted admin: a list of forms, the structure tree, a live preview and a property panel explaining every setting" width="100%" />
 </p>
 
-The self-hosted admin opens any published form in the builder: the structure
-on the left, the real renderer in the middle, and every property on the right
-with a sentence saying what it does to the data. Everything works from the
-keyboard first, and drag second. Publishing tells you when a change would
-break the submissions you already have.
+Add and organise fields in the structure tree, see the form in the live preview,
+and edit labels, validation and other settings in the property panel. Arrange
+fields side by side or into sections using drag and drop or keyboard controls.
+The self-hosted admin lets you reopen published forms and review the impact of
+changes before publishing a new version.
 
-### A playground that shows the engine thinking
+### Click an answer. Watch the form adapt.
 
 <p align="center">
   <img src="./docs/images/readme/playground.png" alt="The playground: the builder, the live form in the Blueprint theme, and the engine's submission value and tracked fields side by side" width="100%" />
 </p>
 
-Edit the schema, and the form and the engine follow as you type: the
-submission value as it would be sent, the errors a person can actually see,
-and which fields the rules have hidden. Switch language or theme without
-reloading. `pnpm --filter @formancy/playground dev` runs it locally.
+Use the visual builder or edit the JSON in the playground. Preview the form in
+Angular and React, try conditional questions and validation, and inspect the
+answers that would be submitted. Switch language or theme without reloading.
+`pnpm --filter @formancy/playground dev` runs it locally.
 
-### And also
+### Six reasons to build with formancy
 
-- **Validation that cannot drift.** The rule that shows a field in the browser
-  is the rule the server checks, compiled from the same document.
-- **Accessible by construction.** The engine owns the ARIA wiring, and the
-  conformance suite runs axe-core after every change, in both renderers.
-- **Your coding agent writes the forms.** `@formancy/mcp` gives it the same
-  checks a person gets, and refuses to publish a form the engine would reject.
+- **The builder is open source, too.** The visual editor, Angular and React
+  renderers, and optional backend are all Apache-2.0. Inspect, adapt and host
+  the whole stack yourself.
+- **Your forms evolve. Answers keep their context.** Each submission keeps
+  the exact form version used to collect it. Review compatibility, potential
+  information loss and breaking changes before publishing an update.
+- **Two frameworks. One tested contract.** Angular and React render the same
+  form definition and run through the same behaviour and accessibility test
+  suite. Support for both is continuously checked.
+- **Catch broken rules before your users do.** Publishing checks form structure
+  and expressions, including invalid references, cycles and supported type
+  errors. The same checks help validate forms written by coding agents.
+- **Your components. Your design system.** Connect your own field components
+  and styles, or start with a supplied theme. The shared engine handles the
+  rules while you control how the form fits your product.
+- **Accessibility built in. Continuously checked.** Designed with WCAG 2.2 in
+  mind: keyboard editing, connected labels, help text and error messages, plus
+  automated accessibility checks in both renderers. Your finished form still
+  needs review with its own components, colours and content; automated tests
+  alone do not establish WCAG conformance.
+
+### The hard parts of forms, already connected
+
+- **Conditional fields and calculations.** Build questions that adapt to
+  previous answers, conditional required fields and automatically calculated
+  totals. Use the condition editor or CEL expressions for more complex rules.
+- **Files and formatted text.** Collect attachments with type and size limits,
+  and let people write answers with bold, italic, links and lists.
+- **Validation in the browser and on the server.** Give immediate feedback,
+  then check submissions again with the same rules in the formancy backend.
+- **Keyboard controls and accessibility checks.** The engine connects labels,
+  descriptions and errors. Both renderers are checked with axe-core in the
+  shared conformance suite.
+- **Form versions and submission history.** Each submission keeps the form
+  version used to collect it. Review changes before publishing an update.
+- **AI-assisted authoring.** Describe a form in the builder, or give your coding
+  agent the MCP tools to author and validate a form definition.
 - **No third party in the loop.** Spam protection is proof of work computed in
   the visitor's browser and verified with your own key, not a captcha service.
 - **Apache-2.0, all of it.** The spec, engine, renderers, builder and backend.
 
-## Install
+## Integrate a form into your app
+
+Install the renderer for your framework:
 
 ```bash
 npm install @formancy/react @formancy/core @formancy/spec    # React 19
@@ -113,11 +175,11 @@ rather than a dependency — see [running the stack](#run-the-stack-locally).
 `@formancy/builder-react` is not published yet; [clone the
 repository](#development) to use the builder.
 
-## Why
+## How it fits your stack
 
-Form platforms today make you choose between a good renderer and a good
-builder, and most of them own your markup. formancy is built on three
-commitments:
+The editor saves a form definition containing fields, layout and rules. Your
+application renders that definition, and the optional backend validates and
+stores the submitted answers. These pieces share the same form model:
 
 - **One engine, browser and server.** The same compiled validation,
   conditional-logic and calculation engine runs in both places, so client and

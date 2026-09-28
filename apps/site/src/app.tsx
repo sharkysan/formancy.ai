@@ -14,10 +14,12 @@ import '@formancy/themes/dusk.css'
 import '@formancy/themes/paper.css'
 import '@formancy/themes/pop.css'
 import './site.css'
+import './hero-studio.css'
 import { EXAMPLES } from './examples.js'
 import { demoUploader } from './demo-uploader.js'
 import { LiveRules, highlight, sourceOf } from './source.js'
 import { useJourney } from './use-journey.js'
+import { HeroStudio } from './hero-studio.js'
 
 /**
  * formancy.ai.
@@ -91,31 +93,35 @@ export function App(): ReactElement {
       <main className="page" id="start">
         <Section id="hero" className="hero wide" journey={journey} section="hero">
           <div className="hero-copy">
-            <a className="pill" href="#agents">
-              <span className="pill-tag">New</span>
-              Your coding agent writes the forms now
-              <span aria-hidden="true"> →</span>
-            </a>
+            <p className="eyebrow">Visual form builder for Angular and React</p>
             <h1>
-              <span className="glow">One engine,</span> running in the browser and on the server.
+              <span className="glow">Build the form.</span>{' '}<span className="hero-payoff">Ship your product.</span>
             </h1>
             <p className="lede">
-              A form is a JSON document. formancy compiles it once and runs it in both places, so
-              what the person filling it in was told and what your server accepts can never drift
-              apart.
+              From a simple signup to a multi-step application: build it visually, add rules,
+              and make it yours. Embed your form in Angular or React with your own design system.
+              Conditional questions, live validation and calculated totals are already part of
+              the toolkit.
             </p>
             <div className="actions">
-              <a className="action primary" href="#build">
-                Try a live form
+              <a className="action primary" href={PLAYGROUND}>
+                Build your first form
               </a>
-              <a className="action" href={REPO} rel="noreferrer noopener">
-                Star on GitHub
+              <a className="action" href="#build">
+                Explore example forms
               </a>
             </div>
+            <p className="note">Open source. Apache-2.0. Optional backend on your infrastructure.</p>
           </div>
 
-          <Planes />
+          <HeroStudio playground={PLAYGROUND} />
         </Section>
+
+        <div className="product-path wide" aria-label="From idea to answers">
+          <a href={PLAYGROUND}><span>01 / BUILD</span><strong>Your idea. A working form.</strong><i aria-hidden="true">↗</i></a>
+          <a href="#stack"><span>02 / CONNECT</span><strong>Angular or React. Your style.</strong><i aria-hidden="true">↘</i></a>
+          <a href="#run"><span>03 / COLLECT</span><strong>Your answers. Your infrastructure.</strong><i aria-hidden="true">↘</i></a>
+        </div>
 
         <Marquee />
 
@@ -124,12 +130,13 @@ export function App(): ReactElement {
         </div>
 
         <Section id="engine" className="wide" journey={journey} section="engine">
-          <p className="eyebrow">The problem</p>
-          <h2>The same rule, written twice, is two rules.</h2>
+          <p className="eyebrow">From editor to your application</p>
+          <h2>Your next form starts in an editor.</h2>
           <p className="lede">
-            Most form stacks check a form in the browser with one piece of code and on the server
-            with another. They agree until they don&rsquo;t — and the day they stop is the day
-            somebody&rsquo;s order is accepted by one and rejected by the other.
+            Build a registration form, an application or an internal workflow. Choose the fields,
+            arrange them into sections and pages, and decide when a question appears or becomes
+            required. Your form is saved as JSON and rendered by native Angular or React
+            components. With the formancy backend, the same rules also check incoming submissions.
           </p>
 
           <div className="mirror">
@@ -150,32 +157,30 @@ export function App(): ReactElement {
 
           <div className="pair">
             <div className="side">
-              <h3>@formancy/core</h3>
+              <h3>Guide people as they fill in the form</h3>
               <p>
-                Compiles the document into one evaluation graph: visibility, requiredness,
-                calculations, validation. No DOM, no Node, no framework — which is what lets the
-                identical build run in both places.
+                Show relevant questions, calculate totals and explain validation errors as people
+                type. Define the rules once and use them in either framework.
               </p>
             </div>
             <div className="side server">
-              <h3>@formancy/server</h3>
+              <h3>Check answers before storing them</h3>
               <p>
-                Replays every submission through that same graph against the exact version the
-                browser rendered, recomputes what the client claimed, and stores the result it
-                worked out itself.
+                The optional backend checks submissions against the same form version and rules.
+                It recalculates totals on the server, so changing a value in the browser cannot
+                bypass those checks.
               </p>
             </div>
           </div>
         </Section>
 
         <Section id="build" className="wide" journey={journey} section="builder">
-          <p className="eyebrow">Live, not a screenshot</p>
-          <h2>A document on the left. A working form on the right.</h2>
+          <p className="eyebrow">Try the forms your users will see</p>
+          <h2>Click an answer. Watch the form adapt.</h2>
           <p className="lede">
-            Three real formancy documents, rendered by <code>@formancy/react</code> right here.
-            Answer a question and watch the rules underneath light up — that is the engine
-            thinking, the same one your server would run. Then switch the theme: the same
-            markup, four products that do not look related.
+            Try these three interactive examples. Change an answer to reveal follow-up questions
+            or update a total. Switch themes to see how the same form can fit different products.
+            These examples use React; the same form definitions also work in Angular.
           </p>
 
           <Examples />
@@ -183,14 +188,14 @@ export function App(): ReactElement {
           <p className="note">
             Nothing here is sent anywhere — the page is a static site, and a file you attach stays
             in this tab, which the submission says out loud rather than pretending otherwise.{' '}
-            <a href={PLAYGROUND}>Open the playground</a> to edit a document yourself and watch
-            React and Angular render the same change.
+            <a href={PLAYGROUND}>Open the form builder</a> to add and arrange fields yourself,
+            then preview your form in React and Angular.
           </p>
         </Section>
 
         <Section id="features" className="wide" journey={journey} section="features">
-          <p className="eyebrow">Batteries, checked</p>
-          <h2>Everything a form needs after somebody presses submit.</h2>
+          <p className="eyebrow">More than fields on a page</p>
+          <h2>The hard parts of forms, already connected.</h2>
           <Features />
         </Section>
 
@@ -217,15 +222,15 @@ export function App(): ReactElement {
         <Section id="stack" className="wide" journey={journey} section="stack">
           <p className="eyebrow">Architecture</p>
           <h2>
-            One engine. Two bindings. Your markup on top.
+            Native Angular and React components. Your design system.
             <span className="depth" aria-hidden="true">
               <i />
             </span>
           </h2>
           <p className="lede">
-            Everything shared sits at the bottom, and it is the larger part. Only the binding is
-            written twice — React hooks on one side, zoneless Angular signals on the other — and
-            neither ships a stylesheet you have to fight.
+            Use the same form definition in either framework. Start with a supplied theme or
+            connect your own components and styles. React hooks and Angular signals integrate
+            the form with your application; the shared engine handles its rules.
           </p>
 
           {/* One list, not a diagram beside a list. The planes below ARE these
@@ -270,11 +275,11 @@ export function App(): ReactElement {
 
         <Section id="access" className="wide" journey={journey} section="access">
           <p className="eyebrow">Accessibility</p>
-          <h2>Built by keyboard, before it was built by mouse.</h2>
+          <h2>Edit forms with a mouse or a keyboard.</h2>
           <p className="lede">
-            WCAG 2.2 requires every drag to have an equivalent that is not a drag. The
-            builder&rsquo;s keyboard path was written first, and the drag surfaces call the same
-            commands — which is the only order that leaves the keyboard path finished.
+            Add, move and arrange fields without dragging. The editor offers keyboard controls
+            and undo, while the rendered forms connect labels, descriptions and validation errors
+            for assistive technology. Both renderers are checked by the same accessibility tests.
           </p>
 
           <div className="keys">
@@ -291,11 +296,12 @@ export function App(): ReactElement {
 
         <Section id="run" className="wide" journey={journey} section="host">
           <p className="eyebrow">Self-hosted</p>
-          <h2>It is a container and a database.</h2>
+          <h2>Keep forms and submissions on your infrastructure.</h2>
           <p className="lede">
-            Submissions bound immutably to the version that produced them, drafts that migrate on
-            resume, CSV export across versions, webhooks from a transactional outbox, and an audit
-            log that records who read what.
+            Add the optional formancy backend when you need to store submissions, let people
+            resume drafts, export answers to CSV or notify other systems through webhooks.
+            Run it with Docker and PostgreSQL. Each submission keeps its form version, and the
+            audit log records who accessed the data.
           </p>
 
           <div className="terminal">
@@ -577,41 +583,36 @@ function Features(): ReactElement {
 
   const cards: ReadonlyArray<{ title: string; body: string; icon: ReactNode; wide?: boolean }> = [
     {
-      title: 'Validated twice, written once',
-      body: 'The browser shows the error, the server replays the submission through the same compiled graph and recomputes every calculated value itself. Nothing the client claims is trusted.',
-      icon: <IconShield />,
+      title: 'The builder is open source, too.',
+      body: 'The visual editor, Angular and React renderers, and optional backend are all Apache-2.0. Build on the whole stack, with source code you can inspect, adapt and host yourself.',
+      icon: <IconFile />,
       wide: true,
     },
     {
-      title: 'Logic in CEL',
-      body: 'Visibility, requiredness, totals and checks — type-checked when the form is saved, evaluated without eval under a strict CSP.',
-      icon: <IconBranch />,
-    },
-    {
-      title: 'Versions that never lie',
-      body: 'Every submission is bound to the exact version that produced it. A change is diffed as compatible, lossy or breaking before it ships.',
+      title: 'Your forms evolve. Answers keep their context.',
+      body: 'Each submission keeps the exact form version used to collect it. Review whether an update is compatible, loses information or breaks existing forms before publishing.',
       icon: <IconLayers />,
     },
     {
-      title: 'Files, claimed in a transaction',
-      body: 'Uploads are bound to their submission in the same transaction that stores it, and only ever served as attachments.',
-      icon: <IconFile />,
+      title: 'Two frameworks. One tested contract.',
+      body: 'Use the same form definition in Angular and React. Both native renderers run through the same behaviour and accessibility test suite, so support for both is continuously checked.',
+      icon: <IconBranch />,
     },
     {
-      title: 'Rich text, parsed not trusted',
-      body: 'Formatted answers go through a parser into elements. Nothing is ever handed to innerHTML.',
+      title: 'Catch broken rules before your users do.',
+      body: 'Publishing checks the form structure and expressions, catching invalid references, cycles and supported type errors before the form goes live. The same checks help validate forms written by coding agents.',
+      icon: <IconShield />,
+    },
+    {
+      title: 'Your components. Your design system.',
+      body: 'Go beyond changing colours. Connect your own field components and styles, or start with a supplied theme. Keep the form integrated with your product while the shared engine handles its rules.',
       icon: <IconType />,
     },
     {
-      title: 'An audit log that records reads',
-      body: 'Who exported four thousand answers is the question that gets asked. The log answers it — and never contains the answers themselves.',
+      title: 'Accessibility built in. Continuously checked.',
+      body: 'Designed with WCAG 2.2 in mind: keyboard editing, connected labels, help text and error messages. Both renderers undergo automated accessibility checks. Your finished form still needs review with its own components, colours and content.',
       icon: <IconEye />,
       wide: true,
-    },
-    {
-      title: 'Webhooks from an outbox',
-      body: 'Delivered from a transactional outbox, to an address the server resolved and checked itself.',
-      icon: <IconSend />,
     },
   ]
 
@@ -757,70 +758,6 @@ function Section({
 }
 
 /**
- * The hero's two planes.
- *
- * The document behind and what the engine makes of it in front, separated in
- * Z and converging as you scroll — the claim the page makes, in the one place
- * it is allowed to be loud. Presentational entirely: `aria-hidden`, because
- * the same words are already in the headline beside it.
- */
-function Planes(): ReactElement {
-  return (
-    <div className="planes" aria-hidden="true">
-      <div className="window plane-document">
-        <header>
-          <span className="lights">
-            <i />
-            <i />
-            <i />
-          </span>
-          ticket.json
-        </header>
-        <pre className="code">
-          {highlight(`{
-  "model": { "fields": [
-    { "key": "ticket", "type": "radio" },
-    { "key": "workshops", "type": "selectboxes" },
-    { "key": "total", "type": "number" }
-  ]},
-  "logic": { "rules": [
-    { "target": "workshops", "kind": "visible",
-      "cel": "ticket == 'pro'" },
-    { "target": "total", "kind": "computed",
-      "cel": "ticket == 'pro' ? 690.0 : 390.0" }
-  ]}
-}`)}
-        </pre>
-      </div>
-
-      <div className="window plane-form">
-        <header>
-          <span className="dot server" />
-          evaluated · browser and server alike
-        </header>
-        <dl className="verdicts">
-          <div>
-            <dt>ticket</dt>
-            <dd>pro</dd>
-          </div>
-          <div className="on">
-            <dt>workshops</dt>
-            <dd>shown</dd>
-          </div>
-          <div className="on">
-            <dt>total</dt>
-            <dd>CHF 690</dd>
-          </div>
-        </dl>
-      </div>
-
-      <span className="chip chip-client">✓ checked in the browser</span>
-      <span className="chip chip-server">✓ replayed on the server</span>
-    </div>
-  )
-}
-
-/**
  * The running submission.
  *
  * The page's conceit: reading it fills a form in. The panel is a real
@@ -829,7 +766,7 @@ function Planes(): ReactElement {
  */
 function Panel({ journey }: { journey: ReturnType<typeof useJourney> }): ReactElement | null {
   const count = Object.keys(journey.data).length
-  if (count === 0) return null
+  if (count === 0 || (journey.seen.size === 1 && journey.seen.has('hero'))) return null
 
   return (
     <aside className="panel" aria-label="What you have told us by reading this far">
@@ -970,10 +907,5 @@ const IconEye = (): ReactElement => (
   <Icon>
     <path d="M2.5 12S6 5 12 5s9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7Z" />
     <circle cx="12" cy="12" r="3" />
-  </Icon>
-)
-const IconSend = (): ReactElement => (
-  <Icon>
-    <path d="M21 3 10 14M21 3l-7 18-4-7-7-4 18-7Z" />
   </Icon>
 )

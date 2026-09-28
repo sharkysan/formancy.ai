@@ -467,6 +467,170 @@ describe('the theme contract', () => {
     expect(wrong).toEqual([])
   })
 
+  test('takes the platform look off date and time controls, which iOS draws too wide', () => {
+    // Reported from a phone as "the date and time fields are broken on mobile". Mobile
+    // Safari gives `date`, `time` and `datetime-local` inputs an intrinsic width that
+    // `width: 100%` and `min-width: 0` do not override, so they run past the edge of
+    // their field; it centres the value; and an empty one collapses the line its value
+    // would sit on. Chromium does none of this -- measured in its phone emulation, all
+    // three were exactly as wide as their field in every theme -- so neither this suite
+    // nor CI nor a desktop browser can see it.
+    //
+    // What is checkable is the stylesheet: each theme takes the platform appearance off
+    // those three types together, and puts the value back at the start of a line that
+    // keeps its height.
+    const wrong = themes().flatMap(({ name, css }) => {
+      const bare = css.replace(/\/\*[\s\S]*?\*\//g, '')
+      const rules = [...bare.matchAll(/([^{}]*)\{([^{}]*)\}/g)].map((match) => ({
+        selector: (match[1] ?? '').trim(),
+        body: match[2] ?? '',
+      }))
+      const problems: string[] = []
+
+      const controls = rules.find(
+        ({ selector }) =>
+          ["'date'", "'time'", "'datetime-local'"].every((type) => selector.includes(`[type=${type}]`)) &&
+          !selector.includes('::'),
+      )
+      if (!/(^|[\s;])appearance:\s*none/.test(controls?.body ?? '')) {
+        problems.push(`${name}: no rule takes \`appearance\` off date, time and datetime-local inputs together`)
+      }
+      if (!/-webkit-appearance:\s*none/.test(controls?.body ?? '')) {
+        problems.push(`${name}: the date and time rule has no \`-webkit-appearance: none\`, which older iOS needs`)
+      }
+
+      const value = rules.find(({ selector }) => selector.includes('::-webkit-date-and-time-value'))
+      if (!/text-align:\s*start/.test(value?.body ?? '')) {
+        problems.push(`${name}: the date and time value is left centred, which is iOS's default`)
+      }
+      if (!/min-height:/.test(value?.body ?? '')) {
+        problems.push(`${name}: an empty date or time value has no height, so iOS collapses its line`)
+      }
+      return problems
+    })
+
+    expect(wrong).toEqual([])
+  })
+
+  test('shows a radio or checkbox state on the next frame, not after the text-field fade', () => {
+    // Reported as "in Dusk the radio is not immediate". Every theme gives its text
+    // controls a short transition on border, shadow and background, and the checkbox and
+    // radio rules inherited it -- they match `input` too. Dusk and Blueprint draw the
+    // radio's dot with an inset box-shadow and the fill with a background, so the chosen
+    // state itself faded in: measured in Dusk, unchanged for the first frames after the
+    // click and settled only after ~150ms, with the whole circle filling with colour
+    // before the ring grew back. A choice that answers late reads as a click that did
+    // not register.
+    //
+    // This covers the box or circle itself; the tick and the dot drawn on a
+    // pseudo-element are the next test's.
+    const wrong = themes().flatMap(({ name, css }) => {
+      const bare = css.replace(/\/\*[\s\S]*?\*\//g, '')
+      const rules = [...bare.matchAll(/([^{}]*)\{([^{}]*)\}/g)].map((match) => ({
+        selector: (match[1] ?? '').trim(),
+        body: match[2] ?? '',
+      }))
+      const choice = rules.find(
+        ({ selector }) =>
+          /input:is\(\[type='checkbox'\],\s*\[type='radio'\]\)$/.test(selector),
+      )
+      if (choice === undefined) return [`${name}: no rule draws checkboxes and radios together`]
+      return /(^|[\s;])transition:\s*none\s*(;|$)/.test(choice.body)
+        ? []
+        : [`${name}: checkboxes and radios inherit the text controls' transition, so a choice shows late`]
+    })
+
+    expect(wrong).toEqual([])
+  })
+
+  test('draws a checkbox tick or radio dot at once, not grown in', () => {
+    // The follow-up report: "Radio- und Checkbox-Zustand scheint immer noch nicht
+    // sofort". The fix above took the text-field fade off the controls, and kept a
+    // scale-in on the tick and the dot as an ornament -- 120-140ms in every theme's
+    // checkbox and in Pop's and Paper's radio. The tick and the dot ARE the state, so
+    // a mark that grows in is a state that arrives late, and it was read that way.
+    const wrong = themes().flatMap(({ name, css }) => {
+      const bare = css.replace(/\/\*[\s\S]*?\*\//g, '')
+      const rules = [...bare.matchAll(/([^{}]*)\{([^{}]*)\}/g)].map((match) => ({
+        selector: (match[1] ?? '').trim(),
+        body: match[2] ?? '',
+      }))
+      return rules
+        .filter(
+          ({ selector, body }) =>
+            /\[type='(checkbox|radio)'\]/.test(selector) &&
+            /::(before|after)/.test(selector) &&
+            /(^|[\s;])transition:\s*(?!none\s*(;|$))/.test(body),
+        )
+        .map(({ selector }) => `${name}: \`${selector}\` animates the mark that shows the choice`)
+    })
+
+    expect(wrong).toEqual([])
+  })
+
+  test('draws a calendar or a clock in date and time fields on iOS, and only there', () => {
+    // Reported from an iPhone: "the date time fields have no icons on safari mobile".
+    // Mobile Safari draws none -- the field reads as plain text and the picker opens
+    // on a tap -- while Chromium and Firefox draw their own button inside the control.
+    // So the icon is the theme's, and it is scoped to iOS: drawn everywhere, Chromium
+    // would show two. `@supports (-webkit-touch-callout: none)` is true on iOS WebKit
+    // and false in desktop Safari, Chromium and Firefox.
+    //
+    // Nothing here runs WebKit, so the stylesheet is what is checked: the rules exist
+    // inside that query and nowhere else, date and datetime-local get a calendar and
+    // time gets a clock, and the icon is drawn in the theme's own muted ink. That last
+    // one is derived rather than trusted, because a data URI cannot say
+    // `var(--fm-muted)` and a hand-copied colour is exactly what drifts.
+    const IOS = /@supports\s*\(\s*-webkit-touch-callout:\s*none\s*\)\s*\{((?:[^{}]*\{[^{}]*\})*[^{}]*)\}/
+
+    const wrong = themes().flatMap(({ name, css }) => {
+      const bare = css.replace(/\/\*[\s\S]*?\*\//g, '')
+      const rulesOf = (text: string) =>
+        [...text.matchAll(/([^{}]*)\{([^{}]*)\}/g)].map((match) => ({
+          selector: (match[1] ?? '').trim(),
+          body: match[2] ?? '',
+        }))
+      const problems: string[] = []
+
+      const muted = /--fm-muted:\s*(#[0-9a-fA-F]{6})\s*;/.exec(bare)?.[1]?.toLowerCase()
+      if (muted === undefined) return [`${name}: defines no six-digit --fm-muted to draw the icon in`]
+
+      const block = IOS.exec(bare)?.[1]
+      if (block === undefined) return [`${name}: has no iOS-only block, so date and time fields there have no icon`]
+
+      const icon = (types: string[]) =>
+        rulesOf(block).find(
+          ({ selector, body }) =>
+            types.every((type) => selector.includes(`[type='${type}']`)) &&
+            /background-image:\s*url\("data:image\/svg\+xml/.test(body),
+        )
+      const calendar = icon(['date', 'datetime-local'])
+      const clock = icon(['time'])
+      if (calendar === undefined) problems.push(`${name}: no calendar for date and datetime-local on iOS`)
+      if (clock === undefined) problems.push(`${name}: no clock for time on iOS`)
+
+      for (const rule of [calendar, clock]) {
+        if (rule === undefined) continue
+        const drawn = /stroke='%23([0-9a-fA-F]{6})'/.exec(rule.body)?.[1]?.toLowerCase()
+        if (`#${drawn}` !== muted) {
+          problems.push(`${name}: the iOS icon is drawn in #${drawn ?? '?'}, not the theme's --fm-muted ${muted}`)
+        }
+      }
+
+      // Outside the query nothing may draw one, or Chromium shows its own button and ours.
+      const outside = bare.replace(IOS, '')
+      const leaked = rulesOf(outside).filter(
+        ({ selector, body }) =>
+          /\[type='(date|time|datetime-local)'\]/.test(selector) && /background-image:/.test(body),
+      )
+      if (leaked.length > 0) problems.push(`${name}: a date or time icon is drawn outside iOS, where the browser already draws one`)
+
+      return problems
+    })
+
+    expect(wrong).toEqual([])
+  })
+
   test('a themed control has a height, so it is visible before it has content', () => {
     // The specific reason the field was invisible rather than merely unstyled:
     // an empty contenteditable collapses to nothing without one.

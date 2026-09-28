@@ -8,6 +8,78 @@ Loosely [Keep a Changelog](https://keepachangelog.com), with reasons attached â€
 a line that says only *what* changed is rarely the line you need six months
 later.
 
+## Unreleased
+
+- The homepage introduces the editor with a real interactive form preview:
+  add a field, change its theme and check answers without sending them. A
+  responsive product walkthrough and illuminated 3D treatment keep the editor
+  in focus; reduced-motion preferences disable the movement.
+
+- The homepage and README highlight six product strengths, including keyboard
+  access and automated accessibility checks, with the limits of WCAG claims
+  stated explicitly.
+
+- The homepage uses a wider content area on large screens while keeping
+  paragraph lengths bounded for readability.
+
+- The homepage and README now introduce formancy as a visual form builder for
+  Angular and React, link directly to the editor, and explain features through their use
+  in a form. Search and sharing descriptions use the same product description.
+
+**Date and time fields show a calendar or a clock on iPhone.** Reported from a
+phone: "the date time fields have no icons on safari mobile". Mobile Safari
+never draws one -- the field reads as plain text until it is tapped -- while
+Chromium and Firefox draw their own button inside the control. All four themes
+now draw a calendar in `date` and `datetime-local` fields and a clock in `time`
+fields, in their own `--fm-muted` ink, inside `@supports (-webkit-touch-callout:
+none)`, which only iOS WebKit matches: drawn everywhere, Chromium would show two.
+`apps/docs/src/themes.test.ts` checks the rules exist only there and that the
+icon's colour is the theme's, since a data URI cannot read a custom property.
+Checked in Chromium that the rule does not apply; not yet seen on an iPhone.
+
+**Dropping beside a field on the preview does what the line says.** Reported as
+"the drag and drop is strange" in the playground builder, and measured there:
+
+- Inside a row, the drop lands to the left or right of the field, and the
+  indicator was a line across its top. The stylesheet had a left-edge rule for
+  row children and a top-edge rule for every field, of equal weight, and the
+  later one won. The surface now names the axis in the value it sets
+  (`inline-before`, `inline-after`), so no two rules compete for it.
+- A field in a table was treated as standing alone, because only a direct
+  `layout-row` parent counted. It was offered the side zones that make a new
+  row, and dropping on "Language on the gift card" built one inside its
+  half-width cell, where the dropped field landed below it rather than beside
+  it. Beside a spanning cell the same drop was offered and then refused with a
+  message about `span`. A table's children, through the cell a span wraps them
+  in, now count as side by side: left and right move among the cells.
+
+A three-field row in the playground's narrow preview still wraps its third
+field onto a new line. That is the reflow rule, twelve rems a column, and not
+part of this.
+
+**A radio or checkbox answers on the next frame.** Reported as "in Dusk the
+radio is not immediate". The checkbox and radio rules match `input`, so they
+inherited the short fade every theme gives its text fields. Dusk and Blueprint
+draw the chosen state with exactly those properties, so the state itself faded
+in: measured in Dusk, nothing changed for the first frames after a click, the
+whole circle then filled with colour before the ring grew back, and it settled
+after about 150 ms. All four themes now take the fade off the choice controls.
+
+The first version of that fix kept the checkbox tick, and Pop's and Paper's
+radio dot, growing in over 120-140 ms as an ornament. It was reported straight
+back as still not immediate, which is right: the tick and the dot are the
+state. They are drawn at once now, in every theme.
+
+**Date and time fields fit their field on iPhone.** Reported from a phone as
+"broken on mobile" in the playground. Mobile Safari draws `date`, `time` and
+`datetime-local` inputs at an intrinsic width that `width: 100%` does not
+override, so they ran past the edge of the field; it also centred the value and
+collapsed an empty one's line. All four themes now take the platform appearance
+off those three types and put the value back at the start of a line that keeps
+its height. Chromium was never affected and still keeps its picker button.
+Nothing in CI runs WebKit, so the guard in `apps/docs/src/themes.test.ts`
+checks the stylesheets rather than a rendered box.
+
 ## 0.2.0 â€” 2026-09-28
 
 **The beta, and the release that freezes spec version 2.** A document written against

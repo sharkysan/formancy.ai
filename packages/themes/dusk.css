@@ -108,6 +108,47 @@
   transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
 }
 
+/* Date and time controls on iOS. Mobile Safari gives these three input types
+   an intrinsic width that `width: 100%` and `min-width: 0` do not override, so
+   they run past the field; it centres the value; and an empty one collapses
+   the line its value would sit on. Taking the platform appearance off lets
+   the rules above size it, and the value goes back to the start of the line.
+   Chromium and Firefox keep their picker button either way. */
+[data-formancy-theme='dusk'] [data-formancy-part='field'] input:is([type='date'], [type='time'], [type='datetime-local']) {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+}
+
+[data-formancy-theme='dusk'] [data-formancy-part='field'] input::-webkit-date-and-time-value {
+  text-align: start;
+  min-height: 1.4em;
+}
+
+/* A calendar and a clock, on iOS only. Mobile Safari draws no icon in these
+   fields -- they read as plain text and the picker opens on a tap -- while
+   Chromium and Firefox draw their own button inside the control, so drawing one
+   everywhere would show two. `-webkit-touch-callout` is supported by iOS WebKit
+   alone. The colour is --fm-muted written out, because a data URI cannot read a
+   custom property; apps/docs/src/themes.test.ts fails if the two drift. */
+@supports (-webkit-touch-callout: none) {
+  [data-formancy-theme='dusk'] [data-formancy-part='field'] input:is([type='date'], [type='datetime-local']) {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238a96a8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M16 3v4M8 3v4M3 10h18'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1.125rem;
+    padding-inline-end: 2.5rem;
+  }
+
+  [data-formancy-theme='dusk'] [data-formancy-part='field'] input[type='time'] {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238a96a8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1.125rem;
+    padding-inline-end: 2.5rem;
+  }
+}
+
 [data-formancy-theme='dusk'] [data-formancy-part='field'] :is(input, select, textarea, [data-formancy-part='richtext-surface']):hover:not(:disabled, :focus-visible) {
   background-color: var(--fm-control-hover);
 }
@@ -182,6 +223,8 @@
 /* Boxes and circles, drawn: a rounded well that lights up when it is chosen.
    `appearance: none` changes how the input looks, not what it is. */
 [data-formancy-theme='dusk'] [data-formancy-part='field'] input:is([type='checkbox'], [type='radio']) {
+  /* The text controls' fade is inherited through `input`; a choice must show at once. */
+  transition: none;
   appearance: none;
   flex: none;
   display: inline-grid;
@@ -217,7 +260,6 @@
   rotate: -45deg;
   translate: 0 -1px;
   scale: 0;
-  transition: scale 140ms ease;
 }
 
 [data-formancy-theme='dusk'] [data-formancy-part='field'] input[type='checkbox']:checked::before {
