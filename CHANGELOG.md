@@ -10,6 +10,17 @@ later.
 
 ## Unreleased
 
+**Date and time fields show a calendar or a clock on iPhone.** Reported from a
+phone: "the date time fields have no icons on safari mobile". Mobile Safari
+never draws one -- the field reads as plain text until it is tapped -- while
+Chromium and Firefox draw their own button inside the control. All four themes
+now draw a calendar in `date` and `datetime-local` fields and a clock in `time`
+fields, in their own `--fm-muted` ink, inside `@supports (-webkit-touch-callout:
+none)`, which only iOS WebKit matches: drawn everywhere, Chromium would show two.
+`apps/docs/src/themes.test.ts` checks the rules exist only there and that the
+icon's colour is the theme's, since a data URI cannot read a custom property.
+Checked in Chromium that the rule does not apply; not yet seen on an iPhone.
+
 **Dropping beside a field on the preview does what the line says.** Reported as
 "the drag and drop is strange" in the playground builder, and measured there:
 
