@@ -23,8 +23,26 @@ const APPEARANCES = [
 
 type Appearance = (typeof APPEARANCES)[number]['theme']
 
-/** What the engine is given, and the two behaviours worth showing in a hero. */
+/**
+ * What the engine is given: a form that looks like a product's, and three behaviours
+ * a visitor can watch happen.
+ *
+ * **A two-column arrangement**, which is why there is a `layouts` entry at all: name
+ * beside email and the date beside the total, so it reads as a real registration form
+ * rather than a column of boxes. Below 40rem every theme collapses it to one column, so
+ * the hero does not need a second schema for a phone.
+ *
+ * A field the layout does not place is invisible, so the company field has to be added
+ * to BOTH when somebody asks for it — which is the rule the arrangement editor exists
+ * to make obvious, and it applies here too.
+ */
 function previewEngine(company: boolean, previous?: FormEngine): FormEngine {
+  const cell = (path: string, span?: 'all'): Record<string, unknown> => ({
+    kind: 'field',
+    path,
+    ...(span === undefined ? {} : { span }),
+  })
+
   const schema: FormSchema = {
     specVersion: '2',
     id: 'hero-registration',
@@ -43,8 +61,7 @@ function previewEngine(company: boolean, previous?: FormEngine): FormEngine {
             { value: 'workshops', label: 'Conference and workshops' },
           ],
         },
-        // Shown only for the second ticket, by a rule the engine evaluates — the
-        // conditional logic the page is about, in the form the page opens with.
+        // Shown only for the second pass, by a rule the engine evaluates.
         {
           key: 'heroWorkshops',
           type: 'selectboxes',
@@ -55,9 +72,34 @@ function previewEngine(company: boolean, previous?: FormEngine): FormEngine {
             { value: 'hosting', label: 'Self-hosting' },
           ],
         },
+        // A bound the format carries, so the control refuses a date before the doors
+        // open rather than the server doing it later.
+        { key: 'heroArriving', type: 'date', label: 'Arriving', earliest: '2027-05-03' },
         { key: 'heroTotal', type: 'number', label: 'Total, CHF' },
+        { key: 'heroProgramme', type: 'checkbox', widget: 'toggle', label: 'Send me the programme' },
       ],
     },
+    layouts: [
+      {
+        name: 'web',
+        nodes: [
+          {
+            kind: 'table',
+            columns: 2,
+            children: [
+              cell('heroName'),
+              cell('heroEmail'),
+              ...(company ? [cell('heroCompany', 'all')] : []),
+              cell('heroTicket', 'all'),
+              cell('heroWorkshops', 'all'),
+              cell('heroArriving'),
+              cell('heroTotal'),
+              cell('heroProgramme', 'all'),
+            ],
+          },
+        ],
+      },
+    ] as unknown as NonNullable<FormSchema['layouts']>,
     logic: {
       rules: [
         { target: 'heroWorkshops', kind: 'visible', cel: "heroTicket == 'workshops'" },
@@ -86,6 +128,8 @@ function previewEngine(company: boolean, previous?: FormEngine): FormEngine {
       heroEmail: previous?.getFieldSnapshot(['heroEmail']).value ?? '',
       heroTicket: previous?.getFieldSnapshot(['heroTicket']).value ?? 'conference',
       heroWorkshops: previous?.getFieldSnapshot(['heroWorkshops']).value ?? [],
+      heroArriving: previous?.getFieldSnapshot(['heroArriving']).value ?? '',
+      heroProgramme: previous?.getFieldSnapshot(['heroProgramme']).value ?? null,
     },
   })
 }
@@ -164,6 +208,7 @@ export function HeroStudio({ playground }: { playground: string }): ReactElement
             </h2>
             <FormancyProvider engine={engine}>
               <FormancyForm
+                layout="web"
                 submitLabel="Check this form"
                 onSubmit={(result) =>
                   setVerdict(

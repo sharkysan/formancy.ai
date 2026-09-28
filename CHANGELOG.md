@@ -20,6 +20,19 @@ versioning and pins documents to `{ "const": "1" }`, so it refuses a version 2 d
 rather than ignoring the property — which is the loud failure rather than the silent one,
 and still a failure.
 
+**The hero form is a form, not three boxes.** Name beside email and the date beside the
+total, through a `layouts` entry the page renders with — which is also why the company
+field has to be added to the layout as well as the model when somebody asks for it, since
+a field the layout does not place is invisible. It gained a date with an `earliest` bound
+and a `toggle`, and it keeps the two rules a visitor can watch happen: a pass that decides
+which questions follow and a total the engine computes.
+
+**The admin's development proxy reaches the server on Windows.** `apps/admin/vite.config.ts`
+targeted `http://localhost:4380` while the server binds `0.0.0.0` — IPv4 only — and Node
+resolves `localhost` to `::1` first on Windows. Every API call answered 502 and the admin
+showed an empty list of forms with nothing saying why. Measured rather than guessed: `curl`
+against the IPv4 address answered 401 and against `[::1]` answered nothing at all.
+
 ### What 0.2.0 knowingly does not have
 
 `RELEASING.md` asks a release entry to say this, because the absence a reader discovers

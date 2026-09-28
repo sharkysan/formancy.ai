@@ -99,14 +99,18 @@ type into the form.
 ### Add a field. Set a rule. See it work.
 
 <p align="center">
-  <img src="./docs/images/readme/builder.png" alt="The self-hosted admin: a list of forms, the structure tree, a live preview and a property panel explaining every setting" width="100%" />
+  <img src="./docs/images/readme/builder.png" alt="The self-hosted admin editing a conference registration: the structure tree with a nested group and a repeater, a live two-column preview with a grid of colleagues and a calculated total, and the property panel for the selected field" width="100%" />
 </p>
 
+A real registration form, open in the admin: a group of attendee details, a
+pass that decides which questions follow, two dates with bounds, a grid of
+colleagues on one invoice, a file and a total the engine calculates.
+
 Add and organise fields in the structure tree, see the form in the live preview,
-and edit labels, validation and other settings in the property panel. Arrange
-fields side by side or into sections using drag and drop or keyboard controls.
-The self-hosted admin lets you reopen published forms and review the impact of
-changes before publishing a new version.
+and edit labels, validation and other settings in the property panel — each with
+a sentence saying what it does to the data. Arrange fields side by side or into
+sections by drag or by keyboard. The admin reopens published forms and reports
+which changes would invalidate the submissions you already have.
 
 ### Click an answer. Watch the form adapt.
 

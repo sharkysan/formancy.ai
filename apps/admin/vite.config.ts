@@ -10,7 +10,13 @@ export default defineConfig({
     strictPort: true,
     // The server has no CORS on purpose (SP-6 owns cross-origin policy);
     // in development the admin reaches it through this same-origin proxy.
-    proxy: { '/api': { target: 'http://localhost:4380', changeOrigin: true, rewrite: (p) => p.slice('/api'.length) } },
+    //
+    // `127.0.0.1` and never `localhost`: the server binds `0.0.0.0`, which is IPv4 only,
+    // while Node resolves `localhost` to `::1` first on Windows. The proxy then answers
+    // 502 for every call and the admin shows an empty list of forms with nothing saying
+    // why -- measured, not guessed: `curl` against the IPv4 address answered 401 and
+    // against `[::1]` answered nothing at all.
+    proxy: { '/api': { target: 'http://127.0.0.1:4380', changeOrigin: true, rewrite: (p) => p.slice('/api'.length) } },
   },
   test: {
     include: ['src/**/*.test.ts'], passWithNoTests: true,
