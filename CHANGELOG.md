@@ -48,6 +48,28 @@ server" long after the page stopped saying it. It is rendered from
 described the old image too, and the docs' own description still called the product a
 self-hostable form engine.
 
+**The landing page and the README say what a manufacturer can do with this.** "Built to
+be incorporated. formancy is not a medical device and claims no conformity. It ships the
+characterisation a manufacturer needs under IEC 62304 to treat it as software of known
+provenance — a SOUP declaration, a safety analysis, the lifecycle, and design rationale —
+as an input to your risk analysis, not a substitute for it." Each of the four is a link,
+and the second sentence is the load-bearing one: conformity attaches to a device with an
+intended purpose, a component has none, and `MDR-CONTEXT.md` tells a manufacturer to be
+suspicious of a supplier who claims otherwise. The risk is not a false claim but a trimmed
+true one, so `apps/docs/src/claims.test.ts` fails when either surface names IEC 62304
+without "not a medical device" in the same breath, and when a document it offers is not
+where the link says; `site.test.tsx` reads the claim off the rendered page rather than out
+of the source, because a paragraph nobody renders would satisfy the first.
+
+**The regulatory set said the spec is frozen at version 1.** It has been frozen at version
+2 since this release, and version 2 is what the code writes. `MDR-CONTEXT.md` said it in
+the one item that tells a manufacturer whether their stored submissions sit in a settled
+shape; `LIFECYCLE.md` named only version 1 while describing change control on the data
+format; `SAFETY-ANALYSIS.md` said "the spec is frozen" without saying which. All three
+were true when written, which is the failure `claims.test.ts` exists for. It now checks
+per paragraph: wherever a document in `docs/regulatory` discusses the frozen spec, the
+version the code implements has to be one of the versions that paragraph names.
+
 **A checkbox and a radio answer the pointer, and the pointer can no longer un-choose
 them.** Reported twice — "the radio button and checkbox is still not visible when clicking
 or hovering (dusk theme)" — and two defects were under that one sentence. Neither control

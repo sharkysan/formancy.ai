@@ -1917,6 +1917,25 @@ kbd {
   border-inline-start: 1px solid var(--edge-strong);
 }
 
+/* The regulatory note under both columns, quieter than either: it is due-diligence
+   material for the minority of visitors who need it, and it should not compete with
+   the licence claim for the ones who do not. */
+.licence-provenance {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding-block-start: clamp(1.25rem, 3vh, 2rem);
+  border-block-start: 1px solid var(--edge);
+  max-width: 78ch;
+  color: var(--muted);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.licence-provenance strong {
+  color: #fff;
+  font-weight: 500;
+}
+
 .licence-terms dt {
   font-size: 1rem;
   font-weight: 500;

@@ -380,6 +380,34 @@ export function App(): ReactElement {
               </dd>
             </div>
           </dl>
+
+          {/* The paragraph a buyer with a regulator behind them is looking for, and the
+              disclaimer is half of it rather than a hedge on it: conformity attaches to a
+              device with an intended purpose, a component cannot have one, and a supplier
+              who claims otherwise is the one to be suspicious of. The two halves travel
+              together -- `apps/docs/src/claims.test.ts` fails if either is left behind,
+              and if a document named here is not where the link says. */}
+          <p className="licence-provenance">
+            <strong>Built to be incorporated.</strong> formancy is not a medical device and
+            claims no conformity. It ships the characterisation a manufacturer needs under
+            IEC 62304 to treat it as software of known provenance — a{' '}
+            <a href={`${REPO}/blob/main/docs/regulatory/SOUP-DECLARATION.md`} rel="noreferrer noopener">
+              SOUP declaration
+            </a>
+            , a{' '}
+            <a href={`${REPO}/blob/main/docs/regulatory/SAFETY-ANALYSIS.md`} rel="noreferrer noopener">
+              safety analysis
+            </a>
+            , the{' '}
+            <a href={`${REPO}/blob/main/docs/regulatory/LIFECYCLE.md`} rel="noreferrer noopener">
+              lifecycle
+            </a>{' '}
+            and the{' '}
+            <a href={`${REPO}/tree/main/docs/decisions`} rel="noreferrer noopener">
+              design rationale
+            </a>{' '}
+            — as an input to your risk analysis, not a substitute for it.
+          </p>
         </Section>
 
         <Finale journey={journey} />

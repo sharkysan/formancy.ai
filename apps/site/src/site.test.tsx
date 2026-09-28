@@ -98,6 +98,34 @@ describe('the page is a document first', () => {
     expect(links.length).toBeGreaterThan(1)
     expect(links[0]).toBe('https://github.com/sharkysan/formancy.ai')
   })
+
+  test('the regulatory claim is on the page, with its disclaimer and its documents', () => {
+    // On the page rather than in the source. `claims.test.ts` reads app.tsx and can
+    // only say the words are in the file; a paragraph inside a branch nobody renders
+    // would satisfy it and reach no visitor. This renders the page and reads what is
+    // actually in it.
+    //
+    // Both halves, because the half worth guarding is the disclaimer: "ships the
+    // characterisation a manufacturer needs under IEC 62304" reads on its own as
+    // precisely the conformity claim the sentence after it refuses.
+    render(<App />)
+
+    const claim = screen.getByText(/Built to be incorporated/i).closest('p')
+    expect(claim).not.toBeNull()
+    expect(claim?.textContent).toMatch(/not a medical device/i)
+    expect(claim?.textContent).toMatch(/claims no conformity/i)
+    expect(claim?.textContent).toMatch(/IEC 62304/)
+    expect(claim?.textContent).toMatch(/not a substitute for it/i)
+
+    // And it offers the material rather than only naming it.
+    const offered = within(claim as HTMLElement)
+      .getAllByRole('link')
+      .map((link) => link.getAttribute('href') ?? '')
+    expect(offered.some((href) => href.includes('SOUP-DECLARATION.md'))).toBe(true)
+    expect(offered.some((href) => href.includes('SAFETY-ANALYSIS.md'))).toBe(true)
+    expect(offered.some((href) => href.includes('LIFECYCLE.md'))).toBe(true)
+    expect(offered.some((href) => href.includes('docs/decisions'))).toBe(true)
+  })
 })
 
 describe('the demo is the product, not a picture of it', () => {
