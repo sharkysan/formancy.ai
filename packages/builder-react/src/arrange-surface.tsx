@@ -46,8 +46,32 @@ const SELECTOR = `[${LAYOUT_ATTR}],[${FIELD_ATTR}]`
  * it was dropped on.
  */
 type DropTarget =
-  | { kind: 'move'; location: LayoutLocation; element: HTMLElement; edge: 'before' | 'after' }
+  | {
+      kind: 'move'
+      location: LayoutLocation
+      element: HTMLElement
+      edge: 'before' | 'after'
+      /** Which way the siblings run, so the indicator is drawn on the side the drop lands. */
+      axis: 'block' | 'inline'
+    }
   | { kind: 'wrap'; side: 'start' | 'end'; element: HTMLElement; over: readonly number[] }
+
+/**
+ * Whether an element already sits side by side with its siblings: a child of a
+ * row, or of a table, which lays its children out in columns.
+ *
+ * A table child that spans is wrapped in a `layout-cell`, so its parent is the
+ * cell and the table is one step further up. Missing that step, or the table
+ * altogether, offered side zones on a field in a two-column table -- and a drop
+ * there built a new row inside a half-width cell, where the dropped field landed
+ * below its target rather than beside it.
+ */
+function sitsSideBySide(element: HTMLElement): boolean {
+  let parent = element.parentElement
+  if (parent?.dataset['formancyPart'] === 'layout-cell') parent = parent.parentElement
+  const part = parent?.dataset['formancyPart']
+  return part === 'layout-row' || part === 'layout-table'
+}
 
 /** Whether `outer` is an ancestor of `inner`. */
 function enclosesPath(outer: readonly number[], inner: readonly number[]): boolean {
@@ -155,13 +179,13 @@ export function FormancyArrangeSurface({
     if (over === undefined) return undefined
 
     const box = element.getBoundingClientRect()
-    const insideRow = element.parentElement?.dataset['formancyPart'] === 'layout-row'
+    const insideRow = sitsSideBySide(element)
 
     // ── Making a row, by aiming at a side ────────────────────────────────────
     //
-    // Only for something NOT already in a row: inside one, left and right
-    // already mean "before" and "after" among its siblings, and giving them a
-    // second meaning would make the commonest drag there ambiguous.
+    // Only for something NOT already side by side with its siblings, in a row
+    // or a table: there, left and right already mean "before" and "after", and
+    // giving them a second meaning would make the commonest drag ambiguous.
     if (!insideRow && box.width >= SIDE_ZONE_MINIMUM) {
       // A quarter of the element, capped: a very wide field should not have a
       // 300px side zone swallowing the middle.
@@ -195,7 +219,9 @@ export function FormancyArrangeSurface({
         : 'after'
 
     const location = layoutDropLocation(view.document, layout, dragging, over, edge)
-    return location === undefined ? undefined : { kind: 'move', location, element, edge }
+    return location === undefined
+      ? undefined
+      : { kind: 'move', location, element, edge, axis: insideRow ? 'inline' : 'block' }
   }
 
   return (
@@ -226,9 +252,16 @@ export function FormancyArrangeSurface({
         event.preventDefault()
         event.dataTransfer.dropEffect = 'move'
         // Distinct from before/after, so somebody aiming for a row does not see
-        // the same line they get for a move.
+        // the same line they get for a move. And a move names its axis: inside a
+        // row or a table the drop lands beside the field, so the line goes down
+        // its side. That was left to the stylesheet to infer, and a rule of equal
+        // weight drew it across the top instead.
         target.element.dataset['drop'] =
-          target.kind === 'wrap' ? `wrap-${target.side}` : target.edge
+          target.kind === 'wrap'
+            ? `wrap-${target.side}`
+            : target.axis === 'inline'
+              ? `inline-${target.edge}`
+              : target.edge
       }}
       onDragLeave={() => clearIndicators()}
       onDrop={(event) => {

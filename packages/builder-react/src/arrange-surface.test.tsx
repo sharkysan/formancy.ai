@@ -349,7 +349,141 @@ describe('the indicator', () => {
 
     // Showing one over an illegal target promises a move that will not happen,
     // which is how a field ends up snapping back with no explanation.
-    expect(fieldNamed('First name').dataset['drop']).toBe('before')
+    expect(fieldNamed('First name').dataset['drop']).toMatch(/before$/)
+  })
+
+  test('inside a row it is drawn down the side the field will land on, not across the top', () => {
+    surfaceWith(open())
+
+    const dataTransfer = transfer()
+    fireEvent(fieldNamed('Email'), dragEvent('dragstart', NOWHERE, dataTransfer))
+    fireEvent(
+      fieldNamed('First name'),
+      dragEvent('dragover', boxOf(fieldNamed('First name'), 'start'), dataTransfer),
+    )
+
+    // Reported as "the drag and drop is strange". Inside a row the drop lands to
+    // the LEFT of the field, and the indicator was a line across its TOP: the
+    // stylesheet had a left-edge rule for row children and a top-edge rule for
+    // every field, with equal weight, and the later one won. The value now names
+    // the axis, so no two rules compete for it.
+    expect(fieldNamed('First name').dataset['drop']).toBe('inline-before')
+  })
+})
+
+describe('in a table', () => {
+  /**
+   * A table lays its children out in columns, so they are side by side exactly
+   * as a row's are. It was not treated that way: only a direct `layout-row`
+   * parent counted, so a field in a two-column table was offered side zones,
+   * and a drop there built a new row INSIDE a half-width cell -- where it had
+   * no room, and the dropped field landed below the target rather than beside
+   * it. Measured in the playground on "Language on the gift card".
+   */
+  const tableSchema = (): FormSchema => ({
+    specVersion: '2',
+    id: 'tabled',
+    title: 'Extras',
+    model: {
+      fields: [
+        { key: 'a', type: 'text', label: 'Alpha' },
+        { key: 'b', type: 'text', label: 'Beta' },
+        { key: 'c', type: 'text', label: 'Gamma' },
+        { key: 'd', type: 'text', label: 'Delta' },
+      ],
+    },
+    layouts: [
+      {
+        name: 'web',
+        nodes: [
+          {
+            kind: 'table',
+            columns: 2,
+            children: [
+              { kind: 'field', path: 'a' },
+              { kind: 'field', path: 'b' },
+              { kind: 'field', path: 'c', span: 'all' },
+            ],
+          },
+          { kind: 'field', path: 'd' },
+        ],
+      },
+    ],
+  })
+
+  /** A table's children, one of them wrapped in the cell a span produces. */
+  function TablePreview() {
+    return (
+      <div>
+        <div data-formancy-part="layout-table" data-formancy-layout-path="0">
+          <div data-formancy-part="field" data-formancy-field-path="a">
+            Alpha
+          </div>
+          <div data-formancy-part="field" data-formancy-field-path="b">
+            Beta
+          </div>
+          <div data-formancy-part="layout-cell" data-span="all">
+            <div data-formancy-part="field" data-formancy-field-path="c">
+              Gamma
+            </div>
+          </div>
+        </div>
+        <div data-formancy-part="field" data-formancy-field-path="d">
+          Delta
+        </div>
+      </div>
+    )
+  }
+
+  const wide = (element: HTMLElement): void => {
+    element.getBoundingClientRect = () =>
+      ({ left: 0, right: 400, width: 400, top: 0, bottom: 40, height: 40, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect
+  }
+
+  const tableSurface = (session: BuilderSession) =>
+    render(
+      <FormancyArrangeSurface session={session} layout="web" enabled>
+        <TablePreview />
+      </FormancyArrangeSurface>,
+    )
+
+  test('the side of a field in a table moves among its cells rather than nesting a row', () => {
+    const session = createBuilderSession(tableSchema())
+    tableSurface(session)
+    const target = fieldNamed('Beta')
+    wide(target)
+
+    // x = 390 is where a side zone would be on a field outside a container.
+    drag(fieldNamed('Delta'), target, { clientX: 390, clientY: 20 })
+
+    expect(screen.getByRole('status').textContent).toContain('Moved to')
+    expect(JSON.stringify(session.document().layouts)).not.toContain('"row"')
+  })
+
+  test('a spanning cell does not hide that its field is in a table', () => {
+    const session = createBuilderSession(tableSchema())
+    tableSurface(session)
+    const target = fieldNamed('Gamma')
+    wide(target)
+
+    // The span wraps the field in a `layout-cell`, so its parent is the cell and
+    // not the table -- which is exactly the step the first version did not take.
+    drag(fieldNamed('Delta'), target, { clientX: 10, clientY: 20 })
+
+    expect(screen.getByRole('status').textContent).toContain('Moved to')
+    expect(JSON.stringify(session.document().layouts)).not.toContain('"row"')
+  })
+
+  test('the indicator in a table is drawn down the side, as in a row', () => {
+    tableSurface(createBuilderSession(tableSchema()))
+    const target = fieldNamed('Beta')
+    wide(target)
+    const dataTransfer = transfer()
+
+    fireEvent(fieldNamed('Delta'), dragEvent('dragstart', NOWHERE, dataTransfer))
+    fireEvent(target, dragEvent('dragover', { clientX: 390, clientY: 20 }, dataTransfer))
+
+    expect(target.dataset['drop']).toBe('inline-after')
   })
 
   test('is cleared when the pointer leaves', () => {

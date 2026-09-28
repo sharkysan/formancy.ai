@@ -10,6 +10,26 @@ later.
 
 ## Unreleased
 
+**Dropping beside a field on the preview does what the line says.** Reported as
+"the drag and drop is strange" in the playground builder, and measured there:
+
+- Inside a row, the drop lands to the left or right of the field, and the
+  indicator was a line across its top. The stylesheet had a left-edge rule for
+  row children and a top-edge rule for every field, of equal weight, and the
+  later one won. The surface now names the axis in the value it sets
+  (`inline-before`, `inline-after`), so no two rules compete for it.
+- A field in a table was treated as standing alone, because only a direct
+  `layout-row` parent counted. It was offered the side zones that make a new
+  row, and dropping on "Language on the gift card" built one inside its
+  half-width cell, where the dropped field landed below it rather than beside
+  it. Beside a spanning cell the same drop was offered and then refused with a
+  message about `span`. A table's children, through the cell a span wraps them
+  in, now count as side by side: left and right move among the cells.
+
+A three-field row in the playground's narrow preview still wraps its third
+field onto a new line. That is the reflow rule, twelve rems a column, and not
+part of this.
+
 **Date and time fields fit their field on iPhone.** Reported from a phone as
 "broken on mobile" in the playground. Mobile Safari draws `date`, `time` and
 `datetime-local` inputs at an intrinsic width that `width: 100%` does not

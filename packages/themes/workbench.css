@@ -975,8 +975,7 @@ kbd {
 
 /* The line shows where it will land. Drawn only for a drop the session will
    accept, because an indicator over an illegal target promises a move that
-   will not happen. A row's children sit side by side, so there the edge is
-   left and right rather than top and bottom. */
+   will not happen. Side-by-side siblings get their own values below. */
 [data-formancy-part='arrange-surface'] [data-drop='before'] {
   box-shadow: inset 0 3px 0 var(--wb-signal);
 }
@@ -985,13 +984,6 @@ kbd {
   box-shadow: inset 0 -3px 0 var(--wb-signal);
 }
 
-[data-formancy-part='layout-row'] > [data-drop='before'] {
-  box-shadow: inset 3px 0 0 var(--wb-signal);
-}
-
-[data-formancy-part='layout-row'] > [data-drop='after'] {
-  box-shadow: inset -3px 0 0 var(--wb-signal);
-}
 
 /* Present for assistive technology, and out of the way visually: the drop
    itself is the visible feedback for anyone who can see it. */
@@ -1025,6 +1017,18 @@ kbd {
 [data-formancy-layout-path][data-drop='after'],
 [data-formancy-field-path][data-drop='after'] {
   box-shadow: inset 0 -3px 0 var(--wb-signal);
+}
+
+/* Among siblings that sit side by side -- in a row, or in a table's columns --
+ * a move lands beside the field, so the line goes down that side. The surface
+ * says so in the value rather than leaving it to a selector: a left-edge rule for
+ * row children used to lose to the top-edge rule above on source order alone. */
+[data-formancy-part='arrange-surface'] [data-drop='inline-before'] {
+  box-shadow: inset 3px 0 0 var(--wb-signal);
+}
+
+[data-formancy-part='arrange-surface'] [data-drop='inline-after'] {
+  box-shadow: inset -3px 0 0 var(--wb-signal);
 }
 
 /* A row, not a move. Down the SIDE rather than across the edge, because the
