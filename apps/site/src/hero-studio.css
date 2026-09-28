@@ -73,7 +73,18 @@
 .swatch.pop { background: #fff3b0; }
 .studio-editor-link { margin-block-start: auto; font-size: 0.72rem; color: #c2b9ff; text-underline-offset: 4px; }
 .studio-editor-link span { float: right; }
-.studio-canvas { margin: 1rem 1rem 1rem 0; padding: clamp(1rem, 2vw, 1.75rem); border-radius: 10px; min-width: 0; }
+/* The sheet sits in the middle of the workspace. It had a margin on three sides and
+   none against the tool rail -- 0px on the left against 17px on the right, measured
+   -- which is what "the form is not centered in the box" was looking at.
+   `align-content` centres the form in the sheet when the rail is the taller
+   column, so the spare height is shared rather than all falling below. */
+.studio-canvas {
+  margin: 1rem;
+  padding: clamp(1rem, 2vw, 1.75rem);
+  border-radius: 10px;
+  min-width: 0;
+  align-content: center;
+}
 .studio-canvas[data-formancy-theme='paper'] { background: #faf8f2; color: #252b29; }
 .studio-canvas[data-formancy-theme='blueprint'] { background: #f4f7fd; color: #1d2433; }
 .studio-canvas[data-formancy-theme='dusk'] { background: #181e2e; color: #eef1f8; }

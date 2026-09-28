@@ -281,8 +281,9 @@ requiring an accessibility conformance statement must perform that work.
 
 **Appearance is reviewed, not verified.** jsdom implements no layout, so no test here can
 ask where a box is, and no application in this repository renders the Angular bindings in a
-browser at all. Three layout defects have shipped and been found by somebody opening a page
-— hazards D4a and D4b have them by name. A manufacturer relying on visual correctness must
+browser at all. Defects of both kinds — where a box sits, and what a control's state looks
+like — have shipped and been found by somebody opening a page rather than by a gate;
+hazards D4a, D4b and D7 have them by name. A manufacturer relying on visual correctness must
 verify it in the browsers it ships to.
 
 ## Verification evidence

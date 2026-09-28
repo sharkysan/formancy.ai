@@ -180,3 +180,4 @@ listed under the sections they belong to above.
 | [0077](0077-options-may-come-from-a-named-source.md) | Options may come from a named source | accepted |
 | [0078](0078-a-grid-row-is-flat.md) | A grid row is flat | accepted |
 | [0079](0079-a-host-is-undone-without-a-stylesheet.md) | A host element is undone without a stylesheet | accepted |
+| [0080](0080-a-choice-control-dresses-its-own-states.md) | A choice control dresses its own states | accepted |

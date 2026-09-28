@@ -140,7 +140,11 @@
   }
 }
 
-[data-formancy-theme='blueprint'] [data-formancy-part='field'] :is(input, select, textarea, [data-formancy-part='richtext-surface']):hover:not(:disabled, :focus-visible) {
+/* Text-like controls only. A checkbox and a radio say what they are with a fill,
+   and this rule's `:not()` puts it one step above `:checked` in the cascade, so the
+   pointer repainted the chosen state — measured in Dusk as a chosen radio going from
+   the signal violet back to the page's own dark. The two have their own hover below. */
+[data-formancy-theme='blueprint'] [data-formancy-part='field'] :is(input, select, textarea, [data-formancy-part='richtext-surface']):hover:not(:disabled, :focus-visible, [type='checkbox'], [type='radio']) {
   border-color: color-mix(in srgb, var(--fm-ink) 40%, var(--fm-rule));
 }
 
@@ -264,6 +268,25 @@
   box-shadow:
     inset 0 0 0 3px var(--fm-paper),
     0 0 0 3px color-mix(in srgb, var(--fm-signal) 22%, transparent);
+}
+
+/* Hover and press. A choice control needs its own, because the one every input
+   shares is a fill change — invisible on something 20px square, which is what
+   "the radio button and checkbox is still not visible when clicking or hovering"
+   turned out to mean. The edge takes the signal and a ring is drawn outside it,
+   so the feedback is the same size whatever the control is. */
+[data-formancy-theme='blueprint'] [data-formancy-part='field'] input:is([type='checkbox'], [type='radio']):hover:not(:disabled, :focus-visible) {
+  border-color: var(--fm-signal);
+  outline: 3px solid color-mix(in srgb, var(--fm-signal) 20%, transparent);
+  outline-offset: 2px;
+}
+
+/* Pressed: the ring closes and the control gives — no glow, which is Dusk's. */
+[data-formancy-theme='blueprint'] [data-formancy-part='field'] input:is([type='checkbox'], [type='radio']):active:not(:disabled) {
+  border-color: var(--fm-signal);
+  outline: 3px solid color-mix(in srgb, var(--fm-signal) 45%, transparent);
+  outline-offset: 0;
+  scale: 0.9;
 }
 
 /* ------------------------------------------------------------------- state */

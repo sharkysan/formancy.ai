@@ -542,22 +542,27 @@ section {
 @media (min-width: 64rem) {
   .hero {
     grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
-    /* Centred against the preview, which is the taller column. Pinning the words to
-       the top was tried and reverted: it reads as a page that starts before you are
-       ready for it, and the headline is the thing a visitor should land on rather
-       than arrive above. The reduced top padding keeps it from sitting as low as it
-       did when the preview was at its tallest. */
-    align-items: center;
+    /* The words are placed against the hero, and the preview grows downward from its
+       own top. Centred against each other they shared one row, so the row's height
+       was the preview's height: measured at 1440x900, revealing the conditional
+       field moved the headline from 279px down the page to 362, and adding the
+       company field took it to 410. A page that rearranges itself under a visitor
+       who touched the demo is worse than a page that starts a little low.
+
+       `align-content` as well, because the row is centred inside the hero's
+       min-height and half of any slack would move with it. */
+    align-items: start;
+    align-content: start;
     column-gap: clamp(2.5rem, 5vw, 5rem);
     padding-block-start: clamp(2rem, 5vh, 3.5rem);
   }
 
-  /* Centred, then nudged up. Padding under a centred item lifts what you can see of
-     it without pinning it to the top, which was tried and read as a page starting
-     before the visitor was ready for it. The words land above the middle, the
-     preview stays centred against them. */
+  /* Where centring used to put them, said as a distance instead. Pinning the words
+     to the very top was tried and reverted -- it reads as a page that starts before
+     you are ready for it -- and this lands them at the same place centring did with
+     the form at rest, without asking the form how tall it is. */
   .hero-copy {
-    padding-block-end: clamp(2rem, 9vh, 6rem);
+    padding-block-start: clamp(2.5rem, 13vh, 9rem);
   }
 }
 

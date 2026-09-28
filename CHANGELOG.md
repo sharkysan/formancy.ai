@@ -48,52 +48,32 @@ server" long after the page stopped saying it. It is rendered from
 described the old image too, and the docs' own description still called the product a
 self-hostable form engine.
 
-### What 0.2.0 knowingly does not have
+**A checkbox and a radio answer the pointer, and the pointer can no longer un-choose
+them.** Reported twice — "the radio button and checkbox is still not visible when clicking
+or hovering (dusk theme)" — and two defects were under that one sentence. Neither control
+had a state of its own, so both fell to the rule every control shares: a fill one step
+lighter, which is right for a text field and, measured across an 18px circle, a contrast
+ratio of about 1.03:1. Each appearance now answers with an edge and a ring, and closes the
+ring on the press, because a ring does not shrink with the control. The second defect was
+the visible one: that shared rule carries a `:not(...)`, which puts it above `:checked` in
+the cascade, so hovering a **chosen** radio in Dusk repainted it from the signal violet
+back to the page's own dark — click it and it went out again under your pointer. The
+shared rule is for text-like controls by name now
+([0080](./docs/decisions/0080-a-choice-control-dresses-its-own-states.md), and D7 in
+`SAFETY-ANALYSIS.md`), and `apps/docs/src/themes.test.ts` fails both when an appearance
+has no pointer state of its own for the two and when a rule that dresses every control can
+paint over a chosen one.
 
-`RELEASING.md` asks a release entry to say this, because the absence a reader discovers
-for themselves is the one that costs them a day.
-
-- **No submission token bound to the form version.** This is the gap that keeps the
-  public plane off a public deployment. Everything else guarding it — the origin
-  allowlist, the rate limits, the proof-of-work challenge, the body cap — is in place.
-- **The server writes no log at all.** Fastify is constructed with the logger off, so no
-  submission content can reach one and nothing will tell an operator why a request
-  failed. The audit log records mutations, including submission reads, and is all there
-  is. A deployment that adds a logger owns the redaction question alone.
-- **The rate limiter's store is per process**, so it is wrong behind more than one
-  replica. Documented rather than fixed.
-- **No virus scanning, no resumable or multipart uploads, and no presigned uploads.**
-  Bytes still pass through the server, so the request body cap is the ceiling on a file.
-- **`signature`, a many-answer tag picker and async validators are spec 3**, now that
-  version 2 is frozen. None of them is reserved ahead of use.
-- **No manual screen-reader audit and no VPAT.** The accessibility claim rests on
-  automated checking, which catches roughly 57% of machine-detectable issues.
-- **Appearance is reviewed, not verified.** jsdom implements no layout, and no
-  application in this repository renders the Angular bindings in a browser at all.
-- **Nothing verifies a release after it is published.** Every gate runs inside the
-  workflow that publishes, against the tree it built from.
-
-Four packages reach npm for the first time: `@formancy/builder-react` — the embeddable
-builder, and the package a prospective adopter most wants to see — along with
-`@formancy/challenge`, `@formancy/mcp` and `@formancy/tiptap`. The server image is
-published and signed by digest for the first time as well; `v0.1.0` predated those steps,
-so there is no `v0.1.0` image.
-
-- The homepage introduces the editor with a real interactive form preview:
-  add a field, change its theme and check answers without sending them. A
-  responsive product walkthrough and illuminated 3D treatment keep the editor
-  in focus; reduced-motion preferences disable the movement.
-
-- The homepage and README highlight six product strengths, including keyboard
-  access and automated accessibility checks, with the limits of WCAG claims
-  stated explicitly.
-
-- The homepage uses a wider content area on large screens while keeping
-  paragraph lengths bounded for readability.
-
-- The homepage and README now introduce formancy as a visual form builder for
-  Angular and React, link directly to the editor, and explain features through their use
-  in a form. Search and sharing descriptions use the same product description.
+**The homepage holds still while somebody plays with the demo.** Reported as "the text on
+the start page should not jump if the form changes (e.g. fields visible)". Measured at
+1440x900: the headline sat 279px down the page, revealing the conditional field moved it
+to 362, and adding the company field took it to 410 — the page rearranging itself under a
+visitor who touched it. The words were centred against the preview, so the row's height,
+which is the preview's height, decided where they sat. They are placed against the hero
+now, at the distance centring used to put them at rest, and the preview grows downward
+from its own top; the headline measured the same in all four states afterwards. The form's
+sheet also sat flush against the tool rail with a margin on the other three sides — 0px
+against 17px — which is what "the form is not centered in the box" was looking at.
 
 **Date and time fields show a calendar or a clock on iPhone.** Reported from a
 phone: "the date time fields have no icons on safari mobile". Mobile Safari
@@ -2264,6 +2244,53 @@ from the demo and from the end of the page.
   silence it replaces. It runs at publish, not at render, so a form already out
   there keeps opening for whoever is filling it in.
   ([0054](./docs/decisions/0054-expressions-that-never-work.md)).
+
+Four packages reach npm for the first time: `@formancy/builder-react` — the embeddable
+builder, and the package a prospective adopter most wants to see — along with
+`@formancy/challenge`, `@formancy/mcp` and `@formancy/tiptap`. The server image is
+published and signed by digest for the first time as well; `v0.1.0` predated those steps,
+so there is no `v0.1.0` image.
+
+- The homepage introduces the editor with a real interactive form preview:
+  add a field, change its theme and check answers without sending them. A
+  responsive product walkthrough and illuminated 3D treatment keep the editor
+  in focus; reduced-motion preferences disable the movement.
+
+- The homepage and README highlight six product strengths, including keyboard
+  access and automated accessibility checks, with the limits of WCAG claims
+  stated explicitly.
+
+- The homepage uses a wider content area on large screens while keeping
+  paragraph lengths bounded for readability.
+
+- The homepage and README now introduce formancy as a visual form builder for
+  Angular and React, link directly to the editor, and explain features through their use
+  in a form. Search and sharing descriptions use the same product description.
+
+### What 0.2.0 knowingly does not have
+
+`RELEASING.md` asks a release entry to say this, because the absence a reader discovers
+for themselves is the one that costs them a day.
+
+- **No submission token bound to the form version.** This is the gap that keeps the
+  public plane off a public deployment. Everything else guarding it — the origin
+  allowlist, the rate limits, the proof-of-work challenge, the body cap — is in place.
+- **The server writes no log at all.** Fastify is constructed with the logger off, so no
+  submission content can reach one and nothing will tell an operator why a request
+  failed. The audit log records mutations, including submission reads, and is all there
+  is. A deployment that adds a logger owns the redaction question alone.
+- **The rate limiter's store is per process**, so it is wrong behind more than one
+  replica. Documented rather than fixed.
+- **No virus scanning, no resumable or multipart uploads, and no presigned uploads.**
+  Bytes still pass through the server, so the request body cap is the ceiling on a file.
+- **`signature`, a many-answer tag picker and async validators are spec 3**, now that
+  version 2 is frozen. None of them is reserved ahead of use.
+- **No manual screen-reader audit and no VPAT.** The accessibility claim rests on
+  automated checking, which catches roughly 57% of machine-detectable issues.
+- **Appearance is reviewed, not verified.** jsdom implements no layout, and no
+  application in this repository renders the Angular bindings in a browser at all.
+- **Nothing verifies a release after it is published.** Every gate runs inside the
+  workflow that publishes, against the tree it built from.
 
 ## [0.1.0] — 2026-09-20
 
