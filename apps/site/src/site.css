@@ -451,7 +451,8 @@ section {
 /* Sections rise into place as they arrive. Scroll-driven, so it costs
    nothing, and a browser without timelines shows them where they are. */
 @supports (animation-timeline: view()) {
-  .page > section:not(.hero) > * {
+  .page > section:not(.hero) > *,
+  .page > .duo > section > * {
     animation: arrive linear both;
     animation-timeline: view(block);
     animation-range: entry 0% entry 55%;
@@ -462,6 +463,55 @@ section {
   from {
     opacity: 0;
     transform: translateY(2.5rem);
+  }
+}
+
+/* Two supporting arguments side by side, from the width where a column of text
+   would otherwise be half a screen of empty margin. One column below that: the
+   sections keep their own headings and their own place in the journey either way,
+   so nothing about the page's structure depends on which one a visitor gets. */
+.duo {
+  max-width: 110rem;
+  margin-inline: auto;
+}
+
+@media (min-width: 62rem) {
+  .duo {
+    display: grid;
+    /* The running submission is fixed to the bottom-right corner, and a two-column
+       band puts a column of prose exactly where it sits. The band keeps out of that
+       lane rather than letting the panel cover a sentence a visitor is reading. */
+    padding-inline-end: 15rem;
+    /* `minmax(0, 1fr)` rather than `1fr`, for the reason the hero gives: a grid
+       item's default minimum is its content, and the terminal block inside one of
+       these would push the page wider than the viewport. */
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: clamp(2.5rem, 5vw, 5rem);
+    align-items: start;
+  }
+
+  /* The band owns the outer width now, so its children stop centring themselves
+     inside it and stop paying the full section rhythm twice. */
+  .duo > section {
+    max-width: none;
+    margin-inline: 0;
+    padding-inline: 0;
+  }
+
+  .duo > section:first-child {
+    padding-inline-start: var(--gutter);
+  }
+
+  .duo > section:last-child {
+    padding-inline-end: var(--gutter);
+  }
+
+  /* `auto 1fr` leaves a key and its sentence at opposite edges once the column is
+     half a page wide, which reads as two lists rather than as pairs. */
+  .duo .keys {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.875rem 1rem;
+    justify-content: start;
   }
 }
 
@@ -492,8 +542,13 @@ section {
 @media (min-width: 64rem) {
   .hero {
     grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
-    align-items: center;
+    /* `start`, not `center`: the preview is the taller column, and centring the
+       headline against it pushed the page's first words a third of the way down a
+       screen that was otherwise empty. */
+    align-items: start;
+    align-content: start;
     column-gap: clamp(2.5rem, 5vw, 5rem);
+    padding-block-start: clamp(2rem, 5vh, 3.5rem);
   }
 }
 
@@ -1811,18 +1866,55 @@ kbd {
 
 /* ------------------------------------------------------------- licence */
 
+/* The claim and what it buys, side by side. Centred and alone it was a paragraph
+   with a screen of air above and below it, which reads as the page having run out
+   of things to say rather than as its closing argument. */
 .licence {
   display: grid;
-  justify-items: center;
-  text-align: center;
+  gap: clamp(2rem, 4vw, 3.5rem);
+  /* Less than a full section's rhythm, and less again at the bottom: the finale
+     brings its own top padding, and two of them stacked is the empty band a visitor
+     scrolls past rather than reads. */
+  padding-block: clamp(3rem, 7vh, 5rem) clamp(1rem, 2vh, 1.75rem);
+}
+
+@media (min-width: 62rem) {
+  .licence {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+    align-items: start;
+    /* Out of the running submission's lane, as the band above is. */
+    padding-inline-end: calc(var(--gutter) + 15rem);
+  }
 }
 
 .licence h2 {
-  max-width: none;
+  max-width: 14ch;
 }
 
-.licence .lede {
-  margin-inline: auto;
+.licence-terms {
+  display: grid;
+  gap: 1.25rem;
+  margin: 0;
+  align-content: start;
+}
+
+.licence-terms > div {
+  padding-inline-start: 1rem;
+  border-inline-start: 1px solid var(--edge-strong);
+}
+
+.licence-terms dt {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #fff;
+}
+
+.licence-terms dd {
+  margin: 0.4rem 0 0;
+  max-width: 46ch;
+  color: var(--muted);
+  font-size: 0.9375rem;
+  line-height: 1.55;
 }
 
 /* ------------------------------------------------------------ the panel
@@ -1913,7 +2005,10 @@ kbd {
 
 .finale {
   position: relative;
-  min-height: 100svh;
+  /* Sized by what it holds, not by the viewport. A full screen with the close
+     centred in it put a band of nothing between the last argument and the payoff,
+     and a visitor scrolls past an empty screen rather than reading what follows it. */
+  padding-block: clamp(4rem, 10vh, 7rem);
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-content: center;

@@ -32,7 +32,7 @@ Apache-2.0 throughout.
 </h3>
 
 <p align="center">
-  <a href="https://formancy.ai"><img src="./docs/images/readme/hero.jpg" alt="The formancy landing page: a form written as JSON on the right, its rules evaluated the same way in the browser and on the server" width="100%" /></a>
+  <a href="https://formancy.ai"><img src="./docs/images/readme/hero.jpg" alt="The formancy landing page: a working form preview on the right, its appearance switchable between four themes and its total calculated by the engine" width="100%" /></a>
 </p>
 
 ## Design it. Add rules. Put it to work.
@@ -82,16 +82,19 @@ backend.
 ### Your form should look like your product
 
 <p align="center">
-  <img src="./docs/images/readme/themes.png" alt="The same conference-ticket form rendered four times, in the Dusk, Blueprint, Pop and Paper themes" width="100%" />
+  <img src="./docs/images/readme/themes.png" alt="One event-registration form rendered four times — in the Paper, Blueprint, Dusk and Pop themes — with the same answers typed in and the same calculated total" width="100%" />
 </p>
 
-The same conference registration form in four themes. Change its appearance
-without rewriting its fields or rules. The renderers are unstyled by default;
-use a supplied theme, your own CSS or your own components.
+One event registration form, four themes, the same answers typed into each.
+Change its appearance without rewriting its fields or rules — the renderers are
+unstyled by default, so a supplied theme, your own CSS or your own components
+all reach the same markup.
 
-The total is calculated from the selected workshop ticket and two hotel nights.
-With the formancy backend, that total is recalculated on submission rather than
-trusting a value sent by the browser.
+Every one of them says **490** because the engine calculated it from the
+selected pass, in the browser, as the radio was clicked. With the formancy
+backend, that total is recalculated on submission rather than trusted from the
+browser. The same four themes are on the landing page, switchable while you
+type into the form.
 
 ### Add a field. Set a rule. See it work.
 

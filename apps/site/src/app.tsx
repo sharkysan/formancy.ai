@@ -273,77 +273,113 @@ export function App(): ReactElement {
           </p>
         </Section>
 
-        <Section id="access" className="wide" journey={journey} section="access">
-          <p className="eyebrow">Accessibility</p>
-          <h2>Edit forms with a mouse or a keyboard.</h2>
-          <p className="lede">
-            Add, move and arrange fields without dragging. The editor offers keyboard controls
-            and undo, while the rendered forms connect labels, descriptions and validation errors
-            for assistive technology. Both renderers are checked by the same accessibility tests.
-          </p>
+        {/* Side by side from 62rem. Both are supporting arguments rather than the
+            page's claims, and stacked full width they read as two more chapters of
+            equal weight to the engine and the builder above them. */}
+        <div className="duo">
+          <Section id="access" className="wide" journey={journey} section="access">
+            <p className="eyebrow">Accessibility</p>
+            <h2>Edit forms with a mouse or a keyboard.</h2>
+            <p className="lede">
+              Add, move and arrange fields without dragging. The editor offers keyboard controls
+              and undo, while the rendered forms connect labels, descriptions and validation errors
+              for assistive technology. Both renderers are checked by the same accessibility tests.
+            </p>
 
-          <div className="keys">
-            <kbd>a</kbd>
-            <span>add a field, a row, a column or a section</span>
-            <kbd>m</kbd>
-            <span>move the focused one, choosing from destinations read as sentences</span>
-            <kbd>u</kbd>
-            <span>unwrap a row, keeping what is inside it</span>
-            <kbd>Ctrl&nbsp;+&nbsp;Z</kbd>
-            <span>undo, over a document model rather than over the DOM</span>
-          </div>
-        </Section>
+            <div className="keys">
+              <kbd>a</kbd>
+              <span>add a field, a row, a column or a section</span>
+              <kbd>m</kbd>
+              <span>move the focused one, choosing from destinations read as sentences</span>
+              <kbd>u</kbd>
+              <span>unwrap a row, keeping what is inside it</span>
+              <kbd>Ctrl&nbsp;+&nbsp;Z</kbd>
+              <span>undo, over a document model rather than over the DOM</span>
+            </div>
+          </Section>
 
-        <Section id="run" className="wide" journey={journey} section="host">
-          <p className="eyebrow">Self-hosted</p>
-          <h2>Keep forms and submissions on your infrastructure.</h2>
-          <p className="lede">
-            Add the optional formancy backend when you need to store submissions, let people
-            resume drafts, export answers to CSV or notify other systems through webhooks.
-            Run it with Docker and PostgreSQL. Each submission keeps its form version, and the
-            audit log records who accessed the data.
-          </p>
+          <Section id="run" className="wide" journey={journey} section="host">
+            <p className="eyebrow">Self-hosted</p>
+            <h2>Keep forms and submissions on your infrastructure.</h2>
+            <p className="lede">
+              Add the optional formancy backend when you need to store submissions, let people
+              resume drafts, export answers to CSV or notify other systems through webhooks.
+              Run it with Docker and PostgreSQL. Each submission keeps its form version, and the
+              audit log records who accessed the data.
+            </p>
 
-          <div className="terminal">
-            <header>
-              <span className="lights" aria-hidden="true">
-                <i />
-                <i />
-                <i />
-              </span>
-              zsh
-            </header>
-            <pre>
-              <span className="prompt">$</span> docker compose up -d{'\n'}
-              <span className="ok">✔</span>
-              <span className="out"> postgres   :5439</span>
-              {'\n'}
-              <span className="ok">✔</span>
-              <span className="out"> formancy   :4380</span>
-              {'\n'}
-              <span className="ok">✔</span>
-              <span className="out"> admin      :4382</span>
-            </pre>
-          </div>
+            <div className="terminal">
+              <header>
+                <span className="lights" aria-hidden="true">
+                  <i />
+                  <i />
+                  <i />
+                </span>
+                zsh
+              </header>
+              <pre>
+                <span className="prompt">$</span> docker compose up -d{'\n'}
+                <span className="ok">✔</span>
+                <span className="out"> postgres   :5439</span>
+                {'\n'}
+                <span className="ok">✔</span>
+                <span className="out"> formancy   :4380</span>
+                {'\n'}
+                <span className="ok">✔</span>
+                <span className="out"> admin      :4382</span>
+              </pre>
+            </div>
 
-          <p className="note">
-            No Redis, no second store, no hosted dependency. Point it at your own Postgres in
-            production and nothing about it phones home.
-          </p>
-        </Section>
+            <p className="note">
+              No Redis, no second store, no hosted dependency. Point it at your own Postgres in
+              production and nothing about it phones home.
+            </p>
+          </Section>
+        </div>
 
         <Section id="licence" className="wide licence" journey={journey} section="licence">
-          <h2>Apache-2.0. The whole thing.</h2>
-          <p className="lede">
-            The spec, the engine, both renderers, the builder and the backend. No paywalled
-            accessibility, no premium components, no clause that turns running it for your own
-            users into distribution.
-          </p>
-          <div className="actions">
-            <a className="action" href={REPO} rel="noreferrer noopener">
-              github.com/sharkysan/formancy.ai
-            </a>
+          <div className="licence-claim">
+            <p className="eyebrow">Licence</p>
+            <h2>Apache-2.0. The whole thing.</h2>
+            <p className="lede">
+              The spec, the engine, both renderers, the builder and the backend. No paywalled
+              accessibility, no premium components, no clause that turns running it for your own
+              users into distribution.
+            </p>
+            <div className="actions">
+              <a className="action" href={REPO} rel="noreferrer noopener">
+                github.com/sharkysan/formancy.ai
+              </a>
+            </div>
           </div>
+
+          {/* What the licence actually gives, beside the claim rather than under it: the
+              section was a centred paragraph with a screen of air around it, and the three
+              things below are the reason Apache-2.0 was chosen over MIT rather than
+              decoration. */}
+          <dl className="licence-terms">
+            <div>
+              <dt>An express patent grant</dt>
+              <dd>
+                With a retaliation clause, which is the term an acquirer&rsquo;s open-source
+                office looks for first. MIT has none.
+              </dd>
+            </div>
+            <div>
+              <dt>Running it is not distributing it</dt>
+              <dd>
+                Offering a form to your own users triggers nothing. No source disclosure, no
+                obligation that arrives with your first visitor.
+              </dd>
+            </div>
+            <div>
+              <dt>Attribution that travels</dt>
+              <dd>
+                A NOTICE file ships in every package, and the licence text with it — checked
+                before a release can publish.
+              </dd>
+            </div>
+          </dl>
         </Section>
 
         <Finale journey={journey} />

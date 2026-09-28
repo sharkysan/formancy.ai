@@ -8,7 +8,48 @@ Loosely [Keep a Changelog](https://keepachangelog.com), with reasons attached �
 a line that says only *what* changed is rarely the line you need six months
 later.
 
-## Unreleased
+## 0.2.0 — 2026-09-28
+
+**The beta, and the release that freezes spec version 2.** A document written against
+version 2 will validate against every future release that speaks it; what version 2 added
+and what freezing it costs are in [`MIGRATIONS.md`](./MIGRATIONS.md). The short of the cost:
+an async validator and a `signature` field type are now spec 3 features.
+
+`0.2.0` is also the first release that **reads** version 2. `0.1.0` predates spec
+versioning and pins documents to `{ "const": "1" }`, so it refuses a version 2 document
+rather than ignoring the property — which is the loud failure rather than the silent one,
+and still a failure.
+
+### What 0.2.0 knowingly does not have
+
+`RELEASING.md` asks a release entry to say this, because the absence a reader discovers
+for themselves is the one that costs them a day.
+
+- **No submission token bound to the form version.** This is the gap that keeps the
+  public plane off a public deployment. Everything else guarding it — the origin
+  allowlist, the rate limits, the proof-of-work challenge, the body cap — is in place.
+- **The server writes no log at all.** Fastify is constructed with the logger off, so no
+  submission content can reach one and nothing will tell an operator why a request
+  failed. The audit log records mutations, including submission reads, and is all there
+  is. A deployment that adds a logger owns the redaction question alone.
+- **The rate limiter's store is per process**, so it is wrong behind more than one
+  replica. Documented rather than fixed.
+- **No virus scanning, no resumable or multipart uploads, and no presigned uploads.**
+  Bytes still pass through the server, so the request body cap is the ceiling on a file.
+- **`signature`, a many-answer tag picker and async validators are spec 3**, now that
+  version 2 is frozen. None of them is reserved ahead of use.
+- **No manual screen-reader audit and no VPAT.** The accessibility claim rests on
+  automated checking, which catches roughly 57% of machine-detectable issues.
+- **Appearance is reviewed, not verified.** jsdom implements no layout, and no
+  application in this repository renders the Angular bindings in a browser at all.
+- **Nothing verifies a release after it is published.** Every gate runs inside the
+  workflow that publishes, against the tree it built from.
+
+Four packages reach npm for the first time: `@formancy/builder-react` — the embeddable
+builder, and the package a prospective adopter most wants to see — along with
+`@formancy/challenge`, `@formancy/mcp` and `@formancy/tiptap`. The server image is
+published and signed by digest for the first time as well; `v0.1.0` predated those steps,
+so there is no `v0.1.0` image.
 
 - The homepage introduces the editor with a real interactive form preview:
   add a field, change its theme and check answers without sending them. A
@@ -80,25 +121,26 @@ its height. Chromium was never affected and still keeps its picker button.
 Nothing in CI runs WebKit, so the guard in `apps/docs/src/themes.test.ts`
 checks the stylesheets rather than a rendered box.
 
-## 0.2.0 — 2026-09-28
+**The landing page shows all four themes, and a form the engine is visibly working on.**
+The hero preview offered a light one and a dark one while the packages ship four, which
+made a smaller claim than the product supports. It now switches between Paper, Blueprint,
+Dusk and Pop, and the form it switches has a radio that decides both what the form asks —
+a workshops field appears — and what it totals, computed in the browser as the radio is
+clicked.
 
-**The beta, and the release that freezes spec version 2.** A document written against
-version 2 will validate against every future release that speaks it; what version 2 added
-and what freezing it costs are in [`MIGRATIONS.md`](./MIGRATIONS.md). The short of the cost:
-an async validator and a `signature` field type are now spec 3 features.
+**The lower half of the page is laid out rather than stacked.** Accessibility and
+self-hosting sit side by side from 62rem, the licence section gained the three things
+Apache-2.0 actually gives and became two columns instead of a centred paragraph with a
+screen of air around it, and the closing section follows the licence directly rather than
+after an empty viewport. The hero's text starts at the top of the page instead of centred
+against the preview beside it.
 
-`0.2.0` is also the first release that **reads** version 2. `0.1.0` predates spec
-versioning and pins documents to `{ "const": "1" }`, so it refuses a version 2 document
-rather than ignoring the property — which is the loud failure rather than the silent one,
-and still a failure.
+**The README's four screenshots are current again.** All four were taken from the built
+site and the running admin: the landing page, the same form in all four themes with the
+same answers and the same calculated total, the admin's builder over a real published
+form, and the playground.
 
-Four packages reach npm for the first time: `@formancy/builder-react` — the embeddable
-builder, and the package a prospective adopter most wants to see — along with
-`@formancy/challenge`, `@formancy/mcp` and `@formancy/tiptap`. The server image is
-published and signed by digest for the first time as well; `v0.1.0` predated those steps,
-so there is no `v0.1.0` image.
 
-Everything below was written under *Unreleased* as it landed.
 
 
 **A grid's rows are flat.** A `datagrid` column could name a `group`, and measured in both
