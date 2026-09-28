@@ -142,7 +142,7 @@ yet* above, so they are worth grouping into one.
 
 | Type | What it is | Why it is not trivial |
 |---|---|---|
-| `signature` | A drawn mark, stored as points rather than as a picture | Points scale, survive a re-render and diff; a PNG does none of that. It needs a pointer *and* keyboard route, and "sign here" carries legal weight the rest of the form does not |
+| ~~`signature`~~ | **Shipped, in spec 3.** A mark stored as points, or a name typed — never both, and never stroke timing ([0083](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0083-a-signature-is-points-or-a-name.md)) | This row said it needs a pointer *and* a keyboard route, and that is how it was built: typing your name is the second route rather than a fallback, because it is the only one a keyboard has. The legal weight the row mentions is answered by saying plainly what this is not — there is no identity proof, no certificate and no timestamp authority, so a qualified signature under eIDAS needs a qualified provider. Timing is refused rather than omitted: velocity is what makes a signature biometric |
 | ~~`datagrid`~~ | **Not a type, and now shipped.** `widget: "datagrid"` on a repeater, with `columns` configuring the arrangement ([0066](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0066-a-widget-may-be-configured.md)), drawn as a grid in both renderers ([0075](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0075-a-datagrid-is-drawn-not-tabulated.md)) | The repeater's data model already handled it, as this row said. The control is built: column headings, per-column width and alignment, row reordering, and a row count that stays out of the accessible name of every field inside it — asserted element for element against the same schema rendered as blocks. **Tab-through-cells is refused rather than missing**: this is not a `role="grid"`, so it never takes the arrow keys, which the controls in the cells already own — a `typeahead` in a row claims Up, Down, Home, End, Enter and Escape. A grid's rows are also flat, because a column holding several answers is a heading that names none of them ([0078](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0078-a-grid-row-is-flat.md)) |
 | ~~`qrcode`~~ | **Split, as this row said, and both halves are shipped.** Showing is a `qrcode` layout node that collects nothing ([0070](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0070-a-code-is-an-arrangement-not-a-field.md)); scanning is `widget: "scanner"` on a text field ([0071](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0071-a-scanner-is-supplied-not-built.md)) | Neither half ships a codec. The display half shows the value as text and no picture; the scanning half renders a button and awaits a string from a scanner **the host supplies**, because no renderer may own camera permission policy, a decoder in every consumer's dependency closure, or a viewfinder in a design system it knows nothing about. With no scanner supplied there is no button and the field is the ordinary text input — typing is the primary route, the fallback and the accessibility floor at once |
 | ~~`autocomplete`~~ / `tagpicker` | **Half shipped, and not as a type.** One answer from a list the document already carries is `widget: "typeahead"` on a select, built in both renderers ([0072](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0072-a-typeahead-is-a-combobox-over-the-same-answer.md)); the name `autocomplete` is still spent on the HTML autofill token and not on this. `optionsSource` — a list the deployment resolves rather than the document carrying it — is built too, in both renderers and on the server, which checks membership because the frozen document cannot ([0077](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0077-options-may-come-from-a-named-source.md)). What is left is the many-answer tag picker | This row said the combobox pattern gets built once rather than per renderer. Half of that held: the filter is one function in `@formancy/spec`, so it cannot fold one way in React and another in Angular. The markup was written twice on purpose, because a shared control would be a third renderer and the agreement it reported would be agreement with itself |
@@ -152,17 +152,17 @@ yet* above, so they are worth grouping into one.
 `signature`, `datagrid` and `qrcode` are the three
 [FormEngine](https://formengine.io) groups as "special components", and they are
 the three most asked about. That is the reason they are named here rather than
-left out as v2-era omissions. Two of the three are now shipped and `signature` is not.
+left out as v2-era omissions. All three are now shipped.
 
 ## What comes next
 
 Roughly in order, and subject to change. The ordering is argued below rather
 than asserted.
 
-1. **`signature`** — the last of the three "special components" still unbuilt, and the
-   smallest. `datagrid` was the other, and it shipped: a control over a data model that
-   already existed, which is why it went first.
-2. **Translated form content**, while the reservation is still fresh.
+1. **Translated form content**, while the reservation is still fresh.
+2. **Freezing spec version 3**, which is open. `signature` is in it; a many-answer tag
+   picker and an async validator are the two named candidates for the same version, and
+   field types are worth grouping into one bump rather than spending a version each.
 3. **Un-paging a form from the builder.** Adding the first page is built; taking it
    away is not, because removing a container removes its children with it. "Unwrap
    this page" is the model tree's equivalent of `unwrapLayoutNode`, which the

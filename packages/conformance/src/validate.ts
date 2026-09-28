@@ -95,6 +95,7 @@ const FIELD_TYPES: Record<FieldType, true> = {
   datetime: true,
   file: true,
   richtext: true,
+  signature: true,
   hidden: true,
   static: true,
   group: true,

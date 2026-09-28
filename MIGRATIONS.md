@@ -11,6 +11,62 @@ of package versions, because it is the artifact with real switching costs:
 your forms and your submissions are written against it. Packages 0.9 and 1.4
 can both speak spec `"1"`.
 
+## Spec version 3 is OPEN
+
+Spec `"3"` is the version this release writes, and it is **not frozen**: it is open until
+a release freezes it, the way version 2 was open until `0.2.0`. A document may declare it
+today and the constructs below will not change underneath it — what is not yet settled is
+what else version 3 will contain before it closes.
+
+**Version 3 is a superset of version 2 and removes nothing.** Upgrading is the same one
+line, and `upgradeSpecVersion` still does nothing else.
+
+The direction that costs something is the other one. A reader pinned to spec 2 — `0.2.0`,
+or anything built against it — **refuses** a version 3 document rather than ignoring the
+part it does not know. That is deliberate and it is the whole point of the version line: a
+reader that shrugged would render a form with a missing question and collect a submission
+with a missing answer, which looks exactly like somebody leaving a field blank
+([0051](docs/decisions/0051-spec-2-adds-types.md)).
+
+### What version 3 added
+
+One field type:
+
+| Type | What it collects |
+|---|---|
+| `signature` | A mark somebody drew, as points, or their name as they typed it |
+
+And two properties, both on `signature` alone:
+
+| Property | What it does |
+|---|---|
+| `box` | The `[width, height]` the points are recorded in — a coordinate space, not pixels. It belongs to the field so that a stored answer can be redrawn at any size |
+| `maxPoints` | How many points one answer may carry across all its strokes |
+
+**A signature answer is points or a name, never both and never a picture**
+([0083](docs/decisions/0083-a-signature-is-points-or-a-name.md)):
+
+```jsonc
+{ "drawn": [[[12, 40], [13, 41], [20, 55]]] }   // a mark
+{ "typed": "Mara Lindqvist" }                   // a name
+```
+
+Points are whole numbers, because a submission is bound to a canonical hash and that hash
+must not depend on how one browser rounded a pointer event. There is deliberately **no
+stroke timing**: velocity is what makes a signature biometric, and biometric data is a
+category nothing in this product is equipped to hold.
+
+### What upgrading to version 3 costs you
+
+Nothing inside the document, and one thing outside it: **every reader of your forms has to
+speak version 3.** If a deployment pins `@formancy/*` at `0.2.0` anywhere — a server, a
+mobile build, a partner's embedded renderer — upgrade those before the documents, not
+after. The refusal is loud rather than silent, so you will know; the question is whether
+you find out in a test or in production.
+
+Nothing migrates submissions, as ever. A submission stays bound to the version it was
+collected under.
+
 ## Spec version 2 is FROZEN
 
 Spec `"2"` is frozen as of 2026-09-28, with the `0.2.0` beta. A document that validates

@@ -37,12 +37,12 @@ export interface FormSchema {
  * compatible the rest of it looks
  * ([0051](../../../docs/decisions/0051-spec-2-adds-types.md)).
  */
-export const SPEC_VERSIONS = ['1', '2'] as const
+export const SPEC_VERSIONS = ['1', '2', '3'] as const
 
 export type SpecVersion = (typeof SPEC_VERSIONS)[number]
 
 /** What a document gets when nothing says otherwise: the newest this package speaks. */
-export const CURRENT_SPEC_VERSION: SpecVersion = '2'
+export const CURRENT_SPEC_VERSION: SpecVersion = '3'
 
 /** Field types version 1 defines. Everything else needs `specVersion: "2"`. */
 export const SPEC_1_FIELD_TYPES = [
@@ -223,6 +223,22 @@ export const ROW_ID_PREFIX = 'r'
  * A list rather than a bare union because formancy.schema.json has to offer
  * the same values, and a test can only compare two lists.
  */
+/**
+ * Field types version 2 defines: version 1's, plus the five it added.
+ *
+ * Named rather than derived by subtraction, because the question each of these
+ * lists answers is "may a document declaring version N use this", and an answer
+ * computed from two other lists is one nobody can read off the page.
+ */
+export const SPEC_2_FIELD_TYPES = [
+  ...SPEC_1_FIELD_TYPES,
+  'selectboxes',
+  'time',
+  'datetime',
+  'file',
+  'richtext',
+] as const
+
 export const FIELD_TYPES = [
   'text',
   'textarea',
@@ -236,6 +252,7 @@ export const FIELD_TYPES = [
   'datetime',
   'file',
   'richtext',
+  'signature',
   'hidden',
   'static',
   'group',
@@ -392,6 +409,33 @@ export const WIDGETS_BY_FIELD_TYPE = {
   text: ['scanner'],
 } as const satisfies Partial<Record<FieldType, readonly FieldWidget[]>>
 
+/**
+ * What a `signature` field collects: a mark, or a name.
+ *
+ * **Points, never a picture.** Points scale, survive a re-render, diff against
+ * the previous answer and mean something to a reader that is not a browser. A
+ * PNG does none of that, and a data URI in a submission is a megabyte of base64
+ * nobody can read.
+ *
+ * **Integers, in the field's own box.** Floats drift, and the canonical hash a
+ * submission is bound to must not depend on how a browser rounded a pointer
+ * event.
+ *
+ * **Either drawn or typed, never both.** Typing your name is not a lesser
+ * fallback for somebody who cannot draw with a pointer — it is how most people
+ * sign most things, and it is the only route available from a keyboard. A field
+ * that offered drawing alone would be a WCAG failure with a legal signature
+ * attached to it.
+ *
+ * **No timing.** Stroke velocity is what makes a signature biometric, and
+ * biometric data is a category (GDPR Article 9) nothing in this product is
+ * equipped to hold. A signature here is a mark somebody made, not evidence
+ * about their body.
+ */
+export type SignatureAnswer =
+  | { drawn: Array<Array<[number, number]>>; typed?: never }
+  | { typed: string; drawn?: never }
+
 export interface FieldDef {
   /**
    * The field's identity, forever. Renaming a key is a data migration, not an
@@ -468,6 +512,22 @@ export interface FieldDef {
    */
   accept?: string[]
   maxFileSize?: number
+  /**
+   * `signature` fields: the space the mark is drawn in, and how much ink it may
+   * hold.
+   *
+   * `box` is `[width, height]` in the coordinate space the points are recorded
+   * in — not pixels on anybody's screen. It travels with the FIELD rather than
+   * with each answer, so two signatures on one form are comparable and a stored
+   * answer can be redrawn at any size: a point at `x: 300` means nothing without
+   * the width it was drawn in, and a picture that scales is exactly what storing
+   * points buys.
+   *
+   * `maxPoints` caps one answer's total across all strokes. An unbounded point
+   * list is a payload amplifier, like every other unbounded thing here.
+   */
+  box?: [number, number]
+  maxPoints?: number
   /**
    * `date`, `time` and `datetime`: the earliest and latest answer allowed,
    * inclusive, written in exactly the form that type's answer takes.

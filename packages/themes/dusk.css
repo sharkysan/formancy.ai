@@ -1586,3 +1586,56 @@
 [data-formancy-theme='dusk'] [data-formancy-part='typeahead-status'][data-state='failed'] {
   color: var(--fm-invalid, currentColor);
 }
+
+/* ---------------------------------------------------------------- signature */
+
+/* A lit well, like the other controls: the mark is the signal colour on dark.
+   The surface has a HEIGHT of its own: an empty SVG collapses to nothing, which
+   is how the rich-text editor once shipped invisible. The stroke is drawn rather
+   than filled, because the answer is a path and not a shape. */
+[data-formancy-theme='dusk'] [data-formancy-part='signature'] {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: 1fr auto;
+}
+
+[data-formancy-theme='dusk'] [data-formancy-part='signature-surface'] {
+  grid-column: 1 / -1;
+  inline-size: 100%;
+  block-size: 8rem;
+  border: 1px solid var(--fm-edge);
+  border-radius: var(--fm-radius);
+  background: var(--fm-control);
+  touch-action: none;
+  cursor: crosshair;
+}
+
+[data-formancy-theme='dusk'] [data-formancy-part='signature-stroke'] {
+  stroke: var(--fm-signal);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+[data-formancy-theme='dusk'] [data-formancy-part='signature-typed'] {
+  min-inline-size: 0;
+}
+
+[data-formancy-theme='dusk'] [data-formancy-part='signature-clear'] {
+  align-self: center;
+  padding: 0.5rem 0.875rem;
+  min-block-size: 44px;
+  border: 1px solid var(--fm-edge);
+  border-radius: var(--fm-radius);
+  background: transparent;
+  color: var(--fm-muted);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+[data-formancy-theme='dusk'] [data-formancy-part='signature-clear']:hover:not(:disabled) {
+  color: var(--fm-text);
+  border-color: var(--fm-signal);
+}

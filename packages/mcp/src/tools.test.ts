@@ -57,7 +57,11 @@ describe('describe_spec', () => {
     const notes = (describeSpec().data as { notes: readonly string[] }).notes.join(' ')
 
     // Each of these has cost somebody real time in this repository.
-    expect(notes).toContain('version 1 document may not contain a version 2 construct')
+    // Shorter than the sentence it checks, on purpose: this said
+    // "version 1 document may not contain a version 2 construct", which stopped
+    // being the note's wording the moment there were three versions and the
+    // sentence had to be written per version instead of per pair.
+    expect(notes).toContain('construct from a later version')
     expect(notes).toContain('[], never null')
     expect(notes).toContain('4.0 rather than 4')
   })

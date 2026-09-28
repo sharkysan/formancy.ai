@@ -37,6 +37,12 @@ export function modelViolations(def: FieldDef, value: unknown): string[] {
     return codes
   }
 
+  // A signature is the one answer here whose value is a nested array, which makes
+  // it a payload question before it is a drawing one: refusing a shape the
+  // control could never have produced is what stops the field being unbounded for
+  // anybody who posts at the endpoint instead.
+  if (def.type === 'signature') return signatureViolations(def, value)
+
   // A chooser stores ONE OPTION'S VALUE, which is a string. Anything else is the
   // hostile-payload path, and refusing it here is what stops it from being invisible:
   // a field whose options live elsewhere (`optionsSource`) has no list to compare
@@ -259,4 +265,49 @@ const FORMAT_CHECKS: Record<FieldFormat, (value: string) => boolean> = {
 
   uuid: (value) =>
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value),
+}
+
+/**
+ * A signature is drawn strokes or a typed name — never both, and never anything else.
+ *
+ * Integers, because a submission is bound to a canonical hash and that hash must not
+ * depend on how one browser rounded a pointer event. Inside the field's box, because
+ * the box is what makes a stored point redrawable at any size and a point outside it
+ * draws over whatever sits next to the field. Bounded, because an unbounded point
+ * list is a payload amplifier
+ * ([0083](../../../docs/decisions/0083-a-signature-is-points-or-a-name.md)).
+ */
+function signatureViolations(def: FieldDef, value: unknown): string[] {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return ['type']
+
+  const answer = value as { drawn?: unknown; typed?: unknown }
+  const hasDrawn = answer.drawn !== undefined
+  const hasTyped = answer.typed !== undefined
+  // Both would leave a reader choosing which one to show, and a signed document
+  // that renders differently depending on that choice is worse than a refusal.
+  if (hasDrawn === hasTyped) return ['type']
+
+  if (hasTyped) return typeof answer.typed === 'string' ? [] : ['type']
+
+  if (!Array.isArray(answer.drawn)) return ['type']
+  const codes: string[] = []
+  let points = 0
+  for (const stroke of answer.drawn) {
+    if (!Array.isArray(stroke)) return ['type']
+    for (const point of stroke) {
+      if (!Array.isArray(point) || point.length !== 2) return ['type']
+      const [x, y] = point as unknown[]
+      if (!Number.isInteger(x) || !Number.isInteger(y)) return ['type']
+      points += 1
+      if (def.box !== undefined && !codes.includes('box')) {
+        const [width, height] = def.box
+        const outside = (x as number) < 0 || (y as number) < 0 || (x as number) > width || (y as number) > height
+        if (outside) codes.push('box')
+      }
+    }
+  }
+  // Across every stroke: ten strokes of ten points is the same hundred points as
+  // one stroke of a hundred, and a per-stroke cap would bound neither.
+  if (def.maxPoints !== undefined && points > def.maxPoints) codes.push('maxPoints')
+  return codes
 }

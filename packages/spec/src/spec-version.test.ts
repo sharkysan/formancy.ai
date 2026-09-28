@@ -27,9 +27,9 @@ const errorsOf = (document: FormSchema): string[] => {
 }
 
 describe('what each version defines', () => {
-  test('the versions this package speaks are 1 and 2, newest by default', () => {
-    expect([...SPEC_VERSIONS]).toEqual(['1', '2'])
-    expect(CURRENT_SPEC_VERSION).toBe('2')
+  test('the versions this package speaks are 1, 2 and 3, newest by default', () => {
+    expect([...SPEC_VERSIONS]).toEqual(['1', '2', '3'])
+    expect(CURRENT_SPEC_VERSION).toBe('3')
   })
 
   test('version 2 is a superset: every version 1 type is still a version 2 type', () => {
@@ -121,12 +121,15 @@ describe('upgradeSpecVersion', () => {
 
     const after = upgradeSpecVersion(before)
 
-    expect(after.specVersion).toBe('2')
+    // Against the constant rather than a literal: this case is about the upgrade
+    // being one field, not about which version is newest this week, and a
+    // literal here has to be corrected every time one is added.
+    expect(after.specVersion).toBe(CURRENT_SPEC_VERSION)
     expect({ ...after, specVersion: '1' }).toEqual(before)
   })
 
   test('hands back the same document when it is already there', () => {
-    const already: FormSchema = { ...spec1(), specVersion: '2' }
+    const already: FormSchema = { ...spec1(), specVersion: CURRENT_SPEC_VERSION }
 
     expect(upgradeSpecVersion(already)).toBe(already)
   })

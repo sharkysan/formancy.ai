@@ -550,7 +550,10 @@ export function FormancyLayoutPane({
                   <button
                     type="button"
                     onClick={() => {
-                      const outcome = session.upgradeSpec()
+                      // To the version the CODE needs, not to the newest: a code
+                      // is a version 2 construct, and a document moved to 3 for it
+                      // loses every reader pinned to 2 for no reason.
+                      const outcome = session.upgradeSpec('2')
                       announce(
                         outcome.ok
                           ? 'Moved this form to spec version 2. Nothing else changed.'

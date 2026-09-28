@@ -18,7 +18,7 @@ software, and neither is `latest`.
 | Licence | Apache-2.0 for every package ([0002](../decisions/0002-apache-2-0.md)) |
 | Source | this repository, in full, including tests |
 | Package version | `0.2.0`, published to npm under the `@formancy` scope |
-| Spec version | `"2"`, **frozen as of 0.2.0** ([0051](../decisions/0051-spec-2-adds-types.md)). Version `"1"` is frozen too and stays readable ([0042](../decisions/0042-freeze-the-spec.md)); what version 2 added and what freezing it costs are in [`MIGRATIONS.md`](../../MIGRATIONS.md) |
+| Spec version | `"2"`, **frozen as of 0.2.0** ([0051](../decisions/0051-spec-2-adds-types.md)) — which is the version this document characterises, because it is the version the released package writes. Version `"1"` is frozen too and stays readable ([0042](../decisions/0042-freeze-the-spec.md)). Version `"3"` is **open** in the source and not characterised here: it adds `signature` ([0083](../decisions/0083-a-signature-is-points-or-a-name.md)) and freezes at the release that ships it. What each version added, and what freezing one costs, is in [`MIGRATIONS.md`](../../MIGRATIONS.md) |
 | Development stage | beta. 0.1.0 was the first release and predates spec versioning: it pins documents to version 1 and refuses a version 2 document rather than ignoring the property. 0.2.0 is the first release that reads version 2 |
 | Integrity | each tarball carries a SLSA v1 provenance attestation issued by GitHub's OIDC identity for the workflow run that built it, plus a registry signature. Verify with `npm audit signatures`. The server image is published to GHCR and **signed by digest**, with the SBOM attached as a CycloneDX attestation — verify with `cosign verify` and `cosign verify-attestation` against the digest rather than the tag, since a tag is mutable. There is deliberately no `latest`, for the reason this table gives two rows down. The pipeline is described in [`RELEASING.md`](../../RELEASING.md) |
 
@@ -27,14 +27,18 @@ governs the code; the spec version governs the *documents and stored
 submissions*, which is the artefact with real switching costs.
 
 > **A manufacturer must pin the spec version as well as the package version.**
-> Version 2 is a superset of version 1: it adds field types and layout kinds and
-> removes nothing, so a document characterised under version 1 is unchanged and
-> still valid. But a reader that speaks only version 1 cannot read a version 2
-> document, and the failure is a validation error rather than a silent one
-> ([0051](../decisions/0051-spec-2-adds-types.md)).
+> Each version is a superset of the one before it: it adds field types, layout kinds
+> and properties, and removes nothing, so a document characterised under version 1 is
+> unchanged and still valid under 2 or 3. But a reader that speaks only version 1
+> cannot read a version 2 document, and one that speaks only 2 cannot read a version 3
+> document — the failure is a validation error rather than a silent one
+> ([0051](../decisions/0051-spec-2-adds-types.md)). This document characterises the
+> released package, which writes version 2; version 3 is open in the source.
 >
-> **The data format is stable; the code is not.** Both spec versions are frozen, so
-> a form document and the submissions stored against it keep their shape. The
+> **The data format is stable; the code is not.** Versions `"1"` and `"2"` are frozen,
+> so a form document written against either — and the submissions stored against it —
+> keeps its shape. A pinned deployment is therefore characterising a frozen format
+> whatever the source does next. The
 > *packages* are pre-1.0 and their APIs will still change. A manufacturer
 > should read the two version lines separately: the one that governs stored
 > data is settled, the one that governs the software is not.
@@ -224,7 +228,6 @@ refuses a document carrying one rather than ignoring it
 ([0051](../decisions/0051-spec-2-adds-types.md)). A pinned deployment therefore keeps
 working untouched.
 
-- `signature` — a drawn mark, stored as points rather than as a picture.
 - `async` — an asynchronous validator. `runsOn` already says *where* a check runs, so the
   ordering question is answered; the property that would make a check asynchronous is not
   in `logicRule`, which is `additionalProperties: false`.
@@ -233,7 +236,8 @@ working untouched.
 An earlier version of this section listed remote option sources and the date-time types
 here. Both shipped — `time`, `datetime` and `optionsSource` are in spec 2 — and the
 sentence stayed, which would have told a manufacturer to leave out three features the
-software has. `apps/docs/src/soup.test.ts` now checks every name in this list against the
+software has. `signature` has since left this list the same way: it is a spec 3 field
+type, and the list is checked rather than read. `apps/docs/src/soup.test.ts` now checks every name in this list against the
 format's own vocabulary, so it cannot happen again in that direction.
 
 ### Characterised by this document, and new since 0.1.0

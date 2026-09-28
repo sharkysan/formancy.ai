@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { createBuilderSession } from '@formancy/builder-core'
-import { FIELD_TYPES, SPEC_1_FIELD_TYPES } from '@formancy/spec'
+import { FIELD_TYPES, SPEC_1_FIELD_TYPES, SPEC_2_FIELD_TYPES } from '@formancy/spec'
 import type { FormSchema } from '@formancy/spec'
 import { newFieldOfType, paletteEntries, typesNeedingUpgrade } from './palette.js'
 
@@ -42,8 +42,18 @@ describe('paletteEntries', () => {
     expect(offered).not.toContain('selectboxes')
   })
 
-  test('a version 2 document is offered everything', () => {
-    expect(paletteEntries('2').map((entry) => entry.type)).toContain('selectboxes')
+  test('a version 2 document is offered what version 2 has, and not what it has not', () => {
+    const offered = paletteEntries('2').map((entry) => entry.type)
+
+    expect(offered).toContain('selectboxes')
+    // It said only the first half, which passed while version 2 was the newest
+    // and would have gone on passing while the palette offered a type the
+    // session refuses every time.
+    expect(offered).not.toContain('signature')
+  })
+
+  test('and a document that declares nothing is offered everything this package speaks', () => {
+    expect(paletteEntries().map((entry) => entry.type)).toContain('signature')
   })
 
   test('what a version 1 document is missing is named, so the builder can offer the upgrade', () => {
@@ -59,11 +69,19 @@ describe('paletteEntries', () => {
     // which is the tuple types doing their job, since a version 1 type is a subset by
     // construction.
     const spec1: readonly string[] = SPEC_1_FIELD_TYPES
-    const expected = FIELD_TYPES.filter((type) => !spec1.includes(type))
-    expect(typesNeedingUpgrade('1').map((entry) => entry.type)).toEqual([...expected])
-    // A guard on the guard: an empty expectation would pass forever.
-    expect(expected.length).toBeGreaterThan(0)
-    expect(typesNeedingUpgrade('2')).toEqual([])
+    const spec2: readonly string[] = SPEC_2_FIELD_TYPES
+    const missingFromOne = FIELD_TYPES.filter((type) => !spec1.includes(type))
+    const missingFromTwo = FIELD_TYPES.filter((type) => !spec2.includes(type))
+
+    expect(typesNeedingUpgrade('1').map((entry) => entry.type)).toEqual([...missingFromOne])
+    // And the same question one version along, which is the case that did not
+    // exist when this was written: a version 2 document is missing whatever
+    // version 3 added, and saying so is what lets the builder offer the upgrade
+    // rather than show a shorter list than the spec reference documents.
+    expect(typesNeedingUpgrade('2').map((entry) => entry.type)).toEqual([...missingFromTwo])
+    // A guard on the guard: two empty expectations would pass forever.
+    expect(missingFromOne.length).toBeGreaterThan(0)
+    expect(missingFromTwo.length).toBeGreaterThan(0)
   })
 })
 

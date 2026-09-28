@@ -10,6 +10,39 @@ later.
 
 ## Unreleased
 
+**`signature`, and the spec version 3 that carries it.** The last of the three components
+form.io and FormEngine both charge for, and the only one still unbuilt. A signature is
+**points, or a name** — `{ "drawn": [[[12, 40], …]] }` or `{ "typed": "Mara Lindqvist" }`,
+never both and never a picture. Points scale, diff and survive a re-render; a PNG does none
+of that and puts a megabyte of base64 in a submission nobody can read. Whole numbers inside
+a `box` the field declares, because a submission is bound to a canonical hash and that hash
+must not depend on how a browser rounded a pointer event. `maxPoints` bounds it: it is the
+one answer whose value is an unbounded nested array.
+
+**Typing your name is the second route, not a fallback with an apology.** It is how most
+people sign most things and the only route a keyboard has, so a field offering drawing
+alone would be a WCAG 2.1.1 failure with a legal signature attached to it.
+
+**Stroke timing is refused rather than omitted.** Velocity is what makes a signature
+biometric, and biometric data is a category (GDPR Article 9) nothing here is equipped to
+hold. Said plainly alongside it: this software cannot verify a signature. There is no
+identity proof, no certificate and no timestamp authority, so a qualified electronic
+signature under eIDAS needs a qualified provider
+([0083](./docs/decisions/0083-a-signature-is-points-or-a-name.md)).
+
+**Spec version 3 is open**, and `MIGRATIONS.md` says what it added and what upgrading
+costs — nothing inside the document, and one thing outside it: every reader of your forms
+has to speak version 3, because a reader pinned to 2 refuses a version 3 document rather
+than dropping the answer it cannot render. Opening it required generalising the version
+gate, which read `if (specVersion !== '1') return []` — right while there were two versions
+and silently wrong the moment there was a third, since a `richtext` in a version 1 document
+would then have been waved through by a function that had stopped looking.
+
+**And the builder now steps one version at a time.** Its upgrade button was the literal
+"Move it to version 2" over an `upgradeSpec()` with no argument, which would have moved a
+version 1 document straight to 3 — costing it every reader pinned to 2, for a type that
+only needs 2.
+
 **A part-filled form can be saved and resumed, and now somebody can watch it happen.**
 The parts were all built and none of them was demonstrated — three public routes, a token
 that addresses a draft, a notice both renderers ship for a resume that lost answers — which

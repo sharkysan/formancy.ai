@@ -2,7 +2,8 @@ import type { ErrorObject, ValidateFunction } from 'ajv/dist/2020.js'
 import documentValidatorFn from './generated/document-validator.js'
 import { modelDataPaths } from './paths.js'
 import { collectFieldPaths, isMessageRef, modelPathsForLayout } from './presentation.js'
-import { ROW_ID, SPEC_1_FIELD_TYPES, SPEC_1_LAYOUT_KINDS,
+import { ROW_ID, SPEC_1_FIELD_TYPES,
+  SPEC_2_FIELD_TYPES, SPEC_1_LAYOUT_KINDS,
   layoutChildren,
 } from './types.js'
 import type { FieldDef, FormSchema, LayoutNode, Text } from './types.js'
@@ -52,19 +53,38 @@ export function validateSchema(document: unknown): ValidationResult {
  * anybody. So the schema accepts the union and this says, by name, which
  * construct needs which version.
  *
- * The direction that matters: a version 1 document must not use version 2
- * constructs. The reverse is fine, because 2 is a superset. That is the whole
- * compatibility story, and it is one function long on purpose.
+ * The direction that matters: a document must not use a construct from a version
+ * later than the one it declares. The reverse is fine, because every version here
+ * is a superset of the one before it. That is the whole compatibility story.
+ *
+ * Written per construct rather than per version. It used to open with
+ * `if (specVersion !== '1') return []`, which was right while there were two
+ * versions and silently wrong the moment there was a third: a `richtext` in a
+ * version 1 document would have been waved through by a function that had stopped
+ * looking. Each construct now names the version that introduced it, and the
+ * comparison is against the document's own.
  */
 function versionErrors(
   schema: FormSchema,
   fields: ReadonlyArray<{ field: FieldDef; path: string }>,
 ): SchemaError[] {
-  if (schema.specVersion !== '1') return []
+  const declared = Number(schema.specVersion)
+  if (!Number.isFinite(declared)) return []
 
   const errors: SchemaError[] = []
   const spec1Types = new Set<string>(SPEC_1_FIELD_TYPES)
+  const spec2Types = new Set<string>(SPEC_2_FIELD_TYPES)
   const spec1Kinds = new Set<string>(SPEC_1_LAYOUT_KINDS)
+
+  /** The version a field type first appeared in. */
+  const introducedIn = (type: string): number =>
+    spec1Types.has(type) ? 1 : spec2Types.has(type) ? 2 : 3
+
+  /** One sentence, so every one of these reads the same way. */
+  const needs = (what: string, version: number): string =>
+    `${what} needs specVersion "${String(version)}". This document says "${schema.specVersion}". ` +
+    `Change it to "${String(version)}" — everything already in the document keeps working, ` +
+    `because a later version only adds.`
 
   for (const { field, path } of fields) {
     // A PROPERTY, not only a type. This function gated field types and layout
@@ -75,11 +95,8 @@ function versionErrors(
     // hint and rendering the default control. A version 1 document carrying one
     // is therefore not a version 1 document, and saying so here is the only place
     // the author finds out — they cannot see the reader that would refuse it.
-    if (field.widget !== undefined) {
-      errors.push({
-        path: `${path}/widget`,
-        message: `A "${field.widget}" widget needs specVersion "2". This document says "1". Change it to "2" — everything already in the document keeps working, because version 2 only adds.`,
-      })
+    if (field.widget !== undefined && declared < 2) {
+      errors.push({ path: `${path}/widget`, message: needs(`A "${field.widget}" widget`, 2) })
     }
 
     // `earliest`/`latest` land on `date` too, which IS a version 1 type -- and that
@@ -89,11 +106,8 @@ function versionErrors(
     // because the schema is closed: a version 1 reader answers `Unknown property
     // "earliest"` and refuses everything.
     for (const bound of ['earliest', 'latest'] as const) {
-      if (field[bound] !== undefined) {
-        errors.push({
-          path: `${path}/${bound}`,
-          message: `A "${bound}" bound needs specVersion "2". This document says "1". Change it to "2" — everything already in the document keeps working, because version 2 only adds.`,
-        })
+      if (field[bound] !== undefined && declared < 2) {
+        errors.push({ path: `${path}/${bound}`, message: needs(`A "${bound}" bound`, 2) })
       }
     }
 
@@ -101,29 +115,21 @@ function versionErrors(
     // closed, so a version 1 reader answers `Unknown property "optionsSource"` and
     // refuses the whole document rather than rendering a select with no options --
     // which would be the same field quietly collecting nothing.
-    if (field.optionsSource !== undefined) {
-      errors.push({
-        path: `${path}/optionsSource`,
-        message: `An "optionsSource" needs specVersion "2". This document says "1". Change it to "2" — everything already in the document keeps working, because version 2 only adds.`,
-      })
+    if (field.optionsSource !== undefined && declared < 2) {
+      errors.push({ path: `${path}/optionsSource`, message: needs('An "optionsSource"', 2) })
     }
 
-    if (spec1Types.has(field.type)) continue
-    errors.push({
-      path: `${path}/type`,
-      message: `A "${field.type}" field needs specVersion "2". This document says "1". Change it to "2" — everything already in the document keeps working, because version 2 only adds.`,
-    })
+    const arrived = introducedIn(field.type)
+    if (arrived <= declared) continue
+    errors.push({ path: `${path}/type`, message: needs(`A "${field.type}" field`, arrived) })
   }
 
   for (const [layoutIndex, layout] of (schema.layouts ?? []).entries()) {
     const walk = (nodes: readonly LayoutNode[], base: string): void => {
       for (const [index, node] of nodes.entries()) {
         const at = `${base}/${String(index)}`
-        if (!spec1Kinds.has(node.kind)) {
-          errors.push({
-            path: `${at}/kind`,
-            message: `A "${node.kind}" layout node needs specVersion "2". This document says "1". Change it to "2" — everything already in the document keeps working, because version 2 only adds.`,
-          })
+        if (!spec1Kinds.has(node.kind) && declared < 2) {
+          errors.push({ path: `${at}/kind`, message: needs(`A "${node.kind}" layout node`, 2) })
         }
         // `layoutChildren` rather than a kind test: `qrcode` is childless and is not a
         // field, so `kind !== 'field'` walked straight into `undefined`.

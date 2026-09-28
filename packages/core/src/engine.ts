@@ -789,6 +789,20 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
     // selectboxes field with nothing ticked and a file field with nothing
     // attached both arrive, and `[]` is not an answer.
     if (Array.isArray(value)) return value.length === 0
+    // A signature is an object either way, so the generic `return false` below
+    // would accept `{ drawn: [] }` — an empty canvas presented as a signature.
+    // "Sign here" is usually the one question on a form that is not optional,
+    // and a form that accepts that is collecting consent nobody gave. A stroke
+    // with no points in it is how an empty canvas arrives when a pointer went
+    // down and came straight back up.
+    if (node.def.type === 'signature') {
+      const answer = value as { drawn?: unknown; typed?: unknown }
+      if (typeof answer.typed === 'string') return answer.typed.trim() === ''
+      if (Array.isArray(answer.drawn)) {
+        return answer.drawn.every((stroke) => Array.isArray(stroke) && stroke.length === 0)
+      }
+      return true
+    }
     return false
   }
 

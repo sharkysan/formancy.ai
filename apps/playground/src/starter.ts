@@ -22,7 +22,7 @@ import type { FormSchema } from '@formancy/spec'
  * rather than printing a message id at somebody.
  */
 export const STARTER_SCHEMA = {
-  specVersion: '2',
+  specVersion: '3',
   id: 'order',
   title: 'Order',
   model: {
@@ -205,6 +205,18 @@ export const STARTER_SCHEMA = {
         maxFileSize: 5 * 1024 * 1024,
       },
 
+      // signature: a mark drawn with a pointer, or a name typed — both routes, because
+      // typing is the only one a keyboard has. The `box` is the coordinate space the
+      // points are recorded in, and `maxPoints` bounds one answer: with a bound in the
+      // demo, the field shows what a bound does rather than only that a control exists.
+      {
+        key: 'signedBy',
+        type: 'signature',
+        label: { $t: 'signedBy' },
+        box: [600, 180],
+        maxPoints: 2000,
+      },
+
       // `widget: 'toggle'` is the author saying how it should look, and nothing
       // more: still a checkbox, still role `checkbox`, still true/false/untouched.
       // Here so the demo shows the widget rather than only documenting it.
@@ -311,6 +323,9 @@ export const STARTER_SCHEMA = {
                     { kind: 'field', path: 'deliveryPoint' },
                     { kind: 'field', path: 'message', span: 'all' },
                     { kind: 'field', path: 'artwork', span: 'all' },
+                    // Spanning, because a signing box that is half a row wide is a
+                    // box nobody can sign in.
+                    { kind: 'field', path: 'signedBy', span: 'all' },
                   ],
                 },
                 // A code node: a second VIEW of an answer placed elsewhere, collecting
@@ -409,6 +424,7 @@ export const STARTER_SCHEMA = {
         'extras.signature': 'Signature on delivery',
         cardLanguage: 'Language on the gift card',
         message: 'A message on the gift card',
+        signedBy: 'Sign here, or type your name',
         artwork: 'Artwork for the gift wrap',
         terms: 'I accept the terms',
         source: 'Source',
@@ -455,6 +471,7 @@ export const STARTER_SCHEMA = {
         'extras.signature': 'Unterschrift bei Zustellung',
         cardLanguage: 'Sprache der Geschenkkarte',
         message: 'Eine Nachricht auf der Geschenkkarte',
+        signedBy: 'Hier unterschreiben, oder Namen eintippen',
         artwork: 'Motiv für die Geschenkverpackung',
         terms: 'Ich akzeptiere die Bedingungen',
         source: 'Quelle',

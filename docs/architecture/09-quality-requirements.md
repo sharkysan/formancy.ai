@@ -51,9 +51,9 @@ formancy
 |---|---|---|
 | Keystroke, large conditional form | 1 ms | ≈0.38 ms |
 | Cold graph compile | 30 ms | ≈1.7 ms |
-| `@formancy/core` bundle | 18 kB brotli | 15.0 kB, measured 2026-09-28 |
-| `@formancy/spec` bundle | — | 9.6 kB, measured 2026-09-28 |
-| `@formancy/react` bundle | 4 kB brotli | **17.5 kB** for the whole barrel, measured 2026-09-28 |
+| `@formancy/core` bundle | 18 kB brotli | 15.5 kB, measured 2026-09-29 |
+| `@formancy/spec` bundle | — | 9.7 kB, measured 2026-09-29 |
+| `@formancy/react` bundle | 4 kB brotli | **18.8 kB** for the whole barrel, measured 2026-09-29 |
 | `uqr`, the QR encoder | — | 6.6 kB brotli, **external** rather than bundled, measured 2026-09-27 |
 
 The performance gate is written to fail on a regression greater than 15%,

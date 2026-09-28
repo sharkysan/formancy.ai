@@ -1,3 +1,4 @@
+import { CURRENT_SPEC_VERSION } from '@formancy/spec'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
@@ -143,8 +144,12 @@ describe('opening a form', () => {
     // version 2 construct, so a form started at version 1 cannot be given
     // tick boxes, a file field or formatted text. The builder refuses them
     // by name — correct, and a dead end nobody asked to be in.
+    // Against the constant, not a literal: this is about a new form starting at
+    // the version this build speaks, and a literal has to be edited every time a
+    // version is added — which is the shape that teaches people to edit a test
+    // without reading it.
     const editor = await screen.findByLabelText<HTMLTextAreaElement>('Schema')
-    expect(JSON.parse(editor.value)).toMatchObject({ specVersion: '2' })
+    expect(JSON.parse(editor.value)).toMatchObject({ specVersion: CURRENT_SPEC_VERSION })
   })
 })
 
