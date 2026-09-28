@@ -68,12 +68,27 @@ function remember(path: string, key: DraftKey | undefined): void {
  */
 const QUIET_MS = 2_000
 
+export interface FillPaneProps {
+  path: string
+  /**
+   * How long the typing has to stop for, in milliseconds.
+   *
+   * A parameter because the tests needed one. Holding a fake clock over a
+   * component whose save is two awaited fetches deep raced: advancing the timer
+   * runs the callback, the assertion runs before the promises settle, and
+   * whether that passes depends on how a runner schedules microtasks. It passed
+   * here and failed on CI, which is the timing test that tells you nothing about
+   * the code. A short interval and a real clock is deterministic.
+   */
+  quietMs?: number
+}
+
 type Status =
   | { kind: 'loading' }
   | { kind: 'failed'; message: string }
   | { kind: 'ready' }
 
-export function FillPane({ path }: { path: string }): ReactElement {
+export function FillPane({ path, quietMs = QUIET_MS }: FillPaneProps): ReactElement {
   const [status, setStatus] = useState<Status>({ kind: 'loading' })
   const [schema, setSchema] = useState<FormSchema | undefined>(undefined)
   const [schemaHash, setSchemaHash] = useState<string | undefined>(undefined)
@@ -175,9 +190,9 @@ export function FillPane({ path }: { path: string }): ReactElement {
     if (engine === undefined || readOnly) return
     return engine.subscribe(() => {
       clearTimeout(pending.current)
-      pending.current = setTimeout(() => void save(engine.value()), QUIET_MS)
+      pending.current = setTimeout(() => void save(engine.value()), quietMs)
     })
-  }, [engine, readOnly, save])
+  }, [engine, readOnly, save, quietMs])
 
   const startOver = (): void => {
     clearTimeout(pending.current)

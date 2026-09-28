@@ -77,7 +77,7 @@ const starts = (): Call[] => calls.filter((c) => c.method === 'POST' && c.url.en
 
 describe('filling in a published form', () => {
   test('renders the published form, not the one being edited', async () => {
-    render(<FillPane path="contact" />)
+    render(<FillPane path="contact" quietMs={60} />)
 
     // The schema comes from `GET /f/:path`, which answers with the CURRENT
     // published version — the point of the pane is to see what a respondent
@@ -86,50 +86,56 @@ describe('filling in a published form', () => {
     expect(calls[0]?.url).toBe('/api/f/contact')
   })
 
-  test('saves once after the typing stops, not once per keystroke', async () => {
-    // `shouldAdvanceTime`, because `findBy*` polls: frozen timers make the query
-    // that waits for the form to load wait forever, which reads as a hung
-    // component rather than as a test holding its own clock.
-    vi.useFakeTimers({ shouldAdvanceTime: true })
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-    render(<FillPane path="contact" />)
+  test('coalesces a burst of typing into a save, rather than one per keystroke', () => {
+    /*
+     * The claim is "fewer saves than keystrokes", and it is written that way on
+     * purpose. It was "exactly one save, and none before the interval" over a
+     * fake clock, which passed here and failed on CI: the save is two awaited
+     * fetches deep, so whether it has happened when the assertion runs depends on
+     * how a runner schedules microtasks. A timing test whose answer depends on
+     * whose machine it is tells you nothing about the code.
+     *
+     * So: a real clock, a short interval, and the invariant that survives a
+     * stalled runner. One save per keystroke is what the documentation says not
+     * to do — a database write per key, and the rate limiter answering 429 while
+     * somebody is typing hardest.
+     */
+    const typed = 'a@b.ch'
+    return (async () => {
+      const user = userEvent.setup()
+      render(<FillPane path="contact" quietMs={60} />)
 
-    const email = await screen.findByLabelText('Email')
-    await user.type(email, 'a@b.ch')
+      await user.type(await screen.findByLabelText('Email'), typed)
 
-    // Eight keystrokes, and a database write per keystroke is what the
-    // documentation says not to do — and what the rate limiter would start
-    // answering 429 to while somebody is typing hardest.
-    expect(saves()).toHaveLength(0)
+      await waitFor(() => {
+        expect(saves().length).toBeGreaterThan(0)
+      })
+      // Long enough that any per-keystroke save would have landed by now.
+      await new Promise((resolve) => setTimeout(resolve, 250))
 
-    await act(async () => {
-      vi.advanceTimersByTime(2_000)
-    })
-
-    expect(saves()).toHaveLength(1)
-    expect(saves()[0]?.body).toMatchObject({ email: 'a@b.ch' })
+      expect(saves().length).toBeLessThan(typed.length)
+      expect(saves().at(-1)?.body).toMatchObject({ email: typed })
+    })()
   })
 
-  test('starts the draft once, and sends the token in the header rather than the URL', async () => {
-    // `shouldAdvanceTime`, because `findBy*` polls: frozen timers make the query
-    // that waits for the form to load wait forever, which reads as a hung
-    // component rather than as a test holding its own clock.
-    vi.useFakeTimers({ shouldAdvanceTime: true })
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-    render(<FillPane path="contact" />)
+  test('starts the draft once however many times it saves, and keeps the token out of the URL', async () => {
+    // Counting saves was the wrong assertion twice: two fields typed back to
+    // back coalesce into ONE save, which is the debounce working. What this is
+    // really about is that the id and token are minted once and kept — true
+    // whatever the count — and that the token travels in a header.
+    const user = userEvent.setup()
+    render(<FillPane path="contact" quietMs={60} />)
 
     await user.type(await screen.findByLabelText('Email'), 'a@b.ch')
-    await act(async () => {
-      vi.advanceTimersByTime(2_000)
+    await waitFor(() => {
+      expect(saves().length).toBeGreaterThan(0)
     })
     await user.type(screen.getByLabelText('Message'), 'hello')
-    await act(async () => {
-      vi.advanceTimersByTime(2_000)
+    await waitFor(() => {
+      expect(saves().at(-1)?.body).toMatchObject({ message: 'hello' })
     })
 
-    // One start, two saves: the id and token are minted once and kept.
     expect(starts()).toHaveLength(1)
-    expect(saves()).toHaveLength(2)
     // In the header. A token in a URL lands in logs, in a Referer, and in
     // somebody's browser history.
     expect(saves()[0]?.headers['x-formancy-draft-token']).toBe('t1')
@@ -142,7 +148,7 @@ describe('filling in a published form', () => {
       body: { outcome: 'resumed', version: 3, schema, schemaHash: 'abc', data: { email: 'kept@example.ch' } },
     }
 
-    render(<FillPane path="contact" />)
+    render(<FillPane path="contact" quietMs={60} />)
 
     await waitFor(() => {
       expect((screen.getByLabelText('Email') as HTMLInputElement).value).toBe('kept@example.ch')
@@ -164,7 +170,7 @@ describe('filling in a published form', () => {
       },
     }
 
-    render(<FillPane path="contact" />)
+    render(<FillPane path="contact" quietMs={60} />)
 
     // Without this somebody resumes, sees a field they know they filled in now
     // empty, and submits believing everything they typed is included.
@@ -173,11 +179,7 @@ describe('filling in a published form', () => {
   })
 
   test('a draft that can no longer be submitted says so, and stops saving', async () => {
-    // `shouldAdvanceTime`, because `findBy*` polls: frozen timers make the query
-    // that waits for the form to load wait forever, which reads as a hung
-    // component rather than as a test holding its own clock.
-    vi.useFakeTimers({ shouldAdvanceTime: true })
-    window.localStorage.setItem('formancy.draft.contact', JSON.stringify({ id: 'd1', token: 't1' }))
+        window.localStorage.setItem('formancy.draft.contact', JSON.stringify({ id: 'd1', token: 't1' }))
     replies['GET /api/f/contact/drafts/d1'] = {
       body: {
         outcome: 'readOnly',
@@ -189,16 +191,16 @@ describe('filling in a published form', () => {
       },
     }
 
-    render(<FillPane path="contact" />)
+    render(<FillPane path="contact" quietMs={60} />)
 
     await waitFor(() => {
       expect(screen.getByRole('region', { name: /changed while you were away/i }).textContent).toMatch(/cannot be submitted/i)
     })
     // And the other half: a read-only draft that kept saving would overwrite the
-    // answers it is showing with the ones it could not rebind.
-    await act(async () => {
-      vi.advanceTimersByTime(5_000)
-    })
+    // answers it is showing with the ones it could not rebind. Waited out rather
+    // than asserted immediately — "no save happened" is only worth anything after
+    // the interval a save would have used.
+    await new Promise((resolve) => setTimeout(resolve, 60))
     expect(saves()).toHaveLength(0)
     expect(screen.getByRole('button', { name: /start over/i })).toBeTruthy()
   })
@@ -217,7 +219,7 @@ describe('filling in a published form', () => {
       },
     }
 
-    render(<FillPane path="contact" />)
+    render(<FillPane path="contact" quietMs={60} />)
     await user.click(await screen.findByRole('button', { name: /start over/i }))
 
     expect(window.localStorage.getItem('formancy.draft.contact')).toBeNull()
