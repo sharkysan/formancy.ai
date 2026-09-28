@@ -73,12 +73,13 @@ export function TranslationsPane({ session }: { session: BuilderSession }): Reac
         <button
           type="button"
           onClick={() => {
-            // Every label in one step, because doing it field by field is a chore
-            // that makes people give up halfway and leave a half-referenced form.
-            for (const keyPath of labelledFields(document)) session.extractText(keyPath, 'label')
+            // Every text in one step, and one undo. Field by field is a chore
+            // people abandon halfway, leaving a form that is half translatable and
+            // a catalogue that looks finished.
+            session.extractAllText()
           }}
         >
-          Make every label translatable
+          Make this form translatable
         </button>
         {unused}
       </div>
@@ -195,18 +196,4 @@ function referencedMessages(document: FormSchema): string[] {
   walk(document.model)
   walk(document.layouts)
   return found
-}
-
-/** The key path of every field carrying a literal label. */
-function labelledFields(document: FormSchema): Array<readonly string[]> {
-  const out: Array<readonly string[]> = []
-  const walk = (fields: readonly FieldDef[], parent: readonly string[]): void => {
-    for (const field of fields) {
-      const at = [...parent, field.key]
-      if (typeof field.label === 'string') out.push(at)
-      walk(field.fields ?? [], at)
-    }
-  }
-  walk(document.model.fields, [])
-  return out
 }

@@ -46,7 +46,7 @@ describe('a form with nothing extracted yet', () => {
     // An empty pane with no explanation reads as a broken tab. What is true is
     // that the form's words are literals, and one press changes that.
     expect(screen.getByText(/nothing in this form is translatable yet/i)).toBeTruthy()
-    await user.click(screen.getByRole('button', { name: /make every label translatable/i }))
+    await user.click(screen.getByRole('button', { name: /make this form translatable/i }))
 
     expect(session.document().model.fields[0]?.label).toEqual({ $t: 'email.label' })
     expect(session.document().model.fields[1]?.label).toEqual({ $t: 'note.label' })
@@ -56,7 +56,7 @@ describe('a form with nothing extracted yet', () => {
     const user = userEvent.setup()
     const session = mount()
 
-    await user.click(screen.getByRole('button', { name: /make every label translatable/i }))
+    await user.click(screen.getByRole('button', { name: /make this form translatable/i }))
 
     const messages = session.document().i18n?.messages['en'] ?? {}
     expect(messages['email.label']).toBe('Work email')

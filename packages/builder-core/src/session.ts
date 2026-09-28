@@ -124,6 +124,20 @@ export interface BuilderSession {
    */
   extractText(keyPath: readonly string[], property: string, locale?: string): CommandOutcome
 
+  /**
+   * Turn every literal in the document into a reference, in one step.
+   *
+   * `Text` appears in exactly four places — a field's label, an option's label, a
+   * datagrid column's heading, and a layout node's label — and this reaches all
+   * four. Doing it property by property is a chore people abandon halfway, which
+   * leaves a form half translatable and a catalogue that looks finished.
+   *
+   * The ids it mints need not be stable, which looks wrong and is not: a
+   * reference lives INSIDE the thing it names, so an option's travels with the
+   * option and a node's with the node. Reordering or moving carries it along.
+   */
+  extractAllText(locale?: string): CommandOutcome
+
   /** Write one message, in one locale. */
   setMessage(locale: string, id: string, text: string): CommandOutcome
 
@@ -486,6 +500,75 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
           [id]: current,
         }
         field[property] = { $t: id }
+        return undefined
+      })
+    },
+
+    extractAllText(locale) {
+      return attempt((draft) => {
+        const defaultLocale = draft.i18n?.defaultLocale ?? locale ?? 'en'
+        const catalogue: Record<string, string> = { ...draft.i18n?.messages[defaultLocale] }
+        const taken = new Set(Object.keys(catalogue))
+
+        /** A readable id nothing else is using. */
+        const mint = (base: string): string => {
+          if (!taken.has(base)) {
+            taken.add(base)
+            return base
+          }
+          let counter = 2
+          while (taken.has(`${base}.${String(counter)}`)) counter += 1
+          const id = `${base}.${String(counter)}`
+          taken.add(id)
+          return id
+        }
+
+        /** Replace one property with a reference, keeping what it said. */
+        const lift = (holder: Record<string, unknown>, property: string, base: string): void => {
+          const current = holder[property]
+          if (typeof current !== 'string') return
+          const id = mint(base)
+          catalogue[id] = current
+          holder[property] = { $t: id }
+        }
+
+        const fields = (defs: FieldDef[], parent: readonly string[]): void => {
+          for (const def of defs) {
+            const at = [...parent, def.key]
+            const path = at.join('.')
+            lift(def as unknown as Record<string, unknown>, 'label', `${path}.label`)
+            for (const option of def.options ?? []) {
+              // By VALUE rather than by index: an option's value is its identity,
+              // so the id reads as the thing it names rather than as a position.
+              lift(option as unknown as Record<string, unknown>, 'label', `${path}.option.${option.value}`)
+            }
+            for (const column of def.columns ?? []) {
+              lift(column as unknown as Record<string, unknown>, 'header', `${path}.column.${column.field}`)
+            }
+            fields(def.fields ?? [], at)
+          }
+        }
+        fields(draft.model.fields, [])
+
+        for (const layout of draft.layouts ?? []) {
+          const walk = (nodes: LayoutNode[], trail: string): void => {
+            for (const [index, node] of nodes.entries()) {
+              const at = `${trail}.${node.kind}${String(index)}`
+              lift(node as unknown as Record<string, unknown>, 'label', `${at}.label`)
+              walk(layoutChildren(node) as LayoutNode[], at)
+            }
+          }
+          walk(layout.nodes, layout.name)
+        }
+
+        // Nothing to lift: leave the document exactly as it was rather than
+        // attaching an empty catalogue to a form nobody is translating.
+        if (Object.keys(catalogue).length === 0) return undefined
+
+        draft.i18n = {
+          defaultLocale,
+          messages: { ...draft.i18n?.messages, [defaultLocale]: catalogue },
+        }
         return undefined
       })
     },

@@ -73,10 +73,12 @@ self-hosting pitch stops having a hole in the middle of it.
 mount and writes the document back, like the build tab, rather than sharing the build
 tab's. Sharing would mean a translator's Ctrl+Z reaching back into somebody's field edits.
 
-**Only labels are extracted by the one-press button.** Options, placeholders, help text and
-a layout section's heading are all `Text` and all translatable, and the button names
-labels because that is what it does. Extending it is a widening of one function; claiming
-it already does more would be the documentation failure this repository keeps finding.
+**The one-press button reaches every `Text` the format has**: field labels, option labels,
+a grid column's heading and a layout node's label. It did not, at first — and the sentence
+recording that said it left "options, placeholders and help text", which named two
+properties **the format does not have**. Written from a memory of other form builders
+rather than from this schema, in a record whose whole subject is the format's own
+vocabulary. `Text` appears in exactly four places, and the sweep now covers all four.
 
 **Nothing imports or exports a catalogue.** A translator working in the pane is a
 translator working in the product; a team with a translation memory and a vendor wants XLIFF
