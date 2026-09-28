@@ -244,7 +244,6 @@
   rotate: -45deg;
   translate: 0 -1px;
   scale: 0;
-  transition: scale 140ms ease;
 }
 
 [data-formancy-theme='paper'] [data-formancy-part='field'] input[type='radio']::before {
@@ -254,7 +253,6 @@
   border-radius: 50%;
   background: var(--fm-ink);
   scale: 0;
-  transition: scale 140ms ease;
 }
 
 [data-formancy-theme='paper'] [data-formancy-part='field'] input:is([type='checkbox'], [type='radio']):checked::before {

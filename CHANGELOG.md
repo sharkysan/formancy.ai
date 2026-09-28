@@ -37,8 +37,11 @@ draw the chosen state with exactly those properties, so the state itself faded
 in: measured in Dusk, nothing changed for the first frames after a click, the
 whole circle then filled with colour before the ring grew back, and it settled
 after about 150 ms. All four themes now take the fade off the choice controls.
-Pop's and Paper's dot still scales in, because that is an ornament drawn on a
-pseudo-element after the state is already visible.
+
+The first version of that fix kept the checkbox tick, and Pop's and Paper's
+radio dot, growing in over 120-140 ms as an ornament. It was reported straight
+back as still not immediate, which is right: the tick and the dot are the
+state. They are drawn at once now, in every theme.
 
 **Date and time fields fit their field on iPhone.** Reported from a phone as
 "broken on mobile" in the playground. Mobile Safari draws `date`, `time` and
