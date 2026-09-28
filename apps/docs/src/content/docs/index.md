@@ -1,6 +1,6 @@
 ---
 title: What is formancy?
-description: A self-hostable form engine, renderers and backend for React and Angular — one engine in browser and server, your design system's markup, Apache-2.0.
+description: A visual form builder for Angular and React. Conditional fields, validation and your own styling, with one engine running in the browser and on the server. Open source, with an optional self-hosted backend.
 ---
 
 :::caution[Status: beta, version 0.2.0]

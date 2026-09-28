@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, test } from 'vitest'
@@ -166,5 +166,49 @@ describe('the package version on the landing page', () => {
     ).version
     expect(version).toMatch(/^\d+\.\d+\.\d+/)
     expect(read('apps', 'site', 'src', 'app.tsx')).not.toContain(version)
+  })
+})
+
+describe('the card a shared link shows', () => {
+  /*
+   * `public/og.png` is what a chat app, a search result and a social post display, and
+   * the one before this outlived two rewrites of the headline: the page said "Build the
+   * form. Ship your product." while every shared link still said "One engine, in the
+   * browser and on the server."
+   *
+   * Nothing could catch that while the image was a PNG somebody once exported. It is
+   * rendered from `og-card.tsx` now, so the headline is source — and this is what fails
+   * when the page's headline moves without the card's following it.
+   *
+   * The image itself is still exported by hand; what is checked is the thing that
+   * produces it. `docs/images/README.md` says how.
+   */
+  const headlineOf = (...parts: string[]): string => {
+    const source = read(...parts)
+    const opened = source.indexOf('<h1>')
+    expect(opened, `${parts.join('/')} has no <h1>`).toBeGreaterThan(-1)
+    const closed = source.indexOf('</h1>', opened)
+
+    return source
+      .slice(opened + '<h1>'.length, closed)
+      // JSX: drop the tags, drop the expressions, keep the words.
+      .replace(/\{[^}]*\}/g, ' ')
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+  }
+
+  test('says what the page says', () => {
+    const page = headlineOf('apps', 'site', 'src', 'app.tsx')
+    // A guard on the guard: two empty strings would agree with each other.
+    expect(page.length).toBeGreaterThan(10)
+    expect(headlineOf('apps', 'site', 'src', 'og-card.tsx')).toBe(page)
+  })
+
+  test('is rendered from source rather than being a picture nobody can regenerate', () => {
+    // The gate that makes the case above worth having: an `og-card.tsx` nothing renders
+    // would pass the comparison and still ship last year's PNG.
+    expect(read('apps', 'site', 'src', 'main.tsx')).toContain('OgCard')
+    expect(existsSync(join(repo, 'apps', 'site', 'public', 'og.png'))).toBe(true)
   })
 })
