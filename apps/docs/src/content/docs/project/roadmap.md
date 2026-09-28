@@ -86,9 +86,15 @@ history, submissions and export).
   sends it in a header, and it shows the resume notice and refuses to save a draft that
   came back read-only. Not demonstrated there: the **anonymous** submission path, since
   the admin is signed in and skips the challenge.
-- **Translated form content.** The key structure is reserved
-  (`label: { $t: "..." }`) and the engine resolves it, but there is no catalogue
-  management and no authoring for it.
+- ~~**Translated form content.**~~ **Authoring is built.** The admin's *translations*
+  tab extracts every literal label into a message reference, keeping the words, and a
+  translator works down a table per language with untranslated messages marked rather
+  than shown as their fallback. A message nothing refers to any more is listed and never
+  collected ([0084](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0084-a-translation-is-authored-not-imported.md)).
+  Still missing: extraction of **options, placeholders and help text** (the one-press
+  button does labels), **import and export** of a catalogue for a team with a translation
+  vendor, and a **per-locale preview** — seeing a translated form means switching the
+  document's default locale.
 - **Concurrent editing of one form.** Published versions are immutable and a
   submission carries the hash it was rendered from, so the pieces are there; two
   people editing one draft still last-write-wins.
@@ -159,7 +165,9 @@ left out as v2-era omissions. All three are now shipped.
 Roughly in order, and subject to change. The ordering is argued below rather
 than asserted.
 
-1. **Translated form content**, while the reservation is still fresh.
+1. **The rest of translation**: extracting options, placeholders and help text, a
+   catalogue import and export, and a preview that shows a locale without changing the
+   document's default.
 2. **Freezing spec version 3**, which is open. `signature` is in it; a many-answer tag
    picker and an async validator are the two named candidates for the same version, and
    field types are worth grouping into one bump rather than spending a version each.
@@ -204,11 +212,13 @@ a small fraction of the cost and most of the visible value.
 autocomplete, tag picker. Each is small on its own and collectively they are a
 priced tier elsewhere. See the table above for what each actually costs.
 
-**Translated form content.** `label: { $t: "..." }` is reserved and resolved, and
-retrofitting i18n into every string-bearing property after people have stored
-documents is brutal. Doing it while the reservation is fresh is the cheapest it
-will ever be, and "self-hosted, nothing phones home" is a European pitch where
-this is table stakes rather than a nicety.
+**Translated form content.** Built, for labels: the format always allowed
+`label: { $t: "..." }` and the engine always resolved it, and what was missing was
+any way to produce one. An author extracts, a translator works down a table, and a
+message whose field has gone is kept rather than collected. Options, placeholders and
+help text are the remaining half, along with catalogue import and export —
+"self-hosted, nothing phones home" is a European pitch where this is table stakes
+rather than a nicety.
 
 **Collision control on form editing.** form.io's term for two people editing one
 form. Immutable published versions and a schema hash on every submission already

@@ -3,6 +3,7 @@ import Editor from '@monaco-editor/react'
 import type { Monaco } from '@monaco-editor/react'
 import { BuildPane } from './build-pane.js'
 import { FillPane } from './fill-pane.js'
+import { TranslationsTab } from './translations-tab.js'
 import { WebhooksPane } from './webhooks-pane.js'
 import { SignIn } from './sign-in.js'
 import '@formancy/themes/workbench.css'
@@ -140,7 +141,7 @@ const NEW_FORM_TEMPLATE = (path: string) =>
 
 function FormWorkspace({ path, onPublished }: { path: string; onPublished: () => Promise<void> }) {
   const [tab, setTab] = useState<
-    'build' | 'editor' | 'fill in' | 'versions' | 'submissions' | 'webhooks'
+    'build' | 'editor' | 'translations' | 'fill in' | 'versions' | 'submissions' | 'webhooks'
   >('build')
   const [source, setSource] = useState<string | undefined>(undefined)
   const [serverHash, setServerHash] = useState<string | undefined>(undefined)
@@ -178,7 +179,7 @@ function FormWorkspace({ path, onPublished }: { path: string; onPublished: () =>
       <div className="wb-titlebar">
         <strong>{path}</strong>
         <div className="wb-tabs">
-        {(['build', 'editor', 'fill in', 'versions', 'submissions', 'webhooks'] as const).map((candidate) => (
+        {(['build', 'editor', 'translations', 'fill in', 'versions', 'submissions', 'webhooks'] as const).map((candidate) => (
           <button key={candidate} onClick={() => setTab(candidate)} aria-pressed={tab === candidate}>
             {candidate}
           </button>
@@ -203,6 +204,8 @@ function FormWorkspace({ path, onPublished }: { path: string; onPublished: () =>
           publishState={publishState}
           onPublish={() => { void publishSource() }}
         />
+      ) : tab === 'translations' ? (
+        <TranslationsTab source={source ?? ''} onChange={setSource} />
       ) : tab === 'fill in' ? (
         // The published form, filled in against the server, with a draft behind
         // it. Here because this is where the server already is: the playground

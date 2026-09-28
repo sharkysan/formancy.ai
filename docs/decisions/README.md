@@ -184,3 +184,4 @@ listed under the sections they belong to above.
 | [0081](0081-a-page-absorbs-the-form-it-joins.md) | The first page absorbs the form it is added to | accepted |
 | [0082](0082-the-draft-flow-is-demonstrated-in-the-admin.md) | The draft flow is demonstrated in the admin | accepted |
 | [0083](0083-a-signature-is-points-or-a-name.md) | A signature is points, or a name | accepted |
+| [0084](0084-a-translation-is-authored-not-imported.md) | Extraction is the command; an orphaned message is kept | accepted |
