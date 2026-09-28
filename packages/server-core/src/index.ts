@@ -1,5 +1,9 @@
 export { checkMembership, sourceNamesIn, sourcedAnswers } from './options-membership.js'
 export type { MembershipOutcome, ServerOptionsSource, ServerOptionsSources } from './options-membership.js'
+// Re-exported from `@formancy/challenge`, which is where the scheme lives: the server
+// mints and verifies while a browser solves, and one description of a protocol is what
+// keeps those two from disagreeing. Named here so a consumer of `@formancy/server-core`
+// does not have to learn about a second package to verify a solution.
 export {
   CHALLENGE_TTL_SECONDS,
   DEFAULT_MAX_NUMBER,
@@ -9,8 +13,8 @@ export {
   mintChallenge,
   solveChallenge,
   verifySolution,
-} from './challenge.js'
-export type { Challenge, Solution, VerifyOutcome } from './challenge.js'
+} from '@formancy/challenge'
+export type { Challenge, Solution, VerifyOutcome } from '@formancy/challenge'
 export { AUDIT_ACTIONS, auditedBy } from './audit.js'
 export type { AuditAction, AuditDraft, AuditEntry } from './audit.js'
 export { replayDelivery } from './outbox.js'
