@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
 import type { BuilderSession } from '@formancy/builder-core'
 import { dropLocation } from './drop.js'
-import { newFieldOfType, paletteEntries, typesNeedingUpgrade } from './palette.js'
+import { newFieldOfType, nextSpecVersion, paletteEntries, typesNeedingUpgrade } from './palette.js'
 import { useBuilder } from './use-builder.js'
 import type { MoveTarget } from './use-builder.js'
 import { nameOf } from './tree.js'
@@ -398,20 +398,24 @@ export function FormancyBuilder({
                   explanation reads as a broken builder, when what is actually
                   true is that the document is written against an older version
                   of the spec and can be moved forward in one step. */}
-              {locked.map((entry) => entry.title).join(', ')} need spec version 2. This form says
-              version {view.document.specVersion}.{' '}
+              {locked.map((entry) => entry.title).join(', ')} need a later spec version. This
+              form says version {view.document.specVersion}.{' '}
               <button
                 type="button"
                 onClick={() => {
-                  const outcome = session.upgradeSpec()
+                  // One step. Moving a version 1 document straight to the newest
+                  // would cost it every reader pinned to 2, for a type that only
+                  // needs 2.
+                  const to = nextSpecVersion(view.document.specVersion)
+                  const outcome = to === undefined ? undefined : session.upgradeSpec(to)
                   announce(
-                    outcome.ok
-                      ? 'Moved this form to spec version 2. Nothing else changed.'
-                      : `Cannot upgrade: ${outcome.message}`,
+                    outcome?.ok === true
+                      ? `Moved this form to spec version ${String(to)}. Nothing else changed.`
+                      : `Cannot upgrade: ${outcome?.ok === false ? outcome.message : 'already at the newest version'}`,
                   )
                 }}
               >
-                Move it to version 2
+                Move it to version {nextSpecVersion(view.document.specVersion) ?? ''}
               </button>
             </p>
           )}

@@ -640,3 +640,78 @@ describe('table', () => {
     ).toBe('2')
   })
 })
+
+describe('the signature field, which must behave as the React one does', () => {
+  /*
+   * Same assertions as `packages/react/src/signature.test.tsx`, by role and
+   * accessible name. Two renderers agreeing is this project's central claim, and
+   * a claim checked in one place is a claim about one renderer.
+   *
+   * The conformance fixtures cannot carry this one: their vocabulary is filling
+   * in and clicking by accessible name, and there is no way to say "draw" in it.
+   * So the parity is held here, deliberately and by hand.
+   */
+  const signing = (): FormSchema =>
+    base({
+      specVersion: '3',
+      model: {
+        fields: [{ key: 'mark', type: 'signature', label: 'Sign here', box: [600, 200] }],
+      },
+    })
+
+  test('records a stroke as whole-numbered points', async () => {
+    const engine = engineFor(signing())
+    await renderForm(engine)
+
+    const surface = screen.getByRole('img', { name: /sign here/i })
+    fireEvent.pointerDown(surface, { clientX: 10, clientY: 10 })
+    // Several moves, because one move is the single shape that hid a real bug:
+    // each move appended a new stroke instead of extending the one in progress.
+    for (let step = 0; step < 12; step += 1) {
+      fireEvent.pointerMove(surface, { clientX: 10 + step * 4, clientY: 15 + step })
+    }
+    fireEvent.pointerUp(surface)
+
+    const drawn = (engine.value() as { mark?: { drawn?: number[][][] } }).mark?.drawn
+    expect(drawn).toHaveLength(1)
+    expect(drawn?.[0]).toHaveLength(13)
+    for (const [x, y] of drawn?.[0] ?? []) {
+      expect(Number.isInteger(x)).toBe(true)
+      expect(Number.isInteger(y)).toBe(true)
+    }
+  })
+
+  test('typing a name is the answer, and replaces a mark', async () => {
+    const engine = engineFor(signing())
+    await renderForm(engine)
+
+    const box = screen.getByRole('textbox', { name: /type your name/i })
+    fireEvent.input(box, { target: { value: 'Mara' } })
+
+    expect((engine.value() as { mark?: unknown }).mark).toEqual({ typed: 'Mara' })
+  })
+
+  test('clearing empties the answer rather than leaving an empty mark', async () => {
+    const engine = engineFor(signing())
+    await renderForm(engine)
+
+    const surface = screen.getByRole('img', { name: /sign here/i })
+    fireEvent.pointerDown(surface, { clientX: 1, clientY: 1 })
+    fireEvent.pointerMove(surface, { clientX: 4, clientY: 4 })
+    fireEvent.pointerUp(surface)
+    fireEvent.click(screen.getByRole('button', { name: /clear/i }))
+
+    expect((engine.value() as { mark?: unknown }).mark ?? null).toBeNull()
+  })
+
+  test('emits the parts a theme dresses, with the names the React renderer uses', async () => {
+    await renderForm(engineFor(signing()))
+
+    const parts = [...document.querySelectorAll('[data-formancy-part]')].map((element) =>
+      element.getAttribute('data-formancy-part'),
+    )
+    for (const part of ['signature', 'signature-surface', 'signature-typed', 'signature-clear']) {
+      expect(parts, `no ${part}`).toContain(part)
+    }
+  })
+})

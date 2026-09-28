@@ -1,5 +1,5 @@
 import schema from '@formancy/spec/schema.json' with { type: 'json' }
-import { SPEC_1_FIELD_TYPES } from '@formancy/spec'
+import { SPEC_1_FIELD_TYPES, SPEC_2_FIELD_TYPES, SPEC_VERSIONS } from '@formancy/spec'
 import type { FieldDef, SpecVersion } from '@formancy/spec'
 
 /**
@@ -26,6 +26,15 @@ interface TypeBranch {
 const root = schema as unknown as { $defs: Record<string, { oneOf?: TypeBranch[] }> }
 
 const SPEC_1 = new Set<string>(SPEC_1_FIELD_TYPES)
+const SPEC_2 = new Set<string>(SPEC_2_FIELD_TYPES)
+
+/** Whether a document declaring `specVersion` may hold this type at all. */
+const allowedIn = (specVersion: SpecVersion | undefined, type: string): boolean => {
+  if (specVersion === '1') return SPEC_1.has(type)
+  if (specVersion === '2') return SPEC_2.has(type)
+  // Undefined means "whatever this package speaks", which is every type it has.
+  return true
+}
 
 /**
  * Types a person adds from a palette.
@@ -43,12 +52,31 @@ export function paletteEntries(specVersion?: SpecVersion): PaletteEntry[] {
     // from a palette that can target any container would offer a choice that is
     // refused most of the time. Adding a page is its own command.
     .filter((branch) => branch.const !== 'page')
-    .filter((branch) => specVersion !== '1' || SPEC_1.has(branch.const))
+    // Per version, not just version 1: offering `signature` while editing a
+    // version 2 document offers a choice the session refuses every time, and
+    // the refusal reads as a broken builder rather than as a document that
+    // needs upgrading — which is a thing the builder can offer to do.
+    .filter((branch) => allowedIn(specVersion, branch.const))
     .map((branch) => ({
       type: branch.const,
       title: branch.title ?? branch.const,
       description: branch.description ?? '',
     }))
+}
+
+
+/**
+ * The next version a document can step to, or `undefined` at the newest.
+ *
+ * One step, never straight to the newest. A `qrcode` needs version 2, and a
+ * version 1 document offered a jump to 3 would be moved further than the thing
+ * it asked for requires — which costs it every reader pinned to 2, for nothing.
+ * The offer was written as the literal "version 2" while there were only two
+ * versions, and a third made that sentence wrong in two places at once.
+ */
+export function nextSpecVersion(current: SpecVersion): SpecVersion | undefined {
+  const at = SPEC_VERSIONS.indexOf(current)
+  return at === -1 ? undefined : SPEC_VERSIONS[at + 1]
 }
 
 /**
@@ -58,8 +86,7 @@ export function paletteEntries(specVersion?: SpecVersion): PaletteEntry[] {
  * than silently showing a shorter list than the spec reference documents.
  */
 export function typesNeedingUpgrade(specVersion: SpecVersion): PaletteEntry[] {
-  if (specVersion !== '1') return []
-  return paletteEntries().filter((entry) => !SPEC_1.has(entry.type))
+  return paletteEntries().filter((entry) => !allowedIn(specVersion, entry.type))
 }
 
 const CONTAINERS = new Set(['group', 'repeater'])

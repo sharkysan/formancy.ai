@@ -297,7 +297,7 @@ describe('the documents a reader is expected to trust', () => {
  */
 describe('the spec version 2 freeze', () => {
   /** What version 2 adds to version 1, read out of the code and the document schema. */
-  const additions = (): { types: string[]; kinds: string[]; widgets: string[] } => {
+  const additions = (): { types: string[]; typesInThree: string[]; kinds: string[]; widgets: string[] } => {
     const types = readFileSync(join(repo, 'packages', 'spec', 'src', 'types.ts'), 'utf8')
     const list = (name: string): string[] => {
       const found = new RegExp(`export const ${name}[^=]*=\\s*\\[([^\\]]*)\\]`, 's').exec(types)
@@ -316,8 +316,18 @@ describe('the spec version 2 freeze', () => {
       .map((branch) => branch.properties?.kind?.const)
       .filter((kind): kind is string => kind !== undefined)
 
+    // Per version, since there are three. Attributing every non-version-1 type to
+    // version 2 was right while 2 was the newest and became a lie the moment 3
+    // existed -- it would have demanded that the version 2 section name
+    // `signature`, which version 2 does not have.
+    // Unioned, because `SPEC_2_FIELD_TYPES` is written as "version 1's, plus…":
+    // it spreads the first list rather than repeating it, and a regex over the
+    // source reads the five literals and not the spread. Reading only those five
+    // made every version 1 type look like a version 3 addition.
+    const inTwo = new Set([...list('SPEC_1_FIELD_TYPES'), ...list('SPEC_2_FIELD_TYPES')])
     return {
-      types: list('FIELD_TYPES').filter((type) => !inOne.has(type)),
+      types: list('SPEC_2_FIELD_TYPES').filter((type) => !inOne.has(type)),
+      typesInThree: list('FIELD_TYPES').filter((type) => !inTwo.has(type)),
       kinds: kinds.filter((kind) => !kindsInOne.has(kind)),
       widgets: list('FIELD_WIDGETS'),
     }
@@ -354,6 +364,17 @@ describe('the spec version 2 freeze', () => {
       (name) => !text.includes(`\`${name}\``),
     )
     expect(missing).toEqual([])
+  })
+
+  test('and names every field type version 3 added', () => {
+    // `SPEC_2_FIELD_TYPES` is the seam: a type added to `FIELD_TYPES` and not to
+    // it belongs to version 3, and a reader pinned to 2 refuses a document that
+    // carries one rather than dropping the answer it cannot render.
+    const { typesInThree } = additions()
+    expect(typesInThree.length).toBeGreaterThan(0)
+
+    const text = under('### What version 3 added')
+    expect(typesInThree.filter((name) => !text.includes(`\`${name}\``))).toEqual([])
   })
 
   test('says the version is frozen and what a version 1 document may not carry', () => {

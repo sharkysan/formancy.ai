@@ -14,11 +14,12 @@
  "properties": {
   "specVersion": {
    "title": "Spec version",
-   "description": "Which version of the document format this form is written against. Version 1 is frozen: a document that validates today will validate against every future release that speaks spec 1. Version 2 is a superset — it adds field types and layout kinds and removes nothing — so every version 1 document is also a valid version 2 document, and upgrading is a one-line change. Independent of the package version.",
-   "default": "2",
+   "description": "Which version of the document format this form is written against. Version 1 is frozen: a document that validates today will validate against every future release that speaks spec 1. Version 2 is a superset — it adds field types and layout kinds and removes nothing — so every version 1 document is also a valid version 2 document, and upgrading is a one-line change. Independent of the package version. Version 3 adds the `signature` field type and is the version this package writes; it is a superset in the same way, so every version 2 document is a valid version 3 document.",
+   "default": "3",
    "enum": [
     "1",
-    "2"
+    "2",
+    "3"
    ]
   },
   "id": {
@@ -676,6 +677,39 @@
        "options": false
       }
      }
+    },
+    {
+     "if": {
+      "required": [
+       "type"
+      ],
+      "properties": {
+       "type": {
+        "const": "signature"
+       }
+      }
+     },
+     "then": {
+      "properties": {
+       "box": {
+        "title": "Signing box",
+        "description": "The width and height the points are recorded in — a coordinate space, not pixels on anybody’s screen. It belongs to the field rather than to each answer, so two signatures on one form are comparable and a stored one can be redrawn at any size.",
+        "type": "array",
+        "items": {
+         "type": "number",
+         "exclusiveMinimum": 0
+        },
+        "minItems": 2,
+        "maxItems": 2
+       },
+       "maxPoints": {
+        "title": "Most points",
+        "description": "How many points one answer may carry across all its strokes. An unbounded point list is a payload amplifier, so this has a ceiling like everything else here.",
+        "type": "integer",
+        "minimum": 1
+       }
+      }
+     }
     }
    ],
    "unevaluatedProperties": false
@@ -771,6 +805,11 @@
      "const": "richtext",
      "title": "Formatted text",
      "description": "Several lines of text the reader can emphasise, link and list. Stored as a restricted markup, not as HTML: nothing a reader writes is ever parsed as markup by the renderer, which is what keeps a submitted answer from becoming a script on the page that displays it."
+    },
+    {
+     "const": "signature",
+     "title": "Signature",
+     "description": "A mark somebody draws, or their name typed. Stored as points rather than as a picture, so it scales, diffs and means something to a reader that is not a browser — and never as stroke timing, which is what would make it biometric data."
     },
     {
      "const": "hidden",

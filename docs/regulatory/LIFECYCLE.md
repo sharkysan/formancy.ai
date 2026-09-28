@@ -148,7 +148,10 @@ The spec carries its own version, independent of the packages
 ([0009](../decisions/0009-independent-spec-version.md)). Version `"1"` is
 **frozen** as of 2026-09-20 ([0042](../decisions/0042-freeze-the-spec.md)) and
 version `"2"` as of 0.2.0 ([0051](../decisions/0051-spec-2-adds-types.md)): a
-document that validates today keeps validating, in either version. Version 2 is
+document that validates today keeps validating, in either version. Version `"3"`
+is **open** — it is what this source writes and what carries `signature`
+([0083](../decisions/0083-a-signature-is-points-or-a-name.md)) — and freezes at
+the release that ships it, the way 2 froze at 0.2.0. Version 2 is
 a superset — it adds field types and layout kinds and removes nothing — so a
 version 1 document is also a valid version 2 document, while a version 1 reader
 refuses a version 2 document rather than ignoring the parts it does not know.

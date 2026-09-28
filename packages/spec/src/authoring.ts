@@ -55,7 +55,7 @@ export function authoringFacts(): AuthoringFacts {
     formats: ['email', 'url', 'uuid'],
     notes: [
       'A field type not in the list does not exist, whatever other form builders call it. An email field is type "text" with format "email".',
-      'A version 1 document may not contain a version 2 construct. The types selectboxes, time, datetime, file and richtext, the layout kinds tabs, table and qrcode, and the properties widget, columns, optionsSource, earliest, latest and span all need version 2. The schema is closed, so a version 1 reader refuses the whole document rather than ignoring the property it does not know.',
+      'A document may not contain a construct from a later version than the one it declares. The types selectboxes, time, datetime, file and richtext, the layout kinds tabs, table and qrcode, and the properties widget, columns, optionsSource, earliest, latest and span all need version 2; the type signature and the properties box and maxPoints need version 3. The schema is closed, so a reader of an earlier version refuses the whole document rather than ignoring the property it does not know.',
       'A widget says how a field looks and never what it stores, so it only goes on a type that accepts it. Asked for a switch, write a checkbox with widget "toggle"; for a grid of rows, a repeater with widget "datagrid".',
       'An empty answer for a list-valued field is [], never null. A rule reads it as a list.',
       'Expressions are CEL and are type-checked. A JSON number is a double, so write 4.0 rather than 4 when multiplying one.',

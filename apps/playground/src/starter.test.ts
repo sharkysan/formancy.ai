@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { unreferencedPaths } from '@formancy/spec'
 import { validateSchema } from '@formancy/spec/validate'
-import { CONTAINER_FIELD_TYPES, FIELD_TYPES, FIELD_WIDGETS } from '@formancy/spec'
+import { CONTAINER_FIELD_TYPES, CURRENT_SPEC_VERSION, FIELD_TYPES, FIELD_WIDGETS } from '@formancy/spec'
 import type { FieldDef, FieldType } from '@formancy/spec'
 import { STARTER_SCHEMA } from './starter.js'
 
@@ -127,11 +127,16 @@ describe('the starter schema', () => {
     expect([...seen].sort()).toEqual([...expected].sort())
   })
 
-  test('is a version 2 document, because three of those types need one', () => {
-    // Not cosmetic. A version 1 document may not contain a version 2
-    // construct, and `validateSchema` refuses one by name — which is what
-    // made the field types above unreachable in the builder.
-    expect(STARTER_SCHEMA.specVersion).toBe('2')
+  test('declares the version its newest construct needs, whatever that is', () => {
+    // Not cosmetic. A document may not contain a construct from a later version
+    // than the one it declares, and `validateSchema` refuses one by name — which
+    // is what once made three field types unreachable in the builder.
+    //
+    // Against the constant rather than a literal. This said `'2'` and had to be
+    // corrected when `signature` arrived, which is a test that has to be edited
+    // every time the thing it guards is extended — the shape that teaches people
+    // to edit it without reading it.
+    expect(STARTER_SCHEMA.specVersion).toBe(CURRENT_SPEC_VERSION)
   })
 
   test('uses the layout kinds version 2 added, not only the version 1 ones', () => {

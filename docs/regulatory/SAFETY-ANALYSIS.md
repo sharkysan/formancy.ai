@@ -657,10 +657,11 @@ focus area for their own verification.
 2. Pay particular attention to **A5** (visibility rules fail open), **C2** (no
    tenant boundary), **D3** (pattern linting not yet implemented) and the
    pre-release package versions. These are the entries where the residual risk
-   is real rather than theoretical. Note that both *spec* versions are frozen —
-   `"1"` ([0042](../decisions/0042-freeze-the-spec.md)) and `"2"`
-   ([0051](../decisions/0051-spec-2-adds-types.md)) — so stored data has a
-   settled shape; it is the software that is still moving.
+   is real rather than theoretical. Note which *spec* version you are
+   characterising: `"1"` ([0042](../decisions/0042-freeze-the-spec.md)) and `"2"`
+   ([0051](../decisions/0051-spec-2-adds-types.md)) are frozen, so stored data
+   written against either has a settled shape, while `"3"` is open and is what an
+   unreleased build writes. It is the software that is still moving.
 3. Decide whether automated accessibility checking is sufficient evidence for
    the device's intended users, and plan a manual audit if it is not.
 4. Treat the 118 known CEL corpus failures as a functional limitation to be

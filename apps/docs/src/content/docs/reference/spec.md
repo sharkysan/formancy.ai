@@ -1,5 +1,5 @@
 ---
-title: Spec reference (v2)
+title: Spec reference (v3)
 description: Every property of a formancy form document, generated from the JSON Schema in packages/spec.
 ---
 
@@ -9,7 +9,7 @@ the source of truth — edit it, not this page.
 :::
 
 :::note
-This page describes spec version 2. Earlier versions are **frozen**: a
+This page describes spec version 3. Earlier versions are **frozen**: a
 document that validates against one keeps validating. A newer version only adds, and
 a reader of an older one refuses a document it cannot fully understand rather than
 dropping an answer from it. See [Versioning](/docs/concepts/versioning/) for how that
@@ -22,9 +22,9 @@ A formancy form. The document holds the data contract only: what the form collec
 
 ### `specVersion`
 
-required · one of `"1"`, `"2"` · default `"2"`
+required · one of `"1"`, `"2"`, `"3"` · default `"3"`
 
-**Spec version.** Which version of the document format this form is written against. Version 1 is frozen: a document that validates today will validate against every future release that speaks spec 1. Version 2 is a superset — it adds field types and layout kinds and removes nothing — so every version 1 document is also a valid version 2 document, and upgrading is a one-line change. Independent of the package version.
+**Spec version.** Which version of the document format this form is written against. Version 1 is frozen: a document that validates today will validate against every future release that speaks spec 1. Version 2 is a superset — it adds field types and layout kinds and removes nothing — so every version 1 document is also a valid version 2 document, and upgrading is a one-line change. Independent of the package version. Version 3 adds the `signature` field type and is the version this package writes; it is a superset in the same way, so every version 2 document is a valid version 3 document.
 
 ### `id`
 
@@ -133,6 +133,7 @@ What kind of answer the field collects, or — for a group, a page or a repeater
 - `"datetime"` — **Date and time.** One moment in time, stored as "YYYY-MM-DDTHH:MM:SSZ" — always UTC, always with seconds. A reader types and reads it in their own zone; the answer records the instant. Numeric offsets are refused because "…10:00:00+03:00" sorts after "…08:00:00Z" as text while being earlier in fact, and the ordering is what makes an earliest or latest bound mean anything.
 - `"file"` — **File upload.** One or more attached files. The submission stores what each file is and where it went — never its bytes — so a submission stays small and readable on its own.
 - `"richtext"` — **Formatted text.** Several lines of text the reader can emphasise, link and list. Stored as a restricted markup, not as HTML: nothing a reader writes is ever parsed as markup by the renderer, which is what keeps a submitted answer from becoming a script on the page that displays it.
+- `"signature"` — **Signature.** A mark somebody draws, or their name typed. Stored as points rather than as a picture, so it scales, diffs and means something to a reader that is not a browser — and never as stroke timing, which is what would make it biometric data.
 - `"hidden"` — **Hidden value.** Travels with the submission but is never shown to the reader, such as a campaign code or a referral source.
 - `"static"` — **Static text.** Text shown to the reader that collects nothing: a heading, an explanation, a notice.
 - `"group"` — **Group.** Related fields kept together on the same page. Collects nothing itself.
@@ -397,6 +398,20 @@ optional · string · pattern `^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5
 ##### `options`
 
 optional · value
+
+#### `signature`
+
+##### `box`
+
+optional · array · at least 2 items
+
+**Signing box.** The width and height the points are recorded in — a coordinate space, not pixels on anybody’s screen. It belongs to the field rather than to each answer, so two signatures on one form are comparable and a stored one can be redrawn at any size.
+
+##### `maxPoints`
+
+optional · integer · minimum 1
+
+**Most points.** How many points one answer may carry across all its strokes. An unbounded point list is a payload amplifier, so this has a ceiling like everything else here.
 
 ## Logic rules
 

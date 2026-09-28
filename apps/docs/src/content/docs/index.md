@@ -4,20 +4,24 @@ description: A visual form builder for Angular and React. Conditional fields, va
 ---
 
 :::caution[Status: beta, version 0.2.0]
-formancy is beta software: **both spec versions are frozen, the package APIs are not.**
+formancy is beta software: **versions 1 and 2 of the spec are frozen, version 3 is open,
+and the package APIs are not frozen at all.**
 
-`specVersion: "2"` needs `0.2.0` or newer. `0.1.0` predates spec versioning entirely —
-its schema pins `"specVersion"` to `{ "const": "1" }`, so it does not merely ignore a
-version 2 document, it refuses it. If `npm install @formancy/core` gives you `0.1.0`, the
-beta has not reached the registry yet: write `specVersion: "1"` until it has, which is what
-the [React](/docs/start/react/) and [Angular](/docs/start/angular/) quickstarts say.
+`specVersion: "2"` needs `0.2.0` or newer, and `specVersion: "3"` — which is what this
+source writes, and the only version that has `signature` — needs a release later than
+`0.2.0`. `0.1.0` predates spec versioning entirely: its schema pins `"specVersion"` to
+`{ "const": "1" }`, so it does not merely ignore a newer document, it refuses it. Write
+the version your installed packages actually speak, which is what the
+[React](/docs/start/react/) and [Angular](/docs/start/angular/) quickstarts say.
 
-**Both versions are frozen and version 2 only adds**, so a version 1 document still
-validates and upgrading one is a single line with nothing rebinding — see
+**Every version only adds**, so an older document still validates and upgrading one is a
+single line with nothing rebinding — see
 [`MIGRATIONS.md`](https://github.com/sharkysan/formancy.ai/blob/main/MIGRATIONS.md), which
-lists what version 2 added and what freezing it costs. The packages are published to npm
-from CI with provenance under the [`@formancy`](https://www.npmjs.com/org/formancy) scope,
-and their APIs will still change before 1.0.
+lists what each version added and what freezing one costs. The direction that costs
+something is the other one: a reader pinned to an older version refuses a newer document
+rather than dropping the answer it cannot render. The packages are published to npm from
+CI with provenance under the [`@formancy`](https://www.npmjs.com/org/formancy) scope, and
+their APIs will still change before 1.0.
 
 The server has authentication, role-based authorization, per-IP rate limiting, a per-form
 origin allowlist, audit logging, drafts that carry their own key, and an opt-in
