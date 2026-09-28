@@ -10,13 +10,16 @@ test('editing the preview preserves the answers already entered', async () => {
   const user = userEvent.setup()
   render(<HeroStudio playground="/playground/" />)
   await user.type(screen.getByRole('textbox', { name: 'Your name' }), 'Alex')
-  await user.type(screen.getByRole('textbox', { name: 'Work email' }), 'alex@example.com')
+  // Short on purpose: every character is a keystroke through the engine and a re-render
+  // of the whole form, and the assertion is about the answer surviving rather than about
+  // its length.
+  await user.type(screen.getByRole('textbox', { name: 'Work email' }), 'a@b.ch')
   await user.click(screen.getByRole('button', { name: 'Add company field' }))
   expect(screen.getByRole('textbox', { name: 'Your company' })).toBeTruthy()
   expect((screen.getByRole('textbox', { name: 'Your name' }) as HTMLInputElement).value).toBe('Alex')
   await user.click(screen.getByRole('button', { name: 'Remove company field' }))
   expect(screen.queryByRole('textbox', { name: 'Your company' })).toBeNull()
-  expect((screen.getByRole('textbox', { name: 'Work email' }) as HTMLInputElement).value).toBe('alex@example.com')
+  expect((screen.getByRole('textbox', { name: 'Work email' }) as HTMLInputElement).value).toBe('a@b.ch')
 })
 
 test('checks required answers without pretending to submit them', async () => {
@@ -26,7 +29,7 @@ test('checks required answers without pretending to submit them', async () => {
   await user.click(screen.getByRole('button', { name: 'Check this form' }))
   expect(await screen.findByText('Complete the required fields to continue.')).toBeTruthy()
   await user.type(screen.getByRole('textbox', { name: 'Your name' }), 'Alex')
-  await user.type(screen.getByRole('textbox', { name: 'Work email' }), 'alex@example.com')
+  await user.type(screen.getByRole('textbox', { name: 'Work email' }), 'a@b.ch')
   await user.click(screen.getByRole('button', { name: 'Check this form' }))
   expect(await screen.findByText('Looks good. Nothing was sent.')).toBeTruthy()
 })
