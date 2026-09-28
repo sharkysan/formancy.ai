@@ -385,3 +385,129 @@ describe('addPage', () => {
     expect(targets.some((t) => t.parent.join('.') === 'intro')).toBe(true)
   })
 })
+
+describe('authoring translations', () => {
+  /*
+   * The format and the engine were finished and the authoring was not: a label
+   * could be `{ $t: "name" }`, the engine resolved it, and nothing in the builder
+   * could produce one. So translated content was a feature a developer could hand-
+   * write and an author could not reach — the same shape the wizard was in, and the
+   * roadmap said so.
+   *
+   * The command that matters is EXTRACT. Adding a catalogue entry to a document
+   * that already uses references is bookkeeping; turning the literal somebody has
+   * already typed into a reference, without them retyping it, is the step that makes
+   * a form translatable at all.
+   */
+  const untranslated: FormSchema = {
+    specVersion: '3',
+    id: 'contact',
+    title: 'Contact us',
+    model: {
+      fields: [
+        { key: 'email', type: 'text', label: 'Work email' },
+        { key: 'note', type: 'textarea', label: 'Anything else?' },
+      ],
+    },
+  }
+
+  test('extracting a label leaves the form reading exactly as it did', () => {
+    const session = createBuilderSession(untranslated)
+
+    const outcome = session.extractText(['email'], 'label')
+
+    expect(outcome.ok).toBe(true)
+    const document = session.document()
+    // The label is a reference now...
+    expect(document.model.fields[0]?.label).toEqual({ $t: 'email.label' })
+    // ...and it still says what it said, because the literal became the default
+    // locale's message. An extraction that made somebody retype their own form is
+    // one nobody would use twice.
+    expect(document.i18n?.messages[document.i18n.defaultLocale]?.['email.label']).toBe(
+      'Work email',
+    )
+  })
+
+  test('the first extraction decides the default locale, and says which', () => {
+    // A document with no `i18n` has no default locale, and one has to exist before
+    // a message can be stored against it. Guessing from the browser would make the
+    // document depend on who happened to author it.
+    const session = createBuilderSession(untranslated)
+
+    session.extractText(['email'], 'label', 'de-CH')
+
+    expect(session.document().i18n?.defaultLocale).toBe('de-CH')
+  })
+
+  test('extracting a label that is already a reference changes nothing', () => {
+    const session = createBuilderSession(untranslated)
+    session.extractText(['email'], 'label')
+    const after = session.document()
+
+    expect(session.extractText(['email'], 'label').ok).toBe(true)
+
+    // Idempotent rather than refused: an author pressing the button twice has not
+    // made a mistake, and a second extraction that re-seeded the message would
+    // overwrite a translation with the English it came from.
+    expect(session.document()).toEqual(after)
+  })
+
+  test('a translation is stored under the locale it was written for', () => {
+    const session = createBuilderSession(untranslated)
+    session.extractText(['email'], 'label')
+
+    expect(session.setMessage('fr', 'email.label', 'Adresse professionnelle').ok).toBe(true)
+
+    expect(session.document().i18n?.messages['fr']?.['email.label']).toBe(
+      'Adresse professionnelle',
+    )
+  })
+
+  test('and a locale with no messages yet can still be started', () => {
+    // Otherwise the only way to add a language is to translate something first,
+    // which is the wrong way round: a translator opens the language and then works
+    // through it.
+    const session = createBuilderSession(untranslated)
+    session.extractText(['email'], 'label')
+
+    expect(session.addLocale('it').ok).toBe(true)
+
+    expect(Object.keys(session.document().i18n?.messages ?? {})).toContain('it')
+  })
+
+  test('the default locale cannot be removed, because everything falls back to it', () => {
+    const session = createBuilderSession(untranslated)
+    session.extractText(['email'], 'label', 'en')
+    session.addLocale('fr')
+
+    expect(session.removeLocale('fr').ok).toBe(true)
+    const refusal = session.removeLocale('en')
+
+    expect(refusal.ok).toBe(false)
+    if (!refusal.ok) expect(refusal.message).toMatch(/default/i)
+  })
+
+  test('every command is one undoable step', () => {
+    const session = createBuilderSession(untranslated)
+
+    session.extractText(['email'], 'label')
+    session.undo()
+
+    expect(session.document()).toEqual(untranslated)
+  })
+
+  test('a message nothing refers to is reported, not deleted', () => {
+    // Deleting it would be the tidy answer and the wrong one: a translator's work
+    // outliving the field it was written for is recoverable, and a builder that
+    // silently discards translations is one nobody trusts with a year of them.
+    const session = createBuilderSession(untranslated)
+    session.extractText(['email'], 'label')
+    session.setMessage('fr', 'email.label', 'Adresse professionnelle')
+    session.removeField(['email'])
+
+    expect(session.orphanedMessages()).toEqual(['email.label'])
+    expect(session.document().i18n?.messages['fr']?.['email.label']).toBe(
+      'Adresse professionnelle',
+    )
+  })
+})

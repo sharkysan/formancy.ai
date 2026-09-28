@@ -10,6 +10,31 @@ later.
 
 ## Unreleased
 
+**A form can be translated in the product now.** `label: { $t: "name" }` has been valid
+since version 1 and the engine has always resolved it — and nothing in the builder could
+produce one, so translated content was a feature a developer could hand-write and an author
+could not reach. The admin has a **translations** tab.
+
+The command that matters is **extraction**: it turns the words somebody already typed into
+a message reference and seeds the default locale with them, so the form reads exactly as it
+did a moment before. A catalogue editor would have been the obvious surface and the one
+that helps least — it presumes the document already refers to messages, and nothing could
+make it. One press does every labelled field, because field by field is a chore people
+abandon halfway.
+
+**A message nothing refers to any more is listed, never collected.** Rename or delete a
+field and its translations stay, with what they said. The tidy instinct is to sweep them;
+the cost of keeping one is bytes and the cost of discarding one is somebody's work
+([0084](./docs/decisions/0084-a-translation-is-authored-not-imported.md)).
+
+An untranslated message is **marked** rather than shown as its fallback, because "it looked
+fine in the preview" is how a language ships half-finished. The default locale cannot be
+removed, and the refusal says why.
+
+Not built, and named rather than implied: extraction of options, placeholders and help
+text — the one-press button does labels — catalogue import and export, and a per-locale
+preview.
+
 **`signature`, and the spec version 3 that carries it.** The last of the three components
 form.io and FormEngine both charge for, and the only one still unbuilt. A signature is
 **points, or a name** — `{ "drawn": [[[12, 40], …]] }` or `{ "typed": "Mara Lindqvist" }`,

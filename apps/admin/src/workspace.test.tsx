@@ -175,6 +175,20 @@ describe('the tabs', () => {
     expect(await screen.findByRole('button', { name: /submit/i })).toBeTruthy()
   })
 
+  test('translations opens the pane, so a form can be translated at all', async () => {
+    // Reachability, like the fill-in tab: the pane's own behaviour is held in
+    // `translations-pane.test.tsx`, and a pane that exists in a file and not in
+    // the titlebar is the documented-but-inert failure in another costume.
+    const stub: Stub = { calls: [] }
+    const user = await openForm(stub)
+
+    await user.click(await screen.findByRole('button', { name: 'translations' }))
+
+    expect(
+      await screen.findByRole('button', { name: /make every label translatable/i }),
+    ).toBeTruthy()
+  })
+
   test('versions lists what has been published, newest and oldest alike', async () => {
     const stub: Stub = { calls: [] }
     const user = await openForm(stub)

@@ -104,6 +104,44 @@ export interface BuilderSession {
   moveField(from: readonly string[], to: Location): CommandOutcome
   renameField(keyPath: readonly string[], newKey: string): CommandOutcome
   setFieldProperty(keyPath: readonly string[], property: string, value: unknown): CommandOutcome
+  // --- translation, which is a third document over the same model ---
+
+  /**
+   * Turn a literal into a message reference, keeping what it says.
+   *
+   * The command that makes a form translatable at all. Adding catalogue entries to
+   * a document that already uses references is bookkeeping; this is the step that
+   * takes the words somebody has already typed and makes them the default locale's
+   * message, without asking them to type anything again.
+   *
+   * Idempotent: a property that is already a reference is left exactly as it is,
+   * because a second extraction would overwrite a translation with the language it
+   * was translated from.
+   *
+   * `locale` decides the default the first time only. A document with no `i18n` has
+   * no default locale, and guessing one from the authoring browser would make the
+   * document depend on who happened to open it.
+   */
+  extractText(keyPath: readonly string[], property: string, locale?: string): CommandOutcome
+
+  /** Write one message, in one locale. */
+  setMessage(locale: string, id: string, text: string): CommandOutcome
+
+  /** Start a locale with nothing in it, which is how a translator opens one. */
+  addLocale(locale: string): CommandOutcome
+
+  /** Remove a locale. The default is refused: everything falls back to it. */
+  removeLocale(locale: string): CommandOutcome
+
+  /**
+   * Message ids nothing in the document refers to any more.
+   *
+   * Reported rather than collected. A translator's work outliving the field it was
+   * written for is recoverable; a builder that silently discards a year of
+   * translations is not one anybody trusts with the next year's.
+   */
+  orphanedMessages(): string[]
+
   addRule(rule: LogicRule): CommandOutcome
   updateRule(index: number, rule: LogicRule): CommandOutcome
   removeRule(index: number): CommandOutcome
@@ -417,6 +455,113 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
         else field[property] = copy(value)
         return undefined
       })
+    },
+
+    extractText(keyPath, property, locale) {
+      return attempt((draft) => {
+        const found = locate(draft, keyPath)
+        if (found === undefined) {
+          return refuse('/model/fields', `No field at "${keyPath.join('.')}".`)
+        }
+        const field = found.siblings[found.index] as unknown as Record<string, unknown>
+        const current = field[property]
+        // Already a reference: nothing to extract, and re-seeding would overwrite a
+        // translation with the language it came from.
+        if (typeof current === 'object' && current !== null && '$t' in current) return undefined
+        if (typeof current !== 'string') {
+          return refuse(
+            `/model/fields/${String(found.index)}/${property}`,
+            `"${property}" on "${keyPath.join('.')}" is not text, so there is nothing to translate.`,
+          )
+        }
+
+        const defaultLocale = draft.i18n?.defaultLocale ?? locale ?? 'en'
+        const id = `${keyPath.join('.')}.${property}`
+        draft.i18n = {
+          defaultLocale,
+          messages: { ...draft.i18n?.messages },
+        }
+        draft.i18n.messages[defaultLocale] = {
+          ...draft.i18n.messages[defaultLocale],
+          [id]: current,
+        }
+        field[property] = { $t: id }
+        return undefined
+      })
+    },
+
+    setMessage(locale, id, text) {
+      return attempt((draft) => {
+        if (draft.i18n === undefined) {
+          return refuse('/i18n', 'This form has no translations yet. Extract a label first.')
+        }
+        draft.i18n = {
+          ...draft.i18n,
+          messages: {
+            ...draft.i18n.messages,
+            [locale]: { ...draft.i18n.messages[locale], [id]: text },
+          },
+        }
+        return undefined
+      })
+    },
+
+    addLocale(locale) {
+      return attempt((draft) => {
+        if (draft.i18n === undefined) {
+          return refuse('/i18n', 'This form has no translations yet. Extract a label first.')
+        }
+        // Present with nothing in it, so a translator can open the language and work
+        // through it rather than having to translate something before it exists.
+        draft.i18n = {
+          ...draft.i18n,
+          messages: { ...draft.i18n.messages, [locale]: { ...draft.i18n.messages[locale] } },
+        }
+        return undefined
+      })
+    },
+
+    removeLocale(locale) {
+      return attempt((draft) => {
+        if (draft.i18n === undefined) return refuse('/i18n', 'This form has no translations.')
+        if (draft.i18n.defaultLocale === locale) {
+          return refuse(
+            '/i18n/defaultLocale',
+            `"${locale}" is the default locale: every other locale falls back to it, so removing it would leave every untranslated message with nothing to resolve to.`,
+          )
+        }
+        const messages = { ...draft.i18n.messages }
+        delete messages[locale]
+        draft.i18n = { ...draft.i18n, messages }
+        return undefined
+      })
+    },
+
+    orphanedMessages() {
+      const referenced = new Set<string>()
+      const walk = (value: unknown): void => {
+        if (Array.isArray(value)) {
+          for (const item of value) walk(item)
+          return
+        }
+        if (typeof value !== 'object' || value === null) return
+        const record = value as Record<string, unknown>
+        if (typeof record['$t'] === 'string') {
+          referenced.add(record['$t'])
+          return
+        }
+        for (const item of Object.values(record)) walk(item)
+      }
+      // The model and the layouts, and NOT `i18n` itself -- walking the catalogue
+      // would find every id in it and report none of them.
+      walk(present.model)
+      walk(present.layouts)
+
+      const known = new Set<string>()
+      for (const catalogue of Object.values(present.i18n?.messages ?? {})) {
+        for (const id of Object.keys(catalogue)) known.add(id)
+      }
+      return [...known].filter((id) => !referenced.has(id)).sort()
     },
 
     addRule(rule) {
