@@ -78,7 +78,7 @@ function liveDocuments(): Array<{ name: string; text: string }> {
 const capabilities = [
   {
     what: 'the proof-of-work challenge',
-    evidence: join(repo, 'packages', 'server-core', 'src', 'challenge.ts'),
+    evidence: join(repo, 'packages', 'challenge', 'src', 'challenge.ts'),
     denied: /no proof-of-work|no\s+challenge\b/i,
   },
   {

@@ -52,8 +52,8 @@ formancy
 | Keystroke, large conditional form | 1 ms | ≈0.38 ms |
 | Cold graph compile | 30 ms | ≈1.7 ms |
 | `@formancy/core` bundle | 18 kB brotli | 15.0 kB, measured 2026-09-28 |
-| `@formancy/spec` bundle | — | 9.8 kB, measured 2026-09-28 |
-| `@formancy/react` bundle | 4 kB brotli | **17.7 kB** for the whole barrel, measured 2026-09-28 |
+| `@formancy/spec` bundle | — | 9.6 kB, measured 2026-09-28 |
+| `@formancy/react` bundle | 4 kB brotli | **17.5 kB** for the whole barrel, measured 2026-09-28 |
 | `uqr`, the QR encoder | — | 6.6 kB brotli, **external** rather than bundled, measured 2026-09-27 |
 
 The performance gate is written to fail on a regression greater than 15%,
@@ -67,7 +67,7 @@ regulatory evidence table. The figures above are `brotliCompressSync` over each 
 
 **The React figure needs reading carefully rather than reporting as a breach.** 4 kB was
 written for a tree-shaken entry — the design is per-entry `exports` so that
-`@formancy/react/fields/date` pulls only what it needs — and 17.7 kB is the *whole barrel*,
+`@formancy/react/fields/date` pulls only what it needs — and 17.5 kB is the *whole barrel*,
 every field type, the error summary, the resume notice and the wizard included. Those are
 not the same number, and which one the budget meant cannot be settled without running a
 bundler over a realistic import, which nothing here does.
@@ -79,6 +79,10 @@ but the async lifecycle behind two of them: debouncing, superseding by abort, na
 stored answer, and one status region. Each is in the barrel because each is the control
 for a type somebody already uses.
 
+It also moves when the SOURCE does. Stripping the decision essays out of the comments took
+it from 17.7 to 17.5 kB, which is the guard catching a change nobody thought was a change
+to the bundle.
+
 The figure is re-measured rather than incremented, which is what `apps/docs/src/bundles.test.ts`
 is for. It has now failed on two consecutive changes before the number was updated — and the
 second time it failed **in CI rather than locally**, because it measures the built output and
@@ -88,7 +92,7 @@ check is the one from last time.
 **`@formancy/spec` is listed because it nearly doubled without anybody noticing.** One
 module imported `formancy.schema.json` to read a single integer — the longest value an
 option may carry — and the bundler inlined all 40.6 kB of it: the package went from 8.7 kB
-brotli to **16.4**, then back to 9.8 once the constant was written down and the derivation
+brotli to **16.4**, then back to 9.6 once the constant was written down and the derivation
 moved into a test, where reading the schema costs nothing. Found by review rather than by a
 gate, which is why the figure is now tracked here with the others.
 
