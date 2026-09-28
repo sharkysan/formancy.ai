@@ -467,6 +467,51 @@ describe('the theme contract', () => {
     expect(wrong).toEqual([])
   })
 
+  test('takes the platform look off date and time controls, which iOS draws too wide', () => {
+    // Reported from a phone as "the date and time fields are broken on mobile". Mobile
+    // Safari gives `date`, `time` and `datetime-local` inputs an intrinsic width that
+    // `width: 100%` and `min-width: 0` do not override, so they run past the edge of
+    // their field; it centres the value; and an empty one collapses the line its value
+    // would sit on. Chromium does none of this -- measured in its phone emulation, all
+    // three were exactly as wide as their field in every theme -- so neither this suite
+    // nor CI nor a desktop browser can see it.
+    //
+    // What is checkable is the stylesheet: each theme takes the platform appearance off
+    // those three types together, and puts the value back at the start of a line that
+    // keeps its height.
+    const wrong = themes().flatMap(({ name, css }) => {
+      const bare = css.replace(/\/\*[\s\S]*?\*\//g, '')
+      const rules = [...bare.matchAll(/([^{}]*)\{([^{}]*)\}/g)].map((match) => ({
+        selector: (match[1] ?? '').trim(),
+        body: match[2] ?? '',
+      }))
+      const problems: string[] = []
+
+      const controls = rules.find(
+        ({ selector }) =>
+          ["'date'", "'time'", "'datetime-local'"].every((type) => selector.includes(`[type=${type}]`)) &&
+          !selector.includes('::'),
+      )
+      if (!/(^|[\s;])appearance:\s*none/.test(controls?.body ?? '')) {
+        problems.push(`${name}: no rule takes \`appearance\` off date, time and datetime-local inputs together`)
+      }
+      if (!/-webkit-appearance:\s*none/.test(controls?.body ?? '')) {
+        problems.push(`${name}: the date and time rule has no \`-webkit-appearance: none\`, which older iOS needs`)
+      }
+
+      const value = rules.find(({ selector }) => selector.includes('::-webkit-date-and-time-value'))
+      if (!/text-align:\s*start/.test(value?.body ?? '')) {
+        problems.push(`${name}: the date and time value is left centred, which is iOS's default`)
+      }
+      if (!/min-height:/.test(value?.body ?? '')) {
+        problems.push(`${name}: an empty date or time value has no height, so iOS collapses its line`)
+      }
+      return problems
+    })
+
+    expect(wrong).toEqual([])
+  })
+
   test('a themed control has a height, so it is visible before it has content', () => {
     // The specific reason the field was invisible rather than merely unstyled:
     // an empty contenteditable collapses to nothing without one.

@@ -8,6 +8,18 @@ Loosely [Keep a Changelog](https://keepachangelog.com), with reasons attached â€
 a line that says only *what* changed is rarely the line you need six months
 later.
 
+## Unreleased
+
+**Date and time fields fit their field on iPhone.** Reported from a phone as
+"broken on mobile" in the playground. Mobile Safari draws `date`, `time` and
+`datetime-local` inputs at an intrinsic width that `width: 100%` does not
+override, so they ran past the edge of the field; it also centred the value and
+collapsed an empty one's line. All four themes now take the platform appearance
+off those three types and put the value back at the start of a line that keeps
+its height. Chromium was never affected and still keeps its picker button.
+Nothing in CI runs WebKit, so the guard in `apps/docs/src/themes.test.ts`
+checks the stylesheets rather than a rendered box.
+
 ## 0.2.0 â€” 2026-09-28
 
 **The beta, and the release that freezes spec version 2.** A document written against

@@ -118,6 +118,23 @@
 
 /* Pointed at, it lifts; focused, it lifts further and its shadow turns blue.
    The shadow is the focus indicator as well as the outline, so it is big. */
+/* Date and time controls on iOS. Mobile Safari gives these three input types
+   an intrinsic width that `width: 100%` and `min-width: 0` do not override, so
+   they run past the field; it centres the value; and an empty one collapses
+   the line its value would sit on. Taking the platform appearance off lets
+   the rules above size it, and the value goes back to the start of the line.
+   Chromium and Firefox keep their picker button either way. */
+[data-formancy-theme='pop'] [data-formancy-part='field'] input:is([type='date'], [type='time'], [type='datetime-local']) {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='field'] input::-webkit-date-and-time-value {
+  text-align: start;
+  min-height: 1.4em;
+}
+
 [data-formancy-theme='pop'] [data-formancy-part='field'] :is(input, select, textarea, [data-formancy-part='richtext-surface']):hover:not(:disabled, :focus-visible) {
   translate: -1px -1px;
   box-shadow: 5px 5px 0 var(--fm-ink);
