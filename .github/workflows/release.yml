@@ -205,10 +205,18 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
+      # The body is this version's section, not the whole changelog. GitHub refuses a
+      # release body over 125,000 characters, and it refuses it HERE -- after the
+      # packages are on npm and the signed image is in the registry, neither of which
+      # can be taken back. The extractor throws when the version has no section, so an
+      # empty body fails loudly rather than quietly.
+      - name: The release body is this version's entry
+        run: node scripts/release-notes.mjs "${GITHUB_REF_NAME#v}" RELEASE_NOTES.md
+
       - name: Create the GitHub release
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
-          body_path: CHANGELOG.md
+          body_path: RELEASE_NOTES.md
           files: |
             formancy-*-sbom.cdx.json
             formancy-*-sbom.cdx.json.sigstore
