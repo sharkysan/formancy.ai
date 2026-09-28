@@ -85,9 +85,20 @@ translator working in the product; a team with a translation memory and a vendor
 or JSON in and out, and that is a feature with a file format attached. Named here rather
 than half-built.
 
-**There is no per-locale preview.** The playground has a language switcher and the admin's
-fill-in tab renders the default locale, so seeing a translated form means switching the
-document's default. Worth fixing, and not in this change.
+**The preview builds its own engine.** An engine resolves text in one locale, fixed for
+its lifetime, so showing a translation meant changing the document's `defaultLocale` — an
+edit to the form in order to read it, published and diffed like any other. The pane
+renders a second engine at the chosen locale instead and the document is not touched.
+Untranslated messages fall back there exactly as they will for a visitor, because a
+preview showing message ids would teach a translator that the fallback is broken when the
+fallback is the feature.
+
+**Adding it made both halves of the pane ambiguous to a test.** The table's inputs carry
+the source text as their accessible name, and so does the preview's control for the same
+question — so an unscoped `getByRole('textbox', { name: 'Work email' })` matched either
+one. Two cases had been passing with no preview at all for that reason. Both regions are
+named now and every case says which one it means, which is the repository's most frequent
+guard failure caught in the act.
 
 ## Alternatives considered
 

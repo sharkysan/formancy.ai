@@ -89,7 +89,11 @@ describe('translating', () => {
     const session = extracted()
 
     await user.selectOptions(screen.getByRole('combobox', { name: /language/i }), 'fr')
-    await user.type(screen.getByRole('textbox', { name: 'Work email' }), 'Adresse pro')
+    // In the TABLE. The preview renders the same question, so its control carries
+    // the same accessible name — which is the ambiguity the preview introduced,
+    // and the reason both halves of this file now say which half they mean.
+    const table = screen.getByRole('table')
+    await user.type(within(table).getByRole('textbox', { name: 'Work email' }), 'Adresse pro')
 
     expect(session.document().i18n?.messages['fr']?.['email.label']).toBe('Adresse pro')
   })
@@ -129,5 +133,65 @@ describe('messages nothing refers to', () => {
     // is the kind of loss a builder never recovers trust from.
     expect(screen.getByText(/no longer used/i)).toBeTruthy()
     expect(screen.getByText('email.label')).toBeTruthy()
+  })
+})
+
+describe('seeing the language being translated', () => {
+  /*
+   * The half that was named as missing when the pane shipped: a translator could
+   * write a language and not see it, because the engine resolves text in one
+   * locale fixed for its lifetime — so the only way to look at a translation was
+   * to change the document's default, which is an edit to the form in order to
+   * read it.
+   *
+   * A translator who cannot see their work checks it by reading the table they
+   * just typed into, which is not checking.
+   */
+  const translated = (): ReturnType<typeof createBuilderSession> => {
+    const session = createBuilderSession(untranslated)
+    session.extractAllText()
+    session.setMessage('fr', 'email.label', 'Adresse professionnelle')
+    render(<TranslationsPane session={session} />)
+    return session
+  }
+
+  test('the preview shows the form in the language being worked on', async () => {
+    const user = userEvent.setup()
+    translated()
+
+    await user.selectOptions(screen.getByRole('combobox', { name: /language/i }), 'fr')
+
+    // Inside the PREVIEW, not anywhere on the pane. The table's own inputs carry
+    // the source text as their accessible name, so an unscoped query here passes
+    // with no preview at all — which is this repository's most frequent guard
+    // failure, found again while writing these three.
+    const preview = await screen.findByRole('region', { name: /preview/i })
+    expect(within(preview).getByRole('textbox', { name: 'Adresse professionnelle' })).toBeTruthy()
+  })
+
+  test('and an untranslated question falls back rather than showing its id', async () => {
+    const user = userEvent.setup()
+    translated()
+
+    await user.selectOptions(screen.getByRole('combobox', { name: /language/i }), 'fr')
+
+    // `note.label` has no French. A preview showing the id would teach a
+    // translator that the fallback is broken, when the fallback is the feature.
+    const preview = screen.getByRole('region', { name: /preview/i })
+    expect(within(preview).getByRole('textbox', { name: 'Anything else?' })).toBeTruthy()
+    expect(within(preview).queryByText('note.label')).toBeNull()
+  })
+
+  test('the document is not edited to look at it', async () => {
+    const user = userEvent.setup()
+    const session = translated()
+    const before = session.document()
+
+    await user.selectOptions(screen.getByRole('combobox', { name: /language/i }), 'fr')
+
+    // Changing `defaultLocale` would have been the cheap way to do this, and it
+    // is an edit to the form in order to read it — published, diffed and
+    // migrated like any other.
+    expect(session.document()).toBe(before)
   })
 })

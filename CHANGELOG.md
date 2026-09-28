@@ -31,8 +31,16 @@ An untranslated message is **marked** rather than shown as its fallback, because
 fine in the preview" is how a language ships half-finished. The default locale cannot be
 removed, and the refusal says why.
 
-Not built, and named rather than implied: catalogue import and export, and a per-locale
-preview — seeing a translated form still means switching the document's default locale.
+**And the language being worked on is previewed**, beside the table. An engine resolves
+text in one locale fixed for its lifetime, so showing a translation used to mean changing
+the document's `defaultLocale` — an edit to the form in order to read it. The pane builds a
+second engine instead. An untranslated message falls back there exactly as it will for a
+visitor, because a preview showing message ids would teach a translator that the fallback
+is broken when the fallback is the feature.
+
+Not built, and named rather than implied: catalogue import and export — a team with a
+translation vendor and a translation memory works in XLIFF or JSON, not in a table in
+somebody's admin.
 
 **The one press reaches every text the format has**: a field's label, an option's label, a
 grid column's heading and a layout node's label. `Text` appears in exactly those four
