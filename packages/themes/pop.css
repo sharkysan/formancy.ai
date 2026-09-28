@@ -240,7 +240,6 @@
   rotate: -45deg;
   translate: 0 -2px;
   scale: 0;
-  transition: scale 120ms ease;
 }
 
 [data-formancy-theme='pop'] [data-formancy-part='field'] input[type='checkbox']:checked::before {
@@ -254,7 +253,6 @@
   border-radius: 50%;
   background: var(--fm-ink);
   scale: 0;
-  transition: scale 120ms ease;
 }
 
 [data-formancy-theme='pop'] [data-formancy-part='field'] input[type='radio']:checked::before {

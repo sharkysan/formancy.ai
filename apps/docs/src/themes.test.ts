@@ -522,9 +522,8 @@ describe('the theme contract', () => {
     // before the ring grew back. A choice that answers late reads as a click that did
     // not register.
     //
-    // A drawn ornament may still follow the state (Pop's and Paper's dot scales in on a
-    // pseudo-element, the checkbox tick does the same). What may not is the control
-    // itself, so the rule that draws the box or circle opts out of the inherited fade.
+    // This covers the box or circle itself; the tick and the dot drawn on a
+    // pseudo-element are the next test's.
     const wrong = themes().flatMap(({ name, css }) => {
       const bare = css.replace(/\/\*[\s\S]*?\*\//g, '')
       const rules = [...bare.matchAll(/([^{}]*)\{([^{}]*)\}/g)].map((match) => ({
@@ -539,6 +538,31 @@ describe('the theme contract', () => {
       return /(^|[\s;])transition:\s*none\s*(;|$)/.test(choice.body)
         ? []
         : [`${name}: checkboxes and radios inherit the text controls' transition, so a choice shows late`]
+    })
+
+    expect(wrong).toEqual([])
+  })
+
+  test('draws a checkbox tick or radio dot at once, not grown in', () => {
+    // The follow-up report: "Radio- und Checkbox-Zustand scheint immer noch nicht
+    // sofort". The fix above took the text-field fade off the controls, and kept a
+    // scale-in on the tick and the dot as an ornament -- 120-140ms in every theme's
+    // checkbox and in Pop's and Paper's radio. The tick and the dot ARE the state, so
+    // a mark that grows in is a state that arrives late, and it was read that way.
+    const wrong = themes().flatMap(({ name, css }) => {
+      const bare = css.replace(/\/\*[\s\S]*?\*\//g, '')
+      const rules = [...bare.matchAll(/([^{}]*)\{([^{}]*)\}/g)].map((match) => ({
+        selector: (match[1] ?? '').trim(),
+        body: match[2] ?? '',
+      }))
+      return rules
+        .filter(
+          ({ selector, body }) =>
+            /\[type='(checkbox|radio)'\]/.test(selector) &&
+            /::(before|after)/.test(selector) &&
+            /(^|[\s;])transition:\s*(?!none\s*(;|$))/.test(body),
+        )
+        .map(({ selector }) => `${name}: \`${selector}\` animates the mark that shows the choice`)
     })
 
     expect(wrong).toEqual([])

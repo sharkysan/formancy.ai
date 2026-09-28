@@ -225,7 +225,6 @@
   rotate: -45deg;
   translate: 0 -1px;
   scale: 0;
-  transition: scale 120ms ease;
 }
 
 [data-formancy-theme='blueprint'] [data-formancy-part='field'] input[type='checkbox']:checked::before {
