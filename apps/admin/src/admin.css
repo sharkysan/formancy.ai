@@ -868,3 +868,26 @@ body::before {
   margin: 0.5rem 0 0;
   padding-inline-start: 1.1rem;
 }
+
+/* The form as the chosen language renders it, beside the table rather than under
+   it where a translator would have to scroll away from what they are typing. */
+[data-formancy-part='translations-preview'] {
+  padding: 1rem;
+  border: 1px solid var(--wb-edge, #2a3346);
+  border-radius: 8px;
+  background: #fff;
+  color: #1d2433;
+}
+
+@media (min-width: 70rem) {
+  [data-formancy-part='translations'] {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+    align-items: start;
+  }
+
+  [data-formancy-part='translations-toolbar'],
+  [data-formancy-part='translations-orphaned'],
+  [data-formancy-part='translations-hint'] {
+    grid-column: 1 / -1;
+  }
+}
