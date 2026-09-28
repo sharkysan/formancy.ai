@@ -205,6 +205,8 @@
 /* Drawn rather than borrowed. `appearance: none` changes how the input looks,
    not what it is: the keyboard and the accessibility tree are the browser's. */
 [data-formancy-theme='pop'] [data-formancy-part='field'] input:is([type='checkbox'], [type='radio']) {
+  /* The text controls' fade is inherited through `input`; a choice must show at once. */
+  transition: none;
   appearance: none;
   flex: none;
   display: inline-grid;

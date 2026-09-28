@@ -214,6 +214,8 @@
 /* Drawn in a hairline of ink. `appearance: none` changes how the input looks,
    not what it is. */
 [data-formancy-theme='paper'] [data-formancy-part='field'] input:is([type='checkbox'], [type='radio']) {
+  /* The text controls' fade is inherited through `input`; a choice must show at once. */
+  transition: none;
   appearance: none;
   flex: none;
   display: inline-grid;

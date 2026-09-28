@@ -189,6 +189,8 @@
    it is, so the keyboard, the label and the accessibility tree are the
    browser's own. */
 [data-formancy-theme='blueprint'] [data-formancy-part='field'] input:is([type='checkbox'], [type='radio']) {
+  /* The text controls' fade is inherited through `input`; a choice must show at once. */
+  transition: none;
   appearance: none;
   flex: none;
   display: inline-grid;
