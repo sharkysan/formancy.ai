@@ -194,10 +194,21 @@ it does **not** do that for `NOTICE`, so both are listed explicitly.
 
 ## Not covered yet
 
-**Container image signing.** There is no server container image, so there is
-nothing to sign. When the image lands, `cosign sign` on the digest belongs in
-this workflow — a job that signs nothing would be worse than an absent one,
-because it reads as coverage.
+**The container image's SBOM describes npm and nothing else.** `cosign attest`
+attaches the same CycloneDX document the release page carries, which is generated from
+the workspace manifests — so it names every runtime npm dependency and says nothing
+about the base image or its system packages. A manufacturer characterising the
+container needs both, and this covers one. Listed as debt in
+[§11](docs/architecture/11-risks-and-debt.md).
 
-**A published SBOM for the container image** likewise, which will need to
-describe the base image and system packages rather than only npm.
+**Nothing verifies a release after it is published.** Every check above runs
+*before* publishing, inside the workflow that publishes. There is no job that
+installs the published tarballs from the registry and runs anything against them, so
+"the tarball on npm works" rests on `check:pkg` having passed against the tree it was
+built from. `pnpm test:e2e:install` through a local Verdaccio is the intended answer
+and is not built.
+
+*This section previously said there was no container image to sign, while the section
+above it explained how the image is signed and how to verify it. The image shipped and
+the caveat stayed — which is the failure the whole documentation policy exists to
+prevent, in the document about shipping.*

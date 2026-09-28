@@ -12,10 +12,13 @@ npm install @formancy/react @formancy/core @formancy/spec
 React 19 is a peer dependency. The packages are ESM-only, so Node 22.12 or
 newer and any bundler from the last few years.
 
-:::note[Pre-alpha]
-`0.1.0` is on npm with provenance — `npm audit signatures` will tell you
-which workflow run built it — but the package APIs will change before 1.0.
-The *schema* is frozen at `specVersion: "1"`; the code around it is not.
+:::note[Beta]
+The packages are published with provenance — `npm audit signatures` will tell you
+which workflow run built one — and their APIs will change before 1.0. The *document
+format* is frozen: `specVersion: "1"` and `"2"` both are, and version 2 only adds.
+`0.2.0` is the first release that reads version 2, so if npm gives you `0.1.0`, write
+`specVersion: "1"` — it pins documents to version 1 and refuses a version 2 document
+rather than ignoring the property.
 :::
 
 ### Or from the repository

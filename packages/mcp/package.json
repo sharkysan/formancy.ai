@@ -1,6 +1,6 @@
 {
   "name": "@formancy/mcp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "formancy as tools for a coding agent: author a form, have it checked before it exists, and publish it.",
   "license": "Apache-2.0",
   "type": "module",

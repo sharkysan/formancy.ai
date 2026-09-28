@@ -1,11 +1,15 @@
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
-import { countDecisionRecords, countFieldTypes } from './decision-records'
+import { countDecisionRecords, countFieldTypes, packageVersion } from './decision-records'
 import { coverage } from '../../vitest.coverage'
 
 export default defineConfig({
   plugins: [react()],
-  define: { __DECISION_RECORDS__: countDecisionRecords(), __FIELD_TYPES__: countFieldTypes() },
+  define: {
+    __DECISION_RECORDS__: countDecisionRecords(),
+    __FIELD_TYPES__: countFieldTypes(),
+    __PACKAGE_VERSION__: JSON.stringify(packageVersion()),
+  },
   test: {
     coverage,
     include: ['src/**/*.test.{ts,tsx}'],

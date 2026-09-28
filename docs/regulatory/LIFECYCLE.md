@@ -18,8 +18,8 @@ quality management system, and this is not a claim of IEC 62304 conformity.**
 | §5.5 Unit implementation and verification | **Yes** | Test-first development, with per-package coverage reported; the suite size is stated as a dated floor under [Verification gates](#verification-gates) rather than transcribed twice — this row said 1,155 while that one said 1,661, both written on one day |
 | §5.6 Software integration and integration testing | **Yes** | Conformance suite across five implementations; integration tests against real PostgreSQL |
 | §5.7 Software system testing | Partially | End-to-end verification performed manually and recorded; not automated end-to-end |
-| §5.8 Software release | Partially | `0.1.0` released to npm from CI with provenance and a signed SBOM; the gates are mechanical and no human sign-off is recorded against a checklist |
-| §6 Software maintenance | **No** | One release exists, but no maintenance process is defined for it — no support commitment, no backport policy, and no defined response time beyond `SECURITY.md` |
+| §5.8 Software release | Partially | Released to npm from CI with provenance and a signed SBOM, and the server image to GHCR signed by digest; the gates are mechanical and no human sign-off is recorded against a checklist, and nothing verifies a release after it is published |
+| §6 Software maintenance | **No** | Releases exist, and no maintenance process is defined for them — no support commitment, no backport policy, and no defined response time beyond `SECURITY.md` |
 | §7 Risk management | Partially | [`SAFETY-ANALYSIS.md`](SAFETY-ANALYSIS.md) identifies failure modes; no ISO 14971 file, by design |
 | §8 Configuration management | **Yes** | Git, pinned dependencies, lockfile, immutable published schema versions |
 | §9 Problem resolution | Partially | Defects are fixed with a regression test; no formal problem-report record |
@@ -176,11 +176,15 @@ Stated plainly, because a gap named is more useful than a gap implied:
   manifest version agreement — but no human sign-off is recorded against a
   checklist. See [`RELEASING.md`](../../RELEASING.md).
 - No manual accessibility audit and no published VPAT.
-- The container image is neither published nor signed, because no registry has
-  been chosen. It builds locally from `docker compose up`. The npm side is
-  done: `0.1.0` went out from CI with a SLSA v1 provenance attestation per
-  tarball and a CycloneDX SBOM signed with cosign, keylessly, so there is no
-  private key to protect or leak.
+- Nothing verifies a release after it is published. Every gate runs inside the
+  workflow that publishes, against the tree it built from, so "the tarball on npm
+  works" rests on `check:pkg` rather than on anything installing it.
+- The container image's SBOM describes npm dependencies and not the base image or
+  its system packages, so a manufacturer characterising the container has half of
+  what they need. The signing side is done: the image goes to GHCR signed by
+  digest with the SBOM attached as an attestation, and each npm tarball carries a
+  SLSA v1 provenance attestation, all keylessly — there is no private key to
+  protect or leak.
 
 A manufacturer needing any of these for their classification must either supply
 it themselves as part of their own SOUP evaluation, or treat its absence as a

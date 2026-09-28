@@ -39,3 +39,29 @@ export function countFieldTypes(): number {
   }
   return [...block.matchAll(/'[a-z]+'/g)].length
 }
+
+/**
+ * The version every package carries, read when the site is built.
+ *
+ * The footer said `packages 0.1.0, pre-alpha` as a literal, and a release is exactly the
+ * branch that changes it while the page is never the branch that shows it -- the same
+ * argument as the two counts above, and the same mistake they were written for. One
+ * number across every manifest is what makes reading one of them enough
+ * (0009-independent-spec-version).
+ *
+ * From the root manifest rather than by importing anything, because this runs inside the
+ * Vite config before the workspace is built.
+ */
+export function packageVersion(): string {
+  const manifest = readFileSync(
+    fileURLToPath(new URL('../../package.json', import.meta.url)),
+    'utf8',
+  )
+  const version = (JSON.parse(manifest) as { version?: unknown }).version
+  if (typeof version !== 'string') {
+    // Loudly, not a placeholder. A footer claiming a version nobody released is worse
+    // than a build that failed.
+    throw new Error('The root package.json has no version to put on the page')
+  }
+  return version
+}

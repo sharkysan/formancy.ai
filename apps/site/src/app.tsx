@@ -349,7 +349,7 @@ export function App(): ReactElement {
           Source
         </a>
         <a href="/docs">Documentation</a>
-        <span className="spacer">Spec version 2 · packages 0.1.0, pre-alpha</span>
+        <span className="spacer">{`Spec version 2 · packages ${__PACKAGE_VERSION__}, beta`}</span>
       </footer>
 
       <Panel journey={journey} />

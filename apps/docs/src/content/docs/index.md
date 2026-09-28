@@ -3,24 +3,29 @@ title: What is formancy?
 description: A self-hostable form engine, renderers and backend for React and Angular — one engine in browser and server, your design system's markup, Apache-2.0.
 ---
 
-:::caution[Status: pre-alpha]
-formancy is pre-alpha software. **`specVersion: "2"` is implemented here and is
-not in any released package.** The packages on npm are at `0.1.0`, and that
-release predates spec versioning entirely: its schema pins `"specVersion"` to
-`{ "const": "1" }`, so `0.1.0` does not merely ignore a version 2 document — it
-refuses it. Version 2 arrives with the next release; until then, install from npm
-and write `specVersion: "1"`, which is what the
-[React](/docs/start/react/) and [Angular](/docs/start/angular/) quickstarts say.
+:::caution[Status: beta, version 0.2.0]
+formancy is beta software: **both spec versions are frozen, the package APIs are not.**
 
-Version 1 is frozen and every version 1 document still validates — version 2
-only adds, so upgrading will be one line and nothing rebinds. The *packages* are
-still pre-alpha and their APIs will change. They are **on npm** under the
-[`@formancy`](https://www.npmjs.com/org/formancy) scope, published from CI with
-provenance — except `@formancy/builder-react`, which lands in the next release. The server has authentication, role-based authorization,
-per-IP rate limiting, a per-form origin allowlist, audit logging and an opt-in
-proof-of-work challenge for anonymous submissions. What it does not have is a
-submission token bound to the form version, and no virus scanning of what people
-attach. Do not build on it yet, and do not deploy it anywhere public.
+`specVersion: "2"` needs `0.2.0` or newer. `0.1.0` predates spec versioning entirely —
+its schema pins `"specVersion"` to `{ "const": "1" }`, so it does not merely ignore a
+version 2 document, it refuses it. If `npm install @formancy/core` gives you `0.1.0`, the
+beta has not reached the registry yet: write `specVersion: "1"` until it has, which is what
+the [React](/docs/start/react/) and [Angular](/docs/start/angular/) quickstarts say.
+
+**Both versions are frozen and version 2 only adds**, so a version 1 document still
+validates and upgrading one is a single line with nothing rebinding — see
+[`MIGRATIONS.md`](https://github.com/sharkysan/formancy.ai/blob/main/MIGRATIONS.md), which
+lists what version 2 added and what freezing it costs. The packages are published to npm
+from CI with provenance under the [`@formancy`](https://www.npmjs.com/org/formancy) scope,
+and their APIs will still change before 1.0.
+
+The server has authentication, role-based authorization, per-IP rate limiting, a per-form
+origin allowlist, audit logging, drafts that carry their own key, and an opt-in
+proof-of-work challenge for anonymous submissions. What it does not have is a submission
+token bound to the form version, and no virus scanning of what people attach. It also
+writes **no log at all** — Fastify is constructed with the logger off, so nothing can leak
+a submission into one and nothing can tell you why a request failed either. Do not deploy
+it anywhere public yet.
 :::
 
 formancy is a modern, self-hostable form platform for React and Angular. It is

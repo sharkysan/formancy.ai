@@ -8,7 +8,26 @@ Loosely [Keep a Changelog](https://keepachangelog.com), with reasons attached �
 a line that says only *what* changed is rarely the line you need six months
 later.
 
-## Unreleased
+## 0.2.0 — 2026-09-28
+
+**The beta, and the release that freezes spec version 2.** A document written against
+version 2 will validate against every future release that speaks it; what version 2 added
+and what freezing it costs are in [`MIGRATIONS.md`](./MIGRATIONS.md). The short of the cost:
+an async validator and a `signature` field type are now spec 3 features.
+
+`0.2.0` is also the first release that **reads** version 2. `0.1.0` predates spec
+versioning and pins documents to `{ "const": "1" }`, so it refuses a version 2 document
+rather than ignoring the property — which is the loud failure rather than the silent one,
+and still a failure.
+
+Four packages reach npm for the first time: `@formancy/builder-react` — the embeddable
+builder, and the package a prospective adopter most wants to see — along with
+`@formancy/challenge`, `@formancy/mcp` and `@formancy/tiptap`. The server image is
+published and signed by digest for the first time as well; `v0.1.0` predated those steps,
+so there is no `v0.1.0` image.
+
+Everything below was written under *Unreleased* as it landed.
+
 
 **A grid's rows are flat.** A `datagrid` column could name a `group`, and measured in both
 renderers what that produces is the group flattened: its own name never reaches the page,

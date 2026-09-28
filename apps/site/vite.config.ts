@@ -1,10 +1,14 @@
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
-import { countDecisionRecords, countFieldTypes } from './decision-records'
+import { countDecisionRecords, countFieldTypes, packageVersion } from './decision-records'
 
 export default defineConfig({
   plugins: [react()],
-  define: { __DECISION_RECORDS__: countDecisionRecords(), __FIELD_TYPES__: countFieldTypes() },
+  define: {
+    __DECISION_RECORDS__: countDecisionRecords(),
+    __FIELD_TYPES__: countFieldTypes(),
+    __PACKAGE_VERSION__: JSON.stringify(packageVersion()),
+  },
   server: {
     port: 4384,
     // Fail rather than wander. Vite's default is to take the next free port,
