@@ -853,36 +853,42 @@ function Finale({ journey }: { journey: ReturnType<typeof useJourney> }): ReactE
       data-section="finale"
       ref={journey.register('finale')}
     >
-      <h2>You have been filling in a form.</h2>
-      <p className="lede">
-        Every section answered one field. The panel in the corner was a real submission the whole
-        way down — the same shape the engine produces, built the same way.
-      </p>
+      {/* The claim beside the evidence. Stacked, the receipt sat below the sentence
+          describing it and the section ran to two screens; side by side, the words and
+          the submission they are about are read together, which is the whole payoff. */}
+      <div className="finale-words">
+        <h2>You have been filling in a form.</h2>
+        <p className="lede">
+          Every section answered one field. The panel in the corner was a real submission the
+          whole way down — the same shape the engine produces, built the same way.
+        </p>
 
-      <div className="receipt">
-        <header>
-          <span className="dot" />
-          POST /f/visitors/submissions
-        </header>
-        <pre>{JSON.stringify(body, null, 2)}</pre>
-        <div className={sent ? 'stamp landed' : 'stamp'}>201 Created</div>
+        {/* Announced once, politely: somebody who cannot see the stamp land should still
+            be told the page did the thing it was building to. */}
+        <p role="status" className="note">
+          {sent ? 'Accepted, and validated by the same engine that drew the form.' : ''}
+        </p>
+
+        <div className="actions">
+          <a className="action primary" href={PLAYGROUND}>
+            Open the playground
+          </a>
+          <a className="action" href={REPO} rel="noreferrer noopener">
+            Read the source
+          </a>
+        </div>
       </div>
 
-      <div className="seal" aria-hidden="true" />
-
-      {/* Announced once, politely: somebody who cannot see the stamp land
-          should still be told the page did the thing it was building to. */}
-      <p role="status" className="note">
-        {sent ? 'Accepted, and validated by the same engine that drew the form.' : ''}
-      </p>
-
-      <div className="actions">
-        <a className="action primary" href={PLAYGROUND}>
-          Open the playground
-        </a>
-        <a className="action" href={REPO} rel="noreferrer noopener">
-          Read the source
-        </a>
+      <div className="finale-receipt">
+        <div className="receipt">
+          <header>
+            <span className="dot" />
+            POST /f/visitors/submissions
+          </header>
+          <pre>{JSON.stringify(body, null, 2)}</pre>
+          <div className={sent ? 'stamp landed' : 'stamp'}>201 Created</div>
+        </div>
+        <div className="seal" aria-hidden="true" />
       </div>
     </section>
   )

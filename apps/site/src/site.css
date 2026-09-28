@@ -542,13 +542,22 @@ section {
 @media (min-width: 64rem) {
   .hero {
     grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
-    /* `start`, not `center`: the preview is the taller column, and centring the
-       headline against it pushed the page's first words a third of the way down a
-       screen that was otherwise empty. */
-    align-items: start;
-    align-content: start;
+    /* Centred against the preview, which is the taller column. Pinning the words to
+       the top was tried and reverted: it reads as a page that starts before you are
+       ready for it, and the headline is the thing a visitor should land on rather
+       than arrive above. The reduced top padding keeps it from sitting as low as it
+       did when the preview was at its tallest. */
+    align-items: center;
     column-gap: clamp(2.5rem, 5vw, 5rem);
     padding-block-start: clamp(2rem, 5vh, 3.5rem);
+  }
+
+  /* Centred, then nudged up. Padding under a centred item lifts what you can see of
+     it without pinning it to the top, which was tried and read as a page starting
+     before the visitor was ready for it. The words land above the middle, the
+     preview stays centred against them. */
+  .hero-copy {
+    padding-block-end: clamp(2rem, 9vh, 6rem);
   }
 }
 
@@ -2029,6 +2038,50 @@ kbd {
   justify-content: center;
 }
 
+.finale-words {
+  display: grid;
+  justify-items: center;
+  gap: 1.25rem;
+}
+
+.finale-receipt {
+  position: relative;
+  width: min(100%, 34rem);
+}
+
+/* The claim and the submission it describes, on one line. Below this the two stack,
+   which is the order they read in anyway: the sentence, then the thing. */
+@media (min-width: 62rem) {
+  .finale {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.95fr);
+    align-items: center;
+    column-gap: clamp(2.5rem, 5vw, 4.5rem);
+    text-align: start;
+    justify-items: stretch;
+    /* Out of the running submission's lane, like the two bands above it. */
+    padding-inline-end: calc(var(--gutter) + 15rem);
+  }
+
+  .finale-words {
+    justify-items: start;
+  }
+
+  .finale .lede {
+    margin-inline: 0;
+  }
+
+  .finale .actions {
+    justify-content: start;
+  }
+
+  /* The receipt owns its column, so it stops adding the gap it needed when it sat
+     under a paragraph. */
+  .finale .receipt {
+    margin-block-start: 0;
+    width: 100%;
+  }
+}
+
 .receipt {
   position: relative;
   margin-block-start: 3rem;
@@ -2130,6 +2183,15 @@ footer {
   display: flex;
   flex-wrap: wrap;
   gap: 1rem 2rem;
+}
+
+/* The running submission overlays the corner, and the footer's last item -- the spec
+   and package version -- sat underneath it, half readable. The same clearance the
+   bands above use. */
+@media (min-width: 62rem) {
+  footer {
+    padding-inline-end: calc(var(--gutter) + 15rem);
+  }
 }
 
 footer a {
