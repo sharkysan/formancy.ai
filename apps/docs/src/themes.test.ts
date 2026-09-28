@@ -512,6 +512,38 @@ describe('the theme contract', () => {
     expect(wrong).toEqual([])
   })
 
+  test('shows a radio or checkbox state on the next frame, not after the text-field fade', () => {
+    // Reported as "in Dusk the radio is not immediate". Every theme gives its text
+    // controls a short transition on border, shadow and background, and the checkbox and
+    // radio rules inherited it -- they match `input` too. Dusk and Blueprint draw the
+    // radio's dot with an inset box-shadow and the fill with a background, so the chosen
+    // state itself faded in: measured in Dusk, unchanged for the first frames after the
+    // click and settled only after ~150ms, with the whole circle filling with colour
+    // before the ring grew back. A choice that answers late reads as a click that did
+    // not register.
+    //
+    // A drawn ornament may still follow the state (Pop's and Paper's dot scales in on a
+    // pseudo-element, the checkbox tick does the same). What may not is the control
+    // itself, so the rule that draws the box or circle opts out of the inherited fade.
+    const wrong = themes().flatMap(({ name, css }) => {
+      const bare = css.replace(/\/\*[\s\S]*?\*\//g, '')
+      const rules = [...bare.matchAll(/([^{}]*)\{([^{}]*)\}/g)].map((match) => ({
+        selector: (match[1] ?? '').trim(),
+        body: match[2] ?? '',
+      }))
+      const choice = rules.find(
+        ({ selector }) =>
+          /input:is\(\[type='checkbox'\],\s*\[type='radio'\]\)$/.test(selector),
+      )
+      if (choice === undefined) return [`${name}: no rule draws checkboxes and radios together`]
+      return /(^|[\s;])transition:\s*none\s*(;|$)/.test(choice.body)
+        ? []
+        : [`${name}: checkboxes and radios inherit the text controls' transition, so a choice shows late`]
+    })
+
+    expect(wrong).toEqual([])
+  })
+
   test('a themed control has a height, so it is visible before it has content', () => {
     // The specific reason the field was invisible rather than merely unstyled:
     // an empty contenteditable collapses to nothing without one.
