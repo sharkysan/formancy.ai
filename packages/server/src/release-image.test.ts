@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { releaseNotes } from '../../../scripts/release-notes.mjs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, test } from 'vitest'
@@ -38,6 +39,50 @@ describe('the release workflow', () => {
     // for the wrong reason.
     expect(release).toContain('pnpm publish')
     expect(release.length).toBeGreaterThan(500)
+  })
+
+  test('hands GitHub a release body it will accept', () => {
+    /*
+     * Found in the preflight for 0.2.0, before the tag was pushed. `body_path` pointed
+     * at `CHANGELOG.md` entire: 164,422 characters against GitHub's documented limit of
+     * 125,000 for a release body. The API answers 422 and the step fails.
+     *
+     * Where it fails is the whole problem. Creating the release is the LAST step, after
+     * fourteen packages are on npm and the signed image is in the registry — neither of
+     * which can be taken back, and a version number can never be reused. The release
+     * carrying the SBOM would simply not exist, which is the one artefact a manufacturer
+     * characterising this software is told to fetch.
+     *
+     * So: the body is the section for this version, and the size is measured rather
+     * than assumed. This asserts the file the workflow actually names, so pointing it
+     * back at the changelog fails here rather than on the release run.
+     */
+    const LIMIT = 125_000
+
+    const named = /body_path:\s*(\S+)/.exec(release)?.[1]
+    expect(named, 'the workflow names no release body').toBeDefined()
+
+    if (named === 'CHANGELOG.md') {
+      throw new Error(
+        'the release body is the whole changelog; GitHub refuses a body over 125,000 characters, and it refuses it after npm has published',
+      )
+    }
+
+    // The body is written by a step rather than committed, so what is checked is the
+    // generator and the section it will produce for the version being released.
+    const version = JSON.parse(
+      readFileSync(join(repo, 'packages', 'core', 'package.json'), 'utf8'),
+    ).version as string
+    const notes = releaseNotes(readFileSync(join(repo, 'CHANGELOG.md'), 'utf8'), version)
+
+    // A guard on the guard: an extractor returning nothing would be under the limit.
+    expect(notes.length).toBeGreaterThan(200)
+    expect(notes).toContain(version)
+    expect(notes.length).toBeLessThan(LIMIT)
+
+    // And the workflow runs that same extractor, rather than a second one that agrees
+    // with this only today.
+    expect(release).toContain('scripts/release-notes.mjs')
   })
 
   test('pushes a container image', () => {
