@@ -20,6 +20,31 @@ versioning and pins documents to `{ "const": "1" }`, so it refuses a version 2 d
 rather than ignoring the property — which is the loud failure rather than the silent one,
 and still a failure.
 
+### What 0.2.0 knowingly does not have
+
+`RELEASING.md` asks a release entry to say this, because the absence a reader discovers
+for themselves is the one that costs them a day.
+
+- **No submission token bound to the form version.** This is the gap that keeps the
+  public plane off a public deployment. Everything else guarding it — the origin
+  allowlist, the rate limits, the proof-of-work challenge, the body cap — is in place.
+- **The server writes no log at all.** Fastify is constructed with the logger off, so no
+  submission content can reach one and nothing will tell an operator why a request
+  failed. The audit log records mutations, including submission reads, and is all there
+  is. A deployment that adds a logger owns the redaction question alone.
+- **The rate limiter's store is per process**, so it is wrong behind more than one
+  replica. Documented rather than fixed.
+- **No virus scanning, no resumable or multipart uploads, and no presigned uploads.**
+  Bytes still pass through the server, so the request body cap is the ceiling on a file.
+- **`signature`, a many-answer tag picker and async validators are spec 3**, now that
+  version 2 is frozen. None of them is reserved ahead of use.
+- **No manual screen-reader audit and no VPAT.** The accessibility claim rests on
+  automated checking, which catches roughly 57% of machine-detectable issues.
+- **Appearance is reviewed, not verified.** jsdom implements no layout, and no
+  application in this repository renders the Angular bindings in a browser at all.
+- **Nothing verifies a release after it is published.** Every gate runs inside the
+  workflow that publishes, against the tree it built from.
+
 Four packages reach npm for the first time: `@formancy/builder-react` — the embeddable
 builder, and the package a prospective adopter most wants to see — along with
 `@formancy/challenge`, `@formancy/mcp` and `@formancy/tiptap`. The server image is
