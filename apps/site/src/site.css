@@ -442,7 +442,9 @@ section {
 }
 
 .wide {
-  max-width: 78rem;
+  /* Give demos and card grids room on large displays. Paragraphs retain
+     their own reading measure instead of stretching with the whole page. */
+  max-width: 110rem;
   margin-inline: auto;
 }
 

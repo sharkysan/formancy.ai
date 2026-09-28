@@ -10,6 +10,22 @@ later.
 
 ## Unreleased
 
+- The homepage introduces the editor with a real interactive form preview:
+  add a field, change its theme and check answers without sending them. A
+  responsive product walkthrough and illuminated 3D treatment keep the editor
+  in focus; reduced-motion preferences disable the movement.
+
+- The homepage and README highlight six product strengths, including keyboard
+  access and automated accessibility checks, with the limits of WCAG claims
+  stated explicitly.
+
+- The homepage uses a wider content area on large screens while keeping
+  paragraph lengths bounded for readability.
+
+- The homepage and README now introduce formancy as a visual form builder for
+  Angular and React, link directly to the editor, and explain features through their use
+  in a form. Search and sharing descriptions use the same product description.
+
 **Date and time fields show a calendar or a clock on iPhone.** Reported from a
 phone: "the date time fields have no icons on safari mobile". Mobile Safari
 never draws one -- the field reads as plain text until it is tapped -- while
