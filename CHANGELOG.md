@@ -33,6 +33,12 @@ resolves `localhost` to `::1` first on Windows. Every API call answered 502 and 
 showed an empty list of forms with nothing saying why. Measured rather than guessed: `curl`
 against the IPv4 address answered 401 and against `[::1]` answered nothing at all.
 
+**The page's closing argument sits beside its evidence.** "You have been filling in a
+form" and the receipt it describes were stacked, so the submission a visitor was being
+told about was below the sentence telling them. Side by side from 62rem, and the whole
+close reads in one screen. The footer's version line came out from under the running
+submission panel while I was there — it had been half covered.
+
 ### What 0.2.0 knowingly does not have
 
 `RELEASING.md` asks a release entry to say this, because the absence a reader discovers

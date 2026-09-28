@@ -2029,6 +2029,50 @@ kbd {
   justify-content: center;
 }
 
+.finale-words {
+  display: grid;
+  justify-items: center;
+  gap: 1.25rem;
+}
+
+.finale-receipt {
+  position: relative;
+  width: min(100%, 34rem);
+}
+
+/* The claim and the submission it describes, on one line. Below this the two stack,
+   which is the order they read in anyway: the sentence, then the thing. */
+@media (min-width: 62rem) {
+  .finale {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.95fr);
+    align-items: center;
+    column-gap: clamp(2.5rem, 5vw, 4.5rem);
+    text-align: start;
+    justify-items: stretch;
+    /* Out of the running submission's lane, like the two bands above it. */
+    padding-inline-end: calc(var(--gutter) + 15rem);
+  }
+
+  .finale-words {
+    justify-items: start;
+  }
+
+  .finale .lede {
+    margin-inline: 0;
+  }
+
+  .finale .actions {
+    justify-content: start;
+  }
+
+  /* The receipt owns its column, so it stops adding the gap it needed when it sat
+     under a paragraph. */
+  .finale .receipt {
+    margin-block-start: 0;
+    width: 100%;
+  }
+}
+
 .receipt {
   position: relative;
   margin-block-start: 3rem;
@@ -2130,6 +2174,15 @@ footer {
   display: flex;
   flex-wrap: wrap;
   gap: 1rem 2rem;
+}
+
+/* The running submission overlays the corner, and the footer's last item -- the spec
+   and package version -- sat underneath it, half readable. The same clearance the
+   bands above use. */
+@media (min-width: 62rem) {
+  footer {
+    padding-inline-end: calc(var(--gutter) + 15rem);
+  }
 }
 
 footer a {
