@@ -450,10 +450,16 @@ from the JSON Schema.
   [the five ideas everything else follows from](./docs/architecture/04-solution-strategy.md).
 - [The decision records](./docs/decisions/), each naming what would
   fail if the decision were violated — or saying plainly that nothing would.
-- [Regulatory material](./docs/regulatory/MDR-CONTEXT.md) for anyone
+- [Regulatory material](./docs/regulatory/MDR-CONTEXT.md), for anyone
   incorporating formancy into a product that has to answer to a regulator.
-  formancy is not a medical device and claims no conformity; the documents say
-  what they are and what they are not.
+  **Built to be incorporated.** formancy is not a medical device and claims no
+  conformity. It ships the characterisation a manufacturer needs under IEC 62304
+  to treat it as software of known provenance — a
+  [SOUP declaration](./docs/regulatory/SOUP-DECLARATION.md), a
+  [safety analysis](./docs/regulatory/SAFETY-ANALYSIS.md), the
+  [lifecycle](./docs/regulatory/LIFECYCLE.md) and the
+  [design rationale](./docs/decisions/) — as an input to your risk analysis, not
+  a substitute for it.
 
 ## Releases
 

@@ -149,7 +149,11 @@
   }
 }
 
-[data-formancy-theme='dusk'] [data-formancy-part='field'] :is(input, select, textarea, [data-formancy-part='richtext-surface']):hover:not(:disabled, :focus-visible) {
+/* Text-like controls only. A checkbox and a radio say what they are with a fill,
+   and this rule's `:not()` puts it one step above `:checked` in the cascade, so the
+   pointer repainted the chosen state — measured in Dusk as a chosen radio going from
+   the signal violet back to the page's own dark. The two have their own hover below. */
+[data-formancy-theme='dusk'] [data-formancy-part='field'] :is(input, select, textarea, [data-formancy-part='richtext-surface']):hover:not(:disabled, :focus-visible, [type='checkbox'], [type='radio']) {
   background-color: var(--fm-control-hover);
 }
 
@@ -270,6 +274,29 @@
   box-shadow:
     inset 0 0 0 4px var(--fm-control),
     0 0 14px -2px color-mix(in srgb, var(--fm-signal) 70%, transparent);
+}
+
+/* Hover and press, which a choice control has to answer for itself.
+   Reported from the running page as "the radio button and checkbox is still not
+   visible when clicking or hovering": with no rule of their own the two fell to
+   the text control's hover, a fill one step lighter — measured at about 1.03:1
+   across an 18px circle. So the edge moves and a ring is drawn, and neither
+   shrinks with the control the way a fill does.
+
+   `outline` rather than a second `box-shadow`: the chosen radio's dot IS a
+   box-shadow, and a shadow here would replace it. */
+[data-formancy-theme='dusk'] [data-formancy-part='field'] input:is([type='checkbox'], [type='radio']):hover:not(:disabled, :focus-visible) {
+  border-color: var(--fm-signal);
+  outline: 3px solid color-mix(in srgb, var(--fm-signal) 28%, transparent);
+  outline-offset: 2px;
+}
+
+/* Pressed: the ring closes onto the control and the control gives a little. */
+[data-formancy-theme='dusk'] [data-formancy-part='field'] input:is([type='checkbox'], [type='radio']):active:not(:disabled) {
+  border-color: var(--fm-signal);
+  outline: 3px solid color-mix(in srgb, var(--fm-signal) 60%, transparent);
+  outline-offset: 0;
+  scale: 0.9;
 }
 
 /* Invalid is a ring, not an edge bar — Blueprint's device, deliberately not

@@ -547,6 +547,39 @@ by anything that stops a *theme* styling them identically. A consumer whose styl
 draws the status line like an error has reintroduced the confusion, and nothing here
 detects that.
 
+### D7. A control shows a state other than the one it is in
+
+*How it arises:* an appearance dresses every control through one group —
+`:is(input, select, textarea, [data-formancy-part='richtext-surface'])` — and the rule for
+the pointer carries `:not(:disabled, :focus-visible)`. Both `:is()` and `:not()` take the
+specificity of their most specific branch, so that rule reaches one step above
+`input:is([type='checkbox'], [type='radio']):checked` and repaints it. Measured in the
+Dusk appearance: a chosen radio sat at `rgb(124, 107, 245)` and turned `rgb(21, 26, 38)`,
+the page's own dark, while the pointer rested on it. The value is set and the control says
+it is not.
+
+*Severity:* worse than a control that does not respond, because nothing prompts a second
+look — the person sees an unchosen radio and chooses again, or leaves believing they
+answered something else. It is invisible to every gate here: the element carries
+`checked`, so the conformance drivers, the accessible-name comparison and the axe runs all
+pass. The accessibility tree is correct and only the pixels disagree, which means sighted
+use is the only use that breaks. The same rule left the two controls with no pointer
+feedback of their own: a fill change measured at about 1.03:1 across an 18px circle.
+
+*Constraint:* the shared rule excludes `[type='checkbox']` and `[type='radio']` by name,
+and each appearance states those two controls' hover and press itself, with an edge and a
+ring rather than a fill ([0080](../decisions/0080-a-choice-control-dresses-its-own-states.md)).
+`apps/docs/src/themes.test.ts` derives both halves from the stylesheets: it fails when an
+appearance has no hover or press of its own for the two, and when a rule that reaches them
+through the shared group declares a property the chosen state also declares. Both were
+observed failing before the change — the first on all four appearances, the second on two.
+
+*Residual:* the guard compares property families, so a shared rule could still repaint a
+chosen control with a property `:checked` does not use. And the numbers above were
+measured in a browser by hand: no gate renders a stylesheet, so nothing will measure them
+again. This is D4a's residual — appearance is reviewed, not verified — reaching a
+different kind of defect than layout.
+
 ---
 
 ## E — Provenance is lost
@@ -593,9 +626,10 @@ focus area for their own verification.
 2. Pay particular attention to **A5** (visibility rules fail open), **C2** (no
    tenant boundary), **D3** (pattern linting not yet implemented) and the
    pre-release package versions. These are the entries where the residual risk
-   is real rather than theoretical. Note that the *spec* is frozen
-   ([0042](../decisions/0042-freeze-the-spec.md)), so stored data has a settled
-   shape; it is the software that is still moving.
+   is real rather than theoretical. Note that both *spec* versions are frozen —
+   `"1"` ([0042](../decisions/0042-freeze-the-spec.md)) and `"2"`
+   ([0051](../decisions/0051-spec-2-adds-types.md)) — so stored data has a
+   settled shape; it is the software that is still moving.
 3. Decide whether automated accessibility checking is sufficient evidence for
    the device's intended users, and plan a manual audit if it is not.
 4. Treat the 118 known CEL corpus failures as a functional limitation to be

@@ -631,6 +631,136 @@ describe('the theme contract', () => {
     expect(wrong).toEqual([])
   })
 
+  test('answers the pointer on a checkbox and a radio, not only on a text field', () => {
+    /*
+     * Reported from the running page: "the radio button and checkbox is still not
+     * visible when clicking or hovering". Measured in Dusk before the fix — hovering an
+     * unchecked radio moved its background from `rgb(17, 21, 31)` to `rgb(21, 26, 38)`,
+     * a contrast ratio of about 1.03:1 across an 18px circle. Nobody can see that.
+     *
+     * The cause is that a choice control had no state of its own and fell to the rule
+     * every `input` shares: a slightly lighter fill, which is the right answer for a
+     * text field two hundred pixels wide and nothing at all for a tick box.
+     *
+     * So the fill is not enough on its own. A choice control's hover and press have to
+     * change its EDGE or draw a ring — something whose size does not depend on the
+     * control's. Both states, because the report named both.
+     */
+    const CHOICE = /input:is\(\[type='checkbox'\], \[type='radio'\]\)/
+
+    const wrong = themes().flatMap(({ name, css }) => {
+      const bare = css.replace(/\/\*[\s\S]*?\*\//g, '')
+      const rules = [...bare.matchAll(/([^{}]*)\{([^{}]*)\}/g)].map((match) => ({
+        selector: (match[1] ?? '').trim(),
+        body: match[2] ?? '',
+      }))
+
+      return [':hover', ':active'].flatMap((state) => {
+        const answering = rules.filter(
+          (rule) => CHOICE.test(rule.selector) && rule.selector.includes(state),
+        )
+        if (answering.length === 0) {
+          return [
+            `${name}: a checkbox and a radio have no ${state} of their own, so they fall to the text field's -- a fill change nobody can see on an 18px control`,
+          ]
+        }
+
+        // The declared property names, parsed rather than matched: `background-color`
+        // contains `color`, and a guard that asked for "color" would accept the very
+        // rule this exists to refuse.
+        const declared = answering.flatMap((rule) =>
+          rule.body
+            .split(';')
+            .map((declaration) => declaration.split(':')[0]?.trim() ?? '')
+            .filter((property) => property !== ''),
+        )
+        const beyondFill = declared.filter((property) => !property.startsWith('background'))
+
+        return beyondFill.length > 0
+          ? []
+          : [
+              `${name}: the ${state} on a checkbox and a radio only changes the fill (${declared.join(', ')}), which is what was already invisible`,
+            ]
+      })
+    })
+
+    expect(wrong).toEqual([])
+  })
+
+  test('the pointer cannot un-choose a checkbox or a radio', () => {
+    /*
+     * The other half of the same report, and the half that was actually visible.
+     * Measured in Dusk: a CHOSEN radio sat at `rgb(124, 107, 245)` and turned
+     * `rgb(21, 26, 38)` under the pointer — the chosen fill replaced by the text
+     * field's hover fill. Click a radio and it lights up, then goes dark again while
+     * your pointer is still on it, which is what "not visible when clicking" looked
+     * like from the outside.
+     *
+     * The mechanism is `:is()`. The rule every control shares selects through
+     * `:is(input, select, textarea, [data-formancy-part='richtext-surface'])`, whose
+     * specificity is the most specific branch — an attribute — and its
+     * `:not(:disabled, :focus-visible)` adds another. That is one more than
+     * `input:is([type='checkbox'], [type='radio']):checked` can muster, so the hover
+     * wins and repaints the chosen state. The focus rule carries no `:not()`, which is
+     * exactly why focus was fine and hover was not.
+     *
+     * So: a rule that reaches a choice control only because it dresses every control
+     * may not declare anything the chosen state declares. Derived from the two rule
+     * bodies rather than from either one's wording, and by property family, because
+     * `background-color` overrides `background` and a string comparison would not say
+     * so.
+     */
+    const NAMES_CHOICE = /\[type='(?:checkbox|radio)'\]/
+    const family = (property: string): string => property.split('-')[0] ?? property
+
+    const wrong = themes().flatMap(({ name, css }) => {
+      const bare = css.replace(/\/\*[\s\S]*?\*\//g, '')
+      const rules = [...bare.matchAll(/([^{}]*)\{([^{}]*)\}/g)].map((match) => ({
+        selector: (match[1] ?? '').trim(),
+        body: match[2] ?? '',
+      }))
+      const families = (of: typeof rules): string[] =>
+        of.flatMap((rule) =>
+          rule.body
+            .split(';')
+            .map((declaration) => declaration.split(':')[0]?.trim() ?? '')
+            .filter((property) => property !== '')
+            .map(family),
+        )
+
+      const named = (selector: string): boolean =>
+        NAMES_CHOICE.test(selector.replace(/:not\([^)]*\)/g, ''))
+      const excluded = (selector: string): boolean =>
+        (selector.match(/:not\([^)]*\)/g) ?? []).some((part) => NAMES_CHOICE.test(part))
+
+      const chosen = new Set(
+        families(rules.filter((rule) => named(rule.selector) && rule.selector.includes(':checked'))),
+      )
+      // A guard on the guard: with no chosen state found there is nothing to clash
+      // with, and this would pass whatever the hover did.
+      if (chosen.size === 0) return [`${name}: no rule paints a chosen checkbox or radio at all`]
+
+      const everyControl = rules.filter(
+        (rule) =>
+          rule.selector.includes(':hover') &&
+          rule.selector.includes(':is(input,') &&
+          !named(rule.selector) &&
+          !excluded(rule.selector),
+      )
+      const clashing = [...new Set(families(everyControl))].filter((property) =>
+        chosen.has(property),
+      )
+
+      return clashing.length === 0
+        ? []
+        : [
+            `${name}: hovering repaints a chosen checkbox or radio (${clashing.join(', ')}), because the rule for every control outranks the chosen one`,
+          ]
+    })
+
+    expect(wrong).toEqual([])
+  })
+
   test('a themed control has a height, so it is visible before it has content', () => {
     // The specific reason the field was invisible rather than merely unstyled:
     // an empty contenteditable collapses to nothing without one.
