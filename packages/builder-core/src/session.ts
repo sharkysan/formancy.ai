@@ -9,6 +9,7 @@ import {
   isLayoutContainer,
   nodeAt as layoutNodeAt,
   nodesOfLayout,
+  samePath,
 } from './layout.js'
 import type { LayoutAddress, LayoutLocation } from './layout.js'
 
@@ -178,10 +179,6 @@ export interface BuilderSession {
 }
 
 const CONTAINER_TYPES = new Set(['group', 'page', 'repeater'])
-
-function samePathOf(a: readonly number[], b: readonly number[]): boolean {
-  return a.length === b.length && a.every((step, at) => b[at] === step)
-}
 
 /** Document order: earlier position first, and a parent before its child. */
 function comparePaths(a: readonly number[], b: readonly number[]): number {
@@ -492,7 +489,7 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
           if (outer === inner) continue
           const a = addresses[outer]!
           const b = addresses[inner]!
-          if (samePathOf(a, b)) {
+          if (samePath(a, b)) {
             // Spliced out once and inserted twice would place one field in two
             // positions, which stays syntactically fine and fails at publish.
             return refuse(
@@ -525,7 +522,7 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
         // not the dragged node's -- and otherwise the earliest in document
         // order, which is the sensible default when nothing prefers one.
         const anchorPath =
-          positionOf !== undefined && addresses.some((path) => samePathOf(path, positionOf))
+          positionOf !== undefined && addresses.some((path) => samePath(path, positionOf))
             ? positionOf
             : [...addresses].sort(comparePaths)[0]!
         const home = locateLayout(draft, { layout, path: anchorPath })

@@ -6,8 +6,6 @@ import { validateSchema } from './validate.js'
 /**
  * `time` and `datetime`, and the `earliest`/`latest` bounds.
  *
- * ── ONE CANONICAL FORM, AT ONE FIXED WIDTH ──────────────────────────────────
- *
  * CEL has no time type, so a temporal answer binds as a **string** and the only
  * ordering available is lexicographic. That equals chronological ordering only
  * while the form is fixed-width, zero-padded and big-endian — which makes the
@@ -24,8 +22,6 @@ import { validateSchema } from './validate.js'
  * 07:00Z and therefore earlier, and no amount of care in a comparison recovers that
  * from the strings.
  *
- * ── `datetime` IS AN INSTANT; `time` IS A WALL CLOCK ────────────────────────
- *
  * The engine is isomorphic and `now()` is frozen per transaction, so a value whose
  * meaning depends on who is reading it cannot be compared with the clock on both
  * sides and agree. This repository had already decided that for expressions:
@@ -40,8 +36,6 @@ import { validateSchema } from './validate.js'
  * ICU versions would disagree about the same answer.
  *
  * **So there is no per-field `timezone` property**, and the absence is deliberate.
- *
- * ── WHY NOT `min`/`max` ─────────────────────────────────────────────────────
  *
  * They are `number` and gated to `type: "number"`. Widening them to `number |
  * string` would let TypeScript accept `min: "5"` on a number field the schema

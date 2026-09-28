@@ -6,8 +6,6 @@ import { validateSchema } from './validate.js'
 /**
  * `widget` — the author says how a field should look, and nothing else.
  *
- * ── WHY IT IS IN THE DOCUMENT AT ALL ────────────────────────────────────────
- *
  * A developer could already do this. `registry.byType` and `registry.byPath`
  * swap the component for any field, per deployment, at zero cost to the format
  * — so "show this as a switch" was solved for anybody who writes code.
@@ -19,8 +17,6 @@ import { validateSchema } from './validate.js'
  * *intent* rather than a component: the document says what the author meant, and
  * every renderer decides how to honour it.
  *
- * ── THE LINE THIS MUST NOT CROSS ────────────────────────────────────────────
- *
  * **A widget may change how a field looks. It may not change what it collects.**
  * The moment a hint alters the stored value, the validation, or what a person is
  * allowed to enter, it is a field type and belongs in `FIELD_TYPES` with all the
@@ -29,16 +25,12 @@ import { validateSchema } from './validate.js'
  * null`, `datagrid` on a `repeater` still stores rows carrying `_id`, `typeahead`
  * on a `select` still stores one offered option value.
  *
- * ── WHY THE NAMES ARE CLOSED ────────────────────────────────────────────────
- *
  * An open string would cost nothing to extend and would be worth nothing: two
  * renderers would guess differently at `widget: "togle"`, one would silently fall
  * back and the other would not, and a form would look right in the build that
  * knew the name and wrong everywhere else, with nothing failing anywhere. Closed
  * means a typo is an authoring-time error. It also means each new name is a
  * format change, which is the price of the guarantee.
- *
- * ── WHY IT COSTS A VERSION, WHICH IT DOES ───────────────────────────────────
  *
  * The obvious claim is that a hint is safely ignorable, so an older reader can
  * drop it and render the default control. **Measured, and false.**

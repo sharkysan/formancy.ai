@@ -8,8 +8,6 @@ import { validateSchema } from './validate.js'
 /**
  * `columns` — configuring the grid a `datagrid` widget arranges.
  *
- * ── WHY THIS IS NOT A FIELD TYPE, HAVING NEARLY BEEN ONE ────────────────────
- *
  * `datagrid` shipped as a widget on a repeater
  * ([0065](../../../docs/decisions/0065-a-widget-is-authored-not-registered.md))
  * because it stores exactly what a repeater stores. Then the columns needed

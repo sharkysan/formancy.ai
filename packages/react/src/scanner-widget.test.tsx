@@ -17,8 +17,6 @@ const CLOCK = { now: () => 0, today: () => '2026-09-27', random: () => 0.5 }
  * `widget: "scanner"` on a text field — a camera route to a value somebody could
  * otherwise type.
  *
- * ── WHY THERE IS NO CAMERA IN HERE ──────────────────────────────────────────
- *
  * The same inversion the `file` field uses for its uploader: the renderer declares
  * a function and the HOST supplies it. A renderer cannot own camera permission
  * policy, cannot own a decoder, and must not grow a dependency for either — so the

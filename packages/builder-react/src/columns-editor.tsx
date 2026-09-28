@@ -10,12 +10,8 @@ import type { DataGridColumn, FieldDef } from '@formancy/spec'
  * schema says "array of objects", and the honest generic rendering of that is a
  * textarea full of JSON.
  *
- * It was found missing by a guard rather than by a person — the check in
- * properties.test.ts walks the schema and asks whether every property is
- * settable, and `columns` was the one it named. The format validated it, both
- * renderers honoured it, and the builder could not set it.
- *
- * ── WHAT A COLUMN IS, AND IS NOT ─────────────────────────────────────────────
+ * `properties.test.ts` walks the schema and asks whether every property is settable,
+ * per type and per widget, so a property with no control fails it.
  *
  * A column NAMES a child field; it does not create one. So `field` is a choice
  * from the children the repeater already has, never a text box — a typo there

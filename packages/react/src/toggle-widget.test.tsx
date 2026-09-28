@@ -13,8 +13,6 @@ const CLOCK = { now: () => 0, today: () => '2026-09-19', random: () => 0.5 }
 /**
  * `widget: "toggle"` — a checkbox a theme can draw as a switch.
  *
- * ── THE ARIA DECISION, WHICH 0065 LEFT OPEN ─────────────────────────────────
- *
  * The obvious implementation is `role="switch"`, and it is wrong here for two
  * reasons that point the same way.
  *

@@ -51,28 +51,17 @@ export function modelViolations(def: FieldDef, value: unknown): string[] {
     return codes
   }
 
-  // A chosen answer is one of the options offered.
+  // A chosen answer is one of the options offered, checked here because this is the one
+  // function the browser and the server both run: a payload posted straight at the
+  // server never went through a control
+  // ([0076](../../../docs/decisions/0076-an-answer-is-one-of-the-options.md)).
   //
-  // This was documented before it was true: `formancy.schema.json` says of
-  // `widget: "typeahead"` that "The answer is still one of the options offered", and
-  // `types.ts` says "Still one offered option value". Nothing enforced either. Measured
-  // against the built engine, which is the same build the server runs:
+  // The VALUE and never the label: a check that matched labels would accept
+  // "Switzerland" and refuse "CH".
   //
-  //     validate(): {"valid":true,"errors":{}}
-  //     value:      {"country":"XX","colour":"plaid","extras":["nope"]}
-  //
-  // The controls this repository ships cannot produce those -- each reaches `setValue`
-  // with an option's own value or with `null` -- but a payload posted straight at the
-  // server is not a control, and the engine validates the value rather than its
-  // provenance. So it is checked here, in the one function both sides run.
-  //
-  // The VALUE and never the label: what somebody sees is not what the form stores, and
-  // a check that matched labels would accept "Switzerland" and refuse "CH".
-  //
-  // Only when the document carries options. A `select` may have none -- the schema adds
-  // `options` in an `if`/`then` branch and requires only `key` and `type` -- and a field
-  // with none has nothing to be outside of. That is also the seam remote options need:
-  // a list that lives outside the document cannot be checked against the document.
+  // Only when the document carries options. A `select` may have none, and a field with
+  // none has nothing to be outside of -- which is also the seam `optionsSource` needs,
+  // since a list living outside the document cannot be checked against it.
   if (offersOptions(def) && !offers(def, value)) codes.push('option')
 
   if (def.min !== undefined || def.max !== undefined) {
@@ -88,16 +77,12 @@ export function modelViolations(def: FieldDef, value: unknown): string[] {
 
   const text = typeof value === 'string' ? value : undefined
 
-  // A temporal answer, bounded by comparing strings.
+  // A temporal answer, bounded by comparing strings, which is only correct because the
+  // format fixes one canonical shape per type -- `TEMPORAL_SHAPES` has the arithmetic.
   //
-  // That is only correct because the format fixes one canonical, zero-padded,
-  // fixed-width shape per type: measured, `'9:30' < '10:00'` is FALSE while
-  // `'09:30' < '10:00'` is true, and
-  // `'2026-09-19T10:00:00+03:00' < '2026-09-19T08:00:00Z'` is FALSE although the
-  // first instant is earlier. So the SHAPE is checked before the bound, and a value
-  // of the wrong shape fails rather than being compared — a malformed answer
-  // compared against a bound gives an ordering nobody predicted, which on the server
-  // is the hostile-payload path.
+  // So the SHAPE is checked before the bound, and a value of the wrong shape fails
+  // rather than being compared: a malformed answer compared against a bound gives an
+  // ordering nobody predicted, which on the server is the hostile-payload path.
   //
   // `shape` rather than `pattern` as the code: `pattern` is the author's own regular
   // expression, and a message catalogue needs to tell these two apart.

@@ -1488,8 +1488,7 @@ function MountedRichText({
     // document, reports the new answer, and React re-renders — but for one
     // render `value` is still the answer from BEFORE the command. That render
     // reaches here, sees a difference, and pushes the stale answer back, which
-    // un-bolds the word and then reports THAT. Observed in the playground: the
-    // stored value went to `**hello**` and back to `hello` on its own.
+    // un-bolds the word and then reports THAT.
     //
     // A value arriving from elsewhere while somebody is typing is rare; losing
     // what they just did is not recoverable. So the sync waits for them to leave,

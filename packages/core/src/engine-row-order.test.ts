@@ -5,8 +5,6 @@ import { createFormEngine } from './engine.js'
 /**
  * Rows keep their own state when the list around them changes.
  *
- * ── THE BUG THIS STARTED AS ─────────────────────────────────────────────────
- *
  * Touched-ness gates error presentation: `aria-invalid` and visible error text appear
  * only on a field that is both invalid AND touched, so a pristine form does not open
  * by shouting. It is stored as a set of wires — `items[1].name` — which means it is
@@ -24,8 +22,6 @@ import { createFormEngine } from './engine.js'
  * user is told the field is invalid before they arrive at it. `removeRow` had always
  * done this; nothing tested it, because the test that would have caught it is about
  * two rows and one removal rather than about one row.
- *
- * ── AND WHY IT HAD TO BE FIXED BEFORE `moveRow` EXISTED ─────────────────────
  *
  * Reordering is the same defect with a bigger blast radius. Removing a row shifts
  * everything after it by one; moving a row shifts a whole span, so every row between

@@ -7,30 +7,23 @@ import { EMPTY_PAYLOAD_SHA256, signRequest } from './sigv4.js'
 /**
  * Uploaded bytes in an S3-compatible object store.
  *
- * The second implementation of `FileStore`, which is what that interface existed
- * for. The local one is right for a single container with a volume and is the
- * ceiling on everything above it: two replicas with two volumes each accept
- * uploads the other cannot serve, so *any* deployment that scales past one
- * server needs this, and until now the answer was "designed, not built".
+ * The second implementation of `FileStore`. The local one is right for a single
+ * container with a volume and is the ceiling on everything above it: two replicas with
+ * two volumes each accept uploads the other cannot serve, so any deployment past one
+ * server needs this.
  *
  * **Not tied to Amazon.** The design calls for Garage, which is what the
  * integration test runs and what belongs in the compose file; the same code path
  * serves MinIO, Backblaze, Cloudflare R2 and real S3, because the only thing they
  * need in common is SigV4 and path-style addressing.
  *
- * ── WHAT THIS IS NOT ────────────────────────────────────────────────────────
+ * **Bytes still pass through the server**, so the request body cap is the ceiling on a
+ * file. A presigned PUT straight from the browser is the roadmap item that removes the
+ * server from the data path; this replaces where the bytes land without touching how
+ * they arrive.
  *
- * **Bytes still pass through the server.** The design's eventual shape is a
- * presigned PUT straight from the browser, with the server claiming the object
- * afterwards -- which removes the server from the data path entirely and is the
- * only way to accept a file larger than the request body cap. That is a change to
- * the upload flow end to end, including both renderers, and it is a separate
- * piece of work. This one replaces where the bytes land without touching how they
- * arrive, which is the smaller half and the one that unblocks a second replica.
- *
- * **No multipart.** A single PUT is one request, so the practical ceiling is
- * whatever the store accepts in one -- 5 GB for S3, and in any case far above
- * `FORMANCY_MAX_FILE_BYTES`. Resumability is the roadmap item, not this.
+ * **No multipart.** A single PUT is one request, so the practical ceiling is whatever
+ * the store accepts in one -- 5 GB for S3, and far above `FORMANCY_MAX_FILE_BYTES`.
  */
 export interface S3FileStoreConfig {
   /** Base URL of the endpoint, e.g. `http://garage:3900` or an S3 regional URL. */
@@ -119,13 +112,10 @@ export function createS3FileStore(config: S3FileStoreConfig): FileStore {
    * still exist and makes a download return nothing for a file the person can see
    * listed.
    *
-   * **404 only, and 403 deliberately not.** The first version of this included
-   * 403, because S3 answers 403 rather than 404 for an object a caller may not
-   * list. That reasoning is about a restricted caller, and this caller owns the
-   * bucket -- so in practice 403 means the credentials are wrong, and treating
-   * that as absence makes a misconfigured deployment look like one where every
-   * file has vanished. The collector would then delete every row while every
-   * object was still there. A rare unhelpful error beats that, by a wide margin.
+   * **404 only, and 403 deliberately not.** S3 answers 403 for an object a caller may
+   * not list, but this caller owns the bucket -- so 403 means the credentials are
+   * wrong, and reading that as absence would make a misconfigured deployment look like
+   * one where every file has vanished and have the collector delete every row.
    */
   const isAbsent = (response: Response): boolean => response.status === 404
 

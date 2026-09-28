@@ -6,7 +6,7 @@ import { validateSchema } from '@formancy/spec/validate'
 import { createFormEngine, expressionProblems } from '@formancy/core'
 import { App } from './app.js'
 import { EXAMPLES } from './examples.js'
-import { JOURNEY, isComplete, submissionFor } from './scroll.js'
+import { JOURNEY, isComplete, scrollProgress, submissionFor } from './scroll.js'
 
 /**
  * The landing page.
@@ -557,5 +557,49 @@ describe('the readings', () => {
     const records = Object.keys(import.meta.glob('../../../docs/decisions/[0-9][0-9][0-9][0-9]-*.md'))
     const shown = document.querySelectorAll('.reading dt')[4]?.textContent
     expect(shown).toBe(String(records.length))
+  })
+})
+
+describe('scrollProgress', () => {
+  /*
+   * Drives the progress rail and the running submission panel. It had no test, and the
+   * interesting half of it is arithmetic on numbers a browser hands over: a page shorter
+   * than its own viewport makes `height - viewport` zero or negative, and `scrollY / 0`
+   * is `Infinity` or `NaN` — either of which becomes a rail drawn off the end of the page
+   * or one that never appears.
+   */
+  test('is 0 at the top and 1 at the bottom', () => {
+    expect(scrollProgress(0, 3000, 1000)).toBe(0)
+    expect(scrollProgress(2000, 3000, 1000)).toBe(1)
+  })
+
+  test('is the fraction of the travel in between', () => {
+    // The travel is the page minus one viewport, because the last viewport's worth is
+    // already on screen when the scroll ends.
+    expect(scrollProgress(1000, 3000, 1000)).toBe(0.5)
+  })
+
+  test('says "finished" for a page that does not scroll at all', () => {
+    // `height - viewport` is 0, and the division would be Infinity or NaN. A page with
+    // nothing to scroll has been read by the time it is shown.
+    expect(scrollProgress(0, 800, 800)).toBe(1)
+    expect(scrollProgress(0, 600, 800)).toBe(1)
+  })
+
+  test('clamps rather than trusting the browser', () => {
+    // Overscroll on iOS reports a negative scrollY and one past the end; both produce a
+    // rail outside its own track.
+    expect(scrollProgress(-200, 3000, 1000)).toBe(0)
+    expect(scrollProgress(9999, 3000, 1000)).toBe(1)
+  })
+})
+
+describe('isComplete', () => {
+  test('is true only when every section has been seen', () => {
+    // The ending reveals itself on this. Revealing it early is the whole page's argument
+    // undercut by its own decoration.
+    expect(isComplete(new Set(JOURNEY.map((stop) => stop.section)))).toBe(true)
+    expect(isComplete(new Set(JOURNEY.slice(0, -1).map((stop) => stop.section)))).toBe(false)
+    expect(isComplete(new Set())).toBe(false)
   })
 })

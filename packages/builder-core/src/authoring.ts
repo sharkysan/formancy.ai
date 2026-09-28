@@ -4,30 +4,16 @@ import type { FormSchema } from '@formancy/spec'
 import { engineRefusal, expressionProblems } from '@formancy/core'
 
 /**
- * Writing a form from an instruction, and refusing to hand back one that does
- * not work.
+ * Writing a form from an instruction, and refusing to hand back one that does not work.
  *
- * ── THE LOOP IS THE PRODUCT ─────────────────────────────────────────────────
+ * The answer is **checked, and the model is told what was wrong with it and asked
+ * again**: the format has a published JSON Schema and the expressions type-check, so
+ * both failures come back as sentences a model can act on — `no such overload: double *
+ * int … write 4.0` — rather than as a stack trace. Nothing reaches the editor until it
+ * would work.
  *
- * Asking a model for JSON and putting the answer in an editor is a demo. What
- * makes this worth shipping is that the answer is **checked, and the model is
- * told what was wrong with it and asked again**. A form document is one of the
- * few things where that closes properly: the format has a published JSON
- * Schema, the expressions type-check, and both failures come back as sentences
- * rather than as a stack trace. So the model gets `no such overload: double *
- * int … write 4.0` and fixes it in the next turn.
- *
- * The alternative is what every other prompt-to-form feature does: produce
- * something plausible, put it in front of somebody, and let them find out at
- * the first submission that the conditional is inverted.
- *
- * ── WHOSE MODEL ─────────────────────────────────────────────────────────────
- *
- * Not ours. `AskModel` is supplied by the host, exactly as `Uploader` is: this
- * package has no vendor, no API key, no network call and no opinion about who
- * pays for tokens. A self-hoster points it at whatever they already run,
- * including something on their own hardware, and nothing about a form's
- * contents leaves their network unless they decide it does.
+ * **The model is the host's.** `AskModel` is supplied exactly as `Uploader` is: no
+ * vendor, no API key, no network call and no opinion about who pays for tokens.
  */
 
 /** One turn with whatever model the host has. Text in, text out. */

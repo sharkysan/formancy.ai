@@ -689,29 +689,20 @@ export class FormancyCode implements OnInit {
    *
    * Angular gives every component a host element. This one recurses, so a container's
    * children arrive wrapped in a `<formancy-layout>` that React does not emit — and a
-   * wrapper that participates in layout is the only grid item its parent has. Measured
-   * in a browser against `blueprint.css`, with the two renderers' exact markup side by
-   * side: React put two fields at the same top and 442px apart; Angular stacked them,
-   * 86px apart at the same left edge. A two-column table layout has therefore never
-   * produced two columns in Angular, and nothing failed, because jsdom has no layout
-   * and no application in this repository renders the Angular bindings.
+   * wrapper that takes part in layout is the only grid item its parent has, which is why
+   * a two-column table produced one column in this renderer
+   * ([0073](../../../docs/decisions/0073-a-host-element-is-not-a-layout.md)).
    *
    * `display: contents` removes the box and keeps the children, so the consumer's grid
    * sees what it sees in React. It also removes the element from the accessibility
    * tree, which is right: it has no role and names nothing.
    *
-   * Set in the CONSTRUCTOR through CSSOM, so this package ships no stylesheet after all.
-   * It arrived as `styles: ':host { display: contents }'`, and Angular emits a component
-   * style as a `<style>` element injected at runtime: under `style-src 'self'` with no
-   * nonce that element is blocked, the host keeps `display: block`, and the bug above
-   * comes back with nothing failing anywhere.
-   * [0073](../../../docs/decisions/0073-a-host-element-is-not-a-layout.md) weighed a
-   * stylesheet against a style ATTRIBUTE on exactly this question and missed the third
-   * option — CSP governs parsed markup, not CSSOM, so a property set on the element needs
-   * no directive and no nonce.
-   * [0079](../../../docs/decisions/0079-a-host-is-undone-without-a-stylesheet.md)
-   * supersedes it, and `layout.test.ts` asserts both halves: the display is `contents`,
-   * and no `<style>` is what says so.
+   * Set in the CONSTRUCTOR through CSSOM, and **never as a component style**: Angular
+   * emits one as a `<style>` element that `style-src 'self'` blocks without a nonce,
+   * which would silently restore the bug above. CSP does not govern CSSOM
+   * ([0079](../../../docs/decisions/0079-a-host-is-undone-without-a-stylesheet.md),
+   * which supersedes 0073's mechanism). `layout.test.ts` asserts both halves: the
+   * display is `contents`, and no `<style>` is what says so.
    *
    * It also restores [0008](../../../docs/decisions/0008-layered-packages.md)'s "nothing
    * below the component kit ships a CSS file" rather than amending it, which is the better

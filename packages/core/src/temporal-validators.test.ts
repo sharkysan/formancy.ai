@@ -5,8 +5,6 @@ import { createFormEngine } from './engine.js'
 /**
  * Temporal answers, checked for shape and then bounded.
  *
- * ── WHY THE SHAPE IS CHECKED FIRST ──────────────────────────────────────────
- *
  * A bound is a string comparison, and that is only correct while every answer takes
  * one canonical, zero-padded, fixed-width form. Measured: `'9:30' < '10:00'` is
  * **false** while `'09:30' < '10:00'` is true, and
@@ -17,8 +15,6 @@ import { createFormEngine } from './engine.js'
  * gives an ordering nobody predicted, and on the server that is the hostile-payload
  * path: a bounded field becomes unbounded for anyone who sends a value the bound
  * cannot order.
- *
- * ── A BEHAVIOUR CHANGE ON A FROZEN TYPE, DELIBERATELY ───────────────────────
  *
  * `date` is a version 1 type and **nothing has ever checked its shape**. A
  * deployment posting `19/09/2026` has been accepted until now and starts failing
