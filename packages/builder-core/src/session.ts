@@ -35,6 +35,36 @@ import type { LayoutAddress, LayoutLocation } from './layout.js'
  * path is the API and a drag layer is sugar over it — not the other way round,
  * which is how the keyboard path ends up an afterthought nobody finishes.
  */
+
+/**
+ * A catalogue as it leaves the builder, and as it comes back.
+ *
+ * The source travels with the target, and that is the whole design. A file of
+ * ids and blanks tells a translator nothing — `country.option.CH` is the schema's
+ * name for a thing rather than the thing — and a vendor's translation memory
+ * matches on source text, so a file without it cannot be leveraged at all.
+ *
+ * Plain JSON rather than XLIFF. XLIFF is what a vendor asks for and it is a
+ * format with a specification, a namespace and versions; shipping half of one
+ * would be worse than shipping none, and this shape converts to it in a script
+ * somebody can write in an afternoon.
+ */
+export interface CatalogueFile {
+  locale: string
+  defaultLocale: string
+  messages: Array<{ id: string; source: string; target: string }>
+}
+
+/** What an import did, and what a reviewer has to look at. */
+export interface ImportReport {
+  /** How many targets were written. */
+  written: number
+  /** Ids the form does not have any more: exported before a field was deleted. */
+  unknown: string[]
+  /** Ids whose source has changed since the export — translated from older words. */
+  stale: string[]
+}
+
 export interface Refusal {
   ok: false
   /** JSON Pointer into the document, as the validator reports it. */
@@ -140,6 +170,29 @@ export interface BuilderSession {
 
   /** Write one message, in one locale. */
   setMessage(locale: string, id: string, text: string): CommandOutcome
+
+  /**
+   * The catalogue for one locale, with every message the form refers to.
+   *
+   * Untranslated messages are present with an empty target rather than absent: a
+   * translator needs the list of what is left, and a file that omits them is a
+   * file that says the language is finished.
+   */
+  exportCatalogue(locale: string): CatalogueFile
+
+  /**
+   * Write a returned catalogue's targets, and report what was odd about it.
+   *
+   * One undoable step. An empty target never erases a translation already
+   * there — a vendor returning a partial file is normal, and writing its blanks
+   * over finished work is a loss nobody notices until the form is live. An id the
+   * form no longer has is reported rather than written, because resurrecting one
+   * as an orphan makes the count of what is left to translate wrong forever.
+   */
+  importCatalogue(file: CatalogueFile): CommandOutcome
+
+  /** What the last import did. `undefined` before one has happened. */
+  lastImportReport(): ImportReport | undefined
 
   /** Start a locale with nothing in it, which is how a translator opens one. */
   addLocale(locale: string): CommandOutcome
@@ -315,6 +368,8 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
   }
 
   /** Apply `edit` to a working copy and commit if the validator agrees. */
+  let lastImport: ImportReport | undefined
+
   function attempt(edit: (draft: FormSchema) => Refusal | undefined): CommandOutcome {
     const draft = copy(present)
     const problem = edit(draft)
@@ -588,6 +643,62 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
         return undefined
       })
     },
+
+    exportCatalogue(locale) {
+      const defaultLocale = present.i18n?.defaultLocale ?? 'en'
+      const source = present.i18n?.messages[defaultLocale] ?? {}
+      const target = present.i18n?.messages[locale] ?? {}
+      // Every id the DOCUMENT refers to, not every id the catalogue holds: an
+      // orphan is somebody's kept work and not a thing to send out for
+      // translation again.
+      const live = referencedIds(present)
+      return {
+        locale,
+        defaultLocale,
+        messages: [...live].map((id) => ({
+          id,
+          source: source[id] ?? '',
+          target: target[id] ?? '',
+        })),
+      }
+    },
+
+    importCatalogue(file) {
+      const live = referencedIds(present)
+      const report: ImportReport = { written: 0, unknown: [], stale: [] }
+      const source = present.i18n?.messages[present.i18n.defaultLocale] ?? {}
+
+      const outcome = attempt((draft) => {
+        const existing = { ...draft.i18n?.messages[file.locale] }
+        for (const message of file.messages) {
+          if (!live.has(message.id)) {
+            report.unknown.push(message.id)
+            continue
+          }
+          // Translated from words that have since changed. Written anyway --
+          // something is better than nothing and the translator may well be
+          // right -- and named, because it is the one a reviewer has to look at.
+          if (message.source !== '' && source[message.id] !== message.source) {
+            report.stale.push(message.id)
+          }
+          if (message.target === '') continue
+          existing[message.id] = message.target
+          report.written += 1
+        }
+
+        const defaultLocale = draft.i18n?.defaultLocale ?? file.defaultLocale
+        draft.i18n = {
+          defaultLocale,
+          messages: { ...draft.i18n?.messages, [file.locale]: existing },
+        }
+        return undefined
+      })
+
+      if (outcome.ok) lastImport = report
+      return outcome
+    },
+
+    lastImportReport: () => lastImport,
 
     addLocale(locale) {
       return attempt((draft) => {
@@ -1289,4 +1400,26 @@ function deepFreeze<T>(value: T): T {
   if (value === null || typeof value !== 'object') return value
   for (const nested of Object.values(value as Record<string, unknown>)) deepFreeze(nested)
   return Object.freeze(value)
+}
+
+/** Every message id the document refers to. Shared by the export and the import,
+ *  so the two can never disagree about which messages are live. */
+function referencedIds(document: FormSchema): Set<string> {
+  const found = new Set<string>()
+  const walk = (value: unknown): void => {
+    if (Array.isArray(value)) {
+      for (const item of value) walk(item)
+      return
+    }
+    if (typeof value !== 'object' || value === null) return
+    const record = value as Record<string, unknown>
+    if (typeof record['$t'] === 'string') {
+      found.add(record['$t'])
+      return
+    }
+    for (const item of Object.values(record)) walk(item)
+  }
+  walk(document.model)
+  walk(document.layouts)
+  return found
 }

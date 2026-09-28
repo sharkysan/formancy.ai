@@ -92,9 +92,10 @@ history, submissions and export).
   than shown as their fallback. A message nothing refers to any more is listed and never
   collected ([0084](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0084-a-translation-is-authored-not-imported.md)).
   One press extracts every text the format has — `Text` appears in exactly four places —
-  and the form is previewed in the language being worked on, without editing the
-  document's default locale to look at it. Still missing: **import and export** of a
-  catalogue, for a team with a translation vendor and a translation memory.
+  the form is previewed in the language being worked on without editing the document to
+  look at it, and a catalogue goes out and comes back as a file carrying the source beside
+  every target. Not XLIFF: that is a format with a specification and a namespace, and
+  shipping half of one would be worse than shipping none.
 - **Concurrent editing of one form.** Published versions are immutable and a
   submission carries the hash it was rendered from, so the pieces are there; two
   people editing one draft still last-write-wins.
@@ -165,9 +166,9 @@ left out as v2-era omissions. All three are now shipped.
 Roughly in order, and subject to change. The ordering is argued below rather
 than asserted.
 
-1. **Catalogue import and export**, which is the last of translation: a team with a
-   vendor and a translation memory works in XLIFF or in JSON, not in a table in
-   somebody's admin.
+1. **XLIFF**, if somebody asks for it. The exchange format is JSON carrying the source
+   beside every target, which converts to XLIFF in a script; a real XLIFF implementation
+   is a specification, a namespace and versions, and half of one is worse than none.
 2. **Freezing spec version 3**, which is open. `signature` is in it; a many-answer tag
    picker and an async validator are the two named candidates for the same version, and
    field types are worth grouping into one bump rather than spending a version each.
@@ -215,8 +216,7 @@ priced tier elsewhere. See the table above for what each actually costs.
 **Translated form content.** Built, for labels: the format always allowed
 `label: { $t: "..." }` and the engine always resolved it, and what was missing was
 any way to produce one. An author extracts, a translator works down a table, and a
-message whose field has gone is kept rather than collected. Catalogue import and export is what
-remains —
+message whose field has gone is kept rather than collected. Built, including the file a vendor works in —
 "self-hosted, nothing phones home" is a European pitch where this is table stakes
 rather than a nicety.
 

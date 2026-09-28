@@ -80,10 +80,24 @@ properties **the format does not have**. Written from a memory of other form bui
 rather than from this schema, in a record whose whole subject is the format's own
 vocabulary. `Text` appears in exactly four places, and the sweep now covers all four.
 
-**Nothing imports or exports a catalogue.** A translator working in the pane is a
-translator working in the product; a team with a translation memory and a vendor wants XLIFF
-or JSON in and out, and that is a feature with a file format attached. Named here rather
-than half-built.
+**A catalogue goes out and comes back as JSON, not as XLIFF.** A team with a vendor works
+outside the product entirely, so the file is the feature rather than the table. It carries
+the **source beside every target**: a list of ids and blanks tells a translator nothing,
+and a translation memory matches on source text, so a file without it cannot be leveraged
+at all.
+
+Not XLIFF, which is what a vendor asks for. XLIFF has a specification, a namespace and
+versions, and half of one is worse than none — a file that says `xliff` and is not one
+fails inside somebody else's tool, where nothing here can explain it. This shape converts
+to XLIFF in a script somebody writes in an afternoon, and the conversion is theirs to own.
+
+**Coming back, three things are reported rather than done quietly.** An empty target never
+erases a translation already there, because a partial file from a vendor is normal and
+overwriting finished work is a loss nobody notices until the form is live. An id the form
+no longer has is not written, because resurrecting one as an orphan makes the count of
+what is left to translate wrong forever. A target whose source has changed since the
+export **is** written and named — something is better than nothing and the translator may
+be right, but it was translated from older wording and a reviewer has to see which.
 
 **The preview builds its own engine.** An engine resolves text in one locale, fixed for
 its lifetime, so showing a translation meant changing the document's `defaultLocale` — an

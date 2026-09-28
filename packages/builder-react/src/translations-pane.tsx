@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { ReactElement } from 'react'
-import type { BuilderSession } from '@formancy/builder-core'
+import type { BuilderSession, CatalogueFile } from '@formancy/builder-core'
 import { createFormEngine } from '@formancy/core'
 import { FormancyForm, FormancyProvider } from '@formancy/react'
 import type { FormSchema } from '@formancy/spec'
@@ -34,6 +34,8 @@ export function TranslationsPane({ session }: { session: BuilderSession }): Reac
 
   const [showing, setShowing] = useState<string>(defaultLocale)
   const [adding, setAdding] = useState('')
+  const [problem, setProblem] = useState<string | null>(null)
+  const report = session.lastImportReport()
 
   const locales = Object.keys(i18n?.messages ?? {})
   const chosen = locales.includes(showing) ? showing : defaultLocale
@@ -122,7 +124,72 @@ export function TranslationsPane({ session }: { session: BuilderSession }): Reac
         >
           Add language
         </button>
+
+        {/* For a team with a vendor and a translation memory, who work in a file
+            rather than in a table in somebody's admin. The file carries the
+            source beside every target, because a list of ids and blanks tells a
+            translator nothing and a memory matches on source text. */}
+        <button
+          type="button"
+          onClick={() => {
+            const file = session.exportCatalogue(chosen)
+            const blob = new Blob([JSON.stringify(file, null, 2)], { type: 'application/json' })
+            const url = URL.createObjectURL(blob)
+            const link = window.document.createElement('a')
+            link.href = url
+            link.download = `${document.id}.${chosen}.json`
+            link.click()
+            URL.revokeObjectURL(url)
+          }}
+        >
+          Download {chosen}
+        </button>
+
+        <label>
+          Upload a translated file
+          <input
+            type="file"
+            accept="application/json,.json"
+            onChange={(event) => {
+              const picked = event.target.files?.[0]
+              if (picked === undefined) return
+              void picked.text().then((text) => {
+                try {
+                  session.importCatalogue(JSON.parse(text) as CatalogueFile)
+                  setProblem(null)
+                } catch (error) {
+                  // A file that is not one of ours, or not JSON at all. Said
+                  // rather than swallowed: a silent no-op after a translator
+                  // uploads an afternoon's work is the worst available outcome.
+                  setProblem(error instanceof Error ? error.message : 'That file could not be read.')
+                }
+              })
+            }}
+          />
+        </label>
       </div>
+
+      {problem === null ? null : <p data-formancy-part="translations-problem">{problem}</p>}
+
+      {report === undefined ? null : (
+        <div data-formancy-part="translations-report">
+          <p>
+            {report.written} {report.written === 1 ? 'translation' : 'translations'} written.
+          </p>
+          {report.unknown.length === 0 ? null : (
+            <p>
+              Not written, because this form no longer has them — the file was exported before
+              a field was removed: {report.unknown.join(', ')}
+            </p>
+          )}
+          {report.stale.length === 0 ? null : (
+            <p>
+              Written, but translated from wording that has since changed, so worth a look:{' '}
+              {report.stale.join(', ')}
+            </p>
+          )}
+        </div>
+      )}
 
       <table data-formancy-part="translations-table">
         <thead>

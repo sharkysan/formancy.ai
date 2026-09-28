@@ -38,9 +38,24 @@ second engine instead. An untranslated message falls back there exactly as it wi
 visitor, because a preview showing message ids would teach a translator that the fallback
 is broken when the fallback is the feature.
 
-Not built, and named rather than implied: catalogue import and export — a team with a
-translation vendor and a translation memory works in XLIFF or JSON, not in a table in
-somebody's admin.
+**A catalogue goes out and comes back as a file**, for a team with a vendor and a
+translation memory who work outside the product entirely. It carries the **source beside
+every target**, because a list of ids and blanks tells a translator nothing —
+`country.option.CH` is the schema's name for a thing rather than the thing — and a
+memory matches on source text. Untranslated messages travel with an empty target rather
+than being left out, since a file that omits them is a file saying the language is
+finished.
+
+Coming back, three things are refused or reported rather than done quietly: an **empty
+target never erases** a translation already there, because a partial file from a vendor is
+normal; an id **the form no longer has** is reported and not written, since resurrecting
+one as an orphan makes the count of what is left wrong forever; and a target whose
+**source has changed** since the export is written *and* named, because it was translated
+from older wording and a reviewer has to see which.
+
+Not XLIFF, deliberately: that is a format with a specification, a namespace and versions,
+and shipping half of one would be worse than shipping none. This shape converts to it in a
+script somebody can write in an afternoon.
 
 **The one press reaches every text the format has**: a field's label, an option's label, a
 grid column's heading and a layout node's label. `Text` appears in exactly those four
