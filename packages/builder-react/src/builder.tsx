@@ -41,6 +41,7 @@ export interface BuilderProps {
 const KEY_HELP = [
   ['↑ ↓', 'move between fields'],
   ['a', 'add a field'],
+  ['p', 'add a page, making the form a wizard'],
   ['m', 'move the focused field'],
   ['Delete', 'remove it'],
   ['Ctrl+Z / Ctrl+Y', 'undo / redo'],
@@ -220,6 +221,24 @@ export function FormancyBuilder({
         event.preventDefault()
         setAdding({ type: '' })
         break
+      case 'p':
+      case 'P': {
+        event.preventDefault()
+        // Counted BEFORE the command, because the first page absorbs what is at
+        // the top level and the count afterwards cannot tell which case it was.
+        const loose = view.document.model.fields.filter((field) => field.type !== 'page')
+        const pages = view.document.model.fields.length - loose.length
+        const outcome = session.addPage(`Page ${String(pages + 1)}`)
+        announce(
+          !outcome.ok
+            ? `Cannot add a page: ${outcome.message}`
+            : loose.length === 0
+              ? `Added Page ${String(pages + 1)}.`
+              : // Moving every field in the form is not something to do quietly.
+                `Added Page 1, holding the ${String(loose.length)} ${loose.length === 1 ? 'field' : 'fields'} that were at the top level. The form is a wizard now.`,
+        )
+        break
+      }
       case 'Delete':
       case 'Backspace': {
         event.preventDefault()

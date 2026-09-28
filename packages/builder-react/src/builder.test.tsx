@@ -408,3 +408,82 @@ describe('reporting which field the tree is on', () => {
     expect(seen.at(-1)).toEqual(['billing'])
   })
 })
+
+describe('making a wizard', () => {
+  /*
+   * A wizard was the one thing a developer could write by hand and an author
+   * could not make: the format has `page`, the engine walks the pages, both
+   * renderers draw a stepper, and the builder had no route to one. The palette
+   * leaves `page` out deliberately — a page may sit only at the top level, and a
+   * palette that can target any container would offer a choice refused most of
+   * the time — so it is its own command, on its own key, like move and delete.
+   *
+   * `p` before any drag surface, because that is the order every command here
+   * was built in: WCAG 2.2 SC 2.5.7 wants the keyboard path to be the equal of
+   * the pointer one, and a builder that adds it afterwards never quite gets it.
+   */
+  test('p makes the form a wizard, and says what it did to the fields', async () => {
+    const user = userEvent.setup()
+    const session = mount()
+
+    await user.tab()
+    await user.keyboard('p')
+
+    // The fields that were loose are inside the page now — measured behaviour,
+    // not taste: the engine gives a top-level field that is not inside a page to
+    // page one wherever it sits, so leaving them out there would draw them in a
+    // place they do not render.
+    const fields = session.document().model.fields
+    expect(fields.map((f) => f.type)).toEqual(['page'])
+    expect(fields[0]?.fields?.map((f) => f.key)).toEqual(['customer', 'billing'])
+
+    // And it is announced, because moving every field in the form is not
+    // something to do quietly.
+    expect(screen.getByRole('status').textContent).toMatch(/2 fields|two fields/i)
+  })
+
+  test('a second p adds an empty page rather than absorbing again', async () => {
+    const user = userEvent.setup()
+    const session = mount()
+
+    await user.tab()
+    await user.keyboard('p')
+    await user.keyboard('p')
+
+    const fields = session.document().model.fields
+    expect(fields.map((f) => f.type)).toEqual(['page', 'page'])
+    expect(fields[1]?.fields ?? []).toEqual([])
+  })
+
+  test('the page arrives with a label an author can read, not just a key', async () => {
+    const user = userEvent.setup()
+    const session = mount()
+
+    await user.tab()
+    await user.keyboard('p')
+
+    const page = session.document().model.fields[0]
+    expect(page?.label).toBe('Page 1')
+    // The key is identity and the label is what the stepper shows; renaming the
+    // step must not be a key change, so they are set independently.
+    expect(page?.key).not.toBe(page?.label)
+  })
+
+  test('the tree keeps the keyboard after it, like every other command', async () => {
+    const user = userEvent.setup()
+    mount()
+
+    await user.tab()
+    await user.keyboard('p')
+
+    expect(document.activeElement?.getAttribute('role')).toBe('treeitem')
+  })
+
+  test('and the shortcut is listed, so it can be found without being told', () => {
+    mount()
+
+    // The legend is how somebody discovers `m` and `Delete`; a command missing
+    // from it is a command only its author knows about.
+    expect(screen.getByText('p')).toBeTruthy()
+  })
+})

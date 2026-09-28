@@ -79,6 +79,26 @@ export interface BuilderSession {
    */
   replaceDocument(next: FormSchema): CommandOutcome
 
+  /**
+   * Add a wizard step, and make the form a wizard if it is not one yet.
+   *
+   * The first page **takes the fields already at the top level**, because the
+   * engine gives a top-level field that is not inside a page to page one
+   * wherever it sits: in `bare1, page one, bare2, page two` the engine reports
+   * pages 0, 0, 0, 1 — `bare2` is drawn between the pages and belongs to the
+   * first. A builder tree cannot show that honestly, so the shape is refused
+   * rather than drawn wrongly, and "add a page" to an unpaged form means "make
+   * this form a wizard": what somebody already built becomes page one.
+   *
+   * Its own command rather than a palette entry, which is why the palette
+   * leaves `page` out: a page may sit only at the top level, and a palette that
+   * can target any container would offer a choice refused most of the time.
+   *
+   * One undoable step either way — including the absorbing case, which moves
+   * every top-level field and adds a container.
+   */
+  addPage(label?: Text): CommandOutcome
+
   insertField(location: Location, def: FieldDef): CommandOutcome
   removeField(keyPath: readonly string[]): CommandOutcome
   moveField(from: readonly string[], to: Location): CommandOutcome
@@ -291,6 +311,24 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
         const mutable = draft as unknown as Record<string, unknown>
         for (const key of Object.keys(mutable)) delete mutable[key]
         Object.assign(draft, copy(next))
+        return undefined
+      })
+    },
+
+    addPage(label) {
+      return attempt((draft) => {
+        const top = draft.model.fields
+        const paged = top.some((field) => field.type === 'page')
+        const page: FieldDef = {
+          key: nextPageKey(draft),
+          type: 'page',
+          ...(label === undefined ? {} : { label }),
+          // Absorbing, when there is nothing to absorb, yields the empty page a
+          // second call would have produced anyway — so the two cases are one
+          // splice rather than a branch that has to agree with itself.
+          fields: paged ? [] : top.splice(0, top.length),
+        }
+        top.push(page)
         return undefined
       })
     },
@@ -696,9 +734,19 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
       if (probe === undefined) return []
 
       const targets: Location[] = []
+      const paged = present.model.fields.some((field) => field.type === 'page')
       for (const parent of containerPaths(present)) {
         // A container cannot be moved into itself or its own descendants.
         if (movingPath !== undefined && isPrefix(movingPath, parent)) continue
+
+        // Once a form has pages, the top level is for pages. The validator
+        // permits a field beside a page and the ENGINE does not honour it: a
+        // top-level field that is not inside a page is given to page one
+        // wherever it sits, measured as pages 0, 0, 0, 1 across
+        // `bare1, page one, bare2, page two`. Offering the position would be
+        // offering a placement that renders somewhere else — worse than
+        // refusing it, because the tree would go on showing it where it is not.
+        if (paged && parent.length === 0 && probe.type !== 'page') continue
 
         // Legality is decided by TRYING the edit against the validator, so
         // these rules can never drift from the ones publish enforces.
@@ -936,6 +984,28 @@ function isPrefix(prefix: readonly string[], candidate: readonly string[]): bool
 function clampIndex(index: number, length: number): number {
   if (!Number.isInteger(index) || index < 0) return 0
   return Math.min(index, length)
+}
+
+/**
+ * `page1`, `page2`, ... counted from the pages there are rather than from 1.
+ *
+ * A key is an identity a rule may name and an author never types; the label is
+ * what the stepper shows. Deriving one from the other would make renaming a step
+ * a key change, and a key change is a data migration.
+ */
+function nextPageKey(document: FormSchema): string {
+  const taken = new Set<string>()
+  const walk = (fields: readonly FieldDef[]): void => {
+    for (const field of fields) {
+      taken.add(field.key)
+      walk(field.fields ?? [])
+    }
+  }
+  walk(document.model.fields)
+
+  let counter = document.model.fields.filter((field) => field.type === 'page').length + 1
+  while (taken.has(`page${String(counter)}`)) counter += 1
+  return `page${String(counter)}`
 }
 
 /** A palette probe must not fail purely because its placeholder key is taken —
