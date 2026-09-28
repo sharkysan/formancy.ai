@@ -568,6 +568,69 @@ describe('the theme contract', () => {
     expect(wrong).toEqual([])
   })
 
+  test('draws a calendar or a clock in date and time fields on iOS, and only there', () => {
+    // Reported from an iPhone: "the date time fields have no icons on safari mobile".
+    // Mobile Safari draws none -- the field reads as plain text and the picker opens
+    // on a tap -- while Chromium and Firefox draw their own button inside the control.
+    // So the icon is the theme's, and it is scoped to iOS: drawn everywhere, Chromium
+    // would show two. `@supports (-webkit-touch-callout: none)` is true on iOS WebKit
+    // and false in desktop Safari, Chromium and Firefox.
+    //
+    // Nothing here runs WebKit, so the stylesheet is what is checked: the rules exist
+    // inside that query and nowhere else, date and datetime-local get a calendar and
+    // time gets a clock, and the icon is drawn in the theme's own muted ink. That last
+    // one is derived rather than trusted, because a data URI cannot say
+    // `var(--fm-muted)` and a hand-copied colour is exactly what drifts.
+    const IOS = /@supports\s*\(\s*-webkit-touch-callout:\s*none\s*\)\s*\{((?:[^{}]*\{[^{}]*\})*[^{}]*)\}/
+
+    const wrong = themes().flatMap(({ name, css }) => {
+      const bare = css.replace(/\/\*[\s\S]*?\*\//g, '')
+      const rulesOf = (text: string) =>
+        [...text.matchAll(/([^{}]*)\{([^{}]*)\}/g)].map((match) => ({
+          selector: (match[1] ?? '').trim(),
+          body: match[2] ?? '',
+        }))
+      const problems: string[] = []
+
+      const muted = /--fm-muted:\s*(#[0-9a-fA-F]{6})\s*;/.exec(bare)?.[1]?.toLowerCase()
+      if (muted === undefined) return [`${name}: defines no six-digit --fm-muted to draw the icon in`]
+
+      const block = IOS.exec(bare)?.[1]
+      if (block === undefined) return [`${name}: has no iOS-only block, so date and time fields there have no icon`]
+
+      const icon = (types: string[]) =>
+        rulesOf(block).find(
+          ({ selector, body }) =>
+            types.every((type) => selector.includes(`[type='${type}']`)) &&
+            /background-image:\s*url\("data:image\/svg\+xml/.test(body),
+        )
+      const calendar = icon(['date', 'datetime-local'])
+      const clock = icon(['time'])
+      if (calendar === undefined) problems.push(`${name}: no calendar for date and datetime-local on iOS`)
+      if (clock === undefined) problems.push(`${name}: no clock for time on iOS`)
+
+      for (const rule of [calendar, clock]) {
+        if (rule === undefined) continue
+        const drawn = /stroke='%23([0-9a-fA-F]{6})'/.exec(rule.body)?.[1]?.toLowerCase()
+        if (`#${drawn}` !== muted) {
+          problems.push(`${name}: the iOS icon is drawn in #${drawn ?? '?'}, not the theme's --fm-muted ${muted}`)
+        }
+      }
+
+      // Outside the query nothing may draw one, or Chromium shows its own button and ours.
+      const outside = bare.replace(IOS, '')
+      const leaked = rulesOf(outside).filter(
+        ({ selector, body }) =>
+          /\[type='(date|time|datetime-local)'\]/.test(selector) && /background-image:/.test(body),
+      )
+      if (leaked.length > 0) problems.push(`${name}: a date or time icon is drawn outside iOS, where the browser already draws one`)
+
+      return problems
+    })
+
+    expect(wrong).toEqual([])
+  })
+
   test('a themed control has a height, so it is visible before it has content', () => {
     // The specific reason the field was invisible rather than merely unstyled:
     // an empty contenteditable collapses to nothing without one.
