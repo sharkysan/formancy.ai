@@ -16,5 +16,11 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test-setup.ts'],
     passWithNoTests: true,
+    // `userEvent` types one character at a time, and every keystroke here runs the
+    // engine and re-renders a real form through a real theme. The hero's form grew a
+    // two-column arrangement and three more fields, and the default five seconds then
+    // expired on a CI runner while passing locally -- a timeout that depends on whose
+    // machine it is tells you nothing about the code.
+    testTimeout: 20_000,
   },
 })
