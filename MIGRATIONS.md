@@ -36,6 +36,17 @@ One field type:
 |---|---|
 | `signature` | A mark somebody drew, as points, or their name as they typed it |
 
+One widget:
+
+| Widget | On | What it does |
+|---|---|---|
+| `tagpicker` | `selectboxes` | Several answers narrowed by typing and shown as chips. The answer is unchanged — an array of offered option values in the options' own order — which is why it is a widget and not a type |
+
+`optionsSource` also widens to `selectboxes`, so a tag picker can be fed by the
+deployment rather than by the document. That widening is itself a version: a
+version 2 reader refuses the combination, so a document using it is not a version 2
+document however version 2 the property looks on its own.
+
 And two properties, both on `signature` alone:
 
 | Property | What it does |

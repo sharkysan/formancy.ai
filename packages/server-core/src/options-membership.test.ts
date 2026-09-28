@@ -169,3 +169,48 @@ describe('sourceNamesIn', () => {
     ).toEqual([])
   })
 })
+
+describe('a list answer from a source', () => {
+  /*
+   * `selectboxes` with an `optionsSource` is the tag picker's reason to exist: a
+   * long list, or one that lives in the deployment. It also walked straight past
+   * the server's membership check, because `sourcedAnswers` asked
+   * `typeof held !== 'string'` and an array is not a string — so every value in
+   * a sourced list was stored unexamined.
+   *
+   * That is hazard A7 with a different shape of answer, and it is the reason the
+   * widening and this walk had to land together rather than one release apart.
+   */
+  const schema = {
+    specVersion: '3',
+    id: 'tags',
+    title: 'Tags',
+    model: {
+      fields: [
+        { key: 'topics', type: 'selectboxes', label: 'Topics', optionsSource: 'topics' },
+      ],
+    },
+  } as unknown as FormSchema
+
+  test('every value in the list is asked about, not just the first', () => {
+    const found = sourcedAnswers(schema, { topics: ['a11y', 'forms', 'i18n'] })
+
+    expect(found.map((answer) => answer.value)).toEqual(['a11y', 'forms', 'i18n'])
+    // One path for the field rather than one per index: the FIELD is wrong when
+    // any of its answers is, and naming an index would describe a payload rather
+    // than the question.
+    expect(new Set(found.map((answer) => answer.path))).toEqual(new Set(['topics']))
+  })
+
+  test('an empty list asks nothing, because emptiness is `required`\u2019s business', () => {
+    expect(sourcedAnswers(schema, { topics: [] })).toEqual([])
+  })
+
+  test('a non-string inside the list is not passed to the deployment', () => {
+    // `modelViolations` refuses the shape, and this is the belt: a source asked
+    // about `{"$gt": ""}` is a source handed a query it did not expect.
+    const found = sourcedAnswers(schema, { topics: ['a11y', { $gt: '' }, 7] })
+
+    expect(found.map((answer) => answer.value)).toEqual(['a11y'])
+  })
+})

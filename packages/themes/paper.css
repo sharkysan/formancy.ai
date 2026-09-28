@@ -1615,3 +1615,93 @@
   color: var(--fm-ink);
   border-color: var(--fm-accent);
 }
+
+/* ---------------------------------------------------------------- tag picker */
+
+/* Chips above the box a person types into, and the popup positioned against an
+   anchor rather than the field: an absolutely positioned child of a grid
+   container takes the container's own origin as its static position, so a popup
+   without this opens over its own label — measured once already, on the
+   typeahead. */
+[data-formancy-theme='paper'] [data-formancy-part='tagpicker'] {
+  display: grid;
+  gap: 0.5rem;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='tagpicker-chips'] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='tagpicker-chip'] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.375rem 0.25rem 0.625rem;
+  border: 1.5px solid var(--fm-hair);
+  border-radius: 999px;
+  background: transparent;
+  font-size: 0.8125rem;
+}
+
+/* A target of its own, because it is one: 44px is the smallest thing WCAG 2.5.8
+   asks a finger to hit, and a chip's cross is the control most often built
+   smaller than a pointer can manage. */
+[data-formancy-theme='paper'] [data-formancy-part='tagpicker-remove'] {
+  display: grid;
+  place-content: center;
+  min-inline-size: 24px;
+  min-block-size: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='tagpicker-remove']:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--fm-accent) 18%, transparent);
+  color: var(--fm-accent);
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='tagpicker-anchor'] {
+  position: relative;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='tagpicker-input'] {
+  inline-size: 100%;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='tagpicker-listbox'] {
+  position: absolute;
+  top: 100%;
+  z-index: 20;
+  inset-inline: 0;
+  margin: 0.25rem 0 0;
+  padding: 0.25rem;
+  list-style: none;
+  max-height: 14rem;
+  overflow-y: auto;
+  background: var(--fm-ground);
+  border: 1.5px solid var(--fm-hair);
+  border-radius: 0;
+  box-shadow: 0 8px 20px rgb(28 25 23 / 12%);
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='tagpicker-option'] {
+  padding: 0.4375rem 0.625rem;
+  border-radius: 0;
+  color: var(--fm-ink);
+  cursor: pointer;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='tagpicker-option']:hover {
+  background: color-mix(in srgb, var(--fm-accent) 14%, transparent);
+}

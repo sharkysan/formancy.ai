@@ -82,24 +82,38 @@ describe('the widget list', () => {
     // The line, asserted rather than trusted. Each of these was requested as a
     // field type and is a widget only because the value shape is untouched; a
     // name here that changes what is collected has to move to FIELD_TYPES.
-    expect([...FIELD_WIDGETS].sort()).toEqual(['datagrid', 'scanner', 'toggle', 'typeahead'])
+    expect([...FIELD_WIDGETS].sort()).toEqual([
+      'datagrid',
+      'scanner',
+      // Several answers narrowed by typing, shown as chips. A field type in
+      // everybody's first description of it, and a widget because the answer is
+      // unchanged: still an array of offered option values, in the options' own
+      // order, which is exactly what a `selectboxes` stores without it.
+      'tagpicker',
+      'toggle',
+      'typeahead',
+    ])
   })
 })
 
 describe('a widget on the type it belongs to', () => {
+  // With the version each widget needs, because they do not all need the same one
+  // any more: `tagpicker` arrived in 3 and the fixture defaults to 2, so a table
+  // without this column asserts that the version gate is broken.
   test.each([
-    ['checkbox', 'toggle'],
-    ['repeater', 'datagrid'],
-    ['select', 'typeahead'],
-    ['text', 'scanner'],
-  ])('%s accepts %s', (type, widget) => {
+    ['checkbox', 'toggle', '2'],
+    ['repeater', 'datagrid', '2'],
+    ['select', 'typeahead', '2'],
+    ['selectboxes', 'tagpicker', '3'],
+    ['text', 'scanner', '2'],
+  ])('%s accepts %s in spec %s', (type, widget, specVersion) => {
     const extra =
       type === 'repeater'
         ? { fields: [{ key: 'row', type: 'text', label: 'Row' }] }
-        : type === 'select'
+        : type === 'select' || type === 'selectboxes'
           ? { options: [{ value: 'a', label: 'A' }] }
           : {}
-    expect(errorsFor(documentWith({ type, widget, ...extra }))).toEqual([])
+    expect(errorsFor(documentWith({ type, widget, ...extra }, specVersion))).toEqual([])
   })
 })
 
