@@ -27,8 +27,6 @@ import type { FileStore } from './file-store.js'
  * here is Garage-specific beyond the bootstrap: the store speaks path-style S3
  * with SigV4, which real S3, R2 and Backblaze also speak.
  *
- * ── THE BOOTSTRAP IS THE AWKWARD PART ───────────────────────────────────────
- *
  * Garage does not come up usable. A fresh node has no layout, and without a
  * layout it accepts no data; then a key and a bucket have to be created and the
  * key allowed on the bucket. That is four `garage` commands after the container

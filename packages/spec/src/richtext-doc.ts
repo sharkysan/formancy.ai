@@ -123,8 +123,7 @@ export function toEditorDoc(blocks: readonly RichBlock[]): EditorNode {
   // an empty document, it is an invalid one, and the editor built from it renders
   // a contenteditable containing no `<p>` at all. It looks like an empty box and
   // behaves like one that is broken: there is no block for Enter to split, so
-  // **newlines do nothing**. That is how this was found — the editor was live in
-  // the playground with `innerHTML` exactly `""`.
+  // **newlines do nothing**.
   //
   // `fromEditorDoc` maps that lone empty paragraph back to no blocks, so an
   // empty answer still stores as the empty string rather than growing a blank

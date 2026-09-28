@@ -3,30 +3,15 @@ import { createHash, createHmac } from 'node:crypto'
 /**
  * AWS Signature Version 4, for the four requests an object store needs.
  *
- * ── WHY THIS IS HERE AND NOT A DEPENDENCY ───────────────────────────────────
+ * Ours rather than an SDK: sixty lines against a frozen specification, with the
+ * algorithm's own vocabulary in the names so it can be read beside AWS's description of
+ * it. It signs requests for **any** S3-compatible endpoint, so Garage, real S3 and
+ * Backblaze take the same code path
+ * ([0064](../../../docs/decisions/0064-an-object-store-behind-the-same-interface.md)).
  *
- * `@aws-sdk/client-s3` is the obvious answer and brings dozens of transitive
- * packages for PUT, GET, DELETE and HEAD against one bucket. Every one of them
- * is a row somebody has to characterise in `SOUP-DECLARATION.md`, and a
- * manufacturer incorporating this reads that table.
- *
- * `aws4fetch` is one MIT file with no dependencies and would have been fine. It
- * was last published in 2024 by a single maintainer, which is the same bus-factor
- * shape as `@marcbachmann/cel-js` -- and that one is handled by owning a facade
- * around it. Here the whole surface is smaller than the facade would be.
- *
- * So this is ours: sixty lines against a frozen specification, with the
- * algorithm's own vocabulary in the names so it can be read beside AWS's
- * description of it. It signs requests for **any** S3-compatible endpoint, which
- * is the point -- Garage is what the design calls for, and a customer pointing at
- * real S3 or Backblaze gets the same code path.
- *
- * ── WHAT VERIFIES IT ────────────────────────────────────────────────────────
- *
- * A real S3 implementation, in a container, refusing a wrong signature with a
- * 403. Unit tests pin the mechanical properties; they cannot tell whether the
- * canonical request is *right*, only that it is consistent with itself. See the
- * long comment in `sigv4.test.ts` for why there is no hard-coded vector.
+ * **What verifies it is a real S3 implementation in a container**, refusing a wrong
+ * signature with a 403. The unit tests pin the mechanical properties; they cannot tell
+ * whether the canonical request is *right*, only that it is consistent with itself.
  */
 
 /** The SHA-256 of an empty body, which a GET or DELETE carries. */

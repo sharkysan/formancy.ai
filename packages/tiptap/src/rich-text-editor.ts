@@ -15,64 +15,22 @@ import Text from '@tiptap/extension-text'
 /**
  * A TipTap editor that cannot produce anything the grammar cannot store.
  *
- * ── WHY AN EDITOR IS ALLOWED HERE AT ALL ────────────────────────────────────
+ * Built from exactly the nodes and marks the grammar has, so **no toolbar button,
+ * keyboard shortcut or console call can put a heading or a `<script>` into the
+ * document**: ProseMirror's schema is closed by construction. The conversion between the
+ * editor's JSON and the stored string lives in `@formancy/spec`, so the editor never
+ * sees the stored string and the stored string is never parsed as markup. Nothing here
+ * touches `innerHTML`, and `getHTML` is never called.
  *
- * [0052](../../../docs/decisions/0052-richtext-is-not-html.md) refused a
- * contenteditable surface, and the reason was never contenteditable itself — it
- * was HTML. An editor that hands back a string of markup makes every consumer of
- * the answer a sanitiser: this renderer, the other renderer, a CSV export, a
- * PDF, an email, somebody's dashboard. One of them gets it wrong, and stored XSS
- * is the most commonly exploited vulnerability in this product category.
+ * **What it produces is still untrusted.** It runs in the browser, so a document can
+ * arrive carrying a `javascript:` href whatever this configuration allows — the spec
+ * re-checks every href on the way out and the server re-parses the stored string
+ * regardless of what a client claims.
  *
- * ProseMirror does not hand back markup. Its document is JSON, and — the part
- * that matters — **its schema is closed by construction**. The editor below is
- * built from exactly the nodes and marks the grammar has, so there is no
- * toolbar button, keyboard shortcut or console call that can put a heading or a
- * `<script>` into the document. That is the same discipline as the closed
- * grammar, enforced by a different mechanism, which is why this is an addition
- * to 0052 rather than a reversal of it.
- *
- * The conversion lives in `@formancy/spec` as a pure function between two JSON
- * trees, so the editor never sees the stored string and the stored string is
- * never parsed as markup. Nothing here touches `innerHTML`, and TipTap's
- * `getHTML` is deliberately never called.
- *
- * ── AND IT IS STILL UNTRUSTED ───────────────────────────────────────────────
- *
- * This runs in the browser, so what it produces is exactly as trustworthy as the
- * submission it ends up inside. A document CAN arrive carrying a
- * `javascript:` href — measured, not assumed — so `@formancy/spec` re-checks
- * every href on the way out, and the server re-parses the stored string
- * regardless of what any client claims. A configuration is a defence against
- * accidents, not against a person.
- *
- * ── WHY ITS OWN PACKAGE ─────────────────────────────────────────────────────
- *
- * ProseMirror is large and most forms have no rich-text field. Putting it in
- * `@formancy/react` would spend the renderer's byte budget on a field type most
- * consumers never use, so the renderers take an editor from the host — the same
- * shape the `file` field already uses for its uploader — and fall back to the
- * textarea-and-toolbar when there is none. A deployment that wants neither pays
- * for neither.
- *
- * It is framework-free for the same reason `core` is: TipTap's `Editor` is a
- * plain class, so React and Angular share this rather than each growing their
- * own configuration to disagree about.
+ * Why an editor is allowed here at all, and why it is its own package rather than part
+ * of `@formancy/react`: [0052](../../../docs/decisions/0052-richtext-is-not-html.md).
  */
 
-/**
- * The extensions the grammar maps to, and nothing else.
- *
- * Exported so the schema cannot drift from the grammar by being named in two
- * places: `index.test.ts` asserts the editor's schema is exactly this, and
- * `@formancy/spec`'s `EDITOR_NODES` and `EDITOR_MARKS` are the same list again
- * on the conversion side.
- *
- * Note what is absent. `StarterKit` would have been one line and brings
- * headings, blockquotes, code blocks, horizontal rules, strikethrough and
- * underline — six constructs with nowhere to go, each of which would silently
- * lose an answer the moment somebody used it.
- */
 export const RICH_TEXT_EXTENSIONS: Extensions = [
   Document,
   Paragraph,

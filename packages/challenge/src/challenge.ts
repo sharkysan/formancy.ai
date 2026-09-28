@@ -3,51 +3,21 @@ import { sha256 } from '@noble/hashes/sha2.js'
 import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js'
 
 /**
- * @formancy/challenge — the proof-of-work challenge, in one place.
+ * The proof-of-work challenge: one description of the scheme, minted and verified by
+ * the server and solved by a browser.
  *
- * ── WHY THIS IS ITS OWN PACKAGE ─────────────────────────────────────────────
+ * The server picks a secret number below a ceiling, publishes `sha256(salt + number)`
+ * and the salt, and signs that hash with a key only it has. A browser searches upwards
+ * from zero until the hash matches. The server recomputes and checks its own signature.
  *
- * The scheme is used in two places that could not otherwise share code: the
- * server mints and verifies, and a browser solves. Putting the solver in a
- * renderer and the verifier in `server-core` would be two descriptions of one
- * protocol, and the day they disagreed the symptom would be submissions the
- * server rejects for no visible reason — which reads as an attack rather than
- * as a bug.
+ * Verification is stateless: a challenge nobody minted cannot be solved into a valid
+ * one, and the expiry rides in the salt so a stale one is refused without a lookup.
+ * **Replay is the caller's to handle** — a correct solution stays correct, and nothing
+ * here remembers that it was used.
  *
- * So there is one description, one implementation of the hash, and it runs in
- * both places. That is the same argument the engine makes about validation,
- * applied to a smaller thing.
- *
- * ── WHY NOT WEB CRYPTO ──────────────────────────────────────────────────────
- *
- * It was `crypto.subtle` first, which needs nothing from npm and is in every
- * browser. Measuring it killed the idea: **100,000 hashes take 269ms
- * synchronously and about 4,800ms through `crypto.subtle`**, because every
- * candidate pays an await and a call boundary rather than the hash itself.
- *
- * That is not merely slow, it is the wrong way round. The cost is supposed to
- * fall on somebody submitting a thousand forms; an attacker writes the fast
- * synchronous loop, so the only person paying the 18x overhead is the visitor
- * using the solver we published. **A proof of work where the defender pays
- * more than the attacker is worse than none**, because it buys nothing and
- * charges the wrong person for it.
- *
- * So the hash is `@noble/hashes`: audited, no dependencies of its own, works
- * in a browser, and already in this repository's tree. `solveChallenge` stays
- * asynchronous, but only so it can yield — the hashing inside it does not
- * wait for anything.
- *
- * ── WHAT THE SCHEME IS ──────────────────────────────────────────────────────
- *
- * The server picks a secret number below a ceiling, publishes
- * `sha256(salt + number)` and the salt, and signs that hash with a key only it
- * has. A browser searches upwards from zero until the hash matches. The server
- * recomputes and checks its own signature.
- *
- * Verification is therefore stateless: **a challenge nobody minted cannot be
- * solved into a valid one**. The expiry rides in the salt, so a stale one is
- * refused without a lookup. Replay is the one thing this cannot decide — a
- * correct solution stays correct — and is the caller's to handle with storage.
+ * Why it is its own package, why the hash is `@noble/hashes` rather than
+ * `crypto.subtle`, and what the ceiling costs:
+ * [0059](../../../docs/decisions/0059-proof-of-work-not-a-captcha.md).
  */
 
 export interface Challenge {
@@ -73,14 +43,11 @@ export interface Solution {
 }
 
 /**
- * How hard the puzzle is.
+ * How hard the puzzle is: the ceiling the secret number is drawn below.
  *
- * A hundred thousand hashes, measured at 269ms rather than guessed at. That is
- * unnoticeable beside the time somebody spent filling the form in, and it is
- * only true of the synchronous hash — the same ceiling took about 4,800ms
- * through `crypto.subtle`, which is why that went. Raising it punishes the
- * slowest device far more than the attacker, who has the fastest one — the
- * trap every difficulty knob in this category falls into.
+ * A hundred thousand hashes, measured at 269ms with the synchronous hash. Raising it
+ * punishes the slowest device far more than the attacker, who has the fastest one —
+ * [0059](../../../docs/decisions/0059-proof-of-work-not-a-captcha.md) has the numbers.
  */
 export const DEFAULT_MAX_NUMBER = 100_000
 

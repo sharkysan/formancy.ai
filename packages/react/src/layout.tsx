@@ -365,26 +365,15 @@ function Tabs({
 /**
  * A machine-readable code drawn from an answer the form already holds.
  *
- * ── THE ACCESSIBLE CONTENT IS THE VALUE, NOT THE PICTURE ────────────────────
+ * **The accessible content is the value, not the picture.** The value is real text in
+ * the document; a drawing, when a consumer registers one, is decorative — a screen
+ * reader needs the value it encodes, which somebody can read, copy or dictate.
  *
- * A picture of a code says nothing to a screen reader, and an `alt` describing it ("QR
- * code") says nothing either — what somebody needs is the value it encodes, which they
- * can then read, copy or dictate. So the value is real text in the document and the
- * drawing, when there is one, is decorative.
- *
- * ── AND THERE IS NO DRAWING, DELIBERATELY ───────────────────────────────────
- *
- * Encoding a QR code is a dependency: a matrix, four mask patterns, Reed–Solomon error
- * correction, and about 10 kB minified for the smallest honest implementation. That is a
- * row in `SOUP-DECLARATION.md` for every consumer including the Node engine, in a package
- * whose budget is 4 kB brotli, to draw something the consumer's design system may want to
- * draw its own way.
- *
- * So the renderer emits the value and the hooks, and a consumer who wants the picture
- * registers a component for it — the registry already replaces any part of the form. What
- * this costs is stated rather than hidden: **out of the box a `qrcode` node shows the
- * value as text and no code.** That is a usable form and a visible gap, which is the right
- * way round; drawing a broken picture would be neither.
+ * **Out of the box a `qrcode` node shows the value as text and no code.** Encoding one
+ * is roughly 10 kB and a SOUP row for every consumer, in a package budgeted at 4 kB, to
+ * draw something a design system may want to draw its own way. A consumer who wants the
+ * picture registers a component for it
+ * ([0070](../../../docs/decisions/0070-a-code-is-an-arrangement-not-a-field.md)).
  */
 function CodeNode({
   schema,

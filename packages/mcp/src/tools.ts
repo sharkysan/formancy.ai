@@ -6,30 +6,15 @@ import { engineRefusal, expressionProblems } from '@formancy/core'
 /**
  * What formancy can be asked to do by a coding agent, as plain functions.
  *
- * Separated from the MCP server itself for the same reason `server-core` is
- * separated from `server`: the protocol is a transport, and a use-case that
- * can only be exercised through one is a use-case nobody can test. Everything
- * here is a function from JSON to JSON.
+ * Separated from the MCP server itself for the same reason `server-core` is separated
+ * from `server`: a use-case that can only be exercised through a transport is one nobody
+ * can test. Everything here is a function from JSON to JSON.
  *
- * ── WHAT MAKES THIS WORTH HAVING ─────────────────────────────────────────────
- *
- * A model writing a form is a model writing logic, and logic is where a model
- * is least reliable and least correctable: a wrong expression does not crash,
- * it quietly shows the wrong field to the wrong person for a year. Wrapping a
- * REST API in tool definitions does nothing about that.
- *
- * formancy can do something about it, because of decisions taken long before
- * anybody thought about agents. The document format has a published JSON
- * Schema, so a generated document is checkable. Expressions are CEL and are
- * statically type-checked, so `seats * 4` against a double is an error with a
- * message rather than a field that stays empty. `diffSchemas` grades a change
- * against the submissions already collected. And CEL is non-Turing-complete by
- * construction, so a model-written expression cannot loop, cannot reach the
- * network and cannot be code.
- *
- * So the tools below check first and act second. `publish_form` validates
- * locally before it opens a socket: an invalid document never reaches the
- * server, and the model gets the reason rather than a 422.
+ * **The tools check first and act second.** `publish_form` validates locally before it
+ * opens a socket, so an invalid document never reaches the server and the model gets the
+ * reason rather than a 422. That is possible because the format has a published JSON
+ * Schema and the expressions are statically type-checked — a generated document is
+ * checkable before anything is done with it.
  */
 
 /** A tool's answer: what happened, and what the agent should do about it. */

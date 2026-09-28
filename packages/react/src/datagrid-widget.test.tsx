@@ -14,8 +14,6 @@ const CLOCK = { now: () => 0, today: () => '2026-09-27', random: () => 0.5 }
 /**
  * `widget: "datagrid"` on a repeater — rows drawn as a grid instead of as blocks.
  *
- * ── WHY IT IS NOT A `<table>`, AND NOT `role="grid"` ─────────────────────────
- *
  * Measured against the accessible-name implementation this repository installs,
  * not assumed: a `<th scope="col">` contributes **nothing** to the accessible
  * name of a control in its column, and `headers=` pointing at that header
@@ -32,8 +30,6 @@ const CLOCK = { now: () => 0, today: () => '2026-09-27', random: () => 0.5 }
  * the cells already own — a `select` with `widget: "typeahead"` is legal in a
  * row and claims Up, Down, Home, End, Enter and Escape
  * ([0072](../../../docs/decisions/0072-a-typeahead-is-a-combobox-over-the-same-answer.md)).
- *
- * ── AND WHY THE CONFORMANCE SUITE IS NOT THE GUARD HERE ──────────────────────
  *
  * Measured: `@testing-library/dom` tests each label source separately, so
  * `queryAllByLabelText('Quantity')` still matches an element whose *computed*

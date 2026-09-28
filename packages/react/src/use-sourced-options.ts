@@ -12,8 +12,6 @@ import { useOptionsSources } from './options-source.js'
  * select that ignored it would render an empty chooser over a field that collects
  * something.
  *
- * ── WHAT THE STATES ARE FOR ──────────────────────────────────────────────────
- *
  * `unavailable` is the file field's branch, not the scanner's. A text field with no
  * scanner still collects by typing; a select whose options come only from a source
  * collects nothing at all, so the control says so instead of rendering an empty

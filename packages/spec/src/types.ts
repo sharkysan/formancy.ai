@@ -1,10 +1,9 @@
 /**
  * The formancy form schema.
  *
- * The four sections are separated deliberately: `model` is the data contract,
- * `logic` is behaviour, `layout` is presentation, `i18n` is text. form.io mixes
- * all four into one component tree, which is why a form there cannot have two
- * presentations of the same data.
+ * Four separate sections: `model` is the data contract, `logic` is behaviour, `layout`
+ * is presentation, `i18n` is text. Keeping them apart is what lets one model have two
+ * presentations.
  */
 export interface FormSchema {
   /**
@@ -82,27 +81,17 @@ export interface FormI18n {
 /**
  * How many of a table's columns a node takes.
  *
- * Only inside a `table`, and `validateSchema` refuses it anywhere else rather than
- * ignoring it: a `span` that validated and did nothing is the documented-but-inert
- * shape this format has shipped once already.
+ * **Only inside a `table`**, and `validateSchema` refuses it anywhere else rather than
+ * ignoring it.
  *
- * **Why it exists at all**, rather than telling an author to put the wide thing outside
- * the grid. A `table` can carry its own `label`, and that label names a real group. A
- * full-width field placed outside the table is outside that group too — so "put it
- * outside" is not a workaround with a cost, it is a layout the format could not express.
- * Reported by somebody looking at the playground, where a rich text editor and a file
- * dropzone sat at 266px against 548px for a field in the flow.
+ * `'all'` rather than the column count, for the common case: `span: 2` in a table later
+ * made three columns wide has silently lost the full width, and `'all'` survives the
+ * edit. A number is still there for "two of three", and one wider than the table is
+ * refused ([0074](../../../docs/decisions/0074-a-table-child-may-span.md)).
  *
- * `'all'` rather than the column count, for the common case. An author who writes
- * `span: 2` in a two-column table and later makes it three columns has silently lost the
- * full width; `'all'` is the thing they meant and it survives the edit. A number is still
- * there for "two of three", and a number wider than the table is refused — an author who
- * writes 4 in a two-column table believes they configured something.
- *
- * A renderer that ignores this is still correct in the sense 0065 means: every answer is
- * still collected and still placed. It is a measurement of width, and the narrow-screen
- * collapse overrides it anyway, because WCAG 1.4.10 is a media query rather than a
- * property of the document.
+ * A renderer that ignores this is still correct: every answer is collected and placed.
+ * The narrow-screen collapse overrides it anyway, because WCAG 1.4.10 is a media query
+ * rather than a property of the document.
  */
 export interface LayoutPlacement {
   span?: number | 'all'
@@ -288,32 +277,22 @@ export type ListValuedFieldType = (typeof LIST_VALUED_FIELD_TYPES)[number]
 /**
  * The exact shape each temporal answer takes, as a regular-expression source.
  *
- * Here rather than in an engine because it is a property of the FORMAT. A renderer
- * writing an answer, a validator bounding one, and a consumer reading a submission
- * years later all have to agree on the shape — and that agreement is the only thing
- * that makes a string comparison a chronological one.
+ * A property of the FORMAT, not of an engine: a renderer writing an answer, a validator
+ * bounding one and a consumer reading a submission years later all have to agree on the
+ * shape, and that agreement is what makes a string comparison a chronological one.
  *
- * **Fixed width, zero-padded, big-endian, no abbreviation.** Not tidiness. Measured:
- * `'9:30' < '10:00'` is **false** while `'09:30' < '10:00'` is true, so an unpadded
- * hour turns every bound into a coin toss. And
- * `'2026-09-19T10:00:00+03:00' < '2026-09-19T08:00:00Z'` is **false** although the
- * first instant is 07:00Z and therefore earlier — which is why `datetime` stores
- * `Z` and never a numeric offset. Widen any of these and a bound stops meaning what
- * it says.
+ * **Fixed width, zero-padded, big-endian, no abbreviation.** `'9:30' < '10:00'` is false
+ * while `'09:30' < '10:00'` is true, and
+ * `'2026-09-19T10:00:00+03:00' < '2026-09-19T08:00:00Z'` is false although the first
+ * instant is earlier — which is why `datetime` stores `Z` and never a numeric offset.
  *
- * **A `time` is a wall clock and not an instant.** It carries no zone, so it cannot
- * be compared with `now()`, and that is what a time of day *is* rather than a gap.
- * A `datetime` is the opposite: an instant, with no wall clock of its own, displayed
- * in whatever zone the reader is in. `bindTimestamp` in `@formancy/expressions`
- * already refuses a zoneless string for the same reason, and says so.
+ * **A `time` is a wall clock and not an instant**: no zone, so it cannot be compared
+ * with `now()`. A `datetime` is the opposite. **`date` and `datetime` are not
+ * comparable** either: `'2026-09-19' < '2026-09-19T00:00:00Z'` is true, because the
+ * shorter string is a prefix ([0067](../../../docs/decisions/0067-a-temporal-answer-is-one-fixed-width-string.md)).
  *
- * **`date` and `datetime` are not comparable**, and the shapes are why: measured,
- * `'2026-09-19' < '2026-09-19T00:00:00Z'` is true, because the shorter string is a
- * prefix — so a date sorts before every instant on its own day, midnight included.
- *
- * Sources rather than compiled patterns so `formancy.schema.json` can carry the
- * identical string and a test can compare the two. Two closed descriptions of one
- * rule is the drift this repository keeps finding.
+ * Sources rather than compiled patterns, so `formancy.schema.json` can carry the
+ * identical string and a test can compare the two.
  */
 export const TEMPORAL_SHAPES = {
   /** `YYYY-MM-DD`, ten characters. Unchanged — version 1 fixed it. */
@@ -333,24 +312,13 @@ export type TemporalFieldType = (typeof TEMPORAL_FIELD_TYPES)[number]
 /**
  * One column of a repeater arranged as a grid.
  *
- * ── WHY A WIDGET CARRIES CONFIGURATION ──────────────────────────────────────
+ * Configuration on a widget rather than a second field type, so there stays **one row
+ * model and one type** ([0066](../../../docs/decisions/0066-a-widget-may-be-configured.md)).
  *
- * [0065](../../../docs/decisions/0065-a-widget-is-authored-not-registered.md) said a
- * widget is a single name. The argument for promoting `datagrid` to a field type
- * once the columns needed configuring was that a name cannot carry an object — and
- * it was wrong: the document schema gates a property on `widget: "datagrid"` as
- * readily as on a type, so the coupling is enforceable either way.
- *
- * What settled it was building the type version first and watching it produce a bug.
- * A second type holding the repeater's row model made `walkFields` wrong — it opened
- * its row scope on `type === 'repeater'` alone, so a grid nested in a repeater passed
- * a rule that exists because the engine cannot count rows two levels deep. One row
- * model, one type ([0066](../../../docs/decisions/0066-a-widget-may-be-configured.md)).
- *
- * The line from 0065 still holds and is worth restating, because this is the edge of
- * it: **none of this changes what is collected.** Columns decide which answers are
- * shown where, never which answers exist. A field left out of the list is still
- * collected and still shown, after the configured ones.
+ * **None of this changes what is collected.** Columns decide which answers are shown
+ * where, never which answers exist: a field left out of the list is still collected and
+ * still shown, after the configured ones. A grid's rows are also flat — a column may not
+ * name a group ([0078](../../../docs/decisions/0078-a-grid-row-is-flat.md)).
  */
 export interface DataGridColumn {
   /** The key of one of this grid's own child fields. */
@@ -387,29 +355,18 @@ export interface DataGridColumn {
 /**
  * How a field should LOOK, chosen by the author, never changing what it collects.
  *
- * A developer could already do this: `registry.byType` and `registry.byPath` swap
- * the component for any field, per deployment, at no cost to the format. What that
- * does not do is let the person the builder exists for choose — a non-technical
- * author cannot register a component, and a choice only a developer can make is
- * not an authoring feature. So the intent lives in the document and every renderer
- * decides how to honour it.
- *
  * **The line: a widget may change how a field looks, never what it collects.** The
- * moment a hint alters the stored value, the validation, or what somebody may
- * enter, it is a field type and belongs in `FIELD_TYPES` with all the cost that
- * carries. Each name here sits on a type whose value shape it leaves exactly alone.
+ * moment a hint alters the stored value, the validation, or what somebody may enter, it
+ * is a field type and belongs in `FIELD_TYPES`. Each name here sits on a type whose
+ * value shape it leaves exactly alone
+ * ([0065](../../../docs/decisions/0065-a-widget-is-authored-not-registered.md)).
  *
- * **Closed, not an open string.** An open one would cost nothing to extend and be
- * worth nothing: two renderers would guess differently at `widget: "togle"`, one
- * falling back silently and the other not, so a form would look right in the build
- * that knew the name and wrong everywhere else with nothing failing anywhere.
- * Closed makes a typo an authoring-time error, and makes each new name a format
- * change — which is the price of the guarantee.
+ * **Closed, not an open string**, so `widget: "togle"` is an authoring-time error rather
+ * than a form that looks right in the build that knew the name. Each new name is a
+ * format change, which is the price of that.
  *
- * `autocomplete` is deliberately NOT the name for the type-ahead. That word is
- * owed to the HTML autofill token, which WCAG 1.3.5 asks for and the spec still
- * does not have; spending it on presentation would leave nothing to call the real
- * thing.
+ * `autocomplete` is deliberately NOT the name for the type-ahead: that word is owed to
+ * the HTML autofill token WCAG 1.3.5 asks for.
  */
 export const FIELD_WIDGETS = ['toggle', 'datagrid', 'typeahead', 'scanner'] as const
 
@@ -473,27 +430,19 @@ export interface FieldDef {
    * The NAME of a list the deployment resolves, for a `select` with too many answers
    * to write down or answers that change too often.
    *
-   * **A name and never an address.** A URL in a form document is a deployment detail
-   * in a portable format: the same form moved from staging to production would point
-   * at the wrong system, and a published version is frozen forever, so it could never
-   * be corrected. It is also attacker-influenceable — a self-hosted instance sits
-   * inside a private network, and an address a form author typed is the SSRF surface
-   * `SAFETY-ANALYSIS.md` treats as the most under-appreciated risk in this product.
+   * **A name and never an address.** A URL here would be a deployment detail in a
+   * portable format, frozen forever in a published version, and an SSRF surface on an
+   * instance inside a private network. The document says *which* list, the deployment
+   * says *where*, and nothing in `@formancy/spec` or `@formancy/core` fetches anything
+   * ([0077](../../../docs/decisions/0077-options-may-come-from-a-named-source.md)).
    *
-   * So the document says *which* list, the deployment says *where*, and nothing in
-   * `@formancy/spec` or `@formancy/core` ever fetches anything — the isomorphic
-   * packages have no `fetch` to reach for
-   * ([0008](../../../docs/decisions/0008-layered-packages.md)).
+   * **Mutually exclusive with `options`.** A field offers a list or names a source;
+   * both would be two answers to "what may be chosen" with no rule for which wins.
    *
-   * **Mutually exclusive with `options`.** A field offers a list or names a source; a
-   * field with both would have two answers to "what may be chosen" and no rule for
-   * which wins.
-   *
-   * **And it weakens a guarantee, which is why it is a property you can grep for.** A
-   * sourced answer's legal set is not in the frozen document, so `schemaHash` no longer
-   * determines what a valid answer is and a stored submission cannot be re-judged
-   * later. That is the trade being asked for, and naming it in the document is what
-   * makes it enumerable per published version.
+   * **It weakens a guarantee.** A sourced answer's legal set is not in the frozen
+   * document, so `schemaHash` no longer determines what a valid answer was and a stored
+   * submission cannot be re-judged later. Naming it in the document is what makes that
+   * trade enumerable per published version.
    */
   optionsSource?: string
   minItems?: number

@@ -3,33 +3,18 @@ import type { WebhookRecord } from './ports.js'
 /**
  * Stopping, when a destination has plainly stopped listening.
  *
- * ── WHY A BREAKER AT ALL ────────────────────────────────────────────────────
+ * Failure is counted per WEBHOOK as well as per delivery. Enough consecutive failures
+ * and the breaker opens: nothing is attempted for that webhook until a cool-down passes,
+ * then exactly one delivery goes through as a probe. It succeeds and the breaker closes;
+ * it fails and the cool-down starts again.
  *
- * The retry schedule already gives up after eight attempts, per delivery. That
- * is the wrong unit when the *destination* is down: a form taking a submission
- * a minute produces a minute's worth of deliveries, each independently trying
- * eight times against an endpoint that has been returning 502 since Tuesday.
- * The receiver gets hammered, the worker spends its batch on work that cannot
- * succeed, and the deliveries that might have worked queue behind it.
+ * `consecutiveFailures` and `openedAt` live on the RECORD rather than in the worker's
+ * memory, so the state survives a restart and can be shown on a screen — a self-hoster
+ * has no operations team watching a dashboard
+ * ([0058](../../../docs/decisions/0058-a-breaker-per-destination.md)).
  *
- * So failure is counted per WEBHOOK as well as per delivery. Enough
- * consecutive failures and the breaker opens: nothing is attempted for that
- * webhook until a cool-down passes, then exactly one delivery goes through as
- * a probe. It succeeds and the breaker closes; it fails and the cool-down
- * starts again.
- *
- * ── AND WHY IT IS VISIBLE ───────────────────────────────────────────────────
- *
- * A self-hoster has no operations team watching a dashboard. A webhook that
- * has been failing for six hours has to be visible *in the product*, or it is
- * discovered when somebody asks why the CRM has no leads this week. That is
- * the reason `consecutiveFailures` and `openedAt` live on the record rather
- * than in the worker's memory: memory does not survive a restart and cannot be
- * shown on a screen.
- *
- * Everything here is a pure function of a record and a clock, for the same
- * reason `afterAttempt` is: these are the decisions, and decisions tangled
- * into network code can only be tested by making requests.
+ * Everything here is a pure function of a record and a clock: decisions tangled into
+ * network code can only be tested by making requests.
  */
 
 /**

@@ -6,8 +6,6 @@ import { validateSchema } from './validate.js'
 /**
  * A `qrcode` layout node — a picture of an answer the form already holds.
  *
- * ── WHY A LAYOUT NODE, AND NOT A FIELD TYPE OR A WIDGET ─────────────────────
- *
  * **It collects nothing**, and that decides the mechanism. A field type would put a
  * non-answering entry in the model: a `key` that is an identity forever, a path in
  * `modelDataPaths`, a row in every `diffSchemas` result, a column in an exported CSV
@@ -24,8 +22,6 @@ import { validateSchema } from './validate.js'
  * already means "a presentation of the model rather than part of it". The scanning half
  * of the same request stays where it is: `scanner` is a widget on a field that collects
  * a string, because reading a code writes an answer and showing one writes nothing.
- *
- * ── THE INTERESTING PART IS THE UNION ───────────────────────────────────────
  *
  * `LayoutNode` had exactly two shapes: `field`, which carries a path and no children,
  * and everything else, which carries children. Fourteen places encoded that as

@@ -6,8 +6,6 @@ import type { AskModel, AuthoringResult, BuilderSession } from '@formancy/builde
 /**
  * Describing a form in words, and getting one that works.
  *
- * ── WHAT THIS IS NOT ────────────────────────────────────────────────────────
- *
  * It is not a box that pastes a model's answer into the editor. The answer is
  * parsed, validated against the spec's own schema and type-checked, and if any
  * of that fails the model is told exactly what was wrong and asked again.
@@ -19,15 +17,11 @@ import type { AskModel, AuthoringResult, BuilderSession } from '@formancy/builde
  * no third outcome where something plausible lands in the editor and somebody
  * finds out at the first submission that the conditional is inverted.
  *
- * ── WHOSE MODEL ─────────────────────────────────────────────────────────────
- *
  * The host's. `ask` is a prop, exactly as `Uploader` is a provider: this
  * package has no vendor, no key and no network call, and a self-hoster can
  * point it at something on their own hardware so that nothing about a form
  * leaves their network. Without the prop the pane does not render at all,
  * which is the honest way to show a feature nobody has configured.
- *
- * ── ACCESSIBILITY ───────────────────────────────────────────────────────────
  *
  * The work happens after a press and takes seconds, so it is announced: one
  * polite live region says what is happening and what came of it. A spinner

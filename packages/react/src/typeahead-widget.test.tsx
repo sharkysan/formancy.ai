@@ -20,8 +20,6 @@ const CLOCK = { now: () => 0, today: () => '2026-09-27', random: () => 0.5 }
 /**
  * `widget: "typeahead"` — a select you type into.
  *
- * ── WHY NO FIXTURE CHANGES ───────────────────────────────────────────────────
- *
  * Measured rather than assumed, in the `aria-query` this repository already
  * installs (5.3.2): `comboboxRole.relatedConcepts` lists `select` with *the
  * multiple attribute not set and the size attribute not greater than 1*, and
@@ -31,8 +29,6 @@ const CLOCK = { now: () => 0, today: () => '2026-09-27', random: () => 0.5 }
  * ([0034](../../../docs/decisions/0034-accessible-name-only.md)). The first case
  * below asserts it, because the claim "conformance is untouched" is worth more
  * than a sentence.
- *
- * ── THE ARIA DECISIONS ───────────────────────────────────────────────────────
  *
  * An ARIA 1.2 editable combobox over a listbox popup: the text box keeps DOM
  * focus at all times and the arrowed-over option is named by
@@ -52,8 +48,6 @@ const CLOCK = { now: () => 0, today: () => '2026-09-27', random: () => 0.5 }
  * `aria-activedescendant` and is not selected: they are two different facts, and
  * a control that conflated them would tell a screen reader the answer had
  * changed every time somebody pressed Down to look.
- *
- * ── AND WHAT IT MAY NOT DO ───────────────────────────────────────────────────
  *
  * A widget may change how a field LOOKS and never what it COLLECTS
  * ([0065](../../../docs/decisions/0065-a-widget-is-authored-not-registered.md)).

@@ -3,51 +3,25 @@ import type { ConformanceSchema, JsonValue, SubmitStatus } from './types.js'
 /**
  * A driver is the adapter between one fixture suite and one implementation.
  *
- * The same fixtures run through the engine in Node, the engine in a browser,
- * the React renderer, the Angular renderer and the server's revalidation
- * endpoint. Five drivers, one suite: that is the only mechanism that keeps two
- * renderers from drifting apart, because a behaviour is written down once and
- * every implementation is measured against the same words.
+ * The same fixtures run through the engine in Node, the engine in a browser, both
+ * renderers and the server's revalidation endpoint. Five drivers, one suite.
  *
- * ── THE RULE ─────────────────────────────────────────────────────────────────
+ * **A DRIVER RESOLVES A FIELD BY ACCESSIBLE NAME AND ROLE. NOTHING ELSE.**
+ * `getByRole('textbox', { name })`, `getByLabelText(name)`. Never a test id, never a CSS
+ * selector, never a component instance, never a framework-internal handle. A renderer
+ * whose markup cannot be queried that way fails conformance
+ * ([0034](../../../docs/decisions/0034-accessible-name-only.md)).
  *
- * A DRIVER RESOLVES A FIELD BY ACCESSIBLE NAME AND ROLE. NOTHING ELSE.
+ * The one thing a driver may use its own knowledge for is the mapping from a fixture's
+ * data path to the name to query: it mounted the schema, so it can read
+ * `fieldAtPath(schema, path).label`. The names are exactly the fixture's `label`,
+ * `addLabel` and `removeLabel`, never ones a driver invents or translates.
  *
- * `getByRole('textbox', { name })`, `getByLabelText(name)`. Never a test id,
- * never a CSS selector, never a component instance, never a framework-internal
- * handle.
- *
- * The consequence is the point: a renderer whose markup cannot be queried by
- * role and accessible name FAILS CONFORMANCE. An input with no label, a custom
- * combobox built from unlabelled divs, an error message not associated with its
- * control — none of them can be driven, so none of them can pass. Accessibility
- * stops being a workstream somebody schedules and becomes a structural property
- * of a passing test run.
- *
- * A future contributor will hit a renderer that is awkward to query and reach
- * for `data-testid` to unblock themselves. That escape hatch deletes the whole
- * guarantee: the suite would then pass over markup no screen reader can use,
- * and it would pass for years before anyone noticed. If a control cannot be
- * found by name and role, the bug is in the renderer. Fix the renderer.
- *
- * The one place a driver may use its own knowledge is the mapping from the
- * fixture's data path to the accessible name to query for: the driver mounted
- * the schema, so it can read `fieldAtPath(schema, path).label`. What it may not
- * do is reach into the implementation to find the control.
- *
- * The fixture format backs the rule up mechanically: `validateFixture` refuses
- * a fixture whose visible leaf fields lack a `label`, and refuses an
- * addItem/removeItem step on a repeater without `addLabel`/`removeLabel`. So
- * every runnable case CARRIES the accessible names, and the names a driver
- * must resolve by are exactly the fixture's `label`, `addLabel` and
- * `removeLabel` — never a name it invents or translates itself.
- *
- * NOTE: that validator check is the minimum enforcement, not the mechanism.
- * The full driver-contract kit is follow-up work: a shared driver test suite
- * that mounts deliberately broken markup (an unlabelled input, an unassociated
- * error message) and asserts the driver CANNOT find it, plus an aria-snapshot
- * golden per fixture. Until it exists, a driver that queries by test id
- * passes undetected; the rule above is enforced by review.
+ * **The rule is enforced by review, not mechanically.** `validateFixture` refuses a
+ * fixture whose visible leaf fields lack a `label`, which makes the names available; it
+ * cannot see a driver that queries by test id anyway. A shared driver test suite that
+ * mounts deliberately broken markup and asserts the driver cannot find it is follow-up
+ * work.
  */
 export interface RendererDriver {
   /**

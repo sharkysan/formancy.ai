@@ -3,15 +3,12 @@ import { createContext, useContext } from 'react'
 /**
  * Where a file goes, and what the submission remembers about it.
  *
- * This package has no opinion about the destination, which is the point: the
- * same field works against local disk, S3, or a customer's own service, and
- * none of them has to be a dependency of a renderer. A host supplies one
- * function; everything else is the form's business.
+ * This package has no opinion about the destination: the same field works against local
+ * disk, S3 or a customer's own service, and none of them is a dependency of a renderer.
  *
- * The bytes never pass through the submission. What is stored is what the file
- * *is* and where it went, so a submission read back years later is small,
- * readable on its own, and says what was attached even if the object store has
- * since been emptied.
+ * **The bytes never pass through the submission.** What is stored is what the file is
+ * and where it went, so a submission read back years later is small, readable on its
+ * own, and says what was attached even if the object store has since been emptied.
  */
 export interface StoredFile {
   /** Stable within the submission; how a row is keyed and removed. */
@@ -26,9 +23,9 @@ export interface StoredFile {
 /**
  * Uploads one file and reports what was stored.
  *
- * Rejecting is a real answer: the field says so out loud rather than dropping
- * the file, because a submission somebody believes carries their evidence and
- * does not is the worst outcome available here.
+ * **Rejecting is a real answer**: the field says so out loud rather than dropping the
+ * file, because a submission somebody believes carries their evidence and does not is
+ * the worst outcome available here.
  */
 export type Uploader = (file: File) => Promise<StoredFile>
 

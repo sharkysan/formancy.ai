@@ -10,28 +10,19 @@ import type { ReactElement } from 'react'
  * ([0027](../../../docs/decisions/0027-lazy-draft-migration.md)). It reports what
  * happened as a severity and a list of changes.
  *
- * **Nothing showed that to the person.** They resumed a draft, some of their
- * answers were no longer on the form, and they submitted believing everything
- * they had typed was in it. The answers are not lost from storage — they are
- * lost from the submission, and nobody was told. `SAFETY-ANALYSIS.md` B2
- * recorded the retention question that orphaning raises, and not this one.
+ * This is what shows it. Without it somebody resumes a draft, some of their answers are
+ * no longer on the form, and they submit believing everything they typed is in it — the
+ * answers are not lost from storage, they are lost from the submission.
  *
- * ── WHY IT LOOKS LIKE THE ERROR SUMMARY ─────────────────────────────────────
+ * It is built like the error summary, and for the same reason: something important
+ * happened and the person may be looking at the middle of a long form. The container
+ * takes focus through `tabindex="-1"`, and is **not** `role="alert"` and carries no
+ * `aria-live` — focusing a container already makes a screen reader announce it, and
+ * doing both announces it twice.
  *
- * Because it is the same problem: something important happened, and the person
- * may be looking at the middle of a long form. The semantics are copied
- * deliberately rather than reinvented. The container takes focus through
- * `tabindex="-1"`, and it is **not** `role="alert"` and carries no `aria-live`
- * — focusing a container already makes a screen reader announce it, and doing
- * both announces it twice, which is the classic double-announcement bug this
- * repository already decided against once.
- *
- * ── WHAT THIS CANNOT DO ─────────────────────────────────────────────────────
- *
- * A library cannot make a host render it. Resuming a draft is the host's call —
- * it holds the transport — so this component exists, is documented, and the
- * safety analysis says plainly that showing it is the deployment's
- * responsibility. That is weaker than a guarantee and is the honest position.
+ * **A library cannot make a host render it.** Resuming a draft is the host's call, so
+ * this component exists and is documented, and showing it is the deployment's
+ * responsibility. `SAFETY-ANALYSIS.md` says so rather than claiming a guarantee.
  */
 
 /** What `resumeDraft` reports. Structural, so a host need not import a type. */
