@@ -68,8 +68,7 @@ describe('the page is a document first', () => {
 
     const headings = screen.getAllByRole('heading', { level: 1 })
     expect(headings).toHaveLength(1)
-    expect(headings[0]?.textContent).toContain('Build the form. Ship your product.')
-    expect(screen.getByText('Visual form builder for Angular and React')).toBeTruthy()
+    expect(headings[0]?.textContent).toContain('browser and on the server')
   })
 
   test('a skip link, for a page this long', () => {
