@@ -76,6 +76,17 @@ https://example.ch/apply?draft=0193…&token=8f2c…
 That puts the key in a URL, which means in history, in a shared screenshot and in
 any analytics that logs query strings. Decide that deliberately.
 
+## Where this is demonstrated
+
+The admin's **fill in** tab does all three of the things below, against a real
+server: `apps/admin/src/fill-pane.tsx`. It is the shortest way to see the flow work
+rather than read about it, and the tests beside it hold each of the three by name.
+
+One thing it does not demonstrate: the **anonymous** submission path. The admin is
+signed in, so its submissions skip the proof-of-work challenge an anonymous one has to
+solve. The draft routes themselves take no identity at all, so those are exactly the
+public ones.
+
 ## The three things to get right
 
 ### Debounce the save

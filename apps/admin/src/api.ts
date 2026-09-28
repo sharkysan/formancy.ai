@@ -245,3 +245,82 @@ export async function uploadFile(path: string, field: string, file: File): Promi
   const { uploadUrl: _sent, ...answer } = stored
   return answer
 }
+
+// --------------------------------------------------------------- the public plane
+//
+// These four take no session. They are the routes a respondent's browser calls,
+// and the admin calls them the same way on purpose: a demonstration that quietly
+// used the management plane would be demonstrating something else.
+
+/** The published form, as a respondent gets it. */
+export async function fetchPublicForm(
+  path: string,
+): Promise<{ version: number; schemaHash: string; schema: FormSchema }> {
+  const response = await fetch(`${BASE}/f/${encodeURIComponent(path)}`)
+  if (!response.ok) throw new Error(`This form could not be loaded (${String(response.status)}).`)
+  return (await response.json()) as { version: number; schemaHash: string; schema: FormSchema }
+}
+
+/** Start a draft. The server picks the id and signs it; the token comes once. */
+export async function startDraft(path: string): Promise<{ id: string; token: string } | undefined> {
+  const response = await fetch(`${BASE}/f/${encodeURIComponent(path)}/drafts`, { method: 'POST' })
+  if (!response.ok) return undefined
+  const body = (await response.json()) as { draftId: string; token: string }
+  return { id: body.draftId, token: body.token }
+}
+
+export async function saveDraft(
+  path: string,
+  id: string,
+  token: string,
+  data: unknown,
+): Promise<boolean> {
+  const response = await fetch(`${BASE}/f/${encodeURIComponent(path)}/drafts/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    // In the header, never the URL: a token in a URL lands in logs, in a
+    // Referer and in somebody's browser history.
+    headers: { 'content-type': 'application/json', 'x-formancy-draft-token': token },
+    body: JSON.stringify(data),
+  })
+  return response.ok
+}
+
+export interface ResumedDraft {
+  outcome: 'resumed' | 'readOnly'
+  version: number
+  schema: FormSchema
+  schemaHash: string
+  data: Record<string, unknown>
+  migration?: { severity: 'lossy' | 'breaking'; changes: Array<{ kind: string; path?: string }> }
+}
+
+/** `undefined` for a draft that is gone OR a token that does not match: the
+ *  server answers those identically so a reply cannot enumerate ids. */
+export async function resumeDraft(
+  path: string,
+  id: string,
+  token: string,
+): Promise<ResumedDraft | undefined> {
+  const response = await fetch(`${BASE}/f/${encodeURIComponent(path)}/drafts/${encodeURIComponent(id)}`, {
+    headers: { 'x-formancy-draft-token': token },
+  })
+  if (!response.ok) return undefined
+  return (await response.json()) as ResumedDraft
+}
+
+/** The hash is the version the browser actually rendered, and the server
+ *  decides what to do about a stale one. */
+export async function submitForm(
+  path: string,
+  schemaHash: string,
+  data: unknown,
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  const response = await authed(`${BASE}/f/${encodeURIComponent(path)}/submissions`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-formancy-schema-hash': schemaHash },
+    body: JSON.stringify(data),
+  })
+  if (response.ok) return { ok: true }
+  const body = (await response.json().catch(() => ({}))) as { message?: string; error?: string }
+  return { ok: false, message: body.message ?? body.error ?? `The server refused it (${String(response.status)}).` }
+}
