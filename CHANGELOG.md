@@ -30,6 +30,16 @@ A three-field row in the playground's narrow preview still wraps its third
 field onto a new line. That is the reflow rule, twelve rems a column, and not
 part of this.
 
+**A radio or checkbox answers on the next frame.** Reported as "in Dusk the
+radio is not immediate". The checkbox and radio rules match `input`, so they
+inherited the short fade every theme gives its text fields. Dusk and Blueprint
+draw the chosen state with exactly those properties, so the state itself faded
+in: measured in Dusk, nothing changed for the first frames after a click, the
+whole circle then filled with colour before the ring grew back, and it settled
+after about 150 ms. All four themes now take the fade off the choice controls.
+Pop's and Paper's dot still scales in, because that is an ornament drawn on a
+pseudo-element after the state is already visible.
+
 **Date and time fields fit their field on iPhone.** Reported from a phone as
 "broken on mobile" in the playground. Mobile Safari draws `date`, `time` and
 `datetime-local` inputs at an intrinsic width that `width: 100%` does not
