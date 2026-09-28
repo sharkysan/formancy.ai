@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { createBuilderSession } from './session.js'
+import { describeNode } from './layout.js'
 import type { FormSchema, LayoutNode } from '@formancy/spec'
 
 /**
@@ -809,5 +810,88 @@ describe('the shape a value has to arrive in', () => {
       false,
     )
     expect(session.setLayoutNodeProperty({ layout: 'web', path: [0] }, 'columns', 3).ok).toBe(true)
+  })
+})
+
+describe('describeNode', () => {
+  /*
+   * What a screen-reader user hears for a row in the arrangement tree, and what the
+   * builder announces after a move. It had no test at all, which is the worst place in
+   * this repository for one to be missing: an announcement is invisible to everything
+   * except somebody listening to it.
+   *
+   * `nameOfPath` stands in for the form's own labels, so a case reads as the sentence a
+   * person hears rather than as a data path.
+   */
+  const named = (path: string): string =>
+    ({ firstName: 'First name', lastName: 'Last name', email: 'Email', ref: 'Booking reference' })[
+      path
+    ] ?? path
+
+  const field = (path: string): LayoutNode => ({ kind: 'field', path }) as LayoutNode
+  const container = (kind: string, children: LayoutNode[], label?: string): LayoutNode =>
+    ({ kind, children, ...(label === undefined ? {} : { label }) }) as unknown as LayoutNode
+
+  test('names a field placement by the field it places', () => {
+    expect(describeNode(field('firstName'), named)).toBe('First name')
+  })
+
+  test('names a code by what it encodes, not by being a code', () => {
+    // "Code" is not findable in a tree with three of them; "Code for Booking reference"
+    // is. The same reasoning a row is named by what it holds.
+    expect(describeNode({ kind: 'qrcode', path: 'ref' } as LayoutNode, named)).toBe(
+      'Code for Booking reference',
+    )
+  })
+
+  test('names a container by its label when it has one', () => {
+    expect(describeNode(container('section', [field('email')], 'Contact'), named)).toBe(
+      'Section “Contact”',
+    )
+  })
+
+  test('names an unlabelled container by what it holds', () => {
+    // A row has nothing to call itself. "Row" is one of six identical rows in a list.
+    expect(describeNode(container('row', [field('firstName'), field('lastName')]), named)).toBe(
+      'Row with First name and Last name',
+    )
+  })
+
+  test('says a container is empty rather than describing nothing', () => {
+    // `Row with ` was what the first version produced, which trails off mid-sentence.
+    expect(describeNode(container('row', []), named)).toBe('Empty row')
+  })
+
+  test('lists three children with commas and a final and', () => {
+    expect(
+      describeNode(container('row', [field('firstName'), field('lastName'), field('email')]), named),
+    ).toBe('Row with First name, Last name and Email')
+  })
+
+  test('goes ONE level down and no further', () => {
+    // Recursing all the way produced "Section with Row with First name and Last name and
+    // Email", where a listener cannot tell which "and" separates what. A nested container
+    // is named as what it is; its own row in the tree says what is inside it.
+    const inner = container('row', [field('firstName'), field('lastName')])
+    expect(describeNode(container('section', [inner, field('email')]), named)).toBe(
+      'Section with a row and Email',
+    )
+  })
+
+  test('names a nested container by its label when it has one', () => {
+    const inner = container('row', [field('firstName')], 'Name')
+    expect(describeNode(container('section', [inner]), named)).toBe('Section with the “Name” row')
+  })
+
+  test('names a nested code by what it encodes', () => {
+    expect(
+      describeNode(container('row', [{ kind: 'qrcode', path: 'ref' } as LayoutNode]), named),
+    ).toBe('Row with code for Booking reference')
+  })
+
+  test('falls back to the path when the form has no label for it', () => {
+    // A field added and not yet named still has to be findable, and "undefined" is not
+    // a name.
+    expect(describeNode(field('notLabelled'), named)).toBe('notLabelled')
   })
 })

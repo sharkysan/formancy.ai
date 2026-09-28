@@ -245,3 +245,61 @@ describe('the spec version 2 freeze', () => {
     }
   })
 })
+
+describe('the files the coverage policy excludes as barrels', () => {
+  /*
+   * `vitest.coverage.ts` drops every `src/index.ts` from the measurement, and gives the
+   * reason: "Barrels (index.ts that only re-exports). They have no behaviour." The
+   * exclusion is right exactly as long as the reason is true.
+   *
+   * It was not. `@formancy/challenge` reported 0% statements with fifteen passing tests,
+   * because its whole implementation — mint, verify, hash, the encoding both sides share
+   * — lives in `index.ts` and was excluded as though it were a re-export list.
+   * `@formancy/tiptap` had the same shape. A zero there does not read as "not measured",
+   * it reads as "not tested", and the opposite was true.
+   *
+   * So: anything excluded for having no behaviour must have none.
+   */
+  /*
+   * What counts is RUNTIME code, not every line that is not an import. The first version
+   * asked for lines that were neither import nor export and flagged
+   * `childrenAt as layoutChildrenAt,` -- a renamed member of a re-export written across
+   * several lines, which is the most ordinary thing a barrel contains.
+   *
+   * A `type` or an `interface` is fine here too: it compiles to nothing, so it cannot be
+   * wrong at runtime and cannot be covered either.
+   */
+  const runtimeDeclaration = /^(export\s+)?(default\s+)?(async\s+)?(function|class|const|let|var)\s/
+
+  test('contain re-exports and nothing that could be wrong', () => {
+    const offenders: string[] = []
+    for (const group of ['packages', 'apps']) {
+      const root = join(repo, group)
+      if (!existsSync(root)) continue
+      for (const entry of readdirSync(root, { withFileTypes: true })) {
+        const barrel = join(root, entry.name, 'src', 'index.ts')
+        if (!entry.isDirectory() || !existsSync(barrel)) continue
+
+        const behaviour = readFileSync(barrel, 'utf8')
+          .split('\n')
+          .map((line, index) => ({ line: line.trim(), at: index + 1 }))
+          .filter(({ line }) => runtimeDeclaration.test(line))
+          // `export const` of a plain re-export is not a thing, but `export type` is, and
+          // the pattern above already lets it through.
+          .filter(({ line }) => !line.startsWith('export type'))
+
+        if (behaviour.length > 0) {
+          offenders.push(
+            `${group}/${entry.name}/src/index.ts holds behaviour at line ${String(
+              behaviour[0]?.at,
+            )}: ${behaviour[0]?.line ?? ''}`,
+          )
+        }
+      }
+    }
+
+    expect(offenders).toEqual([])
+    // A guard on the guard: a wrong path would find no barrels and pass forever.
+    expect(existsSync(join(repo, 'packages', 'core', 'src', 'index.ts'))).toBe(true)
+  })
+})

@@ -1,6 +1,7 @@
 import { parseRichText, serialiseRichText } from '@formancy/spec'
+import type { RichCommand } from '@formancy/spec'
 import { describe, expect, test } from 'vitest'
-import { RICH_TEXT_EXTENSIONS, createRichTextEditor } from './index.js'
+import { RICH_TEXT_EXTENSIONS, createRichTextEditor } from './rich-text-editor.js'
 
 /**
  * The editor tested against a real ProseMirror, not against a mock.
@@ -258,5 +259,115 @@ describe('newlines', () => {
     handle.destroy()
 
     expect(after).toBe('one\n\ntwo\n\nthree')
+  })
+})
+
+describe('the toolbar commands the host actually calls', () => {
+  /*
+   * `run` is a chain of `else if`, one branch per button, and until now a single test
+   * exercised one of them through the editor's own API rather than through `run`. A
+   * branch that toggled the wrong thing — bold under the italic button, a bullet list
+   * under the ordered one — would have produced a green suite and a toolbar that lies.
+   *
+   * Each case selects the whole document first, because a command with nothing to apply
+   * to silently does nothing, which is the failure the `focus()` in `run` exists for and
+   * is indistinguishable from a wrong branch.
+   */
+  const withSelection = (value: string) => {
+    const handle = createRichTextEditor({ value })
+    handle.editor.commands.selectAll()
+    return handle
+  }
+
+  test.each([
+    ['strong', 'hello', '**hello**'],
+    ['emphasis', 'hello', '*hello*'],
+    ['bulletList', 'hello', '- hello'],
+    ['orderedList', 'hello', '1. hello'],
+  ])('%s produces the grammar it is named for', (command, value, expected) => {
+    const handle = withSelection(value)
+
+    handle.run(command as RichCommand)
+    const after = handle.value()
+    handle.destroy()
+
+    expect(after).toBe(expected)
+  })
+
+  test('link takes the href it is given, and unlink takes it away', () => {
+    // Both halves in one case, because the second is only meaningful over the first:
+    // `unsetLink` on text that carries no link is a command that cannot be seen to work.
+    const handle = withSelection('formancy')
+
+    handle.run('link', 'https://formancy.ai')
+    const linked = handle.value()
+    handle.editor.commands.selectAll()
+    handle.run('link')
+    const unlinked = handle.value()
+    handle.destroy()
+
+    expect(linked).toBe('[formancy](https://formancy.ai)')
+    expect(unlinked).toBe('formancy')
+  })
+
+  test('an empty href unlinks rather than linking to nowhere', () => {
+    // The failure this prevents: a link dialog submitted empty writing `[text]()`, which
+    // is a link to the current page in every renderer that reads it.
+    const handle = withSelection('formancy')
+    handle.run('link', 'https://formancy.ai')
+    handle.editor.commands.selectAll()
+
+    handle.run('link', '')
+    const after = handle.value()
+    handle.destroy()
+
+    expect(after).toBe('formancy')
+  })
+
+  test('says which commands are active, for a mark and for a block alike', () => {
+    // A toolbar reads this to decide which buttons look pressed. `isActive` looks a
+    // command up in two maps and returns false when neither has it, so a command in
+    // neither map is a button that never lights up.
+    const handle = withSelection('hello')
+
+    expect(handle.isActive('strong')).toBe(false)
+    handle.run('strong')
+    expect(handle.isActive('strong')).toBe(true)
+    expect(handle.isActive('emphasis')).toBe(false)
+
+    handle.editor.commands.selectAll()
+    handle.run('bulletList')
+    expect(handle.isActive('bulletList')).toBe(true)
+    expect(handle.isActive('orderedList')).toBe(false)
+
+    handle.destroy()
+  })
+
+  test('answers isActive for EVERY command the grammar has', () => {
+    // The list is written out because a TypeScript union is not enumerable at runtime.
+    // What keeps it honest is the map `isActive` reads: it is keyed by `RichCommand`, so
+    // a sixth command fails to compile until it has an entry, and this case then fails
+    // until it is listed here too.
+    const handle = withSelection('hello')
+
+    for (const command of ['strong', 'emphasis', 'link', 'bulletList', 'orderedList'] as const) {
+      expect(typeof handle.isActive(command), command).toBe('boolean')
+    }
+    handle.destroy()
+  })
+
+  test('setValue replaces the answer without reporting an edit', () => {
+    // `emitUpdate: false` is the point: loading a value that read back as somebody
+    // having typed would mark a pristine form dirty, and a host that warns before
+    // navigating away would warn on every form it opened.
+    const seen: string[] = []
+    const handle = createRichTextEditor({ value: 'first', onChange: (v) => seen.push(v) })
+
+    handle.setValue('second')
+    const after = handle.value()
+    handle.destroy()
+
+    expect(after).toBe('second')
+    expect(seen).toEqual([])
   })
 })

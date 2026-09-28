@@ -7,8 +7,8 @@ import {
   mintChallenge,
   solveChallenge,
   verifySolution,
-} from './index.js'
-import type { Solution } from './index.js'
+} from './challenge.js'
+import type { Solution } from './challenge.js'
 
 /**
  * The scheme, and the four ways past it somebody would try.
