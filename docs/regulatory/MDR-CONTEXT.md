@@ -99,8 +99,14 @@ in another.
    but did not author. Decisions marked "Not mechanically enforced" are the
    ones where your own verification has to do the work.
 5. Note which version line you are relying on. The **spec** is frozen at
-   version 1 ([0042](../decisions/0042-freeze-the-spec.md)), so the shape of
-   your form documents and stored submissions is settled. The **packages** are
+   version `"2"` ([0051](../decisions/0051-spec-2-adds-types.md)), and version
+   `"1"` stays frozen and readable
+   ([0042](../decisions/0042-freeze-the-spec.md)), so the shape of your form
+   documents and stored submissions is settled in either. Version 2 is a
+   superset that removes nothing, so a version 1 document is also a valid
+   version 2 document; the reverse is not true, and a version 1 reader refuses
+   a version 2 document rather than ignoring what it cannot read. The
+   **packages** are
    pre-release and their APIs will still change, which is an ordinary
    dependency-management problem rather than a data-integrity one — but it
    means pinning a version and reading `MIGRATIONS.md` before moving.

@@ -123,6 +123,59 @@ describe('the spec version the documents name', () => {
     // the page fails here.
     expect(named).toContain(current)
   })
+
+  test('and so does the regulatory set, which names it in three places', () => {
+    /*
+     * Found by re-reading the set rather than by a gate, which is why this exists.
+     * `MDR-CONTEXT.md` told a manufacturer "the spec is frozen at version 1" -- true
+     * when it was written, false since 0.2.0 froze version 2 and made it the version
+     * the code writes. `LIFECYCLE.md` described change control on the data format and
+     * named only version 1; `SAFETY-ANALYSIS.md` said "the spec is frozen" without
+     * saying which.
+     *
+     * A manufacturer reads that set to decide whether the format their stored
+     * submissions sit in is settled. Naming the wrong version does not make the
+     * answer vaguer, it makes it wrong -- which is the failure this whole file is
+     * about, arriving in the documents that can least afford it.
+     *
+     * Derived per paragraph rather than per phrase: wherever one of these documents
+     * talks about the spec being frozen, the version the code implements has to be
+     * one of the versions that paragraph names. A rewording changes nothing.
+     */
+    const types = readFileSync(join(repo, 'packages', 'spec', 'src', 'types.ts'), 'utf8')
+    const current = /CURRENT_SPEC_VERSION: SpecVersion = '(\d+)'/.exec(types)?.[1]
+    expect(current, 'could not read CURRENT_SPEC_VERSION').toBeDefined()
+
+    const regulatory = join(repo, 'docs', 'regulatory')
+    const claiming = readdirSync(regulatory)
+      .filter((name) => name.endsWith('.md'))
+      .flatMap((name) =>
+        readFileSync(join(regulatory, name), 'utf8')
+          .split(/\n\s*\n/)
+          .filter((paragraph) => /frozen/i.test(paragraph) && /\bspec\b/i.test(paragraph))
+          .map((paragraph) => ({
+            name,
+            opens: paragraph.trim().slice(0, 60),
+            // A version is written `"2"` or "version 2"; a decision record number
+            // is neither, so `[0051]` cannot be mistaken for one.
+            versions: [
+              ...[...paragraph.matchAll(/"(\d+)"/g)].map((m) => m[1]),
+              ...[...paragraph.matchAll(/version (\d+)/gi)].map((m) => m[1]),
+            ],
+          })),
+      )
+
+    // A guard on the guard: no paragraph found means no claim checked, and this
+    // would pass for as long as somebody kept rewording.
+    expect(claiming.length).toBeGreaterThan(2)
+
+    const stale = claiming
+      .filter(({ versions }) => !versions.includes(current ?? ''))
+      .map(({ name, opens, versions }) =>
+        `${name}: "${opens}..." names ${versions.join(', ') || 'no version'}, and the code implements ${String(current)}`,
+      )
+    expect(stale).toEqual([])
+  })
 })
 
 describe('what the documents say the server cannot do', () => {

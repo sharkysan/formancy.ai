@@ -146,8 +146,13 @@ compilation at ≈1.7 ms against a 30 ms budget.
 
 The spec carries its own version, independent of the packages
 ([0009](../decisions/0009-independent-spec-version.md)). Version `"1"` is
-**frozen** as of 2026-09-20 ([0042](../decisions/0042-freeze-the-spec.md)): a
-document that validates today keeps validating. A spec change from here is a
+**frozen** as of 2026-09-20 ([0042](../decisions/0042-freeze-the-spec.md)) and
+version `"2"` as of 0.2.0 ([0051](../decisions/0051-spec-2-adds-types.md)): a
+document that validates today keeps validating, in either version. Version 2 is
+a superset — it adds field types and layout kinds and removes nothing — so a
+version 1 document is also a valid version 2 document, while a version 1 reader
+refuses a version 2 document rather than ignoring the parts it does not know.
+A spec change from here is a
 major event, documents are rewritten forward by an explicit migration, and
 **submissions never migrate** — they stay bound to the version that produced
 them.
