@@ -10,6 +10,21 @@ later.
 
 ## Unreleased
 
+**A part-filled form can be saved and resumed, and now somebody can watch it happen.**
+The parts were all built and none of them was demonstrated — three public routes, a token
+that addresses a draft, a notice both renderers ship for a resume that lost answers — which
+is this repository's own named failure: prose saying a feature exists and a build where
+nobody can see it working are two different claims. The admin's **fill in** tab opens the
+published form against the server and does the three things the documentation asks of a
+host: it saves two seconds after the typing stops rather than per keystroke, it keeps the
+token the server minted and sends it in a header rather than a URL, and it shows the resume
+notice and refuses to save a draft that came back read-only. The public routes are called
+the way a respondent's browser calls them, without a session
+([0082](./docs/decisions/0082-the-draft-flow-is-demonstrated-in-the-admin.md)).
+
+Not demonstrated there, and said rather than implied: the **anonymous** submission path.
+The admin is signed in, so its submissions skip the proof-of-work challenge.
+
 **A wizard is something an author can make now.** It was the one thing a developer could
 write by hand and the builder could not produce: the format has `page`, the engine walks
 the pages and refuses to advance past a problem, both renderers draw the stepper, and

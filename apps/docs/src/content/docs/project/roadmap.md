@@ -79,13 +79,13 @@ history, submissions and export).
   body cap is also the largest file anybody can send.
 - **Form actions** beyond webhooks.
 - **OIDC / SAML.** Local users and API keys only for now.
-- **A worked example of saving a partly-filled form.** The parts all exist now —
-  the three public routes, the token that addresses a draft, and the notice both
-  renderers ship for a resume that lost answers, documented in
-  [Drafts](/docs/concepts/drafts/). What is missing is a host that puts them together:
-  the playground and the marketing site are client-only, and the admin is the
-  authoring tool rather than a form-filling surface. So the debounce, the stored
-  token and the read-only path are described and not demonstrated.
+- ~~**A worked example of saving a partly-filled form.**~~ **Built.** The admin's
+  *fill in* tab opens the published form against the server and does the three things
+  [Drafts](/docs/concepts/drafts/) asks a host to get right: it saves two seconds after
+  the typing stops rather than per keystroke, it keeps the token the server minted and
+  sends it in a header, and it shows the resume notice and refuses to save a draft that
+  came back read-only. Not demonstrated there: the **anonymous** submission path, since
+  the admin is signed in and skips the challenge.
 - **Translated form content.** The key structure is reserved
   (`label: { $t: "..." }`) and the engine resolves it, but there is no catalogue
   management and no authoring for it.
@@ -159,15 +159,11 @@ left out as v2-era omissions. Two of the three are now shipped and `signature` i
 Roughly in order, and subject to change. The ordering is argued below rather
 than asserted.
 
-1. **A host that actually saves and resumes a draft**, so the flow is
-   demonstrated rather than only documented. Everything it needs is built; what it
-   wants is somewhere to live, since no app in this repository fills in a form
-   against a server.
-2. **`signature`** — the last of the three "special components" still unbuilt, and the
+1. **`signature`** — the last of the three "special components" still unbuilt, and the
    smallest. `datagrid` was the other, and it shipped: a control over a data model that
    already existed, which is why it went first.
-3. **Translated form content**, while the reservation is still fresh.
-4. **Un-paging a form from the builder.** Adding the first page is built; taking it
+2. **Translated form content**, while the reservation is still fresh.
+3. **Un-paging a form from the builder.** Adding the first page is built; taking it
    away is not, because removing a container removes its children with it. "Unwrap
    this page" is the model tree's equivalent of `unwrapLayoutNode`, which the
    arrangement tree has and the model tree does not.

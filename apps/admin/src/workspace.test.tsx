@@ -157,6 +157,19 @@ describe('the tabs', () => {
     expect(build.getAttribute('aria-pressed')).toBe('true')
   })
 
+  test('fill in opens the published form, so the draft flow is reachable', async () => {
+    // The point of this one is reachability, not the flow: `fill-pane.test.tsx`
+    // holds the debounce, the token and the read-only path. A pane nobody can
+    // open is the documented-but-inert failure this repository has shipped once,
+    // and a tab that exists in a file and not in the titlebar is exactly that.
+    const stub: Stub = { calls: [] }
+    const user = await openForm(stub)
+
+    await user.click(await screen.findByRole('button', { name: 'fill in' }))
+
+    expect(await screen.findByRole('button', { name: /submit/i })).toBeTruthy()
+  })
+
   test('versions lists what has been published, newest and oldest alike', async () => {
     const stub: Stub = { calls: [] }
     const user = await openForm(stub)
