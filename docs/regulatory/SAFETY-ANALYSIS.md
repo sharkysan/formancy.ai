@@ -580,6 +580,37 @@ measured in a browser by hand: no gate renders a stylesheet, so nothing will mea
 again. This is D4a's residual — appearance is reviewed, not verified — reaching a
 different kind of defect than layout.
 
+### D8. A field renders on a different step from the one it was authored on
+
+*How it arises:* a page is a wizard step and pages are transparent for data, so a form
+renders the same submission whether or not it is paged. The consequence is that a
+top-level field which is not inside a page has no step of its own, and the engine gives
+it the first. Measured against the built engine with `bare1`, `page one`, `bare2`,
+`page two`: `pageOf` reports 0, 0, 0, 1 — `bare2` sits between the two pages in the
+document and renders on the first. `validateSchema` permits the shape, so nothing refuses
+it and nothing reports it.
+
+*Severity:* the answer is collected and stored correctly, so no data is lost or altered.
+What is wrong is that the form asks the question somewhere other than where its author
+put it — a consent or a declaration authored on the final step appearing on the first,
+before the context that was meant to precede it. It is a failure of the authoring tool
+rather than of the engine, which is why it had no entry here until a builder could make
+a wizard at all.
+
+*Constraint:* the builder cannot produce the shape. `addPage` takes the top-level fields
+into the first page, so a form is either unpaged or fully paged, and `validTargets` stops
+offering the bare top level once a form has pages — a field may go inside a page and not
+beside one ([0081](../decisions/0081-a-page-absorbs-the-form-it-joins.md)). Asserted in
+`packages/builder-core/src/session.test.ts` and in `builder.test.tsx`, and the change
+required correcting a test that asserted the opposite.
+
+*Residual, and it is the substantial one:* **the format still permits it.** A document
+written by hand, by an agent through `@formancy/mcp`, or by an older version of the
+builder can place a field beside a page, and it validates. Refusing it is a spec change
+and version 2 is frozen, so it belongs to a version 3 discussion where it would be a
+migration with a report rather than a silent breakage. Until then the constraint covers
+the builder and not the format.
+
 ---
 
 ## E — Provenance is lost

@@ -1,4 +1,4 @@
-import type { FormSchema } from '@formancy/spec'
+import type { FieldDef, FormSchema } from '@formancy/spec'
 import { describe, expect, test } from 'vitest'
 import { createBuilderSession } from './session.js'
 
@@ -62,6 +62,19 @@ export function revise(edit: (draft: FormSchema) => void): FormSchema {
   const draft = clone(base)
   edit(draft)
   return draft
+}
+
+/** A form nobody has paged yet: every field sits at the top level. */
+export const unpaged: FormSchema = {
+  specVersion: '2',
+  id: 'signup',
+  title: 'Sign up',
+  model: {
+    fields: [
+      { key: 'name', type: 'text', required: true },
+      { key: 'email', type: 'text', format: 'email' },
+    ],
+  },
 }
 
 describe('createBuilderSession', () => {
@@ -258,5 +271,117 @@ describe('replaceDocument', () => {
     session.replaceDocument(other)
 
     expect(session.document().logic).toBeUndefined()
+  })
+})
+
+describe('addPage', () => {
+  /*
+   * A wizard was a thing a developer could write by hand and an author could not
+   * make. Every other part existed — the format has `page`, the engine walks the
+   * pages and refuses to advance past a problem, both renderers draw the stepper —
+   * and the builder had no route to one. The palette leaves `page` out on purpose,
+   * because a page may sit only at the top level while the palette can target any
+   * container, so it would offer a choice refused most of the time.
+   *
+   * The shape of the command was decided by measuring the engine rather than by
+   * taste. With a page in the document, a top-level field that is NOT inside one
+   * lands on page 1 wherever it sits: given `bare1`, `page one`, `bare2`, `page
+   * two`, the engine reports `pageOf` as 0, 0, 0, 1 — `bare2` sits between the two
+   * pages in the document and belongs to the first. No builder tree can draw that
+   * honestly; it would show a field between two pages that is not on either.
+   *
+   * So the first page absorbs what is already there. "Add a page" to an unpaged
+   * form means "make this form a wizard", and the form somebody already built
+   * becomes page one rather than being scattered invisibly across it.
+   */
+  test('the first page takes the fields that were already at the top level', () => {
+    const session = createBuilderSession(unpaged)
+
+    const outcome = session.addPage('Your details')
+
+    expect(outcome.ok).toBe(true)
+    const fields = session.document().model.fields
+    // One page, holding everything that was loose.
+    expect(fields.map((f) => f.type)).toEqual(['page'])
+    expect(fields[0]?.fields?.map((f) => f.key)).toEqual(['name', 'email'])
+    expect(fields[0]?.label).toBe('Your details')
+  })
+
+  test('and the second page is a second page, not another absorption', () => {
+    const session = createBuilderSession(unpaged)
+    session.addPage('Your details')
+
+    session.addPage('Your trip')
+
+    const fields = session.document().model.fields
+    expect(fields.map((f) => f.type)).toEqual(['page', 'page'])
+    expect(fields[1]?.fields ?? []).toEqual([])
+    expect(fields.map((f) => f.label)).toEqual(['Your details', 'Your trip'])
+  })
+
+  test('adding a page to a form that already has them appends an empty one', () => {
+    const session = createBuilderSession(base)
+
+    expect(session.addPage('Third').ok).toBe(true)
+
+    const fields = session.document().model.fields
+    expect(fields.map((f) => f.key)).toEqual(['intro', 'details', 'page3'])
+    expect(fields[2]?.fields ?? []).toEqual([])
+  })
+
+  test('is one undoable step, whether or not it absorbed anything', () => {
+    // The absorbing case is the one worth checking: it moves every top-level
+    // field AND adds a container, and a gesture that takes two undos to reverse
+    // is one people stop trusting.
+    const session = createBuilderSession(unpaged)
+    session.addPage('Your details')
+
+    expect(session.undo()).toBe(true)
+
+    expect(session.document()).toEqual(unpaged)
+  })
+
+  test('the key is unique and the label is the author’s, not the key', () => {
+    // A page's key is an identity the author never types and a rule may name;
+    // its label is what the stepper shows. Deriving one from the other would
+    // make renaming the step a key change, which is a data migration.
+    const session = createBuilderSession(base)
+
+    session.addPage('Payment & delivery')
+
+    const added = session.document().model.fields[2]
+    expect(added?.key).toMatch(/^[A-Za-z_][A-Za-z0-9_]*$/)
+    expect(added?.label).toBe('Payment & delivery')
+  })
+
+  test('refuses a document it cannot page, rather than producing a broken one', () => {
+    // A form whose top level holds a repeater cannot become a wizard by wrapping:
+    // the repeater would move inside the page, which is legal, so this is about
+    // the one shape that is not — a page inside a page. `addPage` is refused on a
+    // document that is already invalid for any other reason too, because every
+    // command here is.
+    const session = createBuilderSession(base)
+    const nested = session.validTargets({ key: 'x', type: 'page' } as FieldDef)
+
+    // A page has exactly one legal home: the top level.
+    expect(nested).toEqual([
+      { parent: [], index: 0 },
+      { parent: [], index: 1 },
+      { parent: [], index: 2 },
+    ])
+  })
+
+  test('a field can no longer be dropped beside a page, because it would vanish', () => {
+    // The other half of the same measurement. Once a form has pages, the top
+    // level is for pages only: a field placed there renders on page one however
+    // the tree draws it. Offering the position at all is offering a placement
+    // the engine does not honour.
+    const session = createBuilderSession(base)
+
+    const targets = session.validTargets({ key: 'stray', type: 'text' } as FieldDef)
+
+    expect(targets.filter((t) => t.parent.length === 0)).toEqual([])
+    // And it can still go inside a page, which is where it belongs.
+    expect(targets.some((t) => t.parent.join('.') === 'intro')).toBe(true)
   })
 })

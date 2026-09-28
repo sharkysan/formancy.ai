@@ -267,7 +267,8 @@ function BuilderWorkspace({
         <div className="wb-body">
           {editing === null ? (
             <p className="wb-hint">
-              Press <kbd>a</kbd> in the structure pane to add a field.
+              Press <kbd>a</kbd> in the structure pane to add a field, or <kbd>p</kbd> to add a
+              page and make the form a wizard.
             </p>
           ) : (
             <>

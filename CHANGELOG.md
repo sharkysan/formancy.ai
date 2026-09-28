@@ -8,6 +8,31 @@ Loosely [Keep a Changelog](https://keepachangelog.com), with reasons attached �
 a line that says only *what* changed is rarely the line you need six months
 later.
 
+## Unreleased
+
+**A wizard is something an author can make now.** It was the one thing a developer could
+write by hand and the builder could not produce: the format has `page`, the engine walks
+the pages and refuses to advance past a problem, both renderers draw the stepper, and
+there was no route to one. `p` in the structure tree adds a page, beside `a`, `m` and
+`Delete`, and it is in the legend the tree renders.
+
+**The first page takes the fields already at the top level**, which was decided by
+measuring the engine rather than by taste. A top-level field that is not inside a page is
+given to page one *wherever it sits*: in `bare1, page one, bare2, page two` the engine
+reports pages 0, 0, 0, 1, so `bare2` is drawn between the two pages and renders on the
+first. No builder tree can show that honestly. So "add a page" to an unpaged form means
+"make this form a wizard", the form somebody already built becomes page one, and it is one
+undoable step and announced — a command that rearranges every field in the document is not
+one to perform quietly. `validTargets` stops offering the bare top level once a form has
+pages, which is what keeps the shape from coming back on the next insertion
+([0081](./docs/decisions/0081-a-page-absorbs-the-form-it-joins.md), and D8 in
+`SAFETY-ANALYSIS.md`, whose residual is that the **format** still permits the shape —
+refusing it there is a spec change and version 2 is frozen).
+
+A test had to be corrected rather than the code: `commands.test.ts` asserted that a leaf
+may land in any container, including the top level of a paged form. True of the validator,
+false of the engine.
+
 ## 0.2.0 — 2026-09-28
 
 **The beta, and the release that freezes spec version 2.** A document written against

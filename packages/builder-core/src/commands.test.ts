@@ -332,15 +332,40 @@ describe('validTargets', () => {
     expect(targets.some((t) => t.parent.join('.') === 'details')).toBe(true)
   })
 
-  test('a leaf may land in any container', () => {
+  test('a leaf may land in any container, and beside a page is not one', () => {
+    // This asserted `''` — the top level — until the engine was measured. A
+    // top-level field that is not inside a page is given to page ONE wherever it
+    // sits: `bare1, page one, bare2, page two` reports pages 0, 0, 0, 1. The
+    // validator permits the shape and the engine does not honour it, so offering
+    // the position means offering a placement that renders somewhere else while
+    // the builder's tree goes on showing it where it was dropped.
+    //
+    // `base` is a paged form. An unpaged one still offers its top level, which
+    // the case below this one holds.
     const s = session()
     const targets = s.validTargets({ key: 'note', type: 'text' })
     const parents = targets.map((t) => t.parent.join('.'))
 
-    expect(parents).toContain('')
+    expect(parents).not.toContain('')
     expect(parents).toContain('intro')
     expect(parents).toContain('details.address')
     expect(parents).toContain('details.passengers')
+  })
+
+  test('and an unpaged form still takes one at the top level', () => {
+    // The guard on the rule above: a form with no pages has nothing to be
+    // inconsistent with, and a builder that refused the top level there would
+    // refuse the only container a new form has.
+    const s = createBuilderSession({
+      specVersion: '2',
+      id: 'plain',
+      title: 'Plain',
+      model: { fields: [{ key: 'name', type: 'text' }] },
+    })
+
+    const parents = s.validTargets({ key: 'note', type: 'text' }).map((t) => t.parent.join('.'))
+
+    expect(parents).toContain('')
   })
 
   test('moving an existing container excludes its own descendants', () => {

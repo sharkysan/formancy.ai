@@ -181,3 +181,4 @@ listed under the sections they belong to above.
 | [0078](0078-a-grid-row-is-flat.md) | A grid row is flat | accepted |
 | [0079](0079-a-host-is-undone-without-a-stylesheet.md) | A host element is undone without a stylesheet | accepted |
 | [0080](0080-a-choice-control-dresses-its-own-states.md) | A choice control dresses its own states | accepted |
+| [0081](0081-a-page-absorbs-the-form-it-joins.md) | The first page absorbs the form it is added to | accepted |
