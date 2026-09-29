@@ -1,0 +1,138 @@
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core'
+import type { FieldOption } from './types.js'
+
+let nextId = 0
+
+/**
+ * The editor for a `select` or `radio` field's choices.
+ *
+ * Everything else in the property panel is generated from the JSON Schema, and a
+ * list of value/label pairs has no generic rendering that is any good: the schema
+ * says "array of objects", and the honest generic answer is a textarea full of
+ * JSON.
+ *
+ * **The two columns are not the same kind of thing, and the panel says so.**
+ * `value` is what lands in the submission and is stable identity — changing it
+ * orphans every answer already given, exactly as a field key does
+ * ([0011](../../../docs/decisions/0011-declared-renames.md)). `label` is what a
+ * person reads and is safe to reword.
+ *
+ * A local draft, because the document refuses invalid states and a person editing
+ * text passes through them. Clearing a label to retype it makes it empty for a
+ * moment and the schema requires a non-empty one, so the command is refused, the
+ * document does not change, and a box bound straight to it snaps back mid-word —
+ * measured in the React editor: typing "Schweiz" over "Switzerland" produced
+ * "SwitzerlandSchweiz". So the boxes show the draft, every edit is offered to the
+ * session, and a refusal leaves the document where it was. The form still cannot
+ * be PUBLISHED in an invalid state; it can be typed in.
+ */
+@Component({
+  selector: 'formancy-options-editor',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div data-formancy-part="options-editor">
+      <h3 [attr.id]="headingId">Choices</h3>
+      <ul [attr.aria-labelledby]="headingId">
+        @for (option of draft(); track $index; let at = $index) {
+          <li data-formancy-part="option">
+            <label [attr.for]="valueId(at)">Stored value</label>
+            <input
+              [attr.id]="valueId(at)"
+              [value]="option.value"
+              (input)="setValue(at, $event)"
+            />
+            <label [attr.for]="labelId(at)">Label</label>
+            <input
+              [attr.id]="labelId(at)"
+              [value]="labelText(option)"
+              (input)="setLabel(at, $event)"
+            />
+            <button
+              type="button"
+              [attr.aria-label]="'Remove ' + describe(option)"
+              (click)="remove(at)"
+            >
+              Remove
+            </button>
+          </li>
+        }
+      </ul>
+      <button type="button" (click)="add()">Add a choice</button>
+    </div>
+  `,
+})
+export class FormancyOptionsEditor {
+  readonly options = input<readonly FieldOption[]>([])
+  readonly changed = output<FieldOption[]>()
+
+  protected readonly headingId = `formancy-options-${String((nextId += 1))}`
+
+  private readonly local = signal<FieldOption[] | null>(null)
+  /** What this editor last sent, so its own echo is not adopted as a change. */
+  private pushed = ''
+
+  protected readonly draft = computed((): FieldOption[] => {
+    const incoming = JSON.stringify(this.options())
+    const held = this.local()
+    // Only adopt a change that came from somewhere else — an undo, or another
+    // field being selected. Adopting our own echo would undo the draft.
+    if (held !== null && incoming === this.pushed) return held
+    return [...this.options()]
+  })
+
+  protected valueId(at: number): string {
+    return `${this.headingId}-value-${String(at)}`
+  }
+
+  protected labelId(at: number): string {
+    return `${this.headingId}-label-${String(at)}`
+  }
+
+  protected labelText(option: FieldOption): string {
+    const label = (option as unknown as Record<string, unknown>)['label']
+    return typeof label === 'string' ? label : ''
+  }
+
+  protected describe(option: FieldOption): string {
+    // Named, because "Remove" three times over is three buttons a screen reader
+    // cannot tell apart, on a list where getting the wrong one loses a choice.
+    const label = this.labelText(option)
+    return label === '' ? String(option.value) : label
+  }
+
+  protected setValue(at: number, event: Event): void {
+    const value = (event.target as HTMLInputElement).value
+    this.commit(this.draft().map((option, index) => (index === at ? { ...option, value } : option)))
+  }
+
+  protected setLabel(at: number, event: Event): void {
+    const label = (event.target as HTMLInputElement).value
+    this.commit(this.draft().map((option, index) => (index === at ? { ...option, label } : option)))
+  }
+
+  protected add(): void {
+    // A value nothing else uses. Two choices sharing one store the same answer,
+    // and the form would collect a submission nobody can read back.
+    const used = new Set(this.draft().map((option) => String(option.value)))
+    let n = this.draft().length + 1
+    while (used.has(`option-${String(n)}`)) n += 1
+    // With a label, because the schema requires a non-empty one: a choice added
+    // without would be refused, the document would not change, and the button
+    // would look broken. "New choice" is a word to type over rather than a word
+    // anybody keeps.
+    this.commit([
+      ...this.draft(),
+      { value: `option-${String(n)}`, label: 'New choice' } as FieldOption,
+    ])
+  }
+
+  protected remove(at: number): void {
+    this.commit(this.draft().filter((_, index) => index !== at))
+  }
+
+  private commit(next: FieldOption[]): void {
+    this.local.set(next)
+    this.pushed = JSON.stringify(next)
+    this.changed.emit(next)
+  }
+}

@@ -341,3 +341,24 @@ describe('a property the format writes as a number OR a word', () => {
     expect(label?.numericAlternative).toBeUndefined()
   })
 })
+
+describe('every layout kind has something to configure', () => {
+  /*
+   * Which is why neither property panel carries a "nothing to configure" branch.
+   * Both did; neither could ever render it, because every kind the format
+   * defines can `span`. A branch nobody can reach is a claim nobody checked, and
+   * the honest way to delete one is to derive the reason rather than to notice
+   * it once.
+   *
+   * If the format grows a kind with no editable property, this fails — and the
+   * branch comes back WITH a case, rather than sitting there unexercised again.
+   */
+  test('so an empty panel is a state the format cannot produce', () => {
+    const kinds = layoutKinds()
+    expect(kinds.length).toBeGreaterThan(3)
+
+    for (const kind of kinds) {
+      expect(editableLayoutPropertiesFor(kind), kind).not.toHaveLength(0)
+    }
+  })
+})
