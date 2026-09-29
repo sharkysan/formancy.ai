@@ -10,6 +10,21 @@ later.
 
 ## Unreleased
 
+**The documentation has a way out of itself.** Asked for, and measured in the built page
+before anything changed: the header held one link, Starlight's own title, pointing at
+`/docs/` — the page you are already on. These pages are a third of formancy.ai and had no
+way back to the landing page, the playground or the repository, on exactly the pages where
+somebody is still deciding whether to use any of it.
+
+The title is now the mark and the name, linking to the site root — absolute in development,
+where the site and the docs are two servers and a relative path would land back inside this
+app. GitHub sits beside it. The mark is the file the favicon already uses rather than a
+second copy, which `apps/docs/src/chrome.test.ts` holds by comparing the shapes in both.
+The repository address is derived from what the manifests publish, so a repository that
+moved cannot leave the documentation pointing at where it was.
+
+**And the sidebar still called the spec reference "(v2)"**, two frozen versions later.
+
 **The playground has a second demo, and it is the one with steps.** Asked for directly:
 *"is there a demo for all that in the playground? always add a demo"*. Measured before it
 existed — the playground held **no `page` and no `group` at all**, so it never drew a
