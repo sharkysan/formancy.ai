@@ -15,6 +15,14 @@ for (const section of [manifest.dependencies, manifest.peerDependencies]) {
     }
   }
 }
+// The source manifest's `types` points into dist, because that is what makes the
+// package resolvable from inside the workspace — nothing here had ever imported
+// it until `@formancy/builder-angular` rendered a preview with it. Copied into
+// dist the path is `./dist/types/...` relative to dist itself, which resolves to
+// nothing, and `publint` says so. ng-packagr writes the right `exports` for dist
+// on its own; this is the one field it carries over.
+delete manifest.types
+
 // The source manifest's publishConfig redirects publishing INTO dist; copied
 // into dist itself it would redirect again, to dist/dist. It has done its job.
 delete manifest.publishConfig

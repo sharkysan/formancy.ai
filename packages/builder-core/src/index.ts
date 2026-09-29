@@ -66,6 +66,7 @@ export {
   kindWrites,
   rowTakesValue,
   ruleKindsFor,
+  referencedMessages,
   ruleTargetFor,
 } from './logic.js'
 export type { ConditionRow, RuleKindChoice } from './logic.js'

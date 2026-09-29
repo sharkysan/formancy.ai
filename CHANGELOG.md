@@ -10,6 +10,28 @@ later.
 
 ## Unreleased
 
+**The Angular builder translates.** `FormancyTranslationsPane`: extract in one step, work
+down a language, add one, download the catalogue and upload it back — and a **preview that
+renders the form in the language being worked on**, built on its own engine so the document
+is not edited in order to look at it.
+
+`referencedMessages` moved into `@formancy/builder-core` with the rest, so both panes ask
+the same question in the same order: a translator works down a list and meets the questions
+in the order somebody filling the form does, which is the only order that makes the words
+next to each other mean anything.
+
+**One of its guards passed for the wrong reason and is recorded rather than replaced.** The
+preview cases asserted the English text, which an untranslated language renders *whether or
+not the engine is given a locale at all* — so removing the locale entirely left them green.
+The case that distinguishes them writes a translation and asserts the preview shows it, and
+that one fails without the locale.
+
+**And `@formancy/angular` was not importable from inside the workspace.** Nothing had ever
+imported it here — the renderer is consumed by applications, not by other packages — so its
+source manifest named no entry point, and the first package to need it could not resolve it.
+It does now, with the reason beside it; `finalize-dist.mjs` strips the field from what is
+published, because relative to `dist` the path resolves to nothing and `publint` says so.
+
 **A calculated field is something an author can make.** `computed` has been in the format
 since version 1, both renderers honour it, and **neither builder's kind table listed it** —
 so a calculation was a thing a developer could hand-write and an author could not reach.

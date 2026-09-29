@@ -11,6 +11,7 @@
     "check:pkg": "publint ./dist"
   },
   "dependencies": {
+    "@formancy/angular": "workspace:*",
     "@formancy/builder-core": "workspace:*",
     "@formancy/core": "workspace:*",
     "@formancy/spec": "workspace:*",
@@ -28,7 +29,6 @@
     "@angular/core": "^22.1.7",
     "@angular/platform-browser": "^22.1.7",
     "@arethetypeswrong/cli": "catalog:",
-    "@formancy/angular": "workspace:*",
     "@testing-library/angular": "^19.5.0",
     "@testing-library/user-event": "^14.6.7",
     "@vitest/coverage-v8": "catalog:",
