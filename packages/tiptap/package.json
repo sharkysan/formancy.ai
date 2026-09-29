@@ -1,6 +1,6 @@
 {
   "name": "@formancy/tiptap",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A TipTap editor configured to exactly formancy's rich-text grammar, so it cannot produce anything the grammar cannot store.",
   "license": "Apache-2.0",
   "type": "module",

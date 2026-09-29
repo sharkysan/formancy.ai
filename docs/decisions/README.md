@@ -188,3 +188,4 @@ listed under the sections they belong to above.
 | [0085](0085-a-tag-picker-is-a-widget-and-a-widget-has-a-version.md) | A tag picker is a widget, and a widget has a version | accepted |
 | [0086](0086-a-check-is-named-and-answered-elsewhere.md) | A check is named here and answered elsewhere | accepted |
 | [0087](0087-a-page-can-be-walked-past.md) | A page can be walked past, and its questions go with it | accepted |
+| [0088](0088-spec-3-freezes-with-four-constructs.md) | Spec 3 freezes with four constructs, not one | accepted |

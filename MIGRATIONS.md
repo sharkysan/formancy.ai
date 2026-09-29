@@ -11,12 +11,10 @@ of package versions, because it is the artifact with real switching costs:
 your forms and your submissions are written against it. Packages 0.9 and 1.4
 can both speak spec `"1"`.
 
-## Spec version 3 is OPEN
+## Spec version 3 is FROZEN
 
-Spec `"3"` is the version this release writes, and it is **not frozen**: it is open until
-a release freezes it, the way version 2 was open until `0.2.0`. A document may declare it
-today and the constructs below will not change underneath it — what is not yet settled is
-what else version 3 will contain before it closes.
+Spec `"3"` is frozen as of 2026-09-29, with the `0.3.0` release. A document that validates
+today will validate against every future release that speaks spec 3.
 
 **Version 3 is a superset of version 2 and removes nothing.** Upgrading is the same one
 line, and `upgradeSpecVersion` still does nothing else.

@@ -1,6 +1,6 @@
 {
   "name": "@formancy/challenge",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "The formancy proof-of-work challenge: mint, solve and verify. Isomorphic.",
   "license": "Apache-2.0",
   "type": "module",

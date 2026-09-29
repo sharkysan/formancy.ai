@@ -5,7 +5,7 @@ developed under IEC 62304, and who therefore has to record what this software
 is, what it needs, what it is known to get wrong, and what evidence exists that
 it works. Read [`MDR-CONTEXT.md`](MDR-CONTEXT.md) first.
 
-**This document describes version `0.2.0`.** Everything below is true of that
+**This document describes version `0.3.0`.** Everything below is true of that
 version and of no other. Pin an exact version; a range is not characterised
 software, and neither is `latest`.
 
@@ -17,9 +17,9 @@ software, and neither is `latest`.
 | Supplier | the formancy project (open source) |
 | Licence | Apache-2.0 for every package ([0002](../decisions/0002-apache-2-0.md)) |
 | Source | this repository, in full, including tests |
-| Package version | `0.2.0`, published to npm under the `@formancy` scope |
-| Spec version | `"2"`, **frozen as of 0.2.0** ([0051](../decisions/0051-spec-2-adds-types.md)) — which is the version this document characterises, because it is the version the released package writes. Version `"1"` is frozen too and stays readable ([0042](../decisions/0042-freeze-the-spec.md)). Version `"3"` is **open** in the source and not characterised here: it adds `signature` ([0083](../decisions/0083-a-signature-is-points-or-a-name.md)) and freezes at the release that ships it. What each version added, and what freezing one costs, is in [`MIGRATIONS.md`](../../MIGRATIONS.md) |
-| Development stage | beta. 0.1.0 was the first release and predates spec versioning: it pins documents to version 1 and refuses a version 2 document rather than ignoring the property. 0.2.0 is the first release that reads version 2 |
+| Package version | `0.3.0`, published to npm under the `@formancy` scope |
+| Spec version | `"3"`, **frozen as of 0.3.0** ([0088](../decisions/0088-spec-3-freezes-with-four-constructs.md)) — the version this release writes and the one this document characterises. Versions `"1"` ([0042](../decisions/0042-freeze-the-spec.md)) and `"2"` ([0051](../decisions/0051-spec-2-adds-types.md)) are frozen too and stay readable, so a deployment pinned to either is characterising a settled format. What each version added, and what freezing one costs, is in [`MIGRATIONS.md`](../../MIGRATIONS.md) |
+| Development stage | beta. 0.1.0 was the first release and predates spec versioning: it pins documents to version 1 and refuses anything later rather than ignoring the property. 0.2.0 reads version 2; 0.3.0 reads version 3 and **writes** it by default, so a form authored here is refused by a reader pinned to 0.2.0 — loudly, which is the point |
 | Integrity | each tarball carries a SLSA v1 provenance attestation issued by GitHub's OIDC identity for the workflow run that built it, plus a registry signature. Verify with `npm audit signatures`. The server image is published to GHCR and **signed by digest**, with the SBOM attached as a CycloneDX attestation — verify with `cosign verify` and `cosign verify-attestation` against the digest rather than the tag, since a tag is mutable. There is deliberately no `latest`, for the reason this table gives two rows down. The pipeline is described in [`RELEASING.md`](../../RELEASING.md) |
 
 The two version lines are independent and both matter. The package version
@@ -202,7 +202,7 @@ project's open-core line.
 IEC 62304 §7.1.2 asks for the supplier's published anomaly list.
 [`CHANGELOG.md`](../../CHANGELOG.md) is it: every entry says what changed and why, and the
 defects found by review are named there rather than summarised away. What follows is what a
-manufacturer characterising `0.2.0` needs on one page.
+manufacturer characterising `0.3.0` needs on one page.
 
 **Measured functional gaps.** Against the official CEL corpus: 2,344 cases
 total, 704 in scope and run, **586 passed and 118 failed**, 2 refused
@@ -239,11 +239,32 @@ software has. `signature` and `tagpicker` have since left this list the same way
 field type and a spec 3 widget — and the list is checked rather than read. `apps/docs/src/soup.test.ts` now checks every name in this list against the
 format's own vocabulary, so it cannot happen again in that direction.
 
-### Characterised by this document, and new since 0.1.0
+### Characterised by this document, and new since 0.2.0
 
-`0.2.0` is the first release that reads `specVersion: "2"`. Everything version 2 added is
-listed in [`MIGRATIONS.md`](../../MIGRATIONS.md); the parts that change what a
-*deployment* has to think about are:
+`0.3.0` reads and writes `specVersion: "3"`. Everything version 3 added is listed in
+[`MIGRATIONS.md`](../../MIGRATIONS.md); the parts that change what a *deployment* has to
+think about are:
+
+- **`kind: "check"`**: a validator the deployment answers by name, asked by the engine in
+  the browser, on the server, or both. A deployment supplies it through `ServerDeps.checks`
+  and a check a document names and the deployment has not supplied **fails the field
+  closed** — a form that names a check nobody answers cannot be submitted. It re-runs on
+  its own field's changes only, and nothing debounces it.
+- **`kind: "skip"`**: a page the answers walk past, whose fields are hidden and therefore
+  neither validated nor submitted
+  ([0087](../decisions/0087-a-page-can-be-walked-past.md)).
+- **`signature`**: a mark stored as points or a typed name, and never as stroke timing —
+  velocity is what would make it biometric data, which nothing here is equipped to hold.
+  This software cannot **verify** a signature: no identity proof, no certificate, no
+  timestamp authority.
+- **`optionsSource` on a list-valued field**, with the server's membership check widened to
+  walk a list. Before this it asked only about string answers, so every value in a sourced
+  `selectboxes` would have been stored unexamined — hazard A7 in a different shape.
+- **The server replays as the server**, which it never did: every replay before this ran
+  the client's `runsOn` rules. A deployment relying on a `runsOn: "server"` validation rule
+  was relying on a rule that did not run.
+
+Still from 0.2.0 and unchanged:
 
 - **File uploads** with a claim-and-collect lifecycle, and an S3-compatible store verified
   against a real Garage instance in a container. Local disk remains the default and is the

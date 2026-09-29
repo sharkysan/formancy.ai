@@ -9,7 +9,7 @@ produced a tarball, and only the workflow can make it.
 
 ```bash
 # 1. Bump every package to the new version (one number across all of them)
-node scripts/bump.mjs 0.2.0     # or edit the manifests
+node scripts/bump.mjs 0.3.0     # or edit the manifests
 
 # 2. Write the entry in CHANGELOG.md, including what is knowingly missing
 
@@ -18,8 +18,8 @@ pnpm build && pnpm typecheck && pnpm test && pnpm check:pkg
 node scripts/verify-licenses.mjs
 
 # 4. Commit, tag, push
-git commit -am "Release 0.2.0"
-git tag -a v0.2.0 -m "formancy 0.2.0"
+git commit -am "Release 0.3.0"
+git tag -a v0.3.0 -m "formancy 0.3.0"
 git push origin main --follow-tags
 ```
 
