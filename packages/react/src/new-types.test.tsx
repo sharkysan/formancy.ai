@@ -852,3 +852,60 @@ describe('table', () => {
     ])
   })
 })
+
+describe('a field waiting for a check', () => {
+  /*
+   * A control that looks finished and is not is one somebody submits. The engine
+   * knows a check is in flight; this is the half that says so.
+   *
+   * `aria-busy` and never `disabled`: disabling the element somebody just typed
+   * into blurs it and the browser resets focus to the document body. The scanner
+   * and the typeahead's source both learned that already, and this is the third
+   * control to need the same answer.
+   */
+  const checking: FormSchema = {
+    specVersion: '3',
+    id: 'signup',
+    title: 'Sign up',
+    model: { fields: [{ key: 'email', type: 'text', label: 'Email' }] },
+    logic: {
+      rules: [
+        { target: 'email', kind: 'check', check: 'email-not-taken', code: 'taken', runsOn: 'both' },
+      ],
+    },
+  }
+
+  test('says it is busy while the answer is out, and never disables itself', async () => {
+    let release: (() => void) | undefined
+    const engine = createFormEngine({
+      schema: checking,
+      capabilities: { now: () => 0, today: () => '2026-09-29', random: () => 0.5 },
+      checks: {
+        'email-not-taken': () =>
+          new Promise<string | undefined>((resolve) => {
+            release = () => { resolve(undefined) }
+          }),
+      },
+    })
+    render(
+      <FormancyProvider engine={engine}>
+        <FormancyForm onSubmit={() => undefined} />
+      </FormancyProvider>,
+    )
+
+    const box = screen.getByLabelText('Email')
+    await act(async () => {
+      engine.setValue(['email'], 'a@b.ch')
+    })
+
+    expect(box.getAttribute('aria-busy')).toBe('true')
+    // Still typeable. Disabling it here would blur whoever is typing.
+    expect((box as HTMLInputElement).disabled).toBe(false)
+
+    await act(async () => {
+      release?.()
+      await engine.settle()
+    })
+    expect(box.getAttribute('aria-busy')).toBeNull()
+  })
+})

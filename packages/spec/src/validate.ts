@@ -5,6 +5,7 @@ import { collectFieldPaths, isMessageRef, modelPathsForLayout } from './presenta
 import { ROW_ID, SPEC_1_FIELD_TYPES,
   SPEC_2_FIELD_TYPES,
   SPEC_2_WIDGETS,
+  SPEC_2_RULE_KINDS,
   LIST_VALUED_FIELD_TYPES, SPEC_1_LAYOUT_KINDS,
   layoutChildren,
 } from './types.js'
@@ -77,6 +78,7 @@ function versionErrors(
   const spec1Types = new Set<string>(SPEC_1_FIELD_TYPES)
   const spec2Types = new Set<string>(SPEC_2_FIELD_TYPES)
   const spec2Widgets = new Set<string>(SPEC_2_WIDGETS)
+  const spec2RuleKinds = new Set<string>(SPEC_2_RULE_KINDS)
   const spec1Kinds = new Set<string>(SPEC_1_LAYOUT_KINDS)
 
   /** The version a field type first appeared in. */
@@ -144,6 +146,20 @@ function versionErrors(
     const arrived = introducedIn(field.type)
     if (arrived <= declared) continue
     errors.push({ path: `${path}/type`, message: needs(`A "${field.type}" field`, arrived) })
+  }
+
+  // A rule KIND has a version too, and for the sharpest reason of the three: a
+  // reader given a kind it has never heard of has no safe answer at all. Ignoring
+  // the rule renders a form that behaves differently from the one the author
+  // built — a field that should have been checked, unchecked — and guessing is
+  // worse than ignoring.
+  for (const [index, rule] of (schema.logic?.rules ?? []).entries()) {
+    if (!spec2RuleKinds.has(rule.kind) && declared < 3) {
+      errors.push({
+        path: `/logic/rules/${String(index)}/kind`,
+        message: needs(`A "${rule.kind}" rule`, 3),
+      })
+    }
   }
 
   for (const [layoutIndex, layout] of (schema.layouts ?? []).entries()) {
@@ -337,11 +353,15 @@ function logicErrors(schema: FormSchema): SchemaError[] {
       })
     }
 
-    if (rule.kind !== 'validate') {
+    // A VALIDATION rule may choose where it runs, and there are two kinds of
+    // those now. The restriction is about metadata: visibility or requiredness
+    // differing between browser and server would stop the server's replay being
+    // a check and make it a second opinion.
+    if (rule.kind !== 'validate' && rule.kind !== 'check') {
       if (rule.runsOn !== undefined) {
         errors.push({
           path: `/logic/rules/${String(index)}/runsOn`,
-          message: `Only a validate rule can choose where it runs. A ${rule.kind} rule that behaved differently in the browser and on the server would leave the server unable to check what the browser did.`,
+          message: `Only a validate or check rule can choose where it runs. A ${rule.kind} rule that behaved differently in the browser and on the server would leave the server unable to check what the browser did.`,
         })
       }
 
@@ -771,6 +791,12 @@ function patternMessage(error: ErrorObject, document: unknown): string {
   }
   if (error.schemaPath.includes('/formId/')) {
     return `${found} is not a usable form ID. Start with a letter or a digit, then use only letters, digits, dots, dashes and underscores.`
+  }
+  // A check names a validator the deployment answers, and the mistake somebody
+  // makes is writing the address of one. The generic wording would tell them the
+  // pattern and leave them guessing what shape is wanted.
+  if (error.instancePath.endsWith('/check')) {
+    return `${found} is not a usable check name. Name the check and let the deployment say where to ask — an address here would be a deployment detail frozen into a published form, and a way to make a server inside a private network fetch something.`
   }
   return `${found} does not match the required pattern ${String(error.params['pattern'])}.`
 }

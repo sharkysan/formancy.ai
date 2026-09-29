@@ -8,7 +8,7 @@ import type { SchemaError } from '@formancy/spec/validate'
 import { createFormEngine, expressionProblems } from '@formancy/core'
 import { checkMembership, sourceNamesIn } from './options-membership.js'
 import type { ServerOptionsSources } from './options-membership.js'
-import type { CapabilitySource } from '@formancy/core'
+import type { CapabilitySource, Check } from '@formancy/core'
 import type { AuditEntry } from './audit.js'
 import type { Actor } from './auth.js'
 import { maySubmit } from './access.js'
@@ -28,6 +28,15 @@ export interface ServerDeps {
   storage: Storage
   newId(): string
   nowIso(): string
+  /**
+   * Validators this deployment answers, by the name a `check` rule gives.
+   *
+   * The same shape `optionsSources` takes, and the same rule: the document names
+   * a check, the deployment says how to answer it, and nothing in the engine
+   * fetches anything. A check a document names and a deployment has not supplied
+   * fails the field closed.
+   */
+  checks?: Record<string, Check>
   /** The clock/randomness the ENGINE sees during replay. */
   capabilities: CapabilitySource
   /**
@@ -329,7 +338,18 @@ export async function createSubmission(
     schema: current.schema,
     initialValue: input.data,
     capabilities: deps.capabilities,
+    // The side this replay is, which was never said. Without it the server ran
+    // as a CLIENT: a `runsOn: "server"` rule was skipped in the one place it was
+    // meant to run and a `runsOn: "client"` rule ran in the one place it was
+    // meant not to — both halves of [0043] backwards, in the product, with
+    // nothing reporting it.
+    mode: 'server',
+    ...(deps.checks === undefined ? {} : { checks: deps.checks }),
   })
+  // Checks are asked by the engine and answered later. Awaiting before `submit`
+  // is what makes the server the authority on them rather than a second opinion
+  // that happened to be quick.
+  await engine.settle()
   const outcome = engine.submit()
   if (!outcome.ok) return { ok: false, kind: 'invalid', errors: outcome.errors }
 

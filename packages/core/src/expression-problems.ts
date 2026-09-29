@@ -124,6 +124,11 @@ export function expressionProblems(schema: FormSchema): ExpressionProblem[] {
   const problems: ExpressionProblem[] = []
 
   for (const rule of rules) {
+    // A check has no expression to have a problem with: it names a validator the
+    // deployment answers. Whether that name resolves is the deployment's question
+    // and is asked at publish, not here.
+    if (rule.kind === 'check' || rule.cel === undefined) continue
+
     const variables = rule.target.includes('[]')
       ? { ...declarations, ...ROW_VARIABLES }
       : declarations

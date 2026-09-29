@@ -443,13 +443,13 @@ required · string · min length 1 · max length 512
 
 #### `kind`
 
-required · one of `"visible"`, `"disabled"`, `"required"`, `"computed"`, `"validate"`
+required · one of `"visible"`, `"disabled"`, `"required"`, `"computed"`, `"validate"`, `"check"`
 
 **Kind.** What the rule decides about its field.
 
 #### `cel`
 
-required · string · min length 1 · max length 2000
+optional · string · min length 1 · max length 2000
 
 **Expression.** The rule itself, in the Common Expression Language. It may read other fields by their data paths; what it reads is what it reacts to.
 
@@ -471,6 +471,12 @@ optional · one of `"both"`, `"client"`, `"server"` · default `"both"`
 
 **Runs on.** Where a validation check runs. Some checks only make sense in one place — a uniqueness check needs the database, a typing hint needs the keyboard. Only a validate rule may set this: if visibility or requiredness differed between the browser and the server, the server could no longer check what the browser did.
 
+#### `check`
+
+optional · string · min length 1 · max length 128 · pattern `^[a-zA-Z][a-zA-Z0-9_.-]*$`
+
+**Check name.** The name of a validator the deployment answers, for a `check` rule. A NAME and never an address: a URL here would be a deployment detail in a portable format, frozen forever in a published version, and a way to make an instance inside a private network fetch something for you.
+
 ### Rule kinds
 
 - `"visible"` — **Visible.** Shows the field while the expression is true. A hidden field is not validated, and by default its answer is removed from the submission.
@@ -478,6 +484,7 @@ optional · one of `"both"`, `"client"`, `"server"` · default `"both"`
 - `"required"` — **Required.** Makes the field required while the expression is true, on top of any fixed required flag in the model.
 - `"computed"` — **Computed.** Writes the expression's result into the field whenever something it reads changes. The person filling the form in cannot type over it.
 - `"validate"` — **Validate.** Checks an answer. While the expression is false, the field carries the error named by "code". A field can have any number of these.
+- `"check"` — **Check.** Asks the deployment about an answer — whether this email is already registered, whether this reference exists. The rule names a check rather than carrying an expression, and the deployment answers it; nothing in formancy fetches anything. Needs spec version 3.
 
 ## Named definitions
 

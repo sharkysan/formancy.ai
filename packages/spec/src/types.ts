@@ -584,7 +584,33 @@ export interface FormLogic {
   rules: LogicRule[]
 }
 
-export type RuleKind = 'visible' | 'disabled' | 'required' | 'computed' | 'validate'
+/**
+ * The rule kinds version 2 has, all of them one CEL expression.
+ *
+ * Named so a later kind can be gated by version. A reader on version 2 given a
+ * kind it has never heard of has no safe answer: ignoring the rule renders a form
+ * that behaves differently from the one the author built, and guessing is worse.
+ */
+export const SPEC_2_RULE_KINDS = [
+  'visible',
+  'disabled',
+  'required',
+  'computed',
+  'validate',
+] as const
+
+/**
+ * Every rule kind, including `check` — a validator the deployment answers.
+ *
+ * `check` is a KIND rather than a flag on `validate`, which
+ * [0042](../../../docs/decisions/0042-freeze-the-spec.md) settled before it was
+ * built: a CEL expression is pure and synchronous by construction, which is what
+ * makes the dependency graph derivable and the evaluation bounded, so an
+ * asynchronous validator cannot be an expression with a property on it.
+ */
+export const RULE_KINDS = [...SPEC_2_RULE_KINDS, 'check'] as const
+
+export type RuleKind = (typeof RULE_KINDS)[number]
 
 /** Where a validation rule runs. */
 export type RunsOn = 'both' | 'client' | 'server'
@@ -593,8 +619,14 @@ export interface LogicRule {
   /** Data path of the field the rule applies to, e.g. `address.city` or `items[].qty`. */
   target: string
   kind: RuleKind
-  /** The rule, in CEL. The single source of truth for evaluation. */
-  cel: string
+  /**
+   * The rule, in CEL. The single source of truth for evaluation.
+   *
+   * Absent on a `check`, which has no expression: it names a validator the
+   * deployment answers, and a rule carrying both would be two rules in one object
+   * with no answer to which verdict wins.
+   */
+  cel?: string
   /** validate only: the error code the field carries while the check fails. */
   code?: string
   /**
@@ -609,6 +641,17 @@ export interface LogicRule {
    * would stop being a check and become a second opinion.
    */
   runsOn?: RunsOn
+  /**
+   * check only: the NAME of a validator the deployment answers.
+   *
+   * **A name and never an address**, for the three reasons `optionsSource` gives:
+   * a URL here would be a deployment detail in a portable format, frozen forever
+   * in a published version, and an SSRF surface on an instance inside a private
+   * network. The document says *which* check; the deployment says how to answer
+   * it, and nothing in `@formancy/spec` or `@formancy/core` fetches anything
+   * ([0086](../../../docs/decisions/0086-a-check-is-named-and-answered-elsewhere.md)).
+   */
+  check?: string
   /** Regenerated visual-editor metadata. Never evaluated. */
   editor?: unknown
 }
