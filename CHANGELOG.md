@@ -8,6 +8,25 @@ Loosely [Keep a Changelog](https://keepachangelog.com), with reasons attached �
 a line that says only *what* changed is rarely the line you need six months
 later.
 
+## Unreleased
+
+**The builder writes both of spec 3's rule kinds.** They shipped as things a developer
+writes by hand and 0.3.0 said so plainly — this is the other half, because a rule kind
+nobody can reach from the builder is the wizard's shape all over again. A page's panel
+offers “Skip this page when” with the condition editor; a field's offers “Ask the
+deployment about the answer”, which takes a **check's name** rather than a condition,
+since a check has no expression and offering one would be offering something the rule
+throws away. A page is offered nothing else, because every other kind on a page is refused
+by the validator.
+
+**And it found that no rule could ever be written on a field inside a page.** The panel
+composed a rule's target by joining the key path, so a field the tree calls
+`about.needsVisa` was addressed as `about.needsVisa` — while the model calls it
+`needsVisa`, because pages are transparent for data. Every rule written there was refused
+with *"No field has the data path"*, in the builder, for as long as pages have existed.
+`dataPathOf` was in `builder-core` doing exactly this job for renames and layout pruning,
+and is exported now.
+
 ## 0.3.0 — 2026-09-29
 
 **The release that freezes spec version 3.** A document written against version 3 will

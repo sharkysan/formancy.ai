@@ -1187,7 +1187,16 @@ function containerPaths(document: FormSchema): string[][] {
  */
 const STRUCTURAL_LAYOUT_PROPERTIES = new Set(['kind', 'children', 'path'])
 
-function dataPathOf(document: FormSchema, keyPath: readonly string[]): string | undefined {
+/**
+ * The path a rule and a layout node address a field by, which is not its key path.
+ *
+ * Pages are transparent for data, so a field inside one is addressed without the
+ * page: `about.needsVisa` in the tree is `needsVisa` in the model. Exported
+ * because the logic panel composed a rule target by joining the key path, and a
+ * rule on any field inside a page was therefore refused with "No field has the
+ * data path" — in the builder, for as long as pages have existed.
+ */
+export function dataPathOf(document: FormSchema, keyPath: readonly string[]): string | undefined {
   const segments: string[] = []
   let fields: readonly FieldDef[] = document.model.fields
 
