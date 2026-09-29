@@ -10,6 +10,27 @@ later.
 
 ## Unreleased
 
+**Three things the roadmap said were missing are built, and it kept saying it.** Measured
+rather than proofread: the drag gesture that makes a row out of two fields shipped on
+26 September — aim at a field's side on the rendered form and the side decides the order —
+and the draft endpoint and token shipped in 0062, with `POST /f/:path/drafts` handing back
+the only key to a draft it signs itself, `PUT` and `GET` requiring that key, and a migration
+notice in both renderers. One of the three was *written into the roadmap by the same
+release that shipped what it called absent*.
+
+Two of the three are now derived in `apps/docs/src/claims.test.ts` from the source of
+`@formancy/server-core` and the routes `app.ts` registers, rather than from any wording
+about them: the day publishing gains a stale-base refusal, the item asking for it fails.
+The third — the row gesture — is fixed by removing the claim instead of guarding it: a
+sentence naming what is absent goes stale silently, so the roadmap's list is now the one
+place an absence is named, and the argument above it stopped ending in one.
+
+**And what actually remains is first on that list: collision control on form editing.** The
+409 pattern exists pointed the other way — a submission declares the version it rendered
+and a stale one is refused with `FORM_VERSION_CHANGED` carrying the current schema —
+while `publishForm` takes a path and a schema and declares nothing, so the second of two
+editors overwrites the first in silence.
+
 **A page can be taken away without taking its questions.** `addPage` shipped in 0.3.0 with
 no way back: `removeField` removes a container WITH its children, so an author who made a
 wizard by mistake had to delete every question and type them again. `unwrapField` is the

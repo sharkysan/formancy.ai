@@ -460,3 +460,69 @@ describe('the files the coverage policy excludes as barrels', () => {
     expect(existsSync(join(repo, 'packages', 'core', 'src', 'index.ts'))).toBe(true)
   })
 })
+
+/**
+ * The roadmap names absences, and an absence is the claim most likely to rot.
+ *
+ * Three sentences in it were measured false on the same afternoon, all three
+ * describing something as missing that had shipped: the drag gesture that makes a
+ * row (shipped two days earlier), and the draft endpoint and token (shipped in
+ * 0062, with routes, a signed id and a notice in both renderers). Nothing failed,
+ * because prose does not break — and one of the three had been *written* in the
+ * commit that shipped the feature it said was missing.
+ *
+ * So the two that can be derived, are. Both read the source of `@formancy/
+ * server-core` rather than any wording about it, because deriving the fact from
+ * the code is the only half of this a test can hold.
+ */
+describe('what the roadmap says is still to do', () => {
+  const roadmap = (): string =>
+    readFileSync(join(repo, 'apps', 'docs', 'src', 'content', 'docs', 'project', 'roadmap.md'), 'utf8')
+
+  const useCases = (): string =>
+    readFileSync(join(repo, 'packages', 'server-core', 'src', 'use-cases.ts'), 'utf8')
+
+  /** The refusal kinds one outcome union declares, read off the union itself. */
+  function kindsOf(union: string): string[] {
+    const source = useCases()
+    const at = source.indexOf(`export type ${union} =`)
+    if (at === -1) return []
+    const body = source.slice(at, source.indexOf('\n\n', at))
+    return [...body.matchAll(/kind: '([a-z_]+)'/g)].map((match) => match[1]!)
+  }
+
+  test('is right that publishing declares no version it was based on', () => {
+    // The claim: the 409 pattern exists on the submission path and wants
+    // extending to the editor. Both halves derived from the outcome unions, so
+    // the day a stale-base refusal is added to publishing, this fails and the
+    // roadmap item has to go.
+    expect(kindsOf('SubmissionOutcome')).toContain('version_changed')
+
+    const publish = kindsOf('PublishOutcome')
+    expect(publish.length).toBeGreaterThan(0)
+    const staleBase = publish.filter((kind) => /version|stale|conflict|changed/.test(kind))
+    expect(staleBase).toEqual([])
+
+    // And while that is true, the roadmap has to still be asking for it. This
+    // half is wording, unavoidably — the document is prose — but the fact above
+    // is not, which is the difference between this and a check that matched a
+    // phrase and passed for the wrong reason.
+    expect(roadmap()).toMatch(/Collision control on form editing/)
+  })
+
+  test('and does not describe the draft routes as missing, because they exist', () => {
+    // The sentence that was wrong: "what is missing is an endpoint and a token".
+    // Derived from the routes the server actually registers, not from the
+    // roadmap's own wording about them.
+    const app = readFileSync(join(repo, 'packages', 'server', 'src', 'app.ts'), 'utf8')
+    const draftRoutes = [...app.matchAll(/app\.(post|put|get)\(\s*'(\/f\/:path\/drafts[^']*)'/g)].map(
+      (match) => `${match[1]!.toUpperCase()} ${match[2]!}`,
+    )
+    // Start, save, resume. Anything fewer and the paragraph below is the wrong
+    // paragraph.
+    expect(draftRoutes.length).toBeGreaterThanOrEqual(3)
+
+    const said = roadmap()
+    expect(said).not.toMatch(/missing is an endpoint and a token/)
+  })
+})

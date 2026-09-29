@@ -166,12 +166,14 @@ left out as v2-era omissions. All three are now shipped.
 Roughly in order, and subject to change. The ordering is argued below rather
 than asserted.
 
-1. **A gesture that creates a row.** Every arrangement edit has a keyboard route and
-   most have a drag one, and the one that is missing is dropping a field *between* two
-   others to make a row of them. `wrapLayoutNodes` is the command underneath it and is
-   built; what is missing is the gap target — a drop zone that is not a node — which is
-   the one drag affordance that cannot be described as a smaller version of an existing
-   one.
+1. **Collision control on form editing.** Two people editing one form, which is
+   form.io's term for it. The mechanism is already here and pointed the other way: a
+   submission declares the version it was rendered against and a stale one is refused
+   with **409 `FORM_VERSION_CHANGED`**, carrying the current schema so the client can
+   re-render rather than guess. Publishing declares nothing — `publishForm` takes a path
+   and a schema — so the second of two editors overwrites the first with no sign that
+   anybody else had the form open. The same 409, on the publish route, with the same
+   body.
 2. **XLIFF**, if somebody asks for it. The exchange format is JSON carrying the source
    beside every target, which converts to XLIFF in a script; a real XLIFF implementation
    is a specification, a namespace and versions, and half of one is worse than none.
@@ -225,16 +227,31 @@ tree, the palette, a property panel generated from the spec's own JSON Schema,
 and a condition editor that compiles to CEL — and each got its keyboard route
 first and a drag surface afterwards. That order is not politeness: WCAG 2.2
 SC 2.5.7 requires a complete keyboard path for every drag operation, and a
-builder that grows one afterwards never quite gets it. What remains is a gesture
-that creates a row.
+builder that grows one afterwards never quite gets it.
+
+That includes the gesture that CREATES structure rather than moving it: dragging a
+field onto another field's side makes a row of the two, on the rendered form itself,
+with the side aimed at deciding the order. The arrangement *tree* deliberately does not
+offer that one by drag — in a list of full-width items, left and right point at nothing
+— so there it is the `w` key, which was the first route to it and is still the complete
+one.
+
+*This paragraph previously ended "what remains is a gesture that creates a row", and
+kept saying it after the gesture shipped. A sentence naming what is absent is a sentence
+that goes stale silently; the list above is the one place where an absence is named, and
+each item there says what would have to exist for it to go.*
 
 ### Worth doing, because the hard half already exists
 
-**Save and resume a draft.** form.io sells this. Here the distributed-systems
-half is already built and tested: a resumed draft is rebound against the exact
-version it was written under — `compatible` silently, `lossy` with a migration
-report, `breaking` read-only. What is missing is an endpoint and a token, which is
-a small fraction of the cost and most of the visible value.
+**Save and resume a draft.** ~~form.io sells this.~~ **Built, and it was the endpoint
+and the token that this said were missing.** A resumed draft is rebound against the exact
+version it was written under — `compatible` silently, `lossy` with a migration report,
+`breaking` read-only — and the routes are there: `POST /f/:path/drafts` starts one and
+hands back the only key to it, `PUT` and `GET` require that key, and both renderers show
+the notice when a resumed draft was migrated. The server picks the id and signs it, and
+the token comes back exactly once, because an id the caller chose meant anybody who
+guessed one could read and overwrite a stranger's part-filled form
+([0062](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0062-a-draft-carries-its-own-key.md)).
 
 **The components they charge for, or lead with** — signature, data grid, QR code,
 autocomplete, tag picker. Each is small on its own and collectively they are a
