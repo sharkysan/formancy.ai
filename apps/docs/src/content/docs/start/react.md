@@ -15,16 +15,17 @@ newer and any bundler from the last few years.
 :::note[Beta]
 The packages are published with provenance — `npm audit signatures` will tell you
 which workflow run built one — and their APIs will change before 1.0. The *document
-format* is frozen: `specVersion: "1"` and `"2"` both are, and version 2 only adds.
-`0.2.0` is the first release that reads version 2, so if npm gives you `0.1.0`, write
-`specVersion: "1"` — it pins documents to version 1 and refuses a version 2 document
-rather than ignoring the property.
+format* is frozen and stays frozen: `specVersion: "1"`, `"2"` and `"3"` all are, and each
+later version only adds. A reader **refuses** a document from a version it does not know
+rather than ignoring the part it cannot read, so the version a release speaks is worth
+checking against the version a document declares — `MIGRATIONS.md` lists both.
 :::
 
 ### Or from the repository
 
-The playground app is the fastest place to poke at a live form, and it is the
-only way to use the builder until `@formancy/builder-react` is published.
+The playground app is the fastest place to poke at a live form, and the whole
+builder is in it. `@formancy/builder-react` is published, so embedding it in
+your own application needs no clone — this is the faster way to try it.
 
 ```bash
 git clone https://github.com/sharkysan/formancy.ai.git

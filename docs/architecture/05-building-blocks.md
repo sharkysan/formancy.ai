@@ -164,6 +164,13 @@ page into its neighbour and refuses a group a rule reads inside
 ([0089](../decisions/0089-a-page-is-unwrapped-into-its-neighbour.md)). A command that looks
 like a transposition of a layout one is worth checking twice for exactly this.
 
+There are two builder interfaces over it now, and the split is the same one
+the renderers have: what decides anything is in `builder-core`, and a builder
+package is markup and a subscription. `@formancy/builder-angular` carries the
+structure tree — zoneless, `OnPush`, one signal per session, `revision()` as the
+whole subscription — and the rest of the panes remain React-only
+([0091](../decisions/0091-a-second-builder-is-a-binding.md)).
+
 `builder-react` is the interface: a structure tree, an arrangement tree, a
 property panel generated from the spec's own JSON Schema, a condition editor
 that compiles to CEL, and three drag surfaces — none of which is the only way
