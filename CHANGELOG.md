@@ -10,6 +10,27 @@ later.
 
 ## Unreleased
 
+**The builder's core holds what is framework-free, which is more than it did.** Seven
+modules moved out of `@formancy/builder-react` and into `@formancy/builder-core`: the
+compiler that turns a structured condition into CEL, the two drop models, the two tree
+flatteners, the palette, and the property list read out of the spec's own JSON Schema.
+915 lines, none of which ever mentioned React.
+
+They lived in the React package because it was the only builder there was. A second one
+makes that expensive rather than untidy: an Angular builder would either import from
+`@formancy/builder-react` — dragging React into an Angular application's dependency
+closure — or copy them, which is two compilers turning a condition into CEL and two answers
+to where a drop lands. This is [0008](docs/decisions/0008-layered-packages.md)'s rule one
+layer up, and it is the step that makes a second builder a binding rather than a rewrite.
+
+**Nothing changed for a consumer.** `@formancy/builder-react` re-exports all of them, so an
+existing import keeps working; they are simply also reachable without React now.
+
+The rule is held in `apps/docs/src/builder-layering.test.ts`, against the **source** rather
+than the manifest — a transitive import compiles just as well as a declared one — and
+against Angular as well as React, because a rule written only against the framework that
+happened to be there first is a rule that permits the second.
+
 **The documentation has a way out of itself.** Asked for, and measured in the built page
 before anything changed: the header held one link, Starlight's own title, pointing at
 `/docs/` — the page you are already on. These pages are a third of formancy.ai and had no

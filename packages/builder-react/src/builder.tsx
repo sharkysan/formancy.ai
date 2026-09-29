@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
 import type { BuilderSession } from '@formancy/builder-core'
-import { dropLocation } from './drop.js'
-import { newFieldOfType, nextSpecVersion, paletteEntries, typesNeedingUpgrade } from './palette.js'
+import { dropLocation } from '@formancy/builder-core'
+import { newFieldOfType, nextSpecVersion, paletteEntries, typesNeedingUpgrade } from '@formancy/builder-core'
 import { useBuilder } from './use-builder.js'
 import type { MoveTarget } from './use-builder.js'
-import { nameOf } from './tree.js'
-import type { TreeNode } from './tree.js'
+import { nameOf } from '@formancy/builder-core'
+import type { TreeNode } from '@formancy/builder-core'
 
 /**
  * The structure editor, driven entirely from the keyboard.

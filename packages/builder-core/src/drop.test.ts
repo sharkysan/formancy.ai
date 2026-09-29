@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { createBuilderSession } from '@formancy/builder-core'
+import { createBuilderSession } from './index.js'
 import type { FormSchema } from '@formancy/spec'
 import { dropLocation } from './drop.js'
 
