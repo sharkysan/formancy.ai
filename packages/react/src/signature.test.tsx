@@ -188,3 +188,82 @@ describe('what the field says it is', () => {
     expect(parts).toContain('signature-clear')
   })
 })
+
+describe('what happens after the pen lifts', () => {
+  /*
+   * Reported from the built playground: *"the signature in the playground is
+   * cleared after signing"*. Measured there before a line was changed — one
+   * stroke on screen after the mouse button came up, and NONE after the pointer
+   * moved off the box.
+   *
+   * `pointerleave` was wired to the same handler as `pointerup`, which is right
+   * for a pen that leaves the surface mid-stroke and wrong for one that has
+   * already lifted: with nothing in progress the handler fell through to
+   * `commit(before)`, and `before` is the strokes from before the LAST one. With
+   * one stroke drawn that is nothing at all, so the answer went back to null.
+   *
+   * Every case already here moved the pointer and lifted it, which is the one
+   * sequence that cannot show this. What a person does next is move their hand
+   * away.
+   */
+  const drawOneStroke = (): void => {
+    fireEvent.pointerDown(surface(), { clientX: 10, clientY: 10 })
+    for (let step = 0; step < 12; step += 1) {
+      fireEvent.pointerMove(surface(), { clientX: 10 + step * 4, clientY: 15 + step })
+    }
+    fireEvent.pointerUp(surface())
+  }
+
+  test('the mark survives the pointer leaving the surface afterwards', () => {
+    const engine = mount()
+
+    drawOneStroke()
+    // The hand moves away. Nothing is in progress, so nothing should change.
+    fireEvent.pointerLeave(surface())
+
+    expect(answer(engine).drawn).toHaveLength(1)
+  })
+
+  test('and survives it happening twice, because a mouse can re-enter and leave', () => {
+    const engine = mount()
+
+    drawOneStroke()
+    fireEvent.pointerLeave(surface())
+    fireEvent.pointerEnter(surface())
+    fireEvent.pointerLeave(surface())
+
+    expect(answer(engine).drawn).toHaveLength(1)
+  })
+
+  test('while a pen that leaves mid-stroke still ends the stroke it was drawing', () => {
+    // The reason `pointerleave` is wired up at all, and it must keep working: a
+    // pointer that goes past the edge with the button down never sends
+    // `pointerup` to this element, and without this the next press would append
+    // to a stroke from a minute ago.
+    const engine = mount()
+
+    fireEvent.pointerDown(surface(), { clientX: 1, clientY: 1 })
+    fireEvent.pointerMove(surface(), { clientX: 30, clientY: 30 })
+    fireEvent.pointerMove(surface(), { clientX: 60, clientY: 60 })
+    fireEvent.pointerLeave(surface())
+
+    // Then a second stroke, which must be a second stroke rather than a
+    // continuation of the first.
+    fireEvent.pointerDown(surface(), { clientX: 90, clientY: 10 })
+    fireEvent.pointerMove(surface(), { clientX: 120, clientY: 20 })
+    fireEvent.pointerUp(surface())
+
+    expect(answer(engine).drawn).toHaveLength(2)
+  })
+
+  test('and a tap that leaves without moving still counts as nothing', () => {
+    // One point is a tap, not a stroke. The guard added for the bug above must
+    // not have taken this with it: a tap on the way past is not signing.
+    const engine = mount()
+
+    fireEvent.pointerDown(surface(), { clientX: 5, clientY: 5 })
+    fireEvent.pointerLeave(surface())
+
+    expect(answer(engine).drawn).toBeUndefined()
+  })
+})

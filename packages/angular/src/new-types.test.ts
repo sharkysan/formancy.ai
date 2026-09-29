@@ -681,6 +681,49 @@ describe('the signature field, which must behave as the React one does', () => {
     }
   })
 
+  test('keeps the mark when the pointer leaves after the pen has lifted', async () => {
+    /*
+     * The parity case for the bug the playground reported: `pointerleave` shares
+     * the handler that ends a stroke, and once the pen has already lifted there is
+     * nothing in progress — so it committed the strokes from before the LAST one
+     * and the signature vanished. Both renderers had it, in the same shape, which
+     * is what two independent implementations of one behaviour costs.
+     */
+    const engine = engineFor(signing())
+    await renderForm(engine)
+
+    const surface = screen.getByRole('img', { name: /sign here/i })
+    fireEvent.pointerDown(surface, { clientX: 10, clientY: 10 })
+    for (let step = 0; step < 12; step += 1) {
+      fireEvent.pointerMove(surface, { clientX: 10 + step * 4, clientY: 15 + step })
+    }
+    fireEvent.pointerUp(surface)
+    // The hand moves away, which is what a person does next.
+    fireEvent.pointerLeave(surface)
+
+    expect((engine.value() as { mark?: { drawn?: number[][][] } }).mark?.drawn).toHaveLength(1)
+  })
+
+  test('and a pen leaving mid-stroke still ends that stroke', async () => {
+    // Why `pointerleave` is wired up at all, and it must keep working: a pointer
+    // that goes past the edge with the button down never sends `pointerup` here,
+    // so without this the next press would extend a stroke from a minute ago.
+    const engine = engineFor(signing())
+    await renderForm(engine)
+
+    const surface = screen.getByRole('img', { name: /sign here/i })
+    fireEvent.pointerDown(surface, { clientX: 1, clientY: 1 })
+    fireEvent.pointerMove(surface, { clientX: 30, clientY: 30 })
+    fireEvent.pointerMove(surface, { clientX: 60, clientY: 60 })
+    fireEvent.pointerLeave(surface)
+
+    fireEvent.pointerDown(surface, { clientX: 90, clientY: 10 })
+    fireEvent.pointerMove(surface, { clientX: 120, clientY: 20 })
+    fireEvent.pointerUp(surface)
+
+    expect((engine.value() as { mark?: { drawn?: number[][][] } }).mark?.drawn).toHaveLength(2)
+  })
+
   test('typing a name is the answer, and replaces a mark', async () => {
     const engine = engineFor(signing())
     await renderForm(engine)

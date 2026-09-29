@@ -272,6 +272,40 @@ leading apostrophe.
 
 ---
 
+### B6. A control destroys an answer already given
+
+*How it arises:* a control that tracks a gesture across several events holds state between
+them, and an event that means "the gesture is over" can arrive when there is no gesture. The
+signature surface ended a stroke on `pointerup` **and** on `pointerleave` — the second
+because a pen that crosses the edge with the button down never sends `pointerup` to that
+element, so without it the next press would extend a stroke from minutes earlier. With
+nothing in progress the handler fell through to restoring the strokes recorded before the
+last one, which with one stroke drawn is nothing. Measured in the built playground: one
+stroke on screen after the button came up, none once the mouse left the box, and the stored
+answer back to `null`.
+
+*Severity:* the answer was given, was on screen, and was then removed by a movement nobody
+would connect to it. Worse than a control that refuses input, which at least prompts a
+second attempt: here the person signed, saw the mark, moved their hand, and the form is as
+it was. On a consent or a declaration that is the answer the whole document exists to
+collect. It reached both renderers identically, so a deployment on either was affected.
+
+*Constraint:* the handler returns when no stroke is in progress, in
+`packages/react/src/form.tsx` and `packages/angular/src/fields.ts`. Held by
+`signature.test.tsx` and `new-types.test.ts` — the sequence a person performs, which is
+draw, lift, and move away — with the two behaviours the fix must not take with it asserted
+beside it: a pen leaving mid-stroke still ends that stroke, and a tap that never moved still
+counts as not having signed. Observed failing in both renderers before the change.
+
+*Residual, and it is the general one:* **every case that existed used the one sequence that
+could not show it.** Down, move, up, assert — which is the gesture as a developer describes
+it rather than as a hand performs it. Nothing gates against that: the conformance fixtures
+speak filling in and clicking by accessible name and cannot say "draw", so pointer
+behaviour is held by hand in each renderer, twice over, and a gesture whose tail nobody
+thought of is a gesture nobody tested. This one was found by a person using the playground.
+
+---
+
 ## C — Data reaches the wrong party
 
 ### C1. An account's existence is disclosed by a failed login

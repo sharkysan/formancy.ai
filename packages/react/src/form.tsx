@@ -1771,10 +1771,21 @@ function SignatureField({ path, label }: FieldComponentProps) {
 
   const onPointerUp = (): void => {
     const finished = stroke.current
+    // Nothing in progress, so nothing to end. `pointerleave` shares this handler
+    // — which is what ends a stroke whose pen went past the edge without ever
+    // sending `pointerup` here — and it fires AGAIN once the pen has already
+    // lifted, when `before` holds the strokes from before the last one. Falling
+    // through to `commit(before)` then threw away the stroke just drawn.
+    //
+    // Measured in the built playground, because the sequence every test here used
+    // was down, move, up — and the thing a person does next is move their hand
+    // away: one stroke on screen after the button came up, and none once the
+    // mouse left the box.
+    if (finished === null) return
     stroke.current = null
     // One point is a tap, not a stroke, and a tap on the way past should not
     // count as having signed — so the strokes from before it are what remains.
-    if (finished === null || finished.length < 2) commit(before.current)
+    if (finished.length < 2) commit(before.current)
   }
 
   return (
