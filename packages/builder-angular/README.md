@@ -63,11 +63,34 @@ palette reading "0, 1, 2" is a keyboard route only in the sense that it exists.
 Every command reports through one polite live region. `role="status"` already
 implies `aria-live="polite"`; setting both is the classic way to hear it twice.
 
+## Two trees, as in the React builder
+
+`FormancyLayoutPane` is the arrangement: rows, columns and sections, which is how
+two fields end up side by side.
+
+```ts
+template: `<formancy-layout-pane [session]="session" layout="web" />`
+```
+
+| Key | What it does |
+|---|---|
+| `a` | Add a row, column or section |
+| `m` | Move the focused item |
+| `u` | Unwrap a row or column, keeping what is in it |
+| `w` | Put it and another item side by side in a row |
+| `Delete` | Take it out of the arrangement — **the form still collects the field** |
+
+That last distinction is the pane's reason to exist: the model answers *what does
+this form collect* and the arrangement answers *where does it appear*. A field can
+be in one without being in the other, which is why a field no arrangement places
+is listed under its own heading rather than silently left out — it is collected
+and invisible to everyone filling the form in.
+
 ## What it does not have yet
 
-The arrangement tree, the property panel, the condition editor, the translations
-pane and the drag surfaces are React-only for now. `@formancy/builder-core`
-holds what each of them needs, so they are components rather than designs.
+The property panel, the condition editor, the translations pane and the drag
+surfaces are React-only for now. `@formancy/builder-core` holds what each of them
+needs, so they are components rather than designs.
 
 ## Licence
 

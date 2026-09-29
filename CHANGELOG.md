@@ -10,6 +10,22 @@ later.
 
 ## Unreleased
 
+**The Angular builder arranges as well as structures.** `FormancyLayoutPane` — rows,
+columns and sections, by keyboard: `a` to add a container, `m` to move one, `u` to unwrap
+it keeping what is inside, `w` to put two items side by side, `Delete` to take a field out
+of the arrangement, undo and redo. Eleven cases beside the structure tree's eighteen, by
+role and accessible name only, and each observed failing against its own mutation.
+
+Two things it says out loud, because both are the kind of thing a pane like this exists to
+prevent. Taking a field out of an arrangement announces that **the form still collects
+it** — anything else reads as having deleted the question. And a field no arrangement
+places is listed under a heading rather than silently omitted: it is collected by the form
+and invisible to everyone filling it in, which is the mistake this pane can catch.
+
+What the two panes OFFER is still decided once. Destinations, their descriptions, and what
+may be wrapped with what come from `@formancy/builder-core`, so the React and Angular
+arrangement trees cannot disagree about one document.
+
 **There is a builder for Angular.** `@formancy/builder-angular` — Angular 22, zoneless,
 `OnPush`, standalone — over the same `@formancy/builder-core` the React one uses. Asked
 directly: *"why is there no builder for angular?"*, and the honest answer at the time was
