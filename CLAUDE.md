@@ -147,6 +147,65 @@ at the digit in `FORMANCY_S3_BUCKET` and collapsed five variable names into one
 meaningless match. **Match the whole property, not the shape it usually has**, and
 when a test disagrees with the code, work out which is wrong before changing either.
 
+## The code reads as though a senior wrote both halves
+
+The standard is not "it works". It is that somebody who knows the patterns — a
+senior front-end engineer reading the renderers and the builders, a senior
+back-end engineer reading the server and the engine — recognises the shape
+immediately and finds nothing to explain away.
+
+**Idiomatic for the thing it is written in**, not a translation of another
+framework's habits. React is `useSyncExternalStore` against a snapshot whose
+identity is stable, not a `useEffect` that copies state into state. Angular is
+signals, zoneless and `OnPush`, never `ChangeDetectorRef` and never a `Subject`
+standing in for a value. The server is ports and adapters: a use-case takes
+storage, not a connection. A file that reads as though it were ported from the
+other framework is a file to rewrite, even when it passes.
+
+**A pattern is chosen for a force it resolves, and the comment names the
+force.** A factory because construction has a precondition worth enforcing once;
+a strategy because the deployment supplies the behaviour and the document only
+names it; a port because the thing behind it is genuinely swappable and there is
+a second implementation or a test double that proves it. A pattern applied
+because it has a name costs every later reader the price of working out which
+force it was for, and finding there wasn't one. **The cargo-cult version of this
+rule is worse than the rule's absence**, so: no interface with one implementation
+and no second one planned, no layer that only forwards, no event bus where a
+function call would do, no abstract base class for two concrete cases.
+
+**Duplication is cheaper than the wrong abstraction, and both are cheaper than a
+silent divergence.** Two renderers implementing one control by hand is
+deliberate ([0033](docs/decisions/0033-one-suite-n-drivers.md)); two
+implementations of the *same decision* is the thing this project exists to
+prevent, which is why the condition compiler, the destination list and the
+property list live in a core both builders read
+([0091](docs/decisions/0091-a-second-builder-is-a-binding.md)). The question is
+never "is this repeated" but **"if these two ever disagree, would anybody find
+out?"**
+
+### Size is a signal, and there is a gate on it
+
+A long file is not automatically wrong — `validate.ts` is one subject and reads
+top to bottom. What is wrong is a file that has become the place things go. So
+there is a budget, and `apps/docs/src/size.test.ts` enforces it:
+
+- **600 lines** for a source file, tests excluded.
+- Anything over it is in that test's allow-list **with its current size as its
+  ceiling**, so it cannot grow — and when it shrinks past its ceiling the test
+  fails too, forcing the number down rather than letting a stale entry sit there
+  granting room nobody needs. The list is meant to empty.
+- A new file over the budget does not get added to the list. Split it.
+
+Split by **the reason to change**, never by line count. Three 600-line files that
+must be edited together are worse than the 1,800-line file they came from,
+because now the reader has to find all three. The seams that have worked here:
+one control per file in a renderer, one concern's commands per file in a session,
+one route family per plugin on the server.
+
+The same applies below the file: a function past about 60 lines, a component
+doing two jobs, a `switch` growing a case per feature, a class whose name needs
+"and" to describe it. Each is a signal to look, not a verdict.
+
 ## A new feature is demonstrated, not only documented
 
 Prose that says a feature exists and a build where nobody can see it working are two
