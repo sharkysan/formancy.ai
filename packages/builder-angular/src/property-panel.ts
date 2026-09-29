@@ -7,7 +7,14 @@ import {
   signal,
 } from '@angular/core'
 import { editablePropertiesFor, nameOf } from '@formancy/builder-core'
-import type { BuilderSession, EditableProperty, FieldDef, FieldOption } from './types.js'
+import type {
+  BuilderSession,
+  DataGridColumn,
+  EditableProperty,
+  FieldDef,
+  FieldOption,
+} from './types.js'
+import { FormancyColumnsEditor } from './columns-editor.js'
 import { FormancyOptionsEditor } from './options-editor.js'
 import { injectBuilderView } from './view.js'
 
@@ -33,11 +40,20 @@ let nextId = 0
 @Component({
   selector: 'formancy-property',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormancyOptionsEditor],
+  imports: [FormancyColumnsEditor, FormancyOptionsEditor],
   template: `
     @if (property().kind === 'options') {
       <formancy-options-editor
         [options]="asOptions(value())"
+        (changed)="changed.emit($event.length === 0 ? undefined : $event)"
+      />
+    } @else if (property().kind === 'columns') {
+      <!-- A datagrid's columns name this field's own children, so the editor
+           needs them. Nothing else in the panel does, which is why they are
+           passed rather than reached for. -->
+      <formancy-columns-editor
+        [columns]="asColumns(value())"
+        [children]="childFields()"
         (changed)="changed.emit($event.length === 0 ? undefined : $event)"
       />
     } @else {
@@ -102,6 +118,8 @@ let nextId = 0
 export class FormancyProperty {
   readonly property = input.required<EditableProperty>()
   readonly value = input<unknown>(undefined)
+  /** The field's own children, which only the columns editor needs. */
+  readonly childFields = input<readonly FieldDef[]>([])
   readonly changed = output<unknown>()
 
   protected readonly id = `formancy-property-${String((nextId += 1))}`
@@ -135,6 +153,10 @@ export class FormancyProperty {
 
   protected asOptions(raw: unknown): FieldOption[] {
     return Array.isArray(raw) ? (raw as FieldOption[]) : []
+  }
+
+  protected asColumns(raw: unknown): DataGridColumn[] {
+    return Array.isArray(raw) ? (raw as DataGridColumn[]) : []
   }
 
   protected onCheck(event: Event): void {
@@ -209,6 +231,7 @@ export class FormancyProperty {
           <formancy-property
             [property]="property"
             [value]="valueOf(property.name)"
+            [childFields]="field.fields ?? []"
             (changed)="set(property.name, $event)"
           />
         }

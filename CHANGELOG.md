@@ -10,6 +10,22 @@ later.
 
 ## Unreleased
 
+**The Angular builder edits a datagrid's columns.** `FormancyColumnsEditor`, the second
+shape generation cannot produce — the schema says "array of objects" and the honest generic
+answer is a textarea full of JSON. A column **names** a child that exists, so the answer is
+a choice and never a text box; a width is a **share** and never a length, because a length
+in a document is the format choosing the consumer's design system for them; and a column
+list is an **ordering**, so removing one puts its answer back at the end rather than taking
+it off the form — said out loud, because an author who removes a column expects the answer
+to go with it.
+
+**One comment claimed more than the code did.** Building the column property by property
+rather than by spread is described as keeping "absent" and "empty" apart — and for `width`
+the session catches it anyway, because it copies through JSON and `undefined` does not
+survive that. Measured by writing the naive spread and watching the width case stay green.
+Only `header` is genuinely held here, where `''` **is** a value JSON keeps, so that case now
+exists and the comment says which half it holds.
+
 **Both Angular builder trees can be dragged**, which is the second route to commands that
 already worked without it — the order WCAG 2.2 SC 2.5.7 asks for, and the order both trees
 were built in. Where a drop lands comes from `@formancy/builder-core`, so the React and
