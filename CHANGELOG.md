@@ -10,6 +10,29 @@ later.
 
 ## Unreleased
 
+**A standard for the code itself, and a gate under it.** `CLAUDE.md` gains *the code reads
+as though a senior wrote both halves*: idiomatic for the framework it is written in rather
+than a translation of another's habits, a pattern chosen for a force the comment names, and
+the reminder that the cargo-cult version of that rule is worse than its absence — no
+interface with one implementation, no layer that only forwards, no abstract base for two
+concrete cases.
+
+The part that bites is the size budget. **600 lines for a source file**, enforced by
+`apps/docs/src/size.test.ts`, with the fifteen files already over it on a list — each capped
+at the size it was measured at, each with a note saying where its seam is, because a number
+with no plan is a permission slip. It is a **ratchet**: a listed file may not grow, and when
+one shrinks past its ceiling the test fails too, so the entry comes down rather than sitting
+there granting room nobody needs. A new file over the budget is not added to the list.
+
+**And the first one is worked off.** `packages/angular/src/fields.ts` was 1,909 lines
+holding seventeen components — the second largest file in the repository and the place
+things went. It is now a registry of 55 lines beside ten files of 56 to 321, split by the
+reason to change: a control changes because of that control. The mechanical cost is visible
+and worth saying — about 70 lines of import blocks and headers across the ten — and the
+first attempt at the split cut a component in half, because walking backwards over blank
+lines to find where a class begins lands inside a template literal. It was redone with a
+scanner that understands strings, templates and comments.
+
 **The Angular builder edits properties, for both trees.** `FormancyPropertyPanel` and
 `FormancyLayoutPropertyPanel`, generated from the spec's own JSON Schema exactly as the
 React ones are — hand-write twenty-five panels and they rot within two releases. Plus
