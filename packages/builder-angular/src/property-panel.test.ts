@@ -239,3 +239,149 @@ describe('editing a field’s choices', () => {
     expect(fieldNamed('country', session)['options']).toHaveLength(1)
   })
 })
+
+describe('editing a datagrid’s columns', () => {
+  /*
+   * The other shape generation cannot produce: the schema says "array of
+   * objects" and the honest generic answer is a textarea full of JSON.
+   *
+   * Two things this editor exists to say. A column NAMES a child that already
+   * exists, so the answer is a choice and never a text box — a typed name is a
+   * column over nothing, refused at publish rather than at the keystroke. And a
+   * column list is an ORDERING rather than a choice of which answers to keep, so
+   * removing one does not remove the answer.
+   */
+  const grid: FormSchema = {
+    specVersion: '3',
+    id: 'order',
+    title: 'Order',
+    model: {
+      fields: [
+        {
+          key: 'lines',
+          type: 'repeater',
+          label: 'Lines',
+          widget: 'datagrid',
+          fields: [
+            { key: 'sku', type: 'text', label: 'SKU' },
+            { key: 'qty', type: 'number', label: 'Quantity' },
+          ],
+        },
+      ],
+    },
+  } as unknown as FormSchema
+
+  const onGrid = async (): Promise<Mounted> => {
+    const session = createBuilderSession(grid)
+    const view = await render(FormancyPropertyPanel, {
+      componentInputs: { session, keyPath: ['lines'] },
+      providers: [provideZonelessChangeDetection()],
+    })
+    await view.fixture.whenStable()
+    const user = userEvent.setup()
+    const settle = async (): Promise<void> => {
+      await view.fixture.whenStable()
+    }
+    return {
+      session,
+      type: async (element, text) => {
+        await user.type(element as HTMLElement, text)
+        await settle()
+      },
+      clear: async (element) => {
+        await user.clear(element as HTMLElement)
+        await settle()
+      },
+      click: async (element) => {
+        await user.click(element as HTMLElement)
+        await settle()
+      },
+      select: async (element, value) => {
+        await user.selectOptions(element as HTMLElement, value)
+        await settle()
+      },
+    }
+  }
+
+  test('offers an editor rather than a box of JSON, and says what no column means', async () => {
+    await onGrid()
+
+    expect(screen.getByText(/no columns configured/i)).toBeTruthy()
+    // Said out loud, because an author who removes a column expects the answer
+    // to disappear with it.
+    expect(screen.getByText(/every answer still gets one/i)).toBeTruthy()
+  })
+
+  test('a column names a child that exists, chosen rather than typed', async () => {
+    const { session, click } = await onGrid()
+
+    await click(screen.getByRole('button', { name: /configure the sku column/i }))
+
+    const columns = (
+      session.document().model.fields[0] as unknown as Record<string, unknown>
+    )['columns'] as Array<Record<string, unknown>>
+    expect(columns).toEqual([{ field: 'sku' }])
+    // A choice, never a text box: a typed name is a column over nothing.
+    expect(screen.getByRole('combobox', { name: /answer/i })).toBeTruthy()
+  })
+
+  test('a width is written as a share, and clearing it removes the property', async () => {
+    // A length in a document is the format choosing the consumer's design system
+    // for them, and no renderer can honour one on a narrow screen.
+    const { session, click, type, clear } = await onGrid()
+    await click(screen.getByRole('button', { name: /configure the sku column/i }))
+
+    await type(screen.getByRole('spinbutton', { name: /width, as a share/i }), '2')
+    let columns = (
+      session.document().model.fields[0] as unknown as Record<string, unknown>
+    )['columns'] as Array<Record<string, unknown>>
+    expect(columns[0]?.['width']).toBe(2)
+
+    await clear(screen.getByRole('spinbutton', { name: /width, as a share/i }))
+    columns = (session.document().model.fields[0] as unknown as Record<string, unknown>)[
+      'columns'
+    ] as Array<Record<string, unknown>>
+    // Absent means "an even share"; `width: 0` is refused outright as a column
+    // nobody can see.
+    expect('width' in (columns[0] ?? {})).toBe(false)
+  })
+
+  test('a heading cleared is a column with no heading, not a heading of nothing', async () => {
+    /*
+     * The one thing this editor genuinely holds by building the column property
+     * by property. `width` would be caught anyway — the session copies through
+     * JSON and `undefined` does not survive that — but `''` IS a value JSON
+     * keeps, so an empty heading would reach the document and mean "a heading
+     * that says nothing" rather than "no heading".
+     *
+     * Measured: writing the naive spread leaves the width case green and this
+     * one red, which is why both are here.
+     */
+    const { session, click, type, clear } = await onGrid()
+    await click(screen.getByRole('button', { name: /configure the sku column/i }))
+
+    await type(screen.getByRole('textbox', { name: /short heading/i }), 'Code')
+    await clear(screen.getByRole('textbox', { name: /short heading/i }))
+
+    const columns = (
+      session.document().model.fields[0] as unknown as Record<string, unknown>
+    )['columns'] as Array<Record<string, unknown>>
+    expect('header' in (columns[0] ?? {})).toBe(false)
+  })
+
+  test('each remove button says which column it removes', async () => {
+    const { click } = await onGrid()
+    await click(screen.getByRole('button', { name: /configure the sku column/i }))
+
+    expect(screen.getByRole('button', { name: /remove the sku column/i })).toBeTruthy()
+  })
+
+  test('and once every answer is named, it says removing one does not remove the answer', async () => {
+    const { click } = await onGrid()
+
+    await click(screen.getByRole('button', { name: /configure the sku column/i }))
+    await click(screen.getByRole('button', { name: /configure the qty column/i }))
+
+    expect(screen.getByText(/puts its answer back at the end/i)).toBeTruthy()
+  })
+})

@@ -128,7 +128,8 @@ drop is announced through the same live region the keyboard uses.
 ## What it does not have yet
 
 Dragging on the rendered form itself — the surface the React builder puts over a
-live preview — and the datagrid columns editor. `@formancy/builder-core` holds what each of them
+live preview. Everything it would call is in `@formancy/builder-core` already, so
+it is a directive rather than a design. `@formancy/builder-core` holds what each of them
 needs, so they are components rather than designs.
 
 ## Licence
