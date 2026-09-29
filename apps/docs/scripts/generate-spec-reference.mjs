@@ -239,6 +239,75 @@ out.push(`### Rule kinds\n`)
 out.push(renderConstants(deref(logicRule.properties.kind).node.oneOf))
 out.push('')
 
+/**
+ * One branch of a rule's conditional block, in words.
+ *
+ * A branch says three kinds of thing and only one of them is a property: what it
+ * requires, what it forbids (`"cel": false` is a boolean schema meaning "not
+ * here"), and what it overrides. The third is the one this page existed without:
+ * a `check` falls back to `runsOn: "server"` while the shared property declares
+ * `"both"`, and a JSON Schema `default` is one value where there are two.
+ */
+function renderRuleBranch(node) {
+  const lines = []
+  const required = node.required ?? []
+  if (required.length > 0) {
+    lines.push(`Requires ${required.map((name) => `\`${name}\``).join(', ')}.`)
+  }
+  const entries = Object.entries(node.properties ?? {})
+  const forbidden = entries.filter(([, child]) => child === false).map(([name]) => `\`${name}\``)
+  if (forbidden.length > 0) {
+    lines.push(`${forbidden.join(', ')} ${forbidden.length === 1 ? 'is' : 'are'} not allowed here.`)
+  }
+  const overrides = entries.filter(([, child]) => child !== true && child !== false)
+  if (overrides.length > 0) {
+    lines.push('')
+    lines.push(
+      renderProperties({ properties: Object.fromEntries(overrides), required }, '#####'),
+    )
+  }
+  lines.push('')
+  return lines.join('\n')
+}
+
+// Per-kind properties, from the rule's allOf if/then block.
+//
+// This page did not read `logicRule.allOf` at all, so everything the schema says
+// per kind was published nowhere: which kinds carry `cel` and which carry
+// `check`, and the `runsOn` a check falls back to. Found by writing a demo whose
+// check never ran, then looking for where the reference said so. It did not.
+const ruleBlocks = logicRule.allOf ?? []
+if (ruleBlocks.length > 0) {
+  out.push(`### Per-kind properties\n`)
+  out.push(
+    `Some of a rule's properties depend on its kind. The schema states these as a ` +
+      `conditional block; they are listed here per kind.\n`,
+  )
+}
+for (const block of ruleBlocks) {
+  const condition = block.if?.properties?.kind
+  const kinds = condition?.enum ?? (condition?.const !== undefined ? [condition.const] : [])
+
+  // Gated on something this page has no vocabulary for. Skipping silently would
+  // hide a rule's own requirements from the reference -- which is what happened
+  // while this block was not read at all -- so say so rather than publish a
+  // heading nobody can interpret.
+  if (kinds.length === 0) {
+    throw new Error(
+      `A conditional block on logicRule in formancy.schema.json is gated on ` +
+        `something other than kind, so this page cannot label it: ` +
+        `${JSON.stringify(block.if)}. Teach generate-spec-reference.mjs about it.`,
+    )
+  }
+
+  out.push(`#### ${kinds.map((kind) => `\`${kind}\``).join(', ')}\n`)
+  out.push(renderRuleBranch(block.then ?? {}))
+  if (block.else !== undefined) {
+    out.push(`#### Every other kind\n`)
+    out.push(renderRuleBranch(block.else))
+  }
+}
+
 // ----------------------------------------------------- the named definitions
 const rendered = new Set(['field', 'fieldType', 'logic', 'logicRule', 'leafField', 'containerField'])
 out.push(`## Named definitions\n`)

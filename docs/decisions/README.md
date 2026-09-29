@@ -190,3 +190,4 @@ listed under the sections they belong to above.
 | [0087](0087-a-page-can-be-walked-past.md) | A page can be walked past, and its questions go with it | accepted |
 | [0088](0088-spec-3-freezes-with-four-constructs.md) | Spec 3 freezes with four constructs, not one | accepted |
 | [0089](0089-a-page-is-unwrapped-into-its-neighbour.md) | A page is unwrapped into its neighbour, not onto the top level | accepted |
+| [0090](0090-a-check-defaults-to-the-server.md) | A check defaults to the server, and the page says which default it gets | accepted |

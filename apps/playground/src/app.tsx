@@ -37,6 +37,8 @@ import '@formancy/themes/paper.css'
 import '@formancy/themes/workbench.css'
 import './app.css'
 import { STARTER_SCHEMA } from './starter.js'
+import { WIZARD_SCHEMA } from './wizard.js'
+import { PLAYGROUND_CHECKS } from './demo-checks.js'
 
 /**
  * The playground: the whole thesis on one screen. A schema on the left, the
@@ -47,6 +49,29 @@ import { STARTER_SCHEMA } from './starter.js'
  * switching between them, live, with no remount and no component change, is
  * the claim being demonstrated rather than asserted.
  */
+/**
+ * The two demo documents, and why there are two.
+ *
+ * The starter is one flat form on purpose — every field type the spec defines
+ * **minus the two that nest** — so every control a visitor might want to try is
+ * on screen at once, with nothing to press Next through. The cost of that was
+ * invisible until somebody asked for a demo of the wizard work: this page held no
+ * `page` and no `group` at all, so it never drew a stepper, never showed a step
+ * being walked past, and gave the builder's container commands nothing to act on.
+ *
+ * Adding a page to the starter would have taken away the thing that makes it
+ * work, to demonstrate a page. So the obligation is on the pair, and
+ * `wizard.test.ts` holds it there: between the two of them, every field type and
+ * every rule kind the format defines is on screen somewhere, derived from the
+ * spec's own lists rather than from a list here that would go stale.
+ */
+const DEMOS = [
+  { id: 'starter', label: 'Everything — one form, every field type', schema: STARTER_SCHEMA },
+  { id: 'wizard', label: 'A wizard — steps, a group, a skipped page', schema: WIZARD_SCHEMA },
+] as const
+
+type DemoId = (typeof DEMOS)[number]['id']
+
 const THEMES = [
   { id: 'blueprint', label: 'Blueprint — light, technical' },
   { id: 'dusk', label: 'Dusk — dark, rounded' },
@@ -175,6 +200,7 @@ const PANES = [
 type PaneId = (typeof PANES)[number]['id']
 
 export function App() {
+  const [demo, setDemo] = useState<DemoId>('starter')
   const [source, setSource] = useState(() => JSON.stringify(STARTER_SCHEMA, null, 2))
   const [theme, setTheme] = useState<ThemeId>('blueprint')
   const [locale, setLocale] = useState<LocaleId>('en')
@@ -188,9 +214,16 @@ export function App() {
   const [builderTab, setBuilderTab] = useState<'fields' | 'arrangement'>('fields')
   const [shown, setShown] = useState<PaneId>('form')
 
-  // Opened when the Build pane appears, from whatever the text says then.
-  // Deliberately not re-opened as `source` changes: the builder writes it on
-  // every edit, and re-opening each time would throw the undo stack away.
+  // Opened when the Build pane appears, from whatever the text says then, and
+  // again when a different demo is loaded.
+  //
+  // Deliberately not re-opened as `source` changes in general: the builder writes
+  // it on every edit, and re-opening each time would throw the undo stack away.
+  // A demo switch is the one case where throwing it away is right, because it is
+  // a different document rather than an edit to this one — without `demo` in the
+  // dependencies the form followed the picker and the structure tree did not,
+  // which is two panes showing two documents on the page whose whole claim is
+  // that they cannot.
   useEffect(() => {
     if (pane !== 'build') {
       setSession(null)
@@ -205,7 +238,7 @@ export function App() {
       setSession(null)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pane])
+  }, [pane, demo])
 
   const monaco = useMonaco()
   if (monaco !== null) {
@@ -259,6 +292,11 @@ export function App() {
             today: () => new Date().toISOString().slice(0, 10),
             random: () => Math.random(),
           },
+          // This tab is the deployment. A `check` names a validator and carries no
+          // expression, so with nothing here a document naming one fails CLOSED:
+          // the field shows an error the visitor cannot clear and nothing says that
+          // the deployment, not the answer, is what is missing.
+          checks: PLAYGROUND_CHECKS,
         }),
       }
     } catch (error) {
@@ -284,6 +322,27 @@ export function App() {
         <span className="note">Edit the schema; the form and the engine follow.</span>
 
         <div className="controls">
+          <label className="switcher">
+            Demo
+            <select
+              value={demo}
+              onChange={(event) => {
+                const chosen = DEMOS.find((option) => option.id === event.target.value)
+                if (chosen === undefined) return
+                setDemo(chosen.id)
+                // The text IS the document here — the builder writes it on every
+                // edit and everything else reads it — so loading a demo is setting
+                // the text, and nothing else has to be told.
+                setSource(JSON.stringify(chosen.schema, null, 2))
+              }}
+            >
+              {DEMOS.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
           <label className="switcher">
             Language
             <select value={locale} onChange={(event) => setLocale(event.target.value as LocaleId)}>
