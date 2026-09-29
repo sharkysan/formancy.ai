@@ -160,6 +160,28 @@ export const STARTER_SCHEMA = {
           { value: 'signature', label: { $t: 'extras.signature' } },
         ],
       },
+      // `widget: 'tagpicker'` on a selectboxes: several answers narrowed by typing
+      // and shown as chips. A long list rather than three, because a picker over
+      // a list somebody can read at a glance demonstrates nothing -- the widget
+      // exists for the list that is too long to tick through. Still an array of
+      // offered values in the options' own order, which is what the selectboxes
+      // above stores without it.
+      {
+        key: 'interests',
+        type: 'selectboxes',
+        widget: 'tagpicker',
+        label: { $t: 'interests' },
+        options: [
+          { value: 'architecture', label: { $t: 'interests.architecture' } },
+          { value: 'cycling', label: { $t: 'interests.cycling' } },
+          { value: 'food', label: { $t: 'interests.food' } },
+          { value: 'history', label: { $t: 'interests.history' } },
+          { value: 'hiking', label: { $t: 'interests.hiking' } },
+          { value: 'music', label: { $t: 'interests.music' } },
+          { value: 'photography', label: { $t: 'interests.photography' } },
+          { value: 'swimming', label: { $t: 'interests.swimming' } },
+        ],
+      },
       // `widget: 'typeahead'` on a select: type to narrow a long list. Twelve
       // options rather than two, because a type-ahead over a list somebody can
       // read at a glance demonstrates nothing -- the widget exists for the list
@@ -319,6 +341,9 @@ export const STARTER_SCHEMA = {
                   columns: 2,
                   children: [
                     { kind: 'field', path: 'extras' },
+                    // Spanning, because chips wrap and a half-width row of them
+                    // reads as a wall rather than as a list.
+                    { kind: 'field', path: 'interests', span: 'all' },
                     { kind: 'field', path: 'cardLanguage' },
                     { kind: 'field', path: 'deliveryPoint' },
                     { kind: 'field', path: 'message', span: 'all' },
@@ -424,6 +449,15 @@ export const STARTER_SCHEMA = {
         'extras.signature': 'Signature on delivery',
         cardLanguage: 'Language on the gift card',
         message: 'A message on the gift card',
+        interests: 'What are you interested in?',
+        'interests.architecture': 'Architecture',
+        'interests.cycling': 'Cycling',
+        'interests.food': 'Food and drink',
+        'interests.history': 'History',
+        'interests.hiking': 'Hiking',
+        'interests.music': 'Music',
+        'interests.photography': 'Photography',
+        'interests.swimming': 'Swimming',
         signedBy: 'Sign here, or type your name',
         artwork: 'Artwork for the gift wrap',
         terms: 'I accept the terms',
@@ -471,6 +505,15 @@ export const STARTER_SCHEMA = {
         'extras.signature': 'Unterschrift bei Zustellung',
         cardLanguage: 'Sprache der Geschenkkarte',
         message: 'Eine Nachricht auf der Geschenkkarte',
+        interests: 'Wofür interessieren Sie sich?',
+        'interests.architecture': 'Architektur',
+        'interests.cycling': 'Radfahren',
+        'interests.food': 'Essen und Trinken',
+        'interests.history': 'Geschichte',
+        'interests.hiking': 'Wandern',
+        'interests.music': 'Musik',
+        'interests.photography': 'Fotografie',
+        'interests.swimming': 'Schwimmen',
         signedBy: 'Hier unterschreiben, oder Namen eintippen',
         artwork: 'Motiv für die Geschenkverpackung',
         terms: 'Ich akzeptiere die Bedingungen',

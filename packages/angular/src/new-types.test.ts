@@ -715,3 +715,83 @@ describe('the signature field, which must behave as the React one does', () => {
     }
   })
 })
+
+describe('the tag picker, which must behave as the React one does', () => {
+  const tagging = (): FormSchema =>
+    base({
+      specVersion: '3',
+      model: {
+        fields: [
+          {
+            key: 'topics',
+            type: 'selectboxes',
+            label: 'Topics',
+            widget: 'tagpicker',
+            options: [
+              { value: 'a11y', label: 'Accessibility' },
+              { value: 'forms', label: 'Forms' },
+              { value: 'i18n', label: 'Translation' },
+            ],
+          },
+        ],
+      },
+    })
+
+  test('narrows by typing and stores the option value', async () => {
+    const engine = engineFor(tagging())
+    await renderForm(engine)
+
+    const box = screen.getByRole('combobox', { name: 'Topics' })
+    fireEvent.input(box, { target: { value: 'trans' } })
+    await waitFor(() => {
+      expect(screen.getAllByRole('option')).toHaveLength(1)
+    })
+    fireEvent.click(screen.getByRole('option', { name: 'Translation' }))
+
+    await waitFor(() => {
+      expect((engine.value() as { topics?: unknown }).topics).toEqual(['i18n'])
+    })
+  })
+
+  test('keeps the options own order, however they were chosen', async () => {
+    const engine = engineFor(tagging())
+    await renderForm(engine)
+    const box = screen.getByRole('combobox', { name: 'Topics' })
+
+    fireEvent.input(box, { target: { value: 'trans' } })
+    await waitFor(() => { expect(screen.getAllByRole('option')).toHaveLength(1) })
+    fireEvent.click(screen.getByRole('option', { name: 'Translation' }))
+    fireEvent.input(box, { target: { value: 'access' } })
+    await waitFor(() => { expect(screen.getAllByRole('option')).toHaveLength(1) })
+    fireEvent.click(screen.getByRole('option', { name: 'Accessibility' }))
+
+    await waitFor(() => {
+      expect((engine.value() as { topics?: unknown }).topics).toEqual(['a11y', 'i18n'])
+    })
+  })
+
+  test('a chip names its answer and removes it, by a button named after it', async () => {
+    const engine = engineFor(tagging())
+    engine.setValue(['topics'], ['a11y', 'i18n'])
+    await renderForm(engine)
+
+    fireEvent.click(await screen.findByRole('button', { name: /remove accessibility/i }))
+
+    await waitFor(() => {
+      expect((engine.value() as { topics?: unknown }).topics).toEqual(['i18n'])
+    })
+  })
+
+  test('emits the parts a theme dresses, with the names the React renderer uses', async () => {
+    const engine = engineFor(tagging())
+    engine.setValue(['topics'], ['a11y'])
+    await renderForm(engine)
+
+    const parts = [...document.querySelectorAll('[data-formancy-part]')].map((element) =>
+      element.getAttribute('data-formancy-part'),
+    )
+    for (const part of ['tagpicker', 'tagpicker-chips', 'tagpicker-chip', 'tagpicker-remove']) {
+      expect(parts, `no ${part}`).toContain(part)
+    }
+  })
+})

@@ -231,13 +231,12 @@ working untouched.
 - `async` — an asynchronous validator. `runsOn` already says *where* a check runs, so the
   ordering question is answered; the property that would make a check asynchronous is not
   in `logicRule`, which is `additionalProperties: false`.
-- `tagpicker` — several answers chosen from a list the document does not carry.
 
 An earlier version of this section listed remote option sources and the date-time types
 here. Both shipped — `time`, `datetime` and `optionsSource` are in spec 2 — and the
 sentence stayed, which would have told a manufacturer to leave out three features the
-software has. `signature` has since left this list the same way: it is a spec 3 field
-type, and the list is checked rather than read. `apps/docs/src/soup.test.ts` now checks every name in this list against the
+software has. `signature` and `tagpicker` have since left this list the same way — a spec 3
+field type and a spec 3 widget — and the list is checked rather than read. `apps/docs/src/soup.test.ts` now checks every name in this list against the
 format's own vocabulary, so it cannot happen again in that direction.
 
 ### Characterised by this document, and new since 0.1.0

@@ -297,7 +297,13 @@ describe('the documents a reader is expected to trust', () => {
  */
 describe('the spec version 2 freeze', () => {
   /** What version 2 adds to version 1, read out of the code and the document schema. */
-  const additions = (): { types: string[]; typesInThree: string[]; kinds: string[]; widgets: string[] } => {
+  const additions = (): {
+    types: string[]
+    typesInThree: string[]
+    kinds: string[]
+    widgets: string[]
+    widgetsInThree: string[]
+  } => {
     const types = readFileSync(join(repo, 'packages', 'spec', 'src', 'types.ts'), 'utf8')
     const list = (name: string): string[] => {
       const found = new RegExp(`export const ${name}[^=]*=\\s*\\[([^\\]]*)\\]`, 's').exec(types)
@@ -329,7 +335,13 @@ describe('the spec version 2 freeze', () => {
       types: list('SPEC_2_FIELD_TYPES').filter((type) => !inOne.has(type)),
       typesInThree: list('FIELD_TYPES').filter((type) => !inTwo.has(type)),
       kinds: kinds.filter((kind) => !kindsInOne.has(kind)),
-      widgets: list('FIELD_WIDGETS'),
+      // Widgets belong to versions too, which they did not while there were two:
+      // `widget` itself arrived in 2, so every widget looked like a version 2
+      // widget and the version 2 section was asked to name `tagpicker`.
+      widgets: list('SPEC_2_WIDGETS'),
+      widgetsInThree: list('FIELD_WIDGETS').filter(
+        (widget) => !list('SPEC_2_WIDGETS').includes(widget),
+      ),
     }
   }
 
@@ -370,11 +382,14 @@ describe('the spec version 2 freeze', () => {
     // `SPEC_2_FIELD_TYPES` is the seam: a type added to `FIELD_TYPES` and not to
     // it belongs to version 3, and a reader pinned to 2 refuses a document that
     // carries one rather than dropping the answer it cannot render.
-    const { typesInThree } = additions()
+    const { typesInThree, widgetsInThree } = additions()
     expect(typesInThree.length).toBeGreaterThan(0)
+    expect(widgetsInThree.length).toBeGreaterThan(0)
 
     const text = under('### What version 3 added')
-    expect(typesInThree.filter((name) => !text.includes(`\`${name}\``))).toEqual([])
+    expect(
+      [...typesInThree, ...widgetsInThree].filter((name) => !text.includes(`\`${name}\``)),
+    ).toEqual([])
   })
 
   test('says the version is frozen and what a version 1 document may not carry', () => {

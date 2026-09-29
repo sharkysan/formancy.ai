@@ -70,9 +70,23 @@ export function sourcedAnswers(
       }
 
       if (field.optionsSource === undefined) continue
-      // An empty answer is `required`'s business, not this one's.
-      if (typeof held !== 'string' || held === '') continue
-      found.push({ path: at, source: field.optionsSource, value: held })
+
+      // A list answer is several answers to one question. This asked
+      // `typeof held !== 'string'` and an array is not a string, so every value
+      // in a sourced `selectboxes` was stored with nothing having looked at it —
+      // hazard A7 wearing a different shape of answer.
+      //
+      // One entry per VALUE and the field's own path on each: the field is wrong
+      // when any of its answers is, and naming an index would describe a payload
+      // rather than the question.
+      const answers = Array.isArray(held) ? held : [held]
+      for (const answer of answers) {
+        // An empty answer is `required`'s business, not this one's, and a
+        // non-string is `modelViolations`' — a source asked about `{"$gt": ""}`
+        // is a source handed a query it did not expect.
+        if (typeof answer !== 'string' || answer === '') continue
+        found.push({ path: at, source: field.optionsSource, value: answer })
+      }
     }
   }
 

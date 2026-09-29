@@ -385,7 +385,19 @@ export interface DataGridColumn {
  * `autocomplete` is deliberately NOT the name for the type-ahead: that word is owed to
  * the HTML autofill token WCAG 1.3.5 asks for.
  */
-export const FIELD_WIDGETS = ['toggle', 'datagrid', 'typeahead', 'scanner'] as const
+/**
+ * Widgets version 2 defines.
+ *
+ * Named separately for the same reason the field types are, and for one the field
+ * types did not have: `widget` itself arrived in version 2, so a gate asking
+ * whether a field HAS a widget answers yes for every one of them and says nothing
+ * about which. A version 2 reader given a version 3 widget would render the
+ * default control, collect the same answers and look entirely correct — which is
+ * the silent failure the version line exists to prevent.
+ */
+export const SPEC_2_WIDGETS = ['toggle', 'datagrid', 'typeahead', 'scanner'] as const
+
+export const FIELD_WIDGETS = [...SPEC_2_WIDGETS, 'tagpicker'] as const
 
 export type FieldWidget = (typeof FIELD_WIDGETS)[number]
 
@@ -405,6 +417,9 @@ export const WIDGETS_BY_FIELD_TYPE = {
   repeater: ['datagrid'],
   /** Type to narrow a long option list. Still one offered option value. */
   select: ['typeahead'],
+  /** Several answers, narrowed by typing and shown as chips. Still an array of
+   *  offered option values, in the options' own order. */
+  selectboxes: ['tagpicker'],
   /** A camera route to a string somebody could otherwise type. Still a string. */
   text: ['scanner'],
 } as const satisfies Partial<Record<FieldType, readonly FieldWidget[]>>

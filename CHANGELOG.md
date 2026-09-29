@@ -70,6 +70,36 @@ rather than quietly corrected, because it is the failure this repository's docum
 rules exist for, and it got past me three times in one afternoon — into the roadmap, the
 changelog and a decision record.*
 
+**`widget: "tagpicker"` — several answers, narrowed by typing.** The half of the combobox
+row that was still missing: one answer from a list the document holds is `typeahead` on a
+`select`, and this is the many-answer one. A **widget and not a field type**, because the
+answer is unchanged — an array of offered option values in the options' own order, which is
+what a `selectboxes` stores without it. What changes is that a list too long to tick
+through becomes usable. Every chip carries its own remove button named after the answer it
+removes, because "Remove" three times over tells a screen reader user which nothing.
+
+Building it found two things that were quietly wrong, both older than the feature:
+
+- **The version gate asked whether a field had a widget, not which one.** `widget` arrived
+  in version 2, so the check answered correctly for every version 2 widget and said nothing
+  about any later one — a version 2 reader given a `tagpicker` would have rendered tick
+  boxes, collected the same answers and looked entirely correct. That is the silent failure
+  the version line exists to prevent, and it would have shipped inside the feature that
+  introduced it.
+- **A sourced list answer was never checked.** `sourcedAnswers` collected values with
+  `typeof held !== 'string'`, and an array is not a string, so every value in a
+  `selectboxes` with an `optionsSource` would have been stored with nothing having looked
+  at it — hazard A7 wearing a different shape of answer. `optionsSource` widens to
+  list-valued fields in version 3, and the walk widened with it, because shipping one
+  without the other is a hole waiting for whoever did the second
+  ([0085](./docs/decisions/0085-a-tag-picker-is-a-widget-and-a-widget-has-a-version.md)).
+
+The control is a labelled combobox with a list of chips rather than a fieldset: a
+`selectboxes` without the widget is a group of controls and a legend names it correctly,
+while a tag picker is one control plus a record of what has been chosen. The first version
+built it as a fieldset, which named the group and left the box somebody types into with no
+accessible name — caught by the case that asks for the combobox by name.
+
 **`signature`, and the spec version 3 that carries it.** The last of the three components
 form.io and FormEngine both charge for, and the only one still unbuilt. A signature is
 **points, or a name** — `{ "drawn": [[[12, 40], …]] }` or `{ "typed": "Mara Lindqvist" }`,

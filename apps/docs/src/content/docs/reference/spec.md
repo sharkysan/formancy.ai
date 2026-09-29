@@ -264,6 +264,12 @@ optional · integer · minimum 1 · maximum 1000
 
 **Most choices.** How many options may be ticked at once.
 
+##### `optionsSource`
+
+optional · string · min length 1 · max length 64 · pattern `^[a-z][a-z0-9-]*$`
+
+**Options source.** Where this field's answers come from, when there are too many to write into the form or they change too often. This is a NAME the deployment resolves to a list — never an address: the form never says where to look, so moving it between staging and production changes nothing here. The value that gets stored is a code only that source can decode, and a published version is frozen forever, so it has to still mean the same thing in a year. Leave it out and the field offers the options written above.
+
 #### `file`
 
 ##### `accept`
@@ -412,6 +418,14 @@ optional · array · at least 2 items
 optional · integer · minimum 1
 
 **Most points.** How many points one answer may carry across all its strokes. An unbounded point list is a payload amplifier, so this has a ceiling like everything else here.
+
+#### `selectboxes`
+
+##### `widget`
+
+optional · one of `"tagpicker"`
+
+**Widget.** How this field should look. Presentation only: it never changes what the field collects. `tagpicker` narrows a long list by typing and shows the answers as chips; the answer is still an array of offered option values, in the options’ own order.
 
 ## Logic rules
 

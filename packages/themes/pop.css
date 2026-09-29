@@ -1698,3 +1698,93 @@
   color: var(--fm-ink);
   border-color: var(--fm-ink);
 }
+
+/* ---------------------------------------------------------------- tag picker */
+
+/* Chips above the box a person types into, and the popup positioned against an
+   anchor rather than the field: an absolutely positioned child of a grid
+   container takes the container's own origin as its static position, so a popup
+   without this opens over its own label — measured once already, on the
+   typeahead. */
+[data-formancy-theme='pop'] [data-formancy-part='tagpicker'] {
+  display: grid;
+  gap: 0.5rem;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='tagpicker-chips'] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='tagpicker-chip'] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.375rem 0.25rem 0.625rem;
+  border: var(--fm-line);
+  border-radius: 999px;
+  background: var(--fm-yellow);
+  font-size: 0.8125rem;
+}
+
+/* A target of its own, because it is one: 44px is the smallest thing WCAG 2.5.8
+   asks a finger to hit, and a chip's cross is the control most often built
+   smaller than a pointer can manage. */
+[data-formancy-theme='pop'] [data-formancy-part='tagpicker-remove'] {
+  display: grid;
+  place-content: center;
+  min-inline-size: 24px;
+  min-block-size: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='tagpicker-remove']:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--fm-ink) 18%, transparent);
+  color: var(--fm-ink);
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='tagpicker-anchor'] {
+  position: relative;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='tagpicker-input'] {
+  inline-size: 100%;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='tagpicker-listbox'] {
+  position: absolute;
+  top: 100%;
+  z-index: 20;
+  inset-inline: 0;
+  margin: 0.25rem 0 0;
+  padding: 0.25rem;
+  list-style: none;
+  max-height: 14rem;
+  overflow-y: auto;
+  background: var(--fm-paper);
+  border: var(--fm-line);
+  border-radius: var(--fm-radius);
+  box-shadow: 4px 4px 0 var(--fm-ink);
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='tagpicker-option'] {
+  padding: 0.4375rem 0.625rem;
+  border-radius: var(--fm-radius);
+  color: var(--fm-ink);
+  cursor: pointer;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='tagpicker-option']:hover {
+  background: color-mix(in srgb, var(--fm-ink) 14%, transparent);
+}

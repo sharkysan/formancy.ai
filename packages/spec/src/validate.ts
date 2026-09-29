@@ -3,7 +3,9 @@ import documentValidatorFn from './generated/document-validator.js'
 import { modelDataPaths } from './paths.js'
 import { collectFieldPaths, isMessageRef, modelPathsForLayout } from './presentation.js'
 import { ROW_ID, SPEC_1_FIELD_TYPES,
-  SPEC_2_FIELD_TYPES, SPEC_1_LAYOUT_KINDS,
+  SPEC_2_FIELD_TYPES,
+  SPEC_2_WIDGETS,
+  LIST_VALUED_FIELD_TYPES, SPEC_1_LAYOUT_KINDS,
   layoutChildren,
 } from './types.js'
 import type { FieldDef, FormSchema, LayoutNode, Text } from './types.js'
@@ -74,6 +76,7 @@ function versionErrors(
   const errors: SchemaError[] = []
   const spec1Types = new Set<string>(SPEC_1_FIELD_TYPES)
   const spec2Types = new Set<string>(SPEC_2_FIELD_TYPES)
+  const spec2Widgets = new Set<string>(SPEC_2_WIDGETS)
   const spec1Kinds = new Set<string>(SPEC_1_LAYOUT_KINDS)
 
   /** The version a field type first appeared in. */
@@ -95,8 +98,19 @@ function versionErrors(
     // hint and rendering the default control. A version 1 document carrying one
     // is therefore not a version 1 document, and saying so here is the only place
     // the author finds out — they cannot see the reader that would refuse it.
-    if (field.widget !== undefined && declared < 2) {
-      errors.push({ path: `${path}/widget`, message: needs(`A "${field.widget}" widget`, 2) })
+    if (field.widget !== undefined) {
+      // WHICH widget, not whether there is one. `widget` arrived in version 2, so
+      // the presence test answers yes for every widget there will ever be — and a
+      // version 2 reader given a version 3 widget renders the default control,
+      // collects the same answers and looks entirely correct, which is exactly the
+      // silent failure the version line exists to prevent.
+      const arrived = spec2Widgets.has(field.widget) ? 2 : 3
+      if (arrived > declared) {
+        errors.push({
+          path: `${path}/widget`,
+          message: needs(`A "${field.widget}" widget`, arrived),
+        })
+      }
     }
 
     // `earliest`/`latest` land on `date` too, which IS a version 1 type -- and that
@@ -115,8 +129,16 @@ function versionErrors(
     // closed, so a version 1 reader answers `Unknown property "optionsSource"` and
     // refuses the whole document rather than rendering a select with no options --
     // which would be the same field quietly collecting nothing.
-    if (field.optionsSource !== undefined && declared < 2) {
-      errors.push({ path: `${path}/optionsSource`, message: needs('An "optionsSource"', 2) })
+    if (field.optionsSource !== undefined) {
+      // On a `select` since version 2; on a list-valued field since version 3,
+      // which is the tag picker's case. Widening a property to a new TYPE is a
+      // version in the same way adding the property was: a version 2 reader
+      // refuses the combination, so a document using it is not a version 2
+      // document however version 2 the property looks on its own.
+      const arrived = LIST_VALUED_FIELD_TYPES.includes(field.type as never) ? 3 : 2
+      if (arrived > declared) {
+        errors.push({ path: `${path}/optionsSource`, message: needs('An "optionsSource"', arrived) })
+      }
     }
 
     const arrived = introducedIn(field.type)
