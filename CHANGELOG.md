@@ -10,6 +10,27 @@ later.
 
 ## Unreleased
 
+**The landing page uses a wide screen.** Reported as *"the start page is still really small
+on wide screens"* and measured at 2560×1440 before anything changed: every band capped at a
+flat **1760px** and centred, so 392px of empty margin down each side — while the sticky bar
+was full-bleed on the gutter, putting its logo and its links **312px outside** the column
+everything else lined up to. That mismatch is most of the effect. A page with margins reads
+as a page; a narrow card under a wide header reads as small.
+
+Two changes, and only the second is about width. The bar keeps its full-bleed background
+and puts its contents on the same measure, so the logo starts where the headline does. And
+the measure stops being a constant: `--shell: clamp(110rem, 88vw, 132rem)`, declared once
+and used by both bands. Below 2000px the middle term is under the floor and **nothing
+moves** — the layout was tuned there — while at 2560px the band goes 1760 → 2112, the
+headline column 646 → 796, and the live demo 564 → 702. The upper bound is what keeps this
+from trading one complaint for the opposite one: paragraphs keep their own `--measure`, so
+only the demos and the card grids take the extra room, which is what the cap existed for.
+
+Guarded in `apps/docs/src/hero-layout.test.ts`, which cannot measure a pixel — jsdom has no
+layout — and instead fails when the measure goes back to a constant, loses its bound, is
+written twice as a literal, or stops being shared by the bar. All five observed failing
+first.
+
 **A signature was destroyed by moving the pointer away from it.** Reported from the
 playground and reproduced there before a line was changed: one stroke on screen after the
 mouse button came up, and **none** once the mouse left the box. `pointerleave` shared the
