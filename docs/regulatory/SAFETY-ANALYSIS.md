@@ -597,12 +597,21 @@ before the context that was meant to precede it. It is a failure of the authorin
 rather than of the engine, which is why it had no entry here until a builder could make
 a wizard at all.
 
-*Constraint:* the builder cannot produce the shape. `addPage` takes the top-level fields
-into the first page, so a form is either unpaged or fully paged, and `validTargets` stops
-offering the bare top level once a form has pages — a field may go inside a page and not
-beside one ([0081](../decisions/0081-a-page-absorbs-the-form-it-joins.md)). Asserted in
+*Constraint:* the builder cannot produce the shape, in either direction. `addPage` takes
+the top-level fields into the first page, so a form is either unpaged or fully paged, and
+`validTargets` stops offering the bare top level once a form has pages — a field may go
+inside a page and not beside one
+([0081](../decisions/0081-a-page-absorbs-the-form-it-joins.md)). Taking a page away holds
+the same invariant from the other side: `unwrapField` merges a page's questions into the
+neighbouring page and only un-pages the form when the last page goes, so an unwrap in the
+middle of a wizard cannot leave a question beside a page
+([0089](../decisions/0089-a-page-is-unwrapped-into-its-neighbour.md)). Asserted in
 `packages/builder-core/src/session.test.ts` and in `builder.test.tsx`, and the change
-required correcting a test that asserted the opposite.
+required correcting a test that asserted the opposite. The unwrap's own case — *'never
+leaves a question beside a page instead of inside one'* — derives the invariant from the
+document after each edit rather than naming the expected shape, because the shape differs
+per case and the invariant does not; it was observed failing against the implementation
+that spliced the questions onto the top level, which is the one that reads correct.
 
 *Residual, and it is the substantial one:* **the format still permits it.** A document
 written by hand, by an agent through `@formancy/mcp`, or by an older version of the

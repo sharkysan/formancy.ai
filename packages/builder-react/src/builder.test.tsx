@@ -487,3 +487,190 @@ describe('making a wizard', () => {
     expect(screen.getByText('p')).toBeTruthy()
   })
 })
+
+describe('unmaking a wizard', () => {
+  /*
+   * The other direction of `p`, and the reason it needed its own key rather than
+   * a second press of Delete: Delete takes the container AND everything inside
+   * it, so an author who made a wizard by mistake had to delete every question
+   * and type them again. `u` takes the container away and keeps the questions.
+   *
+   * On the tree rather than in a dialog, because there is nothing to choose:
+   * where the questions go is decided by where the container stood.
+   */
+  const paged = (
+    ...pages: Array<[string, string, string[]]>
+  ): ReturnType<typeof createBuilderSession> => {
+    const session = createBuilderSession({
+      specVersion: '3',
+      id: 'trip',
+      title: 'Trip',
+      model: {
+        fields: pages.map(([key, label, children]) => ({
+          key,
+          type: 'page',
+          label,
+          fields: children.map((child) => ({ key: child, type: 'text', label: child })),
+        })),
+      },
+    } as unknown as FormSchema)
+    render(<FormancyBuilder session={session} />)
+    return session
+  }
+
+  test('u on the only page takes it away and leaves the questions where it stood', async () => {
+    const user = userEvent.setup()
+    const session = paged(['about', 'About you', ['name', 'email']])
+
+    await user.tab()
+    await user.keyboard('u')
+
+    expect(session.document().model.fields.map((field) => field.key)).toEqual(['name', 'email'])
+  })
+
+  test('and says the form is no longer a wizard, because that is the part worth hearing', async () => {
+    // Two questions moving is small. A form ceasing to have steps is not, and it
+    // is invisible in a tree that looked like a flat list of questions either way.
+    const user = userEvent.setup()
+    paged(['about', 'About you', ['name', 'email']])
+
+    await user.tab()
+    await user.keyboard('u')
+
+    expect(screen.getByRole('status').textContent).toMatch(/wizard/i)
+  })
+
+  test('u on one page of several names the page the questions went to', async () => {
+    // The questions do not stay at the top level while other pages remain —
+    // hazard D8 — so they are somewhere the author did not choose, and the only
+    // thing worse than moving them is moving them quietly.
+    const user = userEvent.setup()
+    paged(['about', 'About you', ['name']], ['trip', 'Your trip', ['when']])
+
+    await user.tab()
+    await user.keyboard('{ArrowDown}{ArrowDown}u')
+
+    expect(screen.getByRole('status').textContent).toMatch(/Your trip/)
+  })
+
+  test('u on a field that holds nothing says why, rather than deleting it', async () => {
+    const user = userEvent.setup()
+    const session = mount()
+
+    await user.tab()
+    await user.keyboard('u')
+
+    // `customer` is a text field. The refusal is the session's own sentence,
+    // which says unwrapping is not another word for deleting — and the field is
+    // still there, which is the half a wrong implementation would get wrong.
+    expect(screen.getByRole('status').textContent).toMatch(/nothing inside/i)
+    expect(session.document().model.fields.map((field) => field.key)).toEqual([
+      'customer',
+      'billing',
+    ])
+  })
+
+  test('the tree keeps the keyboard after it, like every other command', async () => {
+    const user = userEvent.setup()
+    const session = paged(['about', 'About you', ['name', 'email']])
+
+    await user.tab()
+    await user.keyboard('u')
+
+    // The command is asserted as well as the focus, because focus on a treeitem
+    // is also what a key that does NOTHING leaves behind: written without this
+    // line the case passed before the command existed.
+    expect(session.document().model.fields).toHaveLength(2)
+    expect(document.activeElement?.getAttribute('role')).toBe('treeitem')
+  })
+
+  test('and the shortcut is listed, so it can be found without being told', () => {
+    mount()
+
+    // Every other command in this tree is discoverable from the legend. One that
+    // is not is a command only its author knows about — which is how `p` would
+    // have shipped.
+    expect(screen.getByText('u')).toBeTruthy()
+  })
+})
+
+describe('and what it says when the page was empty', () => {
+  /*
+   * Both of these were found in the built playground rather than here: press `p`
+   * twice, which makes page one out of the form and page two empty, then press
+   * `u` on page two. It said *"Removed the page Page 2 and kept its 0 questions.
+   * The form is not a wizard any more."* — nonsense in the first sentence and
+   * FALSE in the second, because page one was still there.
+   *
+   * The cause of the false half is worth recording: the announcement worked out
+   * whether the form was still a wizard by looking for the page that now held the
+   * first question, and an empty page has no first question. Absence of a host
+   * read as absence of pages. It is decided by counting the pages now.
+   */
+  const twoPages = (): ReturnType<typeof createBuilderSession> => {
+    const session = createBuilderSession({
+      specVersion: '3',
+      id: 'trip',
+      title: 'Trip',
+      model: {
+        fields: [
+          {
+            key: 'one',
+            type: 'page',
+            label: 'Page 1',
+            fields: [{ key: 'name', type: 'text', label: 'Name' }],
+          },
+          { key: 'two', type: 'page', label: 'Page 2', fields: [] },
+        ],
+      },
+    } as unknown as FormSchema)
+    render(<FormancyBuilder session={session} />)
+    return session
+  }
+
+  test('an empty page is removed without a count of what it kept', async () => {
+    const user = userEvent.setup()
+    twoPages()
+
+    await user.tab()
+    await user.keyboard('{ArrowDown}{ArrowDown}u')
+
+    const said = screen.getByRole('status').textContent ?? ''
+    expect(said).toMatch(/empty/i)
+    expect(said).not.toMatch(/0 questions/)
+  })
+
+  test('and it does not claim the form stopped being a wizard while a page remains', async () => {
+    // The half that was actually wrong rather than merely clumsy. A false
+    // statement in a live region is worse than a missing one: nothing on screen
+    // contradicts it, because a tree of questions looks the same either way.
+    const user = userEvent.setup()
+    const session = twoPages()
+
+    await user.tab()
+    await user.keyboard('{ArrowDown}{ArrowDown}u')
+
+    expect(screen.getByRole('status').textContent).not.toMatch(/not a wizard/i)
+    expect(session.document().model.fields.map((field) => field.type)).toEqual(['page'])
+  })
+
+  test('and says it when the last page goes, empty or not', async () => {
+    // The other side of the same discriminator: an empty page that was the ONLY
+    // page does end the wizard, and a rule written to fix the sentence above must
+    // not have stopped saying so.
+    const user = userEvent.setup()
+    const session = createBuilderSession({
+      specVersion: '3',
+      id: 'trip',
+      title: 'Trip',
+      model: { fields: [{ key: 'one', type: 'page', label: 'Page 1', fields: [] }] },
+    } as unknown as FormSchema)
+    render(<FormancyBuilder session={session} />)
+
+    await user.tab()
+    await user.keyboard('u')
+
+    expect(screen.getByRole('status').textContent).toMatch(/not a wizard/i)
+    expect(session.document().model.fields).toEqual([])
+  })
+})

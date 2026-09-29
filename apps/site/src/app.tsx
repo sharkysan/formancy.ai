@@ -292,7 +292,7 @@ export function App(): ReactElement {
               <kbd>m</kbd>
               <span>move the focused one, choosing from destinations read as sentences</span>
               <kbd>u</kbd>
-              <span>unwrap a row, keeping what is inside it</span>
+              <span>unwrap a row, a group or a page, keeping the questions inside it</span>
               <kbd>Ctrl&nbsp;+&nbsp;Z</kbd>
               <span>undo, over a document model rather than over the DOM</span>
             </div>
