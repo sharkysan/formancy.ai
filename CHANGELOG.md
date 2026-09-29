@@ -10,6 +10,27 @@ later.
 
 ## Unreleased
 
+**A signature was destroyed by moving the pointer away from it.** Reported from the
+playground and reproduced there before a line was changed: one stroke on screen after the
+mouse button came up, and **none** once the mouse left the box. `pointerleave` shared the
+handler that ends a stroke — which is what it is for, since a pen that goes past the edge
+with the button down never sends `pointerup` to the surface — and once the pen had already
+lifted there was nothing in progress, so the handler fell through to committing the strokes
+from before the *last* one. With one stroke drawn that is nothing at all, and the answer
+went back to null.
+
+**Both renderers had it, in the same shape.** That is what two independent implementations
+of one control cost, and why the parity case is held by hand in each: the conformance
+fixtures speak filling in and clicking by accessible name, and there is no way to say
+"draw" in that vocabulary.
+
+Every case that existed moved the pointer and lifted it, which is the one sequence that
+cannot show this — the thing a person does next is move their hand away. The new cases do
+that, twice, and keep the two behaviours the fix had to leave alone: a pen leaving
+mid-stroke still ends that stroke, and a tap that never moved still counts as not having
+signed. Recorded as **B6** in the safety analysis, because an answer being destroyed after
+it was given is a different failure from a control that will not take one.
+
 **Three things the roadmap said were missing are built, and it kept saying it.** Measured
 rather than proofread: the drag gesture that makes a row out of two fields shipped on
 26 September — aim at a field's side on the rendered form and the side decides the order —

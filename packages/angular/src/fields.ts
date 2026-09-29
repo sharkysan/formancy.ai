@@ -1839,9 +1839,20 @@ export class FormancySignatureField extends FieldComponentBase {
 
   protected onUp(): void {
     const finished = this.stroke
+    // Nothing in progress, so nothing to end. `pointerleave` shares this handler
+    // — which is what ends a stroke whose pen went past the edge without ever
+    // sending `pointerup` here — and it fires AGAIN once the pen has already
+    // lifted, when `before` holds the strokes from before the last one. Falling
+    // through to `commit(before)` then threw away the stroke just drawn.
+    //
+    // Measured in the built playground, because the sequence every test here used
+    // was down, move, up — and the thing a person does next is move their hand
+    // away: one stroke on screen after the button came up, and none once the
+    // mouse left the box.
+    if (finished === null) return
     this.stroke = null
     // One point is a tap on the way past, not a signature.
-    if (finished === null || finished.length < 2) this.commit(this.before)
+    if (finished.length < 2) this.commit(this.before)
   }
 
   protected onTyped(event: Event): void {
