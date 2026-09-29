@@ -31,10 +31,6 @@ const BUDGET = 600
  * marked as such — splitting a generated file is splitting its generator.
  */
 const CEILINGS: Record<string, { lines: number; why: string }> = {
-  'packages/react/src/form.tsx': {
-    lines: 2154,
-    why: 'Every React control in one file. The seam is one control per file, as the Angular renderer will need too.',
-  },
   'packages/builder-core/src/session.ts': {
     lines: 1638,
     why: 'One factory holding every command. The seam is one concern per file — model, arrangement, translation, version — over a shared attempt/commit core.',
