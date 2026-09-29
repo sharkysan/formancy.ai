@@ -16,10 +16,10 @@ work inside the monorepo instead, clone
 
 :::note[Beta]
 The packages are published with provenance, and their APIs will change before 1.0. The
-*document format* is frozen: `specVersion: "1"` and `"2"` both are, and version 2 only
-adds. `0.2.0` is the first release that reads version 2, so if npm gives you `0.1.0`,
-write `specVersion: "1"` — it refuses a version 2 document rather than ignoring the
-property.
+*document format* is frozen and stays frozen: `specVersion: "1"`, `"2"` and `"3"` all are,
+and each later version only adds. A reader **refuses** a document from a version it does
+not know rather than ignoring the part it cannot read, so the version a release speaks is
+worth checking against the version a document declares — `MIGRATIONS.md` lists both.
 :::
 
 formancy's Angular binding targets **Angular 22** and is **zoneless**: it never
@@ -146,6 +146,48 @@ providers: [
   { provide: FORMANCY_REGISTRY, useValue: { byType: { text: MyTextField } } },
 ]
 ```
+
+## Editing a form, from Angular
+
+`@formancy/builder-angular` is the builder's structure tree over the same
+session the React builder drives. Zoneless, `OnPush`, standalone — one signal
+per session, changing exactly once per accepted command.
+
+```bash
+npm install @formancy/builder-angular @formancy/builder-core
+```
+
+```ts
+import { Component } from '@angular/core'
+import { createBuilderSession } from '@formancy/builder-core'
+import { FormancyBuilder } from '@formancy/builder-angular'
+
+@Component({
+  imports: [FormancyBuilder],
+  template: `<formancy-builder [session]="session" (selected)="chosen.set($event)" />`,
+})
+export class Editor {
+  protected readonly session = createBuilderSession(schema)
+}
+```
+
+It is a **keyboard interface**: `↑` `↓` and `Home`/`End` to move about, `a` to add a
+field, `m` to move one, `p` to add a page, `u` to take a container away and keep
+what is inside, `Delete` to remove, `Ctrl+Z`/`Ctrl+Y` to undo and redo. The tree
+is one tab stop rather than one per field, and every destination is offered as a
+sentence rather than an index. The legend under the tree lists every key, so none
+of this has to be told to anybody.
+
+What the two builders OFFER is decided once, in `@formancy/builder-core`: the
+destination list, the palette, the condition compiler and the property list read
+out of the spec's own JSON Schema. Two builders disagreeing about where a field
+may go would be two products
+([0091](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0091-a-second-builder-is-a-binding.md)).
+
+The arrangement tree, the property panel, the condition editor and the
+translations pane are React-only for now — said here rather than discovered,
+because a package that half exists is worse to meet than one that says which
+half.
 
 ## Proof this is not a second implementation
 

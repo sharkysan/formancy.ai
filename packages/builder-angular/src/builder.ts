@@ -1,0 +1,521 @@
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  computed,
+  effect,
+  input,
+  output,
+  signal,
+  untracked,
+  viewChild,
+  viewChildren,
+} from '@angular/core'
+import {
+  describeTarget,
+  nameOf,
+  newFieldOfType,
+  nextSpecVersion,
+  paletteEntries,
+  typesNeedingUpgrade,
+} from '@formancy/builder-core'
+import type {
+  BuilderSession,
+  FieldDef,
+  Location,
+  MoveTarget,
+  PaletteEntry,
+  TreeNode,
+} from './types.js'
+import { injectBuilderView } from './view.js'
+
+/**
+ * What the legend lists, which is every command this tree has.
+ *
+ * Shared spelling with the React builder on purpose: a shortcut that differed
+ * between the two would be a thing somebody learns once and gets wrong in the
+ * other, and neither page would be able to explain why.
+ */
+const KEY_HELP: ReadonlyArray<readonly [string, string]> = [
+  ['↑ ↓', 'move between fields'],
+  ['a', 'add a field'],
+  ['p', 'add a page, making the form a wizard'],
+  ['u', 'take a container away and keep what is inside'],
+  ['m', 'move the focused field'],
+  ['Delete', 'remove it'],
+  ['Ctrl+Z / Ctrl+Y', 'undo / redo'],
+]
+
+/** The add palette's two steps: which type, then where it goes. */
+interface Adding {
+  type: string
+}
+
+interface Moving {
+  node: TreeNode
+  targets: MoveTarget[]
+}
+
+/**
+ * The form's structure, as a tree somebody can edit with the keyboard.
+ *
+ * The Angular half of `@formancy/builder-react`'s `FormancyBuilder`, over the
+ * same session and the same view. Zoneless and `OnPush`: the session is read
+ * through one signal that changes exactly once per accepted command, so a
+ * keystroke that the session refuses costs no render at all.
+ *
+ * **Keyboard first, and not as a courtesy.** WCAG 2.2 SC 2.5.7 requires a
+ * complete keyboard path for every drag operation, and a builder that grows one
+ * afterwards never quite gets it — so every command here is a key, every
+ * destination is a sentence rather than an index, and the drag surface is an
+ * addition for people who prefer it rather than the way the thing works
+ * ([0046](../../../docs/decisions/0046-keyboard-before-drag.md)).
+ */
+@Component({
+  selector: 'formancy-builder',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div data-formancy-part="builder">
+      <ul
+        #tree
+        role="tree"
+        [attr.aria-label]="label()"
+        data-formancy-part="builder-tree"
+        [attr.tabindex]="count() === 0 ? 0 : -1"
+        (keydown)="onKeyDown($event)"
+      >
+        @for (node of view().nodes; track node.keyPath.join('.'); let position = $index) {
+          <li
+            #item
+            role="treeitem"
+            [attr.aria-level]="node.depth + 1"
+            [attr.aria-selected]="position === index()"
+            data-formancy-part="builder-node"
+            [attr.data-container]="node.isContainer ? 'true' : null"
+            [attr.tabindex]="position === index() ? 0 : -1"
+            (focus)="focusedIndex.set(position)"
+          >
+            {{ nameOfNode(node) }}
+          </li>
+        }
+      </ul>
+
+      @if (count() === 0) {
+        <p data-formancy-part="builder-empty">This form has no fields yet.</p>
+      }
+
+      @if (adding() !== null) {
+        @if (adding()!.type === '') {
+          <div role="dialog" aria-label="Add a field" data-formancy-part="add-palette">
+            <ul>
+              @for (entry of palette(); track entry.type) {
+                <li>
+                  <button type="button" (click)="chooseType(entry.type)">{{ entry.title }}</button>
+                  <span data-formancy-part="palette-hint">{{ entry.description }}</span>
+                </li>
+              }
+            </ul>
+            @if (locked().length > 0) {
+              <!-- Said rather than silently omitted: a shorter palette with no
+                   explanation reads as a broken builder, when what is true is
+                   that the document is written against an older version of the
+                   spec and can be moved forward in one step. -->
+              <p data-formancy-part="palette-locked">
+                {{ lockedNames() }} need a later spec version. This form says version
+                {{ view().document.specVersion }}.
+                <button type="button" (click)="upgrade()">
+                  Move it to version {{ nextVersion() }}
+                </button>
+              </p>
+            }
+            <button type="button" (click)="cancelDialog()">Cancel</button>
+          </div>
+        } @else {
+          <div
+            role="dialog"
+            [attr.aria-label]="'Where should the ' + labelForType(adding()!.type) + ' go?'"
+            data-formancy-part="add-where"
+          >
+            <ul>
+              @for (target of insertTargets(); track targetKey(target)) {
+                <li>
+                  <button type="button" (click)="completeAdd(target)">{{ target.label }}</button>
+                </li>
+              }
+            </ul>
+            <button type="button" (click)="cancelDialog()">Cancel</button>
+          </div>
+        }
+      }
+
+      @if (moving() !== null) {
+        <div
+          role="dialog"
+          [attr.aria-label]="'Move ' + nameOfNode(moving()!.node)"
+          data-formancy-part="move-palette"
+        >
+          <ul>
+            @for (target of moving()!.targets; track targetKey(target)) {
+              <li>
+                <button type="button" (click)="completeMove(target)">{{ target.label }}</button>
+              </li>
+            }
+          </ul>
+          <button type="button" (click)="cancelDialog()">Cancel</button>
+        </div>
+      }
+
+      <!-- One polite region for the whole builder, as in the renderers: a
+           command's result is announced once, by the thing that knows it.
+           role="status" already implies aria-live="polite"; setting both is the
+           classic way to get an announcement twice. -->
+      <p role="status" data-formancy-part="builder-status">{{ announcement() }}</p>
+
+      <dl data-formancy-part="builder-keys">
+        @for (entry of keyHelp; track entry[0]) {
+          <div>
+            <dt>{{ entry[0] }}</dt>
+            <dd>{{ entry[1] }}</dd>
+          </div>
+        }
+      </dl>
+    </div>
+  `,
+})
+export class FormancyBuilder {
+  readonly session = input.required<BuilderSession>()
+  readonly label = input('Form structure')
+  /**
+   * The focused field's key path, for a consumer showing a property panel beside
+   * the tree without reading our DOM.
+   *
+   * Keyed on the key path rather than the position, because an edit that
+   * reorders the list leaves a position pointing at a different field and would
+   * announce a selection nobody made.
+   */
+  readonly selected = output<readonly string[] | null>()
+
+  protected readonly keyHelp = KEY_HELP
+  protected readonly view = injectBuilderView(this.session)
+
+  /** The position the arrow keys move. */
+  protected readonly focusedIndex = signal(0)
+  protected readonly adding = signal<Adding | null>(null)
+  protected readonly moving = signal<Moving | null>(null)
+  protected readonly announcement = signal('')
+
+  private readonly tree = viewChild<ElementRef<HTMLElement>>('tree')
+  private readonly items = viewChildren<ElementRef<HTMLElement>>('item')
+
+  /**
+   * Whether the next render should put focus back on the tree.
+   *
+   * Set whenever a key is handled, which can only happen while the tree has
+   * focus. Removing the focused row detaches it from the document and focus
+   * falls to `<body>`, so by the time the effect runs the "is focus inside"
+   * test says no — and without this the tree silently stops responding to the
+   * keyboard after every delete.
+   */
+  private keepFocus = false
+  /** The key path focus was on, so an edit hands the position back to the field. */
+  private focusedKey: string | null = null
+  /** The list as it was, so a correction happens on an edit and not on a keystroke. */
+  private listed = ''
+
+  protected readonly count = computed(() => this.view().nodes.length)
+  protected readonly index = computed(() =>
+    this.count() === 0 ? 0 : Math.min(this.focusedIndex(), this.count() - 1),
+  )
+  protected readonly focused = computed((): TreeNode | undefined => this.view().nodes[this.index()])
+  protected readonly selectedKey = computed((): string | null => {
+    const node = this.focused()
+    return node === undefined ? null : node.keyPath.join('.')
+  })
+  protected readonly palette = computed((): PaletteEntry[] =>
+    paletteEntries(this.view().document.specVersion),
+  )
+  protected readonly locked = computed((): PaletteEntry[] =>
+    typesNeedingUpgrade(this.view().document.specVersion),
+  )
+  protected readonly lockedNames = computed(() =>
+    this.locked()
+      .map((entry) => entry.title)
+      .join(', '),
+  )
+  protected readonly nextVersion = computed(
+    () => nextSpecVersion(this.view().document.specVersion) ?? '',
+  )
+  protected readonly insertTargets = computed((): MoveTarget[] => {
+    const type = this.adding()?.type
+    if (type === undefined || type === '') return []
+    return this.view().insertTargetsFor(this.newField(type))
+  })
+
+  constructor() {
+    /*
+     * Keep focus on the FIELD across an edit, not on the number.
+     *
+     * Only when the LIST itself changed, which is the whole subtlety: correcting
+     * on every pass would override the arrow keys, because the key remembered a
+     * moment ago is the key the arrows just moved away from. The arrows own the
+     * position between edits; an edit hands it back to the field.
+     *
+     * `untracked` around everything this reads about the position, and that is
+     * not a detail either. Written as an ordinary effect it both READ
+     * `focusedIndex` and wrote it, which Angular treats as a cycle and answers
+     * by not scheduling any further change detection — measured, and it looked
+     * exactly like a component whose bindings had frozen: the key handler ran,
+     * the signal changed, and the DOM kept the value from the first render.
+     */
+    effect(() => {
+      const nodes = this.view().nodes
+      untracked(() => {
+        const listing = nodes.map((node) => node.keyPath.join('.')).join('|')
+        if (listing !== this.listed) {
+          this.listed = listing
+          const wanted = this.focusedKey
+          const at =
+            wanted === null ? -1 : nodes.findIndex((node) => node.keyPath.join('.') === wanted)
+          // Gone — deleted — and the clamped index is then the right answer.
+          if (at !== -1 && at !== this.focusedIndex()) this.focusedIndex.set(at)
+        }
+      })
+    })
+
+    // Report the focused field outward, so a consumer can show a property panel
+    // beside the tree without reading our DOM. Keyed on the key path rather than
+    // the position, because an edit that reorders the list leaves a position
+    // pointing at a different field and would announce a selection nobody made.
+    effect(() => {
+      const key = this.selectedKey()
+      untracked(() => {
+        this.focusedKey = key
+        this.selected.emit(key === null ? null : key.split('.'))
+      })
+    })
+
+    // Move focus WITHIN the tree, never INTO it. A component that grabs focus on
+    // mount takes it from wherever the person actually was, which on a page with
+    // a builder and a preview side by side is the preview.
+    effect(() => {
+      const at = this.index()
+      const items = this.items()
+      const root = this.tree()?.nativeElement
+      untracked(() => {
+        if (this.adding() !== null || this.moving() !== null) return
+        const active = document.activeElement
+        const inside = root !== undefined && active !== null && root.contains(active)
+        if (inside || this.keepFocus) items[at]?.nativeElement.focus()
+        this.keepFocus = false
+      })
+    })
+  }
+
+
+  protected nameOfNode(node: TreeNode): string {
+    return nameOf(this.view().document, node.def)
+  }
+
+  protected targetKey(target: MoveTarget): string {
+    return `${target.location.parent.join('.')}:${String(target.location.index)}`
+  }
+
+  protected labelForType(type: string): string {
+    return paletteEntries().find((entry) => entry.type === type)?.title ?? type
+  }
+
+  protected onKeyDown(event: KeyboardEvent): void {
+    const focused = this.focused()
+    if (focused === undefined) return
+    // A key reached us, so the tree has focus and must still have it after
+    // whatever this does to the document.
+    this.keepFocus = true
+
+    // Let the browser have its own shortcuts.
+    if (event.altKey || event.metaKey) return
+
+    if (event.ctrlKey) {
+      const key = event.key.toLowerCase()
+      if (key === 'z') {
+        event.preventDefault()
+        this.announce(this.session().undo() ? 'Undone.' : 'Nothing to undo.')
+      } else if (key === 'y') {
+        event.preventDefault()
+        this.announce(this.session().redo() ? 'Redone.' : 'Nothing to redo.')
+      }
+      return
+    }
+
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault()
+        console.log('PROBE before', this.focusedIndex(), 'index', this.index(), 'count', this.count())
+        this.focusedIndex.set(Math.min(this.index() + 1, this.count() - 1))
+        console.log('PROBE after', this.focusedIndex(), 'index', this.index())
+        break
+      case 'ArrowUp':
+        event.preventDefault()
+        this.focusedIndex.set(Math.max(this.index() - 1, 0))
+        break
+      case 'Home':
+        event.preventDefault()
+        this.focusedIndex.set(0)
+        break
+      case 'End':
+        event.preventDefault()
+        this.focusedIndex.set(this.count() - 1)
+        break
+      case 'Escape':
+        event.preventDefault()
+        this.cancelDialog()
+        break
+      case 'a':
+      case 'A':
+        event.preventDefault()
+        this.adding.set({ type: '' })
+        break
+      case 'm':
+      case 'M': {
+        event.preventDefault()
+        const targets = this.view().moveTargetsFor(focused.keyPath)
+        // An empty palette is a real answer — a page cannot go inside a group —
+        // and saying so beats opening an empty dialog.
+        if (targets.length === 0) {
+          this.announce(`${this.nameOfNode(focused)} cannot be moved anywhere else.`)
+          return
+        }
+        this.moving.set({ node: focused, targets })
+        break
+      }
+      case 'p':
+      case 'P': {
+        event.preventDefault()
+        // Counted BEFORE the command, because the first page absorbs what is at
+        // the top level and the count afterwards cannot tell which case it was.
+        const loose = this.view().document.model.fields.filter((field) => field.type !== 'page')
+        const pages = this.view().document.model.fields.length - loose.length
+        const outcome = this.session().addPage(`Page ${String(pages + 1)}`)
+        this.announce(
+          !outcome.ok
+            ? `Cannot add a page: ${outcome.message}`
+            : loose.length === 0
+              ? `Added Page ${String(pages + 1)}.`
+              : // Moving every field in the form is not something to do quietly.
+                `Added Page 1, holding the ${String(loose.length)} ${loose.length === 1 ? 'field' : 'fields'} that were at the top level. The form is a wizard now.`,
+        )
+        break
+      }
+      case 'u':
+      case 'U': {
+        event.preventDefault()
+        // Read BEFORE the command: the container is gone afterwards, so neither
+        // its name nor what was inside it can be recovered to say what happened.
+        const name = this.nameOfNode(focused)
+        const inside = focused.def.fields ?? []
+        const wasPage = focused.def.type === 'page'
+        const count = String(inside.length)
+        const questions = `${count} ${inside.length === 1 ? 'question' : 'questions'}`
+        const outcome = this.session().unwrapField(focused.keyPath)
+        const after = this.session().document()
+        const host =
+          inside[0] === undefined
+            ? undefined
+            : after.model.fields.find(
+                (field) =>
+                  field.type === 'page' &&
+                  (field.fields ?? []).some((child) => child.key === inside[0]?.key),
+              )
+        // COUNTED, not inferred from the host: an empty page has no first
+        // question to find, and absence of a host would then read as absence of
+        // pages — which is how the React builder claimed a form had stopped
+        // being a wizard while page one was still there.
+        const stillPaged = after.model.fields.some((field) => field.type === 'page')
+        const what =
+          inside.length === 0
+            ? `Removed ${name}, which was empty.`
+            : host !== undefined
+              ? `Removed the page ${name}. Its ${questions} are on ${nameOf(after, host)} now.`
+              : `Removed ${name} and kept the ${questions} that were inside it.`
+        this.announce(
+          !outcome.ok
+            ? `Cannot unwrap ${name}: ${outcome.message}`
+            : wasPage && !stillPaged
+              ? `${what} The form is not a wizard any more.`
+              : what,
+        )
+        break
+      }
+      case 'Delete':
+      case 'Backspace': {
+        event.preventDefault()
+        const name = this.nameOfNode(focused)
+        const outcome = this.session().removeField(focused.keyPath)
+        this.announce(outcome.ok ? `Removed ${name}.` : `Cannot remove ${name}: ${outcome.message}`)
+        break
+      }
+      default:
+        break
+    }
+  }
+
+  protected chooseType(type: string): void {
+    this.adding.set({ type })
+  }
+
+  protected completeAdd(target: MoveTarget): void {
+    const type = this.adding()?.type ?? ''
+    this.adding.set(null)
+    const outcome = this.session().insertField(target.location, this.newField(type))
+    this.announce(
+      outcome.ok
+        ? `Added ${this.labelForType(type)} to ${target.label}.`
+        : `Cannot add: ${outcome.message}`,
+    )
+    this.keepFocus = true
+  }
+
+  protected completeMove(target: MoveTarget): void {
+    const node = this.moving()?.node
+    this.moving.set(null)
+    if (node === undefined) return
+    const outcome = this.session().moveField(node.keyPath, target.location)
+    this.announce(
+      outcome.ok
+        ? `Moved ${this.nameOfNode(node)} to ${target.label}.`
+        : `Cannot move: ${outcome.message}`,
+    )
+    this.keepFocus = true
+  }
+
+  protected cancelDialog(): void {
+    this.adding.set(null)
+    this.moving.set(null)
+    this.keepFocus = true
+    this.items()[this.index()]?.nativeElement.focus()
+  }
+
+  protected upgrade(): void {
+    // One step. Moving a version 1 document straight to the newest would cost it
+    // every reader pinned to 2, for a type that only needs 2.
+    const to = nextSpecVersion(this.view().document.specVersion)
+    const outcome = to === undefined ? undefined : this.session().upgradeSpec(to)
+    this.announce(
+      outcome?.ok === true
+        ? `Moved this form to spec version ${String(to)}. Nothing else changed.`
+        : `Cannot upgrade: ${outcome?.ok === false ? outcome.message : 'already at the newest version'}`,
+    )
+  }
+
+  private newField(type: string): FieldDef {
+    const existing = new Set(
+      this.view().nodes.map((node) => node.keyPath[node.keyPath.length - 1] ?? ''),
+    )
+    return newFieldOfType(type, existing)
+  }
+
+  private announce(message: string): void {
+    this.announcement.set(message)
+  }
+}
+
+export type { Location }

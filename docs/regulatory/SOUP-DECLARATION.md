@@ -77,7 +77,7 @@ What it does **not** do, and must not be assumed to do:
 
 ## Composition and third-party dependencies
 
-Fourteen published packages, layered so that the isomorphic ones cannot
+Fifteen published packages, layered so that the isomorphic ones cannot
 acquire a platform dependency ([0008](../decisions/0008-layered-packages.md)).
 Workspace dependencies between them are not listed: the whole repository is
 delivered as one version under one licence, so assessing `@formancy/server` is
@@ -91,6 +91,7 @@ not separately assessing `@formancy/spec`.
 | `@formancy/challenge` | `@noble/hashes ^2.4.0` |
 | `@formancy/builder-core` | none |
 | `@formancy/builder-react` | none (React is a peer) |
+| `@formancy/builder-angular` | `tslib ^2.8.0` (Angular is a peer) |
 | `@formancy/conformance` | none |
 | `@formancy/react` | `uqr ^0.1.3` (React is a peer) |
 | `@formancy/angular` | `tslib ^2.8.0`, `uqr ^0.1.3` (Angular is a peer) |

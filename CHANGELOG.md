@@ -10,6 +10,40 @@ later.
 
 ## Unreleased
 
+**There is a builder for Angular.** `@formancy/builder-angular` — Angular 22, zoneless,
+`OnPush`, standalone — over the same `@formancy/builder-core` the React one uses. Asked
+directly: *"why is there no builder for angular?"*, and the honest answer at the time was
+that nothing in the documentation said, while the README's headline read *"the open-source
+visual form builder for Angular and React"*.
+
+**The structure tree first, and complete.** Every command the React tree has — add, move,
+delete, add a page, unwrap a container, undo and redo — every refusal announced through one
+polite live region, one tab stop with a roving `tabindex`, and every destination described
+as a sentence rather than an index. `packages/builder-angular/src/builder.test.ts` holds it
+to the same behaviours as `builder.test.tsx`, by role and accessible name only, the way the
+renderers hold the signature control: the conformance fixtures speak filling in and clicking
+on a rendered *form* and cannot say "press `m` and choose a destination", so the parity is
+by hand and says so.
+
+**Which destinations exist is decided once.** `builderView(session)` moved into
+`builder-core` alongside the seven modules that moved before it, so both builders read the
+same list — including the rule that a field is never offered the position it already
+occupies. Two builders offering different destinations for one document would be two
+products, and nobody using only one of them could see the difference.
+
+**An Angular effect may not read the signal it writes**, and this cost an afternoon worth
+recording. Keeping focus on a field across an edit is done in React during render with a
+ref guard; written as an Angular effect that read the focused position and set it, Angular
+treats it as a cycle and answers by **not scheduling any further change detection** — with
+no error. It looks exactly like frozen bindings: the key handler runs, the signal changes,
+the DOM keeps the first render's value. Found by probing the signal and the DOM in one test
+and watching them disagree; five cases fail against that shape and pass against the
+correction ([0091](docs/decisions/0091-a-second-builder-is-a-binding.md)).
+
+The arrangement tree, the property panel, the condition editor, the translations pane and
+the drag surfaces are still React-only, and the package's README says so rather than
+leaving it to be discovered.
+
 **The builder's core holds what is framework-free, which is more than it did.** Seven
 modules moved out of `@formancy/builder-react` and into `@formancy/builder-core`: the
 compiler that turns a structured condition into CEL, the two drop models, the two tree

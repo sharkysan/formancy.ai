@@ -54,3 +54,5 @@ export {
 export type { EditableProperty, PropertyKind } from './properties.js'
 export { describeTarget, flatten, nameOf } from './tree.js'
 export type { TreeNode } from './tree.js'
+export { builderView } from './view.js'
+export type { BuilderView, MoveTarget } from './view.js'

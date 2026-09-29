@@ -182,8 +182,13 @@ ESM-only, Node >= 22.12. The framework package is a peer dependency, so you
 keep the React or Angular version you already have. The backend is a container
 rather than a dependency — see [running the stack](#run-the-stack-locally).
 
-`@formancy/builder-react` is not published yet; [clone the
-repository](#development) to use the builder.
+The builder ships as two packages over one core — `@formancy/builder-react`
+and `@formancy/builder-angular`, both published. What decides anything is in
+`@formancy/builder-core` and shared, so the two cannot offer different
+destinations for the same document
+([0091](./docs/decisions/0091-a-second-builder-is-a-binding.md)). The Angular
+package carries the structure tree today; the arrangement tree, the property
+panel, the condition editor and the translations pane are React-only.
 
 ## How it fits your stack
 
@@ -210,10 +215,15 @@ packages/core           the headless reactive engine (rules, rows, wizard, a11y 
 packages/react          React binding: hooks, unstyled components, error summary
 packages/angular        Angular binding: signals over the same protocol, zoneless
 packages/conformance    the behaviour + accessibility contract (7 fixtures, published)
-packages/builder-core   headless schema editing: commands, undo/redo, valid targets
-packages/builder-react  the builder UI: structure tree, arrangement tree,
-                        field palette, property panel, logic — keyboard-first,
-                        with drag as a second route
+packages/builder-core   headless schema editing: commands, undo/redo, valid
+                        targets, and everything a builder's UI reads off a
+                        session — shared by both builders
+packages/builder-react  the builder UI for React: structure tree, arrangement
+                        tree, field palette, property panel, logic —
+                        keyboard-first, with drag as a second route
+packages/builder-angular  the same structure tree for Angular: zoneless, one
+                        signal per session, the same commands and the same
+                        destinations
 packages/server-core    backend use-cases against storage ports
 packages/server         Fastify + Postgres: publish, resolve, replayed submissions,
                         drafts with lazy migration, CSV export
@@ -226,8 +236,9 @@ apps/docs               the documentation site (Astro Starlight)
 ```
 
 **The builder edits two documents over one model.** `builder-core` holds the
-document, the undo stack and the rules about which edits are legal.
-`builder-react` is the interface over it, in two trees:
+document, the undo stack, the rules about which edits are legal, and what any
+builder's interface reads off a session. `builder-react` is the interface over
+it, in two trees — and `builder-angular` carries the first of them:
 
 - **Structure** — what the form collects. Fields, groups, pages and repeaters,
   with a palette, a property panel generated from the spec's own JSON Schema,
