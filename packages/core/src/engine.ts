@@ -157,7 +157,14 @@ export interface FormEngine {
   /** Each repeater with its definition — add/remove labels ride on it. */
   repeaters(): ReadonlyArray<{ wire: string; def: FieldDef }>
   /** The wizard pages in order, with their definitions. Empty when unpaged. */
-  pages(): ReadonlyArray<{ key: string; def: FieldDef }>
+  /**
+   * The wizard pages in order, each saying whether the answers walk past it.
+   *
+   * `skipped` rather than a filtered list: `page()` is an absolute index, so a
+   * list with holes in it and an index that counts them differently is two
+   * numbers that disagree about the same page.
+   */
+  pages(): ReadonlyArray<{ key: string; def: FieldDef; skipped: boolean }>
   /** The current submission value. */
   value(): unknown
   rowCount(path: Path): number
@@ -449,10 +456,15 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
     // A predicate rather than a plain filter, so the compile step below reads
     // `rule.cel` as a string and `rule.kind` as an expression kind without a cast.
     // The schema guarantees both: a rule that is not a check requires `cel`.
+    //
+    // A `skip` leaves too, and for a different reason from a check: it HAS an
+    // expression, and its target is a page's key rather than a data path, so
+    // every walk here that resolves a target would resolve it to nothing.
     (rule): rule is LogicRule & { cel: string; kind: ExpressionKind } =>
-      rule.kind !== 'check' && rule.cel !== undefined,
+      rule.kind !== 'check' && rule.kind !== 'skip' && rule.cel !== undefined,
   )
   const checkRules = allRules.filter((rule) => rule.kind === 'check')
+  const skipRules = allRules.filter((rule) => rule.kind === 'skip')
   const capabilitySource = options.capabilities
   const checks = options.checks
 
@@ -826,6 +838,71 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
     }
   }
 
+  // ----------------------------------------------------------------- skipping
+
+  /**
+   * Pages the answers walk past.
+   *
+   * A `skip` rule is an expression like `visible`, and it is compiled as one:
+   * same policy, same boolean result, same refusal of anything that could reach
+   * outside the document. What differs is its TARGET — a page's key rather than a
+   * data path, because a page is transparent for data and has no path at all.
+   *
+   * The consequence that matters is not the stepper. It is that the fields on a
+   * skipped page are hidden, and therefore not validated: a required answer on a
+   * page somebody never saw is a form that cannot be submitted and will not say
+   * why ([0087](../../../docs/decisions/0087-a-page-can-be-walked-past.md)).
+   */
+  const compiledSkips = skipRules.map((rule) => {
+    // `visible` rather than a policy of its own: the question is the same shape,
+    // the result is the same boolean, and giving it a second policy would be a
+    // second list of allowed functions for somebody to forget to keep level.
+    const outcome = compile(rule.cel ?? '', { kind: 'visible', variables: declarations })
+    if (!outcome.ok) throw new Error(refusedRule(rule, outcome.error, fieldsByKey))
+    const index = pageDefs.findIndex((page) => page.key === rule.target)
+    return { rule, program: outcome.program, index }
+  })
+
+  const skippedPages = new Set<number>()
+
+  /** Recomputed whenever anything the expressions read changes. */
+  function applySkips(): string[] {
+    if (compiledSkips.length === 0) return []
+    const capabilities: Capabilities = captureCapabilities(capabilitySource!)
+    const bag = buildBag()
+    const changed: string[] = []
+
+    for (const entry of compiledSkips) {
+      if (entry.index === -1) continue
+      const outcome = evaluate(entry.program, bag, { capabilities })
+      // A rule that cannot evaluate does NOT skip. Failing open here is the one
+      // place it is right: a page hidden by a broken expression takes its
+      // questions away silently, while a page shown in error is visible and
+      // answerable ([0054] on what a rule that never works costs).
+      const skip = outcome.ok && outcome.value === true
+      const was = skippedPages.has(entry.index)
+      if (skip === was) continue
+      if (skip) skippedPages.add(entry.index)
+      else skippedPages.delete(entry.index)
+
+      // Every field on the page: hidden follows the page, and hidden is what
+      // keeps the answers out of validation and out of the submission.
+      for (const node of staticNodes) {
+        if (node.page !== entry.index) continue
+        if (skip) hiddenWires.add(node.wire)
+        else hiddenWires.delete(node.wire)
+        changed.push(node.wire)
+      }
+      for (const repeater of repeaters) {
+        if (repeater.page !== entry.index) continue
+        if (skip) hiddenWires.add(repeater.wire)
+        else hiddenWires.delete(repeater.wire)
+        changed.push(repeater.wire)
+      }
+    }
+    return changed
+  }
+
   // ------------------------------------------------------------------ checks
 
   /**
@@ -955,6 +1032,14 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
     // And it invalidates every check about it, which is what the generation
     // inside `runChecksFor` enforces for answers already in flight.
     for (const wire of related) runChecksFor(wire)
+    // Which pages are live can change with any answer, and the fields on a page
+    // that has just been walked past have to stop being validated in the same
+    // turn — not on the next one, when somebody has already pressed Submit.
+    const pagesChanged = applySkips()
+    if (pagesChanged.length > 0) {
+      invalidate(pagesChanged)
+      wizardInstance?.refresh()
+    }
     applyRules()
     if (validatedOnce && !applyingRules) runValidation()
   })
@@ -1095,6 +1180,9 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
 
   // The first pass: initial visibility and computed values, before anyone asks.
   applyRules()
+  // Which pages are live, before anybody has typed: a form that opens on a page
+  // the answers already walk past would open on an empty step.
+  applySkips()
 
   /**
    * Rewrite the row index in every piece of position-keyed state under one repeater.
@@ -1132,7 +1220,11 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
     fieldPaths: () => activeNodes().map((node) => node.wire),
     repeaterPaths: () => repeaters.map((node) => node.wire),
     repeaters: () => repeaters.map((node) => ({ wire: node.wire, def: node.def })),
-    pages: () => pageDefs,
+    pages: () =>
+      // The `skipped` flag rather than a filtered list: the stepper needs to
+      // leave a page out AND `page()` is an absolute index, so a filtered list
+      // would put the two out of step with each other.
+      pageDefs.map((page, index) => ({ ...page, skipped: skippedPages.has(index) })),
     value: () => store.root(),
 
     rowCount: (path) => currentRowCount(requireRepeater(path)),
@@ -1300,7 +1392,14 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
 
     wizard() {
       if (pageCount === 0) return undefined
-      wizardInstance ??= createWizard({ pageCount, validatePage: validateOnePage })
+      wizardInstance ??= createWizard({
+        pageCount,
+        validatePage: validateOnePage,
+        // Absolute page indices throughout: a skipped page is walked past rather
+        // than removed, so `page()` still means the same thing it always did and
+        // `pageOf(field)` still compares against it.
+        isLive: (index) => !skippedPages.has(index),
+      })
       return wizardInstance
     },
 

@@ -443,7 +443,7 @@ required · string · min length 1 · max length 512
 
 #### `kind`
 
-required · one of `"visible"`, `"disabled"`, `"required"`, `"computed"`, `"validate"`, `"check"`
+required · one of `"visible"`, `"disabled"`, `"required"`, `"computed"`, `"validate"`, `"check"`, `"skip"`
 
 **Kind.** What the rule decides about its field.
 
@@ -485,6 +485,7 @@ optional · string · min length 1 · max length 128 · pattern `^[a-zA-Z][a-zA-
 - `"computed"` — **Computed.** Writes the expression's result into the field whenever something it reads changes. The person filling the form in cannot type over it.
 - `"validate"` — **Validate.** Checks an answer. While the expression is false, the field carries the error named by "code". A field can have any number of these.
 - `"check"` — **Check.** Asks the deployment about an answer — whether this email is already registered, whether this reference exists. The rule names a check rather than carrying an expression, and the deployment answers it; nothing in formancy fetches anything. Needs spec version 3.
+- `"skip"` — **Skip.** Walks past a page while the expression is true — a visa page for somebody who does not need a visa. Its target is the PAGE’s key rather than a data path, because a page carries no answer of its own. Needs spec version 3.
 
 ## Named definitions
 

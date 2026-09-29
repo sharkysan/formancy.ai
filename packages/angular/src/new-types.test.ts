@@ -795,3 +795,47 @@ describe('the tag picker, which must behave as the React one does', () => {
     }
   })
 })
+
+describe('a skipped page under Angular, which must match the React one', () => {
+  const routed = (): FormSchema =>
+    base({
+      specVersion: '3',
+      model: {
+        fields: [
+          { key: 'p1', type: 'page', label: 'About you', fields: [{ key: 'needsVisa', type: 'checkbox', label: 'Do you need a visa?' }] },
+          { key: 'p2', type: 'page', label: 'Visa details', fields: [{ key: 'passport', type: 'text', label: 'Passport number' }] },
+          { key: 'p3', type: 'page', label: 'Confirm', fields: [{ key: 'agreed', type: 'checkbox', label: 'Agreed' }] },
+        ],
+      },
+      logic: { rules: [{ target: 'p2', kind: 'skip', cel: 'needsVisa != true' }] },
+    })
+
+  test('names only the steps the form will actually take', async () => {
+    const engine = engineFor(routed())
+    const view = await renderForm(engine)
+
+    const stepper = screen.getByRole('navigation', { name: /progress/i })
+    expect(within(stepper).getAllByRole('listitem').map((item) => item.textContent?.trim())).toEqual([
+      'About you',
+      'Confirm',
+    ])
+
+    engine.setValue(['needsVisa'], true)
+    await view.fixture.whenStable()
+    await waitFor(() => {
+      expect(within(stepper).getAllByRole('listitem')).toHaveLength(3)
+    })
+  })
+
+  test('Next lands on the page it names', async () => {
+    const engine = engineFor(routed())
+    await renderForm(engine)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }))
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Agreed')).toBeTruthy()
+    })
+    expect(screen.queryByRole('button', { name: 'Next' })).toBeNull()
+  })
+})

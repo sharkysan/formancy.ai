@@ -1,5 +1,5 @@
 import { check, parse } from '@formancy/expressions'
-import type { DeclaredType, VariableDeclarations } from '@formancy/expressions'
+import type { DeclaredType, ExpressionKind, VariableDeclarations } from '@formancy/expressions'
 import type { FormSchema, LogicRule } from '@formancy/spec'
 import { topLevelDataFields } from './engine.js'
 
@@ -128,6 +128,10 @@ export function expressionProblems(schema: FormSchema): ExpressionProblem[] {
     // deployment answers. Whether that name resolves is the deployment's question
     // and is asked at publish, not here.
     if (rule.kind === 'check' || rule.cel === undefined) continue
+    // A `skip` is checked as a `visible` would be: the same boolean question,
+    // compiled under the same policy in the engine, so reporting it under a kind
+    // the checker does not have would be reporting it under the wrong rules.
+    const kind: ExpressionKind = rule.kind === 'skip' ? 'visible' : rule.kind
 
     const variables = rule.target.includes('[]')
       ? { ...declarations, ...ROW_VARIABLES }
@@ -138,7 +142,7 @@ export function expressionProblems(schema: FormSchema): ExpressionProblem[] {
     // reporting it twice, in different words, helps nobody.
     if (!parsed.ok) continue
 
-    const outcome = check(parsed.ast, { kind: rule.kind })
+    const outcome = check(parsed.ast, { kind })
     if (outcome.ok) continue
     if (!reportable(outcome.error.code, outcome.error.message)) continue
 
@@ -148,7 +152,7 @@ export function expressionProblems(schema: FormSchema): ExpressionProblem[] {
 
     problems.push({
       target: rule.target,
-      kind: rule.kind,
+      kind,
       cel: rule.cel,
       message:
         `Rule on "${rule.target}" (${rule.kind}): ${outcome.error.message}. ` +

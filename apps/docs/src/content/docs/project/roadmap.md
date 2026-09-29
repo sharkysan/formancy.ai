@@ -177,9 +177,13 @@ than asserted.
    this page" is the model tree's equivalent of `unwrapLayoutNode`, which the
    arrangement tree has and the model tree does not.
 
-   Not in any of these: **conditional page routing** — skipping a page on an answer.
-   That is a new rule kind, so it is a spec version, and the pages a form has have
-   only just stopped being a developer-only feature.
+   **Conditional page routing is built**, and is in spec 3 rather than being the only
+   thing in a version 4: `kind: "skip"` walks past a page while its expression is true,
+   and the fields on it are hidden, which is what keeps a required answer on a page
+   nobody saw from holding the form up
+   ([0087](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0087-a-page-can-be-walked-past.md)).
+   What the **builder** cannot do yet is write one: a skip rule is authored by hand or by
+   an agent, like every rule kind before the condition editor learns it.
 
 ## Measured against the competition
 

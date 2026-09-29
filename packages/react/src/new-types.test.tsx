@@ -909,3 +909,68 @@ describe('a field waiting for a check', () => {
     expect(box.getAttribute('aria-busy')).toBeNull()
   })
 })
+
+describe('a stepper over a form that skips a page', () => {
+  /*
+   * The engine knows which pages the answers walk past. If the stepper does not,
+   * a form claims four steps and does three -- and the step it names is one
+   * pressing Next never reaches, which reads as a broken button rather than as a
+   * page that does not apply.
+   *
+   * `canGoNext` rather than `page < pageCount - 1`, because those stopped being
+   * the same question: the last LIVE page is not always the last page.
+   */
+  const routed: FormSchema = {
+    specVersion: '3',
+    id: 'trip',
+    title: 'Trip',
+    model: {
+      fields: [
+        { key: 'p1', type: 'page', label: 'About you', fields: [{ key: 'needsVisa', type: 'checkbox', label: 'Do you need a visa?' }] },
+        { key: 'p2', type: 'page', label: 'Visa details', fields: [{ key: 'passport', type: 'text', label: 'Passport number' }] },
+        { key: 'p3', type: 'page', label: 'Confirm', fields: [{ key: 'agreed', type: 'checkbox', label: 'Agreed' }] },
+      ],
+    },
+    logic: { rules: [{ target: 'p2', kind: 'skip', cel: 'needsVisa != true' }] },
+  }
+
+  const mount = (): ReturnType<typeof createFormEngine> => {
+    const engine = createFormEngine({
+      schema: routed,
+      capabilities: { now: () => 0, today: () => '2026-09-29', random: () => 0.5 },
+    })
+    render(
+      <FormancyProvider engine={engine}>
+        <FormancyForm onSubmit={() => undefined} />
+      </FormancyProvider>,
+    )
+    return engine
+  }
+
+  test('names only the steps the form will actually take', async () => {
+    const engine = mount()
+    const stepper = screen.getByRole('navigation', { name: /progress/i })
+
+    expect(within(stepper).getAllByRole('listitem').map((item) => item.textContent)).toEqual([
+      'About you',
+      'Confirm',
+    ])
+
+    await act(async () => {
+      engine.setValue(['needsVisa'], true)
+    })
+    expect(within(stepper).getAllByRole('listitem')).toHaveLength(3)
+  })
+
+  test('Next goes to the page it names, not to the one that was skipped', async () => {
+    const user = userEvent.setup()
+    mount()
+
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+
+    expect(screen.getByLabelText('Agreed')).toBeTruthy()
+    // And the last live page offers Submit rather than Next, which index
+    // arithmetic over `pageCount` would have got wrong.
+    expect(screen.queryByRole('button', { name: 'Next' })).toBeNull()
+  })
+})
