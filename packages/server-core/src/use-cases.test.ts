@@ -878,3 +878,62 @@ describe('patterns that backtrack are refused at publish', () => {
     expect(outcome.patterns[0]?.path).toBe('contacts[].code')
   })
 })
+
+describe('the side the server replays as', () => {
+  /*
+   * `runsOn` exists so a check that can only run in one place can say so
+   * ([0043](../../../docs/decisions/0043-runs-on.md)) — a uniqueness check needs
+   * the database, a debounced hint needs the keyboard.
+   *
+   * The engine honours it. The server never told the engine which side it was,
+   * so the replay ran as a CLIENT: a `runsOn: "server"` rule was skipped in the
+   * one place it was meant to run, and a `runsOn: "client"` rule ran in the one
+   * place it was meant not to. Both halves of the feature were backwards, in the
+   * product, with nothing reporting it.
+   */
+  const withRule = (runsOn: 'server' | 'client'): FormSchema =>
+    ({
+      specVersion: '3',
+      id: 'contact-us',
+      title: 'Contact us',
+      model: { fields: [{ key: 'email', type: 'text', label: 'Email' }] },
+      logic: {
+        rules: [
+          { target: 'email', kind: 'validate', cel: 'false', code: 'refused', runsOn },
+        ],
+      },
+    }) as unknown as FormSchema
+
+  test('runs a server-only validation rule, which is what runsOn is for', async () => {
+    const published = await publishForm(deps, { path: 'contact-us', schema: withRule('server') })
+    if (!published.ok) throw new Error('publish failed')
+
+    const outcome = await createSubmission(deps, {
+      path: 'contact-us',
+      declaredSchemaHash: published.schemaHash,
+      actor: 'authenticated',
+      data: { email: 'a@b.ch' },
+    })
+
+    expect(outcome.ok).toBe(false)
+    if (outcome.ok) return
+    expect(JSON.stringify(outcome)).toMatch(/refused/)
+  })
+
+  test('and does not run a client-only one, which would be a second opinion', async () => {
+    // A debounced hint, or anything else the browser owns. Running it here would
+    // refuse a submission the browser had accepted, for a rule whose author said
+    // where it belongs.
+    const published = await publishForm(deps, { path: 'contact-us', schema: withRule('client') })
+    if (!published.ok) throw new Error('publish failed')
+
+    const outcome = await createSubmission(deps, {
+      path: 'contact-us',
+      declaredSchemaHash: published.schemaHash,
+      actor: 'authenticated',
+      data: { email: 'a@b.ch' },
+    })
+
+    expect(outcome.ok).toBe(true)
+  })
+})

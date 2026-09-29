@@ -5,6 +5,7 @@ import type {
   Capabilities,
   CapabilitySource,
   DeclaredType,
+  ExpressionKind,
   Program,
   VariableDeclarations,
 } from '@formancy/expressions'
@@ -55,6 +56,15 @@ export interface FieldSnapshot {
   visible: boolean
   disabled: boolean
   touched: boolean
+  /**
+   * A check about this answer is in flight.
+   *
+   * On the snapshot rather than left for a host to track, because a control that
+   * looks finished and is not is one somebody submits — and the renderers say so
+   * with `aria-busy`, never by disabling, which would move focus out from under
+   * whoever is typing.
+   */
+  checking: boolean
   /** Error CODES (e.g. "required") — text belongs to the message catalog, not the engine. */
   errors: readonly string[]
   /**
@@ -103,7 +113,31 @@ export interface FormEngineOptions {
    * Defaults to `client`, since that is where a form is filled in.
    */
   mode?: 'client' | 'server'
+  /**
+   * Validators the deployment answers, by the name a `check` rule gives.
+   *
+   * The same shape `optionsSource` uses and for the same reasons: the document
+   * names a check, the deployment says how to answer it, and nothing in this
+   * package fetches anything. A check that is declared and not supplied fails the
+   * field closed rather than passing it.
+   */
+  checks?: Record<string, Check>
 }
+
+/** What a deployment is asked, and what it answers. */
+export interface CheckRequest {
+  /** The name the rule gave. */
+  check: string
+  /** The data path of the field being checked. */
+  path: string
+  /** The answer in question. Never empty: emptiness is `required`'s business. */
+  value: unknown
+  /** The whole submission so far, for a check that needs more than one answer. */
+  data: unknown
+}
+
+/** An error code while the answer is refused, or `undefined` while it is fine. */
+export type Check = (request: CheckRequest) => Promise<string | undefined> | string | undefined
 
 export interface FormEngine {
   /**
@@ -157,6 +191,14 @@ export interface FormEngine {
   /** Errors a user should currently SEE — touched and invalid — in document
    *  order. Identity-stable until something changes, for useSyncExternalStore. */
   visibleErrors(): ReadonlyArray<{ path: string; codes: readonly string[] }>
+  /**
+   * Resolves when no check is in flight.
+   *
+   * A host awaits this before submitting. Without it a form can be sent while a
+   * verdict is still coming, and "it was valid when I pressed the button" is not
+   * something the server will agree with.
+   */
+  settle(): Promise<void>
   validate(): ValidationReport
   submit(): { ok: boolean; errors: Record<string, string[]> }
   /** Present when the schema has pages; the same instance for the form's lifetime. */
@@ -393,8 +435,26 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
 
   // -------------------------------------------------- logic rule compilation
 
-  const rules = schema.logic?.rules ?? []
+  const allRules = schema.logic?.rules ?? []
+  /**
+   * The rules that ARE an expression.
+   *
+   * A `check` is not one: it names a validator the deployment answers, so there is
+   * nothing to compile, nothing to derive a dependency from, and nothing for the
+   * graph to recompute. Separating them here rather than skipping them at each use
+   * is what keeps the compile step from having to ask, and what made the type
+   * checker point at every place that had assumed a rule has an expression.
+   */
+  const rules = allRules.filter(
+    // A predicate rather than a plain filter, so the compile step below reads
+    // `rule.cel` as a string and `rule.kind` as an expression kind without a cast.
+    // The schema guarantees both: a rule that is not a check requires `cel`.
+    (rule): rule is LogicRule & { cel: string; kind: ExpressionKind } =>
+      rule.kind !== 'check' && rule.cel !== undefined,
+  )
+  const checkRules = allRules.filter((rule) => rule.kind === 'check')
   const capabilitySource = options.capabilities
+  const checks = options.checks
 
   // Fixed for the engine's lifetime: a snapshot's identity is supposed to change
   // only when that field's state changes, and a locale that could move under it
@@ -766,11 +826,135 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
     }
   }
 
+  // ------------------------------------------------------------------ checks
+
+  /**
+   * Validators the deployment answers, and the three ways this goes wrong.
+   *
+   * **A stale answer wins.** Somebody types an address, the check goes out, they
+   * correct it, and the first answer lands second and marks the corrected address
+   * taken. Every call carries a generation, and a verdict whose generation is not
+   * the current one is dropped. Debouncing narrows that window; only a token
+   * closes it.
+   *
+   * **Submit outruns the verdict.** `settle()` resolves when nothing is in
+   * flight, so a host can await it before submitting rather than sending a form
+   * whose verdict was not in.
+   *
+   * **The field says nothing while it waits.** `checking` is on the snapshot, so a
+   * control can say so rather than looking finished.
+   *
+   * A check that cannot be answered — no checker supplied, or one that throws —
+   * fails the field CLOSED, like every other thing here that cannot get an
+   * answer: an accepted bogus value is undetectable afterwards and a refusal is
+   * retryable.
+   */
+  const checkErrorsByWire = new Map<string, string[]>()
+  const checkingWires = new Set<string>()
+  const checkGeneration = new Map<string, number>()
+  let inFlight = 0
+  let idle: (() => void) | undefined
+  let idleWaiters: Array<() => void> = []
+
+  /** The check rules that apply on this side. */
+  const activeChecks = checkRules.filter((rule) => {
+    const runsOn = rule.runsOn ?? 'server'
+    return runsOn === 'both' || runsOn === mode
+  })
+
+  const checksByTarget = new Map<string, typeof activeChecks>()
+  for (const rule of activeChecks) {
+    const held = checksByTarget.get(rule.target) ?? []
+    held.push(rule)
+    checksByTarget.set(rule.target, held)
+  }
+
+  function settleWaiters(): void {
+    if (inFlight > 0) return
+    const waiting = idleWaiters
+    idleWaiters = []
+    for (const resolve of waiting) resolve()
+    idle?.()
+  }
+
+  function runChecksFor(wire: string): void {
+    const rules = checksByTarget.get(wire)
+    if (rules === undefined || rules.length === 0) return
+
+    const node = resolveNode(parsePath(wire))
+    if (!node) return
+    const value = store.get(node.path)
+
+    // Emptiness is `required`'s question, not a check's, and asking a deployment
+    // whether nothing is taken is asking it nothing.
+    const empty = value === undefined || value === null || value === ''
+    const generation = (checkGeneration.get(wire) ?? 0) + 1
+    checkGeneration.set(wire, generation)
+
+    if (empty) {
+      checkErrorsByWire.delete(wire)
+      checkingWires.delete(wire)
+      invalidate([wire])
+      return
+    }
+
+    checkingWires.add(wire)
+    checkErrorsByWire.delete(wire)
+    invalidate([wire])
+
+    for (const rule of rules) {
+      const checker = checks?.[rule.check ?? '']
+      inFlight += 1
+      const settled = (codes: string[] | undefined): void => {
+        inFlight -= 1
+        // The generation is the whole mechanism: a verdict about a value nobody
+        // holds any more is not a verdict about this field.
+        if (checkGeneration.get(wire) === generation) {
+          if (codes !== undefined && codes.length > 0) {
+            checkErrorsByWire.set(wire, [...(checkErrorsByWire.get(wire) ?? []), ...codes])
+          }
+          if (inFlight === 0) checkingWires.delete(wire)
+          invalidate([wire])
+        }
+        settleWaiters()
+      }
+
+      if (checker === undefined) {
+        // Named and absent: the document asks for a check this deployment has not
+        // supplied. Failing closed is the same answer `optionsSource` gives.
+        settled(['check_unavailable'])
+        continue
+      }
+
+      // Called synchronously, not off a microtask. Deferring it delays the moment
+      // the deployment learns there is a question, which for a debounced checker
+      // is the moment its own timer starts — and it made `checking` true before
+      // anything had actually been asked.
+      let answer: Promise<string | undefined> | string | undefined
+      try {
+        answer = checker({ check: rule.check ?? '', path: wire, value, data: store.root() })
+      } catch {
+        settled(['check_unavailable'])
+        continue
+      }
+      void Promise.resolve(answer)
+        .then((verdict) => {
+          settled(verdict === undefined ? undefined : [verdict])
+        })
+        .catch(() => {
+          settled(['check_unavailable'])
+        })
+    }
+  }
+
   store.subscribe((written) => {
     const related = valueRelated(written)
     // A new value invalidates the server's old verdict about the old value.
     for (const wire of related) serverErrorsByWire.delete(wire)
     invalidate(related)
+    // And it invalidates every check about it, which is what the generation
+    // inside `runChecksFor` enforces for answers already in flight.
+    for (const wire of related) runChecksFor(wire)
     applyRules()
     if (validatedOnce && !applyingRules) runValidation()
   })
@@ -1040,9 +1224,11 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
       const errors = Object.freeze([
         ...(errorsByWire.get(wire) ?? NO_ERRORS),
         ...(serverErrorsByWire.get(wire) ?? NO_ERRORS),
+        ...(checkErrorsByWire.get(wire) ?? NO_ERRORS),
       ])
       const ids = fieldIds(schema.id, node.path)
       const snapshot: FieldSnapshot = Object.freeze({
+        checking: checkingWires.has(wire),
         value: store.get(node.path),
         type: node.def.type,
         label: resolveText(schema, node.def.label, locale),
@@ -1061,6 +1247,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
           touched,
           errors,
           grouped: GROUPED_TYPES.has(node.def.type),
+          checking: checkingWires.has(wire),
         }),
       })
       snapshotCache.set(wire, snapshot)
@@ -1101,6 +1288,14 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
       return visibleErrorsCache
     },
 
+    settle() {
+      // Resolves immediately when nothing is in flight, so a host may await it
+      // unconditionally rather than asking whether this form has checks at all.
+      if (inFlight === 0) return Promise.resolve()
+      return new Promise<void>((resolve) => {
+        idleWaiters.push(resolve)
+      })
+    },
     validate: runValidation,
 
     wizard() {

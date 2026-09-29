@@ -126,7 +126,7 @@ at a time.** Each bump is an event for every consumer: a pinned reader, a
 regulatory characterisation, a line in `MIGRATIONS.md`. Shipping `signature` on
 its own and `datagrid` a fortnight later spends two of those where one would do.
 
-Rule-level properties are reserved one at a time, and **only one of the two is there.**
+Rule-level properties are reserved one at a time, and **both of the two are there now.**
 `runsOn` is in the format and enforced — `both | client | server` on a validate rule and
 deliberately nowhere else, because visibility that differed between the browser and the
 server would leave the server unable to check what the browser did
@@ -134,11 +134,11 @@ server would leave the server unable to check what the browser did
 `async` is not: `logicRule` is `additionalProperties: false`, so a document carrying it is
 rejected today, and adding it is a version bump rather than an additive change.
 
-It is deliberately **not** being reserved ahead of use. A property nothing reads validates
-and does nothing, which is the documented-but-inert failure this repository has shipped
-once already — and reserving it would not save the bump anyway, because a reader of the
-older version refuses the whole document rather than ignoring a property it has never heard
-of. So an async validator is a spec 3 feature, and that is the price of freezing 2.
+It was deliberately not reserved ahead of use, and it did not need to be: an asynchronous
+validator turned out not to be a property at all. `kind: "check"` is a rule kind in spec 3
+— a CEL expression is synchronous by construction, so the asynchronous thing could never
+be an expression with a flag on it
+([0086](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0086-a-check-is-named-and-answered-elsewhere.md)).
 
 ## Field types that are not here yet
 

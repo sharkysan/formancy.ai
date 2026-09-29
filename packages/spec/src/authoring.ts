@@ -7,6 +7,7 @@ import {
   SPEC_1_LAYOUT_KINDS,
   SPEC_VERSIONS,
   WIDGETS_BY_FIELD_TYPE,
+  RULE_KINDS,
 } from './types.js'
 
 /**
@@ -51,7 +52,10 @@ export function authoringFacts(): AuthoringFacts {
     listValuedFieldTypes: LIST_VALUED_FIELD_TYPES,
     layoutKinds: [...SPEC_1_LAYOUT_KINDS, 'tabs', 'table', 'qrcode'],
     widgetsByFieldType: WIDGETS_BY_FIELD_TYPE,
-    ruleKinds: ['visible', 'disabled', 'required', 'computed', 'validate'],
+    // From the constant rather than typed out: the list was a literal and had to
+    // be edited when `check` arrived, which is how a briefing comes to describe a
+    // format one version behind the one it is briefing about.
+    ruleKinds: RULE_KINDS,
     formats: ['email', 'url', 'uuid'],
     notes: [
       'A field type not in the list does not exist, whatever other form builders call it. An email field is type "text" with format "email".',

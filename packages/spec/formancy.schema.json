@@ -894,8 +894,7 @@
    "type": "object",
    "required": [
     "target",
-    "kind",
-    "cel"
+    "kind"
    ],
    "additionalProperties": false,
    "properties": {
@@ -934,6 +933,11 @@
        "const": "validate",
        "title": "Validate",
        "description": "Checks an answer. While the expression is false, the field carries the error named by \"code\". A field can have any number of these."
+      },
+      {
+       "const": "check",
+       "title": "Check",
+       "description": "Asks the deployment about an answer — whether this email is already registered, whether this reference exists. The rule names a check rather than carrying an expression, and the deployment answers it; nothing in formancy fetches anything. Needs spec version 3."
       }
      ]
     },
@@ -964,8 +968,48 @@
       "server"
      ],
      "default": "both"
+    },
+    "check": {
+     "title": "Check name",
+     "description": "The name of a validator the deployment answers, for a `check` rule. A NAME and never an address: a URL here would be a deployment detail in a portable format, frozen forever in a published version, and a way to make an instance inside a private network fetch something for you.",
+     "type": "string",
+     "minLength": 1,
+     "maxLength": 128,
+     "pattern": "^[a-zA-Z][a-zA-Z0-9_.-]*$"
     }
-   }
+   },
+   "allOf": [
+    {
+     "if": {
+      "properties": {
+       "kind": {
+        "const": "check"
+       }
+      },
+      "required": [
+       "kind"
+      ]
+     },
+     "then": {
+      "required": [
+       "check"
+      ],
+      "properties": {
+       "check": true,
+       "cel": false
+      }
+     },
+     "else": {
+      "required": [
+       "cel"
+      ],
+      "properties": {
+       "cel": true,
+       "check": false
+      }
+     }
+    }
+   ]
   },
   "fieldOption": {
    "title": "Option",

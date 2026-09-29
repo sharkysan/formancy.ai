@@ -37,7 +37,9 @@ function conditionHint(
   fields: ReadonlyMap<string, FieldDef>,
 ): string | undefined {
   if (error.code !== 'result_type_not_allowed') return undefined
-  const name = rule.cel.trim()
+  // A refused rule always has an expression: a check names a validator and is
+  // never compiled, so it cannot reach this.
+  const name = (rule.cel ?? '').trim()
   if (fields.get(name)?.type !== 'checkbox') return undefined
   return `A checkbox nobody has touched is null rather than false, so it cannot be a condition on its own: write ${name} == true.`
 }

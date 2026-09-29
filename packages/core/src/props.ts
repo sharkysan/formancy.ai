@@ -18,6 +18,15 @@ export interface ControlProps {
   'aria-invalid'?: true
   'aria-required'?: true
   'aria-describedby'?: string
+  /**
+   * A check about this answer is in flight.
+   *
+   * Busy is said with `aria-busy`, never by disabling: disabling the element
+   * somebody just typed into blurs it, and the browser then resets focus to the
+   * document body. The scanner and the typeahead's option source both arrived at
+   * the same answer, and composing it here is what stops the three from drifting.
+   */
+  'aria-busy'?: true
   disabled?: true
 }
 
@@ -48,6 +57,8 @@ export interface FieldPropsInput {
    * both looked right.
    */
   grouped: boolean
+  /** A check about this answer is waiting for the deployment to answer. */
+  checking?: boolean
   disabled: boolean
   touched: boolean
   errors: readonly string[]
@@ -62,6 +73,7 @@ export function buildFieldProps(input: FieldPropsInput): FieldProps {
   // ARIA. The hint below carries it instead.
   if (input.required && !input.grouped) control['aria-required'] = true
   if (input.disabled) control.disabled = true
+  if (input.checking) control['aria-busy'] = true
   if (showError) control['aria-invalid'] = true
 
   // Error text is a describedby target and must NOT also be a live region —

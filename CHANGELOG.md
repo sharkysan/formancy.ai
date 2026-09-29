@@ -70,6 +70,37 @@ rather than quietly corrected, because it is the failure this repository's docum
 rules exist for, and it got past me three times in one afternoon — into the roadmap, the
 changelog and a decision record.*
 
+**`kind: "check"` — a validator the deployment answers, and the last construct version 3
+was waiting for.** An asynchronous validator could never be `async: true` on a `validate`
+rule: a CEL expression is pure and synchronous by construction, and every structural
+property the engine has rests on that — the dependency graph is walked out of the AST,
+cycles are refused at save time, evaluation is bounded by a clock. So it is a different
+kind of rule, which is what [0042](./docs/decisions/0042-freeze-the-spec.md) said when the
+spec was frozen the first time.
+
+It names a check and never an address, exactly as `optionsSource` does: a URL in a document
+is a deployment detail frozen into a published version, and a way to make a server inside a
+private network fetch something for you. The document says which check; the deployment says
+how to answer it.
+
+**Every call carries a generation, and a verdict from an old one is dropped** — the bug
+every implementation of this ships with. Somebody types an address, the check goes out,
+they correct it, and the first answer lands second and marks the corrected address taken.
+Debouncing narrows that window; only a token closes it. `engine.settle()` resolves when
+nothing is in flight, so a host can await it before submitting rather than sending a form
+whose verdict was not in, and `checking` on the snapshot becomes `aria-busy` in the
+composed props — never `disabled`, which would blur whoever is typing
+([0086](./docs/decisions/0086-a-check-is-named-and-answered-elsewhere.md)).
+
+**And it found that the server has never replayed as the server.** Wiring checks meant
+passing `mode`, and nothing ever had: `createFormEngine` defaults to `client`, so every
+server-side replay since `runsOn` shipped ran the **client's** rules. A `runsOn: "server"`
+rule — a uniqueness check, the reason the property exists — was skipped in the one place it
+was meant to run, and a `runsOn: "client"` rule ran in the one place it was meant not to.
+Both halves backwards, in the product. The engine had unit tests for the behaviour and the
+server had tests for submissions; the seam between them was tested by neither, which is
+what the two new cases now do.
+
 **`widget: "tagpicker"` — several answers, narrowed by typing.** The half of the combobox
 row that was still missing: one answer from a list the document holds is `typeahead` on a
 `select`, and this is the many-answer one. A **widget and not a field type**, because the

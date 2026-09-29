@@ -36,6 +36,17 @@ One field type:
 |---|---|
 | `signature` | A mark somebody drew, as points, or their name as they typed it |
 
+One rule kind:
+
+| Kind | What it does |
+|---|---|
+| `check` | Asks the deployment about an answer — whether this email is registered, whether this reference exists. It names a check rather than carrying an expression, and the deployment answers it |
+
+A check carries `check` (the name) and no `cel`, and may carry `code` and `runsOn` like a
+`validate` rule. **A name and never an address**: a URL in a document is a deployment
+detail frozen into a published version, and a way to make a server inside a private network
+fetch something ([0086](docs/decisions/0086-a-check-is-named-and-answered-elsewhere.md)).
+
 One widget:
 
 | Widget | On | What it does |
