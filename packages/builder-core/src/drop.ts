@@ -1,4 +1,4 @@
-import type { Location } from '@formancy/builder-core'
+import type { Location } from './index.js'
 import type { FieldDef, FormSchema } from '@formancy/spec'
 
 /**

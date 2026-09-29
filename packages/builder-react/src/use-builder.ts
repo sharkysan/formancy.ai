@@ -1,8 +1,8 @@
 import { useCallback, useMemo, useSyncExternalStore } from 'react'
 import type { BuilderSession, Location } from '@formancy/builder-core'
 import type { FieldDef, FormSchema } from '@formancy/spec'
-import { describeTarget, flatten } from './tree.js'
-import type { TreeNode } from './tree.js'
+import { describeTarget, flatten } from '@formancy/builder-core'
+import type { TreeNode } from '@formancy/builder-core'
 
 export interface MoveTarget {
   location: Location

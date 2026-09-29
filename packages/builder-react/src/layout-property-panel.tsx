@@ -2,7 +2,7 @@ import type { ReactElement } from 'react'
 import type { BuilderSession, LayoutAddress } from '@formancy/builder-core'
 import { layoutNodeAt } from '@formancy/builder-core'
 import { PropertyField } from './property-panel.js'
-import { editableLayoutPropertiesFor } from './properties.js'
+import { editableLayoutPropertiesFor } from '@formancy/builder-core'
 import { useBuilder } from './use-builder.js'
 
 /**

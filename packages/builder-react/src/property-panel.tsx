@@ -4,9 +4,9 @@ import type { DataGridColumn, FieldDef, FieldOption } from '@formancy/spec'
 import type { BuilderSession } from '@formancy/builder-core'
 import { ColumnsEditor } from './columns-editor.js'
 import { OptionsEditor } from './options-editor.js'
-import { editablePropertiesFor } from './properties.js'
-import type { EditableProperty } from './properties.js'
-import { nameOf } from './tree.js'
+import { editablePropertiesFor } from '@formancy/builder-core'
+import type { EditableProperty } from '@formancy/builder-core'
+import { nameOf } from '@formancy/builder-core'
 import { useBuilder } from './use-builder.js'
 
 /**

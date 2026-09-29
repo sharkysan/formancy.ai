@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { createBuilderSession } from '@formancy/builder-core'
+import { createBuilderSession } from './index.js'
 import { FIELD_TYPES, SPEC_1_FIELD_TYPES, SPEC_2_FIELD_TYPES } from '@formancy/spec'
 import type { FormSchema } from '@formancy/spec'
 import { newFieldOfType, paletteEntries, typesNeedingUpgrade } from './palette.js'

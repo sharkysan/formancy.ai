@@ -1,5 +1,5 @@
-import { describeLayoutNode, isLayoutContainer, layoutChildrenAt, nodesOfLayout } from '@formancy/builder-core'
-import type { LayoutLocation } from '@formancy/builder-core'
+import { describeLayoutNode, isLayoutContainer, layoutChildrenAt, nodesOfLayout } from './index.js'
+import type { LayoutLocation } from './index.js'
 import type { FieldDef, FormSchema, LayoutNode } from '@formancy/spec'
 import { nameOf } from './tree.js'
 

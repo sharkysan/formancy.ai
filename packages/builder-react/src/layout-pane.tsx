@@ -3,9 +3,9 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent, ReactElement } from 'react'
 import type { BuilderSession, LayoutLocation } from '@formancy/builder-core'
 import type { LayoutNode } from '@formancy/spec'
-import { layoutDropLocation } from './layout-drop.js'
-import { describeLayoutTarget, flattenLayout, nameOfPath } from './layout-tree.js'
-import type { LayoutTreeNode } from './layout-tree.js'
+import { layoutDropLocation } from '@formancy/builder-core'
+import { describeLayoutTarget, flattenLayout, nameOfPath } from '@formancy/builder-core'
+import type { LayoutTreeNode } from '@formancy/builder-core'
 import { useBuilder } from './use-builder.js'
 
 /**

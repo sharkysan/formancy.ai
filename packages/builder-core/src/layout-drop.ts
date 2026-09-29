@@ -1,5 +1,5 @@
-import { layoutChildrenAt, layoutEncloses } from '@formancy/builder-core'
-import type { LayoutLocation } from '@formancy/builder-core'
+import { layoutChildrenAt, layoutEncloses } from './index.js'
+import type { LayoutLocation } from './index.js'
 import type { FormSchema } from '@formancy/spec'
 
 /**

@@ -3,9 +3,9 @@ import type { ReactElement } from 'react'
 import { dataPathOf } from '@formancy/builder-core'
 import type { BuilderSession } from '@formancy/builder-core'
 import type { LogicRule } from '@formancy/spec'
-import { OPERATORS, compileGroup } from './conditions.js'
-import type { Condition, ConditionGroup, Operator } from './conditions.js'
-import { nameOf } from './tree.js'
+import { OPERATORS, compileGroup } from '@formancy/builder-core'
+import type { Condition, ConditionGroup, Operator } from '@formancy/builder-core'
+import { nameOf } from '@formancy/builder-core'
 import { useBuilder } from './use-builder.js'
 
 /**

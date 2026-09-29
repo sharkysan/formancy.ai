@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactElement, ReactNode } from 'react'
 import type { BuilderSession, LayoutLocation } from '@formancy/builder-core'
-import { layoutDropLocation } from './layout-drop.js'
-import { describeLayoutTarget, flattenLayout } from './layout-tree.js'
+import { layoutDropLocation } from '@formancy/builder-core'
+import { describeLayoutTarget, flattenLayout } from '@formancy/builder-core'
 import { useBuilder } from './use-builder.js'
 
 /**

@@ -139,6 +139,14 @@ every command is applied to a copy, validated, and committed only if it passes.
 Legality is decided by *trying* an edit rather than by a second implementation
 of the validator's rules, which would drift from it.
 
+It holds what a builder's interface needs and a framework does not decide: the
+compiler that turns a structured condition into CEL, where a drop lands in each
+of the two trees, the palette, and the editable property list read out of the
+spec's own JSON Schema. Those sat in `builder-react` while it was the only
+builder, and none of them mentioned React — the same shape as `@formancy/core`
+sitting under the renderers, one layer up. A binding is then the part that is
+genuinely per framework, which is the components and nothing else.
+
 It holds two addressing schemes that deliberately do not mix. A model field is
 a key path (`['contact', 'email']`); a layout node is a position path
 (`[0, 1]`), because an arrangement's nodes have no keys and every edit
