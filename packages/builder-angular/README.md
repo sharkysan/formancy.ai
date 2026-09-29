@@ -107,10 +107,28 @@ const "all"]`, so typing the word offers "a", then "al", then "all" — the firs
 two are refused, and a box bound straight to the document would re-render empty
 and swallow the next keystroke.
 
+## Writing rules, and translating
+
+`FormancyLogicPanel` writes the rules — conditions composed as comparisons and
+compiled to CEL, a check named for the deployment to answer, a calculation
+written as an expression. `FormancyTranslationsPane` extracts, translates, takes
+a catalogue out and brings it back, and previews the form in the language being
+worked on without editing the document to look at it.
+
+Which kinds exist and what each is written with comes from
+`@formancy/builder-core`, so the two builders cannot offer different ones.
+
+## Dragging
+
+Both trees take a drag, and it is a **second** route: every command works from
+the keyboard first, which is what WCAG 2.2 SC 2.5.7 asks for and the order these
+were built in. Only a drop the session will accept shows an indicator, and every
+drop is announced through the same live region the keyboard uses.
+
 ## What it does not have yet
 
-The condition editor, the translations pane and the drag surfaces are React-only
-for now. `@formancy/builder-core` holds what each of them
+Dragging on the rendered form itself — the surface the React builder puts over a
+live preview — and the datagrid columns editor. `@formancy/builder-core` holds what each of them
 needs, so they are components rather than designs.
 
 ## Licence

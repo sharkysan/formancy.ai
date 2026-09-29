@@ -27,6 +27,7 @@ import type {
   PaletteEntry,
   TreeNode,
 } from './types.js'
+import { dropLocation } from '@formancy/builder-core'
 import { injectBuilderView } from './view.js'
 
 /**
@@ -85,6 +86,8 @@ interface Moving {
         (keydown)="onKeyDown($event)"
       >
         @for (node of view().nodes; track node.keyPath.join('.'); let position = $index) {
+          <!-- 2.5.7 is satisfied by the keyboard path existing, not by the drag.
+               Dragging is an addition for people who prefer it. -->
           <li
             #item
             role="treeitem"
@@ -94,6 +97,14 @@ interface Moving {
             [attr.data-container]="node.isContainer ? 'true' : null"
             [attr.tabindex]="position === index() ? 0 : -1"
             (focus)="focusedIndex.set(position)"
+            draggable="true"
+            [attr.data-dragging]="isDragging(node) ? 'true' : null"
+            [attr.data-drop]="dropEdgeFor(position)"
+            (dragstart)="onDragStart(node, $event)"
+            (dragend)="onDragEnd()"
+            (dragover)="onDragOver(node, position, $event)"
+            (dragleave)="dropTarget.set(null)"
+            (drop)="onDrop(node, $event)"
           >
             {{ nameOfNode(node) }}
           </li>
@@ -203,6 +214,8 @@ export class FormancyBuilder {
   protected readonly adding = signal<Adding | null>(null)
   protected readonly moving = signal<Moving | null>(null)
   protected readonly announcement = signal('')
+  protected readonly dragging = signal<readonly string[] | null>(null)
+  protected readonly dropTarget = signal<{ index: number; edge: 'before' | 'after' } | null>(null)
 
   private readonly tree = viewChild<ElementRef<HTMLElement>>('tree')
   private readonly items = viewChildren<ElementRef<HTMLElement>>('item')
@@ -311,6 +324,62 @@ export class FormancyBuilder {
     })
   }
 
+
+  protected isDragging(node: TreeNode): boolean {
+    const from = this.dragging()
+    return from !== null && from.join('.') === node.keyPath.join('.')
+  }
+
+  protected dropEdgeFor(position: number): string | null {
+    const target = this.dropTarget()
+    return target?.index === position ? target.edge : null
+  }
+
+  protected onDragStart(node: TreeNode, event: DragEvent): void {
+    this.dragging.set(node.keyPath)
+    if (event.dataTransfer === null) return
+    event.dataTransfer.effectAllowed = 'move'
+    // Some browsers refuse to start a drag without data set.
+    event.dataTransfer.setData('text/plain', node.keyPath.join('.'))
+  }
+
+  protected onDragEnd(): void {
+    this.dragging.set(null)
+    this.dropTarget.set(null)
+  }
+
+  protected onDragOver(node: TreeNode, position: number, event: DragEvent): void {
+    const from = this.dragging()
+    if (from === null) return
+    const edge = edgeOf(event)
+    // Only a legal drop shows an indicator and accepts one. Allowing a drop the
+    // session will refuse means the field snaps back with no explanation.
+    if (dropLocation(this.view().document, from, node.keyPath, edge) === undefined) {
+      this.dropTarget.set(null)
+      return
+    }
+    event.preventDefault()
+    if (event.dataTransfer !== null) event.dataTransfer.dropEffect = 'move'
+    this.dropTarget.set({ index: position, edge })
+  }
+
+  protected onDrop(node: TreeNode, event: DragEvent): void {
+    event.preventDefault()
+    const from = this.dragging()
+    this.dragging.set(null)
+    this.dropTarget.set(null)
+    if (from === null) return
+
+    const location = dropLocation(this.view().document, from, node.keyPath, edgeOf(event))
+    if (location === undefined) return
+
+    const outcome = this.session().moveField(from, location)
+    // Through the same live region the keyboard path uses, so a drag is not a
+    // silent command for somebody using both.
+    this.announce(
+      outcome.ok ? `Moved ${this.nameOfNode(node)}.` : `Cannot move: ${outcome.message}`,
+    )
+  }
 
   protected nameOfNode(node: TreeNode): string {
     return nameOf(this.view().document, node.def)
@@ -519,3 +588,9 @@ export class FormancyBuilder {
 }
 
 export type { Location }
+
+/** Which half of the row the pointer is over. */
+function edgeOf(event: DragEvent): 'before' | 'after' {
+  const box = (event.currentTarget as HTMLElement).getBoundingClientRect()
+  return event.clientY < box.top + box.height / 2 ? 'before' : 'after'
+}
