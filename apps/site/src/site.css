@@ -59,6 +59,21 @@
   --display: 'Archivo', 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
 
   --gutter: clamp(1.25rem, 5vw, 5rem);
+  /* The page's own width, shared by every band and by the bar above them.
+     Reported as "the start page is still really small on wide screens" and
+     measured at 2560x1440: the bands were capped at a flat 110rem, so 392px of
+     empty margin down each side, while the bar was full-bleed on the gutter —
+     putting its logo and links 312px OUTSIDE the column everything else lined up
+     to. A page with margins reads as a page; a narrow card under a wide header
+     reads as small.
+
+     A clamp rather than a bigger constant, because a constant is a number chosen
+     against the screens somebody had. Below 2000px the middle term is under the
+     floor and nothing moves, which is deliberate: the layout was tuned there. The
+     upper bound is what keeps this from trading one complaint for the opposite
+     one — paragraphs keep their own `--measure`, so only the demos and the card
+     grids take the extra room, which is what the cap existed for. */
+  --shell: clamp(110rem, 88vw, 132rem);
   --measure: 36rem;
   --radius: 16px;
 
@@ -335,7 +350,12 @@ code {
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 0.75rem var(--gutter);
+  padding-block: 0.75rem;
+  /* Background across the whole width, contents on the measure. A padding rather
+     than an inner wrapper, so the blur and the border do not need a second
+     element to survive — and `max()` keeps the gutter whenever the viewport is
+     narrower than the shell, which is every screen below 2000px. */
+  padding-inline: max(var(--gutter), calc((100% - var(--shell)) / 2));
   background: color-mix(in srgb, var(--ground) 62%, transparent);
   backdrop-filter: blur(18px) saturate(1.4);
   border-block-end: 1px solid var(--edge);
@@ -444,7 +464,7 @@ section {
 .wide {
   /* Give demos and card grids room on large displays. Paragraphs retain
      their own reading measure instead of stretching with the whole page. */
-  max-width: 110rem;
+  max-width: var(--shell);
   margin-inline: auto;
 }
 
@@ -471,7 +491,7 @@ section {
    sections keep their own headings and their own place in the journey either way,
    so nothing about the page's structure depends on which one a visitor gets. */
 .duo {
-  max-width: 110rem;
+  max-width: var(--shell);
   margin-inline: auto;
 }
 
