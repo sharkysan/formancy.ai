@@ -56,3 +56,16 @@ export { describeTarget, flatten, nameOf } from './tree.js'
 export type { TreeNode } from './tree.js'
 export { builderView } from './view.js'
 export type { BuilderView, MoveTarget } from './view.js'
+export {
+  RULE_KIND_CHOICES,
+  composeRule,
+  conditionOf,
+  draftIsComplete,
+  emptyRow,
+  kindCarriesCondition,
+  kindWrites,
+  rowTakesValue,
+  ruleKindsFor,
+  ruleTargetFor,
+} from './logic.js'
+export type { ConditionRow, RuleKindChoice } from './logic.js'

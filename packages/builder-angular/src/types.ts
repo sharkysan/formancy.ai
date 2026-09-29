@@ -9,6 +9,7 @@
 export type {
   BuilderSession,
   BuilderView,
+  ConditionRow,
   EditableProperty,
   CommandOutcome,
   LayoutAddress,
@@ -16,7 +17,8 @@ export type {
   LayoutTreeNode,
   Location,
   MoveTarget,
+  Operator,
   PaletteEntry,
   TreeNode,
 } from '@formancy/builder-core'
-export type { FieldDef, FieldOption, FormSchema, LayoutNode } from '@formancy/spec'
+export type { FieldDef, FieldOption, FormSchema, LayoutNode, LogicRule } from '@formancy/spec'
