@@ -54,20 +54,23 @@ agent through MCP. The shared engine handles validation and calculations, so
 you do not need to implement each rule separately in your UI and the formancy
 backend.
 
-> **Status: beta, version 0.2.0.**
+> **Status: beta, version 0.3.0.**
 >
-> **Both spec versions are frozen.** Version 2 only adds, so a version 1 document
+> **All three spec versions are frozen.** Each only adds, so an older document
 > keeps working and its submissions keep their shape — upgrading is one line and
-> nothing rebinds ([0051](./docs/decisions/0051-spec-2-adds-types.md)).
-> [`MIGRATIONS.md`](./MIGRATIONS.md) lists what version 2 added and what freezing
-> it costs: an async validator and a `signature` type are now spec 3.
+> nothing rebinds ([0051](./docs/decisions/0051-spec-2-adds-types.md),
+> [0088](./docs/decisions/0088-spec-3-freezes-with-four-constructs.md)).
+> [`MIGRATIONS.md`](./MIGRATIONS.md) lists what each version added.
+>
+> **The direction that costs something is the other one.** A reader pinned to an
+> older release *refuses* a newer document rather than ignoring the part it cannot
+> read — loudly, on purpose, because the alternative is a form with a missing
+> question and a submission with a missing answer. Upgrade the readers before the
+> documents.
 >
 > **The package APIs are not frozen** — they will change before 1.0. They are
 > published to npm from CI with provenance under the
-> [`@formancy`](https://www.npmjs.com/org/formancy) scope. `0.2.0` is the first
-> release that reads version 2: `0.1.0` predates spec versioning and pins
-> documents to `{ "const": "1" }`, so it refuses a version 2 document rather than
-> ignoring the property. If npm gives you `0.1.0`, write `specVersion: "1"`.
+> [`@formancy`](https://www.npmjs.com/org/formancy) scope.
 >
 > The server is not ready for a public deployment. It has authentication,
 > role-based authorization, forms that are private until opened, per-IP rate
@@ -470,7 +473,7 @@ cut, and what the pipeline signs and attests.
 Releases are published from CI with npm provenance, and each one carries a
 CycloneDX SBOM signed with cosign.
 
-**`0.2.0` is the beta.** Every package under the
+**`0.3.0` is the current beta.** Every package under the
 [`@formancy`](https://www.npmjs.com/org/formancy) scope moves on one version
 number, so any two of them at the same version are known to work together — which
 is what makes the support matrix size one

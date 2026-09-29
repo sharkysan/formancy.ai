@@ -98,10 +98,11 @@ in another.
 4. Treat [`../decisions/`](../decisions/) as design rationale you may reference
    but did not author. Decisions marked "Not mechanically enforced" are the
    ones where your own verification has to do the work.
-5. Note which version line you are relying on. The **spec** has frozen versions
-   `"2"` ([0051](../decisions/0051-spec-2-adds-types.md)) and `"1"`, and an open
-   version `"3"` which is what this source writes — pin a released version and
-   you are characterising a frozen one. Version `"1"` stays frozen and readable
+5. Note which version line you are relying on. All three **spec** versions are
+   frozen — `"1"`, `"2"` ([0051](../decisions/0051-spec-2-adds-types.md)) and
+   `"3"` ([0088](../decisions/0088-spec-3-freezes-with-four-constructs.md)) — so
+   whichever one you pin, the shape of your documents and stored submissions is
+   settled. Version `"1"` stays frozen and readable
    ([0042](../decisions/0042-freeze-the-spec.md)), so the shape of your form
    documents and stored submissions is settled in either. Version 2 is a
    superset that removes nothing, so a version 1 document is also a valid

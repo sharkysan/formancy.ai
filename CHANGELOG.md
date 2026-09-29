@@ -8,7 +8,19 @@ Loosely [Keep a Changelog](https://keepachangelog.com), with reasons attached �
 a line that says only *what* changed is rarely the line you need six months
 later.
 
-## Unreleased
+## 0.3.0 — 2026-09-29
+
+**The release that freezes spec version 3.** A document written against version 3 will
+validate against every future release that speaks it. What version 3 added — `signature`,
+the `tagpicker` widget, the `check` and `skip` rule kinds, and `optionsSource` on a
+list-valued field — and what freezing it costs are in
+[`MIGRATIONS.md`](./MIGRATIONS.md).
+
+The direction that costs something is the other one, and it is worth saying before the
+list rather than after it: **a reader pinned to `0.2.0` refuses a version 3 document**
+rather than ignoring the part it cannot read. That is the whole point of the version line.
+Upgrade the readers before the documents.
+
 
 **A form can be translated in the product now.** `label: { $t: "name" }` has been valid
 since version 1 and the engine has always resolved it — and nothing in the builder could
@@ -226,6 +238,40 @@ refusing it there is a spec change and version 2 is frozen).
 A test had to be corrected rather than the code: `commands.test.ts` asserted that a leaf
 may land in any container, including the top level of a paged form. True of the validator,
 false of the engine.
+
+### What 0.3.0 knowingly does not have
+
+`RELEASING.md` asks a release entry to say this, because the absence a reader discovers
+for themselves is the one that costs them a day. Everything 0.2.0 listed is still true
+unless it appears below; these are the ones this release adds or changes.
+
+- **The builder cannot write a `check` or a `skip` rule.** Both are authored by hand or by
+  an agent. The condition editor compiles conditions to CEL already, so each is a target
+  picker and a kind — and until it learns them, conditional page routing is a thing a
+  developer can write and an author cannot make, which is the shape the wizard was in one
+  release ago.
+- **A check has no declared dependency.** It re-runs when its own target changes, not when
+  something else it read changes, so a check that reads a second field is stale until its
+  own is edited. Deriving dependencies is what the CEL AST is for, and a check has no AST.
+- **Nothing debounces a check.** It runs on every committed value, which for a text field
+  is every keystroke a renderer commits. The timer belongs to whoever pays for the call,
+  and nothing here warns that the obvious implementation is expensive.
+- **A signature cannot be verified by this software**, and nothing claims otherwise: no
+  identity proof, no certificate, no timestamp authority. A qualified electronic signature
+  under eIDAS needs a qualified provider; this is a mark on a form.
+- **Catalogue exchange is JSON, not XLIFF.** A vendor asking for XLIFF gets a file that
+  converts to it in a script. Half an XLIFF implementation would fail inside somebody
+  else's tool, where nothing here could explain it.
+- **A form can still be authored with every page skipped**, and nothing refuses that
+  document — whether every page is skipped depends on the answers and is not knowable at
+  publish.
+- **The `fill in` tab does not demonstrate the anonymous path.** The admin is signed in, so
+  its submissions skip the proof-of-work challenge. The draft routes take no identity at
+  all, so those are exactly the public ones.
+- **Appearance is still reviewed rather than verified**, and this release leaned on that
+  harder than the last: a signature surface, a chip list and a stepper that hides a step
+  are all things jsdom cannot measure. The numbers quoted for them were taken in a browser
+  by hand.
 
 ## 0.2.0 — 2026-09-28
 
