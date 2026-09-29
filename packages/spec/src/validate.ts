@@ -342,11 +342,29 @@ function logicErrors(schema: FormSchema): SchemaError[] {
   if (rules === undefined) return []
 
   const knownPaths = new Set(modelDataPaths(schema.model))
+  // The keys of the pages, which are the only legal target of a `skip`. A page is
+  // transparent for data and has no data path at all — measured before this
+  // existed, a rule aimed at one was refused with "No field has the data path".
+  const pageKeys = new Set(
+    schema.model.fields.filter((field) => field.type === 'page').map((field) => field.key),
+  )
   const claimedKinds = new Set<string>()
   const errors: SchemaError[] = []
 
   for (const [index, rule] of rules.entries()) {
-    if (!knownPaths.has(rule.target)) {
+    if (rule.kind === 'skip') {
+      // A page, by key. Saying which it is not matters: a skip rule aimed at a
+      // text field is an author who believes they wrote a conditional page and
+      // wrote a rule that can never do anything.
+      if (!pageKeys.has(rule.target)) {
+        errors.push({
+          path: `/logic/rules/${String(index)}/target`,
+          message: pageKeys.size === 0
+            ? `A skip rule walks past a page, and this form has no pages. Give it a "page" field first, or remove the rule.`
+            : `"${rule.target}" is not a page. A skip rule names the key of a page — ${[...pageKeys].map((key) => `"${key}"`).join(', ')} — rather than a data path, because a page carries no answer of its own.`,
+        })
+      }
+    } else if (!knownPaths.has(rule.target)) {
       errors.push({
         path: `/logic/rules/${String(index)}/target`,
         message: `No field has the data path "${rule.target}". A rule can only apply to a field the model defines.`,

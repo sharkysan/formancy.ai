@@ -132,6 +132,7 @@ const RULE_KINDS: Record<RuleKind, true> = {
   computed: true,
   validate: true,
   check: true,
+  skip: true,
 }
 
 const RULE_KIND_SET: ReadonlySet<string> = new Set(Object.keys(RULE_KINDS))

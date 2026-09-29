@@ -70,6 +70,31 @@ rather than quietly corrected, because it is the failure this repository's docum
 rules exist for, and it got past me three times in one afternoon — into the roadmap, the
 changelog and a decision record.*
 
+**`kind: "skip"` — a page a form walks past.** The last thing the roadmap deferred, and it
+went into version 3 rather than becoming the only thing in a version 4: a rule kind costs a
+version whenever it lands.
+
+Its target is a page's **key**, not a data path, and that is measured rather than chosen: a
+`visible` rule aimed at a page is refused with *"No field has the data path"*, because
+pages are transparent for data and a page therefore has no path at all.
+
+**The fields on a skipped page are hidden**, which is the half that matters — a required
+answer on a page somebody never saw is a form that cannot be submitted and will not say
+why, with the error on a page they cannot reach. A skipped page is walked past **in both
+directions**, because skipping it forward and stepping into it backward is the shape
+nobody can reason about.
+
+Page indices stay absolute, so `pageOf` and `goTo` still mean what they meant;
+`engine.pages()` marks an entry `skipped` rather than returning a shorter list. Both
+renderers gained `canGoNext`/`canGoBack`, because `page < pageCount - 1` stopped being the
+question: the last live page is not always the last page
+([0087](./docs/decisions/0087-a-page-can-be-walked-past.md)).
+
+And the wizard carries a revision now. Walking past a page changes which steps exist while
+leaving the position alone — so a binding whose store snapshot was the page number saw the
+same number, did not re-render, and went on naming a step the form had stopped taking.
+Found by a test that asserted the stepper after an answer changed.
+
 **`kind: "check"` — a validator the deployment answers, and the last construct version 3
 was waiting for.** An asynchronous validator could never be `async: true` on a `validate`
 rule: a CEL expression is pure and synchronous by construction, and every structural

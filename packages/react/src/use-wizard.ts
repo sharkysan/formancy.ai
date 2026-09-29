@@ -4,6 +4,10 @@ import { useFormEngine } from './context.js'
 export interface WizardBinding {
   page: number
   pageCount: number
+  /** Whether there is a live page after this one. Not `page < pageCount - 1`
+   *  once a page can be walked past: the last live page is not always the last. */
+  canGoNext: boolean
+  canGoBack: boolean
   /** Resolves true iff the page advanced; a failed validation keeps the page. */
   next(): Promise<boolean>
   back(): void
@@ -24,17 +28,22 @@ export function useWizard(): WizardBinding {
   }
 
   const subscribe = useCallback((onChange: () => void) => wizard.subscribe(onChange), [wizard])
-  const getPage = useCallback(() => wizard.page(), [wizard])
-  const page = useSyncExternalStore(subscribe, getPage, getPage)
+  // The REVISION, not the page: walking past a page changes which steps exist
+  // while leaving the position alone, and a store snapshot that did not change
+  // is a component that does not re-render.
+  const getRevision = useCallback(() => wizard.revision(), [wizard])
+  const revision = useSyncExternalStore(subscribe, getRevision, getRevision)
 
   return useMemo(
     () => ({
-      page,
+      page: wizard.page(),
       pageCount: wizard.pageCount,
+      canGoNext: wizard.canGoNext(),
+      canGoBack: wizard.canGoBack(),
       next: () => wizard.next(),
       back: () => wizard.back(),
       goTo: (pageIndex: number) => wizard.goTo(pageIndex),
     }),
-    [page, wizard],
+    [revision, wizard],
   )
 }

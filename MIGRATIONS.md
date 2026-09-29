@@ -36,11 +36,12 @@ One field type:
 |---|---|
 | `signature` | A mark somebody drew, as points, or their name as they typed it |
 
-One rule kind:
+Two rule kinds:
 
 | Kind | What it does |
 |---|---|
 | `check` | Asks the deployment about an answer — whether this email is registered, whether this reference exists. It names a check rather than carrying an expression, and the deployment answers it |
+| `skip` | Walks past a page while its expression is true. Its target is the PAGE's key rather than a data path, because a page carries no answer of its own — and the fields on a skipped page are hidden, which is what keeps them out of validation ([0087](docs/decisions/0087-a-page-can-be-walked-past.md)) |
 
 A check carries `check` (the name) and no `cel`, and may carry `code` and `runsOn` like a
 `validate` rule. **A name and never an address**: a URL in a document is a deployment

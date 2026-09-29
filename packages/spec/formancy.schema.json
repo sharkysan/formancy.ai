@@ -938,6 +938,11 @@
        "const": "check",
        "title": "Check",
        "description": "Asks the deployment about an answer — whether this email is already registered, whether this reference exists. The rule names a check rather than carrying an expression, and the deployment answers it; nothing in formancy fetches anything. Needs spec version 3."
+      },
+      {
+       "const": "skip",
+       "title": "Skip",
+       "description": "Walks past a page while the expression is true — a visa page for somebody who does not need a visa. Its target is the PAGE’s key rather than a data path, because a page carries no answer of its own. Needs spec version 3."
       }
      ]
     },

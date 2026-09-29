@@ -187,3 +187,4 @@ listed under the sections they belong to above.
 | [0084](0084-a-translation-is-authored-not-imported.md) | Extraction is the command; an orphaned message is kept | accepted |
 | [0085](0085-a-tag-picker-is-a-widget-and-a-widget-has-a-version.md) | A tag picker is a widget, and a widget has a version | accepted |
 | [0086](0086-a-check-is-named-and-answered-elsewhere.md) | A check is named here and answered elsewhere | accepted |
+| [0087](0087-a-page-can-be-walked-past.md) | A page can be walked past, and its questions go with it | accepted |

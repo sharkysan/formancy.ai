@@ -901,8 +901,8 @@ export class FormancyLayout {
     @if (wizard; as w) {
       <nav data-formancy-part="stepper" aria-label="Progress">
         <ol>
-          @for (page of pages; track page.key; let i = $index) {
-            <li [attr.aria-current]="i === w.page() ? 'step' : null">{{ pageLabel(page) }}</li>
+          @for (page of w.livePages(); track page.key) {
+            <li [attr.aria-current]="page.index === w.page() ? 'step' : null">{{ pageLabel(page) }}</li>
           }
         </ol>
       </nav>
@@ -913,10 +913,10 @@ export class FormancyLayout {
         <formancy-repeater [wire]="wire" [labels]="labels()" />
       }
       <div data-formancy-part="wizard-nav">
-        @if (w.page() > 0) {
+        @if (w.canGoBack()) {
           <button type="button" (click)="w.back()">Back</button>
         }
-        @if (w.page() < w.pageCount - 1) {
+        @if (w.canGoNext()) {
           <button type="button" (click)="onNext()">Next</button>
         } @else {
           <button type="button" data-formancy-part="submit" (click)="onSubmit()">{{ submitLabel() ?? 'Submit' }}</button>

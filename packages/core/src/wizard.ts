@@ -11,11 +11,38 @@ export interface WizardOptions {
   pageCount: number
   /** Validate one page. Called with the page being LEFT, only on forward moves. */
   validatePage: (pageIndex: number) => boolean | Promise<boolean>
+  /**
+   * Whether a page is on the path the answers take.
+   *
+   * A skipped page is walked past in BOTH directions. Skipping it going forward
+   * and stepping into it going back is the shape nobody can reason about, and it
+   * is how this is usually got wrong.
+   *
+   * Absent means every page is live, which is what every wizard did before
+   * conditional routing existed.
+   */
+  isLive?: (pageIndex: number) => boolean
 }
 
 export interface Wizard {
   readonly pageCount: number
   page(): number
+  /** Whether there is a live page after this one, which is not the same as
+   *  `page() < pageCount - 1` once a page can be walked past. */
+  canGoNext(): boolean
+  canGoBack(): boolean
+  /** Recompute after the answers change which pages are live. */
+  refresh(): void
+  /**
+   * Increments on every change the wizard notifies about.
+   *
+   * A binding needs a snapshot that changes whenever anything here did, and the
+   * page number is not one: walking past a page changes which steps exist while
+   * leaving the position alone, so a `useSyncExternalStore` reading `page()`
+   * sees the same number and does not re-render. The stepper then went on naming
+   * a step the form had stopped taking.
+   */
+  revision(): number
   /** Resolves true iff the page actually advanced. */
   next(): Promise<boolean>
   back(): void
@@ -37,22 +64,60 @@ export function createWizard(options: WizardOptions): Wizard {
    * "next" buttons must not skip a page when validation eventually resolves.
    */
   let advancing = false
+  let revision = 0
   const listeners = new Set<() => void>()
 
   function notify(): void {
+    revision += 1
     for (const listener of [...listeners]) listener()
+  }
+
+  const live = (index: number): boolean => options.isLive?.(index) ?? true
+
+  /** The next live page after `from`, or `undefined` at the end of the path. */
+  const after = (from: number): number | undefined => {
+    for (let index = from + 1; index < options.pageCount; index += 1) {
+      if (live(index)) return index
+    }
+    return undefined
+  }
+
+  const before = (from: number): number | undefined => {
+    for (let index = from - 1; index >= 0; index -= 1) {
+      if (live(index)) return index
+    }
+    return undefined
   }
 
   return {
     pageCount: options.pageCount,
     page: () => current,
+    revision: () => revision,
+    canGoNext: () => after(current) !== undefined,
+    canGoBack: () => before(current) !== undefined,
+
+    refresh() {
+      // The page somebody is standing on may have just been walked past — they
+      // said they need no visa while reading the visa page. Staying would leave
+      // them on a page whose fields are hidden, which renders as an empty step.
+      if (!live(current)) {
+        const target = after(current) ?? before(current)
+        if (target !== undefined) current = target
+      }
+      // Notified either way, and that is not belt and braces: the STEPPER changed
+      // even when the position did not, and a renderer subscribed to the wizard
+      // is how it finds out. Without this a form kept naming a step it had just
+      // stopped taking.
+      notify()
+    },
 
     async next() {
-      if (advancing || current >= options.pageCount - 1) return false
+      const target = after(current)
+      if (advancing || target === undefined) return false
       advancing = true
       try {
         if (!(await options.validatePage(current))) return false
-        current++
+        current = target
         notify()
         return true
       } finally {
@@ -61,8 +126,9 @@ export function createWizard(options: WizardOptions): Wizard {
     },
 
     back() {
-      if (current === 0) return
-      current--
+      const target = before(current)
+      if (target === undefined) return
+      current = target
       notify()
     },
 

@@ -117,15 +117,21 @@ function FlatForm(props: FormancyFormProps) {
 function PagedForm(props: FormancyFormProps) {
   const engine = useFormEngine()
   const wizard = useWizard()
-  const pages = engine.pages()
-  const lastPage = wizard.pageCount - 1
+  // The live pages, with the index they have in the form kept beside them: a
+  // form that named a step Next never reaches reads as a broken button rather
+  // than as a page that does not apply, and `aria-current` has to compare
+  // against the ABSOLUTE index because that is what `page` is.
+  const pages = engine
+    .pages()
+    .map((page, index) => ({ ...page, index }))
+    .filter((page) => !page.skipped)
 
   return (
     <>
       <nav data-formancy-part="stepper" aria-label="Progress">
         <ol>
-          {pages.map((page, index) => (
-            <li key={page.key} aria-current={index === wizard.page ? 'step' : undefined}>
+          {pages.map((page) => (
+            <li key={page.key} aria-current={page.index === wizard.page ? 'step' : undefined}>
               {engine.text(page.def.label) ?? page.key}
             </li>
           ))}
@@ -133,12 +139,12 @@ function PagedForm(props: FormancyFormProps) {
       </nav>
       <FieldList {...props} page={wizard.page} />
       <div data-formancy-part="wizard-nav">
-        {wizard.page > 0 ? (
+        {wizard.canGoBack ? (
           <button type="button" onClick={() => wizard.back()}>
             Back
           </button>
         ) : null}
-        {wizard.page < lastPage ? (
+        {wizard.canGoNext ? (
           <button type="button" onClick={() => void wizard.next()}>
             Next
           </button>

@@ -608,7 +608,16 @@ export const SPEC_2_RULE_KINDS = [
  * makes the dependency graph derivable and the evaluation bounded, so an
  * asynchronous validator cannot be an expression with a property on it.
  */
-export const RULE_KINDS = [...SPEC_2_RULE_KINDS, 'check'] as const
+export const RULE_KINDS = [...SPEC_2_RULE_KINDS, 'check', 'skip'] as const
+
+/**
+ * Rule kinds whose `target` is a PAGE KEY rather than a data path.
+ *
+ * Exactly one, and it is worth naming rather than testing for the kind at each
+ * use: a page is transparent for data and therefore has no data path at all, so
+ * every walk that resolves a target has to know which of the two it is holding.
+ */
+export const PAGE_TARGETED_RULE_KINDS = ['skip'] as const
 
 export type RuleKind = (typeof RULE_KINDS)[number]
 
