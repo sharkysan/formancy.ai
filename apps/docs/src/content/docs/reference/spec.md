@@ -469,7 +469,7 @@ optional · value
 
 optional · one of `"both"`, `"client"`, `"server"` · default `"both"`
 
-**Runs on.** Where a validation check runs. Some checks only make sense in one place — a uniqueness check needs the database, a typing hint needs the keyboard. Only a validate rule may set this: if visibility or requiredness differed between the browser and the server, the server could no longer check what the browser did.
+**Runs on.** Where a validation check runs. Some checks only make sense in one place — a uniqueness check needs the database, a typing hint needs the keyboard. Only a validate rule may set this: if visibility or requiredness differed between the browser and the server, the server could no longer check what the browser did. The default below is the one a VALIDATE rule gets; a check gets its own, stated on the check branch.
 
 #### `check`
 
@@ -486,6 +486,26 @@ optional · string · min length 1 · max length 128 · pattern `^[a-zA-Z][a-zA-
 - `"validate"` — **Validate.** Checks an answer. While the expression is false, the field carries the error named by "code". A field can have any number of these.
 - `"check"` — **Check.** Asks the deployment about an answer — whether this email is already registered, whether this reference exists. The rule names a check rather than carrying an expression, and the deployment answers it; nothing in formancy fetches anything. Needs spec version 3.
 - `"skip"` — **Skip.** Walks past a page while the expression is true — a visa page for somebody who does not need a visa. Its target is the PAGE’s key rather than a data path, because a page carries no answer of its own. Needs spec version 3.
+
+### Per-kind properties
+
+Some of a rule's properties depend on its kind. The schema states these as a conditional block; they are listed here per kind.
+
+#### `check`
+
+Requires `check`.
+`cel` is not allowed here.
+
+##### `runsOn`
+
+optional · value · default `"server"`
+
+**Runs on, for a check.** A check defaults to `server`, and not to `both` the way a validate rule does. Only the server can always answer one — a browser can only ask if its host supplied a checker — so a check that did not say would fail closed on a page nobody had wired up. A host that CAN answer in the browser says `both`; until it does, the check runs at submit and nowhere else.
+
+#### Every other kind
+
+Requires `cel`.
+`check` is not allowed here.
 
 ## Named definitions
 

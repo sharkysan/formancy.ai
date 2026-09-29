@@ -639,7 +639,17 @@ export interface LogicRule {
   /** validate only: the error code the field carries while the check fails. */
   code?: string
   /**
-   * validate only: where this check runs. Defaults to `both`.
+   * Where this rule runs.
+   *
+   * **The default is not one value.** A `validate` rule with none falls back to
+   * `both`; a `check` falls back to `server`, because only the server can always
+   * answer one — a browser can ask only if its host supplied a checker, so a
+   * check defaulting to `both` would fail closed on every page nobody had wired
+   * up. A host that can answer in the browser says `both`, and until it does the
+   * check runs at submit and nowhere else
+   * ([0090](../../../docs/decisions/0090-a-check-defaults-to-the-server.md)).
+   * Measured: written the obvious way, with no `runsOn`, a check never ran in the
+   * browser and nothing reported it.
    *
    * Some checks cannot run in both places — a uniqueness check needs the
    * database, a debounced hint needs the keyboard — and without a way to say

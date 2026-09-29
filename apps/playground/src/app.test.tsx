@@ -266,3 +266,132 @@ describe('the switchers', () => {
     expect(container.querySelector('[data-formancy-theme="dusk"]')).toBeTruthy()
   })
 })
+
+describe('the second demo, which is the one with steps', () => {
+  /*
+   * Asked for directly: *"is there a demo for all that in the playground? always
+   * add a demo"* — about the wizard work, which had tests, documents, decision
+   * records and nowhere to see it working. Measured before this existed: the
+   * playground held no `page` and no `group` at all, because the starter is one
+   * flat form on purpose. So it never drew a stepper, never showed a step being
+   * walked past, and gave the builder's container commands nothing to act on.
+   *
+   * A second document rather than a change to the starter. The starter's own
+   * test holds it to every field type **minus the two that nest**, and that
+   * exclusion is the reason it works: one flat form with every control visible at
+   * once. Adding a page would take that away to demonstrate a page.
+   */
+  const pick = async (user: ReturnType<typeof userEvent.setup>, label: string): Promise<void> => {
+    await user.selectOptions(screen.getByRole('combobox', { name: /demo/i }), label)
+  }
+
+  /**
+   * Answer step one, which is required-gated.
+   *
+   * Not a workaround. `canGoNext` validates the page being left, so a wizard whose
+   * first step has required answers cannot be walked past without them — which is
+   * the behaviour, and is why every case below that wants step three says so out
+   * loud instead of arriving there by accident.
+   */
+  const answerStepOne = async (user: ReturnType<typeof userEvent.setup>): Promise<void> => {
+    await user.type(within(form()).getByLabelText('Full name'), 'Mara Keller')
+    await user.type(within(form()).getByLabelText('Work email'), 'mara@example.ch')
+  }
+
+  test('is offered, and the flat form is what the page still opens on', () => {
+    render(<App />)
+
+    // The starter first: somebody arriving wants the shortest path to a control
+    // they recognise, not a form that asks them to press Next.
+    expect(within(form()).getByLabelText('First name')).toBeTruthy()
+    expect(screen.getByRole('combobox', { name: /demo/i })).toBeTruthy()
+  })
+
+  test('renders a stepper, which no demo here has ever shown', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    await pick(user, 'wizard')
+
+    // The step names come from the catalogue, so this is also the locale
+    // switcher having something to do on this document.
+    expect(await within(form()).findByText('About you')).toBeTruthy()
+    expect(within(form()).getByRole('button', { name: /next/i })).toBeTruthy()
+  })
+
+  test('walks past the skipped step, and stops when the answer changes', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await pick(user, 'wizard')
+
+    await answerStepOne(user)
+
+    // Untouched, the visa box is off and the visa step is not there: `skip` walks
+    // past a page while its condition holds and hides the fields on it.
+    await user.click(within(form()).getByRole('button', { name: /next/i }))
+    expect(within(form()).queryByLabelText(/passport number/i)).toBeNull()
+    expect(within(form()).getByLabelText(/cost centre reference/i)).toBeTruthy()
+
+    // Back, tick it, and the step exists.
+    await user.click(within(form()).getByRole('button', { name: /back/i }))
+    await user.click(within(form()).getByLabelText(/need a visa/i))
+    await user.click(within(form()).getByRole('button', { name: /next/i }))
+
+    expect(within(form()).getByLabelText(/passport number/i)).toBeTruthy()
+  })
+
+  test('answers its own check, so the field is not stuck on an error nobody can clear', async () => {
+    // The documented-but-inert failure this demo could most easily have shipped:
+    // a `check` names a validator the DEPLOYMENT answers, and a document naming
+    // one nothing answers fails closed. Here the playground is the deployment.
+    const user = userEvent.setup()
+    render(<App />)
+    await pick(user, 'wizard')
+
+    // Straight to the last step, which is reachable because the middle one is
+    // skipped while the visa box is off.
+    await answerStepOne(user)
+    await user.click(within(form()).getByRole('button', { name: /next/i }))
+    const reference = within(form()).getByLabelText(/cost centre reference/i)
+    await user.type(reference, 'FM-1234')
+    await user.tab()
+
+    // It takes a moment on purpose — that is the one thing only a check does —
+    // and then the answer is accepted rather than left refused.
+    await waitFor(() => {
+      expect(reference.getAttribute('aria-busy')).toBeNull()
+    })
+    expect(within(form()).queryByText(/unknownReference/)).toBeNull()
+  })
+
+  test('and refuses a reference this deployment does not know', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await pick(user, 'wizard')
+
+    await answerStepOne(user)
+    await user.click(within(form()).getByRole('button', { name: /next/i }))
+    await user.type(within(form()).getByLabelText(/cost centre reference/i), 'nonsense')
+    await user.tab()
+
+    // The code the rule returns, shown as the renderers show codes. A check that
+    // accepted everything would demonstrate the wiring and not the feature.
+    expect(await within(form()).findByText(/unknownReference/)).toBeTruthy()
+  })
+
+  test('gives the builder a container to take away, which is what `u` is for', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await pick(user, 'wizard')
+    await user.click(screen.getByRole('button', { name: 'Build' }))
+
+    // The structure tree lists the pages, so the commands that only apply to a
+    // container finally have something to apply to. It also has to be THIS
+    // document: the session is opened once and a demo switch has to re-open it,
+    // or the form follows the picker and the tree does not.
+    const tree = screen.getByRole('tree', { name: /structure/i })
+    const items = within(tree).getAllByRole('treeitem').map((item) => item.textContent)
+    expect(items).toContain('About you')
+    expect(items).not.toContain('First name')
+  })
+})

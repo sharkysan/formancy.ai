@@ -169,6 +169,17 @@ dependency runs one way only: `@formancy/react` knows nothing about the builder.
 `apps/playground` and `apps/admin` are the two tools; `apps/docs` is the
 reference; `apps/site` is formancy.ai.
 
+The playground carries **two** demo documents and the pair is the unit that is
+held to covering the format. One is flat — every field type minus the two that
+nest, so every control is visible at once — and a flat form cannot show a
+stepper, a step being walked past, or a container for the builder's container
+commands to act on. Splitting the obligation across two documents is what lets
+each keep the shape that makes it useful, and `wizard.test.ts` derives the
+obligation from the spec's own lists so neither carries an exclusion list that
+can go stale. It also runs the second demo's rules against a real engine: a
+demo whose logic does not fire is the documented-but-inert failure in the one
+place a visitor would take it for the product.
+
 The website is listed here rather than left out of the architecture because it
 takes a real dependency on `@formancy/react` and renders a real document with a
 real engine ([0053](../decisions/0053-the-page-is-the-product.md)). That is

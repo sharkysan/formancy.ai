@@ -10,6 +10,47 @@ later.
 
 ## Unreleased
 
+**The playground has a second demo, and it is the one with steps.** Asked for directly:
+*"is there a demo for all that in the playground? always add a demo"*. Measured before it
+existed — the playground held **no `page` and no `group` at all**, so it never drew a
+stepper, never showed a step being walked past, and gave the builder's container commands
+nothing to act on. Three releases of wizard work were demonstrated nowhere.
+
+A second document rather than a change to the starter, which is one flat form on purpose:
+every field type the spec defines **minus the two that nest**, so every control is on screen
+at once with nothing to press Next through. Adding a page would have taken that away to
+demonstrate a page. So the obligation sits on the pair, derived from the spec's own lists
+rather than from a hand-kept list: between the two demos, every field type **and every rule
+kind** the format defines is on screen. `disabled`, `check` and `skip` were in neither.
+
+**Building it found three things that were wrong, and each was silent.**
+
+- **`!needsVisa` never fires.** An untouched checkbox is null, CEL refuses `!null`, and a
+  rule that errors fails closed — so the page was never skipped in any state, and the demo
+  would have shipped showing the feature not working. `needsVisa != true` is the idiom the
+  engine's own tests use. The demo's guards now build a real engine and ask it, because a
+  document whose rules do not fire is exactly the documented-but-inert failure a demo
+  exists to prevent.
+- **A `check` with no `runsOn` never runs in the browser.** The engine falls back to
+  `server` for a check and `both` for a validate rule, while the JSON Schema declared one
+  default for both. Written the obvious way, the check made no request and marked nothing:
+  an answer accepted that nothing had checked. The engine's behaviour stands and is the
+  right one — only the server can always answer a check — and the schema now states the
+  check's own default **as data** on the check branch
+  ([0090](docs/decisions/0090-a-check-defaults-to-the-server.md)).
+- **The spec reference never read the rule's conditional block.** So everything the schema
+  says per kind — which kinds carry `cel`, which carry `check`, and now this default — was
+  published nowhere. `generate-spec-reference.mjs` reads it now and throws on a branch
+  gated on anything but `kind`, which is what the field blocks already did after an empty
+  heading shipped once.
+
+**And switching demo left the builder on the old document.** The session is opened when the
+Build pane appears and deliberately not re-opened as the text changes — the builder writes
+that text on every edit. A demo switch is the one case where throwing the undo stack away is
+right, because it is a different document rather than an edit to this one. Without it the
+form followed the picker and the structure tree did not, which is two panes showing two
+documents on the page whose whole claim is that they cannot.
+
 **The landing page uses a wide screen.** Reported as *"the start page is still really small
 on wide screens"* and measured at 2560×1440 before anything changed: every band capped at a
 flat **1760px** and centred, so 392px of empty margin down each side — while the sticky bar

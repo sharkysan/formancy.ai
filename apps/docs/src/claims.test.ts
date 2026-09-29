@@ -526,3 +526,101 @@ describe('what the roadmap says is still to do', () => {
     expect(said).not.toMatch(/missing is an endpoint and a token/)
   })
 })
+
+/**
+ * Where a rule runs when it does not say.
+ *
+ * `runsOn` has ONE declared default and the engine applies TWO, and the gap was
+ * silent in the worst direction. A `validate` rule with no `runsOn` falls back to
+ * `both`, which is what the JSON Schema says. A `check` falls back to `server` —
+ * the safe choice, since only the server can always answer one — and the schema
+ * said `both`, so a check written the obvious way never ran in the browser: no
+ * error, no request, an answer accepted that nothing had checked.
+ *
+ * Found by building a demo of it rather than by reading either file. Both values
+ * are derived from `engine.ts` here, because the document is the thing that can
+ * be wrong and the code is the thing that decides.
+ */
+describe('where a rule runs when it does not say', () => {
+  const engineSource = (): string =>
+    readFileSync(join(repo, 'packages', 'core', 'src', 'engine.ts'), 'utf8')
+
+  const runsOnProperty = (): { description?: string; default?: string } => {
+    const schema = JSON.parse(
+      readFileSync(join(repo, 'packages', 'spec', 'formancy.schema.json'), 'utf8'),
+    ) as Record<string, unknown>
+    const found: Array<Record<string, unknown>> = []
+    const walk = (node: unknown): void => {
+      if (node === null || typeof node !== 'object') return
+      const record = node as Record<string, unknown>
+      const properties = record['properties'] as Record<string, unknown> | undefined
+      if (properties?.['runsOn'] !== undefined) {
+        found.push(properties['runsOn'] as Record<string, unknown>)
+      }
+      for (const value of Object.values(record)) walk(value)
+    }
+    walk(schema)
+    expect(found.length).toBeGreaterThan(0)
+    return found[0] as { description?: string; default?: string }
+  }
+
+  /** The fallback applied to a validation rule, read off the filter that applies it. */
+  const validateFallback = (): string => {
+    const found = /kind === 'validate' && \(entry\.rule\.runsOn \?\? '(\w+)'\)/.exec(engineSource())
+    expect(found, 'the validate filter has moved; this guard is reading nothing').not.toBeNull()
+    return found?.[1] ?? ''
+  }
+
+  /** And the one applied to a check, read off the list of checks this side runs. */
+  const checkFallback = (): string => {
+    const source = engineSource()
+    const at = source.indexOf('const activeChecks')
+    expect(at, 'activeChecks has been renamed; this guard is reading nothing').toBeGreaterThan(0)
+    const found = /rule\.runsOn \?\? '(\w+)'/.exec(source.slice(at))
+    expect(found).not.toBeNull()
+    return found?.[1] ?? ''
+  }
+
+  test('is reading two different fallbacks, which is the whole point', () => {
+    // A guard on the guard: if these ever agree, the paragraph this protects is
+    // saying something more complicated than the truth and should be simplified
+    // rather than left.
+    expect(validateFallback()).not.toBe(checkFallback())
+  })
+
+  test("the schema's declared default is the one a validate rule gets", () => {
+    expect(runsOnProperty().default).toBe(validateFallback())
+  })
+
+  /** What the check branch of the rule's conditional block overrides. */
+  const checkBranchDefault = (): unknown => {
+    const schema = JSON.parse(
+      readFileSync(join(repo, 'packages', 'spec', 'formancy.schema.json'), 'utf8'),
+    ) as { $defs: Record<string, { allOf?: Array<Record<string, any>> }> }
+    const block = (schema.$defs['logicRule']?.allOf ?? []).find(
+      (entry) => entry['if']?.properties?.kind?.const === 'check',
+    )
+    return block?.['then']?.properties?.runsOn?.default
+  }
+
+  test('and the check branch declares the different one a check gets', () => {
+    // Compared as VALUES, and that is the whole of why the schema states this on
+    // the branch rather than in a sentence. Written as a phrase match first, this
+    // passed immediately -- the shared description happens to contain the words
+    // "check" and "server" in a paragraph about neither. Green, asserting
+    // nothing, which is the failure this repository has shipped before.
+    expect(checkBranchDefault()).toBe(checkFallback())
+  })
+
+  test('and the generated reference carries it, because that is what is read', () => {
+    // The reference is generated from the schema, and the generator did not read
+    // the rule's conditional block at all -- so everything the schema said per
+    // kind was published nowhere. This is the value arriving where a developer
+    // meets it.
+    const reference = readFileSync(
+      join(repo, 'apps', 'docs', 'src', 'content', 'docs', 'reference', 'spec.md'),
+      'utf8',
+    )
+    expect(reference).toContain('default `"' + checkFallback() + '"`')
+  })
+})

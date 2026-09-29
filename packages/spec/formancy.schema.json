@@ -966,7 +966,7 @@
     },
     "runsOn": {
      "title": "Runs on",
-     "description": "Where a validation check runs. Some checks only make sense in one place — a uniqueness check needs the database, a typing hint needs the keyboard. Only a validate rule may set this: if visibility or requiredness differed between the browser and the server, the server could no longer check what the browser did.",
+     "description": "Where a validation check runs. Some checks only make sense in one place — a uniqueness check needs the database, a typing hint needs the keyboard. Only a validate rule may set this: if visibility or requiredness differed between the browser and the server, the server could no longer check what the browser did. The default below is the one a VALIDATE rule gets; a check gets its own, stated on the check branch.",
      "enum": [
       "both",
       "client",
@@ -1001,7 +1001,12 @@
       ],
       "properties": {
        "check": true,
-       "cel": false
+       "cel": false,
+       "runsOn": {
+        "title": "Runs on, for a check",
+        "default": "server",
+        "description": "A check defaults to `server`, and not to `both` the way a validate rule does. Only the server can always answer one — a browser can only ask if its host supplied a checker — so a check that did not say would fail closed on a page nobody had wired up. A host that CAN answer in the browser says `both`; until it does, the check runs at submit and nowhere else."
+       }
       }
      },
      "else": {
