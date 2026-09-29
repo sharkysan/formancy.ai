@@ -10,6 +10,21 @@ later.
 
 ## Unreleased
 
+**Both Angular builder trees can be dragged**, which is the second route to commands that
+already worked without it — the order WCAG 2.2 SC 2.5.7 asks for, and the order both trees
+were built in. Where a drop lands comes from `@formancy/builder-core`, so the React and
+Angular trees answer that identically; only a drop the session will accept shows an
+indicator, because one over an illegal target promises a move that will not happen and a
+field that snaps back has told somebody nothing; and every drop is announced through the
+same live region the keyboard uses, so a drag is not a silent command for somebody using
+both.
+
+The cases dispatch **MouseEvents** rather than a drag helper, for the reason the React ones
+do: jsdom has no `DragEvent` and the fallback drops `clientY`, so both edges arrive as
+`undefined`, every drop lands below the target, and half of what the code decides goes
+untested. Observed: with the edge decision replaced by a constant, *"the upper half of a row
+means before it"* fails and nothing else does.
+
 **The Angular builder translates.** `FormancyTranslationsPane`: extract in one step, work
 down a language, add one, download the catalogue and upload it back — and a **preview that
 renders the form in the language being worked on**, built on its own engine so the document

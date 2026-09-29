@@ -50,6 +50,8 @@ const schema: FormSchema = {
 
 interface Mounted {
   session: BuilderSession
+  /** Flush the render a change causes, as `press` and `click` already do. */
+  settle(): Promise<void>
   /** A keystroke, with the render it causes awaited. */
   press(keys: string): Promise<void>
   /** A click, likewise. */
@@ -83,6 +85,7 @@ const mount = async (form: FormSchema = schema): Promise<Mounted> => {
   }
   return {
     session,
+    settle,
     press: async (keys) => {
       await user.keyboard(keys)
       await settle()
@@ -341,5 +344,104 @@ describe('what the tree says it is', () => {
     for (const part of ['builder', 'builder-tree', 'builder-node', 'builder-keys']) {
       expect(parts, `no ${part}`).toContain(part)
     }
+  })
+})
+
+/*
+ * Dragging is a SECOND way to reach commands that already work without it. WCAG
+ * 2.2 SC 2.5.7 wants an equivalent alternative to every dragging movement, and
+ * the way to get one is to write it first — which is the order this was built
+ * in, so removing the drag would lose the convenience and nothing else.
+ */
+describe('dragging', () => {
+  const dragFromTo = (from: string, to: string, edge: 'top' | 'bottom'): void => {
+    const source = screen.getByRole('treeitem', { name: from })
+    const target = screen.getByRole('treeitem', { name: to })
+
+    const dataTransfer = {
+      effectAllowed: '',
+      dropEffect: '',
+      setData: () => undefined,
+      getData: () => '',
+    }
+
+    // Dispatched as MouseEvents rather than through a DragEvent helper. jsdom
+    // has no DragEvent, and the fallback drops `clientY` — so both edges arrive
+    // as `undefined` and every drop lands below the target, which is half of
+    // what this code decides. jsdom also gives every element a zero-sized box,
+    // so the midpoint is 0 and the sign of clientY picks the edge.
+    const at = (type: string): Event => {
+      const event = new MouseEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        clientY: edge === 'top' ? -1 : 1,
+      })
+      Object.defineProperty(event, 'dataTransfer', { value: dataTransfer })
+      return event
+    }
+
+    source.dispatchEvent(at('dragstart'))
+    target.dispatchEvent(at('dragover'))
+    target.dispatchEvent(at('drop'))
+  }
+
+  test('a field can be dragged to another position', async () => {
+    const { settle } = await mount()
+
+    // Dropped below "City", which is inside the group — so it lands inside the
+    // group, after City. That is the drop model's answer and not an accident:
+    // where a row sits in the TREE is where the field goes.
+    dragFromTo('Customer', 'City', 'bottom')
+    await settle()
+
+    expect(keys()).toEqual(['Billing address', 'Street', 'City', 'Customer'])
+  })
+
+  test('the upper half of a row means before it, not after', async () => {
+    // The other half of the decision, and the one a test that loses clientY
+    // silently cannot reach.
+    const { session, settle } = await mount()
+
+    dragFromTo('City', 'Street', 'top')
+    await settle()
+
+    const billing = session.document().model.fields.find((field) => field.key === 'billing')
+    expect(billing?.fields?.map((field) => field.key)).toEqual(['city', 'street'])
+  })
+
+  test('a drop the session would refuse is not offered', async () => {
+    // An indicator over an illegal target promises a move that will not happen,
+    // and a field that snaps back has told somebody nothing.
+    const { session, settle } = await mount()
+    const before = JSON.stringify(session.document())
+
+    // A container onto something inside itself.
+    dragFromTo('Billing address', 'Street', 'bottom')
+    await settle()
+
+    expect(JSON.stringify(session.document())).toBe(before)
+  })
+
+  test('and a drop is announced through the same region the keyboard uses', async () => {
+    // A drag that changes the document silently is a change somebody using a
+    // screen reader with a pointer never hears about.
+    const { settle } = await mount()
+
+    dragFromTo('Customer', 'City', 'bottom')
+    await settle()
+
+    expect(keys()).toEqual(['Billing address', 'Street', 'City', 'Customer'])
+    expect(screen.getByRole('status').textContent).toMatch(/moved/i)
+  })
+
+  test('the keyboard path still works afterwards, because it never depended on this', async () => {
+    const { press, tab, settle } = await mount()
+
+    dragFromTo('Customer', 'City', 'bottom')
+    await settle()
+    await tab()
+    await press('{ArrowDown}')
+
+    expect(document.activeElement?.getAttribute('role')).toBe('treeitem')
   })
 })

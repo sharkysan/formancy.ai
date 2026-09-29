@@ -11,7 +11,12 @@ import {
   viewChild,
   viewChildren,
 } from '@angular/core'
-import { describeLayoutTarget, flattenLayout, nameOfPath } from '@formancy/builder-core'
+import {
+  describeLayoutTarget,
+  flattenLayout,
+  layoutDropLocation,
+  nameOfPath,
+} from '@formancy/builder-core'
 import type {
   BuilderSession,
   LayoutLocation,
@@ -75,6 +80,7 @@ function samePath(a: readonly number[], b: readonly number[]): boolean {
         (keydown)="onKeyDown($event)"
       >
         @for (row of rows(); track row.path.join('.'); let position = $index) {
+          <!-- A second route to commands that already work without it. -->
           <li
             #item
             role="treeitem"
@@ -84,6 +90,14 @@ function samePath(a: readonly number[], b: readonly number[]): boolean {
             [attr.data-kind]="row.node.kind"
             [attr.tabindex]="position === index() ? 0 : -1"
             (focus)="focusedIndex.set(position)"
+            draggable="true"
+            [attr.data-dragging]="isDragging(row) ? 'true' : null"
+            [attr.data-drop]="dropEdgeFor(position)"
+            (dragstart)="onDragStart(row, $event)"
+            (dragend)="onDragEnd()"
+            (dragover)="onDragOver(row, position, $event)"
+            (dragleave)="dropTarget.set(null)"
+            (drop)="onDrop(row, $event)"
           >
             {{ row.name }}
           </li>
@@ -211,6 +225,8 @@ export class FormancyLayoutPane {
    */
   protected readonly wrapping = signal<LayoutTreeNode | null>(null)
   protected readonly announcement = signal('')
+  protected readonly dragging = signal<readonly number[] | null>(null)
+  protected readonly dropTarget = signal<{ index: number; edge: 'before' | 'after' } | null>(null)
 
   private readonly tree = viewChild<ElementRef<HTMLElement>>('tree')
   private readonly items = viewChildren<ElementRef<HTMLElement>>('item')
@@ -305,6 +321,59 @@ export class FormancyLayoutPane {
         this.keepFocus = false
       })
     })
+  }
+
+  protected isDragging(row: LayoutTreeNode): boolean {
+    const from = this.dragging()
+    return from !== null && samePath(from, row.path)
+  }
+
+  protected dropEdgeFor(position: number): string | null {
+    const target = this.dropTarget()
+    return target?.index === position ? target.edge : null
+  }
+
+  protected onDragStart(row: LayoutTreeNode, event: DragEvent): void {
+    this.dragging.set(row.path)
+    if (event.dataTransfer === null) return
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', row.path.join('.'))
+  }
+
+  protected onDragEnd(): void {
+    this.dragging.set(null)
+    this.dropTarget.set(null)
+  }
+
+  protected onDragOver(row: LayoutTreeNode, position: number, event: DragEvent): void {
+    const from = this.dragging()
+    const name = this.name()
+    if (from === null || name === undefined) return
+    const edge = edgeOf(event)
+    // Only a legal drop shows an indicator and accepts one: an indicator over an
+    // illegal target promises a move that will not happen.
+    if (layoutDropLocation(this.view().document, name, from, row.path, edge) === undefined) {
+      this.dropTarget.set(null)
+      return
+    }
+    event.preventDefault()
+    if (event.dataTransfer !== null) event.dataTransfer.dropEffect = 'move'
+    this.dropTarget.set({ index: position, edge })
+  }
+
+  protected onDrop(row: LayoutTreeNode, event: DragEvent): void {
+    event.preventDefault()
+    const from = this.dragging()
+    const name = this.name()
+    this.dragging.set(null)
+    this.dropTarget.set(null)
+    if (from === null || name === undefined) return
+
+    const location = layoutDropLocation(this.view().document, name, from, row.path, edgeOf(event))
+    if (location === undefined) return
+
+    const outcome = this.session().moveLayoutNode({ layout: name, path: from }, location)
+    this.announcement.set(outcome.ok ? 'Moved.' : `Cannot move: ${outcome.message}`)
   }
 
   protected nameOf(path: string): string {
@@ -517,4 +586,10 @@ export class FormancyLayoutPane {
         !enclosesPath(candidate.path, subject.path),
     )
   }
+}
+
+/** Which half of the row the pointer is over. */
+function edgeOf(event: DragEvent): 'before' | 'after' {
+  const box = (event.currentTarget as HTMLElement).getBoundingClientRect()
+  return event.clientY < box.top + box.height / 2 ? 'before' : 'after'
 }

@@ -55,6 +55,8 @@ const schema: FormSchema = {
 
 interface Mounted {
   session: BuilderSession
+  /** Flush the render a change causes, as press and click already do. */
+  settle(): Promise<void>
   press(keys: string): Promise<void>
   click(element: Element): Promise<void>
   tab(): Promise<void>
@@ -74,6 +76,7 @@ const mount = async (form: FormSchema = schema): Promise<Mounted> => {
   }
   return {
     session,
+    settle,
     press: async (keys) => {
       await user.keyboard(keys)
       await settle()
@@ -238,5 +241,62 @@ describe('the arrangement tree', () => {
     for (const part of ['layout-pane', 'layout-tree', 'layout-node', 'layout-keys']) {
       expect(parts, `no ${part}`).toContain(part)
     }
+  })
+})
+
+/*
+ * Dragging, which is the SECOND way to reach these commands. Everything above
+ * works without it, which is what WCAG 2.2 SC 2.5.7 asks for and the order this
+ * was built in.
+ */
+describe('dragging in the arrangement', () => {
+  const dragFromTo = (from: string, to: string, edge: 'top' | 'bottom'): void => {
+    const source = screen.getByRole('treeitem', { name: from })
+    const target = screen.getByRole('treeitem', { name: to })
+    const dataTransfer = {
+      effectAllowed: '',
+      dropEffect: '',
+      setData: () => undefined,
+      getData: () => '',
+    }
+    // MouseEvents, because jsdom has no DragEvent and the fallback drops
+    // `clientY` — so both edges arrive undefined and every drop lands below the
+    // target, which is half of what this decides.
+    const at = (type: string): Event => {
+      const event = new MouseEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        clientY: edge === 'top' ? -1 : 1,
+      })
+      Object.defineProperty(event, 'dataTransfer', { value: dataTransfer })
+      return event
+    }
+    source.dispatchEvent(at('dragstart'))
+    target.dispatchEvent(at('dragover'))
+    target.dispatchEvent(at('drop'))
+  }
+
+  test('a node can be dragged to another position, and it is announced', async () => {
+    const { session, settle } = await mount()
+    const before = JSON.stringify(session.document().layouts?.[0]?.nodes)
+
+    dragFromTo('Email', 'First name', 'top')
+    await settle()
+
+    expect(JSON.stringify(session.document().layouts?.[0]?.nodes)).not.toBe(before)
+    // Through the same live region the keyboard path uses, so a drag is not a
+    // silent command for somebody using both.
+    expect(screen.getByRole('status').textContent).toMatch(/moved/i)
+  })
+
+  test('and a drop the session would refuse changes nothing', async () => {
+    const { session, settle } = await mount()
+    const before = JSON.stringify(session.document().layouts?.[0]?.nodes)
+
+    // A container onto something inside itself.
+    dragFromTo(items()[0] ?? '', 'First name', 'bottom')
+    await settle()
+
+    expect(JSON.stringify(session.document().layouts?.[0]?.nodes)).toBe(before)
   })
 })
