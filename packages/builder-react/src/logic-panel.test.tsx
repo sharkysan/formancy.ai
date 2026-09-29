@@ -268,3 +268,124 @@ describe('existing rules', () => {
     expect(screen.getAllByRole('listitem')).toHaveLength(1)
   })
 })
+
+describe('the two rule kinds spec 3 added', () => {
+  /*
+   * Both shipped in 0.3.0 as things a developer writes by hand, and the release
+   * said so plainly rather than implying otherwise. This is the other half: the
+   * builder's whole reason to exist is that an author should not have to write
+   * JSON, and a rule kind nobody can reach from it is the wizard's shape all over
+   * again.
+   *
+   * They need different treatment, and that is the point of this block. A `check`
+   * has NO expression — it names a validator the deployment answers — so the
+   * condition editor is the wrong surface for it. A `skip` targets a PAGE, so it
+   * cannot appear on a field at all.
+   */
+  const paged: FormSchema = {
+    specVersion: '3',
+    id: 'trip',
+    title: 'Trip',
+    model: {
+      fields: [
+        {
+          key: 'about',
+          type: 'page',
+          label: 'About you',
+          fields: [{ key: 'needsVisa', type: 'checkbox', label: 'Do you need a visa?' }],
+        },
+        {
+          key: 'visa',
+          type: 'page',
+          label: 'Visa details',
+          fields: [{ key: 'passport', type: 'text', label: 'Passport number' }],
+        },
+      ],
+    },
+  }
+
+  const openOn = (keyPath: readonly string[]): ReturnType<typeof createBuilderSession> => {
+    const session = createBuilderSession(paged)
+    render(<LogicPanel session={session} keyPath={keyPath} />)
+    return session
+  }
+
+  test('a check is offered on a field, and asks for a name rather than a condition', async () => {
+    const user = userEvent.setup()
+    const session = openOn(['about', 'needsVisa'])
+
+    await user.click(screen.getByRole('button', { name: /add a rule/i }))
+    await user.selectOptions(screen.getByRole('combobox', { name: /what the rule does/i }), 'check')
+
+    // A name, because a check has no expression: the condition editor would be
+    // asking for something the rule cannot carry.
+    await user.type(screen.getByRole('textbox', { name: /which check/i }), 'visa-eligible')
+    await user.click(screen.getByRole('button', { name: /^add rule$/i }))
+
+    const rule = rulesOf(session)[0]
+    expect(rule?.kind).toBe('check')
+    expect(rule?.check).toBe('visa-eligible')
+    expect(rule?.cel).toBeUndefined()
+  })
+
+  test('and the condition editor is not shown while a check is being written', async () => {
+    const user = userEvent.setup()
+    openOn(['about', 'needsVisa'])
+
+    await user.click(screen.getByRole('button', { name: /add a rule/i }))
+    await user.selectOptions(screen.getByRole('combobox', { name: /what the rule does/i }), 'check')
+
+    // Offering "Country is CH" beside a check would be offering a condition the
+    // rule throws away.
+    expect(screen.queryByRole('combobox', { name: /field/i })).toBeNull()
+  })
+
+  test('a skip is offered on a page, and writes a condition', async () => {
+    const user = userEvent.setup()
+    const session = openOn(['visa'])
+
+    await user.click(screen.getByRole('button', { name: /add a rule/i }))
+    await user.selectOptions(screen.getByRole('combobox', { name: /what the rule does/i }), 'skip')
+    await user.click(screen.getByRole('button', { name: /^add rule$/i }))
+
+    const rule = rulesOf(session)[0]
+    expect(rule?.kind).toBe('skip')
+    expect(rule?.target).toBe('visa')
+    expect(typeof rule?.cel).toBe('string')
+  })
+
+  test('a skip is not offered on a field, because a field is not a page', async () => {
+    const user = userEvent.setup()
+    openOn(['about', 'needsVisa'])
+
+    await user.click(screen.getByRole('button', { name: /add a rule/i }))
+
+    const kinds = [...screen.getByRole('combobox', { name: /what the rule does/i }).querySelectorAll('option')]
+    expect(kinds.map((option) => option.getAttribute('value'))).not.toContain('skip')
+  })
+
+  test('and a page is offered nothing else, because nothing else applies to one', async () => {
+    // `visible` on a page is refused by the validator -- a page has no data path
+    // -- so offering it would be offering a choice refused every time.
+    const user = userEvent.setup()
+    openOn(['visa'])
+
+    await user.click(screen.getByRole('button', { name: /add a rule/i }))
+
+    const kinds = [...screen.getByRole('combobox', { name: /what the rule does/i }).querySelectorAll('option')]
+    expect(kinds.map((option) => option.getAttribute('value'))).toEqual(['skip'])
+  })
+
+  test('a rule the panel wrote is one the session accepted', async () => {
+    // The guard that matters: the panel composes a document the validator has
+    // already refused or accepted, so a rule it writes is one that publishes.
+    const user = userEvent.setup()
+    const session = openOn(['visa'])
+
+    await user.click(screen.getByRole('button', { name: /add a rule/i }))
+    await user.selectOptions(screen.getByRole('combobox', { name: /what the rule does/i }), 'skip')
+    await user.click(screen.getByRole('button', { name: /^add rule$/i }))
+
+    expect(session.canPublish().valid).toBe(true)
+  })
+})

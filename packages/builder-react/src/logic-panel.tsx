@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { ReactElement } from 'react'
+import { dataPathOf } from '@formancy/builder-core'
 import type { BuilderSession } from '@formancy/builder-core'
 import type { LogicRule } from '@formancy/spec'
 import { OPERATORS, compileGroup } from './conditions.js'
@@ -20,11 +21,42 @@ import { useBuilder } from './use-builder.js'
  * have to read it, and a developer should not have to guess it.
  */
 
-const KINDS: ReadonlyArray<{ id: LogicRule['kind']; label: string; hint: string }> = [
-  { id: 'visible', label: 'Show this field when', hint: 'Hidden otherwise, and its answer is cleared unless the field says not to.' },
-  { id: 'required', label: 'Require an answer when', hint: 'Only while the condition holds.' },
-  { id: 'disabled', label: 'Disable this field when', hint: 'Visible but not editable.' },
-  { id: 'validate', label: 'Reject the answer unless', hint: 'The condition must hold for the form to be submitted.' },
+/**
+ * What a rule can do, and where.
+ *
+ * `on` is the half that arrived with spec 3. A `skip` targets a PAGE and a page
+ * has no data path, so the validator refuses every other kind on one — offering
+ * them would be offering a choice refused every time, which is what the field
+ * palette already learned about `page` itself. And a `check` is not a condition
+ * at all: it names a validator the deployment answers, so the condition editor is
+ * the wrong surface and is not shown for it.
+ */
+const KINDS: ReadonlyArray<{
+  id: LogicRule['kind']
+  label: string
+  hint: string
+  on: 'field' | 'page'
+  /** Whether the rule carries a condition. A check names a check instead. */
+  condition: boolean
+}> = [
+  { id: 'visible', label: 'Show this field when', hint: 'Hidden otherwise, and its answer is cleared unless the field says not to.', on: 'field', condition: true },
+  { id: 'required', label: 'Require an answer when', hint: 'Only while the condition holds.', on: 'field', condition: true },
+  { id: 'disabled', label: 'Disable this field when', hint: 'Visible but not editable.', on: 'field', condition: true },
+  { id: 'validate', label: 'Reject the answer unless', hint: 'The condition must hold for the form to be submitted.', on: 'field', condition: true },
+  {
+    id: 'check',
+    label: 'Ask the deployment about the answer',
+    hint: 'Names a check this deployment answers — is this email already registered, does this reference exist. A check the deployment has not supplied refuses the answer rather than passing it.',
+    on: 'field',
+    condition: false,
+  },
+  {
+    id: 'skip',
+    label: 'Skip this page when',
+    hint: 'The page is walked past, in both directions, and the questions on it are neither asked nor validated.',
+    on: 'page',
+    condition: true,
+  },
 ]
 
 export interface LogicPanelProps {
@@ -37,12 +69,28 @@ export function LogicPanel({ session, keyPath }: LogicPanelProps): ReactElement 
   const view = useBuilder(session)
   const [drafting, setDrafting] = useState(false)
 
-  const target = keyPath.join('.')
+  // The DATA path, not the key path. Pages are transparent for data, so a field
+  // inside one is `needsVisa` in the model and `about.needsVisa` in the tree —
+  // and this joined the key path, so every rule written on a field inside a page
+  // was refused with "No field has the data path". In the builder, for as long as
+  // pages have existed, found by the first test that opened this panel on one.
+  const target = dataPathOf(view.document, keyPath) ?? keyPath.join('.')
+  /**
+   * A page's rules are addressed by its KEY, not by a data path.
+   *
+   * A page carries no answer, so it has no path — which is why a `skip` is its
+   * own kind rather than `visible` pointed at a page
+   * ([0087](../../../docs/decisions/0087-a-page-can-be-walked-past.md)).
+   */
+  const node = view.nodes.find((candidate) => candidate.keyPath.join('.') === keyPath.join('.'))
+  const onPage = node?.def.type === 'page'
+  const pageTarget = keyPath[keyPath.length - 1] ?? target
+  const ruleTarget = onPage ? pageTarget : target
   const rules = view.document.logic?.rules ?? []
   // Index within the whole list, because removeRule takes one.
   const mine = rules
     .map((rule, index) => ({ rule, index }))
-    .filter((entry) => entry.rule.target === target)
+    .filter((entry) => entry.rule.target === ruleTarget)
 
   return (
     <div data-formancy-part="logic-panel">
@@ -74,25 +122,24 @@ export function LogicPanel({ session, keyPath }: LogicPanelProps): ReactElement 
 
       {drafting ? (
         <RuleDraft
+          on={onPage ? 'page' : 'field'}
           fields={view.nodes
-            .filter((node) => !node.isContainer)
-            .map((node) => ({
-              path: node.keyPath.join('.'),
-              label: nameOf(view.document, node.def),
+            .filter((candidate) => !candidate.isContainer)
+            .map((candidate) => ({
+              path: candidate.keyPath.join('.'),
+              label: nameOf(view.document, candidate.def),
             }))}
           onCancel={() => setDrafting(false)}
-          onAdd={(kind, group) => {
+          onAdd={(kind, group, check) => {
             setDrafting(false)
+            const carries = KINDS.find((candidate) => candidate.id === kind)?.condition ?? true
             session.addRule({
-              target,
+              target: ruleTarget,
               kind,
-              cel: compileGroup(group),
-              // Regenerated metadata, never evaluated: it exists so this panel
-              // can reopen the condition instead of parsing CEL back. It holds
-              // the GROUP now rather than a bare condition -- one shape, and the
-              // field is documented as regenerated, so there is nothing to
-              // migrate and nothing reads it yet.
-              editor: group,
+              // A check has no expression and a rule carrying both would be two
+              // rules in one object; the schema refuses it, so the panel does not
+              // compose it.
+              ...(carries ? { cel: compileGroup(group), editor: group } : { check }),
               ...(kind === 'validate' ? { code: 'condition' } : {}),
             } as LogicRule)
           }}
@@ -107,15 +154,21 @@ export function LogicPanel({ session, keyPath }: LogicPanelProps): ReactElement 
 }
 
 function RuleDraft({
+  on,
   fields,
   onAdd,
   onCancel,
 }: {
+  /** Whether the rules being written are about a page or a field. */
+  on: 'field' | 'page'
   fields: ReadonlyArray<{ path: string; label: string }>
-  onAdd: (kind: LogicRule['kind'], group: ConditionGroup) => void
+  onAdd: (kind: LogicRule['kind'], group: ConditionGroup, check: string) => void
   onCancel: () => void
 }): ReactElement {
-  const [kind, setKind] = useState<LogicRule['kind']>('visible')
+  const applicable = KINDS.filter((candidate) => candidate.on === on)
+  const [kind, setKind] = useState<LogicRule['kind']>(applicable[0]?.id ?? 'visible')
+  const [check, setCheck] = useState('')
+  const carriesCondition = KINDS.find((candidate) => candidate.id === kind)?.condition ?? true
   const [join, setJoin] = useState<ConditionGroup['join']>('all')
   /**
    * One row per comparison.
@@ -159,9 +212,9 @@ function RuleDraft({
   return (
     <div data-formancy-part="logic-draft">
       <label>
-        Rule
+        What the rule does
         <select value={kind} onChange={(event) => setKind(event.target.value as LogicRule['kind'])}>
-          {KINDS.map((candidate) => (
+          {applicable.map((candidate) => (
             <option key={candidate.id} value={candidate.id}>
               {candidate.label}
             </option>
@@ -169,6 +222,20 @@ function RuleDraft({
         </select>
       </label>
 
+      {carriesCondition ? null : (
+        <label>
+          Which check
+          <input
+            type="text"
+            value={check}
+            onChange={(event) => setCheck(event.target.value)}
+            placeholder="email-not-taken"
+          />
+        </label>
+      )}
+
+      {carriesCondition ? (
+        <>
       {/* Only once there is something to join. A control that does nothing is a
           control somebody has to work out is irrelevant. */}
       {rows.length > 1 ? (
@@ -252,14 +319,25 @@ function RuleDraft({
         Add a comparison
       </button>
 
-      <p data-formancy-part="logic-hint">{hint}</p>
+        <p data-formancy-part="logic-hint">{hint}</p>
 
-      {/* Shown before it is added, not after. Somebody who can read CEL can
-          check the condition means what they chose. */}
-      <code data-formancy-part="logic-preview">{compileGroup(group)}</code>
+          {/* Shown before it is added, not after. Somebody who can read CEL
+              can check the condition means what they chose. */}
+          <code data-formancy-part="logic-preview">{compileGroup(group)}</code>
+        </>
+      ) : null}
+
+      {carriesCondition ? null : <p data-formancy-part="logic-hint">{hint}</p>}
 
       <div data-formancy-part="logic-actions">
-        <button type="button" onClick={() => onAdd(kind, group)} disabled={rows.some((row) => row.field === '')}>
+        <button
+          type="button"
+          onClick={() => onAdd(kind, group, check.trim())}
+          // A check with no name asks nobody, and an empty comparison compiles to
+          // an expression about nothing. Which of the two applies depends on the
+          // kind, so the guard does too.
+          disabled={carriesCondition ? rows.some((row) => row.field === '') : check.trim() === ''}
+        >
           Add rule
         </button>
         <button type="button" onClick={onCancel}>

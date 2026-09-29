@@ -6,7 +6,7 @@ export type {
   AuthoringProblem,
   AuthoringResult,
 } from './authoring.js'
-export { createBuilderSession } from './session.js'
+export { createBuilderSession, dataPathOf } from './session.js'
 export type {
   BuilderSession,
   CatalogueFile,

@@ -182,8 +182,10 @@ than asserted.
    and the fields on it are hidden, which is what keeps a required answer on a page
    nobody saw from holding the form up
    ([0087](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0087-a-page-can-be-walked-past.md)).
-   What the **builder** cannot do yet is write one: a skip rule is authored by hand or by
-   an agent, like every rule kind before the condition editor learns it.
+   The **builder writes both** of spec 3's rule kinds now: a page's panel offers
+   “Skip this page when” with the condition editor, and a field's offers “Ask the
+   deployment about the answer”, which takes a check's name rather than a condition —
+   because a check has no expression to write.
 
 ## Measured against the competition
 
