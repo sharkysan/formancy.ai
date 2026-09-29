@@ -13,6 +13,19 @@ export default defineConfig({
     starlight({
       title: 'formancy.ai',
       favicon: '/favicon.svg',
+      // The header's only link used to be Starlight's own title, which points at
+      // the docs root -- so on a one-origin deployment it went to the page you
+      // were already on. These pages are a third of formancy.ai and had no way
+      // back to the other two, or to the repository, on exactly the pages where
+      // somebody is still deciding whether to use any of it.
+      components: { SiteTitle: './src/components/SiteTitle.astro' },
+      social: [
+        {
+          icon: 'github',
+          label: 'GitHub',
+          href: 'https://github.com/sharkysan/formancy.ai',
+        },
+      ],
       // Starlight writes the title, description and URL for each page; the
       // preview image is the landing page's, so a shared docs link looks like
       // the rest of formancy.ai rather than a bare text card.
@@ -50,7 +63,7 @@ export default defineConfig({
         },
         {
           label: 'Reference',
-          items: [{ label: 'Spec reference (v2)', slug: 'reference/spec' }],
+          items: [{ label: 'Spec reference', slug: 'reference/spec' }],
         },
         {
           label: 'Project',
