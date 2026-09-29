@@ -491,6 +491,9 @@ importers:
 
   packages/builder-angular:
     dependencies:
+      '@formancy/angular':
+        specifier: workspace:*
+        version: link:../angular
       '@formancy/builder-core':
         specifier: workspace:*
         version: link:../builder-core
@@ -528,9 +531,6 @@ importers:
       '@arethetypeswrong/cli':
         specifier: 'catalog:'
         version: 0.18.5
-      '@formancy/angular':
-        specifier: workspace:*
-        version: link:../angular
       '@testing-library/angular':
         specifier: ^19.5.0
         version: 19.5.0(@angular/core@22.1.7(@angular/compiler@22.1.7)(rxjs@7.8.2))(@angular/router@22.1.7(@angular/common@22.1.7(@angular/core@22.1.7(@angular/compiler@22.1.7)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.7(@angular/compiler@22.1.7)(rxjs@7.8.2))(@angular/platform-browser@22.1.7(@angular/common@22.1.7(@angular/core@22.1.7(@angular/compiler@22.1.7)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.7(@angular/compiler@22.1.7)(rxjs@7.8.2)))(rxjs@7.8.2))(@testing-library/dom@10.4.2)

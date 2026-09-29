@@ -233,3 +233,39 @@ export function draftIsComplete(input: {
       return input.rows.every((row) => row.field !== '')
   }
 }
+
+/**
+ * Every message id the document refers to, in document order and deduplicated.
+ *
+ * The order matters: a translator works down a list and meets the questions in
+ * the order somebody filling the form does, which is the only order that makes
+ * the words next to each other mean anything.
+ *
+ * Framework-free, so both translation panes ask the same question. It walks the
+ * model AND the layouts, because a section's heading is text a reader sees and
+ * lives in the arrangement rather than in the model.
+ */
+export function referencedMessages(document: FormSchema): string[] {
+  const found: string[] = []
+  const seen = new Set<string>()
+  const walk = (value: unknown): void => {
+    if (Array.isArray(value)) {
+      for (const item of value) walk(item)
+      return
+    }
+    if (typeof value !== 'object' || value === null) return
+    const record = value as Record<string, unknown>
+    const reference = record['$t']
+    if (typeof reference === 'string') {
+      if (!seen.has(reference)) {
+        seen.add(reference)
+        found.push(reference)
+      }
+      return
+    }
+    for (const item of Object.values(record)) walk(item)
+  }
+  walk(document.model)
+  walk(document.layouts)
+  return found
+}

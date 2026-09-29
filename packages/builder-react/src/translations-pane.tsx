@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { ReactElement } from 'react'
+import { referencedMessages } from '@formancy/builder-core'
 import type { BuilderSession, CatalogueFile } from '@formancy/builder-core'
 import { createFormEngine } from '@formancy/core'
 import { FormancyForm, FormancyProvider } from '@formancy/react'
@@ -293,30 +294,4 @@ function Preview({ document, locale }: { document: FormSchema; locale: string })
       )}
     </section>
   )
-}
-
-/** Every message id the document refers to, in document order and deduplicated. */
-function referencedMessages(document: FormSchema): string[] {
-  const found: string[] = []
-  const seen = new Set<string>()
-  const walk = (value: unknown): void => {
-    if (Array.isArray(value)) {
-      for (const item of value) walk(item)
-      return
-    }
-    if (typeof value !== 'object' || value === null) return
-    const record = value as Record<string, unknown>
-    const reference = record['$t']
-    if (typeof reference === 'string') {
-      if (!seen.has(reference)) {
-        seen.add(reference)
-        found.push(reference)
-      }
-      return
-    }
-    for (const item of Object.values(record)) walk(item)
-  }
-  walk(document.model)
-  walk(document.layouts)
-  return found
 }

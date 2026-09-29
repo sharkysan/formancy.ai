@@ -5,6 +5,7 @@
     "entryFile": "src/index.ts"
   },
   "allowedNonPeerDependencies": [
+    "@formancy/angular",
     "@formancy/builder-core",
     "@formancy/core",
     "@formancy/spec",

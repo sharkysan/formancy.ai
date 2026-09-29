@@ -9,6 +9,7 @@
 export type {
   BuilderSession,
   BuilderView,
+  CatalogueFile,
   ConditionRow,
   EditableProperty,
   CommandOutcome,

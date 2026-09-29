@@ -3,6 +3,14 @@
   "version": "0.3.0",
   "description": "Idiomatic Angular binding for the formancy form engine: signals over the same snapshot protocol.",
   "license": "Apache-2.0",
+  "//": "Resolvable from inside the workspace. ng-packagr publishes from dist/ and writes dist/package.json itself, so these describe the SOURCE checkout only: without them @formancy/builder-angular cannot import the renderer it renders a preview with, because nothing else in the workspace had ever imported this package.",
+  "types": "./dist/types/formancy-angular.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/formancy-angular.d.ts",
+      "default": "./dist/fesm2022/formancy-angular.mjs"
+    }
+  },
   "scripts": {
     "build": "ng-packagr -p ng-package.json && node scripts/finalize-dist.mjs",
     "test:coverage": "vitest run --coverage",
