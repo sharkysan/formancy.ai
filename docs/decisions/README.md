@@ -189,3 +189,4 @@ listed under the sections they belong to above.
 | [0086](0086-a-check-is-named-and-answered-elsewhere.md) | A check is named here and answered elsewhere | accepted |
 | [0087](0087-a-page-can-be-walked-past.md) | A page can be walked past, and its questions go with it | accepted |
 | [0088](0088-spec-3-freezes-with-four-constructs.md) | Spec 3 freezes with four constructs, not one | accepted |
+| [0089](0089-a-page-is-unwrapped-into-its-neighbour.md) | A page is unwrapped into its neighbour, not onto the top level | accepted |

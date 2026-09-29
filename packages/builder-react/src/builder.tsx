@@ -42,6 +42,7 @@ const KEY_HELP = [
   ['↑ ↓', 'move between fields'],
   ['a', 'add a field'],
   ['p', 'add a page, making the form a wizard'],
+  ['u', 'take a container away and keep what is inside'],
   ['m', 'move the focused field'],
   ['Delete', 'remove it'],
   ['Ctrl+Z / Ctrl+Y', 'undo / redo'],
@@ -236,6 +237,54 @@ export function FormancyBuilder({
               ? `Added Page ${String(pages + 1)}.`
               : // Moving every field in the form is not something to do quietly.
                 `Added Page 1, holding the ${String(loose.length)} ${loose.length === 1 ? 'field' : 'fields'} that were at the top level. The form is a wizard now.`,
+        )
+        break
+      }
+      case 'u':
+      case 'U': {
+        event.preventDefault()
+        // Read BEFORE the command, for the reason `p` counts before its own: the
+        // container is gone afterwards, so neither its name nor what was inside
+        // it can be recovered to say what happened.
+        const name = nameOf(view.document, focused.def)
+        const inside = focused.def.fields ?? []
+        const wasPage = focused.def.type === 'page'
+        const count = String(inside.length)
+        const questions = `${count} ${inside.length === 1 ? 'question' : 'questions'}`
+        const outcome = session.unwrapField(focused.keyPath)
+        const after = session.document()
+        // Where they went, read off the document rather than worked out twice: the
+        // page now holding the first of them. A page's questions do not stay at
+        // the top level while other pages remain, so an author has to be told
+        // which step they are on now.
+        const host =
+          inside[0] === undefined
+            ? undefined
+            : after.model.fields.find(
+                (field) =>
+                  field.type === 'page' &&
+                  (field.fields ?? []).some((child) => child.key === inside[0]?.key),
+              )
+        // COUNTED, not inferred from the host above. Inferred, an empty page read
+        // as no pages left — because an empty page has no first question to find —
+        // and the live region said the form had stopped being a wizard while page
+        // one was still there. Found by pressing the keys in the playground.
+        const stillPaged = after.model.fields.some((field) => field.type === 'page')
+        const what =
+          inside.length === 0
+            ? `Removed ${name}, which was empty.`
+            : host !== undefined
+              ? `Removed the page ${name}. Its ${questions} are on ${nameOf(after, host)} now.`
+              : `Removed ${name} and kept the ${questions} that were inside it.`
+        announce(
+          !outcome.ok
+            ? `Cannot unwrap ${name}: ${outcome.message}`
+            : wasPage && !stillPaged
+              ? // A form ceasing to have steps is the largest thing this command
+                // does and the least visible: the tree looks like a flat list of
+                // questions either way.
+                `${what} The form is not a wizard any more.`
+              : what,
         )
         break
       }

@@ -10,6 +10,38 @@ later.
 
 ## Unreleased
 
+**A page can be taken away without taking its questions.** `addPage` shipped in 0.3.0 with
+no way back: `removeField` removes a container WITH its children, so an author who made a
+wizard by mistake had to delete every question and type them again. `unwrapField` is the
+model tree's equivalent of `unwrapLayoutNode`, which the arrangement tree has had since
+layouts existed — `u` on the structure tree, one undoable step.
+
+**A page's questions join the neighbouring page rather than the top level**, and that is
+not a detail. Hazard D8 in the safety analysis: the engine gives a top-level field that is
+not inside a page to step ONE wherever it sits, so two questions authored on step two and
+left beside step three are asked on step one — collected correctly, in the wrong place. So
+they merge into the page before, or the page after when there is none before, which keeps
+the document in the order somebody typed it either way; only the LAST page leaves the form
+unpaged. The move is announced by name, because the tree looks like a flat list of questions
+whichever step they are on. The obvious implementation — splice the children in where the
+container stood — was built first, passed its tests, and produced exactly the shape D8 says
+the builder cannot ([0089](docs/decisions/0089-a-page-is-unwrapped-into-its-neighbour.md)).
+
+**It refuses three things**, each for a different reason. A leaf, because unwrapping is not
+another word for deleting. A repeater, because its children describe one ROW and lifting
+them out would keep the first row and lose every row after it — silently, since the document
+that comes out is valid. And a group a rule addresses or reads inside: a group carries the
+answer, so unwrapping renames every path beneath it, layouts follow because a placement is
+structured data, and a rule's condition is CEL source that this will not rewrite by pattern.
+The rule is named instead.
+
+**And a page carrying a `skip` rule could not be deleted at all.** Measured while writing
+the above, through `removeField`: a `skip` names a page KEY, so removing the page left a
+rule aimed at nothing and the validator refused the whole edit — *"visa is not a page"*.
+Conditional page routing shipped in 0.3.0, which means every page anybody routed around has
+been undeletable from the builder since that release. The rule is only ever about the page,
+so it now goes with it — in both commands.
+
 **The builder writes both of spec 3's rule kinds.** They shipped as things a developer
 writes by hand and 0.3.0 said so plainly — this is the other half, because a rule kind
 nobody can reach from the builder is the wizard's shape all over again. A page's panel

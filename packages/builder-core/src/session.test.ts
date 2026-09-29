@@ -798,3 +798,409 @@ describe('handing a catalogue to somebody outside the builder', () => {
     expect(session.document().i18n?.messages['it']?.['email.label']).toBe('Email di lavoro')
   })
 })
+
+/*
+ * The inverse of [0081]'s `addPage`, and the reason that record named it as
+ * missing: adding the first page is one press, and taking it away was not
+ * possible at all, because `removeField` removes a container WITH its children.
+ * An author who made a wizard by mistake had to delete every question and type
+ * them again.
+ *
+ * The arrangement tree has had this since layouts existed — `unwrapLayoutNode`
+ * replaces a container with its children where it stood. The model tree did not,
+ * and the asymmetry was the whole of the gap.
+ *
+ * A page is not a group, though, and the difference is the interesting part.
+ * Hazard D8 says a top-level field that is NOT inside a page renders on step one
+ * wherever it sits, and names the builder's constraint against producing that
+ * shape. So a page's children cannot simply be left at the top level beside the
+ * pages that remain: they merge into the neighbouring page that keeps their
+ * order, and only the LAST page leaves the form unpaged.
+ */
+describe('unwrapField', () => {
+  const trip = (...pages: Array<[string, string[]]>): FormSchema =>
+    ({
+      specVersion: '3',
+      id: 'trip',
+      title: 'Trip',
+      model: {
+        fields: pages.map(([key, children]) => ({
+          key,
+          type: 'page',
+          label: key,
+          fields: children.map((child) => ({ key: child, type: 'text', label: child })),
+        })),
+      },
+    }) as unknown as FormSchema
+
+  /** Every top-level key, with a page's children listed under it. */
+  const shape = (session: BuilderSession): unknown =>
+    session.document().model.fields.map((field) =>
+      field.type === 'page'
+        ? { [field.key]: (field.fields ?? []).map((child) => child.key) }
+        : field.key,
+    )
+
+  test('the last page left un-pages the form, which is the case it exists for', () => {
+    const session = createBuilderSession(trip(['about', ['name', 'email']]))
+
+    expect(session.unwrapField(['about']).ok).toBe(true)
+
+    // In place, in order: the questions stand where the page stood, and the form
+    // has no steps.
+    expect(shape(session)).toEqual(['name', 'email'])
+  })
+
+  test('a later page merges into the one before it, keeping the order of the questions', () => {
+    const session = createBuilderSession(trip(['about', ['name']], ['trip', ['when', 'where']]))
+
+    expect(session.unwrapField(['trip']).ok).toBe(true)
+
+    // `when` and `where` still follow `name` in the document, which is the order
+    // somebody typed them in and the order they are asked in.
+    expect(shape(session)).toEqual([{ about: ['name', 'when', 'where'] }])
+  })
+
+  test('and the first page merges into the one after it, for the same reason', () => {
+    const session = createBuilderSession(trip(['about', ['name']], ['trip', ['when']]))
+
+    expect(session.unwrapField(['about']).ok).toBe(true)
+
+    // There is no page before the first, so the questions go to the front of the
+    // page after it. Either direction would keep them in the form; only this one
+    // keeps them in their order.
+    expect(shape(session)).toEqual([{ trip: ['name', 'when'] }])
+  })
+
+  test('never leaves a question beside a page instead of inside one', () => {
+    // The constraint this command had to be designed around, and the reason the
+    // two cases above are not one. Hazard D8: the engine gives a top-level field
+    // that is not inside a page to step ONE wherever it sits, so a question left
+    // beside page three renders on page one — collected correctly and asked in
+    // the wrong place. Derived from the document rather than asserted per case,
+    // so a fourth case cannot forget it.
+    const session = createBuilderSession(
+      trip(['one', ['a']], ['two', ['b']], ['three', ['c']]),
+    )
+
+    for (const key of ['two', 'one', 'three']) {
+      const outcome = session.unwrapField([key])
+      if (!outcome.ok) continue
+      const top = session.document().model.fields
+      const pages = top.filter((field) => field.type === 'page').length
+      expect(pages === 0 || pages === top.length).toBe(true)
+    }
+
+    // And it did get all the way to an unpaged form, rather than refusing early
+    // and satisfying the invariant by doing nothing. The order is the document's
+    // own throughout: `two` merged back into `one`, then `one` into `three`, and
+    // `a b c` is what somebody typed. This line said `b a c` first — the test was
+    // wrong and the code was right, which is worth leaving a note about, because
+    // the merge direction is the one thing here easy to reason about backwards.
+    expect(shape(session)).toEqual(['a', 'b', 'c'])
+  })
+
+  test('is one undoable step, including the merge', () => {
+    const before = trip(['about', ['name']], ['trip', ['when']])
+    const session = createBuilderSession(before)
+
+    session.unwrapField(['trip'])
+    session.undo()
+
+    expect(session.document()).toEqual(before)
+  })
+
+  test('refuses a field that holds nothing, rather than deleting it', () => {
+    // "Unwrap" pressed on a text field is somebody who meant delete. Doing it
+    // anyway would remove an answer on a word that does not say remove.
+    const session = createBuilderSession(trip(['about', ['name']]))
+
+    const outcome = session.unwrapField(['about', 'name'])
+
+    expect(outcome.ok).toBe(false)
+    if (!outcome.ok) expect(outcome.message).toMatch(/nothing inside/i)
+  })
+
+  test('refuses a repeater, because its children are a row and not a list of fields', () => {
+    // A repeater's children describe ONE row, and its answer is a list of those.
+    // Lifting them out would turn every row's answers into one answer each and
+    // lose every row after the first — silently, because the document that came
+    // out would be perfectly valid.
+    const session = createBuilderSession({
+      specVersion: '3',
+      id: 'order',
+      title: 'Order',
+      model: {
+        fields: [
+          {
+            key: 'lines',
+            type: 'repeater',
+            label: 'Lines',
+            fields: [{ key: 'sku', type: 'text', label: 'SKU' }],
+          },
+        ],
+      },
+    } as unknown as FormSchema)
+
+    const outcome = session.unwrapField(['lines'])
+
+    expect(outcome.ok).toBe(false)
+    if (!outcome.ok) expect(outcome.message).toMatch(/row/i)
+  })
+
+  test('takes the rule that skipped the page with it', () => {
+    // Measured before this existed: a `skip` names a PAGE KEY, so a page that
+    // goes leaves a rule aimed at nothing and the validator refuses the whole
+    // edit — "visa is not a page". An author who added conditional routing to a
+    // page could then never take that page away. The rule is not a casualty of
+    // the unwrap; it is only ever ABOUT the page, so it goes with it.
+    const session = createBuilderSession({
+      ...trip(['about', ['needsVisa']], ['visa', ['passport']]),
+      logic: { rules: [{ kind: 'skip', target: 'visa', cel: 'true' }] },
+    } as unknown as FormSchema)
+
+    expect(session.unwrapField(['visa']).ok).toBe(true)
+
+    expect(session.document().logic?.rules ?? []).toEqual([])
+    expect(shape(session)).toEqual([{ about: ['needsVisa', 'passport'] }])
+  })
+
+  test('works on a group, and every placement follows the answers that moved', () => {
+    // A group is not transparent for data, so unwrapping one is a path change:
+    // `address.city` becomes `city`. A layout addresses a field by data path, so
+    // leaving the placement behind would make the document invalid and the
+    // unwrap impossible — for exactly the fields somebody has already arranged.
+    const session = createBuilderSession({
+      specVersion: '3',
+      id: 'order',
+      title: 'Order',
+      model: {
+        fields: [
+          {
+            key: 'address',
+            type: 'group',
+            label: 'Address',
+            fields: [
+              { key: 'city', type: 'text', label: 'City' },
+              { key: 'street', type: 'text', label: 'Street' },
+            ],
+          },
+        ],
+      },
+      layouts: [
+        {
+          name: 'web',
+          nodes: [
+            {
+              kind: 'row',
+              children: [
+                { kind: 'field', path: 'address.city' },
+                { kind: 'field', path: 'address.street' },
+              ],
+            },
+          ],
+        },
+      ],
+    } as unknown as FormSchema)
+
+    expect(session.unwrapField(['address']).ok).toBe(true)
+
+    expect(session.document().model.fields.map((field) => field.key)).toEqual(['city', 'street'])
+    const row = session.document().layouts?.[0]?.nodes[0]
+    const placed =
+      row?.kind === 'row' ? row.children.map((child) => (child as { path: string }).path) : []
+    expect(placed).toEqual(['city', 'street'])
+  })
+
+  test('and a group inside a page leaves its questions on that page', () => {
+    // The same command, and the case that shows why a group needs none of the
+    // page handling: a group carries no step, so its children were already on
+    // this one and stay on it.
+    const session = createBuilderSession({
+      specVersion: '3',
+      id: 'order',
+      title: 'Order',
+      model: {
+        fields: [
+          {
+            key: 'step',
+            type: 'page',
+            label: 'Step',
+            fields: [
+              {
+                key: 'address',
+                type: 'group',
+                label: 'Address',
+                fields: [{ key: 'city', type: 'text', label: 'City' }],
+              },
+            ],
+          },
+        ],
+      },
+    } as unknown as FormSchema)
+
+    expect(session.unwrapField(['step', 'address']).ok).toBe(true)
+
+    expect(shape(session)).toEqual([{ step: ['city'] }])
+  })
+
+  test('refuses a group a rule targets inside, rather than aiming the rule at nothing', () => {
+    // The other half of the path change, and the half that cannot be repaired
+    // here: a rule's condition is CEL text, and rewriting `address.city` inside
+    // it by pattern is how a guard in this repository has been wrong six times.
+    // So the unwrap is refused and the rule named, which is what `renameField`
+    // already does to the same document for the same reason.
+    const session = createBuilderSession(withRuleOn('address.city', 'true'))
+
+    const outcome = session.unwrapField(['address'])
+
+    expect(outcome.ok).toBe(false)
+    if (!outcome.ok) expect(outcome.message).toMatch(/rule/i)
+  })
+
+  test('and refuses a group a rule only READS inside, which is the silent one', () => {
+    // This is the case worth the refusal. A rule targeting `note` whose
+    // condition reads `address.city` still validates after the unwrap — its
+    // target is fine — and then evaluates against a path no field has. The form
+    // goes on working and the condition stops, with nothing to see.
+    const session = createBuilderSession(withRuleOn('note', 'address.city == "Zug"'))
+
+    const outcome = session.unwrapField(['address'])
+
+    expect(outcome.ok).toBe(false)
+    if (!outcome.ok) expect(outcome.message).toMatch(/rule/i)
+  })
+
+  test('but not a group whose name a rule merely starts with, which is another field', () => {
+    // The boundary the refusal is drawn on. `addressbook` begins with the same
+    // seven letters and is not inside this group; refusing on a substring would
+    // make the command unavailable on a document it is perfectly safe for.
+    const session = createBuilderSession(withRuleOn('note', 'addressbook == "x"', 'addressbook'))
+
+    expect(session.unwrapField(['address']).ok).toBe(true)
+  })
+})
+
+/** A group `address` holding `city`, beside a `note` a rule can hang off. */
+function withRuleOn(target: string, cel: string, extraKey?: string): FormSchema {
+  return {
+    specVersion: '3',
+    id: 'order',
+    title: 'Order',
+    model: {
+      fields: [
+        {
+          key: 'address',
+          type: 'group',
+          label: 'Address',
+          fields: [{ key: 'city', type: 'text', label: 'City' }],
+        },
+        { key: 'note', type: 'text', label: 'Note' },
+        ...(extraKey === undefined ? [] : [{ key: extraKey, type: 'text', label: 'Other' }]),
+      ],
+    },
+    logic: { rules: [{ kind: 'visible', target, cel }] },
+  } as unknown as FormSchema
+}
+
+describe('unwrapField and the group that was placed as one thing', () => {
+  /*
+   * A group is placeable in its own right — `modelPathsForLayout` pushes the
+   * group's own path before recursing into it — so a layout may hold
+   * `{kind: 'field', path: 'address'}`, one node standing for the whole group.
+   * That node has to go, because the group does; pruning everything UNDER the
+   * path instead would take the children's placements with it and leave the row
+   * empty, which is the difference between `unplaceOnly` and `unplaceEverywhere`.
+   */
+  const placedAsOne = (): FormSchema =>
+    ({
+      specVersion: '3',
+      id: 'order',
+      title: 'Order',
+      model: {
+        fields: [
+          {
+            key: 'address',
+            type: 'group',
+            label: 'Address',
+            fields: [{ key: 'city', type: 'text', label: 'City' }],
+          },
+          { key: 'note', type: 'text', label: 'Note' },
+        ],
+      },
+      layouts: [
+        {
+          name: 'web',
+          nodes: [
+            { kind: 'field', path: 'address' },
+            { kind: 'field', path: 'note' },
+          ],
+        },
+      ],
+    }) as unknown as FormSchema
+
+  test('takes the placement of the group itself, and leaves the rest of the arrangement alone', () => {
+    const session = createBuilderSession(placedAsOne())
+
+    expect(session.unwrapField(['address']).ok).toBe(true)
+
+    // `address` is gone from the arrangement because the group is gone from the
+    // model. `note` is untouched: unwrapping one container is not a reason to
+    // rearrange what stood beside it.
+    const nodes = session.document().layouts?.[0]?.nodes ?? []
+    expect(nodes.map((node) => (node as { path?: string }).path)).toEqual(['note'])
+  })
+
+  test('and the answer that came out is not left placed under a path no field has', () => {
+    // The same edit read from the other side, and written this way on purpose:
+    // `canPublish()` alone would pass when the command is REFUSED, because the
+    // document it then reports on is the untouched one. Written that way it
+    // passed with the pruning removed — green, asserting nothing. So the outcome
+    // is asserted first, and the placements are derived from the arrangement
+    // rather than named here.
+    const session = createBuilderSession(placedAsOne())
+
+    expect(session.unwrapField(['address']).ok).toBe(true)
+
+    expect(session.canPublish().valid).toBe(true)
+    const placed = (session.document().layouts?.[0]?.nodes ?? []).map(
+      (node) => (node as { path?: string }).path,
+    )
+    expect(placed.filter((path) => path?.startsWith('address'))).toEqual([])
+  })
+})
+
+describe('removeField takes a page rule with it too', () => {
+  test('a page carrying a skip rule can be deleted', () => {
+    // The same measured refusal as the unwrap case, reached through the other
+    // command: conditional page routing shipped in 0.3.0 and made every page it
+    // was used on undeletable from the builder. Found by writing the unwrap.
+    const session = createBuilderSession({
+      specVersion: '3',
+      id: 'trip',
+      title: 'Trip',
+      model: {
+        fields: [
+          {
+            key: 'about',
+            type: 'page',
+            label: 'About',
+            fields: [{ key: 'needsVisa', type: 'checkbox', label: 'Visa?' }],
+          },
+          {
+            key: 'visa',
+            type: 'page',
+            label: 'Visa',
+            fields: [{ key: 'passport', type: 'text', label: 'Passport' }],
+          },
+        ],
+      },
+      logic: { rules: [{ kind: 'skip', target: 'visa', cel: '!needsVisa' }] },
+    } as unknown as FormSchema)
+
+    expect(session.removeField(['visa']).ok).toBe(true)
+
+    expect(session.document().logic?.rules ?? []).toEqual([])
+    expect(session.document().model.fields.map((field) => field.key)).toEqual(['about'])
+  })
+})

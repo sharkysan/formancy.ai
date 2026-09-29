@@ -58,6 +58,11 @@ handling, currency and masking, multi-select and combobox, rich text,
 signature, address, rating, slider, tabs and accordions, and conditional page
 routing.
 
+That list is what was out of **v0.1**, and most of it has shipped since — through spec
+versions 2 and 3, which is what the version line is for. The roadmap says which, and
+which are deliberately not coming; this paragraph is kept because the *reason* for the
+cut is architecture rather than history.
+
 ## Stakeholders
 
 | Stakeholder | What they need from the architecture |

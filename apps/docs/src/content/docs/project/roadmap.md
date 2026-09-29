@@ -166,26 +166,47 @@ left out as v2-era omissions. All three are now shipped.
 Roughly in order, and subject to change. The ordering is argued below rather
 than asserted.
 
-1. **XLIFF**, if somebody asks for it. The exchange format is JSON carrying the source
+1. **A gesture that creates a row.** Every arrangement edit has a keyboard route and
+   most have a drag one, and the one that is missing is dropping a field *between* two
+   others to make a row of them. `wrapLayoutNodes` is the command underneath it and is
+   built; what is missing is the gap target — a drop zone that is not a node — which is
+   the one drag affordance that cannot be described as a smaller version of an existing
+   one.
+2. **XLIFF**, if somebody asks for it. The exchange format is JSON carrying the source
    beside every target, which converts to XLIFF in a script; a real XLIFF implementation
    is a specification, a namespace and versions, and half of one is worse than none.
-2. **Freezing spec version 3**, which is open. `signature` is in it; a many-answer tag
-   picker and an async validator are the two named candidates for the same version, and
-   field types are worth grouping into one bump rather than spending a version each.
-3. **Un-paging a form from the builder.** Adding the first page is built; taking it
-   away is not, because removing a container removes its children with it. "Unwrap
-   this page" is the model tree's equivalent of `unwrapLayoutNode`, which the
-   arrangement tree has and the model tree does not.
+3. **Rewriting a data path inside a rule's condition.** Two commands refuse a document they
+   should accept, for one missing capability: `renameField` refuses to rename a field a rule
+   mentions, and `unwrapField` refuses to unwrap a group a rule reads inside. Both would
+   need the CEL parsed and printed back, because a regular expression over source is the
+   shape of guard this repository has got wrong six times. Refusing names the rule and loses
+   nothing, which is why this is third rather than first.
 
-   **Conditional page routing is built**, and is in spec 3 rather than being the only
-   thing in a version 4: `kind: "skip"` walks past a page while its expression is true,
-   and the fields on it are hidden, which is what keeps a required answer on a page
-   nobody saw from holding the form up
-   ([0087](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0087-a-page-can-be-walked-past.md)).
-   The **builder writes both** of spec 3's rule kinds now: a page's panel offers
-   “Skip this page when” with the condition editor, and a field's offers “Ask the
-   deployment about the answer”, which takes a check's name rather than a condition —
-   because a check has no expression to write.
+### Done since this list was written
+
+**Spec version 3 is frozen**, as of `0.3.0`. It holds `signature`, the `tagpicker` widget,
+the `check` and `skip` rule kinds, and `optionsSource` on a list-valued field — four
+constructs in one version rather than four versions, which is the batching rule written
+down ([0088](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0088-spec-3-freezes-with-four-constructs.md)).
+
+**Conditional page routing is built**, and is in spec 3 rather than being the only thing in
+a version 4: `kind: "skip"` walks past a page while its expression is true, and the fields
+on it are hidden, which is what keeps a required answer on a page nobody saw from holding
+the form up
+([0087](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0087-a-page-can-be-walked-past.md)).
+The **builder writes both** of spec 3's rule kinds: a page's panel offers “Skip this page
+when” with the condition editor, and a field's offers “Ask the deployment about the answer”,
+which takes a check's name rather than a condition — because a check has no expression to
+write.
+
+**Un-paging a form from the builder** is built, and it was not the transposition it looked
+like. `u` on the structure tree replaces a container with its children, the way
+`unwrapLayoutNode` has always done in the arrangement tree — except that a page's questions
+join the neighbouring page instead of the top level, because a top-level field that is not
+inside a page is asked on step one wherever it sits. Only the last page leaves the form
+unpaged
+([0089](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0089-a-page-is-unwrapped-into-its-neighbour.md)).
+It also found that a page carrying a `skip` rule could not be deleted at all.
 
 ## Measured against the competition
 

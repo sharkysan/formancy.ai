@@ -1,5 +1,11 @@
 import type { FieldDef, FormSchema, LayoutNode, LogicRule, SpecVersion, Text } from '@formancy/spec'
-import { CURRENT_SPEC_VERSION, unreferencedPaths, LAYOUT_LEAF_KINDS, layoutChildren} from '@formancy/spec'
+import {
+  CURRENT_SPEC_VERSION,
+  unreferencedPaths,
+  LAYOUT_LEAF_KINDS,
+  layoutChildren,
+  PAGE_TARGETED_RULE_KINDS,
+} from '@formancy/spec'
 import { validateSchema } from '@formancy/spec/validate'
 import type { SchemaError } from '@formancy/spec/validate'
 import {
@@ -131,6 +137,47 @@ export interface BuilderSession {
 
   insertField(location: Location, def: FieldDef): CommandOutcome
   removeField(keyPath: readonly string[]): CommandOutcome
+  /**
+   * Replace a container with its children, in order, where it stood.
+   *
+   * The inverse of `addPage`, and the reason [0081] named it as missing:
+   * `removeField` removes a container WITH everything inside it, so an author
+   * who made a wizard by mistake had to delete every question and type them
+   * again. The arrangement tree has had `unwrapLayoutNode` since layouts
+   * existed; the model tree had no equivalent, and that asymmetry was the gap.
+   *
+   * One undoable step, and three refusals:
+   *
+   * - **A leaf.** "Unwrap" pressed on a text field is somebody who meant
+   *   delete, and doing it anyway removes an answer on a word that does not say
+   *   remove.
+   * - **A repeater.** Its children describe ONE row and its answer is a list of
+   *   those, so lifting them out turns every row into one answer each and loses
+   *   every row after the first — silently, because the document that comes out
+   *   is perfectly valid.
+   * - **A group a rule addresses or reads inside.** A group carries the answer,
+   *   so unwrapping one renames every path beneath it. Layouts follow; a rule's
+   *   condition is CEL text and this cannot rewrite it without pattern-matching
+   *   source, so the rule is named and the edit refused.
+   *
+   * A page needs none of that renaming: it is transparent for data, so nothing
+   * beneath it moves. It needs two other things instead.
+   *
+   * Its `skip` rule goes with it, because a `skip` names a page key and can only
+   * ever have been about this page. Measured: without that the validator refused
+   * the whole edit, which made every page somebody had routed around impossible
+   * to take away.
+   *
+   * And its children do NOT stay at the top level while other pages remain.
+   * Hazard D8: the engine gives a top-level field that is not inside a page to
+   * step ONE wherever it sits, so a question left beside page three is asked on
+   * page one — collected correctly and in the wrong place, which
+   * [0081](../../../docs/decisions/0081-a-page-absorbs-the-form-it-joins.md)
+   * built `addPage` to avoid producing. So the children merge into the
+   * neighbouring page that keeps their order: the page before, or the page after
+   * when this was the first. Only the last page leaves the form unpaged.
+   */
+  unwrapField(keyPath: readonly string[]): CommandOutcome
   moveField(from: readonly string[], to: Location): CommandOutcome
   renameField(keyPath: readonly string[], newKey: string): CommandOutcome
   setFieldProperty(keyPath: readonly string[], property: string, value: unknown): CommandOutcome
@@ -457,6 +504,7 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
         if (found === undefined) return refuse('/model/fields', `No field at "${keyPath.join('.')}".`)
         // Read before the removal: afterwards the path cannot be resolved.
         const dataPath = dataPathOf(draft, keyPath)
+        const removed = found.siblings[found.index]!
         found.siblings.splice(found.index, 1)
         // A layout node placing a field that no longer exists is invalid, so
         // without this the command is simply refused and a form author cannot
@@ -464,6 +512,88 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
         // not a convenience: an arrangement is a view of the model, and it
         // cannot outlive what it is a view of.
         if (dataPath !== undefined) unplaceEverywhere(draft, dataPath)
+        // And the rule that could only ever have been about this page. Measured:
+        // conditional page routing shipped in 0.3.0 and a `skip` names a page
+        // key, so the validator refused the whole removal with "visa is not a
+        // page" — which made every page somebody had routed around undeletable
+        // from the builder. Found by writing `unwrapField`, not by reading this.
+        if (removed.type === 'page') unskipEverywhere(draft, removed.key)
+        return undefined
+      })
+    },
+
+    unwrapField(keyPath) {
+      return attempt((draft) => {
+        const found = locate(draft, keyPath)
+        if (found === undefined) return refuse('/model/fields', `No field at "${keyPath.join('.')}".`)
+        const field = found.siblings[found.index]!
+        const where = keyPath.join('.')
+
+        if (!CONTAINER_TYPES.has(field.type)) {
+          return refuse(
+            '/model/fields',
+            `"${where}" holds one answer. There is nothing inside it to keep, and unwrapping is not another word for deleting.`,
+          )
+        }
+        if (field.type === 'repeater') {
+          return refuse(
+            '/model/fields',
+            `"${where}" is a repeater, and the fields inside it describe one ROW rather than a list of questions. Lifting them out would turn every row's answers into one answer each and lose every row after the first — and nothing would say so, because the form that came out would be perfectly valid. Move the fields out one at a time if that is what you meant.`,
+          )
+        }
+
+        const children = [...(field.fields ?? [])]
+        // Read before the splice: afterwards neither path resolves. A page
+        // contributes no segment, so this is the empty string for one — which is
+        // exactly the signal that nothing beneath it is about to be renamed.
+        const container = dataPathOf(draft, keyPath) ?? ''
+
+        if (container !== '') {
+          const blocking = rulesTouching(draft, container)
+          if (blocking.length > 0) {
+            return refuse(
+              '/logic/rules',
+              `Unwrapping "${where}" renames every answer inside it — "${container}.x" becomes "x" — and ${blocking.join(', ')} still ${blocking.length === 1 ? 'addresses or reads' : 'address or read'} a path inside it. A rule's condition is CEL, which this cannot rewrite without pattern-matching source, so change or delete the rule first.`,
+            )
+          }
+          // The container's OWN placement goes: the group is what disappears, and
+          // a node placing a group that no longer exists is refused — which would
+          // make the command unavailable on exactly the forms somebody arranged.
+          // Its children's placements are repointed rather than pruned.
+          unplaceOnly(draft, container)
+          const parent = container.includes('.')
+            ? container.slice(0, container.lastIndexOf('.'))
+            : ''
+          for (const child of children) {
+            repathEverywhere(
+              draft,
+              `${container}.${child.key}`,
+              parent === '' ? child.key : `${parent}.${child.key}`,
+            )
+          }
+        }
+
+        if (field.type === 'page') {
+          // A page sits only at the top level, so `found.siblings` IS the model's
+          // field list and the neighbours are its pages.
+          const host = neighbouringPage(found.siblings, found.index)
+          if (host === undefined) found.siblings.splice(found.index, 1, ...children)
+          else {
+            const into = found.siblings[host]!
+            // Appended after a preceding page's questions, prepended before a
+            // following one's: both are the position that leaves the document in
+            // the order somebody typed it.
+            into.fields =
+              host < found.index
+                ? [...(into.fields ?? []), ...children]
+                : [...children, ...(into.fields ?? [])]
+            found.siblings.splice(found.index, 1)
+          }
+          unskipEverywhere(draft, field.key)
+          return undefined
+        }
+
+        found.siblings.splice(found.index, 1, ...children)
         return undefined
       })
     },
@@ -1218,25 +1348,98 @@ function underPath(path: string, prefix: string): boolean {
 /** Drop every layout node placing `dataPath`, or anything inside it. */
 function unplaceEverywhere(draft: FormSchema, dataPath: string): void {
   for (const layout of draft.layouts ?? []) {
-    layout.nodes = pruned(layout.nodes, dataPath)
+    layout.nodes = pruned(layout.nodes, (path) => underPath(path, dataPath))
   }
 }
 
-function pruned(nodes: readonly LayoutNode[], dataPath: string): LayoutNode[] {
+/**
+ * Drop every layout node placing `dataPath` ITSELF, leaving what is inside it.
+ *
+ * What unwrapping a group needs, and the reason the two are separate: a group is
+ * placeable in its own right, so the node placing it goes with it — while the
+ * nodes placing its children stay, repointed at where those answers moved to.
+ */
+function unplaceOnly(draft: FormSchema, dataPath: string): void {
+  for (const layout of draft.layouts ?? []) {
+    layout.nodes = pruned(layout.nodes, (path) => path === dataPath)
+  }
+}
+
+function pruned(nodes: readonly LayoutNode[], goes: (path: string) => boolean): LayoutNode[] {
   const kept: LayoutNode[] = []
   for (const node of nodes) {
     if (node.kind === 'field' || node.kind === 'qrcode') {
       // A code goes when the answer it encodes goes, exactly as its placement does:
       // what would remain is a node drawing a picture of nothing, and the validator
       // would then refuse the document the builder had just produced.
-      if (!underPath(node.path, dataPath)) kept.push(node)
+      if (!goes(node.path)) kept.push(node)
       continue
     }
     // The container stays even when it empties. Removing one field should not
     // silently take a row with it and rearrange everything beside it.
-    kept.push({ ...node, children: pruned(layoutChildren(node) as LayoutNode[], dataPath) })
+    kept.push({ ...node, children: pruned(layoutChildren(node) as LayoutNode[], goes) })
   }
   return kept
+}
+
+/**
+ * The page a page's questions should join, or nothing if there is no other.
+ *
+ * The page before, and the page after when there is none before — which is the
+ * choice that keeps the document in its order either way, rather than the choice
+ * between two directions it might look like. Nothing when this is the only page,
+ * and the form then stops being a wizard.
+ */
+function neighbouringPage(fields: readonly FieldDef[], at: number): number | undefined {
+  for (let before = at - 1; before >= 0; before -= 1) {
+    if (fields[before]!.type === 'page') return before
+  }
+  for (let after = at + 1; after < fields.length; after += 1) {
+    if (fields[after]!.type === 'page') return after
+  }
+  return undefined
+}
+
+/**
+ * Drop every rule that could only ever have been about this page.
+ *
+ * `skip` names a page KEY rather than a data path, because a page carries no
+ * answer of its own. So a page that goes leaves a rule aimed at nothing, the
+ * validator refuses the whole edit, and the page becomes undeletable — which is
+ * what it was between 0.3.0 and this.
+ */
+function unskipEverywhere(draft: FormSchema, pageKey: string): void {
+  const rules = draft.logic?.rules
+  if (rules === undefined) return
+  draft.logic = {
+    ...draft.logic,
+    rules: rules.filter(
+      (rule) => !(PAGE_TARGETED_RULE_KINDS.includes(rule.kind as never) && rule.target === pageKey),
+    ),
+  }
+}
+
+/**
+ * Which rules address or read a data path at or under `prefix`, described.
+ *
+ * Two questions, and only the first can be answered structurally. `target` is a
+ * data path, so that is a comparison. A condition is CEL SOURCE, so this is a
+ * search — and a search of source is the shape of guard that has been wrong six
+ * times in this repository, so the boundary is the whole point: `address`
+ * matches in `address.city` and in `has(address)`, and does not match in
+ * `addressbook` or in `mailing.address`. A false positive costs a refusal on a
+ * document that was safe; a false negative breaks a rule in silence. It is drawn
+ * to fail toward the refusal, and that is why this reports rather than rewrites.
+ */
+function rulesTouching(document: FormSchema, prefix: string): string[] {
+  const mentioned = new RegExp(`(?<![\\w.])${prefix.replaceAll('.', '\\.')}(?![\\w])`)
+  const touching: string[] = []
+  for (const [index, rule] of (document.logic?.rules ?? []).entries()) {
+    const reads = rule.cel !== undefined && mentioned.test(rule.cel)
+    if (!underPath(rule.target, prefix) && !reads) continue
+    touching.push(`rule ${String(index + 1)} (${rule.kind} on "${rule.target}")`)
+  }
+  return touching
 }
 
 /** Point every layout node at the new path, including fields inside a group. */

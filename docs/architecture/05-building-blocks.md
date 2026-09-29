@@ -146,6 +146,16 @@ renumbers their neighbours. `layout.ts` keeps the second one's navigation
 apart from the first's for that reason
 ([0050](../decisions/0050-arrange-in-two-places.md)).
 
+The two trees offer the same operations where the operation means the same thing, and
+`unwrapField` beside `unwrapLayoutNode` is the case where it does not quite. Replacing a
+container with its children is one splice in an arrangement, where a node has no meaning
+beyond its position. In the model a container may carry the answer — a group's children are
+addressed beneath it — or carry a step, and a question that leaves a page does not simply
+move in the document: it changes which step it is asked on. So the model's command merges a
+page into its neighbour and refuses a group a rule reads inside
+([0089](../decisions/0089-a-page-is-unwrapped-into-its-neighbour.md)). A command that looks
+like a transposition of a layout one is worth checking twice for exactly this.
+
 `builder-react` is the interface: a structure tree, an arrangement tree, a
 property panel generated from the spec's own JSON Schema, a condition editor
 that compiles to CEL, and three drag surfaces — none of which is the only way
