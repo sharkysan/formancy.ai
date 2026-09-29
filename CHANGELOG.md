@@ -10,6 +10,27 @@ later.
 
 ## Unreleased
 
+**The Angular builder edits properties, for both trees.** `FormancyPropertyPanel` and
+`FormancyLayoutPropertyPanel`, generated from the spec's own JSON Schema exactly as the
+React ones are — hand-write twenty-five panels and they rot within two releases. Plus
+`FormancyOptionsEditor`, because a list of value/label pairs has no generic rendering that
+is any good and the honest generic answer is a textarea full of JSON.
+
+**A branch neither builder could ever render is gone.** Both property panels carried a
+*"this node has nothing to configure"* case, and there is no such node: every layout kind
+the format defines can `span`. `packages/builder-core/src/properties.test.ts` derives that
+now, so a kind added without an editable property fails there — and the branch comes back
+with a case rather than sitting unexercised again.
+
+**And one guard was written where it could not bite.** The property control keeps a draft
+of its text because the document refuses invalid states and a person typing passes through
+them. Written against a field's `label`, the case passed with the draft removed — every
+intermediate state of a label is accepted, so there is nothing to recover from. The case
+lives on a layout node's `span` instead, which is `anyOf: [integer, const "all"]`: typing
+the word offers "a", then "al", then "all", the first two are refused, and a box bound
+straight to the document re-renders empty so the next keystroke lands in an empty box. The
+field-panel case is renamed to what it actually holds.
+
 **The Angular builder arranges as well as structures.** `FormancyLayoutPane` — rows,
 columns and sections, by keyboard: `a` to add a container, `m` to move one, `u` to unwrap
 it keeping what is inside, `w` to put two items side by side, `Delete` to take a field out

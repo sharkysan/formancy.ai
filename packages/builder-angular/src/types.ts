@@ -9,6 +9,7 @@
 export type {
   BuilderSession,
   BuilderView,
+  EditableProperty,
   CommandOutcome,
   LayoutAddress,
   LayoutLocation,
@@ -18,4 +19,4 @@ export type {
   PaletteEntry,
   TreeNode,
 } from '@formancy/builder-core'
-export type { FieldDef, FormSchema, LayoutNode } from '@formancy/spec'
+export type { FieldDef, FieldOption, FormSchema, LayoutNode } from '@formancy/spec'

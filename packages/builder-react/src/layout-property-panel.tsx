@@ -50,31 +50,30 @@ export function LayoutPropertyPanel({
       <h2>{headingFor(node.kind)}</h2>
       <p data-formancy-part="property-panel-type">{node.kind}</p>
 
-      {properties.length === 0 ? (
-        <p data-formancy-part="property-panel-empty">
-          This node has nothing to configure. Where it sits is the arrangement&rsquo;s job.
-        </p>
-      ) : (
-        properties.map((property) => (
-          <PropertyField
-            key={property.name}
-            property={property}
-            value={current[property.name]}
-            // Only a field's own children can be a datagrid's columns, and a layout
-            // node has none — so this panel never renders that editor.
-            childFields={[]}
-            onChange={(value) => {
-              // An empty box means "no value", not "the empty string": writing ''
-              // would put a property into the document the author just cleared.
-              session.setLayoutNodeProperty(
-                address,
-                property.name,
-                value === '' || value === undefined ? undefined : value,
-              )
-            }}
-          />
-        ))
-      )}
+      {/* No "nothing to configure" branch, because there is no such node: every
+          layout kind the format defines can span, so this list is never empty.
+          `properties.test.ts` derives that, so a kind added without a property
+          fails there rather than reaching a branch nobody could ever see — which
+          is what the branch removed here was. */}
+      {properties.map((property) => (
+        <PropertyField
+          key={property.name}
+          property={property}
+          value={current[property.name]}
+          // Only a field's own children can be a datagrid's columns, and a layout
+          // node has none — so this panel never renders that editor.
+          childFields={[]}
+          onChange={(value) => {
+            // An empty box means "no value", not "the empty string": writing ''
+            // would put a property into the document the author just cleared.
+            session.setLayoutNodeProperty(
+              address,
+              property.name,
+              value === '' || value === undefined ? undefined : value,
+            )
+          }}
+        />
+      ))}
     </div>
   )
 }

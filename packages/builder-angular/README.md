@@ -86,10 +86,31 @@ be in one without being in the other, which is why a field no arrangement places
 is listed under its own heading rather than silently left out — it is collected
 and invisible to everyone filling the form in.
 
+## Editing what a field is
+
+`FormancyPropertyPanel` is generated from the spec's own JSON Schema rather than
+written out per field type, so a property the format grows appears with its own
+title and description and nobody has to remember it exists.
+
+```ts
+template: `<formancy-property-panel [session]="session" [keyPath]="chosen()" />`
+```
+
+`FormancyLayoutPropertyPanel` is the same thing for a node in the arrangement,
+and `FormancyOptionsEditor` handles the one shape generation cannot: a select's
+value/label pairs, where `value` is stable identity that orphans answers if it
+changes and `label` is safe to reword.
+
+Both keep a **draft** of the text being typed, because the document refuses
+invalid states and a person passes through them. `span` is `anyOf: [integer,
+const "all"]`, so typing the word offers "a", then "al", then "all" — the first
+two are refused, and a box bound straight to the document would re-render empty
+and swallow the next keystroke.
+
 ## What it does not have yet
 
-The property panel, the condition editor, the translations pane and the drag
-surfaces are React-only for now. `@formancy/builder-core` holds what each of them
+The condition editor, the translations pane and the drag surfaces are React-only
+for now. `@formancy/builder-core` holds what each of them
 needs, so they are components rather than designs.
 
 ## Licence
