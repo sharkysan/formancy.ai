@@ -53,7 +53,7 @@ formancy
 | Cold graph compile | 30 ms | ≈1.7 ms |
 | `@formancy/core` bundle | 18 kB brotli | 17.3 kB, measured 2026-09-29 |
 | `@formancy/spec` bundle | — | 9.7 kB, measured 2026-09-29 |
-| `@formancy/react` bundle | 4 kB brotli | **19.5 kB** for the whole barrel, measured 2026-09-29 |
+| `@formancy/react` bundle | 4 kB brotli | **20.0 kB** for the whole barrel, measured 2026-09-29 |
 | `uqr`, the QR encoder | — | 6.6 kB brotli, **external** rather than bundled, measured 2026-09-27 |
 
 The performance gate is written to fail on a regression greater than 15%,
@@ -95,6 +95,14 @@ option may carry — and the bundler inlined all 40.6 kB of it: the package went
 brotli to **16.4**, then back to 9.6 once the constant was written down and the derivation
 moved into a test, where reading the schema costs nothing. Found by review rather than by a
 gate, which is why the figure is now tracked here with the others.
+
+**The barrel grew 0.5 kB when the controls became separate files**, and that is the cost
+of splitting `form.tsx` — 2,154 lines holding every control — into one file per control.
+Measured both ways: dropping the re-export hop from `form.tsx` changed nothing, so the half
+kilobyte is module boundaries rather than indirection this could remove. It was found by
+`apps/docs/src/bundles.test.ts` on the same commit that made it, which is the guard doing
+exactly what it is for: a refactor that improves how the code reads is still allowed to cost
+something, and the number says how much rather than the change being waved through.
 
 **The QR encoder is listed separately because it is not in the bundle.** Drawing a code
 needs `uqr`, and the build leaves it external — so a consumer with no `qrcode` node pays

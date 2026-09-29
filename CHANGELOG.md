@@ -10,6 +10,25 @@ later.
 
 ## Unreleased
 
+**One React control per file.** `packages/react/src/form.tsx` was 2,154 lines — the largest
+file in the repository — holding the form, the list that walks it, and every control. It is
+466 lines now, beside ten files of 21 to 328, split by the reason to change: a control
+changes because of that control.
+
+What stayed together is the part that is genuinely one subject. A form renders a list, a
+list renders a slot, a slot may render a repeater, and a repeater renders a list —
+**mutual recursion is not a seam**, and splitting it would have bought a cycle rather than
+a boundary. The registry stayed with it because resolving a component is what the slot does.
+
+**It cost 0.5 kB brotli, and a guard said so on the same commit.** `@formancy/react`'s
+barrel went 19.5 → 20.0 kB, caught by `apps/docs/src/bundles.test.ts`, which measures rather
+than trusting §9.3's number. Measured both ways: dropping the re-export hop changed nothing,
+so it is module boundaries and not indirection that could be removed. §9.3 carries the new
+figure with the reason — a refactor that improves how the code reads is allowed to cost
+something, and the number says how much rather than the change being waved through.
+
+243 React tests pass unchanged, which is the point: nothing about the behaviour moved.
+
 **A standard for the code itself, and a gate under it.** `CLAUDE.md` gains *the code reads
 as though a senior wrote both halves*: idiomatic for the framework it is written in rather
 than a translation of another's habits, a pattern chosen for a force the comment names, and
