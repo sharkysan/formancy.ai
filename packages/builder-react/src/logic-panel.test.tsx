@@ -389,3 +389,66 @@ describe('the two rule kinds spec 3 added', () => {
     expect(session.canPublish().valid).toBe(true)
   })
 })
+
+describe('the rule kind no builder could write', () => {
+  /*
+   * `computed` is in the format, both renderers honour it, and the panel's kind
+   * table simply did not list it — so a calculated field was a thing a developer
+   * could hand-write and an author could not make. The same shape `check` and
+   * `skip` shipped in, and found the same way: by deriving the list of kinds
+   * from the spec rather than reading the table.
+   *
+   * It is written as CEL rather than through the comparison editor, and that is
+   * not a shortcut. A calculation produces a VALUE; the comparison editor
+   * composes booleans. Offering it there would be offering a surface that cannot
+   * express what the rule is for.
+   */
+  test('a calculation is offered, and asks for an expression', async () => {
+    const user = userEvent.setup()
+    const session = mount()
+
+    await user.click(screen.getByRole('button', { name: /add a rule/i }))
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: /what the rule does/i }),
+      'computed',
+    )
+    await user.type(screen.getByRole('textbox', { name: /the calculation/i }), 'qty * unitPrice')
+    await user.click(screen.getByRole('button', { name: /^add rule$/i }))
+
+    const rule = rulesOf(session)[0]
+    expect(rule?.kind).toBe('computed')
+    expect(rule?.cel).toBe('qty * unitPrice')
+    // No editor metadata: the comparison editor did not write this and cannot
+    // regenerate it, and claiming otherwise would be a lie the next opening of
+    // the panel tells.
+    expect(rule?.editor).toBeUndefined()
+  })
+
+  test('and the comparison editor is not shown for it', async () => {
+    const user = userEvent.setup()
+    mount()
+
+    await user.click(screen.getByRole('button', { name: /add a rule/i }))
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: /what the rule does/i }),
+      'computed',
+    )
+
+    expect(screen.queryByRole('button', { name: /add a comparison/i })).toBeNull()
+  })
+
+  test('and an empty calculation cannot be added, because it calculates nothing', async () => {
+    const user = userEvent.setup()
+    mount()
+
+    await user.click(screen.getByRole('button', { name: /add a rule/i }))
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: /what the rule does/i }),
+      'computed',
+    )
+
+    expect(
+      (screen.getByRole('button', { name: /^add rule$/i }) as HTMLButtonElement).disabled,
+    ).toBe(true)
+  })
+})

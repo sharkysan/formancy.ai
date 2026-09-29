@@ -10,6 +10,28 @@ later.
 
 ## Unreleased
 
+**A calculated field is something an author can make.** `computed` has been in the format
+since version 1, both renderers honour it, and **neither builder's kind table listed it** —
+so a calculation was a thing a developer could hand-write and an author could not reach.
+The same documented-but-unreachable shape `check` and `skip` shipped in, and found the same
+way: by deriving the list of kinds from the spec rather than reading the table.
+
+It is written as CEL rather than through the comparison editor, and that is not a shortcut.
+A calculation produces a **value**; the comparison editor composes booleans. Offering it
+there would be offering a surface that cannot express what the rule is for. So a kind now
+says what it is written WITH — a condition, a check's name, or an expression — where it used
+to say only whether it carried a condition.
+
+**And the Angular builder writes rules.** `FormancyLogicPanel`, over the same table: which
+kinds exist, what each is called, what it is written with, how a rule is addressed and what
+it compiles to are all `@formancy/builder-core`'s now. Two copies of that table drift the
+first time the format grows a kind — which it had already done, twice.
+
+That move also made four things testable without rendering anything: the value narrowing
+that turns a typed `"5"` into `5` before CEL sees it, the data-path-versus-page-key rule for
+addressing, what a draft needs before it can be added, and the table itself against
+`RULE_KINDS`.
+
 **One React control per file.** `packages/react/src/form.tsx` was 2,154 lines — the largest
 file in the repository — holding the form, the list that walks it, and every control. It is
 466 lines now, beside ten files of 21 to 328, split by the reason to change: a control
