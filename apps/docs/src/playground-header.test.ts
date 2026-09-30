@@ -26,29 +26,40 @@ const repo = join(here, '..', '..', '..')
 
 const css = (): string => readFileSync(join(repo, 'apps', 'playground', 'src', 'app.css'), 'utf8')
 
-/** Every `grid-template-columns` declared for `.controls`, in source order. */
-function templatesForControls(): string[] {
+/** Every declaration block written for `.controls`, comments stripped. */
+function rulesForControls(): string[] {
   const text = css().replace(/\/\*[\s\S]*?\*\//g, '')
-  return [...text.matchAll(/\.controls\s*\{([^}]*)\}/g)]
-    .flatMap((rule) => [...(rule[1] ?? '').matchAll(/grid-template-columns\s*:([^;]*)/g)])
-    .map((match) => (match[1] ?? '').trim())
+  return [...text.matchAll(/\.controls\s*\{([^}]*)\}/g)].map((rule) => (rule[1] ?? '').trim())
 }
 
 describe('the playground header', () => {
   test('is reading the stylesheet at all', () => {
-    // A guard on the guard: no rule found would make the assertion below
-    // vacuously true, and it is an assertion about absence.
-    expect(templatesForControls().length).toBeGreaterThan(0)
+    // A guard on the guard: no rule found would make the assertions below
+    // vacuously true, and both are assertions about absence.
+    expect(rulesForControls().length).toBeGreaterThan(0)
   })
 
   test('lays its controls out by what fits, not by how many there are', () => {
-    // `repeat(2, …)` is the defect. `auto-fit` is the same rule written so that
-    // a fourth control needs no edit here — and a fourth is likely: this row has
-    // grown once already.
-    for (const template of templatesForControls()) {
-      expect(template, template).not.toMatch(/repeat\(\s*\d+/)
-      expect(template, template).toMatch(/auto-fit|auto-fill/)
+    // `repeat(2, …)` was the defect, and `auto-fit` was the next answer to it —
+    // which made three columns at phone width, so the two controls sharing the
+    // second line got a third of it each and "English" arrived as "E". A row
+    // that wraps needs no count at all, which is why the assertion is against
+    // the count rather than for a particular mechanism.
+    for (const rule of rulesForControls()) {
+      expect(rule, rule).not.toMatch(/repeat\(\s*\d+/)
     }
+  })
+
+  test('and the header itself may shrink, or the page scrolls sideways', () => {
+    // The header is a GRID item, where `min-width` defaults to `auto` — its
+    // content — exactly as a flex item does. Measured at 320×844 without this:
+    // the bar held 348px inside a 305px viewport and the page scrolled
+    // sideways, which is a 1.4.10 reflow failure.
+    const text = css().replace(/\/\*[\s\S]*?\*\//g, '')
+    const bar = /\.bar\s*\{([^}]*)\}/.exec(text)?.[1] ?? ''
+
+    expect(bar.length).toBeGreaterThan(0)
+    expect(bar).toMatch(/min-width\s*:\s*0/)
   })
 
   test('and the app has more controls than the old template allowed for', () => {

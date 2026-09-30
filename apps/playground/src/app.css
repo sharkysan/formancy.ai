@@ -128,6 +128,11 @@ body {
      the whole document — which is how a three-pane tool ends up 918 pixels
      wide on a phone and scrolls sideways before anything else has a say. */
   flex-wrap: wrap;
+  /* And the header is itself a GRID item, where `min-width` defaults to `auto`
+     the same way. Measured at 320x844: the bar held 348px inside a 305px
+     viewport and the page scrolled sideways — a 1.4.10 reflow failure, from the
+     same default one level up than the comment above it describes. */
+  min-width: 0;
   gap: 0.5rem 0.875rem;
   padding: 0.75rem 1rem;
 }
@@ -647,27 +652,61 @@ body {
    * see. A count in a template is a count that goes stale the way a count in
    * prose does.
    */
+  /*
+   * A row that wraps, with the demo chooser given a line of its own.
+   *
+   * No column count anywhere, and not a grid either — a grid needs to be told
+   * how many columns there are, and every answer to that is a number that goes
+   * stale. `repeat(2, …)` was one; `auto-fit` was the next, and it made three
+   * columns at phone width so the two controls sharing the second line got a
+   * third of it each and "English" arrived as "E".
+   *
+   * A basis of 100% is what puts the chooser alone on its line, and the two
+   * below it then share whatever is left, however many of them there are.
+   */
   .controls {
     order: 1;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(5rem, 1fr));
+    display: flex;
+    flex-wrap: wrap;
     width: 100%;
     margin-inline-start: 0;
   }
 
-  /* The label above rather than beside it, which is what makes a narrow column
-     usable: side by side, a third of a phone's width leaves the select about
-     sixty pixels and every option reads as an ellipsis. */
+  /*
+   * The demo chooser takes a line of its own.
+   *
+   * It is not the same kind of control as the two beside it: language and
+   * appearance change how the form LOOKS, and this changes which document is
+   * open — the same thing the schema editor and the builder do. Sharing a row
+   * said they were three settings of one kind, and cost the chooser its label:
+   * "Everything — one form, every field type" does not survive a third of a
+   * phone.
+   */
+  .controls > .switcher:first-child {
+    flex-basis: 100%;
+  }
+
   .switcher {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.25rem;
+    flex: 1 1 8rem;
     min-width: 0;
   }
 
+  /* The select takes what the label leaves, rather than both asking for the
+     whole cell: `width: 100%` on a flex item beside a label shrinks below its
+     own content. */
   .switcher select {
+    flex: 1;
     min-width: 0;
-    width: 100%;
+    width: auto;
+  }
+
+  /* The select takes what the label leaves, rather than both of them asking for
+     the whole cell: `width: 100%` on a flex item beside a label shrinks below
+     its own content, and "English" arrived as "E". */
+  .switcher select {
+    flex: 1;
+    min-width: 0;
+    width: auto;
   }
 
   .show {
