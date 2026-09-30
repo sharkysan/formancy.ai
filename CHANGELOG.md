@@ -10,6 +10,26 @@ later.
 
 ## Unreleased
 
+**The Angular suites stopped being timed against a budget nobody chose for them.** Rendering
+a component tree in jsdom is real work: the first `render(FormancyForm, …)` in a file
+compiles the form and everything the registry pulls in — seventeen field components — and
+costs **372ms** locally, against 4–30ms for a test that renders a small host. On a shared CI
+runner under parallel load that same case was observed at **5,396ms**, a factor of about
+fourteen, and it turned `main` red the day a fifteenth package joined the parallel build.
+
+Two changes, and the first is the one that matters. The compile happens **once, before any
+test is timed**, so it is not charged to whichever case happens to be written first: 372ms
+to 196ms for that test, with the rest being the render these cases are actually about.
+Charging a one-off cost to the first test is how a suite acquires a case that looks slow and
+is not.
+
+And the two Angular packages moved to `testTimeout: 20_000`, which is where `apps/playground`
+and `apps/site` — the other suites that render real trees — have been all along. A timeout
+is here to catch a **hang**; speed is policed by the performance gate, not by this number.
+
+*This flake was seen once before and re-run past rather than fixed, which is how it reached
+`main`.*
+
 **The demo chooser takes a line of its own.** It is not the same kind of control as the two
 beside it: language and appearance change how the form *looks*, and this changes which
 document is open — the same thing the schema editor and the builder do. Sharing a row said
