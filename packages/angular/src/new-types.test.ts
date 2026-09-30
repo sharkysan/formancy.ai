@@ -2,7 +2,7 @@ import { provideZonelessChangeDetection } from '@angular/core'
 import { computeAccessibleName } from 'dom-accessibility-api'
 import { TestBed } from '@angular/core/testing'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/angular'
-import { afterEach, describe, expect, test } from 'vitest'
+import { afterEach, beforeAll, describe, expect, test } from 'vitest'
 import { createFormEngine } from '@formancy/core'
 import type { FormEngine } from '@formancy/core'
 import type { FormSchema } from '@formancy/spec'
@@ -47,6 +47,24 @@ const engineFor = (schema: FormSchema): FormEngine =>
     schema,
     capabilities: { now: () => 0, today: () => '2026-09-22', random: () => 0.5 },
   })
+
+/*
+ * Compile the form once, before any test is timed.
+ *
+ * The first `render(FormancyForm, …)` in a file compiles the component and
+ * everything the registry pulls in, and the test that happened to be first paid
+ * for it: 372ms against 39ms for the one after it. Charging a one-off cost to
+ * whichever case is written first is how a suite acquires a test that looks slow
+ * and is not, and it is the case CI timed out on.
+ *
+ * Measured: 372ms to 196ms for that test. The rest is the render itself, which
+ * is work these cases are actually about.
+ */
+beforeAll(async () => {
+  await renderForm(engineFor(base({})))
+  TestBed.resetTestingModule()
+  document.body.innerHTML = ''
+})
 
 describe('selectboxes', () => {
   const schema = base({
