@@ -10,6 +10,29 @@ later.
 
 ## Unreleased
 
+**The demo chooser takes a line of its own.** It is not the same kind of control as the two
+beside it: language and appearance change how the form *looks*, and this changes which
+document is open — the same thing the schema editor and the builder do. Sharing a row said
+they were three settings of one kind, and cost the chooser its label, since *"Everything —
+one form, every field type"* does not survive a third of a phone.
+
+**And the controls stopped being a grid at all.** A grid has to be told how many columns
+there are, and every answer to that is a number that goes stale: `repeat(2, …)` was the
+first, and `auto-fit` was the correction — which then made *three* columns at phone width,
+so the two controls sharing the second line got a third of it each and "English" arrived as
+"E". A row that wraps needs no count: a basis of 100% puts the chooser alone on its line and
+whatever follows shares what is left, however many of them there are.
+
+**The header could not shrink, and that was a reflow failure.** Measured at 320×844 while
+fixing the above: the bar held 348px inside a 305px viewport and the page scrolled sideways.
+The header is a **grid** item, where `min-width` defaults to `auto` — its content — exactly
+as a flex item does, which is the trap its own comment already described one level down.
+1.4.10 asks for no horizontal scroll at 320px and there is none now.
+
+At 390×844 the header is 133px with the chooser's full label readable; at 1280 nothing moved.
+`apps/docs/src/playground-header.test.ts` fails on a fixed column count and on the header
+losing its `min-width`, both observed.
+
 **The playground's header stopped counting its own controls.** Adding the demo picker made
 it a third switcher in a grid written for exactly two — `repeat(2, minmax(0, 1fr))`, with a
 comment above it saying *"the two switchers side by side"*. The third landed alone on a row
