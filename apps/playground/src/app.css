@@ -630,21 +630,38 @@ body {
     display: none;
   }
 
-  /* Two rows: the way back, the title and the way out on the first; the two
-     switchers side by side on the second. */
+  /* Two rows: the way back, the title and the way out on the first; the
+     switchers below them. */
   .repo {
     margin-inline-start: auto;
   }
 
+  /*
+   * As many columns as fit, rather than a number.
+   *
+   * This said `repeat(2, ...)` and the comment above it said "the two
+   * switchers", both written when there were exactly two. A third arrived and
+   * the grid put it alone on a row of its own with an empty cell beside it —
+   * measured at 390x844, the header went from one row of controls to two and
+   * from 95px to 133px, 16% of the screen, before anything a visitor came to
+   * see. A count in a template is a count that goes stale the way a count in
+   * prose does.
+   */
   .controls {
     order: 1;
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(5rem, 1fr));
     width: 100%;
     margin-inline-start: 0;
   }
 
+  /* The label above rather than beside it, which is what makes a narrow column
+     usable: side by side, a third of a phone's width leaves the select about
+     sixty pixels and every option reads as an ellipsis. */
   .switcher {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.25rem;
     min-width: 0;
   }
 

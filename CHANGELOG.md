@@ -10,6 +10,27 @@ later.
 
 ## Unreleased
 
+**The playground's header stopped counting its own controls.** Adding the demo picker made
+it a third switcher in a grid written for exactly two — `repeat(2, minmax(0, 1fr))`, with a
+comment above it saying *"the two switchers side by side"*. The third landed alone on a row
+of its own with an empty cell beside it.
+
+Measured in a browser at 390×844: the header went from one row of controls to two, **95px to
+133px**, 16% of the screen before anything a visitor came to see. At 360px — a very common
+phone — it was 175px, and at 320px, 213px.
+
+`repeat(auto-fit, minmax(5rem, 1fr))` instead, with the label stacked above its select below
+64rem so a narrow column is usable rather than sixty pixels of ellipsis. All three fit on one
+row from **320px up**, and the floor costs nothing wider because `1fr` still expands them.
+Desktop is untouched: above 64rem the controls are still a flex row with the label beside the
+select.
+
+That is [the rule about counts](CLAUDE.md) in a stylesheet rather than in prose — a number in
+a template goes stale exactly the way a number in a sentence does, and neither announces it.
+`apps/docs/src/playground-header.test.ts` fails when a fixed repeat count comes back, and
+derives from the app that there are more than two controls, so the rule stays load-bearing
+rather than tidy.
+
 **The Angular builder edits a datagrid's columns.** `FormancyColumnsEditor`, the second
 shape generation cannot produce — the schema says "array of objects" and the honest generic
 answer is a textarea full of JSON. A column **names** a child that exists, so the answer is
