@@ -177,7 +177,23 @@ than asserted.
    to add. So this is a question about whether a form may be authored in pieces before it is
    a piece of work, which is why it is not first.
 
+3. **An application that mounts the Angular packages.** `@formancy/angular` and
+   `@formancy/builder-angular` are complete and published, and nothing runs them outside a
+   jsdom suite — the playground and the admin are both React. The v0.1 goal was one schema
+   rendering in React *and* Angular in one screenshot, and that screenshot does not exist, so
+   Angular parity is currently a claim backed by tests rather than by anything a visitor can
+   open.
+
 ### Done since this list was written
+
+**The Angular builder reached parity.** Dragging on the rendered form was the last thing the
+React builder had that it did not. Where a drop lands moved into `@formancy/builder-core`
+rather than being copied, so the two cannot disagree about which part of a field is a side
+zone; what is per-framework is reading a pointer and drawing a line, which is about 190 lines
+either way — a binding, as
+[0091](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0091-a-second-builder-is-a-binding.md)
+said, and not a free one
+([0094](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0094-the-second-builder-reaches-parity.md)).
 
 **Rules follow the paths they read.** `renameField` and `unwrapField` now rewrite a rule's
 target, its condition and the metadata the logic panel reopens from, by splicing the source

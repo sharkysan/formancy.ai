@@ -153,9 +153,10 @@ of the validator's rules, which would drift from it.
 
 It holds what a builder's interface needs and a framework does not decide: the
 compiler that turns a structured condition into CEL, where a drop lands in each
-of the two trees, the palette, the editable property list read out of the spec's
-own JSON Schema, and — in `repath.ts` — what the rest of the document does when a
-path moves or goes. That last one is why this package depends on
+of the two trees **and on the rendered form** (`arrange.ts`, which takes a
+rectangle as plain numbers because this package compiles with no DOM), the
+palette, the editable property list read out of the spec's own JSON Schema, and —
+in `repath.ts` — what the rest of the document does when a path moves or goes. That last one is why this package depends on
 `@formancy/expressions` at all: a field lives in the model, in the layouts that
 arrange it, in the rules that read and target it, and in the metadata the logic
 panel reopens from, and all four have to follow in the same edit. Three of them

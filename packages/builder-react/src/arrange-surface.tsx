@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactElement, ReactNode } from 'react'
-import type { BuilderSession, LayoutLocation } from '@formancy/builder-core'
-import { layoutDropLocation } from '@formancy/builder-core'
+import type { ArrangeDrop, BuilderSession } from '@formancy/builder-core'
+import { arrangeDrop } from '@formancy/builder-core'
 import { describeLayoutTarget, flattenLayout } from '@formancy/builder-core'
 import { useBuilder } from './use-builder.js'
 
@@ -42,19 +42,12 @@ const FIELD_ATTR = 'data-formancy-field-path'
 const SELECTOR = `[${LAYOUT_ATTR}],[${FIELD_ATTR}]`
 
 /**
- * What a drop would do: move the dragged node, or put it in a new row with what
- * it was dropped on.
+ * A drop, plus the element to draw the indicator on.
+ *
+ * Where the drop LANDS is `arrangeDrop` in `@formancy/builder-core`, shared with
+ * the Angular surface; what stays here is reading a pointer and marking the DOM.
  */
-type DropTarget =
-  | {
-      kind: 'move'
-      location: LayoutLocation
-      element: HTMLElement
-      edge: 'before' | 'after'
-      /** Which way the siblings run, so the indicator is drawn on the side the drop lands. */
-      axis: 'block' | 'inline'
-    }
-  | { kind: 'wrap'; side: 'start' | 'end'; element: HTMLElement; over: readonly number[] }
+type DropTarget = ArrangeDrop & { element: HTMLElement }
 
 /**
  * Whether an element already sits side by side with its siblings: a child of a
@@ -71,15 +64,6 @@ function sitsSideBySide(element: HTMLElement): boolean {
   if (parent?.dataset['formancyPart'] === 'layout-cell') parent = parent.parentElement
   const part = parent?.dataset['formancyPart']
   return part === 'layout-row' || part === 'layout-table'
-}
-
-/** Whether `outer` is an ancestor of `inner`. */
-function enclosesPath(outer: readonly number[], inner: readonly number[]): boolean {
-  return outer.length < inner.length && outer.every((step, at) => inner[at] === step)
-}
-
-function samePath(a: readonly number[], b: readonly number[]): boolean {
-  return a.length === b.length && a.every((step, at) => b[at] === step)
 }
 
 export function FormancyArrangeSurface({
@@ -160,16 +144,6 @@ export function FormancyArrangeSurface({
     return <div ref={surface}>{children}</div>
   }
 
-  /**
-   * How wide an element has to be before its sides are worth aiming at.
-   *
-   * A side zone on a narrow control is one nobody can hit, and the whole element
-   * would be side zones. Below this the sides are not offered at all and the drop
-   * stays a move, which is also what keeps a zero-sized element — every element,
-   * under jsdom — from being treated as all edge.
-   */
-  const SIDE_ZONE_MINIMUM = 80
-
   const targetFor = (event: React.DragEvent<HTMLDivElement>): DropTarget | undefined => {
     if (dragging === null) return undefined
     const element = (event.target as Element | null)?.closest<HTMLElement>(SELECTOR) ?? null
@@ -178,50 +152,16 @@ export function FormancyArrangeSurface({
     const over = pathOfElement(element)
     if (over === undefined) return undefined
 
-    const box = element.getBoundingClientRect()
-    const insideRow = sitsSideBySide(element)
-
-    // ── Making a row, by aiming at a side ────────────────────────────────────
-    //
-    // Only for something NOT already side by side with its siblings, in a row
-    // or a table: there, left and right already mean "before" and "after", and
-    // giving them a second meaning would make the commonest drag ambiguous.
-    if (!insideRow && box.width >= SIDE_ZONE_MINIMUM) {
-      // A quarter of the element, capped: a very wide field should not have a
-      // 300px side zone swallowing the middle.
-      const zone = Math.min(box.width / 4, 64)
-      const side =
-        event.clientX < box.left + zone
-          ? 'start'
-          : event.clientX > box.right - zone
-            ? 'end'
-            : undefined
-
-      if (side !== undefined) {
-        // Refused here rather than by the session, so the indicator never
-        // offers a drop that would snap back with no explanation.
-        if (samePath(dragging, over)) return undefined
-        if (enclosesPath(dragging, over) || enclosesPath(over, dragging)) return undefined
-        return { kind: 'wrap', side, element, over }
-      }
-    }
-
-    // ── Moving, exactly as before ───────────────────────────────────────────
-    //
-    // Horizontal for a field already inside a row: the two halves a person aims
-    // at there are left and right, not top and bottom.
-    const edge = insideRow
-      ? event.clientX < box.left + box.width / 2
-        ? 'before'
-        : 'after'
-      : event.clientY < box.top + box.height / 2
-        ? 'before'
-        : 'after'
-
-    const location = layoutDropLocation(view.document, layout, dragging, over, edge)
-    return location === undefined
-      ? undefined
-      : { kind: 'move', location, element, edge, axis: insideRow ? 'inline' : 'block' }
+    const drop = arrangeDrop({
+      document: view.document,
+      layout,
+      dragged: dragging,
+      over,
+      box: element.getBoundingClientRect(),
+      pointer: { x: event.clientX, y: event.clientY },
+      sideBySide: sitsSideBySide(element),
+    })
+    return drop === undefined ? undefined : { ...drop, element }
   }
 
   return (

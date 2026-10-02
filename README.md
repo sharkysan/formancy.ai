@@ -186,9 +186,10 @@ The builder ships as two packages over one core — `@formancy/builder-react`
 and `@formancy/builder-angular`, both published. What decides anything is in
 `@formancy/builder-core` and shared, so the two cannot offer different
 destinations for the same document
-([0091](./docs/decisions/0091-a-second-builder-is-a-binding.md)). The Angular
-package carries the structure tree today; the arrangement tree, the property
-panel, the condition editor and the translations pane are React-only.
+([0091](./docs/decisions/0091-a-second-builder-is-a-binding.md)). Both carry
+both trees, the property panel, the condition editor, the translations pane and
+the drop surface over the rendered form. The prompt pane — describing a form in
+words — is React-only.
 
 ## How it fits your stack
 
@@ -221,9 +222,8 @@ packages/builder-core   headless schema editing: commands, undo/redo, valid
 packages/builder-react  the builder UI for React: structure tree, arrangement
                         tree, field palette, property panel, logic —
                         keyboard-first, with drag as a second route
-packages/builder-angular  the same structure tree for Angular: zoneless, one
-                        signal per session, the same commands and the same
-                        destinations
+packages/builder-angular  the same builder for Angular: zoneless, one signal per
+                        session, the same commands and the same destinations
 packages/server-core    backend use-cases against storage ports
 packages/server         Fastify + Postgres: publish, resolve, replayed submissions,
                         drafts with lazy migration, CSV export
@@ -238,7 +238,7 @@ apps/docs               the documentation site (Astro Starlight)
 **The builder edits two documents over one model.** `builder-core` holds the
 document, the undo stack, the rules about which edits are legal, and what any
 builder's interface reads off a session. `builder-react` is the interface over
-it, in two trees — and `builder-angular` carries the first of them:
+it, in two trees, and `builder-angular` carries the same two:
 
 - **Structure** — what the form collects. Fields, groups, pages and repeaters,
   with a palette, a property panel generated from the spec's own JSON Schema,
