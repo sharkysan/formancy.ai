@@ -193,3 +193,4 @@ listed under the sections they belong to above.
 | [0090](0090-a-check-defaults-to-the-server.md) | A check defaults to the server, and the page says which default it gets | accepted |
 | [0091](0091-a-second-builder-is-a-binding.md) | A second builder is a binding, not a second builder | accepted |
 | [0092](0092-publishing-declares-what-it-opened.md) | Publishing declares what it opened, and declaring is optional | accepted |
+| [0093](0093-a-rule-follows-the-path-it-reads.md) | A rule follows the path it reads, by splicing spans the parser reports | accepted |

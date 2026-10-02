@@ -169,14 +169,25 @@ than asserted.
 1. **XLIFF**, if somebody asks for it. The exchange format is JSON carrying the source
    beside every target, which converts to XLIFF in a script; a real XLIFF implementation
    is a specification, a namespace and versions, and half of one is worse than none.
-2. **Rewriting a data path inside a rule's condition.** Two commands refuse a document they
-   should accept, for one missing capability: `renameField` refuses to rename a field a rule
-   mentions, and `unwrapField` refuses to unwrap a group a rule reads inside. Both would
-   need the CEL parsed and printed back, because a regular expression over source is the
-   shape of guard this repository has got wrong six times. Refusing names the rule and loses
-   nothing, which is why this is third rather than first.
+2. **Detecting a rule that reads a path no field has**, in a document the builder did not
+   write. The builder now keeps rules and fields in step, but a form composed by hand or by
+   a script can still publish a condition reading a path nothing provides, and
+   `validateSchema` does not refuse it — the `dyn` typing that lets an unfinished form be
+   edited is what makes that indistinguishable from a rule about a field somebody is about
+   to add. So this is a question about whether a form may be authored in pieces before it is
+   a piece of work, which is why it is not first.
 
 ### Done since this list was written
+
+**Rules follow the paths they read.** `renameField` and `unwrapField` now rewrite a rule's
+target, its condition and the metadata the logic panel reopens from, by splicing the source
+spans the CEL parser reports — so a field whose name is a prefix of another's is untouched,
+and a field name inside a string literal stays the data it is. This list used to say both
+commands *refused*. One did; `renameField` did not, and that was the defect: it succeeded
+and left the condition reading a path no field had, which still compiles, still publishes,
+and evaluates as null for the life of an immutable version. A conditionally visible field
+was simply never shown again, with nothing to say so
+([0093](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0093-a-rule-follows-the-path-it-reads.md)).
 
 **Collision control on form editing** is built. A publish may declare the version it
 started from, and one overtaken by somebody else is refused with the same **409

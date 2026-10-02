@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@formancy/core": "workspace:*",
+    "@formancy/expressions": "workspace:*",
     "@formancy/spec": "workspace:*"
   },
   "devDependencies": {

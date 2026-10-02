@@ -130,7 +130,23 @@ not expressible, in exchange for cycles being impossible.
 **Visibility rules fail open.** The cost of
 [0022](../decisions/0022-fail-open-fail-closed.md). A form whose visibility
 rules are quietly failing looks as though it works and shows more than it
-should. This is the residual risk most worth a consumer's attention.
+should. This is the residual risk most worth a consumer's attention — and the
+condition most likely to be failing is one somebody wrote defensively, because
+`address.country != null && address.country == "CH"` errors on an empty form for
+the same reason the unguarded version does: it has to read the path to compare
+it. `has(...)` is the only guard that answers, which `concepts/logic.md` now
+states as a table and a test evaluates row by row.
+
+**A rule may name a data path no field provides, in a document the builder did
+not write.** The cost of the `dyn` typing that makes an unfinished form editable
+([0054](../decisions/0054-expressions-that-never-work.md) is the related
+decision): a condition reading a field somebody is *about* to add is
+indistinguishable from one reading a field somebody has just removed, so
+`validateSchema` refuses neither. Inside the builder, rules follow a path when it
+moves ([0093](../decisions/0093-a-rule-follows-the-path-it-reads.md)); outside
+it, a generated or hand-edited document can be published with a condition that
+evaluates to null forever. Held as a roadmap item and as a test asserting the gap
+is still there, so closing it has to be deliberate.
 
 **TypeScript is pinned below `latest`.** The cost of supporting Angular as a
 co-first target ([0039](../decisions/0039-pin-typescript.md)). It will look
