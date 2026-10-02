@@ -166,18 +166,10 @@ left out as v2-era omissions. All three are now shipped.
 Roughly in order, and subject to change. The ordering is argued below rather
 than asserted.
 
-1. **Collision control on form editing.** Two people editing one form, which is
-   form.io's term for it. The mechanism is already here and pointed the other way: a
-   submission declares the version it was rendered against and a stale one is refused
-   with **409 `FORM_VERSION_CHANGED`**, carrying the current schema so the client can
-   re-render rather than guess. Publishing declares nothing — `publishForm` takes a path
-   and a schema — so the second of two editors overwrites the first with no sign that
-   anybody else had the form open. The same 409, on the publish route, with the same
-   body.
-2. **XLIFF**, if somebody asks for it. The exchange format is JSON carrying the source
+1. **XLIFF**, if somebody asks for it. The exchange format is JSON carrying the source
    beside every target, which converts to XLIFF in a script; a real XLIFF implementation
    is a specification, a namespace and versions, and half of one is worse than none.
-3. **Rewriting a data path inside a rule's condition.** Two commands refuse a document they
+2. **Rewriting a data path inside a rule's condition.** Two commands refuse a document they
    should accept, for one missing capability: `renameField` refuses to rename a field a rule
    mentions, and `unwrapField` refuses to unwrap a group a rule reads inside. Both would
    need the CEL parsed and printed back, because a regular expression over source is the
@@ -185,6 +177,15 @@ than asserted.
    nothing, which is why this is third rather than first.
 
 ### Done since this list was written
+
+**Collision control on form editing** is built. A publish may declare the version it
+started from, and one overtaken by somebody else is refused with the same **409
+`FORM_VERSION_CHANGED`** a stale submission gets, carrying the current schema so an editor
+can show what changed rather than fetching and diffing to find out why. Declaring is
+optional on purpose — a script, the CLI and an agent compose a document rather than opening
+one, and have nothing to declare; the builder opened a version, so the builder declares.
+Nothing is overwritten either way, because a published version is immutable; what was
+missing was that anybody noticed.
 
 **Spec version 3 is frozen**, as of `0.3.0`. It holds `signature`, the `tagpicker` widget,
 the `check` and `skip` rule kinds, and `optionsSource` on a list-valued field — four
@@ -257,17 +258,19 @@ guessed one could read and overwrite a stranger's part-filled form
 autocomplete, tag picker. Each is small on its own and collectively they are a
 priced tier elsewhere. See the table above for what each actually costs.
 
-**Translated form content.** Built, for labels: the format always allowed
-`label: { $t: "..." }` and the engine always resolved it, and what was missing was
-any way to produce one. An author extracts, a translator works down a table, and a
-message whose field has gone is kept rather than collected. Built, including the file a vendor works in —
-"self-hosted, nothing phones home" is a European pitch where this is table stakes
-rather than a nicety.
+**Translated form content.** Built, including the file a vendor works in. The format
+always allowed `label: { $t: "..." }` and the engine always resolved it; what was missing
+was any way to produce one. An author extracts, a translator works down a table, and a
+message whose field has gone is kept rather than collected. "Self-hosted, nothing phones
+home" is a European pitch where this is table stakes rather than a nicety.
 
-**Collision control on form editing.** form.io's term for two people editing one
-form. Immutable published versions and a schema hash on every submission already
-give the mechanism; the 409-on-stale-hash pattern exists on the submission path
-and wants extending to the editor.
+**Two people editing one form**, which form.io calls collision control. Built. The
+409-on-stale-hash pattern that was already on the submission path now runs on the publish
+route too: an editor declares the version it opened, and one overtaken by somebody else is
+refused with the current schema attached, so it can show what changed rather than fetching
+and diffing to find out why. Declaring is optional, because a script or an agent composes a
+document rather than opening one. Nothing was ever overwritten — published versions are
+immutable — and what was missing was that anybody noticed.
 
 ### Deferred, with the reason
 

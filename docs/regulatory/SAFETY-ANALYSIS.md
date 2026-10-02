@@ -691,6 +691,37 @@ It was fixed and is covered by tests.
 where a future defect would be most costly. A manufacturer should treat it as a
 focus area for their own verification.
 
+### E4. One author's published form is replaced by another's without either being told
+
+*How it arises:* two people open the same form in a builder. Both publish. The
+second publish wins and nothing says the first ever happened. Because a
+published version is immutable, the first author's document is **not destroyed**
+— it is still a version, still readable, and every submission bound to it still
+resolves ([0025](../decisions/0025-immutability-in-the-database.md)). What is
+lost is that anybody noticed: `forms.current_version_id` moved past it, and the
+first author's next page load shows a form they did not write, with nothing
+saying why.
+
+That the data survives is what makes this worth an entry. Nothing surfaces to
+prompt the question, so the only signal is an author's memory of what they
+wrote.
+
+*Constraint:* a publish may **declare the version it opened**, and one declaring
+a version that has since been replaced is refused with the current schema
+attached, so the author sees what changed rather than being told no
+([0092](../decisions/0092-publishing-declares-what-it-opened.md)). Declaring is
+optional by design — a script composes a document rather than opening one — so
+the guarantee is available to any client that opens a version, and the builder
+does.
+
+*Residual:* **a client that does not declare still overwrites silently**, and
+that is deliberate: a non-interactive publisher has no version to declare. A
+manufacturer whose process requires that no published form can be replaced
+unnoticed must either restrict publishing to clients that declare, or restrict
+`form.publish` to one role. There is also **no merge** — the refusal shows the
+difference and a person decides. Nothing detects two authors editing
+concurrently *before* one of them publishes.
+
 ---
 
 ## What a manufacturer must do with this

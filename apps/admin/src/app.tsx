@@ -23,6 +23,7 @@ import {
   fetchSubmissions,
   fetchVersions,
   publish,
+  publishProblem,
   setToken,
 } from './api.js'
 import type { FormListEntry, PublishResult, SubmissionEntry, VersionEntry } from './api.js'
@@ -161,7 +162,11 @@ function FormWorkspace({ path, onPublished }: { path: string; onPublished: () =>
   const publishSource = async (): Promise<void> => {
     if (source === undefined) return
     try {
-      const outcome = await publish(path, JSON.parse(source))
+      // `serverHash` is the version this editor OPENED, which is what the
+      // server compares against — not the hash of what is being sent. Holding it
+      // and not sending it is how the second of two editors used to win in
+      // silence.
+      const outcome = await publish(path, JSON.parse(source), serverHash)
       setPublishState(outcome)
       if (outcome.ok) {
         setServerHash(outcome.schemaHash)
@@ -263,7 +268,7 @@ function EditorPane({
             (publishState.ok ? (
               <span className="wb-ok">published as v{publishState.version}</span>
             ) : (
-              <span className="wb-problem">{publishState.message}</span>
+              <span className="wb-problem">{publishProblem(publishState)}</span>
             ))}
         </div>
         <Editor

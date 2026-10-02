@@ -215,6 +215,17 @@ gives the tests an in-memory implementation.
 including the immutability trigger, and the auth runtime (argon2id via
 `@node-rs/argon2`, sessions via `jose`).
 
+Both sides are split **one use-case family per file**, and what forced it was
+the size budget rather than taste: `use-cases.ts` and `app.ts` were where
+everything went, and the ratchet in `apps/docs/src/size.test.ts` refused the
+next thing added to each. Publishing came out first, because it is the family
+with the most of its own vocabulary — `server-core/publishing.ts` holds
+`publishForm` and the audit row it writes inside the same transaction,
+`server/routes/publish.ts` is the matching Fastify plugin, and
+`server/headers.ts` holds the one header name both the submission route and the
+publish plugin read. Two spellings of one header is a bug nobody sees until a
+client sends the other one.
+
 The webhook outbox shows the split at its sharpest. `server-core/outbox.ts` has
 `afterAttempt` — pure, four arguments, the entire retry policy — and
 `drainOutbox`, one batch that returns. `server/deliver.ts` has the part that

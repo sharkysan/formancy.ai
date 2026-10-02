@@ -110,17 +110,62 @@ export async function fetchForm(
 
 export type PublishResult =
   | { ok: true; version: number; schemaHash: string }
+  /** Somebody else published while this editor was editing. */
+  | { ok: false; conflict: { version: number; schemaHash: string; schema: FormSchema } }
   | { ok: false; message: string; errors?: SchemaError[] }
 
-export async function publish(path: string, schema: unknown): Promise<PublishResult> {
+/**
+ * What a refused publish says, in one place.
+ *
+ * Both panes render a `PublishResult`, so a sentence written in one of them is a
+ * sentence the other says differently — and the difference would be invisible to
+ * anybody who only ever uses one tab. The compiler found this: adding the
+ * conflict to the union broke the pane that had not been changed.
+ */
+export function publishProblem(result: Exclude<PublishResult, { ok: true }>): string {
+  if ('conflict' in result) {
+    // Not "publish failed", which makes somebody press it again. What they need
+    // is that the form moved while they were editing, and to what — nothing of
+    // theirs was overwritten, and nothing of theirs was published either.
+    return (
+      `Somebody else published this form while you were editing it. It is on version ${String(result.conflict.version)} now. ` +
+      'Nothing you wrote was lost and nothing was published — compare the two before publishing again.'
+    )
+  }
+  return result.message
+}
+
+/**
+ * Publish, declaring which version this edit started from.
+ *
+ * `basedOn` is what the server compares: it is the hash this editor OPENED, not
+ * the hash of what it is sending. Sending it is how an editor asks to be told it
+ * has been overtaken rather than quietly overwriting somebody — and it is
+ * optional on the route precisely so that a script or an agent, which composed a
+ * document rather than opening one, has nothing to declare.
+ */
+export async function publish(
+  path: string,
+  schema: unknown,
+  basedOn?: string,
+): Promise<PublishResult> {
   const response = await authed(`${BASE}/forms`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: {
+      'content-type': 'application/json',
+      ...(basedOn === undefined ? {} : { 'x-formancy-schema-hash': basedOn }),
+    },
     body: JSON.stringify({ path, schema }),
   })
   const body = (await response.json()) as Record<string, unknown>
   if (response.ok) {
     return { ok: true, version: body['version'] as number, schemaHash: body['schemaHash'] as string }
+  }
+  if (body['error'] === 'FORM_VERSION_CHANGED' && body['current'] !== undefined) {
+    return {
+      ok: false,
+      conflict: body['current'] as { version: number; schemaHash: string; schema: FormSchema },
+    }
   }
   return {
     ok: false,

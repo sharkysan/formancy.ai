@@ -192,3 +192,4 @@ listed under the sections they belong to above.
 | [0089](0089-a-page-is-unwrapped-into-its-neighbour.md) | A page is unwrapped into its neighbour, not onto the top level | accepted |
 | [0090](0090-a-check-defaults-to-the-server.md) | A check defaults to the server, and the page says which default it gets | accepted |
 | [0091](0091-a-second-builder-is-a-binding.md) | A second builder is a binding, not a second builder | accepted |
+| [0092](0092-publishing-declares-what-it-opened.md) | Publishing declares what it opened, and declaring is optional | accepted |

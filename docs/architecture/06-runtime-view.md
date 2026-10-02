@@ -170,6 +170,19 @@ re-check every expression with leaves typed as the MODEL says
    ▼
 canonicalise and hash                      ([0010](../decisions/0010-canonical-hash.md))
    │
+   ├─ hash == the current version's ──▶ that version, unchanged. Not a new row:
+   │                     republishing what is already published is a no-op, and
+   │                     `UNIQUE (form_id, schema_hash)` is what makes it one
+   │
+   ├─ hash == an OLDER version's ──▶ already_published, with that version's number
+   │                     a published version is immutable and cannot be
+   │                     published twice; without this the insert raised 500
+   ▼
+the request declared the version it opened?  ← optional: a script composes a
+   │                     document rather than opening one, and declares nothing
+   ├─ declared, and something else is current ──▶ version_changed, carrying that
+   │                     schema, so the editor shows the difference
+   │                     ([0092](../decisions/0092-publishing-declares-what-it-opened.md))
    ▼
 diffSchemas(current, new) ──▶ compatible | lossy | breaking, shown to the author
    │
@@ -180,7 +193,11 @@ CREATE per-form partial indexes for fields marked indexed
 ```
 
 A form that could loop is never persisted. A published version is never
-modified. And the second expression check runs *here* rather than in the
+modified. **The two hash branches come before the declaration check**, and that
+order is the point: an editor whose document already matches what is published
+has nothing to merge — somebody else wrote exactly what they were going to
+write — and a repeated deploy of an unchanged schema must not manufacture a
+version. And the second expression check runs *here* rather than in the
 engine: a form already published with that mistake keeps opening for whoever is
 halfway through filling it in, with the one field that never fills in that it
 has always had.

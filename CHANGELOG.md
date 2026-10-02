@@ -10,6 +10,61 @@ later.
 
 ## Unreleased
 
+**Publishing a form declares the version it was based on, so two people editing one form
+cannot silently overwrite each other.** form.io calls it collision control; the mechanism
+was already here and pointed the other way. A *submission* declares the version it was
+rendered against and a stale one is refused with **409 `FORM_VERSION_CHANGED`** carrying
+the current schema. A *publish* declared nothing, so the second of two editors won and
+nothing said anybody else had the form open.
+
+Because a published version is immutable, nothing was ever destroyed — the first editor's
+document is still a version, still readable, and every submission bound to it still
+resolves. What was lost is that **anybody noticed**: `forms.current_version_id` moved past
+it, and the first editor's next page load showed a form they did not write. That the data
+survives is what made this worth fixing rather than what made it safe to leave; nothing
+surfaced to prompt the question.
+
+`POST /forms` now reads the same `x-formancy-schema-hash` the submission route reads, and
+answers the same 409 with the same body, so a client that already handles one stale version
+handles both. **Sending it is optional, and that is the decision.** A script, the CLI and an
+agent publish a document they *composed* rather than one they *opened*; requiring the header
+would make every one of them fetch the current version first to satisfy a rule about
+editors. What declares is the thing that opened a version — the builder, which now does —
+and declaring is how a client asks to be told it has been overtaken. No merge is attempted:
+the refusal carries the other schema so a person can see what changed and decide.
+[0092](docs/decisions/0092-publishing-declares-what-it-opened.md) has the argument,
+including why the hash rather than the version number and why not a lock.
+
+**And a 500 that was hiding behind it got a name.** `UNIQUE (form_id, schema_hash)` is what
+makes republishing the current document a no-op rather than a version factory, and it
+refuses an *older* document just as firmly — so republishing version 3 to undo a bad
+version 4 raised at the insert and the route answered **500**. It is now `409
+already_published`, naming the version it already is, which is also the honest answer: a
+published version cannot be published twice.
+
+The order of the two checks is load-bearing and has a test that says so. An editor whose
+document already hashes to what is published has nothing to merge — somebody else wrote
+exactly what they were going to write — so the idempotent case is answered **before** the
+stale-base check. Otherwise a repeated deploy of an unchanged schema becomes a conflict.
+
+**Moving the file found a regulatory claim with nothing behind it.** Reading the coverage
+report for the new `publishing.ts` showed one branch no test anywhere reached: the
+publish-time refusal of a document naming an `optionsSource` the deployment has never
+configured. `SAFETY-ANALYSIS.md` A7 asserts that constraint in prose — *"a form cannot be
+frozen with a list nobody can resolve"* — and [0077](docs/decisions/0077-options-may-come-from-a-named-source.md)'s
+*Verified by* named the schema-validation and submission-time cases, not this one. It now
+has three cases, two of them boundaries, each observed failing. The claim was absent rather
+than wrong, which is the better of the two, and it was found by moving the code rather than
+by proofreading the sentence.
+
+Three files moved, and the size ratchet is why: `use-cases.ts` (916 → 663) and `app.ts`
+(988 → 928) were where everything went, and the budget refused the next thing added to each
+rather than letting the number drift. `server-core/publishing.ts` holds `publishForm` and
+the audit row written inside its transaction, `server/routes/publish.ts` is the matching
+Fastify plugin, and `server/headers.ts` holds the one header name both routes read — two
+spellings of one header is a bug nobody sees until a client sends the other one. Both
+ceilings were lowered to the new numbers.
+
 **The Angular suites stopped being timed against a budget nobody chose for them.** Rendering
 a component tree in jsdom is real work: the first `render(FormancyForm, …)` in a file
 compiles the form and everything the registry pulls in — seventeen field components — and

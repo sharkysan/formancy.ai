@@ -48,9 +48,11 @@ const submissions = [
 
 /** Every request the workspace makes, and a record of what it sent. */
 interface Stub {
-  readonly calls: { url: string; method: string; body: unknown }[]
+  readonly calls: { url: string; method: string; body: unknown; headers: Record<string, string> }[]
   formMissing?: boolean
   publishFails?: boolean
+  /** Somebody else published while this editor was editing. */
+  publishConflicts?: boolean
 }
 
 function serve(stub: Stub): void {
@@ -64,7 +66,13 @@ function serve(stub: Stub): void {
       } catch {
         body = init?.body
       }
-      stub.calls.push({ url, method, body })
+      const headers: Record<string, string> = {}
+      for (const [name, value] of Object.entries(
+        (init?.headers ?? {}) as Record<string, string>,
+      )) {
+        headers[name.toLowerCase()] = value
+      }
+      stub.calls.push({ url, method, body, headers })
 
       const json = (value: unknown, status = 200): Response =>
         new Response(JSON.stringify(value), {
@@ -76,6 +84,17 @@ function serve(stub: Stub): void {
       if (url.includes('/versions')) return Promise.resolve(json({ versions }))
       if (url.includes('/submissions')) return Promise.resolve(json({ submissions }))
       if (method === 'POST' || method === 'PUT') {
+        if (stub.publishConflicts === true) {
+          return Promise.resolve(
+            json(
+              {
+                error: 'FORM_VERSION_CHANGED',
+                current: { version: 7, schemaHash: 'hash-theirs000', schema: SCHEMA },
+              },
+              409,
+            ),
+          )
+        }
         return Promise.resolve(
           stub.publishFails === true
             ? json({ error: 'schema_invalid', message: 'canton is not a field' }, 422)
@@ -304,5 +323,56 @@ describe('the editor pane', () => {
 
     // The same renderer a consumer gets, against the document in the editor.
     expect(await screen.findByLabelText(/Email/)).toBeTruthy()
+  })
+})
+
+describe('publishing a form somebody else has published meanwhile', () => {
+  /*
+   * The builder is the one thing that OPENS a version, so it is the one thing
+   * that can declare which version it opened — which is why declaring is
+   * optional on the route and sent here. A script composes a document and has
+   * nothing to declare; this held `serverHash` all along and never sent it.
+   *
+   * Without it the second of two editors silently wins: no error, no diff, and
+   * nothing says anybody else had the form open. The first editor's work is not
+   * destroyed — a published version is immutable — but `current_version_id` now
+   * points past it and nobody was told.
+   */
+  test('declares the version it opened, so the server can tell it apart', async () => {
+    const stub: Stub = { calls: [] }
+    const user = await openForm(stub)
+
+    // Awaited, not assumed: the workspace loads the form and its panes lazily,
+    // so the button arrives a tick after `openForm` returns. Written with
+    // `getByRole` these passed alone and failed about half the time in the full
+    // suite, which is a timing assumption rather than a test.
+    await user.click(await screen.findByRole('button', { name: /^publish$/i }))
+
+    const published = stub.calls.find((call) => call.method === 'POST' && call.url.endsWith('/forms'))
+    expect(published?.headers?.['x-formancy-schema-hash']).toBe('hash-abcdef012345')
+  })
+
+  test('and when it has been overtaken, says so with the version that won', async () => {
+    // "Publish failed" would make somebody press it again. What they need is
+    // that the form moved, and to what.
+    const stub: Stub = { calls: [], publishConflicts: true }
+    const user = await openForm(stub)
+
+    await user.click(await screen.findByRole('button', { name: /^publish$/i }))
+
+    const said = await screen.findByText(/somebody else published/i)
+    expect(said.textContent).toMatch(/version 7/)
+  })
+
+  test('and does not pretend the publish worked', async () => {
+    const stub: Stub = { calls: [], publishConflicts: true }
+    const user = await openForm(stub)
+
+    await user.click(await screen.findByRole('button', { name: /^publish$/i }))
+    await screen.findByText(/somebody else published/i)
+
+    // The header still names the version this editor opened: nothing was
+    // published, so nothing about what is current has changed.
+    expect(screen.getByText(/published hash-abcdef0/)).toBeTruthy()
   })
 })
