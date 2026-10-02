@@ -32,8 +32,8 @@ const BUDGET = 600
  */
 const CEILINGS: Record<string, { lines: number; why: string }> = {
   'packages/builder-core/src/session.ts': {
-    lines: 1638,
-    why: 'One factory holding every command. The seam is one concern per file — model, arrangement, translation, version — over a shared attempt/commit core.',
+    lines: 1558,
+    why: 'One factory holding every command. The seam is one concern per file — model, arrangement, translation, version — over a shared attempt/commit core. The repath family left for `repath.ts` when this budget refused the rule rewriting, which is the seam working as intended.',
   },
   'packages/core/src/engine.ts': {
     lines: 1460,

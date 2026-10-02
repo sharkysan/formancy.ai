@@ -18,6 +18,9 @@ export type { ExpressionAst } from './ast.js'
 
 export { referencedPaths } from './references.js'
 
+export { rewritePath } from './rewrite.js'
+export type { RewriteOutcome } from './rewrite.js'
+
 export { check } from './check.js'
 export type { CheckOptions, CheckOutcome } from './check.js'
 

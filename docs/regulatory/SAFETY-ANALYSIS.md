@@ -105,6 +105,19 @@ consequential residual risk in this document. In a context where a hidden field
 must stay hidden for reasons other than tidiness, a manufacturer should not
 rely on `visible` expressions alone.
 
+*And the condition most likely to be failing is one written defensively.* An
+unanswered field is `null`, and so is an unopened group, so `!needsVisa` errors
+(CEL has no `!` for null) and `address.country == "CH"` errors (the group is
+null, so reading a member of it fails). The obvious repair,
+`address.country != null && address.country == "CH"`, **errors identically** —
+it has to read the path in order to compare it. Only `has(address.country)`
+answers. Both of the failing shapes shipped in this project's own demonstration
+form and were found by evaluating it rather than reading it; a manufacturer
+writing visibility rules should expect the same and test for presence rather
+than against null. Measured and held by
+`apps/docs/src/empty-answer-guards.test.ts`, which parses the table in the user
+documentation and evaluates every row.
+
 ### A6. A presentation hint changes what the field collects
 
 *How it arises:* a widget replaces a control with one that can express more than the
@@ -199,6 +212,40 @@ than a rename.
 *Residual:* an author who deletes a field and creates a new one with a
 different key has not renamed anything, and the software cannot tell the
 difference from intent. Publishing reports this as a lossy change.
+
+### B1a. Logic is orphaned when a field is renamed, and nothing reports it
+
+*How it arises:* a form author renames a field, or unwraps a group so the fields
+inside it move up a level. A rule's `target`, its `cel` condition and the
+metadata the visual editor reopens from each name a data path, and a path left
+behind names a field that no longer exists.
+
+This is **B1 seen from the other side**, and the quieter of the two. An orphaned
+*answer* is detectable — the data is there under a key nothing reads. An orphaned
+*condition* is not: the engine types an unknown leaf as `dyn`, so the rule still
+compiles and still publishes, and `postcode == "8000"` becomes `null == "8000"`,
+which is `false` for the life of the version. A conditionally visible field is
+then simply never shown, and nothing at authoring time, publish time or run time
+says so.
+
+*Constraint:* a path rewrite moves all three
+([0093](../decisions/0093-a-rule-follows-the-path-it-reads.md)). The condition is
+rewritten by splicing the spans the CEL parser reports, never by matching source,
+so a field whose name is a prefix of another's is untouched and a field name
+inside a string literal is left as the data it is. A rewrite that cannot be made
+safely — an unparseable condition, or a new name a comprehension would capture —
+**refuses the whole command** and names the rule, rather than applying half of it.
+The rewrite is verified by comparing what the result reads against what the input
+read with the rename applied, so a splice that lost, invented or captured a
+reference is refused rather than written.
+
+*Residual:* **this covers the builder, not the document.** A form edited by hand
+or by a script can be published with a rule reading a path no field has, and
+nothing refuses it — the `dyn` typing that makes an unfinished form editable is
+what makes that indistinguishable from a rule about a field somebody is about to
+add. A manufacturer who generates or edits form documents outside the builder
+should check `referencedPaths` against their model themselves. There is also no
+*detection* pass for documents already published this way.
 
 ### B2. A saved draft loses answers when the form changes underneath it
 

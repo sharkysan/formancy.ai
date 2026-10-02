@@ -17,6 +17,9 @@
     "astro": "^7.3.3"
   },
   "devDependencies": {
+    "@formancy/core": "workspace:*",
+    "@formancy/expressions": "workspace:*",
+    "@formancy/spec": "workspace:*",
     "@types/node": "^22.10.0",
     "@vitest/coverage-v8": "catalog:",
     "typescript": "catalog:",

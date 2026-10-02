@@ -71,6 +71,17 @@ export const WIZARD_SCHEMA = {
             ],
           },
 
+          // Shown only for a Swiss address, by a condition that reads INSIDE the
+          // group — `address.country`, not `country`. No demo had one, and a
+          // grouped path is where the builder's rename and unwrap get
+          // interesting: unwrap "Where you are based" and watch this condition
+          // become `country == "CH"` rather than break.
+          {
+            key: 'cantonNotice',
+            type: 'static',
+            label: 'Swiss addresses need the canton on the expense form. Have it to hand.',
+          },
+
           { key: 'needsVisa', type: 'checkbox', label: 'I need a visa for this trip' },
         ],
       },
@@ -139,6 +150,25 @@ export const WIZARD_SCHEMA = {
       // one, because a document whose rules do not fire is the exact
       // documented-but-inert failure a demo exists to prevent.
       { target: 'visa', kind: 'skip', cel: 'needsVisa != true' },
+
+      // A condition reading a path inside a GROUP. Worth its own rule because
+      // the data path and the tree path differ here — `address.country` in the
+      // model, two levels down in the builder's tree — and that difference is
+      // what every path rewrite has to get right. Renaming the group, or
+      // unwrapping it, now rewrites this line
+      // ([0093](../../../docs/decisions/0093-a-rule-follows-the-path-it-reads.md));
+      // before that the rename silently left it reading a path no field had,
+      // which showed up as a notice that never appeared again.
+      // `has(...)` and not a comparison against null, and that is not style.
+      // Measured on a real engine, all three states: with an untouched group,
+      // `address.country == "CH"` ERRORS — the group itself is null, so the
+      // member access fails before anything is compared — and a `visible` rule
+      // that errors fails OPEN, so the notice was on screen from the start. The
+      // obvious defensive fix, `address.country != null && ...`, fails the same
+      // way for the same reason: it has to read the path to compare it.
+      // `has()` is the presence test and is the only one of the three that
+      // answers. Same family as `needsVisa != true` above, one level deeper.
+      { target: 'cantonNotice', kind: 'visible', cel: 'has(address.country) && address.country == "CH"' },
 
       // No `cel` at all: a check names a validator and carries no expression,
       // because a CEL expression is synchronous by construction. `demo-checks.ts`

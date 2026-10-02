@@ -270,6 +270,15 @@ importers:
         specifier: ^7.3.3
         version: 7.3.3(@emnapi/core@1.11.3)(@emnapi/runtime@1.11.3)(@types/node@22.20.3)(less@4.9.1(supports-color@7.2.0))(sass@1.104.1)(yaml@2.9.1)
     devDependencies:
+      '@formancy/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@formancy/expressions':
+        specifier: workspace:*
+        version: link:../../packages/expressions
+      '@formancy/spec':
+        specifier: workspace:*
+        version: link:../../packages/spec
       '@types/node':
         specifier: ^22.10.0
         version: 22.20.3
@@ -569,6 +578,9 @@ importers:
       '@formancy/core':
         specifier: workspace:*
         version: link:../core
+      '@formancy/expressions':
+        specifier: workspace:*
+        version: link:../expressions
       '@formancy/spec':
         specifier: workspace:*
         version: link:../spec

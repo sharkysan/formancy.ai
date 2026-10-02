@@ -204,6 +204,37 @@ describe('the wizard demo, run rather than read', () => {
     expect(skippedKeys(form)).toEqual(['visa'])
   })
 
+  test('hides the canton notice until the address inside the group says Switzerland', () => {
+    /*
+     * The demo's only condition that reads INSIDE a group, and the reason it is
+     * here rather than only in the document: `address.country` is the DATA path,
+     * two levels down in the builder's tree, and a rule written against the tree
+     * path — `country` — compiles and silently never fires, because the engine
+     * types an unknown leaf as `dyn`.
+     *
+     * That is also exactly the state a rename used to leave behind, which is
+     * what this rule is in the demo to show being fixed
+     * ([0093](../../../docs/decisions/0093-a-rule-follows-the-path-it-reads.md)).
+     *
+     * And it needs `has(...)`, which this demo found by measuring rather than
+     * by reading. All three states on a real engine: with the group untouched,
+     * `address.country == "CH"` **errors** — the group is null, so the member
+     * access fails before anything is compared — and a `visible` rule that
+     * errors fails OPEN, so the notice was on screen from the start.
+     * `address.country != null && ...` fails identically, because it has to
+     * read the path to compare it. Asserted in all three directions below: a
+     * condition false in every state looks exactly like one correctly false
+     * now, and a condition TRUE in every state is how this was caught.
+     */
+    const form = engine()
+
+    expect(form.getFieldSnapshot(['cantonNotice']).visible).toBe(false)
+    form.setValue(['address', 'country'], 'CH')
+    expect(form.getFieldSnapshot(['cantonNotice']).visible).toBe(true)
+    form.setValue(['address', 'country'], 'DE')
+    expect(form.getFieldSnapshot(['cantonNotice']).visible).toBe(false)
+  })
+
   test('disables the notes until somebody asks for them', () => {
     // The same null-versus-`!` trap, on the other rule kind in this document: it
     // would have shipped as a disabled rule that never disabled anything.

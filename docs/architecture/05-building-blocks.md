@@ -22,7 +22,8 @@ L1  expressions                  CEL parse · check · compile · evaluate · po
 ─────────────────────────────────────────────────────────────────────
 L0  spec                         types · JSON Schema · diff · canonical hash
 
-    builder-core                 sits beside L2: depends on spec only
+    builder-core                 sits beside L2: spec, and expressions for the
+                                 one thing a document engine cannot do by hand
     conformance                  sits beside L2: depends on spec only
     challenge                    sits beside L0: isomorphic, mint/solve/verify
     server-core                  depends on core and spec; no HTTP types
@@ -74,9 +75,20 @@ things a thin pass-through would have nowhere to put: `limits.ts` (AST size and
 depth), `budget.ts` (per-expression and per-submission wall-clock), `kinds.ts`
 (the function allow-list per expression slot, so a `visible` expression cannot
 perform a lookup), `capabilities.ts` (the injected clock and randomness),
-`references.ts` (the static variable extraction the dependency graph needs) and
+`references.ts` (the static variable extraction the dependency graph needs),
+`rewrite.ts` (replacing one data path with another in a condition) and
 `decimal.ts` (scaled-integer money, so `price * 0.19` is a type error and
 `price * dec("0.19")` is required).
+
+`references.ts` and `rewrite.ts` share one walk, in `chains.ts`, and that is the
+point of having them here rather than in the builder: what counts as a field and
+what is a local bound by a comprehension has to be **one** answer, because those
+two answers are the dependency graph and the text of a rule
+([0093](../decisions/0093-a-rule-follows-the-path-it-reads.md)). The rewrite
+splices the source spans the parser reports rather than reprinting the AST, so an
+author's spacing and notation survive a rename, and it verifies itself by asking
+the result what it reads — which is what catches a replacement name that a
+comprehension would capture.
 
 ### `@formancy/core` (L2)
 
@@ -141,8 +153,14 @@ of the validator's rules, which would drift from it.
 
 It holds what a builder's interface needs and a framework does not decide: the
 compiler that turns a structured condition into CEL, where a drop lands in each
-of the two trees, the palette, and the editable property list read out of the
-spec's own JSON Schema. Those sat in `builder-react` while it was the only
+of the two trees, the palette, the editable property list read out of the spec's
+own JSON Schema, and — in `repath.ts` — what the rest of the document does when a
+path moves or goes. That last one is why this package depends on
+`@formancy/expressions` at all: a field lives in the model, in the layouts that
+arrange it, in the rules that read and target it, and in the metadata the logic
+panel reopens from, and all four have to follow in the same edit. Three of them
+are JSON; the condition is CEL, and rewriting it needs a parser
+([0093](../decisions/0093-a-rule-follows-the-path-it-reads.md)). Those sat in `builder-react` while it was the only
 builder, and none of them mentioned React — the same shape as `@formancy/core`
 sitting under the renderers, one layer up. A binding is then the part that is
 genuinely per framework, which is the components and nothing else.

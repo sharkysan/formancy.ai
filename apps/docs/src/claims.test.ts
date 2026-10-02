@@ -2,6 +2,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, test } from 'vitest'
+import { validateSchema } from '@formancy/spec/validate'
 
 /**
  * Claims that a decision record contradicts.
@@ -516,6 +517,57 @@ describe('what the roadmap says is still to do', () => {
     // also banned the phrase from the paragraph recording that it is done, which
     // is a guard policing words rather than the claim behind them.
     expect(stillToDo()).not.toMatch(/Collision control on form editing/)
+  })
+
+  test('no longer asks the builder to keep rules in step, because it does', () => {
+    /*
+     * The item this replaces said both `renameField` and `unwrapField` refused
+     * a document a rule mentioned. One did. The other succeeded and left the
+     * rule reading a path no field had, which is why a list item was the wrong
+     * artefact for it and a test is the right one
+     * ([0093](../../../docs/decisions/0093-a-rule-follows-the-path-it-reads.md)).
+     *
+     * Derived from the capability rather than from the wording: the day
+     * `rewritePath` stops being exported, or `repath.ts` stops rewriting a
+     * rule's three path-bearing places, this fails.
+     */
+    const exported = readFileSync(
+      join(repo, 'packages', 'expressions', 'src', 'index.ts'),
+      'utf8',
+    )
+    expect(exported).toMatch(/export \{ rewritePath \}/)
+
+    const repath = readFileSync(join(repo, 'packages', 'builder-core', 'src', 'repath.ts'), 'utf8')
+    for (const place of ['next.target =', 'rewritePath(rule.cel', 'repathEditor(rule.editor']) {
+      expect(repath, `repath.ts no longer moves ${place}`).toContain(place)
+    }
+
+    expect(stillToDo()).not.toMatch(/Rewriting a data path inside a rule's condition/)
+  })
+
+  test('and is right that a hand-written document can still name a path no field has', () => {
+    /*
+     * The item that replaced it, and the same shape as the collision-control
+     * one: asserted TRUE while the gap is real, so the day somebody makes
+     * `validateSchema` refuse this, the test fails and the roadmap item has to
+     * go.
+     *
+     * Derived by validating such a document rather than by reading the prose
+     * about it. The rule's TARGET is a field that exists — the gap is about the
+     * paths inside the condition, and a document whose target was also missing
+     * is refused today for a different reason, which would make this pass for
+     * the wrong one.
+     */
+    const document = {
+      specVersion: '1',
+      id: 'gap',
+      title: 'Gap',
+      model: { fields: [{ key: 'note', type: 'text' }] },
+      logic: { rules: [{ target: 'note', kind: 'visible', cel: 'noSuchField == 1' }] },
+    }
+
+    expect(validateSchema(document).valid).toBe(true)
+    expect(stillToDo()).toMatch(/Detecting a rule that reads a path no field has/)
   })
 
   test('and does not describe the draft routes as missing, because they exist', () => {

@@ -89,6 +89,33 @@ control flow, and the direction of failure is chosen per kind:
   vouch for the value, so the field is marked invalid. The author sees their
   broken rule instead of bad data getting through.
 
+### Which means an unanswered field needs guarding, and `!= null` is not the guard
+
+Fails-open is the right default and it has a consequence worth knowing before
+you write your first rule: **a condition that errors on an empty form shows the
+field it was meant to hide, from the start, with nothing to say so.**
+
+Three shapes error, and two of them look defensive:
+
+| Condition | On an untouched form |
+| --- | --- |
+| `!needsVisa` | **errors** — CEL has no `!` for null |
+| `address.country == "CH"` | **errors** — the *group* is null, so reading a member of it fails |
+| `address.country != null && address.country == "CH"` | **errors** — it still has to read the path to compare it |
+| `needsVisa != true` | `true` |
+| `has(address.country) && address.country == "CH"` | `false` |
+
+The pattern: comparing against `null` cannot rescue a read that fails, because
+the read happens first. For a top-level field, compare against the value you
+mean — `needsVisa != true` rather than `!needsVisa`. For a path inside a group or
+a row, test presence with **`has(...)`**, which is the only one of these that
+answers rather than failing.
+
+Both of these shipped in this project's own demo and were found by running it
+against an engine rather than by reading it. A `visible` rule that is wrong this
+way is invisible precisely because it fails open: the field is simply always
+there.
+
 ## Nothing ambient
 
 `now()`, `today()` and `random()` do not read a clock — they read values the

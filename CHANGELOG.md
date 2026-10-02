@@ -10,6 +10,72 @@ later.
 
 ## Unreleased
 
+**A rule follows the path it reads.** Renaming a field, or unwrapping a group, now rewrites
+every rule that names it — the `target`, the `cel` condition, and the `editor` metadata the
+logic panel reopens from.
+
+The roadmap said both commands *refused* a document a rule mentioned. One did. **`renameField`
+did not, and that was the defect:** it succeeded, left the condition reading a path no field
+had, and published. The engine types an unknown leaf as `dyn`, so the rule still compiles;
+`validateSchema` checks a rule's target and not the paths inside its condition, so the
+document still publishes; and `postcode == "8000"` becomes `null == "8000"`, which is `false`
+for the life of that immutable version. A conditionally visible field was simply never shown
+again, with nothing to say so at authoring time, publish time or run time.
+
+`rewritePath` in `@formancy/expressions` does the work by **splicing the source spans the CEL
+parser reports**. Three things follow and none of them need arguing about: `postcode_uk` is a
+different node, so it is untouched; `"postcode"` inside a string literal is not a path node,
+so it stays the data it is; and the author's spacing and choice between `address.city` and
+`address["city"]` survive, because everything outside the matched spans is left alone — which
+matters when the published document is diffed in git.
+
+**The splice is the mechanism; the verification is the guard.** The result is parsed again and
+asked what it reads, compared against what the input read with the rename applied. That is
+what catches capture — renaming `postcode` to `zip` inside `items.all(zip, zip.n > postcode)`
+produces a perfectly correct splice whose text is valid CEL meaning something else. A rewrite
+that cannot be made safely refuses the whole command and names the rule, because half a
+rename is the state the author was being protected from.
+
+A regular expression was tried, with correct escaping and word boundaries — the shape the old
+code used. It fails **4 of the 14** cases: it rewrites a field name inside a string literal,
+misses `address["city"]` when renaming `address.city`, rewrites a comprehension's own
+iteration variable, and cannot detect capture. The first two are silent and produce documents
+that validate. [0093](docs/decisions/0093-a-rule-follows-the-path-it-reads.md) has the rest,
+including why the AST is spliced rather than reprinted.
+
+**And the old pattern was over-refusing.** `note == "address"` reads `note` and nothing else,
+and it blocked an unwrap while naming a rule that had nothing to do with it.
+
+**Building the demo for this found a second defect, in how a condition is written rather than
+in the rewrite.** A rule reading into a group — `address.country == "CH"` — **errors** on an
+untouched form, because the group itself is null, and a `visible` rule that errors fails
+*open*: the field it was meant to hide was on screen from the start. The obvious repair,
+`address.country != null && …`, errors identically, since it has to read the path to compare
+it. Only `has(address.country)` answers. Same family as `needsVisa != true`, one level deeper,
+and found the same way — by running the demo rather than reading it. `concepts/logic.md` now
+carries the table, `SAFETY-ANALYSIS.md` A5 carries the consequence for a manufacturer, and
+`apps/docs/src/empty-answer-guards.test.ts` parses that table and evaluates every row, so a
+verdict that stops being true fails and a row added without one fails too.
+
+The wizard demo gained the condition that shows it: a notice visible only for a Swiss
+address, read off `address.country` — the first rule in either demo that reads **inside** a
+group, which is where a path rewrite gets interesting, and asserted in all three states
+against a real engine.
+
+Two files moved, and the size ratchet is why: `session.ts` passed its ceiling, so the "a path
+moved, make the document follow" family left for `builder-core/src/repath.ts` — eight
+functions, one subject — and `session.ts` ended up 80 lines *smaller* than before this change
+rather than 70 larger. `references.ts` and the new `rewrite.ts` now share one walk in
+`chains.ts`, because what counts as a field and what is a local bound by a comprehension has
+to be one answer: those two answers are the dependency graph and the text of the rule.
+
+**What this does not cover is a document the builder did not write.** A form composed by hand
+or by a script can still publish a condition reading a path nothing provides, and
+`validateSchema` will not refuse it — the `dyn` typing that lets an unfinished form be edited
+is what makes that indistinguishable from a rule about a field somebody is about to add.
+Recorded as `SAFETY-ANALYSIS.md` B1a's residual and as the roadmap's next item, with a test
+asserting the gap is still there so closing it has to be deliberate.
+
 **Publishing a form declares the version it was based on, so two people editing one form
 cannot silently overwrite each other.** form.io calls it collision control; the mechanism
 was already here and pointed the other way. A *submission* declares the version it was

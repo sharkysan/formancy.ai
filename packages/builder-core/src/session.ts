@@ -18,6 +18,14 @@ import {
   samePath,
 } from './layout.js'
 import type { LayoutAddress, LayoutLocation } from './layout.js'
+import {
+  repathEverywhere,
+  repathRules,
+  underPath,
+  unplaceEverywhere,
+  unplaceOnly,
+  unskipEverywhere,
+} from './repath.js'
 
 /**
  * The headless document engine under the form builder.
@@ -549,13 +557,6 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
         const container = dataPathOf(draft, keyPath) ?? ''
 
         if (container !== '') {
-          const blocking = rulesTouching(draft, container)
-          if (blocking.length > 0) {
-            return refuse(
-              '/logic/rules',
-              `Unwrapping "${where}" renames every answer inside it — "${container}.x" becomes "x" — and ${blocking.join(', ')} still ${blocking.length === 1 ? 'addresses or reads' : 'address or read'} a path inside it. A rule's condition is CEL, which this cannot rewrite without pattern-matching source, so change or delete the rule first.`,
-            )
-          }
           // The container's OWN placement goes: the group is what disappears, and
           // a node placing a group that no longer exists is refused — which would
           // make the command unavailable on exactly the forms somebody arranged.
@@ -565,11 +566,20 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
             ? container.slice(0, container.lastIndexOf('.'))
             : ''
           for (const child of children) {
-            repathEverywhere(
-              draft,
-              `${container}.${child.key}`,
-              parent === '' ? child.key : `${parent}.${child.key}`,
-            )
+            const from = `${container}.${child.key}`
+            const to = parent === '' ? child.key : `${parent}.${child.key}`
+            repathEverywhere(draft, from, to)
+            // Every rule naming the old path follows it. This used to be a
+            // refusal, on the grounds that a condition is CEL and rewriting it
+            // meant pattern-matching source — true at the time, and no longer:
+            // `rewritePath` splices the spans the parser reports.
+            const refused = repathRules(draft, from, to)
+            if (refused !== undefined) {
+              return refuse(
+                '/logic/rules',
+                `Unwrapping "${where}" renames every answer inside it — "${from}" becomes "${to}" — and ${refused}`,
+              )
+            }
           }
         }
 
@@ -639,7 +649,20 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
         // and the rename impossible — for exactly the fields most likely to
         // need one, the ones somebody has already arranged.
         const after = dataPathOf(draft, [...keyPath.slice(0, -1), newKey])
-        if (before !== undefined && after !== undefined) repathEverywhere(draft, before, after)
+        if (before !== undefined && after !== undefined) {
+          repathEverywhere(draft, before, after)
+          // And every rule. Leaving these behind did not refuse and did not
+          // fail: the condition went on compiling against a path no field had,
+          // evaluated as null, and silently held a conditional field hidden
+          // for the life of the form.
+          const refused = repathRules(draft, before, after)
+          if (refused !== undefined) {
+            return refuse(
+              '/logic/rules',
+              `Renaming "${before}" to "${after}" means every rule naming it has to follow, and ${refused}`,
+            )
+          }
+        }
         baselineByCurrentKey.set(newKey, baseline)
         return undefined
       })
@@ -1340,48 +1363,6 @@ export function dataPathOf(document: FormSchema, keyPath: readonly string[]): st
   return undefined
 }
 
-/** Whether `path` is `prefix` itself or a field inside it. */
-function underPath(path: string, prefix: string): boolean {
-  return path === prefix || path.startsWith(`${prefix}.`)
-}
-
-/** Drop every layout node placing `dataPath`, or anything inside it. */
-function unplaceEverywhere(draft: FormSchema, dataPath: string): void {
-  for (const layout of draft.layouts ?? []) {
-    layout.nodes = pruned(layout.nodes, (path) => underPath(path, dataPath))
-  }
-}
-
-/**
- * Drop every layout node placing `dataPath` ITSELF, leaving what is inside it.
- *
- * What unwrapping a group needs, and the reason the two are separate: a group is
- * placeable in its own right, so the node placing it goes with it — while the
- * nodes placing its children stay, repointed at where those answers moved to.
- */
-function unplaceOnly(draft: FormSchema, dataPath: string): void {
-  for (const layout of draft.layouts ?? []) {
-    layout.nodes = pruned(layout.nodes, (path) => path === dataPath)
-  }
-}
-
-function pruned(nodes: readonly LayoutNode[], goes: (path: string) => boolean): LayoutNode[] {
-  const kept: LayoutNode[] = []
-  for (const node of nodes) {
-    if (node.kind === 'field' || node.kind === 'qrcode') {
-      // A code goes when the answer it encodes goes, exactly as its placement does:
-      // what would remain is a node drawing a picture of nothing, and the validator
-      // would then refuse the document the builder had just produced.
-      if (!goes(node.path)) kept.push(node)
-      continue
-    }
-    // The container stays even when it empties. Removing one field should not
-    // silently take a row with it and rearrange everything beside it.
-    kept.push({ ...node, children: pruned(layoutChildren(node) as LayoutNode[], goes) })
-  }
-  return kept
-}
-
 /**
  * The page a page's questions should join, or nothing if there is no other.
  *
@@ -1398,67 +1379,6 @@ function neighbouringPage(fields: readonly FieldDef[], at: number): number | und
     if (fields[after]!.type === 'page') return after
   }
   return undefined
-}
-
-/**
- * Drop every rule that could only ever have been about this page.
- *
- * `skip` names a page KEY rather than a data path, because a page carries no
- * answer of its own. So a page that goes leaves a rule aimed at nothing, the
- * validator refuses the whole edit, and the page becomes undeletable — which is
- * what it was between 0.3.0 and this.
- */
-function unskipEverywhere(draft: FormSchema, pageKey: string): void {
-  const rules = draft.logic?.rules
-  if (rules === undefined) return
-  draft.logic = {
-    ...draft.logic,
-    rules: rules.filter(
-      (rule) => !(PAGE_TARGETED_RULE_KINDS.includes(rule.kind as never) && rule.target === pageKey),
-    ),
-  }
-}
-
-/**
- * Which rules address or read a data path at or under `prefix`, described.
- *
- * Two questions, and only the first can be answered structurally. `target` is a
- * data path, so that is a comparison. A condition is CEL SOURCE, so this is a
- * search — and a search of source is the shape of guard that has been wrong six
- * times in this repository, so the boundary is the whole point: `address`
- * matches in `address.city` and in `has(address)`, and does not match in
- * `addressbook` or in `mailing.address`. A false positive costs a refusal on a
- * document that was safe; a false negative breaks a rule in silence. It is drawn
- * to fail toward the refusal, and that is why this reports rather than rewrites.
- */
-function rulesTouching(document: FormSchema, prefix: string): string[] {
-  const mentioned = new RegExp(`(?<![\\w.])${prefix.replaceAll('.', '\\.')}(?![\\w])`)
-  const touching: string[] = []
-  for (const [index, rule] of (document.logic?.rules ?? []).entries()) {
-    const reads = rule.cel !== undefined && mentioned.test(rule.cel)
-    if (!underPath(rule.target, prefix) && !reads) continue
-    touching.push(`rule ${String(index + 1)} (${rule.kind} on "${rule.target}")`)
-  }
-  return touching
-}
-
-/** Point every layout node at the new path, including fields inside a group. */
-function repathEverywhere(draft: FormSchema, before: string, after: string): void {
-  const walk = (nodes: LayoutNode[]): void => {
-    for (const [index, node] of nodes.entries()) {
-      if (node.kind === 'field' || node.kind === 'qrcode') {
-        // A code follows a rename. A declared rename keeps the answer, so a code of it
-        // must keep encoding the same answer -- leaving the old path behind would turn
-        // a rename into a silently broken code.
-        if (underPath(node.path, before)) {
-          nodes[index] = { ...node, path: after + node.path.slice(before.length) }
-        }
-        continue
-      }
-      walk(layoutChildren(node) as LayoutNode[])
-    }
-  }
-  for (const layout of draft.layouts ?? []) walk(layout.nodes)
 }
 
 // ----------------------------------------------------------- layout helpers

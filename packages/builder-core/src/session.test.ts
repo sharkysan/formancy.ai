@@ -1044,40 +1044,50 @@ describe('unwrapField', () => {
     expect(shape(session)).toEqual([{ step: ['city'] }])
   })
 
-  test('refuses a group a rule targets inside, rather than aiming the rule at nothing', () => {
-    // The other half of the path change, and the half that cannot be repaired
-    // here: a rule's condition is CEL text, and rewriting `address.city` inside
-    // it by pattern is how a guard in this repository has been wrong six times.
-    // So the unwrap is refused and the rule named, which is what `renameField`
-    // already does to the same document for the same reason.
+  test('repoints a rule that targets inside it, rather than aiming the rule at nothing', () => {
+    /*
+     * This asserted a REFUSAL until the day the rewrite existed, on grounds
+     * that were true when they were written: *"a rule's condition is CEL text,
+     * and rewriting `address.city` inside it by pattern is how a guard in this
+     * repository has been wrong six times."*
+     *
+     * The answer was not a better pattern. `rewritePath` asks the parser which
+     * characters are the path and splices those, so there is no pattern to be
+     * wrong about — and the comment's other claim, that `renameField` already
+     * refused the same document, was simply false: it succeeded and left the
+     * rule reading a path no field had. Turned around rather than deleted,
+     * because the reasoning is the record of why it took a new capability.
+     */
     const session = createBuilderSession(withRuleOn('address.city', 'true'))
 
-    const outcome = session.unwrapField(['address'])
+    expect(session.unwrapField(['address']).ok).toBe(true)
 
-    expect(outcome.ok).toBe(false)
-    if (!outcome.ok) expect(outcome.message).toMatch(/rule/i)
+    expect(session.document().logic?.rules[0]?.target).toBe('city')
   })
 
-  test('and refuses a group a rule only READS inside, which is the silent one', () => {
-    // This is the case worth the refusal. A rule targeting `note` whose
+  test('and rewrites a rule that only READS inside it, which was the silent one', () => {
+    // The case the refusal was worth having. A rule targeting `note` whose
     // condition reads `address.city` still validates after the unwrap — its
     // target is fine — and then evaluates against a path no field has. The form
-    // goes on working and the condition stops, with nothing to see.
+    // goes on working and the condition stops, with nothing to see. Now the
+    // condition follows instead.
     const session = createBuilderSession(withRuleOn('note', 'address.city == "Zug"'))
 
-    const outcome = session.unwrapField(['address'])
+    expect(session.unwrapField(['address']).ok).toBe(true)
 
-    expect(outcome.ok).toBe(false)
-    if (!outcome.ok) expect(outcome.message).toMatch(/rule/i)
+    expect(session.document().logic?.rules[0]?.cel).toBe('city == "Zug"')
   })
 
-  test('but not a group whose name a rule merely starts with, which is another field', () => {
-    // The boundary the refusal is drawn on. `addressbook` begins with the same
-    // seven letters and is not inside this group; refusing on a substring would
-    // make the command unavailable on a document it is perfectly safe for.
+  test('and leaves a field whose name merely starts the same alone, which is another field', () => {
+    // The boundary. `addressbook` begins with the same seven letters and is not
+    // inside this group, so nothing about it may move. This held when the rule
+    // was a refusal and holds now that it is a rewrite — the same boundary,
+    // enforced on the other side of the decision.
     const session = createBuilderSession(withRuleOn('note', 'addressbook == "x"', 'addressbook'))
 
     expect(session.unwrapField(['address']).ok).toBe(true)
+
+    expect(session.document().logic?.rules[0]?.cel).toBe('addressbook == "x"')
   })
 })
 
