@@ -11,6 +11,13 @@
   `packages/angular/src/options-source.test.ts` (13 and 11, deliberate near-copies).
   `packages/server-core/src/options-membership.test.ts` (13 cases, including that a
   source which throws fails the submission **closed**).
+  `packages/server-core/src/use-cases.test.ts`, *'a document naming a list this deployment
+  cannot resolve'* — the **publish-time** refusal, which this line did not name and no test
+  reached: refused and naming the list, published once the deployment offers it, and
+  published unchecked where the deployment configures no sources at all. Observed failing
+  with the branch removed, and the third case observed failing with the branch made
+  unconditional. `SAFETY-ANALYSIS.md` A7 asserts this constraint in prose and nothing had
+  failed if it stopped being true.
 
 ## Context
 

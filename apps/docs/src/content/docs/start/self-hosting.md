@@ -145,6 +145,14 @@ compiled by the engine itself — so a form whose logic could loop, or that read
 a field which does not exist, is refused here (`422`) and never persisted.
 Publishing the identical document twice does not manufacture a second version.
 
+Add `-H "x-formancy-schema-hash: <hash>"` to say which version this edit started
+from, and the publish is refused with `409 FORM_VERSION_CHANGED` if somebody
+else published in the meantime — the builder sends it so two people editing one
+form cannot silently overwrite each other. The header is optional: a script
+publishing a document it composed has no version to declare, and omitting it is
+last-write-wins. [Versioning](/docs/concepts/versioning/) has the rest, including
+the `409 already_published` you get for republishing an older version verbatim.
+
 ### Read the form (public)
 
 ```bash
@@ -221,7 +229,7 @@ for lookup and a hash for verification. Present it as `x-formancy-api-key`.
 | `POST` | `/auth/login` | public | — |
 | `POST` | `/users` | management | `user.create` |
 | `POST` | `/api-keys` | management | `apiKey.create` |
-| `POST` | `/forms` | management | `form.publish` |
+| `POST` | `/forms` | management | `form.publish` (optional `x-formancy-schema-hash`) |
 | `GET` | `/forms` | management | `form.read` |
 | `GET` | `/f/:path/versions` | management | `form.read` |
 | `GET` | `/f/:path/submissions` | management | `submission.read` |

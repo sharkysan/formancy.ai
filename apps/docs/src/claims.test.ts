@@ -479,35 +479,43 @@ describe('what the roadmap says is still to do', () => {
   const roadmap = (): string =>
     readFileSync(join(repo, 'apps', 'docs', 'src', 'content', 'docs', 'project', 'roadmap.md'), 'utf8')
 
-  const useCases = (): string =>
-    readFileSync(join(repo, 'packages', 'server-core', 'src', 'use-cases.ts'), 'utf8')
+  /** The numbered list of what is still to do, and nothing after it. */
+  const stillToDo = (): string => {
+    const text = roadmap()
+    const from = text.indexOf('## What comes next')
+    const to = text.indexOf('### Done since this list was written', from)
+    expect(from, 'the roadmap has no "what comes next" section').toBeGreaterThan(-1)
+    expect(to, 'the roadmap has no "done since" section').toBeGreaterThan(from)
+    return text.slice(from, to)
+  }
 
   /** The refusal kinds one outcome union declares, read off the union itself. */
-  function kindsOf(union: string): string[] {
-    const source = useCases()
+  function kindsOf(union: string, file: string): string[] {
+    const source = readFileSync(join(repo, 'packages', 'server-core', 'src', file), 'utf8')
     const at = source.indexOf(`export type ${union} =`)
     if (at === -1) return []
     const body = source.slice(at, source.indexOf('\n\n', at))
     return [...body.matchAll(/kind: '([a-z_]+)'/g)].map((match) => match[1]!)
   }
 
-  test('is right that publishing declares no version it was based on', () => {
-    // The claim: the 409 pattern exists on the submission path and wants
-    // extending to the editor. Both halves derived from the outcome unions, so
-    // the day a stale-base refusal is added to publishing, this fails and the
-    // roadmap item has to go.
-    expect(kindsOf('SubmissionOutcome')).toContain('version_changed')
+  test('no longer asks for collision control, because publishing refuses a stale base', () => {
+    /*
+     * This asserted the opposite until the day the feature shipped, which is
+     * what it was for: *"the 409 pattern exists on the submission path and wants
+     * extending to the editor"*, derived from the two outcome unions so that
+     * adding the refusal would fail here and force the roadmap item out.
+     *
+     * It did. Turned around rather than deleted: the same derivation now holds
+     * that both paths refuse a stale version, and that the list has stopped
+     * asking.
+     */
+    expect(kindsOf('SubmissionOutcome', 'use-cases.ts')).toContain('version_changed')
+    expect(kindsOf('PublishOutcome', 'publishing.ts')).toContain('version_changed')
 
-    const publish = kindsOf('PublishOutcome')
-    expect(publish.length).toBeGreaterThan(0)
-    const staleBase = publish.filter((kind) => /version|stale|conflict|changed/.test(kind))
-    expect(staleBase).toEqual([])
-
-    // And while that is true, the roadmap has to still be asking for it. This
-    // half is wording, unavoidably — the document is prose — but the fact above
-    // is not, which is the difference between this and a check that matched a
-    // phrase and passed for the wrong reason.
-    expect(roadmap()).toMatch(/Collision control on form editing/)
+    // The section that ASKS, not the whole document: written against the file it
+    // also banned the phrase from the paragraph recording that it is done, which
+    // is a guard policing words rather than the claim behind them.
+    expect(stillToDo()).not.toMatch(/Collision control on form editing/)
   })
 
   test('and does not describe the draft routes as missing, because they exist', () => {

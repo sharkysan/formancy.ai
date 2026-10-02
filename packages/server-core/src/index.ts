@@ -34,7 +34,6 @@ export {
   listForms,
   listSubmissions,
   listVersions,
-  publishForm,
   resolveForm,
   resumeDraft,
   saveDraft,
@@ -46,7 +45,6 @@ export type {
   ListedForm,
   ListedSubmission,
   ListedVersion,
-  PublishOutcome,
   ResolvedForm,
   ResumeOutcome,
   ServerDeps,
@@ -88,3 +86,5 @@ export type { AttemptOutcome, OutboxDeps } from './outbox.js'
 export type { DeliveryRecord, WebhookRecord } from './ports.js'
 export { collectAbandonedFiles, filesToClaim, fileFieldPaths, offerUpload } from './uploads.js'
 export type { ClaimOutcome, OfferDeps, OfferInput, OfferOutcome } from './uploads.js'
+export { publishForm } from './publishing.js'
+export type { PublishOutcome } from './publishing.js'

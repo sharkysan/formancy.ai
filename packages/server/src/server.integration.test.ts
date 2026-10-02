@@ -1593,3 +1593,180 @@ describe('submission content and the logs', () => {
     expect(app.log.info('marker-3f9c1d-never-in-a-log')).toBeUndefined()
   })
 })
+
+describe('two editors publishing one form', () => {
+  /*
+   * The same 409 the submission route sends, on the publish route, with the same
+   * body — so a client that already knows how to handle one stale version
+   * handles both.
+   *
+   * What makes this safe to add to an existing route is that declaring is
+   * OPTIONAL: every publish in this file that sends no header still publishes,
+   * which is what a script, the CLI and an agent do. The builder declares,
+   * because the builder opened a version.
+   */
+  test('a publish declaring the version it opened is accepted', async () => {
+    const first = await app.inject({
+      method: 'POST',
+      url: '/forms',
+      headers: asAdmin(),
+      payload: { path: 'collide-accepted', schema },
+    })
+    const opened = (first.json() as { schemaHash: string }).schemaHash
+
+    const second = await app.inject({
+      method: 'POST',
+      url: '/forms',
+      headers: asAdmin({ [SCHEMA_HASH_HEADER]: opened }),
+      payload: { path: 'collide-accepted', schema: { ...schema, title: 'Edited' } },
+    })
+
+    expect(second.statusCode).toBe(201)
+    expect((second.json() as { version: number }).version).toBe(2)
+  })
+
+  test('and one overtaken by somebody else is refused with the current schema', async () => {
+    const first = await app.inject({
+      method: 'POST',
+      url: '/forms',
+      headers: asAdmin(),
+      payload: { path: 'collide-overtaken', schema },
+    })
+    const opened = (first.json() as { schemaHash: string }).schemaHash
+
+    // Somebody else publishes while the first editor is still editing.
+    await app.inject({
+      method: 'POST',
+      url: '/forms',
+      headers: asAdmin(),
+      payload: { path: 'collide-overtaken', schema: { ...schema, title: 'Theirs' } },
+    })
+
+    const late = await app.inject({
+      method: 'POST',
+      url: '/forms',
+      headers: asAdmin({ [SCHEMA_HASH_HEADER]: opened }),
+      payload: { path: 'collide-overtaken', schema: { ...schema, title: 'Mine' } },
+    })
+
+    expect(late.statusCode).toBe(409)
+    const body = late.json() as { error: string; current: { version: number; schema: { title: string } } }
+    expect(body.error).toBe('FORM_VERSION_CHANGED')
+    // The current version travels with the refusal, so the editor can show what
+    // changed rather than fetching and diffing to find out why it was refused.
+    expect(body.current.version).toBe(2)
+    expect(body.current.schema.title).toBe('Theirs')
+  })
+
+  test('and nothing was overwritten: the version they lost the race to is still current', async () => {
+    const first = await app.inject({
+      method: 'POST',
+      url: '/forms',
+      headers: asAdmin(),
+      payload: { path: 'collide-kept', schema },
+    })
+    const opened = (first.json() as { schemaHash: string }).schemaHash
+    await app.inject({
+      method: 'POST',
+      url: '/forms',
+      headers: asAdmin(),
+      payload: { path: 'collide-kept', schema: { ...schema, title: 'Theirs' } },
+    })
+
+    await app.inject({
+      method: 'POST',
+      url: '/forms',
+      headers: asAdmin({ [SCHEMA_HASH_HEADER]: opened }),
+      payload: { path: 'collide-kept', schema: { ...schema, title: 'Mine' } },
+    })
+
+    const resolved = await app.inject({ method: 'GET', url: '/f/collide-kept' })
+    expect((resolved.json() as { schema: { title: string } }).schema.title).toBe('Theirs')
+  })
+
+  test('a publish that declares nothing still publishes, as every other one here does', async () => {
+    await app.inject({
+      method: 'POST',
+      url: '/forms',
+      headers: asAdmin(),
+      payload: { path: 'collide-script', schema },
+    })
+
+    const script = await app.inject({
+      method: 'POST',
+      url: '/forms',
+      headers: asAdmin(),
+      payload: { path: 'collide-script', schema: { ...schema, title: 'From a script' } },
+    })
+
+    expect(script.statusCode).toBe(201)
+  })
+})
+
+describe('republishing a document this form has had before', () => {
+  /*
+   * Found while testing the above, and it was a **500**.
+   *
+   * `UNIQUE (form_id, schema_hash)` is what makes republishing the CURRENT
+   * document idempotent rather than a version factory. Publishing an OLDER
+   * version's document — undoing a bad publish by putting yesterday's back — hit
+   * the same index, and nothing caught it: the insert raised and Fastify
+   * answered "Internal Server Error".
+   *
+   * A published version is immutable and cannot be published twice, so the
+   * answer is a refusal rather than a new version; what it owed the caller is
+   * WHICH version they already have.
+   */
+  test('is refused by name and by version, not with a 500', async () => {
+    const first = await app.inject({
+      method: 'POST',
+      url: '/forms',
+      headers: asAdmin(),
+      payload: { path: 'revert-me', schema },
+    })
+    expect(first.statusCode).toBe(201)
+
+    await app.inject({
+      method: 'POST',
+      url: '/forms',
+      headers: asAdmin(),
+      payload: { path: 'revert-me', schema: { ...schema, title: 'A publish to undo' } },
+    })
+
+    // Put the original back, which is what undoing looks like.
+    const revert = await app.inject({
+      method: 'POST',
+      url: '/forms',
+      headers: asAdmin(),
+      payload: { path: 'revert-me', schema },
+    })
+
+    expect(revert.statusCode).toBe(409)
+    const body = revert.json() as { error: string; version: number }
+    expect(body.error).toBe('already_published')
+    // The version it already is, so the caller knows what to point at rather
+    // than being told no.
+    expect(body.version).toBe(1)
+  })
+
+  test('while republishing the current document is still idempotent', async () => {
+    // The distinction that makes the refusal above safe: "deploy again" must
+    // never manufacture a version, and must never start failing either.
+    await app.inject({
+      method: 'POST',
+      url: '/forms',
+      headers: asAdmin(),
+      payload: { path: 'deploy-again', schema },
+    })
+
+    const again = await app.inject({
+      method: 'POST',
+      url: '/forms',
+      headers: asAdmin(),
+      payload: { path: 'deploy-again', schema },
+    })
+
+    expect(again.statusCode).toBe(201)
+    expect((again.json() as { version: number }).version).toBe(1)
+  })
+})

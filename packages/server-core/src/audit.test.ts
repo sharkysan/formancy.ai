@@ -2,7 +2,8 @@ import { describe, expect, test } from 'vitest'
 import { AUDIT_ACTIONS, auditedBy } from './audit.js'
 import type { AuditAction } from './audit.js'
 import { createMemoryStorage } from './testing/memory-storage.js'
-import { createSubmission, publishForm, setFormAccess } from './use-cases.js'
+import { createSubmission, setFormAccess } from './use-cases.js'
+import { publishForm } from './publishing.js'
 import type { ServerDeps } from './index.js'
 
 /**

@@ -1,4 +1,6 @@
 import { randomUUID } from 'node:crypto'
+import { publishRoutes } from './routes/publish.js'
+import { SCHEMA_HASH_HEADER } from './headers.js'
 import Fastify from 'fastify'
 import type { FileStore } from './file-store.js'
 import rateLimit from '@fastify/rate-limit'
@@ -40,7 +42,7 @@ import type {
 } from '@formancy/server-core'
 import { createSessionTokens, realRandomToken, realSecretHashing } from './auth-runtime.js'
 
-export const SCHEMA_HASH_HEADER = 'x-formancy-schema-hash'
+export { SCHEMA_HASH_HEADER } from './headers.js'
 /** Base64 JSON, the shape an ALTCHA client already produces. */
 export const CHALLENGE_HEADER = 'x-formancy-challenge'
 
@@ -320,42 +322,9 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
 
   // -------------------------------------------------------------- management
 
-  app.post('/forms', { preHandler: requires('form.publish') }, async (request, reply) => {
-    const body = request.body as { path?: unknown; schema?: unknown } | null
-    if (body === null || typeof body.path !== 'string' || body.path === '' || body.schema === undefined) {
-      return reply.code(400).send({ error: 'bad_request', message: 'Body needs { path, schema }.' })
-    }
-
-    const outcome = await publishForm(deps, {
-      path: body.path,
-      schema: body.schema,
-      // Passed in so the audit row can be written INSIDE the publish's
-      // transaction. Appended here afterwards, it would record a publish that
-      // half-applied as having happened.
-      actor: (request as FastifyRequest & { actor: Actor }).actor,
-    })
-    if (!outcome.ok) {
-      // A switch rather than a ternary chain, so adding a refusal kind to
-      // PublishOutcome fails to compile here until it is given a shape.
-      switch (outcome.kind) {
-        case 'invalid_schema':
-          return reply.code(422).send({ error: outcome.kind, errors: outcome.errors })
-        case 'unsafe_pattern':
-          // The pattern and its complexity, so the author can see which field
-          // and why rather than being told no.
-          return reply.code(422).send({ error: outcome.kind, patterns: outcome.patterns })
-        case 'invalid_logic':
-          return reply.code(422).send({ error: outcome.kind, message: outcome.message })
-        case 'unknown_options_source':
-          // The names, so an author can see which list this deployment has never
-          // heard of rather than being told no. A published version is frozen
-          // forever, so a form naming an unresolvable list would render a message
-          // instead of a chooser with nothing ever having said so.
-          return reply.code(422).send({ error: outcome.kind, sources: outcome.sources })
-      }
-    }
-    return reply.code(201).send({ version: outcome.version, schemaHash: outcome.schemaHash })
-  })
+  // Publishing is its own plugin: one route family per plugin, which is
+  // Fastify's own unit and what this file's size budget named as the seam.
+  await app.register(publishRoutes, { deps, requires })
 
   app.put('/f/:path/access', { preHandler: requires('form.publish') }, async (request, reply) => {
     const { path } = request.params as { path: string }

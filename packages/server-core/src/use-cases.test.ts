@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, test } from 'vitest'
 import type { FormSchema } from '@formancy/spec'
 import { MIXED_NUMERIC_LITERAL_EXAMPLE } from '@formancy/core'
-import { createSubmission, exportCsv, setFormAccess, listForms, listSubmissions, listVersions, publishForm, resolveForm, resumeDraft, saveDraft, startDraft } from './use-cases.js'
+import { createSubmission, exportCsv, setFormAccess, listForms, listSubmissions, listVersions, resolveForm, resumeDraft, saveDraft, startDraft } from './use-cases.js'
+import { publishForm } from './publishing.js'
 import type { ServerDeps } from './use-cases.js'
 import { createMemoryStorage } from './testing/memory-storage.js'
 
@@ -935,5 +936,208 @@ describe('the side the server replays as', () => {
     })
 
     expect(outcome.ok).toBe(true)
+  })
+})
+
+describe('two people editing one form', () => {
+  /*
+   * form.io calls it collision control. The mechanism was already here and
+   * pointed the other way: a SUBMISSION declares the version it was rendered
+   * against, and a stale one is refused with `version_changed` carrying the
+   * current schema, so the client can re-render rather than guess.
+   *
+   * Publishing declared nothing. Two editors open the same form, both press
+   * publish, and the second silently wins — no error, no diff, no sign that
+   * anybody else had it open. The first editor's work is not lost, because a
+   * published version is immutable and theirs is still version 4
+   * ([0025](../../../docs/decisions/0025-immutability-in-the-database.md)) —
+   * what is lost is that anyone noticed, and `forms.current_version_id` now
+   * points past it.
+   *
+   * **Declaring is optional, and that is deliberate.** A script, the CLI and an
+   * agent publish a document they composed rather than one they opened, and have
+   * nothing to declare; forcing them to read the current version first would make
+   * every one of them do a round trip to satisfy a rule about editors. What
+   * declares is the thing that OPENED a version: the builder.
+   */
+  const other: FormSchema = {
+    ...schema,
+    title: 'Contact, edited by somebody else',
+  }
+
+  const publishedHash = async (): Promise<string> => {
+    const outcome = await publishForm(deps, { path: 'contact-us', schema })
+    if (!outcome.ok) throw new Error('the fixture did not publish')
+    return outcome.schemaHash
+  }
+
+  test('a publish that declares nothing still publishes, as a script does', async () => {
+    await publishedHash()
+
+    const outcome = await publishForm(deps, { path: 'contact-us', schema: other })
+
+    expect(outcome.ok).toBe(true)
+  })
+
+  test('a publish that declares the version it opened is accepted', async () => {
+    const basedOn = await publishedHash()
+
+    const outcome = await publishForm(deps, {
+      path: 'contact-us',
+      schema: other,
+      basedOnSchemaHash: basedOn,
+    })
+
+    expect(outcome.ok).toBe(true)
+  })
+
+  test('and one that declares a version somebody has since replaced is refused', async () => {
+    const basedOn = await publishedHash()
+    // Somebody else publishes while the first editor is still editing.
+    await publishForm(deps, { path: 'contact-us', schema: other })
+
+    const outcome = await publishForm(deps, {
+      path: 'contact-us',
+      schema: { ...schema, title: 'Contact, edited by the first person' },
+      basedOnSchemaHash: basedOn,
+    })
+
+    expect(outcome).toMatchObject({ ok: false, kind: 'version_changed' })
+  })
+
+  test('and the refusal carries the current version, so the editor can show the difference', async () => {
+    // The same body the submission path's 409 carries, for the same reason: a
+    // refusal that only says no makes the client fetch and guess what changed.
+    const basedOn = await publishedHash()
+    await publishForm(deps, { path: 'contact-us', schema: other })
+
+    const outcome = await publishForm(deps, {
+      path: 'contact-us',
+      schema,
+      basedOnSchemaHash: basedOn,
+    })
+
+    expect(outcome.ok).toBe(false)
+    if (outcome.ok || outcome.kind !== 'version_changed') throw new Error('wrong refusal')
+    expect(outcome.current?.schema).toMatchObject({ title: 'Contact, edited by somebody else' })
+    expect(outcome.current?.version).toBe(2)
+  })
+
+  test('republishing the identical document is still idempotent, declared or not', async () => {
+    /*
+     * The order these two checks happen in is the whole of this case. If the
+     * stale-base refusal came first, an editor whose document already MATCHES
+     * what is published would be told to resolve a conflict with themselves —
+     * somebody else wrote exactly what they were going to write, there is
+     * nothing to merge, and "deploy again" must never manufacture a version.
+     */
+    const basedOn = await publishedHash()
+    await publishForm(deps, { path: 'contact-us', schema: other })
+
+    const outcome = await publishForm(deps, {
+      path: 'contact-us',
+      schema: other,
+      basedOnSchemaHash: basedOn,
+    })
+
+    expect(outcome).toMatchObject({ ok: true, version: 2 })
+  })
+
+  test('a first publish declaring a base is refused, because there was nothing to open', async () => {
+    // An editor that declares a version of a form which has none is an editor
+    // working from something this deployment never published.
+    const outcome = await publishForm(deps, {
+      path: 'brand-new',
+      schema,
+      basedOnSchemaHash: 'sha256-of-a-form-that-is-not-here',
+    })
+
+    expect(outcome).toMatchObject({ ok: false, kind: 'version_changed' })
+  })
+})
+
+describe('a document naming a list this deployment cannot resolve', () => {
+  /*
+   * `SAFETY-ANALYSIS.md` A7 states this as a constraint — *"at publish time a
+   * document naming a source the deployment has never configured is refused
+   * outright, so a form cannot be frozen with a list nobody can resolve"* —
+   * and nothing failed if it stopped being true. [0077]'s *Verified by* names
+   * the schema-validation cases and the submission-time membership cases, and
+   * this branch was in neither.
+   *
+   * It matters because a published version is frozen forever: the form's
+   * select would render a message instead of a chooser, for as long as that
+   * version exists, with nothing having said so at the only moment anybody
+   * could have acted on it.
+   */
+  const sourced: FormSchema = {
+    specVersion: '2',
+    id: 'sourced',
+    title: 'Sourced',
+    model: { fields: [{ key: 'canton', type: 'select', optionsSource: 'cantons' }] },
+  }
+
+  test('is refused, and names the list so an operator can compare configurations', async () => {
+    const outcome = await publishForm({ ...deps, optionsSources: {} }, {
+      path: 'needs-cantons',
+      schema: sourced,
+    })
+
+    expect(outcome).toMatchObject({ ok: false, kind: 'unknown_options_source', sources: ['cantons'] })
+  })
+
+  test('and publishes once the deployment offers it', async () => {
+    const outcome = await publishForm({ ...deps, optionsSources: { cantons: {} } }, {
+      path: 'needs-cantons',
+      schema: sourced,
+    })
+
+    expect(outcome.ok).toBe(true)
+  })
+
+  test('while a deployment that configures no sources at all publishes it unchecked', async () => {
+    // `optionsSources` absent means this deployment does not resolve lists,
+    // which is not the same as "this list does not exist" — the alternative
+    // would make every form naming a source unpublishable on a default
+    // install, including one whose host supplies the list client-side.
+    const outcome = await publishForm(deps, { path: 'unchecked', schema: sourced })
+
+    expect(outcome.ok).toBe(true)
+  })
+})
+
+describe('republishing a document this form has already had', () => {
+  /*
+   * `UNIQUE (form_id, schema_hash)` is what makes republishing the CURRENT
+   * document a no-op rather than a version factory, and it refuses an OLDER
+   * one just as firmly. Reverting by republishing yesterday's document is a
+   * reasonable thing to try, and before this branch existed the insert raised
+   * and the route answered **500**.
+   *
+   * Asserted here and not only against real PostgreSQL, because the refusal is
+   * a decision this layer makes — a published version is immutable and cannot
+   * be published twice ([0025]) — rather than a constraint it discovers. A
+   * branch only the integration suite reaches is a branch a later tidy-up
+   * deletes.
+   */
+  test('names the version it already is, rather than failing at the insert', async () => {
+    const first = await publishForm(deps, { path: 'revert-me', schema })
+    await publishForm(deps, { path: 'revert-me', schema: { ...schema, title: 'A bad edit' } })
+
+    // Putting the original back, which is what undoing looks like.
+    const outcome = await publishForm(deps, { path: 'revert-me', schema })
+
+    expect(outcome).toMatchObject({ ok: false, kind: 'already_published', version: 1 })
+    expect(first.ok).toBe(true)
+  })
+
+  test('while the current document is idempotent, which is what makes that refusal safe', async () => {
+    // The distinction: "deploy again" must never manufacture a version, and
+    // must never start failing either.
+    await publishForm(deps, { path: 'deploy-twice', schema })
+
+    const outcome = await publishForm(deps, { path: 'deploy-twice', schema })
+
+    expect(outcome).toMatchObject({ ok: true, version: 1 })
   })
 })

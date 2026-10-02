@@ -52,16 +52,16 @@ const CEILINGS: Record<string, { lines: number; why: string }> = {
     why: 'The landing page, one long document. The seam is one section per file.',
   },
   'packages/server/src/app.ts': {
-    lines: 959,
-    why: 'Every route in one plugin. The seam is one route family per Fastify plugin, which is the framework’s own unit.',
+    lines: 928,
+    why: 'The seam is one route family per Fastify plugin, which is the framework’s own unit. Publishing moved to routes/publish.ts when the budget refused the next thing added here; the rest follow the same way.',
   },
   'packages/spec/src/validate.ts': {
     lines: 870,
     why: 'One subject, read top to bottom: what makes a document invalid. Kept deliberately whole.',
   },
   'packages/server-core/src/use-cases.ts': {
-    lines: 841,
-    why: 'The seam is one use-case family per file — publishing, submitting, drafts, files.',
+    lines: 663,
+    why: 'The seam is one use-case family per file. Publishing moved to publishing.ts when the budget refused the next thing added here; submitting, drafts and files follow the same way.',
   },
   'packages/conformance/src/validate.ts': {
     lines: 763,

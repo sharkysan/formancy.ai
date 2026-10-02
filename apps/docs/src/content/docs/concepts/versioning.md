@@ -52,6 +52,38 @@ If the form has been republished since, the server answers
 `409 FORM_VERSION_CHANGED` **with the current schema attached**, so the client
 can re-render and preserve what it can instead of guessing why it was refused.
 
+### Publishing declares it too — and may decline to
+
+The same header on `POST /forms` says which version this edit *started from*:
+
+```
+x-formancy-schema-hash: 52b543ef…
+```
+
+If somebody else published in the meantime, the answer is the same
+`409 FORM_VERSION_CHANGED` with the current schema attached. That is what stops
+two people editing one form in the builder from silently overwriting each other
+— the loser is told what won, and shown the difference, rather than finding out
+on their next page load.
+
+**Sending it is optional**, and that is the design. A script, the CLI or an
+agent publishes a document it *composed* rather than one it *opened*; it has no
+version to declare, and requiring the header would make every one of them fetch
+the current version first to satisfy a rule about editors. Send it when you
+opened a version and want to be told you have been overtaken; omit it and the
+publish is last-write-wins, as a deploy should be.
+
+Two answers it will not give. Republishing a document **identical** to what is
+current is a no-op and returns that version, declared or not — there is nothing
+to merge with somebody who wrote exactly what you were going to write, and a
+repeated deploy must not manufacture versions. Republishing a document
+identical to an **older** version is `409 already_published` naming that
+version, because a published version is immutable and cannot be published
+twice.
+
+No merge is attempted. The refusal carries the other schema so you can see what
+changed; which parts to keep is a person's decision.
+
 ## 5. Drafts migrate lazily, never eagerly
 
 An autosaved draft is bound to the version it was written under. When it is
