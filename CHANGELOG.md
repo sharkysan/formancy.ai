@@ -10,6 +10,57 @@ later.
 
 ## Unreleased
 
+**The Angular builder arranges the form on the form itself**, which was the last thing the
+React builder had that it did not. `FormancyArrangeSurface` wraps a rendered form and makes
+it a drop target; it is off unless a caller turns it on, because a preview somebody is typing
+into should not be picking up drags.
+
+**Where a drop lands moved into `@formancy/builder-core` rather than being copied.** It was
+80 lines inside the React surface: which part of an element is a side zone, how wide an
+element has to be before its sides are worth aiming at, the cap that stops a very wide field
+being all edge, that a node already inside a row has no side zones because left and right
+already mean before and after, and which axis the indicator runs along. Every one of those is
+a decision about what a pointer means, and a user asks it by pointing at one place — two
+implementations would be two answers, and the difference would show up as "the drag works
+differently in the Angular builder".
+
+`arrangeDrop` takes a rectangle as plain numbers rather than a `DOMRect`, because
+`builder-core` compiles with no DOM library. One thing stays per framework: whether the
+hovered node already sits side by side with its siblings is a fact about what the *renderer
+did* — a table child that spans is wrapped in a `layout-cell` — and predicting it in the
+builder would mean reimplementing the renderer.
+
+**And the measurement is less flattering than the slogan.** What decides anything is 67 lines
+of shared code with no framework in it; what each builder needs on top is about 190 lines of
+event plumbing, 181 in React and 198 in Angular. A second builder is a binding rather than a
+second builder, as [0091](docs/decisions/0091-a-second-builder-is-a-binding.md) said, but a
+binding for this feature is roughly the same amount of code again.
+[0094](docs/decisions/0094-the-second-builder-reaches-parity.md) has the bill.
+
+A side effect worth having: a side zone is now testable without a layout engine. jsdom gives
+every element a zero rectangle, so the React suite could never see one — its drag tests aim at
+`box.left ± 1` and rely on the sign. The nine geometry cases pass real numbers and assert the
+boundaries, the cap and the minimum directly.
+
+**Two documentation claims were wrong and are corrected.** The README said *"the Angular
+package carries the structure tree today; the arrangement tree, the property panel, the
+condition editor and the translations pane are React-only"* — every clause of that shipped
+over four releases and the sentence changed in none of them. It is now derived: a guard reads
+both builders' barrels, pairs every pane across the two, and requires anything one-sided to be
+named with a reason. And arc42's debt table still said a data path inside a rule's condition
+is never rewritten, which the previous change fixed and this one noticed.
+
+A comment also claimed `SIDE_ZONE_MINIMUM` was what kept a zero-sized element from being
+treated as all edge. It is not — with a width of zero the zone is zero and neither comparison
+at the edges holds — and the correction is in the code, because believing the wrong guard
+protects something is how the real one gets deleted as redundant.
+
+**What is still missing is a demonstration.** No application mounts `@formancy/builder-angular`,
+or `@formancy/angular` either: both exist only inside jsdom suites. The v0.1 goal was one
+schema rendering in React *and* Angular in one screenshot, and that screenshot does not exist,
+so Angular parity is a claim backed by tests rather than by anything a visitor can open.
+Recorded in arc42's debt table and as the roadmap's next item rather than left implied.
+
 **A rule follows the path it reads.** Renaming a field, or unwrapping a group, now rewrites
 every rule that names it — the `target`, the `cel` condition, and the `editor` metadata the
 logic panel reopens from.

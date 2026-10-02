@@ -194,3 +194,4 @@ listed under the sections they belong to above.
 | [0091](0091-a-second-builder-is-a-binding.md) | A second builder is a binding, not a second builder | accepted |
 | [0092](0092-publishing-declares-what-it-opened.md) | Publishing declares what it opened, and declaring is optional | accepted |
 | [0093](0093-a-rule-follows-the-path-it-reads.md) | A rule follows the path it reads, by splicing spans the parser reports | accepted |
+| [0094](0094-the-second-builder-reaches-parity.md) | The second builder reaches parity, and the drop geometry is shared rather than copied | accepted |

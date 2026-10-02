@@ -125,12 +125,29 @@ the keyboard first, which is what WCAG 2.2 SC 2.5.7 asks for and the order these
 were built in. Only a drop the session will accept shows an indicator, and every
 drop is announced through the same live region the keyboard uses.
 
+## Arranging on the form itself
+
+`FormancyArrangeSurface` wraps a rendered form and makes it a drop target, as the
+React builder's does. It is **off unless a caller turns it on**: a preview
+somebody is typing into should not be picking up drags.
+
+Where a drop lands is `arrangeDrop` in `@formancy/builder-core`, shared with the
+React surface, so the two cannot disagree about which part of a field is a side
+zone ([0094](../../docs/decisions/0094-the-second-builder-reaches-parity.md)).
+What is here is the Angular half: reading a pointer, marking elements draggable,
+drawing the indicator, and announcing the outcome through a live region. Every
+move goes through the same session command the arrangement tree and the keyboard
+use.
+
+The renderer knows nothing about it. `@formancy/angular` emits
+`data-formancy-layout-path` and `data-formancy-field-path` on what it renders,
+both inert, and this reads them from the outside.
+
 ## What it does not have yet
 
-Dragging on the rendered form itself — the surface the React builder puts over a
-live preview. Everything it would call is in `@formancy/builder-core` already, so
-it is a directive rather than a design. `@formancy/builder-core` holds what each of them
-needs, so they are components rather than designs.
+Nothing the React builder has. What it does not have is a **demonstration**: no
+application mounts this package, so parity is a property of its tests rather than
+something anybody can see working.
 
 ## Licence
 

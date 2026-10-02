@@ -42,6 +42,8 @@ export { OPERATORS, celLiteral, compileCondition, compileGroup } from './conditi
 export type { Condition, ConditionGroup, Operator } from './conditions.js'
 export { dropLocation } from './drop.js'
 export { layoutDropLocation } from './layout-drop.js'
+export { SIDE_ZONE_MINIMUM, arrangeDrop } from './arrange.js'
+export type { ArrangeDrop, Box } from './arrange.js'
 export { describeLayoutTarget, flattenLayout, nameOfPath } from './layout-tree.js'
 export type { LayoutTreeNode } from './layout-tree.js'
 export { newFieldOfType, nextSpecVersion, paletteEntries, typesNeedingUpgrade } from './palette.js'

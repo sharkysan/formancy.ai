@@ -7,6 +7,7 @@
  * came from.
  */
 export type {
+  ArrangeDrop,
   BuilderSession,
   BuilderView,
   CatalogueFile,
