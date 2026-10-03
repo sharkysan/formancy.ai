@@ -27,13 +27,20 @@ const arrangementTree = (): HTMLElement => screen.getByRole('tree', { name: /Arr
 /**
  * The preview pane alone.
  *
- * Scoped because the page deliberately shows the same document three ways —
- * as JSON, as a tree and as a form — so an unscoped query finds the schema
- * text when it meant the rendered field. The required marker is a theme's
- * ::after, so accessible names here have no asterisk.
+ * Scoped because the page deliberately shows the same document four ways — as
+ * JSON, as a tree, and as a rendered form under EACH renderer — so an unscoped
+ * query finds the schema text when it meant the field, or finds the field twice.
+ * The required marker is a theme's ::after, so accessible names here have no
+ * asterisk.
+ *
+ * This returns the React one. Both renderers are regions with accessible names
+ * for exactly this reason, and `angularForm` below is the same question asked of
+ * the other half.
  */
-const form = (): HTMLElement =>
-  screen.getByRole('heading', { name: 'Form' }).closest('section') as HTMLElement
+const form = (): HTMLElement => screen.getByRole('region', { name: 'React' })
+
+/** The same document, under the other renderer. */
+const angularForm = (): HTMLElement => screen.getByRole('region', { name: 'Angular' })
 
 describe('the file field', () => {
   test('can actually accept a file, because the app provides an uploader', async () => {
@@ -55,17 +62,21 @@ describe('the file field', () => {
     // configured" to be ABSENT, which it is while the field is hidden and while the form has
     // not rendered at all. A vacuous pass that would have survived removing the uploader
     // again, which is exactly the bug it was written for.
-    await userEvent.click(screen.getByRole('checkbox', { name: 'Gift wrapping' }))
+    // Scoped to the React renderer: the page shows the document under both, so
+    // the unscoped query found the checkbox twice and could not say which form
+    // it was about to tick.
+    const react = within(form())
+    await userEvent.click(react.getByRole('checkbox', { name: 'Gift wrapping' }))
 
     const picker = await waitFor(() => {
-      const found = document.querySelector('input[type="file"]')
+      const found = form().querySelector('input[type="file"]')
       expect(found, 'the file field did not appear').not.toBeNull()
       return found
     })
     expect(picker).not.toBeNull()
 
     // And the read-only message is gone, which is the thing the uploader changes.
-    expect(screen.queryByText(/no upload destination has been configured/i)).toBeNull()
+    expect(react.queryByText(/no upload destination has been configured/i)).toBeNull()
   })
 
   test('records where the bytes went, and does not pretend they left the tab', async () => {

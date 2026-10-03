@@ -10,6 +10,69 @@ later.
 
 ## Unreleased
 
+**One schema now renders in React and Angular side by side, in the playground.** The project's
+founding claim is a headless engine that is genuinely framework-neutral, and it was
+demonstrated nowhere: both Angular packages were complete, published, and mounted by no
+application, so parity was a result in two jsdom suites that had never seen each other.
+
+The landing page and this repository's README have both been telling people they could
+*"preview your form in React and Angular"* in the playground. That was not true. It is now,
+and there is a guard deriving it from what the page actually mounts so it cannot quietly stop
+being true again.
+
+**`createFormEngine` takes an optional `formId`**, because putting them on one page needed
+something the engine could not express. Element ids are minted as `f:{formId}:{path}:{part}`
+from `schema.id`, which is what makes them deterministic and SSR-stable — so two engines built
+from one schema mint **identical** ids. Measured.
+
+And the consequence is worse than two elements sharing an id, which was also measured: with
+both engines on one form id, every control in the second renderer **loses its accessible name
+altogether**, because `<label for>` resolves to the first match in the document. Not
+duplicated — unreachable. Each renderer is correct about the tree it rendered, so neither can
+see it.
+
+`formId` is a rendering concern and not a document one, which is why it is an option rather
+than a second `schema.id`: the document is the same document, its hash is the same hash, and a
+submission still binds to the version it was rendered against. It is also validated when the
+engine is **built** rather than when a field is first rendered — which was true of `schema.id`
+too, and is the wrong moment, because a page that renders nothing until somebody scrolls
+reported the mistake then. [0095](docs/decisions/0095-one-schema-two-renderers.md) has the
+argument, including why the renderers do not share one engine.
+
+A host has the same page for an ordinary reason — two of the same form, one per applicant — so
+both getting-started guides now document it.
+
+**The cost, measured over the built bundle:** 231.4 kB brotli before, **280.9 kB after**. About
+50 kB for Angular's framework and renderer, on a page that already carries React, Monaco and
+the builder. Published rather than left to be found: this is a demonstration page, and nothing
+a consumer installs got bigger.
+
+**Building it found a defect nobody could have seen.** The playground's own capabilities — the
+options source, the scanner, the uploader, the rich-text editor — were local to the React
+component, so the Angular half was bootstrapped without them and rendered **one control
+fewer**: `deliveryPoint` is a typeahead over an `optionsSource`, and with no source to resolve
+it shows a message instead of a chooser. The pane was full of fields and looked right. It was
+caught by comparing the two panes by **accessible name**, which is why that test is an equality
+rather than a spot check. The capabilities moved to `demo-capabilities.ts`, because they are
+the *deployment* and both renderers here are one deployment.
+
+**And the accessibility audit had been checking half the page.** It rendered the app and
+returned, and Angular bootstraps asynchronously, so axe reported a clean page with one form on
+it. It now waits — and that wait is what makes the audit mean anything, since duplicate ids are
+exactly what axe catches and exactly what two renderers of one schema produce. Confirmed by
+colliding the ids and watching all four cases fail.
+
+Two smaller things the work forced. The engine's size budget allows no growth at all, so the
+check protocol types moved to `core/src/checks.ts` to pay for the new option — the first piece
+of the seam that entry already named. And `OptionsSource`, `OptionsSources` and `Scanner` turn
+out to be declared independently and byte-for-byte identically in `@formancy/react` and
+`@formancy/angular`; the shared capabilities typecheck structurally against both, which is the
+only reason one deployment can serve two renderers. Recorded as debt rather than moved, because
+a published type is two packages' public surface.
+
+**What is still demonstrated nowhere is the Angular builder.** What is on the page is
+`@formancy/angular`, the renderer. The debt table and the roadmap say which half is left.
+
 **The Angular builder arranges the form on the form itself**, which was the last thing the
 React builder had that it did not. `FormancyArrangeSurface` wraps a rendered form and makes
 it a drop target; it is off unless a caller turns it on, because a preview somebody is typing

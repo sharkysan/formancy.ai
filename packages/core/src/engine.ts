@@ -12,6 +12,7 @@ import type {
 import { buildGraph } from './graph.js'
 import type { GraphNode } from './graph.js'
 import { fieldIds } from './ids.js'
+import type { Check } from './checks.js'
 import type { FieldIds } from './ids.js'
 import { createInteractionState } from './interaction.js'
 import { modelViolations } from './model-validators.js'
@@ -93,6 +94,16 @@ export interface ValidationReport {
 
 export interface FormEngineOptions {
   schema: FormSchema
+  /**
+   * The namespace for this engine's element ids. Defaults to `schema.id`.
+   *
+   * For rendering one schema twice on one page, which is otherwise not
+   * expressible: two engines over one schema mint identical ids, and a
+   * duplicate id breaks `<label for>` and `aria-describedby` silently — the
+   * second form's controls lose their accessible names altogether
+   * ([0095](../../../docs/decisions/0095-one-schema-two-renderers.md)).
+   */
+  formId?: string
   initialValue?: unknown
   /**
    * Where now()/today()/random() come from. Required when the schema has
@@ -123,21 +134,6 @@ export interface FormEngineOptions {
    */
   checks?: Record<string, Check>
 }
-
-/** What a deployment is asked, and what it answers. */
-export interface CheckRequest {
-  /** The name the rule gave. */
-  check: string
-  /** The data path of the field being checked. */
-  path: string
-  /** The answer in question. Never empty: emptiness is `required`'s business. */
-  value: unknown
-  /** The whole submission so far, for a check that needs more than one answer. */
-  data: unknown
-}
-
-/** An error code while the answer is refused, or `undefined` while it is fine. */
-export type Check = (request: CheckRequest) => Promise<string | undefined> | string | undefined
 
 export interface FormEngine {
   /**
@@ -275,6 +271,10 @@ const GROUPED_TYPES: ReadonlySet<string> = new Set(['radio', 'selectboxes'])
 
 export function createFormEngine(options: FormEngineOptions): FormEngine {
   const { schema } = options
+
+  // Validated now, not when a field is first rendered and the argument is gone.
+  const elementNamespace = options.formId ?? schema.id
+  fieldIds(elementNamespace, [])
 
   // ---------------------------------------------------------------- the walk
 
@@ -1318,7 +1318,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
         ...(serverErrorsByWire.get(wire) ?? NO_ERRORS),
         ...(checkErrorsByWire.get(wire) ?? NO_ERRORS),
       ])
-      const ids = fieldIds(schema.id, node.path)
+      const ids = fieldIds(elementNamespace, node.path)
       const snapshot: FieldSnapshot = Object.freeze({
         checking: checkingWires.has(wire),
         value: store.get(node.path),

@@ -121,10 +121,15 @@ which changes would invalidate the submissions you already have.
   <img src="./docs/images/readme/playground.png" alt="The playground: the builder, the live form in the Blueprint theme, and the engine's submission value and tracked fields side by side" width="100%" />
 </p>
 
-Use the visual builder or edit the JSON in the playground. Preview the form in
-Angular and React, try conditional questions and validation, and inspect the
-answers that would be submitted. Switch language or theme without reloading.
+Use the visual builder or edit the JSON in the playground. The form is rendered
+**twice, side by side — once by Angular and once by React**, from one schema over
+two engines built from it, so the claim that the engine is framework-neutral is
+something you can look at rather than something this file asserts. Try
+conditional questions and validation, and inspect the answers that would be
+submitted. Switch language or theme without reloading.
 `pnpm --filter @formancy/playground dev` runs it locally.
+
+*(The screenshot above predates the second renderer.)*
 
 ### Six reasons to build with formancy
 

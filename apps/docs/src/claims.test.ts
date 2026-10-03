@@ -476,6 +476,61 @@ describe('the files the coverage policy excludes as barrels', () => {
  * server-core` rather than any wording about it, because deriving the fact from
  * the code is the only half of this a test can hold.
  */
+/**
+ * The landing page's promise about the playground, held against the playground.
+ *
+ * *"Open the form builder to add and arrange fields yourself, then preview your
+ * form in React and Angular."* That sentence was on the landing page — the most
+ * visible prose in the project — while the playground rendered **React only**.
+ * Nobody wrote it dishonestly: the Angular package existed, was published, and
+ * was mounted by no application, so the sentence described the product as
+ * designed rather than as built.
+ *
+ * Derived from the page that has to deliver it, in both directions, so the claim
+ * and the capability cannot drift apart again
+ * ([0095](../../../docs/decisions/0095-one-schema-two-renderers.md)).
+ */
+describe('what the landing page promises the playground does', () => {
+  const read = (...parts: string[]): string => readFileSync(join(repo, ...parts), 'utf8')
+
+  const BOTH_RENDERERS = /preview your form in React and Angular/
+
+  test('is a sentence that is actually there, which is a guard on this guard', () => {
+    expect(read('apps', 'site', 'src', 'app.tsx')).toMatch(BOTH_RENDERERS)
+  })
+
+  test('and the playground mounts both renderers, not only the one it used to', () => {
+    /*
+     * Derived from what the page MOUNTS rather than from anything it says about
+     * itself. `FormancyForm` is the React renderer and `AngularPane` is the
+     * Angular one bootstrapped into a host; losing either makes the landing
+     * page's sentence false, and this is where that is noticed.
+     */
+    const playground = read('apps', 'playground', 'src', 'app.tsx')
+
+    expect(playground, 'the playground stopped rendering the React form').toMatch(
+      /<FormancyForm\s/,
+    )
+    expect(playground, 'the playground stopped mounting the Angular renderer').toMatch(
+      /<AngularPane\s/,
+    )
+  })
+
+  test('and gives each renderer its own id namespace, or they break each other', () => {
+    // Two engines over one schema mint identical element ids, and `label[for]`
+    // resolves to the first match — so the second renderer's controls lose their
+    // accessible names entirely. Measured. The namespaces are what prevent it,
+    // and they are easy to remove while the page still looks right.
+    const playground = read('apps', 'playground', 'src', 'app.tsx')
+    const namespaces = [...playground.matchAll(/forRenderer\('([a-z]+)'\)/g)].map(
+      (match) => match[1]!,
+    )
+
+    expect(namespaces.length).toBe(2)
+    expect(new Set(namespaces).size, 'both renderers were given the same form id').toBe(2)
+  })
+})
+
 describe('what the roadmap says is still to do', () => {
   const roadmap = (): string =>
     readFileSync(join(repo, 'apps', 'docs', 'src', 'content', 'docs', 'project', 'roadmap.md'), 'utf8')
