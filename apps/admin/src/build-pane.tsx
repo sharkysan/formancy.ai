@@ -14,7 +14,7 @@ import { FormancyForm, FormancyProvider, UploaderProvider } from '@formancy/reac
 import type { Uploader } from '@formancy/react'
 import type { FieldDef, FormSchema } from '@formancy/spec'
 import { uploadFile } from './api.js'
-import { publishProblem } from './api.js'
+import { PublishNote } from './publish-note.js'
 import type { PublishResult } from './api.js'
 
 /**
@@ -226,13 +226,7 @@ function BuilderWorkspace({
               {view.publishable.errors.map((error) => error.message).join(' ')}
             </p>
           )}
-          {publishState === undefined ? null : (
-            <p className={publishState.ok ? 'wb-ok' : 'wb-problem'}>
-              {publishState.ok
-                ? `Published version ${publishState.version}.`
-                : publishProblem(publishState)}
-            </p>
-          )}
+          <PublishNote state={publishState} />
         </div>
       </section>
 

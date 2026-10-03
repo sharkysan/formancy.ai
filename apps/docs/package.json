@@ -19,6 +19,7 @@
   "devDependencies": {
     "@formancy/core": "workspace:*",
     "@formancy/expressions": "workspace:*",
+    "@formancy/server-core": "workspace:*",
     "@formancy/spec": "workspace:*",
     "@types/node": "^22.10.0",
     "@vitest/coverage-v8": "catalog:",

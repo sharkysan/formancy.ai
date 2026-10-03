@@ -276,6 +276,9 @@ importers:
       '@formancy/expressions':
         specifier: workspace:*
         version: link:../../packages/expressions
+      '@formancy/server-core':
+        specifier: workspace:*
+        version: link:../../packages/server-core
       '@formancy/spec':
         specifier: workspace:*
         version: link:../../packages/spec

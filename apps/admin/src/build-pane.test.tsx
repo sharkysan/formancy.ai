@@ -169,12 +169,63 @@ describe('publishing', () => {
       <BuildPane
         source={JSON.stringify(schema)}
         onChange={vi.fn()}
-        publishState={{ ok: true, version: 4, schemaHash: 'h4' }}
+        publishState={{ ok: true, version: 4, schemaHash: 'h4', warnings: [] }}
         onPublish={vi.fn()}
       />,
     )
 
     expect(screen.getByText('Published version 4.')).toBeTruthy()
+  })
+
+  test('and shows what the server thought worth checking, without calling it a failure', () => {
+    /*
+     * A publish that warns has SUCCEEDED, and the two have to be told apart on
+     * screen or the warning reads as a refusal and somebody presses the button
+     * again. So both are present: the version it created, and the list.
+     *
+     * The warning worth having this for is a rule reading a path no field
+     * provides — it evaluates to nothing for the life of an immutable version,
+     * and nothing else anywhere reports it
+     * ([0097](../../../docs/decisions/0097-a-publish-may-warn.md)).
+     */
+    render(
+      <BuildPane
+        source={JSON.stringify(schema)}
+        onChange={vi.fn()}
+        publishState={{
+          ok: true,
+          version: 4,
+          schemaHash: 'h4',
+          warnings: ['Rule on "note" (visible) reads "address.nope", which no field provides.'],
+        }}
+        onPublish={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText('Published version 4.')).toBeTruthy()
+    expect(screen.getByText(/address\.nope/)).toBeTruthy()
+    // Announced politely rather than as an alert: the publish worked, and an
+    // alert interrupts whatever was being read to report something that is not
+    // an error.
+    expect(screen.getByRole('status', { name: 'Publish warnings' })).toBeTruthy()
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
+  test('and says nothing extra when there is nothing to say', () => {
+    // The case that keeps the channel worth reading. A list that appears empty,
+    // or a heading with nothing under it, teaches somebody to skip the region.
+    render(
+      <BuildPane
+        source={JSON.stringify(schema)}
+        onChange={vi.fn()}
+        publishState={{ ok: true, version: 4, schemaHash: 'h4', warnings: [] }}
+        onPublish={vi.fn()}
+      />,
+    )
+
+    // By name: the pane has another `status` of its own, and asking for "the
+    // status" would find whichever came first.
+    expect(screen.queryByRole('status', { name: 'Publish warnings' })).toBeNull()
   })
 
   test('the button calls back', async () => {

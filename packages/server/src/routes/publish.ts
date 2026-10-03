@@ -77,6 +77,14 @@ app.post('/forms', { preHandler: requires('form.publish') }, async (request, rep
         })
     }
   }
-  return reply.code(201).send({ version: outcome.version, schemaHash: outcome.schemaHash })
+  // Warnings ride on the 201 rather than changing the status, because the
+  // publish succeeded and a 2xx that means "partly" is a status nobody can
+  // handle. Omitted when there are none, so a client that has never heard of
+  // them sees the body it always saw.
+  return reply.code(201).send({
+    version: outcome.version,
+    schemaHash: outcome.schemaHash,
+    ...(outcome.warnings.length > 0 ? { warnings: outcome.warnings } : {}),
+  })
 })
 }

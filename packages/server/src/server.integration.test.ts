@@ -1749,6 +1749,67 @@ describe('republishing a document this form has had before', () => {
     expect(body.version).toBe(1)
   })
 
+  test('and a publish that warns still returns 201, with the warning in the body', async () => {
+    /*
+     * The distinction this whole feature rests on, across a real HTTP boundary
+     * and a real database: the document IS published, and the publisher is told
+     * what is wrong with it ([0097]).
+     *
+     * `address.nope` rather than an unknown root, because a root is already
+     * refused — the engine compiles each rule against the fields that exist. A
+     * member of a group type-checks as `dyn` and gets through, which is also
+     * exactly what a rename leaves behind inside a group.
+     */
+    const grouped = {
+      specVersion: '2',
+      id: 'warned',
+      title: 'Warned',
+      model: {
+        fields: [
+          { key: 'note', type: 'text', label: 'Note' },
+          {
+            key: 'address',
+            type: 'group',
+            label: 'Address',
+            fields: [{ key: 'city', type: 'text', label: 'City' }],
+          },
+        ],
+      },
+      logic: { rules: [{ target: 'note', kind: 'visible', cel: 'address.nope == "Zug"' }] },
+    }
+
+    const published = await app.inject({
+      method: 'POST',
+      url: '/forms',
+      headers: asAdmin(),
+      payload: { path: 'warned-form', schema: grouped },
+    })
+
+    expect(published.statusCode).toBe(201)
+    const body = published.json() as { version: number; warnings?: string[] }
+    expect(body.version).toBe(1)
+    expect(body.warnings?.[0]).toContain('"address.nope"')
+
+    // And it really is there, which is what separates a warning from a refusal
+    // with a friendlier name.
+    const resolved = await app.inject({ method: 'GET', url: '/f/warned-form' })
+    expect(resolved.statusCode).toBe(200)
+  })
+
+  test('while a publish with nothing to say carries no warnings key at all', async () => {
+    // Omitted rather than empty, so a client that has never heard of warnings
+    // sees the body it always saw.
+    const clean = await app.inject({
+      method: 'POST',
+      url: '/forms',
+      headers: asAdmin(),
+      payload: { path: 'quiet-form', schema },
+    })
+
+    expect(clean.statusCode).toBe(201)
+    expect(clean.json()).not.toHaveProperty('warnings')
+  })
+
   test('while republishing the current document is still idempotent', async () => {
     // The distinction that makes the refusal above safe: "deploy again" must
     // never manufacture a version, and must never start failing either.

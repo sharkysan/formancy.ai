@@ -109,7 +109,19 @@ export async function fetchForm(
 }
 
 export type PublishResult =
-  | { ok: true; version: number; schemaHash: string }
+  | {
+      ok: true
+      version: number
+      schemaHash: string
+      /**
+       * Things the server thought worth saying about a publish that worked.
+       *
+       * Always an array, empty when the server said nothing or is older than
+       * this field, so a pane renders a list rather than branching on three
+       * states.
+       */
+      warnings: readonly string[]
+    }
   /** Somebody else published while this editor was editing. */
   | { ok: false; conflict: { version: number; schemaHash: string; schema: FormSchema } }
   | { ok: false; message: string; errors?: SchemaError[] }
@@ -159,7 +171,12 @@ export async function publish(
   })
   const body = (await response.json()) as Record<string, unknown>
   if (response.ok) {
-    return { ok: true, version: body['version'] as number, schemaHash: body['schemaHash'] as string }
+    return {
+      ok: true,
+      version: body['version'] as number,
+      schemaHash: body['schemaHash'] as string,
+      warnings: Array.isArray(body['warnings']) ? (body['warnings'] as string[]) : [],
+    }
   }
   if (body['error'] === 'FORM_VERSION_CHANGED' && body['current'] !== undefined) {
     return {

@@ -3,7 +3,7 @@ import type { FormSchema } from '@formancy/spec'
 import { validateSchema } from '@formancy/spec/validate'
 import type { SchemaError } from '@formancy/spec/validate'
 import type { ResolvedForm, ServerDeps } from './use-cases.js'
-import { createFormEngine, expressionProblems } from '@formancy/core'
+import { createFormEngine, expressionProblems, unknownReferences } from '@formancy/core'
 import { sourceNamesIn } from './options-membership.js'
 import type { AuditEntry } from './audit.js'
 import type { Actor } from './auth.js'
@@ -19,7 +19,23 @@ import type { UnsafePattern } from './redos.js'
  * said the seam was one use-case family per file, and this is the family.
  */
 export type PublishOutcome =
-  | { ok: true; formId: string; versionId: string; version: number; schemaHash: string }
+  | {
+      ok: true
+      formId: string
+      versionId: string
+      version: number
+      schemaHash: string
+      /**
+       * Things worth telling the publisher that are not grounds to refuse.
+       *
+       * Always present, empty when there is nothing to say, so a caller reads a
+       * list rather than branching on whether there is one. Sentences rather
+       * than codes: the only consumers are a person reading a CLI, an admin
+       * screen or a log, and a code would need a catalogue nobody would write
+       * ([0097](../../../docs/decisions/0097-a-publish-may-warn.md)).
+       */
+      warnings: readonly string[]
+    }
   | { ok: false; kind: 'invalid_schema'; errors?: SchemaError[] }
   | { ok: false; kind: 'invalid_logic'; message: string }
   | { ok: false; kind: 'unsafe_pattern'; patterns: UnsafePattern[] }
@@ -101,6 +117,18 @@ export async function publishForm(
     }
   }
 
+  /*
+   * And the ones that are worth saying rather than refusing.
+   *
+   * A rule reading a path no field provides is a real defect — it evaluates to
+   * nothing for the life of an immutable version — and refusing it is not
+   * available: documents valid today would become invalid tomorrow, and what a
+   * reader accepts is the frozen version contract. Computed before the storage
+   * branches below so that every successful return carries the same answer,
+   * including the idempotent one.
+   */
+  const warnings = unknownReferences(schema).map((found) => found.message)
+
   // Before the schema is persisted, because after it is there is no way to
   // time out a regular expression that has already started matching.
   const unsafe = await unsafePatterns(schema)
@@ -140,6 +168,7 @@ export async function publishForm(
         versionId: current.id,
         version: current.version,
         schemaHash: hash,
+        warnings,
       }
     }
 
@@ -187,7 +216,7 @@ export async function publishForm(
         sources: sourceNamesIn(schema),
       }),
     })
-    return { ok: true, formId: existing.id, versionId, version, schemaHash: hash }
+    return { ok: true, formId: existing.id, versionId, version, schemaHash: hash, warnings }
   }
 
   // A base declared for a form that has none is an editor working from something
@@ -218,7 +247,7 @@ export async function publishForm(
       sources: sourceNamesIn(schema),
     }),
   })
-  return { ok: true, formId, versionId, version: 1, schemaHash: hash }
+  return { ok: true, formId, versionId, version: 1, schemaHash: hash, warnings }
 }
 
 /**

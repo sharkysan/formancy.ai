@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import Editor from '@monaco-editor/react'
 import type { Monaco } from '@monaco-editor/react'
 import { BuildPane } from './build-pane.js'
+import { PublishNote } from './publish-note.js'
 import { FillPane } from './fill-pane.js'
 import { TranslationsTab } from './translations-tab.js'
 import { WebhooksPane } from './webhooks-pane.js'
@@ -23,7 +24,6 @@ import {
   fetchSubmissions,
   fetchVersions,
   publish,
-  publishProblem,
   setToken,
 } from './api.js'
 import type { FormListEntry, PublishResult, SubmissionEntry, VersionEntry } from './api.js'
@@ -264,12 +264,10 @@ function EditorPane({
           <button className="wb-primary" onClick={() => void onPublish()} disabled={'problems' in preview}>
             Publish
           </button>
-          {publishState !== undefined &&
-            (publishState.ok ? (
-              <span className="wb-ok">published as v{publishState.version}</span>
-            ) : (
-              <span className="wb-problem">{publishProblem(publishState)}</span>
-            ))}
+          {/* The same component the builder uses. These two had drifted into
+              wording the same success differently, which nobody using one tab
+              could see. */}
+          <PublishNote state={publishState} />
         </div>
         <Editor
           language="json"

@@ -153,6 +153,39 @@ publishing a document it composed has no version to declare, and omitting it is
 last-write-wins. [Versioning](/docs/concepts/versioning/) has the rest, including
 the `409 already_published` you get for republishing an older version verbatim.
 
+### A 201 may carry warnings
+
+```bash
+# → 201 {"version":2,"schemaHash":"7ac1…","warnings":[
+#        "Rule on \"note\" (visible) reads \"address.nope\", which no field provides. …"]}
+```
+
+The publish **succeeded** — the version is there and the form is live. The
+warnings are things worth checking that are not grounds to refuse, and today
+there is one kind: a rule whose condition reads a data path the model does not
+define.
+
+That rule evaluates to nothing, so it never does anything, and nothing else will
+ever tell you. An unknown *top-level* field is refused outright (`422`) because
+the engine compiles each rule against the fields that exist; what gets through is
+a member of a group or of a repeater row — `address.nope`, `item.nope` — which
+type-check, because a member of a map is dynamic. Those are also the ones a
+rename inside a group leaves behind.
+
+It is a warning rather than a refusal because tightening what a reader accepts
+would make documents that are valid today invalid tomorrow, and published spec
+versions are frozen ([0097](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0097-a-publish-may-warn.md)).
+
+**If you want a gate, this is the hook.** Fail your deploy when `warnings` is
+non-empty:
+
+```bash
+curl -sS -X POST localhost:4380/forms -H "authorization: Bearer $TOKEN"   -H 'content-type: application/json' -d @form.json   | jq -e '(.warnings // []) | length == 0'
+```
+
+The key is omitted entirely when there is nothing to say, which is why the `//
+[]` is there. Nothing in formancy fails anything over a warning.
+
 ### Read the form (public)
 
 ```bash

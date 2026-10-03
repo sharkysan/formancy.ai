@@ -239,13 +239,34 @@ The rewrite is verified by comparing what the result reads against what the inpu
 read with the rename applied, so a splice that lost, invented or captured a
 reference is refused rather than written.
 
-*Residual:* **this covers the builder, not the document.** A form edited by hand
-or by a script can be published with a rule reading a path no field has, and
-nothing refuses it — the `dyn` typing that makes an unfinished form editable is
-what makes that indistinguishable from a rule about a field somebody is about to
-add. A manufacturer who generates or edits form documents outside the builder
-should check `referencedPaths` against their model themselves. There is also no
-*detection* pass for documents already published this way.
+*Constraint, for a document the builder did not write:* publishing **reports** a
+rule reading a path the model does not define, as a warning on a successful
+publish ([0097](../decisions/0097-a-publish-may-warn.md)). The depth matters and
+was measured rather than assumed:
+
+| What the rule reads | At publish |
+| --- | --- |
+| an unknown **root** — `gone == "8000"` | **refused**, `invalid_logic` |
+| an unknown member of a group — `address.nope` | published, **warned** |
+| an unknown member of a row — `item.nope` | published, **warned** |
+
+The root is refused because the engine compiles each rule against declarations
+for the fields that exist. The other two type-check, because a member of a `map`
+is `dyn`, and they are the cases a rename inside a group leaves behind — inside a
+group the data path and the builder's tree path differ.
+
+*Residual, and a manufacturer should read it as the main one here:* **a warning is
+not a refusal.** A document with such a rule is published, and the rule evaluates
+to nothing for the life of that immutable version. Refusing is not available: it
+would make documents that are valid today invalid tomorrow, and what a reader
+accepts is the frozen version contract. A manufacturer whose process requires that
+such a document never reach production must **treat the publish warnings as a
+gate** in their own pipeline — the API returns them on the `201`, so this is
+mechanisable, but nothing in formancy does it for them.
+
+There is also no *detection* pass over documents already published this way, and
+the warning is computed from the document rather than from the stored version, so
+a form published before this existed is not revisited.
 
 ### B2. A saved draft loses answers when the form changes underneath it
 

@@ -169,15 +169,23 @@ than asserted.
 1. **XLIFF**, if somebody asks for it. The exchange format is JSON carrying the source
    beside every target, which converts to XLIFF in a script; a real XLIFF implementation
    is a specification, a namespace and versions, and half of one is worse than none.
-2. **Detecting a rule that reads a path no field has**, in a document the builder did not
-   write. The builder now keeps rules and fields in step, but a form composed by hand or by
-   a script can still publish a condition reading a path nothing provides, and
-   `validateSchema` does not refuse it — the `dyn` typing that lets an unfinished form be
-   edited is what makes that indistinguishable from a rule about a field somebody is about
-   to add. So this is a question about whether a form may be authored in pieces before it is
-   a piece of work, which is why it is not first.
-
 ### Done since this list was written
+
+**A publish warns about a rule reading a path no field provides.** This list asked for
+detection and described the gap wrongly: an unknown *root* has always been refused, because
+the engine compiles each rule against the fields that exist. What got through is a member of a
+group or of a repeater row — `address.nope`, `item.nope` — which type-check as `dyn`, publish,
+and then evaluate as nothing for the life of an immutable version. Those are also the cases
+that matter, since a grouped path is exactly where a rename leaves a rule behind.
+
+It **warns rather than refuses**, and that is the decision rather than a half-measure:
+tightening what a reader accepts would make documents valid today invalid tomorrow, and the
+spec versions are frozen. The warning rides on the `201` and the admin shows it under the
+version it created, so a success with a warning is not read as a failure
+([0097](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0097-a-publish-may-warn.md)).
+
+A deployment that needs a *gate* can treat those warnings as one; nothing here does that for
+them, and `SAFETY-ANALYSIS.md` B1a says so as the main residual.
 
 **Both Angular packages are mounted, and the builder shares the React builder's session.** The
 playground's Build pane has a chooser: React or Angular, over the *same* `BuilderSession`. Make

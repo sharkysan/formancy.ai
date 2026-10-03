@@ -1,7 +1,7 @@
 import { fileURLToPath } from 'node:url'
 import angular from '@analogjs/vite-plugin-angular'
 import { defineConfig } from 'vitest/config'
-import { coverage } from '../../vitest.coverage'
+import { RENDER_TIMEOUT_MS, coverage } from '../../vitest.coverage'
 
 export default defineConfig({
   plugins: [
@@ -29,7 +29,7 @@ export default defineConfig({
      * A timeout is here to catch a HANG, and speed is policed by the
      * performance gate in `pnpm bench`, not by this number.
      */
-    testTimeout: 20_000,
+    testTimeout: RENDER_TIMEOUT_MS,
     include: ['src/**/*.test.ts'],
     environment: 'jsdom',
     passWithNoTests: true,
