@@ -10,6 +10,60 @@ later.
 
 ## Unreleased
 
+**A publish can now warn.** `POST /forms` returns `warnings` on its `201` when there is
+something worth telling the publisher that is not grounds to refuse, and the admin shows it
+under the version it created rather than as a failure. Today there is one kind: a rule whose
+condition reads a data path the model does not define.
+
+**The gap was smaller than the roadmap said, and measuring is what established that.** The
+residual paragraph claimed such a document "can be published and nothing refuses it". Not so:
+
+| What the rule reads | At publish |
+| --- | --- |
+| an unknown **root** — `gone == "8000"` | **refused**, `invalid_logic` |
+| an unknown member of a group — `address.nope` | published, **warned** |
+| an unknown member of a row — `item.nope` | published, **warned** |
+
+An unknown root has always been fatal, because the engine compiles each rule against
+declarations for the fields that exist. What gets through is everything deeper, since a member
+of a `map` is `dyn`. That paragraph was written from reasoning rather than from a run, and it
+was wrong in the direction that **under-claims the software's own safety** — a manufacturer
+reading it would have built a check they did not need and missed the two they did. Both tables
+that now state it are parsed and driven through a real publish by
+`apps/docs/src/unknown-path-table.test.ts`.
+
+The two that get through are also the ones that matter, because a grouped path is exactly where
+a rename leaves a rule behind: inside a group the data path and the field's own key differ.
+
+**Warning rather than refusing is the decision, not a half-measure.** Tightening what a reader
+accepts would make documents valid today invalid tomorrow, and published spec versions are
+frozen. A form published last year would stop opening in the builder, which is the worst
+possible way to deliver this news.
+[0097](docs/decisions/0097-a-publish-may-warn.md) has the alternatives, including why not a new
+spec version and why not at render.
+
+**If you want a gate, the `201` is the hook** — fail your deploy when `warnings` is non-empty.
+Nothing in formancy does that for you, and `SAFETY-ANALYSIS.md` B1a says so as the main
+residual rather than a footnote.
+
+Two things fall out of it. The admin's two panes stopped wording success differently — they had
+drifted to *"published as v4"* and *"Published version 4."*, the same fact in two voices, which
+nobody using one tab could see; `publishProblem` already existed for that force on the
+refusals, and warnings made it a component. And `@formancy/core` is now **17.8 kB brotli
+against an 18 kB budget**, because the check lives in the lowest layer that can see both the
+spec's model and the expression walker. No browser runs it. §9.3 says so, and says the next
+thing added there should either be under 0.2 kB or arrive with a decision about splitting the
+barrel.
+
+**And the React suites were on a timeout nobody chose for them.** `packages/react`'s wizard
+conformance case failed at **5,618ms** against vitest's 5-second default; it measures ~630ms
+locally, so that is a factor of nine on a loaded runner. This is the same defect the Angular
+suites hit — the fix then moved four suites off the default and left the React side on it. Now
+every suite that mounts a real tree shares one `RENDER_TIMEOUT_MS`, declared once in
+`vitest.coverage.ts` with the measurements beside it, because eight copies of a number drift
+until nobody can say what it was chosen for. A timeout is there to catch a hang; speed is the
+performance gate's job.
+
 **Both Angular packages are now mounted, and the Angular builder shares the React builder's
 session.** The playground's Build pane has a chooser — React or Angular — over the *same*
 `BuilderSession`. Make an edit in the Angular tree, switch back, and undo it: the document, the

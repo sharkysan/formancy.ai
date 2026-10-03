@@ -78,6 +78,32 @@ form where `price` computes from `qty` and `qty` computes from `price` is
 rejected when it is saved, with the cycle named — rather than hanging in a
 browser somewhere.
 
+## A rule that reads a field you removed
+
+The builder keeps these in step: renaming a field, or unwrapping a group, rewrites
+every rule that names it. A document you write by hand, generate, or have an agent
+compose has no such help — and a rule reading a path no field provides is the
+quietest mistake in the format. It compiles, it publishes, it evaluates to
+nothing, and a conditionally visible field is simply never shown again.
+
+How far the format catches it:
+
+| What the rule reads | At publish |
+| --- | --- |
+| an unknown top-level field — `gone == "8000"` | **refused**, `422` |
+| an unknown member of a group — `address.nope` | published, with a **warning** |
+| an unknown member of a row — `item.nope` | published, with a **warning** |
+
+The first is refused because the engine compiles each rule against the fields that
+exist. The other two type-check, because a member of a map is dynamic — and they
+are the cases that bite, since inside a group the data path (`address.city`) and
+the field's own key (`city`) are different things.
+
+The warning comes back on the publish's `201`. It is a warning rather than a
+refusal because published spec versions are frozen, and a reader that started
+rejecting documents it used to accept would break that contract. If you want it to
+be a gate, [Self-hosting](/docs/start/self-hosting/) shows the one-line check.
+
 ## What it tolerates at runtime
 
 A half-filled form produces evaluation failures constantly; those are normal

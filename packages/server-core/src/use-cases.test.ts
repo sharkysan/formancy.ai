@@ -1056,6 +1056,104 @@ describe('two people editing one form', () => {
   })
 })
 
+describe('a rule that reads a path no field provides', () => {
+  /*
+   * Published WITH A WARNING rather than refused — and the gap is narrower than
+   * it first looks, which measuring established rather than reading
+   * ([0097](../../../docs/decisions/0097-a-publish-may-warn.md)).
+   *
+   * An unknown ROOT is already refused: the engine compiles each rule against
+   * declarations for the fields that exist, so `gone == "8000"` is
+   * `Unknown variable: gone` and the publish fails with `invalid_logic`. What
+   * gets through is what CEL's checker cannot see — a member of a group or of a
+   * repeater row, because a member of a `map` is `dyn`:
+   *
+   * | `gone == "8000"`           | refused, `invalid_logic` |
+   * | `address.nope == "Zug"`    | **publishes**            |
+   * | `item.nope * 2.0`          | **publishes**            |
+   *
+   * That is also the half that matters most, because a grouped path is exactly
+   * where a rename leaves a rule behind: the data path and the tree path differ
+   * there. And it cannot be refused — documents valid today would become invalid
+   * tomorrow, and what a reader accepts is the frozen version contract.
+   */
+  const grouped = (cel: string): FormSchema =>
+    ({
+      specVersion: '2',
+      id: 'warned',
+      title: 'Warned',
+      model: {
+        fields: [
+          { key: 'note', type: 'text' },
+          { key: 'address', type: 'group', fields: [{ key: 'city', type: 'text' }] },
+        ],
+      },
+      logic: { rules: [{ target: 'note', kind: 'visible', cel }] },
+    }) as unknown as FormSchema
+
+  test('publishes, and says which path and which rule', async () => {
+    const outcome = await publishForm(deps, {
+      path: 'warned',
+      schema: grouped('address.nope == "Zug"'),
+    })
+
+    expect(outcome.ok).toBe(true)
+    if (!outcome.ok) return
+    expect(outcome.warnings).toHaveLength(1)
+    expect(outcome.warnings[0]).toContain('"address.nope"')
+    expect(outcome.warnings[0]).toContain('note')
+  })
+
+  test('and the version is really there, because a warning is not a refusal', async () => {
+    // The assertion that keeps "warning" honest. A publish that warned and then
+    // did not persist would be a refusal with a friendlier name.
+    await publishForm(deps, { path: 'warned', schema: grouped('address.nope == "Zug"') })
+
+    const resolved = await resolveForm(deps, 'warned')
+    expect(resolved?.version).toBe(1)
+  })
+
+  test('and says nothing when every path exists', async () => {
+    // A channel that warns about a correct document is a channel people stop
+    // reading, so this is the case that decides whether it is worth having.
+    const outcome = await publishForm(deps, {
+      path: 'fine',
+      schema: grouped('address.city == "Zug"'),
+    })
+
+    expect(outcome).toMatchObject({ ok: true, warnings: [] })
+  })
+
+  test('and warns on a republish of the same document too', async () => {
+    /*
+     * The idempotent path returns the version that is already there. It still
+     * has to warn: somebody redeploying an unchanged document may never have
+     * seen the first warning, and silence on the second attempt reads as the
+     * problem having been fixed.
+     */
+    const schema = grouped('address.nope == "Zug"')
+    await publishForm(deps, { path: 'warned', schema })
+
+    const again = await publishForm(deps, { path: 'warned', schema })
+
+    expect(again).toMatchObject({ ok: true, version: 1 })
+    if (!again.ok) return
+    expect(again.warnings).toHaveLength(1)
+  })
+
+  test('while an unknown ROOT is still refused, which is a stronger answer', async () => {
+    /*
+     * Asserted so the warning cannot quietly replace the refusal. If the engine
+     * ever stopped declaring its variables — making every unknown root `dyn` —
+     * this would start publishing with a warning, which is weaker than what the
+     * document gets today and would be a regression nobody would see.
+     */
+    const outcome = await publishForm(deps, { path: 'rooted', schema: grouped('gone == "8000"') })
+
+    expect(outcome).toMatchObject({ ok: false, kind: 'invalid_logic' })
+  })
+})
+
 describe('a document naming a list this deployment cannot resolve', () => {
   /*
    * `SAFETY-ANALYSIS.md` A7 states this as a constraint — *"at publish time a

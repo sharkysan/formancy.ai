@@ -51,7 +51,7 @@ formancy
 |---|---|---|
 | Keystroke, large conditional form | 1 ms | ≈0.38 ms |
 | Cold graph compile | 30 ms | ≈1.7 ms |
-| `@formancy/core` bundle | 18 kB brotli | 17.3 kB, measured 2026-09-29 |
+| `@formancy/core` bundle | 18 kB brotli | 17.8 kB, measured 2026-10-04 |
 | `@formancy/spec` bundle | — | 9.7 kB, measured 2026-09-29 |
 | `@formancy/react` bundle | 4 kB brotli | **20.0 kB** for the whole barrel, measured 2026-09-29 |
 | `uqr`, the QR encoder | — | 6.6 kB brotli, **external** rather than bundled, measured 2026-09-27 |
@@ -82,6 +82,18 @@ for a type somebody already uses.
 It also moves when the SOURCE does. Stripping the decision essays out of the comments took
 it from 17.7 to 17.5 kB, which is the guard catching a change nobody thought was a change
 to the bundle.
+
+**`@formancy/core` is now 17.8 kB against an 18 kB budget, and that is tight enough to say
+out loud.** The last 0.5 kB is `unknown-paths.ts`, a publish-time check that reports a rule
+reading a path the model does not define
+([0097](../decisions/0097-a-publish-may-warn.md)). No browser runs it. It is in `core` because
+`core` is the lowest layer that can see both the spec's model and the expression walker, and
+because the server and the builder's authoring check both want it — but it is measured here,
+in the browser engine's figure, which is the honest place for a cost a renderer pays for
+something it does not use. The per-entry `exports` map means a consumer importing
+`@formancy/core` for the engine alone does not ship it; the figure above is the whole barrel,
+as the React note below explains. The next thing added to this package should either be
+smaller than 0.2 kB or arrive with a decision about splitting the barrel.
 
 The figure is re-measured rather than incremented, which is what `apps/docs/src/bundles.test.ts`
 is for. It has now failed on two consecutive changes before the number was updated — and the

@@ -647,18 +647,23 @@ describe('what the roadmap says is still to do', () => {
     expect(stillToDo()).not.toMatch(/Rewriting a data path inside a rule's condition/)
   })
 
-  test('and is right that a hand-written document can still name a path no field has', () => {
+  test('no longer asks for detection, because a publish warns about it', () => {
     /*
-     * The item that replaced it, and the same shape as the collision-control
-     * one: asserted TRUE while the gap is real, so the day somebody makes
-     * `validateSchema` refuse this, the test fails and the roadmap item has to
-     * go.
+     * Turned around rather than deleted, and the original is worth keeping in
+     * view because it was asserting the wrong thing for the right reason.
      *
-     * Derived by validating such a document rather than by reading the prose
-     * about it. The rule's TARGET is a field that exists — the gap is about the
-     * paths inside the condition, and a document whose target was also missing
-     * is refused today for a different reason, which would make this pass for
-     * the wrong one.
+     * It validated a document whose rule reads `noSuchField` and asserted
+     * `validateSchema` accepts it — which is true, and which is not what the
+     * roadmap item was about. PUBLISHING refuses that document: the engine
+     * compiles each rule against the fields that exist, so an unknown root is
+     * fatal. The gap was only ever the deeper cases, `address.nope` and
+     * `item.nope`, which type-check because a member of a `map` is `dyn`.
+     *
+     * So this now derives the capability rather than the gap. `validateSchema`
+     * still accepts the document — the decision was to warn, not to tighten
+     * what a reader accepts
+     * ([0097](../../../docs/decisions/0097-a-publish-may-warn.md)) — and the
+     * warning has to exist and travel.
      */
     const document = {
       specVersion: '1',
@@ -667,9 +672,22 @@ describe('what the roadmap says is still to do', () => {
       model: { fields: [{ key: 'note', type: 'text' }] },
       logic: { rules: [{ target: 'note', kind: 'visible', cel: 'noSuchField == 1' }] },
     }
-
+    // Unchanged on purpose: refusing here is the thing 0097 decided against.
     expect(validateSchema(document).valid).toBe(true)
-    expect(stillToDo()).toMatch(/Detecting a rule that reads a path no field has/)
+
+    const core = readFileSync(join(repo, 'packages', 'core', 'src', 'index.ts'), 'utf8')
+    expect(core, 'the unknown-path check is no longer exported').toMatch(
+      /export \{ unknownReferences \}/,
+    )
+
+    const publishing = readFileSync(
+      join(repo, 'packages', 'server-core', 'src', 'publishing.ts'),
+      'utf8',
+    )
+    expect(publishing, 'publishing no longer computes warnings').toContain('unknownReferences(')
+    expect(publishing, 'a successful publish no longer carries them').toContain('warnings')
+
+    expect(stillToDo()).not.toMatch(/Detecting a rule that reads a path no field has/)
   })
 
   test('and does not describe the draft routes as missing, because they exist', () => {

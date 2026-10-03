@@ -150,7 +150,34 @@ describe('publish', () => {
   test('reports the new version', async () => {
     answering(() => json({ version: 3, schemaHash: 'h3' }))
 
-    expect(await publish('contact', {})).toEqual({ ok: true, version: 3, schemaHash: 'h3' })
+    // `warnings: []` rather than absent, even though the server said nothing.
+    // A server older than the field, and a server with nothing to say, are the
+    // same thing to a caller, and giving them one shape means no pane has to
+    // know which it is talking to.
+    expect(await publish('contact', {})).toEqual({
+      ok: true,
+      version: 3,
+      schemaHash: 'h3',
+      warnings: [],
+    })
+  })
+
+  test('and carries warnings from a publish that worked', async () => {
+    /*
+     * A 201 with a list, not a status of its own: the publish succeeded, and a
+     * 2xx meaning "partly" is a status no client can handle. The admin tells
+     * the two apart on screen instead
+     * ([0097](../../../docs/decisions/0097-a-publish-may-warn.md)).
+     */
+    answering(() =>
+      json({ version: 4, schemaHash: 'h4', warnings: ['Rule on "note" reads "address.nope".'] }),
+    )
+
+    expect(await publish('contact', {})).toMatchObject({
+      ok: true,
+      version: 4,
+      warnings: ['Rule on "note" reads "address.nope".'],
+    })
   })
 
   test('carries the validator’s errors through, not just a status', async () => {

@@ -2,7 +2,7 @@ import { fileURLToPath } from 'node:url'
 import angular from '@analogjs/vite-plugin-angular'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
-import { coverage } from '../../vitest.coverage'
+import { RENDER_TIMEOUT_MS, coverage } from '../../vitest.coverage'
 
 /**
  * The Angular tsconfig, resolved when the plugin asks rather than when this
@@ -51,6 +51,6 @@ export default defineConfig({
     // Every test renders the whole playground into jsdom, and the first one in
     // the file also pays for the cold start. On a loaded CI runner that has
     // taken more than the default five seconds with nothing wrong.
-    testTimeout: 20_000,
+    testTimeout: RENDER_TIMEOUT_MS,
   },
 })

@@ -39,3 +39,30 @@ export const coverage: NonNullable<NonNullable<ViteUserConfig['test']>['coverage
     'src/main.tsx',
   ],
 }
+
+/**
+ * How long a suite that renders a real component tree may take for one case.
+ *
+ * Written once for the same reason the coverage policy is: it is an argument
+ * rather than a setting, and eight copies of a number drift until nobody can
+ * say what it was chosen for.
+ *
+ * **It is here to catch a hang, not to police speed.** Speed is the performance
+ * gate's job (`pnpm bench`, §9.3), which measures what it is measuring under
+ * conditions it controls. A test timeout measured against the wall clock of a
+ * shared CI runner measures the runner.
+ *
+ * Measured, which is why it is this large. Rendering a form into jsdom is real
+ * work: the Angular suites' first `render(FormancyForm, …)` compiles the form
+ * and the seventeen field components the registry pulls in, at 372ms locally,
+ * and the same case was observed at **5,396ms** on a loaded runner — a factor
+ * of fourteen. React's wizard conformance case measures ~630ms locally and was
+ * observed failing at **5,618ms**, a factor of nine. Both failures were the 5s
+ * default, and neither was a defect in the test.
+ *
+ * The Angular pair, the playground and the site were moved off the default when
+ * the first of those turned `main` red; the React side was left on it and failed
+ * the same way a week later. So every suite that mounts a real tree now shares
+ * this.
+ */
+export const RENDER_TIMEOUT_MS = 20_000
