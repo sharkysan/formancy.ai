@@ -28,6 +28,22 @@
     "test": "echo \"themes: no tests\"",
     "typecheck": "echo \"themes: no types\""
   },
+  "//check:pkg": [
+    "publint only: this package ships five stylesheets and no types, so there is",
+    "nothing for attw to resolve. Every other published package runs both, and this",
+    "one ran NEITHER until somebody counted — which is how the two Angular packages",
+    "ended up on a weaker check than their thirteen siblings.",
+    "",
+    "A comment belongs HERE and not inside `scripts`: turbo requires every script",
+    "value to be a string, and an array in there fails the whole workspace with",
+    "`package_json_parse_error` and no file name."
+  ],
+  "scripts": {
+    "check:pkg": "publint"
+  },
+  "devDependencies": {
+    "publint": "catalog:"
+  },
   "publishConfig": {
     "access": "public"
   },

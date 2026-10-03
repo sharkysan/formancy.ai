@@ -50,21 +50,31 @@ const RUN_RATHER_THAN_IMPORTED: ReadonlyArray<{ name: string; why: string }> = [
   },
 ]
 
-/** Every package in `packages/` that `pnpm publish` would push. */
-function publishedPackages(): Array<{ dir: string; name: string }> {
+/** Every package in `packages/` that `pnpm publish` would push, with its manifest. */
+function publishedPackages(): Array<{
+  dir: string
+  name: string
+  manifest: { scripts?: Record<string, string>; types?: unknown; exports?: unknown }
+}> {
   const root = join(repo, 'packages')
   return readdirSync(root, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .flatMap((entry) => {
       const manifest = join(root, entry.name, 'package.json')
-      let parsed: { name?: string; private?: boolean }
+      let parsed: {
+        name?: string
+        private?: boolean
+        scripts?: Record<string, string>
+        types?: unknown
+        exports?: unknown
+      }
       try {
-        parsed = JSON.parse(readFileSync(manifest, 'utf8')) as { name?: string; private?: boolean }
+        parsed = JSON.parse(readFileSync(manifest, 'utf8')) as typeof parsed
       } catch {
         return []
       }
       if (parsed.private === true || parsed.name === undefined) return []
-      return [{ dir: `packages/${entry.name}`, name: parsed.name }]
+      return [{ dir: `packages/${entry.name}`, name: parsed.name, manifest: parsed }]
     })
 }
 
@@ -178,5 +188,74 @@ describe('what consumes each published package', () => {
     for (const { name, why } of RUN_RATHER_THAN_IMPORTED) {
       expect(why.length, `${name} is excused without a reason`).toBeGreaterThan(40)
     }
+  })
+})
+
+/**
+ * Every published package is checked as a package, to the same standard.
+ *
+ * Found by counting, which nothing had done: thirteen of fifteen ran
+ * `publint && attw`, the two Angular packages ran `publint ./dist` with **no
+ * attw at all**, and `@formancy/themes` ran nothing. Three published artefacts on
+ * a weaker check than their siblings, for no reason anybody had written down —
+ * and `attw` is the tool that answers "do this package's types resolve for a
+ * consumer", which is one question away from the defect that started all this.
+ *
+ * The Angular pair is the interesting case. `attw --pack .` packs the package
+ * directory, and `publishConfig.directory: dist` means what ships is `dist`, so
+ * the plain invocation would check the wrong tree. Pointed at `./dist` it works
+ * and passes — so the weaker check was never a constraint, only an omission.
+ */
+describe('how each published package is checked as a package', () => {
+  /** Whether this package ships anything `attw` could resolve types for. */
+  const shipsTypes = (manifest: { types?: unknown; exports?: unknown }): boolean => {
+    if (manifest.types !== undefined) return true
+    // A CSS-only package maps its entries to `.css` files and declares no types,
+    // which is the one honest reason to skip attw.
+    const entries = Object.values((manifest.exports ?? {}) as Record<string, unknown>)
+    return entries.some((entry) => typeof entry === 'object' && entry !== null)
+  }
+
+  test('is something, for every one of them', () => {
+    const unchecked = publishedPackages()
+      .filter(({ manifest }) => manifest.scripts?.['check:pkg'] === undefined)
+      .map(({ name }) => `${name} is published and has no check:pkg at all`)
+
+    expect(unchecked).toEqual([])
+  })
+
+  test('includes publint, which is what reads the manifest a consumer resolves', () => {
+    const missing = publishedPackages()
+      .filter(({ manifest }) => !(manifest.scripts?.['check:pkg'] ?? '').includes('publint'))
+      .map(({ name }) => `${name} does not run publint`)
+
+    expect(missing).toEqual([])
+  })
+
+  test('and includes attw wherever there are types to resolve', () => {
+    /*
+     * The assertion that would have caught the Angular pair. Skipping attw is
+     * defensible for a package with no types — and for one WITH them it is the
+     * difference between "the manifest looks right" and "a consumer can import
+     * this".
+     */
+    const missing = publishedPackages()
+      .filter(({ manifest }) => shipsTypes(manifest))
+      .filter(({ manifest }) => !(manifest.scripts?.['check:pkg'] ?? '').includes('attw'))
+      .map(({ name }) => `${name} ships types and does not run attw`)
+
+    expect(missing).toEqual([])
+  })
+
+  test('and the one package that skips attw really has no types', () => {
+    // So the exemption cannot be claimed by a package that grows types later.
+    const skipping = publishedPackages()
+      .filter(({ manifest }) => !(manifest.scripts?.['check:pkg'] ?? '').includes('attw'))
+      .map(({ name, manifest }) => ({ name, types: shipsTypes(manifest) }))
+
+    // A guard on the guard: if this list empties, the assertion below stops
+    // asserting anything and the test should go rather than sit here green.
+    expect(skipping.map(({ name }) => name)).toEqual(['@formancy/themes'])
+    expect(skipping.filter(({ types }) => types)).toEqual([])
   })
 })
