@@ -15,6 +15,7 @@
     "@angular/core": "^22.1.7",
     "@angular/platform-browser": "^22.1.7",
     "@formancy/angular": "workspace:*",
+    "@formancy/builder-angular": "workspace:*",
     "@formancy/builder-core": "workspace:*",
     "@formancy/builder-react": "workspace:*",
     "@formancy/core": "workspace:*",

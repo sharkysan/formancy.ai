@@ -26,5 +26,10 @@
     "noEmit": false,
     "outDir": "out-tsc"
   },
-  "include": ["src/angular-preview.ts", "src/angular-bootstrap.ts"]
+  "include": [
+    "src/angular-preview.ts",
+    "src/angular-bootstrap.ts",
+    "src/angular-builder-host.ts",
+    "src/angular-builder-bootstrap.ts"
+  ]
 }

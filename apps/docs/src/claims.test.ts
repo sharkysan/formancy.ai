@@ -493,6 +493,24 @@ describe('the files the coverage policy excludes as barrels', () => {
 describe('what the landing page promises the playground does', () => {
   const read = (...parts: string[]): string => readFileSync(join(repo, ...parts), 'utf8')
 
+  /**
+   * Every source file of the playground, concatenated.
+   *
+   * Scanned rather than named, because the claim is about what the *playground*
+   * mounts and not about which file does it. A first version of this read
+   * `app.tsx`, and the next change — moving the builder pane into its own file
+   * when the size budget asked for it — broke the guard without changing
+   * anything it was guarding.
+   */
+  const playgroundSources = (): string => {
+    const directory = join(repo, 'apps', 'playground', 'src')
+    const names = readdirSync(directory).filter(
+      (name) => /\.tsx?$/.test(name) && !/\.test\./.test(name),
+    )
+    expect(names.length, 'the playground has no sources, so nothing below is checked').toBeGreaterThan(5)
+    return names.map((name) => readFileSync(join(directory, name), 'utf8')).join('\n')
+  }
+
   const BOTH_RENDERERS = /preview your form in React and Angular/
 
   test('is a sentence that is actually there, which is a guard on this guard', () => {
@@ -506,7 +524,7 @@ describe('what the landing page promises the playground does', () => {
      * Angular one bootstrapped into a host; losing either makes the landing
      * page's sentence false, and this is where that is noticed.
      */
-    const playground = read('apps', 'playground', 'src', 'app.tsx')
+    const playground = playgroundSources()
 
     expect(playground, 'the playground stopped rendering the React form').toMatch(
       /<FormancyForm\s/,
@@ -516,13 +534,42 @@ describe('what the landing page promises the playground does', () => {
     )
   })
 
+  test('and mounts the Angular BUILDER too, over the same session as the React one', () => {
+    /*
+     * The roadmap asked for this as its own item until the day it shipped. Both
+     * builders bind one `BuilderSession` — there is one document, so there is
+     * one undo stack — and the guard is that the pane mounts it at all, since
+     * the package was for a long time mounted by nothing and, it turned out,
+     * importable by nothing either
+     * ([0096](../../../docs/decisions/0096-two-builders-one-session.md)).
+     */
+    expect(
+      playgroundSources(),
+      'the playground stopped mounting the Angular builder',
+    ).toMatch(/<AngularBuilderPane\s/)
+
+    // One session, passed to both. A `session=` that was not the same expression
+    // would be two documents pretending to be one.
+    const pane = read('apps', 'playground', 'src', 'angular-builder-pane.tsx')
+    expect(pane, 'the Angular builder stopped using the session it was given').toMatch(
+      /mountAngularBuilder\(element, session,/,
+    )
+
+    // And the package can be imported at all, which is the defect that hid this.
+    const manifest = JSON.parse(read('packages', 'builder-angular', 'package.json')) as {
+      exports?: unknown
+      types?: unknown
+    }
+    expect(manifest.exports, '@formancy/builder-angular is unimportable again').toBeDefined()
+    expect(manifest.types).toBeDefined()
+  })
+
   test('and gives each renderer its own id namespace, or they break each other', () => {
     // Two engines over one schema mint identical element ids, and `label[for]`
     // resolves to the first match — so the second renderer's controls lose their
     // accessible names entirely. Measured. The namespaces are what prevent it,
     // and they are easy to remove while the page still looks right.
-    const playground = read('apps', 'playground', 'src', 'app.tsx')
-    const namespaces = [...playground.matchAll(/forRenderer\('([a-z]+)'\)/g)].map(
+    const namespaces = [...playgroundSources().matchAll(/forRenderer\('([a-z]+)'\)/g)].map(
       (match) => match[1]!,
     )
 

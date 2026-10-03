@@ -17,6 +17,23 @@ import { defineConfig } from 'vite'
  * at the root and a base would only make the URL longer.
  */
 /**
+ * What the Angular compiler is pointed at, and nothing else.
+ *
+ * Every entry is either a file of ours that declares a component or a package
+ * ng-packagr emitted in partial Ivy form, which needs the linker. Everything
+ * else in this app is React, and the compiler's output for a module that
+ * declares no component DROPS ITS EXPORTS — which is how a narrow-looking
+ * `include` produced five `MISSING_EXPORT`s for files with nothing Angular in
+ * them.
+ */
+const ANGULAR_SOURCES = [
+  'angular-preview',
+  'angular-builder-host',
+  '@formancy/angular',
+  '@formancy/builder-angular',
+]
+
+/**
  * The Angular tsconfig, resolved when the plugin asks rather than when this
  * module loads.
  *
@@ -51,7 +68,7 @@ export default defineConfig(({ command }) => ({
     angular({
       tsconfig: TSCONFIG,
       transformFilter: (_code, id) =>
-        id.includes('angular-preview') || id.includes('@formancy/angular'),
+        ANGULAR_SOURCES.some((part) => id.includes(part)),
     }),
   ],
   // Fail rather than wander: the readme writes this port down, and Vite's
