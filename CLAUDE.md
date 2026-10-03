@@ -141,11 +141,17 @@ than so it looks good. The bar is not a number. It is this:
 
 ### When the test is wrong and the code is right
 
-It happens often enough to expect it. Six times here the defect was the guard's own
-regular expression, not the thing it guarded — most recently `[A-Z_]+`, which stops
-at the digit in `FORMANCY_S3_BUCKET` and collapsed five variable names into one
-meaningless match. **Match the whole property, not the shape it usually has**, and
-when a test disagrees with the code, work out which is wrong before changing either.
+It happens often enough to expect it. Seven times here the defect was the guard's own
+regular expression, not the thing it guarded. `[A-Z_]+` stopped at the digit in
+`FORMANCY_S3_BUCKET` and collapsed five variable names into one meaningless match.
+Most recently a check on which published packages anybody imports matched only
+`from '<name>'`, and reported `@formancy/themes` as consumed by nothing — a theme is
+consumed for its *effect*, `import '@formancy/themes/blueprint.css'`, which has no
+`from` in it at all.
+
+**Match the whole property, not the shape it usually has**, and when a test disagrees
+with the code, work out which is wrong before changing either. Both of those were the
+pattern knowing one spelling of a thing that has several.
 
 ## The code reads as though a senior wrote both halves
 
