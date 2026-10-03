@@ -15,7 +15,8 @@
     "test:coverage": "turbo run test:coverage",
     "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",
-    "check:pkg": "turbo run check:pkg"
+    "check:pkg": "turbo run check:pkg",
+    "test:e2e:install": "node scripts/install-test.mjs"
   },
   "devDependencies": {
     "turbo": "^2.11.2",

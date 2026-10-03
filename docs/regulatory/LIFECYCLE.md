@@ -18,7 +18,7 @@ quality management system, and this is not a claim of IEC 62304 conformity.**
 | §5.5 Unit implementation and verification | **Yes** | Test-first development, with per-package coverage reported; the suite size is stated as a dated floor under [Verification gates](#verification-gates) rather than transcribed twice — this row said 1,155 while that one said 1,661, both written on one day |
 | §5.6 Software integration and integration testing | **Yes** | Conformance suite across five implementations; integration tests against real PostgreSQL |
 | §5.7 Software system testing | Partially | End-to-end verification performed manually and recorded; not automated end-to-end |
-| §5.8 Software release | Partially | Released to npm from CI with provenance and a signed SBOM, and the server image to GHCR signed by digest; the gates are mechanical and no human sign-off is recorded against a checklist, and nothing verifies a release after it is published |
+| §5.8 Software release | Partially | Released to npm from CI with provenance and a signed SBOM, and the server image to GHCR signed by digest; the gates are mechanical and no human sign-off is recorded against a checklist. The packed tarballs are installed into a project outside the workspace and run before release (`test:e2e:install`), but nothing re-checks a version once it is on the registry |
 | §6 Software maintenance | **No** | Releases exist, and no maintenance process is defined for them — no support commitment, no backport policy, and no defined response time beyond `SECURITY.md` |
 | §7 Risk management | Partially | [`SAFETY-ANALYSIS.md`](SAFETY-ANALYSIS.md) identifies failure modes; no ISO 14971 file, by design |
 | §8 Configuration management | **Yes** | Git, pinned dependencies, lockfile, immutable published schema versions |
@@ -84,6 +84,7 @@ pnpm build:web
 pnpm typecheck
 pnpm test
 pnpm check:pkg
+pnpm test:e2e:install
 ```
 
 Each gate exists for a reason that was paid for at least once:
@@ -121,7 +122,21 @@ Each gate exists for a reason that was paid for at least once:
 - **`check:pkg`** — `publint` and `@arethetypeswrong/cli` with
   `--profile esm-only`, because broken exports maps are the commonest way a
   multi-framework library fails in somebody else's application
-  ([0038](../decisions/0038-esm-only.md)).
+  ([0038](../decisions/0038-esm-only.md)). It runs for **every** published
+  package: three of them were on a weaker check than their twelve siblings until
+  somebody counted, two with no `attw` at all and one with no check whatsoever.
+- **`test:e2e:install`** — the tarballs `pnpm pack` produces, installed into a
+  plain npm project which is then type-checked with `skipLibCheck` **off**, run
+  under Node, and built with Vite. Every other gate runs *inside* the workspace,
+  where a sibling resolves a package through a symlink to its source directory —
+  so an `exports` map that is wrong for a real consumer can be right for every
+  test here. That is not hypothetical: `@formancy/builder-angular` shipped with
+  no `exports` at all for four releases, and its own ninety-five tests could not
+  see it because they import by relative path
+  ([0096](../decisions/0096-two-builders-one-session.md)). Verified by breaking
+  it three ways — an entry point removed, an `exports` path pointing at a file
+  the tarball does not contain, and a runtime assertion inverted — and watching
+  each one fail.
 
 Additionally, performance budgets are measured rather than asserted: a
 keystroke on a large form at ≈0.38 ms against a 1 ms budget, and cold graph
@@ -184,9 +199,13 @@ Stated plainly, because a gap named is more useful than a gap implied:
   manifest version agreement — but no human sign-off is recorded against a
   checklist. See [`RELEASING.md`](../../RELEASING.md).
 - No manual accessibility audit and no published VPAT.
-- Nothing verifies a release after it is published. Every gate runs inside the
-  workflow that publishes, against the tree it built from, so "the tarball on npm
-  works" rests on `check:pkg` rather than on anything installing it.
+- Nothing verifies a release **after it is published**. `test:e2e:install` packs
+  the tarballs and installs them into a project outside the workspace, which is
+  most of this gap closed — but it talks to no registry, so a release that packed
+  differently from `pnpm pack` would still slip through, and nothing re-checks a
+  version once it is on npm. The two Angular packages are also outside that gate:
+  consuming one needs the Angular build toolchain rather than an import, so
+  `apps/playground` building them from the workspace is what covers them.
 - The container image's SBOM describes npm dependencies and not the base image or
   its system packages, so a manufacturer characterising the container has half of
   what they need. The signing side is done: the image goes to GHCR signed by

@@ -262,8 +262,9 @@ exactly that reason.
 
 ## Checks before pushing
 
-CI runs `pnpm build`, `pnpm build:web`, `pnpm typecheck`, `pnpm test:coverage`
-and `pnpm check:pkg`. Run the ones for the packages you changed.
+CI runs `pnpm build`, `pnpm build:web`, `pnpm typecheck`, `pnpm test:coverage`,
+`pnpm check:pkg` and `pnpm test:e2e:install`. Run the ones for the packages you
+changed.
 
 `build:web` is not redundant with `build`: it composes the landing page, the
 playground and the docs under one origin, and it carries the check for
@@ -272,6 +273,16 @@ than `/docs/`, build cleanly and 404 in production.
 
 The server's integration tests need Docker and run in CI — real PostgreSQL, and
 real Garage for the object store.
+
+`test:e2e:install` is the only gate that looks at the packages from outside. It
+packs them, installs the tarballs into a plain npm project, type-checks it with
+`skipLibCheck` **off**, runs it and bundles it — because every other gate
+resolves a package through a symlink to its source, so an `exports` map that is
+wrong for a consumer can be right for the whole suite. It takes about twenty
+seconds and needs `pnpm build` first. Its fixture is real files under
+`scripts/install-fixture/`, not strings in the runner: generating TypeScript
+inside a template literal inside a script cost two broken attempts before it ran
+once.
 
 ## Conventions that live elsewhere
 

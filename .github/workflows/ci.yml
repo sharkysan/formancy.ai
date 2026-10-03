@@ -56,6 +56,46 @@ jobs:
       # multi-framework libraries.
       - run: pnpm check:pkg
 
+  # Every job above runs inside the workspace, against the tree it built from —
+  # and a workspace sibling resolves a package through a symlink to its SOURCE
+  # directory. So an exports map that is wrong for a real consumer can be right
+  # for every test in the repository, which is how @formancy/builder-angular
+  # shipped with no exports at all for four releases: ninety-five of its own
+  # tests import by relative path, and publint reads the manifest ng-packagr
+  # generates.
+  #
+  # This packs the tarballs, installs them into a plain npm project, type-checks
+  # it with skipLibCheck OFF, runs it under Node and builds it with Vite. Its own
+  # job rather than a step in `verify`, following `container`: it is about the
+  # ARTEFACT rather than the tree, and keeping it separate means `verify` stays
+  # the fast signal.
+  install:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: corepack enable pnpm
+
+      - name: Get pnpm store directory
+        id: pnpm-store
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+
+      - run: pnpm install --frozen-lockfile
+
+      # The tarballs are built output, so there is nothing to pack without this.
+      - run: pnpm build
+
+      - run: pnpm test:e2e:install
+
   # The image is the product for a self-hoster, and nothing else here touches
   # it. The static check in `dockerfile.test.ts` catches a workspace package
   # the COPY list forgot; this catches everything it cannot — a dependency
