@@ -41,6 +41,13 @@ the `container` job starts the server image.
 much smaller gap than the one this closes, and the debt table and `LIFECYCLE.md` now say which
 is which rather than describing the whole thing as unbuilt.
 
+And the first CI run of it failed where the local run passed — which is precisely the trap
+`CLAUDE.md` warns about. With `skipLibCheck` off and the program globbed as `*.ts`, tsc pulled
+in the consumer's own `vite.config.ts` and type-checked **Vite's** Node-flavoured declarations,
+failing on `Cannot find name 'Buffer'`. Adding `@types/node` would have made it pass and made
+the program less like a browser consumer's; naming the two consumer files instead leaves
+nothing for npm's resolution to vary. The consumer's build config was never what was on trial.
+
 The fixture is real files under `scripts/install-fixture/` rather than strings in the runner.
 It began as a template literal and three layers of escaping — a backtick inside a template
 literal inside a script edited by a script — broke it twice before it ran once. A fixture that

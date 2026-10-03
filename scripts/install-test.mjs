@@ -179,7 +179,24 @@ try {
           // type-checks at all.
           types: ['vite/client'],
         },
-        include: ['*.ts', '*.tsx'],
+        /*
+         * The two consumer files by name, and not `*.ts`.
+         *
+         * `vite.config.ts` imports Vite, whose own declarations are
+         * Node-flavoured — so with `skipLibCheck` off and a glob, tsc
+         * type-checks Vite's internals and fails on `Cannot find name 'Buffer'`
+         * in a project with no `@types/node`. Adding those types would make it
+         * pass and make the program less like a browser consumer's.
+         *
+         * The consumer's build config is not what is on trial here. Vite still
+         * reads it; tsc has no reason to.
+         *
+         * Found in CI after passing locally, which is the shape of trap
+         * `CLAUDE.md` warns about — a glob resolves to different files depending
+         * on what npm happened to install. Named by file, there is nothing left
+         * to differ.
+         */
+        include: ['consume.ts', 'bundled.tsx'],
       },
       null,
       2,
