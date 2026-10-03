@@ -10,6 +10,31 @@ later.
 
 ## Unreleased
 
+**Every published package is now checked as a package, to one standard.** Counting found
+three that were not: the two Angular packages ran `publint ./dist` with **no `attw` at all**,
+and `@formancy/themes` ran nothing. Twelve of fifteen ran `publint && attw`; three were on a
+weaker check for no reason anybody had written down.
+
+`attw` is the tool that answers *"do this package's types resolve for a consumer"*, which is
+one question away from the defect that prompted the look — `@formancy/builder-angular` shipping
+with no `exports` at all.
+
+**The Angular pair's weaker check was an omission, not a constraint.** `attw --pack .` packs
+the package directory, and `publishConfig.directory: dist` means what ships is `dist`, so the
+plain invocation would have checked the wrong tree — which is presumably why it was dropped.
+Pointed at `./dist` it works and passes on both. `@formancy/themes` keeps `publint` alone and
+says why in its manifest: five stylesheets and no types, so there is nothing for `attw` to
+resolve.
+
+The ratchet is in `published-packages.test.ts` beside the consumer check: a published package
+must have a `check:pkg`, it must run `publint`, and it must run `attw` wherever it ships types
+— with the one exemption asserted to be genuinely typeless, so a package that grows types
+cannot keep claiming it.
+
+*Incidentally:* a `//`-prefixed comment belongs at a manifest's top level and **not inside
+`scripts`**. Turbo requires every script value to be a string, and an array in there fails the
+whole workspace with `package_json_parse_error` and no file name to go on.
+
 **Every published library now has to be imported by something, by name.**
 `@formancy/builder-angular` was unimportable for four releases — no `exports`, no `types` —
 and nothing noticed, because its own ninety-five tests import `./builder` by relative path

@@ -16,7 +16,7 @@
     "test:coverage": "vitest run --coverage",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "check:pkg": "publint ./dist"
+    "check:pkg": "publint ./dist && attw --pack ./dist --profile esm-only"
   },
   "dependencies": {
     "@formancy/core": "workspace:*",
