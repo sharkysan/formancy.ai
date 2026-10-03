@@ -34,7 +34,12 @@ export default defineConfig({
     angular({
       tsconfig: TSCONFIG,
       transformFilter: (_code, id) =>
-        id.includes('angular-preview') || id.includes('@formancy/angular'),
+        [
+          'angular-preview',
+          'angular-builder-host',
+          '@formancy/angular',
+          '@formancy/builder-angular',
+        ].some((part) => id.includes(part)),
     }),
   ],
   test: {

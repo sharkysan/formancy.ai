@@ -39,6 +39,7 @@ import './app.css'
 import { STARTER_SCHEMA } from './starter.js'
 import { WIZARD_SCHEMA } from './wizard.js'
 import { AngularPane } from './angular-pane.js'
+import { BuilderBody, PLACEHOLDER_SESSION } from './builder-pane.js'
 import { PLAYGROUND_CHECKS } from './demo-checks.js'
 
 /**
@@ -594,99 +595,3 @@ function EngineInspector({ engine }: { engine: FormEngine }) {
   )
 }
 
-/**
- * The same builder the admin uses, over the same document the JSON editor
- * edits. Switching panes is not switching tools: the session is opened from
- * the current text and every edit writes it back, so the JSON is always what
- * the builder built and the builder always shows what the JSON says.
- */
-/**
- * A session that exists only so the preview's drop surface has one to hold
- * while the document is unopenable. It is never enabled, so nothing reaches
- * it — and a component whose props go optional for one edge case grows two
- * code paths for the rest of its life.
- */
-const PLACEHOLDER_SESSION: BuilderSession = createBuilderSession({
-  specVersion: '1',
-  id: 'placeholder',
-  title: 'No form',
-  model: { fields: [] },
-})
-
-function BuilderBody({
-  session,
-  onChange,
-  tab,
-  onTab,
-}: {
-  session: BuilderSession
-  onChange: (next: string) => void
-  tab: 'fields' | 'arrangement'
-  onTab: (next: 'fields' | 'arrangement') => void
-}) {
-  const view = useBuilder(session)
-  const [selected, setSelected] = useState<readonly string[] | null>(null)
-  /** Which node the arrangement pane is on, so its property panel has something to show. */
-  const [arranging, setArranging] = useState<readonly number[] | null>(null)
-
-  useEffect(() => {
-    onChange(JSON.stringify(view.document, null, 2))
-  }, [view.document, onChange])
-
-  const editing = selected ?? view.nodes[0]?.keyPath ?? null
-
-  return (
-    <div className="builder-pane">
-      <div className="builder-tools">
-        <button onClick={() => session.undo()} disabled={!view.canUndo}>
-          Undo
-        </button>
-        <button onClick={() => session.redo()} disabled={!view.canRedo}>
-          Redo
-        </button>
-        <span className="builder-tabs">
-          {(['fields', 'arrangement'] as const).map((candidate) => (
-            <button
-              key={candidate}
-              aria-pressed={tab === candidate}
-              onClick={() => onTab(candidate)}
-            >
-              {candidate === 'fields' ? 'Fields' : 'Arrangement'}
-            </button>
-          ))}
-        </span>
-      </div>
-
-      {tab === 'arrangement' ? (
-        <>
-          <FormancyLayoutPane session={session} layout="web" onSelect={setArranging} />
-
-          {/* Until this existed, NO property of a layout node could be set from the
-              builder at all: a table's `columns` and a section's `label` since the
-              day layouts existed, and `span` from the moment the format grew it.
-              The panel is generated from the JSON Schema, so the next one arrives
-              with an editor rather than needing somebody to remember. */}
-          {arranging === null ? null : (
-            <LayoutPropertyPanel session={session} address={{ layout: 'web', path: arranging }} />
-          )}
-        </>
-      ) : (
-        <>
-          {/* The tree reports which field it is on, rather than this app reading its
-              DOM. What was here before took the focused row's POSITION among its
-              siblings and indexed the flattened node list with it — right only while
-              those two lists agree about nesting, which they stop doing the moment a
-              container is collapsed. */}
-          <FormancyBuilder session={session} onSelect={setSelected} />
-
-          {editing === null ? null : (
-            <>
-              <PropertyPanel session={session} keyPath={editing} />
-              <LogicPanel session={session} keyPath={editing} />
-            </>
-          )}
-        </>
-      )}
-    </div>
-  )
-}

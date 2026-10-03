@@ -259,7 +259,7 @@ importers:
         version: 8.3.0(@types/node@22.20.3)(esbuild@0.28.2)(less@4.9.1(supports-color@7.2.0))(sass@1.104.1)(yaml@2.9.1)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.1(@types/node@22.20.3)(@vitest/coverage-v8@5.0.1)(jsdom@30.1.0(@noble/hashes@2.4.0))(vite@8.3.0(@types/node@22.20.3))
+        version: 5.0.1(@types/node@22.20.3)(@vitest/coverage-v8@5.0.1)(jsdom@30.1.0(@noble/hashes@2.4.0))(vite@8.3.0(@types/node@22.20.3)(esbuild@0.28.2)(less@4.9.1(supports-color@7.2.0))(sass@1.104.1)(yaml@2.9.1))
 
   apps/docs:
     dependencies:
@@ -290,7 +290,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 'catalog:'
-        version: 5.0.1(@types/node@22.20.3)(@vitest/coverage-v8@5.0.1)(jsdom@30.1.0(@noble/hashes@2.4.0))(vite@8.3.0(@types/node@22.20.3))
+        version: 5.0.1(@types/node@22.20.3)(@vitest/coverage-v8@5.0.1)(jsdom@30.1.0(@noble/hashes@2.4.0))(vite@8.3.0(@types/node@22.20.3)(esbuild@0.28.2)(less@4.9.1(supports-color@7.2.0))(sass@1.104.1)(yaml@2.9.1))
 
   apps/playground:
     dependencies:
@@ -306,6 +306,9 @@ importers:
       '@formancy/angular':
         specifier: workspace:*
         version: link:../../packages/angular
+      '@formancy/builder-angular':
+        specifier: workspace:*
+        version: link:../../packages/builder-angular
       '@formancy/builder-core':
         specifier: workspace:*
         version: link:../../packages/builder-core
@@ -384,7 +387,7 @@ importers:
         version: 8.3.0(@types/node@22.20.3)(esbuild@0.28.2)(less@4.9.1(supports-color@7.2.0))(sass@1.104.1)(yaml@2.9.1)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.1(@types/node@22.20.3)(@vitest/coverage-v8@5.0.1)(jsdom@30.1.0(@noble/hashes@2.4.0))(vite@8.3.0(@types/node@22.20.3))
+        version: 5.0.1(@types/node@22.20.3)(@vitest/coverage-v8@5.0.1)(jsdom@30.1.0(@noble/hashes@2.4.0))(vite@8.3.0(@types/node@22.20.3)(esbuild@0.28.2)(less@4.9.1(supports-color@7.2.0))(sass@1.104.1)(yaml@2.9.1))
 
   apps/site:
     dependencies:
@@ -439,7 +442,7 @@ importers:
         version: 8.3.0(@types/node@22.20.3)(esbuild@0.28.2)(less@4.9.1(supports-color@7.2.0))(sass@1.104.1)(yaml@2.9.1)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.1(@types/node@22.20.3)(@vitest/coverage-v8@5.0.1)(jsdom@30.1.0(@noble/hashes@2.4.0))(vite@8.3.0(@types/node@22.20.3))
+        version: 5.0.1(@types/node@22.20.3)(@vitest/coverage-v8@5.0.1)(jsdom@30.1.0(@noble/hashes@2.4.0))(vite@8.3.0(@types/node@22.20.3)(esbuild@0.28.2)(less@4.9.1(supports-color@7.2.0))(sass@1.104.1)(yaml@2.9.1))
 
   packages/angular:
     dependencies:
@@ -590,7 +593,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 'catalog:'
-        version: 5.0.1(@types/node@22.20.3)(@vitest/coverage-v8@5.0.1)(jsdom@30.1.0(@noble/hashes@2.4.0))(vite@8.3.0(@types/node@22.20.3))
+        version: 5.0.1(@types/node@22.20.3)(@vitest/coverage-v8@5.0.1)(jsdom@30.1.0(@noble/hashes@2.4.0))(vite@8.3.0(@types/node@22.20.3)(esbuild@0.28.2)(less@4.9.1(supports-color@7.2.0))(sass@1.104.1)(yaml@2.9.1))
     linkDirectory: false
     publishDirectory: dist
 
@@ -854,7 +857,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 'catalog:'
-        version: 5.0.1(@types/node@22.20.3)(@vitest/coverage-v8@5.0.1)(jsdom@30.1.0(@noble/hashes@2.4.0))(vite@8.3.0(@types/node@22.20.3))
+        version: 5.0.1(@types/node@22.20.3)(@vitest/coverage-v8@5.0.1)(jsdom@30.1.0(@noble/hashes@2.4.0))(vite@8.3.0(@types/node@22.20.3)(esbuild@0.28.2)(less@4.9.1(supports-color@7.2.0))(sass@1.104.1)(yaml@2.9.1))
 
   packages/react:
     dependencies:
@@ -8650,7 +8653,7 @@ snapshots:
       estree-walker: 3.0.3
       magic-string: 1.4.1
     optionalDependencies:
-      vite: 8.3.0(@types/node@22.20.3)(esbuild@0.28.2)(less@4.9.1(supports-color@7.2.0))(sass@1.104.1)(yaml@2.9.1)
+      vite: 8.3.0(@types/node@22.20.3)
 
   '@vitest/spy@5.0.1': {}
 
@@ -11856,6 +11859,17 @@ snapshots:
       sass: 1.101.0
       yaml: 2.9.1
 
+  vite@8.3.0(@types/node@22.20.3):
+    dependencies:
+      lightningcss: 1.33.0
+      picomatch: 4.0.7
+      postcss: 8.5.28
+      rolldown: 1.2.9
+      tinyglobby: 0.2.17
+    optionalDependencies:
+      '@types/node': 22.20.3
+      fsevents: 2.3.3
+
   vite@8.3.0(@types/node@22.20.3)(esbuild@0.28.2)(less@4.9.1(supports-color@7.2.0))(sass@1.101.0)(yaml@2.9.1):
     dependencies:
       lightningcss: 1.33.0
@@ -11950,7 +11964,7 @@ snapshots:
       tinybench: 6.1.4
       tinyexec: 1.3.0
       tinyglobby: 0.2.17
-      vite: 8.3.0(@types/node@22.20.3)(esbuild@0.28.2)(less@4.9.1(supports-color@7.2.0))(sass@1.104.1)(yaml@2.9.1)
+      vite: 8.3.0(@types/node@22.20.3)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 22.20.3

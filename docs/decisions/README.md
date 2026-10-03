@@ -196,3 +196,4 @@ listed under the sections they belong to above.
 | [0093](0093-a-rule-follows-the-path-it-reads.md) | A rule follows the path it reads, by splicing spans the parser reports | accepted |
 | [0094](0094-the-second-builder-reaches-parity.md) | The second builder reaches parity, and the drop geometry is shared rather than copied | accepted |
 | [0095](0095-one-schema-two-renderers.md) | One schema, two renderers, on one page — and an engine may be told its id namespace | accepted |
+| [0096](0096-two-builders-one-session.md) | Two builders over one session, and a package that could not be imported | accepted |

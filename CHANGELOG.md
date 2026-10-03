@@ -10,6 +10,41 @@ later.
 
 ## Unreleased
 
+**Both Angular packages are now mounted, and the Angular builder shares the React builder's
+session.** The playground's Build pane has a chooser — React or Angular — over the *same*
+`BuilderSession`. Make an edit in the Angular tree, switch back, and undo it: the document, the
+undo stack and both rendered forms are one set of things.
+
+That is a stronger demonstration than the renderers'. The two renderers get an engine each,
+because element ids are minted per engine and two over one schema collide
+([0095](docs/decisions/0095-one-schema-two-renderers.md)). The two builders share one session,
+because a session *is* the document — so an edit in either appears in the other, and neither
+knows the other exists. It is
+[0091](docs/decisions/0091-a-second-builder-is-a-binding.md)'s claim as something to do rather
+than something to read.
+
+**Mounting it turned up why that had been easy to leave: `@formancy/builder-angular` could not
+be imported from anywhere in the workspace.** Its manifest carried no `exports` and no `types`,
+and `publishConfig.linkDirectory: false` means a sibling resolves the package directory rather
+than `dist` — so there was nothing for TypeScript or a bundler to find. `@formancy/angular` has
+carried both fields all along.
+
+Its own ninety-five tests never noticed, because they import `./builder` and friends by relative
+path, and `check:pkg` runs `publint` against `dist`, whose manifest ng-packagr generates
+correctly. The gap sat between those two facts and only a consumer could fall into it. There is
+now a consumer, and a guard reads the manifest.
+
+Two smaller decisions, both forced. The session and the current tab reach the Angular
+application **through the injector** rather than as `input()`s: `bootstrapApplication` runs
+change detection before it returns, so a template reading an `input.required` that nothing has
+set yet throws during the bootstrap. And the chooser is a labelled select rather than a third
+pair of pressed buttons — the tabs pick a part of one product, this picks which product.
+[0096](docs/decisions/0096-two-builders-one-session.md) has the rest, including why the two
+builders are not shown side by side the way the renderers are.
+
+The builder pane moved to `builder-pane.tsx`, which is the seam `app.tsx`'s size ceiling already
+named: 693 lines to 598.
+
 **One schema now renders in React and Angular side by side, in the playground.** The project's
 founding claim is a headless engine that is genuinely framework-neutral, and it was
 demonstrated nowhere: both Angular packages were complete, published, and mounted by no

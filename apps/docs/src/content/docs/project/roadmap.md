@@ -177,12 +177,20 @@ than asserted.
    to add. So this is a question about whether a form may be authored in pieces before it is
    a piece of work, which is why it is not first.
 
-3. **An application that mounts the Angular BUILDER.** The playground now renders one schema
-   in React and Angular side by side, so the renderer half of this is done. Nothing mounts
-   `@formancy/builder-angular`, so builder parity is still a claim backed by tests rather than
-   by anything a visitor can open.
-
 ### Done since this list was written
+
+**Both Angular packages are mounted, and the builder shares the React builder's session.** The
+playground's Build pane has a chooser: React or Angular, over the *same* `BuilderSession`. Make
+an edit in the Angular tree, switch back, and undo it — the document, the undo stack and both
+rendered forms are one set of things, which is
+[0091](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0091-a-second-builder-is-a-binding.md)'s
+claim as something to do rather than something to read.
+
+Mounting it turned up why it had been easy to leave: **`@formancy/builder-angular` could not be
+imported from anywhere in the workspace.** Its manifest carried no `exports` and no `types`, so
+there was nothing for a bundler or TypeScript to resolve — and its own ninety-five tests never
+noticed, because they import by relative path
+([0096](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0096-two-builders-one-session.md)).
 
 **One schema renders in React and Angular, side by side, on one page.** The project's founding
 claim — a headless engine that is genuinely framework-neutral — was demonstrated nowhere until

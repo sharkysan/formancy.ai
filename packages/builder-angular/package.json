@@ -3,6 +3,22 @@
   "version": "0.3.0",
   "description": "Keyboard-first Angular builder UI for formancy form documents.",
   "license": "Apache-2.0",
+  "//exports": [
+    "Pointing into dist, so this package is importable from elsewhere in the",
+    "workspace. `publishConfig.linkDirectory: false` means the link a sibling",
+    "resolves is this directory rather than dist, and without these fields there",
+    "is nothing here to resolve: @formancy/builder-angular could not be imported",
+    "by any workspace package at all, which is consistent with nothing having",
+    "mounted it. @formancy/angular has carried the same two fields all along.",
+    "The published manifest is ng-packagr's, in dist, and is unaffected."
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/types/formancy-builder-angular.d.ts",
+      "default": "./dist/fesm2022/formancy-builder-angular.mjs"
+    }
+  },
+  "types": "./dist/types/formancy-builder-angular.d.ts",
   "scripts": {
     "build": "ng-packagr -p ng-package.json && node scripts/finalize-dist.mjs",
     "test:coverage": "vitest run --coverage",
