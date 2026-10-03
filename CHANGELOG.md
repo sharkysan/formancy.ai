@@ -10,6 +10,31 @@ later.
 
 ## Unreleased
 
+**Every published library now has to be imported by something, by name.**
+`@formancy/builder-angular` was unimportable for four releases — no `exports`, no `types` —
+and nothing noticed, because its own ninety-five tests import `./builder` by relative path
+and `check:pkg` lints the `dist` manifest, which ng-packagr writes correctly. The gap sat
+between those two facts and only a consumer could fall into it.
+
+So a published package with no workspace consumer importing it by name has never been
+consumed the way a user consumes it, and that is now a test. `@formancy/server` and
+`@formancy/mcp` are excused with reasons — nothing imports a server — and a package that
+acquires a consumer has to come off that list rather than sit on it, the same ratchet the
+size budget uses.
+
+It is the cheap half of post-publish verification and does not replace the other: a workspace
+sibling reads the *source* manifest, so this proves somebody imports the package, not that
+the published tarball resolves. Installing the tarballs through a local Verdaccio is still
+unbuilt and still the only thing that can see bundler and SSR breakage. The debt table says
+both halves.
+
+**And the guard's first version was wrong in the way this repository keeps writing down.** It
+matched `from '<name>'` and reported `@formancy/themes` as consumed by nothing — a theme is
+consumed for its *effect*, `import '@formancy/themes/blueprint.css'`, which has no `from` in
+it, and a stylesheet reaching one writes `@import`. Seventh instance of the guard's own
+regular expression being the defect; `CLAUDE.md` now counts it, and the case that caught it is
+named in the test so the pattern cannot narrow again.
+
 **A publish can now warn.** `POST /forms` returns `warnings` on its `201` when there is
 something worth telling the publisher that is not grounds to refuse, and the admin shows it
 under the version it created rather than as a failure. Today there is one kind: a rule whose
