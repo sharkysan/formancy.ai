@@ -194,3 +194,28 @@ half.
 The Angular renderer passes the **same conformance fixtures** as the React one,
 driven only by accessible name and role. That suite is what keeps the two from
 drifting apart — see [Conformance](/docs/concepts/conformance/).
+
+And you can watch it: the [playground](https://formancy.ai/playground/) renders
+one schema under both renderers, side by side, over two engines built from the
+same document. Edit the JSON and both follow.
+
+### Two of the same form on one page
+
+Element ids come from the engine, minted from the form's `id`, which is what
+makes them deterministic and stable under server rendering. So two engines built
+from one schema mint **identical** ids — and a duplicate id does not merely
+duplicate: `<label for>` resolves to the first match in the document, so every
+control in the second form loses its accessible name.
+
+Pass `formId` when a page shows the same form twice, whether that is two
+renderers or two applicants:
+
+```ts
+const left = createFormEngine({ schema, formId: 'applicant-1', capabilities })
+const right = createFormEngine({ schema, formId: 'applicant-2', capabilities })
+```
+
+It changes nothing about the document: the schema is the same schema, its hash is
+the same hash, and a submission still binds to the version it was rendered
+against. Leaving it out keeps the form's own `id`, which is right for the usual
+case of one form on a page.

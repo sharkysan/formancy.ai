@@ -1,0 +1,30 @@
+{
+  "//": [
+    "The tsconfig Vite's Angular plugin compiles with, and nothing else uses.",
+    "",
+    "Separate from tsconfig.json because that one is a React app's: `noEmit: true`",
+    "and `module: preserve`. The Angular compiler has to EMIT — it rewrites a",
+    "decorated class into a definition — and given a no-emit program it produces",
+    "nothing, which surfaces as a rolldown MISSING_EXPORT for the component",
+    "itself rather than as a compiler error. Mirrors packages/angular's",
+    "tsconfig.spec.json, which is the working example in this repository.",
+    "",
+    "`include` names only the Angular files, so the program the compiler builds",
+    "does not contain a single .tsx."
+  ],
+  "compilerOptions": {
+    "strict": true,
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "experimentalDecorators": false,
+    "useDefineForClassFields": false,
+    "noEmit": false,
+    "outDir": "out-tsc"
+  },
+  "include": ["src/angular-preview.ts", "src/angular-bootstrap.ts"]
+}

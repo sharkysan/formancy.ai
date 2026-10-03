@@ -1,6 +1,26 @@
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import type { ConfigEnv, UserConfig } from 'vite'
-import config from '../vite.config.js'
+
+/*
+ * The Angular plugin, stubbed — and only here.
+ *
+ * This file imports the REAL `vite.config.ts`, which is the whole point: a test
+ * that restated the base value would pass while the build used another one. The
+ * config now also imports Vite's Angular plugin, which reaches `@angular/build`
+ * and through it `listr2` — an ES module shipped inside a CommonJS package, so
+ * Node refuses its `import` statement and the suite fails to load the config at
+ * all.
+ *
+ * Stubbed rather than worked around in the vitest config, because what this
+ * file asserts is one string and the plugin has nothing to do with it. Inlining
+ * the dependency for the whole suite was tried first and made it worse: with
+ * `inline: true` Vitest went on to try to transform TypeScript itself.
+ */
+vi.mock('@analogjs/vite-plugin-angular', () => ({
+  default: () => ({ name: 'angular-stub' }),
+}))
+
+const { default: config } = await import('../vite.config.js')
 
 /**
  * Where the built app thinks it lives.

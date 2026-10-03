@@ -177,14 +177,28 @@ than asserted.
    to add. So this is a question about whether a form may be authored in pieces before it is
    a piece of work, which is why it is not first.
 
-3. **An application that mounts the Angular packages.** `@formancy/angular` and
-   `@formancy/builder-angular` are complete and published, and nothing runs them outside a
-   jsdom suite — the playground and the admin are both React. The v0.1 goal was one schema
-   rendering in React *and* Angular in one screenshot, and that screenshot does not exist, so
-   Angular parity is currently a claim backed by tests rather than by anything a visitor can
-   open.
+3. **An application that mounts the Angular BUILDER.** The playground now renders one schema
+   in React and Angular side by side, so the renderer half of this is done. Nothing mounts
+   `@formancy/builder-angular`, so builder parity is still a claim backed by tests rather than
+   by anything a visitor can open.
 
 ### Done since this list was written
+
+**One schema renders in React and Angular, side by side, on one page.** The project's founding
+claim — a headless engine that is genuinely framework-neutral — was demonstrated nowhere until
+now: both Angular packages were complete, published and mounted by no application.
+
+Putting them on one page needed something the engine could not express. Element ids are minted
+from the form id, so two engines over one schema mint identical ones — and a duplicate id does
+not merely duplicate: `<label for>` resolves to the first match in the document, so every
+control in the second renderer loses its accessible name. Measured, both before and after.
+`createFormEngine` now takes a `formId`, which is a rendering concern rather than a document
+one; the schema, its hash and what a submission binds to are unchanged
+([0095](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0095-one-schema-two-renderers.md)).
+
+Building it also found that the playground's own capabilities — the options source, the
+scanner, the uploader, the editor — were local to the React component, so the Angular half
+rendered one control fewer and looked fine doing it.
 
 **The Angular builder reached parity.** Dragging on the rendered form was the last thing the
 React builder had that it did not. Where a drop lands moved into `@formancy/builder-core`

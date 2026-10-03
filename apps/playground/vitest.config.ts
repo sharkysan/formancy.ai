@@ -1,9 +1,45 @@
+import { fileURLToPath } from 'node:url'
+import angular from '@analogjs/vite-plugin-angular'
+import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
 import { coverage } from '../../vitest.coverage'
 
+/**
+ * The Angular tsconfig, resolved when the plugin asks rather than when this
+ * module loads.
+ *
+ * `tsconfig` accepts a thunk, and that is load-bearing here: `build-base.test.ts`
+ * imports this config to assert the base path, and under Vitest's transform
+ * `import.meta.url` is not a file URL — so resolving it eagerly threw *"The URL
+ * must be of scheme file"* and took a test about one string with it.
+ */
+const TSCONFIG = (): string =>
+  fileURLToPath(new URL('./tsconfig.angular.json', import.meta.url))
+
 export default defineConfig({
+  /*
+   * The same Angular plugin the build uses, for the same reason and with the
+   * same narrowing.
+   *
+   * This config is separate from `vite.config.ts`, so adding the plugin there
+   * did nothing here: the suite loaded `@formancy/angular` untransformed and
+   * every file that mounts the app failed with *"needs to be compiled using the
+   * JIT compiler"*.
+   */
+  plugins: [
+    // React first, and both are required: with only the Angular plugin the
+    // `.tsx` suites stopped parsing at all — *"Cannot use import statement
+    // outside a module"* — because nothing was transforming the JSX any more.
+    react(),
+    angular({
+      tsconfig: TSCONFIG,
+      transformFilter: (_code, id) =>
+        id.includes('angular-preview') || id.includes('@formancy/angular'),
+    }),
+  ],
   test: {
     coverage,
+    setupFiles: ['src/test-setup.ts'],
     include: ['src/**/*.test.{ts,tsx}'],
     environment: 'jsdom',
     passWithNoTests: true,

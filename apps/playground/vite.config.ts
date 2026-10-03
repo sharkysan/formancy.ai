@@ -1,3 +1,5 @@
+import { fileURLToPath } from 'node:url'
+import angular from '@analogjs/vite-plugin-angular'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
@@ -14,9 +16,44 @@ import { defineConfig } from 'vite'
  * Only on build. The dev server is its own origin on :4381, where the app is
  * at the root and a base would only make the URL longer.
  */
+/**
+ * The Angular tsconfig, resolved when the plugin asks rather than when this
+ * module loads.
+ *
+ * `tsconfig` accepts a thunk, and that is load-bearing here: `build-base.test.ts`
+ * imports this config to assert the base path, and under Vitest's transform
+ * `import.meta.url` is not a file URL — so resolving it eagerly threw *"The URL
+ * must be of scheme file"* and took a test about one string with it.
+ */
+const TSCONFIG = (): string =>
+  fileURLToPath(new URL('./tsconfig.angular.json', import.meta.url))
+
 export default defineConfig(({ command }) => ({
   base: command === 'build' ? '/playground/' : '/',
-  plugins: [react()],
+  /*
+   * Both frameworks, in one page.
+   *
+   * The Angular plugin compiles Angular's templates and runs the linker over
+   * `@formancy/angular`'s published output, which ng-packagr emits in partial
+   * Ivy form — without it the components carry `ɵɵngDeclareComponent` calls and
+   * nothing resolves them.
+   *
+   * **`transformFilter`, not `include`.** The plugin's `include` is for
+   * *additional* files to compile, so passing a narrow list there does not
+   * narrow anything: it kept transforming every `.ts` in this app, and the
+   * Angular compiler's output for a module that declares no component drops its
+   * exports. The build failed with five `MISSING_EXPORT`s for
+   * `STARTER_SCHEMA`, `WIZARD_SCHEMA` and friends — files with nothing Angular
+   * in them at all.
+   */
+  plugins: [
+    react(),
+    angular({
+      tsconfig: TSCONFIG,
+      transformFilter: (_code, id) =>
+        id.includes('angular-preview') || id.includes('@formancy/angular'),
+    }),
+  ],
   // Fail rather than wander: the readme writes this port down, and Vite's
   // default of taking the next free one turns a stale dev server from an
   // error into a page at an address nobody was told about.

@@ -11,6 +11,10 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@angular/common": "^22.1.7",
+    "@angular/core": "^22.1.7",
+    "@angular/platform-browser": "^22.1.7",
+    "@formancy/angular": "workspace:*",
     "@formancy/builder-core": "workspace:*",
     "@formancy/builder-react": "workspace:*",
     "@formancy/core": "workspace:*",
@@ -23,6 +27,9 @@
     "react-dom": "^19.3.0"
   },
   "devDependencies": {
+    "@analogjs/vite-plugin-angular": "^2.7.2",
+    "@angular/compiler": "^22.1.7",
+    "@angular/compiler-cli": "^22.1.7",
     "@formancy/conformance": "workspace:*",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",

@@ -16,9 +16,9 @@ import {
   ScannerProvider,
   UploaderProvider,
 } from '@formancy/react'
-import type { OptionsSources, Scanner } from '@formancy/react'
 import { createRichTextEditor } from '@formancy/tiptap'
 import { playgroundUploader } from './demo-uploader.js'
+import { DEMO_OPTIONS_SOURCES, DEMO_SCANNER } from './demo-capabilities.js'
 import { createBuilderSession } from '@formancy/builder-core'
 import type { BuilderSession } from '@formancy/builder-core'
 import {
@@ -38,6 +38,7 @@ import '@formancy/themes/workbench.css'
 import './app.css'
 import { STARTER_SCHEMA } from './starter.js'
 import { WIZARD_SCHEMA } from './wizard.js'
+import { AngularPane } from './angular-pane.js'
 import { PLAYGROUND_CHECKS } from './demo-checks.js'
 
 /**
@@ -122,65 +123,6 @@ const SITE = import.meta.env.DEV ? 'http://localhost:4384/' : '/'
  * it refuses typing. `window.prompt` even has the contract's own shape: a string, or
  * `null` when somebody cancels.
  */
-/**
- * A stand-in for a deployment's own list, so the demo shows the real behaviour.
- *
- * This is the half a form document deliberately does NOT carry: the document says
- * `optionsSource: "pickup-points"` and this says what that name means. In a real
- * deployment `resolve` is a call to whatever already holds the list — an internal
- * API, a database, a directory — and nothing in formancy ever makes a request of
- * its own.
- *
- * Slow on purpose, by a quarter of a second: the busy state, the debounce and the
- * "searching" announcement are the parts of this that only exist under latency, and a
- * demo that answered instantly would show none of them.
- */
-const PICKUP_POINTS = [
-  'Zürich Hauptbahnhof',
-  'Zürich Oerlikon',
-  'Bern Bahnhof',
-  'Basel SBB',
-  'Genève Cornavin',
-  'Lausanne Flon',
-  'Luzern Bahnhof',
-  'St. Gallen Bahnhof',
-  'Lugano Centro',
-  'Winterthur Altstadt',
-].map((label, index) => ({ value: `p${String(index + 1)}`, label }))
-
-const DEMO_OPTIONS_SOURCES: OptionsSources = {
-  'pickup-points': {
-    minQueryLength: 0,
-    maxRows: 6,
-    resolve: ({ kind, query, values, signal }) =>
-      new Promise((resolve, reject) => {
-        const timer = setTimeout(() => {
-          if (kind === 'labels') {
-            resolve(PICKUP_POINTS.filter((point) => values.includes(point.value)))
-            return
-          }
-          // The narrowing is the SOURCE's, not the control's: it was handed the
-          // query, and a control that re-filtered its answer would drop rows the
-          // source matched on data the person cannot see.
-          const folded = query.trim().toLowerCase()
-          resolve(
-            folded === ''
-              ? PICKUP_POINTS
-              : PICKUP_POINTS.filter((point) => point.label.toLowerCase().includes(folded)),
-          )
-        }, 250)
-        // Honouring the signal is the point of it: a keystroke that supersedes an
-        // earlier one should cancel the work, not just ignore the answer.
-        signal.addEventListener('abort', () => {
-          clearTimeout(timer)
-          reject(new DOMException('Superseded', 'AbortError'))
-        })
-      }),
-  },
-}
-
-const DEMO_SCANNER: Scanner = async ({ label }) =>
-  window.prompt(`Stand-in for a camera. What does the code for "${label}" read?`)
 
 /**
  * The three panes, for a screen too narrow to show them side by side.
@@ -278,27 +220,48 @@ export function App() {
   // gets, and a consumer gets a new engine when the schema changes.
   const built = useMemo(() => {
     if (validated === undefined || !validated.valid) return undefined
+    /*
+     * One engine per renderer, from one schema, with its own id namespace.
+     *
+     * Not a shared instance, and not an oversight. Element ids are minted from
+     * the form id — `f:everything:email:control` — so two renderers of one
+     * schema on one page emit every id twice, and a duplicate id breaks exactly
+     * the two things the engine mints them for: `<label for>` and
+     * `aria-describedby` both resolve to the FIRST match in the document, which
+     * here would be the other framework's. Each renderer is correct about its
+     * own tree and neither can see the collision, which is why the engine takes
+     * a `formId` rather than the renderers taking a prefix
+     * ([0021](../../../docs/decisions/0021-engine-owns-aria.md)).
+     *
+     * The cost is that the two previews hold their own answers rather than
+     * mirroring each other. That is the right trade for what this demonstrates:
+     * the claim is that one engine build behaves identically under both
+     * renderers, which is shown by filling the same field in each and getting
+     * the same validation — not by one typing into the other.
+     */
+    const forRenderer = (formId: string) =>
+      createFormEngine({
+        schema: validated.schema,
+        formId,
+        // Fixed for the engine's lifetime, so switching locale rebuilds it —
+        // which is exactly what the spec says must happen, because snapshots
+        // are identity-stable and a locale moving under them would leave
+        // every cached one stale.
+        locale,
+        capabilities: {
+          now: () => Date.now(),
+          today: () => new Date().toISOString().slice(0, 10),
+          random: () => Math.random(),
+        },
+        // This tab is the deployment. A `check` names a validator and carries no
+        // expression, so with nothing here a document naming one fails CLOSED:
+        // the field shows an error the visitor cannot clear and nothing says that
+        // the deployment, not the answer, is what is missing.
+        checks: PLAYGROUND_CHECKS,
+      })
+
     try {
-      return {
-        engine: createFormEngine({
-          schema: validated.schema,
-          // Fixed for the engine's lifetime, so switching locale rebuilds it —
-          // which is exactly what the spec says must happen, because snapshots
-          // are identity-stable and a locale moving under them would leave
-          // every cached one stale.
-          locale,
-          capabilities: {
-            now: () => Date.now(),
-            today: () => new Date().toISOString().slice(0, 10),
-            random: () => Math.random(),
-          },
-          // This tab is the deployment. A `check` names a validator and carries no
-          // expression, so with nothing here a document naming one fails CLOSED:
-          // the field shows an error the visitor cannot clear and nothing says that
-          // the deployment, not the answer, is what is missing.
-          checks: PLAYGROUND_CHECKS,
-        }),
-      }
+      return { engine: forRenderer('react'), angular: forRenderer('angular') }
     } catch (error) {
       // validateSchema passed but the engine refused: an expression error or a
       // dependency cycle. Exactly what a form author needs to see verbatim.
@@ -454,7 +417,7 @@ export function App() {
                 layout="web"
                 enabled={session !== null && pane === 'build' && builderTab === 'arrangement'}
               >
-                <div className="sheet" data-formancy-theme={theme}>
+                <div className="renderers">
                   {/* The playground provides the editor, so the richtext
                       field here is the one a visitor would actually use rather
                       than the textarea fallback. `createRichTextEditor` matches
@@ -469,10 +432,29 @@ export function App() {
                     <UploaderProvider value={playgroundUploader}>
                       <ScannerProvider value={DEMO_SCANNER}>
                       <OptionsSourcesProvider value={DEMO_OPTIONS_SOURCES}>
-                      <FormancyProvider engine={built.engine} key={source}>
-                        <ErrorSummary />
-                        <FormancyForm layout="web" />
-                      </FormancyProvider>
+                      {/* A region with an accessible name, so a test — and a
+                          screen reader moving by landmark — can say which
+                          renderer it means. Two forms on one page otherwise give
+                          every query two answers.
+
+                          The themed sheet is per pane rather than around both:
+                          the theme styles a FORM, and each renderer renders its
+                          own. One sheet around the pair also capped the two at
+                          the width written for one. */}
+                      <section className="react-pane" aria-labelledby="renderer-react">
+                        <h3 id="renderer-react">React</h3>
+                        <div className="sheet" data-formancy-theme={theme}>
+                          <FormancyProvider engine={built.engine} key={source}>
+                            <ErrorSummary />
+                            <FormancyForm layout="web" />
+                          </FormancyProvider>
+                        </div>
+                      </section>
+                      {/* The same document, under the other renderer. One engine
+                          build, two framework-native bindings, side by side —
+                          which is the project's central claim and was until now
+                          only ever asserted. */}
+                      <AngularPane engine={built.angular} theme={theme} />
                       </OptionsSourcesProvider>
                       </ScannerProvider>
                     </UploaderProvider>

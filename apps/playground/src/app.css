@@ -361,8 +361,56 @@ body {
   background-size: 18px 18px;
 }
 
+/*
+ * The two renderers, side by side.
+ *
+ * `auto-fit` rather than a column count, because the number of columns is the
+ * thing that goes stale: the header's controls were a `repeat(2, …)` and then an
+ * `auto-fit` that made three, and the rule learned the hard way is to say how
+ * narrow a column may get and let the browser count. Below about 2× 22rem the
+ * two stack, which is right — comparing renderers needs them beside each other,
+ * and on a phone nothing is beside anything.
+ *
+ * `min-width: 0` on the children: a grid item defaults to `min-width: auto`, so
+ * a wide control inside one pane sets a floor on the whole page and the layout
+ * stops reflowing at 320px (WCAG 1.4.10). This has bitten the header once
+ * already.
+ */
+.renderers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr));
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.renderers > * {
+  min-width: 0;
+}
+
+.renderers > * > h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #8e97ad;
+}
+
+/* The bootstrap's own failure, where the form would have been. */
+.angular-pane .problem {
+  margin: 0;
+  padding: 0.75rem 0.875rem;
+  border-radius: 10px;
+  background: rgb(255 107 107 / 12%);
+  color: #ff9d9d;
+  font-size: 0.875rem;
+}
+
 .sheet {
   margin-inline: auto;
+  /* 38rem is the width a form reads well at, and there are two of them now, so
+     the cap is per pane rather than around the pair. The grid above decides how
+     many panes fit; this decides how wide one gets. */
   max-width: 38rem;
   padding: 1.75rem 1.875rem 2rem;
   border-radius: 14px;

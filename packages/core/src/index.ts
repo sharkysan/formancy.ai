@@ -14,8 +14,6 @@ export { createWizard } from './wizard.js'
 export type { Wizard, WizardOptions } from './wizard.js'
 export { createFormEngine } from './engine.js'
 export type {
-  Check,
-  CheckRequest,
   FieldSnapshot,
   FormEngine,
   FormEngineOptions,
@@ -27,3 +25,4 @@ export type { ExpressionProblem } from './expression-problems.js'
 export { buildFieldProps } from './props.js'
 export type { ControlProps, FieldProps } from './props.js'
 export type { Capabilities, CapabilitySource } from '@formancy/expressions'
+export type { Check, CheckRequest } from './checks.js'

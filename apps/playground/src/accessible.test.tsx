@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
 import axe from 'axe-core'
 import { computeAccessibleName } from 'dom-accessibility-api'
@@ -99,6 +99,27 @@ const PANES = ['Fields', 'Arrangement'] as const
 
 async function showing(pane: (typeof PANES)[number]): Promise<void> {
   render(<App />)
+
+  /*
+   * Wait for the Angular renderer before auditing anything.
+   *
+   * The page shows the document under both renderers, and Angular bootstraps
+   * asynchronously — so without this the audit ran against a page with ONE form
+   * and reported it clean. Duplicate element ids are exactly what axe catches
+   * and exactly what two renderers of one schema produce, so the half of the
+   * page most likely to fail was the half not being looked at.
+   */
+  await waitFor(
+    () => {
+      const angular = screen.getByRole('region', { name: 'Angular' })
+      expect(
+        within(angular).queryByRole('textbox', { name: 'First name' }),
+        'the Angular renderer never rendered, so this audit covers half the page',
+      ).not.toBeNull()
+    },
+    { timeout: 10_000 },
+  )
+
   if (pane === 'Fields') return
   const user = userEvent.setup()
   await user.click(screen.getByRole('button', { name: pane }))

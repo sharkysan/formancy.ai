@@ -106,6 +106,28 @@ reason is `"invoice"`. When a rule hides a field, its answer is removed from
 the value by default (`clearOnHide`), so a hidden branch cannot smuggle data
 into the submission.
 
+## Two of the same form on one page
+
+Element ids come from the engine, minted from the form's `id` — which is what
+makes them deterministic and stable under server rendering. Two engines built
+from one schema therefore mint **identical** ids, and a duplicate id does not
+merely duplicate: `<label for>` resolves to the first match in the document, so
+every control in the second form loses its accessible name.
+
+Pass `formId` when one page shows the same form twice:
+
+```ts
+const first = createFormEngine({ schema, formId: 'applicant-1', capabilities })
+const second = createFormEngine({ schema, formId: 'applicant-2', capabilities })
+```
+
+It changes nothing about the document — same schema, same hash, and a submission
+still binds to the version it was rendered against. Leave it out for the usual
+case of one form on a page and the form's own `id` is used.
+
+The [playground](https://formancy.ai/playground/) does exactly this to show one
+schema under the React and Angular renderers at once.
+
 ## Why `capabilities` is required
 
 The engine never reads an ambient clock or random source. `now()`, `today()`

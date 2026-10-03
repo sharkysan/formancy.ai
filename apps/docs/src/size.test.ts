@@ -37,7 +37,7 @@ const CEILINGS: Record<string, { lines: number; why: string }> = {
   },
   'packages/core/src/engine.ts': {
     lines: 1460,
-    why: 'The engine is one subject and its parts are genuinely coupled through the graph. The seam, if there is one, is the check and skip machinery.',
+    why: 'The engine is one subject and its parts are genuinely coupled through the graph. The seam, if there is one, is the check and skip machinery — whose protocol types left for `checks.ts` to pay for the `formId` option, since this budget allows no growth at all. The machinery itself still needs the graph and the store, which is why it has not followed.',
   },
   'packages/angular/src/form.ts': {
     lines: 1019,
@@ -68,8 +68,8 @@ const CEILINGS: Record<string, { lines: number; why: string }> = {
     why: 'Refusing a fixture that could not run honestly. One subject.',
   },
   'apps/playground/src/app.tsx': {
-    lines: 711,
-    why: 'Three panes and their wiring. The seam is one pane per file.',
+    lines: 693,
+    why: 'Three panes and their wiring. The seam is one pane per file, and two left when the page grew a second renderer: the Angular pane, and the capabilities this deployment supplies — which both renderers need and only one was getting.',
   },
   'packages/spec/src/types.ts': {
     lines: 695,

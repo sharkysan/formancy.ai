@@ -81,10 +81,13 @@ correction is in the code, because believing the wrong guard protects something 
 real one gets deleted as redundant.
 
 **The Angular builder is still demonstrated nowhere.** No application mounts
-`@formancy/builder-angular`, or `@formancy/angular` either — both exist only inside jsdom
-suites. That is a gap this record does not close and should not be read as closing: parity with
-the React builder is now a property of the tests, not something an evaluator can see. Recorded
-in `docs/architecture/11-risks-and-debt.md` and on the roadmap.
+`@formancy/builder-angular`. That is a gap this record does not close and should not be read as
+closing: parity with the React builder is a property of the tests, not something an evaluator
+can see. Recorded in `docs/architecture/11-risks-and-debt.md` and on the roadmap.
+
+*Since this was written, the renderer half was closed:* the playground mounts
+`@formancy/angular` beside React over one schema
+([0095](0095-one-schema-two-renderers.md)). The builder half stands.
 
 ## Alternatives considered
 
