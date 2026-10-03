@@ -10,6 +10,43 @@ later.
 
 ## Unreleased
 
+**`pnpm test:e2e:install` packs the packages and installs them into a project that knows
+nothing about this repository.** Fifteen tarballs, a plain npm project, `tsc` with
+`skipLibCheck` **off**, run under Node, then built with Vite. It is a new CI job beside
+`container`, and it takes about twenty seconds.
+
+**Every other gate is blind to this by construction.** `build`, `typecheck`, `test:coverage`
+and `check:pkg` all run inside the workspace, where a sibling resolves a package through a
+symlink to its *source* directory — so an `exports` map that is wrong for a real consumer can
+be right for every test here. Not hypothetical: `@formancy/builder-angular` had no `exports`
+at all for four releases, and its own ninety-five tests could not see it because they import by
+relative path, while `publint` read the manifest ng-packagr generates.
+
+Broken three ways to prove it works:
+
+- an entry point removed from `exports` — caught in **three** places, including inside two
+  other packages' published declaration files, which only `skipLibCheck: false` reveals;
+- an `exports` path pointing at a file the tarball does not contain — `ERR_MODULE_NOT_FOUND`
+  at runtime, which no static check would have reached;
+- a runtime assertion inverted — the Node step fails, so the assertions genuinely run.
+
+Two packages are outside it, with reasons: consuming `@formancy/angular` or
+`@formancy/builder-angular` needs the Angular build toolchain rather than an import, so a
+project importing them is an Angular project — and `apps/playground` is that project, building
+both from the workspace on every run. `@formancy/server` and `@formancy/mcp` are applications;
+the `container` job starts the server image.
+
+**What it still does not do is talk to npm.** A release that packed differently from
+`pnpm pack` would slip through, and nothing revisits a version once it is published. That is a
+much smaller gap than the one this closes, and the debt table and `LIFECYCLE.md` now say which
+is which rather than describing the whole thing as unbuilt.
+
+The fixture is real files under `scripts/install-fixture/` rather than strings in the runner.
+It began as a template literal and three layers of escaping — a backtick inside a template
+literal inside a script edited by a script — broke it twice before it ran once. A fixture that
+can be opened and type-checked in place is also one somebody can extend without reading the
+runner.
+
 **Every published package is now checked as a package, to one standard.** Counting found
 three that were not: the two Angular packages ran `publint ./dist` with **no `attw` at all**,
 and `@formancy/themes` ran nothing. Twelve of fifteen ran `publint && attw`; three were on a
