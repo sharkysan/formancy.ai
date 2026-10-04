@@ -68,8 +68,8 @@ const CEILINGS: Record<string, { lines: number; why: string }> = {
     why: 'Refusing a fixture that could not run honestly. One subject.',
   },
   'apps/playground/src/app.tsx': {
-    lines: 598,
-    why: 'Three panes and their wiring. The seam is one pane per file, and three have left: the Angular renderer pane, the capabilities this deployment supplies, and the builder pane — the last when a second builder arrived beside the React one over the same session.',
+    lines: 587,
+    why: 'Three panes and their wiring. The seam is one pane per file, and five things have left: the Angular renderer pane, the capabilities this deployment supplies, the builder pane, the engine inspector, and the pane list with its fold control — the last two when folding a pane away pushed this past its ceiling.',
   },
   'packages/spec/src/types.ts': {
     lines: 695,

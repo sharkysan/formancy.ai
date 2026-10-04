@@ -282,10 +282,99 @@ body {
 .panes {
   grid-row: 3;
   display: grid;
+  /* Overridden inline with the same values when a pane is folded; the fallback
+     here is the all-open case, so the page is right before React runs. */
   grid-template-columns: minmax(19rem, 1fr) minmax(24rem, 1.25fr) minmax(16rem, 0.8fr);
   gap: 0.75rem;
   padding: 0 0.75rem 0.75rem;
   min-height: 0;
+}
+
+/*
+ * Folding a pane away.
+ *
+ * How narrow a folded strip is lives here rather than in the component, which
+ * composes the grid template from it: the template depends on which panes are
+ * folded and three panes is eight combinations, but the WIDTH is a styling
+ * decision like any other.
+ */
+.panes {
+  --pane-folded: 2.75rem;
+}
+
+/*
+ * The body is hidden, not unmounted.
+ *
+ * `display: none` rather than removing it from the tree, because the pane is
+ * holding things worth keeping: the form's answers, the Angular application the
+ * preview bootstrapped, and wherever the editor was scrolled to. A fold that
+ * costs you your place is a fold nobody uses twice.
+ */
+.pane[data-folded] > .body,
+.pane[data-folded] > .builder-pane {
+  display: none;
+}
+
+/*
+ * On its side, which is what makes a 2.75rem strip readable at all.
+ *
+ * `vertical-rl` with a 180° turn reads bottom-to-top, the direction a collapsed
+ * panel is labelled in every editor people already use. The fold button stays
+ * upright inside it so the chevron still points the way it means.
+ */
+.pane[data-folded] > h2 {
+  writing-mode: vertical-rl;
+  rotate: 180deg;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.75rem 0.5rem;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.pane[data-folded] > h2 > .fold {
+  writing-mode: horizontal-tb;
+  rotate: 180deg;
+}
+
+/* The mode switch has no room on a strip, and nothing on it can be reached
+   while the body is hidden anyway. */
+.pane[data-folded] > h2 > .mode {
+  display: none;
+}
+
+.fold {
+  font: inherit;
+  font-size: 0.875rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex: none;
+  cursor: pointer;
+  border: 1px solid var(--edge-strong);
+  border-radius: 7px;
+  background: rgb(255 255 255 / 4%);
+  color: var(--muted);
+  transition:
+    color 160ms ease,
+    border-color 160ms ease;
+}
+
+.fold:hover {
+  color: var(--text);
+  border-color: var(--client);
+}
+
+/* Below this the switcher already shows one pane at a time, so a fold control
+   would be a second answer to a question already answered — and on a strip of
+   its own it would leave nothing on screen. */
+@media (max-width: 64rem) {
+  .fold {
+    display: none;
+  }
 }
 
 .pane {

@@ -39,6 +39,9 @@ import './app.css'
 import { STARTER_SCHEMA } from './starter.js'
 import { WIZARD_SCHEMA } from './wizard.js'
 import { AngularPane } from './angular-pane.js'
+import { EngineInspector } from './engine-inspector.js'
+import { FoldPane, PANES, PANE_COLUMNS } from './panes.js'
+import type { PaneId } from './panes.js'
 import { BuilderBody, PLACEHOLDER_SESSION } from './builder-pane.js'
 import { PLAYGROUND_CHECKS } from './demo-checks.js'
 
@@ -125,22 +128,6 @@ const SITE = import.meta.env.DEV ? 'http://localhost:4384/' : '/'
  * `null` when somebody cancels.
  */
 
-/**
- * The three panes, for a screen too narrow to show them side by side.
- *
- * Stacked, each pane became a 320-pixel box with its own scrollbar inside a
- * page with another one — a form you could see four fields of at a time.
- * Narrow, the page shows one pane at a time at its full height instead, and
- * this chooses which. The form is first because it is what somebody came to
- * see. Wide, all three are shown and the switch is not.
- */
-const PANES = [
-  { id: 'form', label: 'Form' },
-  { id: 'editor', label: 'Editor' },
-  { id: 'engine', label: 'Engine' },
-] as const
-
-type PaneId = (typeof PANES)[number]['id']
 
 export function App() {
   const [demo, setDemo] = useState<DemoId>('starter')
@@ -156,6 +143,20 @@ export function App() {
   const [session, setSession] = useState<BuilderSession | null>(null)
   const [builderTab, setBuilderTab] = useState<'fields' | 'arrangement'>('fields')
   const [shown, setShown] = useState<PaneId>('form')
+
+  /**
+   * Which panes are folded away.
+   *
+   * Session-only, like the theme, the locale and the demo chooser: nothing in
+   * this app persists, and one setting that did would be the odd one out.
+   */
+  const [folded, setFolded] = useState<ReadonlySet<PaneId>>(() => new Set())
+  const foldPane = (pane: PaneId): void =>
+    setFolded((current) => {
+      const next = new Set(current)
+      if (!next.delete(pane)) next.add(pane)
+      return next
+    })
 
   // Opened when the Build pane appears, from whatever the text says then, and
   // again when a different demo is loaded.
@@ -352,9 +353,26 @@ export function App() {
         ))}
       </nav>
 
-      <div className="panes" data-shown={shown}>
-        <section className="pane editor" id="pane-editor">
+      <div
+        className="panes"
+        data-shown={shown}
+        style={{
+          gridTemplateColumns: PANE_COLUMNS.map(([pane, open]) =>
+            folded.has(pane) ? 'var(--pane-folded)' : open,
+          ).join(' '),
+        }}
+      >
+        {/* A named region per pane, so the heading names it for a screen reader
+            moving by landmark and for a test asking by role — the same reason
+            the two renderers inside the form pane are named regions. */}
+        <section
+          className="pane editor"
+          id="pane-editor"
+          aria-label="Editor"
+          data-folded={folded.has('editor') ? 'true' : undefined}
+        >
           <h2>
+            <FoldPane pane="Editor" folded={folded.has('editor')} onToggle={() => foldPane('editor')} />
             {(['build', 'schema'] as const).map((candidate) => (
               <button
                 key={candidate}
@@ -398,8 +416,16 @@ export function App() {
           </div>
         </section>
 
-        <section className="pane preview" id="pane-form">
-          <h2>Form</h2>
+        <section
+          className="pane preview"
+          id="pane-form"
+          aria-label="Form"
+          data-folded={folded.has('form') ? 'true' : undefined}
+        >
+          <h2>
+            <FoldPane pane="Form" folded={folded.has('form')} onToggle={() => foldPane('form')} />
+            Form
+          </h2>
           <div className="body">
             {parsed.parseError !== undefined ? (
               <Problem title="Not valid JSON yet" detail={parsed.parseError} />
@@ -466,8 +492,16 @@ export function App() {
           </div>
         </section>
 
-        <section className="pane engine" id="pane-engine">
-          <h2>Engine</h2>
+        <section
+          className="pane engine"
+          id="pane-engine"
+          aria-label="Engine"
+          data-folded={folded.has('engine') ? 'true' : undefined}
+        >
+          <h2>
+            <FoldPane pane="Engine" folded={folded.has('engine')} onToggle={() => foldPane('engine')} />
+            Engine
+          </h2>
           <div className="body inspect">
             {built?.engine !== undefined ? (
               <EngineInspector engine={built.engine} />
@@ -549,49 +583,4 @@ function SchemaProblems({ errors }: { errors: SchemaError[] }) {
   )
 }
 
-function EngineInspector({ engine }: { engine: FormEngine }) {
-  const value = useSyncExternalStore(
-    (onChange) => engine.subscribe(onChange),
-    () => JSON.stringify(engine.value(), null, 2),
-    () => JSON.stringify(engine.value(), null, 2),
-  )
-  const errors = useSyncExternalStore(
-    (onChange) => engine.subscribe(onChange),
-    () => engine.visibleErrors(),
-    () => engine.visibleErrors(),
-  )
-
-  return (
-    <div>
-      <h3>Submission value</h3>
-      <pre>{value}</pre>
-
-      <h3>Errors a person can see</h3>
-      {errors.length === 0 ? (
-        <p className="empty">None — nothing invalid has been touched yet.</p>
-      ) : (
-        <ul>
-          {errors.map((entry) => (
-            <li key={entry.path}>
-              {entry.path} <span className="code">{entry.codes.join(', ')}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <h3>Fields the engine is tracking</h3>
-      <ul>
-        {engine.fieldPaths().map((path) => {
-          const hidden = !engine.getFieldSnapshot(parsePath(path)).visible
-          return (
-            <li key={path} className={hidden ? 'hidden-field' : undefined}>
-              {path}
-              {hidden ? <span className="tag">hidden</span> : null}
-            </li>
-          )
-        })}
-      </ul>
-    </div>
-  )
-}
 

@@ -10,7 +10,32 @@ later.
 
 ## Unreleased
 
-*Nothing yet.*
+**Each pane in the playground folds away by hand.** Three panes at once is right on a wide
+screen and crowded on a laptop, and the existing answer — the switcher that shows one at a
+time — only appears below 64rem. Between those two widths you got all three or you resized the
+window.
+
+A disclosure button in each pane's heading: the accessible name says which pane and
+`aria-expanded` says the state, so a screen reader reads *"Engine pane, button, expanded"* and
+the name does not change under somebody mid-sentence. Folded, the pane becomes a narrow strip
+with its title turned on its side — the shape a collapsed panel has in every editor people
+already use — and the grid gives its column back to the others.
+
+**The body is hidden rather than unmounted**, which is the choice worth pinning: making it
+conditional would tear down the Angular application the preview bootstrapped on every fold,
+and lose focus and scroll position with it.
+
+Two things the tests deliberately do not claim, because measuring said otherwise. They cannot
+see the hide itself — jsdom applies no CSS, so swapping the hiding rule leaves them green, and
+what they pin is that the body is still *there*. And the form's answers are not what
+unmounting would cost: the engine is created above the pane, so even forcing a remount keeps
+every value. The obvious comment to write there was the wrong one, and it said so for a while
+before the mutation caught it.
+
+Folding pushed `app.tsx` past its size ceiling, so two more things left for the seam that entry
+already names: `engine-inspector.tsx` is the engine pane's contents, and `panes.tsx` holds which
+panes there are, how wide each is and how to fold one — one subject, since the narrow screen
+needs their names, the wide screen needs their widths, and folding needs both.
 
 ## 0.3.0 — 2026-10-04
 
