@@ -56,6 +56,16 @@ jobs:
       # multi-framework libraries.
       - run: pnpm check:pkg
 
+      # Apache-2.0 section 4(a) requires the licence to travel with the work and
+      # 4(d) the NOTICE, and `npm publish` is perfectly happy to ship a tarball
+      # with neither. This ran only in the release workflow, which is the last
+      # possible moment: the two Angular packages pack from `dist`, which is
+      # turbo's cached output for `build`, so the files were written after the
+      # build task finished and any later restore of it took them away again.
+      # The release gate caught that and stopped — correctly, and far too late
+      # to be useful. It belongs on the pull request.
+      - run: node scripts/verify-licenses.mjs
+
   # Every job above runs inside the workspace, against the tree it built from —
   # and a workspace sibling resolves a package through a symlink to its SOURCE
   # directory. So an exports map that is wrong for a real consumer can be right
