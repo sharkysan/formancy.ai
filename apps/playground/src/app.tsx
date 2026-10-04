@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import type { CSSProperties } from 'react'
 import Editor, { useMonaco } from '@monaco-editor/react'
 import type { Monaco } from '@monaco-editor/react'
 import { createFormEngine, parsePath } from '@formancy/core'
@@ -40,7 +41,7 @@ import { STARTER_SCHEMA } from './starter.js'
 import { WIZARD_SCHEMA } from './wizard.js'
 import { AngularPane } from './angular-pane.js'
 import { EngineInspector } from './engine-inspector.js'
-import { FoldPane, PANES, PANE_COLUMNS } from './panes.js'
+import { FoldPane, PANES, PaneBoundary, usePaneLayout } from './panes.js'
 import type { PaneId } from './panes.js'
 import { BuilderBody, PLACEHOLDER_SESSION } from './builder-pane.js'
 import { PLAYGROUND_CHECKS } from './demo-checks.js'
@@ -144,19 +145,7 @@ export function App() {
   const [builderTab, setBuilderTab] = useState<'fields' | 'arrangement'>('fields')
   const [shown, setShown] = useState<PaneId>('form')
 
-  /**
-   * Which panes are folded away.
-   *
-   * Session-only, like the theme, the locale and the demo chooser: nothing in
-   * this app persists, and one setting that did would be the odd one out.
-   */
-  const [folded, setFolded] = useState<ReadonlySet<PaneId>>(() => new Set())
-  const foldPane = (pane: PaneId): void =>
-    setFolded((current) => {
-      const next = new Set(current)
-      if (!next.delete(pane)) next.add(pane)
-      return next
-    })
+  const panes = usePaneLayout()
 
   // Opened when the Build pane appears, from whatever the text says then, and
   // again when a different demo is loaded.
@@ -356,11 +345,13 @@ export function App() {
       <div
         className="panes"
         data-shown={shown}
-        style={{
-          gridTemplateColumns: PANE_COLUMNS.map(([pane, open]) =>
-            folded.has(pane) ? 'var(--pane-folded)' : open,
-          ).join(' '),
-        }}
+        /*
+         * A custom property, not `grid-template-columns` itself. An inline
+         * declaration beats every rule in the stylesheet, including the
+         * narrow-screen override that asks for a single column — which was
+         * silently losing while this set the property directly.
+         */
+        style={{ '--pane-template': panes.template } as CSSProperties}
       >
         {/* A named region per pane, so the heading names it for a screen reader
             moving by landmark and for a test asking by role — the same reason
@@ -369,10 +360,10 @@ export function App() {
           className="pane editor"
           id="pane-editor"
           aria-label="Editor"
-          data-folded={folded.has('editor') ? 'true' : undefined}
+          data-folded={panes.folded.has('editor') ? 'true' : undefined}
         >
           <h2>
-            <FoldPane pane="Editor" folded={folded.has('editor')} onToggle={() => foldPane('editor')} />
+            <FoldPane pane="Editor" folded={panes.folded.has('editor')} onToggle={() => panes.foldPane('editor')} />
             {(['build', 'schema'] as const).map((candidate) => (
               <button
                 key={candidate}
@@ -416,14 +407,16 @@ export function App() {
           </div>
         </section>
 
+        <PaneBoundary layout={panes} left="editor" right="form" />
+
         <section
           className="pane preview"
           id="pane-form"
           aria-label="Form"
-          data-folded={folded.has('form') ? 'true' : undefined}
+          data-folded={panes.folded.has('form') ? 'true' : undefined}
         >
           <h2>
-            <FoldPane pane="Form" folded={folded.has('form')} onToggle={() => foldPane('form')} />
+            <FoldPane pane="Form" folded={panes.folded.has('form')} onToggle={() => panes.foldPane('form')} />
             Form
           </h2>
           <div className="body">
@@ -492,14 +485,16 @@ export function App() {
           </div>
         </section>
 
+        <PaneBoundary layout={panes} left="form" right="engine" />
+
         <section
           className="pane engine"
           id="pane-engine"
           aria-label="Engine"
-          data-folded={folded.has('engine') ? 'true' : undefined}
+          data-folded={panes.folded.has('engine') ? 'true' : undefined}
         >
           <h2>
-            <FoldPane pane="Engine" folded={folded.has('engine')} onToggle={() => foldPane('engine')} />
+            <FoldPane pane="Engine" folded={panes.folded.has('engine')} onToggle={() => panes.foldPane('engine')} />
             Engine
           </h2>
           <div className="body inspect">
