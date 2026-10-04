@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, test } from 'vitest'
@@ -257,5 +257,97 @@ describe('how each published package is checked as a package', () => {
     // asserting anything and the test should go rather than sit here green.
     expect(skipping.map(({ name }) => name)).toEqual(['@formancy/themes'])
     expect(skipping.filter(({ types }) => types)).toEqual([])
+  })
+})
+
+/**
+ * No package imports itself by its own name.
+ *
+ * **Why this is a gate and not a style note.** `turbo.json` has `typecheck`
+ * depend on `^build` — the builds of a package's *dependencies*, not its own —
+ * because a package's own `dist` is output, not input. A module that imports its
+ * own package name breaks that: the import resolves through the barrel to
+ * `dist/index.d.mts`, so the file's typecheck now needs its own build, which the
+ * task graph never promises.
+ *
+ * Found by running `turbo run typecheck --force`. With a warm cache the dist is
+ * already on disk and everything passes; forced, `builder-core:typecheck` raced
+ * its own build and tsc reported a `Location`'s members as implicitly `any` —
+ * three errors about a type that is declared in the file next door.
+ *
+ * CI survives it by accident, because `pnpm build` and `pnpm typecheck` are
+ * separate steps there. A gate that holds for a reason nobody chose is one line
+ * away from not holding, so the one line is what this checks.
+ */
+describe('what a package imports from itself', () => {
+  /** Every workspace package, published or not, with its own name. */
+  const workspacePackages = (): Array<{ dir: string; name: string }> =>
+    ['packages', 'apps'].flatMap((group) =>
+      readdirSync(join(repo, group), { withFileTypes: true })
+        .filter((entry) => entry.isDirectory())
+        .flatMap((entry) => {
+          const file = join(repo, group, entry.name, 'package.json')
+          try {
+            const parsed = JSON.parse(readFileSync(file, 'utf8')) as { name?: string }
+            if (parsed.name === undefined) return []
+            return [{ dir: join(repo, group, entry.name), name: parsed.name }]
+          } catch {
+            return []
+          }
+        }),
+    )
+
+  /** Files under `dir` that name `self` in an import. */
+  const selfImports = (dir: string, self: string): string[] => {
+    const found: string[] = []
+    // Built from a plain string rather than a template literal: inside one,
+    // `\s` is an unrecognised escape and quietly becomes `s`, so the pattern
+    // matched `fromsomething` and nothing else. Caught by putting the
+    // self-import back and watching this guard stay green — which is the whole
+    // reason the rule says to make a guard fail before trusting it.
+    const needle = new RegExp(
+      '(?:from|import)\\s+[\'"]' + self.replace('/', '\\/') + '(?:/[^\'"]*)?[\'"]',
+    )
+
+    const walk = (at: string): void => {
+      for (const entry of readdirSync(at, { withFileTypes: true })) {
+        if (entry.isDirectory()) {
+          if (['node_modules', 'dist', 'out-tsc'].includes(entry.name)) continue
+          walk(join(at, entry.name))
+          continue
+        }
+        if (!/\.(ts|tsx|mts)$/.test(entry.name)) continue
+        const file = join(at, entry.name)
+        if (needle.test(readFileSync(file, 'utf8'))) {
+          found.push(file.slice(repo.length + 1).replaceAll('\\', '/'))
+        }
+      }
+    }
+    const source = join(dir, 'src')
+    // `@formancy/themes` ships stylesheets from its root and has no `src` at
+    // all, which is not an error — a package with no TypeScript cannot import
+    // anything, let alone itself.
+    if (!existsSync(source)) return found
+    walk(source)
+    return found
+  }
+
+  test('is reading a real list of packages', () => {
+    // A guard on the guard: the assertion below is about absence, so an empty
+    // walk would pass for ever.
+    const all = workspacePackages()
+    expect(all.length).toBeGreaterThan(15)
+    expect(all.map(({ name }) => name)).toContain('@formancy/builder-core')
+  })
+
+  test('and the answer is nothing, so no typecheck needs its own build output', () => {
+    const offenders = workspacePackages().flatMap(({ dir, name }) =>
+      selfImports(dir, name).map(
+        (file) =>
+          `${file} imports ${name}, its own package — so its typecheck needs this package's own dist, which turbo's \`^build\` does not provide`,
+      ),
+    )
+
+    expect(offenders).toEqual([])
   })
 })

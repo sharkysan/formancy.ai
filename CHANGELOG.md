@@ -10,6 +10,34 @@ later.
 
 ## Unreleased
 
+**No module imports its own package name any more, and a test says so.** Found by running the
+gates with turbo's cache off: `turbo run typecheck --force` failed in `builder-core` with three
+`implicitly has an 'any' type` errors about a type declared in the file next door.
+
+The cause is a one-line import. `tree.ts` took `Location` from `@formancy/builder-core` — its
+own package — which resolves through the barrel to that package's own `dist`. But
+`turbo.json` has `typecheck` depend on `^build`, the builds of a package's **dependencies**,
+not its own, because a package's own `dist` is output rather than input. So the file's
+typecheck needed a build the task graph never promised. With a warm cache the dist is already
+there and everything passes; forced, it raced its own build.
+
+CI survived it by accident — `pnpm build` and `pnpm typecheck` are separate steps there. A
+gate that holds for a reason nobody chose is one line from not holding, so the import is now
+relative and `published-packages.test.ts` fails on any self-import, anywhere in the workspace.
+It was exactly one, repo-wide.
+
+*That guard's own first pattern was wrong,* and the mutation is what caught it: built in a
+template literal, `\s` is an unrecognised escape and quietly becomes `s`, so it matched
+`fromsomething` and nothing else. Putting the self-import back left it green. It is built from
+a plain string now, and the note says why — the eighth time here the defect would have been a
+guard's own regular expression, and the first caught before it shipped.
+
+**And a confusing failure got a cause attached.** `bundles.test.ts` measures built output, so a
+missing or half-written `dist` makes the figure wrong and the test blames §9.3 for drifting —
+sending somebody to edit the document when what they needed was `pnpm build`. Seen twice: once
+in CI before the build step existed, and once under a forced parallel rebuild where a package
+`apps/docs` does not depend on was still writing its dist. It now says which.
+
 **`pnpm test:e2e:install` packs the packages and installs them into a project that knows
 nothing about this repository.** Fifteen tarballs, a plain npm project, `tsc` with
 `skipLibCheck` **off**, run under Node, then built with Vite. It is a new CI job beside

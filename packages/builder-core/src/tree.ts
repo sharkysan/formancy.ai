@@ -1,6 +1,18 @@
 import { resolveText } from '@formancy/spec'
 import type { FieldDef, FormSchema } from '@formancy/spec'
-import type { Location } from '@formancy/builder-core'
+// By relative path, not by this package's own name.
+//
+// `Location` is declared next door in `session.ts`, and importing it through the
+// barrel made this file's typecheck depend on this package's own `dist` — which
+// `turbo.json` does not guarantee, because `typecheck` depends on `^build` (the
+// builds of its DEPENDENCIES) and not on `build`. With a warm cache the dist is
+// already there and everything passes; on a forced run its own build can still
+// be writing it, and tsc then reports `Location`'s members as implicitly `any`.
+//
+// CI survives this by accident: `pnpm build` and `pnpm typecheck` are separate
+// steps there. A gate that holds for a reason nobody chose is one line away from
+// not holding.
+import type { Location } from './session.js'
 
 /**
  * Turning a form document into something a keyboard can walk, and turning a
