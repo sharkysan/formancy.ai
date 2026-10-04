@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { brotliCompressSync } from 'node:zlib'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -25,7 +25,28 @@ const here = dirname(fileURLToPath(import.meta.url))
 const repo = join(here, '..', '..', '..')
 
 const brotliKilobytes = (packageName: string): number => {
-  const built = readFileSync(join(repo, 'packages', packageName, 'dist', 'index.mjs'))
+  const file = join(repo, 'packages', packageName, 'dist', 'index.mjs')
+  /*
+   * Said out loud, because the alternative failure is a riddle.
+   *
+   * This measures BUILT output, so a missing or half-written `dist` makes the
+   * figure wrong and the test then reports it as the document having drifted —
+   * which sends somebody to edit §9.3 when what they needed was `pnpm build`.
+   * Seen twice: once in CI before the build step existed, and once under
+   * `turbo run test:coverage --force`, where a package this app does not depend
+   * on was still writing its dist while this read it.
+   */
+  if (!existsSync(file)) {
+    throw new Error(
+      `${packageName} has no dist/index.mjs. This measures built output — run \`pnpm build\` first; the figures in §9.3 are not the problem.`,
+    )
+  }
+  const built = readFileSync(file)
+  if (built.length < 1024) {
+    throw new Error(
+      `${packageName}'s dist/index.mjs is ${String(built.length)} bytes, which is not a built bundle. Something is mid-write — run \`pnpm build\` to completion before this.`,
+    )
+  }
   return brotliCompressSync(built).length / 1024
 }
 
