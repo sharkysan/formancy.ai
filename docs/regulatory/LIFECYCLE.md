@@ -137,6 +137,21 @@ Each gate exists for a reason that was paid for at least once:
   it three ways — an entry point removed, an `exports` path pointing at a file
   the tarball does not contain, and a runtime assertion inverted — and watching
   each one fail.
+- **The contributor agreement**, in a workflow of its own rather than in the list
+  above, because it is not a `pnpm` script and needs no install:
+  `node scripts/check-cla.mjs` reads the commit authors of a pull request and
+  fails naming any the record in `.github/cla/signatories.json` has no signature
+  for ([0098](../decisions/0098-the-cla-is-checked-in-the-repository.md)). Added
+  a week after [0069](../decisions/0069-contributions-under-a-cla.md) decided the
+  agreement, which had written down that until a check existed the terms were
+  "stated and unverified". Verified by ten mutations, each observed failing the
+  case meant to catch it — among them a fail-open on a commit range the check
+  cannot read, which is the one that looks like success.
+
+**None of these gates is mechanically required.** `main` carries no branch
+protection rule, so every one of them reports and a maintainer decides. That is
+recorded in [§11.6](../architecture/11-risks-and-debt.md) rather than left to be
+inferred from the fact that the gates exist.
 
 Additionally, performance budgets are measured rather than asserted: a
 keystroke on a large form at ≈0.38 ms against a 1 ms budget, and cold graph

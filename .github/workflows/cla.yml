@@ -1,0 +1,48 @@
+name: CLA
+
+# Every author in a pull request has a signature on file for CLA.md as it
+# currently stands. 0069 decided the agreement and named this as the missing
+# half: "a CLA nobody checks is a document in a repository."
+#
+# A separate workflow rather than a job in ci.yml so the check has its own name
+# in the pull request's list -- "CLA" says what is wrong, where a red "verify"
+# sends the reader into a twenty-minute build log to find out.
+on:
+  pull_request:
+
+concurrency:
+  group: cla-${{ github.ref }}
+  cancel-in-progress: true
+
+# `pull_request` rather than `pull_request_target`, and read-only. Nothing here
+# needs a token, a secret or write access: the record is a file in the repository
+# and the check is one node script against the commit log. That is the whole
+# reason this is not a third-party CLA bot -- see 0098.
+permissions:
+  contents: read
+
+jobs:
+  signed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # The full history, because the check reads the commits between the fork
+      # point and the head. A shallow clone has neither end of that range, and
+      # the script refuses a range it cannot see rather than passing it.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # No install step on purpose. The script imports nothing outside node's own
+      # library, so this check answers in seconds and keeps answering if the
+      # workspace stops installing -- which is exactly when somebody is most
+      # likely to want to merge something quickly.
+      - name: Every author has signed
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/check-cla.mjs

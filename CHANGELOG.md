@@ -10,6 +10,46 @@ later.
 
 ## Unreleased
 
+**The contributor agreement is checked on every pull request, not only stated.**
+[0069](./docs/decisions/0069-contributions-under-a-cla.md) decided a CLA a week ago and
+wrote down the half it had not done: "a CLA nobody checks is a document in a repository."
+That half is now here. [`CLA.md`](./CLA.md) is the agreement — adapted from the Apache
+individual CLA, shortened, a copyright licence broad enough to sublicense, a patent licence
+mirroring Apache-2.0 section 3, and **no assignment of copyright**.
+`.github/cla/signatories.json` is the record, and signing is a commit under your own git
+identity carrying the hash of the text you agreed to. `.github/workflows/cla.yml` reads the
+commit authors of a pull request and names any it has no signature for.
+
+No bot account, no token, no third-party service. The alternative — CLA Assistant — needs a
+personal access token with write scope used by a third-party action under
+`pull_request_target`, which runs with this repository's permissions against a fork's code;
+for a project whose pitch includes a strict CSP and no third-party round-trips that was the
+wrong trade, and a third-party action also cannot be mutated and watched to fail
+([0098](./docs/decisions/0098-the-cla-is-checked-in-the-repository.md)).
+
+Two refusals in the check are the point rather than details. It refuses a commit range it
+cannot read, because `git log base..head` answering nothing is indistinguishable from an
+empty range and both happen — a wrong base SHA, a shallow clone, a rebase that moved the
+range — so reporting "nobody is missing" would turn each of those into a pass. And it
+reports a signature recorded against text that has since changed as *stale* rather than as
+absent, because the two ask the contributor for different things.
+
+**And the section that said this was undecided said so for a week after it was decided.**
+arc42 §11.5 still listed "CLA or DCO" under *Open decisions*, and it was found by somebody
+asking what was open and reading that section instead of the decision records — so the
+answer given was the stale one. A section called *Open decisions* is read as an answer,
+which makes a settled question listed there worse than an absent one. `claims.test.ts` now
+fails if a document calls that question open, derived from 0069's own status rather than
+from how any sentence is worded; the paragraph recording the mistake says "CLA or DCO" in
+order to say it is gone, which is exactly why the check reads the section's bullets and not
+its prose.
+
+**What the check cannot do is refuse a merge, and nothing here claims it can.** `main`
+carries no branch protection rule, so no gate in this repository is mechanically required —
+not this one and not CI. What stops a red check from being merged is a maintainer reading
+it. New arc42 §11.6 records that, so a reader does not infer enforcement from the existence
+of the gates.
+
 **Each pane in the playground folds away by hand.** Three panes at once is right on a wide
 screen and crowded on a laptop, and the existing answer — the switcher that shows one at a
 time — only appears below 64rem. Between those two widths you got all three or you resized the

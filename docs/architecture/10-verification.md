@@ -50,6 +50,7 @@ it.
 | ~~`size-limit`~~ | — | **Not wired up.** This row claimed it ran under `check:pkg` and nothing in the repository runs it; the byte budgets in [§9.3](09-quality-requirements.md) are measured by hand and dated. |
 | The site as the host composes it, with the documentation link check | `pnpm build:web` | A root-absolute documentation link resolves against the landing page rather than `/docs/`, builds cleanly and 404s in production |
 | Typecheck with no `@types/node` in the isomorphic packages | `pnpm typecheck` | The layer boundary holds |
+| Every commit author in a pull request has signed the CLA | `node scripts/check-cla.mjs` | The agreement [0069](../decisions/0069-contributions-under-a-cla.md) decided is checked rather than only stated, and a range it cannot read is refused rather than passed ([0098](../decisions/0098-the-cla-is-checked-in-the-repository.md)) |
 
 There was a table of per-package test counts here, and it is gone for the reason
 it was wrong: the figures were transcribed by hand, they moved on almost every

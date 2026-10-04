@@ -3,6 +3,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, test } from 'vitest'
 import { validateSchema } from '@formancy/spec/validate'
+import { AGREEMENT, SIGNATORIES } from '../../../scripts/check-cla.mjs'
 
 /**
  * Claims that a decision record contradicts.
@@ -802,5 +803,94 @@ describe('where a rule runs when it does not say', () => {
       'utf8',
     )
     expect(reference).toContain('default `"' + checkFallback() + '"`')
+  })
+})
+
+describe('a question an accepted decision record has settled', () => {
+  /*
+   * The failure this exists for, in the shape it actually took.
+   *
+   * 0069 decided the contributor agreement on 2026-09-27. A week later arc42
+   * §11.5 still listed "CLA or DCO" under *Open decisions*, and it was found by
+   * somebody asking what was still open and reading that section instead of the
+   * decision records -- so the answer given was the stale one. A section called
+   * *Open decisions* is read as an answer, which makes a settled question listed
+   * there a wrong statement rather than a missing one.
+   *
+   * Derived from the record's own status, not from any wording: flip 0069 to
+   * `proposed` and these cases go quiet, which is the only honest way to express
+   * "this is no longer open".
+   */
+  const AGREEMENT_RECORD = '0069-contributions-under-a-cla.md'
+
+  /** The status line of a decision record, read off the record. */
+  const statusOf = (file: string): string => {
+    const text = readFileSync(join(repo, 'docs', 'decisions', file), 'utf8')
+    return /- \*\*Status:\*\*\s*(.+)/.exec(text)?.[1]?.trim() ?? ''
+  }
+
+  /**
+   * The bullets of arc42 §11.5, each one whole.
+   *
+   * Bullets rather than the section's text, and this is the whole point: the
+   * paragraph *recording* that the contributor agreement left this list says
+   * "CLA or DCO" in order to say it is gone. A check over the section would
+   * match that and fail; a check that then got "fixed" by deleting the
+   * paragraph would have cost the repository the only place the mistake is
+   * written down. The same trap caught a documentation check here once already,
+   * in the other direction -- it passed because the banned phrase survived
+   * elsewhere in the paragraph.
+   *
+   * Continuation lines are joined in, because the bullets in that section wrap
+   * and a subject on the second line is still that bullet's subject.
+   */
+  const openDecisions = (): string[] => {
+    const text = readFileSync(join(repo, 'docs', 'architecture', '11-risks-and-debt.md'), 'utf8')
+    const from = text.indexOf('## 11.5 Open decisions')
+    expect(from, 'arc42 has no open-decisions section').toBeGreaterThan(-1)
+    const after = text.indexOf('\n## ', from + 1)
+    const section = text.slice(from, after === -1 ? text.length : after)
+
+    const bullets: string[] = []
+    for (const line of section.split('\n')) {
+      if (line.startsWith('- ')) bullets.push(line)
+      else if (/^\s+\S/.test(line) && bullets.length > 0) bullets[bullets.length - 1] += ` ${line.trim()}`
+      else if (line.trim() === '') continue
+      else bullets.push('')
+    }
+    return bullets.filter((bullet) => bullet !== '')
+  }
+
+  test('is one the section being checked still lists several of, or it checks nothing', () => {
+    // A guard on the guard. An emptied or renamed section would make the case
+    // below pass while asserting that nothing is listed, which is true of a
+    // section that is not there.
+    expect(openDecisions().length).toBeGreaterThan(1)
+    expect(statusOf(AGREEMENT_RECORD)).toBe('accepted')
+  })
+
+  test('is not the contributor agreement, which 0069 settled', () => {
+    if (statusOf(AGREEMENT_RECORD) !== 'accepted') return
+
+    for (const bullet of openDecisions()) {
+      expect(bullet, 'arc42 §11.5 lists a question 0069 has already decided').not.toMatch(/\bCLA\b|\bDCO\b/)
+    }
+  })
+
+  test('and the documents a contributor reads name the agreement and the record', () => {
+    /*
+     * The other half of what 0069 asked for: "a guard would go [here] if
+     * GOVERNANCE.md and CONTRIBUTING.md ever disagree about the answer".
+     *
+     * Asserted as paths rather than as prose, and the paths come from the check
+     * that reads them. A document still describing the question as open would
+     * not be naming an agreement file, and a check whose record moved would take
+     * both documents with it instead of leaving them pointing at nothing.
+     */
+    for (const name of ['CONTRIBUTING.md', 'GOVERNANCE.md']) {
+      const text = readFileSync(join(repo, name), 'utf8')
+      expect(text, `${name} does not name ${AGREEMENT}`).toContain(AGREEMENT)
+      expect(text, `${name} does not name ${SIGNATORIES}`).toContain(SIGNATORIES)
+    }
   })
 })

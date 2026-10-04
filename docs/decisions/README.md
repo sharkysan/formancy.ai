@@ -198,3 +198,4 @@ listed under the sections they belong to above.
 | [0095](0095-one-schema-two-renderers.md) | One schema, two renderers, on one page — and an engine may be told its id namespace | accepted |
 | [0096](0096-two-builders-one-session.md) | Two builders over one session, and a package that could not be imported | accepted |
 | [0097](0097-a-publish-may-warn.md) | A publish may warn, because refusing would break the reader contract | accepted |
+| [0098](0098-the-cla-is-checked-in-the-repository.md) | The CLA is checked in the repository, not by a bot with a token | accepted |
