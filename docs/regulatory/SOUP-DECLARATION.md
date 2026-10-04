@@ -323,7 +323,7 @@ verify it in the browsers it ships to.
 | Performance budgets, measured: keystroke ≈0.38 ms against a <1 ms budget; graph compile ≈1.7 ms against a <30 ms budget | `packages/core/bench/perf.mjs` |
 | Package-publication gates: `publint`, `@arethetypeswrong/cli` | `pnpm check:pkg` |
 | Bundle sizes, measured by hand and dated rather than gated — `size-limit` is **not** wired up, and this table named it as a gate until 2026-09-27 | [§9.3](../architecture/09-quality-requirements.md) |
-| Line coverage, reported per package and uploaded per commit | `pnpm turbo run test:coverage`, and Codecov |
+| Line coverage, reported per package and uploaded per commit — **reported and gated nowhere**, deliberately ([0099](../decisions/0099-coverage-is-reported-per-package-and-never-gated.md)) | `pnpm turbo run test:coverage`, and Codecov |
 | Build provenance for every published tarball | `npm audit signatures` against the installed version |
 
 A per-package breakdown used to be transcribed here, package by package. It is

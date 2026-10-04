@@ -351,3 +351,75 @@ describe('what a package imports from itself', () => {
     expect(offenders).toEqual([])
   })
 })
+
+describe('what a manifest says twice', () => {
+  /*
+   * Found by a mutation that did nothing.
+   *
+   * A case here was being proved by adding `test:coverage` to
+   * `packages/themes/package.json` and watching a Codecov guard fail. It did not
+   * fail, and the manifest was the reason: it carried **two** `"scripts"` keys,
+   * so JSON kept the last one and `build`, `test` and `typecheck` had been
+   * silently dead since a comment was moved out of that block. Nothing broke,
+   * because all three were `echo`. The next one would not be.
+   *
+   * No tool reports this. `JSON.parse` takes the last value without complaint,
+   * pnpm and turbo read the parsed object, and a formatter leaves both keys
+   * alone -- so the only symptom is a script that does not run, in a repository
+   * where several scripts legitimately do nothing.
+   *
+   * Read from the text rather than the parsed object, necessarily: by the time
+   * it is parsed the evidence is gone. Every manifest here is two-space
+   * formatted, so a top-level key is a quoted name at exactly that indentation.
+   */
+  const manifests = (): Array<{ file: string; text: string }> => {
+    const out: Array<{ file: string; text: string }> = []
+    for (const group of ['packages', 'apps']) {
+      for (const entry of readdirSync(join(repo, group), { withFileTypes: true })) {
+        if (!entry.isDirectory()) continue
+        const file = join(group, entry.name, 'package.json')
+        try {
+          out.push({ file, text: readFileSync(join(repo, file), 'utf8') })
+        } catch {
+          continue
+        }
+      }
+    }
+    out.push({ file: 'package.json', text: readFileSync(join(repo, 'package.json'), 'utf8') })
+    return out
+  }
+
+  /** The top-level keys as written, duplicates included. */
+  const writtenKeys = (text: string): string[] =>
+    [...text.matchAll(/^ {2}"([^"]+)":/gm)].map((match) => match[1]!)
+
+  test('is read correctly, which is what makes the case below able to fail', () => {
+    /*
+     * A guard on the guard, and it earns its place: this reads keys with a
+     * regular expression over indentation, and six guards in this repository
+     * have had their own expression as the defect. If it matched nothing, or
+     * matched nested keys as well, the duplicate check would be silent or
+     * permanently red.
+     *
+     * So: what is read is compared against what `JSON.parse` sees. Equal as
+     * sets, in order, for every manifest -- which is only true if the expression
+     * finds every top-level key and nothing else.
+     */
+    const all = manifests()
+    expect(all.length).toBeGreaterThan(15)
+
+    for (const { file, text } of all) {
+      const parsed = Object.keys(JSON.parse(text) as Record<string, unknown>)
+      expect([...new Set(writtenKeys(text))], file).toEqual(parsed)
+    }
+  })
+
+  test('and never declares a key twice, because JSON keeps the last and says nothing', () => {
+    for (const { file, text } of manifests()) {
+      const keys = writtenKeys(text)
+      const twice = [...new Set(keys.filter((key, index) => keys.indexOf(key) !== index))]
+
+      expect(twice, `${file} declares ${twice.join(', ')} more than once; the earlier one is dead`).toEqual([])
+    }
+  })
+})

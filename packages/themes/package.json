@@ -26,7 +26,8 @@
   "scripts": {
     "build": "echo \"themes: css only, nothing to build\"",
     "test": "echo \"themes: no tests\"",
-    "typecheck": "echo \"themes: no types\""
+    "typecheck": "echo \"themes: no types\"",
+    "check:pkg": "publint"
   },
   "//check:pkg": [
     "publint only: this package ships five stylesheets and no types, so there is",
@@ -36,11 +37,13 @@
     "",
     "A comment belongs HERE and not inside `scripts`: turbo requires every script",
     "value to be a string, and an array in there fails the whole workspace with",
-    "`package_json_parse_error` and no file name."
+    "`package_json_parse_error` and no file name.",
+    "",
+    "Moving it here left a SECOND `scripts` key below, and JSON keeps the last one",
+    "— so `build`, `test` and `typecheck` were silently dead for as long as it sat",
+    "there. All four are one block now, and `no manifest declares a key twice` in",
+    "apps/docs/src/published-packages.test.ts is what finds the next one."
   ],
-  "scripts": {
-    "check:pkg": "publint"
-  },
   "devDependencies": {
     "publint": "catalog:"
   },
