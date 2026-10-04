@@ -10,6 +10,39 @@ later.
 
 ## Unreleased
 
+**The coverage report says which package moved, and gates nothing.** There was no
+`codecov.yml`, so Codecov applied its defaults — a `project` and a `patch` status against
+an `auto` target, which is a *failing check* when the number drops. That is a threshold
+nobody chose, in a repository that has argued twice in prose against having one, and the
+prose was losing. The comment on #145 read ":x: Patch coverage is `87.87879%` … Please
+review": a red cross on a reported number, five decimal places of precision for a line
+count, and no indication which of nineteen packages the lines were in.
+
+Every status is now informational, precision is one decimal rounded down, and there is one
+component per package that measures coverage — so the comment names the package instead of
+averaging it away ([0099](./docs/decisions/0099-coverage-is-reported-per-package-and-never-gated.md)).
+The file is **generated** by `scripts/codecov-config.mjs` from the manifests, because a
+component list typed by hand goes stale the way the publication checks did, and the symptom
+is absence rather than error: the package is not reported wrongly, it is not reported.
+`codecov.test.ts` fails when the committed file is not what the generator produces, and
+names the command.
+
+Checked against Codecov's own validator before committing, because an invalid
+configuration is ignored silently and falls back to exactly the defaults this replaces —
+which would have left the change inert and the record describing something that never
+happened.
+
+**`packages/themes` declared `"scripts"` twice, so three of its scripts were dead.** Found
+by a mutation that did nothing: a case was being proved by giving themes a `test:coverage`
+script and watching a guard fail, and it did not fail. JSON keeps the last of two
+duplicate keys without complaint, so `build`, `test` and `typecheck` had been silently
+ignored since a comment was moved out of that block — harmless only because all three were
+`echo`. No tool reports this: pnpm and turbo read the parsed object and a formatter leaves
+both keys alone. The blocks are merged, and `published-packages.test.ts` now reads the
+top-level keys of every manifest as written and fails on a duplicate, with a case asserting
+that what it reads matches what `JSON.parse` sees — because six guards here have had their
+own regular expression as the defect.
+
 **The contributor agreement is checked on every pull request, not only stated.**
 [0069](./docs/decisions/0069-contributions-under-a-cla.md) decided a CLA a week ago and
 wrote down the half it had not done: "a CLA nobody checks is a document in a repository."
