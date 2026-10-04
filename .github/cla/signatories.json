@@ -1,0 +1,21 @@
+{
+  "$comment": "Who has agreed to CLA.md, and to which version of it. Checked by scripts/check-cla.mjs on every pull request; see CLA.md section 'How to sign'. Sign by adding yourself in a commit under your own git identity -- the commit is the signature.",
+  "agreement": "CLA.md",
+  "signatories": [
+    {
+      "name": "Daniel Bacher",
+      "login": "sharkysan",
+      "emails": ["dbacher@gmail.com"],
+      "signed": "2026-10-04",
+      "agreement": "sha256:7372fec3f12fe44bae3e468468252c00a28e129421797aaef9faf494a8af42cc",
+      "note": "The copyright holder, listed rather than exempted. A licence to oneself grants nothing, so this entry is not one -- it is the check's only exemption written down instead of hidden in a comparison against the repository owner's login. It also happens to pin the address this project commits under, which was a convention in a file nobody ran until now."
+    }
+  ],
+  "machines": [
+    {
+      "name": "copilot-swe-agent[bot]",
+      "emails": ["198982749+copilot@users.noreply.github.com"],
+      "reason": "A coding agent that has authored six commits here, every one of them on the maintainer's instruction, in his account, and merged by him. It cannot hold copyright and cannot agree to anything, so there is nothing for it to sign; what it produced is the maintainer's contribution and is covered by his entry above. Recorded as an exemption rather than given a signature, because inventing one would be the dishonest way to make this file green."
+    }
+  ]
+}

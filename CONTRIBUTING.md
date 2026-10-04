@@ -24,10 +24,19 @@ option of a proprietary build — because it does. Better that you read it here 
 discover it later. The reasoning, including the case for a DCO instead, is in
 [0069](docs/decisions/0069-contributions-under-a-cla.md).
 
-**This is newly decided and not yet mechanised.** There is no CLA bot on pull requests
-yet, so for now the agreement is stated and unverified. If you want to contribute before
-that exists, open an issue first and we will sort the paperwork out by hand rather than
-leave you guessing.
+### How to sign
+
+[`CLA.md`](CLA.md) is the agreement. Signing it is a commit in this repository, under
+your own git identity, adding yourself to
+[`.github/cla/signatories.json`](.github/cla/signatories.json) — the hash of the terms
+you agreed to goes in beside your name, so the signature says what was signed. The
+steps are in `CLA.md` under *How to sign*; there is no form and no third-party service
+([0098](docs/decisions/0098-the-cla-is-checked-in-the-repository.md)).
+
+`.github/workflows/cla.yml` runs on every pull request and names any commit author it
+has no signature for. It reads commit **authors**, so list every address you commit
+from — a second machine with a different git identity is the way this fails in
+practice, and the failure names the address so you are not left guessing.
 
 ## The project is pre-1.0, and that changes what is useful
 

@@ -185,15 +185,37 @@ the likeliest misreading of the freeze.
 
 Genuinely undecided, and recorded as such rather than quietly defaulted:
 
-- **CLA or DCO.** A contributor licence agreement preserves the option of
-  proprietary enterprise builds but reads as "they plan to relicense" and
-  measurably suppresses contributions on a young project. A DCO is lighter but
-  makes relicensing effectively impossible once there are contributors. This
-  must be settled **before the first external pull request**, because
-  retrofitting a CLA is effectively impossible.
 - **Trademark registration.** Cheap now, effectively impossible after adoption,
   and it is what preserves the commercial hosted option without relicensing.
+  Apache-2.0 grants no trademark rights ([0002](../decisions/0002-apache-2-0.md)),
+  which is what makes a word mark the thing that holds the hosted option open —
+  and nothing in this repository can register one.
 - **The container image's SBOM covers npm only.** `cosign attest` attaches the
   CycloneDX document generated from the workspace manifests, so it names every runtime
   npm dependency and nothing about the base image or its system packages. A
   manufacturer characterising the container needs both.
+
+**The contributor agreement left this list, and the way it left is the lesson.**
+It sat here as "**CLA or DCO**, genuinely undecided" for a week after
+[0069](../decisions/0069-contributions-under-a-cla.md) decided it, and was found
+by somebody asking what was still open and reading this section instead of the
+decision records. A section called *Open decisions* is read as an answer, so a
+settled question listed in it answers incorrectly — which this repository holds
+to be worse than not answering at all. `apps/docs/src/claims.test.ts` now fails
+if a document still calls that question open, derived from 0069's status rather
+than from how any sentence is worded.
+
+## 11.6 No check on this repository is mechanically required
+
+`main` carries no branch protection rule. Every gate in
+[§10.2](10-verification.md) runs on every pull request and reports, and what
+stops a red one from being merged is a maintainer reading it — including the
+contributor-agreement check that [0098](../decisions/0098-the-cla-is-checked-in-the-repository.md)
+added, whose whole purpose is to stop something.
+
+This is honest rather than fine. It is also the one piece of debt in this section
+that no file in this tree can discharge, because branch protection is repository
+configuration and lives in GitHub's settings; a test here cannot assert it and
+should not pretend to. It is recorded so that a reader does not infer enforcement
+from the existence of the gates, and so that the one remaining step is written
+down somewhere rather than remembered.
