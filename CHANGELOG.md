@@ -10,6 +10,47 @@ later.
 
 ## Unreleased
 
+**The playground was broken on an iPad, and on every screen narrower than 64rem.**
+Folding a pane away composed the grid template in the component and set it with an
+inline `style`, which outranks every rule in the stylesheet — including the
+narrow-screen override asking for a single column, which had been correct until
+something started shadowing it. Measured in Chromium at an 820px viewport: the row
+demanded 992px, the page scrolled sideways by **187px**, and the one visible pane was
+304px wide inside an 820px screen. At 390px the overflow would be 602px.
+
+It shipped, it passed every gate, and it was reported by somebody using an iPad. No
+test could have seen it — jsdom applies no CSS and resolves no media queries, so the
+cascade this depended on does not exist in the suite. The template now arrives as
+`--pane-template` and the declaration that reads it stays in the stylesheet, where the
+media query can still beat it; a test asserts the row sets nothing inline but custom
+properties, which is the structural version of the same fact
+([0100](./docs/decisions/0100-a-pane-boundary-is-dragged.md)). Recorded against hazard
+D4a in `SAFETY-ANALYSIS.md` as its third instance, and the first with a gate rather
+than a proxy.
+
+**And the boundary between two panes can be dragged.** Folding is blunt — a pane is
+open or it is a strip — and neither is what you want while writing a schema, where the
+editor should have two thirds of the row, or while filling the form in, where it should
+have a quarter. Each adjacent pair of open panes now has a `separator` between them:
+drag it, nudge it with the arrow keys, Home and End for the ends of its travel,
+double-click to put it back. A folded pane gets no handle, because there is nothing to
+resize and a handle that cannot move is a tab stop announcing a value nobody can change.
+
+The keyboard path is not an afterthought: a drag with no keyboard equivalent fails WCAG
+2.2 SC 2.5.7. The handle is 12px wide against SC 2.5.8's 24, which is met through the
+spacing exception rather than by size — it runs the full height of the row with nothing
+else within 24px — and it declares `touch-action: none`, or iOS claims the gesture for
+scrolling and the feature works on a trackpad and is absent on the device it was asked
+for.
+
+**Two things measurement contradicted.** A comment claimed the pane on the far side of
+the row never moves; in fractions that is true, and in pixels it is not — once one of
+the pair reaches its `minmax` minimum the grid redistributes what is left, and dragging
+the Editor/Form handle 160px right pulled Engine from 353px to 304px. And rounding a
+fraction *after* clamping it moved the stop, so a floor of 0.3125 came out as 0.312,
+half a thousandth below the value being enforced. Both were found in a browser, neither
+by the suite.
+
 **The contributor agreement is checked on every pull request, not only stated.**
 [0069](./docs/decisions/0069-contributions-under-a-cla.md) decided a CLA a week ago and
 wrote down the half it had not done: "a CLA nobody checks is a document in a repository."

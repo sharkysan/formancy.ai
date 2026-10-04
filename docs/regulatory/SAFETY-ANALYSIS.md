@@ -559,6 +559,19 @@ typeahead popup opened over its own label and box, because an absolutely positio
 child of a grid container takes the container's origin and not its place in the flow
 ([0072](../decisions/0072-a-typeahead-is-a-combobox-over-the-same-answer.md)).
 
+A third has occurred since, in an application rather than a renderer, and it is
+recorded here because it is the same mechanism: the playground set the pane row's
+`grid-template-columns` from the component, an inline declaration outranks every
+rule in a stylesheet, and the narrow-screen rule asking for a single column was
+silently losing. Every viewport below the breakpoint kept the desktop template, so
+the page scrolled sideways by **187px** at 820px wide — measured in Chromium — with
+the one visible pane 304px wide inside an 820px screen, and 602px of overflow at
+390px. It shipped, passed every gate, and was reported by somebody using an iPad
+([0100](../decisions/0100-a-pane-boundary-is-dragged.md)). Unlike the two above it
+now has a structural contract rather than a proxy: the row may set only custom
+properties inline, so no component can shadow a media query, asserted in
+`apps/playground/src/panes.test.ts` and watched to fail.
+
 *Severity:* a control that is covered or missing is a control that cannot be
 operated, so this reaches the same outcome as D4 by a route D4's constraint does not
 watch.

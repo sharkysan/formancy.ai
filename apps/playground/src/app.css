@@ -282,9 +282,22 @@ body {
 .panes {
   grid-row: 3;
   display: grid;
-  /* Overridden inline with the same values when a pane is folded; the fallback
-     here is the all-open case, so the page is right before React runs. */
-  grid-template-columns: minmax(19rem, 1fr) minmax(24rem, 1.25fr) minmax(16rem, 0.8fr);
+  /*
+   * The template is composed in `panes.tsx` and arrives as a custom property,
+   * because it depends on which panes are folded and how wide each has been
+   * dragged. The fallback is the all-open case, so the page is right before
+   * React runs.
+   *
+   * **A property rather than the declaration itself**, which fixed something.
+   * The component used to set `grid-template-columns` inline, and an inline
+   * declaration beats every rule in this file — including the narrow-screen
+   * override below, which asks for one column and was silently losing. Setting
+   * a variable leaves the cascade in charge of which declaration wins.
+   */
+  grid-template-columns: var(
+    --pane-template,
+    minmax(19rem, 1fr) minmax(24rem, 1.25fr) minmax(16rem, 0.8fr)
+  );
   gap: 0.75rem;
   padding: 0 0.75rem 0.75rem;
   min-height: 0;
@@ -300,6 +313,50 @@ body {
  */
 .panes {
   --pane-folded: 2.75rem;
+  --pane-split: 0.75rem;
+}
+
+/*
+ * The handle between two open panes.
+ *
+ * It replaces the gap rather than sitting on top of one, which is why
+ * `--pane-split` is the same 0.75rem the row's `gap` is: nothing moves when a
+ * splitter appears or a fold takes one away.
+ *
+ * **12 pixels wide, against SC 2.5.8's 24.** The target-size criterion is met
+ * through its *spacing* exception rather than by size: the handle runs the full
+ * height of the row with no other control within 24 pixels of it, and a handle
+ * wide enough to pass on size alone would eat the layout it exists to adjust.
+ * The keyboard path on the same element and the fold button in each heading are
+ * both there as well. Reviewed, not verified — jsdom has no layout, so no test
+ * here can measure a box.
+ */
+.split {
+  justify-self: center;
+  width: 100%;
+  cursor: col-resize;
+  /* Without this, iOS claims the gesture for scrolling and the handle never
+     moves -- the drag works on a trackpad and does nothing on the device it was
+     asked for. */
+  touch-action: none;
+  border: 0;
+  padding: 0;
+  background: none;
+  /* The line is drawn, not the target. A 2px rule centred in a 12px hit area is
+     the shape every editor uses, and it reads as a boundary rather than a
+     control until you reach for it. */
+  background-image: linear-gradient(to right, transparent calc(50% - 1px), var(--edge-strong) calc(50% - 1px), var(--edge-strong) calc(50% + 1px), transparent calc(50% + 1px));
+  transition: background-image 120ms ease;
+}
+
+.split:hover,
+.split:focus-visible {
+  background-image: linear-gradient(to right, transparent calc(50% - 2px), var(--client) calc(50% - 2px), var(--client) calc(50% + 2px), transparent calc(50% + 2px));
+}
+
+.split:focus-visible {
+  outline: 2px solid var(--client);
+  outline-offset: 1px;
 }
 
 /*
@@ -917,6 +974,13 @@ body {
 
   .panes {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* One pane at a time, so there is no boundary to drag. Hidden rather than not
+     rendered: the switcher changes which pane shows on every tap, and a handle
+     that comes and goes with it would move the focus order under somebody. */
+  .split {
+    display: none;
   }
 
   .panes[data-shown='form'] > .pane:not(.preview),

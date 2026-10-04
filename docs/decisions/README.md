@@ -199,3 +199,4 @@ listed under the sections they belong to above.
 | [0096](0096-two-builders-one-session.md) | Two builders over one session, and a package that could not be imported | accepted |
 | [0097](0097-a-publish-may-warn.md) | A publish may warn, because refusing would break the reader contract | accepted |
 | [0098](0098-the-cla-is-checked-in-the-repository.md) | The CLA is checked in the repository, not by a bot with a token | accepted |
+| [0100](0100-a-pane-boundary-is-dragged.md) | A pane boundary is dragged, and the row's template is a custom property | accepted |
