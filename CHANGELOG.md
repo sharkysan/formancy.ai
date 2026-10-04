@@ -10,6 +10,36 @@ later.
 
 ## Unreleased
 
+**The Angular packages were going to publish without their licence, and the release could not
+be cut.** Found by running `node scripts/verify-licenses.mjs`, which is what `RELEASING.md`
+asks for before a tag: it exits 1 with *"@formancy/angular: no LICENSE where it packs from"*
+for both Angular packages.
+
+The cause is turbo cache semantics. `sync-licenses.mjs` writes LICENSE and NOTICE wherever a
+package packs from, and for those two that is `dist` — which is also `turbo.json`'s cached
+output for `build`. So the files were written *after* the build task finished, were never part
+of its cached outputs, and **any later execution or restore of that task removed them**.
+Measured: two files in `packages/angular/dist` after `pnpm build`, zero after
+`turbo run check:pkg --force`, because `check:pkg` depends on its own `build`.
+
+Not academic. The release workflow runs `check:pkg` at step 89 and the licence gate at step 93,
+so the gate fired and the release stopped — every time. The gate was right and the timing was
+useless: Apache-2.0 §4(a) requires the licence to travel with the work, §4(d) the NOTICE, and
+`npm publish` ships a tarball with neither quite happily.
+
+The licences are now copied **as part of the build**, so they are a build output — cached with
+everything else and restored with it. Verified in the three cases that matter: a forced build, a
+forced `check:pkg` that re-runs build, and a pure cache restore with `dist` deleted first. The
+root script still handles the fourteen packages that pack from their own directory, which turbo
+never touches.
+
+**And the check is a pull-request gate now, not only a release one.** It ran at the last
+possible moment, which is how a defect that blocks every release sat there unnoticed.
+
+The two `finalize-dist.mjs` scripts became one `scripts/finalize-angular-dist.mjs`. They were
+byte-identical apart from a package name — one decision in two places, where the next change
+lands in one of them and nobody finds out, because each package only ever runs its own.
+
 **No module imports its own package name any more, and a test says so.** Found by running the
 gates with turbo's cache off: `turbo run typecheck --force` failed in `builder-core` with three
 `implicitly has an 'any' type` errors about a type declared in the file next door.

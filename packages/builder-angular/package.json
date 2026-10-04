@@ -20,7 +20,7 @@
   },
   "types": "./dist/types/formancy-builder-angular.d.ts",
   "scripts": {
-    "build": "ng-packagr -p ng-package.json && node scripts/finalize-dist.mjs",
+    "build": "ng-packagr -p ng-package.json && node ../../scripts/finalize-angular-dist.mjs .",
     "test:coverage": "vitest run --coverage",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json",
