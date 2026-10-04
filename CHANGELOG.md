@@ -10,6 +10,19 @@ later.
 
 ## Unreleased
 
+*Nothing yet.*
+
+## 0.3.0 — 2026-10-04
+
+**The first release since `0.2.0`, and it freezes spec version 3.** A document written
+against version 3 will validate against every future release that speaks it.
+
+It is a long entry because the version was prepared on 2026-09-29 and then kept moving:
+the spec-3 freeze is the oldest thing in here and sits at the end, with everything that
+followed above it. Nothing was published in between — npm went straight from `0.2.0` to
+this — so there is no `0.3.0` anywhere that means something narrower.
+
+
 **The Angular packages were going to publish without their licence, and the release could not
 be cut.** Found by running `node scripts/verify-licenses.mjs`, which is what `RELEASING.md`
 asks for before a tag: it exits 1 with *"@formancy/angular: no LICENSE where it packs from"*
@@ -927,7 +940,6 @@ with *"No field has the data path"*, in the builder, for as long as pages have e
 `dataPathOf` was in `builder-core` doing exactly this job for renames and layout pruning,
 and is exported now.
 
-## 0.3.0 — 2026-09-29
 
 **The release that freezes spec version 3.** A document written against version 3 will
 validate against every future release that speaks it. What version 3 added — `signature`,
