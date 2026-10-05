@@ -406,3 +406,12 @@ describe('the second demo, which is the one with steps', () => {
     expect(items).not.toContain('First name')
   })
 })
+
+
+test('legal links leave the app for the public notices', () => {
+  // A visitor must reach these without opening the demo, switching panes or
+  // knowing a URL. In development the playground has a separate origin.
+  render(<App />)
+  expect(screen.getByRole('link', { name: 'Datenschutz' }).getAttribute('href')).toBe('http://localhost:4384/privacy/')
+  expect(screen.getByRole('link', { name: 'Impressum' }).getAttribute('href')).toBe('http://localhost:4384/imprint/')
+})

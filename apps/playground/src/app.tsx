@@ -1,3 +1,4 @@
+import { REPO, SITE } from './site-links.js'
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import type { CSSProperties } from 'react'
 import Editor, { useMonaco } from '@monaco-editor/react'
@@ -100,17 +101,6 @@ const LOCALES = [
 
 type LocaleId = (typeof LOCALES)[number]['id']
 
-const REPO = 'https://github.com/sharkysan/formancy.ai'
-
-/**
- * Where the landing page lives — the way back from here.
- *
- * One origin in production, where the site is at `/` and this app at
- * `/playground/`; two Vite servers in development, where a relative path would
- * land on the playground's own root. The same reasoning, mirrored, as the
- * site's link to this page.
- */
-const SITE = import.meta.env.DEV ? 'http://localhost:4384/' : '/'
 
 /**
  * The playground's stand-in for a camera.
@@ -506,6 +496,10 @@ export function App() {
           </div>
         </section>
       </div>
+      <footer className="legal-footer" aria-label="Rechtliche Informationen" lang="de">
+        <a href={`${SITE}privacy/`}>Datenschutz</a>
+        <a href={`${SITE}imprint/`}>Impressum</a>
+      </footer>
     </div>
   )
 }

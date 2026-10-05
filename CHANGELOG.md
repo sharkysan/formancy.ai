@@ -10,6 +10,14 @@ later.
 
 ## Unreleased
 
+**The public website now serves its own fonts.** The landing page and playground no
+longer load Google Fonts stylesheets or preconnect to Google. Existing WOFF2 files are
+bundled unchanged with their copyright and SIL OFL notices. Privacy and operator-page
+drafts are linked from the site, playground and docs; they remain explicitly unfinished
+until the operator confirms the address, contact, hosting, retention and transfer facts.
+The remaining Monaco/jsDelivr request and observed Cloudflare NEL headers are recorded in
+[`docs/website-privacy-review.md`](./docs/website-privacy-review.md).
+
 **The signature control could not be signed with a finger.** Reported from an iPad: the
 page scrolls while you sign. A touch drag on a drawing surface is ambiguous — signature
 or pan — and `touch-action` is how an element says which; the browser resolves it in the

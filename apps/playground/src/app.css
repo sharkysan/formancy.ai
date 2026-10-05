@@ -90,7 +90,7 @@ body {
      900-pixel screen. Rows are assigned below, because the pane switch is not
      displayed at all on a wide screen and would otherwise pull the panes up
      into its track. */
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   height: 100%;
 }
 
@@ -1040,3 +1040,17 @@ body {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* A separate grid row keeps the legal links reachable without covering a pane. */
+.legal-footer {
+  grid-row: 4;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 0.35rem 1rem;
+  border-top: 1px solid var(--edge);
+  font-size: 0.8125rem;
+}
+.legal-footer a { color: var(--muted); padding-block: 0.25rem; }

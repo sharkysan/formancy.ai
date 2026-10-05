@@ -1,0 +1,16 @@
+---
+import DefaultFooter from '@astrojs/starlight/components/Footer.astro'
+
+const site = import.meta.env.DEV ? 'http://localhost:4384/' : 'https://formancy.ai/'
+---
+
+<DefaultFooter {...Astro.props} />
+<nav aria-label="Rechtliche Informationen" lang="de">
+  <a href={`${site}privacy/`}>Datenschutz</a>
+  <a href={`${site}imprint/`}>Impressum</a>
+</nav>
+
+<style>
+  nav { display: flex; flex-wrap: wrap; gap: 1rem; margin-block: 1.5rem; }
+  a { color: var(--sl-color-text-accent); padding-block: 0.25rem; }
+</style>

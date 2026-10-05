@@ -231,3 +231,12 @@ Stated plainly, because a gap named is more useful than a gap implied:
 A manufacturer needing any of these for their classification must either supply
 it themselves as part of their own SOUP evaluation, or treat its absence as a
 reason not to use this software.
+
+### Public website asset checks
+
+`apps/docs/src/web-privacy.test.ts` checks the public apps' font entry points,
+vendor-asset hashes and the public OFL notice copies. It runs in the existing docs
+suite in CI. This is a website data-flow and distribution check, not verification
+of a self-hosted formancy deployment's privacy compliance. Account-level hosting
+facts and the legal-page drafts still require the operator review documented in
+`docs/website-privacy-review.md`.

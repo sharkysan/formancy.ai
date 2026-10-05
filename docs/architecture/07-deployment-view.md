@@ -148,3 +148,18 @@ That had already come apart once: `FORMANCY_CHALLENGE_SECRET` was documented at
 length and passed through by neither file, so the proof-of-work challenge stayed
 off on a deployment whose operator had set it and believed otherwise.
 `packages/server/src/compose.test.ts` compares the two directions now.
+
+## The public project website
+
+The site and playground import vendored WOFF2 assets from `apps/shared/fonts`.
+Vite emits them under each app's base; OFL notices are public assets in both apps.
+The docs use system fonts. Static privacy and operator-page drafts live at
+`/privacy/` and `/imprint/`, served without JavaScript by the site's public directory.
+Every app links there; documentation links use the production origin so the docs'
+base-path guard still rejects genuinely misplaced documentation resources.
+
+As inspected on 2026-10-05, Cloudflare and NEL headers are visible on the live
+site, while the exact hosting product and retention settings are not recorded
+in the repository. The playground's Monaco loader still requests jsDelivr.
+[The operator review](../website-privacy-review.md) records the evidence and
+missing facts; the visitor pages are drafts until those facts are confirmed.

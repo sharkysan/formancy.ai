@@ -18,7 +18,10 @@ export default defineConfig({
       // were already on. These pages are a third of formancy.ai and had no way
       // back to the other two, or to the repository, on exactly the pages where
       // somebody is still deciding whether to use any of it.
-      components: { SiteTitle: './src/components/SiteTitle.astro' },
+      components: {
+        SiteTitle: './src/components/SiteTitle.astro',
+        Footer: './src/components/Footer.astro',
+      },
       social: [
         {
           icon: 'github',

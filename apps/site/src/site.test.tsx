@@ -631,3 +631,12 @@ describe('isComplete', () => {
     expect(isComplete(new Set())).toBe(false)
   })
 })
+
+
+test('legal links leave the app for the public notices', () => {
+  // A visitor must reach these without opening the demo, switching panes or
+  // knowing a URL. In development the playground has a separate origin.
+  render(<App />)
+  expect(screen.getByRole('link', { name: 'Datenschutz' }).getAttribute('href')).toBe('/privacy/')
+  expect(screen.getByRole('link', { name: 'Impressum' }).getAttribute('href')).toBe('/imprint/')
+})

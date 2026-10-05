@@ -220,3 +220,13 @@ configuration and lives in GitHub's settings; a test here cannot assert it and
 should not pretend to. It is recorded so that a reader does not infer enforcement
 from the existence of the gates, and so that the one remaining step is written
 down somewhere rather than remembered.
+
+## Public website operator information
+
+Privacy and Impressum pages are prepared, but operator identity/address, public
+contact, actual hosting services, log-retention periods and international-transfer
+arrangements require confirmation. They are marked as drafts and must not be
+published as finished notices. Cloudflare can change browser-visible processing
+without a repository edit; source tests cannot validate account settings. The
+Monaco loader remains an external jsDelivr dependency. See
+[the dated inspection](../website-privacy-review.md).

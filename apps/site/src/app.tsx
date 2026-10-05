@@ -1,3 +1,4 @@
+import { SiteFooter } from './site-footer.js'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { KeyboardEvent, PointerEvent, ReactElement, ReactNode } from 'react'
 import { createFormEngine } from '@formancy/core'
@@ -413,14 +414,7 @@ export function App(): ReactElement {
         <Finale journey={journey} />
       </main>
 
-      <footer>
-        <span>Apache-2.0</span>
-        <a href={REPO} rel="noreferrer noopener">
-          Source
-        </a>
-        <a href="/docs">Documentation</a>
-        <span className="spacer">{`Spec version 2 · packages ${__PACKAGE_VERSION__}, beta`}</span>
-      </footer>
+      <SiteFooter packageVersion={__PACKAGE_VERSION__} />
 
       <Panel journey={journey} />
     </>

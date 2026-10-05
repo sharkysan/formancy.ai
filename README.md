@@ -512,6 +512,15 @@ table in
 [`SOUP-DECLARATION.md`](./docs/regulatory/SOUP-DECLARATION.md), which
 `apps/docs/src/soup.test.ts` checks against the manifests on every run.
 
+## Website privacy and operator details
+
+The public site and playground bundle their fonts and OFL notices locally. The privacy
+and operator-page drafts live in `apps/site/public/privacy` and `apps/site/public/imprint`,
+with navigation from all three apps. They need the operator's confirmed details before
+publication; see [the website review](./docs/website-privacy-review.md) for the remaining
+hosting, retention and recipient questions. The playground's Monaco loader still uses
+jsDelivr; removing Google Fonts does not remove that separate connection.
+
 ## License
 
 Apache-2.0. See [LICENSE](./LICENSE) and [NOTICE](./NOTICE).

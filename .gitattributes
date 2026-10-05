@@ -3,4 +3,8 @@
 *.jpg binary
 *.ico binary
 *.woff2 binary
+# Keep vendored notices byte-for-byte: their download hashes are recorded.
+apps/shared/fonts/*-OFL.txt -text
+apps/site/public/font-licenses/*-OFL.txt -text
+apps/playground/public/font-licenses/*-OFL.txt -text
 pnpm-lock.yaml -diff

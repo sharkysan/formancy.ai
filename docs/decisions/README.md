@@ -202,3 +202,4 @@ listed under the sections they belong to above.
 | [0099](0099-coverage-is-reported-per-package-and-never-gated.md) | Coverage is reported per package, and gated nowhere | accepted |
 | [0100](0100-a-pane-boundary-is-dragged.md) | A pane boundary is dragged, and the row's template is a custom property | accepted |
 | [0101](0101-a-control-is-operable-without-a-theme.md) | A control owns what it needs in order to work; a theme owns how it looks | accepted |
+| [0102](0102-serve-web-fonts-with-the-site.md) | Serve web fonts with the site and name what still leaves it | accepted |
