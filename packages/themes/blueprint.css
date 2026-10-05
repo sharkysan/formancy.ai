@@ -1638,7 +1638,6 @@
   border: 1px solid var(--fm-rule);
   border-radius: var(--fm-radius);
   background: var(--fm-paper);
-  touch-action: none;
   cursor: crosshair;
 }
 

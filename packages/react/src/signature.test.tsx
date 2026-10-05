@@ -267,3 +267,67 @@ describe('what happens after the pen lifts', () => {
     expect(answer(engine).drawn).toBeUndefined()
   })
 })
+
+describe('signing with a finger, which is how most people will', () => {
+  /*
+   * Reported from an iPad: the control is unusable because the page scrolls
+   * while you sign.
+   *
+   * A touch drag on a drawing surface is ambiguous — it could be a signature or
+   * it could be a pan — and `touch-action` is how an element says which. Without
+   * it the browser resolves the ambiguity in favour of scrolling, and it resolves
+   * it in the compositor BEFORE the first event reaches this code, so no handler
+   * can take it back.
+   *
+   * **It was only in the themes, and that is the bug.** All four set
+   * `touch-action: none` on the surface, so drawing worked everywhere the demo
+   * was looked at and nowhere else. Measured in Chromium with the attribute
+   * removed from the host: `auto` on the surface, inside a pane whose overflow
+   * is `auto` — a finger pans the pane instead of signing. The renderers ship no
+   * CSS by design, so anything the control needs in order to *work* has to come
+   * from the control.
+   */
+  test('declares that a drag on the surface is a signature, not a scroll', () => {
+    mount()
+    const surface = screen.getByRole('img', { name: 'Sign here' })
+
+    expect(
+      surface.style.touchAction,
+      'the surface lets the browser treat a touch drag as a pan',
+    ).toBe('none')
+  })
+
+  test('and prevents the pan itself, for a browser that did not honour that', () => {
+    /*
+     * The belt behind the braces, and the reason for it is honest: the device
+     * this was reported on cannot be driven from here, and `touch-action` was
+     * already doing its job in the one browser that can be. If it is honoured,
+     * these events are not cancelable and this costs nothing; if it is not,
+     * this is the only thing left that stops the scroll.
+     *
+     * Registered by hand rather than with `onTouchMove`, because React attaches
+     * `touchstart` and `touchmove` at the root as **passive** listeners, where
+     * `preventDefault` is ignored and logs a warning. A passive handler here
+     * would look exactly like a fix and do nothing.
+     */
+    mount()
+    const surface = screen.getByRole('img', { name: 'Sign here' })
+
+    const move = new Event('touchmove', { bubbles: true, cancelable: true })
+    surface.dispatchEvent(move)
+
+    expect(move.defaultPrevented, 'a touchmove on the surface was left to scroll the page').toBe(true)
+  })
+
+  test('and leaves a touch outside the surface alone, so the form can still be scrolled', () => {
+    // The whole form must stay scrollable with a finger. Cancelling touches
+    // anywhere but the surface would trap the page, which is a worse bug than
+    // the one being fixed and the obvious way to overshoot it.
+    mount()
+
+    const move = new Event('touchmove', { bubbles: true, cancelable: true })
+    screen.getByRole('textbox', { name: 'Type your name' }).dispatchEvent(move)
+
+    expect(move.defaultPrevented, 'touches away from the surface are being cancelled too').toBe(false)
+  })
+})

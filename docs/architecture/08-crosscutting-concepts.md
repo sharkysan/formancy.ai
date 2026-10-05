@@ -116,6 +116,16 @@ Three concentric mechanisms, each usable without the next:
    `data-formancy-part` and `data-state` hooks, so a Tailwind user writes
    `data-[state=invalid]:border-red-500`.
 
+**Zero CSS is about appearance, and one property crossed that line.** A control
+declares what it needs in order to *work*; a theme declares how it looks
+([0101](../decisions/0101-a-control-is-operable-without-a-theme.md)). The test is
+not whether a property is CSS but whether removing every stylesheet leaves a
+control a person can still operate — and the signature surface failed it, because
+`touch-action: none` lived only in the four shipped themes, so a touch drag
+scrolled the page for anybody using their own design system. The surface now
+declares it inline and the themes do not declare it at all. A theme still owns
+the height, the border, the background and the cursor.
+
 Themes are strictly downstream and are never a dependency. The shipped themes
 are deliberately *different design languages* rather than palette swaps —
 different radii, typefaces, spacing, and different devices for showing an

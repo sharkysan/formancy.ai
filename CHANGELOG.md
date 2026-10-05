@@ -10,6 +10,36 @@ later.
 
 ## Unreleased
 
+**The signature control could not be signed with a finger.** Reported from an iPad: the
+page scrolls while you sign. A touch drag on a drawing surface is ambiguous — signature
+or pan — and `touch-action` is how an element says which; the browser resolves it in the
+compositor *before* the first event reaches any handler, so nothing in JavaScript can take
+it back.
+
+**It was declared only in the four shipped themes**, which is why drawing worked
+everywhere the demo was looked at and nowhere else. Measured in Chromium with the theme
+attribute removed from the host: `auto` on the surface, inside a pane whose own `overflow`
+is `auto`, so a finger pans the pane instead of signing. Anybody using a renderer with
+their own design system — which is the consumer this project is built for — had a field
+that could only be completed by typing.
+
+Both renderers now declare it on the element, and that draws a line worth stating:
+**a control owns what it needs in order to work, a theme owns how it looks**
+([0101](./docs/decisions/0101-a-control-is-operable-without-a-theme.md)). The test is not
+whether a property is CSS but whether removing every stylesheet leaves a control a person
+can still operate. The surface's height, border, background and cursor are still the
+theme's; the themes gave up their `touch-action` copy, because an inline style outranks
+every author rule and a dead rule that looks load-bearing is worse than none.
+
+Each control also cancels `touchstart` and `touchmove` on the surface itself, for a
+browser that did not honour the property — **the device this was reported on cannot be
+driven from here**, so the primary mechanism is verified and this covers the case that is
+not. Only the surface cancels: both suites assert a touch on the text input beside it is
+left alone, because cancelling on an ancestor would trap the page, which is a worse bug
+than the one being fixed. Recorded as hazard **D4c** in `SAFETY-ANALYSIS.md`, with the
+part that stays open — nothing enumerates which properties are operability rather than
+appearance, so the next control to need one can repeat this.
+
 **The playground was broken on an iPad, and on every screen narrower than 64rem.**
 Folding a pane away composed the grid template in the component and set it with an
 inline `style`, which outranks every rule in the stylesheet — including the

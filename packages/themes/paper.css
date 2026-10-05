@@ -1582,7 +1582,6 @@
   border: 1.5px solid var(--fm-hair);
   border-radius: 0;
   background: transparent;
-  touch-action: none;
   cursor: crosshair;
 }
 

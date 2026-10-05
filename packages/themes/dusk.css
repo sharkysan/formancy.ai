@@ -1606,7 +1606,6 @@
   border: 1px solid var(--fm-edge);
   border-radius: var(--fm-radius);
   background: var(--fm-control);
-  touch-action: none;
   cursor: crosshair;
 }
 

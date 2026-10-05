@@ -24,9 +24,6 @@
     "*.css"
   ],
   "scripts": {
-    "build": "echo \"themes: css only, nothing to build\"",
-    "test": "echo \"themes: no tests\"",
-    "typecheck": "echo \"themes: no types\"",
     "check:pkg": "publint"
   },
   "//check:pkg": [
@@ -41,8 +38,15 @@
     "",
     "Moving it here left a SECOND `scripts` key below, and JSON keeps the last one",
     "— so `build`, `test` and `typecheck` were silently dead for as long as it sat",
-    "there. All four are one block now, and `no manifest declares a key twice` in",
-    "apps/docs/src/published-packages.test.ts is what finds the next one."
+    "there. `no manifest declares a key twice` in",
+    "apps/docs/src/published-packages.test.ts is what finds the next one.",
+    "",
+    "Reviving those three then printed a turbo warning on every build: each was an",
+    "`echo`, and the `build` task declares `outputs: [\"dist/**\"]`, so there were",
+    "none to cache. They are gone rather than configured around — turbo skips a",
+    "package with no such script, which is what happened for months anyway, and",
+    "there is genuinely nothing here to build, typecheck or unit-test. The themes",
+    "ARE tested, by apps/docs/src/themes.test.ts, which reads these files."
   ],
   "devDependencies": {
     "publint": "catalog:"

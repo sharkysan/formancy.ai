@@ -33,6 +33,7 @@ import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
         <svg
           #surface
           data-formancy-part="signature-surface"
+          style="touch-action: none"
           [attr.viewBox]="viewBox()"
           role="img"
           [attr.aria-label]="context.label"
@@ -40,6 +41,8 @@ import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
           (pointermove)="onMove($event)"
           (pointerup)="onUp()"
           (pointerleave)="onUp()"
+          (touchstart)="noScroll($event)"
+          (touchmove)="noScroll($event)"
         >
           @for (stroke of strokes(); track $index) {
             <path data-formancy-part="signature-stroke" [attr.d]="pathOf(stroke)" fill="none" />
@@ -86,6 +89,40 @@ export class FormancySignatureField extends FieldComponentBase {
     return points
       .map(([x, y], step) => `${step === 0 ? 'M' : 'L'}${String(x)} ${String(y)}`)
       .join(' ')
+  }
+
+  /*
+   * A touch drag on this surface is a signature, not a scroll.
+   *
+   * Reported from an iPad: the control is unusable because the page scrolls
+   * while you sign. `touch-action: none` on the surface is the mechanism, and it
+   * has to be resolved in the compositor before the first event arrives -- by
+   * the time this class runs, the browser has already decided. It was only in
+   * the four themes until now, which is why drawing worked everywhere the demo
+   * was looked at and nowhere else; this package ships no CSS, so what the
+   * control needs in order to *work* belongs to the control. Appearance -- a
+   * height, a border, a cursor -- is still the theme's.
+   *
+   * This method is the fallback for a browser that did not honour the property,
+   * which is the case that cannot be tested from here. Where it is honoured the
+   * event is not cancelable and this costs nothing.
+   *
+   * **A template binding, where the React control attaches listeners by hand.**
+   * Angular's `(touchmove)` goes through `addEventListener` on the element,
+   * which is non-passive by default; React registers `touchstart` and
+   * `touchmove` at the root and marks them passive, where `preventDefault` is
+   * ignored. Same decision, each framework's idiom -- not a difference to tidy
+   * away.
+   */
+  protected noScroll(event: TouchEvent): void {
+    // `cancelable` is checked because Chrome logs "Ignored attempt to cancel a
+    // touchmove event with cancelable=false" otherwise -- which is what arrives
+    // when `touch-action` WAS honoured, so the common case would print a warning
+    // per finger move. **No test covers this branch**: jsdom emits no such
+    // warning and `defaultPrevented` reads false either way, so the mutation
+    // survives the suite. Kept on the strength of the browser behaviour, and
+    // said out loud rather than left looking verified.
+    if (event.cancelable) event.preventDefault()
   }
 
   protected onDown(event: PointerEvent): void {

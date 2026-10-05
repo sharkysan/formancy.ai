@@ -627,6 +627,37 @@ heading names a column and a label names a control. Nothing checks that a theme'
 applied only where a heading exists; four themes each carry the rule and a fifth could get
 it wrong. Appearance is reviewed rather than verified, as D4a's residual says at length.
 
+### D4c. A control cannot be operated without a stylesheet
+
+*How it arises:* the renderers ship **zero CSS** on purpose, so that a consumer's design
+system owns the markup ([§8.7](../architecture/08-crosscutting-concepts.md)). That
+boundary is about appearance, and a property can cross it without anybody noticing: the
+signature surface needs `touch-action: none` or the browser resolves a touch drag as a
+pan, in the compositor, before any handler runs. It was declared only in the four shipped
+themes. So drawing worked in every context the demo was looked at, and failed for anybody
+using the renderer with their own stylesheet — reported from an iPad as "unusable, it
+scrolls while you sign". Measured in Chromium with the theme attribute removed: `auto` on
+the surface, inside a container whose own `overflow` is `auto`.
+
+*Severity:* the same outcome as D4. A signature that cannot be drawn is a field that
+cannot be completed, and the keyboard route — typing a name — is the only one left, which
+is a narrower product than the one documented.
+
+*Constraint:* a control declares what it needs in order to *work*; a theme declares how it
+looks ([0101](../decisions/0101-a-control-is-operable-without-a-theme.md)). Both renderers
+now set `touch-action` on the element, each asserts it in its own suite, and
+`apps/docs/src/themes.test.ts` asserts no theme declares it — an inline style outranks
+every author rule, so a theme's copy would be dead and would read as load-bearing. Seven
+mutations were observed failing, including the inert version of the fix: React's listeners
+made `passive`, where `preventDefault` is ignored.
+
+*Residual:* **the class is not closed, only this instance of it.** Nothing enumerates
+which properties are operability rather than appearance, so the next control to need one
+can repeat the mistake; a slider and a cropper both would. And the report came from a
+device no test here can drive — what is verified is that the mechanism is present without
+a theme and that the fallback fires, not that iOS Safari behaves as expected with it.
+Listed as debt in [§11](../architecture/11-risks-and-debt.md).
+
 ### D5. A repeater shows the wrong number of rows
 
 *How it arises:* `minItems` was originally seeded by each renderer in a mount
