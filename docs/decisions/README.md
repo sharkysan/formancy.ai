@@ -201,3 +201,4 @@ listed under the sections they belong to above.
 | [0098](0098-the-cla-is-checked-in-the-repository.md) | The CLA is checked in the repository, not by a bot with a token | accepted |
 | [0099](0099-coverage-is-reported-per-package-and-never-gated.md) | Coverage is reported per package, and gated nowhere | accepted |
 | [0100](0100-a-pane-boundary-is-dragged.md) | A pane boundary is dragged, and the row's template is a custom property | accepted |
+| [0101](0101-a-control-is-operable-without-a-theme.md) | A control owns what it needs in order to work; a theme owns how it looks | accepted |

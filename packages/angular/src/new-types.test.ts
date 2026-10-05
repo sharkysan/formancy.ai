@@ -775,6 +775,62 @@ describe('the signature field, which must behave as the React one does', () => {
       expect(parts, `no ${part}`).toContain(part)
     }
   })
+
+  test('declares that a drag on the surface is a signature, not a scroll', async () => {
+    /*
+     * Reported from an iPad: the control is unusable because the page scrolls
+     * while you sign. `touch-action` is how an element resolves that ambiguity,
+     * and the browser resolves it in the compositor before the first event
+     * arrives -- so no handler can take it back.
+     *
+     * It was only in the four themes, so drawing worked everywhere the demo was
+     * looked at and nowhere else. Measured in Chromium with the theme attribute
+     * removed: `auto` on the surface, inside a pane whose overflow is `auto`.
+     * Neither renderer ships CSS, so what the control needs in order to *work*
+     * belongs to the control -- in both of them, which is why this case exists
+     * here as well as in React's suite.
+     */
+    await renderForm(engineFor(signing()))
+    const surface = screen.getByRole('img', { name: /sign here/i })
+
+    expect(
+      (surface as HTMLElement).style.touchAction,
+      'the surface lets the browser treat a touch drag as a pan',
+    ).toBe('none')
+  })
+
+  test('and prevents the pan itself, for a browser that did not honour that', async () => {
+    /*
+     * The fallback, for the same reason React's suite gives: the device this was
+     * reported on cannot be driven from here, and the property was already doing
+     * its job in the one that can be.
+     *
+     * **Done differently in each renderer, on purpose.** Angular binds
+     * `(touchmove)` and the listener is non-passive, because that is the default
+     * for `addEventListener` on an element. React registers `touchstart` and
+     * `touchmove` at the ROOT and marks them passive, where `preventDefault` is
+     * ignored, so its control attaches its own listeners by hand. Same decision,
+     * each framework's idiom -- not an inconsistency to tidy up.
+     */
+    await renderForm(engineFor(signing()))
+    const surface = screen.getByRole('img', { name: /sign here/i })
+
+    const move = new Event('touchmove', { bubbles: true, cancelable: true })
+    surface.dispatchEvent(move)
+
+    expect(move.defaultPrevented, 'a touchmove on the surface was left to scroll the page').toBe(true)
+  })
+
+  test('and leaves a touch outside the surface alone, so the form can still be scrolled', async () => {
+    // Cancelling touches anywhere but the surface would trap the page, which is
+    // a worse bug than the one being fixed and the obvious way to overshoot it.
+    await renderForm(engineFor(signing()))
+
+    const move = new Event('touchmove', { bubbles: true, cancelable: true })
+    screen.getByRole('textbox', { name: /type your name/i }).dispatchEvent(move)
+
+    expect(move.defaultPrevented, 'touches away from the surface are being cancelled too').toBe(false)
+  })
 })
 
 describe('the tag picker, which must behave as the React one does', () => {

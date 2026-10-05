@@ -106,6 +106,13 @@ reason is `"invoice"`. When a rule hides a field, its answer is removed from
 the value by default (`clearOnHide`), so a hidden branch cannot smuggle data
 into the submission.
 
+One exception, and it is the only one: a control sets the CSS it needs in order
+to **work**, never how it looks. The signature surface declares
+`touch-action: none` on the element, because a touch drag on a drawing surface is
+otherwise resolved as a scroll by the browser before any handler runs — so a
+signature drawn with a finger would pan the page instead. Its height, border,
+background and cursor are still yours.
+
 ## Two of the same form on one page
 
 Element ids come from the engine, minted from the form's `id` — which is what

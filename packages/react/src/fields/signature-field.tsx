@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { useField } from '../use-field.js'
 import { FieldShell } from './internals.js'
 import type { FieldComponentProps, SignatureAnswerValue } from './internals.js'
@@ -82,6 +82,62 @@ export function SignatureField({ path, label }: FieldComponentProps) {
     field.setValue(strokes.length === 0 ? null : { drawn: strokes })
   }
 
+  /*
+   * A touch drag on this surface is a signature, not a scroll.
+   *
+   * Reported from an iPad: the control is unusable because the page scrolls
+   * while you sign. `touch-action: none` is how an element resolves that
+   * ambiguity, and it has to be resolved in the compositor before the first
+   * event arrives — by the time a handler runs, the browser has already decided.
+   *
+   * It was only in the four themes, which is why drawing worked everywhere the
+   * demo was looked at and nowhere else. Measured in Chromium with the theme
+   * removed: `auto` on the surface, inside a pane whose overflow is `auto`, so a
+   * finger pans the pane. This package ships no CSS at all, so anything the
+   * control needs in order to *work* belongs to the control. Appearance still
+   * belongs to the consumer: a height, a border and a cursor are the theme's.
+   *
+   * Inline, which is heavy-handed and deliberate — a consumer who overrode this
+   * would be turning the control off.
+   */
+  const preventsScroll = { touchAction: 'none' } as const
+
+  /*
+   * And prevented by hand as well, for a browser that did not honour the above.
+   *
+   * The device this was reported on cannot be driven from here, and the property
+   * was already doing its job in the one that can be — so the honest position is
+   * that the primary mechanism is verified and this is the fallback for the case
+   * that is not. Where it is honoured these events are not cancelable and this
+   * costs nothing.
+   *
+   * By hand rather than `onTouchMove`, because React registers `touchstart` and
+   * `touchmove` at the root as **passive**, where `preventDefault` is ignored
+   * and logs a warning. A passive handler would look exactly like a fix and do
+   * nothing.
+   */
+  useEffect(() => {
+    const element = surface.current
+    if (element === null) return
+
+    const swallow = (event: TouchEvent): void => {
+    // `cancelable` is checked because Chrome logs "Ignored attempt to cancel a
+    // touchmove event with cancelable=false" otherwise -- which is what arrives
+    // when `touch-action` WAS honoured, so the common case would print a warning
+    // per finger move. **No test covers this branch**: jsdom emits no such
+    // warning and `defaultPrevented` reads false either way, so the mutation
+    // survives the suite. Kept on the strength of the browser behaviour, and
+    // said out loud rather than left looking verified.
+      if (event.cancelable) event.preventDefault()
+    }
+    element.addEventListener('touchstart', swallow, { passive: false })
+    element.addEventListener('touchmove', swallow, { passive: false })
+    return () => {
+      element.removeEventListener('touchstart', swallow)
+      element.removeEventListener('touchmove', swallow)
+    }
+  }, [])
+
   const onPointerDown = (event: React.PointerEvent<SVGSVGElement>): void => {
     before.current = drawn
     stroke.current = [pointFrom(event)]
@@ -122,6 +178,7 @@ export function SignatureField({ path, label }: FieldComponentProps) {
         <svg
           ref={surface}
           data-formancy-part="signature-surface"
+          style={preventsScroll}
           viewBox={`0 0 ${String(width)} ${String(height)}`}
           // A graphic with a name, not a control: the things that take input are
           // the box and the button beside it, and claiming otherwise would put a

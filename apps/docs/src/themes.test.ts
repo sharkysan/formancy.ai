@@ -86,6 +86,31 @@ function themes(): Array<{ name: string; css: string }> {
     .filter(({ css }) => css.includes('data-formancy-theme'))
 }
 
+describe('what a theme must not try to own', () => {
+  test('whether a touch drag on the signature surface scrolls the page', () => {
+    /*
+     * All four themes used to set `touch-action: none` on the signature surface,
+     * and that is how a control shipped whose *operability* depended on a
+     * stylesheet. Reported from an iPad: the page scrolls while you sign.
+     * Measured in Chromium with the theme attribute removed — `auto` on the
+     * surface, inside a pane whose overflow is `auto`.
+     *
+     * Both renderers now declare it on the element
+     * ([0101](../../../docs/decisions/0101-a-control-is-operable-without-a-theme.md)),
+     * which means a rule here is **dead**: an inline style outranks every author
+     * rule. Dead CSS that looks load-bearing is worse than none, because the next
+     * person to need it will find it already there and conclude it works.
+     *
+     * So: not in a theme. A theme owns the height, the border and the cursor.
+     */
+    for (const { name, css } of themes()) {
+      expect(css, `${name} sets touch-action, which the control owns and a stylesheet cannot win`).not.toMatch(
+        /touch-action\s*:/,
+      )
+    }
+  })
+})
+
 describe('the theme contract', () => {
   test('is actually being read: parts and themes were both found', () => {
     // A guard on the guard. A regex that matched nothing would make everything

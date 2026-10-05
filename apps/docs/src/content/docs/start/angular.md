@@ -135,7 +135,11 @@ error at mount beats a component that silently renders nothing.
 
 The defaults ship **zero CSS**. Every part carries a `data-formancy-part`
 attribute and a `data-state`, so a design system can style them without
-overrides. When styling is not enough, provide your own components through the
+overrides. One exception, and it is the only one: a control sets the
+CSS it needs in order to **work**, never how it looks — the signature surface
+declares `touch-action: none` on the element, because a touch drag on a drawing
+surface is otherwise resolved as a scroll by the browser before any handler runs.
+Its height, border, background and cursor are still yours. When styling is not enough, provide your own components through the
 registry token — per-path beats per-type beats the defaults:
 
 ```ts
