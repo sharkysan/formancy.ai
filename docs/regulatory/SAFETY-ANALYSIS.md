@@ -881,6 +881,12 @@ concurrently *before* one of them publishes.
 
 ## Starter-template suitability
 
+Gallery language input is mapped to the three supported locale literals before
+translation lookup, and editor-link parameters are URI-encoded. An unexpected DOM
+value must not crash the gallery or change another query parameter. The site test
+injects such a value and checks both card and preview editor links; it failed with
+an undefined translation lookup before the runtime validation was added.
+
 *How it arises:* a general-purpose template is treated as an approved clinical,
 legal or organisation-specific form because it can be imported and passes validation.
 

@@ -28,6 +28,9 @@ Offer a dedicated `/templates/` entry point with search, area filters, local
 previews and JSON downloads. The gallery preview, download and playground read
 the same form file. Editing is a link into the playground carrying a template
 id and locale; it never fetches an arbitrary URL from the query string.
+Map the gallery's language input to known literals before indexing translations,
+and URI-encode each editor-link parameter. A TypeScript cast is not validation of
+a DOM value; unsupported values leave the last valid selection intact.
 
 ## Consequences
 

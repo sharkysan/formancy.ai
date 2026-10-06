@@ -19,6 +19,9 @@ previews and direct JSON downloads. Its edit links open the selected document
 and language in the playground. Both read the same files, so the document an
 integrator copies is the one the previews demonstrate. Schema checks alone missed a
 string-to-timestamp comparison in the birth-date rule; running its sample found it.
+The gallery accepts only its three supported language values and encodes editor-link
+parameters. An unexpected DOM value previously crashed translation lookup; a regression
+test now verifies the gallery and both editor links retain the last valid language.
 
 **The two previews now own separate native forms.** Loading a template and choosing a
 radio option revealed that the Angular and React controls shared a browser radio group:

@@ -31,7 +31,7 @@ const templates = catalog.templates.map((entry) => {
 })
 type Template = (typeof templates)[number]
 const editUrl = (entry: Entry, locale: Locale): string =>
-  `${PLAYGROUND}?template=${encodeURIComponent(entry.id)}&locale=${locale}`
+  `${PLAYGROUND}?template=${encodeURIComponent(entry.id)}&locale=${encodeURIComponent(locale)}`
 
 export function TemplateGallery() {
   const [area, setArea] = useState('all')
@@ -73,7 +73,12 @@ export function TemplateGallery() {
         <section id="templates" className="template-browser" aria-label="Browse templates">
           <div className="template-toolbar">
             <label className="template-search">Search templates<input type="search" value={query} placeholder="Try onboarding, feedback or registration" onChange={(event) => setQuery(event.target.value)} /></label>
-            <label className="template-language">Template language<select value={locale} onChange={(event) => setLocale(event.target.value as Locale)}><option value="en">English</option><option value="de">Deutsch</option><option value="fr">Français</option></select></label>
+            <label className="template-language">Template language<select value={locale} onChange={(event) => {
+              // Map DOM input to known literals before indexing translations or building links.
+              if (event.target.value === 'en') setLocale('en')
+              else if (event.target.value === 'de') setLocale('de')
+              else if (event.target.value === 'fr') setLocale('fr')
+            }}><option value="en">English</option><option value="de">Deutsch</option><option value="fr">Français</option></select></label>
           </div>
           <div className="template-filters" role="group" aria-label="Filter by area">
             <button type="button" aria-pressed={area === 'all'} onClick={() => setArea('all')}>All templates</button>

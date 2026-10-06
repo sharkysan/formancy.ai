@@ -1,5 +1,5 @@
 import { afterEach, beforeAll, expect, test } from 'vitest'
-import { cleanup, render, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
 import { TemplateGallery } from './template-gallery.js'
 
@@ -47,4 +47,22 @@ test('an empty search has a recovery action', async () => {
   expect(screen.getByText('No templates match your search.')).toBeTruthy()
   await user.click(screen.getByRole('button', { name: 'Clear filters' }))
   expect(screen.getAllByRole('article').length).toBeGreaterThan(0)
+})
+
+test('an unexpected language value cannot break the gallery or alter editor parameters', async () => {
+  // DOM values are untrusted even when the authored select has only three options.
+  const user = userEvent.setup()
+  render(<TemplateGallery />)
+  const select = screen.getByRole('combobox', { name: 'Template language' }) as HTMLSelectElement
+  await user.selectOptions(select, 'de')
+  const value = 'fr&template=unexpected'
+  select.add(new Option('Unexpected', value))
+  fireEvent.change(select, { target: { value } })
+  expect(select.value).toBe('de')
+  const link = screen.getByRole('link', { name: 'Edit Verkaufsanfrage in playground' })
+  const url = new URL(link.getAttribute('href')!, 'https://formancy.ai')
+  expect([...url.searchParams.entries()]).toEqual([['template', 'sales-lead-enquiry'], ['locale', 'de']])
+  await user.click(screen.getByRole('button', { name: 'Preview Verkaufsanfrage' }))
+  const dialog = within(screen.getByRole('dialog', { name: 'Verkaufsanfrage' }))
+  expect(dialog.getByRole('link', { name: /Edit in playground/ }).getAttribute('href')).toBe(link.getAttribute('href'))
 })
