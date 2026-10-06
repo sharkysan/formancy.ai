@@ -10,6 +10,40 @@ later.
 
 ## Unreleased
 
+**A gate that can see CSS.** Two defects shipped in one week through every gate this
+repository has — an inline style that outranked a media query, costing 187px of sideways
+scroll at an 820px viewport, and a `touch-action` that lived only in the shipped themes,
+so signing with a finger panned the page. Neither was a coverage gap. **jsdom applies no
+CSS, resolves no media queries and performs no layout**: every box measures zero and every
+cascade question has no answer, so no number of additional cases in that environment could
+have found either.
+
+`pnpm test:browser` loads the site `build:web` composes — over HTTP, in Chromium, not a
+dev server and not a component — at a phone, a tablet in both orientations and a laptop.
+It asserts that nothing scrolls sideways, how many columns the pane row *computes*, and
+the computed `touch-action` of **every** signature surface on the page with the theme
+present and removed. Both renderers, because the playground renders one schema twice and
+the first version of the gate used `querySelector` and checked React alone. One positive
+assertion among the refusals — a pointer drag must record a stroke — because a surface
+that refused every gesture would satisfy all the others.
+
+**The evidence is not that it passes.** Both defects were reverted, rebuilt and watched
+to redden it, as was the touch fallback behind the second
+([0102](./docs/decisions/0102-what-jsdom-cannot-see-is-checked-in-a-browser.md)).
+
+**Deliberately not screenshots.** The renderers ship no styling, so a pixel baseline would
+be testing demo CSS — and a baseline is a file somebody updates when it goes red, which
+makes it the one kind of assertion that gets quieter the more often it fails. What the two
+defects actually were is a computed property, a column count and an overflow in pixels.
+
+Its own CI job, so the name in the pull request list says what is wrong. And three
+statements in the regulatory set became wrong the moment it landed, corrected in the same
+change: `SAFETY-ANALYSIS.md` and `SOUP-DECLARATION.md` both said no test here can ask
+where a box is, and one of them also said no application renders the Angular bindings in a
+browser — which the playground had already made false. What stays true is written down
+beside it: one engine rather than Safari, no pixel baselines, and four viewports of one
+demo schema rather than the conformance suite.
+
 **Two stale claims, found by a reader rather than by nineteen guards.** Somebody compared
 this repository against a competitor's feature list and hit both in the places a visitor
 actually reads.

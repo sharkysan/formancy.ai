@@ -50,6 +50,7 @@ it.
 | ~~`size-limit`~~ | — | **Not wired up.** This row claimed it ran under `check:pkg` and nothing in the repository runs it; the byte budgets in [§9.3](09-quality-requirements.md) are measured by hand and dated. |
 | The site as the host composes it, with the documentation link check | `pnpm build:web` | A root-absolute documentation link resolves against the landing page rather than `/docs/`, builds cleanly and 404s in production |
 | Typecheck with no `@types/node` in the isomorphic packages | `pnpm typecheck` | The layer boundary holds |
+| No horizontal overflow, the pane row's computed column count, and both renderers' computed `touch-action` — four viewports in Chromium against the composed site | `pnpm test:browser` | The facts jsdom cannot represent: it applies no CSS, resolves no media queries and performs no layout. Two defects shipped through every other gate here in one week for that reason ([0102](../decisions/0102-what-jsdom-cannot-see-is-checked-in-a-browser.md)) |
 | Every commit author in a pull request has signed the CLA | `node scripts/check-cla.mjs` | The agreement [0069](../decisions/0069-contributions-under-a-cla.md) decided is checked rather than only stated, and a range it cannot read is refused rather than passed ([0098](../decisions/0098-the-cla-is-checked-in-the-repository.md)) |
 
 There was a table of per-package test counts here, and it is gone for the reason

@@ -263,8 +263,8 @@ exactly that reason.
 ## Checks before pushing
 
 CI runs `pnpm build`, `pnpm build:web`, `pnpm typecheck`, `pnpm test:coverage`,
-`pnpm check:pkg` and `pnpm test:e2e:install`. Run the ones for the packages you
-changed.
+`pnpm check:pkg`, `pnpm test:e2e:install` and `pnpm test:browser`. Run the ones
+for the packages you changed.
 
 `build:web` is not redundant with `build`: it composes the landing page, the
 playground and the docs under one origin, and it carries the check for
@@ -283,6 +283,17 @@ seconds and needs `pnpm build` first. Its fixture is real files under
 `scripts/install-fixture/`, not strings in the runner: generating TypeScript
 inside a template literal inside a script cost two broken attempts before it ran
 once.
+
+`test:browser` is the only gate that uses a real browser, and the only one that
+can see CSS. jsdom applies none, resolves no media queries and performs no
+layout — every box measures zero — so an inline style shadowing a media query and
+a `touch-action` that lived only in a theme both shipped through every other gate
+in one week. It loads the composed site after `pnpm build:web`, at four
+viewports, and asks Chromium for computed values and geometry. **Not
+screenshots**: the renderers ship no styling, so a pixel baseline would be
+testing demo CSS, and a baseline is a file somebody updates when it goes red
+([0102](docs/decisions/0102-what-jsdom-cannot-see-is-checked-in-a-browser.md)).
+It needs the Chromium download once: `pnpm exec playwright install chromium`.
 
 ## Conventions that live elsewhere
 

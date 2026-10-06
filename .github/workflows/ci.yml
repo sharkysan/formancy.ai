@@ -106,6 +106,56 @@ jobs:
 
       - run: pnpm test:e2e:install
 
+  # What jsdom structurally cannot see. jsdom applies no CSS, resolves no media
+  # queries and performs no layout -- every box measures zero and every cascade
+  # question has no answer. Two defects shipped through every other gate here in
+  # one week for exactly that reason: an inline style that outranked a media
+  # query, so the page scrolled sideways by 187px on a tablet (0100); and
+  # `touch-action` that lived only in the shipped themes, so signing with a
+  # finger panned the page (0101). Reverting either one reddens this job.
+  #
+  # Its own job rather than part of `verify`, for the same reason the CLA check is
+  # its own workflow: "browser" says what is wrong, where a red "verify" sends the
+  # reader into a twenty-minute log to find out.
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: corepack enable pnpm
+
+      - name: Get pnpm store directory
+        id: pnpm-store
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+
+      - run: pnpm install --frozen-lockfile
+
+      # The gate runs against the composed site a host serves, not a dev server,
+      # so both builds are the subject rather than setup.
+      - run: pnpm build
+      - run: pnpm build:web
+
+      # Cached by the lockfile, which pins the playwright version the browser
+      # revision is tied to -- a mismatch is the one failure here that would look
+      # like a defect in the page.
+      - name: Cache the Chromium download
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+      - run: pnpm exec playwright install --with-deps chromium
+
+      - run: pnpm test:browser
+
   # The image is the product for a self-hoster, and nothing else here touches
   # it. The static check in `dockerfile.test.ts` catches a workspace package
   # the COPY list forgot; this catches everything it cannot — a dependency

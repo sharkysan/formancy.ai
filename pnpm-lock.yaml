@@ -176,6 +176,9 @@ catalogs:
     fast-check:
       specifier: ^4.10.1
       version: 4.10.1
+    playwright:
+      specifier: ^1.63.0
+      version: 1.63.0
     publint:
       specifier: ^0.3.24
       version: 0.3.24
@@ -193,6 +196,9 @@ importers:
 
   .:
     devDependencies:
+      playwright:
+        specifier: 'catalog:'
+        version: 1.63.0
       turbo:
         specifier: ^2.11.2
         version: 2.11.2
@@ -5539,6 +5545,16 @@ packages:
     resolution: {integrity: sha512-4peoBq4Wks0riS0z8741NVv+/8IiTvqnZAr8QGgtdifrtpdXbNw/FxRS1l6NFqm4EMzuS0EDqNNx4XGaz8cuyQ==}
     engines: {node: '>=18'}
 
+  playwright-core@1.63.0:
+    resolution: {integrity: sha512-rYCsBF/M5HjUch52bbtVONEFjv6Xu8sm8h72dNlR5bzIE1fvC/bxgspzkjSfU+MweEMmPM8KJebG6nnyxo5mCg==}
+    engines: {node: '>=20'}
+    hasBin: true
+
+  playwright@1.63.0:
+    resolution: {integrity: sha512-+7ziBLidS4NaNCdt57SUDT+wYmmd5fmiQejUic/kb+YsYSCPyOOE9sebzMjNmQrsnNpDJqd4WHvV/8lfKfUDUg==}
+    engines: {node: '>=20'}
+    hasBin: true
+
   postcss-media-query-parser@0.2.3:
     resolution: {integrity: sha512-3sOlxmbKcSHMjlUXQZKQ06jOswE7oVkXPxmZdoB1r5l0q6gTFTQSHxNxOrCccElbW7dxNytifNEo8qidX2Vsig==}
 
@@ -10781,6 +10797,12 @@ snapshots:
   pkg-dir@8.0.0:
     dependencies:
       find-up-simple: 1.0.1
+
+  playwright-core@1.63.0: {}
+
+  playwright@1.63.0:
+    dependencies:
+      playwright-core: 1.63.0
 
   postcss-media-query-parser@0.2.3: {}
 

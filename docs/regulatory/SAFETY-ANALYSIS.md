@@ -586,13 +586,29 @@ span, asserted in `apps/docs/src/themes.test.ts`. Each was reverted and watched 
 fail.
 
 *Residual, and it is the honest centre of this entry:* **those are proxies, and
-appearance is reviewed rather than verified.** jsdom implements no layout, so no
-test in this repository can ask where a box is; the measurements quoted in the
-records above were taken by hand in a browser. **No application in this repository
-renders the Angular bindings at all**, so that renderer's appearance has never been
-seen by anything but review. A manufacturer relying on visual correctness must
-verify it in the browsers it ships to. Listed as debt in
-[§11](../architecture/11-risks-and-debt.md).
+appearance is largely reviewed rather than verified.** jsdom implements no layout
+and resolves no media queries, so almost no test in this repository can ask where
+a box is; the measurements quoted in the records above were taken by hand in a
+browser.
+
+**A narrow part of it is now verified rather than reviewed.** `pnpm test:browser`
+loads the composed site in Chromium at four viewports — a phone, a tablet in both
+orientations and a laptop — and asserts that nothing scrolls sideways, how many
+columns the pane row computes, and the computed `touch-action` of **both**
+renderers' signature surfaces with and without a theme
+([0102](../decisions/0102-what-jsdom-cannot-see-is-checked-in-a-browser.md)).
+Reverting either defect named above reddens it, which was checked by doing so.
+That also corrects a claim this paragraph carried for longer than it was true:
+the playground renders the Angular bindings in a browser, and the gate loads it,
+so that renderer is no longer seen by review alone.
+
+What stays reviewed is everything else: there are **no pixel baselines**, by
+choice — the renderers ship no styling, so a baseline would be testing demo CSS,
+and a baseline is a file somebody updates when it goes red. One engine, Chromium,
+and not Safari; the defect behind D4c was reported on an iPad, which nothing here
+can drive. And four viewports of one demo schema is not the conformance suite. A
+manufacturer relying on visual correctness must still verify it in the browsers it
+ships to. Listed as debt in [§11](../architecture/11-risks-and-debt.md).
 
 ### D4b. A control keeps its accessible name and loses its visible label
 
