@@ -1040,3 +1040,123 @@ body {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* --------------------------------------------------------- theme editor */
+
+/*
+ * The third editor mode: every token the applied theme declares.
+ *
+ * The control list is discovered from the stylesheet rather than written down,
+ * because the four shipped themes declare different vocabularies on purpose —
+ * so this has to lay out a list whose length it does not know, for a theme it
+ * may never have seen.
+ */
+.pane.editor > .body.theme {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.875rem;
+  overflow: auto;
+}
+
+.theme-intro {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.theme-tokens {
+  display: grid;
+  gap: 0.375rem;
+}
+
+/* Name and control on one row, the name given a fixed share so the fields line
+   up down the list — a ragged left edge on twelve rows is hard to scan. */
+.theme-token {
+  display: grid;
+  grid-template-columns: minmax(5.5rem, 8rem) 1fr;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+}
+
+.theme-token-name {
+  color: var(--muted);
+  text-transform: capitalize;
+}
+
+.theme-token input[type='text'] {
+  min-width: 0;
+  padding: 0.3125rem 0.5rem;
+  border: 1px solid var(--edge);
+  border-radius: 6px;
+  background: var(--inset);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+}
+
+.theme-token input[type='text']:focus-visible {
+  outline: 2px solid var(--client);
+  outline-offset: 1px;
+}
+
+/* The swatch first, then the text. The picker speaks six-digit hex only, so the
+   field beside it is the control and the swatch is the assist. */
+.theme-token-colour {
+  display: grid;
+  grid-template-columns: 1.75rem 1fr;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+.theme-token-colour input[type='color'] {
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  padding: 0;
+  border: 1px solid var(--edge);
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+}
+
+.theme-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.theme-actions button {
+  padding: 0.375rem 0.75rem;
+  border: 1px solid var(--edge-strong);
+  border-radius: 7px;
+  background: var(--glass);
+  color: var(--text);
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.theme-actions button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.theme-actions button:not(:disabled):hover {
+  border-color: var(--client);
+}
+
+/* The patch, shown rather than only downloadable: reading it is how somebody
+   learns there is nothing proprietary in the output. */
+.theme-output {
+  margin: 0;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--edge);
+  border-radius: 8px;
+  background: var(--inset);
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-x: auto;
+}

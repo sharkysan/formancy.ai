@@ -302,6 +302,84 @@ async function run() {
           : `${String(drawn.strokes)} strokes and ${String(drawn.points)} points, expected 1 and 9`,
       )
 
+      /*
+       * The theme editor changes what the form looks like.
+       *
+       * Only at the widest viewport: below the breakpoint the playground shows
+       * one pane at a time, so the editor pane is not on screen to open.
+       *
+       * This is the one check here that could not be written any other way. The
+       * editor discovers its controls from the stylesheet and applies an
+       * override as a custom property, and **jsdom has neither** -- no cascade,
+       * so no computed colour to compare. The suite can assert that the property
+       * lands on the host; that it reaches a control is this.
+       */
+      if (width >= 1440) {
+        const theming = await page.evaluate(async () => {
+          const wait = () => new Promise((done) => setTimeout(done, 150))
+          const host = document.querySelector('.sheet[data-formancy-theme]')
+          const box = host?.querySelector('input[type="checkbox"]')
+          if (host === null || box === null || box === undefined) return { error: 'no themed checkbox' }
+
+          // A checked checkbox takes its background from `--fm-signal` in every
+          // shipped theme, which makes it the element whose rendering proves an
+          // override arrived.
+          if (!box.checked) {
+            box.click()
+            await wait()
+          }
+          const read = () => getComputedStyle(box).backgroundColor
+          const before = read()
+
+          const mode = [...document.querySelectorAll('button.mode')].find(
+            (button) => button.textContent?.trim() === 'Theme',
+          )
+          if (mode === undefined) return { error: 'no Theme mode' }
+          mode.click()
+          await wait()
+
+          const controls = [...document.querySelectorAll('.theme-token')]
+          const signal = controls
+            .find((token) => token.querySelector('.theme-token-name')?.textContent === 'signal')
+            ?.querySelector('input[type="text"]')
+          if (signal === null || signal === undefined) return { error: 'no signal control', controls: controls.length }
+
+          // Through the value setter, so React's onChange sees it.
+          const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
+          setter?.call(signal, '#ff00aa')
+          signal.dispatchEvent(new Event('input', { bubbles: true }))
+          await wait()
+          const overridden = read()
+
+          const reset = [...document.querySelectorAll('.theme-actions button')].find((button) =>
+            button.textContent?.trim().startsWith('Reset'),
+          )
+          reset?.click()
+          await wait()
+
+          return { controls: controls.length, before, overridden, afterReset: read() }
+        })
+
+        check(
+          'the theme editor finds the tokens the applied theme declares',
+          theming.error === undefined && theming.controls > 8
+            ? null
+            : `${theming.error ?? `${String(theming.controls)} controls`}`,
+        )
+        check(
+          'and an override reaches the rendered form',
+          theming.before !== theming.overridden
+            ? null
+            : `the checkbox stayed ${String(theming.before)} after the signal colour changed`,
+        )
+        check(
+          'and resetting gives the theme back',
+          theming.afterReset === theming.before
+            ? null
+            : `${String(theming.afterReset)} after reset, was ${String(theming.before)}`,
+        )
+      }
+
       await page.close()
     }
   } finally {
@@ -314,7 +392,7 @@ async function run() {
     throw new Error(`${String(failures.length)} browser check(s) failed:\n  ${failures.join('\n  ')}`)
   }
   console.log(
-    `browser checks passed: ${String(WIDTHS.length)} viewports against the composed site, for the two things jsdom cannot see`,
+    `browser checks passed: ${String(WIDTHS.length)} viewports against the composed site, for the layout, gesture and cascade facts jsdom cannot represent`,
   )
 }
 

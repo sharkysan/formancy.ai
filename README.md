@@ -169,6 +169,9 @@ submitted. Switch language or theme without reloading.
   shared conformance suite.
 - **Form versions and submission history.** Each submission keeps the form
   version used to collect it. Review changes before publishing an update.
+- **A visual theme editor.** Every design token the applied theme declares, read
+  from its stylesheet rather than from a list — so it works on a theme you wrote,
+  and what it hands back is a CSS patch that keeps inheriting rather than a fork.
 - **AI-assisted authoring.** Describe a form in the builder, or give your coding
   agent the MCP tools to author and validate a form definition.
 - **No third party in the loop.** Spam protection is proof of work computed in
