@@ -140,12 +140,20 @@ validator turned out not to be a property at all. `kind: "check"` is a rule kind
 be an expression with a flag on it
 ([0086](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0086-a-check-is-named-and-answered-elsewhere.md)).
 
-## Field types that are not here yet
+## Field type names that were reserved, and what became of them
 
 Named because a type name is a promise: reserving one costs nothing and renaming
 it later costs everybody. Note what reserving does **not** buy — adding any of
 these to the spec is a version bump, for the reason under *What does not exist
 yet* above, so they are worth grouping into one.
+
+**Every row below has shipped**, which is why this heading no longer says they are
+missing. It said so for one row longer than it was true: `toggle` sat here
+unstruck while the widget had been in the spec since version 2, and a reader
+comparing this repository against a competitor's feature list found it.
+`apps/docs/src/claims.test.ts` now fails when a row here names something the
+document schema defines and is not struck through — derived from the schema, so
+the next reserved name to ship cannot sit here quietly either.
 
 | Type | What it is | Why it is not trivial |
 |---|---|---|
@@ -154,7 +162,7 @@ yet* above, so they are worth grouping into one.
 | ~~`qrcode`~~ | **Split, as this row said, and both halves are shipped.** Showing is a `qrcode` layout node that collects nothing ([0070](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0070-a-code-is-an-arrangement-not-a-field.md)); scanning is `widget: "scanner"` on a text field ([0071](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0071-a-scanner-is-supplied-not-built.md)) | Neither half ships a codec. The display half shows the value as text and no picture; the scanning half renders a button and awaits a string from a scanner **the host supplies**, because no renderer may own camera permission policy, a decoder in every consumer's dependency closure, or a viewfinder in a design system it knows nothing about. With no scanner supplied there is no button and the field is the ordinary text input — typing is the primary route, the fallback and the accessibility floor at once |
 | ~~`autocomplete`~~ / ~~`tagpicker`~~ | **Both shipped, and neither as a type.** One answer from a list the document already carries is `widget: "typeahead"` on a select, built in both renderers ([0072](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0072-a-typeahead-is-a-combobox-over-the-same-answer.md)); the name `autocomplete` is still spent on the HTML autofill token and not on this. `optionsSource` — a list the deployment resolves rather than the document carrying it — is built too, in both renderers and on the server, which checks membership because the frozen document cannot ([0077](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0077-options-may-come-from-a-named-source.md)). The many-answer tag picker is built too, as `widget: "tagpicker"` on a `selectboxes` and for the same reason: the answer is an array of offered option values in the options' own order, which is what that type stores without it ([0085](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0085-a-tag-picker-is-a-widget-and-a-widget-has-a-version.md)) | This row said the combobox pattern gets built once rather than per renderer. Half of that held: the filter is one function in `@formancy/spec`, so it cannot fold one way in React and another in Angular. The markup was written twice on purpose, because a shared control would be a third renderer and the agreement it reported would be agreement with itself |
 | ~~`time`, `datetime`~~ | **Shipped.** One canonical fixed-width string each, with `earliest`/`latest` bounds ([0067](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0067-a-temporal-answer-is-one-fixed-width-string.md)) | This row said time zones are where form platforms lose data, and the semantics are written down now: a `datetime` is an instant in UTC, a `time` is a wall clock with no zone, and there is deliberately no per-field `timezone` — a zone *name* would put the host's IANA data into the replay contract |
-| `toggle` | A switch | A checkbox with different paint, *unless* it commits immediately — and in a form it must not, so it is a checkbox with different paint |
+| ~~`toggle`~~ | **Shipped, and not as a type.** `widget: "toggle"` on a checkbox, in spec 2 — drawn as a switch by both renderers, each with its own test file | This row was in a table of things that are not here, unstruck, while the widget had been in the spec since version 2. Its reasoning still holds and is why it is a widget rather than a type: a switch is a checkbox with different paint *unless* it commits immediately, and in a form it must not. What was wrong was the heading above it, not the argument in it — found by somebody reading the repository against a competitor's feature list, which is one of the two stale claims a reader found that nineteen guards had not |
 
 `signature`, `datagrid` and `qrcode` are the three
 [FormEngine](https://formengine.io) groups as "special components", and they are

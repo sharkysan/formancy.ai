@@ -894,3 +894,154 @@ describe('a question an accepted decision record has settled', () => {
     }
   })
 })
+
+describe('what a reader found that nineteen guards had not', () => {
+  /*
+   * Two stale claims, both found by somebody reading this repository against a
+   * competitor's feature list rather than by anything here.
+   *
+   * 1. The README said "The visual editor is built in React" — true until the
+   *    Angular builder shipped, and then false in the one sentence a visitor
+   *    reads before the paragraph that contradicts it. It gave away the single
+   *    thing this project has that the obvious commercial comparison does not.
+   * 2. The roadmap listed `toggle` in a table of things that are not here,
+   *    unstruck, while the widget had been in the spec since version 2.
+   *
+   * Both are the shape this file exists for: a sentence that was true when
+   * written, is false now, and changed nothing in any diff. What the existing
+   * cases guarded was the roadmap's *what comes next* list and the playground's
+   * mounts — neither of which covers a table of names or a one-line summary.
+   */
+  /** Every field type, widget and layout kind the document schema defines. */
+  const vocabulary = (): Set<string> => {
+    const schema = JSON.parse(
+      readFileSync(join(repo, 'packages', 'spec', 'formancy.schema.json'), 'utf8'),
+    ) as Record<string, unknown>
+
+    const found = new Set<string>()
+    const VOCABULARY_KEYS = ['fieldType', 'widget', 'kind']
+
+    /*
+     * The context is carried down, which is the whole trick. These three are
+     * each spelled differently in the schema: a `widget` is an `enum`, a layout
+     * `kind` is a `const` on the key itself, and a **field type is eighteen
+     * `oneOf` branches each with its own `const`** — so a walk that only looked
+     * at the keyed node found ten names and missed every type. The guard on the
+     * guard caught that, which is the one job it has.
+     */
+    const walk = (node: unknown, key: string, within: string | undefined): void => {
+      if (node === null || typeof node !== 'object') return
+      const record = node as Record<string, unknown>
+      const context = VOCABULARY_KEYS.includes(key) ? key : within
+
+      if (context !== undefined) {
+        if (typeof record['const'] === 'string') found.add(record['const'])
+        if (Array.isArray(record['enum'])) {
+          for (const value of record['enum']) if (typeof value === 'string') found.add(value)
+        }
+      }
+      for (const [childKey, child] of Object.entries(record)) walk(child, childKey, context)
+    }
+    walk(schema, '', undefined)
+    return found
+  }
+
+  /** The first cell of each row in the reserved-names table. */
+  const reservedNames = (): Array<{ cell: string; names: string[] }> => {
+    const roadmap = readFileSync(
+      join(repo, 'apps', 'docs', 'src', 'content', 'docs', 'project', 'roadmap.md'),
+      'utf8',
+    )
+    const from = roadmap.indexOf('## Field type names that were reserved')
+    expect(from, 'the roadmap has no reserved-names section').toBeGreaterThan(-1)
+    const after = roadmap.indexOf('\n## ', from + 1)
+    const section = roadmap.slice(from, after === -1 ? roadmap.length : after)
+
+    return section
+      .split('\n')
+      .filter((line) => line.startsWith('| '))
+      .map((line) => line.split('|')[1] ?? '')
+      .map((cell) => ({ cell, names: [...cell.matchAll(/`([^`]+)`/g)].map((match) => match[1]!) }))
+      .filter(({ names }) => names.length > 0)
+  }
+
+  test('is read correctly, which is what lets the two cases below fail', () => {
+    // A guard on the guard, and it earns it twice over: these read a table out of
+    // prose and an enum out of a generated schema, and either returning nothing
+    // would make both cases pass while asserting that nothing is wrong.
+    /*
+     * **One name per spelling, not a count.** A count was the first version and
+     * it let a real mutation through: dropping the context from the walker loses
+     * all eighteen field types and still leaves twelve widgets and layout kinds,
+     * which cleared a `> 10` threshold. A number nobody chose for a reason is a
+     * number that passes for the wrong one.
+     *
+     * So each of the three spellings the walker has to handle is pinned by a name
+     * that cannot go away: a field type is a `oneOf` branch with a `const`, a
+     * widget is an `enum`, a layout kind is a `const` on the key. All four names
+     * belong to frozen spec versions, which is what makes them safe to write by
+     * hand — version 1, 2 and 3 remove nothing, ever
+     * ([0051](../../../docs/decisions/0051-spec-2-adds-types.md)).
+     */
+    const defined = vocabulary()
+    expect(defined.has('text'), 'no spec 1 field type: the oneOf branches were missed').toBe(true)
+    expect(defined.has('signature'), 'no spec 3 field type').toBe(true)
+    expect(defined.has('toggle'), 'no widget: the enums were missed').toBe(true)
+    expect(defined.has('section'), 'no layout kind: the kind consts were missed').toBe(true)
+
+    expect(reservedNames().length, 'no rows were read out of the reserved-names table').toBeGreaterThan(3)
+  })
+
+  test('the roadmap does not list, as missing, a name the schema already defines', () => {
+    /*
+     * Derived from the schema rather than from a list kept beside it, so the next
+     * reserved name to ship cannot sit here quietly either. A row that has shipped
+     * is struck through and says what it became — the table's own convention, and
+     * the reason it reads as a record rather than a backlog.
+     */
+    const defined = vocabulary()
+
+    for (const { cell, names } of reservedNames()) {
+      if (cell.includes('~~')) continue
+      for (const name of names) {
+        expect(defined.has(name), `the roadmap lists \`${name}\` as not here yet, and the schema defines it`).toBe(
+          false,
+        )
+      }
+    }
+  })
+
+  test('and no document says the editor is built in one framework when two build it', () => {
+    /*
+     * Derived from the packages. A builder package per framework is the fact; a
+     * sentence naming fewer of them is the claim that went wrong, and it went
+     * wrong in the summary paragraph rather than in the section about builders —
+     * which is why a reader hit it and the guards did not.
+     */
+    const frameworks = readdirSync(join(repo, 'packages'))
+      .filter((name) => name.startsWith('builder-') && name !== 'builder-core')
+      .map((name) => name.slice('builder-'.length))
+
+    expect(frameworks.length, 'no builder packages were found to compare against').toBeGreaterThan(1)
+
+    for (const { name, text } of liveDocuments()) {
+      for (const [sentence, named] of text.matchAll(/(?:visual editor|builder) is built in ([^.;\n]*)/gi)) {
+        for (const framework of frameworks) {
+          expect(
+            named!.toLowerCase().includes(framework),
+            `${name} says the editor ${sentence.trim()} — there is a ${framework} builder too`,
+          ).toBe(true)
+        }
+      }
+    }
+  })
+
+  test('and the README names both builder packages, so deleting the sentence is not the fix', () => {
+    // The case above is satisfied by a document that says nothing at all. This is
+    // the positive half: the thing the project is unusual for has to be findable.
+    const readme = readFileSync(join(repo, 'README.md'), 'utf8')
+
+    expect(readme).toContain('@formancy/builder-react')
+    expect(readme).toContain('@formancy/builder-angular')
+  })
+})
