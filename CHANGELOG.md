@@ -10,6 +10,36 @@ later.
 
 ## Unreleased
 
+**Two stale claims, found by a reader rather than by nineteen guards.** Somebody compared
+this repository against a competitor's feature list and hit both in the places a visitor
+actually reads.
+
+The README said *"The visual editor is built in React"* — true until the Angular builder
+shipped, and then false in the one-line summary near the top, three paragraphs above the
+section that says both builders exist and share a core. It gave away the single thing this
+project has that the obvious commercial comparison does not: an Apache-2.0 **Angular**
+builder. And the roadmap listed `toggle` in a table headed *Field types that are not here
+yet*, unstruck, while the widget had been in the spec since version 2 with a control and a
+test file in both renderers.
+
+Both are the shape `claims.test.ts` exists for — a sentence that was true when written, is
+false now, and changed nothing in any diff — and neither was covered: the existing cases
+guard the roadmap's *what comes next* list and the playground's mounts, not a table of
+names or a summary paragraph. Two new guards, both derived rather than matched:
+
+- **No document says the editor is built in one framework while two packages build it.**
+  The framework list comes from `packages/builder-*`, so a Vue builder would fail the
+  sentence until it was updated. With a positive half beside it — the README must name both
+  builder packages — because the first case is satisfied by a document that says nothing.
+- **The roadmap lists nothing as missing that the document schema defines.** The vocabulary
+  is walked out of the schema, so the next reserved name to ship cannot sit there quietly.
+
+That table's every row is now struck through, so the heading no longer claims they are
+missing. The guard on the guard pins one name per spelling the walker has to handle rather
+than a count — a count was the first version and let a real mutation through, because
+dropping the field types still left twelve widgets and layout kinds above a `> 10`
+threshold.
+
 **The signature control could not be signed with a finger.** Reported from an iPad: the
 page scrolls while you sign. A touch drag on a drawing surface is ambiguous — signature
 or pan — and `touch-action` is how an element says which; the browser resolves it in the

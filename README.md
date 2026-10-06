@@ -48,11 +48,12 @@ Apache-2.0 throughout.
    submissions with the same rules, stores them in PostgreSQL, and provides
    drafts, file attachments, CSV export, webhooks and an audit log.
 
-The visual editor is built in React; the forms it creates work in **both
-Angular and React**. You can also author the JSON directly or use a coding
-agent through MCP. The shared engine handles validation and calculations, so
-you do not need to implement each rule separately in your UI and the formancy
-backend.
+The visual editor is built in **both Angular and React**, over one shared core
+that decides what any edit may do — so the two cannot offer different answers
+for the same document — and the forms it creates render in either. You can also
+author the JSON directly or use a coding agent through MCP. The shared engine
+handles validation and calculations, so you do not need to implement each rule
+separately in your UI and the formancy backend.
 
 > **Status: beta, version 0.3.0.**
 >
