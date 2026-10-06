@@ -42,6 +42,8 @@ import { WIZARD_SCHEMA } from './wizard.js'
 import { AngularPane } from './angular-pane.js'
 import { EngineInspector } from './engine-inspector.js'
 import { FoldPane, PANES, PaneBoundary, usePaneLayout } from './panes.js'
+import { EditorPane } from './editor-pane.js'
+import type { EditorMode } from './editor-pane.js'
 import type { PaneId } from './panes.js'
 import { BuilderBody, PLACEHOLDER_SESSION } from './builder-pane.js'
 import { PLAYGROUND_CHECKS } from './demo-checks.js'
@@ -134,8 +136,23 @@ export function App() {
   const [demo, setDemo] = useState<DemoId>('starter')
   const [source, setSource] = useState(() => JSON.stringify(STARTER_SCHEMA, null, 2))
   const [theme, setTheme] = useState<ThemeId>('blueprint')
+
+  /**
+   * Theme tokens the visitor has changed, per theme.
+   *
+   * Kept per theme because the four declare different vocabularies: carrying one
+   * map across a switch would apply `--fm-hair` to a theme that has never heard
+   * of it, and silently drop the edits on the way back.
+   *
+   * Applied as custom properties on the themed host rather than as resolved
+   * declarations -- the lesson from the pane template (0100): set the variable
+   * and leave the declarations to the cascade.
+   */
+  const [themeEdits, setThemeEdits] = useState<Readonly<Record<string, Record<string, string>>>>({})
+  const overrides = themeEdits[theme] ?? {}
+  const [themeHost, setThemeHost] = useState<HTMLElement | null>(null)
   const [locale, setLocale] = useState<LocaleId>('en')
-  const [pane, setPane] = useState<'build' | 'schema'>('build')
+  const [pane, setPane] = useState<EditorMode>('build')
   /**
    * The builder session lives up here, not inside the Build pane, because the
    * PREVIEW is a drop target too and a drop has to reach the same session the
@@ -356,56 +373,21 @@ export function App() {
         {/* A named region per pane, so the heading names it for a screen reader
             moving by landmark and for a test asking by role — the same reason
             the two renderers inside the form pane are named regions. */}
-        <section
-          className="pane editor"
-          id="pane-editor"
-          aria-label="Editor"
-          data-folded={panes.folded.has('editor') ? 'true' : undefined}
-        >
-          <h2>
-            <FoldPane pane="Editor" folded={panes.folded.has('editor')} onToggle={() => panes.foldPane('editor')} />
-            {(['build', 'schema'] as const).map((candidate) => (
-              <button
-                key={candidate}
-                className="mode"
-                aria-pressed={pane === candidate}
-                onClick={() => setPane(candidate)}
-              >
-                {candidate === 'build' ? 'Build' : 'Schema'}
-              </button>
-            ))}
-          </h2>
-          <div className="body" hidden={pane !== 'build'}>
-            {pane !== 'build' ? null : session === null ? (
-              <p className="empty" style={{ padding: '1rem' }}>
-                This schema cannot be opened in the builder yet. Fix it under Schema and come back.
-              </p>
-            ) : (
-              <BuilderBody
-                session={session}
-                onChange={setSource}
-                tab={builderTab}
-                onTab={setBuilderTab}
-              />
-            )}
-          </div>
-          <div className="body schema" hidden={pane !== 'schema'}>
-            <Editor
-              language="json"
-              value={source}
-              onChange={(next) => setSource(next ?? '')}
-              beforeMount={defineNightTheme}
-              theme="formancy-night"
-              options={{
-                minimap: { enabled: false },
-                scrollBeyondLastLine: false,
-                fontSize: 13,
-                fontFamily: "'IBM Plex Mono', ui-monospace, Consolas, monospace",
-                tabSize: 2,
-              }}
-            />
-          </div>
-        </section>
+        <EditorPane
+          mode={pane}
+          onMode={setPane}
+          folded={panes.folded.has('editor')}
+          onFold={() => panes.foldPane('editor')}
+          source={source}
+          onSource={setSource}
+          session={session}
+          tab={builderTab}
+          onTab={setBuilderTab}
+          theme={theme}
+          themeHost={themeHost}
+          overrides={overrides}
+          onThemeChange={(next) => setThemeEdits((current) => ({ ...current, [theme]: next }))}
+        />
 
         <PaneBoundary layout={panes} left="editor" right="form" />
 
@@ -463,7 +445,12 @@ export function App() {
                           the width written for one. */}
                       <section className="react-pane" aria-labelledby="renderer-react">
                         <h3 id="renderer-react">React</h3>
-                        <div className="sheet" data-formancy-theme={theme}>
+                        <div
+                          className="sheet"
+                          data-formancy-theme={theme}
+                          ref={setThemeHost}
+                          style={overrides as CSSProperties}
+                        >
                           <FormancyProvider engine={built.engine} key={source}>
                             <ErrorSummary />
                             <FormancyForm layout="web" />
@@ -517,28 +504,6 @@ export function App() {
  * editor reads as two products glued together. Keys, strings and literals
  * take the same three colours the landing page gives them.
  */
-function defineNightTheme(monaco: Monaco): void {
-  monaco.editor.defineTheme('formancy-night', {
-    base: 'vs-dark',
-    inherit: true,
-    rules: [
-      { token: 'string.key.json', foreground: 'c3b9ff' },
-      { token: 'string.value.json', foreground: '9ee8c9' },
-      { token: 'number', foreground: 'ff9ecf' },
-      { token: 'keyword.json', foreground: 'ff9ecf' },
-    ],
-    colors: {
-      'editor.background': '#0b0f18',
-      'editor.lineHighlightBackground': '#141a29',
-      'editorLineNumber.foreground': '#3a445a',
-      'editorLineNumber.activeForeground': '#95a0b4',
-      'editorIndentGuide.background1': '#1b2233',
-      'editor.selectionBackground': '#3b3470',
-      'editorCursor.foreground': '#3fe0d5',
-    },
-  })
-}
-
 /**
  * The mark — the same one as the favicon and the landing page's bar. Hidden
  * from assistive technology: the link text beside it already says the name.

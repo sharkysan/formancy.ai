@@ -10,6 +10,58 @@ later.
 
 ## Unreleased
 
+**A visual theme editor, and it reads the theme rather than the other way round.** The
+playground's editor pane has a third mode beside Build and Schema: every design token the
+applied theme declares, with a control each, a live form beside it, and a CSS patch to take
+away.
+
+**The controls are discovered, not written down**, and finding out why took one
+measurement. The four shipped themes **do not share a token vocabulary** — `blueprint` has
+`--fm-ink`, `--fm-paper`, `--fm-chrome`, `--fm-rule`; `dusk` has `--fm-ground`,
+`--fm-raised`, `--fm-inset`, `--fm-edge`; `pop` has `--fm-yellow`, `--fm-pink`,
+`--fm-lift`. Five names are common to all four. That is deliberate: they are different
+design languages rather than palette swaps, because that is what falsifies the headless
+claim. So a fixed set of controls would have been wrong for three of the four, and making
+them fit would have meant flattening the property that makes them worth shipping. Reading
+each theme's own declarations has a better side effect: **it works on a theme you wrote**,
+with no registration step ([0103](./docs/decisions/0103-a-theme-editor-edits-what-a-theme-declares.md)).
+
+A theme-level token is one declared on the theme's own selector and nothing narrower —
+the shape of the selector, not a list of names to exclude. Measured: `blueprint` declares
+fourteen `--fm-*` properties and two of them are `--fm-columns` and `--fm-datagrid-count`,
+set on `[data-columns='3']` so a layout can read its own column count. A control for those
+would be a control that breaks the grid. Fifty-eight such declarations are rejected across
+the shipped themes.
+
+An override is a **custom property set inline on the host**, never a resolved
+declaration — the lesson from the pane template. The value a control opens at comes from
+`getComputedStyle` rather than from the rule, because what a rule declares and what the
+browser resolved are different questions and `dusk` declares one token twice. What comes
+out is only what you changed: a patch that keeps inheriting, not a fork that pins every
+value.
+
+**Three mutations survived the first run, and each produced a change rather than an
+assertion.** Clearing a field snapped it back to the theme's value, so clearing and
+retyping appended — `#17222e` became `#17222e#ff0000`. The baseline was readable through
+an override, so resetting after a theme switch would have returned to the edited value
+rather than the theme's. And a filter before setting the style was **inert**: CSSOM
+discards a whitespace-only custom property and trims a padded one by itself, measured in
+jsdom and in Chromium, so that call is gone rather than left looking load-bearing.
+
+**And CI now limits its token to reading, which the new job is how we found out.**
+`ci.yml` had no `permissions` block at all, so every job took the repository's default —
+and CodeQL had been reporting one `actions/missing-workflow-permissions` alert per job for
+three jobs. Adding a fourth turned those into a *failing* check on the pull request that
+added it, which is the gate doing its job rather than a nuisance. One `contents: read` at
+the top fixes all four: nothing in this workflow writes to the repository, since the
+coverage upload authenticates with its own token and the caches are the runner's.
+
+`pnpm test:browser` carries the half jsdom cannot judge — that an override reaches a
+rendered control's computed colour, and that resetting gives the theme back. `app.tsx`
+went over its ceiling again and the editor pane left with its Monaco palette; the budget
+was pointing at something real both times, and that file's ceiling is down from 582 to
+547.
+
 **A gate that can see CSS.** Two defects shipped in one week through every gate this
 repository has — an inline style that outranked a media query, costing 187px of sideways
 scroll at an 820px viewport, and a `touch-action` that lived only in the shipped themes,

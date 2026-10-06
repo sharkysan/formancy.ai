@@ -56,6 +56,15 @@ by side, with theme and language switchers) and the self-hosted admin (the
 builder in a three-pane inspector, a raw schema editor, publish, version
 history, submissions and export).
 
+**A visual theme editor**, in the playground's third editor mode. Every token the
+applied theme declares, discovered from its stylesheet — which is what lets it work on a
+theme nobody here wrote, and what a fixed set of controls could not do: the four shipped
+themes declare different vocabularies on purpose
+([0103](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0103-a-theme-editor-edits-what-a-theme-declares.md)).
+It emits a patch rather than a fork, and it does not persist: what you leave with is a
+CSS file. A stored theme needs somewhere to put it, which is a backend decision nobody
+has taken.
+
 ## What does not exist yet
 
 - **Dropping *between* two elements** rather than onto one, which would need gap
