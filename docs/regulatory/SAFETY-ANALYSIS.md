@@ -878,3 +878,18 @@ concurrently *before* one of them publishes.
    the device's intended users, and plan a manual audit if it is not.
 4. Treat the 118 known CEL corpus failures as a functional limitation to be
    assessed against the expressions the device's forms actually use.
+
+## Starter-template suitability
+
+*How it arises:* a general-purpose template is treated as an approved clinical,
+legal or organisation-specific form because it can be imported and passes validation.
+
+*Constraint:* catalogue adaptation notes identify decisions the host must make;
+healthcare entries are administrative and include no clinical scores or triage rules.
+Samples remain separate from form documents and the gallery and playground start
+blank. `apps/docs/src/templates.test.ts` checks samples and scenarios against the
+engine; the UI tests check that fictional sample names do not appear as defaults.
+
+*Residual:* those tests establish the specified software behaviour, not the
+appropriateness, completeness or translation accuracy of a real deployment's
+questions. The adopting organisation must review the chosen content and workflow.

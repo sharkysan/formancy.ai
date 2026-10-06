@@ -1,0 +1,209 @@
+{
+  "specVersion": "2",
+  "id": "hr-leave-request",
+  "title": "Leave request",
+  "model": {
+    "fields": [
+      {
+        "key": "intro",
+        "type": "static",
+        "label": {
+          "$t": "intro"
+        }
+      },
+      {
+        "key": "fullName",
+        "type": "text",
+        "label": {
+          "$t": "fullName"
+        },
+        "required": true,
+        "maxLength": 160
+      },
+      {
+        "key": "email",
+        "type": "text",
+        "label": {
+          "$t": "email"
+        },
+        "required": true,
+        "format": "email",
+        "maxLength": 254
+      },
+      {
+        "key": "leaveType",
+        "type": "select",
+        "label": {
+          "$t": "leaveType"
+        },
+        "required": true,
+        "options": [
+          {
+            "value": "holiday",
+            "label": {
+              "$t": "leaveType.holiday"
+            }
+          },
+          {
+            "value": "unpaid",
+            "label": {
+              "$t": "leaveType.unpaid"
+            }
+          },
+          {
+            "value": "other",
+            "label": {
+              "$t": "leaveType.other"
+            }
+          }
+        ]
+      },
+      {
+        "key": "startDate",
+        "type": "date",
+        "label": {
+          "$t": "startDate"
+        },
+        "required": true
+      },
+      {
+        "key": "endDate",
+        "type": "date",
+        "label": {
+          "$t": "endDate"
+        },
+        "required": true
+      },
+      {
+        "key": "otherReason",
+        "type": "textarea",
+        "label": {
+          "$t": "otherReason"
+        },
+        "maxLength": 500
+      },
+      {
+        "key": "handover",
+        "type": "textarea",
+        "label": {
+          "$t": "handover"
+        },
+        "maxLength": 1500
+      }
+    ]
+  },
+  "logic": {
+    "rules": [
+      {
+        "target": "endDate",
+        "kind": "validate",
+        "cel": "startDate == null || endDate == null || endDate >= startDate",
+        "code": "date_order"
+      },
+      {
+        "target": "otherReason",
+        "kind": "visible",
+        "cel": "leaveType == \"other\""
+      },
+      {
+        "target": "otherReason",
+        "kind": "required",
+        "cel": "leaveType == \"other\""
+      }
+    ]
+  },
+  "layouts": [
+    {
+      "name": "web",
+      "nodes": [
+        {
+          "kind": "field",
+          "path": "intro"
+        },
+        {
+          "kind": "section",
+          "label": {
+            "$t": "section.1"
+          },
+          "children": [
+            {
+              "kind": "field",
+              "path": "fullName"
+            },
+            {
+              "kind": "field",
+              "path": "email"
+            },
+            {
+              "kind": "field",
+              "path": "leaveType"
+            },
+            {
+              "kind": "field",
+              "path": "startDate"
+            },
+            {
+              "kind": "field",
+              "path": "endDate"
+            },
+            {
+              "kind": "field",
+              "path": "otherReason"
+            },
+            {
+              "kind": "field",
+              "path": "handover"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "i18n": {
+    "defaultLocale": "en",
+    "messages": {
+      "en": {
+        "intro": "Request leave for a date range; approval is handled separately.",
+        "section.1": "Request",
+        "fullName": "Full name",
+        "email": "Email address",
+        "leaveType": "Type of leave",
+        "leaveType.holiday": "Annual leave",
+        "leaveType.unpaid": "Unpaid leave",
+        "leaveType.other": "Other",
+        "startDate": "First day",
+        "endDate": "Last day",
+        "otherReason": "Brief reason; no medical details",
+        "handover": "Handover arrangements (optional)"
+      },
+      "de": {
+        "intro": "Beantragen Sie eine Abwesenheit; die Genehmigung erfolgt separat.",
+        "section.1": "Antrag",
+        "fullName": "Vor- und Nachname",
+        "email": "E-Mail-Adresse",
+        "leaveType": "Abwesenheitsart",
+        "leaveType.holiday": "Ferien",
+        "leaveType.unpaid": "Unbezahlter Urlaub",
+        "leaveType.other": "Andere",
+        "startDate": "Erster Tag",
+        "endDate": "Letzter Tag",
+        "otherReason": "Kurze Begründung; keine medizinischen Angaben",
+        "handover": "Übergabe (optional)"
+      },
+      "fr": {
+        "intro": "Demandez une absence sur une période ; l’approbation est traitée séparément.",
+        "section.1": "Demande",
+        "fullName": "Prénom et nom",
+        "email": "Adresse e-mail",
+        "leaveType": "Type d’absence",
+        "leaveType.holiday": "Vacances",
+        "leaveType.unpaid": "Congé sans solde",
+        "leaveType.other": "Autre",
+        "startDate": "Premier jour",
+        "endDate": "Dernier jour",
+        "otherReason": "Motif bref ; aucune information médicale",
+        "handover": "Organisation du relais (facultatif)"
+      }
+    }
+  }
+}

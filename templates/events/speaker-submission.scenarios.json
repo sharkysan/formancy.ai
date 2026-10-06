@@ -1,0 +1,51 @@
+[
+  {
+    "name": "prerequisites is required when the branch applies",
+    "changes": {
+      "prerequisites": ""
+    },
+    "valid": false,
+    "errors": {
+      "prerequisites": [
+        "required"
+      ]
+    }
+  },
+  {
+    "name": "switching off prerequisites clears its branch",
+    "changes": {
+      "format": "talk"
+    },
+    "valid": true,
+    "visible": {
+      "prerequisites": false
+    },
+    "absent": [
+      "prerequisites"
+    ]
+  },
+  {
+    "name": "the required fullName cannot be omitted",
+    "changes": {
+      "fullName": null
+    },
+    "valid": false,
+    "errors": {
+      "fullName": [
+        "required"
+      ]
+    }
+  },
+  {
+    "name": "an invalid email is rejected",
+    "changes": {
+      "email": "invalid-address"
+    },
+    "valid": false,
+    "errors": {
+      "email": [
+        "email"
+      ]
+    }
+  }
+]

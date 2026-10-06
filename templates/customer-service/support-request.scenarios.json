@@ -1,0 +1,51 @@
+[
+  {
+    "name": "invoiceReference is required when the branch applies",
+    "changes": {
+      "invoiceReference": ""
+    },
+    "valid": false,
+    "errors": {
+      "invoiceReference": [
+        "required"
+      ]
+    }
+  },
+  {
+    "name": "switching off invoiceReference clears its branch",
+    "changes": {
+      "category": "technical"
+    },
+    "valid": true,
+    "visible": {
+      "invoiceReference": false
+    },
+    "absent": [
+      "invoiceReference"
+    ]
+  },
+  {
+    "name": "the required fullName cannot be omitted",
+    "changes": {
+      "fullName": null
+    },
+    "valid": false,
+    "errors": {
+      "fullName": [
+        "required"
+      ]
+    }
+  },
+  {
+    "name": "an invalid email is rejected",
+    "changes": {
+      "email": "invalid-address"
+    },
+    "valid": false,
+    "errors": {
+      "email": [
+        "email"
+      ]
+    }
+  }
+]

@@ -1,0 +1,203 @@
+{
+  "specVersion": "2",
+  "id": "operations-equipment-inspection",
+  "title": "Equipment inspection",
+  "model": {
+    "fields": [
+      {
+        "key": "intro",
+        "type": "static",
+        "label": {
+          "$t": "intro"
+        }
+      },
+      {
+        "key": "inspector",
+        "type": "text",
+        "label": {
+          "$t": "inspector"
+        },
+        "required": true,
+        "maxLength": 160
+      },
+      {
+        "key": "assetId",
+        "type": "text",
+        "label": {
+          "$t": "assetId"
+        },
+        "required": true,
+        "maxLength": 100
+      },
+      {
+        "key": "location",
+        "type": "text",
+        "label": {
+          "$t": "location"
+        },
+        "required": true,
+        "maxLength": 200
+      },
+      {
+        "key": "inspectionDate",
+        "type": "date",
+        "label": {
+          "$t": "inspectionDate"
+        },
+        "required": true
+      },
+      {
+        "key": "condition",
+        "type": "radio",
+        "label": {
+          "$t": "condition"
+        },
+        "required": true,
+        "options": [
+          {
+            "value": "noissue",
+            "label": {
+              "$t": "condition.noissue"
+            }
+          },
+          {
+            "value": "followup",
+            "label": {
+              "$t": "condition.followup"
+            }
+          },
+          {
+            "value": "notinspected",
+            "label": {
+              "$t": "condition.notinspected"
+            }
+          }
+        ]
+      },
+      {
+        "key": "findings",
+        "type": "textarea",
+        "label": {
+          "$t": "findings"
+        },
+        "maxLength": 2500
+      },
+      {
+        "key": "followUpOwner",
+        "type": "text",
+        "label": {
+          "$t": "followUpOwner"
+        },
+        "maxLength": 160
+      }
+    ]
+  },
+  "logic": {
+    "rules": [
+      {
+        "target": "findings",
+        "kind": "visible",
+        "cel": "condition == \"followup\" || condition == \"notinspected\""
+      },
+      {
+        "target": "findings",
+        "kind": "required",
+        "cel": "condition == \"followup\" || condition == \"notinspected\""
+      }
+    ]
+  },
+  "layouts": [
+    {
+      "name": "web",
+      "nodes": [
+        {
+          "kind": "field",
+          "path": "intro"
+        },
+        {
+          "kind": "section",
+          "label": {
+            "$t": "section.1"
+          },
+          "children": [
+            {
+              "kind": "field",
+              "path": "inspector"
+            },
+            {
+              "kind": "field",
+              "path": "assetId"
+            },
+            {
+              "kind": "field",
+              "path": "location"
+            },
+            {
+              "kind": "field",
+              "path": "inspectionDate"
+            },
+            {
+              "kind": "field",
+              "path": "condition"
+            },
+            {
+              "kind": "field",
+              "path": "findings"
+            },
+            {
+              "kind": "field",
+              "path": "followUpOwner"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "i18n": {
+    "defaultLocale": "en",
+    "messages": {
+      "en": {
+        "intro": "Record a visual inspection and any follow-up findings.",
+        "section.1": "Inspection record",
+        "inspector": "Inspector name",
+        "assetId": "Asset identifier",
+        "location": "Location",
+        "inspectionDate": "Inspection date",
+        "condition": "Observed condition",
+        "condition.noissue": "No visible issue",
+        "condition.followup": "Follow-up needed",
+        "condition.notinspected": "Could not inspect",
+        "findings": "Findings or reason inspection was not possible",
+        "followUpOwner": "Person responsible for follow-up (optional)"
+      },
+      "de": {
+        "intro": "Dokumentieren Sie eine Sichtprüfung und allfällige Folgeaufgaben.",
+        "section.1": "Prüfprotokoll",
+        "inspector": "Name der prüfenden Person",
+        "assetId": "Inventarnummer",
+        "location": "Standort",
+        "inspectionDate": "Prüfdatum",
+        "condition": "Festgestellter Zustand",
+        "condition.noissue": "Kein sichtbarer Mangel",
+        "condition.followup": "Nachkontrolle nötig",
+        "condition.notinspected": "Prüfung nicht möglich",
+        "findings": "Feststellungen oder Grund der nicht möglichen Prüfung",
+        "followUpOwner": "Verantwortliche Person für Folgeaufgaben (optional)"
+      },
+      "fr": {
+        "intro": "Consignez une inspection visuelle et les éventuelles actions de suivi.",
+        "section.1": "Fiche d’inspection",
+        "inspector": "Nom de la personne chargée de l’inspection",
+        "assetId": "Identifiant de l’équipement",
+        "location": "Emplacement",
+        "inspectionDate": "Date d’inspection",
+        "condition": "État constaté",
+        "condition.noissue": "Aucun défaut visible",
+        "condition.followup": "Suivi nécessaire",
+        "condition.notinspected": "Inspection impossible",
+        "findings": "Constatations ou motif de l’impossibilité d’inspection",
+        "followUpOwner": "Responsable du suivi (facultatif)"
+      }
+    }
+  }
+}

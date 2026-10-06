@@ -1,0 +1,51 @@
+[
+  {
+    "name": "contactEmail is required when the branch applies",
+    "changes": {
+      "contactEmail": ""
+    },
+    "valid": false,
+    "errors": {
+      "contactEmail": [
+        "required"
+      ]
+    }
+  },
+  {
+    "name": "switching off contactEmail clears its branch",
+    "changes": {
+      "followUp": false
+    },
+    "valid": true,
+    "visible": {
+      "contactEmail": false
+    },
+    "absent": [
+      "contactEmail"
+    ]
+  },
+  {
+    "name": "the required eventName cannot be omitted",
+    "changes": {
+      "eventName": null
+    },
+    "valid": false,
+    "errors": {
+      "eventName": [
+        "required"
+      ]
+    }
+  },
+  {
+    "name": "an invalid contactEmail is rejected",
+    "changes": {
+      "contactEmail": "invalid-address"
+    },
+    "valid": false,
+    "errors": {
+      "contactEmail": [
+        "email"
+      ]
+    }
+  }
+]

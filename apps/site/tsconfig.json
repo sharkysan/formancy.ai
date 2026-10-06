@@ -8,6 +8,7 @@
     ],
     "jsx": "react-jsx",
     "noEmit": true,
+    "resolveJsonModule": true,
     "module": "preserve",
     "moduleResolution": "bundler",
     "verbatimModuleSyntax": false

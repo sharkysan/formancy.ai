@@ -1,0 +1,236 @@
+{
+  "specVersion": "2",
+  "id": "sales-lead-enquiry",
+  "title": "Sales enquiry",
+  "model": {
+    "fields": [
+      {
+        "key": "intro",
+        "type": "static",
+        "label": {
+          "$t": "intro"
+        }
+      },
+      {
+        "key": "fullName",
+        "type": "text",
+        "label": {
+          "$t": "fullName"
+        },
+        "required": true,
+        "maxLength": 160
+      },
+      {
+        "key": "email",
+        "type": "text",
+        "label": {
+          "$t": "email"
+        },
+        "required": true,
+        "format": "email",
+        "maxLength": 254
+      },
+      {
+        "key": "company",
+        "type": "text",
+        "label": {
+          "$t": "company"
+        },
+        "maxLength": 160
+      },
+      {
+        "key": "contactMethod",
+        "type": "radio",
+        "label": {
+          "$t": "contactMethod"
+        },
+        "required": true,
+        "options": [
+          {
+            "value": "email",
+            "label": {
+              "$t": "contactMethod.email"
+            }
+          },
+          {
+            "value": "phone",
+            "label": {
+              "$t": "contactMethod.phone"
+            }
+          }
+        ]
+      },
+      {
+        "key": "phone",
+        "type": "text",
+        "label": {
+          "$t": "phone"
+        },
+        "maxLength": 40
+      },
+      {
+        "key": "interest",
+        "type": "select",
+        "label": {
+          "$t": "interest"
+        },
+        "required": true,
+        "options": [
+          {
+            "value": "product",
+            "label": {
+              "$t": "interest.product"
+            }
+          },
+          {
+            "value": "services",
+            "label": {
+              "$t": "interest.services"
+            }
+          },
+          {
+            "value": "partnership",
+            "label": {
+              "$t": "interest.partnership"
+            }
+          }
+        ]
+      },
+      {
+        "key": "message",
+        "type": "textarea",
+        "label": {
+          "$t": "message"
+        },
+        "required": true,
+        "minLength": 20,
+        "maxLength": 3000
+      }
+    ]
+  },
+  "logic": {
+    "rules": [
+      {
+        "target": "phone",
+        "kind": "visible",
+        "cel": "contactMethod == \"phone\""
+      },
+      {
+        "target": "phone",
+        "kind": "required",
+        "cel": "contactMethod == \"phone\""
+      }
+    ]
+  },
+  "layouts": [
+    {
+      "name": "web",
+      "nodes": [
+        {
+          "kind": "field",
+          "path": "intro"
+        },
+        {
+          "kind": "section",
+          "label": {
+            "$t": "section.1"
+          },
+          "children": [
+            {
+              "kind": "field",
+              "path": "fullName"
+            },
+            {
+              "kind": "field",
+              "path": "email"
+            },
+            {
+              "kind": "field",
+              "path": "company"
+            },
+            {
+              "kind": "field",
+              "path": "contactMethod"
+            },
+            {
+              "kind": "field",
+              "path": "phone"
+            }
+          ]
+        },
+        {
+          "kind": "section",
+          "label": {
+            "$t": "section.2"
+          },
+          "children": [
+            {
+              "kind": "field",
+              "path": "interest"
+            },
+            {
+              "kind": "field",
+              "path": "message"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "i18n": {
+    "defaultLocale": "en",
+    "messages": {
+      "en": {
+        "intro": "Tell us about your needs and how you would like to be contacted.",
+        "section.1": "Contact",
+        "fullName": "Full name",
+        "email": "Email address",
+        "company": "Company (optional)",
+        "contactMethod": "Preferred contact method",
+        "contactMethod.email": "Email",
+        "contactMethod.phone": "Phone",
+        "phone": "Phone number",
+        "section.2": "Your enquiry",
+        "interest": "Area of interest",
+        "interest.product": "Product",
+        "interest.services": "Services",
+        "interest.partnership": "Partnership",
+        "message": "What would you like to achieve?"
+      },
+      "de": {
+        "intro": "Beschreiben Sie Ihren Bedarf und wie wir Sie kontaktieren dürfen.",
+        "section.1": "Kontakt",
+        "fullName": "Vor- und Nachname",
+        "email": "E-Mail-Adresse",
+        "company": "Firma (optional)",
+        "contactMethod": "Bevorzugte Kontaktart",
+        "contactMethod.email": "E-Mail",
+        "contactMethod.phone": "Telefon",
+        "phone": "Telefonnummer",
+        "section.2": "Ihre Anfrage",
+        "interest": "Interessensgebiet",
+        "interest.product": "Produkt",
+        "interest.services": "Dienstleistungen",
+        "interest.partnership": "Partnerschaft",
+        "message": "Was möchten Sie erreichen?"
+      },
+      "fr": {
+        "intro": "Présentez vos besoins et indiquez comment vous contacter.",
+        "section.1": "Contact",
+        "fullName": "Prénom et nom",
+        "email": "Adresse e-mail",
+        "company": "Entreprise (facultatif)",
+        "contactMethod": "Mode de contact préféré",
+        "contactMethod.email": "E-mail",
+        "contactMethod.phone": "Téléphone",
+        "phone": "Numéro de téléphone",
+        "section.2": "Votre demande",
+        "interest": "Domaine d’intérêt",
+        "interest.product": "Produit",
+        "interest.services": "Services",
+        "interest.partnership": "Partenariat",
+        "message": "Quel est votre objectif ?"
+      }
+    }
+  }
+}

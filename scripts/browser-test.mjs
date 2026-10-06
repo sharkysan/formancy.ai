@@ -34,6 +34,7 @@ import { createServer } from 'node:http'
 import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs'
 import { dirname, extname, join, normalize, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { checkTemplateGallery } from './template-browser-test.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const site = join(root, 'apps', 'site', 'dist')
@@ -137,6 +138,7 @@ async function run() {
   }
 
   try {
+    await checkTemplateGallery(browser, `http://127.0.0.1:${String(port)}`, check)
     for (const { label, width, height } of WIDTHS) {
       const page = await browser.newPage({ viewport: { width, height } })
       await page.goto(url, { waitUntil: 'load' })

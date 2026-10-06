@@ -1,0 +1,12 @@
+{
+  "fullName": "Alex Example",
+  "email": "alex@example.com",
+  "costCentre": "DEMO-PROJECT",
+  "expenseDate": "2026-10-01",
+  "category": "travel",
+  "purpose": "Train journey for a customer workshop.",
+  "amount": 86.5,
+  "currency": "CHF",
+  "receiptReference": "DEMO-RECEIPT-001",
+  "travelRoute": "Example City to Example Town"
+}

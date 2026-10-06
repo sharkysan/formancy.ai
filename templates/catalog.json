@@ -1,0 +1,480 @@
+{
+  "collectionVersion": "1.0.0",
+  "license": "Apache-2.0",
+  "locales": [
+    "en",
+    "de",
+    "fr"
+  ],
+  "templates": [
+    {
+      "id": "hr-job-application",
+      "area": "hr",
+      "title": {
+        "en": "Job application",
+        "de": "Bewerbung",
+        "fr": "Candidature"
+      },
+      "description": {
+        "en": "Apply for a role and share relevant experience.",
+        "de": "Bewerben Sie sich auf eine Stelle und beschreiben Sie Ihre relevante Erfahrung.",
+        "fr": "Postulez à un poste et présentez votre expérience pertinente."
+      },
+      "schema": "hr/job-application.form.json",
+      "sample": "hr/job-application.sample.json",
+      "scenarios": "hr/job-application.scenarios.json",
+      "locales": [
+        "en",
+        "de",
+        "fr"
+      ],
+      "adaptBeforeUse": [
+        "Replace position/reference with your vacancy list if needed.",
+        "Add the employer-specific applicant privacy information."
+      ]
+    },
+    {
+      "id": "hr-employee-onboarding",
+      "area": "hr",
+      "title": {
+        "en": "Employee onboarding",
+        "de": "Eintritt neuer Mitarbeitender",
+        "fr": "Accueil du personnel"
+      },
+      "description": {
+        "en": "Collect work arrangements and equipment needs for a new starter.",
+        "de": "Erfassen Sie Arbeitsorganisation und Gerätebedarf für den Eintritt.",
+        "fr": "Recueillez les modalités de travail et les besoins en équipement."
+      },
+      "schema": "hr/employee-onboarding.form.json",
+      "sample": "hr/employee-onboarding.sample.json",
+      "scenarios": "hr/employee-onboarding.scenarios.json",
+      "locales": [
+        "en",
+        "de",
+        "fr"
+      ],
+      "adaptBeforeUse": [
+        "Adapt equipment choices and onboarding workflow to the employer.",
+        "Use a separate secure process for payroll and identity documents."
+      ]
+    },
+    {
+      "id": "hr-leave-request",
+      "area": "hr",
+      "title": {
+        "en": "Leave request",
+        "de": "Abwesenheitsantrag",
+        "fr": "Demande d’absence"
+      },
+      "description": {
+        "en": "Request leave for a date range; approval is handled separately.",
+        "de": "Beantragen Sie eine Abwesenheit; die Genehmigung erfolgt separat.",
+        "fr": "Demandez une absence sur une période ; l’approbation est traitée séparément."
+      },
+      "schema": "hr/leave-request.form.json",
+      "sample": "hr/leave-request.sample.json",
+      "scenarios": "hr/leave-request.scenarios.json",
+      "locales": [
+        "en",
+        "de",
+        "fr"
+      ],
+      "adaptBeforeUse": [
+        "Configure leave categories and approval rules for your organisation.",
+        "Dates are inclusive; this template does not calculate working days or balances."
+      ]
+    },
+    {
+      "id": "sales-lead-enquiry",
+      "area": "sales",
+      "title": {
+        "en": "Sales enquiry",
+        "de": "Verkaufsanfrage",
+        "fr": "Demande commerciale"
+      },
+      "description": {
+        "en": "Tell us about your needs and how you would like to be contacted.",
+        "de": "Beschreiben Sie Ihren Bedarf und wie wir Sie kontaktieren dürfen.",
+        "fr": "Présentez vos besoins et indiquez comment vous contacter."
+      },
+      "schema": "sales/lead-enquiry.form.json",
+      "sample": "sales/lead-enquiry.sample.json",
+      "scenarios": "sales/lead-enquiry.scenarios.json",
+      "locales": [
+        "en",
+        "de",
+        "fr"
+      ],
+      "adaptBeforeUse": [
+        "Replace the areas of interest with your actual offering."
+      ]
+    },
+    {
+      "id": "sales-quotation-request",
+      "area": "sales",
+      "title": {
+        "en": "Quotation request",
+        "de": "Offertanfrage",
+        "fr": "Demande de devis"
+      },
+      "description": {
+        "en": "Describe the scope and timing for an indicative quotation.",
+        "de": "Beschreiben Sie Umfang und Termin für eine unverbindliche Offerte.",
+        "fr": "Précisez le périmètre et le calendrier pour un devis indicatif."
+      },
+      "schema": "sales/quotation-request.form.json",
+      "sample": "sales/quotation-request.sample.json",
+      "scenarios": "sales/quotation-request.scenarios.json",
+      "locales": [
+        "en",
+        "de",
+        "fr"
+      ],
+      "adaptBeforeUse": [
+        "Adapt currencies and scope to the offering.",
+        "This requests a quotation; it does not calculate a price or accept an order."
+      ]
+    },
+    {
+      "id": "sales-customer-onboarding",
+      "area": "sales",
+      "title": {
+        "en": "Customer onboarding",
+        "de": "Kundenerfassung",
+        "fr": "Enregistrement client"
+      },
+      "description": {
+        "en": "Collect company and billing contact details for account setup.",
+        "de": "Erfassen Sie Firmen- und Rechnungskontaktdaten für die Kontoeröffnung.",
+        "fr": "Recueillez les coordonnées de l’entreprise et de facturation."
+      },
+      "schema": "sales/customer-onboarding.form.json",
+      "sample": "sales/customer-onboarding.sample.json",
+      "scenarios": "sales/customer-onboarding.scenarios.json",
+      "locales": [
+        "en",
+        "de",
+        "fr"
+      ],
+      "adaptBeforeUse": [
+        "Connect to your account setup process.",
+        "Tax identifiers and contractual terms are deliberately not assumed."
+      ]
+    },
+    {
+      "id": "customer-service-support-request",
+      "area": "customer-service",
+      "title": {
+        "en": "Support request",
+        "de": "Supportanfrage",
+        "fr": "Demande d’assistance"
+      },
+      "description": {
+        "en": "Describe the issue and its impact. Do not include passwords or secrets.",
+        "de": "Beschreiben Sie das Problem und seine Auswirkungen. Geben Sie keine Passwörter oder Geheimnisse an.",
+        "fr": "Décrivez le problème et son impact. Ne communiquez aucun mot de passe ni secret."
+      },
+      "schema": "customer-service/support-request.form.json",
+      "sample": "customer-service/support-request.sample.json",
+      "scenarios": "customer-service/support-request.scenarios.json",
+      "locales": [
+        "en",
+        "de",
+        "fr"
+      ],
+      "adaptBeforeUse": [
+        "Replace product and category choices with your support taxonomy.",
+        "Connect to ticket creation; this template defines no SLA or escalation service."
+      ]
+    },
+    {
+      "id": "customer-service-complaint",
+      "area": "customer-service",
+      "title": {
+        "en": "Customer complaint",
+        "de": "Reklamation",
+        "fr": "Réclamation client"
+      },
+      "description": {
+        "en": "Describe what happened and the outcome you would like.",
+        "de": "Beschreiben Sie den Vorfall und die gewünschte Lösung.",
+        "fr": "Décrivez les faits et la solution souhaitée."
+      },
+      "schema": "customer-service/complaint.form.json",
+      "sample": "customer-service/complaint.sample.json",
+      "scenarios": "customer-service/complaint.scenarios.json",
+      "locales": [
+        "en",
+        "de",
+        "fr"
+      ],
+      "adaptBeforeUse": [
+        "Set your complaint routing and customer-facing response expectations.",
+        "Selecting a resolution records a request, not an entitlement or promise."
+      ]
+    },
+    {
+      "id": "customer-service-satisfaction-survey",
+      "area": "customer-service",
+      "title": {
+        "en": "Customer satisfaction",
+        "de": "Kundenzufriedenheit",
+        "fr": "Satisfaction client"
+      },
+      "description": {
+        "en": "Tell us about your experience. Contact details are only requested if you want a follow-up.",
+        "de": "Bewerten Sie Ihre Erfahrung. Kontaktdaten werden nur für eine gewünschte Rückmeldung erfragt.",
+        "fr": "Évaluez votre expérience. Les coordonnées ne sont demandées que si vous souhaitez un suivi."
+      },
+      "schema": "customer-service/satisfaction-survey.form.json",
+      "sample": "customer-service/satisfaction-survey.sample.json",
+      "scenarios": "customer-service/satisfaction-survey.scenarios.json",
+      "locales": [
+        "en",
+        "de",
+        "fr"
+      ],
+      "adaptBeforeUse": [
+        "The rating is a categorical 1–5 radio scale for compatibility with spec 2.",
+        "No claim of anonymity is made; hosting and response metadata determine that."
+      ]
+    },
+    {
+      "id": "events-registration",
+      "area": "events",
+      "title": {
+        "en": "Event registration",
+        "de": "Veranstaltungsanmeldung",
+        "fr": "Inscription à un événement"
+      },
+      "description": {
+        "en": "Register your attendance and any practical requirements. Registration does not process a payment.",
+        "de": "Melden Sie Ihre Teilnahme und organisatorische Wünsche an. Die Anmeldung löst keine Zahlung aus.",
+        "fr": "Inscrivez-vous et précisez vos besoins pratiques. L’inscription ne déclenche aucun paiement."
+      },
+      "schema": "events/registration.form.json",
+      "sample": "events/registration.sample.json",
+      "scenarios": "events/registration.scenarios.json",
+      "locales": [
+        "en",
+        "de",
+        "fr"
+      ],
+      "adaptBeforeUse": [
+        "Add the event name, available attendance formats and actual ticket terms.",
+        "Dietary/allergy handling, capacity, billing and confirmations belong to the organiser."
+      ]
+    },
+    {
+      "id": "events-speaker-submission",
+      "area": "events",
+      "title": {
+        "en": "Speaker submission",
+        "de": "Referatsvorschlag",
+        "fr": "Proposition d’intervention"
+      },
+      "description": {
+        "en": "Propose a session with its audience, format and key learning points.",
+        "de": "Schlagen Sie einen Beitrag mit Zielgruppe, Format und Lernzielen vor.",
+        "fr": "Proposez une session en précisant le public, le format et les objectifs."
+      },
+      "schema": "events/speaker-submission.form.json",
+      "sample": "events/speaker-submission.sample.json",
+      "scenarios": "events/speaker-submission.scenarios.json",
+      "locales": [
+        "en",
+        "de",
+        "fr"
+      ],
+      "adaptBeforeUse": [
+        "Adapt session formats, durations, deadlines and programme review process."
+      ]
+    },
+    {
+      "id": "events-feedback",
+      "area": "events",
+      "title": {
+        "en": "Event feedback",
+        "de": "Veranstaltungsfeedback",
+        "fr": "Évaluation d’un événement"
+      },
+      "description": {
+        "en": "Share feedback about the event and suggestions for next time.",
+        "de": "Geben Sie Feedback zur Veranstaltung und Anregungen für das nächste Mal.",
+        "fr": "Partagez votre avis sur l’événement et vos suggestions pour la prochaine édition."
+      },
+      "schema": "events/feedback.form.json",
+      "sample": "events/feedback.sample.json",
+      "scenarios": "events/feedback.scenarios.json",
+      "locales": [
+        "en",
+        "de",
+        "fr"
+      ],
+      "adaptBeforeUse": [
+        "Use the actual event name or set it in the host application.",
+        "This is operational feedback, not a validated research questionnaire."
+      ]
+    },
+    {
+      "id": "operations-expense-claim",
+      "area": "operations",
+      "title": {
+        "en": "Expense claim",
+        "de": "Spesenabrechnung",
+        "fr": "Note de frais"
+      },
+      "description": {
+        "en": "Submit one expense with its business purpose and receipt reference.",
+        "de": "Erfassen Sie eine Ausgabe mit Geschäftszweck und Belegreferenz.",
+        "fr": "Soumettez une dépense avec son motif professionnel et sa référence de justificatif."
+      },
+      "schema": "operations/expense-claim.form.json",
+      "sample": "operations/expense-claim.sample.json",
+      "scenarios": "operations/expense-claim.scenarios.json",
+      "locales": [
+        "en",
+        "de",
+        "fr"
+      ],
+      "adaptBeforeUse": [
+        "One expense per submission; combine claims in your approval system.",
+        "Connect the receipt reference to your document system, or add a file field and uploader.",
+        "Currency conversion, tax recovery and reimbursement approval are outside this template."
+      ]
+    },
+    {
+      "id": "operations-purchase-request",
+      "area": "operations",
+      "title": {
+        "en": "Purchase request",
+        "de": "Beschaffungsantrag",
+        "fr": "Demande d’achat"
+      },
+      "description": {
+        "en": "Request one purchase item and review its estimated cost before approval.",
+        "de": "Beantragen Sie eine Position und prüfen Sie die geschätzten Kosten vor der Genehmigung.",
+        "fr": "Demandez l’achat d’un article et vérifiez son coût estimatif avant approbation."
+      },
+      "schema": "operations/purchase-request.form.json",
+      "sample": "operations/purchase-request.sample.json",
+      "scenarios": "operations/purchase-request.scenarios.json",
+      "locales": [
+        "en",
+        "de",
+        "fr"
+      ],
+      "adaptBeforeUse": [
+        "Replace cost centres and currencies with your organisation’s choices.",
+        "The estimate uses decimal inputs without invoice rounding, taxes or exchange rates.",
+        "Approval thresholds and order placement belong to the host workflow."
+      ]
+    },
+    {
+      "id": "operations-equipment-inspection",
+      "area": "operations",
+      "title": {
+        "en": "Equipment inspection",
+        "de": "Geräteinspektion",
+        "fr": "Inspection d’équipement"
+      },
+      "description": {
+        "en": "Record a visual inspection and any follow-up findings.",
+        "de": "Dokumentieren Sie eine Sichtprüfung und allfällige Folgeaufgaben.",
+        "fr": "Consignez une inspection visuelle et les éventuelles actions de suivi."
+      },
+      "schema": "operations/equipment-inspection.form.json",
+      "sample": "operations/equipment-inspection.sample.json",
+      "scenarios": "operations/equipment-inspection.scenarios.json",
+      "locales": [
+        "en",
+        "de",
+        "fr"
+      ],
+      "adaptBeforeUse": [
+        "Replace the visual checklist with asset-specific inspection instructions.",
+        "This records observations; it does not certify equipment safety or suitability."
+      ]
+    },
+    {
+      "id": "healthcare-administration-appointment-request",
+      "area": "healthcare-administration",
+      "title": {
+        "en": "Appointment request",
+        "de": "Terminanfrage",
+        "fr": "Demande de rendez-vous"
+      },
+      "description": {
+        "en": "Send an administrative appointment request. This form is not monitored for urgent care and does not confirm a booking.",
+        "de": "Senden Sie eine administrative Terminanfrage. Dieses Formular wird nicht für dringende Versorgung überwacht und bestätigt keine Buchung.",
+        "fr": "Envoyez une demande administrative de rendez-vous. Ce formulaire n’est pas surveillé pour les soins urgents et ne confirme pas de réservation."
+      },
+      "schema": "healthcare-administration/appointment-request.form.json",
+      "sample": "healthcare-administration/appointment-request.sample.json",
+      "scenarios": "healthcare-administration/appointment-request.scenarios.json",
+      "locales": [
+        "en",
+        "de",
+        "fr"
+      ],
+      "adaptBeforeUse": [
+        "Add the practice’s actual services, booking process and approved urgent-contact wording.",
+        "No symptoms, diagnoses or clinical prioritisation are collected."
+      ]
+    },
+    {
+      "id": "healthcare-administration-patient-registration",
+      "area": "healthcare-administration",
+      "title": {
+        "en": "Patient registration",
+        "de": "Patientenregistrierung",
+        "fr": "Enregistrement patient"
+      },
+      "description": {
+        "en": "Provide administrative details for registration. Do not include symptoms or medical records.",
+        "de": "Erfassen Sie administrative Angaben für die Registrierung. Geben Sie keine Symptome oder medizinischen Akten an.",
+        "fr": "Fournissez les renseignements administratifs pour l’enregistrement, sans symptômes ni dossier médical."
+      },
+      "schema": "healthcare-administration/patient-registration.form.json",
+      "sample": "healthcare-administration/patient-registration.sample.json",
+      "scenarios": "healthcare-administration/patient-registration.scenarios.json",
+      "locales": [
+        "en",
+        "de",
+        "fr"
+      ],
+      "adaptBeforeUse": [
+        "Review the identity and contact fields against the practice’s registration process.",
+        "A stated relationship does not establish legal authority to act for the patient.",
+        "today() must use the same captured date for client and server validation."
+      ]
+    },
+    {
+      "id": "healthcare-administration-referral-intake",
+      "area": "healthcare-administration",
+      "title": {
+        "en": "Referral intake — administration",
+        "de": "Zuweisung — administrative Erfassung",
+        "fr": "Réception d’une demande d’orientation — administration"
+      },
+      "description": {
+        "en": "Record referral contact details and document references. Clinical content belongs in the approved clinical system.",
+        "de": "Erfassen Sie Zuweisungskontakte und Dokumentreferenzen. Klinische Inhalte gehören in das freigegebene klinische System.",
+        "fr": "Enregistrez les contacts et références de documents. Les informations cliniques restent dans le système clinique approuvé."
+      },
+      "schema": "healthcare-administration/referral-intake.form.json",
+      "sample": "healthcare-administration/referral-intake.sample.json",
+      "scenarios": "healthcare-administration/referral-intake.scenarios.json",
+      "locales": [
+        "en",
+        "de",
+        "fr"
+      ],
+      "adaptBeforeUse": [
+        "Agree patient identifiers and secure document exchange with the receiving service.",
+        "This administrative record contains no clinical referral decision, urgency score or clinical completeness check."
+      ]
+    }
+  ]
+}

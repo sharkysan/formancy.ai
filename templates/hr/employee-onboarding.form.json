@@ -1,0 +1,259 @@
+{
+  "specVersion": "2",
+  "id": "hr-employee-onboarding",
+  "title": "Employee onboarding",
+  "model": {
+    "fields": [
+      {
+        "key": "intro",
+        "type": "static",
+        "label": {
+          "$t": "intro"
+        }
+      },
+      {
+        "key": "fullName",
+        "type": "text",
+        "label": {
+          "$t": "fullName"
+        },
+        "required": true,
+        "maxLength": 160
+      },
+      {
+        "key": "email",
+        "type": "text",
+        "label": {
+          "$t": "email"
+        },
+        "required": true,
+        "format": "email",
+        "maxLength": 254
+      },
+      {
+        "key": "startDate",
+        "type": "date",
+        "label": {
+          "$t": "startDate"
+        },
+        "required": true
+      },
+      {
+        "key": "department",
+        "type": "text",
+        "label": {
+          "$t": "department"
+        },
+        "required": true,
+        "maxLength": 120
+      },
+      {
+        "key": "manager",
+        "type": "text",
+        "label": {
+          "$t": "manager"
+        },
+        "required": true,
+        "maxLength": 160
+      },
+      {
+        "key": "workMode",
+        "type": "radio",
+        "label": {
+          "$t": "workMode"
+        },
+        "required": true,
+        "options": [
+          {
+            "value": "office",
+            "label": {
+              "$t": "workMode.office"
+            }
+          },
+          {
+            "value": "hybrid",
+            "label": {
+              "$t": "workMode.hybrid"
+            }
+          },
+          {
+            "value": "remote",
+            "label": {
+              "$t": "workMode.remote"
+            }
+          }
+        ]
+      },
+      {
+        "key": "equipment",
+        "type": "selectboxes",
+        "label": {
+          "$t": "equipment"
+        },
+        "options": [
+          {
+            "value": "laptop",
+            "label": {
+              "$t": "equipment.laptop"
+            }
+          },
+          {
+            "value": "monitor",
+            "label": {
+              "$t": "equipment.monitor"
+            }
+          },
+          {
+            "value": "headset",
+            "label": {
+              "$t": "equipment.headset"
+            }
+          }
+        ]
+      },
+      {
+        "key": "deliveryAddress",
+        "type": "textarea",
+        "label": {
+          "$t": "deliveryAddress"
+        },
+        "maxLength": 600
+      }
+    ]
+  },
+  "logic": {
+    "rules": [
+      {
+        "target": "deliveryAddress",
+        "kind": "visible",
+        "cel": "workMode == \"remote\" || workMode == \"hybrid\""
+      },
+      {
+        "target": "deliveryAddress",
+        "kind": "required",
+        "cel": "workMode == \"remote\" || workMode == \"hybrid\""
+      }
+    ]
+  },
+  "layouts": [
+    {
+      "name": "web",
+      "nodes": [
+        {
+          "kind": "field",
+          "path": "intro"
+        },
+        {
+          "kind": "section",
+          "label": {
+            "$t": "section.1"
+          },
+          "children": [
+            {
+              "kind": "field",
+              "path": "fullName"
+            },
+            {
+              "kind": "field",
+              "path": "email"
+            },
+            {
+              "kind": "field",
+              "path": "startDate"
+            },
+            {
+              "kind": "field",
+              "path": "department"
+            },
+            {
+              "kind": "field",
+              "path": "manager"
+            }
+          ]
+        },
+        {
+          "kind": "section",
+          "label": {
+            "$t": "section.2"
+          },
+          "children": [
+            {
+              "kind": "field",
+              "path": "workMode"
+            },
+            {
+              "kind": "field",
+              "path": "equipment"
+            },
+            {
+              "kind": "field",
+              "path": "deliveryAddress"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "i18n": {
+    "defaultLocale": "en",
+    "messages": {
+      "en": {
+        "intro": "Collect work arrangements and equipment needs for a new starter.",
+        "section.1": "Employee",
+        "fullName": "Full name",
+        "email": "Email address",
+        "startDate": "Start date",
+        "department": "Department",
+        "manager": "Line manager",
+        "section.2": "Work setup",
+        "workMode": "Work arrangement",
+        "workMode.office": "Office",
+        "workMode.hybrid": "Hybrid",
+        "workMode.remote": "Remote",
+        "equipment": "Equipment required",
+        "equipment.laptop": "Laptop",
+        "equipment.monitor": "Monitor",
+        "equipment.headset": "Headset",
+        "deliveryAddress": "Equipment delivery address"
+      },
+      "de": {
+        "intro": "Erfassen Sie Arbeitsorganisation und Gerätebedarf für den Eintritt.",
+        "section.1": "Mitarbeitende Person",
+        "fullName": "Vor- und Nachname",
+        "email": "E-Mail-Adresse",
+        "startDate": "Eintrittsdatum",
+        "department": "Abteilung",
+        "manager": "Vorgesetzte Person",
+        "section.2": "Arbeitsplatz",
+        "workMode": "Arbeitsmodell",
+        "workMode.office": "Büro",
+        "workMode.hybrid": "Hybrid",
+        "workMode.remote": "Remote",
+        "equipment": "Benötigte Geräte",
+        "equipment.laptop": "Laptop",
+        "equipment.monitor": "Bildschirm",
+        "equipment.headset": "Headset",
+        "deliveryAddress": "Lieferadresse für Geräte"
+      },
+      "fr": {
+        "intro": "Recueillez les modalités de travail et les besoins en équipement.",
+        "section.1": "Membre du personnel",
+        "fullName": "Prénom et nom",
+        "email": "Adresse e-mail",
+        "startDate": "Date d’entrée",
+        "department": "Service",
+        "manager": "Responsable hiérarchique",
+        "section.2": "Organisation du travail",
+        "workMode": "Mode de travail",
+        "workMode.office": "Sur site",
+        "workMode.hybrid": "Hybride",
+        "workMode.remote": "À distance",
+        "equipment": "Équipement nécessaire",
+        "equipment.laptop": "Ordinateur portable",
+        "equipment.monitor": "Écran",
+        "equipment.headset": "Casque audio",
+        "deliveryAddress": "Adresse de livraison du matériel"
+      }
+    }
+  }
+}

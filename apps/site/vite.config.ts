@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import { countDecisionRecords, countFieldTypes, packageVersion } from './decision-records'
@@ -8,6 +9,13 @@ export default defineConfig({
     __DECISION_RECORDS__: countDecisionRecords(),
     __FIELD_TYPES__: countFieldTypes(),
     __PACKAGE_VERSION__: JSON.stringify(packageVersion()),
+  },
+  build: {
+    assetsInlineLimit: 0,
+    rolldownOptions: { input: {
+      main: fileURLToPath(new URL('./index.html', import.meta.url)),
+      templates: fileURLToPath(new URL('./templates/index.html', import.meta.url)),
+    } },
   },
   server: {
     port: 4384,

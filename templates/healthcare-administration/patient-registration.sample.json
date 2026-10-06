@@ -1,0 +1,10 @@
+{
+  "fullName": "Alex Example",
+  "email": "alex@example.com",
+  "dateOfBirth": "1990-04-12",
+  "address": "Example Street 1, 8000 Example City",
+  "language": "de",
+  "completedBy": "representative",
+  "representativeName": "Morgan Example",
+  "relationship": "Family member"
+}

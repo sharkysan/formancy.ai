@@ -1,0 +1,266 @@
+{
+  "specVersion": "2",
+  "id": "events-registration",
+  "title": "Event registration",
+  "model": {
+    "fields": [
+      {
+        "key": "intro",
+        "type": "static",
+        "label": {
+          "$t": "intro"
+        }
+      },
+      {
+        "key": "fullName",
+        "type": "text",
+        "label": {
+          "$t": "fullName"
+        },
+        "required": true,
+        "maxLength": 160
+      },
+      {
+        "key": "email",
+        "type": "text",
+        "label": {
+          "$t": "email"
+        },
+        "required": true,
+        "format": "email",
+        "maxLength": 254
+      },
+      {
+        "key": "organisation",
+        "type": "text",
+        "label": {
+          "$t": "organisation"
+        },
+        "maxLength": 160
+      },
+      {
+        "key": "attendance",
+        "type": "radio",
+        "label": {
+          "$t": "attendance"
+        },
+        "required": true,
+        "options": [
+          {
+            "value": "onsite",
+            "label": {
+              "$t": "attendance.onsite"
+            }
+          },
+          {
+            "value": "online",
+            "label": {
+              "$t": "attendance.online"
+            }
+          }
+        ]
+      },
+      {
+        "key": "meal",
+        "type": "select",
+        "label": {
+          "$t": "meal"
+        },
+        "options": [
+          {
+            "value": "standard",
+            "label": {
+              "$t": "meal.standard"
+            }
+          },
+          {
+            "value": "vegetarian",
+            "label": {
+              "$t": "meal.vegetarian"
+            }
+          },
+          {
+            "value": "vegan",
+            "label": {
+              "$t": "meal.vegan"
+            }
+          },
+          {
+            "value": "none",
+            "label": {
+              "$t": "meal.none"
+            }
+          }
+        ]
+      },
+      {
+        "key": "accessNeeds",
+        "type": "textarea",
+        "label": {
+          "$t": "accessNeeds"
+        },
+        "maxLength": 1000
+      },
+      {
+        "key": "invoiceNeeded",
+        "type": "checkbox",
+        "label": {
+          "$t": "invoiceNeeded"
+        }
+      },
+      {
+        "key": "billingAddress",
+        "type": "textarea",
+        "label": {
+          "$t": "billingAddress"
+        },
+        "maxLength": 600
+      }
+    ]
+  },
+  "logic": {
+    "rules": [
+      {
+        "target": "meal",
+        "kind": "visible",
+        "cel": "attendance == \"onsite\""
+      },
+      {
+        "target": "meal",
+        "kind": "required",
+        "cel": "attendance == \"onsite\""
+      },
+      {
+        "target": "billingAddress",
+        "kind": "visible",
+        "cel": "invoiceNeeded == true"
+      },
+      {
+        "target": "billingAddress",
+        "kind": "required",
+        "cel": "invoiceNeeded == true"
+      }
+    ]
+  },
+  "layouts": [
+    {
+      "name": "web",
+      "nodes": [
+        {
+          "kind": "field",
+          "path": "intro"
+        },
+        {
+          "kind": "section",
+          "label": {
+            "$t": "section.1"
+          },
+          "children": [
+            {
+              "kind": "field",
+              "path": "fullName"
+            },
+            {
+              "kind": "field",
+              "path": "email"
+            },
+            {
+              "kind": "field",
+              "path": "organisation"
+            }
+          ]
+        },
+        {
+          "kind": "section",
+          "label": {
+            "$t": "section.2"
+          },
+          "children": [
+            {
+              "kind": "field",
+              "path": "attendance"
+            },
+            {
+              "kind": "field",
+              "path": "meal"
+            },
+            {
+              "kind": "field",
+              "path": "accessNeeds"
+            },
+            {
+              "kind": "field",
+              "path": "invoiceNeeded"
+            },
+            {
+              "kind": "field",
+              "path": "billingAddress"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "i18n": {
+    "defaultLocale": "en",
+    "messages": {
+      "en": {
+        "intro": "Register your attendance and any practical requirements. Registration does not process a payment.",
+        "section.1": "Attendee",
+        "fullName": "Full name",
+        "email": "Email address",
+        "organisation": "Organisation (optional)",
+        "section.2": "Attendance",
+        "attendance": "Attendance format",
+        "attendance.onsite": "In person",
+        "attendance.online": "Online",
+        "meal": "Meal preference",
+        "meal.standard": "Standard",
+        "meal.vegetarian": "Vegetarian",
+        "meal.vegan": "Vegan",
+        "meal.none": "No meal",
+        "accessNeeds": "Access or organisational requests (optional)",
+        "invoiceNeeded": "I need an invoice",
+        "billingAddress": "Billing name and address"
+      },
+      "de": {
+        "intro": "Melden Sie Ihre Teilnahme und organisatorische Wünsche an. Die Anmeldung löst keine Zahlung aus.",
+        "section.1": "Teilnehmende Person",
+        "fullName": "Vor- und Nachname",
+        "email": "E-Mail-Adresse",
+        "organisation": "Organisation (optional)",
+        "section.2": "Teilnahme",
+        "attendance": "Teilnahmeform",
+        "attendance.onsite": "Vor Ort",
+        "attendance.online": "Online",
+        "meal": "Verpflegungswunsch",
+        "meal.standard": "Standard",
+        "meal.vegetarian": "Vegetarisch",
+        "meal.vegan": "Vegan",
+        "meal.none": "Keine Verpflegung",
+        "accessNeeds": "Zugangs- oder Organisationswünsche (optional)",
+        "invoiceNeeded": "Ich benötige eine Rechnung",
+        "billingAddress": "Rechnungsname und -adresse"
+      },
+      "fr": {
+        "intro": "Inscrivez-vous et précisez vos besoins pratiques. L’inscription ne déclenche aucun paiement.",
+        "section.1": "Participant ou participante",
+        "fullName": "Prénom et nom",
+        "email": "Adresse e-mail",
+        "organisation": "Organisation (facultatif)",
+        "section.2": "Participation",
+        "attendance": "Mode de participation",
+        "attendance.onsite": "Sur place",
+        "attendance.online": "En ligne",
+        "meal": "Préférence de repas",
+        "meal.standard": "Standard",
+        "meal.vegetarian": "Végétarien",
+        "meal.vegan": "Végétalien",
+        "meal.none": "Sans repas",
+        "accessNeeds": "Besoins d’accès ou d’organisation (facultatif)",
+        "invoiceNeeded": "J’ai besoin d’une facture",
+        "billingAddress": "Nom et adresse de facturation"
+      }
+    }
+  }
+}

@@ -1,0 +1,307 @@
+{
+  "specVersion": "2",
+  "id": "healthcare-administration-appointment-request",
+  "title": "Appointment request",
+  "model": {
+    "fields": [
+      {
+        "key": "intro",
+        "type": "static",
+        "label": {
+          "$t": "intro"
+        }
+      },
+      {
+        "key": "fullName",
+        "type": "text",
+        "label": {
+          "$t": "fullName"
+        },
+        "required": true,
+        "maxLength": 160
+      },
+      {
+        "key": "email",
+        "type": "text",
+        "label": {
+          "$t": "email"
+        },
+        "required": true,
+        "format": "email",
+        "maxLength": 254
+      },
+      {
+        "key": "contactMethod",
+        "type": "radio",
+        "label": {
+          "$t": "contactMethod"
+        },
+        "required": true,
+        "options": [
+          {
+            "value": "email",
+            "label": {
+              "$t": "contactMethod.email"
+            }
+          },
+          {
+            "value": "phone",
+            "label": {
+              "$t": "contactMethod.phone"
+            }
+          }
+        ]
+      },
+      {
+        "key": "phone",
+        "type": "text",
+        "label": {
+          "$t": "phone"
+        },
+        "maxLength": 40
+      },
+      {
+        "key": "appointmentType",
+        "type": "select",
+        "label": {
+          "$t": "appointmentType"
+        },
+        "required": true,
+        "options": [
+          {
+            "value": "first",
+            "label": {
+              "$t": "appointmentType.first"
+            }
+          },
+          {
+            "value": "followup",
+            "label": {
+              "$t": "appointmentType.followup"
+            }
+          },
+          {
+            "value": "administrative",
+            "label": {
+              "$t": "appointmentType.administrative"
+            }
+          }
+        ]
+      },
+      {
+        "key": "preferredDate",
+        "type": "date",
+        "label": {
+          "$t": "preferredDate"
+        },
+        "required": true
+      },
+      {
+        "key": "timePreference",
+        "type": "select",
+        "label": {
+          "$t": "timePreference"
+        },
+        "required": true,
+        "options": [
+          {
+            "value": "morning",
+            "label": {
+              "$t": "timePreference.morning"
+            }
+          },
+          {
+            "value": "afternoon",
+            "label": {
+              "$t": "timePreference.afternoon"
+            }
+          },
+          {
+            "value": "either",
+            "label": {
+              "$t": "timePreference.either"
+            }
+          }
+        ]
+      },
+      {
+        "key": "language",
+        "type": "select",
+        "label": {
+          "$t": "language"
+        },
+        "required": true,
+        "options": [
+          {
+            "value": "en",
+            "label": {
+              "$t": "language.en"
+            }
+          },
+          {
+            "value": "de",
+            "label": {
+              "$t": "language.de"
+            }
+          },
+          {
+            "value": "fr",
+            "label": {
+              "$t": "language.fr"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "logic": {
+    "rules": [
+      {
+        "target": "phone",
+        "kind": "visible",
+        "cel": "contactMethod == \"phone\""
+      },
+      {
+        "target": "phone",
+        "kind": "required",
+        "cel": "contactMethod == \"phone\""
+      }
+    ]
+  },
+  "layouts": [
+    {
+      "name": "web",
+      "nodes": [
+        {
+          "kind": "field",
+          "path": "intro"
+        },
+        {
+          "kind": "section",
+          "label": {
+            "$t": "section.1"
+          },
+          "children": [
+            {
+              "kind": "field",
+              "path": "fullName"
+            },
+            {
+              "kind": "field",
+              "path": "email"
+            },
+            {
+              "kind": "field",
+              "path": "contactMethod"
+            },
+            {
+              "kind": "field",
+              "path": "phone"
+            }
+          ]
+        },
+        {
+          "kind": "section",
+          "label": {
+            "$t": "section.2"
+          },
+          "children": [
+            {
+              "kind": "field",
+              "path": "appointmentType"
+            },
+            {
+              "kind": "field",
+              "path": "preferredDate"
+            },
+            {
+              "kind": "field",
+              "path": "timePreference"
+            },
+            {
+              "kind": "field",
+              "path": "language"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "i18n": {
+    "defaultLocale": "en",
+    "messages": {
+      "en": {
+        "intro": "Send an administrative appointment request. This form is not monitored for urgent care and does not confirm a booking.",
+        "section.1": "Contact",
+        "fullName": "Full name",
+        "email": "Email address",
+        "contactMethod": "Preferred contact method",
+        "contactMethod.email": "Email",
+        "contactMethod.phone": "Phone",
+        "phone": "Phone number",
+        "section.2": "Appointment preferences",
+        "appointmentType": "Appointment type",
+        "appointmentType.first": "First appointment",
+        "appointmentType.followup": "Follow-up appointment",
+        "appointmentType.administrative": "Administrative appointment",
+        "preferredDate": "Preferred date",
+        "timePreference": "Preferred time of day",
+        "timePreference.morning": "Morning",
+        "timePreference.afternoon": "Afternoon",
+        "timePreference.either": "Either",
+        "language": "Preferred contact language",
+        "language.en": "English",
+        "language.de": "Deutsch",
+        "language.fr": "Français"
+      },
+      "de": {
+        "intro": "Senden Sie eine administrative Terminanfrage. Dieses Formular wird nicht für dringende Versorgung überwacht und bestätigt keine Buchung.",
+        "section.1": "Kontakt",
+        "fullName": "Vor- und Nachname",
+        "email": "E-Mail-Adresse",
+        "contactMethod": "Bevorzugte Kontaktart",
+        "contactMethod.email": "E-Mail",
+        "contactMethod.phone": "Telefon",
+        "phone": "Telefonnummer",
+        "section.2": "Terminwünsche",
+        "appointmentType": "Terminart",
+        "appointmentType.first": "Ersttermin",
+        "appointmentType.followup": "Folgetermin",
+        "appointmentType.administrative": "Administrativer Termin",
+        "preferredDate": "Wunschdatum",
+        "timePreference": "Bevorzugte Tageszeit",
+        "timePreference.morning": "Vormittag",
+        "timePreference.afternoon": "Nachmittag",
+        "timePreference.either": "Beides möglich",
+        "language": "Bevorzugte Kontaktsprache",
+        "language.en": "English",
+        "language.de": "Deutsch",
+        "language.fr": "Français"
+      },
+      "fr": {
+        "intro": "Envoyez une demande administrative de rendez-vous. Ce formulaire n’est pas surveillé pour les soins urgents et ne confirme pas de réservation.",
+        "section.1": "Contact",
+        "fullName": "Prénom et nom",
+        "email": "Adresse e-mail",
+        "contactMethod": "Mode de contact préféré",
+        "contactMethod.email": "E-mail",
+        "contactMethod.phone": "Téléphone",
+        "phone": "Numéro de téléphone",
+        "section.2": "Préférences de rendez-vous",
+        "appointmentType": "Type de rendez-vous",
+        "appointmentType.first": "Premier rendez-vous",
+        "appointmentType.followup": "Rendez-vous de suivi",
+        "appointmentType.administrative": "Rendez-vous administratif",
+        "preferredDate": "Date souhaitée",
+        "timePreference": "Moment de la journée préféré",
+        "timePreference.morning": "Matin",
+        "timePreference.afternoon": "Après-midi",
+        "timePreference.either": "Indifférent",
+        "language": "Langue de contact préférée",
+        "language.en": "English",
+        "language.de": "Deutsch",
+        "language.fr": "Français"
+      }
+    }
+  }
+}

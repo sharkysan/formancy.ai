@@ -1,0 +1,39 @@
+[
+  {
+    "name": "findings is required when the branch applies",
+    "changes": {
+      "findings": ""
+    },
+    "valid": false,
+    "errors": {
+      "findings": [
+        "required"
+      ]
+    }
+  },
+  {
+    "name": "switching off findings clears its branch",
+    "changes": {
+      "condition": "noissue"
+    },
+    "valid": true,
+    "visible": {
+      "findings": false
+    },
+    "absent": [
+      "findings"
+    ]
+  },
+  {
+    "name": "the required inspector cannot be omitted",
+    "changes": {
+      "inspector": null
+    },
+    "valid": false,
+    "errors": {
+      "inspector": [
+        "required"
+      ]
+    }
+  }
+]

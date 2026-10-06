@@ -10,6 +10,23 @@ later.
 
 ## Unreleased
 
+**Start with a form whose examples run.** The starter collection covers HR, sales,
+customer service, events, operations and healthcare administration. Each plain JSON
+form carries English, Swiss High German and French text, its layout and rules,
+a fictional sample and executable scenarios. They use frozen spec 2 and no external
+services. The dedicated `/templates/` page offers search, area filters, translated local
+previews and direct JSON downloads. Its edit links open the selected document
+and language in the playground. Both read the same files, so the document an
+integrator copies is the one the previews demonstrate. Schema checks alone missed a
+string-to-timestamp comparison in the birth-date rule; running its sample found it.
+
+**The two previews now own separate native forms.** Loading a template and choosing a
+radio option revealed that the Angular and React controls shared a browser radio group:
+the ids differed, but the names and form owner did not. React reported a mixed-framework
+radio group and a selection could uncheck the other preview. Native form boundaries
+isolate them; preview submission is prevented so Enter cannot navigate away.
+
+
 **The Schema view was broken, and the cascade did it again.** Reported as "the schema view
 is broken", and what was broken was the theme editor bleeding into it: `hidden` hides an
 element through `display: none` in the user-agent stylesheet, and **any** author `display`

@@ -1,0 +1,203 @@
+{
+  "specVersion": "2",
+  "id": "hr-job-application",
+  "title": "Job application",
+  "model": {
+    "fields": [
+      {
+        "key": "intro",
+        "type": "static",
+        "label": {
+          "$t": "intro"
+        }
+      },
+      {
+        "key": "fullName",
+        "type": "text",
+        "label": {
+          "$t": "fullName"
+        },
+        "required": true,
+        "maxLength": 160
+      },
+      {
+        "key": "email",
+        "type": "text",
+        "label": {
+          "$t": "email"
+        },
+        "required": true,
+        "format": "email",
+        "maxLength": 254
+      },
+      {
+        "key": "position",
+        "type": "text",
+        "label": {
+          "$t": "position"
+        },
+        "required": true,
+        "maxLength": 160
+      },
+      {
+        "key": "experience",
+        "type": "textarea",
+        "label": {
+          "$t": "experience"
+        },
+        "required": true,
+        "minLength": 20,
+        "maxLength": 4000
+      },
+      {
+        "key": "profileUrl",
+        "type": "text",
+        "label": {
+          "$t": "profileUrl"
+        },
+        "format": "url",
+        "maxLength": 500
+      },
+      {
+        "key": "availableFrom",
+        "type": "date",
+        "label": {
+          "$t": "availableFrom"
+        },
+        "required": true
+      },
+      {
+        "key": "needsInterviewAdjustment",
+        "type": "checkbox",
+        "label": {
+          "$t": "needsInterviewAdjustment"
+        }
+      },
+      {
+        "key": "interviewAdjustment",
+        "type": "textarea",
+        "label": {
+          "$t": "interviewAdjustment"
+        },
+        "maxLength": 800
+      }
+    ]
+  },
+  "logic": {
+    "rules": [
+      {
+        "target": "interviewAdjustment",
+        "kind": "visible",
+        "cel": "needsInterviewAdjustment == true"
+      },
+      {
+        "target": "interviewAdjustment",
+        "kind": "required",
+        "cel": "needsInterviewAdjustment == true"
+      }
+    ]
+  },
+  "layouts": [
+    {
+      "name": "web",
+      "nodes": [
+        {
+          "kind": "field",
+          "path": "intro"
+        },
+        {
+          "kind": "section",
+          "label": {
+            "$t": "section.1"
+          },
+          "children": [
+            {
+              "kind": "field",
+              "path": "fullName"
+            },
+            {
+              "kind": "field",
+              "path": "email"
+            },
+            {
+              "kind": "field",
+              "path": "position"
+            }
+          ]
+        },
+        {
+          "kind": "section",
+          "label": {
+            "$t": "section.2"
+          },
+          "children": [
+            {
+              "kind": "field",
+              "path": "experience"
+            },
+            {
+              "kind": "field",
+              "path": "profileUrl"
+            },
+            {
+              "kind": "field",
+              "path": "availableFrom"
+            },
+            {
+              "kind": "field",
+              "path": "needsInterviewAdjustment"
+            },
+            {
+              "kind": "field",
+              "path": "interviewAdjustment"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "i18n": {
+    "defaultLocale": "en",
+    "messages": {
+      "en": {
+        "intro": "Apply for a role and share relevant experience.",
+        "section.1": "Applicant",
+        "fullName": "Full name",
+        "email": "Email address",
+        "position": "Position or reference",
+        "section.2": "Experience and availability",
+        "experience": "Relevant experience",
+        "profileUrl": "CV or portfolio link (optional)",
+        "availableFrom": "Available from",
+        "needsInterviewAdjustment": "I would like to discuss interview arrangements",
+        "interviewAdjustment": "Requested arrangements; no medical details needed"
+      },
+      "de": {
+        "intro": "Bewerben Sie sich auf eine Stelle und beschreiben Sie Ihre relevante Erfahrung.",
+        "section.1": "Bewerbende Person",
+        "fullName": "Vor- und Nachname",
+        "email": "E-Mail-Adresse",
+        "position": "Stelle oder Referenz",
+        "section.2": "Erfahrung und Verfügbarkeit",
+        "experience": "Relevante Erfahrung",
+        "profileUrl": "Link zu Lebenslauf oder Portfolio (optional)",
+        "availableFrom": "Verfügbar ab",
+        "needsInterviewAdjustment": "Ich möchte die Rahmenbedingungen für das Gespräch besprechen",
+        "interviewAdjustment": "Gewünschte Rahmenbedingungen; keine medizinischen Angaben nötig"
+      },
+      "fr": {
+        "intro": "Postulez à un poste et présentez votre expérience pertinente.",
+        "section.1": "Candidat ou candidate",
+        "fullName": "Prénom et nom",
+        "email": "Adresse e-mail",
+        "position": "Poste ou référence",
+        "section.2": "Expérience et disponibilité",
+        "experience": "Expérience pertinente",
+        "profileUrl": "Lien vers le CV ou le portfolio (facultatif)",
+        "availableFrom": "Disponible à partir du",
+        "needsInterviewAdjustment": "Je souhaite discuter des modalités de l’entretien",
+        "interviewAdjustment": "Modalités souhaitées ; aucune information médicale nécessaire"
+      }
+    }
+  }
+}

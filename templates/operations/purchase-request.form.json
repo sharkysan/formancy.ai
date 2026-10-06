@@ -1,0 +1,290 @@
+{
+  "specVersion": "2",
+  "id": "operations-purchase-request",
+  "title": "Purchase request",
+  "model": {
+    "fields": [
+      {
+        "key": "intro",
+        "type": "static",
+        "label": {
+          "$t": "intro"
+        }
+      },
+      {
+        "key": "fullName",
+        "type": "text",
+        "label": {
+          "$t": "fullName"
+        },
+        "required": true,
+        "maxLength": 160
+      },
+      {
+        "key": "email",
+        "type": "text",
+        "label": {
+          "$t": "email"
+        },
+        "required": true,
+        "format": "email",
+        "maxLength": 254
+      },
+      {
+        "key": "costCentre",
+        "type": "text",
+        "label": {
+          "$t": "costCentre"
+        },
+        "required": true,
+        "maxLength": 100
+      },
+      {
+        "key": "item",
+        "type": "text",
+        "label": {
+          "$t": "item"
+        },
+        "required": true,
+        "maxLength": 200
+      },
+      {
+        "key": "justification",
+        "type": "textarea",
+        "label": {
+          "$t": "justification"
+        },
+        "required": true,
+        "minLength": 20,
+        "maxLength": 2000
+      },
+      {
+        "key": "quantity",
+        "type": "number",
+        "label": {
+          "$t": "quantity"
+        },
+        "required": true,
+        "min": 0.01,
+        "max": 1000000
+      },
+      {
+        "key": "unitPrice",
+        "type": "number",
+        "label": {
+          "$t": "unitPrice"
+        },
+        "required": true,
+        "min": 0,
+        "max": 1000000000
+      },
+      {
+        "key": "currency",
+        "type": "select",
+        "label": {
+          "$t": "currency"
+        },
+        "required": true,
+        "options": [
+          {
+            "value": "CHF",
+            "label": {
+              "$t": "currency.CHF"
+            }
+          },
+          {
+            "value": "EUR",
+            "label": {
+              "$t": "currency.EUR"
+            }
+          },
+          {
+            "value": "USD",
+            "label": {
+              "$t": "currency.USD"
+            }
+          }
+        ]
+      },
+      {
+        "key": "estimatedTotal",
+        "type": "number",
+        "label": {
+          "$t": "estimatedTotal"
+        }
+      },
+      {
+        "key": "preferredSupplier",
+        "type": "checkbox",
+        "label": {
+          "$t": "preferredSupplier"
+        }
+      },
+      {
+        "key": "supplier",
+        "type": "text",
+        "label": {
+          "$t": "supplier"
+        },
+        "maxLength": 200
+      }
+    ]
+  },
+  "logic": {
+    "rules": [
+      {
+        "target": "estimatedTotal",
+        "kind": "computed",
+        "cel": "quantity == null || unitPrice == null ? 0.0 : quantity * unitPrice"
+      },
+      {
+        "target": "estimatedTotal",
+        "kind": "disabled",
+        "cel": "true"
+      },
+      {
+        "target": "supplier",
+        "kind": "visible",
+        "cel": "preferredSupplier == true"
+      },
+      {
+        "target": "supplier",
+        "kind": "required",
+        "cel": "preferredSupplier == true"
+      }
+    ]
+  },
+  "layouts": [
+    {
+      "name": "web",
+      "nodes": [
+        {
+          "kind": "field",
+          "path": "intro"
+        },
+        {
+          "kind": "section",
+          "label": {
+            "$t": "section.1"
+          },
+          "children": [
+            {
+              "kind": "field",
+              "path": "fullName"
+            },
+            {
+              "kind": "field",
+              "path": "email"
+            },
+            {
+              "kind": "field",
+              "path": "costCentre"
+            }
+          ]
+        },
+        {
+          "kind": "section",
+          "label": {
+            "$t": "section.2"
+          },
+          "children": [
+            {
+              "kind": "field",
+              "path": "item"
+            },
+            {
+              "kind": "field",
+              "path": "justification"
+            },
+            {
+              "kind": "field",
+              "path": "quantity"
+            },
+            {
+              "kind": "field",
+              "path": "unitPrice"
+            },
+            {
+              "kind": "field",
+              "path": "currency"
+            },
+            {
+              "kind": "field",
+              "path": "estimatedTotal"
+            },
+            {
+              "kind": "field",
+              "path": "preferredSupplier"
+            },
+            {
+              "kind": "field",
+              "path": "supplier"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "i18n": {
+    "defaultLocale": "en",
+    "messages": {
+      "en": {
+        "intro": "Request one purchase item and review its estimated cost before approval.",
+        "section.1": "Requester",
+        "fullName": "Full name",
+        "email": "Email address",
+        "costCentre": "Cost centre or project",
+        "section.2": "Requested item",
+        "item": "Item or service",
+        "justification": "Business justification",
+        "quantity": "Quantity",
+        "unitPrice": "Estimated unit price, excluding tax",
+        "currency": "Currency",
+        "currency.CHF": "CHF",
+        "currency.EUR": "EUR",
+        "currency.USD": "USD",
+        "estimatedTotal": "Estimated total, excluding tax",
+        "preferredSupplier": "I have a preferred supplier",
+        "supplier": "Supplier name"
+      },
+      "de": {
+        "intro": "Beantragen Sie eine Position und prüfen Sie die geschätzten Kosten vor der Genehmigung.",
+        "section.1": "Antragstellende Person",
+        "fullName": "Vor- und Nachname",
+        "email": "E-Mail-Adresse",
+        "costCentre": "Kostenstelle oder Projekt",
+        "section.2": "Gewünschte Position",
+        "item": "Artikel oder Dienstleistung",
+        "justification": "Geschäftliche Begründung",
+        "quantity": "Menge",
+        "unitPrice": "Geschätzter Einzelpreis ohne Steuern",
+        "currency": "Währung",
+        "currency.CHF": "CHF",
+        "currency.EUR": "EUR",
+        "currency.USD": "USD",
+        "estimatedTotal": "Geschätzter Gesamtbetrag ohne Steuern",
+        "preferredSupplier": "Ich habe einen bevorzugten Lieferanten",
+        "supplier": "Name des Lieferanten"
+      },
+      "fr": {
+        "intro": "Demandez l’achat d’un article et vérifiez son coût estimatif avant approbation.",
+        "section.1": "Demandeur ou demandeuse",
+        "fullName": "Prénom et nom",
+        "email": "Adresse e-mail",
+        "costCentre": "Centre de coûts ou projet",
+        "section.2": "Article demandé",
+        "item": "Article ou service",
+        "justification": "Justification professionnelle",
+        "quantity": "Quantité",
+        "unitPrice": "Prix unitaire estimé hors taxes",
+        "currency": "Devise",
+        "currency.CHF": "CHF",
+        "currency.EUR": "EUR",
+        "currency.USD": "USD",
+        "estimatedTotal": "Total estimé hors taxes",
+        "preferredSupplier": "J’ai un fournisseur préféré",
+        "supplier": "Nom du fournisseur"
+      }
+    }
+  }
+}

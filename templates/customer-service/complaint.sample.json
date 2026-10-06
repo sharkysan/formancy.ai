@@ -1,0 +1,9 @@
+{
+  "fullName": "Alex Example",
+  "email": "alex@example.com",
+  "occurredOn": "2026-10-01",
+  "description": "The delivered item differed from the agreed specification.",
+  "hasOrder": true,
+  "orderReference": "DEMO-ORDER-001",
+  "requestedResolution": "replacement"
+}

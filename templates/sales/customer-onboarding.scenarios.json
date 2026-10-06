@@ -1,0 +1,65 @@
+[
+  {
+    "name": "billingEmail is required when the branch applies",
+    "changes": {
+      "billingEmail": ""
+    },
+    "valid": false,
+    "errors": {
+      "billingEmail": [
+        "required"
+      ]
+    }
+  },
+  {
+    "name": "billingAddress is required when the branch applies",
+    "changes": {
+      "billingAddress": ""
+    },
+    "valid": false,
+    "errors": {
+      "billingAddress": [
+        "required"
+      ]
+    }
+  },
+  {
+    "name": "switching off billingEmail clears its branch",
+    "changes": {
+      "separateBilling": false
+    },
+    "valid": true,
+    "visible": {
+      "billingEmail": false,
+      "billingAddress": false
+    },
+    "absent": [
+      "billingEmail",
+      "billingAddress"
+    ]
+  },
+  {
+    "name": "the required company cannot be omitted",
+    "changes": {
+      "company": null
+    },
+    "valid": false,
+    "errors": {
+      "company": [
+        "required"
+      ]
+    }
+  },
+  {
+    "name": "an invalid email is rejected",
+    "changes": {
+      "email": "invalid-address"
+    },
+    "valid": false,
+    "errors": {
+      "email": [
+        "email"
+      ]
+    }
+  }
+]

@@ -1,0 +1,13 @@
+{
+  "fullName": "Alex Example",
+  "email": "alex@example.com",
+  "startDate": "2026-12-01",
+  "department": "Product",
+  "manager": "Morgan Example",
+  "workMode": "hybrid",
+  "equipment": [
+    "laptop",
+    "monitor"
+  ],
+  "deliveryAddress": "Example Street 1, 8000 Example City"
+}

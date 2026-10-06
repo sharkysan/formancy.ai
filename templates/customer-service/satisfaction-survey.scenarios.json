@@ -1,0 +1,63 @@
+[
+  {
+    "name": "contactEmail is required when the branch applies",
+    "changes": {
+      "contactEmail": ""
+    },
+    "valid": false,
+    "errors": {
+      "contactEmail": [
+        "required"
+      ]
+    }
+  },
+  {
+    "name": "switching off contactEmail clears its branch",
+    "changes": {
+      "followUp": false
+    },
+    "valid": true,
+    "visible": {
+      "contactEmail": false
+    },
+    "absent": [
+      "contactEmail"
+    ]
+  },
+  {
+    "name": "only offered satisfaction values are accepted",
+    "changes": {
+      "satisfaction": "6"
+    },
+    "valid": false,
+    "errors": {
+      "satisfaction": [
+        "option"
+      ]
+    }
+  },
+  {
+    "name": "the required service cannot be omitted",
+    "changes": {
+      "service": null
+    },
+    "valid": false,
+    "errors": {
+      "service": [
+        "required"
+      ]
+    }
+  },
+  {
+    "name": "an invalid contactEmail is rejected",
+    "changes": {
+      "contactEmail": "invalid-address"
+    },
+    "valid": false,
+    "errors": {
+      "contactEmail": [
+        "email"
+      ]
+    }
+  }
+]
