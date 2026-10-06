@@ -48,6 +48,14 @@ rather than the theme's. And a filter before setting the style was **inert**: CS
 discards a whitespace-only custom property and trims a padded one by itself, measured in
 jsdom and in Chromium, so that call is gone rather than left looking load-bearing.
 
+**And CI now limits its token to reading, which the new job is how we found out.**
+`ci.yml` had no `permissions` block at all, so every job took the repository's default —
+and CodeQL had been reporting one `actions/missing-workflow-permissions` alert per job for
+three jobs. Adding a fourth turned those into a *failing* check on the pull request that
+added it, which is the gate doing its job rather than a nuisance. One `contents: read` at
+the top fixes all four: nothing in this workflow writes to the repository, since the
+coverage upload authenticates with its own token and the caches are the runner's.
+
 `pnpm test:browser` carries the half jsdom cannot judge — that an override reaches a
 rendered control's computed colour, and that resetting gives the theme back. `app.tsx`
 went over its ceiling again and the editor pane left with its Monaco palette; the budget
