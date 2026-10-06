@@ -85,6 +85,7 @@ pnpm typecheck
 pnpm test
 pnpm check:pkg
 pnpm test:e2e:install
+pnpm test:browser
 ```
 
 Each gate exists for a reason that was paid for at least once:
@@ -147,6 +148,20 @@ Each gate exists for a reason that was paid for at least once:
   "stated and unverified". Verified by ten mutations, each observed failing the
   case meant to catch it — among them a fail-open on a commit range the check
   cannot read, which is the one that looks like success.
+
+- **`test:browser`** — the composed site loaded in Chromium at four viewports,
+  asserting what jsdom cannot represent: that nothing scrolls sideways, how many
+  columns the pane row computes, and the computed `touch-action` of both
+  renderers' signature surfaces with and without a theme
+  ([0102](../decisions/0102-what-jsdom-cannot-see-is-checked-in-a-browser.md)).
+  **A different kind of test from the rest of this list**, and the reason is
+  structural rather than a coverage gap: jsdom applies no CSS, resolves no media
+  queries and performs no layout, so every box measures zero and every cascade
+  question has no answer. Two defects shipped through every other gate in one
+  week for exactly that reason. Verified by reverting both of them and watching
+  this one redden, which is the only evidence that mattered. Deliberately not
+  screenshots: the renderers ship no styling, so a pixel baseline would be
+  testing demo CSS, and a baseline is a file somebody updates when it goes red.
 
 **None of these gates is mechanically required.** `main` carries no branch
 protection rule, so every one of them reports and a maintainer decides. That is

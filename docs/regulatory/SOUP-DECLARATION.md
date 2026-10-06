@@ -304,11 +304,18 @@ of WCAG 2.2 criteria are machine-testable at all. **No manual screen-reader
 audit has been performed, and no VPAT has been published.** A manufacturer
 requiring an accessibility conformance statement must perform that work.
 
-**Appearance is reviewed, not verified.** jsdom implements no layout, so no test here can
-ask where a box is, and no application in this repository renders the Angular bindings in a
-browser at all. Defects of both kinds — where a box sits, and what a control's state looks
-like — have shipped and been found by somebody opening a page rather than by a gate;
-hazards D4a, D4b and D7 have them by name. A manufacturer relying on visual correctness must
+**Appearance is largely reviewed, not verified.** jsdom implements no layout and resolves
+no media queries, so almost no test here can ask where a box is. Defects of both kinds —
+where a box sits, and what a control's state looks like — have shipped and been found by
+somebody opening a page rather than by a gate; hazards D4a, D4b, D4c and D7 have them by
+name.
+
+**The exception is `pnpm test:browser`**, which loads the composed site in Chromium at four
+viewports and asserts that nothing scrolls sideways, how many columns the pane row computes,
+and the computed `touch-action` of both renderers' signature surfaces with and without a
+theme. It covers the two mechanisms that produced D4a's third instance and D4c, and nothing
+wider: no pixel baselines by choice, one engine rather than Safari, and one demo schema
+rather than the conformance suite. A manufacturer relying on visual correctness must still
 verify it in the browsers it ships to.
 
 ## Verification evidence
@@ -321,6 +328,7 @@ verify it in the browsers it ships to.
 | Property-based invariants over hide/unhide, repeater identity and evaluation order | `packages/core` |
 | The official CEL corpus, with results pinned | `packages/expressions/CEL-CONFORMANCE.md` |
 | Performance budgets, measured: keystroke ≈0.38 ms against a <1 ms budget; graph compile ≈1.7 ms against a <30 ms budget | `packages/core/bench/perf.mjs` |
+| Layout and gesture facts jsdom cannot represent — horizontal overflow, computed grid columns and computed `touch-action` for both renderers — at four viewports in Chromium against the composed site | `pnpm test:browser` |
 | Package-publication gates: `publint`, `@arethetypeswrong/cli` | `pnpm check:pkg` |
 | Bundle sizes, measured by hand and dated rather than gated — `size-limit` is **not** wired up, and this table named it as a gate until 2026-09-27 | [§9.3](../architecture/09-quality-requirements.md) |
 | Line coverage, reported per package and uploaded per commit — **reported and gated nowhere**, deliberately ([0099](../decisions/0099-coverage-is-reported-per-package-and-never-gated.md)) | `pnpm turbo run test:coverage`, and Codecov |

@@ -16,9 +16,11 @@
     "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",
     "check:pkg": "turbo run check:pkg",
-    "test:e2e:install": "node scripts/install-test.mjs"
+    "test:e2e:install": "node scripts/install-test.mjs",
+    "test:browser": "node scripts/browser-test.mjs"
   },
   "devDependencies": {
+    "playwright": "catalog:",
     "turbo": "^2.11.2",
     "typescript": "catalog:"
   }
