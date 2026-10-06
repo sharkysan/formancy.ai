@@ -360,6 +360,51 @@ async function run() {
           return { controls: controls.length, before, overridden, afterReset: read() }
         })
 
+        /*
+         * Exactly one editor body on screen per mode.
+         *
+         * Reported as "the schema view is broken", and what was broken was the
+         * cascade: `hidden` hides an element through `display: none` in the
+         * user-agent stylesheet, and ANY author `display` beats it. The theme
+         * body's `display: flex` matched at the same specificity as
+         * `.pane .body[hidden]` and came later in the file, so it was rendered in
+         * every mode — 349px of controls inside a pane with 321px of room.
+         *
+         * Third cascade defect in this file in one session. jsdom resolves none
+         * of it, so this is the only place the fact can be held.
+         */
+        const modes = await page.evaluate(async () => {
+          const wait = () => new Promise((done) => setTimeout(done, 200))
+          const shown = () =>
+            [...document.querySelectorAll('.pane.editor > .body')]
+              .filter((body) => getComputedStyle(body).display !== 'none')
+              .map((body) => body.className.replace('body', '').trim() || 'build')
+
+          const seen = { start: shown() }
+          for (const name of ['Schema', 'Theme', 'Build']) {
+            const button = [...document.querySelectorAll('button.mode')].find(
+              (candidate) => candidate.textContent?.trim() === name,
+            )
+            if (button === undefined) return { error: `no ${name} mode` }
+            button.click()
+            await wait()
+            seen[name.toLowerCase()] = shown()
+          }
+          return seen
+        })
+
+        check(
+          'exactly one editor body is on screen in each mode',
+          modes.error !== undefined
+            ? modes.error
+            : Object.entries(modes).filter(([, bodies]) => bodies.length !== 1).length === 0
+              ? null
+              : Object.entries(modes)
+                  .filter(([, bodies]) => bodies.length !== 1)
+                  .map(([mode, bodies]) => `${mode}: ${bodies.join(' + ') || 'nothing'}`)
+                  .join('; '),
+        )
+
         check(
           'the theme editor finds the tokens the applied theme declares',
           theming.error === undefined && theming.controls > 8

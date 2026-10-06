@@ -84,7 +84,16 @@ describe('the widget list', () => {
     // name here that changes what is collected has to move to FIELD_TYPES.
     expect([...FIELD_WIDGETS].sort()).toEqual([
       'datagrid',
+      // Stars, or a scale of numbers. Requested as `rating` and as NPS, and a
+      // widget because the answer is unchanged: one number between `min` and
+      // `max`, which is what a `number` field stores without it. NPS is that
+      // field with `min: 0` and `max: 10` and needs no name of its own.
+      'rating',
       'scanner',
+      // A track to drag. Same answer again, and the reason `step` is a FIELD
+      // property rather than widget configuration: it says which values are
+      // valid, which the server has to agree with.
+      'slider',
       // Several answers narrowed by typing, shown as chips. A field type in
       // everybody's first description of it, and a widget because the answer is
       // unchanged: still an array of offered option values, in the options' own

@@ -298,3 +298,72 @@ describe('a chooser stores a string, or it stores nothing', () => {
     expect(errorsOf({ colour: { $gt: '' } })).toEqual({ colour: ['type'] })
   })
 })
+
+describe('a step, which says which numbers count', () => {
+  /*
+   * `step` arrived with spec 4 for the slider, and it is a **field** property
+   * rather than widget configuration precisely so this exists: a value the
+   * client accepted and the server refused is the drift this project exists to
+   * prevent, and presentation cannot be checked on the server at all.
+   *
+   * Counted from `min` when there is one, and from zero when there is not. That
+   * choice is the difference between a scale of 2, 7, 12 and one of 0, 5, 10
+   * when the author wrote `min: 2, step: 5` — and the first is what they meant,
+   * because they also wrote the minimum.
+   */
+  const codesFor = (def: Record<string, unknown>, value: unknown): string[] =>
+    createFormEngine({
+      schema: {
+        specVersion: '4',
+        id: 'survey',
+        title: 'Survey',
+        model: { fields: [{ key: 'n', type: 'number', ...def } as never] },
+      },
+      initialValue: { n: value },
+    }).validate().errors['n'] ?? []
+
+  test('accepts a multiple of the step and refuses one in between', () => {
+    expect(codesFor({ step: 5 }, 10)).not.toContain('step')
+    expect(codesFor({ step: 5 }, 7)).toContain('step')
+  })
+
+  test('counts from the minimum, not from zero', () => {
+    // `min: 2, step: 5` is a scale of 2, 7, 12 — which is what an author who
+    // wrote both of those meant. Counting from zero would refuse every value on
+    // their own scale and accept 0, which their minimum forbids.
+    expect(codesFor({ min: 2, step: 5 }, 7)).not.toContain('step')
+    expect(codesFor({ min: 2, step: 5 }, 5)).toContain('step')
+  })
+
+  test('and tolerates the arithmetic, because 0.1 three times is not 0.3', () => {
+    /*
+     * The real trap, and the reason this is not `value % step === 0`.
+     * `0.30000000000000004 % 0.1` is `0.09999999999999998`, so a slider at 0.3
+     * with a step of 0.1 — a perfectly ordinary configuration — would report an
+     * invalid answer that the control itself produced, on a value the person
+     * never typed.
+     *
+     * Measured: every tenth from 0 to 1 is accepted, which the remainder test
+     * fails on three of.
+     */
+    for (let tenth = 0; tenth <= 10; tenth += 1) {
+      const value = tenth / 10
+      expect(codesFor({ min: 0, max: 1, step: 0.1 }, value), `${String(value)} was refused`).not.toContain('step')
+    }
+    // And it is a tolerance, not an amnesty: half a step out is still out.
+    expect(codesFor({ min: 0, max: 1, step: 0.1 }, 0.05)).toContain('step')
+  })
+
+  test('and says nothing about a field with no step', () => {
+    // A guard on the guard: a validator that always pushed `step` would make
+    // every case above pass for the wrong reason.
+    expect(codesFor({}, 7)).not.toContain('step')
+    expect(codesFor({ min: 0, max: 10 }, 7)).not.toContain('step')
+  })
+
+  test('and refuses a non-number the way the bounds do, rather than comparing NaN', () => {
+    // The hostile-payload path on the server: a string where a number belongs
+    // must fail rather than sail through arithmetic that is vacuously true.
+    expect(codesFor({ step: 5 }, 'seven')).toContain('step')
+  })
+})

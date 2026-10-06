@@ -22,7 +22,7 @@ import type { FormSchema } from '@formancy/spec'
  * rather than printing a message id at somebody.
  */
 export const STARTER_SCHEMA = {
-  specVersion: '3',
+  specVersion: '4',
   id: 'order',
   title: 'Order',
   model: {
@@ -146,6 +146,35 @@ export const STARTER_SCHEMA = {
       // something that does not match it and the engine refuses it exactly as it
       // refuses a typed answer, which is the whole claim about what a widget may do.
       { key: 'voucher', type: 'text', widget: 'scanner', label: { $t: 'voucher' }, pattern: '[A-Z0-9]{6}' },
+
+      // `widget: 'rating'` on a number: spec 4. An NPS question, which is this
+      // widget's commonest use and needs no type of its own — 0 to 10 inclusive is
+      // eleven options, and the off-by-one that makes a scale run 1 to 10 drops the
+      // answer somebody meant. Bounds are not optional in practice: without them
+      // there is no scale to draw and the control falls back to a number input, so
+      // a demo without them would show the fallback and teach nothing.
+      {
+        key: 'recommend',
+        type: 'number',
+        widget: 'rating',
+        label: { $t: 'recommend' },
+        min: 0,
+        max: 10,
+      },
+      // `widget: 'slider'` on a number, with a `step` — because a slider without
+      // one is a control nobody can see the point of, and `step` is the property
+      // spec 4 added for it. 1 to 5 in halves shows what a step DOES: the thumb
+      // stops at 2.5, and the engine refuses 2.7 on the server as well, which is
+      // why `step` is a field property rather than widget configuration.
+      {
+        key: 'portions',
+        type: 'number',
+        widget: 'slider',
+        label: { $t: 'portions' },
+        min: 1,
+        max: 5,
+        step: 0.5,
+      },
 
       { key: 'notes', type: 'textarea', label: { $t: 'notes' }, maxLength: 500 },
       // selectboxes: several answers from one list. The answer is the list of
@@ -311,6 +340,8 @@ export const STARTER_SCHEMA = {
             { kind: 'field', path: 'items' },
         { kind: 'field', path: 'recipients' },
             { kind: 'field', path: 'voucher' },
+            { kind: 'field', path: 'recommend' },
+            { kind: 'field', path: 'portions' },
           ],
         },
         {
@@ -439,6 +470,8 @@ export const STARTER_SCHEMA = {
         'items.unitPrice': 'Unit price',
         'items.lineTotal': 'Line total',
         voucher: 'Voucher code',
+        recommend: 'How likely are you to recommend us',
+        portions: 'Portions per serving',
         notes: 'Notes',
         tabs: 'Extras and anything else',
         'tab.extras': 'Extras',
@@ -495,6 +528,8 @@ export const STARTER_SCHEMA = {
         'items.unitPrice': 'Einzelpreis',
         'items.lineTotal': 'Zeilensumme',
         voucher: 'Gutscheincode',
+        recommend: 'Wie wahrscheinlich empfehlen Sie uns weiter',
+        portions: 'Portionen pro Gang',
         notes: 'Bemerkungen',
         tabs: 'Extras und Sonstiges',
         'tab.extras': 'Extras',

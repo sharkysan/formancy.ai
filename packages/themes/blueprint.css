@@ -1760,3 +1760,81 @@
 [data-formancy-theme='blueprint'] [data-formancy-part='tagpicker-option']:hover {
   background: color-mix(in srgb, var(--fm-signal) 14%, transparent);
 }
+
+/* ------------------------------------------- rating and slider (spec 4) */
+
+/*
+ * A technical scale: numbered boxes, not stars. This theme's idea is that a form
+ * reads like a drawing, and a drawing has no decorations. The number is also the
+ * control's accessible name, so covering it with a glyph would hide what it says.
+ */
+[data-formancy-theme='blueprint'] [data-formancy-part='rating'] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='rating-step'] {
+  position: relative;
+  display: grid;
+  place-items: center;
+  /* 2.25rem is 36px: above SC 2.5.8's 24px minimum without a spacing exception
+     to argue, which a row of eleven of these would otherwise need. */
+  min-inline-size: 2.25rem;
+  min-block-size: 2.25rem;
+  border: 1px solid var(--fm-rule);
+  border-radius: var(--fm-radius);
+  background: var(--fm-paper);
+  cursor: pointer;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='rating-step'] input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='rating-label'] {
+  font-family: var(--fm-mono);
+  font-size: 0.8125rem;
+  color: var(--fm-muted);
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='rating-step'][data-chosen] {
+  border-color: var(--fm-signal);
+  background: color-mix(in srgb, var(--fm-signal) 12%, var(--fm-paper));
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='rating-step'][data-chosen] [data-formancy-part='rating-label'] {
+  color: var(--fm-signal);
+  font-weight: 600;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='rating-step']:focus-within {
+  outline: 2px solid var(--fm-signal);
+  outline-offset: 1px;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='slider'] {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0.875rem;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='slider'] input {
+  inline-size: 100%;
+  accent-color: var(--fm-signal);
+}
+
+/* Monospace and a fixed width, so the number does not shift the track as it
+   changes — a read-out that moves is one that is hard to read while dragging. */
+[data-formancy-theme='blueprint'] [data-formancy-part='slider-value'] {
+  min-inline-size: 3ch;
+  text-align: end;
+  font-family: var(--fm-mono);
+  font-size: 0.8125rem;
+  color: var(--fm-ink);
+}

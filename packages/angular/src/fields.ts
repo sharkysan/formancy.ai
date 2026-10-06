@@ -15,11 +15,8 @@ import {
   FormancyDateTimeField,
   FormancyTimeField,
 } from './fields/temporal-fields.js'
-import {
-  FormancyNumberField,
-  FormancyTextField,
-  FormancyTextareaField,
-} from './fields/text-fields.js'
+import { FormancyTextField, FormancyTextareaField } from './fields/text-fields.js'
+import { FormancyNumberField } from './fields/scale-fields.js'
 
 /**
  * Which component renders which field type.
@@ -73,8 +70,5 @@ export {
   FormancyDateTimeField,
   FormancyTimeField,
 } from './fields/temporal-fields.js'
-export {
-  FormancyNumberField,
-  FormancyTextField,
-  FormancyTextareaField,
-} from './fields/text-fields.js'
+export { FormancyTextField, FormancyTextareaField } from './fields/text-fields.js'
+export { FormancyNumberField } from './fields/scale-fields.js'

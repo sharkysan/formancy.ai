@@ -24,10 +24,11 @@ import { CheckboxField, RadioGroupField, SelectField } from './fields/choice-fie
 import { FileField } from './fields/file-field.js'
 import { RichTextField } from './fields/rich-text-field.js'
 import { SelectBoxesSwitch } from './fields/selectboxes-field.js'
+import { NumberSwitch } from './fields/scale-fields.js'
 import { SignatureField } from './fields/signature-field.js'
 import { StaticField } from './fields/static-field.js'
 import { DateField, DateTimeField, TimeField } from './fields/temporal-fields.js'
-import { NumberField, TextField, TextareaField } from './fields/text-fields.js'
+import { TextField, TextareaField } from './fields/text-fields.js'
 import type { FieldComponent, FormancyFormProps, Registry } from './fields/internals.js'
 
 /**
@@ -439,7 +440,7 @@ function RepeaterSection({
 const DEFAULT_COMPONENTS: Record<FieldType, FieldComponent | null> = {
   text: TextField,
   textarea: TextareaField,
-  number: NumberField,
+  number: NumberSwitch,
   checkbox: CheckboxField,
   date: DateField,
   time: TimeField,

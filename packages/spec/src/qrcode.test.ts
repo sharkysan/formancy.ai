@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 
-import { LAYOUT_LEAF_KINDS, SPEC_1_LAYOUT_KINDS, layoutChildren } from './types.js'
+import { LAYOUT_LEAF_KINDS, SPEC_1_LAYOUT_KINDS, layoutChildren } from './layout.js'
 import { validateSchema } from './validate.js'
 
 /**

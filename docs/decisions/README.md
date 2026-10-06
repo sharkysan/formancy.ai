@@ -204,3 +204,4 @@ listed under the sections they belong to above.
 | [0101](0101-a-control-is-operable-without-a-theme.md) | A control owns what it needs in order to work; a theme owns how it looks | accepted |
 | [0102](0102-what-jsdom-cannot-see-is-checked-in-a-browser.md) | What jsdom cannot represent is checked in a real browser, and not with screenshots | accepted |
 | [0103](0103-a-theme-editor-edits-what-a-theme-declares.md) | A theme editor edits what a theme declares, discovered from its stylesheet | accepted |
+| [0104](0104-spec-4-opens-with-a-widget-not-a-type.md) | Spec 4 opens with two widgets and a property, not a type | accepted |

@@ -53,7 +53,7 @@ formancy
 | Cold graph compile | 30 ms | ≈1.7 ms |
 | `@formancy/core` bundle | 18 kB brotli | 17.8 kB, measured 2026-10-04 |
 | `@formancy/spec` bundle | — | 9.7 kB, measured 2026-09-29 |
-| `@formancy/react` bundle | 4 kB brotli | **20.0 kB** for the whole barrel, measured 2026-09-29 |
+| `@formancy/react` bundle | 4 kB brotli | **21.1 kB** for the whole barrel, measured 2026-10-06 |
 | `uqr`, the QR encoder | — | 6.6 kB brotli, **external** rather than bundled, measured 2026-09-27 |
 
 The performance gate is written to fail on a regression greater than 15%,
@@ -82,6 +82,13 @@ for a type somebody already uses.
 It also moves when the SOURCE does. Stripping the decision essays out of the comments took
 it from 17.7 to 17.5 kB, which is the guard catching a change nobody thought was a change
 to the bundle.
+
+**And again with spec 4: 20.0 kB to 21.1 kB** for the `rating` and `slider` controls. 1.1 kB
+for two controls is the ordinary price of this list growing, and worth recording because the
+pattern is now five data points long: every control a type gains lands in the barrel, because
+the barrel is what a consumer importing `@formancy/react` gets. The answer when this stops
+being affordable is the per-entry split the 4 kB figure was written for — not a smaller
+control.
 
 **`@formancy/core` is now 17.8 kB against an 18 kB budget, and that is tight enough to say
 out loud.** The last 0.5 kB is `unknown-paths.ts`, a publish-time check that reports a rule

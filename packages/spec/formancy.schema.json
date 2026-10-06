@@ -19,7 +19,8 @@
    "enum": [
     "1",
     "2",
-    "3"
+    "3",
+    "4"
    ]
   },
   "id": {
@@ -254,6 +255,36 @@
         "title": "Maximum",
         "description": "The largest value that counts as a valid answer.",
         "type": "number"
+       },
+       "step": {
+        "title": "Step",
+        "description": "The granularity of the answer, and the distance a slider moves. Counted from the minimum when there is one, and from zero when there is not — so a step of 5 with a minimum of 2 accepts 2, 7 and 12. Must be greater than zero. Needs spec version 4.",
+        "type": "number",
+        "exclusiveMinimum": 0
+       }
+      }
+     }
+    },
+    {
+     "if": {
+      "required": [
+       "type"
+      ],
+      "properties": {
+       "type": {
+        "const": "number"
+       }
+      }
+     },
+     "then": {
+      "properties": {
+       "widget": {
+        "title": "Widget",
+        "description": "How this field should look. Presentation only: it never changes what the field collects or what is stored. Leave it out for the default control. Show a scale of stars or numbers between the minimum and the maximum, or a track to drag. The answer is unchanged: still one number, and still subject to the minimum, maximum and step. Needs spec version 4.",
+        "enum": [
+         "rating",
+         "slider"
+        ]
        }
       }
      }

@@ -1704,3 +1704,72 @@
 [data-formancy-theme='paper'] [data-formancy-part='tagpicker-option']:hover {
   background: color-mix(in srgb, var(--fm-accent) 14%, transparent);
 }
+
+/* ------------------------------------------- rating and slider (spec 4) */
+
+/*
+ * Quiet and editorial: a hairline under each number rather than a box, so a
+ * scale reads as part of the text rather than as a row of buttons.
+ */
+[data-formancy-theme='paper'] [data-formancy-part='rating'] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='rating-step'] {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-inline-size: 2rem;
+  min-block-size: 2rem;
+  border-block-end: 2px solid var(--fm-hair);
+  cursor: pointer;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='rating-step'] input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='rating-label'] {
+  font-family: var(--fm-serif);
+  font-size: 1rem;
+  color: var(--fm-muted);
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='rating-step'][data-chosen] {
+  border-block-end-color: var(--fm-accent);
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='rating-step'][data-chosen] [data-formancy-part='rating-label'] {
+  color: var(--fm-accent);
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='rating-step']:focus-within {
+  outline: 2px solid var(--fm-accent);
+  outline-offset: 2px;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='slider'] {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0.875rem;
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='slider'] input {
+  inline-size: 100%;
+  accent-color: var(--fm-accent);
+}
+
+[data-formancy-theme='paper'] [data-formancy-part='slider-value'] {
+  min-inline-size: 3ch;
+  text-align: end;
+  font-family: var(--fm-serif);
+  font-size: 1rem;
+  color: var(--fm-ink);
+}

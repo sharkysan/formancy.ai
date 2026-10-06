@@ -81,6 +81,36 @@ export function modelViolations(def: FieldDef, value: unknown): string[] {
     }
   }
 
+  /*
+   * A `step`, which says which numbers on the scale count (spec 4).
+   *
+   * Enforced here rather than left to the control, which is the reason `step` is
+   * a field property and not widget configuration: a slider is presentation and
+   * the server never sees one, so a value the client accepted and the server
+   * refused would be exactly the drift this engine exists to prevent.
+   *
+   * **Counted from `min` when there is one, and from zero when there is not.**
+   * `min: 2, step: 5` is a scale of 2, 7, 12 — which is what an author who wrote
+   * both of those meant; counting from zero would refuse every value on their own
+   * scale and accept 0, which their minimum forbids.
+   *
+   * **Compared with a tolerance, not a remainder**, and that is not fussiness:
+   * `0.30000000000000004 % 0.1` is `0.09999999999999998`, so a slider at 0.3 with
+   * a step of 0.1 — an ordinary configuration — would report an invalid answer
+   * that the control itself produced, on a value the person never typed. The
+   * tolerance is a millionth of a step, which is far below any granularity a
+   * person can express and far above the error binary fractions accumulate.
+   */
+  if (def.step !== undefined && def.step > 0) {
+    if (typeof value !== 'number' || Number.isNaN(value)) {
+      codes.push('step')
+    } else {
+      const from = def.min ?? 0
+      const steps = (value - from) / def.step
+      if (Math.abs(steps - Math.round(steps)) > 1e-6) codes.push('step')
+    }
+  }
+
   const text = typeof value === 'string' ? value : undefined
 
   // A temporal answer, bounded by comparing strings, which is only correct because the

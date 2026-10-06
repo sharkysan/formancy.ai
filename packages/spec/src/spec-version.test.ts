@@ -27,9 +27,12 @@ const errorsOf = (document: FormSchema): string[] => {
 }
 
 describe('what each version defines', () => {
-  test('the versions this package speaks are 1, 2 and 3, newest by default', () => {
-    expect([...SPEC_VERSIONS]).toEqual(['1', '2', '3'])
-    expect(CURRENT_SPEC_VERSION).toBe('3')
+  test('the versions this package speaks are 1 to 4, newest by default', () => {
+    // Version 4 is **open**: it is the current one and it is not frozen, which is
+    // the one state no other version is in. `MIGRATIONS.md` says so, and
+    // `rating-slider.test.ts` covers what it has added so far.
+    expect([...SPEC_VERSIONS]).toEqual(['1', '2', '3', '4'])
+    expect(CURRENT_SPEC_VERSION).toBe('4')
   })
 
   test('version 2 is a superset: every version 1 type is still a version 2 type', () => {

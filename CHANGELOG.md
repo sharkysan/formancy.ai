@@ -10,6 +10,73 @@ later.
 
 ## Unreleased
 
+**The Schema view was broken, and the cascade did it again.** Reported as "the schema view
+is broken", and what was broken was the theme editor bleeding into it: `hidden` hides an
+element through `display: none` in the user-agent stylesheet, and **any** author `display`
+beats it. `.pane.editor > .body.theme { display: flex }` matched at the same specificity as
+`.pane .body[hidden]` and came later in the file, so the theme body was rendered in every
+mode — measured in Chromium: `hidden: true`, `display: flex`, **349px tall** inside a pane
+with 321px of room. Scoped with `:not([hidden])`. Third cascade defect in that one file in
+a week, after the pane template shadowing a media query and `touch-action` living only in a
+theme, so `pnpm test:browser` now asserts that exactly one editor body is on screen per
+mode — and that check was proved by reverting the fix and watching it name the overlap.
+
+**Spec version 4 is open, with two widgets and a property.** `widget: "rating"`,
+`widget: "slider"` and `step`, all on `number`.
+
+**Widgets rather than types, and the test is the answer shape.** A rating is a number
+between two bounds and so is a slider, so both are a `number` field wearing different
+paint: a version 3 reader given one renders a number input, collects the same answer, and
+is wrong only about how it looked. An NPS question is `rating` with `min: 0` and
+`max: 10` — giving that its own construct would have been giving one spelling of one scale
+a place in a frozen format. `ranking` and `matrix` are **not** here for the same reason
+these two are: each stores an answer no existing type holds, so each is a type, and four
+constructs at once would have been four at the quality of two
+([0104](./docs/decisions/0104-spec-4-opens-with-a-widget-not-a-type.md)).
+
+**`step` is a field property, not widget configuration**, and that is the load-bearing
+choice: a slider is presentation and the server never sees one, so a stepped scale
+configured in the widget would be enforced on the client and not on the submission. It is
+counted from `min` when there is one, so `min: 2, step: 5` is a scale of 2, 7, 12. And the
+engine compares with a tolerance rather than a remainder, because
+`0.30000000000000004 % 0.1` is `0.09999999999999998` — a slider at 0.3 with a step of 0.1
+would otherwise report an invalid answer that the control itself produced.
+
+**A rating is a radio group, not a row of buttons.** Eleven buttons are eleven tab stops a
+screen reader announces as unrelated controls; a radio group is one stop whose arrow keys
+move along the scale. It is named with `aria-labelledby`, because a `label[for]` names a
+form *control* and a `role="radiogroup"` is not one — in React the group rendered with no
+accessible name at all until that was found. A scale with no `min` and `max` falls back to
+the plain number input rather than inventing 1–5 or 0–100, and a slider tells the engine
+nothing until it is moved, so `required` still bites while the read-out shows where the
+thumb is.
+
+**The read-out is a `<span>`, not an `<output>`** — `<output>` carries an implicit
+`role="status"`, so every step of a drag would be announced on top of the value the range
+input announces itself. The playground's own "every control has an accessible name" guard
+found that.
+
+**Version 4 says it is open, everywhere that matters.** Every other version's section in
+`MIGRATIONS.md` says FROZEN; this one says OPEN, and `SOUP-DECLARATION.md`,
+`MDR-CONTEXT.md` and `SAFETY-ANALYSIS.md` now each state that a deployment pinning version
+4 is pinning a format that may still gain constructs. One of those paragraphs still said a
+fix "belongs to a version 3 discussion", which stopped being true when 3 froze.
+
+**And the themes guard had been checking 44% of the theming contract.** `emittedParts()`
+read only the top level of each renderer's `src`, and every control lives in `src/fields/`
+— so the scan saw **36 of 82** parts, missing `label`, `error`, `field`, and every part of
+the file field, the rich text editor, the signature, the tag picker and the typeahead. The
+guard that holds this project's central product claim passed because it was looking in the
+wrong place. Fixing it cost almost nothing — all 46 were already styled by hand in all four
+themes — and a mutation run *cannot* catch this one, because a guard that checks fewer
+things cannot fail: it is held forwards instead, by naming parts that exist only in a
+subdirectory.
+
+Three files were split and the budget was right each time: `types.ts` gave up the layout
+vocabulary, `validate.ts` gave up the version gate, and the playground's `app.tsx` gave up
+its editor pane. The React barrel grew 1.1 kB to 21.1 kB, re-measured in §9.3 — the fifth
+data point in a pattern that file now records.
+
 **A visual theme editor, and it reads the theme rather than the other way round.** The
 playground's editor pane has a third mode beside Build and Schema: every design token the
 applied theme declares, with a control each, a live form beside it, and a CSS patch to take

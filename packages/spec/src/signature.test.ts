@@ -32,7 +32,11 @@ const form = (specVersion: string, fields: unknown[]): FormSchema =>
 describe('spec version 3', () => {
   test('exists, is the current one, and adds rather than replaces', () => {
     expect(SPEC_VERSIONS).toContain('3')
-    expect(CURRENT_SPEC_VERSION).toBe('3')
+    // Was `toBe('3')`, which is a different claim from the one this case is
+    // about: that version 3 exists and only adds. Pinning the CURRENT version
+    // here made opening version 4 fail in a file about signatures, which is the
+    // wrong place to find out. `spec-version.test.ts` owns that assertion.
+    expect(SPEC_VERSIONS).toContain('3')
     // Every version 2 type is still a type. A version is a superset or it is a
     // different format wearing the same name.
     for (const type of SPEC_2_FIELD_TYPES) expect(FIELD_TYPES).toContain(type)

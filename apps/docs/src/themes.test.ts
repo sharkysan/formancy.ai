@@ -39,14 +39,40 @@ const NO_STYLING_NEEDED: Readonly<Record<string, string>> = {
 }
 
 function emittedParts(): string[] {
-  const sources = [
-    ...readdirSync(join(repo, 'packages', 'react', 'src'))
-      .filter((name) => name.endsWith('.tsx') || name.endsWith('.ts'))
-      .map((name) => join(repo, 'packages', 'react', 'src', name)),
-    ...readdirSync(join(repo, 'packages', 'angular', 'src'))
-      .filter((name) => name.endsWith('.ts'))
-      .map((name) => join(repo, 'packages', 'angular', 'src', name)),
-  ].filter((path) => !path.includes('.test.'))
+  /*
+   * **Recursive, and it was not.**
+   *
+   * This read only the top level of each package's `src`, and every control
+   * lives in `src/fields/`. Measured when spec 4 added two: the scan saw **36
+   * of 82** parts. The 46 it missed include `label`, `error`, `field`,
+   * `required-hint`, and every part of the file field, the rich text editor, the
+   * signature, the tag picker and the typeahead.
+   *
+   * So the guard holding this project's theming contract — "a part with no rule
+   * is not a styling preference, it is half a feature" — had been checking 44%
+   * of it since the controls were split into their own directory. It passed
+   * because it was looking in the wrong place, which is the most expensive way a
+   * guard can be green.
+   *
+   * Fixing the scan turned out to cost almost nothing: all 46 were already
+   * styled by hand in all four themes. Only the two new controls' parts were
+   * missing, which is the work this change owed anyway.
+   */
+  const sources: string[] = []
+  const walk = (directory: string, extensions: readonly string[]): void => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      const path = join(directory, entry.name)
+      if (entry.isDirectory()) {
+        walk(path, extensions)
+        continue
+      }
+      if (!extensions.some((extension) => entry.name.endsWith(extension))) continue
+      if (path.includes('.test.')) continue
+      sources.push(path)
+    }
+  }
+  walk(join(repo, 'packages', 'react', 'src'), ['.tsx', '.ts'])
+  walk(join(repo, 'packages', 'angular', 'src'), ['.ts'])
 
   const parts = new Set<string>()
   for (const path of sources) {
@@ -117,6 +143,34 @@ describe('the theme contract', () => {
     // below pass forever, which is the failure mode of every derived test.
     expect(emittedParts().length).toBeGreaterThan(20)
     expect(themes().length).toBeGreaterThan(2)
+  })
+
+  test('and read from every directory, not only the top of each package', () => {
+    /*
+     * The trap this file fell into, and the one shape of it a mutation cannot
+     * catch.
+     *
+     * `emittedParts()` read only the top level of each renderer's `src`, and
+     * every control lives in `src/fields/`. Measured: the scan saw **36 of 82**
+     * parts, missing `label`, `error`, `field`, `required-hint`, and every part
+     * of the file field, the rich text editor, the signature, the tag picker and
+     * the typeahead. The guard holding this project's theming contract had been
+     * checking 44% of it.
+     *
+     * **Reverting the fix leaves the suite green**, which is why a mutation run
+     * found nothing: a guard that checks fewer things cannot fail. The only way
+     * to hold it is forwards — name parts that exist *only* in a subdirectory and
+     * assert the scan finds them. All four of these are emitted from
+     * `src/fields/`, and all four were invisible before.
+     *
+     * Count-free on purpose: 82 is a number that moves on the next control, and
+     * a count nobody chose for a reason is a count that passes for the wrong one.
+     */
+    const parts = emittedParts()
+
+    for (const part of ['label', 'error', 'signature-surface', 'rating-step']) {
+      expect(parts, `${part} is emitted from a subdirectory and the scan missed it`).toContain(part)
+    }
   })
 
   test('every part the renderers emit is styled by every theme', () => {
