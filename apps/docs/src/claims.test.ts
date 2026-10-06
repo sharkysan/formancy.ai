@@ -305,8 +305,18 @@ describe('the spec version 2 freeze', () => {
     kinds: string[]
     widgets: string[]
     widgetsInThree: string[]
+    widgetsInFour: string[]
   } => {
-    const types = readFileSync(join(repo, 'packages', 'spec', 'src', 'types.ts'), 'utf8')
+    /*
+     * Both files, because the layout vocabulary moved out of `types.ts` when spec
+     * 4 pushed that file past its size ceiling. Reading one of them returned an
+     * empty list for `SPEC_1_LAYOUT_KINDS`, so every layout kind looked like a
+     * version 2 addition and `field` — a version 1 kind since the beginning — was
+     * reported as missing from the version 2 section.
+     */
+    const types = ['types.ts', 'layout.ts']
+      .map((name) => readFileSync(join(repo, 'packages', 'spec', 'src', name), 'utf8'))
+      .join('\n')
     const list = (name: string): string[] => {
       const found = new RegExp(`export const ${name}[^=]*=\\s*\\[([^\\]]*)\\]`, 's').exec(types)
       return [...(found?.[1] ?? '').matchAll(/'([^']+)'/g)].map((match) => match[1] ?? '')
@@ -341,9 +351,18 @@ describe('the spec version 2 freeze', () => {
       // `widget` itself arrived in 2, so every widget looked like a version 2
       // widget and the version 2 section was asked to name `tagpicker`.
       widgets: list('SPEC_2_WIDGETS'),
-      widgetsInThree: list('FIELD_WIDGETS').filter(
-        (widget) => !list('SPEC_2_WIDGETS').includes(widget),
-      ),
+      /*
+       * Each version's own list, not a subtraction from the whole.
+       * `FIELD_WIDGETS` minus version 2's was version 3's answer only while 3 was
+       * the newest: the moment spec 4 added `rating` and `slider`, that
+       * subtraction handed version 3's section two widgets it has never had.
+       *
+       * Reading the literals in `SPEC_3_WIDGETS` is exactly right, because it is
+       * written as "version 2's, plus one" — it spreads the earlier list rather
+       * than repeating it, so the literals written there ARE its additions.
+       */
+      widgetsInThree: list('SPEC_3_WIDGETS'),
+      widgetsInFour: list('SPEC_4_WIDGETS'),
     }
   }
 
@@ -392,6 +411,32 @@ describe('the spec version 2 freeze', () => {
     expect(
       [...typesInThree, ...widgetsInThree].filter((name) => !text.includes(`\`${name}\``)),
     ).toEqual([])
+  })
+
+  test('and names every widget version 4 added, which is the open one', () => {
+    /*
+     * The same shape as version 3's case, and it has to exist for the same
+     * reason: a section that does not name an addition is a reader who cannot
+     * find out what a version costs them. Version 4 is the one where that
+     * matters most, because it is **not frozen** — anybody reading it is reading
+     * a moving target and the list is how they tell what has moved so far.
+     */
+    const { widgetsInFour } = additions()
+    expect(widgetsInFour.length, 'version 4 has added no widget to name').toBeGreaterThan(0)
+
+    const text = under('### What version 4 added')
+    expect(widgetsInFour.filter((name) => !text.includes(`\`${name}\``))).toEqual([])
+  })
+
+  test('and says that version 4 is open rather than frozen, which no other version is', () => {
+    // The one fact about version 4 a reader must not miss. Every other version's
+    // section says FROZEN; this one says the opposite, and a copy-paste that
+    // inherited the wrong word would tell a manufacturer their format is settled
+    // when it is not.
+    const text = readFileSync(join(repo, 'MIGRATIONS.md'), 'utf8')
+
+    expect(text).toContain('## Spec version 4 is OPEN')
+    expect(under('## Spec version 4 is OPEN')).toContain('not frozen')
   })
 
   test('says the version is frozen and what a version 1 document may not carry', () => {

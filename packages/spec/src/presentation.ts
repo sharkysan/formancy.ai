@@ -1,5 +1,6 @@
-import { layoutChildren } from './types.js'
-import type { FieldDef, FormI18n, FormSchema, LayoutNode, MessageRef, Text } from './types.js'
+import { layoutChildren } from './layout.js'
+import type { FieldDef, FormI18n, FormSchema, MessageRef, Text } from './types.js'
+import type { LayoutNode } from './layout.js'
 
 /**
  * Reading the presentation sections: text that may be translated, and layouts

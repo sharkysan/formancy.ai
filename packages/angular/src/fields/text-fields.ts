@@ -177,36 +177,3 @@ export class FormancyTextareaField extends FieldComponentBase {
     this.field.setValue((event.target as HTMLTextAreaElement).value)
   }
 }
-
-@Component({
-  selector: 'formancy-number-field',
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormancyFieldShell],
-  template: `
-    <formancy-field-shell [field]="field" [label]="context.label" [path]="context.path">
-      <input
-        type="number"
-        [id]="control().id"
-        [attr.name]="control().name"
-        [attr.aria-invalid]="control()['aria-invalid']"
-        [attr.aria-required]="control()['aria-required']"
-        [attr.aria-describedby]="control()['aria-describedby']"
-        [disabled]="control().disabled === true"
-        [value]="text()"
-        (input)="onInput($event)"
-        (blur)="field.touch()"
-      />
-    </formancy-field-shell>
-  `,
-})
-export class FormancyNumberField extends FieldComponentBase {
-  protected readonly text = computed(() => {
-    const value = this.field.snapshot().value
-    return typeof value === 'number' ? String(value) : ''
-  })
-
-  protected onInput(event: Event): void {
-    const raw = (event.target as HTMLInputElement).value
-    this.field.setValue(raw === '' ? null : Number(raw))
-  }
-}

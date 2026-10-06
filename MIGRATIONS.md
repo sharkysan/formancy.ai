@@ -11,6 +11,47 @@ of package versions, because it is the artifact with real switching costs:
 your forms and your submissions are written against it. Packages 0.9 and 1.4
 can both speak spec `"1"`.
 
+## Spec version 4 is OPEN
+
+Spec `"4"` is **not frozen**, and it is the only version that is not. It is what this
+source writes, so a document written against it may need changing again before it freezes
+— which is the one thing none of the other three can ask of you.
+
+**Pin a frozen version unless you are following the source deliberately.** A deployment on
+`"3"` is characterising a settled format; one on `"4"` is characterising a moving one.
+
+It is a superset of version 3 and removes nothing, so upgrading is the same single line
+and `upgradeSpecVersion` still does nothing else. The direction that costs something is
+the other one, exactly as before: a reader pinned to spec 3 **refuses** a version 4
+document rather than ignoring the part it does not know
+([0051](docs/decisions/0051-spec-2-adds-types.md)).
+
+### What version 4 added
+
+Two widgets, both on `number`:
+
+- `rating` — stars, or a scale of numbers, between the field's `min` and `max`. An NPS
+  question is this with `min: 0` and `max: 10`; it needs no name of its own.
+- `slider` — a track to drag between the same two bounds.
+
+And one property:
+
+- `step` — the granularity of a numeric answer, and the distance a slider moves. Counted
+  from `min` when there is one and from zero when there is not, so `min: 2, step: 5`
+  accepts 2, 7 and 12. A **field** property rather than widget configuration, because it
+  says which values are valid and the server has to agree
+  ([0104](docs/decisions/0104-spec-4-opens-with-a-widget-not-a-type.md)).
+
+**Both are widgets rather than types, and that is the design.** Each stores exactly what a
+`number` field already stores, so the control differs and the answer does not. A construct
+that changed the answer — a ranking's chosen order, a matrix's row-to-column map — is a
+type, and those are not here yet.
+
+It is still a version, for the reason every widget is: the format is closed, so a version 3
+reader does not shrug at `widget: "rating"` — it refuses the document. A version that
+rendered the default control instead would collect the same answers and look entirely
+correct, which is the silent failure the version line exists to prevent.
+
 ## Spec version 3 is FROZEN
 
 Spec `"3"` is frozen as of 2026-09-29, with the `0.3.0` release. A document that validates

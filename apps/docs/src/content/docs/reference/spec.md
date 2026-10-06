@@ -1,5 +1,5 @@
 ---
-title: Spec reference (v3)
+title: Spec reference (v4)
 description: Every property of a formancy form document, generated from the JSON Schema in packages/spec.
 ---
 
@@ -9,7 +9,7 @@ the source of truth — edit it, not this page.
 :::
 
 :::note
-This page describes spec version 3. Earlier versions are **frozen**: a
+This page describes spec version 4. Earlier versions are **frozen**: a
 document that validates against one keeps validating. A newer version only adds, and
 a reader of an older one refuses a document it cannot fully understand rather than
 dropping an answer from it. See [Versioning](/docs/concepts/versioning/) for how that
@@ -22,7 +22,7 @@ A formancy form. The document holds the data contract only: what the form collec
 
 ### `specVersion`
 
-required · one of `"1"`, `"2"`, `"3"` · default `"3"`
+required · one of `"1"`, `"2"`, `"3"`, `"4"` · default `"3"`
 
 **Spec version.** Which version of the document format this form is written against. Version 1 is frozen: a document that validates today will validate against every future release that speaks spec 1. Version 2 is a superset — it adds field types and layout kinds and removes nothing — so every version 1 document is also a valid version 2 document, and upgrading is a one-line change. Independent of the package version. Version 3 adds the `signature` field type and is the version this package writes; it is a superset in the same way, so every version 2 document is a valid version 3 document.
 
@@ -217,6 +217,20 @@ optional · number
 optional · number
 
 **Maximum.** The largest value that counts as a valid answer.
+
+##### `step`
+
+optional · number
+
+**Step.** The granularity of the answer, and the distance a slider moves. Counted from the minimum when there is one, and from zero when there is not — so a step of 5 with a minimum of 2 accepts 2, 7 and 12. Must be greater than zero. Needs spec version 4.
+
+#### `number`
+
+##### `widget`
+
+optional · one of `"rating"`, `"slider"`
+
+**Widget.** How this field should look. Presentation only: it never changes what the field collects or what is stored. Leave it out for the default control. Show a scale of stars or numbers between the minimum and the maximum, or a track to drag. The answer is unchanged: still one number, and still subject to the minimum, maximum and step. Needs spec version 4.
 
 #### `text`, `textarea`
 

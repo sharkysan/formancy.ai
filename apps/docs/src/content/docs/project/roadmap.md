@@ -65,6 +65,13 @@ It emits a patch rather than a fork, and it does not persist: what you leave wit
 CSS file. A stored theme needs somewhere to put it, which is a backend decision nobody
 has taken.
 
+**Spec version 4 is open**, with `widget: "rating"`, `widget: "slider"` and the `step`
+property. Both are widgets on `number` because neither changes the answer — a rating is a
+number between two bounds and so is a slider — and `step` is a *field* property rather than
+widget configuration, because it says which values are valid and the server has to agree
+([0104](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0104-spec-4-opens-with-a-widget-not-a-type.md)).
+An NPS question is `rating` with `min: 0` and `max: 10`; it needs no construct of its own.
+
 ## What does not exist yet
 
 - **Dropping *between* two elements** rather than onto one, which would need gap
@@ -183,7 +190,13 @@ left out as v2-era omissions. All three are now shipped.
 Roughly in order, and subject to change. The ordering is argued below rather
 than asserted.
 
-1. **XLIFF**, if somebody asks for it. The exchange format is JSON carrying the source
+1. **`ranking` and `matrix`, in version 4.** The two survey constructs that are types
+   rather than widgets, because each stores an answer no existing type holds: a ranking
+   stores the respondent's chosen order and a matrix a row-to-column map. They are the
+   reason version 4 is open rather than frozen — it can gain them without another bump.
+   Image choices are smaller and go with them: an `image` on an option plus a widget,
+   which changes no answer at all.
+2. **XLIFF**, if somebody asks for it. The exchange format is JSON carrying the source
    beside every target, which converts to XLIFF in a script; a real XLIFF implementation
    is a specification, a namespace and versions, and half of one is worse than none.
 ### Done since this list was written

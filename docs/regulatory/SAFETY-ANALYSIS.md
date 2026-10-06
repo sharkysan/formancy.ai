@@ -777,10 +777,15 @@ that spliced the questions onto the top level, which is the one that reads corre
 
 *Residual, and it is the substantial one:* **the format still permits it.** A document
 written by hand, by an agent through `@formancy/mcp`, or by an older version of the
-builder can place a field beside a page, and it validates. Refusing it is a spec change
-and version 2 is frozen, so it belongs to a version 3 discussion where it would be a
-migration with a report rather than a silent breakage. Until then the constraint covers
-the builder and not the format.
+builder can place a field beside a page, and it validates. Refusing it is a spec change,
+and versions `"1"`, `"2"` and `"3"` are frozen — so it belongs to **version `"4"`, which
+is open** ([0104](../decisions/0104-spec-4-opens-with-a-widget-not-a-type.md)), where it
+would be a migration with a report rather than a silent breakage. That it is open does not
+make it decided: a version that only ever adds cannot refuse something an older one
+allowed without breaking a document that validates today, so the honest form of this is a
+warning on publish rather than a refusal
+([0097](../decisions/0097-a-publish-may-warn.md)). Until then the constraint covers the
+builder and not the format.
 
 ---
 
@@ -863,8 +868,12 @@ concurrently *before* one of them publishes.
    characterising: `"1"` ([0042](../decisions/0042-freeze-the-spec.md)), `"2"`
    ([0051](../decisions/0051-spec-2-adds-types.md)) and `"3"`
    ([0088](../decisions/0088-spec-3-freezes-with-four-constructs.md)) are all
-   frozen, so stored data written against any of them has a settled shape. It is
-   the software that is still moving.
+   frozen, so stored data written against any of them has a settled shape.
+   **Version `"4"` is open** and is what the source writes
+   ([0104](../decisions/0104-spec-4-opens-with-a-widget-not-a-type.md)): it may
+   still gain constructs, so characterise a frozen version unless you are
+   following the source deliberately. It is the software that is still moving —
+   and, for version 4, the format with it.
 3. Decide whether automated accessibility checking is sufficient evidence for
    the device's intended users, and plan a manual audit if it is not.
 4. Treat the 118 known CEL corpus failures as a functional limitation to be

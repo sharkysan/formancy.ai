@@ -1051,7 +1051,23 @@ body {
  * so this has to lay out a list whose length it does not know, for a theme it
  * may never have seen.
  */
-.pane.editor > .body.theme {
+/*
+ * `:not([hidden])`, and the selector is the bug fix.
+ *
+ * `hidden` hides an element by setting `display: none` in the user-agent
+ * stylesheet, and ANY author `display` beats it. `.pane .body[hidden]` restates
+ * it at 0,3,0 — and `.pane.editor > .body.theme` is also 0,3,0, so the later
+ * rule won and this body was displayed in every mode. Measured in Chromium:
+ * `hidden: true`, `display: flex`, **349px tall** inside a pane with 321px of
+ * room, in the Schema view, which is how it was reported — "the schema view is
+ * broken", when what was broken was this.
+ *
+ * Third time the cascade has bitten in this file in one session, after the pane
+ * template shadowing a media query and `touch-action` living only in a theme.
+ * The browser gate now asserts that exactly one editor body is displayed per
+ * mode, because jsdom resolves none of this.
+ */
+.pane.editor > .body.theme:not([hidden]) {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;

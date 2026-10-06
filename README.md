@@ -172,6 +172,9 @@ submitted. Switch language or theme without reloading.
 - **A visual theme editor.** Every design token the applied theme declares, read
   from its stylesheet rather than from a list — so it works on a theme you wrote,
   and what it hands back is a CSS patch that keeps inheriting rather than a fork.
+- **Ratings and sliders.** A scale is a `number` field with a widget on it, so the
+  answer is the same number either way — and a rating is a radio group rather than
+  a row of buttons, which is one tab stop instead of eleven.
 - **AI-assisted authoring.** Describe a form in the builder, or give your coding
   agent the MCP tools to author and validate a form definition.
 - **No third party in the loop.** Spam protection is proof of work computed in

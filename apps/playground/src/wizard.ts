@@ -30,7 +30,7 @@ import type { FormSchema } from '@formancy/spec'
  * have answered anything.
  */
 export const WIZARD_SCHEMA = {
-  specVersion: '3',
+  specVersion: '4',
   id: 'trip-request',
   title: 'Trip request',
   model: {

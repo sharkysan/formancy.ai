@@ -13,14 +13,16 @@ export {
   RULE_KINDS,
   SPEC_1_FIELD_TYPES,
   SPEC_2_FIELD_TYPES,
-  SPEC_1_LAYOUT_KINDS,
-  LAYOUT_LEAF_KINDS,
-  layoutChildren,
   SPEC_VERSIONS,
   TEMPORAL_FIELD_TYPES,
   TEMPORAL_SHAPES,
   WIDGETS_BY_FIELD_TYPE,
 } from './types.js'
+export {
+  SPEC_1_LAYOUT_KINDS,
+  LAYOUT_LEAF_KINDS,
+  layoutChildren,
+} from './layout.js'
 export { acceptRemoteOptions, capRemoteOptions } from './options-source.js'
 export type { RemoteOption } from './options-source.js'
 export { datagridColumns } from './datagrid.js'
@@ -52,10 +54,8 @@ export type {
   TemporalFieldType,
   FormLogic,
   FormI18n,
-  FormLayout,
   FormModel,
   FormSchema,
-  LayoutNode,
   ListValuedFieldType,
   SpecVersion,
   MessageRef,
@@ -64,6 +64,10 @@ export type {
   LogicRule,
   RuleKind,
 } from './types.js'
+export type {
+  FormLayout,
+  LayoutNode,
+} from './layout.js'
 export { modelDataPaths } from './paths.js'
 export { ROW_ID, ROW_ID_PREFIX } from './types.js'
 export { collectFieldPaths, isMessageRef, modelPathsForLayout, resolveText, unreferencedPaths } from './presentation.js'

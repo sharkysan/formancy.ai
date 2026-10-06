@@ -956,3 +956,130 @@ describe('a skipped page under Angular, which must match the React one', () => {
     expect(screen.queryByRole('button', { name: 'Next' })).toBeNull()
   })
 })
+
+describe('a rating and a slider, which must behave as the React ones do', () => {
+  /*
+   * Spec 4's two widgets. Same assertions as
+   * `packages/react/src/rating-slider.test.tsx`, by role and accessible name —
+   * two renderers agreeing is this project's central claim, and a claim checked
+   * in one place is a claim about one renderer.
+   *
+   * The conformance fixtures cannot carry these: their vocabulary is filling in
+   * and clicking by accessible name, and "drag a slider" is not a sentence in
+   * it. So the parity is held here, deliberately and by hand.
+   */
+  const scaleSchema = (widget: 'rating' | 'slider', over: Record<string, unknown> = {}): FormSchema =>
+    base({
+      specVersion: '4',
+      model: {
+        fields: [
+          {
+            key: 'score',
+            type: 'number',
+            label: 'How likely are you to recommend us',
+            min: 0,
+            max: 10,
+            widget,
+            ...over,
+          } as never,
+        ],
+      },
+    })
+
+  test('a rating is one radio group with a value per step, named by its number', async () => {
+    // The accessibility decision: eleven buttons are eleven tab stops a screen
+    // reader announces as unrelated controls. A radio group is one stop whose
+    // arrow keys move along the scale, which is what the control is.
+    await renderForm(engineFor(scaleSchema('rating')))
+
+    expect(screen.getByRole('radiogroup', { name: /how likely/i })).toBeTruthy()
+    expect(screen.getAllByRole('radio')).toHaveLength(11)
+    for (const value of ['0', '5', '10']) {
+      expect(screen.getByRole('radio', { name: value }), value).toBeTruthy()
+    }
+  })
+
+  test('and stores the number rather than the position', async () => {
+    // A scale from 2 to 5 has four options and the second one means 3. Storing
+    // the index would store 1 and be wrong in a way nothing else notices.
+    const engine = engineFor(scaleSchema('rating', { min: 2, max: 5 }))
+    await renderForm(engine)
+
+    fireEvent.click(screen.getByRole('radio', { name: '3' }))
+
+    expect(engine.value()).toEqual({ score: 3 })
+  })
+
+  test('a slider carries the field’s bounds and step, and shows its value', async () => {
+    await renderForm(engineFor(scaleSchema('slider', { step: 0.5 })))
+    const slider = screen.getByRole('slider', { name: /how likely/i }) as HTMLInputElement
+
+    expect(slider.min).toBe('0')
+    expect(slider.max).toBe('10')
+    expect(slider.step).toBe('0.5')
+    // A track with no number is a control somebody drags until it looks right.
+    expect(screen.getByText('5')).toBeTruthy()
+  })
+
+  test('and tells the engine nothing until it is moved, so required still bites', async () => {
+    /*
+     * A range input with no value sits at its midpoint, so the thumb's position
+     * is a claim about an answer that does not exist. Both renderers leave the
+     * value null and show where the thumb is instead.
+     */
+    const engine = engineFor(scaleSchema('slider'))
+    await renderForm(engine)
+
+    expect(engine.value()).toEqual({})
+    expect((screen.getByRole('slider') as HTMLInputElement).value).toBe('5')
+
+    fireEvent.input(screen.getByRole('slider'), { target: { value: '8' } })
+    expect(engine.value()).toEqual({ score: 8 })
+  })
+
+  test('and neither draws a scale it has no bounds for', async () => {
+    /*
+     * A scale needs both ends, and the format cannot require them: `min` and
+     * `max` are optional on every number field, and making them conditional on a
+     * widget would mean a document that stops validating when somebody changes
+     * presentation. So the fallback is the ordinary number input rather than an
+     * invented range of 1–5 or 0–100.
+     */
+    for (const widget of ['rating', 'slider'] as const) {
+      await renderForm(engineFor(scaleSchema(widget, { min: undefined, max: undefined })))
+
+      expect(screen.queryByRole('radiogroup'), widget).toBeNull()
+      expect(screen.queryByRole('slider'), widget).toBeNull()
+      expect(screen.getByRole('spinbutton', { name: /how likely/i }), widget).toBeTruthy()
+
+      // The teardown this suite uses between cases, by hand between iterations:
+      // `TestBed.resetTestingModule()` and an emptied body. Testing-library's
+      // `cleanup` is not what the file imports, and calling it was the first
+      // version's mistake.
+      TestBed.resetTestingModule()
+      document.body.innerHTML = ''
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] })
+    }
+  })
+
+  test('and the parts a theme dresses carry the names the React renderer uses', async () => {
+    await renderForm(engineFor(scaleSchema('rating')))
+    const rating = [...document.querySelectorAll('[data-formancy-part]')].map((element) =>
+      element.getAttribute('data-formancy-part'),
+    )
+    for (const part of ['rating', 'rating-step', 'rating-label']) {
+      expect(rating, `no ${part}`).toContain(part)
+    }
+
+    TestBed.resetTestingModule()
+    document.body.innerHTML = ''
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] })
+    await renderForm(engineFor(scaleSchema('slider')))
+    const slider = [...document.querySelectorAll('[data-formancy-part]')].map((element) =>
+      element.getAttribute('data-formancy-part'),
+    )
+    for (const part of ['slider', 'slider-value']) {
+      expect(slider, `no ${part}`).toContain(part)
+    }
+  })
+})

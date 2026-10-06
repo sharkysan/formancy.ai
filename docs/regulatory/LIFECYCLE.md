@@ -196,7 +196,10 @@ version `"2"` as of 0.2.0 ([0051](../decisions/0051-spec-2-adds-types.md)): a
 document that validates today keeps validating, in either version. Version `"3"` is
 **frozen** as of 2026-09-29 with 0.3.0, and carries `signature`, the `tagpicker`
 widget and the `check` and `skip` rule kinds
-([0088](../decisions/0088-spec-3-freezes-with-four-constructs.md)). Version 2 is
+([0088](../decisions/0088-spec-3-freezes-with-four-constructs.md)). Version `"4"` is **open**: it is the version the
+source writes and the only one that is not frozen, so a deployment pinning it is
+pinning a format that may still gain constructs
+([0104](../decisions/0104-spec-4-opens-with-a-widget-not-a-type.md)). Version 2 is
 a superset — it adds field types and layout kinds and removes nothing — so a
 version 1 document is also a valid version 2 document, while a version 1 reader
 refuses a version 2 document rather than ignoring the parts it does not know.
