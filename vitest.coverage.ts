@@ -20,6 +20,9 @@ import type { ViteUserConfig } from 'vitest/config'
  *   and pretending otherwise with a mock-heavy test would raise the number
  *   without raising the confidence.
  * - **Generated and declaration files**, which have no source to cover.
+ * - **A framework's own config** (`content.config.ts`), for the same reason as a
+ *   composition root: it wires a loader and a schema together and is verified by
+ *   the build that reads it.
  *
  * Everything else counts, including the parts that are awkward to reach. When
  * a file is hard to cover that is usually the file saying something about its
@@ -37,6 +40,15 @@ export const coverage: NonNullable<NonNullable<ViteUserConfig['test']>['coverage
     'src/index.ts',
     'src/main.ts',
     'src/main.tsx',
+    // A framework's own config, which is the composition-root argument in
+    // another costume: `apps/docs/src/content.config.ts` is three imports and an
+    // object literal handing Astro a loader and a schema. There is nothing in it
+    // a unit test could find wrong — a bad collection config fails the docs
+    // build, which `pnpm build:web` runs as a gate. Excluded after reading the
+    // report and finding it at 0% beside files that genuinely were untested;
+    // leaving it there makes the figure mean less, which is what these
+    // exclusions exist to prevent.
+    'src/content.config.ts',
   ],
 }
 

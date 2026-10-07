@@ -162,7 +162,25 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
-      - run: pnpm exec playwright install --with-deps chromium
+
+      # **No `--with-deps`**, and that is the fix for a twenty-minute hang.
+      #
+      # `--with-deps` runs `apt-get` for Chromium's system libraries, and the
+      # hosted Ubuntu runner already ships them — so on a cache hit the browser
+      # was present in five seconds and this step then went to apt anyway and sat
+      # there for 19m30s until the job's timeout cancelled it. The same step had
+      # taken 66 seconds the run before.
+      #
+      # A gate that depends on an apt mirror depends on somebody else's uptime,
+      # which is the trade this repository refuses elsewhere (0059, 0098). If a
+      # library is ever actually missing, Chromium fails to launch and
+      # `browser-test.mjs` prints the exact command to run — a loud failure
+      # rather than a silent wait.
+      #
+      # The step timeout is the backstop: five minutes is far more than a cold
+      # download needs, and a hang now costs five minutes instead of the job.
+      - run: pnpm exec playwright install chromium
+        timeout-minutes: 5
 
       - run: pnpm test:browser
 

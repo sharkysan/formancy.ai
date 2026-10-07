@@ -1,5 +1,5 @@
-import { afterEach, describe, expect, test } from 'vitest'
-import { cleanup, render, screen, within } from '@testing-library/react'
+import { afterEach, describe, expect, test, vi } from 'vitest'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
 import { createBuilderSession } from '@formancy/builder-core'
 import type { FormSchema } from '@formancy/spec'
@@ -253,5 +253,171 @@ describe('taking a catalogue out and bringing it back', () => {
     // file was exported before somebody deleted a field, and a reviewer has to
     // know which one.
     expect(screen.getAllByText(/gone\.label/).length).toBeGreaterThan(0)
+  })
+})
+
+describe('the catalogue leaving and coming back', () => {
+  /*
+   * The round trip is the feature: a catalogue goes out as a file carrying the
+   * source beside every target, a translator works on it somewhere else, and it
+   * comes back. `exportCatalogue` and `importCatalogue` are covered in
+   * `session.test.ts`; **the plumbing in this pane was covered by nothing** —
+   * lines 136–143 and 155–166, which is the download and the upload.
+   *
+   * That gap matters more than its size. A button that builds a blob and never
+   * clicks the link looks exactly like a working download: the browser shows
+   * nothing either way. And an upload handler that throws inside a promise
+   * leaves a translator's afternoon of work silently discarded, which is the
+   * outcome the `catch` below exists to prevent and which nothing proved it did.
+   */
+  const downloadSpies = () => {
+    const clicked: Array<{ name: string }> = []
+    const urls: string[] = []
+    const revoked: string[] = []
+    let text = ''
+    vi.spyOn(URL, 'createObjectURL').mockImplementation((blob: Blob | MediaSource) => {
+      // The real signature takes a `MediaSource` too; narrowed here because only
+      // a `Blob` is ever passed and the text is what the case is about.
+      const file = blob as Blob
+      void file.text().then((read) => {
+        text = read
+      })
+      const url = `blob:fake/${String(urls.length)}`
+      urls.push(url)
+      return url
+    })
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation((url: string) => void revoked.push(url))
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+      clicked.push({ name: this.download })
+    })
+    return { clicked, urls, revoked, read: () => text }
+  }
+
+  /** Its own session, because the helper above is local to another block. */
+  const mountTranslated = async (): Promise<ReturnType<typeof createBuilderSession>> => {
+    const session = createBuilderSession(untranslated)
+    session.extractAllText()
+    session.setMessage('fr', 'email.label', 'Adresse professionnelle')
+    render(<TranslationsPane session={session} />)
+    // The pane opens on the default language, and everything below is about the
+    // one being translated. The first version of these cases skipped this and
+    // got `contact.en.json`, which is how it learned that the file is named
+    // after the language on screen rather than after the one with work in it.
+    await userEvent.setup().selectOptions(screen.getByRole('combobox', { name: /language/i }), 'fr')
+    return session
+  }
+
+  test('downloads a file named for the form and the language', async () => {
+    /*
+     * The name is the only thing a translator sees before they open it, and two
+     * languages of one form must not arrive as the same file. `createObjectURL`
+     * does not exist in jsdom and clicking an anchor would navigate, so both are
+     * stubbed; what is asserted is what somebody ends up with.
+     */
+    const user = userEvent.setup()
+    const session = await mountTranslated()
+    const spies = downloadSpies()
+
+    await user.click(screen.getByRole('button', { name: /download/i }))
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(spies.clicked.map(({ name }) => name)).toEqual([`${session.document().id}.fr.json`])
+    expect(spies.urls.length, 'nothing was offered to download').toBe(1)
+    expect(spies.revoked, 'the object URL was never revoked').toEqual(spies.urls)
+  })
+
+  test('and the file carries the source beside every target, which is what a memory matches on', async () => {
+    /*
+     * A list of ids and blanks tells a translator nothing, and a translation
+     * memory matches on source text. This is the claim the roadmap makes about
+     * the format, asserted against the bytes that leave the page rather than
+     * against the function that built them.
+     */
+    const user = userEvent.setup()
+    await mountTranslated()
+    const spies = downloadSpies()
+
+    await user.click(screen.getByRole('button', { name: /download/i }))
+    await Promise.resolve()
+    await Promise.resolve()
+
+    const file = JSON.parse(spies.read()) as {
+      locale?: string
+      defaultLocale?: string
+      messages?: Array<{ id: string; source: string; target: string }>
+    }
+    expect(file.locale).toBe('fr')
+    expect(file.defaultLocale, 'a target with no source language is a target against nothing').toBeDefined()
+    expect(file.messages?.length, 'the catalogue went out empty').toBeGreaterThan(0)
+    expect(Object.keys(file.messages?.[0] ?? {}).sort()).toEqual(['id', 'source', 'target'])
+  })
+
+  test('an uploaded catalogue reaches the document', async () => {
+    // The other half of the trip, and the half with somebody's work in it.
+    const session = await mountTranslated()
+    const id = session.exportCatalogue('fr').messages[0]?.id
+    expect(id, 'nothing was extracted to translate').toBeDefined()
+
+    const file = new File(
+      [
+        JSON.stringify({
+          locale: 'fr',
+          defaultLocale: 'en',
+          messages: [{ id: id as string, source: 'x', target: 'Bonjour' }],
+        }),
+      ],
+      'order.fr.json',
+      { type: 'application/json' },
+    )
+    fireEvent.change(screen.getByLabelText(/upload/i), { target: { files: [file] } })
+    await Promise.resolve()
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(
+      session.exportCatalogue('fr').messages.find((message) => message.id === id)?.target,
+    ).toBe('Bonjour')
+  })
+
+  test('and a file that is not one of ours is reported rather than swallowed', async () => {
+    /*
+     * The worst available outcome is a silent no-op: a translator uploads an
+     * afternoon's work, nothing happens, and nothing says why. The handler
+     * catches inside a promise, which is precisely the shape that swallows an
+     * error if the `catch` is ever dropped — and nothing proved it was there.
+     */
+    await mountTranslated()
+
+    const file = new File(['this is not json'], 'notes.txt', { type: 'text/plain' })
+    fireEvent.change(screen.getByLabelText(/upload/i), { target: { files: [file] } })
+
+    /*
+     * `waitFor`, because the handler reads the file in a promise and sets state
+     * from inside it — outside `act`, so an assertion on the next line reads the
+     * markup from before. Third time that has caught me this week; it is the
+     * default shape of a mistake in a promise-driven handler.
+     *
+     * The named part rather than a wording: the message is whatever
+     * `JSON.parse` threw, which differs between engines. What must hold is that
+     * something is said at all.
+     */
+    await waitFor(() => {
+      const said = document.querySelector('[data-formancy-part="translations-problem"]')
+      expect(said, 'an unreadable file was accepted in silence').not.toBeNull()
+      expect((said?.textContent ?? '').length).toBeGreaterThan(0)
+    })
+  })
+
+  test('and choosing no file at all does nothing, rather than importing undefined', async () => {
+    // A file input fires `change` when a picker is cancelled on some platforms.
+    // The early return is one line and the alternative is parsing `undefined`.
+    const session = await mountTranslated()
+    const before = JSON.stringify(session.document())
+
+    fireEvent.change(screen.getByLabelText(/upload/i), { target: { files: [] } })
+    await Promise.resolve()
+
+    expect(JSON.stringify(session.document())).toBe(before)
   })
 })

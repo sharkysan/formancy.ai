@@ -450,6 +450,46 @@ describe('the spec version 2 freeze', () => {
   })
 })
 
+describe('the files the coverage policy excludes as configuration', () => {
+  /*
+   * The same argument the barrel guard below makes, for the exclusion added
+   * beside them: anything dropped from the measurement for having no behaviour
+   * must have none. An exclusion nobody checks is an escape hatch, and this one
+   * is a glob — `src/content.config.ts` in any package — so it could quietly
+   * cover a file that grew logic.
+   *
+   * What makes it safe is not its name but its size and its shape: a config that
+   * wires a loader to a schema has no branches, no functions and nothing to
+   * assert. If one grows any of those, it is code and belongs in the figure.
+   */
+  test('contain no logic, because a config that computes is code', () => {
+    const configs: Array<{ path: string; text: string }> = []
+    for (const group of ['packages', 'apps']) {
+      for (const entry of readdirSync(join(repo, group), { withFileTypes: true })) {
+        if (!entry.isDirectory()) continue
+        const path = join(group, entry.name, 'src', 'content.config.ts')
+        if (!existsSync(join(repo, path))) continue
+        configs.push({ path, text: readFileSync(join(repo, path), 'utf8') })
+      }
+    }
+
+    // A guard on the guard: no file found means nothing checked, and the
+    // exclusion would sit there unexamined.
+    expect(configs.length, 'the excluded config was not found').toBeGreaterThan(0)
+
+    for (const { path, text } of configs) {
+      const body = text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
+      const lines = body.split(/\r?\n/).filter((line) => line.trim() !== '')
+      expect(lines.length, `${path} is long enough to hide logic`).toBeLessThan(20)
+      for (const keyword of ['if (', 'for (', 'while (', '=>', 'function ']) {
+        expect(body.includes(keyword), `${path} contains \`${keyword}\`, so it is code rather than wiring`).toBe(
+          false,
+        )
+      }
+    }
+  })
+})
+
 describe('the files the coverage policy excludes as barrels', () => {
   /*
    * `vitest.coverage.ts` drops every `src/index.ts` from the measurement, and gives the
