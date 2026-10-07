@@ -21,6 +21,8 @@ export type {
 } from './engine.js'
 export { engineRefusal } from './engine-refusal.js'
 export { expressionProblems, MIXED_NUMERIC_LITERAL_EXAMPLE } from './expression-problems.js'
+export { runScenarios } from './scenarios.js'
+export type { Scenario, ScenarioFailure, ScenarioOptions, ScenarioResult, FailureAbout } from './scenarios.js'
 export { unknownReferences } from './unknown-paths.js'
 export type { UnknownReference } from './unknown-paths.js'
 export type { ExpressionProblem } from './expression-problems.js'

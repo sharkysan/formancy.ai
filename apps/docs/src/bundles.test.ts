@@ -60,14 +60,20 @@ describe('the bundle figures in §9.3', () => {
     // One decimal place, because that is the precision the document quotes. A figure that
     // has drifted by more than that is a figure somebody has to re-measure, which is the
     // whole point of dating it.
-    for (const [packageName, shown] of [
-      ['core', /`@formancy\/core` bundle \| 18 kB brotli \| ([\d.]+) kB/],
-      ['react', /`@formancy\/react` bundle \| 4 kB brotli \| \*\*([\d.]+) kB\*\*/],
-      // Tracked because it nearly doubled without anybody noticing: one module imported
-      // the whole 40.6 kB JSON Schema to read one integer, and the bundler inlined it.
-      ['spec', /`@formancy\/spec` bundle \| — \| ([\d.]+) kB/],
-    ] as const) {
-      const quoted = shown.exec(quality)?.[1]
+    /*
+     * The row, then the first number in its last cell — not a pattern per row.
+     *
+     * There was one regular expression per package, each carrying that row's
+     * exact wording including whether the figure was in bold. Then a figure
+     * went over budget, gained a `**`, and the guard reported "no figure for
+     * @formancy/core in §9.3" — a true sentence about its own pattern and a
+     * false one about the document. The eighth time a guard here has known one
+     * spelling of a thing that has several.
+     */
+    for (const packageName of ['core', 'react', 'spec'] as const) {
+      const row = new RegExp(String.raw`^\|\s*\`@formancy/${packageName}\` bundle\s*\|.*$`, 'm')
+        .exec(quality)?.[0]
+      const quoted = row === undefined ? undefined : /([\d.]+)\s*kB/.exec(row.split('|').at(-2) ?? '')?.[1]
       expect(quoted, `no figure for @formancy/${packageName} in §9.3`).toBeDefined()
 
       const measured = brotliKilobytes(packageName)

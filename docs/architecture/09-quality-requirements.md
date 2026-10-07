@@ -51,7 +51,7 @@ formancy
 |---|---|---|
 | Keystroke, large conditional form | 1 ms | ≈0.38 ms |
 | Cold graph compile | 30 ms | ≈1.7 ms |
-| `@formancy/core` bundle | 18 kB brotli | 17.8 kB, measured 2026-10-04 |
+| `@formancy/core` bundle | 18 kB brotli | **18.7 kB** — over, measured 2026-10-08 |
 | `@formancy/spec` bundle | — | 14.0 kB for the whole barrel, measured 2026-10-08 |
 | `@formancy/react` bundle | 4 kB brotli | **21.1 kB** for the whole barrel, measured 2026-10-06 |
 | `uqr`, the QR encoder | — | 6.6 kB brotli, **external** rather than bundled, measured 2026-09-27 |
@@ -64,6 +64,23 @@ repository runs `size-limit` — [0038](../decisions/0038-esm-only.md) says so p
 its *Verified by* line, and three other documents said the opposite, including the
 regulatory evidence table. The figures above are `brotliCompressSync` over each built
 `dist/index.mjs`, dated because they are re-measured rather than incremented.
+
+**The core bundle is over its budget, and that is the honest word for it.** 17.8 kB
+became 18.7 against a stated 18 when `runScenarios` landed in it — the runner that
+checks a form against written-down examples
+([0110](../decisions/0110-a-form-is-checked-against-examples.md)). A browser rendering
+a form never runs a scenario, so the obvious answer was a second entry point. It was
+tried and reverted: `tsdown` code-splits a two-entry build, after which
+`dist/index.mjs` is a file of re-exports measuring 2.8 kB and this row would have
+reported a 15 kB improvement that is pure accounting. **A measurement that improves
+because the build changed shape is worse than a number over budget.**
+
+So the figure is the truth and the budget is breached. What makes it tolerable rather
+than urgent is that the package declares `sideEffects: false`, so a consumer that never
+imports `runScenarios` does not ship it — this row is the package, not what a renderer
+pulls. What would actually fix it is measuring an entry point's dependency closure
+rather than one file, which is a change to the guard rather than to the code, and is
+not being made in the same change that broke the number.
 
 **The spec figure moved 4.3 kB in one change, and the reason is worth the line.**
 `diffSchemas` stopped comparing only a field's identity, its type and its `required`
