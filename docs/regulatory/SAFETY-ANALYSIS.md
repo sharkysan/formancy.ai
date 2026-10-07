@@ -865,7 +865,15 @@ auditable at all. Only *drafts* migrate, and only on resume
 ### E3. A change that breaks stored data is classified as harmless
 
 *How it arises:* `diffSchemas` reports a severity, and the draft-migration path
-trusts it. A wrong answer here corrupts data quietly.
+trusts it. A wrong answer here corrupts data quietly. **And there is a worse answer
+than a wrong severity, which this entry did not describe until it was found: no
+answer at all.** The function compared a field's identity, its type and its
+`required` flag and nothing else, so an option withdrawn from a radio, a bound
+halved, a rule added, a catalogue rewritten and a layout rearranged each produced
+an EMPTY list — two materially different documents diffing to "nothing changed".
+The option case is the one that loses data outright: a submission holding `"post"`
+against a radio that no longer offers it carries a value outside the document's own
+vocabulary.
 
 *Constraint:* the diff walks **data paths** rather than the document tree
 ([0015](../decisions/0015-diff-before-server.md)). An adversarial review found
@@ -873,9 +881,29 @@ the critical defect in the first implementation — blindness to changes inside
 nested containers, which would have classified a breaking change as compatible.
 It was fixed and is covered by tests.
 
+Every area of the document now has a comparator — options, bounds and patterns,
+rules, catalogues, layouts, the form's own name and id — and **anything without one
+is still reported**: a field property nobody compared as `field.changed`, a top-level
+section nobody compared as `document.changed`, both `lossy`, because a change nobody
+examined must not be called harmless
+([0108](../decisions/0108-the-diff-reports-everything-that-changed.md)).
+`packages/spec/src/diff.test.ts` holds fourteen edits against the kind and severity
+each must be answered with, **and a case that none of them reaches either backstop** —
+without which one catch-all would satisfy the whole table while classifying nothing.
+Thirteen mutations were observed reddening their own cases; a fourteenth reddened
+nothing and found dead code, which was removed.
+
 *Residual:* this function is load-bearing for data integrity and is the place
 where a future defect would be most costly. A manufacturer should treat it as a
-focus area for their own verification.
+focus area for their own verification. Three limits are known and deliberate.
+**Every rule change is reported `lossy`, including ones that cost nothing**: deciding
+otherwise means evaluating the rule against the data, which is the engine's work and
+would make a pure comparison depend on a submission. **A rule has no id**, so identity
+is its target, kind and code, and a rule moved between two targets reads as one removed
+and one added. **The rename translation is textual**, because `@formancy/spec` is below
+`@formancy/expressions` in the layering and carries no CEL parser; it is written to fail
+towards "changed", so a substitution that is wrong reports a change rather than hiding
+one.
 
 ### E4. One author's published form is replaced by another's without either being told
 
