@@ -332,3 +332,104 @@ describe('a node that spans a table\u2019s columns', () => {
     expect(screen.getByRole('textbox', { name: 'City' })).toBeTruthy()
   })
 })
+
+/**
+ * A layout's own text is translated too, in the locale the engine is in.
+ *
+ * Reported from the templates gallery: the HR onboarding form chosen in German
+ * showed German field labels under the English headings "Employee" and "Work
+ * setup". The document was correct — `label: { $t: 'section.1' }`, with the
+ * German catalogue carrying that key — and so was `resolveText`. What was wrong
+ * is that the layout tree was handed `schema.i18n.defaultLocale` instead of the
+ * engine's locale, so **every string that belongs to the arrangement rather
+ * than to a field** rendered in the language the form was written in: section
+ * headings, group labels, the tab strip's name, a code block's label.
+ *
+ * Field labels come through the engine and were right, which is what made it
+ * survive — a form half in one language reads as a missing translation rather
+ * than as a bug, and the missing translation is right there in the file.
+ *
+ * `engine.locale()` already existed for exactly this class of mistake; its own
+ * docblock says it was added because a value computed elsewhere "was a wrong
+ * answer whenever a host passed a `locale` of its own". This call site was
+ * never moved over.
+ */
+describe('a layout in a locale that is not the default', () => {
+  const translated: FormSchema = {
+    specVersion: '1',
+    id: 'onboarding',
+    title: 'Onboarding',
+    model: {
+      fields: [
+        { key: 'fullName', type: 'text', label: { $t: 'fullName' } },
+        { key: 'workMode', type: 'text', label: { $t: 'workMode' } },
+      ],
+    },
+    layouts: [
+      {
+        name: 'web',
+        nodes: [
+          { kind: 'section', label: { $t: 'section.1' }, children: [{ kind: 'field', path: 'fullName' }] },
+          { kind: 'section', label: { $t: 'section.2' }, children: [{ kind: 'field', path: 'workMode' }] },
+        ],
+      },
+    ],
+    i18n: {
+      defaultLocale: 'en',
+      messages: {
+        en: { 'section.1': 'Employee', 'section.2': 'Work setup', fullName: 'Full name', workMode: 'Work arrangement' },
+        de: {
+          'section.1': 'Mitarbeitende Person',
+          'section.2': 'Arbeitsplatz',
+          fullName: 'Vor- und Nachname',
+          workMode: 'Arbeitsmodell',
+        },
+      },
+    },
+  }
+
+  test('names its sections in that locale, not the one the form was written in', () => {
+    render(
+      <FormancyProvider engine={createFormEngine({ schema: translated, locale: 'de' })}>
+        <FormancyForm layout="web" onSubmit={() => undefined} />
+      </FormancyProvider>,
+    )
+
+    // By role and accessible name, which is the contract a section's heading
+    // exists to satisfy: the heading is what names the group.
+    expect(screen.getByRole('group', { name: 'Mitarbeitende Person' })).toBeTruthy()
+    expect(screen.getByRole('group', { name: 'Arbeitsplatz' })).toBeTruthy()
+
+    // And the English is gone rather than merely joined. A heading left in the
+    // source language is the whole of the reported defect.
+    expect(screen.queryByRole('group', { name: 'Employee' })).toBeNull()
+    expect(screen.queryByRole('group', { name: 'Work setup' })).toBeNull()
+  })
+
+  test('and still falls back to the default locale for a string that has no translation', () => {
+    /*
+     * The other half, and the reason this is not simply "use the locale": a
+     * catalogue with a gap must show the source language, never the message id.
+     * `fr` here has the fields and not the headings.
+     */
+    const partly: FormSchema = {
+      ...translated,
+      i18n: {
+        defaultLocale: 'en',
+        messages: {
+          ...translated.i18n!.messages,
+          fr: { fullName: 'Prénom et nom', workMode: 'Mode de travail' },
+        },
+      },
+    }
+
+    render(
+      <FormancyProvider engine={createFormEngine({ schema: partly, locale: 'fr' })}>
+        <FormancyForm layout="web" onSubmit={() => undefined} />
+      </FormancyProvider>,
+    )
+
+    expect(screen.getByRole('textbox', { name: 'Prénom et nom' })).toBeTruthy()
+    expect(screen.getByRole('group', { name: 'Employee' }), 'a gap showed the message id').toBeTruthy()
+  })
+})

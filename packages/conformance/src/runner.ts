@@ -586,8 +586,8 @@ async function snapshotQuietly(driver: RendererDriver): Promise<string | undefin
   }
 }
 
-function mountOptionsFor(fixture: Fixture): MountOptions | undefined {
-  return fixture.initialValues === undefined ? undefined : { initialValues: fixture.initialValues }
+function mountOptionsFor({ initialValues, locale }: Fixture): MountOptions {
+  return { ...(initialValues && { initialValues }), ...(locale !== undefined && { locale }) }
 }
 
 function codesAt(messages: readonly ConformanceMessage[], path: string): readonly string[] {

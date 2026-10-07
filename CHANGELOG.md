@@ -10,6 +10,47 @@ later.
 
 ## Unreleased
 
+**A form shown in German asked its questions under English headings.** Reported from the
+templates gallery: the HR onboarding template chosen in German rendered German field
+labels under **Employee** and **Work setup**. Nothing was wrong with the document — the
+section carries `label: { "$t": "section.1" }` and the German catalogue carries
+`"section.1": "Mitarbeitende Person"`. Both renderers handed `resolveText` the
+document's `defaultLocale` instead of the engine's, at every call site belonging to the
+*arrangement* rather than to a field: section headings, group labels, a tab strip's
+name, a code block's label. Three such sites in `@formancy/angular`, one in
+`@formancy/react`. Field labels come through the engine and were right.
+
+Measured across the starter collection: **every template in it** has at least one translated section heading, so every one of them rendered its headings in English in both German and French.
+
+That is what let it survive. A form entirely in one language announces itself and a
+reader who cannot read it stops; a form translated everywhere **except** its headings
+looks finished, so the reader proceeds — and a heading is what scopes the questions
+under it. `engine.locale()` already existed for this class of mistake, with a docblock
+saying so; these call sites were never moved over.
+
+**The suite could not have found it, and now can.** `MountOptions.locale` existed on the
+driver interface, documented as something a driver "may ignore" — and both drivers
+ignored it, never passing it to the engine. So no fixture could run in another language
+and none did: the one i18n fixture is named *"renders in the default locale"*, with an
+unused German catalogue sitting in it. Mounted in the default locale, a form in which
+nothing is translated looks exactly like one in which everything is. A fixture may now
+name its `locale`, both drivers honour it and resolve accessible names in it, and
+`translated-mounted-locale.json` runs a conditional form in German under every driver.
+`validateFixture` refuses a `locale` the document has no catalogue for, because the
+fallback would make such a case pass against the source language.
+
+**The first attempt at that gate asserted nothing, and the reason is worth keeping.**
+Every lookup in the suite is by accessible name and the driver resolves that name
+itself, so a driver that drops the locale mounts an English form *and* looks up English
+names — it agrees with itself and passes. Reverting each driver's forwarding reddened
+nothing. The fixture is a gate on the *renderer*, which is the shape a third-party
+renderer would have; each driver now has a case of its own that mounts in German and
+reads the German string **off the document** rather than through the driver. Five
+mutations in all, each watched to redden exactly its own case, plus the two renderer
+tests observed failing before the fix
+([0107](docs/decisions/0107-layout-text-is-read-in-the-engines-locale.md), and
+`SAFETY-ANALYSIS.md` D9).
+
 **The site is one product again, because its second page was not.** `/templates/`
 shipped with a design language of its own: a `#f6f8f3` ground and `color-scheme: light`
 inside a dark site, `Inter` as its first font family — **loaded nowhere in this

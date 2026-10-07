@@ -528,9 +528,8 @@ export class FormancyTabs {
   /** A tab's name is its section's heading. The validator insists it has one. */
   protected nameOf(node: LayoutNode, index: number): string {
     if (node.kind === 'field') return `Tab ${String(index + 1)}`
-    const schema = this.engine.schema()
     return (
-      resolveText(schema, node.label, schema.i18n?.defaultLocale ?? '') ??
+      resolveText(this.engine.schema(), node.label, this.engine.locale()) ??
       `Tab ${String(index + 1)}`
     )
   }
@@ -859,8 +858,7 @@ export class FormancyLayout {
   /** A tabs node's own name, for the tab strip. Null when it has none. */
   protected stripLabelFor(node: LayoutNode): string | null {
     if (node.kind !== 'tabs') return null
-    const schema = this.engine.schema()
-    return resolveText(schema, node.label, schema.i18n?.defaultLocale ?? '') ?? null
+    return resolveText(this.engine.schema(), node.label, this.engine.locale()) ?? null
   }
 
   protected isRepeater(path: string): boolean {
@@ -871,9 +869,11 @@ export class FormancyLayout {
     const cached = this.headings.get(node)
     if (cached !== undefined) return cached
 
-    const schema = this.engine.schema()
+    // `engine.locale()` at all three sites, not the document's default: that
+    // showed German fields under English headings, and React had it too (0107).
+    // The cache stays safe — an engine's locale is fixed for its life.
     const label = node.kind === 'field' ? undefined : node.label
-    const text = resolveText(schema, label, schema.i18n?.defaultLocale ?? '')
+    const text = resolveText(this.engine.schema(), label, this.engine.locale())
     const heading =
       text === undefined || text === ''
         ? null
