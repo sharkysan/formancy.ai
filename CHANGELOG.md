@@ -10,6 +10,20 @@ later.
 
 ## Unreleased
 
+**And the browser gate hung in CI for twenty minutes, which is a flaw in the gate.**
+`playwright install --with-deps chromium` ran `apt-get` for Chromium's system libraries,
+and the hosted Ubuntu runner already ships them — so with the browser restored from cache
+in five seconds, the step then sat on apt for 19m30s until the job's timeout cancelled it.
+The same step had taken 66 seconds the run before. `--with-deps` is gone and the step
+carries a five-minute timeout: a gate that depends on an apt mirror depends on somebody
+else's uptime, which is the trade this repository refuses elsewhere, and a missing library
+now fails loudly — Chromium refuses to launch and the script prints the command to run.
+
+Worth recording for a second reason: `gh run watch` exited **0** for a run whose `browser`
+job was CANCELLED. The repository's rule is to confirm a run's conclusion in a separate
+query rather than trust the watcher, and this is the second time that rule has earned its
+place.
+
 **The coverage report read, which CLAUDE.md asks for and nothing had done.** 93.5% of
 lines and 81.3% of branches across 221 files, measured per file out of the lcov rather
 than from the terminal reporter — which interleaves across eighteen packages and makes the
