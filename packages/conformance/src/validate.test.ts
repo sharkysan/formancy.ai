@@ -418,6 +418,62 @@ describe('validateFixture rejects', () => {
   })
 })
 
+/**
+ * The locale a fixture mounts in.
+ *
+ * A fixture may ask for a locale other than the document's default, which is
+ * the only way this suite can hold a renderer to translating anything at all.
+ * `resolveText` falls back to the default locale for a string it cannot find —
+ * correct in a product, and fatal in a fixture: a case asking for `de` against
+ * a document with no `de` catalogue would render entirely in English, find
+ * every label by its English name and pass while certifying nothing.
+ *
+ * The same shape as the vacuous-assertion refusals above. A fixture that
+ * cannot fail is worse than a fixture that is missing.
+ */
+describe('the locale a fixture mounts in', () => {
+  const translated = (locale: unknown): unknown =>
+    revise((draft) => {
+      draft['locale'] = locale
+      const schema = draft['schema'] as Record<string, unknown>
+      schema['model'] = { fields: [{ key: 'email', type: 'text', label: { $t: 'email' } }] }
+      schema['i18n'] = {
+        defaultLocale: 'en',
+        messages: { en: { email: 'Email' }, de: { email: 'E-Mail' } },
+      }
+    })
+
+  test('is refused when the document has no catalogue for it', () => {
+    expect(validateFixture(translated('fr'))).toEqual([
+      {
+        path: 'locale',
+        message:
+          'no catalogue for "fr": the fixture would fall back to the default locale and assert nothing',
+      },
+    ])
+  })
+
+  test('and refused on a document with no catalogues at all, which is the plainest form of it', () => {
+    expect(validateFixture(revise((draft) => (draft['locale'] = 'de')))).toEqual([
+      {
+        path: 'locale',
+        message:
+          'no catalogue for "de": the fixture would fall back to the default locale and assert nothing',
+      },
+    ])
+  })
+
+  test('and refused for what it is when it is not a string', () => {
+    expect(validateFixture(translated(7))).toEqual([
+      { path: 'locale', message: 'expected a non-empty string' },
+    ])
+  })
+
+  test('but accepted when the document can actually be read in it', () => {
+    expect(validateFixture(translated('de'))).toEqual([])
+  })
+})
+
 describe('validateFixture accepts', () => {
   function fixtureWithSteps(steps: readonly unknown[]): unknown {
     return { name: 'nested', schema: nested, steps }

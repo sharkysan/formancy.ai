@@ -68,8 +68,16 @@ export function createAngularDriver(): RendererDriver {
    * would look up "[object Object]" the moment a fixture uses a translation.
    */
   function textOf(value: Text | undefined): string | undefined {
-    const { schema } = requireMounted()
-    return resolveText(schema, value, schema.i18n?.defaultLocale ?? '')
+    const { schema, engine: mounted } = requireMounted()
+    /*
+     * The locale the form was MOUNTED in, not the document's default.
+     *
+     * A fixture may ask for another one, and resolving here in the default
+     * would look up an English name against a German page — or, worse, agree
+     * with a renderer that had also ignored the request, so the pair passed
+     * while neither translated anything.
+     */
+    return resolveText(schema, value, mounted.locale())
   }
 
   function labelOf(path: string): string {
@@ -115,6 +123,9 @@ export function createAngularDriver(): RendererDriver {
       engine = createFormEngine({
         schema: mountSchema as unknown as FormSchema,
         initialValue: options?.initialValues,
+        // The suite may ask for a locale; a driver that drops it certifies
+        // nothing about translation. Both drivers dropped it.
+        ...(options?.locale === undefined ? {} : { locale: options.locale }),
         capabilities: {
           now: () => Date.now(),
           today: () => new Date().toISOString().slice(0, 10),

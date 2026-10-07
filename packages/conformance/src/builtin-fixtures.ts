@@ -768,6 +768,147 @@ export const builtinFixtures: readonly Fixture[] = [
     ],
   },
   {
+    name: 'a form mounted in a locale other than the default renders in that locale',
+    description: 'Every lookup in this suite is by accessible name, so a renderer that resolved the message catalogue in the document\'s default locale rather than the one it was mounted in fails every step below without needing an assertion of its own. That is the point: the sibling fixture mounts in the default locale, where a form in which nothing is translated looks exactly like one in which everything is — and both renderers shipped a layout that resolved its own headings in the default locale while the fields around them were correct. The validator refuses a `locale` the document has no catalogue for, because the fallback would make this case pass against the source language.',
+    tags: [
+      'i18n',
+    ],
+    locale: 'de',
+    schema: {
+      specVersion: '1',
+      id: 'translated-mounted',
+      title: 'Translated, mounted in German',
+      model: {
+        fields: [
+          {
+            key: 'email',
+            type: 'text',
+            label: {
+              $t: 'email.label',
+            },
+            required: true,
+          },
+          {
+            key: 'contactBy',
+            type: 'radio',
+            label: {
+              $t: 'contactBy.label',
+            },
+            options: [
+              {
+                value: 'email',
+                label: {
+                  $t: 'contactBy.email',
+                },
+              },
+              {
+                value: 'post',
+                label: {
+                  $t: 'contactBy.post',
+                },
+              },
+            ],
+          },
+          {
+            key: 'phone',
+            type: 'text',
+            label: {
+              $t: 'phone.label',
+            },
+            required: true,
+          },
+        ],
+      },
+      logic: {
+        rules: [
+          {
+            target: 'phone',
+            kind: 'visible',
+            cel: 'contactBy == \'post\'',
+          },
+        ],
+      },
+      i18n: {
+        defaultLocale: 'en',
+        messages: {
+          en: {
+            'email.label': 'Email address',
+            'contactBy.label': 'How should we reach you?',
+            'contactBy.email': 'By email',
+            'contactBy.post': 'By post',
+            'phone.label': 'Telephone number',
+          },
+          de: {
+            'email.label': 'E-Mail-Adresse',
+            'contactBy.label': 'Wie sollen wir Sie erreichen?',
+            'contactBy.email': 'Per E-Mail',
+            'contactBy.post': 'Per Post',
+            'phone.label': 'Telefonnummer',
+          },
+        },
+      },
+    },
+    steps: [
+      {
+        expectHidden: [
+          'phone',
+        ],
+      },
+      {
+        submit: true,
+      },
+      {
+        expectSubmit: {
+          status: 'rejected',
+        },
+      },
+      {
+        expectErrors: {
+          email: [
+            'required',
+          ],
+        },
+      },
+      {
+        set: {
+          email: 'ada@example.com',
+        },
+      },
+      {
+        set: {
+          contactBy: 'post',
+        },
+      },
+      {
+        expectVisible: [
+          'phone',
+        ],
+      },
+      {
+        set: {
+          phone: '+41 00 000 00 00',
+        },
+      },
+      {
+        expectValue: {
+          contactBy: 'post',
+          phone: '+41 00 000 00 00',
+        },
+      },
+      {
+        expectNoErrors: true,
+      },
+      {
+        submit: true,
+      },
+      {
+        expectSubmit: {
+          status: 'accepted',
+        },
+      },
+    ],
+  },
+  {
     name: 'a wizard validates the current page on next and the whole form on submit',
     description: 'Next may only look at the page a person is on: validating pages they have not reached yet would show them errors for questions nobody has asked them. Submit must look at everything, because an answer on a later page can make a field on an earlier one required, and it must take them to the first page that has a problem rather than leaving them on a clean review page staring at a rejection. Pages are presentation: they own no data, so the payload is flat and moving a field between pages is not a data migration.',
     tags: [

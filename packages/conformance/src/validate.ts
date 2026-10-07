@@ -11,6 +11,13 @@ import { SPEC_VERSIONS, modelDataPaths } from '@formancy/spec'
 import type { FieldDef, FieldType, RuleKind } from '@formancy/spec'
 import { COMMAND_SEPARATOR, fieldAtPath, pageKeys } from './paths.js'
 import type { ConformanceSchema, Fixture, FixtureStep, StepKind } from './types.js'
+import {
+  accessibleNameProblem,
+  messageCatalogue,
+  validateI18n,
+  validateLocale,
+} from './validate-text.js'
+import { asRecord, describeValue, isJsonValue, isStringArray } from './values.js'
 
 export interface FixtureProblem {
   /** Where in the fixture, e.g. `steps[3].expectErrors.canton`. */
@@ -198,6 +205,8 @@ export function validateFixture(value: unknown): readonly FixtureProblem[] {
       problems.push(...validateValueMap(record, 'initialValues', schema))
     }
   }
+
+  problems.push(...validateLocale(fixture['locale'], fixture['schema']))
 
   const steps = fixture['steps']
   if (!Array.isArray(steps)) {
@@ -427,90 +436,6 @@ function validateFields(
   return problems
 }
 
-/**
- * What is wrong with a piece of text that has to become an accessible name, or
- * undefined when it will. Accepts either a literal or a `{ $t }` reference,
- * because the renderers accept both — and insists the reference resolves,
- * because a driver searching for an unresolved id finds nothing.
- */
-function accessibleNameProblem(
-  label: unknown,
-  messages: ReadonlySet<string> | undefined,
-): string | undefined {
-  if (typeof label === 'string') {
-    return label === '' ? 'needs a non-empty label' : undefined
-  }
-  const record = asRecord(label)
-  const ref = record?.['$t']
-  if (typeof ref !== 'string') return 'needs a non-empty label'
-  if (messages === undefined) {
-    return `refers to "${ref}", but the fixture has no i18n section`
-  }
-  if (!messages.has(ref)) {
-    return `refers to "${ref}", which the default locale does not define`
-  }
-  return undefined
-}
-
-/** The message ids the default locale defines, or undefined when unlocalised. */
-function messageCatalogue(value: unknown): ReadonlySet<string> | undefined {
-  const i18n = asRecord(value)
-  if (i18n === undefined) return undefined
-  const locale = i18n['defaultLocale']
-  if (typeof locale !== 'string') return new Set()
-  const catalogue = asRecord(asRecord(i18n['messages'])?.[locale])
-  if (catalogue === undefined) return new Set()
-  return new Set(Object.keys(catalogue).filter((id) => typeof catalogue[id] === 'string'))
-}
-
-function validateI18n(value: unknown, at: string): FixtureProblem[] {
-  if (value === undefined) return []
-  const i18n = asRecord(value)
-  if (i18n === undefined) {
-    return [{ path: at, message: `expected an object, got ${describeValue(value)}` }]
-  }
-
-  const problems: FixtureProblem[] = []
-  const locale = i18n['defaultLocale']
-  if (typeof locale !== 'string' || locale === '') {
-    problems.push({ path: `${at}.defaultLocale`, message: 'expected a non-empty string' })
-  }
-
-  const messages = asRecord(i18n['messages'])
-  if (messages === undefined) {
-    problems.push({
-      path: `${at}.messages`,
-      message: `expected an object, got ${describeValue(i18n['messages'])}`,
-    })
-    return problems
-  }
-
-  if (typeof locale === 'string' && asRecord(messages[locale]) === undefined) {
-    problems.push({
-      path: `${at}.messages.${locale}`,
-      message: 'the default locale needs a catalogue: it is what every other locale falls back to',
-    })
-  }
-
-  for (const [name, catalogue] of Object.entries(messages)) {
-    const entries = asRecord(catalogue)
-    if (entries === undefined) {
-      problems.push({ path: `${at}.messages.${name}`, message: 'expected an object' })
-      continue
-    }
-    for (const [id, text] of Object.entries(entries)) {
-      if (typeof text !== 'string' || text === '') {
-        problems.push({
-          path: `${at}.messages.${name}.${id}`,
-          message: 'expected a non-empty string',
-        })
-      }
-    }
-  }
-
-  return problems
-}
-
 function validateStep(
   value: unknown,
   at: string,
@@ -727,36 +652,3 @@ function assertNever(value: never): never {
   throw new TypeError(`Unhandled step kind: ${String(value)}`)
 }
 
-function asRecord(value: unknown): Record<string, unknown> | undefined {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) return undefined
-  return value as Record<string, unknown>
-}
-
-function isStringArray(value: unknown): value is readonly string[] {
-  return Array.isArray(value) && value.every((item) => typeof item === 'string')
-}
-
-function isJsonValue(value: unknown): boolean {
-  if (value === null) return true
-  switch (typeof value) {
-    case 'string':
-    case 'boolean':
-      return true
-    case 'number':
-      // JSON has no NaN or Infinity, so a fixture carrying one would not
-      // survive the file round-trip that every driver reads it through.
-      return Number.isFinite(value)
-    case 'object':
-      return Array.isArray(value)
-        ? value.every(isJsonValue)
-        : Object.values(value as Record<string, unknown>).every(isJsonValue)
-    default:
-      return false
-  }
-}
-
-function describeValue(value: unknown): string {
-  if (value === null) return 'null'
-  if (Array.isArray(value)) return 'an array'
-  return typeof value
-}

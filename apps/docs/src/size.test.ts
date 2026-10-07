@@ -44,8 +44,8 @@ const CEILINGS: Record<string, { lines: number; why: string }> = {
     why: 'The form shell plus layout rendering. The seam is the layout renderer.',
   },
   'packages/conformance/src/builtin-fixtures.ts': {
-    lines: 1012,
-    why: 'GENERATED from fixtures/*.json. Splitting this means splitting the fixtures, which are the unit of meaning.',
+    lines: 1153,
+    why: 'GENERATED from fixtures/*.json. Splitting this means splitting the fixtures, which are the unit of meaning — so this number moves when the suite gains a case, which is the one entry here whose growth is not a signal.',
   },
   'apps/site/src/app.tsx': {
     lines: 896,
@@ -64,8 +64,8 @@ const CEILINGS: Record<string, { lines: number; why: string }> = {
     why: 'The seam is one use-case family per file. Publishing moved to publishing.ts when the budget refused the next thing added here; submitting, drafts and files follow the same way.',
   },
   'packages/conformance/src/validate.ts': {
-    lines: 763,
-    why: 'Refusing a fixture that could not run honestly. One subject.',
+    lines: 655,
+    why: 'Refusing a fixture that could not run honestly. One subject — and two have left it: the message catalogue and the names a driver searches by went to validate-text.ts when this budget refused the locale check, and the JSON predicates under them to values.ts, which both now share.',
   },
   'apps/playground/src/app.tsx': {
     lines: 525,

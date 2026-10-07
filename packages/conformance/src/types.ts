@@ -169,5 +169,19 @@ export interface Fixture {
   readonly tags?: readonly string[]
   readonly schema: ConformanceSchema
   readonly initialValues?: Readonly<Record<string, JsonValue>>
+  /**
+   * The locale to mount in. Defaults to the document's own `defaultLocale`.
+   *
+   * The only way this suite can hold a renderer to translating anything:
+   * mounted in the default locale, a form in which nothing is translated looks
+   * exactly like one in which everything is. The validator refuses a locale
+   * the document has no catalogue for, because `resolveText` would fall back
+   * and every lookup would succeed against the source language.
+   *
+   * A driver that renders one language may not ignore this. Two did, which is
+   * how section headings came to render in the wrong language in both
+   * renderers at once.
+   */
+  readonly locale?: string
   readonly steps: readonly FixtureStep[]
 }

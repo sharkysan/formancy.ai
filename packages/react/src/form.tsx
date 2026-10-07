@@ -146,7 +146,24 @@ function FieldList({ labels, registry, page, layout }: FormancyFormProps & { pag
       <LayoutTree
         schema={schema}
         nodes={arrangement.nodes}
-        locale={schema.i18n?.defaultLocale ?? ''}
+        /*
+         * The engine's locale, not the document's default.
+         *
+         * This read `schema.i18n?.defaultLocale`, so every string belonging to
+         * the arrangement rather than to a field — section headings, group
+         * labels, a tab strip's name, a code block's label — rendered in the
+         * language the form was written in, whatever locale the engine was
+         * given. Field labels come through the engine and were right, so a
+         * German form showed German fields under English headings and read as
+         * a missing translation rather than as a bug.
+         *
+         * `engine.locale()` exists for this class of mistake; its docblock
+         * records that a value computed elsewhere "was a wrong answer whenever
+         * a host passed a `locale` of its own". This call site was never moved
+         * over. The fallback to the default locale for an untranslated string
+         * still happens, inside `resolveText`, where it belongs.
+         */
+        locale={engine.locale()}
         renderField={(path) => {
           if (repeaterWires.includes(path)) {
             return <RepeaterSection key={path} wire={path} labels={labels} registry={registry} />

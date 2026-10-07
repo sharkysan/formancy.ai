@@ -207,3 +207,4 @@ listed under the sections they belong to above.
 | [0104](0104-spec-4-opens-with-a-widget-not-a-type.md) | Spec 4 opens with two widgets and a property, not a type | accepted |
 | [0105](0105-templates-are-documents-with-examples.md) | Keep templates as documents with executable examples and an independent gallery | accepted |
 | [0106](0106-one-shell-for-every-page-of-the-site.md) | One shell for every page of the site, and the two pages are compared in a browser | accepted |
+| [0107](0107-layout-text-is-read-in-the-engines-locale.md) | Layout text is read in the engine's locale, and the suite can mount in one | accepted |

@@ -294,3 +294,86 @@ describe('the recursion\u2019s own host element', () => {
     expect(between.filter((entry) => !entry.endsWith(':contents'))).toEqual([])
   })
 })
+
+/**
+ * The same locale defect, and the same assertions as
+ * packages/react/src/layout.test.tsx.
+ *
+ * Both renderers had it, identically and independently: the layout tree was
+ * handed `schema.i18n.defaultLocale` rather than the engine's locale, so every
+ * string belonging to the arrangement rather than to a field rendered in the
+ * language the form was written in. Reported from the templates gallery, where
+ * the German HR onboarding form showed German fields under the English
+ * headings "Employee" and "Work setup".
+ *
+ * Two hand-written renderers agreeing on a mistake is the case
+ * [0033](../../../docs/decisions/0033-one-suite-n-drivers.md) accepts the cost
+ * of, so the pair is written twice here as well.
+ */
+const translated = {
+  specVersion: '1',
+  id: 'onboarding',
+  title: 'Onboarding',
+  model: {
+    fields: [
+      { key: 'fullName', type: 'text', label: { $t: 'fullName' } },
+      { key: 'workMode', type: 'text', label: { $t: 'workMode' } },
+    ],
+  },
+  layouts: [
+    {
+      name: 'web',
+      nodes: [
+        { kind: 'section', label: { $t: 'section.1' }, children: [{ kind: 'field', path: 'fullName' }] },
+        { kind: 'section', label: { $t: 'section.2' }, children: [{ kind: 'field', path: 'workMode' }] },
+      ],
+    },
+  ],
+  i18n: {
+    defaultLocale: 'en',
+    messages: {
+      en: { 'section.1': 'Employee', 'section.2': 'Work setup', fullName: 'Full name', workMode: 'Work arrangement' },
+      de: {
+        'section.1': 'Mitarbeitende Person',
+        'section.2': 'Arbeitsplatz',
+        fullName: 'Vor- und Nachname',
+        workMode: 'Arbeitsmodell',
+      },
+      fr: { fullName: 'Prénom et nom', workMode: 'Mode de travail' },
+    },
+  },
+} as unknown as FormSchema
+
+async function mountTranslated(locale: string): Promise<void> {
+  await render(FormancyForm, {
+    inputs: { layout: 'web' },
+    providers: [
+      provideZonelessChangeDetection(),
+      provideFormancy(createFormEngine({ schema: translated, locale })),
+    ],
+  })
+}
+
+describe('a layout in a locale that is not the default', () => {
+  test('names its sections in that locale, not the one the form was written in', async () => {
+    await mountTranslated('de')
+
+    expect(screen.getByRole('group', { name: 'Mitarbeitende Person' })).toBeTruthy()
+    expect(screen.getByRole('group', { name: 'Arbeitsplatz' })).toBeTruthy()
+
+    // The English gone rather than merely joined: a heading left in the source
+    // language is the whole of the reported defect.
+    expect(screen.queryByRole('group', { name: 'Employee' })).toBeNull()
+    expect(screen.queryByRole('group', { name: 'Work setup' })).toBeNull()
+  })
+
+  test('and still falls back to the default locale for a string with no translation', async () => {
+    // The other half, and why this is not simply "use the locale": a catalogue
+    // with a gap must show the source language, never the message id. `fr` here
+    // carries the fields and not the headings.
+    await mountTranslated('fr')
+
+    expect(screen.getByRole('textbox', { name: 'Prénom et nom' })).toBeTruthy()
+    expect(screen.getByRole('group', { name: 'Employee' }), 'a gap showed the message id').toBeTruthy()
+  })
+})

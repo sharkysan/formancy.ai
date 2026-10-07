@@ -787,6 +787,59 @@ warning on publish rather than a refusal
 ([0097](../decisions/0097-a-publish-may-warn.md)). Until then the constraint covers the
 builder and not the format.
 
+### D9. A form asks its questions in a language the reader did not choose
+
+*How it arises:* text may be a reference into the message catalogue
+(`label: { "$t": "section.1" }`), and `resolveText` resolves it in a locale the caller
+supplies, falling back to the document's `defaultLocale` for anything a catalogue does
+not carry. The fallback is correct. What was wrong is that both renderers handed
+`resolveText` the document's default locale instead of the engine's at every call site
+belonging to the **arrangement** rather than to a field: a section's heading, a group's
+label, a tab strip's name, a code block's label. Field labels come through the engine
+and were right. Observed in the templates gallery with the HR onboarding form chosen in
+German: German fields under the English headings *Employee* and *Work setup*, with the
+German strings present in the document and simply not read. Three call sites in
+`@formancy/angular`, one in `@formancy/react`.
+
+*Severity:* a heading is what scopes the questions under it, so a heading in another
+language changes what those questions are understood to ask — *Employee* above fields
+that a German reader will complete for themselves reads differently from
+*Mitarbeitende Person*. It is worse than an untranslated form, because a form entirely
+in one language announces itself: a reader who cannot read it stops. A form that is
+translated everywhere except its headings looks finished, so the reader proceeds and
+supplies the wrong thing. And it is invisible from inside: the document is correct, the
+catalogue is complete, and a reviewer reading the JSON sees nothing wrong.
+
+*Constraint:* every renderer resolves layout text in `engine.locale()`, which is fixed
+for an engine's lifetime. `packages/react/src/layout.test.tsx` and
+`packages/angular/src/layout.test.ts` each mount a document whose headings are
+references, in a locale that is not the default, and require the translated heading by
+role and accessible name **and the absence of the source-language one** — both were
+observed failing before the change, in both renderers. A second case in each requires
+the fallback to still produce the source language, not a message id, where a catalogue
+has a gap.
+
+Underneath that, the suite could not have found it: `MountOptions.locale` existed and
+**neither conformance driver passed it on**, so no fixture could run in another
+language and the one i18n fixture mounted in the default locale, where a form in which
+nothing is translated looks exactly like one in which everything is. Both drivers now
+honour it and resolve accessible names in the locale they mounted with, a `locale` field
+on a fixture reaches them, and `translated-mounted-locale.json` runs a conditional form
+in German under every driver. `validateFixture` refuses a `locale` the document has no
+catalogue for, because the fallback would make such a case pass against the source
+language ([0107](../decisions/0107-layout-text-is-read-in-the-engines-locale.md)).
+
+*Residual:* the conformance fixture holds **field** labels, options and messages, because
+every lookup in that suite is by accessible name. It does not reach a section heading:
+the driver interface exposes layout text only through `ariaSnapshot()`, and there is no
+fixture step that asserts against it. The headings are therefore held by the two renderer
+tests named above — written twice, which is the cost
+[0033](../decisions/0033-one-suite-n-drivers.md) accepts — and a third renderer would
+not inherit them. A fixture step for the accessibility tree was rejected rather than
+forgotten: a snapshot is a file somebody updates when it goes red, which is why pixel
+baselines were refused for the same reason
+([0102](../decisions/0102-what-jsdom-cannot-see-is-checked-in-a-browser.md)).
+
 ---
 
 ## E — Provenance is lost

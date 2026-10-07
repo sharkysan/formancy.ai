@@ -30,10 +30,23 @@ A behaviour is written once and verified in five places.
 
 The fixture format has its own validator, which refuses a case that could not
 run honestly — including a field with no resolvable accessible name, since a
-driver could never find it. Cases are embedded by a generator and the case list
+driver could never find it, and a `locale` the document has no catalogue for,
+since `resolveText` would fall back to the source language and every lookup
+would succeed against it. Cases are embedded by a generator and the case list
 is **pinned in a test**, so a case that silently stopped being embedded is
 caught rather than leaving every renderer passing a suite that no longer tests
 it.
+
+A fixture may name the **locale it mounts in**, which is the only way this
+suite can hold a renderer to translating anything: mounted in the document's
+default, a form in which nothing is translated looks exactly like one in which
+everything is. It holds the renderer and not the driver, and the distinction is
+load-bearing — every lookup here is by accessible name and the driver resolves
+that name itself, so a driver that drops the locale mounts a source-language
+form, looks up source-language names, agrees with itself and passes. Each
+driver therefore carries one case of its own, outside the fixtures, that reads
+the translated string off the document
+([0107](../decisions/0107-layout-text-is-read-in-the-engines-locale.md)).
 
 ## 10.2 The checks
 
