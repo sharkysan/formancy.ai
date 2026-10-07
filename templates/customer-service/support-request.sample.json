@@ -1,0 +1,10 @@
+{
+  "fullName": "Alex Example",
+  "email": "alex@example.com",
+  "product": "Example App",
+  "category": "billing",
+  "summary": "Invoice shows an incorrect billing address",
+  "details": "The invoice uses the previous office address after the account was updated.",
+  "impact": "limited",
+  "invoiceReference": "DEMO-INV-001"
+}

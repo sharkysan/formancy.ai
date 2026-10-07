@@ -1,0 +1,51 @@
+[
+  {
+    "name": "documentReference is required when the branch applies",
+    "changes": {
+      "documentReference": ""
+    },
+    "valid": false,
+    "errors": {
+      "documentReference": [
+        "required"
+      ]
+    }
+  },
+  {
+    "name": "switching off documentReference clears its branch",
+    "changes": {
+      "documentsAvailable": false
+    },
+    "valid": true,
+    "visible": {
+      "documentReference": false
+    },
+    "absent": [
+      "documentReference"
+    ]
+  },
+  {
+    "name": "the required referrerName cannot be omitted",
+    "changes": {
+      "referrerName": null
+    },
+    "valid": false,
+    "errors": {
+      "referrerName": [
+        "required"
+      ]
+    }
+  },
+  {
+    "name": "an invalid email is rejected",
+    "changes": {
+      "email": "invalid-address"
+    },
+    "valid": false,
+    "errors": {
+      "email": [
+        "email"
+      ]
+    }
+  }
+]

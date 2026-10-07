@@ -1,0 +1,224 @@
+{
+  "specVersion": "2",
+  "id": "customer-service-complaint",
+  "title": "Customer complaint",
+  "model": {
+    "fields": [
+      {
+        "key": "intro",
+        "type": "static",
+        "label": {
+          "$t": "intro"
+        }
+      },
+      {
+        "key": "fullName",
+        "type": "text",
+        "label": {
+          "$t": "fullName"
+        },
+        "required": true,
+        "maxLength": 160
+      },
+      {
+        "key": "email",
+        "type": "text",
+        "label": {
+          "$t": "email"
+        },
+        "required": true,
+        "format": "email",
+        "maxLength": 254
+      },
+      {
+        "key": "occurredOn",
+        "type": "date",
+        "label": {
+          "$t": "occurredOn"
+        },
+        "required": true
+      },
+      {
+        "key": "description",
+        "type": "textarea",
+        "label": {
+          "$t": "description"
+        },
+        "required": true,
+        "minLength": 20,
+        "maxLength": 4000
+      },
+      {
+        "key": "hasOrder",
+        "type": "checkbox",
+        "label": {
+          "$t": "hasOrder"
+        }
+      },
+      {
+        "key": "orderReference",
+        "type": "text",
+        "label": {
+          "$t": "orderReference"
+        },
+        "maxLength": 100
+      },
+      {
+        "key": "requestedResolution",
+        "type": "select",
+        "label": {
+          "$t": "requestedResolution"
+        },
+        "required": true,
+        "options": [
+          {
+            "value": "explanation",
+            "label": {
+              "$t": "requestedResolution.explanation"
+            }
+          },
+          {
+            "value": "replacement",
+            "label": {
+              "$t": "requestedResolution.replacement"
+            }
+          },
+          {
+            "value": "refund",
+            "label": {
+              "$t": "requestedResolution.refund"
+            }
+          },
+          {
+            "value": "contact",
+            "label": {
+              "$t": "requestedResolution.contact"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "logic": {
+    "rules": [
+      {
+        "target": "orderReference",
+        "kind": "visible",
+        "cel": "hasOrder == true"
+      },
+      {
+        "target": "orderReference",
+        "kind": "required",
+        "cel": "hasOrder == true"
+      }
+    ]
+  },
+  "layouts": [
+    {
+      "name": "web",
+      "nodes": [
+        {
+          "kind": "field",
+          "path": "intro"
+        },
+        {
+          "kind": "section",
+          "label": {
+            "$t": "section.1"
+          },
+          "children": [
+            {
+              "kind": "field",
+              "path": "fullName"
+            },
+            {
+              "kind": "field",
+              "path": "email"
+            }
+          ]
+        },
+        {
+          "kind": "section",
+          "label": {
+            "$t": "section.2"
+          },
+          "children": [
+            {
+              "kind": "field",
+              "path": "occurredOn"
+            },
+            {
+              "kind": "field",
+              "path": "description"
+            },
+            {
+              "kind": "field",
+              "path": "hasOrder"
+            },
+            {
+              "kind": "field",
+              "path": "orderReference"
+            },
+            {
+              "kind": "field",
+              "path": "requestedResolution"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "i18n": {
+    "defaultLocale": "en",
+    "messages": {
+      "en": {
+        "intro": "Describe what happened and the outcome you would like.",
+        "section.1": "Contact",
+        "fullName": "Full name",
+        "email": "Email address",
+        "section.2": "Complaint",
+        "occurredOn": "Date of incident",
+        "description": "What happened?",
+        "hasOrder": "This concerns an order",
+        "orderReference": "Order reference",
+        "requestedResolution": "Preferred resolution",
+        "requestedResolution.explanation": "Explanation",
+        "requestedResolution.replacement": "Replacement or correction",
+        "requestedResolution.refund": "Refund request",
+        "requestedResolution.contact": "Contact me to discuss"
+      },
+      "de": {
+        "intro": "Beschreiben Sie den Vorfall und die gewünschte Lösung.",
+        "section.1": "Kontakt",
+        "fullName": "Vor- und Nachname",
+        "email": "E-Mail-Adresse",
+        "section.2": "Reklamation",
+        "occurredOn": "Datum des Vorfalls",
+        "description": "Was ist passiert?",
+        "hasOrder": "Es geht um eine Bestellung",
+        "orderReference": "Bestellreferenz",
+        "requestedResolution": "Gewünschte Lösung",
+        "requestedResolution.explanation": "Erklärung",
+        "requestedResolution.replacement": "Ersatz oder Korrektur",
+        "requestedResolution.refund": "Rückerstattungsanfrage",
+        "requestedResolution.contact": "Bitte kontaktieren Sie mich"
+      },
+      "fr": {
+        "intro": "Décrivez les faits et la solution souhaitée.",
+        "section.1": "Contact",
+        "fullName": "Prénom et nom",
+        "email": "Adresse e-mail",
+        "section.2": "Réclamation",
+        "occurredOn": "Date de l’incident",
+        "description": "Que s’est-il passé ?",
+        "hasOrder": "Cela concerne une commande",
+        "orderReference": "Référence de commande",
+        "requestedResolution": "Solution souhaitée",
+        "requestedResolution.explanation": "Explication",
+        "requestedResolution.replacement": "Remplacement ou correction",
+        "requestedResolution.refund": "Demande de remboursement",
+        "requestedResolution.contact": "Contactez-moi pour en discuter"
+      }
+    }
+  }
+}

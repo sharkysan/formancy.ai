@@ -1,0 +1,63 @@
+[
+  {
+    "name": "travelRoute is required when the branch applies",
+    "changes": {
+      "travelRoute": ""
+    },
+    "valid": false,
+    "errors": {
+      "travelRoute": [
+        "required"
+      ]
+    }
+  },
+  {
+    "name": "switching off travelRoute clears its branch",
+    "changes": {
+      "category": "supplies"
+    },
+    "valid": true,
+    "visible": {
+      "travelRoute": false
+    },
+    "absent": [
+      "travelRoute"
+    ]
+  },
+  {
+    "name": "an expense must be positive",
+    "changes": {
+      "amount": 0
+    },
+    "valid": false,
+    "errors": {
+      "amount": [
+        "min"
+      ]
+    }
+  },
+  {
+    "name": "the required fullName cannot be omitted",
+    "changes": {
+      "fullName": null
+    },
+    "valid": false,
+    "errors": {
+      "fullName": [
+        "required"
+      ]
+    }
+  },
+  {
+    "name": "an invalid email is rejected",
+    "changes": {
+      "email": "invalid-address"
+    },
+    "valid": false,
+    "errors": {
+      "email": [
+        "email"
+      ]
+    }
+  }
+]

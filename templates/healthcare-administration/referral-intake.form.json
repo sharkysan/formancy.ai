@@ -1,0 +1,202 @@
+{
+  "specVersion": "2",
+  "id": "healthcare-administration-referral-intake",
+  "title": "Referral intake — administration",
+  "model": {
+    "fields": [
+      {
+        "key": "intro",
+        "type": "static",
+        "label": {
+          "$t": "intro"
+        }
+      },
+      {
+        "key": "referrerName",
+        "type": "text",
+        "label": {
+          "$t": "referrerName"
+        },
+        "required": true,
+        "maxLength": 160
+      },
+      {
+        "key": "organisation",
+        "type": "text",
+        "label": {
+          "$t": "organisation"
+        },
+        "required": true,
+        "maxLength": 160
+      },
+      {
+        "key": "email",
+        "type": "text",
+        "label": {
+          "$t": "email"
+        },
+        "required": true,
+        "format": "email",
+        "maxLength": 254
+      },
+      {
+        "key": "patientReference",
+        "type": "text",
+        "label": {
+          "$t": "patientReference"
+        },
+        "required": true,
+        "maxLength": 100
+      },
+      {
+        "key": "serviceRequested",
+        "type": "text",
+        "label": {
+          "$t": "serviceRequested"
+        },
+        "required": true,
+        "maxLength": 200
+      },
+      {
+        "key": "referralDate",
+        "type": "date",
+        "label": {
+          "$t": "referralDate"
+        },
+        "required": true
+      },
+      {
+        "key": "documentsAvailable",
+        "type": "checkbox",
+        "label": {
+          "$t": "documentsAvailable"
+        }
+      },
+      {
+        "key": "documentReference",
+        "type": "text",
+        "label": {
+          "$t": "documentReference"
+        },
+        "maxLength": 200
+      }
+    ]
+  },
+  "logic": {
+    "rules": [
+      {
+        "target": "documentReference",
+        "kind": "visible",
+        "cel": "documentsAvailable == true"
+      },
+      {
+        "target": "documentReference",
+        "kind": "required",
+        "cel": "documentsAvailable == true"
+      }
+    ]
+  },
+  "layouts": [
+    {
+      "name": "web",
+      "nodes": [
+        {
+          "kind": "field",
+          "path": "intro"
+        },
+        {
+          "kind": "section",
+          "label": {
+            "$t": "section.1"
+          },
+          "children": [
+            {
+              "kind": "field",
+              "path": "referrerName"
+            },
+            {
+              "kind": "field",
+              "path": "organisation"
+            },
+            {
+              "kind": "field",
+              "path": "email"
+            }
+          ]
+        },
+        {
+          "kind": "section",
+          "label": {
+            "$t": "section.2"
+          },
+          "children": [
+            {
+              "kind": "field",
+              "path": "patientReference"
+            },
+            {
+              "kind": "field",
+              "path": "serviceRequested"
+            },
+            {
+              "kind": "field",
+              "path": "referralDate"
+            },
+            {
+              "kind": "field",
+              "path": "documentsAvailable"
+            },
+            {
+              "kind": "field",
+              "path": "documentReference"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "i18n": {
+    "defaultLocale": "en",
+    "messages": {
+      "en": {
+        "intro": "Record referral contact details and document references. Clinical content belongs in the approved clinical system.",
+        "section.1": "Referring organisation",
+        "referrerName": "Referring professional",
+        "organisation": "Organisation",
+        "email": "Administrative contact email",
+        "section.2": "Referral record",
+        "patientReference": "Patient reference in the agreed system",
+        "serviceRequested": "Receiving service",
+        "referralDate": "Referral date",
+        "documentsAvailable": "Documents are available in the agreed secure channel",
+        "documentReference": "Document reference (no access credentials)"
+      },
+      "de": {
+        "intro": "Erfassen Sie Zuweisungskontakte und Dokumentreferenzen. Klinische Inhalte gehören in das freigegebene klinische System.",
+        "section.1": "Zuweisende Organisation",
+        "referrerName": "Zuweisende Fachperson",
+        "organisation": "Organisation",
+        "email": "Administrative Kontakt-E-Mail",
+        "section.2": "Zuweisung",
+        "patientReference": "Patientenreferenz im vereinbarten System",
+        "serviceRequested": "Empfangende Stelle",
+        "referralDate": "Zuweisungsdatum",
+        "documentsAvailable": "Dokumente liegen im vereinbarten sicheren Kanal vor",
+        "documentReference": "Dokumentreferenz (keine Zugangsdaten)"
+      },
+      "fr": {
+        "intro": "Enregistrez les contacts et références de documents. Les informations cliniques restent dans le système clinique approuvé.",
+        "section.1": "Organisation à l’origine de la demande",
+        "referrerName": "Professionnel à l’origine de la demande",
+        "organisation": "Organisation",
+        "email": "E-mail du contact administratif",
+        "section.2": "Demande d’orientation",
+        "patientReference": "Référence du patient dans le système convenu",
+        "serviceRequested": "Service destinataire",
+        "referralDate": "Date de la demande",
+        "documentsAvailable": "Les documents sont disponibles via le canal sécurisé convenu",
+        "documentReference": "Référence du document (sans identifiants d’accès)"
+      }
+    }
+  }
+}

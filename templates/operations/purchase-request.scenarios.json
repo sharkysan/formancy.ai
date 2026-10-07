@@ -1,0 +1,83 @@
+[
+  {
+    "name": "the estimate is recomputed rather than trusted",
+    "changes": {
+      "estimatedTotal": 999
+    },
+    "valid": true,
+    "values": {
+      "estimatedTotal": 502
+    }
+  },
+  {
+    "name": "changing the quantity recalculates the estimate",
+    "changes": {
+      "quantity": 2
+    },
+    "valid": true,
+    "values": {
+      "estimatedTotal": 251
+    }
+  },
+  {
+    "name": "negative prices are rejected",
+    "changes": {
+      "unitPrice": -1
+    },
+    "valid": false,
+    "errors": {
+      "unitPrice": [
+        "min"
+      ]
+    }
+  },
+  {
+    "name": "supplier is required when the branch applies",
+    "changes": {
+      "supplier": ""
+    },
+    "valid": false,
+    "errors": {
+      "supplier": [
+        "required"
+      ]
+    }
+  },
+  {
+    "name": "switching off supplier clears its branch",
+    "changes": {
+      "preferredSupplier": false
+    },
+    "valid": true,
+    "visible": {
+      "supplier": false
+    },
+    "absent": [
+      "supplier"
+    ]
+  },
+  {
+    "name": "the required fullName cannot be omitted",
+    "changes": {
+      "fullName": null
+    },
+    "valid": false,
+    "errors": {
+      "fullName": [
+        "required"
+      ]
+    }
+  },
+  {
+    "name": "an invalid email is rejected",
+    "changes": {
+      "email": "invalid-address"
+    },
+    "valid": false,
+    "errors": {
+      "email": [
+        "email"
+      ]
+    }
+  }
+]

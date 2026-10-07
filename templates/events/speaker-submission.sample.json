@@ -1,0 +1,11 @@
+{
+  "fullName": "Alex Example",
+  "email": "alex@example.com",
+  "bio": "Alex develops software and shares practical engineering lessons.",
+  "sessionTitle": "Building reliable forms",
+  "abstract": "Participants will learn how to design, validate and test dynamic forms.",
+  "language": "en",
+  "format": "workshop",
+  "durationMinutes": "60",
+  "prerequisites": "A laptop and basic JavaScript knowledge."
+}

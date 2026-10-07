@@ -25,7 +25,7 @@ export function AngularPane({
   /** The same theme the React pane wears, so a difference on screen is the renderer. */
   theme: string
 }): ReactElement {
-  const host = useRef<HTMLDivElement | null>(null)
+  const host = useRef<HTMLFormElement | null>(null)
   const [problem, setProblem] = useState<string | undefined>(undefined)
 
   useEffect(() => {
@@ -73,7 +73,10 @@ export function AngularPane({
           The Angular renderer did not start: {problem}
         </p>
       )}
-      <div className="sheet" data-formancy-theme={theme} ref={host} />
+      {/* Radios are grouped by their native form owner as well as their name.
+          Separate owners prevent the two renderers from sharing a radio group. */}
+      <form className="sheet" aria-label="Angular form preview" noValidate
+        onSubmit={(event) => event.preventDefault()} data-formancy-theme={theme} ref={host} />
     </section>
   )
 }

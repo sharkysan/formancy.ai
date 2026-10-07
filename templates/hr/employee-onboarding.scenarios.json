@@ -1,0 +1,51 @@
+[
+  {
+    "name": "deliveryAddress is required when the branch applies",
+    "changes": {
+      "deliveryAddress": ""
+    },
+    "valid": false,
+    "errors": {
+      "deliveryAddress": [
+        "required"
+      ]
+    }
+  },
+  {
+    "name": "switching off deliveryAddress clears its branch",
+    "changes": {
+      "workMode": "office"
+    },
+    "valid": true,
+    "visible": {
+      "deliveryAddress": false
+    },
+    "absent": [
+      "deliveryAddress"
+    ]
+  },
+  {
+    "name": "the required fullName cannot be omitted",
+    "changes": {
+      "fullName": null
+    },
+    "valid": false,
+    "errors": {
+      "fullName": [
+        "required"
+      ]
+    }
+  },
+  {
+    "name": "an invalid email is rejected",
+    "changes": {
+      "email": "invalid-address"
+    },
+    "valid": false,
+    "errors": {
+      "email": [
+        "email"
+      ]
+    }
+  }
+]

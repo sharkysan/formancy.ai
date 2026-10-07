@@ -1,0 +1,303 @@
+{
+  "specVersion": "2",
+  "id": "operations-expense-claim",
+  "title": "Expense claim",
+  "model": {
+    "fields": [
+      {
+        "key": "intro",
+        "type": "static",
+        "label": {
+          "$t": "intro"
+        }
+      },
+      {
+        "key": "fullName",
+        "type": "text",
+        "label": {
+          "$t": "fullName"
+        },
+        "required": true,
+        "maxLength": 160
+      },
+      {
+        "key": "email",
+        "type": "text",
+        "label": {
+          "$t": "email"
+        },
+        "required": true,
+        "format": "email",
+        "maxLength": 254
+      },
+      {
+        "key": "costCentre",
+        "type": "text",
+        "label": {
+          "$t": "costCentre"
+        },
+        "required": true,
+        "maxLength": 100
+      },
+      {
+        "key": "expenseDate",
+        "type": "date",
+        "label": {
+          "$t": "expenseDate"
+        },
+        "required": true
+      },
+      {
+        "key": "category",
+        "type": "select",
+        "label": {
+          "$t": "category"
+        },
+        "required": true,
+        "options": [
+          {
+            "value": "travel",
+            "label": {
+              "$t": "category.travel"
+            }
+          },
+          {
+            "value": "meal",
+            "label": {
+              "$t": "category.meal"
+            }
+          },
+          {
+            "value": "supplies",
+            "label": {
+              "$t": "category.supplies"
+            }
+          },
+          {
+            "value": "other",
+            "label": {
+              "$t": "category.other"
+            }
+          }
+        ]
+      },
+      {
+        "key": "purpose",
+        "type": "textarea",
+        "label": {
+          "$t": "purpose"
+        },
+        "required": true,
+        "minLength": 15,
+        "maxLength": 1200
+      },
+      {
+        "key": "amount",
+        "type": "number",
+        "label": {
+          "$t": "amount"
+        },
+        "required": true,
+        "min": 0.01,
+        "max": 1000000
+      },
+      {
+        "key": "currency",
+        "type": "select",
+        "label": {
+          "$t": "currency"
+        },
+        "required": true,
+        "options": [
+          {
+            "value": "CHF",
+            "label": {
+              "$t": "currency.CHF"
+            }
+          },
+          {
+            "value": "EUR",
+            "label": {
+              "$t": "currency.EUR"
+            }
+          },
+          {
+            "value": "USD",
+            "label": {
+              "$t": "currency.USD"
+            }
+          }
+        ]
+      },
+      {
+        "key": "receiptReference",
+        "type": "text",
+        "label": {
+          "$t": "receiptReference"
+        },
+        "required": true,
+        "maxLength": 200
+      },
+      {
+        "key": "travelRoute",
+        "type": "text",
+        "label": {
+          "$t": "travelRoute"
+        },
+        "maxLength": 300
+      }
+    ]
+  },
+  "logic": {
+    "rules": [
+      {
+        "target": "travelRoute",
+        "kind": "visible",
+        "cel": "category == \"travel\""
+      },
+      {
+        "target": "travelRoute",
+        "kind": "required",
+        "cel": "category == \"travel\""
+      }
+    ]
+  },
+  "layouts": [
+    {
+      "name": "web",
+      "nodes": [
+        {
+          "kind": "field",
+          "path": "intro"
+        },
+        {
+          "kind": "section",
+          "label": {
+            "$t": "section.1"
+          },
+          "children": [
+            {
+              "kind": "field",
+              "path": "fullName"
+            },
+            {
+              "kind": "field",
+              "path": "email"
+            },
+            {
+              "kind": "field",
+              "path": "costCentre"
+            }
+          ]
+        },
+        {
+          "kind": "section",
+          "label": {
+            "$t": "section.2"
+          },
+          "children": [
+            {
+              "kind": "field",
+              "path": "expenseDate"
+            },
+            {
+              "kind": "field",
+              "path": "category"
+            },
+            {
+              "kind": "field",
+              "path": "purpose"
+            },
+            {
+              "kind": "field",
+              "path": "amount"
+            },
+            {
+              "kind": "field",
+              "path": "currency"
+            },
+            {
+              "kind": "field",
+              "path": "receiptReference"
+            },
+            {
+              "kind": "field",
+              "path": "travelRoute"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "i18n": {
+    "defaultLocale": "en",
+    "messages": {
+      "en": {
+        "intro": "Submit one expense with its business purpose and receipt reference.",
+        "section.1": "Claimant",
+        "fullName": "Full name",
+        "email": "Email address",
+        "costCentre": "Cost centre or project",
+        "section.2": "Expense",
+        "expenseDate": "Expense date",
+        "category": "Expense category",
+        "category.travel": "Travel",
+        "category.meal": "Business meal",
+        "category.supplies": "Supplies",
+        "category.other": "Other",
+        "purpose": "Business purpose",
+        "amount": "Amount paid",
+        "currency": "Currency",
+        "currency.CHF": "CHF",
+        "currency.EUR": "EUR",
+        "currency.USD": "USD",
+        "receiptReference": "Receipt reference in your document system",
+        "travelRoute": "Travel route"
+      },
+      "de": {
+        "intro": "Erfassen Sie eine Ausgabe mit Geschäftszweck und Belegreferenz.",
+        "section.1": "Antragstellende Person",
+        "fullName": "Vor- und Nachname",
+        "email": "E-Mail-Adresse",
+        "costCentre": "Kostenstelle oder Projekt",
+        "section.2": "Ausgabe",
+        "expenseDate": "Belegdatum",
+        "category": "Spesenart",
+        "category.travel": "Reise",
+        "category.meal": "Geschäftsessen",
+        "category.supplies": "Material",
+        "category.other": "Andere",
+        "purpose": "Geschäftszweck",
+        "amount": "Bezahlter Betrag",
+        "currency": "Währung",
+        "currency.CHF": "CHF",
+        "currency.EUR": "EUR",
+        "currency.USD": "USD",
+        "receiptReference": "Belegreferenz in Ihrem Dokumentensystem",
+        "travelRoute": "Reiseroute"
+      },
+      "fr": {
+        "intro": "Soumettez une dépense avec son motif professionnel et sa référence de justificatif.",
+        "section.1": "Demandeur ou demandeuse",
+        "fullName": "Prénom et nom",
+        "email": "Adresse e-mail",
+        "costCentre": "Centre de coûts ou projet",
+        "section.2": "Dépense",
+        "expenseDate": "Date de la dépense",
+        "category": "Catégorie de dépense",
+        "category.travel": "Déplacement",
+        "category.meal": "Repas professionnel",
+        "category.supplies": "Fournitures",
+        "category.other": "Autre",
+        "purpose": "Motif professionnel",
+        "amount": "Montant payé",
+        "currency": "Devise",
+        "currency.CHF": "CHF",
+        "currency.EUR": "EUR",
+        "currency.USD": "USD",
+        "receiptReference": "Référence du justificatif dans votre système documentaire",
+        "travelRoute": "Trajet"
+      }
+    }
+  }
+}

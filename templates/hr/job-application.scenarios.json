@@ -1,0 +1,51 @@
+[
+  {
+    "name": "interviewAdjustment is required when the branch applies",
+    "changes": {
+      "interviewAdjustment": ""
+    },
+    "valid": false,
+    "errors": {
+      "interviewAdjustment": [
+        "required"
+      ]
+    }
+  },
+  {
+    "name": "switching off interviewAdjustment clears its branch",
+    "changes": {
+      "needsInterviewAdjustment": false
+    },
+    "valid": true,
+    "visible": {
+      "interviewAdjustment": false
+    },
+    "absent": [
+      "interviewAdjustment"
+    ]
+  },
+  {
+    "name": "the required fullName cannot be omitted",
+    "changes": {
+      "fullName": null
+    },
+    "valid": false,
+    "errors": {
+      "fullName": [
+        "required"
+      ]
+    }
+  },
+  {
+    "name": "an invalid email is rejected",
+    "changes": {
+      "email": "invalid-address"
+    },
+    "valid": false,
+    "errors": {
+      "email": [
+        "email"
+      ]
+    }
+  }
+]

@@ -1,0 +1,10 @@
+{
+  "company": "Example Studio",
+  "fullName": "Alex Example",
+  "email": "alex@example.com",
+  "address": "Example Street 1, 8000 Example City",
+  "preferredLanguage": "de",
+  "separateBilling": true,
+  "billingEmail": "billing@example.com",
+  "billingAddress": "Example Avenue 2, 3000 Example Town"
+}

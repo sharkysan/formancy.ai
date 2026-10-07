@@ -1,0 +1,10 @@
+{
+  "fullName": "Alex Example",
+  "email": "alex@example.com",
+  "company": "Example Studio",
+  "scope": "Build an online application form with three languages.",
+  "targetDate": "2027-02-01",
+  "budgetKnown": true,
+  "budget": 25000,
+  "currency": "CHF"
+}

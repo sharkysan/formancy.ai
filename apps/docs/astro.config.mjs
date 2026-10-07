@@ -46,6 +46,7 @@ export default defineConfig({
             { label: 'Quickstart: Angular', slug: 'start/angular' },
             { label: 'Quickstart: self-hosting', slug: 'start/self-hosting' },
             { label: 'Quickstart: coding agents', slug: 'start/agents' },
+            { label: 'Starter templates', slug: 'start/templates' },
           ],
         },
         {

@@ -1,0 +1,241 @@
+{
+  "specVersion": "2",
+  "id": "sales-customer-onboarding",
+  "title": "Customer onboarding",
+  "model": {
+    "fields": [
+      {
+        "key": "intro",
+        "type": "static",
+        "label": {
+          "$t": "intro"
+        }
+      },
+      {
+        "key": "company",
+        "type": "text",
+        "label": {
+          "$t": "company"
+        },
+        "required": true,
+        "maxLength": 160
+      },
+      {
+        "key": "fullName",
+        "type": "text",
+        "label": {
+          "$t": "fullName"
+        },
+        "required": true,
+        "maxLength": 160
+      },
+      {
+        "key": "email",
+        "type": "text",
+        "label": {
+          "$t": "email"
+        },
+        "required": true,
+        "format": "email",
+        "maxLength": 254
+      },
+      {
+        "key": "address",
+        "type": "textarea",
+        "label": {
+          "$t": "address"
+        },
+        "required": true,
+        "maxLength": 600
+      },
+      {
+        "key": "preferredLanguage",
+        "type": "select",
+        "label": {
+          "$t": "preferredLanguage"
+        },
+        "required": true,
+        "options": [
+          {
+            "value": "en",
+            "label": {
+              "$t": "preferredLanguage.en"
+            }
+          },
+          {
+            "value": "de",
+            "label": {
+              "$t": "preferredLanguage.de"
+            }
+          },
+          {
+            "value": "fr",
+            "label": {
+              "$t": "preferredLanguage.fr"
+            }
+          }
+        ]
+      },
+      {
+        "key": "separateBilling",
+        "type": "checkbox",
+        "label": {
+          "$t": "separateBilling"
+        }
+      },
+      {
+        "key": "billingEmail",
+        "type": "text",
+        "label": {
+          "$t": "billingEmail"
+        },
+        "format": "email",
+        "maxLength": 254
+      },
+      {
+        "key": "billingAddress",
+        "type": "textarea",
+        "label": {
+          "$t": "billingAddress"
+        },
+        "maxLength": 600
+      }
+    ]
+  },
+  "logic": {
+    "rules": [
+      {
+        "target": "billingEmail",
+        "kind": "visible",
+        "cel": "separateBilling == true"
+      },
+      {
+        "target": "billingEmail",
+        "kind": "required",
+        "cel": "separateBilling == true"
+      },
+      {
+        "target": "billingAddress",
+        "kind": "visible",
+        "cel": "separateBilling == true"
+      },
+      {
+        "target": "billingAddress",
+        "kind": "required",
+        "cel": "separateBilling == true"
+      }
+    ]
+  },
+  "layouts": [
+    {
+      "name": "web",
+      "nodes": [
+        {
+          "kind": "field",
+          "path": "intro"
+        },
+        {
+          "kind": "section",
+          "label": {
+            "$t": "section.1"
+          },
+          "children": [
+            {
+              "kind": "field",
+              "path": "company"
+            },
+            {
+              "kind": "field",
+              "path": "fullName"
+            },
+            {
+              "kind": "field",
+              "path": "email"
+            },
+            {
+              "kind": "field",
+              "path": "address"
+            },
+            {
+              "kind": "field",
+              "path": "preferredLanguage"
+            }
+          ]
+        },
+        {
+          "kind": "section",
+          "label": {
+            "$t": "section.2"
+          },
+          "children": [
+            {
+              "kind": "field",
+              "path": "separateBilling"
+            },
+            {
+              "kind": "field",
+              "path": "billingEmail"
+            },
+            {
+              "kind": "field",
+              "path": "billingAddress"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "i18n": {
+    "defaultLocale": "en",
+    "messages": {
+      "en": {
+        "intro": "Collect company and billing contact details for account setup.",
+        "section.1": "Company and main contact",
+        "company": "Company name",
+        "fullName": "Full name",
+        "email": "Email address",
+        "address": "Business address",
+        "preferredLanguage": "Preferred language",
+        "preferredLanguage.en": "English",
+        "preferredLanguage.de": "Deutsch",
+        "preferredLanguage.fr": "Français",
+        "section.2": "Billing",
+        "separateBilling": "Use different billing details",
+        "billingEmail": "Billing email",
+        "billingAddress": "Billing address"
+      },
+      "de": {
+        "intro": "Erfassen Sie Firmen- und Rechnungskontaktdaten für die Kontoeröffnung.",
+        "section.1": "Firma und Hauptkontakt",
+        "company": "Firmenname",
+        "fullName": "Vor- und Nachname",
+        "email": "E-Mail-Adresse",
+        "address": "Geschäftsadresse",
+        "preferredLanguage": "Bevorzugte Sprache",
+        "preferredLanguage.en": "English",
+        "preferredLanguage.de": "Deutsch",
+        "preferredLanguage.fr": "Français",
+        "section.2": "Rechnungsstellung",
+        "separateBilling": "Abweichende Rechnungsangaben verwenden",
+        "billingEmail": "E-Mail für Rechnungen",
+        "billingAddress": "Rechnungsadresse"
+      },
+      "fr": {
+        "intro": "Recueillez les coordonnées de l’entreprise et de facturation.",
+        "section.1": "Entreprise et contact principal",
+        "company": "Raison sociale",
+        "fullName": "Prénom et nom",
+        "email": "Adresse e-mail",
+        "address": "Adresse professionnelle",
+        "preferredLanguage": "Langue préférée",
+        "preferredLanguage.en": "English",
+        "preferredLanguage.de": "Deutsch",
+        "preferredLanguage.fr": "Français",
+        "section.2": "Facturation",
+        "separateBilling": "Utiliser des coordonnées de facturation différentes",
+        "billingEmail": "E-mail de facturation",
+        "billingAddress": "Adresse de facturation"
+      }
+    }
+  }
+}

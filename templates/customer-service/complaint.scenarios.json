@@ -1,0 +1,51 @@
+[
+  {
+    "name": "orderReference is required when the branch applies",
+    "changes": {
+      "orderReference": ""
+    },
+    "valid": false,
+    "errors": {
+      "orderReference": [
+        "required"
+      ]
+    }
+  },
+  {
+    "name": "switching off orderReference clears its branch",
+    "changes": {
+      "hasOrder": false
+    },
+    "valid": true,
+    "visible": {
+      "orderReference": false
+    },
+    "absent": [
+      "orderReference"
+    ]
+  },
+  {
+    "name": "the required fullName cannot be omitted",
+    "changes": {
+      "fullName": null
+    },
+    "valid": false,
+    "errors": {
+      "fullName": [
+        "required"
+      ]
+    }
+  },
+  {
+    "name": "an invalid email is rejected",
+    "changes": {
+      "email": "invalid-address"
+    },
+    "valid": false,
+    "errors": {
+      "email": [
+        "email"
+      ]
+    }
+  }
+]

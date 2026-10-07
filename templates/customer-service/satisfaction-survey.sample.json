@@ -1,0 +1,7 @@
+{
+  "service": "Example App",
+  "satisfaction": "4",
+  "improvement": "Provide clearer onboarding instructions.",
+  "followUp": true,
+  "contactEmail": "alex@example.com"
+}

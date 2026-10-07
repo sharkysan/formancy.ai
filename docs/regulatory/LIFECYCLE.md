@@ -249,3 +249,12 @@ Stated plainly, because a gap named is more useful than a gap implied:
 A manufacturer needing any of these for their classification must either supply
 it themselves as part of their own SOUP evaluation, or treat its absence as a
 reason not to use this software.
+
+### Template examples as verification inputs
+
+Starter templates carry fictional samples and scenario expectations alongside their
+JSON documents. The docs test task runs those scenarios in client and server modes;
+the site and playground tasks exercise their presentation. The existing browser gate
+also verifies built gallery navigation, downloads, modal focus and phone/desktop
+layout. These are software checks of the supplied examples, not domain approval of
+the template content.

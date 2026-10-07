@@ -1,0 +1,77 @@
+[
+  {
+    "name": "date of birth cannot be in the future",
+    "changes": {
+      "dateOfBirth": "2027-01-01"
+    },
+    "valid": false,
+    "errors": {
+      "dateOfBirth": [
+        "future_birth_date"
+      ]
+    }
+  },
+  {
+    "name": "representativeName is required when the branch applies",
+    "changes": {
+      "representativeName": ""
+    },
+    "valid": false,
+    "errors": {
+      "representativeName": [
+        "required"
+      ]
+    }
+  },
+  {
+    "name": "relationship is required when the branch applies",
+    "changes": {
+      "relationship": ""
+    },
+    "valid": false,
+    "errors": {
+      "relationship": [
+        "required"
+      ]
+    }
+  },
+  {
+    "name": "switching off representativeName clears its branch",
+    "changes": {
+      "completedBy": "self"
+    },
+    "valid": true,
+    "visible": {
+      "representativeName": false,
+      "relationship": false
+    },
+    "absent": [
+      "representativeName",
+      "relationship"
+    ]
+  },
+  {
+    "name": "the required fullName cannot be omitted",
+    "changes": {
+      "fullName": null
+    },
+    "valid": false,
+    "errors": {
+      "fullName": [
+        "required"
+      ]
+    }
+  },
+  {
+    "name": "an invalid email is rejected",
+    "changes": {
+      "email": "invalid-address"
+    },
+    "valid": false,
+    "errors": {
+      "email": [
+        "email"
+      ]
+    }
+  }
+]

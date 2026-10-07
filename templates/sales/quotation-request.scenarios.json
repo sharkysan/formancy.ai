@@ -1,0 +1,77 @@
+[
+  {
+    "name": "budget is required when the branch applies",
+    "changes": {
+      "budget": ""
+    },
+    "valid": false,
+    "errors": {
+      "budget": [
+        "required"
+      ]
+    }
+  },
+  {
+    "name": "currency is required when the branch applies",
+    "changes": {
+      "currency": ""
+    },
+    "valid": false,
+    "errors": {
+      "currency": [
+        "required"
+      ]
+    }
+  },
+  {
+    "name": "switching off budget clears its branch",
+    "changes": {
+      "budgetKnown": false
+    },
+    "valid": true,
+    "visible": {
+      "budget": false,
+      "currency": false
+    },
+    "absent": [
+      "budget",
+      "currency"
+    ]
+  },
+  {
+    "name": "a negative budget is rejected",
+    "changes": {
+      "budget": -1
+    },
+    "valid": false,
+    "errors": {
+      "budget": [
+        "min"
+      ]
+    }
+  },
+  {
+    "name": "the required fullName cannot be omitted",
+    "changes": {
+      "fullName": null
+    },
+    "valid": false,
+    "errors": {
+      "fullName": [
+        "required"
+      ]
+    }
+  },
+  {
+    "name": "an invalid email is rejected",
+    "changes": {
+      "email": "invalid-address"
+    },
+    "valid": false,
+    "errors": {
+      "email": [
+        "email"
+      ]
+    }
+  }
+]

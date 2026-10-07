@@ -1,0 +1,10 @@
+{
+  "fullName": "Alex Example",
+  "email": "alex@example.com",
+  "position": "Software engineer",
+  "experience": "Five years building web applications.",
+  "profileUrl": "https://example.com/portfolio",
+  "availableFrom": "2026-12-01",
+  "needsInterviewAdjustment": true,
+  "interviewAdjustment": "Please offer a remote interview."
+}

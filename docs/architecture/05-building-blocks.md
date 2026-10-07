@@ -255,3 +255,13 @@ back in `server-core/address.ts`, because deciding whether `::ffff:10.0.0.5` is
 private needs no runtime at all — only parsing it into a `URL` does, and that
 is why `webhookUrlProblem` lives in `server` while `isPrivateAddress` does
 not.
+
+## Starter template collection and gallery
+
+`templates/` holds plain form documents, a discovery catalogue, fictional answer
+objects and executable scenario expectations. It is application content, not a
+new layer or npm package. The site builds `/templates/` as its own HTML entry;
+preview and JSON download use the same document, and its edit links pass a known
+template id and locale to the playground. No respondent answers cross that link.
+Both applications read the catalogue; neither bundles the sample answers as form
+defaults. See [0105](../decisions/0105-templates-are-documents-with-examples.md).
