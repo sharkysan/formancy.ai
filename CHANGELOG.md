@@ -87,6 +87,76 @@ compares against the version read from `package.json`.
 budget's ratchet and took `app.tsx`'s ceiling down with it — the ratchet pointing at
 something real rather than a number being tidied.
 
+**And the browser gate hung in CI for twenty minutes, which is a flaw in the gate.**
+`playwright install --with-deps chromium` ran `apt-get` for Chromium's system libraries,
+and the hosted Ubuntu runner already ships them — so with the browser restored from cache
+in five seconds, the step then sat on apt for 19m30s until the job's timeout cancelled it.
+The same step had taken 66 seconds the run before. `--with-deps` is gone and the step
+carries a five-minute timeout: a gate that depends on an apt mirror depends on somebody
+else's uptime, which is the trade this repository refuses elsewhere, and a missing library
+now fails loudly — Chromium refuses to launch and the script prints the command to run.
+
+Worth recording for a second reason: `gh run watch` exited **0** for a run whose `browser`
+job was CANCELLED. The repository's rule is to confirm a run's conclusion in a separate
+query rather than trust the watcher, and this is the second time that rule has earned its
+place.
+
+**The coverage report read, which CLAUDE.md asks for and nothing had done.** 93.5% of
+lines and 81.3% of branches across 221 files, measured per file out of the lcov rather
+than from the terminal reporter — which interleaves across eighteen packages and makes the
+one thing the policy asks for hard to do. Now **94.3% and 81.8%**, with no file at 0% and
+none below 69%. The figure moved a little; what it bought is elsewhere.
+
+**`builder-core/src/logic.ts` went from 46% of its lines to 100%.** The weakest file in
+the repository, in the core *both* builders read. `referencedMessages` was **entirely
+untested** — the function that decides the order a translator meets the questions in, with
+a docblock arguing that the order is load-bearing because "a translator works down a list
+and meets the questions in the order somebody filling the form does". Nothing would have
+noticed that order changing. Four other exported functions were uncovered too, each with a
+fallback that turns a wrong name into a plausible-looking rule.
+
+**The catalogue round trip, in both translation panes.** At 61% and 70%, and the uncovered
+block in each was the download and the upload — the plumbing a translator touches, and the
+plumbing that can silently do nothing: a button that builds a blob and never clicks looks
+exactly like a working download. Both panes name the file, choose the accepted types and
+report a bad file *independently*, so this is where the pair can diverge without anybody
+finding out. Now asserted in both, including that an unreadable file is reported rather
+than swallowed — the handler catches inside a promise, which is the shape that swallows an
+error the moment the `catch` is dropped.
+
+**The link-preview card was at 0%, and it exists because one went stale.** Its own docblock
+records that the previous card "outlived two rewrites of the headline before anybody
+noticed it still read *One engine, in the browser and on the server*". The fix was to build
+it from the same renderer as the page — and then nothing checked that the words still
+matched, which is the half the story was about. **The card's headline is now derived from
+both sources and compared**: a rewrite of one without the other fails. Proved by rewriting
+the card's and watching it name both.
+
+Also covered: the theme editor's colour picker and download (77% → 100% of lines), the
+scale controls' `touch()` lines — an untouched field shows no error, so a control that
+never touches is one whose own message never appears — and the temporal controls at 67%,
+including the branch that writes `null` for input it cannot parse. That branch keeps the
+stored answer always empty or canonical, which is what the engine's shape check assumes,
+and `earliest`/`latest` compare strings: a half-typed datetime reaching the answer would
+make the bound comparison succeed or fail against something that is not a datetime.
+
+**Two guards came out of it that are not about coverage.** The Monaco theme the Schema view
+asks for is now asserted to be the one that gets defined — two places claiming one string,
+and if they disagree Monaco falls back silently, with no error and the wrong colours. And
+`apps/docs/src/content.config.ts` is excluded from the measurement as a framework config
+with the composition-root argument, with a test that the reason is true: no branches, no
+functions, under twenty lines. An exclusion nobody checks is an escape hatch.
+
+**One finding fixed:** `editor-pane.tsx` memoised Monaco's options and then did not use
+them — the extraction left an inline literal, so the memo was dead and the editor
+reconfigured on every keystroke. An unused local is not a failure, which is exactly why it
+survived a green suite; the coverage report is what showed it.
+
+And the type checker corrected four assumptions in one new fixture: a form's `title` is a
+plain string and is **not** translatable, there is no `hint` property, a section's text is
+`label`, and a layout is addressed by `name`. An `as never` would have hidden all four and
+left a test asserting an order over properties that do not exist.
+
 **Start with a form whose examples run.** The starter collection covers HR, sales,
 customer service, events, operations and healthcare administration. Each plain JSON
 form carries English, Swiss High German and French text, its layout and rules,

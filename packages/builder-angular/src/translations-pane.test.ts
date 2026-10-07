@@ -1,7 +1,7 @@
 import { provideZonelessChangeDetection } from '@angular/core'
 import { TestBed } from '@angular/core/testing'
-import { afterEach, describe, expect, test } from 'vitest'
-import { render, screen, within } from '@testing-library/angular'
+import { afterEach, describe, expect, test, vi } from 'vitest'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/angular'
 import { userEvent } from '@testing-library/user-event'
 import { createBuilderSession } from '@formancy/builder-core'
 import type { BuilderSession } from '@formancy/builder-core'
@@ -209,5 +209,156 @@ describe('messages nothing refers to', () => {
 
     const kept = document.querySelector('[data-formancy-part="translations-orphaned"]')
     expect(kept?.textContent).toMatch(/Email/)
+  })
+})
+
+describe('the catalogue leaving and coming back, as it does in React', () => {
+  /*
+   * The same block exists in `packages/builder-react/src/translations-pane.test.tsx`,
+   * and that is the point: **the round trip is where the two panes can diverge
+   * without anybody finding out.** They name the downloaded file, choose the
+   * accepted types and report a bad file independently, so a difference in any
+   * of those is a translator being handed two products.
+   *
+   * Both panes were weakly covered here — 61% and 70% of their lines — and the
+   * uncovered block was the download and the upload in each. The core's
+   * `exportCatalogue`/`importCatalogue` were already covered; what was not was
+   * the plumbing a person touches, which is also the plumbing that can silently
+   * do nothing. A button that builds a blob and never clicks looks exactly like
+   * a working download.
+   */
+  const translated = async () => {
+    const session = createBuilderSession(plain)
+    session.extractAllText()
+    session.setMessage('fr', 'email.label', 'Adresse professionnelle')
+    const view = await render(FormancyTranslationsPane, {
+      componentInputs: { session },
+      providers: [provideZonelessChangeDetection()],
+    })
+    await view.fixture.whenStable()
+
+    // The pane opens on the default language; everything here is about the one
+    // being translated. React's block learned the same thing by getting
+    // `contact.en.json` when it expected `.fr.json`.
+    const user = userEvent.setup()
+    await user.selectOptions(screen.getByRole('combobox', { name: /language/i }), 'fr')
+    await view.fixture.whenStable()
+    return { session, view, user }
+  }
+
+  const downloadSpies = () => {
+    const clicked: string[] = []
+    const urls: string[] = []
+    const revoked: string[] = []
+    let text = ''
+    vi.spyOn(URL, 'createObjectURL').mockImplementation((blob: Blob | MediaSource) => {
+      // The real signature takes a `MediaSource` too; narrowed here because only
+      // a `Blob` is ever passed and the text is what the case is about.
+      const file = blob as Blob
+      void file.text().then((read) => {
+        text = read
+      })
+      const url = `blob:fake/${String(urls.length)}`
+      urls.push(url)
+      return url
+    })
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation((url: string) => void revoked.push(url))
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+      clicked.push(this.download)
+    })
+    return { clicked, urls, revoked, read: () => text }
+  }
+
+  test('downloads a file named for the form and the language, as React does', async () => {
+    const { session, user } = await translated()
+    const spies = downloadSpies()
+
+    await user.click(screen.getByRole('button', { name: /download/i }))
+    await Promise.resolve()
+    await Promise.resolve()
+
+    // The same name the React pane produces. If these two ever disagreed, two
+    // deployments of one product would hand a translator differently named files
+    // for the same work.
+    expect(spies.clicked).toEqual([`${session.document().id}.fr.json`])
+    expect(spies.urls.length, 'nothing was offered to download').toBe(1)
+    expect(spies.revoked, 'the object URL was never revoked').toEqual(spies.urls)
+  })
+
+  test('and the file carries the source beside every target', async () => {
+    const { user } = await translated()
+    const spies = downloadSpies()
+
+    await user.click(screen.getByRole('button', { name: /download/i }))
+    await Promise.resolve()
+    await Promise.resolve()
+
+    const file = JSON.parse(spies.read()) as {
+      locale?: string
+      defaultLocale?: string
+      messages?: Array<{ id: string; source: string; target: string }>
+    }
+    expect(file.locale).toBe('fr')
+    expect(file.defaultLocale, 'a target with no source language is a target against nothing').toBeDefined()
+    expect(file.messages?.length, 'the catalogue went out empty').toBeGreaterThan(0)
+    expect(Object.keys(file.messages?.[0] ?? {}).sort()).toEqual(['id', 'source', 'target'])
+  })
+
+  test('an uploaded catalogue reaches the document', async () => {
+    const { session } = await translated()
+    const id = session.exportCatalogue('fr').messages[0]?.id
+    expect(id, 'nothing was extracted to translate').toBeDefined()
+
+    const file = new File(
+      [
+        JSON.stringify({
+          locale: 'fr',
+          defaultLocale: 'en',
+          messages: [{ id: id as string, source: 'x', target: 'Bonjour' }],
+        }),
+      ],
+      'contact.fr.json',
+      { type: 'application/json' },
+    )
+    fireEvent.change(screen.getByLabelText(/upload/i), { target: { files: [file] } })
+
+    await waitFor(() => {
+      expect(
+        session.exportCatalogue('fr').messages.find((message) => message.id === id)?.target,
+      ).toBe('Bonjour')
+    })
+  })
+
+  test('and a file that is not one of ours is reported rather than swallowed', async () => {
+    /*
+     * The worst available outcome is silence: a translator uploads an
+     * afternoon's work, nothing happens, nothing says why. The handler catches
+     * inside a promise, which is the shape that swallows an error the moment the
+     * `catch` is dropped — and nothing proved it was there, in either renderer.
+     */
+    const { view } = await translated()
+
+    fireEvent.change(screen.getByLabelText(/upload/i), {
+      target: { files: [new File(['this is not json'], 'notes.txt', { type: 'text/plain' })] },
+    })
+
+    await waitFor(() => {
+      // Synchronous on purpose: `waitFor`'s callback is typed to return nothing,
+      // and it re-runs until the assertion holds — which is what settles the
+      // fixture here without an `await` inside it.
+      const said = document.querySelector('[data-formancy-part="translations-problem"]')
+      expect(said, 'an unreadable file was accepted in silence').not.toBeNull()
+      expect((said?.textContent ?? '').length).toBeGreaterThan(0)
+    })
+  })
+
+  test('and choosing no file at all does nothing', async () => {
+    const { session } = await translated()
+    const before = JSON.stringify(session.document())
+
+    fireEvent.change(screen.getByLabelText(/upload/i), { target: { files: [] } })
+    await Promise.resolve()
+
+    expect(JSON.stringify(session.document())).toBe(before)
   })
 })

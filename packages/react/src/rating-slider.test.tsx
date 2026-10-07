@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { userEvent } from '@testing-library/user-event'
 import { createFormEngine } from '@formancy/core'
 import type { FormSchema } from '@formancy/spec'
 import { FormancyForm } from './form.js'
@@ -170,5 +171,120 @@ describe('a slider', () => {
 
     expect(screen.queryByRole('slider')).toBeNull()
     expect(screen.getByRole('spinbutton', { name: /how likely/i })).toBeTruthy()
+  })
+})
+
+describe('when a scale has been left alone', () => {
+  /*
+   * Both controls call `field.touch()` on blur, and both of those lines were
+   * uncovered. That is not a coverage detail: an untouched field shows no error,
+   * so a control that never touches is a control whose own validation message
+   * never appears — the person sees nothing wrong and the submit refuses.
+   *
+   * **Touched is the control's job; the error is the engine's.** The first
+   * version of these cases blurred a radio and looked for the word `required` on
+   * screen, and found nothing — because an empty required field has no error
+   * until `submit`. Probed rather than guessed: `touched` was already `true` and
+   * `errors` was `[]`. So each half is asserted where it lives.
+   */
+  const required = (widget: 'rating' | 'slider'): FormSchema => ({
+    specVersion: '4',
+    id: 'survey',
+    title: 'How did we do',
+    model: {
+      fields: [
+        {
+          key: 'score',
+          type: 'number',
+          label: 'How likely are you to recommend us',
+          min: 0,
+          max: 10,
+          required: true,
+          widget,
+        } as never,
+      ],
+    },
+  })
+
+  /*
+   * Focus in and out, not `fireEvent.blur`. React listens for `focusout` at the
+   * root and `blur` does not bubble, so dispatching `blur` reaches nothing.
+   */
+  const tabAway = async (user: ReturnType<typeof userEvent.setup>, element: HTMLElement): Promise<void> => {
+    element.focus()
+    await user.tab()
+  }
+
+  test('a rating marks itself touched when focus leaves it', async () => {
+    const user = userEvent.setup()
+    const engine = mount(required('rating'))
+
+    expect(engine.getFieldSnapshot(['score']).touched).toBe(false)
+    await tabAway(user, screen.getAllByRole('radio')[0]!)
+
+    expect(engine.getFieldSnapshot(['score']).touched, 'the rating never marked itself touched').toBe(true)
+  })
+
+  test('and so does a slider', async () => {
+    const user = userEvent.setup()
+    const engine = mount(required('slider'))
+
+    expect(engine.getFieldSnapshot(['score']).touched).toBe(false)
+    await tabAway(user, screen.getByRole('slider'))
+
+    expect(engine.getFieldSnapshot(['score']).touched, 'the slider never marked itself touched').toBe(true)
+  })
+
+  test('and the two halves together put the message on screen', async () => {
+    /*
+     * Touched alone shows nothing and an error alone shows nothing; the shell
+     * asks for both. Worth one case because it is the sentence a person reads,
+     * and because it is the only thing that proves the control's `touch()` and
+     * the engine's validation meet at all.
+     */
+    const engine = mount(required('rating'))
+
+    expect(screen.queryByText(/required/)).toBeNull()
+    engine.validate()
+    engine.getFieldSnapshot(['score'])
+    const user = userEvent.setup()
+    await tabAway(user, screen.getAllByRole('radio')[0]!)
+
+    expect(screen.getByText(/required/)).toBeTruthy()
+  })
+
+  test('and a rating shows a step refusal it could never have produced itself', async () => {
+    /*
+     * The scale offers 0, 5 and 10, so picking one cannot break the step. The
+     * value can still arrive from the document, from an agent or from a stale
+     * draft — and then the control shows the engine's refusal rather than looking
+     * correct. This is the client half of why `step` is a field property rather
+     * than widget configuration.
+     */
+    const engine = createFormEngine({
+      schema: {
+        specVersion: '4',
+        id: 'survey',
+        title: 'Survey',
+        model: {
+          fields: [
+            { key: 'score', type: 'number', label: 'Score', min: 0, max: 10, step: 5, widget: 'rating' } as never,
+          ],
+        },
+      },
+      initialValue: { score: 7 },
+      capabilities: { now: () => 0, today: () => '2026-10-07', random: () => 0.5 },
+    })
+    render(
+      <FormancyProvider engine={engine}>
+        <FormancyForm onSubmit={() => undefined} />
+      </FormancyProvider>,
+    )
+
+    engine.validate()
+    const user = userEvent.setup()
+    await tabAway(user, screen.getAllByRole('radio')[0]!)
+
+    expect(screen.getByText(/step/)).toBeTruthy()
   })
 })

@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterAll, afterEach, beforeAll, describe, expect, test, vi } from 'vitest'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
 import { App } from './app.js'
 
@@ -69,6 +69,24 @@ const openEditor = async (): Promise<ReturnType<typeof userEvent.setup>> => {
   render(<App />)
   await user.click(screen.getByRole('button', { name: 'Theme' }))
   return user
+}
+
+/**
+ * The swatch belonging to one token.
+ *
+ * Scoped by name, not `querySelector` on the first match: the tokens are sorted,
+ * so the first colour is `chrome` and a case that edited `ink` and read that
+ * swatch was comparing two different tokens. It failed with `#eef2f6`, which is
+ * chrome's value and the clearest possible message about which mistake it was.
+ */
+const swatchFor = (token: string): HTMLInputElement => {
+  const label = [...document.querySelectorAll('.theme-token')].find(
+    (candidate) => candidate.querySelector('.theme-token-name')?.textContent === token,
+  )
+  expect(label, `no control for ${token}`).toBeDefined()
+  const swatch = label?.querySelector('input[type="color"]')
+  expect(swatch, `${token} has no colour picker`).not.toBeNull()
+  return swatch as HTMLInputElement
 }
 
 /** The element the overrides are applied to. */
@@ -317,5 +335,123 @@ describe('the theme editor', () => {
 
     await user.selectOptions(screen.getByRole('combobox', { name: /theme/i }), 'blueprint')
     expect(host().style.getPropertyValue('--fm-ink'), 'the edit was lost rather than kept').toBe('#ff0000')
+  })
+})
+
+describe('the two ways a value gets in', () => {
+  test('the picker writes the token, not only the field beside it', async () => {
+    /*
+     * Uncovered until now, and the half most people will use: a colour is chosen
+     * from the swatch far more often than typed. The field and the picker are two
+     * controls over one token, so either writing and the other not is a control
+     * that looks like it worked.
+     */
+    const user = await Promise.resolve(userEvent.setup())
+    await openEditor()
+
+    fireEvent.change(swatchFor('ink'), { target: { value: '#00ff00' } })
+
+    expect(screen.getByLabelText('Theme CSS').textContent).toContain('#00ff00')
+    void user
+  })
+
+  test('and the picker shows black for a value it cannot express', async () => {
+    /*
+     * `<input type="color">` speaks six-digit hex and nothing else. A theme may
+     * legitimately write `oklch()` or a three-digit hex, and an invalid `value`
+     * makes the control report `#000000` anyway — so the swatch is wrong rather
+     * than empty, which is why the text field beside it is the control and this
+     * is the assist. Asserted so that nobody later "fixes" the fallback into
+     * something that throws.
+     */
+    const user = await Promise.resolve(userEvent.setup())
+    await openEditor()
+
+    const ink = screen.getByRole('textbox', { name: 'ink' })
+    fireEvent.change(ink, { target: { value: 'oklch(55% 0.1 250)' } })
+
+    expect(swatchFor('ink').value).toBe('#000000')
+    expect(screen.getByLabelText('Theme CSS').textContent).toContain('oklch(55% 0.1 250)')
+    void user
+  })
+})
+
+describe('taking the patch away', () => {
+  test('downloads a file named after the theme, carrying only the overrides', async () => {
+    /*
+     * The only way out of this editor, and nothing reached it. A button that
+     * builds a blob and never triggers the download is a button that looks like
+     * it worked — the browser shows nothing either way.
+     *
+     * `createObjectURL` does not exist in jsdom and `click()` on an anchor would
+     * try to navigate, so both are stubbed. What is asserted is what a person
+     * ends up with: the file's name and its contents.
+     */
+    const user = await Promise.resolve(userEvent.setup())
+    await openEditor()
+
+    const ink = screen.getByRole('textbox', { name: 'ink' })
+    fireEvent.change(ink, { target: { value: '#ff0000' } })
+
+    let downloaded: { name: string; text: string } | undefined
+    const urls: string[] = []
+    const revoked: string[] = []
+    vi.spyOn(URL, 'createObjectURL').mockImplementation((blob: Blob | MediaSource) => {
+      // The real signature takes a `MediaSource` too; narrowed here because only
+      // a `Blob` is ever passed and the text is what the case is about.
+      const file = blob as Blob
+      const url = `blob:fake/${String(urls.length)}`
+      urls.push(url)
+      void file.text().then((text) => {
+        downloaded = { name: downloaded?.name ?? '', text }
+      })
+      return url
+    })
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation((url: string) => void revoked.push(url))
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+      downloaded = { name: this.download, text: downloaded?.text ?? '' }
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Download CSS' }))
+    // The blob is read asynchronously; one microtask turn is enough.
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(downloaded?.name).toBe('formancy-blueprint-overrides.css')
+    expect(urls.length, 'no object URL was made, so nothing was offered').toBe(1)
+    expect(revoked, 'the object URL was never revoked, which leaks it for the page’s life').toEqual(urls)
+  })
+
+  test('and what it contains is the patch, not the whole theme', async () => {
+    /*
+     * The claim that makes the output worth having: paste it into a project and
+     * the next release of `@formancy/themes` still reaches you, because only the
+     * tokens you changed are pinned. A full dump would be a fork.
+     */
+    const user = await Promise.resolve(userEvent.setup())
+    await openEditor()
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'radius' }), { target: { value: '14px' } })
+
+    let text = ''
+    vi.spyOn(URL, 'createObjectURL').mockImplementation((blob: Blob | MediaSource) => {
+      // The real signature takes a `MediaSource` too; narrowed here because only
+      // a `Blob` is ever passed and the text is what the case is about.
+      const file = blob as Blob
+      void file.text().then((read) => {
+        text = read
+      })
+      return 'blob:fake'
+    })
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined)
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined)
+
+    await user.click(screen.getByRole('button', { name: 'Download CSS' }))
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(text).toContain('--fm-radius: 14px;')
+    expect(text, 'the file carries a token nobody changed').not.toContain('--fm-ink')
+    expect(text.startsWith("[data-formancy-theme='blueprint']")).toBe(true)
   })
 })
