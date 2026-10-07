@@ -51,8 +51,16 @@ export function EditorPane({
   overrides: Readonly<Record<string, string>>
   onThemeChange: (overrides: Record<string, string>) => void
 }) {
-  // Monaco's options object identity decides whether it reconfigures, and a
-  // fresh literal per render makes it do so on every keystroke.
+  /*
+   * Monaco's options object identity decides whether it reconfigures, and a
+   * fresh literal per render makes it do so on every keystroke.
+   *
+   * This was memoised and then **not used**: the extraction left an inline
+   * literal on the editor and nothing read this, so the memo was dead and the
+   * reconfiguration was happening anyway. Found by reading the coverage report
+   * rather than by any test — an unused local is not a failure, which is exactly
+   * why it survived a green suite.
+   */
   const options = useMemo(
     () => ({
       minimap: { enabled: false },
@@ -115,20 +123,14 @@ export function EditorPane({
           onChange={(next) => onSource(next ?? '')}
           beforeMount={defineNightTheme}
           theme="formancy-night"
-          options={{
-            minimap: { enabled: false },
-            scrollBeyondLastLine: false,
-            fontSize: 13,
-            fontFamily: "'IBM Plex Mono', ui-monospace, Consolas, monospace",
-            tabSize: 2,
-          }}
+          options={options}
         />
       </div>
     </section>
   )
 }
 
-function defineNightTheme(monaco: Monaco): void {
+export function defineNightTheme(monaco: Monaco): void {
   monaco.editor.defineTheme('formancy-night', {
     base: 'vs-dark',
     inherit: true,

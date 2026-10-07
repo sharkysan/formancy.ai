@@ -5,6 +5,11 @@ import {
   composeRule,
   conditionOf,
   draftIsComplete,
+  emptyRow,
+  kindCarriesCondition,
+  kindWrites,
+  referencedMessages,
+  rowTakesValue,
   ruleKindsFor,
   ruleTargetFor,
 } from './logic.js'
@@ -170,5 +175,240 @@ describe('when a draft is enough to add', () => {
 
     expect(rule.cel).toBe('qty * price')
     expect(rule.editor).toBeUndefined()
+  })
+})
+
+describe('what a kind is written with', () => {
+  /*
+   * Three answers rather than two, and the UI reads this to decide which surface
+   * to show. Getting it wrong does not throw: a `check` would be offered the
+   * comparison editor, which composes booleans, and an author would compose one
+   * for a rule that takes a NAME. Covered because nothing did — the file scored
+   * 46% of its lines and these four exported functions were among the gaps.
+   */
+  test('a condition for the kinds the comparison editor composes', () => {
+    expect(kindWrites('visible')).toBe('condition')
+    expect(kindCarriesCondition('visible')).toBe(true)
+  })
+
+  test('a name for a check, which is answered by the deployment', () => {
+    // Not a condition at all. Showing the comparison editor for one would ask an
+    // author to compose a boolean for a rule that names a validator.
+    expect(kindWrites('check')).toBe('check')
+    expect(kindCarriesCondition('check')).toBe(false)
+  })
+
+  test('an expression for a computed value, because the editor makes booleans', () => {
+    // The kind is `computed`, not `computedValue` — the first version of this
+    // case guessed the latter, got the `condition` fallback, and failed. Worth a
+    // line: the fallback is what makes a wrong name look like a working rule.
+    expect(kindWrites('computed')).toBe('expression')
+    expect(kindCarriesCondition('computed')).toBe(false)
+  })
+
+  test('and a condition for a kind it has never heard of, which is the safe default', () => {
+    /*
+     * The fallback matters more than it looks. A kind added to the format and not
+     * to this list would otherwise get `undefined` and render no surface at all —
+     * a rule an author can select and cannot write. Defaulting to the comparison
+     * editor shows something wrong rather than nothing, and
+     * `covers every kind the format defines` above is what stops it being needed.
+     */
+    expect(kindWrites('invented' as never)).toBe('condition')
+    expect(kindCarriesCondition('invented' as never)).toBe(true)
+  })
+})
+
+describe('a fresh comparison row', () => {
+  test('is aimed at a field, so the first thing an author sees is answerable', () => {
+    // A row with no field is a row whose operator and value mean nothing, and the
+    // builder has to offer SOME field — the palette has already decided which.
+    expect(emptyRow('email')).toEqual({ field: 'email', operator: 'is', text: '' })
+  })
+
+  test('and opens on "is", which is the comparison that needs no explaining', () => {
+    // Asserted separately because it is a product decision rather than a shape:
+    // opening on `is not` or on a bound would make the common case two edits.
+    expect(emptyRow('x').operator).toBe('is')
+    expect(rowTakesValue(emptyRow('x'))).toBe(true)
+  })
+})
+
+describe('whether a row takes a value at all', () => {
+  test('yes for a comparison, no for one that asks about emptiness', () => {
+    /*
+     * The UI hides the value box when this is false. If it answered yes for
+     * `is empty`, an author would type into a box whose contents are discarded —
+     * and `conditionOf` drops the value, so the typed text would vanish on save
+     * with no explanation.
+     */
+    expect(rowTakesValue({ field: 'a', operator: 'is', text: '1' })).toBe(true)
+    // `isAnswered`, not `isEmpty`: the operator asks whether there IS an answer,
+    // which reads the way a person says it. Guessing the other name got the
+    // `true` fallback, which is the same lesson as above.
+    expect(rowTakesValue({ field: 'a', operator: 'isAnswered', text: '' })).toBe(false)
+    expect(rowTakesValue({ field: 'a', operator: 'isNotAnswered', text: '' })).toBe(false)
+  })
+
+  test('and yes for an operator it does not know, which keeps the box rather than losing it', () => {
+    // The same reasoning as `kindWrites`' fallback: showing a box that may be
+    // unnecessary costs an author a glance, and hiding one that is necessary
+    // costs them the answer.
+    expect(rowTakesValue({ field: 'a', operator: 'invented' as never, text: '' })).toBe(true)
+  })
+})
+
+describe('which messages a document refers to', () => {
+  /*
+   * The list a translator works down, and it was **entirely untested** — 22 lines
+   * of a 271-line file at 46% coverage, in the core both translation panes read.
+   * Its own docblock argues that the ORDER is load-bearing: a translator meets
+   * the questions in the order somebody filling the form does, which is the only
+   * order that makes the words next to each other mean anything. Nothing checked
+   * that order, so nothing would have noticed it changing.
+   */
+  // Typed, because `referencedMessages` takes a `FormSchema` and an object
+  // literal widens `type` to `string`. An `as never` would have hidden a real
+  // mistake; this keeps the fixture checked against the format it claims to be.
+  /*
+   * Typed, and the type corrected three assumptions this fixture started with.
+   * A form's `title` is a plain `string` — it is not translatable, which is a
+   * fact about the format worth knowing. There is no `hint`; the translatable
+   * properties on a field are `label` and, on an option, its own `label`. And a
+   * section's text is `label`, not `heading`.
+   *
+   * An `as never` would have hidden all three and left this asserting an order
+   * over properties that do not exist.
+   */
+  const document_ = (over: Partial<FormSchema> = {}): FormSchema => ({
+    specVersion: '4',
+    id: 'order',
+    title: 'Order',
+    model: {
+      fields: [
+        { key: 'name', type: 'text', label: { $t: 'name' } },
+        {
+          key: 'colour',
+          type: 'radio',
+          label: { $t: 'colour' },
+          options: [{ value: 'red', label: { $t: 'colour.red' } }],
+        },
+      ],
+    },
+    ...over,
+  })
+
+  test('every reference it carries, in the order a person meets them', () => {
+    expect(referencedMessages(document_())).toEqual(['name', 'colour', 'colour.red'])
+  })
+
+  test('and the layouts too, because a heading is text a reader sees', () => {
+    /*
+     * A section's heading lives in the ARRANGEMENT rather than in the model, so
+     * walking the model alone would leave every heading untranslatable — and the
+     * pane would show a complete-looking list with the headings missing from it,
+     * which is the worst kind of incomplete.
+     */
+    const messages = referencedMessages(
+      document_({
+        layouts: [
+          {
+            // `name`, not `id` — a layout is addressed by the name a document
+            // refers to it with. The fourth thing the type checker corrected in
+            // this fixture, and the reason none of them was written `as never`.
+            name: 'web',
+            nodes: [{ kind: 'section', label: { $t: 'section.label' }, children: [] }],
+          },
+        ],
+      }),
+    )
+
+    expect(messages).toContain('section.label')
+    // After the model's, because the model is what a person fills in first.
+    expect(messages.indexOf('section.label')).toBeGreaterThan(messages.indexOf('colour'))
+  })
+
+  test('and each one once, however many times it is used', () => {
+    // A catalogue listing one message three times is three rows a translator has
+    // to notice are the same row.
+    const twice = document_({
+      model: {
+        fields: [
+          { key: 'a', type: 'text', label: { $t: 'shared' } },
+          { key: 'b', type: 'text', label: { $t: 'shared' } },
+        ],
+      },
+    })
+
+    expect(referencedMessages(twice)).toEqual(['shared'])
+  })
+
+  test('and nothing from a document with no references at all', () => {
+    // A guard on the guard: a walker that returned every string it met would make
+    // every case above pass and fill the pane with labels nobody can translate.
+    expect(
+      referencedMessages({
+        specVersion: '1',
+        id: 'plain',
+        title: 'Plain',
+        model: { fields: [{ key: 'a', type: 'text', label: 'Not a reference' }] },
+      }),
+    ).toEqual([])
+  })
+
+  test('and does not mistake a nested object for one, or stop at the first it finds', () => {
+    /*
+     * The walker returns as soon as a node has a `$t`, which is right — a message
+     * reference has nothing inside it worth walking. What it must NOT do is stop
+     * walking its siblings, which is what a `return` one level too high would do:
+     * the first translated label would be the only one in the catalogue.
+     */
+    const nested = referencedMessages({
+      specVersion: '1',
+      id: 'nested',
+      title: 'Nested',
+      model: {
+        fields: [
+          {
+            key: 'group',
+            type: 'group',
+            label: { $t: 'group.label' },
+            fields: [
+              { key: 'inner', type: 'text', label: { $t: 'inner.label' } },
+              { key: 'after', type: 'text', label: { $t: 'after.label' } },
+            ],
+          },
+        ],
+      },
+    })
+
+    expect(nested).toEqual(['group.label', 'inner.label', 'after.label'])
+  })
+})
+
+describe('how typed text is narrowed', () => {
+  test('a boolean typed as a word is compared as a boolean', () => {
+    /*
+     * `true` in a text box is a string, and comparing a checkbox to `"true"` is a
+     * CEL type error caught at save time. The narrowing happens where the author
+     * can still see what happened rather than at publish — and the existing cases
+     * covered the number path and not this one.
+     */
+    expect(conditionOf({ field: 'agreed', operator: 'is', text: 'true' }).value).toBe(true)
+    expect(conditionOf({ field: 'agreed', operator: 'is', text: 'false' }).value).toBe(false)
+  })
+
+  test('and empty text stays a string rather than becoming zero', () => {
+    // `Number('')` is 0, so a nullish check would compare an empty box to the
+    // number zero — which is a comparison that quietly succeeds against any
+    // field whose answer is 0.
+    expect(conditionOf({ field: 'qty', operator: 'is', text: '' }).value).toBe('')
+  })
+
+  test('and text that merely starts with digits stays text', () => {
+    // `Number('5 apples')` is NaN, so this is the branch that keeps a postcode
+    // like `8001 Zurich` a string. Without it the comparison would be against
+    // NaN, which is false for everything including itself.
+    expect(conditionOf({ field: 'postcode', operator: 'is', text: '8001 Zurich' }).value).toBe('8001 Zurich')
   })
 })
