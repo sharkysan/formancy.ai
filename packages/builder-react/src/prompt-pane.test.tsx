@@ -57,31 +57,95 @@ describe('when nobody has configured a model', () => {
 })
 
 describe('writing a form', () => {
-  test('applies it, and says so out loud', async () => {
+  test('proposes it, and applies nothing until somebody says so', async () => {
+    /*
+     * The property this pane now rests on. It used to apply the answer and
+     * offer undo, and undo is the wrong shape: it puts a document back after
+     * the change has been read, previewed and — in a shared session —
+     * published by somebody else.
+     */
     const user = userEvent.setup()
     const session = createBuilderSession(START)
     render(<PromptPane session={session} ask={say(JSON.stringify(WRITTEN))} />)
 
     await ask(user, 'a contact form')
 
-    await waitFor(() => expect(session.document().id).toBe('contact'))
+    await waitFor(() => expect(screen.getByRole('heading', { name: /Review these changes/ })).toBeTruthy())
     // Announced, not just drawn: the work takes seconds and a spinner tells a
     // screen-reader user nothing about what came of it.
-    expect(screen.getByRole('status').textContent).toContain('valid')
+    expect(screen.getByRole('status').textContent).toContain('Nothing has been applied')
+    expect(session.document()).toEqual(START)
+    expect(session.revision()).toBe(0)
   })
 
-  test('as ONE undoable step', async () => {
+  test('shows what the change actually does, from the same diff everything else reads', async () => {
+    // Not a second opinion about what changed. The publish check, draft
+    // migration and the consumer CI gate read `diffSchemas`, and so does this.
     const user = userEvent.setup()
     const session = createBuilderSession(START)
     render(<PromptPane session={session} ask={say(JSON.stringify(WRITTEN))} />)
 
     await ask(user, 'a contact form')
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: /Review/ })).toBeTruthy())
+    const listed = screen.getAllByRole('listitem').map((item) => item.textContent ?? '')
+    // `name` goes and `email` arrives: the removal is the one that costs
+    // something, and the review has to say so before anybody presses apply.
+    expect(listed.some((entry) => entry.includes('name') && /orphaned/i.test(entry))).toBe(true)
+    expect(screen.getByRole('heading', { name: /affect answers already collected/ })).toBeTruthy()
+  })
+
+  test('and applying it is one undoable step', async () => {
+    const user = userEvent.setup()
+    const session = createBuilderSession(START)
+    render(<PromptPane session={session} ask={say(JSON.stringify(WRITTEN))} />)
+
+    await ask(user, 'a contact form')
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Apply these changes' })).toBeTruthy())
+    await user.click(screen.getByRole('button', { name: 'Apply these changes' }))
+
     await waitFor(() => expect(session.document().id).toBe('contact'))
-
     session.undo()
-
-    // The only behaviour anybody would expect of a button like this.
     expect(session.document().id).toBe('start')
+  })
+
+  test('discarding one leaves no trace of it', async () => {
+    const user = userEvent.setup()
+    const session = createBuilderSession(START)
+    render(<PromptPane session={session} ask={say(JSON.stringify(WRITTEN))} />)
+
+    await ask(user, 'a contact form')
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Discard' })).toBeTruthy())
+    await user.click(screen.getByRole('button', { name: 'Discard' }))
+
+    expect(screen.queryByRole('heading', { name: /Review/ })).toBeNull()
+    expect(session.document()).toEqual(START)
+    expect(session.revision()).toBe(0)
+  })
+
+  test('one written against a form that has since moved is refused rather than applied', async () => {
+    /*
+     * The failure the review step would otherwise introduce. A model answers
+     * with the WHOLE document, so applying a proposal made before somebody
+     * added a field would silently discard that field. Refused rather than
+     * merged: there is no three-way merge here, and inventing one would be
+     * guessing at which edit wins.
+     */
+    const user = userEvent.setup()
+    const session = createBuilderSession(START)
+    render(<PromptPane session={session} ask={say(JSON.stringify(WRITTEN))} />)
+
+    await ask(user, 'a contact form')
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Apply these changes' })).toBeTruthy())
+
+    // Somebody edits the form while the proposal sits on screen.
+    session.insertField({ parent: [], index: 0 }, { key: 'reference', type: 'text' })
+    await user.click(screen.getByRole('button', { name: 'Apply these changes' }))
+
+    expect(screen.getByRole('status').textContent).toMatch(/changed since/i)
+    expect(session.document().model.fields[0]?.key).toBe('reference')
+    // Still on screen: the person needs it in order to ask again.
+    expect(screen.getByRole('button', { name: 'Apply these changes' })).toBeTruthy()
   })
 
   test('the model is told what is already there, so a change is a change', async () => {
@@ -111,7 +175,9 @@ describe('writing a form', () => {
     await ask(user, 'a contact form')
 
     await waitFor(() => expect(screen.getByRole('status').textContent).toContain('2 attempts'))
-    expect(session.document().id).toBe('contact')
+    // Still only proposed. The count is worth saying because a model that
+    // needed correcting is one worth reading more carefully.
+    expect(session.document()).toEqual(START)
   })
 })
 
@@ -190,7 +256,7 @@ describe('while it is working', () => {
     expect(screen.getByRole('status').textContent).toContain('checking it')
 
     release(JSON.stringify(WRITTEN))
-    await waitFor(() => expect(session.document().id).toBe('contact'))
+    await waitFor(() => expect(screen.getByRole('heading', { name: /Review/ })).toBeTruthy())
     expect(slow).toHaveBeenCalledTimes(1)
   })
 

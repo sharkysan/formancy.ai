@@ -4,11 +4,12 @@ import {
   diffForms,
   getForm,
   listForms,
+  proposeFormEdit,
   publishForm,
   validateForm,
 } from './tools.js'
 import type { ServerAccess } from './tools.js'
-import { FIELD_TYPES } from '@formancy/spec'
+import { FIELD_TYPES, schemaHash } from '@formancy/spec'
 
 /**
  * What an agent is actually told.
@@ -341,5 +342,159 @@ describe('talking to a server', () => {
     })
 
     expect(seen).toBe('http://localhost:4380/forms')
+  })
+})
+
+/**
+ * Proposing an edit through MCP, and refusing a stale one.
+ *
+ * The builders got a review step: a model's answer is held, shown as a change
+ * list and applied only when somebody says so
+ * ([0109](../../../docs/decisions/0109-an-ai-edit-is-reviewed-before-it-lands.md)).
+ * An agent editing through MCP has the same two problems and one more.
+ *
+ * **It cannot see what its own edit does.** `validate_form` says the document
+ * works; it does not say that the rewrite dropped an option somebody has
+ * already chosen. `propose_form_edit` fetches what is published, diffs against
+ * it, and hands back the change list — so the agent can put *that* in front of
+ * a person rather than "I updated your form".
+ *
+ * **And it cannot see that the form moved.** Between fetching and publishing,
+ * somebody else publishes. A document is the whole form, so the agent's
+ * publish silently reverts their work. `publish_form` now takes the hash the
+ * edit was based on and refuses when the server is no longer on it — the same
+ * check `applyProposal` makes in a builder, against a server rather than a
+ * session.
+ */
+describe('proposing an edit to a published form', () => {
+  const published = {
+    specVersion: '2',
+    id: 'contact',
+    title: 'Contact us',
+    model: {
+      fields: [
+        { key: 'email', type: 'text', label: 'Email', required: true },
+        {
+          key: 'contactBy',
+          type: 'radio',
+          label: 'How should we reach you?',
+          options: [
+            { value: 'email', label: 'By email' },
+            { value: 'post', label: 'By post' },
+          ],
+        },
+      ],
+    },
+  }
+
+  const serving = (body: unknown) =>
+    ({
+      baseUrl: 'https://forms.example',
+      apiKey: 'k',
+      fetch: vi.fn(() =>
+        Promise.resolve(new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } })),
+      ),
+    }) as unknown as ServerAccess
+
+  test('reports what the edit would do to answers already collected, and publishes nothing', async () => {
+    const access = serving({ schema: published, version: 3 })
+    const edited = structuredClone(published)
+    edited.model.fields[1]!.options!.pop()
+
+    const result = await proposeFormEdit(access, 'contact', edited)
+
+    expect(result.ok).toBe(true)
+    const data = result.data as { severity: string; changes: { kind: string }[]; basedOn: string }
+    // The whole point: withdrawing an option is the edit a model makes while
+    // doing something else, and it leaves stored answers outside the
+    // document's vocabulary.
+    expect(data.changes.map((change) => change.kind)).toContain('field.optionRemoved')
+    expect(data.severity).toBe('lossy')
+    expect(data.basedOn).toBe(schemaHash(published as never))
+    // One call: the GET. Nothing was published.
+    expect((access.fetch as unknown as { mock: { calls: unknown[] } }).mock.calls).toHaveLength(1)
+  })
+
+  test('and refuses an edit that would not have worked, before anybody reads a change list', async () => {
+    // A change list for a document that cannot be published is a list of
+    // things that will not happen.
+    const access = serving({ schema: published, version: 3 })
+
+    const result = await proposeFormEdit(access, 'contact', { specVersion: '2', id: 'x' })
+
+    expect(result.ok).toBe(false)
+    expect(result.summary).toMatch(/would not have worked/i)
+  })
+})
+
+describe('publishing against the version the edit was based on', () => {
+  const document = {
+    specVersion: '2',
+    id: 'contact',
+    title: 'Contact us',
+    model: { fields: [{ key: 'email', type: 'text', label: 'Email' }] },
+  }
+
+  const serverOn = (current: unknown) => {
+    const calls: string[] = []
+    return {
+      calls,
+      access: {
+        baseUrl: 'https://forms.example',
+        apiKey: 'k',
+        fetch: vi.fn((url: string, init?: { method?: string }) => {
+          calls.push(`${init?.method ?? 'GET'} ${url}`)
+          const body = init?.method === 'POST' ? { version: 4 } : { schema: current, version: 3 }
+          return Promise.resolve(
+            new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } }),
+          )
+        }),
+      } as unknown as ServerAccess,
+    }
+  }
+
+  test('refuses when the server has moved on, rather than reverting somebody’s work', async () => {
+    /*
+     * The lost update, which is the one mistake an agent makes that nobody
+     * sees until the form is wrong. A document is the WHOLE form, so
+     * publishing an edit based on version 3 over a version 4 somebody else
+     * published discards their change entirely — and the publish succeeds, so
+     * nothing reports it.
+     */
+    const moved = structuredClone(document)
+    moved.model.fields.push({ key: 'phone', type: 'text', label: 'Phone' })
+    const { access, calls } = serverOn(moved)
+
+    const result = await publishForm(access, 'contact', document, schemaHash(document as never))
+
+    expect(result.ok).toBe(false)
+    expect(result.summary).toMatch(/changed since/i)
+    // The GET happened, the POST did not.
+    expect(calls.filter((call) => call.startsWith('POST'))).toEqual([])
+  })
+
+  test('publishes when the server is still on it', async () => {
+    const { access, calls } = serverOn(document)
+
+    const result = await publishForm(access, 'contact', document, schemaHash(document as never))
+
+    expect(result.ok).toBe(true)
+    expect(calls.filter((call) => call.startsWith('POST'))).toHaveLength(1)
+  })
+
+  test('and without one, publishes as it always did', async () => {
+    /*
+     * The check is opt-in. An agent writing a NEW form has nothing to be
+     * based on, and making the argument required would turn the first publish
+     * into a fetch of something that is not there. Stated rather than
+     * assumed: this is the path where a lost update is still possible, and
+     * the tool description is what points an agent at the safer one.
+     */
+    const { access, calls } = serverOn(document)
+
+    const result = await publishForm(access, 'contact', document)
+
+    expect(result.ok).toBe(true)
+    expect(calls.filter((call) => call.startsWith('GET'))).toEqual([])
   })
 })

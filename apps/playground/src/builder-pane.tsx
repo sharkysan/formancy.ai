@@ -4,12 +4,14 @@ import {
   FormancyLayoutPane,
   LayoutPropertyPanel,
   LogicPanel,
+  PromptPane,
   PropertyPanel,
   useBuilder,
 } from '@formancy/builder-react'
 import { createBuilderSession } from '@formancy/builder-core'
 import type { BuilderSession } from '@formancy/builder-core'
 import { AngularBuilderPane } from './angular-builder-pane.js'
+import { DEMO_MODEL } from './demo-capabilities.js'
 
 /**
  * The builder pane: two trees over one document, in either framework.
@@ -135,6 +137,15 @@ export function BuilderBody({
               siblings and indexed the flattened node list with it — right only while
               those two lists agree about nesting, which they stop doing the moment a
               container is collapsed. */}
+          {/* Describing a change in words, and reviewing what it did before it
+              lands. The model is a stand-in — the person plays it, as they
+              play the camera — because this app has no vendor and no key, and
+              that is the point of `ask` being the host's
+              ([0109](../../../docs/decisions/0109-an-ai-edit-is-reviewed-before-it-lands.md)).
+              Everything after the answer is real: parsed, validated, compiled,
+              type-checked, diffed and held for review. */}
+          <PromptPane session={session} ask={DEMO_MODEL} />
+
           <FormancyBuilder session={session} onSelect={setSelected} />
 
           {editing === null ? null : (

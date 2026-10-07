@@ -11,6 +11,7 @@
  * published type is a change to two packages' public surfaces.
  */
 import type { OptionsSources, Scanner } from '@formancy/react'
+import type { AskModel } from '@formancy/builder-core'
 
 /**
  * What this deployment supplies, for both renderers.
@@ -90,3 +91,31 @@ export const DEMO_OPTIONS_SOURCES: OptionsSources = {
 
 export const DEMO_SCANNER: Scanner = async ({ label }) =>
   window.prompt(`Stand-in for a camera. What does the code for "${label}" read?`)
+
+/**
+ * A stand-in for a model, in the same spirit as the scanner above.
+ *
+ * The prompt pane needs an `AskModel`, and this app has no vendor, no key and
+ * no business making a network call on a visitor's behalf — which is the whole
+ * point of `ask` being supplied by the host rather than built in. A pane that
+ * renders nothing because nobody configured a model is honest and shows
+ * nothing, so the feature would be documented and invisible: the failure this
+ * repository has shipped once.
+ *
+ * So the person plays the model, exactly as they play the camera. Everything
+ * downstream is real — the answer is parsed, validated against the spec's own
+ * schema, compiled by the engine, type-checked, diffed against the open
+ * document and held for review — and the only part that is pretend is the
+ * sentence-to-JSON step, which is the part a key would buy.
+ *
+ * It hands back the current document when somebody cancels, so the pane's
+ * "that proposal changes nothing" refusal is reachable too.
+ */
+export const DEMO_MODEL: AskModel = ({ user }) =>
+  Promise.resolve(
+    window.prompt(
+      'Stand-in for a model. It was asked:\n\n' +
+        `${user.split('\n').at(-1) ?? ''}\n\n` +
+        'Answer with the whole form document, as JSON.',
+    ) ?? '',
+  )

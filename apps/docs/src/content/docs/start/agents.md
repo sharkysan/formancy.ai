@@ -61,7 +61,8 @@ cannot be a condition on its own: write callback == true.
 | `describe_spec` | no | Every field type, layout kind, rule kind and format. Call it before writing anything. |
 | `validate_form` | no | The server's publish checks, without publishing: schema, the engine's compile, expressions that never evaluate. |
 | `diff_forms` | no | What a change would do to submissions already collected: compatible, lossy or breaking. |
-| `publish_form` | yes | Publish — after validating locally and refusing to send a document that would not work. |
+| `propose_form_edit` | yes | Hold an edit up against the published form **without publishing it**: what it would cost submissions already collected, plus the `basedOn` hash to publish with. |
+| `publish_form` | yes | Publish — after validating locally and refusing to send a document that would not work. Takes `basedOn`, and refuses when the form has changed since. |
 | `list_forms` | yes | The forms on the server, with their current version. |
 | `get_form` | yes | One document, with its version and schema hash. |
 | `list_submissions` | yes | Submissions for one form. |
@@ -90,6 +91,24 @@ anything?" is a tool call rather than a judgement:
   They are kept under `data.__orphaned`, never deleted.
 - **breaking** — existing drafts *cannot* rebind and open read-only against the
   version that produced them.
+
+### Changing a form that exists is a two-step tool call
+
+`validate_form` says a document works. It does not say that your rewrite
+dropped an option somebody has already chosen, and an agent reading only its
+own two documents cannot tell either — it has not seen what is published.
+
+So `propose_form_edit` fetches the live form, diffs against it and answers with
+the change list and a `basedOn` hash. Put the change list in front of the
+person; publish with the hash when they agree.
+
+The hash is not ceremony. **A formancy document is the whole form**, so
+publishing an edit based on an older version silently reverts whatever somebody
+published in between — and the publish succeeds, so nothing reports it.
+`publish_form` with `basedOn` refuses that; without it, the older behaviour is
+still there, because a form being created for the first time has nothing to be
+based on. The two builders hold the same rule against a session rather than a
+server ([0109](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0109-an-ai-edit-is-reviewed-before-it-lands.md)).
 
 ## Connecting it to a server
 
@@ -126,9 +145,18 @@ port:
 ## In the builder, for people who are not using an agent
 
 The same loop is available with a person in front of it. `PromptPane` from
-`@formancy/builder-react` takes an instruction, and the answer is parsed,
+`@formancy/builder-react` — and `FormancyPromptPane` from
+`@formancy/builder-angular` — takes an instruction, and the answer is parsed,
 validated, compiled by the engine and type-checked before anything reaches the
-editor — if it fails, the model is told what was wrong and asked again.
+editor. If it fails, the model is told what was wrong and asked again.
+
+**And then it is shown rather than applied.** Valid is not the same as wanted:
+a document passes every one of those checks with the condition inverted that
+you asked to loosen. The pane lists what the answer would change — the same
+list `diff_forms` gives, marking what costs answers already collected — and
+applies nothing until you press the button. A proposal written against a form
+that has since changed is refused rather than applied over the change, because
+a document is the whole form.
 
 The model is yours. `ask` is a prop, the way an uploader is a provider: no
 vendor, no key and no network call inside any formancy package, so you can
