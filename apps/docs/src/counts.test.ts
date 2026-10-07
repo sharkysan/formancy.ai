@@ -149,7 +149,8 @@ describe('the package version on the landing page', () => {
     // It was a literal -- `packages 0.1.0, pre-alpha` -- and a release is exactly the
     // branch that changes it while the page is never the branch that shows it. The same
     // mistake the two counts above were written for, made a third time.
-    expect(read('apps', 'site', 'src', 'app.tsx')).toContain('__PACKAGE_VERSION__')
+    // `chrome.tsx` since the footer became the shared one both pages render.
+    expect(read('apps', 'site', 'src', 'chrome.tsx')).toContain('__PACKAGE_VERSION__')
     expect(read('apps', 'site', 'decision-records.ts')).toContain('packageVersion')
     for (const config of ['vite.config.ts', 'vitest.config.ts']) {
       // Both, because a define missing from the test config makes the page throw in
@@ -165,7 +166,11 @@ describe('the package version on the landing page', () => {
       JSON.parse(read('package.json')) as { version: string }
     ).version
     expect(version).toMatch(/^\d+\.\d+\.\d+/)
-    expect(read('apps', 'site', 'src', 'app.tsx')).not.toContain(version)
+    // Both files, because the page is now two of them and a literal in either
+    // is the same wrong number on the same page.
+    for (const file of ['app.tsx', 'chrome.tsx']) {
+      expect(read('apps', 'site', 'src', file), file).not.toContain(version)
+    }
   })
 })
 

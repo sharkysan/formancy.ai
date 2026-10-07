@@ -1,0 +1,538 @@
+/**
+ * The shell every page of formancy.ai is drawn in.
+ *
+ * Split out of `site.css` because the site grew a second page and the second
+ * page invented its own everything: a light background under a dark site,
+ * `Inter` where the site loads Archivo, Fraunces and IBM Plex — and Inter is
+ * not loaded anywhere, so it was rendering in whatever the system had — Georgia
+ * for the serif accent, a different violet, pixels instead of rem, and its own
+ * brand mark, navigation and footer. Reported as "the templates page does not
+ * fit the style at all".
+ *
+ * Two copies of a design system is the exact thing this product exists to stop
+ * people needing, so the fix is not to make the numbers match but to have one
+ * set of them. The tokens, the type, the bar and the footer live here and both
+ * entry points import this file; the page-specific rules stay in `site.css`
+ * and `template-gallery.css`.
+ *
+ * The matching structural half is `chrome.tsx`: the bar's markup and the
+ * footer's are one component, so the two pages cannot drift apart in markup
+ * either. What a type cannot hold is held by `chrome.test.tsx` for the markup
+ * and by the site block in `scripts/browser-test.mjs` for everything in this
+ * file, which compares the two pages' computed values to each other.
+ */
+
+:root {
+  --ground: #080a12;
+  --raised: #141a29;
+  --inset: #0b0f18;
+  --glass: rgb(20 26 41 / 55%);
+  --text: #eef1f8;
+  --muted: #95a0b4;
+  --edge: rgb(255 255 255 / 9%);
+  --edge-strong: rgb(255 255 255 / 16%);
+
+  /* The browser. */
+  --client: #8b7bff;
+  /* The server. The pair is the argument. */
+  --server: #3fe0d5;
+  /* Where the two meet. Used sparingly: the headline and the payoff. */
+  --meet: #f07bd8;
+
+  --sans: 'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Code', Consolas, monospace;
+  /* The display face. Archivo is a grotesque with a width axis — engineered
+     rather than editorial, which is the register this product speaks in. */
+  --display: 'Archivo', 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+
+  --gutter: clamp(1.25rem, 5vw, 5rem);
+  /* The page's own width, shared by every band and by the bar above them.
+     Reported as "the start page is still really small on wide screens" and
+     measured at 2560x1440: the bands were capped at a flat 110rem, so 392px of
+     empty margin down each side, while the bar was full-bleed on the gutter —
+     putting its logo and links 312px OUTSIDE the column everything else lined up
+     to. A page with margins reads as a page; a narrow card under a wide header
+     reads as small.
+
+     A clamp rather than a bigger constant, because a constant is a number chosen
+     against the screens somebody had. Below 2000px the middle term is under the
+     floor and nothing moves, which is deliberate: the layout was tuned there. The
+     upper bound is what keeps this from trading one complaint for the opposite
+     one — paragraphs keep their own `--measure`, so only the demos and the card
+     grids take the extra room, which is what the cap existed for. */
+  --shell: clamp(110rem, 88vw, 132rem);
+  --measure: 36rem;
+  --radius: 16px;
+
+  /* One depth scale, so 3D reads as a place rather than as a pile of
+     arbitrary translations. */
+  --persp: 1400px;
+  --z1: 40px;
+  --z2: 90px;
+  --z3: 150px;
+  --z4: 220px;
+  --z5: 300px;
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: clamp(1rem, 0.96rem + 0.2vw, 1.0625rem);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--client) 45%, transparent);
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--server);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* Skipping to the content, for a page this long. */
+.skip {
+  position: absolute;
+  inset-inline-start: -100vw;
+  top: 0.75rem;
+  z-index: 100;
+  padding: 0.625rem 1rem;
+  background: var(--raised);
+  border: 1px solid var(--client);
+  border-radius: 8px;
+  text-decoration: none;
+}
+
+.skip:focus {
+  inset-inline-start: 0.75rem;
+}
+
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding-block: 0.75rem;
+  /* Background across the whole width, contents on the measure. A padding rather
+     than an inner wrapper, so the blur and the border do not need a second
+     element to survive — and `max()` keeps the gutter whenever the viewport is
+     narrower than the shell, which is every screen below 2000px. */
+  padding-inline: max(var(--gutter), calc((100% - var(--shell)) / 2));
+  background: color-mix(in srgb, var(--ground) 62%, transparent);
+  backdrop-filter: blur(18px) saturate(1.4);
+  border-block-end: 1px solid var(--edge);
+}
+
+.bar strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* The wordmark goes home. It was plain text on the landing page, where home is
+   where you already are, and a link on the templates page — so now it is a link
+   on both, because two spellings of the same thing is what this file ends. */
+.bar strong a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+}
+
+/* The mark, which is the favicon: violet stem, teal arms — the browser and
+   the server, the same pair the whole page is about. */
+.mark {
+  display: block;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 7px;
+  flex: none;
+  filter: drop-shadow(0 0 10px rgb(139 123 255 / 45%));
+}
+
+.mark .stem {
+  fill: var(--client);
+}
+
+.mark .arm {
+  fill: var(--server);
+}
+
+.bar nav {
+  margin-inline-start: auto;
+  display: flex;
+  align-items: center;
+  gap: 1.375rem;
+  font-size: 0.9375rem;
+}
+
+.bar nav a {
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 160ms ease;
+}
+
+.bar nav a:hover {
+  color: var(--text);
+}
+
+/* The page you are on. An underline rather than a colour alone, because colour
+   alone is not a distinction for everybody reading this (WCAG 1.4.1), and the
+   bar is where somebody checks whether the link they clicked did anything. */
+.bar nav a[aria-current='page'] {
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-color: var(--client);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 6px;
+}
+
+.bar nav .bar-cta {
+  padding: 0.375rem 0.875rem;
+  border: 1px solid var(--edge-strong);
+  border-radius: 999px;
+  color: var(--text);
+  background: rgb(255 255 255 / 4%);
+}
+
+.bar nav .bar-cta:hover {
+  border-color: var(--client);
+}
+
+@media (max-width: 50rem) {
+  .bar nav a.optional {
+    display: none;
+  }
+}
+
+/* 320 CSS pixels still has to fit the wordmark and both links. */
+@media (max-width: 24rem) {
+  .bar nav {
+    gap: 0.75rem;
+  }
+
+  .bar nav .bar-cta {
+    padding-inline: 0.625rem;
+  }
+}
+
+/* The read-so-far rail. Scroll-driven, so the browser animates it without a
+   single scroll event reaching JavaScript. */
+.rail {
+  position: absolute;
+  inset-inline: 0;
+  bottom: -1px;
+  height: 2px;
+  transform-origin: 0 50%;
+  background: linear-gradient(90deg, var(--client), var(--meet), var(--server));
+  scale: 0 1;
+  animation: rail linear;
+  animation-timeline: scroll(root block);
+}
+
+@keyframes rail {
+  to {
+    scale: 1 1;
+  }
+}
+
+footer {
+  position: relative;
+  z-index: 1;
+  padding: 3rem var(--gutter) 4rem;
+  border-block-start: 1px solid var(--edge);
+  color: var(--muted);
+  font-size: 0.875rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 2rem;
+}
+
+/* The running submission overlays the corner, and the footer's last item -- the spec
+   and package version -- sat underneath it, half readable. The same clearance the
+   bands above use. */
+@media (min-width: 62rem) {
+  footer {
+    padding-inline-end: calc(var(--gutter) + 15rem);
+  }
+}
+
+footer a {
+  color: var(--muted);
+}
+
+footer .spacer {
+  margin-inline-start: auto;
+}
+
+/* ------------------------------------------------------------------ type */
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 700;
+  /* Archivo's width axis, set slightly narrow: the headlines are sentences
+     rather than words, and a condensed setting is what lets them stay large
+     without wrapping into five lines. */
+  font-variation-settings: 'wdth' 92;
+  letter-spacing: -0.02em;
+  line-height: 1.04;
+  text-wrap: balance;
+}
+
+h1 {
+  font-size: clamp(2.75rem, 1.2rem + 4.8vw, 5.5rem);
+  letter-spacing: -0.032em;
+  /* Tight tracking closes the word spaces too; open them back up so
+     "browser and" does not read as one word. */
+  word-spacing: 0.08em;
+  line-height: 0.98;
+}
+
+h2 {
+  font-size: clamp(2rem, 1.4rem + 2.4vw, 3.5rem);
+  max-width: 22ch;
+  background: linear-gradient(180deg, var(--text) 30%, color-mix(in srgb, var(--text) 62%, var(--ground)));
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+h3 {
+  font-size: 1.125rem;
+  letter-spacing: -0.015em;
+}
+
+/* The two channels, meeting in the headline. The gradient slides slowly so
+   the words read as light rather than as paint. */
+.glow {
+  background: linear-gradient(
+    100deg,
+    var(--client) 0%,
+    var(--meet) 35%,
+    var(--server) 65%,
+    var(--client) 100%
+  );
+  background-size: 250% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation: shimmer 9s linear infinite;
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -250% 0;
+  }
+}
+
+p {
+  margin: 0;
+  max-width: var(--measure);
+}
+
+.lede {
+  margin-block-start: 1.25rem;
+  font-size: clamp(1.0625rem, 1rem + 0.45vw, 1.3125rem);
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.eyebrow {
+  margin-block-end: 1rem;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--server);
+}
+
+.eyebrow::before {
+  content: '';
+  display: inline-block;
+  vertical-align: middle;
+  width: 1.5rem;
+  height: 1px;
+  margin-inline-end: 0.625rem;
+  background: linear-gradient(90deg, var(--client), var(--server));
+}
+
+.note {
+  margin-block-start: 2rem;
+  font-size: 0.9375rem;
+  color: var(--muted);
+}
+
+.note a {
+  color: var(--text);
+  text-decoration-color: var(--client);
+  text-underline-offset: 3px;
+}
+
+code {
+  font-family: var(--mono);
+  font-size: 0.88em;
+}
+
+.actions {
+  margin-block-start: 2.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.action {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  /* 2.5.8 Target size, with room to spare. */
+  min-height: 3rem;
+  padding: 0 1.5rem;
+  border: 1px solid var(--edge-strong);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 4%);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.action:hover {
+  border-color: var(--client);
+  transform: translateY(-1px);
+}
+
+.action.primary {
+  border-color: transparent;
+  background: linear-gradient(100deg, var(--client), #6e5cf0 45%, var(--server));
+  color: #06050d;
+  font-weight: 600;
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 12%) inset,
+    0 10px 40px -10px rgb(139 123 255 / 70%);
+}
+
+.action.primary:hover {
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 25%) inset,
+    0 14px 50px -8px rgb(63 224 213 / 60%);
+}
+
+/* ------------------------------------------------------------ backdrop
+ *
+ * Three washes of light drifting behind everything, a grid that fades out
+ * below the fold, and a grain so the gradients do not band. Gradients rather
+ * than `filter: blur()`, which would repaint a full-screen layer every frame;
+ * these only ever move by `transform`.
+ */
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.backdrop i {
+  position: absolute;
+  display: block;
+}
+
+.aurora {
+  width: 70vmax;
+  height: 70vmax;
+  border-radius: 50%;
+  opacity: 0.55;
+  will-change: transform;
+}
+
+.a1 {
+  inset-block-start: -35vmax;
+  inset-inline-start: -15vmax;
+  background: radial-gradient(closest-side, rgb(139 123 255 / 55%), transparent);
+  animation: drift-a 26s ease-in-out infinite alternate;
+}
+
+.a2 {
+  inset-block-start: -20vmax;
+  inset-inline-end: -30vmax;
+  background: radial-gradient(closest-side, rgb(63 224 213 / 38%), transparent);
+  animation: drift-b 32s ease-in-out infinite alternate;
+}
+
+.a3 {
+  inset-block-start: 40vh;
+  inset-inline-start: 20vw;
+  width: 55vmax;
+  height: 55vmax;
+  background: radial-gradient(closest-side, rgb(240 123 216 / 20%), transparent);
+  animation: drift-c 38s ease-in-out infinite alternate;
+}
+
+@keyframes drift-a {
+  to {
+    transform: translate3d(18vw, 14vh, 0) scale(1.15);
+  }
+}
+
+@keyframes drift-b {
+  to {
+    transform: translate3d(-22vw, 22vh, 0) scale(0.9);
+  }
+}
+
+@keyframes drift-c {
+  to {
+    transform: translate3d(-30vw, -26vh, 0) scale(1.2);
+  }
+}
+
+.grid {
+  inset: 0;
+  background-image:
+    linear-gradient(rgb(255 255 255 / 4.5%) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 4.5%) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 30%, transparent 75%);
+}
+
+.grain {
+  inset: -50%;
+  opacity: 0.07;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}

@@ -223,6 +223,18 @@ Its effects are CSS scroll-driven animations with no scroll listener anywhere,
 and `prefers-reduced-motion` removes them in the stylesheet rather than in
 script.
 
+It has **two pages**, and they are drawn in one shell: `src/shell.css` holds the
+tokens, the type scale and the backdrop, and `src/chrome.tsx` holds the bar, the
+footer and the mark that both render
+([0106](../decisions/0106-one-shell-for-every-page-of-the-site.md)). The second
+page — the templates gallery — shipped with its own palette, its own font stack
+(naming a family nothing loads), its own navigation and its own footer, which is
+two design systems inside a product whose argument is that a consumer's design
+system owns the markup. The split is structural rather than a copied stylesheet:
+the navigation is one list, so a third page joins every page's bar by existing,
+and the browser gate compares the two pages' computed ground, families and bar
+against **each other** rather than against a literal.
+
 ### `@formancy/server-core` and `@formancy/server`
 
 `server-core` holds the use cases — publish, resolve, submit with replay, list,

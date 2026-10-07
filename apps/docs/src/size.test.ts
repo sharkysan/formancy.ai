@@ -48,8 +48,8 @@ const CEILINGS: Record<string, { lines: number; why: string }> = {
     why: 'GENERATED from fixtures/*.json. Splitting this means splitting the fixtures, which are the unit of meaning.',
   },
   'apps/site/src/app.tsx': {
-    lines: 982,
-    why: 'The landing page, one long document. The seam is one section per file.',
+    lines: 896,
+    why: 'The landing page, one long document. The seam is one section per file — and the chrome has already gone that way: the bar, the footer, the brand mark and the backdrop left for `chrome.tsx` when the site grew a second page that had written its own, which is the ratchet pointing at something real rather than at a line count.',
   },
   'packages/server/src/app.ts': {
     lines: 928,

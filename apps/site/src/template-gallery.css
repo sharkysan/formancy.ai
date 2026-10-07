@@ -1,85 +1,567 @@
-:root { color-scheme: light; font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #193b38; background: #f6f8f3; font-synthesis: none; }
-* { box-sizing: border-box; }
-body { margin: 0; }
-button, input, select { font: inherit; }
-a { color: inherit; }
-button, a, input, select { -webkit-tap-highlight-color: transparent; }
-button { cursor: pointer; }
-:focus-visible { outline: 3px solid #7261cf; outline-offset: 4px; }
-.template-page { --ink: #193b38; --muted: #60726d; --line: #d9e2da; --accent: #6852bd; }
-.template-header, .template-page main, .template-footer { width: min(1240px, calc(100% - 80px)); margin-inline: auto; }
-.template-header { height: 96px; display: flex; align-items: center; justify-content: space-between; gap: 24px; border-bottom: 1px solid var(--line); }
-.template-brand { display: inline-flex; gap: 10px; align-items: center; font-weight: 750; font-size: 21px; letter-spacing: -.7px; text-decoration: none; white-space: nowrap; }
-.template-brand > span { color: white; background: var(--ink); height: 33px; width: 33px; display: grid; place-items: center; font-size: 27px; font-family: Georgia, serif; border-radius: 10px 10px 10px 2px; }
-.template-header nav { display: flex; align-items: center; gap: 29px; font-size: 14px; font-weight: 650; }
-.template-header nav a { text-decoration: none; padding-block: 8px; }
-.template-header nav a[aria-current] { color: var(--accent); border-bottom: 2px solid var(--accent); }
-.template-skip { position: fixed; top: -100px; left: 16px; z-index: 5; background: white; padding: 12px; }
-.template-skip:focus { top: 12px; }
-.template-hero { display: grid; grid-template-columns: 1fr 310px; gap: 70px; align-items: center; padding: 72px 0 56px; }
-.template-eyebrow { font-size: 11px; text-transform: uppercase; letter-spacing: 1.8px; font-weight: 750; color: var(--accent); margin: 0 0 20px; }
-.template-hero h1 { font-size: clamp(45px, 5.4vw, 72px); line-height: 1.04; font-weight: 550; letter-spacing: -3.4px; margin: 0; }
-.template-hero h1 em { font-family: Georgia, serif; font-weight: 400; color: var(--accent); }
-.template-lede { max-width: 555px; color: var(--muted); font-size: 18px; line-height: 1.65; margin: 25px 0 22px; }
-.template-badges { display: flex; flex-wrap: wrap; gap: 9px; }
-.template-badges span { border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; font-size: 11px; background: #ffffff80; }
-.template-hero-note { background: #e8ede2; padding: 30px; border-radius: 18px; transform: rotate(2deg); }
-.template-hero-note strong { display: block; font-size: 18px; letter-spacing: -.3px; margin-top: 28px; }
-.template-hero-note p { color: var(--muted); font-size: 14px; line-height: 1.7; margin-bottom: 0; }
-.template-sheet-art { height: 128px; width: 170px; margin-inline: auto; background: #fff; padding: 24px; border: 1px solid #d8dfd2; border-radius: 9px; box-shadow: 7px 8px 0 #d1dac8; transform: rotate(-7deg); position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.template-sheet-art span { background: #dce2d7; height: 4px; border-radius: 4px; grid-column: 1/-1; }
-.template-sheet-art span:first-child { width: 65%; background: #a79bd1; }
-.template-sheet-art i { height: 26px; border: 1px solid #dbe3d4; border-radius: 4px; }
-.template-sheet-art b { position: absolute; width: 44px; height: 44px; display: grid; place-items: center; background: #bfeacb; border: 5px solid #e8ede2; border-radius: 50%; right: -20px; bottom: -15px; font-size: 19px; }
-.template-browser { scroll-margin-top: 25px; }
-.template-toolbar { display: flex; gap: 24px; justify-content: space-between; align-items: end; padding-top: 25px; border-top: 1px solid var(--line); }
-.template-toolbar label { display: grid; gap: 8px; font-size: 12px; font-weight: 650; }
-.template-search { flex: 1; max-width: 515px; }
-.template-toolbar input, .template-toolbar select { padding: 13px 15px; border: 1px solid #b9c9be; border-radius: 7px; background: #fff; color: var(--ink); min-height: 46px; width: 100%; font-size: 14px; }
-.template-toolbar input::placeholder { color: #718078; opacity: 1; }
-.template-language { width: 180px; }
-.template-filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 23px 0 25px; }
-.template-filters button { padding: 10px 14px; border: 1px solid var(--line); border-radius: 30px; background: transparent; color: var(--muted); font-size: 12px; }
-.template-filters button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: #fff; }
-.template-filters button:hover { border-color: var(--ink); }
-.template-count { font-size: 12px; color: var(--muted); margin: 0 0 18px; }
-.template-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
-.template-card { padding: 27px 25px 21px; border: 1px solid var(--line); background: #fff; border-radius: 12px; display: flex; flex-direction: column; transition: border-color .15s, box-shadow .15s; }
-.template-card:hover { border-color: #a39ac0; box-shadow: 0 6px 22px #273a2610; }
-.template-card-top { display: flex; align-items: center; gap: 10px; font-size: 11px; color: var(--muted); }
-.template-category-mark { width: 31px; height: 31px; display: grid; place-items: center; border-radius: 8px; color: #645499; background: #f0edf8; font-family: ui-monospace, monospace; }
-.template-card[data-area="sales"] .template-category-mark, .template-card[data-area="operations"] .template-category-mark { background: #e9f1e7; color: #3f6850; }
-.template-card[data-area="events"] .template-category-mark { background: #f8eddf; color: #805c33; }
-.template-card h2 { font-size: 21px; line-height: 1.25; letter-spacing: -.65px; font-weight: 650; margin: 20px 0 10px; }
-.template-card > p { font-size: 13px; line-height: 1.65; color: var(--muted); margin: 0 0 20px; flex-grow: 1; }
-.template-card-meta { display: flex; flex-wrap: wrap; gap: 12px; font-size: 10px; color: #6d796e; padding-bottom: 19px; border-bottom: 1px solid #edf0e9; }
-.template-card-actions { display: flex; align-items: center; gap: 10px; justify-content: space-between; margin-top: 18px; font-size: 12px; }
-.template-card-actions button { border: 1px solid #d9d4e7; border-radius: 6px; background: #f6f3fc; color: #5e4ba1; padding: 10px 13px; font-weight: 650; min-height: 40px; }
-.template-card-actions a { color: var(--ink); font-weight: 650; text-decoration: none; padding-block: 10px; }
-.template-download { font-size: 11px; color: var(--muted); text-decoration-color: #b3bdb3; text-underline-offset: 4px; align-self: start; padding: 12px 0 2px; }
-.template-empty { text-align: center; padding: 50px 20px; }
-.template-empty button { background: var(--ink); color: white; border: 0; border-radius: 6px; padding: 12px 20px; }
-.template-next { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; margin: 65px 0; padding: 35px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-.template-next h2 { font-weight: 500; font-size: 31px; line-height: 1.2; letter-spacing: -1px; margin: 0; }
-.template-next > p { font-size: 14px; line-height: 1.85; color: var(--muted); }
-.template-next a { display: inline-block; margin-top: 15px; color: var(--ink); }
-.template-footer { display: flex; flex-wrap: wrap; gap: 25px; padding: 0 0 35px; font-size: 12px; color: var(--muted); }
-.template-footer span { margin-right: auto; }
-.template-preview { width: min(790px, calc(100% - 32px)); max-height: calc(100dvh - 40px); padding: 30px; border: 1px solid #c5cebd; border-radius: 16px; color: #193b38; background: #fafbf8; box-shadow: 0 25px 100px #142c3140; }
-.template-preview::backdrop { background: #19312c99; backdrop-filter: blur(4px); }
-.template-preview-header { display: flex; justify-content: space-between; align-items: start; gap: 20px; }
-.template-preview-header .template-eyebrow { margin-bottom: 8px; }
-.template-preview-header h2 { font-size: 28px; font-weight: 600; letter-spacing: -.8px; margin: 0; }
-.template-preview-header button { background: white; border: 1px solid #cbd4c5; border-radius: 50%; flex-shrink: 0; width: 38px; height: 38px; }
-.template-preview-note { font-size: 13px; color: #60726d; line-height: 1.6; }
-.template-preview form { padding: 22px; border: 1px solid #dde3d5; border-radius: 10px; }
-.template-preview-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 20px; margin-top: 22px; }
-.template-preview-controls button { padding: 11px 17px; background: #193b38; color: #fff; border: 0; border-radius: 6px; font-size: 13px; }
-.template-preview-controls a { font-size: 13px; }
-.template-preview [role="status"] { font-size: 13px; line-height: 1.6; }
-.template-adapt { margin-top: 20px; font-size: 13px; color: #60726d; }
-.template-adapt summary { cursor: pointer; }
-.template-adapt li { margin-bottom: 8px; line-height: 1.6; }
-@media (max-width: 1020px) { .template-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .template-hero { grid-template-columns: 1fr 260px; gap: 30px; } .template-hero-note { padding: 25px; } }
-@media (max-width: 680px) { .template-header, .template-page main, .template-footer { width: calc(100% - 32px); } .template-header { height: 78px; gap: 12px; } .template-header nav { gap: 13px; font-size: 11px; } .template-brand { font-size: 16px; gap: 7px; } .template-brand > span { width: 26px; height: 26px; font-size: 22px; } .template-hero { display: block; padding: 40px 0 30px; } .template-hero h1 { font-size: 51px; letter-spacing: -2.4px; } .template-lede { font-size: 16px; } .template-hero-note { display: none; } .template-toolbar { align-items: stretch; gap: 13px; } .template-language { width: 115px; flex-shrink: 0; } .template-toolbar input { min-width: 0; } .template-search { min-width: 0; } .template-grid { grid-template-columns: 1fr; } .template-card { padding: 24px; } .template-next { grid-template-columns: 1fr; gap: 12px; margin-block: 35px; } .template-preview { padding: 18px; } .template-preview form { padding: 14px; } .template-preview-header h2 { font-size: 24px; } }
-@media (prefers-reduced-motion: reduce) { .template-card { transition: none; } }
+/**
+ * The templates gallery.
+ *
+ * Written against the tokens in `shell.css` and nothing else. The version
+ * before this declared its own: a light ground under a dark site, `Inter` as
+ * the first family — not loaded anywhere, so it rendered in whatever the
+ * machine happened to have — `Georgia` for the serif accent, a violet of its
+ * own, and pixels throughout where the site is in rem. It had its own header,
+ * brand mark, navigation and footer too. Reported as "the templates page does
+ * not fit the style at all".
+ *
+ * There are no colours in this file. Every one is a token, so the page cannot
+ * drift from the site by a shade, and a product whose argument is that your
+ * design system owns the markup cannot ship two design systems of its own.
+ *
+ * The one thing that survives from the old sheet is the *shape*: a hero, a
+ * toolbar, a card grid, a dialog. That was never the complaint.
+ */
+
+.template-page {
+  position: relative;
+  z-index: 1;
+}
+
+.template-page main,
+.template-next {
+  max-width: var(--shell);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+/* ------------------------------------------------------------------ hero */
+
+.template-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 20rem;
+  gap: clamp(2rem, 5vw, 4.5rem);
+  align-items: center;
+  padding-block: clamp(3.5rem, 9vh, 6rem) clamp(2.5rem, 6vh, 4rem);
+}
+
+.template-hero h1 {
+  /* Shorter than the landing page's measure: this headline is three words and
+     a payoff, and `13ch` would break it after "head". */
+  max-width: 16ch;
+}
+
+/* The editorial half of the headline. Fraunces is the site's serif and is
+   already loaded for the marks elsewhere; Georgia was the old sheet reaching
+   for a face nobody had chosen. */
+.template-hero h1 em {
+  font-family: 'Fraunces', Georgia, serif;
+  font-variation-settings: 'opsz' 96;
+  font-style: italic;
+  font-weight: 500;
+  background: linear-gradient(100deg, var(--client), var(--meet) 60%, var(--server));
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.template-badges {
+  margin-block-start: 1.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.template-badges span {
+  padding: 0.4375rem 0.75rem;
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  background: var(--glass);
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+}
+
+/* The count beside the headline. A card rather than a figure, because the
+   number is the reassurance and the two lines under it are the point. */
+.template-hero-note {
+  padding: 1.75rem;
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  background: var(--raised);
+  box-shadow: 0 30px 80px -40px rgb(0 0 0 / 70%);
+}
+
+.template-hero-note strong {
+  display: block;
+  margin-block-start: 1.75rem;
+  font-family: var(--display);
+  font-size: 1.125rem;
+  letter-spacing: -0.015em;
+}
+
+.template-hero-note p {
+  margin-block-start: 0.5rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+/* A form, drawn. The only picture of a form on the site, and it is allowed to
+   be one: it is 170px of furniture beside a page that renders six real ones. */
+.template-sheet-art {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  position: relative;
+  width: 10.625rem;
+  height: 8rem;
+  margin-inline: auto;
+  padding: 1.5rem;
+  border: 1px solid var(--edge-strong);
+  border-radius: 10px;
+  background: var(--inset);
+  rotate: -7deg;
+}
+
+.template-sheet-art span {
+  grid-column: 1 / -1;
+  height: 4px;
+  border-radius: 4px;
+  background: var(--edge-strong);
+}
+
+.template-sheet-art span:first-child {
+  width: 65%;
+  background: var(--client);
+}
+
+.template-sheet-art i {
+  height: 1.625rem;
+  border: 1px solid var(--edge);
+  border-radius: 4px;
+}
+
+.template-sheet-art b {
+  position: absolute;
+  inset-inline-end: -1.25rem;
+  inset-block-end: -0.9375rem;
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 5px solid var(--raised);
+  border-radius: 50%;
+  background: var(--server);
+  color: #06050d;
+  font-size: 1.1875rem;
+}
+
+/* --------------------------------------------------------------- browsing */
+
+.template-browser {
+  scroll-margin-top: 5rem;
+}
+
+.template-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  justify-content: space-between;
+  align-items: end;
+  padding-block-start: 1.75rem;
+  border-block-start: 1px solid var(--edge);
+}
+
+.template-toolbar label {
+  display: grid;
+  gap: 0.5rem;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.template-search {
+  flex: 1;
+  max-width: 32rem;
+}
+
+.template-language {
+  width: 11.25rem;
+}
+
+.template-toolbar input,
+.template-toolbar select {
+  width: 100%;
+  /* 2.5.8 Target size. */
+  min-height: 2.875rem;
+  padding: 0.75rem 0.9375rem;
+  border: 1px solid var(--edge-strong);
+  border-radius: 10px;
+  background: var(--inset);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9375rem;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.template-toolbar input::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+
+.template-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-block: 1.5rem;
+}
+
+.template-filters button {
+  min-height: 2.5rem;
+  padding: 0.5rem 0.875rem;
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    border-color 160ms ease;
+}
+
+.template-filters button:hover {
+  border-color: var(--edge-strong);
+  color: var(--text);
+}
+
+.template-filters button[aria-pressed='true'] {
+  border-color: transparent;
+  background: linear-gradient(100deg, var(--client), #6e5cf0 45%, var(--server));
+  color: #06050d;
+  font-weight: 600;
+}
+
+.template-count {
+  margin-block-end: 1.25rem;
+  max-width: none;
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+/* ------------------------------------------------------------------ cards */
+
+.template-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+  gap: 1.125rem;
+}
+
+.template-card {
+  display: flex;
+  flex-direction: column;
+  padding: 1.625rem 1.5rem 1.25rem;
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  background: var(--raised);
+  transition:
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+.template-card:hover {
+  border-color: var(--client);
+  transform: translateY(-2px);
+}
+
+.template-card-top {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/*
+ * The area's number.
+ *
+ * One treatment for all six rather than a colour per area. The old sheet gave
+ * three of the six their own background and left the other three on the
+ * default, so the marks read as a classification that does not exist — and the
+ * page already names the area in words beside it.
+ */
+.template-category-mark {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--edge);
+  border-radius: 9px;
+  background: var(--inset);
+  color: var(--client);
+  font-size: 0.75rem;
+}
+
+.template-card h2 {
+  margin-block: 1.25rem 0.625rem;
+  /* The site's `h2` is a 3.5rem gradient headline. A card is not a band. */
+  max-width: none;
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: var(--text);
+  font-size: 1.25rem;
+  line-height: 1.25;
+}
+
+.template-card > p {
+  flex-grow: 1;
+  margin-block-end: 1.25rem;
+  max-width: none;
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.template-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding-block-end: 1.1875rem;
+  border-block-end: 1px solid var(--edge);
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  color: var(--muted);
+}
+
+.template-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.625rem;
+  margin-block-start: 1.125rem;
+}
+
+.template-card-actions .action {
+  min-height: 2.5rem;
+  padding-inline: 1rem;
+  font-size: 0.8125rem;
+}
+
+.template-download {
+  align-self: start;
+  padding-block: 0.75rem 0.125rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+  text-decoration-color: var(--edge-strong);
+  text-underline-offset: 4px;
+}
+
+.template-download:hover {
+  color: var(--text);
+  text-decoration-color: var(--client);
+}
+
+.template-empty {
+  padding: 3rem 1.25rem;
+  text-align: center;
+}
+
+.template-empty h2 {
+  margin-inline: auto;
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: var(--text);
+  font-size: 1.5rem;
+}
+
+.template-empty .action {
+  margin-block-start: 1.5rem;
+}
+
+/* ------------------------------------------------------------------- next */
+
+.template-next {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr));
+  gap: clamp(1.5rem, 4vw, 3.75rem);
+  margin-block: 4rem;
+  padding-block: 2.25rem;
+  border-block: 1px solid var(--edge);
+}
+
+.template-next h2 {
+  font-size: clamp(1.75rem, 1.4rem + 1.2vw, 2.25rem);
+}
+
+.template-next > p {
+  color: var(--muted);
+  font-size: 0.9375rem;
+  line-height: 1.75;
+}
+
+.template-next > p a {
+  display: inline-block;
+  margin-block-start: 1rem;
+  color: var(--text);
+  text-decoration-color: var(--client);
+  text-underline-offset: 4px;
+}
+
+/* ---------------------------------------------------------------- preview */
+
+.template-preview {
+  width: min(49.375rem, calc(100% - 2rem));
+  max-height: calc(100dvh - 2.5rem);
+  padding: clamp(1.25rem, 3vw, 1.875rem);
+  border: 1px solid var(--edge-strong);
+  border-radius: var(--radius);
+  background: var(--raised);
+  color: var(--text);
+  box-shadow: 0 25px 100px rgb(0 0 0 / 65%);
+}
+
+.template-preview::backdrop {
+  background: rgb(8 10 18 / 72%);
+  backdrop-filter: blur(4px);
+}
+
+.template-preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 1.25rem;
+}
+
+.template-preview-header .eyebrow {
+  margin-block-end: 0.5rem;
+}
+
+.template-preview-header h2 {
+  max-width: none;
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: var(--text);
+  font-size: clamp(1.5rem, 1.2rem + 1vw, 1.75rem);
+}
+
+.template-preview-header button {
+  display: grid;
+  place-items: center;
+  flex: none;
+  /* 2.5.8 Target size: the only way out of a modal with a pointer. */
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid var(--edge-strong);
+  border-radius: 50%;
+  background: var(--inset);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.template-preview-header button:hover {
+  border-color: var(--client);
+}
+
+.template-preview-note {
+  margin-block-start: 0.75rem;
+  max-width: none;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+.template-preview form {
+  margin-block-start: 1.25rem;
+  padding: 1.375rem;
+  border: 1px solid var(--edge);
+  border-radius: 12px;
+  background: var(--inset);
+}
+
+.template-preview-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.25rem;
+  margin-block-start: 1.375rem;
+}
+
+.template-preview-controls a {
+  color: var(--muted);
+  font-size: 0.8125rem;
+  text-decoration-color: var(--edge-strong);
+  text-underline-offset: 4px;
+}
+
+.template-preview-controls a:hover {
+  color: var(--text);
+}
+
+.template-preview [role='status'] {
+  max-width: none;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.template-adapt {
+  margin-block-start: 1.25rem;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.template-adapt summary {
+  cursor: pointer;
+  /* 2.5.8 again: a summary is the control that opens the list. */
+  padding-block: 0.625rem;
+}
+
+.template-adapt li {
+  margin-block-end: 0.5rem;
+  line-height: 1.6;
+}
+
+/* ------------------------------------------------------------ narrow */
+
+@media (max-width: 58rem) {
+  .template-hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* The drawing is decoration, and the first screen of a narrow page is for
+     the headline and the search. */
+  .template-hero-note {
+    display: none;
+  }
+
+  .template-toolbar {
+    align-items: stretch;
+    gap: 0.875rem;
+  }
+
+  .template-language {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .template-card,
+  .template-filters button {
+    transition: none;
+  }
+
+  .template-card:hover {
+    transform: none;
+  }
+
+  .template-sheet-art {
+    rotate: none;
+  }
+}

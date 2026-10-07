@@ -13,6 +13,7 @@ import '@formancy/themes/blueprint.css'
 import '@formancy/themes/dusk.css'
 import '@formancy/themes/paper.css'
 import '@formancy/themes/pop.css'
+import './shell.css'
 import './site.css'
 import './hero-studio.css'
 import { EXAMPLES } from './examples.js'
@@ -20,6 +21,7 @@ import { demoUploader } from './demo-uploader.js'
 import { LiveRules, highlight, sourceOf } from './source.js'
 import { useJourney } from './use-journey.js'
 import { HeroStudio } from './hero-studio.js'
+import { Backdrop, PLAYGROUND, REPO, SiteBar, SiteFooter } from './chrome.js'
 
 /**
  * formancy.ai.
@@ -35,24 +37,6 @@ import { HeroStudio } from './hero-studio.js'
  * landing page arguing against its own product.
  */
 
-const REPO = 'https://github.com/sharkysan/formancy.ai'
-
-/**
- * Where the playground lives.
- *
- * One origin in production, where the site and the playground are served from
- * the same host — and two Vite servers in development, where a relative path
- * would land on whichever app is being worked on rather than the playground. A
- * link that is broken for everybody developing the site is a link nobody
- * notices is broken in production either.
- *
- * The trailing slash is load-bearing. `/playground` is a directory, and
- * whether it resolves to `/playground/index.html` depends on the static host:
- * some redirect, some 404. Asking for the address we actually mean costs
- * nothing and removes the host from the question.
- */
-const PLAYGROUND = import.meta.env.DEV ? 'http://localhost:4381/' : '/playground/'
-
 export function App(): ReactElement {
   const journey = useJourney()
 
@@ -64,31 +48,7 @@ export function App(): ReactElement {
         Skip to content
       </a>
 
-      <header className="bar">
-        <strong>
-          <Mark />
-          formancy.ai
-        </strong>
-        <nav>
-          <a className="optional" href="#engine">
-            How it works
-          </a>
-          <a className="optional" href="#build">
-            Examples
-          </a>
-          <a className="optional" href="/templates/">
-            Templates
-          </a>
-          <a className="optional" href="#run">
-            Run it
-          </a>
-          <a href={PLAYGROUND}>Playground</a>
-          <a className="bar-cta" href={REPO} rel="noreferrer noopener">
-            GitHub
-          </a>
-        </nav>
-        <div className="rail" aria-hidden="true" />
-      </header>
+      <SiteBar current="home" />
 
       <main className="page" id="start">
         <Section id="hero" className="hero wide" journey={journey} section="hero">
@@ -413,37 +373,10 @@ export function App(): ReactElement {
         <Finale journey={journey} />
       </main>
 
-      <footer>
-        <span>Apache-2.0</span>
-        <a href={REPO} rel="noreferrer noopener">
-          Source
-        </a>
-        <a href="/docs">Documentation</a>
-        <span className="spacer">{`Spec version 2 · packages ${__PACKAGE_VERSION__}, beta`}</span>
-      </footer>
+      <SiteFooter />
 
       <Panel journey={journey} />
     </>
-  )
-}
-
-/**
- * The light behind the page.
- *
- * Three slow washes of the two channel colours and a grid that fades out from
- * the top — drawn with gradients and moved with `transform` only, so the
- * compositor animates them and the main thread never hears about it. Purely
- * decorative, and gone entirely under reduced motion except as a still.
- */
-function Backdrop(): ReactElement {
-  return (
-    <div className="backdrop" aria-hidden="true">
-      <i className="aurora a1" />
-      <i className="aurora a2" />
-      <i className="aurora a3" />
-      <i className="grid" />
-      <i className="grain" />
-    </div>
   )
 }
 
@@ -778,25 +711,6 @@ function Readings(): ReactElement {
         </div>
       ))}
     </dl>
-  )
-}
-
-/**
- * The mark — the same one in the favicon and the browser tab.
- *
- * Inline rather than an `<img>`, so the stem and the arms take the page's own
- * accent tokens instead of hard-coding the two colours a second time. Hidden
- * from assistive technology: the wordmark beside it already says the name, and
- * hearing it twice helps nobody.
- */
-function Mark(): ReactElement {
-  return (
-    <svg className="mark" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
-      <rect width="64" height="64" rx="18" fill="var(--inset)" />
-      <rect className="stem" x="14" y="14" width="12" height="36" rx="6" />
-      <rect className="arm" x="30" y="14" width="20" height="12" rx="6" />
-      <rect className="arm" x="30" y="30" width="14" height="12" rx="6" />
-    </svg>
   )
 }
 

@@ -115,7 +115,8 @@ async function run() {
   }
 
   const { server, port } = await serve(site)
-  const url = `http://127.0.0.1:${String(port)}/playground/`
+  const origin = `http://127.0.0.1:${String(port)}`
+  const url = `${origin}/playground/`
 
   let browser
   try {
@@ -138,7 +139,7 @@ async function run() {
   }
 
   try {
-    await checkTemplateGallery(browser, `http://127.0.0.1:${String(port)}`, check)
+    await checkTemplateGallery(browser, origin, check)
     for (const { label, width, height } of WIDTHS) {
       const page = await browser.newPage({ viewport: { width, height } })
       await page.goto(url, { waitUntil: 'load' })
@@ -429,6 +430,235 @@ async function run() {
 
       await page.close()
     }
+
+    /*
+     * The two pages of the site, side by side.
+     *
+     * The gate was written for the playground's cascade defects. These are the
+     * same class of fact about the pages in front of it, and all three were
+     * reported by somebody looking at them rather than found by anything here:
+     *
+     *   - The templates gallery was a light page, in a family nothing loads, on
+     *     a palette of its own, under its own header and footer, inside a dark
+     *     site. "The templates page does not fit the style at all."
+     *   - The hero opened its form on `paper` — cream, serif, editorial —
+     *     inside a dark studio, while the examples section further down had
+     *     defaulted to `dusk` all along.
+     *   - The running submission is fixed in the corner of a full-bleed page,
+     *     so at 1600px it sat on top of the live form and the JSON beside it.
+     *
+     * One width, because none of the three is a breakpoint; all three were
+     * worst where there is the most room.
+     */
+    {
+      const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } })
+      console.log('\nthe site — 1600×1000')
+
+      /*
+       * What a page is drawn in, read from the page rather than from a file.
+       *
+       * Computed values, so this is the cascade's answer and not the
+       * stylesheet's intention — and `font-family` as computed, so a family the
+       * document never fetches still shows up here as the name it asked for.
+       * That is deliberate: the old gallery asked for `Inter`, which nothing in
+       * this repository has ever loaded, and the browser quietly served
+       * whatever the machine had. Comparing the two pages' *requests* catches
+       * that, where comparing what rendered would not.
+       */
+      const look = async (path) => {
+        await page.goto(`${origin}${path}`, { waitUntil: 'load' })
+        await page.waitForSelector('.bar nav a', { timeout: 30_000 })
+        return page.evaluate(() => {
+          const body = getComputedStyle(document.body)
+          const heading = document.querySelector('h1')
+          const bar = document.querySelector('.bar')
+          return {
+            ground: body.backgroundColor,
+            ink: body.color,
+            text: body.fontFamily,
+            display: heading === null ? null : getComputedStyle(heading).fontFamily,
+            bar: bar === null ? null : getComputedStyle(bar).backgroundColor,
+            links: [...document.querySelectorAll('.bar nav a')].map((link) => (link.textContent ?? '').trim()),
+            mark: document.querySelectorAll('.bar svg.mark').length,
+          }
+        })
+      }
+
+      const home = await look('/')
+      const templates = await look('/templates/')
+
+      for (const part of ['ground', 'ink', 'text', 'display', 'bar']) {
+        check(
+          `both pages are drawn in the same ${part}`,
+          home[part] !== null && home[part] === templates[part]
+            ? null
+            : `the landing page has ${String(home[part])} and the templates page ${String(templates[part])}`,
+        )
+      }
+      check(
+        'and carry the same navigation, so adding a page cannot miss one',
+        home.links.length > 3 && home.links.join(' | ') === templates.links.join(' | ')
+          ? null
+          : `${home.links.join(' | ')} against ${templates.links.join(' | ')}`,
+      )
+      check(
+        'and the same mark, which is the favicon rather than a letter in a box',
+        home.mark === 1 && templates.mark === 1
+          ? null
+          : `${String(home.mark)} marks on the landing page and ${String(templates.mark)} on the templates page`,
+      )
+
+      /*
+       * The form in the hero is the tone of the page it sits in.
+       *
+       * Asserted as relative luminance, never as the theme's name: what was
+       * wrong is that two surfaces disagreed, so that is the property. A
+       * differently-named dark theme must pass here and `paper` must not,
+       * whatever the default is called by then.
+       */
+      await page.goto(`${origin}/`, { waitUntil: 'load' })
+      await page.waitForSelector('.studio-canvas', { timeout: 30_000 })
+      const tone = await page.evaluate(async () => {
+        const wait = () => new Promise((done) => setTimeout(done, 200))
+        const dark = (colour) => {
+          const parts = /rgba?\(([^)]+)\)/.exec(colour)
+          if (parts === null) return null
+          const [r, g, b] = parts[1].split(/[ ,/]+/).map(Number)
+          // Rec. 709 luma, which is ample for "is this surface dark".
+          return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 < 0.5
+        }
+
+        const canvas = document.querySelector('.studio-canvas')
+        if (canvas === null) return { error: 'no form in the hero' }
+        const ground = dark(getComputedStyle(document.body).backgroundColor)
+        const opens = dark(getComputedStyle(canvas).backgroundColor)
+
+        /*
+         * And the same measurement on an appearance that is light.
+         *
+         * Without it the case above passes on a page where nothing is themed
+         * and every surface reads as the same transparent black — green while
+         * asserting nothing, which is how a guard here has failed twice.
+         */
+        const light = [...document.querySelectorAll('.studio-swatches button')].find((button) =>
+          (button.textContent ?? '').toLowerCase().includes('paper'),
+        )
+        if (light === undefined) return { error: 'no appearance switcher' }
+        light.click()
+        await wait()
+        return { ground, opens, switched: dark(getComputedStyle(canvas).backgroundColor) }
+      })
+
+      check(
+        'the hero form opens in the tone of the page around it',
+        tone.error ??
+          (tone.ground === null || tone.opens === null
+            ? 'could not read a background colour'
+            : tone.ground === tone.opens
+              ? null
+              : `the page is ${tone.ground ? 'dark' : 'light'} and the form opens ${tone.opens ? 'dark' : 'light'}`),
+      )
+      check(
+        'and the switcher beside it really does change that tone',
+        tone.error !== undefined || tone.switched !== tone.opens
+          ? null
+          : 'a light appearance changed nothing, so the case above is reading a constant',
+      )
+
+      /*
+       * The running submission does not cover the form it reports on.
+       *
+       * Reading the page is what fills the submission in, so scrolling to the
+       * examples is both how the panel appears and how the form it would cover
+       * comes on screen.
+       */
+      const covering = await page.evaluate(async () => {
+        const demo = document.querySelector('.demo')
+        if (demo === null) return { error: 'no examples section' }
+        demo.scrollIntoView({ block: 'center' })
+        await new Promise((done) => setTimeout(done, 800))
+
+        const panel = document.querySelector('.panel')
+        if (panel === null) return { error: 'the panel never appeared, so this measures nothing' }
+        const box = panel.getBoundingClientRect()
+        const covered = new Set()
+        for (const element of demo.querySelectorAll('.window, .sheet')) {
+          const other = element.getBoundingClientRect()
+          if (other.right > box.left && other.left < box.right && other.bottom > box.top && other.top < box.bottom) {
+            covered.add(String(element.className))
+          }
+        }
+        return { covered: [...covered] }
+      })
+
+      check(
+        'the running submission does not cover the form it reports on',
+        covering.error ?? (covering.covered.length === 0 ? null : `the panel is on top of ${covering.covered.join(', ')}`),
+      )
+
+      /*
+       * And nothing a visitor needs is off the side of either page.
+       *
+       * Not `scrollWidth`, which is what the playground's cases use. The site
+       * sets `overflow-x: hidden` on the body so the backdrop's auroras and the
+       * marquee's two rails can be wider than the screen on purpose, and with
+       * that set `scrollWidth` reports 348px of "overflow" on a page that
+       * cannot be scrolled sideways at all. Measuring it here would be a case
+       * that fails on the decoration and says nothing about the content.
+       *
+       * So: the page genuinely cannot be scrolled sideways, and every control
+       * on it is inside the viewport. The second half is the one with teeth —
+       * it is what the reader is actually deprived of when a layout is too
+       * wide.
+       */
+      for (const path of ['/', '/templates/']) {
+        await page.goto(`${origin}${path}`, { waitUntil: 'load' })
+        await page.waitForSelector('.bar nav a', { timeout: 30_000 })
+        const reach = await page.evaluate(() => {
+          const root = document.scrollingElement ?? document.documentElement
+          root.scrollLeft = 9999
+          const slid = root.scrollLeft
+          root.scrollLeft = 0
+
+          const edge = document.documentElement.clientWidth
+          const past = []
+          const active = document.activeElement
+          for (const control of document.querySelectorAll('a, button, input, select, textarea, summary')) {
+            const box = control.getBoundingClientRect()
+            if (box.width === 0 || box.height === 0) continue
+            if (box.right <= edge + 1 && box.left >= -1) continue
+
+            /*
+             * A control parked off the side that comes back when it is focused
+             * is the skip link, and that is the correct pattern rather than a
+             * defect. Asked of the element rather than recognised by its class:
+             * the repository has had a guard match the shape a thing usually
+             * has and go quiet the moment it had another.
+             */
+            control.focus({ preventScroll: true })
+            const focused = control.getBoundingClientRect()
+            if (focused.right <= edge + 1 && focused.left >= -1) continue
+
+            past.push(`${control.tagName}.${String(control.className).slice(0, 24)}`)
+          }
+          if (active instanceof HTMLElement) active.focus({ preventScroll: true })
+          else if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+          return { slid, past: [...new Set(past)].slice(0, 6) }
+        })
+
+        check(
+          `${path} cannot be scrolled sideways`,
+          reach.slid === 0 ? null : `it slid ${String(reach.slid)}px`,
+        )
+        check(
+          `and every control on ${path} is inside the viewport`,
+          reach.past.length === 0 ? null : `off the edge: ${reach.past.join(', ')}`,
+        )
+      }
+
+      await page.close()
+    }
+
   } finally {
     await browser.close()
     server.close()
@@ -439,7 +669,7 @@ async function run() {
     throw new Error(`${String(failures.length)} browser check(s) failed:\n  ${failures.join('\n  ')}`)
   }
   console.log(
-    `browser checks passed: ${String(WIDTHS.length)} viewports against the composed site, for the layout, gesture and cascade facts jsdom cannot represent`,
+    `browser checks passed: ${String(WIDTHS.length)} viewports of the playground, plus both pages of the site, for the layout, gesture and cascade facts jsdom cannot represent`,
   )
 }
 

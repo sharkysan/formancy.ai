@@ -10,6 +10,83 @@ later.
 
 ## Unreleased
 
+**The site is one product again, because its second page was not.** `/templates/`
+shipped with a design language of its own: a `#f6f8f3` ground and `color-scheme: light`
+inside a dark site, `Inter` as its first font family — **loaded nowhere in this
+repository**, so it was rendering in whatever face the visitor's machine happened to
+have — `Georgia` where the site loads Fraunces, a violet of its own where the site's
+violet and teal *mean* the browser and the server, pixels where the site is in rem, and
+its own header, brand mark, navigation and footer. Reported as "the templates page does
+not fit the style at all".
+
+The fix is one shell rather than matching numbers. `apps/site/src/shell.css` holds the
+tokens, the type scale and the backdrop; `apps/site/src/chrome.tsx` holds the bar, the
+footer and the mark, and both pages render them. Copying the values across would have
+made the two pages agree once; a component they both render makes them unable to
+disagree, which is the question CLAUDE.md asks of any duplication. The navigation is one
+list, so a third page joins every page's bar by existing, and the place it could be
+forgotten no longer exists. `template-gallery.css` now contains **no colours at all** —
+every one is a token ([0106](docs/decisions/0106-one-shell-for-every-page-of-the-site.md)).
+
+A product whose whole argument is that your design system owns the markup cannot ship
+two design systems of its own. That is why this is a changelog entry and not a tidy-up.
+
+**And the hero opened on the wrong theme, in a dark studio.** `paper` — cream, serif,
+editorial — was the first thing a visitor saw, inside a dark page, while the examples
+section further down had defaulted to `dusk` all along: two halves of one claim about
+theming, disagreeing about how to open. The gallery's preview was `paper` in a dark
+dialog for the same reason. Both now open in the tone of the page around them, and the
+switcher beside the hero is still what makes the point.
+
+**The running submission stopped covering the form it reports on.** It is
+`position: fixed` in the corner of a full-bleed page, and measured in Chromium at
+1600px it sat 232×212 pixels on top of the live form and the JSON beside it — the one
+place on the page somebody is actually clicking, hidden by the panel describing what
+they clicked. The footer had been given clearance for exactly this; the examples band
+now takes the same `calc(var(--gutter) + 15rem)`, on the band rather than on the page,
+because a gutter on the page would move the hero sideways the moment the panel appeared.
+
+**And the preview dialog had two submit buttons.** The renderer draws its own, and the
+dialog had a second one underneath it doing the same thing — two controls, one action,
+stacked, which was easy to miss while one of them was grey. There is now one, named
+“Check answers”, reporting through `FormancyForm`'s `onSubmit`; the `<form>` around it
+stays, because it is what keeps the radio groups to themselves and stops Enter
+navigating out of the dialog.
+
+**Both pages are now compared to each other in a browser, not to a literal.** The gate
+loads `/` and `/templates/` from the composed build and asserts they agree on computed
+ground, ink, body family, display family and bar, plus their navigation and their mark.
+No constant says what the ground is, so changing the palette stays one change. Three
+details are the whole value of it:
+
+- **`font-family` as computed, which is the family each page *asks for*** — deliberately
+  not what rendered. The gallery asked for `Inter` and got the system face, so comparing
+  what rendered would have reported the two pages in agreement while one was wrong.
+- **The sideways check is scroll*ability*, not `scrollWidth`.** The site sets
+  `overflow-x: hidden` so the backdrop's auroras and the marquee's rails can exceed the
+  screen on purpose, and with that set `scrollWidth` reports 348px of "overflow" on a
+  page that cannot be scrolled sideways at all — a case that fails on the decoration and
+  says nothing about the content. So instead: the page cannot be slid, and every control
+  on it is inside the viewport. A control parked off the side is **asked whether focusing
+  brings it back**, which is the skip-link pattern, rather than recognised by its class.
+- **The theme cases assert relative luminance, never a theme's name**, and a second case
+  switches to a light appearance and requires the measurement to change — without it the
+  first passes on a page where nothing is themed and every surface reads as the same
+  transparent black. Green while asserting nothing is how a guard here has failed twice.
+
+**Thirteen mutations, each watched to redden the case it belongs to.** Seven against the
+browser gate — the gallery's own ground, its `Inter` stack, its own navigation, the hero
+on `paper`, an appearance switch that changes nothing, the examples band without its
+clearance, and a card grid of three fixed columns — and six against the new
+`chrome.test.tsx`. Each reintroduces the actual defect rather than breaking something
+arbitrary. One of them found a trap in the test: the footer's version case first matched
+`/packages \d+\.\d+\.\d+/`, which a typed `0.1.0` satisfies completely, so it now
+compares against the version read from `package.json`.
+
+`site.css` lost 489 lines and `app.tsx` lost 87 to the shell, which fired the size
+budget's ratchet and took `app.tsx`'s ceiling down with it — the ratchet pointing at
+something real rather than a number being tidied.
+
 **Start with a form whose examples run.** The starter collection covers HR, sales,
 customer service, events, operations and healthcare administration. Each plain JSON
 form carries English, Swiss High German and French text, its layout and rules,
