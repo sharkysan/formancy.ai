@@ -206,3 +206,4 @@ listed under the sections they belong to above.
 | [0103](0103-a-theme-editor-edits-what-a-theme-declares.md) | A theme editor edits what a theme declares, discovered from its stylesheet | accepted |
 | [0104](0104-spec-4-opens-with-a-widget-not-a-type.md) | Spec 4 opens with two widgets and a property, not a type | accepted |
 | [0105](0105-templates-are-documents-with-examples.md) | Keep templates as documents with executable examples and an independent gallery | accepted |
+| [0106](0106-one-shell-for-every-page-of-the-site.md) | One shell for every page of the site, and the two pages are compared in a browser | accepted |

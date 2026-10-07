@@ -25,7 +25,20 @@ const capabilities = { now: () => 1791244800000, today: () => '2026-10-06', rand
 // cannot be submitted, or a conditional with the opposite meaning, is a broken template.
 describe('starter template collection', () => {
   test('catalogues every form exactly once and keeps examples outside the schema', () => {
-    const paths = readdirSync(root, { recursive: true }).filter((p): p is string => typeof p === 'string')
+    /*
+     * `/` on both sides. `readdirSync` returns the platform's separator, so on
+     * Windows this compared `hr\leave-request.form.json` against the catalogue's
+     * `hr/leave-request.form.json` and reported all eighteen entries as both
+     * missing and unexpected — a guard that cannot run where somebody is
+     * working, which is the same class of problem as one that is not a gate.
+     *
+     * The catalogue's spelling is the contract: `template-gallery.tsx` builds
+     * `import.meta.glob` keys from it, and those are forward slashes whatever
+     * the platform.
+     */
+    const paths = readdirSync(root, { recursive: true })
+      .filter((p): p is string => typeof p === 'string')
+      .map((p) => p.replaceAll('\\', '/'))
     expect(catalog.templates.map((e) => e.schema).sort()).toEqual(paths.filter((p) => p.endsWith('.form.json')).sort())
     expect(new Set(catalog.templates.map((e) => e.id)).size).toBe(catalog.templates.length)
     expect([...new Set(catalog.templates.map((e) => e.area))].sort()).toEqual([

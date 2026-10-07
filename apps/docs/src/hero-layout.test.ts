@@ -24,7 +24,14 @@ import { describe, expect, test } from 'vitest'
  */
 const here = dirname(fileURLToPath(import.meta.url))
 const repo = join(here, '..', '..', '..')
-const stylesheets = ['site.css', 'hero-studio.css'].map((name) => ({
+/*
+ * Every sheet the page is drawn from, because the cascade does not care which
+ * file a rule is in. `shell.css` joined the list when the tokens and the bar
+ * left `site.css` for it: the four cases below went red that day reading a
+ * `--shell` that was no longer where they looked, which is the right failure —
+ * a guard that follows a moved fact silently would be a guard reading nothing.
+ */
+const stylesheets = ['shell.css', 'site.css', 'hero-studio.css'].map((name) => ({
   name,
   css: readFileSync(join(repo, 'apps', 'site', 'src', name), 'utf8'),
 }))

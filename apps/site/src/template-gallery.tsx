@@ -3,12 +3,12 @@ import type { FormSchema } from '@formancy/spec'
 import { createFormEngine } from '@formancy/core'
 import { ErrorSummary, FormancyForm, FormancyProvider } from '@formancy/react'
 import catalog from '../../../templates/catalog.json'
-import '@formancy/themes/paper.css'
+import '@formancy/themes/dusk.css'
+import { Backdrop, PLAYGROUND, SiteBar, SiteFooter } from './chrome.js'
 import './template-gallery.css'
 
 type Locale = 'en' | 'de' | 'fr'
 type Entry = (typeof catalog.templates)[number]
-const PLAYGROUND = import.meta.env.DEV ? 'http://localhost:4381/' : '/playground/'
 const AREAS = [
   { id: 'hr', label: 'HR', mark: '01' },
   { id: 'sales', label: 'Sales', mark: '02' },
@@ -47,21 +47,17 @@ export function TemplateGallery() {
 
   return (
     <div className="template-page">
-      <a className="template-skip" href="#templates">Skip to templates</a>
-      <header className="template-header">
-        <a className="template-brand" href="/" aria-label="formancy.ai home"><span aria-hidden="true">f.</span> formancy.ai</a>
-        <nav aria-label="Main navigation">
-          <a href="/templates/" aria-current="page">Templates</a>
-          <a href="/docs/start/templates/">Guide</a>
-          <a href={PLAYGROUND}>Playground <span aria-hidden="true">↗</span></a>
-        </nav>
-      </header>
+      <Backdrop />
+      <a className="skip" href="#templates">
+        Skip to templates
+      </a>
+      <SiteBar current="templates" />
       <main>
         <section className="template-hero" aria-labelledby="gallery-title">
           <div>
-            <p className="template-eyebrow">A starting point, already connected</p>
+            <p className="eyebrow">A starting point, already connected</p>
             <h1 id="gallery-title">A head start<br />for every <em>form.</em></h1>
-            <p className="template-lede">From your next event to your next new hire. Pick a template, try its rules, and make it yours.</p>
+            <p className="lede">From your next event to your next new hire. Pick a template, try its rules, and make it yours.</p>
             <div className="template-badges"><span>Angular + React</span><span>English · Deutsch · Français</span><span>Apache-2.0</span></div>
           </div>
           <aside className="template-hero-note" aria-label="Collection at a glance">
@@ -96,19 +92,19 @@ export function TemplateGallery() {
                   <p>{entry.description[locale]}</p>
                   <div className="template-card-meta"><span>3 languages</span><span>Conditional questions</span></div>
                   <div className="template-card-actions">
-                    <button type="button" aria-label={`Preview ${title}`} onClick={() => setSelected(entry)}>Preview <span aria-hidden="true">↗</span></button>
-                    <a href={editUrl(entry, locale)} aria-label={`Edit ${title} in playground`}>Use template <span aria-hidden="true">→</span></a>
+                    <button type="button" className="action primary" aria-label={`Preview ${title}`} onClick={() => setSelected(entry)}>Preview <span aria-hidden="true">↗</span></button>
+                    <a className="action" href={editUrl(entry, locale)} aria-label={`Edit ${title} in playground`}>Use template <span aria-hidden="true">→</span></a>
                   </div>
                   <a className="template-download" href={entry.download} download={entry.schema.split('/').at(-1)} aria-label={`Download ${title} JSON`}>Download JSON</a>
                 </article>
               )
             })}
           </div>
-          {shown.length === 0 ? <div className="template-empty"><h2>No templates match your search.</h2><button type="button" onClick={() => { setQuery(''); setArea('all') }}>Clear filters</button></div> : null}
+          {shown.length === 0 ? <div className="template-empty"><h2>No templates match your search.</h2><button type="button" className="action" onClick={() => { setQuery(''); setArea('all') }}>Clear filters</button></div> : null}
         </section>
-        <section className="template-next"><div><p className="template-eyebrow">Your process, your form</p><h2>A useful beginning.<br />Room for your own rules.</h2></div><p>Every template includes editable questions, translations and conditional logic. Start with the closest fit, then adapt it in the visual builder or your code.<br /><a href="/docs/start/templates/">Read the template guide <span aria-hidden="true">→</span></a></p></section>
+        <section className="template-next"><div><p className="eyebrow">Your process, your form</p><h2>A useful beginning.<br />Room for your own rules.</h2></div><p>Every template includes editable questions, translations and conditional logic. Start with the closest fit, then adapt it in the visual builder or your code.<br /><a href="/docs/start/templates/">Read the template guide <span aria-hidden="true">→</span></a></p></section>
       </main>
-      <footer className="template-footer"><span>formancy.ai · Open source, all the way.</span><a href="https://github.com/sharkysan/formancy.ai/tree/main/templates">Source &amp; examples</a><a href="/docs/">Documentation</a></footer>
+      <SiteFooter />
       {selected === null ? null : <Preview entry={selected} locale={locale} onClose={() => setSelected(null)} />}
     </div>
   )
@@ -143,15 +139,31 @@ function Preview({ entry, locale, onClose }: { entry: Template; locale: Locale; 
 
   return (
     <dialog ref={dialog} className="template-preview" aria-labelledby="preview-title" onCancel={(event) => { event.preventDefault(); closePreview() }}>
-      <div className="template-preview-header"><div><p className="template-eyebrow">Live preview</p><h2 id="preview-title">{entry.title[locale]}</h2></div><button type="button" autoFocus onClick={closePreview} aria-label="Close preview">✕</button></div>
+      <div className="template-preview-header"><div><p className="eyebrow">Live preview</p><h2 id="preview-title">{entry.title[locale]}</h2></div><button type="button" autoFocus onClick={closePreview} aria-label="Close preview">✕</button></div>
       <p className="template-preview-note">Try the questions and conditions. Answers stay in this tab.</p>
-      <form data-formancy-theme="paper" noValidate onSubmit={(event) => {
-        event.preventDefault()
-        const result = engine.submit()
-        setStatus(result.ok ? 'The answers pass this template’s validation. Nothing was sent.' : 'Check the required fields and the errors shown below. Nothing was sent.')
-      }}>
-        <FormancyProvider engine={engine}><ErrorSummary /><FormancyForm layout="web" /></FormancyProvider>
-        <div className="template-preview-controls"><button type="submit">Check answers</button><a href={editUrl(entry, locale)}>Edit in playground <span aria-hidden="true">↗</span></a></div>
+      {/* A real <form> around it for the native boundary: it keeps the radio
+          groups to themselves and stops Enter navigating out of the dialog.
+          Nothing here submits it — the renderer's own button is
+          `type="button"` and reports through `onSubmit`. */}
+      <form data-formancy-theme="dusk" noValidate onSubmit={(event) => event.preventDefault()}>
+        {/* One submit, named for what it does. The renderer draws its own
+            button, and the dialog had a second one underneath it doing the same
+            thing — two controls, one action, stacked. */}
+        <FormancyProvider engine={engine}>
+          <ErrorSummary />
+          <FormancyForm
+            layout="web"
+            submitLabel="Check answers"
+            onSubmit={(result) =>
+              setStatus(
+                result.ok
+                  ? 'The answers pass this template’s validation. Nothing was sent.'
+                  : 'Check the required fields and the errors shown below. Nothing was sent.',
+              )
+            }
+          />
+        </FormancyProvider>
+        <div className="template-preview-controls"><a href={editUrl(entry, locale)}>Edit in playground <span aria-hidden="true">↗</span></a></div>
         <p role="status">{status}</p>
       </form>
       <details className="template-adapt"><summary>What to adapt before use</summary><ul>{entry.adaptBeforeUse.map((note) => <li key={note}>{note}</li>)}</ul></details>

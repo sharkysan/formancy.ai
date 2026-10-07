@@ -137,7 +137,19 @@ function previewEngine(company: boolean, previous?: FormEngine): FormEngine {
 /** A small, real editing interaction. No network, fake saving or simulated submission. */
 export function HeroStudio({ playground }: { playground: string }): ReactElement {
   const [company, setCompany] = useState(false)
-  const [appearance, setAppearance] = useState<Appearance>('paper')
+  /*
+   * Opens on `dusk`, which is the theme this page is written in.
+   *
+   * It opened on `paper` — cream, serif, editorial — inside a dark studio on a
+   * dark page, and the first thing a visitor saw was a card that looked like it
+   * belonged to a different product. The switcher is what makes the point about
+   * design systems; the default does not have to, and making it carry that
+   * argument cost the page its first impression.
+   *
+   * The examples section further down has defaulted to `dusk` all along, so the
+   * two halves of the same claim disagreed about how to open.
+   */
+  const [appearance, setAppearance] = useState<Appearance>('dusk')
   const [engine, setEngine] = useState(() => previewEngine(false))
   const [verdict, setVerdict] = useState('')
 
