@@ -52,7 +52,7 @@ formancy
 | Keystroke, large conditional form | 1 ms | ≈0.38 ms |
 | Cold graph compile | 30 ms | ≈1.7 ms |
 | `@formancy/core` bundle | 18 kB brotli | 17.8 kB, measured 2026-10-04 |
-| `@formancy/spec` bundle | — | 9.7 kB, measured 2026-09-29 |
+| `@formancy/spec` bundle | — | 14.0 kB for the whole barrel, measured 2026-10-08 |
 | `@formancy/react` bundle | 4 kB brotli | **21.1 kB** for the whole barrel, measured 2026-10-06 |
 | `uqr`, the QR encoder | — | 6.6 kB brotli, **external** rather than bundled, measured 2026-09-27 |
 
@@ -64,6 +64,23 @@ repository runs `size-limit` — [0038](../decisions/0038-esm-only.md) says so p
 its *Verified by* line, and three other documents said the opposite, including the
 regulatory evidence table. The figures above are `brotliCompressSync` over each built
 `dist/index.mjs`, dated because they are re-measured rather than incremented.
+
+**The spec figure moved 4.3 kB in one change, and the reason is worth the line.**
+`diffSchemas` stopped comparing only a field's identity, its type and its `required`
+flag: it now also reports options, constraints, rules, catalogues, layouts and anything
+it has no comparator for
+([0108](../decisions/0108-the-diff-reports-everything-that-changed.md)). That is the
+function four readers trust to say what changed between two published versions, and it
+used to answer `[]` for two materially different documents.
+
+This row is the **barrel**, which is the honest number to quote and not the one a
+renderer ships: the package declares `sideEffects: false`, so a bundler drops the diff
+from a consumer that never imports it. Note what that sentence does not say — there is
+no `./diff` entry point. `exports` has `.` and `./validate`, so a consumer wanting only
+the diff takes the barrel and relies on tree-shaking rather than on an entry, which is
+weaker than the per-entry design [0038](../decisions/0038-esm-only.md) describes. Worth
+a second entry if anybody measures it mattering; written down here rather than assumed
+either way.
 
 **The React figure needs reading carefully rather than reporting as a breach.** 4 kB was
 written for a tree-shaken entry — the design is per-entry `exports` so that

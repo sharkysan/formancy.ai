@@ -46,3 +46,17 @@ function normalize(value: unknown, path: string): unknown {
       throw new TypeError(`Cannot canonicalize ${typeof value} at ${path}`)
   }
 }
+
+/**
+ * Whether two optional values are the same.
+ *
+ * `canonicalize` throws on `undefined` on purpose: dropping it would make a
+ * document that omits a property hash the same as one that sets it, which is
+ * the distinction a schema hash exists to keep. Everything compared here is
+ * optional, so the absence has to be handled before the call rather than
+ * inside it.
+ */
+export function same(left: unknown, right: unknown): boolean {
+  if (left === undefined || right === undefined) return left === right
+  return canonicalize(left) === canonicalize(right)
+}

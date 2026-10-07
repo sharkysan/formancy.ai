@@ -10,6 +10,79 @@ later.
 
 ## Unreleased
 
+**Two different forms used to diff to "nothing changed".** `diffSchemas` compared a
+field's identity, its type and its `required` flag — and nothing else. An option
+withdrawn from a radio, a `maxLength` halved, a `pattern` added, a `visible` rule
+added or rewritten, a message catalogue rewritten, a locale added, a layout
+rearranged, a field relabelled, the form's own title or id changed: every one of them
+produced an **empty list**.
+
+That is worse than a wrong severity. Four readers trust this function — draft
+migration, the builder's *what changed before you publish* view, export column
+unioning and the consumer CI compatibility gate — and an empty answer tells all four
+that nothing happened. A draft rebinds silently against a form that now rejects it; a
+publish review shows an empty list and somebody approves it. The option case loses
+data outright: a submission holding `"post"` against a radio that no longer offers it
+carries a value outside the document's own vocabulary, and the function whose job is
+to say so said nothing.
+
+**Every area now has a comparator, and the severity answers only the second question.**
+*What changed* is the length of the list; *what it costs the data* is the severity. So
+`compatible` carries real weight now — a rewritten translation, a relabelled option
+and a rearranged layout are changes, are reported, and cost the stored answers
+nothing. The new kinds are `field.optionRemoved` (lossy — the stored value is no
+longer one the document defines), `field.optionAdded`, `field.optionRelabelled`,
+`field.constraintTightened` (lossy), `field.constraintRelaxed`, `field.relabelled`,
+`rule.added`, `rule.removed`, `rule.changed` (all lossy — `visible` with `clearOnHide`
+decides whether an answer is kept at all), `text.changed`, `layout.changed`,
+`document.relabelled` and `document.identityChanged`.
+
+**And two backstops, which are the decision rather than the tidying-up.** A field
+property with no comparator is `field.changed`; a top-level section with no comparator
+is `document.changed`. Both `lossy`, because a change nobody examined must not be
+called harmless — `clearOnHide` is the example that settles it, since it decides
+whether a hidden field's answer survives and nothing compares it by name. They are
+also the part that survives the format growing: a section added to `FormSchema` and
+forgotten is reported rather than ignored. A test asserts that **no** edit in the
+suite's table reaches either backstop, without which one catch-all would satisfy
+"never silent" while classifying nothing.
+
+**A declared rename now carries its rules along.** `renamedFrom` promises a rename
+costs the data nothing, and the builder rewrites the expressions that referenced the
+old path in the same edit — so the first version of the rule comparator reported the
+rewritten expression as a rule that "says something else now", and the promise held
+for the fields while breaking on their logic. Caught by `builder-core`'s own test, not
+by this package's. The before-side is now read as though the renames had happened, by
+textual substitution on path boundaries: `@formancy/spec` is below
+`@formancy/expressions` in the layering and carries no CEL parser, and what makes that
+safe is the direction — a substitution that is wrong produces an expression that does
+not match, so the rule is reported as changed. Only an exact match is read as "this
+followed a renamed field".
+
+**What an integrator will notice.** Nothing is newly refused: only `breaking` makes a
+draft read-only, and nothing new is breaking. What changes is that a draft resumed
+against a version where only a rule, an option or a bound moved now rebinds **with a
+migration report** where it used to rebind in silence — because the diff used to report
+no change at all for those. Same data, same rebinding, and somebody is now told. The
+same applies to `staleVersionPolicy: acceptCompatible`, which sees those versions as
+lossy rather than as identical.
+
+**Thirteen mutations, each watched to redden its own cases.** A fourteenth reddened
+nothing and found dead code: a branch for a constraint arriving where there was none,
+already answered by the check beneath it. Deleted rather than tested, which is what a
+mutation that changes nothing means. One case had to be rewritten after a mutation
+left it green — a changed `pattern` must count as stricter, and written with a new
+pattern that sorts *before* the old one the generic comparison reached the same answer
+by accident.
+
+`@formancy/spec`'s barrel grew 4.3 kB brotli, from 9.7 to 14.0, recorded in arc42 §9.3
+with the reason and with what the `exports` map does and does not do about it.
+`diff.ts` split into `diff-fields.ts`, `diff-rules.ts` and the orchestration when the
+size budget refused the additions at 694 lines
+([0108](docs/decisions/0108-the-diff-reports-everything-that-changed.md), and
+`SAFETY-ANALYSIS.md` E3, which described this failure as a residual and now describes
+it as one that happened).
+
 **A form shown in German asked its questions under English headings.** Reported from the
 templates gallery: the HR onboarding template chosen in German rendered German field
 labels under **Employee** and **Work setup**. Nothing was wrong with the document — the
