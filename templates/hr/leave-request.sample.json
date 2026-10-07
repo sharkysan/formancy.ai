@@ -1,0 +1,9 @@
+{
+  "fullName": "Alex Example",
+  "email": "alex@example.com",
+  "leaveType": "other",
+  "startDate": "2026-12-07",
+  "endDate": "2026-12-11",
+  "otherReason": "A personal appointment.",
+  "handover": "Tasks documented for the team."
+}

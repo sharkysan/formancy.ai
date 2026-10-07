@@ -1,0 +1,266 @@
+{
+  "specVersion": "2",
+  "id": "healthcare-administration-patient-registration",
+  "title": "Patient registration",
+  "model": {
+    "fields": [
+      {
+        "key": "intro",
+        "type": "static",
+        "label": {
+          "$t": "intro"
+        }
+      },
+      {
+        "key": "fullName",
+        "type": "text",
+        "label": {
+          "$t": "fullName"
+        },
+        "required": true,
+        "maxLength": 160
+      },
+      {
+        "key": "email",
+        "type": "text",
+        "label": {
+          "$t": "email"
+        },
+        "required": true,
+        "format": "email",
+        "maxLength": 254
+      },
+      {
+        "key": "dateOfBirth",
+        "type": "date",
+        "label": {
+          "$t": "dateOfBirth"
+        },
+        "required": true
+      },
+      {
+        "key": "address",
+        "type": "textarea",
+        "label": {
+          "$t": "address"
+        },
+        "required": true,
+        "maxLength": 600
+      },
+      {
+        "key": "language",
+        "type": "select",
+        "label": {
+          "$t": "language"
+        },
+        "required": true,
+        "options": [
+          {
+            "value": "en",
+            "label": {
+              "$t": "language.en"
+            }
+          },
+          {
+            "value": "de",
+            "label": {
+              "$t": "language.de"
+            }
+          },
+          {
+            "value": "fr",
+            "label": {
+              "$t": "language.fr"
+            }
+          }
+        ]
+      },
+      {
+        "key": "completedBy",
+        "type": "radio",
+        "label": {
+          "$t": "completedBy"
+        },
+        "required": true,
+        "options": [
+          {
+            "value": "self",
+            "label": {
+              "$t": "completedBy.self"
+            }
+          },
+          {
+            "value": "representative",
+            "label": {
+              "$t": "completedBy.representative"
+            }
+          }
+        ]
+      },
+      {
+        "key": "representativeName",
+        "type": "text",
+        "label": {
+          "$t": "representativeName"
+        },
+        "maxLength": 160
+      },
+      {
+        "key": "relationship",
+        "type": "text",
+        "label": {
+          "$t": "relationship"
+        },
+        "maxLength": 160
+      }
+    ]
+  },
+  "logic": {
+    "rules": [
+      {
+        "target": "dateOfBirth",
+        "kind": "validate",
+        "cel": "dateOfBirth == null || dateOfBirth == \"\" || timestamp(dateOfBirth + \"T00:00:00Z\") <= today()",
+        "code": "future_birth_date"
+      },
+      {
+        "target": "representativeName",
+        "kind": "visible",
+        "cel": "completedBy == \"representative\""
+      },
+      {
+        "target": "representativeName",
+        "kind": "required",
+        "cel": "completedBy == \"representative\""
+      },
+      {
+        "target": "relationship",
+        "kind": "visible",
+        "cel": "completedBy == \"representative\""
+      },
+      {
+        "target": "relationship",
+        "kind": "required",
+        "cel": "completedBy == \"representative\""
+      }
+    ]
+  },
+  "layouts": [
+    {
+      "name": "web",
+      "nodes": [
+        {
+          "kind": "field",
+          "path": "intro"
+        },
+        {
+          "kind": "section",
+          "label": {
+            "$t": "section.1"
+          },
+          "children": [
+            {
+              "kind": "field",
+              "path": "fullName"
+            },
+            {
+              "kind": "field",
+              "path": "email"
+            },
+            {
+              "kind": "field",
+              "path": "dateOfBirth"
+            },
+            {
+              "kind": "field",
+              "path": "address"
+            },
+            {
+              "kind": "field",
+              "path": "language"
+            }
+          ]
+        },
+        {
+          "kind": "section",
+          "label": {
+            "$t": "section.2"
+          },
+          "children": [
+            {
+              "kind": "field",
+              "path": "completedBy"
+            },
+            {
+              "kind": "field",
+              "path": "representativeName"
+            },
+            {
+              "kind": "field",
+              "path": "relationship"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "i18n": {
+    "defaultLocale": "en",
+    "messages": {
+      "en": {
+        "intro": "Provide administrative details for registration. Do not include symptoms or medical records.",
+        "section.1": "Patient details",
+        "fullName": "Full name",
+        "email": "Email address",
+        "dateOfBirth": "Date of birth",
+        "address": "Postal address",
+        "language": "Preferred language",
+        "language.en": "English",
+        "language.de": "Deutsch",
+        "language.fr": "Français",
+        "section.2": "Person completing the form",
+        "completedBy": "Who is completing this form?",
+        "completedBy.self": "The patient",
+        "completedBy.representative": "Another person",
+        "representativeName": "Name of the person completing the form",
+        "relationship": "Relationship to the patient"
+      },
+      "de": {
+        "intro": "Erfassen Sie administrative Angaben für die Registrierung. Geben Sie keine Symptome oder medizinischen Akten an.",
+        "section.1": "Patientenangaben",
+        "fullName": "Vor- und Nachname",
+        "email": "E-Mail-Adresse",
+        "dateOfBirth": "Geburtsdatum",
+        "address": "Postadresse",
+        "language": "Bevorzugte Sprache",
+        "language.en": "English",
+        "language.de": "Deutsch",
+        "language.fr": "Français",
+        "section.2": "Ausfüllende Person",
+        "completedBy": "Wer füllt dieses Formular aus?",
+        "completedBy.self": "Die Patientin oder der Patient",
+        "completedBy.representative": "Eine andere Person",
+        "representativeName": "Name der ausfüllenden Person",
+        "relationship": "Beziehung zur Patientin oder zum Patienten"
+      },
+      "fr": {
+        "intro": "Fournissez les renseignements administratifs pour l’enregistrement, sans symptômes ni dossier médical.",
+        "section.1": "Coordonnées du patient",
+        "fullName": "Prénom et nom",
+        "email": "Adresse e-mail",
+        "dateOfBirth": "Date de naissance",
+        "address": "Adresse postale",
+        "language": "Langue préférée",
+        "language.en": "English",
+        "language.de": "Deutsch",
+        "language.fr": "Français",
+        "section.2": "Personne remplissant le formulaire",
+        "completedBy": "Qui remplit ce formulaire ?",
+        "completedBy.self": "Le patient ou la patiente",
+        "completedBy.representative": "Une autre personne",
+        "representativeName": "Nom de la personne remplissant le formulaire",
+        "relationship": "Lien avec le patient"
+      }
+    }
+  }
+}

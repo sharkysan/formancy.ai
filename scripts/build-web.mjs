@@ -66,6 +66,10 @@ if (!existsSync(join(siteDist, 'index.html'))) {
   throw new Error(`The site build produced no index.html at ${siteDist}.`)
 }
 
+if (!existsSync(join(siteDist, 'templates', 'index.html'))) {
+  throw new Error('The site build produced no templates/index.html.')
+}
+
 for (const app of NESTED) {
   const built = join(root, 'apps', app.name, 'dist')
   const into = join(siteDist, app.name)
@@ -154,6 +158,7 @@ if (!existsSync(docsIndex)) {
 const expectedPages = [
   `${ORIGIN}/`,
   ...NESTED.filter((app) => app.name !== 'docs').map((app) => `${ORIGIN}${app.base}`),
+  `${ORIGIN}/templates/`,
 ]
 const expectedIndex = [`${ORIGIN}/sitemap-pages.xml`, ...locs(docsIndex)]
 

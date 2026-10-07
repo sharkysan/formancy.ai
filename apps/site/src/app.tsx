@@ -76,8 +76,8 @@ export function App(): ReactElement {
           <a className="optional" href="#build">
             Examples
           </a>
-          <a className="optional" href="#agents">
-            Agents
+          <a className="optional" href="/templates/">
+            Templates
           </a>
           <a className="optional" href="#run">
             Run it

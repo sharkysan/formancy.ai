@@ -37,8 +37,7 @@ import '@formancy/themes/pop.css'
 import '@formancy/themes/paper.css'
 import '@formancy/themes/workbench.css'
 import './app.css'
-import { STARTER_SCHEMA } from './starter.js'
-import { WIZARD_SCHEMA } from './wizard.js'
+import { DEMOS, initialDemo, initialLocale } from './demos.js'
 import { AngularPane } from './angular-pane.js'
 import { EngineInspector } from './engine-inspector.js'
 import { FoldPane, PANES, PaneBoundary, usePaneLayout } from './panes.js'
@@ -57,29 +56,6 @@ import { PLAYGROUND_CHECKS } from './demo-checks.js'
  * switching between them, live, with no remount and no component change, is
  * the claim being demonstrated rather than asserted.
  */
-/**
- * The two demo documents, and why there are two.
- *
- * The starter is one flat form on purpose — every field type the spec defines
- * **minus the two that nest** — so every control a visitor might want to try is
- * on screen at once, with nothing to press Next through. The cost of that was
- * invisible until somebody asked for a demo of the wizard work: this page held no
- * `page` and no `group` at all, so it never drew a stepper, never showed a step
- * being walked past, and gave the builder's container commands nothing to act on.
- *
- * Adding a page to the starter would have taken away the thing that makes it
- * work, to demonstrate a page. So the obligation is on the pair, and
- * `wizard.test.ts` holds it there: between the two of them, every field type and
- * every rule kind the format defines is on screen somewhere, derived from the
- * spec's own lists rather than from a list here that would go stale.
- */
-const DEMOS = [
-  { id: 'starter', label: 'Everything — one form, every field type', schema: STARTER_SCHEMA },
-  { id: 'wizard', label: 'A wizard — steps, a group, a skipped page', schema: WIZARD_SCHEMA },
-] as const
-
-type DemoId = (typeof DEMOS)[number]['id']
-
 const THEMES = [
   { id: 'blueprint', label: 'Blueprint — light, technical' },
   { id: 'dusk', label: 'Dusk — dark, rounded' },
@@ -97,7 +73,7 @@ type ThemeId = (typeof THEMES)[number]['id']
 const LOCALES = [
   { id: 'en', label: 'English' },
   { id: 'de', label: 'Deutsch' },
-  { id: 'fr', label: 'Français — partly translated' },
+  { id: 'fr', label: 'Français' },
 ] as const
 
 type LocaleId = (typeof LOCALES)[number]['id']
@@ -133,8 +109,8 @@ const SITE = import.meta.env.DEV ? 'http://localhost:4384/' : '/'
 
 
 export function App() {
-  const [demo, setDemo] = useState<DemoId>('starter')
-  const [source, setSource] = useState(() => JSON.stringify(STARTER_SCHEMA, null, 2))
+  const [demo, setDemo] = useState(() => initialDemo(window.location.search).id)
+  const [source, setSource] = useState(() => JSON.stringify(initialDemo(window.location.search).schema, null, 2))
   const [theme, setTheme] = useState<ThemeId>('blueprint')
 
   /**
@@ -151,7 +127,7 @@ export function App() {
   const [themeEdits, setThemeEdits] = useState<Readonly<Record<string, Record<string, string>>>>({})
   const overrides = themeEdits[theme] ?? {}
   const [themeHost, setThemeHost] = useState<HTMLElement | null>(null)
-  const [locale, setLocale] = useState<LocaleId>('en')
+  const [locale, setLocale] = useState<LocaleId>(() => initialLocale(window.location.search))
   const [pane, setPane] = useState<EditorMode>('build')
   /**
    * The builder session lives up here, not inside the Build pane, because the
@@ -445,8 +421,11 @@ export function App() {
                           the width written for one. */}
                       <section className="react-pane" aria-labelledby="renderer-react">
                         <h3 id="renderer-react">React</h3>
-                        <div
+                        <form
                           className="sheet"
+                          aria-label="React form preview"
+                          onSubmit={(event) => event.preventDefault()}
+                          noValidate
                           data-formancy-theme={theme}
                           ref={setThemeHost}
                           style={overrides as CSSProperties}
@@ -455,7 +434,7 @@ export function App() {
                             <ErrorSummary />
                             <FormancyForm layout="web" />
                           </FormancyProvider>
-                        </div>
+                        </form>
                       </section>
                       {/* The same document, under the other renderer. One engine
                           build, two framework-native bindings, side by side —
@@ -542,5 +521,4 @@ function SchemaProblems({ errors }: { errors: SchemaError[] }) {
     </div>
   )
 }
-
 

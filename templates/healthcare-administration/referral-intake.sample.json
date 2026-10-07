@@ -1,0 +1,10 @@
+{
+  "referrerName": "Alex Example",
+  "organisation": "Example Practice",
+  "email": "referrals@example.com",
+  "patientReference": "DEMO-PATIENT-001",
+  "serviceRequested": "Example Outpatient Service",
+  "referralDate": "2026-10-06",
+  "documentsAvailable": true,
+  "documentReference": "DEMO-REFERRAL-001"
+}

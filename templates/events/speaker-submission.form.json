@@ -1,0 +1,299 @@
+{
+  "specVersion": "2",
+  "id": "events-speaker-submission",
+  "title": "Speaker submission",
+  "model": {
+    "fields": [
+      {
+        "key": "intro",
+        "type": "static",
+        "label": {
+          "$t": "intro"
+        }
+      },
+      {
+        "key": "fullName",
+        "type": "text",
+        "label": {
+          "$t": "fullName"
+        },
+        "required": true,
+        "maxLength": 160
+      },
+      {
+        "key": "email",
+        "type": "text",
+        "label": {
+          "$t": "email"
+        },
+        "required": true,
+        "format": "email",
+        "maxLength": 254
+      },
+      {
+        "key": "bio",
+        "type": "textarea",
+        "label": {
+          "$t": "bio"
+        },
+        "required": true,
+        "minLength": 30,
+        "maxLength": 1200
+      },
+      {
+        "key": "sessionTitle",
+        "type": "text",
+        "label": {
+          "$t": "sessionTitle"
+        },
+        "required": true,
+        "minLength": 10,
+        "maxLength": 160
+      },
+      {
+        "key": "abstract",
+        "type": "textarea",
+        "label": {
+          "$t": "abstract"
+        },
+        "required": true,
+        "minLength": 50,
+        "maxLength": 3000
+      },
+      {
+        "key": "language",
+        "type": "select",
+        "label": {
+          "$t": "language"
+        },
+        "required": true,
+        "options": [
+          {
+            "value": "en",
+            "label": {
+              "$t": "language.en"
+            }
+          },
+          {
+            "value": "de",
+            "label": {
+              "$t": "language.de"
+            }
+          },
+          {
+            "value": "fr",
+            "label": {
+              "$t": "language.fr"
+            }
+          }
+        ]
+      },
+      {
+        "key": "format",
+        "type": "radio",
+        "label": {
+          "$t": "format"
+        },
+        "required": true,
+        "options": [
+          {
+            "value": "talk",
+            "label": {
+              "$t": "format.talk"
+            }
+          },
+          {
+            "value": "workshop",
+            "label": {
+              "$t": "format.workshop"
+            }
+          }
+        ]
+      },
+      {
+        "key": "durationMinutes",
+        "type": "select",
+        "label": {
+          "$t": "durationMinutes"
+        },
+        "required": true,
+        "options": [
+          {
+            "value": "20",
+            "label": {
+              "$t": "durationMinutes.20"
+            }
+          },
+          {
+            "value": "45",
+            "label": {
+              "$t": "durationMinutes.45"
+            }
+          },
+          {
+            "value": "60",
+            "label": {
+              "$t": "durationMinutes.60"
+            }
+          }
+        ]
+      },
+      {
+        "key": "prerequisites",
+        "type": "textarea",
+        "label": {
+          "$t": "prerequisites"
+        },
+        "maxLength": 1200
+      }
+    ]
+  },
+  "logic": {
+    "rules": [
+      {
+        "target": "prerequisites",
+        "kind": "visible",
+        "cel": "format == \"workshop\""
+      },
+      {
+        "target": "prerequisites",
+        "kind": "required",
+        "cel": "format == \"workshop\""
+      }
+    ]
+  },
+  "layouts": [
+    {
+      "name": "web",
+      "nodes": [
+        {
+          "kind": "field",
+          "path": "intro"
+        },
+        {
+          "kind": "section",
+          "label": {
+            "$t": "section.1"
+          },
+          "children": [
+            {
+              "kind": "field",
+              "path": "fullName"
+            },
+            {
+              "kind": "field",
+              "path": "email"
+            },
+            {
+              "kind": "field",
+              "path": "bio"
+            }
+          ]
+        },
+        {
+          "kind": "section",
+          "label": {
+            "$t": "section.2"
+          },
+          "children": [
+            {
+              "kind": "field",
+              "path": "sessionTitle"
+            },
+            {
+              "kind": "field",
+              "path": "abstract"
+            },
+            {
+              "kind": "field",
+              "path": "language"
+            },
+            {
+              "kind": "field",
+              "path": "format"
+            },
+            {
+              "kind": "field",
+              "path": "durationMinutes"
+            },
+            {
+              "kind": "field",
+              "path": "prerequisites"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "i18n": {
+    "defaultLocale": "en",
+    "messages": {
+      "en": {
+        "intro": "Propose a session with its audience, format and key learning points.",
+        "section.1": "Speaker",
+        "fullName": "Full name",
+        "email": "Email address",
+        "bio": "Short biography",
+        "section.2": "Session",
+        "sessionTitle": "Session title",
+        "abstract": "Abstract and learning points",
+        "language": "Presentation language",
+        "language.en": "English",
+        "language.de": "Deutsch",
+        "language.fr": "Français",
+        "format": "Session format",
+        "format.talk": "Talk",
+        "format.workshop": "Workshop",
+        "durationMinutes": "Requested duration",
+        "durationMinutes.20": "20 minutes",
+        "durationMinutes.45": "45 minutes",
+        "durationMinutes.60": "60 minutes",
+        "prerequisites": "Participant prerequisites and equipment"
+      },
+      "de": {
+        "intro": "Schlagen Sie einen Beitrag mit Zielgruppe, Format und Lernzielen vor.",
+        "section.1": "Referierende Person",
+        "fullName": "Vor- und Nachname",
+        "email": "E-Mail-Adresse",
+        "bio": "Kurzbiografie",
+        "section.2": "Beitrag",
+        "sessionTitle": "Titel des Beitrags",
+        "abstract": "Zusammenfassung und Lernziele",
+        "language": "Vortragssprache",
+        "language.en": "English",
+        "language.de": "Deutsch",
+        "language.fr": "Français",
+        "format": "Beitragsformat",
+        "format.talk": "Vortrag",
+        "format.workshop": "Workshop",
+        "durationMinutes": "Gewünschte Dauer",
+        "durationMinutes.20": "20 Minuten",
+        "durationMinutes.45": "45 Minuten",
+        "durationMinutes.60": "60 Minuten",
+        "prerequisites": "Voraussetzungen und Ausrüstung der Teilnehmenden"
+      },
+      "fr": {
+        "intro": "Proposez une session en précisant le public, le format et les objectifs.",
+        "section.1": "Intervenant ou intervenante",
+        "fullName": "Prénom et nom",
+        "email": "Adresse e-mail",
+        "bio": "Courte biographie",
+        "section.2": "Session",
+        "sessionTitle": "Titre de la session",
+        "abstract": "Résumé et objectifs",
+        "language": "Langue de présentation",
+        "language.en": "English",
+        "language.de": "Deutsch",
+        "language.fr": "Français",
+        "format": "Format de session",
+        "format.talk": "Présentation",
+        "format.workshop": "Atelier",
+        "durationMinutes": "Durée souhaitée",
+        "durationMinutes.20": "20 minutes",
+        "durationMinutes.45": "45 minutes",
+        "durationMinutes.60": "60 minutes",
+        "prerequisites": "Prérequis et matériel pour les participants"
+      }
+    }
+  }
+}

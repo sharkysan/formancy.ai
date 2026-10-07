@@ -1,0 +1,13 @@
+{
+  "fullName": "Alex Example",
+  "email": "alex@example.com",
+  "costCentre": "DEMO-PROJECT",
+  "item": "Monitor",
+  "justification": "Equipment for the new project workstations.",
+  "quantity": 4,
+  "unitPrice": 125.5,
+  "currency": "CHF",
+  "estimatedTotal": 502,
+  "preferredSupplier": true,
+  "supplier": "Example Supplies"
+}

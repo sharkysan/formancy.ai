@@ -1,0 +1,189 @@
+{
+  "specVersion": "2",
+  "id": "customer-service-satisfaction-survey",
+  "title": "Customer satisfaction",
+  "model": {
+    "fields": [
+      {
+        "key": "intro",
+        "type": "static",
+        "label": {
+          "$t": "intro"
+        }
+      },
+      {
+        "key": "service",
+        "type": "text",
+        "label": {
+          "$t": "service"
+        },
+        "required": true,
+        "maxLength": 160
+      },
+      {
+        "key": "satisfaction",
+        "type": "radio",
+        "label": {
+          "$t": "satisfaction"
+        },
+        "required": true,
+        "options": [
+          {
+            "value": "1",
+            "label": {
+              "$t": "satisfaction.1"
+            }
+          },
+          {
+            "value": "2",
+            "label": {
+              "$t": "satisfaction.2"
+            }
+          },
+          {
+            "value": "3",
+            "label": {
+              "$t": "satisfaction.3"
+            }
+          },
+          {
+            "value": "4",
+            "label": {
+              "$t": "satisfaction.4"
+            }
+          },
+          {
+            "value": "5",
+            "label": {
+              "$t": "satisfaction.5"
+            }
+          }
+        ]
+      },
+      {
+        "key": "improvement",
+        "type": "textarea",
+        "label": {
+          "$t": "improvement"
+        },
+        "maxLength": 2000
+      },
+      {
+        "key": "followUp",
+        "type": "checkbox",
+        "label": {
+          "$t": "followUp"
+        }
+      },
+      {
+        "key": "contactEmail",
+        "type": "text",
+        "label": {
+          "$t": "contactEmail"
+        },
+        "format": "email",
+        "maxLength": 254
+      }
+    ]
+  },
+  "logic": {
+    "rules": [
+      {
+        "target": "contactEmail",
+        "kind": "visible",
+        "cel": "followUp == true"
+      },
+      {
+        "target": "contactEmail",
+        "kind": "required",
+        "cel": "followUp == true"
+      }
+    ]
+  },
+  "layouts": [
+    {
+      "name": "web",
+      "nodes": [
+        {
+          "kind": "field",
+          "path": "intro"
+        },
+        {
+          "kind": "section",
+          "label": {
+            "$t": "section.1"
+          },
+          "children": [
+            {
+              "kind": "field",
+              "path": "service"
+            },
+            {
+              "kind": "field",
+              "path": "satisfaction"
+            },
+            {
+              "kind": "field",
+              "path": "improvement"
+            },
+            {
+              "kind": "field",
+              "path": "followUp"
+            },
+            {
+              "kind": "field",
+              "path": "contactEmail"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "i18n": {
+    "defaultLocale": "en",
+    "messages": {
+      "en": {
+        "intro": "Tell us about your experience. Contact details are only requested if you want a follow-up.",
+        "section.1": "Your experience",
+        "service": "Product or service used",
+        "satisfaction": "Overall satisfaction",
+        "satisfaction.1": "1 — Very dissatisfied",
+        "satisfaction.2": "2 — Dissatisfied",
+        "satisfaction.3": "3 — Neutral",
+        "satisfaction.4": "4 — Satisfied",
+        "satisfaction.5": "5 — Very satisfied",
+        "improvement": "What could we improve? (optional)",
+        "followUp": "I would like a follow-up",
+        "contactEmail": "Email for follow-up"
+      },
+      "de": {
+        "intro": "Bewerten Sie Ihre Erfahrung. Kontaktdaten werden nur für eine gewünschte Rückmeldung erfragt.",
+        "section.1": "Ihre Erfahrung",
+        "service": "Genutztes Produkt oder Angebot",
+        "satisfaction": "Gesamtzufriedenheit",
+        "satisfaction.1": "1 — Sehr unzufrieden",
+        "satisfaction.2": "2 — Unzufrieden",
+        "satisfaction.3": "3 — Neutral",
+        "satisfaction.4": "4 — Zufrieden",
+        "satisfaction.5": "5 — Sehr zufrieden",
+        "improvement": "Was können wir verbessern? (optional)",
+        "followUp": "Ich wünsche eine Rückmeldung",
+        "contactEmail": "E-Mail für Rückfragen"
+      },
+      "fr": {
+        "intro": "Évaluez votre expérience. Les coordonnées ne sont demandées que si vous souhaitez un suivi.",
+        "section.1": "Votre expérience",
+        "service": "Produit ou service utilisé",
+        "satisfaction": "Satisfaction globale",
+        "satisfaction.1": "1 — Très insatisfait",
+        "satisfaction.2": "2 — Insatisfait",
+        "satisfaction.3": "3 — Neutre",
+        "satisfaction.4": "4 — Satisfait",
+        "satisfaction.5": "5 — Très satisfait",
+        "improvement": "Que pourrions-nous améliorer ? (facultatif)",
+        "followUp": "Je souhaite être recontacté",
+        "contactEmail": "E-mail pour le suivi"
+      }
+    }
+  }
+}

@@ -1,0 +1,252 @@
+{
+  "specVersion": "2",
+  "id": "customer-service-support-request",
+  "title": "Support request",
+  "model": {
+    "fields": [
+      {
+        "key": "intro",
+        "type": "static",
+        "label": {
+          "$t": "intro"
+        }
+      },
+      {
+        "key": "fullName",
+        "type": "text",
+        "label": {
+          "$t": "fullName"
+        },
+        "required": true,
+        "maxLength": 160
+      },
+      {
+        "key": "email",
+        "type": "text",
+        "label": {
+          "$t": "email"
+        },
+        "required": true,
+        "format": "email",
+        "maxLength": 254
+      },
+      {
+        "key": "product",
+        "type": "text",
+        "label": {
+          "$t": "product"
+        },
+        "required": true,
+        "maxLength": 160
+      },
+      {
+        "key": "category",
+        "type": "select",
+        "label": {
+          "$t": "category"
+        },
+        "required": true,
+        "options": [
+          {
+            "value": "technical",
+            "label": {
+              "$t": "category.technical"
+            }
+          },
+          {
+            "value": "account",
+            "label": {
+              "$t": "category.account"
+            }
+          },
+          {
+            "value": "billing",
+            "label": {
+              "$t": "category.billing"
+            }
+          }
+        ]
+      },
+      {
+        "key": "summary",
+        "type": "text",
+        "label": {
+          "$t": "summary"
+        },
+        "required": true,
+        "minLength": 10,
+        "maxLength": 200
+      },
+      {
+        "key": "details",
+        "type": "textarea",
+        "label": {
+          "$t": "details"
+        },
+        "required": true,
+        "minLength": 20,
+        "maxLength": 5000
+      },
+      {
+        "key": "impact",
+        "type": "radio",
+        "label": {
+          "$t": "impact"
+        },
+        "required": true,
+        "options": [
+          {
+            "value": "blocked",
+            "label": {
+              "$t": "impact.blocked"
+            }
+          },
+          {
+            "value": "limited",
+            "label": {
+              "$t": "impact.limited"
+            }
+          },
+          {
+            "value": "question",
+            "label": {
+              "$t": "impact.question"
+            }
+          }
+        ]
+      },
+      {
+        "key": "invoiceReference",
+        "type": "text",
+        "label": {
+          "$t": "invoiceReference"
+        },
+        "maxLength": 100
+      }
+    ]
+  },
+  "logic": {
+    "rules": [
+      {
+        "target": "invoiceReference",
+        "kind": "visible",
+        "cel": "category == \"billing\""
+      },
+      {
+        "target": "invoiceReference",
+        "kind": "required",
+        "cel": "category == \"billing\""
+      }
+    ]
+  },
+  "layouts": [
+    {
+      "name": "web",
+      "nodes": [
+        {
+          "kind": "field",
+          "path": "intro"
+        },
+        {
+          "kind": "section",
+          "label": {
+            "$t": "section.1"
+          },
+          "children": [
+            {
+              "kind": "field",
+              "path": "fullName"
+            },
+            {
+              "kind": "field",
+              "path": "email"
+            },
+            {
+              "kind": "field",
+              "path": "product"
+            },
+            {
+              "kind": "field",
+              "path": "category"
+            },
+            {
+              "kind": "field",
+              "path": "summary"
+            },
+            {
+              "kind": "field",
+              "path": "details"
+            },
+            {
+              "kind": "field",
+              "path": "impact"
+            },
+            {
+              "kind": "field",
+              "path": "invoiceReference"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "i18n": {
+    "defaultLocale": "en",
+    "messages": {
+      "en": {
+        "intro": "Describe the issue and its impact. Do not include passwords or secrets.",
+        "section.1": "Contact and issue",
+        "fullName": "Full name",
+        "email": "Email address",
+        "product": "Product or service",
+        "category": "Issue category",
+        "category.technical": "Technical problem",
+        "category.account": "Account access",
+        "category.billing": "Billing",
+        "summary": "Short summary",
+        "details": "Details and steps to reproduce",
+        "impact": "Business impact",
+        "impact.blocked": "Work is blocked",
+        "impact.limited": "Work is affected",
+        "impact.question": "General question",
+        "invoiceReference": "Invoice reference"
+      },
+      "de": {
+        "intro": "Beschreiben Sie das Problem und seine Auswirkungen. Geben Sie keine Passwörter oder Geheimnisse an.",
+        "section.1": "Kontakt und Problem",
+        "fullName": "Vor- und Nachname",
+        "email": "E-Mail-Adresse",
+        "product": "Produkt oder Dienstleistung",
+        "category": "Problemkategorie",
+        "category.technical": "Technisches Problem",
+        "category.account": "Kontozugriff",
+        "category.billing": "Rechnung",
+        "summary": "Kurze Zusammenfassung",
+        "details": "Details und Schritte zur Reproduktion",
+        "impact": "Geschäftliche Auswirkungen",
+        "impact.blocked": "Arbeit blockiert",
+        "impact.limited": "Arbeit beeinträchtigt",
+        "impact.question": "Allgemeine Frage",
+        "invoiceReference": "Rechnungsreferenz"
+      },
+      "fr": {
+        "intro": "Décrivez le problème et son impact. Ne communiquez aucun mot de passe ni secret.",
+        "section.1": "Contact et problème",
+        "fullName": "Prénom et nom",
+        "email": "Adresse e-mail",
+        "product": "Produit ou service",
+        "category": "Catégorie du problème",
+        "category.technical": "Problème technique",
+        "category.account": "Accès au compte",
+        "category.billing": "Facturation",
+        "summary": "Résumé",
+        "details": "Détails et étapes pour reproduire",
+        "impact": "Impact sur l’activité",
+        "impact.blocked": "Travail bloqué",
+        "impact.limited": "Travail perturbé",
+        "impact.question": "Question générale",
+        "invoiceReference": "Référence de facture"
+      }
+    }
+  }
+}

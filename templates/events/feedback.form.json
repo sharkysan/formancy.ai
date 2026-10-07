@@ -1,0 +1,195 @@
+{
+  "specVersion": "2",
+  "id": "events-feedback",
+  "title": "Event feedback",
+  "model": {
+    "fields": [
+      {
+        "key": "intro",
+        "type": "static",
+        "label": {
+          "$t": "intro"
+        }
+      },
+      {
+        "key": "eventName",
+        "type": "text",
+        "label": {
+          "$t": "eventName"
+        },
+        "required": true,
+        "maxLength": 160
+      },
+      {
+        "key": "overall",
+        "type": "radio",
+        "label": {
+          "$t": "overall"
+        },
+        "required": true,
+        "options": [
+          {
+            "value": "poor",
+            "label": {
+              "$t": "overall.poor"
+            }
+          },
+          {
+            "value": "fair",
+            "label": {
+              "$t": "overall.fair"
+            }
+          },
+          {
+            "value": "good",
+            "label": {
+              "$t": "overall.good"
+            }
+          },
+          {
+            "value": "excellent",
+            "label": {
+              "$t": "overall.excellent"
+            }
+          }
+        ]
+      },
+      {
+        "key": "mostUseful",
+        "type": "textarea",
+        "label": {
+          "$t": "mostUseful"
+        },
+        "maxLength": 1500
+      },
+      {
+        "key": "improvements",
+        "type": "textarea",
+        "label": {
+          "$t": "improvements"
+        },
+        "maxLength": 1500
+      },
+      {
+        "key": "followUp",
+        "type": "checkbox",
+        "label": {
+          "$t": "followUp"
+        }
+      },
+      {
+        "key": "contactEmail",
+        "type": "text",
+        "label": {
+          "$t": "contactEmail"
+        },
+        "format": "email",
+        "maxLength": 254
+      }
+    ]
+  },
+  "logic": {
+    "rules": [
+      {
+        "target": "contactEmail",
+        "kind": "visible",
+        "cel": "followUp == true"
+      },
+      {
+        "target": "contactEmail",
+        "kind": "required",
+        "cel": "followUp == true"
+      }
+    ]
+  },
+  "layouts": [
+    {
+      "name": "web",
+      "nodes": [
+        {
+          "kind": "field",
+          "path": "intro"
+        },
+        {
+          "kind": "section",
+          "label": {
+            "$t": "section.1"
+          },
+          "children": [
+            {
+              "kind": "field",
+              "path": "eventName"
+            },
+            {
+              "kind": "field",
+              "path": "overall"
+            },
+            {
+              "kind": "field",
+              "path": "mostUseful"
+            },
+            {
+              "kind": "field",
+              "path": "improvements"
+            },
+            {
+              "kind": "field",
+              "path": "followUp"
+            },
+            {
+              "kind": "field",
+              "path": "contactEmail"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "i18n": {
+    "defaultLocale": "en",
+    "messages": {
+      "en": {
+        "intro": "Share feedback about the event and suggestions for next time.",
+        "section.1": "Event experience",
+        "eventName": "Event name",
+        "overall": "Overall rating",
+        "overall.poor": "Poor",
+        "overall.fair": "Fair",
+        "overall.good": "Good",
+        "overall.excellent": "Excellent",
+        "mostUseful": "What was most useful? (optional)",
+        "improvements": "What should change? (optional)",
+        "followUp": "Please contact me about my feedback",
+        "contactEmail": "Contact email"
+      },
+      "de": {
+        "intro": "Geben Sie Feedback zur Veranstaltung und Anregungen für das nächste Mal.",
+        "section.1": "Veranstaltungserlebnis",
+        "eventName": "Name der Veranstaltung",
+        "overall": "Gesamtbewertung",
+        "overall.poor": "Schlecht",
+        "overall.fair": "Mittelmässig",
+        "overall.good": "Gut",
+        "overall.excellent": "Ausgezeichnet",
+        "mostUseful": "Was war besonders hilfreich? (optional)",
+        "improvements": "Was sollte sich ändern? (optional)",
+        "followUp": "Bitte kontaktieren Sie mich zu meinem Feedback",
+        "contactEmail": "Kontakt-E-Mail"
+      },
+      "fr": {
+        "intro": "Partagez votre avis sur l’événement et vos suggestions pour la prochaine édition.",
+        "section.1": "Votre expérience",
+        "eventName": "Nom de l’événement",
+        "overall": "Évaluation globale",
+        "overall.poor": "Mauvaise",
+        "overall.fair": "Moyenne",
+        "overall.good": "Bonne",
+        "overall.excellent": "Excellente",
+        "mostUseful": "Qu’avez-vous trouvé le plus utile ? (facultatif)",
+        "improvements": "Que faudrait-il changer ? (facultatif)",
+        "followUp": "Veuillez me contacter au sujet de mon avis",
+        "contactEmail": "E-mail de contact"
+      }
+    }
+  }
+}

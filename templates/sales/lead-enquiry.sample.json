@@ -1,0 +1,9 @@
+{
+  "fullName": "Alex Example",
+  "email": "alex@example.com",
+  "company": "Example Studio",
+  "contactMethod": "phone",
+  "phone": "+41 00 000 00 00",
+  "interest": "services",
+  "message": "We need to replace a manual registration workflow."
+}

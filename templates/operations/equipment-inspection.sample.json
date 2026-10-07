@@ -1,0 +1,9 @@
+{
+  "inspector": "Alex Example",
+  "assetId": "DEMO-ASSET-001",
+  "location": "Example Office",
+  "inspectionDate": "2026-10-06",
+  "condition": "followup",
+  "findings": "A loose external cover requires a qualified inspection.",
+  "followUpOwner": "Morgan Example"
+}

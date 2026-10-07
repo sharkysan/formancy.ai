@@ -1,0 +1,240 @@
+{
+  "specVersion": "2",
+  "id": "sales-quotation-request",
+  "title": "Quotation request",
+  "model": {
+    "fields": [
+      {
+        "key": "intro",
+        "type": "static",
+        "label": {
+          "$t": "intro"
+        }
+      },
+      {
+        "key": "fullName",
+        "type": "text",
+        "label": {
+          "$t": "fullName"
+        },
+        "required": true,
+        "maxLength": 160
+      },
+      {
+        "key": "email",
+        "type": "text",
+        "label": {
+          "$t": "email"
+        },
+        "required": true,
+        "format": "email",
+        "maxLength": 254
+      },
+      {
+        "key": "company",
+        "type": "text",
+        "label": {
+          "$t": "company"
+        },
+        "required": true,
+        "maxLength": 160
+      },
+      {
+        "key": "scope",
+        "type": "textarea",
+        "label": {
+          "$t": "scope"
+        },
+        "required": true,
+        "minLength": 30,
+        "maxLength": 4000
+      },
+      {
+        "key": "targetDate",
+        "type": "date",
+        "label": {
+          "$t": "targetDate"
+        }
+      },
+      {
+        "key": "budgetKnown",
+        "type": "checkbox",
+        "label": {
+          "$t": "budgetKnown"
+        }
+      },
+      {
+        "key": "budget",
+        "type": "number",
+        "label": {
+          "$t": "budget"
+        },
+        "min": 0,
+        "max": 1000000000
+      },
+      {
+        "key": "currency",
+        "type": "select",
+        "label": {
+          "$t": "currency"
+        },
+        "options": [
+          {
+            "value": "CHF",
+            "label": {
+              "$t": "currency.CHF"
+            }
+          },
+          {
+            "value": "EUR",
+            "label": {
+              "$t": "currency.EUR"
+            }
+          },
+          {
+            "value": "USD",
+            "label": {
+              "$t": "currency.USD"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "logic": {
+    "rules": [
+      {
+        "target": "budget",
+        "kind": "visible",
+        "cel": "budgetKnown == true"
+      },
+      {
+        "target": "budget",
+        "kind": "required",
+        "cel": "budgetKnown == true"
+      },
+      {
+        "target": "currency",
+        "kind": "visible",
+        "cel": "budgetKnown == true"
+      },
+      {
+        "target": "currency",
+        "kind": "required",
+        "cel": "budgetKnown == true"
+      }
+    ]
+  },
+  "layouts": [
+    {
+      "name": "web",
+      "nodes": [
+        {
+          "kind": "field",
+          "path": "intro"
+        },
+        {
+          "kind": "section",
+          "label": {
+            "$t": "section.1"
+          },
+          "children": [
+            {
+              "kind": "field",
+              "path": "fullName"
+            },
+            {
+              "kind": "field",
+              "path": "email"
+            },
+            {
+              "kind": "field",
+              "path": "company"
+            },
+            {
+              "kind": "field",
+              "path": "scope"
+            },
+            {
+              "kind": "field",
+              "path": "targetDate"
+            }
+          ]
+        },
+        {
+          "kind": "section",
+          "label": {
+            "$t": "section.2"
+          },
+          "children": [
+            {
+              "kind": "field",
+              "path": "budgetKnown"
+            },
+            {
+              "kind": "field",
+              "path": "budget"
+            },
+            {
+              "kind": "field",
+              "path": "currency"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "i18n": {
+    "defaultLocale": "en",
+    "messages": {
+      "en": {
+        "intro": "Describe the scope and timing for an indicative quotation.",
+        "section.1": "Contact and scope",
+        "fullName": "Full name",
+        "email": "Email address",
+        "company": "Company",
+        "scope": "Requested work or products",
+        "targetDate": "Desired delivery date (optional)",
+        "section.2": "Budget",
+        "budgetKnown": "I can provide an indicative budget",
+        "budget": "Indicative budget",
+        "currency": "Currency",
+        "currency.CHF": "CHF",
+        "currency.EUR": "EUR",
+        "currency.USD": "USD"
+      },
+      "de": {
+        "intro": "Beschreiben Sie Umfang und Termin für eine unverbindliche Offerte.",
+        "section.1": "Kontakt und Umfang",
+        "fullName": "Vor- und Nachname",
+        "email": "E-Mail-Adresse",
+        "company": "Firma",
+        "scope": "Gewünschte Leistungen oder Produkte",
+        "targetDate": "Gewünschter Liefertermin (optional)",
+        "section.2": "Budget",
+        "budgetKnown": "Ich kann ein ungefähres Budget angeben",
+        "budget": "Ungefähres Budget",
+        "currency": "Währung",
+        "currency.CHF": "CHF",
+        "currency.EUR": "EUR",
+        "currency.USD": "USD"
+      },
+      "fr": {
+        "intro": "Précisez le périmètre et le calendrier pour un devis indicatif.",
+        "section.1": "Contact et périmètre",
+        "fullName": "Prénom et nom",
+        "email": "Adresse e-mail",
+        "company": "Entreprise",
+        "scope": "Prestations ou produits souhaités",
+        "targetDate": "Date de livraison souhaitée (facultatif)",
+        "section.2": "Budget",
+        "budgetKnown": "Je peux indiquer un budget estimatif",
+        "budget": "Budget estimatif",
+        "currency": "Devise",
+        "currency.CHF": "CHF",
+        "currency.EUR": "EUR",
+        "currency.USD": "USD"
+      }
+    }
+  }
+}

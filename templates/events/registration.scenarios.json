@@ -1,0 +1,76 @@
+[
+  {
+    "name": "meal is required when the branch applies",
+    "changes": {
+      "meal": ""
+    },
+    "valid": false,
+    "errors": {
+      "meal": [
+        "required"
+      ]
+    }
+  },
+  {
+    "name": "switching off meal clears its branch",
+    "changes": {
+      "attendance": "online"
+    },
+    "valid": true,
+    "visible": {
+      "meal": false
+    },
+    "absent": [
+      "meal"
+    ]
+  },
+  {
+    "name": "billingAddress is required when the branch applies",
+    "changes": {
+      "billingAddress": ""
+    },
+    "valid": false,
+    "errors": {
+      "billingAddress": [
+        "required"
+      ]
+    }
+  },
+  {
+    "name": "switching off billingAddress clears its branch",
+    "changes": {
+      "invoiceNeeded": false
+    },
+    "valid": true,
+    "visible": {
+      "billingAddress": false
+    },
+    "absent": [
+      "billingAddress"
+    ]
+  },
+  {
+    "name": "the required fullName cannot be omitted",
+    "changes": {
+      "fullName": null
+    },
+    "valid": false,
+    "errors": {
+      "fullName": [
+        "required"
+      ]
+    }
+  },
+  {
+    "name": "an invalid email is rejected",
+    "changes": {
+      "email": "invalid-address"
+    },
+    "valid": false,
+    "errors": {
+      "email": [
+        "email"
+      ]
+    }
+  }
+]

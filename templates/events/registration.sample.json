@@ -1,0 +1,10 @@
+{
+  "fullName": "Alex Example",
+  "email": "alex@example.com",
+  "organisation": "Example Studio",
+  "attendance": "onsite",
+  "meal": "vegetarian",
+  "accessNeeds": "Please provide step-free access.",
+  "invoiceNeeded": true,
+  "billingAddress": "Example Studio, Example Street 1, 8000 Example City"
+}

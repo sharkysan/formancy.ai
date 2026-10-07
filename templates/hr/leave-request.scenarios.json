@@ -1,0 +1,63 @@
+[
+  {
+    "name": "leave cannot end before it starts",
+    "changes": {
+      "endDate": "2026-12-06"
+    },
+    "valid": false,
+    "errors": {
+      "endDate": [
+        "date_order"
+      ]
+    }
+  },
+  {
+    "name": "otherReason is required when the branch applies",
+    "changes": {
+      "otherReason": ""
+    },
+    "valid": false,
+    "errors": {
+      "otherReason": [
+        "required"
+      ]
+    }
+  },
+  {
+    "name": "switching off otherReason clears its branch",
+    "changes": {
+      "leaveType": "holiday"
+    },
+    "valid": true,
+    "visible": {
+      "otherReason": false
+    },
+    "absent": [
+      "otherReason"
+    ]
+  },
+  {
+    "name": "the required fullName cannot be omitted",
+    "changes": {
+      "fullName": null
+    },
+    "valid": false,
+    "errors": {
+      "fullName": [
+        "required"
+      ]
+    }
+  },
+  {
+    "name": "an invalid email is rejected",
+    "changes": {
+      "email": "invalid-address"
+    },
+    "valid": false,
+    "errors": {
+      "email": [
+        "email"
+      ]
+    }
+  }
+]

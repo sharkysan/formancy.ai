@@ -1,0 +1,51 @@
+[
+  {
+    "name": "phone is required when the branch applies",
+    "changes": {
+      "phone": ""
+    },
+    "valid": false,
+    "errors": {
+      "phone": [
+        "required"
+      ]
+    }
+  },
+  {
+    "name": "switching off phone clears its branch",
+    "changes": {
+      "contactMethod": "email"
+    },
+    "valid": true,
+    "visible": {
+      "phone": false
+    },
+    "absent": [
+      "phone"
+    ]
+  },
+  {
+    "name": "the required fullName cannot be omitted",
+    "changes": {
+      "fullName": null
+    },
+    "valid": false,
+    "errors": {
+      "fullName": [
+        "required"
+      ]
+    }
+  },
+  {
+    "name": "an invalid email is rejected",
+    "changes": {
+      "email": "invalid-address"
+    },
+    "valid": false,
+    "errors": {
+      "email": [
+        "email"
+      ]
+    }
+  }
+]

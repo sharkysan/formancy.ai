@@ -123,3 +123,17 @@ conformance claim.
 The expression evaluator passes 586 of 704 in-scope CEL specification cases.
 The 118 failures are enumerated rather than averaged away, because a percentage
 would let a reader assume their expressions are in the passing set.
+
+## Starter templates
+
+`apps/docs/src/templates.test.ts` checks catalogue/file agreement, schema validity,
+engine compilation, expression checks and every referenced translation. It executes
+fictional samples and scenario changes in client and server modes, checking exact
+errors, visibility, recalculated values and removed answers. This covers the stated
+examples rather than proving all possible paths or domain suitability.
+
+The site and playground suites exercise discovery, translated previews and editor
+links. `scripts/template-browser-test.mjs`, called by `pnpm test:browser`, checks the
+built `/templates/` page on phone and desktop widths, modal focus restoration, real
+JSON downloads and navigation into the selected template and locale. The composed
+build refuses a missing gallery HTML file or a sitemap that omits the page.

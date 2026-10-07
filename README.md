@@ -181,6 +181,16 @@ submitted. Switch language or theme without reloading.
   the visitor's browser and verified with your own key, not a captcha service.
 - **Apache-2.0, all of it.** The spec, engine, renderers, builder and backend.
 
+## Start from a template
+
+The [starter collection](./templates/README.md) covers HR, sales, customer service,
+events, operations and healthcare administration. Each template is a plain JSON
+form with English, Swiss High German and French text, a fictional sample and
+executable behaviour cases. Browse [Templates](https://formancy.ai/templates/)
+to preview or download a form, then open it in the playground to edit it and
+try both renderers. You can also copy its `*.form.json` straight into your app.
+The forms use frozen spec version 2 and need no external services.
+
 ## Integrate a form into your app
 
 Install the renderer for your framework:
