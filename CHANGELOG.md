@@ -10,6 +10,58 @@ later.
 
 ## Unreleased
 
+**A form can be checked against examples now, by anybody.** A condition type-checks and
+is still the wrong business rule: `visible: leaveType == 'other'` and
+`visible: leaveType != 'other'` are both valid CEL, both compile, both satisfy every
+gate here — and one of them asks a question nobody should be asked. The difference is
+not in the document; it is between the document and what somebody meant, and no amount
+of checking the document can see it.
+
+An example with its answer written down can. This repository has had those since the
+starter templates shipped — `*.scenarios.json` beside each form — and **the runner
+lived inside one test file**, as an interface and twenty lines of `expect`. So the
+product's own answer to "your condition type-checks and is still wrong" was a private
+helper: not available to a form author, not to a consumer's CI, not to an agent about to
+publish.
+
+`runScenarios` is in `@formancy/core` now. It **reports rather than asserts**, because
+the caller is sometimes a test and sometimes a panel, and a panel cannot be built out of
+`expect` — a failure says *"otherReason: expected to be hidden, and it is visible"*
+rather than that something failed. It runs the real engine in the mode asked for, which
+matters: `server` is what the publish gate and the submission endpoint run, and a
+scenario that passes in one mode and fails in the other is the client/server drift this
+product exists to prevent. A scenario can pin validity, error codes, visibility, values
+and **absence** — four rather than two, because validity alone cannot tell a cleared
+branch from one that was never filled, which is the whole of `clearOnHide`. A scenario
+naming a path the form does not have **fails**, rather than quietly checking nothing,
+which is how a renamed field leaves its scenarios behind.
+
+The eighteen starter templates stopped having their own runner and go through this one,
+which is both the migration and the proof: about ninety scenarios that passed before
+pass after.
+
+**`@formancy/core` is now over its byte budget — 18.7 kB against a stated 18 — and that
+is reported rather than quietly raised.** A browser rendering a form never runs a
+scenario, so the obvious fix was a second entry point; it was tried and reverted,
+because `tsdown` code-splits a two-entry build and `dist/index.mjs` then measures 2.8 kB
+of re-exports. A measurement that improves because the build changed shape is worse than
+a number over budget. The fix is to measure an entry point's dependency closure rather
+than one file, which is a change to the guard and not to the code.
+
+Six mutations, each watched to redden its own case. A seventh reddened nothing and found
+a defensive copy guarding against something the value store already prevents — it writes
+immutably — so the copy was deleted rather than tested. And the bundle guard had to be
+rewritten: it carried one regular expression per package including whether that row's
+figure was in bold, so a number going over budget and gaining a `**` made it report "no
+figure for @formancy/core in §9.3" — true about its own pattern, false about the
+document. It reads the table row now
+([0110](docs/decisions/0110-a-form-is-checked-against-examples.md)).
+
+**What is not here**: saving a scenario in a builder, rerunning it after an edit and
+showing which ones stopped holding. That is the half somebody touches, and this is the
+part both builders and an MCP tool have to agree about, in the one place they can share
+it.
+
 **A model's edit is now shown before it lands, in both builders and through MCP.**
 `authorForm` checks an answer as hard as anything here checks anything — parsed,
 validated against the spec's own JSON Schema, compiled by the real engine, every

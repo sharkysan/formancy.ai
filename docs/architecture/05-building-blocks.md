@@ -143,6 +143,16 @@ name — and `builtin-fixtures.ts` is generated from `fixtures/*.json` with the
 case list pinned in a test, so a case that silently stopped being embedded is
 caught.
 
+`core` also publishes `runScenarios`, which is the only answer this product has to a
+condition that type-checks and is still the wrong business rule: an example with its
+answer written down, run against the real engine in the mode asked for. It reports
+rather than asserts, because the caller is sometimes a test and sometimes a panel. It
+lives here rather than in a builder because a package is where the reason to change
+lives — this changes when the engine's verdict surface changes, not when a palette does
+— and the cost of that is in [§9.3](09-quality-requirements.md), where the bundle is
+now over its budget
+([0110](../decisions/0110-a-form-is-checked-against-examples.md)).
+
 ### `@formancy/builder-core` and `@formancy/builder-react`
 
 `builder-core` is the document engine: commands, undo/redo, and one rule that

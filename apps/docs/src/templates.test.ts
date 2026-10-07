@@ -4,20 +4,12 @@ import { join } from 'node:path'
 import { describe, expect, test } from 'vitest'
 import { validateSchema } from '@formancy/spec/validate'
 import type { FormSchema } from '@formancy/spec'
-import { createFormEngine, engineRefusal, expressionProblems, parsePath } from '@formancy/core'
+import { createFormEngine, engineRefusal, expressionProblems, runScenarios } from '@formancy/core'
+import type { Scenario } from '@formancy/core'
 
 const root = fileURLToPath(new URL('../../../templates/', import.meta.url))
 const read = <T>(path: string): T => JSON.parse(readFileSync(join(root, path), 'utf8')) as T
 interface Entry { id: string; area: string; schema: string; sample: string; scenarios: string }
-interface Scenario {
-  name: string
-  changes: Record<string, unknown>
-  valid: boolean
-  errors?: Record<string, string[]>
-  visible?: Record<string, boolean>
-  values?: Record<string, unknown>
-  absent?: string[]
-}
 const catalog = read<{ templates: Entry[] }>('catalog.json')
 const capabilities = { now: () => 1791244800000, today: () => '2026-10-06', random: () => 0.5 }
 
@@ -74,25 +66,31 @@ describe('starter template collection', () => {
         expect(engine.submit()).toEqual({ ok: true, errors: {} })
       })
 
-      for (const scenario of scenarios) {
-        test(`${entry.id}: ${scenario.name} (${mode})`, () => {
-          const engine = createFormEngine({ schema, initialValue: sample, mode, capabilities })
-          // Set values through the live engine: turning off a branch must clear
-          // what somebody already typed, not just hide an initially empty field.
-          for (const [path, value] of Object.entries(scenario.changes)) engine.setValue(parsePath(path), value)
-          const report = engine.validate()
-          expect(report.valid).toBe(scenario.valid)
-          expect(report.errors).toEqual(scenario.errors ?? {})
-          for (const [path, visible] of Object.entries(scenario.visible ?? {})) {
-            expect(engine.getFieldSnapshot(parsePath(path)).visible).toBe(visible)
-          }
-          for (const [path, value] of Object.entries(scenario.values ?? {})) {
-            expect(engine.getFieldSnapshot(parsePath(path)).value).toEqual(value)
-          }
-          const value = engine.value() as Record<string, unknown>
-          for (const path of scenario.absent ?? []) expect(value).not.toHaveProperty(path)
+      /*
+       * One runner, not two. This used to set values and compare the engine's
+       * answers inline, right here — which made the capability the product
+       * needs available to this file and to nobody else: not to a form author,
+       * not to a consumer's CI, not to an agent about to publish. It is
+       * `runScenarios` in `@formancy/core` now
+       * ([0110](../../../docs/decisions/0110-a-form-is-checked-against-examples.md)),
+       * and these eighteen templates are what exercises it.
+       */
+      test(`${entry.id}: every scenario still holds (${mode})`, () => {
+        const results = runScenarios(schema, scenarios, {
+          initialValue: sample,
+          mode,
+          capabilities,
         })
-      }
+
+        // Named, so a failure says which example stopped holding and how,
+        // rather than which index of an array returned false.
+        const broken = results
+          .filter((result) => !result.passed)
+          .map((result) => `${result.name}: ${result.failures.map((f) => f.detail).join(' ')}`)
+        expect(broken).toEqual([])
+        // A set that ran nothing would pass the line above.
+        expect(results).toHaveLength(scenarios.length)
+      })
     }
   }
 })
