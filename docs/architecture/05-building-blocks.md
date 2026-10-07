@@ -183,11 +183,24 @@ page into its neighbour and refuses a group a rule reads inside
 ([0089](../decisions/0089-a-page-is-unwrapped-into-its-neighbour.md)). A command that looks
 like a transposition of a layout one is worth checking twice for exactly this.
 
+It also holds what a **reviewed** edit means. `proposal.ts` is three things a
+model's answer has to pass through before it is a change to a document:
+`proposeEdit` holds the answer against the document it was written for and
+carries the change list `diffSchemas` gives and whether any of it costs the
+answers already collected; `applyProposal` refuses it when the form has moved
+underneath it, when it changes nothing, or when the session itself says no. A
+hash rather than a revision, because an undo-then-redo leaves a document
+exactly as it was. Both panes and `@formancy/mcp`'s `propose_form_edit` read
+those, so three surfaces cannot disagree about what counts as a change or when
+a proposal has gone stale
+([0109](../decisions/0109-an-ai-edit-is-reviewed-before-it-lands.md)).
+
 There are two builder interfaces over it now, and the split is the same one
 the renderers have: what decides anything is in `builder-core`, and a builder
 package is markup and a subscription. `@formancy/builder-angular` carries the
 structure tree — zoneless, `OnPush`, one signal per session, `revision()` as the
-whole subscription — and the rest of the panes remain React-only
+whole subscription — and the prompt pane, in the same idiom; the rest of the
+panes remain React-only
 ([0091](../decisions/0091-a-second-builder-is-a-binding.md)).
 
 `builder-react` is the interface: a structure tree, an arrangement tree, a

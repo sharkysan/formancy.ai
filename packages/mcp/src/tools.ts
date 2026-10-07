@@ -1,4 +1,4 @@
-import { authoringFacts, diffSchemas } from '@formancy/spec'
+import { authoringFacts, diffSchemas, schemaHash } from '@formancy/spec'
 import { validateSchema } from '@formancy/spec/validate'
 import type { Change, FormSchema } from '@formancy/spec'
 import { engineRefusal, expressionProblems } from '@formancy/core'
@@ -174,6 +174,16 @@ export async function publishForm(
   access: ServerAccess,
   path: string,
   document: unknown,
+  /**
+   * The schema hash the edit was based on, from `propose_form_edit` or
+   * `get_form`. Given, the published form is checked against it first.
+   *
+   * Opt-in, and the reason is the first publish: a new form has nothing to be
+   * based on, and requiring this would turn it into a fetch of something that
+   * is not there. So the unsafe path still exists, which is why the tool's
+   * description points at the safe one rather than leaving an agent to guess.
+   */
+  basedOn?: string,
 ): Promise<ToolResult> {
   const checked = validateForm(document)
   if (!checked.ok) {
@@ -184,10 +194,106 @@ export async function publishForm(
     }
   }
 
+  if (basedOn !== undefined) {
+    const current = await currentSchema(access, path)
+    if (!current.ok) return current.problem
+    if (current.hash !== basedOn) {
+      /*
+       * The lost update, and the one mistake here nobody sees until the form
+       * is wrong. A document is the WHOLE form, so publishing an edit based
+       * on an older version over a newer one discards that version's change
+       * entirely — and the publish succeeds, so nothing reports it.
+       */
+      return {
+        ok: false,
+        summary:
+          `Not published: "${path}" has changed since this edit was based on it, and publishing ` +
+          `the whole document would discard that change. Call get_form again, redo the edit ` +
+          `against what is there now, and publish with the new basedOn.`,
+        data: { basedOn, current: current.hash },
+      }
+    }
+  }
+
   return request(access, '/forms', {
     method: 'POST',
     body: JSON.stringify({ path, schema: document }),
   })
+}
+
+/**
+ * An edit held up against what is published, without publishing it.
+ *
+ * The MCP half of a builder's review step. `validate_form` says a document
+ * works; it does not say that the rewrite dropped an option somebody has
+ * already chosen, and an agent reading only its own two documents cannot tell
+ * either. This fetches what is live, diffs against it, and hands back the
+ * change list and the hash — so the agent can put *that* in front of a person
+ * rather than "I updated your form", and then publish with the hash so the
+ * edit cannot land on a version it was never written against
+ * ([0109](../../../docs/decisions/0109-an-ai-edit-is-reviewed-before-it-lands.md)).
+ */
+export async function proposeFormEdit(
+  access: ServerAccess,
+  path: string,
+  document: unknown,
+): Promise<ToolResult> {
+  const checked = validateForm(document)
+  if (!checked.ok) {
+    // A change list for a document that cannot be published is a list of
+    // things that will not happen.
+    return {
+      ok: false,
+      summary: `Nothing to review, because the document would not have worked. ${checked.summary}`,
+      data: checked.data,
+    }
+  }
+
+  const current = await currentSchema(access, path)
+  if (!current.ok) return current.problem
+
+  const changes = diffSchemas(current.schema, document as FormSchema)
+  const worst = severityOf(changes)
+
+  return {
+    ok: true,
+    summary:
+      changes.length === 0
+        ? `No change: "${path}" is already this document. Nothing to publish.`
+        : `${String(changes.length)} change(s) to "${path}", worst severity ${worst}. ${ADVICE[worst]} ` +
+          `Show these to the person before publishing, then publish with basedOn=${current.hash}.`,
+    data: { severity: worst, changes, basedOn: current.hash },
+  }
+}
+
+/** What the server currently has for a path, and its hash. */
+async function currentSchema(
+  access: ServerAccess,
+  path: string,
+): Promise<
+  { ok: true; schema: FormSchema; hash: string } | { ok: false; problem: ToolResult }
+> {
+  const fetched = await getForm(access, path)
+  if (!fetched.ok) return { ok: false, problem: fetched }
+
+  const schema = (fetched.data as { schema?: unknown } | undefined)?.schema
+  const valid = validateSchema(schema)
+  if (!valid.valid) {
+    // The published form does not validate against this reader's spec: an
+    // older client against a newer document. Said plainly rather than
+    // compared anyway, which would report nonsense as a change list.
+    return {
+      ok: false,
+      problem: {
+        ok: false,
+        summary:
+          `The form published at "${path}" is not a document this version of the tools can read, ` +
+          `so an edit cannot be compared against it. Upgrade the tools to the server's spec version.`,
+      },
+    }
+  }
+
+  return { ok: true, schema: schema as FormSchema, hash: schemaHash(schema as FormSchema) }
 }
 
 export async function listForms(access: ServerAccess): Promise<ToolResult> {

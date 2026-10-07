@@ -840,6 +840,42 @@ forgotten: a snapshot is a file somebody updates when it goes red, which is why 
 baselines were refused for the same reason
 ([0102](../decisions/0102-what-jsdom-cannot-see-is-checked-in-a-browser.md)).
 
+### D10. A form is changed by a model and nobody reads what it changed
+
+*How it arises:* a person describes a change in words and a model answers with a whole
+new document. Everything checkable is checked — parsed, validated against the spec's own
+JSON Schema, compiled by the engine, every expression type-checked, and the model told
+what was wrong and asked again ([0056](../decisions/0056-agents-get-the-checks.md)).
+**Valid is not the same as wanted.** A document passes all of it with the condition
+inverted that somebody asked to loosen, a field renamed whose answers are already in a
+database, an option withdrawn that submissions already carry, or a bound the model
+rounded while doing something else.
+
+*Severity:* a form that is wrong in a way its author believes is right, which is worse
+than one that is visibly broken. The edits above are all **lossy** rather than
+breaking, so nothing downstream refuses them: drafts rebind, publishing succeeds, and
+the first signal is a submission that went somewhere unexpected or an answer that no
+longer has a field. The author's own instruction is what they will check it against,
+and the instruction was satisfied.
+
+*Constraint:* the answer is **shown rather than applied**. Both builder panes hold it
+as a proposal and list what it would do — the list `diffSchemas` gives, marked where it
+costs the answers already collected — and apply nothing until somebody presses the
+button ([0109](../decisions/0109-an-ai-edit-is-reviewed-before-it-lands.md)). The list
+is complete rather than a summary, which it was not until
+[0108](../decisions/0108-the-diff-reports-everything-that-changed.md): before that, an
+option withdrawn and three rules rewritten produced an empty change list, and a review
+screen built on it would have shown nothing while being read as proof. For an agent the
+same shape is `propose_form_edit`, which answers with the change list and publishes
+nothing.
+
+*Residual:* the review shows what changed, not whether it is what was asked for — that
+judgement is the person's and cannot be delegated to the thing being judged. It is a
+change list rather than a side-by-side of the two documents, so an edit's *shape* is
+visible and its wording is not. And pressing the button is one click: nothing here
+distinguishes a reviewer who read the list from one who did not, which is the limit of
+what software can assert about attention.
+
 ---
 
 ## E — Provenance is lost
@@ -928,13 +964,24 @@ optional by design — a script composes a document rather than opening one — 
 the guarantee is available to any client that opens a version, and the builder
 does.
 
+Two more clients declare now, and both are ones where the author is not
+watching. `@formancy/mcp`'s `publish_form` takes a `basedOn` hash and refuses
+when the server has moved past it, and `propose_form_edit` is what hands an
+agent that hash along with what its edit would cost. Inside a builder the same
+rule holds against the session rather than the server: an edit proposed by a
+model is refused if the document changed while it sat on screen
+([0109](../decisions/0109-an-ai-edit-is-reviewed-before-it-lands.md)).
+
 *Residual:* **a client that does not declare still overwrites silently**, and
-that is deliberate: a non-interactive publisher has no version to declare. A
-manufacturer whose process requires that no published form can be replaced
-unnoticed must either restrict publishing to clients that declare, or restrict
-`form.publish` to one role. There is also **no merge** — the refusal shows the
-difference and a person decides. Nothing detects two authors editing
-concurrently *before* one of them publishes.
+that is deliberate: a non-interactive publisher has no version to declare — and
+`basedOn` is optional for the same reason, since a form created for the first
+time has nothing to be based on. An agent can therefore still lose an update by
+omitting it, and what is done about that is the tool's description, which is
+the only lever the protocol gives. A manufacturer whose process requires that
+no published form can be replaced unnoticed must either restrict publishing to
+clients that declare, or restrict `form.publish` to one role. There is also
+**no merge** — the refusal shows the difference and a person decides. Nothing
+detects two authors editing concurrently *before* one of them publishes.
 
 ---
 

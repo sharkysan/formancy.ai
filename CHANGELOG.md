@@ -10,6 +10,65 @@ later.
 
 ## Unreleased
 
+**A model's edit is now shown before it lands, in both builders and through MCP.**
+`authorForm` checks an answer as hard as anything here checks anything — parsed,
+validated against the spec's own JSON Schema, compiled by the real engine, every
+expression type-checked, and the model told what was wrong and asked again. Then the
+React pane applied it.
+
+**Valid is not the same as wanted.** A document passes every one of those checks with
+the condition inverted that somebody asked to loosen, a field renamed whose answers are
+already in a database, or an option withdrawn that submissions already carry. Undo was
+the answer, and undo is the wrong shape: it puts a document back *after* the change has
+been read, previewed, and — in a shared session — published by somebody else in another
+tab.
+
+So: propose, show what it does, decide. The change list is `diffSchemas`, the same
+function the publish check, draft migration and the consumer CI gate read — one thing
+decides what changed rather than a review screen holding a second opinion. It is also
+why this follows the diff work in the same release: until that landed, the review screen
+for "the model rewrote your options and three rules" would have been an empty list.
+
+**`PromptPane` changed behaviour, and it is published.** An integrator who mounted it
+gets a review step they did not ask for. The `ask` prop, the attempts and the refusal
+reporting are unchanged; what is new is that nothing reaches the document until somebody
+presses the button, and that a proposal written against a form which has since changed
+is **refused** rather than applied over the change — a model answers with the whole
+document, so applying it would silently discard whatever was edited in between. Refused
+rather than merged: there is no three-way merge here and inventing one would be guessing
+at which edit wins.
+
+**Angular has a prompt pane at last.** It had none. `FormancyPromptPane` is the same
+feature in Angular's idiom — signals, zoneless, `OnPush` — over the same three functions
+in `@formancy/builder-core`, so the two builders cannot disagree about what counts as a
+change, when a proposal has gone stale, or whether an edit costs the answers already
+collected. The layering guard in `apps/docs` now pairs the two panes instead of excusing
+React's as one-sided.
+
+**A new MCP tool, and a safer publish.** `propose_form_edit` fetches the published form,
+diffs the edit against it, and answers with the change list and a `basedOn` hash —
+publishing nothing. `publish_form` takes that hash and refuses when the server has moved
+on. This is the mistake an agent makes that nobody sees until the form is wrong: a
+document is the *whole* form, so publishing an edit based on an older version discards
+whatever somebody published in between, and the publish succeeds so nothing reports it.
+`basedOn` is optional, because a form being created for the first time has nothing to be
+based on — so the unsafe path still exists and the tool's description is what points at
+the safe one.
+
+**And the playground shows it.** Neither pane was mounted by any application, so the
+React one was a feature in a package and nowhere a visitor could reach — the
+documented-and-inert failure this repository has shipped once. The playground now
+supplies a stand-in model exactly as it supplies a stand-in camera: the person plays the
+model through a prompt, and everything after the answer is real. A test drives the whole
+thing through the application — the model answers, the structure tree does not change,
+the person presses apply, the tree changes.
+
+Sixteen mutations, each watched to redden its own cases: five on the core rules, six
+across the two panes, five on the MCP tools. One guard had to be rewritten rather than
+updated — the layering test encoded "the prompt pane is React-only" twice, so a fact
+that changed left a guard insisting the old prose stay; it now derives both directions
+([0109](docs/decisions/0109-an-ai-edit-is-reviewed-before-it-lands.md)).
+
 **Two different forms used to diff to "nothing changed".** `diffSchemas` compared a
 field's identity, its type and its `required` flag — and nothing else. An option
 withdrawn from a radio, a `maxLength` halved, a `pattern` added, a `visible` rule

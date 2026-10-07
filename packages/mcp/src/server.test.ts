@@ -29,7 +29,7 @@ const textOf = (result: unknown): string =>
     .join('\n')
 
 describe('the tools a client can see', () => {
-  test('all seven, each with a description', async () => {
+  test('all eight, each with a description', async () => {
     const client = await connect()
 
     const { tools } = await client.listTools()
@@ -40,6 +40,7 @@ describe('the tools a client can see', () => {
       'get_form',
       'list_forms',
       'list_submissions',
+      'propose_form_edit',
       'publish_form',
       'validate_form',
     ])

@@ -6,6 +6,7 @@ import {
   getForm,
   listForms,
   listSubmissions,
+  proposeFormEdit,
   publishForm,
   validateForm,
 } from './tools.js'
@@ -54,9 +55,18 @@ export const TOOL_DEFINITIONS = {
   diff_forms:
     'Compare two form documents and report what the change would do to submissions already ' +
     'collected: compatible, lossy, or breaking. Call this before publishing over an existing form.',
+  propose_form_edit:
+    'Hold an edit up against the form that is published, WITHOUT publishing it. Answers with ' +
+    'what the edit would do to submissions already collected, and with a basedOn hash. ' +
+    'Call this instead of publish_form whenever you are changing a form that already exists: ' +
+    'show the changes to the person, get their agreement, then publish_form with the basedOn ' +
+    'it gave you.',
   publish_form:
     'Publish a form document to a formancy server. Validates locally first and refuses to send ' +
-    'an invalid document, so the reason comes back as something to fix rather than as a 422.',
+    'an invalid document, so the reason comes back as something to fix rather than as a 422. ' +
+    'Pass basedOn when changing an existing form: a document is the WHOLE form, so publishing ' +
+    'one based on an older version silently discards whatever was published in between, and ' +
+    'the publish succeeds so nothing reports it.',
   list_forms: 'List the forms on the formancy server, with their current version.',
   get_form: 'Fetch one form document from the formancy server, with its version and schema hash.',
   list_submissions: 'List submissions for one form.',
@@ -99,6 +109,13 @@ function noServer(name: string): ToolResult {
  */
 const DOCUMENT = z.unknown().describe('A formancy form document (the JSON schema object).')
 const FORM_PATH = z.string().min(1).describe("The form's path, as it appears in its URL.")
+const BASED_ON = z
+  .string()
+  .optional()
+  .describe(
+    'The schema hash this edit was based on, from propose_form_edit or get_form. Given, the ' +
+      'publish is refused if the form has changed since.',
+  )
 
 export function createFormancyMcpServer(options: McpServerOptions = {}): McpServer {
   const server = new McpServer({ name: 'formancy', version: '0.1.0' })
@@ -124,16 +141,30 @@ export function createFormancyMcpServer(options: McpServerOptions = {}): McpServ
   )
 
   server.registerTool(
-    'publish_form',
+    'propose_form_edit',
     {
-      description: TOOL_DEFINITIONS.publish_form,
+      description: TOOL_DEFINITIONS.propose_form_edit,
       inputSchema: { path: FORM_PATH, document: DOCUMENT },
     },
     async ({ path, document }) =>
       respond(
         access === undefined
+          ? noServer('propose_form_edit')
+          : await proposeFormEdit(access, path, document),
+      ),
+  )
+
+  server.registerTool(
+    'publish_form',
+    {
+      description: TOOL_DEFINITIONS.publish_form,
+      inputSchema: { path: FORM_PATH, document: DOCUMENT, basedOn: BASED_ON },
+    },
+    async ({ path, document, basedOn }) =>
+      respond(
+        access === undefined
           ? noServer('publish_form')
-          : await publishForm(access, path, document),
+          : await publishForm(access, path, document, basedOn),
       ),
   )
 

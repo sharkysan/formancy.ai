@@ -152,6 +152,14 @@ describe('what the two builders each offer', () => {
       react: 'FormancyArrangeSurface',
       angular: 'FormancyArrangeSurface',
     },
+    {
+      // Was React-only, and this list said so. Angular got it when the pane
+      // grew a review step and the two had to agree about what reviewing is
+      // ([0109](../../../docs/decisions/0109-an-ai-edit-is-reviewed-before-it-lands.md)).
+      pane: 'describing a form in words',
+      react: 'PromptPane',
+      angular: 'FormancyPromptPane',
+    },
   ]
 
   /**
@@ -164,11 +172,6 @@ describe('what the two builders each offer', () => {
    * refers to a component by selector and cannot reach an unexported one.
    */
   const ONE_SIDED: ReadonlyArray<{ name: string; side: 'react' | 'angular'; why: string }> = [
-    {
-      name: 'PromptPane',
-      side: 'react',
-      why: 'Describing a form in words. Nothing about it is React-shaped; it has not been written for Angular, and the README says which pane that is.',
-    },
     {
       name: 'FormancyProperty',
       side: 'angular',
@@ -225,16 +228,31 @@ describe('what the two builders each offer', () => {
     expect(wrong).toEqual([])
   })
 
-  test('and the README does not call a pane React-only once it is not', () => {
-    // The sentence itself, held against the barrel: the only pane the prose may
-    // single out is one `REACT_ONLY` names.
+  test('and the README singles out a pane as React-only exactly when one is', () => {
+    /*
+     * Both directions, derived from the list above rather than from the name
+     * of the pane that used to be one.
+     *
+     * This guard was written when the prompt pane was React-only, and it said
+     * so twice — once in a regular expression and once in an assertion naming
+     * `PromptPane`. Then Angular got the pane, and what should have been a
+     * sentence to delete was a guard insisting the sentence stay. A guard that
+     * encodes today's answer rather than today's *question* has to be edited
+     * every time the answer moves, which is the moment somebody edits it
+     * wrongly.
+     */
     const readme = readFileSync(join(repo, 'README.md'), 'utf8')
     const singledOut = /The (.+?) — [^—]*? — is React-only\./.exec(readme)
+    const reactOnly = ONE_SIDED.filter(({ side }) => side === 'react')
 
-    expect(singledOut, 'the README stopped saying which pane is React-only').not.toBeNull()
-    expect(singledOut?.[1]).toBe('prompt pane')
-    expect(ONE_SIDED.filter(({ side }) => side === 'react').map(({ name }) => name)).toEqual([
-      'PromptPane',
-    ])
+    if (reactOnly.length === 0) {
+      expect(
+        singledOut?.[1],
+        'the README calls a pane React-only and the barrels say none is',
+      ).toBeUndefined()
+      return
+    }
+
+    expect(singledOut, 'a pane is React-only and the README no longer says which').not.toBeNull()
   })
 })

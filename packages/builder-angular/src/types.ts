@@ -8,6 +8,9 @@
  */
 export type {
   ArrangeDrop,
+  AskModel,
+  AuthoringResult,
+  EditProposal,
   BuilderSession,
   BuilderView,
   CatalogueFile,

@@ -209,3 +209,4 @@ listed under the sections they belong to above.
 | [0106](0106-one-shell-for-every-page-of-the-site.md) | One shell for every page of the site, and the two pages are compared in a browser | accepted |
 | [0107](0107-layout-text-is-read-in-the-engines-locale.md) | Layout text is read in the engine's locale, and the suite can mount in one | accepted |
 | [0108](0108-the-diff-reports-everything-that-changed.md) | The diff reports everything that changed, and never answers nothing | accepted |
+| [0109](0109-an-ai-edit-is-reviewed-before-it-lands.md) | An AI edit is reviewed before it lands, and a stale one is refused | accepted |

@@ -127,3 +127,84 @@ describe('switching which builder is on screen', () => {
     })
   })
 })
+
+/**
+ * The prompt pane is on screen, and it proposes rather than applies.
+ *
+ * `@formancy/builder-react` has exported `PromptPane` for a while and **no
+ * application mounted it** — the same shape as the Angular builder above, and
+ * noticed the same way. A feature that exists in a package and nowhere a
+ * visitor can reach is documented and inert, which is the failure this
+ * repository has already shipped once.
+ *
+ * So the playground supplies a stand-in model, exactly as it supplies a
+ * stand-in camera: the person plays the model and everything after the answer
+ * is real. What is pinned here is that the pane is reachable and that its
+ * review step is the one thing it must never skip
+ * ([0109](../../../docs/decisions/0109-an-ai-edit-is-reviewed-before-it-lands.md)).
+ */
+describe('describing a change in words', () => {
+  test('is offered in the builder, with a stand-in model', async () => {
+    render(<App />)
+    await builtWith('React')
+
+    // By accessible name, like everything else here: the label is the contract.
+    expect(screen.getByRole('textbox', { name: /Describe the form/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Write it' })).toBeTruthy()
+  })
+
+  test('and an answer is reviewed before anything lands', async () => {
+    /*
+     * The whole of 0109, end to end through the application. The stand-in
+     * model is `window.prompt`, so the test answers it — and then the
+     * document must be unchanged until somebody presses apply.
+     */
+    const user = userEvent.setup()
+    render(<App />)
+    await builtWith('React')
+
+    /*
+     * Asserted on the structure tree rather than on the JSON: the Build pane
+     * shows one editor body at a time, so the Schema view is not on screen
+     * here — and the tree is what somebody is actually looking at while they
+     * decide.
+     */
+    const tree = screen.getAllByRole('tree', { name: /structure/i })[0]!
+    const named = (): string[] =>
+      within(tree).getAllByRole('treeitem').map((item) => item.textContent ?? '')
+    expect(named().some((entry) => entry.includes('Telephone'))).toBe(false)
+
+    // Undo is the thing the old behaviour relied on. It must still be
+    // disabled after the model answers, because nothing has happened yet.
+    expect(undoButton().disabled).toBe(true)
+
+    vi.spyOn(window, 'prompt').mockReturnValue(
+      JSON.stringify({
+        specVersion: '2',
+        id: 'proposed',
+        title: 'Proposed',
+        model: { fields: [{ key: 'phone', type: 'text', label: 'Telephone' }] },
+      }),
+    )
+    await user.type(screen.getByRole('textbox', { name: /Describe the form/ }), 'add a phone number')
+    await user.click(screen.getByRole('button', { name: 'Write it' }))
+
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: /Review these changes/ })).toBeTruthy(),
+    )
+    // Proposed, not applied.
+    expect(named().some((entry) => entry.includes('Telephone'))).toBe(false)
+    expect(undoButton().disabled, 'something was applied before anybody agreed to it').toBe(true)
+
+    await user.click(screen.getByRole('button', { name: 'Apply these changes' }))
+
+    await waitFor(() => {
+      expect(
+        screen
+          .getAllByRole('treeitem')
+          .some((item) => (item.textContent ?? '').includes('Telephone')),
+      ).toBe(true)
+    })
+    expect(undoButton().disabled).toBe(false)
+  })
+})

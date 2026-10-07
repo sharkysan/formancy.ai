@@ -209,9 +209,9 @@ and `@formancy/builder-angular`, both published. What decides anything is in
 `@formancy/builder-core` and shared, so the two cannot offer different
 destinations for the same document
 ([0091](./docs/decisions/0091-a-second-builder-is-a-binding.md)). Both carry
-both trees, the property panel, the condition editor, the translations pane and
-the drop surface over the rendered form. The prompt pane — describing a form in
-words — is React-only.
+both trees, the property panel, the condition editor, the translations pane,
+the drop surface over the rendered form, and the prompt pane — describing a
+form in words, and reviewing what the answer does before it lands.
 
 ## How it fits your stack
 
@@ -330,11 +330,18 @@ nobody was told about.
 claude mcp add formancy -- npx -y @formancy/mcp
 ```
 
-Seven tools. Four of them — `describe_spec`, `validate_form`, `diff_forms`,
+Eight tools. Four of them — `describe_spec`, `validate_form`, `diff_forms`,
 and the checking half of `publish_form` — need **no server and no
 credentials**, so an agent can write a whole form and be told exactly what is
 wrong with it before anybody deploys anything. Set `FORMANCY_URL` and
 `FORMANCY_API_KEY` together to add publishing and reading submissions.
+
+Changing a form that already exists is two calls, not one. `propose_form_edit`
+holds the edit up against what is published and answers with what it would cost
+submissions already collected — then `publish_form` takes the hash it gave you
+and refuses if the form moved in between. A document is the whole form, so
+publishing one based on an older version silently reverts whatever somebody
+published while you were working.
 
 The point is not that the API is reachable by prompt. It is that a model
 writing a form is a model writing logic, and this is the one product category
