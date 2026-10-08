@@ -3,6 +3,7 @@ import { OPERATORS } from './conditions.js'
 import type { Condition, ConditionGroup, Operator } from './conditions.js'
 import { compileGroup } from './conditions.js'
 import { BUILDER_MESSAGES } from './messages.js'
+import type { BuilderText } from './messages.js'
 import { dataPathOf } from './navigate.js'
 import { flatten } from './tree.js'
 
@@ -78,6 +79,39 @@ function kindChoice(
     on,
     writes,
   }
+}
+
+/**
+ * A kind's words in the session's language: what the select offers, what a listed
+ * rule is called, and the sentence under it. `RULE_KIND_CHOICES` keeps its English
+ * for callers that read it; both builders read these
+ * ([0114](../../../docs/decisions/0114-the-builder-speaks-the-authors-language.md)).
+ */
+export function ruleKindLabel(kind: LogicRule['kind'], text: BuilderText): string {
+  return text(`rule.${kind}.label`)
+}
+
+export function ruleKindHint(kind: LogicRule['kind'], text: BuilderText): string {
+  return text(`rule.${kind}.hint`)
+}
+
+/** A comparison's words in the session's language. `OPERATORS` keeps its English. */
+export function operatorLabel(id: Operator, text: BuilderText): string {
+  return text(`operator.${id}`)
+}
+
+/**
+ * "Field", or "Field 2" once there is more than one comparison: a number on a
+ * single one is a number somebody has to wonder about. Both panels numbered their
+ * rows this way by hand.
+ */
+export function comparisonLabel(
+  part: 'field' | 'comparison' | 'value',
+  at: number,
+  count: number,
+  text: BuilderText,
+): string {
+  return count > 1 ? text(`logic.${part}.numbered`, { number: at + 1 }) : text(`logic.${part}`)
 }
 
 /** The kinds that may be written on this node, and nothing that would be refused. */

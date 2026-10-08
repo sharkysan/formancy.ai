@@ -10,6 +10,21 @@ later.
 
 ## Unreleased
 
+**The logic panel speaks the author's language in both builders.** What a rule does, the
+comparisons, the join, the numbered labels and every button come from the catalogue;
+the rule kinds and operators through `ruleKindLabel`, `ruleKindHint` and
+`operatorLabel`, which read the same ids `RULE_KIND_CHOICES` and `OPERATORS` take their
+English from, and the numbering — "Field", or "Field 2" once there are two — through
+`comparisonLabel`, which both panels had written by hand
+([0114](docs/decisions/0114-the-builder-speaks-the-authors-language.md)).
+
+**A rule's remove button said "Remove the visible rule on canton"**: `visible` is the
+format's id for the kind, not a word in any language a builder speaks. It names the rule
+by what it does now — "Remove the rule “Show this field when” on canton" — in both
+builders. A host or test that looked for the old name finds the new one. The check and
+calculation boxes show their examples in the session's language, and the Angular panel
+shows them at all.
+
 **The property editors speak the author's language, and the two options editors are one
 shape.** The panels are generated from the spec's JSON Schema, so most of what they show
 is the schema's own words; what is the builder's is in the choices and columns editors and

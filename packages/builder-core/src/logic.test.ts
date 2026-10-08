@@ -2,18 +2,24 @@ import { describe, expect, test } from 'vitest'
 import type { FormSchema } from '@formancy/spec'
 import {
   RULE_KIND_CHOICES,
+  comparisonLabel,
   composeRule,
   conditionOf,
   draftIsComplete,
   emptyRow,
   kindCarriesCondition,
   kindWrites,
+  operatorLabel,
   referencedMessages,
   rowTakesValue,
+  ruleKindHint,
+  ruleKindLabel,
   ruleKindsFor,
   ruleTargetFor,
 } from './logic.js'
 import { RULE_KINDS } from '@formancy/spec'
+import { BUILDER_MESSAGES_DE } from './messages-de.js'
+import { createBuilderText } from './messages.js'
 
 /**
  * What a builder offers when somebody writes a rule.
@@ -410,5 +416,28 @@ describe('how typed text is narrowed', () => {
     // like `8001 Zurich` a string. Without it the comparison would be against
     // NaN, which is false for everything including itself.
     expect(conditionOf({ field: 'postcode', operator: 'is', text: '8001 Zurich' }).value).toBe('8001 Zurich')
+  })
+})
+
+describe('the words a logic panel shows', () => {
+  const german = createBuilderText({ locale: 'de', messages: BUILDER_MESSAGES_DE })
+  const english = createBuilderText()
+
+  test('number a comparison only when there is more than one', () => {
+    // "Field 1" on a form with a single comparison is a number somebody has to
+    // wonder about; both panels numbered their rows this way by hand.
+    expect(comparisonLabel('field', 0, 1, english)).toBe('Field')
+    expect(comparisonLabel('comparison', 1, 2, english)).toBe('Comparison 2')
+    expect(comparisonLabel('value', 2, 3, german)).toBe(german('logic.value.numbered', { number: 3 }))
+  })
+
+  test('name kinds and comparisons in the session’s language, from the catalogue the tables read', () => {
+    expect(ruleKindLabel('visible', german)).toBe(german('rule.visible.label'))
+    expect(ruleKindHint('skip', german)).toBe(german('rule.skip.hint'))
+    expect(operatorLabel('isAnswered', german)).toBe(german('operator.isAnswered'))
+    // The English the tables still carry is the same words, not a second copy.
+    expect(ruleKindLabel('visible', english)).toBe(
+      RULE_KIND_CHOICES.find((choice) => choice.id === 'visible')?.label,
+    )
   })
 })

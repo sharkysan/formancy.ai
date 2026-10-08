@@ -233,7 +233,7 @@ describe('authoring a rule', () => {
 
     // "Remove" on its own is a button a screen reader cannot tell from the next
     // one, on a list where getting the wrong one deletes a rule.
-    expect(screen.getByRole('button', { name: /remove the visible rule on total/i })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Remove the rule “Show this field when” on total' })).toBeTruthy()
   })
 
   test('and removing one takes it out of the document', async () => {
@@ -241,7 +241,7 @@ describe('authoring a rule', () => {
     await click(screen.getByRole('button', { name: /add a rule/i }))
     await click(screen.getByRole('button', { name: /^add rule$/i }))
 
-    await click(screen.getByRole('button', { name: /remove the visible rule/i }))
+    await click(screen.getByRole('button', { name: /remove the rule “show this field when”/i }))
 
     expect(rulesOf(session)).toEqual([])
   })

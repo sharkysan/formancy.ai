@@ -111,9 +111,13 @@ export { builderView } from './view.js'
 export type { BuilderView, MoveTarget } from './view.js'
 export {
   RULE_KIND_CHOICES,
+  comparisonLabel,
   composeRule,
   conditionOf,
   draftIsComplete,
+  operatorLabel,
+  ruleKindHint,
+  ruleKindLabel,
   emptyRow,
   kindCarriesCondition,
   kindWrites,

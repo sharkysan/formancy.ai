@@ -233,8 +233,8 @@ rather than inline in English twice. Whole sentences per noun rather than a noun
 into a template, because German agrees an adjective with its noun; `Intl` decides
 plural forms and how a list is joined
 ([0114](../decisions/0114-the-builder-speaks-the-authors-language.md)). The structure tree,
-the arrangement pane and the property editors read it in both builders; the logic,
-translations, prompt and scenario panes have not moved yet. A property's own title and
+the arrangement pane, the property editors and the logic panel read it in both builders;
+the translations, prompt and scenario panes have not moved yet. A property's own title and
 description are the spec's JSON Schema's words and are not translated here.
 
 `spoken.ts` holds what a builder **says** after a command on the structure tree — the

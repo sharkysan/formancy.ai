@@ -22,6 +22,7 @@ import { FormancyBuilder } from './builder'
 import { FormancyLayoutPane } from './layout-pane'
 import { FormancyColumnsEditor } from './columns-editor'
 import { FormancyLayoutPropertyPanel } from './layout-property-panel'
+import { FormancyLogicPanel } from './logic-panel'
 import { FormancyOptionsEditor } from './options-editor'
 import { FormancyPropertyPanel } from './property-panel'
 
@@ -60,6 +61,8 @@ function shown(root: Element): string[] {
   const out: string[] = []
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
   for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
+    // Code is not language: a rule's CEL is shown as it is written.
+    if (node.parentElement?.closest('code') !== null) continue
     out.push(node.nodeValue ?? '')
   }
   for (const element of root.querySelectorAll('*')) {
@@ -356,10 +359,7 @@ describe('the property panels and their editors', () => {
     ]
   }
 
-  async function shownBy<T>(
-    component: Type<T>,
-    inputs: Record<string, unknown>,
-  ) {
+  async function shownBy<T>(component: Type<T>, inputs: Record<string, unknown>) {
     const view = await render(component, {
       componentInputs: inputs,
       providers: [provideZonelessChangeDetection()],
@@ -407,6 +407,76 @@ describe('the property panels and their editors', () => {
         'This grid',
         'No choices yet',
         'No columns configured',
+      ].filter((prefix) => !seen.some((text) => text.includes(prefix))),
+    ).toEqual([])
+  })
+})
+
+describe('the logic panel', () => {
+  const ruled: FormSchema = {
+    specVersion: '3',
+    id: 'order',
+    title: 'Order',
+    model: {
+      fields: [
+        { key: 'country', type: 'text', label: 'Country' },
+        { key: 'canton', type: 'text', label: 'Canton' },
+      ],
+    },
+    logic: { rules: [{ target: 'canton', kind: 'visible', cel: 'country == "CH"' }] },
+  }
+
+  test('shows nothing in English that the catalogue did not give it', async () => {
+    const session = createBuilderSession(ruled, { text: createBuilderText(pseudoLanguage()) })
+    const view = await render(FormancyLogicPanel, {
+      componentInputs: { session, keyPath: ['canton'] },
+      providers: [provideZonelessChangeDetection()],
+    })
+    await view.fixture.whenStable()
+    const user = userEvent.setup()
+    const root = view.container as Element
+    const settle = async (): Promise<void> => {
+      await view.fixture.whenStable()
+    }
+    const seen = shown(root)
+
+    await user.click(screen.getAllByRole('button').at(-1)!)
+    await settle()
+    await user.click(
+      screen
+        .getAllByRole('button')
+        .find((button) => button.textContent?.includes('Add a comparison'))!,
+    )
+    await settle()
+    seen.push(...shown(root))
+    const kind = root.querySelector('select')!
+    await user.selectOptions(kind, 'check')
+    await settle()
+    seen.push(...shown(root))
+    await user.selectOptions(kind, 'computed')
+    await settle()
+    seen.push(...shown(root))
+
+    const words = [
+      ruled.title,
+      ...flatten(ruled).flatMap((node) => [nameOf(ruled, node.def), node.def.key]),
+    ]
+    expect(untranslated(seen, words)).toEqual([])
+    expect(
+      [
+        'Rules',
+        'Remove the rule',
+        'What the rule does',
+        'Match',
+        'Field 2',
+        'Comparison 2',
+        'Remove comparison 2',
+        'Which check',
+        'email-not-taken',
+        'The calculation',
+        'Add rule',
+        'Show this field when',
+        'is not answered',
       ].filter((prefix) => !seen.some((text) => text.includes(prefix))),
     ).toEqual([])
   })
