@@ -142,6 +142,34 @@ still there, because a form being created for the first time has nothing to be
 based on. The two builders hold the same rule against a session rather than a
 server ([0109](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0109-an-ai-edit-is-reviewed-before-it-lands.md)).
 
+## What a tool says about itself
+
+Every tool carries annotations, which is the only thing a client has to decide
+whether a call needs your agreement before it happens. The five that need no server
+— `describe_spec`, `validate_form`, `diff_forms`, `check_scenarios` and the checking
+half of publishing — declare themselves read-only and closed-world, so a host can run
+them freely. `publish_form` declares that it writes, that it is **not** destructive
+(a published version is immutable, so a publish adds rather than overwrites) and that
+it is **not** idempotent (publishing twice makes two versions).
+
+Each answers with a structured result beside the prose — the same envelope every
+time: whether it worked, a sentence to read, and the part to act on. Refusals too,
+which is the answer you most need to act on.
+
+## Three prompts, for the three things you ask
+
+`build_a_form`, `change_a_form` and `embed_a_form`. They ship with the server, so
+they arrive with the connection rather than being documentation somebody has to find
+and paste, and they give the **order** rather than the tool names:
+
+- **Building** calls `describe_spec` first. A model that writes the document first
+  has already invented `type: "email"`, and the correction costs a turn. Scenarios
+  come last and are written from the description rather than from the rules just
+  written — otherwise they agree with whatever the rules happen to say.
+- **Changing** goes `get_form` → edit → `propose_form_edit` → show the person →
+  `publish_form` with the hash. Never straight to publish.
+- **Embedding** answers for one framework, not both.
+
 ## Connecting it to a server
 
 ```bash

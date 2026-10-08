@@ -153,6 +153,20 @@ lives — this changes when the engine's verdict surface changes, not when a pal
 now over its budget
 ([0110](../decisions/0110-a-form-is-checked-against-examples.md)).
 
+### `@formancy/mcp`
+
+Nine tools and three prompts over the packages above, and a deliberately thin
+wiring layer: every tool is a call into `tools.ts` and a conversion of the answer,
+because a use-case reachable only through a transport is a use-case nobody tests
+properly. Five of the tools need no server at all, which is what lets an agent write
+a whole form and be told what is wrong with it before anything is deployed.
+
+What the tools *say about themselves* is part of the product rather than metadata:
+the annotations are the only thing a client has to decide whether a call needs a
+person's agreement, the result envelope is one shape across all nine, and the prompts
+carry the **order** of operations, which is most of what an agent gets wrong
+([0112](../decisions/0112-the-mcp-server-says-what-its-tools-do.md)).
+
 ### `@formancy/builder-core` and `@formancy/builder-react`
 
 `builder-core` is the document engine: commands, undo/redo, and one rule that

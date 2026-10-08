@@ -10,6 +10,51 @@ later.
 
 ## Unreleased
 
+**The MCP server now says what each tool will do, answers in structure, and ships the
+order of operations.** Four things, three of which were wrong rather than merely absent.
+
+**Every tool carries annotations.** They are the only thing a client has to decide
+whether a call needs a person's agreement, and without them a tool defaults to
+`readOnlyHint: false`, `destructiveHint: true`, `openWorldHint: true` — so this server's
+local checks, which need no server and no credentials and change nothing anywhere, were
+every one of them advertised as potentially destructive calls into an open world. A host
+that auto-approves read-only tools and asks about the rest could not tell `validate_form`
+from `publish_form`, so it either asked about everything or asked about nothing. Now:
+`describe_spec`, `validate_form`, `diff_forms` and `check_scenarios` declare themselves
+read-only and closed-world; `publish_form` declares that it writes, that it is **not**
+destructive — a published version is immutable, so a publish adds rather than overwrites
+— and that it is **not** idempotent, since publishing twice makes two versions.
+
+**Every answer carries its structure beside the prose.** It used to be a sentence with
+JSON glued to the end, so a client wanting the data had to find the blank line and parse
+what came after. One envelope for all nine tools rather than a schema each — whether it
+worked, a sentence to read, the part to act on — because nine schemas would be nine
+places for `data` to drift from what the tool returns. Refusals are structured too: a
+refusal is the answer a client most needs to act on, and one arriving as prose alone
+makes that a reading-comprehension problem.
+
+**The server reported version `0.1.0` while the package was on 0.3.0.** A wrong
+statement in the one field a client uses to tell two installations apart, and exactly the
+hand-written number this repository keeps finding stale. It comes from the manifest now.
+
+**And three prompts, which is MCP's own answer to a skill pack.** `build_a_form`,
+`change_a_form` and `embed_a_form`, named for what somebody is doing rather than for the
+tools they use, and each giving the **order** — which is most of the value. Building
+calls `describe_spec` first, because a model that writes the document first has already
+invented `type: "email"`; its scenarios come last and are written from the description
+rather than from the rules just written, or they agree with whatever those rules happen
+to say. Changing goes `get_form` → edit → `propose_form_edit` → show the person →
+publish *with the hash*, never straight to publish. Embedding answers for one framework
+and not both, because a prompt that lists the alternative makes the model choose again
+having just been told. They ship with the server, so they arrive with the connection
+rather than being documentation somebody has to find and paste.
+
+Twelve mutations, each watched to redden its own case. One of them caught a case passing
+for the wrong reason: the test for "publish with the hash" asked whether `basedOn`
+appeared anywhere in the prompt, and removing the instruction left the word in an earlier
+sentence. It now looks for the two in one line
+([0112](docs/decisions/0112-the-mcp-server-says-what-its-tools-do.md)).
+
 **And a panel that says which example stopped holding.** The decision above published the runner and
 said plainly what it did not do; this is that half. Both builders carry a scenario panel
 now — `ScenarioPane` in React, `FormancyScenarioPane` in Angular — which reruns the

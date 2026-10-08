@@ -1,4 +1,6 @@
+import { createRequire } from 'node:module'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import type { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js'
 import { z } from 'zod'
 import {
   checkScenarios,
@@ -79,19 +81,99 @@ export const TOOL_DEFINITIONS = {
   list_submissions: 'List submissions for one form.',
 } as const
 
-/** MCP wants string content; a tool that answered with prose alone would throw
- *  away the part an agent can act on, so both travel. */
+/**
+ * The version this server reports.
+ *
+ * From the manifest, not typed. It said `0.1.0` while the package was on 0.3.0 —
+ * a wrong statement in the one field a client uses to tell two installations
+ * apart, and exactly the hand-written number this repository keeps finding
+ * stale.
+ *
+ * `createRequire` rather than a JSON import: `../package.json` resolves to the
+ * package root from both `src/server.ts` and `dist/index.mjs`, so the same line
+ * is right in a test and in the published package.
+ */
+export const PACKAGE_VERSION: string = (
+  createRequire(import.meta.url)('../package.json') as { version: string }
+).version
+
+/**
+ * What a client is told a result looks like, before it reads one.
+ *
+ * One envelope for every tool rather than a schema each. The shape is the same
+ * everywhere — did it work, one sentence a person can read, and the part an
+ * agent acts on — so a client that has learned it once has learned it for all
+ * nine. A schema per tool would be nine places for `data` to drift from what
+ * the tool returns.
+ */
+const RESULT_SHAPE = {
+  ok: z.boolean().describe('Whether the tool did what was asked.'),
+  summary: z.string().describe('One or two sentences a person can read.'),
+  data: z.unknown().optional().describe('The part an agent acts on, when there is one.'),
+}
+
+/**
+ * Both readings of the answer: prose and structure.
+ *
+ * `content` is what a model reads; `structuredContent` is what a client parses
+ * without pulling JSON back out of a string. Both travel — prose alone throws
+ * away the part an agent acts on, and structure alone makes every refusal a
+ * parsing exercise.
+ */
 function respond(result: ToolResult): {
   content: { type: 'text'; text: string }[]
+  structuredContent: Record<string, unknown>
   isError?: boolean
 } {
   const text =
     result.data === undefined
       ? result.summary
       : `${result.summary}\n\n${JSON.stringify(result.data, null, 2)}`
-  // `isError` rather than a thrown exception: a refusal is an answer the model
-  // should read and act on, not a transport failure.
-  return { content: [{ type: 'text', text }], ...(result.ok ? {} : { isError: true }) }
+  return {
+    content: [{ type: 'text', text }],
+    structuredContent: {
+      ok: result.ok,
+      summary: result.summary,
+      ...(result.data === undefined ? {} : { data: result.data }),
+    },
+    // `isError` rather than a thrown exception: a refusal is an answer the model
+    // should read and act on, not a transport failure.
+    ...(result.ok ? {} : { isError: true }),
+  }
+}
+
+/**
+ * What a tool will do, for a client deciding whether to ask first.
+ *
+ * The only thing a host has to tell `validate_form` from `publish_form` before
+ * calling either. Without them a tool defaults to `readOnlyHint: false`,
+ * `destructiveHint: true`, `openWorldHint: true` — so this server’s local,
+ * read-only checks were all advertised as potentially destructive calls into an
+ * open world, which is the opposite of true in every case.
+ */
+const LOCAL_CHECK: ToolAnnotations = {
+  readOnlyHint: true,
+  // No network and no server: these are the ones that work before anything is
+  // deployed, and saying so is what lets a host run them without asking.
+  openWorldHint: false,
+}
+
+const SERVER_READ: ToolAnnotations = { readOnlyHint: true, openWorldHint: true }
+
+/**
+ * Publishing. `destructiveHint: false` is not optimism: a published version is
+ * immutable and a publish inserts a new row, so nothing is overwritten
+ * ([0025](../../../docs/decisions/0025-immutability-in-the-database.md)).
+ *
+ * Not idempotent, though — publishing the same document twice makes a second
+ * version rather than the same one, and saying otherwise would invite a client
+ * to retry it freely.
+ */
+const SERVER_WRITE: ToolAnnotations = {
+  readOnlyHint: false,
+  destructiveHint: false,
+  idempotentHint: false,
+  openWorldHint: true,
 }
 
 /** A tool that needs a server, when there is not one. */
@@ -136,16 +218,18 @@ const BASED_ON = z
   )
 
 export function createFormancyMcpServer(options: McpServerOptions = {}): McpServer {
-  const server = new McpServer({ name: 'formancy', version: '0.1.0' })
+  const server = new McpServer({ name: 'formancy', version: PACKAGE_VERSION })
   const { access } = options
 
-  server.registerTool('describe_spec', { description: TOOL_DEFINITIONS.describe_spec }, () =>
+  server.registerTool('describe_spec', { description: TOOL_DEFINITIONS.describe_spec, outputSchema: RESULT_SHAPE, annotations: LOCAL_CHECK }, () =>
     respond(describeSpec()),
   )
 
   server.registerTool(
     'validate_form',
-    { description: TOOL_DEFINITIONS.validate_form, inputSchema: { document: DOCUMENT } },
+    { description: TOOL_DEFINITIONS.validate_form,
+      outputSchema: RESULT_SHAPE,
+      annotations: LOCAL_CHECK, inputSchema: { document: DOCUMENT } },
     ({ document }) => respond(validateForm(document)),
   )
 
@@ -153,6 +237,8 @@ export function createFormancyMcpServer(options: McpServerOptions = {}): McpServ
     'diff_forms',
     {
       description: TOOL_DEFINITIONS.diff_forms,
+      outputSchema: RESULT_SHAPE,
+      annotations: LOCAL_CHECK,
       inputSchema: { before: DOCUMENT, after: DOCUMENT },
     },
     ({ before, after }) => respond(diffForms(before, after)),
@@ -162,6 +248,8 @@ export function createFormancyMcpServer(options: McpServerOptions = {}): McpServ
     'check_scenarios',
     {
       description: TOOL_DEFINITIONS.check_scenarios,
+      outputSchema: RESULT_SHAPE,
+      annotations: LOCAL_CHECK,
       inputSchema: { document: DOCUMENT, scenarios: SCENARIOS },
     },
     ({ document, scenarios }) => respond(checkScenarios(document, scenarios as never)),
@@ -171,6 +259,8 @@ export function createFormancyMcpServer(options: McpServerOptions = {}): McpServ
     'propose_form_edit',
     {
       description: TOOL_DEFINITIONS.propose_form_edit,
+      outputSchema: RESULT_SHAPE,
+      annotations: SERVER_READ,
       inputSchema: { path: FORM_PATH, document: DOCUMENT },
     },
     async ({ path, document }) =>
@@ -185,6 +275,8 @@ export function createFormancyMcpServer(options: McpServerOptions = {}): McpServ
     'publish_form',
     {
       description: TOOL_DEFINITIONS.publish_form,
+      outputSchema: RESULT_SHAPE,
+      annotations: SERVER_WRITE,
       inputSchema: { path: FORM_PATH, document: DOCUMENT, basedOn: BASED_ON },
     },
     async ({ path, document, basedOn }) =>
@@ -195,24 +287,183 @@ export function createFormancyMcpServer(options: McpServerOptions = {}): McpServ
       ),
   )
 
-  server.registerTool('list_forms', { description: TOOL_DEFINITIONS.list_forms }, async () =>
+  server.registerTool('list_forms', { description: TOOL_DEFINITIONS.list_forms, outputSchema: RESULT_SHAPE, annotations: SERVER_READ }, async () =>
     respond(access === undefined ? noServer('list_forms') : await listForms(access)),
   )
 
   server.registerTool(
     'get_form',
-    { description: TOOL_DEFINITIONS.get_form, inputSchema: { path: FORM_PATH } },
+    { description: TOOL_DEFINITIONS.get_form,
+      outputSchema: RESULT_SHAPE,
+      annotations: SERVER_READ, inputSchema: { path: FORM_PATH } },
     async ({ path }) =>
       respond(access === undefined ? noServer('get_form') : await getForm(access, path)),
   )
 
   server.registerTool(
     'list_submissions',
-    { description: TOOL_DEFINITIONS.list_submissions, inputSchema: { path: FORM_PATH } },
+    { description: TOOL_DEFINITIONS.list_submissions,
+      outputSchema: RESULT_SHAPE,
+      annotations: SERVER_READ, inputSchema: { path: FORM_PATH } },
     async ({ path }) =>
       respond(
         access === undefined ? noServer('list_submissions') : await listSubmissions(access, path),
       ),
+  )
+
+  /*
+   * The three things somebody asks an agent to do with a form.
+   *
+   * A tool says what a model CAN call; a prompt says what to do with the set
+   * of them, in order. That order is most of the value: a model that writes
+   * the document first and calls `describe_spec` afterwards has already
+   * invented `type: "email"`, and the correction costs a turn. Scenarios
+   * written after the rules they check tend to agree with whatever the rules
+   * happen to say.
+   *
+   * MCP's own answer to a skill pack, so it arrives with the server rather
+   * than being documentation somebody has to find and paste
+   * ([0112](../../../docs/decisions/0112-the-mcp-server-says-what-its-tools-do.md)).
+   */
+  server.registerPrompt(
+    'build_a_form',
+    {
+      title: 'Build a form',
+      description:
+        'Write a new formancy form from a description, in the order that gets it right ' +
+        'the first time: the spec, then the document, then examples that check the rules.',
+      argsSchema: {
+        description: z.string().min(1).describe('What the form is for, in a sentence or two.'),
+      },
+    },
+    ({ description }) => ({
+      messages: [
+        {
+          role: 'user' as const,
+          content: {
+            type: 'text' as const,
+            text: [
+              `Write a formancy form for: ${description}`,
+              '',
+              'Work in this order, and do not skip the first step:',
+              '',
+              '1. Call `describe_spec`. It lists every field type, widget, rule kind and',
+              '   format the document format has. A type that is not in that list does not',
+              '   exist, whatever other form builders call it — an email field is `text`',
+              '   with `format: "email"`.',
+              '2. Write the document.',
+              '3. Call `validate_form`. It runs the schema check, the engine compile, and',
+              '   the check for expressions that compile and can never evaluate. Fix what',
+              '   it names and call it again.',
+              '4. Write a scenario for every rule, and call `check_scenarios`. This is the',
+              '   only check that catches a condition written backwards: `a == b` and',
+              '   `a != b` are both valid CEL and both pass step 3. Write the scenarios',
+              '   from the description above rather than from the rules you just wrote, or',
+              '   they will agree with whatever the rules happen to say.',
+              '5. Show the person the form and what the scenarios checked, before',
+              '   publishing anything.',
+            ].join('\n'),
+          },
+        },
+      ],
+    }),
+  )
+
+  server.registerPrompt(
+    'change_a_form',
+    {
+      title: 'Change a published form',
+      description:
+        'Edit a form that already exists, without discarding somebody else’s work and ' +
+        'without publishing a change nobody has read.',
+      argsSchema: {
+        path: z.string().min(1).describe("The form's path, as it appears in its URL."),
+        change: z.string().min(1).describe('What should be different, in a sentence.'),
+      },
+    },
+    ({ path, change }) => ({
+      messages: [
+        {
+          role: 'user' as const,
+          content: {
+            type: 'text' as const,
+            text: [
+              `Change the form at "${path}": ${change}`,
+              '',
+              'A formancy document is the WHOLE form, so an edit based on an older version',
+              'silently discards whatever was published in between — and the publish',
+              'succeeds, so nothing reports it. Work this way:',
+              '',
+              '1. Call `get_form` for the current document.',
+              '2. Make the change to it.',
+              '3. Call `propose_form_edit`. It publishes nothing, and answers with what the',
+              '   edit would cost submissions already collected, plus a `basedOn` hash.',
+              '4. Show the person that list. A change marked lossy means stored answers lose',
+              '   the field they live in; say so plainly before going further.',
+              '5. Call `publish_form` with `basedOn` set to the hash from step 3. If it',
+              '   refuses, the form moved — start again from step 1 rather than publishing',
+              '   over it.',
+            ].join('\n'),
+          },
+        },
+      ],
+    }),
+  )
+
+  server.registerPrompt(
+    'embed_a_form',
+    {
+      title: 'Embed a form in an application',
+      description: 'Render a formancy document in a React or Angular application.',
+      argsSchema: {
+        framework: z.enum(['react', 'angular']).describe('Which renderer the application uses.'),
+      },
+    },
+    ({ framework }) => ({
+      messages: [
+        {
+          role: 'user' as const,
+          content: {
+            type: 'text' as const,
+            // One framework's instructions, never both: a prompt that lists
+            // the alternative makes the model choose again, having just been
+            // told which one this application uses.
+            text:
+              framework === 'angular'
+                ? [
+                    'Render a formancy form in an Angular application.',
+                    '',
+                    '- Install `@formancy/angular` and `@formancy/core`.',
+                    '- Build the engine once with `createFormEngine({ schema })` and provide',
+                    '  it with `provideFormancy(engine)`.',
+                    '- Render `<formancy-form />`. It is zoneless and OnPush, and the engine',
+                    '  is the state — there is nothing to copy into a component.',
+                    '- Styling is yours: the renderer ships no CSS. A theme from',
+                    '  `@formancy/themes` is one stylesheet import and a',
+                    '  `data-formancy-theme` attribute, or write your own against the',
+                    '  `data-formancy-part` hooks.',
+                    '- The submitted value is `engine.value()`. Validate it on the server',
+                    '  too: the same engine runs there, so the two cannot disagree.',
+                  ].join('\n')
+                : [
+                    'Render a formancy form in a React application.',
+                    '',
+                    '- Install `@formancy/react` and `@formancy/core`.',
+                    '- Build the engine once with `createFormEngine({ schema })` and put it',
+                    '  in `<FormancyProvider engine={engine}>`.',
+                    '- Render `<FormancyForm />`. The engine is the state; there is nothing',
+                    '  to copy into component state and nothing to memoise.',
+                    '- Styling is yours: the renderer ships no CSS. A theme from',
+                    '  `@formancy/themes` is one stylesheet import and a',
+                    '  `data-formancy-theme` attribute, or write your own against the',
+                    '  `data-formancy-part` hooks.',
+                    '- The submitted value is `engine.value()`. Validate it on the server',
+                    '  too: the same engine runs there, so the two cannot disagree.',
+                  ].join('\n'),
+          },
+        },
+      ],
+    }),
   )
 
   return server
