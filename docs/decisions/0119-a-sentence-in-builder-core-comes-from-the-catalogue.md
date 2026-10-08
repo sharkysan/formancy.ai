@@ -36,8 +36,10 @@ is a sentence written into code, and is named with its file and line.
 
 **Three exemptions, each derived from what the code is rather than what it says:** the
 two catalogue files; `authoring.ts`, whose sentences are instructions to a model, asked in
-English whatever the author speaks because that is what its answers are checked against;
-and any literal that is the argument of `new Error(...)`, which is for a caller who broke an
+English whatever the author speaks because that is what its answers are checked against —
+including the problems it tells the model, which the prompt pane also shows the author
+**as they were told**, so a person reads exactly what the model was asked to fix, in
+English; and any literal that is the argument of `new Error(...)`, which is for a caller who broke an
 invariant no correct caller reaches, and which the builders never show.
 
 The guard lives in `apps/docs/src` beside the other source checks, because

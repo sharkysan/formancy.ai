@@ -40,7 +40,7 @@ const SPEAKS_FOR_ITSELF: ReadonlyArray<{ file: string; why: string }> = [
   { file: 'messages-de.ts', why: 'The German catalogue.' },
   {
     file: 'authoring.ts',
-    why: 'Instructions to a model, not words to a person. The model is asked in English whatever the author speaks, because that is the language its answers are checked against.',
+    why: 'Instructions to a model. The model is asked in English whatever the author speaks, because that is the language its answers are checked against — and the problems it is told are shown to the author as they were told, so a person reads exactly what the model was asked to fix.',
   },
 ]
 
