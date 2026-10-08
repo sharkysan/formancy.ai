@@ -61,6 +61,17 @@ export const BUILDER_MESSAGES_DE = {
     'Ein Container lässt sich nicht zusammen mit etwas aus seinem Inneren zusammenfassen.',
   'refuse.moveNodeIntoItself':
     'Das lässt sich nicht in sich selbst oder eines seiner eigenen Kinder verschieben.',
+  'refuse.notText': '„{property}“ an „{path}“ ist kein Text, es gibt also nichts zu übersetzen.',
+  'refuse.defaultLocale':
+    '„{locale}“ ist die Standardsprache: Jede andere Sprache fällt auf sie zurück, und ohne sie hätte jede unübersetzte Meldung nichts, worauf sie zurückfallen kann.',
+  'refuse.notASetting':
+    '„{property}“ ist keine Einstellung. Es ist, was der Knoten ist oder wo er steht, und das ändern die Befehle der Anordnung selbst.',
+  'refuse.settingName': '„{property}“ ist als Name einer Einstellung eines Layout-Knotens nicht erlaubt.',
+  'translations.unreadable': 'Diese Datei ließ sich nicht lesen: Sie ist kein JSON.',
+  'refuse.notACatalogue':
+    'Das ist keine Übersetzungsdatei eines formancy-Builders: Sie hat keine Sprache und keine Liste von Meldungen.',
+  'refuse.ruleCannotFollow':
+    'Regel {number} („{kind}“ für „{target}“) kann der Änderung nicht folgen: {reason} Ändere oder lösche die Regel zuerst.',
   'refuse.fieldNodeName': 'Ein Feldknoten trägt den Namen des Feldes, das er platziert.',
 
   'layout.codeFor': 'Code für {name}',

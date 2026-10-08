@@ -10,6 +10,25 @@ later.
 
 ## Unreleased
 
+**"Every refusal a session issues" was not every refusal.** The change that moved the
+builder's words into a catalogue said so, and four were still English in `session.ts` —
+removing the default language, extracting a property that is not text, and two about
+layout settings — while a rename a rule could not follow set an English clause into a
+German refusal. They are in the catalogue now, and
+`apps/docs/src/builder-sentences.test.ts` reads every string in `builder-core` through
+the TypeScript compiler and names any that reads as a sentence, so the next one fails the
+build wherever it is written
+([0119](docs/decisions/0119-a-sentence-in-builder-core-comes-from-the-catalogue.md)).
+
+**An uploaded file that is not a translation file said "file.messages is not iterable".**
+`importCatalogue` threw on it, and both builders showed the exception's text to a
+translator as the reason. It refuses in words now — and both translation panes had been
+dropping every outcome `importCatalogue` returned, so a refusal would have been a
+silent no-op after an upload. They show it; a file that is not JSON says so in the
+builder's words rather than the parser's. The translation commands moved from
+`session.ts` to `translation.ts`, and the orphan list stopped walking the document a
+second way.
+
 **The logic panel speaks the author's language in both builders.** What a rule does, the
 comparisons, the join, the numbered labels and every button come from the catalogue;
 the rule kinds and operators through `ruleKindLabel`, `ruleKindHint` and

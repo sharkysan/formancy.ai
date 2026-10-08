@@ -90,6 +90,19 @@ export const BUILDER_MESSAGES = {
   'refuse.wrapContainerWithChild': 'Cannot wrap a container together with something inside it.',
   'refuse.moveNodeIntoItself': 'Cannot move this inside itself or one of its own children.',
   'refuse.fieldNodeName': 'A field node takes its name from the field it places.',
+  'refuse.notText': '"{property}" on "{path}" is not text, so there is nothing to translate.',
+  'refuse.defaultLocale':
+    '"{locale}" is the default locale: every other locale falls back to it, so removing it would leave every untranslated message with nothing to resolve to.',
+  'refuse.notASetting':
+    '"{property}" is not a setting. It is what the node is, or where it sits, and the arrangement\'s own commands change it.',
+  'refuse.settingName': '"{property}" is not allowed as a layout node setting name.',
+  'translations.unreadable': 'That file could not be read: it is not JSON.',
+  'refuse.notACatalogue':
+    'That is not a translation file from a formancy builder: it has no locale and no list of messages.',
+  // Set into refuse.renameFollows and refuse.unwrapRenames after "and", so it
+  // starts in lower case. {reason} is the expression parser's own message.
+  'refuse.ruleCannotFollow':
+    'rule {number} (“{kind}” on “{target}”) cannot follow the change: {reason} Change or delete the rule first.',
 
   // --------------------------------------------- naming a node in the layout tree
   // Whole sentences per kind rather than a kind slotted into a template: the

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
-import { createBuilderSession } from '@formancy/builder-core'
+import { createBuilderSession, createBuilderText } from '@formancy/builder-core'
 import type { FormSchema } from '@formancy/spec'
 import { TranslationsPane } from './translations-pane.js'
 
@@ -406,6 +406,36 @@ describe('the catalogue leaving and coming back', () => {
       const said = document.querySelector('[data-formancy-part="translations-problem"]')
       expect(said, 'an unreadable file was accepted in silence').not.toBeNull()
       expect((said?.textContent ?? '').length).toBeGreaterThan(0)
+    })
+  })
+
+  test('and a JSON file that is not a catalogue is reported with the session’s reason', async () => {
+    /*
+     * It threw "file.messages is not iterable" inside the session, and this pane
+     * showed that to a translator as the reason. With the session refusing it in
+     * words instead, the pane has to show the refusal — which it did not: it
+     * dropped every outcome `importCatalogue` returned.
+     */
+    await mountTranslated()
+
+    const file = new File(['{"hello":1}'], 'other.json', { type: 'application/json' })
+    fireEvent.change(screen.getByLabelText(/upload/i), { target: { files: [file] } })
+
+    await waitFor(() => {
+      const said = document.querySelector('[data-formancy-part="translations-problem"]')
+      expect(said?.textContent).toBe(createBuilderText()('refuse.notACatalogue'))
+    })
+  })
+
+  test('and a file that is not JSON says so in the builder’s words, not the parser’s', async () => {
+    await mountTranslated()
+
+    const file = new File(['this is not json'], 'notes.txt', { type: 'text/plain' })
+    fireEvent.change(screen.getByLabelText(/upload/i), { target: { files: [file] } })
+
+    await waitFor(() => {
+      const said = document.querySelector('[data-formancy-part="translations-problem"]')
+      expect(said?.textContent).toBe(createBuilderText()('translations.unreadable'))
     })
   })
 
