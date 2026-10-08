@@ -1,30 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core'
-import { editableLayoutPropertiesFor, layoutNodeAt } from '@formancy/builder-core'
+import {
+  editableLayoutPropertiesFor,
+  layoutNodeAt,
+  layoutPropertyHeading,
+} from '@formancy/builder-core'
 import type { BuilderSession, EditableProperty, LayoutAddress, LayoutNode } from './types.js'
 import { FormancyProperty } from './property-panel.js'
 import { injectBuilderView } from './view.js'
-
-/**
- * What to call the thing being edited.
- *
- * The node's own `label` cannot be the heading: it is one of the properties this
- * panel edits, so it would be empty exactly when somebody is about to set it, and
- * it would change under them as they typed.
- */
-function headingFor(kind: string): string {
-  switch (kind) {
-    case 'field':
-      return 'This placement'
-    case 'table':
-      return 'This grid'
-    case 'tabs':
-      return 'This tab strip'
-    case 'qrcode':
-      return 'This code'
-    default:
-      return `This ${kind}`
-  }
-}
 
 /**
  * The property panel for a node in the arrangement.
@@ -59,6 +41,7 @@ function headingFor(kind: string): string {
           <formancy-property
             [property]="property"
             [value]="valueOf(property.name)"
+            [text]="session().text"
             (changed)="set(property.name, $event)"
           />
         }
@@ -77,7 +60,11 @@ export class FormancyLayoutPropertyPanel {
     const at = this.address()
     return layoutNodeAt(this.view().document, at.layout, at.path)
   })
-  protected readonly heading = computed(() => headingFor(this.node()?.kind ?? ''))
+  /** The kind, not the node's own label, which is one of the properties edited here. */
+  protected readonly heading = computed(() => {
+    const node = this.node()
+    return node === undefined ? '' : layoutPropertyHeading(node.kind, this.session().text)
+  })
   protected readonly properties = computed((): EditableProperty[] =>
     editableLayoutPropertiesFor(this.node()?.kind ?? ''),
   )

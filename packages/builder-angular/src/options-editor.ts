@@ -1,5 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core'
+import { createBuilderText, nextChoice } from '@formancy/builder-core'
+import type { BuilderText } from '@formancy/builder-core'
 import type { FieldOption } from './types.js'
+import { BuilderTextPipe } from './text.pipe.js'
+
+const ENGLISH = createBuilderText()
 
 let nextId = 0
 
@@ -25,44 +30,64 @@ let nextId = 0
  * "SwitzerlandSchweiz". So the boxes show the draft, every edit is offered to the
  * session, and a refusal leaves the document where it was. The form still cannot
  * be PUBLISHED in an invalid state; it can be typed in.
+ *
+ * **Laid out as the React editor is**, with its names and its parts. It was not:
+ * each choice's text box was called "Label" — the panel's own Label for the field
+ * is a second control with that name, ambiguous read aloud — it had no word for
+ * an empty list, and its parts were named so that a theme styling the React
+ * editor left this one bare.
  */
 @Component({
   selector: 'formancy-options-editor',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [BuilderTextPipe],
   template: `
     <div data-formancy-part="options-editor">
-      <h3 [attr.id]="headingId">Choices</h3>
-      <ul [attr.aria-labelledby]="headingId">
-        @for (option of draft(); track $index; let at = $index) {
-          <li data-formancy-part="option">
-            <label [attr.for]="valueId(at)">Stored value</label>
-            <input
-              [attr.id]="valueId(at)"
-              [value]="option.value"
-              (input)="setValue(at, $event)"
-            />
-            <label [attr.for]="labelId(at)">Label</label>
-            <input
-              [attr.id]="labelId(at)"
-              [value]="labelText(option)"
-              (input)="setLabel(at, $event)"
-            />
-            <button
-              type="button"
-              [attr.aria-label]="'Remove ' + describe(option)"
-              (click)="remove(at)"
-            >
-              Remove
-            </button>
-          </li>
-        }
-      </ul>
-      <button type="button" (click)="add()">Add a choice</button>
+      <h3 [attr.id]="headingId" data-formancy-part="options-heading">
+        {{ 'options.heading' | builderText: text() }}
+      </h3>
+      @if (draft().length === 0) {
+        <p data-formancy-part="options-empty">{{ 'options.empty' | builderText: text() }}</p>
+      } @else {
+        <ul [attr.aria-labelledby]="headingId" data-formancy-part="options-list">
+          @for (option of draft(); track $index; let at = $index) {
+            <li data-formancy-part="option-row">
+              <!-- "Choice label", not "Label": the panel already has a Label for
+                   the field itself, and two controls with one name are ambiguous
+                   read aloud as well as in a test. -->
+              <label [attr.for]="labelId(at)">{{ 'options.label' | builderText: text() }}</label>
+              <input
+                [attr.id]="labelId(at)"
+                [value]="labelText(option)"
+                (input)="setLabel(at, $event)"
+              />
+              <label [attr.for]="valueId(at)">{{ 'options.value' | builderText: text() }}</label>
+              <input
+                [attr.id]="valueId(at)"
+                [value]="option.value"
+                (input)="setValue(at, $event)"
+              />
+              <button
+                type="button"
+                [attr.aria-label]="
+                  'options.remove' | builderText: text() : { name: describe(option) }
+                "
+                (click)="remove(at)"
+              >
+                {{ 'list.remove' | builderText: text() }}
+              </button>
+            </li>
+          }
+        </ul>
+      }
+      <button type="button" (click)="add()">{{ 'options.add' | builderText: text() }}</button>
     </div>
   `,
 })
 export class FormancyOptionsEditor {
   readonly options = input<readonly FieldOption[]>([])
+  /** The language to speak: the panel passes its session's. English when none is given. */
+  readonly text = input<BuilderText>(ENGLISH)
   readonly changed = output<FieldOption[]>()
 
   protected readonly headingId = `formancy-options-${String((nextId += 1))}`
@@ -111,19 +136,9 @@ export class FormancyOptionsEditor {
   }
 
   protected add(): void {
-    // A value nothing else uses. Two choices sharing one store the same answer,
-    // and the form would collect a submission nobody can read back.
-    const used = new Set(this.draft().map((option) => String(option.value)))
-    let n = this.draft().length + 1
-    while (used.has(`option-${String(n)}`)) n += 1
-    // With a label, because the schema requires a non-empty one: a choice added
-    // without would be refused, the document would not change, and the button
-    // would look broken. "New choice" is a word to type over rather than a word
-    // anybody keeps.
-    this.commit([
-      ...this.draft(),
-      { value: `option-${String(n)}`, label: 'New choice' } as FieldOption,
-    ])
+    // A value nothing else uses and a label in the author's language: builder-core
+    // decides both, for this editor and the React one.
+    this.commit([...this.draft(), nextChoice(this.draft(), this.text())])
   }
 
   protected remove(at: number): void {

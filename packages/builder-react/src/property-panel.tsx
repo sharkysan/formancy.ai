@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
 import type { DataGridColumn, FieldDef, FieldOption } from '@formancy/spec'
-import type { BuilderSession } from '@formancy/builder-core'
+import type { BuilderSession, BuilderText } from '@formancy/builder-core'
 import { ColumnsEditor } from './columns-editor.js'
 import { OptionsEditor } from './options-editor.js'
 import { editablePropertiesFor } from '@formancy/builder-core'
@@ -56,6 +56,7 @@ export function PropertyPanel({ session, keyPath }: PropertyPanelProps): ReactEl
           // them. Nothing else in the panel does, which is why it is passed rather
           // than reached for.
           childFields={def.fields ?? []}
+          text={session.text}
           onChange={(value) => {
             // An empty box means "no value", not "the empty string". Writing ''
             // would put a property into the document that the author just
@@ -83,11 +84,14 @@ export function PropertyField({
   property,
   value,
   childFields,
+  text,
   onChange,
 }: {
   property: EditableProperty
   value: unknown
   childFields: readonly FieldDef[]
+  /** The session's language, for the two editors that have words of their own. */
+  text: BuilderText
   onChange: (value: unknown) => void
 }): ReactElement | null {
   const id = useId()
@@ -135,6 +139,7 @@ export function PropertyField({
     return (
       <OptionsEditor
         options={Array.isArray(value) ? (value as FieldOption[]) : []}
+        text={text}
         onChange={(next) => onChange(next.length === 0 ? undefined : next)}
       />
     )
@@ -147,6 +152,7 @@ export function PropertyField({
       <ColumnsEditor
         columns={Array.isArray(value) ? (value as DataGridColumn[]) : []}
         children={childFields}
+        text={text}
         onChange={(next) => onChange(next.length === 0 ? undefined : next)}
       />
     )

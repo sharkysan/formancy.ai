@@ -232,9 +232,10 @@ and a layout node's name are worded once, in the language of the person building
 rather than inline in English twice. Whole sentences per noun rather than a noun slotted
 into a template, because German agrees an adjective with its noun; `Intl` decides
 plural forms and how a list is joined
-([0114](../decisions/0114-the-builder-speaks-the-authors-language.md)). The structure tree
-and the arrangement pane read it in both builders; the other surfaces have not moved yet,
-and until they do a German builder is German in its trees and English in its panels.
+([0114](../decisions/0114-the-builder-speaks-the-authors-language.md)). The structure tree,
+the arrangement pane and the property editors read it in both builders; the logic,
+translations, prompt and scenario panes have not moved yet. A property's own title and
+description are the spec's JSON Schema's words and are not translated here.
 
 `spoken.ts` holds what a builder **says** after a command on the structure tree — the
 command and the sentence together, because the sentence needs what was true before the
@@ -253,6 +254,11 @@ the Angular one listed the fields an arrangement leaves out and gave no way to p
 so the offer is decided here and both panes render it
 ([0117](../decisions/0117-the-arrangement-pane-offers-the-same-in-both-builders.md)).
 `messages-de.ts` is the German catalogue, apart from the English it translates.
+`editors.ts` holds what the two property editors had each decided — the choice "Add a
+choice" adds, and what the layout panel calls a node — and the editors are handed the
+session's language rather than finding it, because it belongs to one session and two
+builders on a page can speak two
+([0118](../decisions/0118-an-editor-is-handed-its-language.md)).
 `navigate.ts` holds finding things — a field by key path, a container, a layout node
 by position — which left `session.ts` because none of it is a command.
 

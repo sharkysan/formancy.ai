@@ -1,6 +1,8 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
 import type { DataGridColumn, FieldDef } from '@formancy/spec'
+import { createBuilderText } from '@formancy/builder-core'
+import type { BuilderText } from '@formancy/builder-core'
 
 /**
  * The editor for a datagrid's columns.
@@ -30,9 +32,18 @@ export interface ColumnsEditorProps {
   /** The repeater's own children, which are the only things a column may name. */
   children: readonly FieldDef[]
   onChange: (columns: DataGridColumn[]) => void
+  /** The language to speak: the panel passes its session's. English when none is given. */
+  text?: BuilderText
 }
 
-export function ColumnsEditor({ columns, children, onChange }: ColumnsEditorProps): ReactElement {
+const ENGLISH = createBuilderText()
+
+export function ColumnsEditor({
+  columns,
+  children,
+  onChange,
+  text = ENGLISH,
+}: ColumnsEditorProps): ReactElement {
   const id = useId()
 
   /*
@@ -100,14 +111,11 @@ export function ColumnsEditor({ columns, children, onChange }: ColumnsEditorProp
   return (
     <div data-formancy-part="columns-editor">
       <div id={`${id}-heading`} data-formancy-part="columns-heading">
-        Columns
+        {text('columns.heading')}
       </div>
 
       {draft.length === 0 ? (
-        <p data-formancy-part="columns-empty">
-          No columns configured. Every answer still gets one, in the order the fields are
-          declared.
-        </p>
+        <p data-formancy-part="columns-empty">{text('columns.empty')}</p>
       ) : (
         <ul aria-labelledby={`${id}-heading`} data-formancy-part="columns-list">
           {draft.map((column, index) => (
@@ -116,7 +124,7 @@ export function ColumnsEditor({ columns, children, onChange }: ColumnsEditorProp
             <li key={index} data-formancy-part="column-row">
               {/* A choice and never a text box: a column names a child that exists,
                   and a typed name is a column over nothing. */}
-              <label htmlFor={`${id}-field-${String(index)}`}>Answer</label>
+              <label htmlFor={`${id}-field-${String(index)}`}>{text('columns.answer')}</label>
               <select
                 id={`${id}-field-${String(index)}`}
                 value={column.field}
@@ -125,7 +133,9 @@ export function ColumnsEditor({ columns, children, onChange }: ColumnsEditorProp
                 {/* The one it names, even if that child is gone — so the panel shows
                     what the document says rather than silently rewriting it. */}
                 {children.some((child) => child.key === column.field) ? null : (
-                  <option value={column.field}>{column.field} — no such field</option>
+                  <option value={column.field}>
+                    {text('columns.noSuchField', { name: column.field })}
+                  </option>
                 )}
                 {children.map((child) => (
                   <option key={child.key} value={child.key}>
@@ -137,7 +147,7 @@ export function ColumnsEditor({ columns, children, onChange }: ColumnsEditorProp
               {/* A ratio, never a length: a length in a document is the format choosing
                   the consumer's design system for them, and no renderer can honour one
                   on a narrow screen. */}
-              <label htmlFor={`${id}-width-${String(index)}`}>Width, as a share</label>
+              <label htmlFor={`${id}-width-${String(index)}`}>{text('columns.width')}</label>
               <input
                 id={`${id}-width-${String(index)}`}
                 type="number"
@@ -151,7 +161,7 @@ export function ColumnsEditor({ columns, children, onChange }: ColumnsEditorProp
                 }
               />
 
-              <label htmlFor={`${id}-align-${String(index)}`}>Align</label>
+              <label htmlFor={`${id}-align-${String(index)}`}>{text('columns.align')}</label>
               <select
                 id={`${id}-align-${String(index)}`}
                 value={column.align ?? ''}
@@ -161,15 +171,15 @@ export function ColumnsEditor({ columns, children, onChange }: ColumnsEditorProp
                   })
                 }
               >
-                <option value="">Default</option>
-                <option value="start">Start</option>
-                <option value="center">Center</option>
-                <option value="end">End</option>
+                <option value="">{text('columns.align.default')}</option>
+                <option value="start">{text('columns.align.start')}</option>
+                <option value="center">{text('columns.align.center')}</option>
+                <option value="end">{text('columns.align.end')}</option>
               </select>
 
               {/* Shortens the HEADING and never the question: the field's own label is
                   still what a screen reader announces for every answer in the column. */}
-              <label htmlFor={`${id}-header-${String(index)}`}>Short heading</label>
+              <label htmlFor={`${id}-header-${String(index)}`}>{text('columns.header')}</label>
               <input
                 id={`${id}-header-${String(index)}`}
                 type="text"
@@ -181,10 +191,10 @@ export function ColumnsEditor({ columns, children, onChange }: ColumnsEditorProp
                 type="button"
                 // Named, not an unlabelled cross: four identical remove buttons are four
                 // identical announcements.
-                aria-label={`Remove the ${column.field} column`}
+                aria-label={text('columns.remove', { name: column.field })}
                 onClick={() => commit(draft.filter((_, at) => at !== index))}
               >
-                Remove
+                {text('list.remove')}
               </button>
             </li>
           ))}
@@ -192,13 +202,10 @@ export function ColumnsEditor({ columns, children, onChange }: ColumnsEditorProp
       )}
 
       {unnamed.length === 0 ? (
-        <p data-formancy-part="columns-all-named">
-          Every answer has a column. The ones above are sized and ordered; removing one
-          puts its answer back at the end rather than taking it off the form.
-        </p>
+        <p data-formancy-part="columns-all-named">{text('columns.allNamed')}</p>
       ) : (
         <button type="button" onClick={() => commit([...draft, { field: unnamed[0]!.key }])}>
-          {`Configure the ${unnamed[0]!.key} column`}
+          {text('columns.configure', { name: unnamed[0]!.key })}
         </button>
       )}
     </div>
