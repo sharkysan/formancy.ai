@@ -93,7 +93,9 @@ changing what decides its branch is two steps, and the second needs `initialValu
 is the shape the templates have carried since they shipped; a list of steps is the
 honest alternative the day one of them needs it, and nothing has yet.
 
-**This publishes the runner and not the authoring surface.** Saving a scenario in a
+**This publishes the runner and not the authoring surface** — which
+[0111](0111-a-scenario-panel-names-what-stopped-holding.md) then built, so read the
+paragraph below as what was true on the day rather than as what is true now.  Saving a scenario in a
 builder, rerunning it after an edit and showing which ones stopped holding is the half
 somebody actually touches, and it is not here. What is here is the part both builders
 and an MCP tool would have to agree about, in the one place they can share it — the same

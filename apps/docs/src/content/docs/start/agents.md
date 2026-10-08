@@ -61,6 +61,7 @@ cannot be a condition on its own: write callback == true.
 | `describe_spec` | no | Every field type, layout kind, rule kind and format. Call it before writing anything. |
 | `validate_form` | no | The server's publish checks, without publishing: schema, the engine's compile, expressions that never evaluate. |
 | `diff_forms` | no | What a change would do to submissions already collected: compatible, lossy or breaking. |
+| `check_scenarios` | no | Run a form against examples with their answers written down, and report which stopped holding. The only check that catches a condition written backwards. |
 | `propose_form_edit` | yes | Hold an edit up against the published form **without publishing it**: what it would cost submissions already collected, plus the `basedOn` hash to publish with. |
 | `publish_form` | yes | Publish — after validating locally and refusing to send a document that would not work. Takes `basedOn`, and refuses when the form has changed since. |
 | `list_forms` | yes | The forms on the server, with their current version. |
@@ -91,6 +92,37 @@ anything?" is a tool call rather than a judgement:
   They are kept under `data.__orphaned`, never deleted.
 - **breaking** — existing drafts *cannot* rebind and open read-only against the
   version that produced them.
+
+### `check_scenarios` catches the rule written backwards
+
+`validate_form` says a document works. It cannot say the condition is the opposite of
+the one you were asked for, because
+
+```
+visible: leaveType == 'other'
+visible: leaveType != 'other'
+```
+
+are both valid CEL. Both compile, both type-check, both satisfy the schema and the
+engine. One of them asks a question nobody should be asked, and the difference is not in
+the document — it is between the document and what somebody meant.
+
+An example with its answer written down is the only thing that can see it:
+
+```json
+{
+  "name": "other shows the reason",
+  "changes": { "leaveType": "other" },
+  "valid": true,
+  "visible": { "reason": true }
+}
+```
+
+A scenario can pin whether the form validates, which error codes each field carries,
+which fields are visible, what each holds, and which paths the submission does **not**
+carry — the last one because validity alone cannot tell a cleared branch from one that
+was never filled. Write one for every rule you add. The tool refuses an empty set rather
+than reporting that all nought scenarios hold.
 
 ### Changing a form that exists is a two-step tool call
 

@@ -10,6 +10,54 @@ later.
 
 ## Unreleased
 
+**And a panel that says which example stopped holding.** The decision above published the runner and
+said plainly what it did not do; this is that half. Both builders carry a scenario panel
+now — `ScenarioPane` in React, `FormancyScenarioPane` in Angular — which reruns the
+examples after every edit and **names** what broke rather than counting it. "3 of 5
+fail" is a number somebody reads once; "Stopped holding: Switzerland asks for a canton"
+is a sentence that gets acted on.
+
+**The scenarios are the host's**, arriving as a prop and leaving through a callback,
+exactly as the model and the uploader do. Not in the form document: that would put test
+data in every published, immutable version, add a section every renderer has to ignore,
+and break the reader contract for spec 1 to 3. Not on the server either, because the
+check is worth most *before* a server exists — an agent checking a form it has just
+written has none. A host keeping them in a `.scenarios.json` beside the form gets a CI
+gate out of the same file, which is the shape the starter templates have always had.
+
+Three rules decide what a regression is, each one a way a panel stops being read: a form
+that **arrives** with failing scenarios has not regressed, a **new** scenario that fails
+is not a regression, and **repairs are reported too**, because a panel that only ever
+delivers bad news is one people learn to ignore. They live in `@formancy/builder-core`,
+so the two builders cannot tell two people different things about one edit.
+
+**A ninth MCP tool, `check_scenarios`.** Local, no server. An agent writes a rule from a
+sentence, and an example is the one thing that catches it writing the opposite rule. It
+**refuses an empty set** rather than answering that all nought scenarios hold — true,
+and the single most misleading sentence it could give an agent about to publish.
+
+**The playground shows it**, with five scenarios beside the starter, each pinning a rule
+that compiles whichever way round it is written. A test drives it through the whole
+application: the five hold, a field is deleted in the builder's own tree, and the panel
+names the example that stopped holding.
+
+Two things the work turned up and the records keep. **The panes needed an
+`initialValue`** — a document with required fields is invalid before a scenario has set
+anything, so every scenario against the real starter reported the same six `required`
+errors and none was about the rule it was for; pointing the pane at a three-field form
+would never have shown that. And **deleting the field a rule reads is refused**, which
+reads like a limitation and is the opposite: the builder will not leave a condition
+pointing at nothing, so the edit that breaks a scenario in the test is one the builder
+is perfectly happy with — the honest case, since the dangerous edits are the ones
+nothing else objects to.
+
+Eleven mutations, each watched to redden its own case. A twelfth reddened nothing and
+found a branch that could not change an answer, which was deleted rather than tested.
+The playground's Monaco mock became writable in the process: it was read-only, so it
+silently did nothing the moment a case tried to write, and the first version of the
+scenario case passed against an unedited form
+([0111](docs/decisions/0111-a-scenario-panel-names-what-stopped-holding.md)).
+
 **A form can be checked against examples now, by anybody.** A condition type-checks and
 is still the wrong business rule: `visible: leaveType == 'other'` and
 `visible: leaveType != 'other'` are both valid CEL, both compile, both satisfy every

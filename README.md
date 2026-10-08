@@ -330,11 +330,16 @@ nobody was told about.
 claude mcp add formancy -- npx -y @formancy/mcp
 ```
 
-Eight tools. Four of them — `describe_spec`, `validate_form`, `diff_forms`,
-and the checking half of `publish_form` — need **no server and no
+Nine tools. Five of them — `describe_spec`, `validate_form`, `diff_forms`,
+`check_scenarios` and the checking half of `publish_form` — need **no server and no
 credentials**, so an agent can write a whole form and be told exactly what is
 wrong with it before anybody deploys anything. Set `FORMANCY_URL` and
 `FORMANCY_API_KEY` together to add publishing and reading submissions.
+
+`check_scenarios` is the one that catches a rule written backwards.
+`leaveType == 'other'` and `leaveType != 'other'` are both valid CEL and both pass
+every other check here — the difference is between the document and what somebody
+meant, and the only thing that can see it is an example with its answer written down.
 
 Changing a form that already exists is two calls, not one. `propose_form_edit`
 holds the edit up against what is published and answers with what it would cost

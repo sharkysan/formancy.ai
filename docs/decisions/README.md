@@ -211,3 +211,4 @@ listed under the sections they belong to above.
 | [0108](0108-the-diff-reports-everything-that-changed.md) | The diff reports everything that changed, and never answers nothing | accepted |
 | [0109](0109-an-ai-edit-is-reviewed-before-it-lands.md) | An AI edit is reviewed before it lands, and a stale one is refused | accepted |
 | [0110](0110-a-form-is-checked-against-examples.md) | A form is checked against examples, and the runner is published | accepted |
+| [0111](0111-a-scenario-panel-names-what-stopped-holding.md) | A scenario panel names what stopped holding, and the scenarios are the host's | accepted |

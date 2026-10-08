@@ -16,6 +16,8 @@ export type { LayoutPaneProps } from './layout-pane.js'
 export { FormancyArrangeSurface } from './arrange-surface.js'
 export type { ArrangeSurfaceProps } from './arrange-surface.js'
 export { PromptPane } from './prompt-pane.js'
+export { ScenarioPane } from './scenario-pane.js'
+export type { ScenarioPaneProps } from './scenario-pane.js'
 export type { PromptPaneProps } from './prompt-pane.js'
 
 // Moved into `@formancy/builder-core`, and re-exported here so an existing

@@ -205,12 +205,19 @@ those, so three surfaces cannot disagree about what counts as a change or when
 a proposal has gone stale
 ([0109](../decisions/0109-an-ai-edit-is-reviewed-before-it-lands.md)).
 
+`scenario-runs.ts` holds the other thing both builders must agree about: what counts
+as a **regression**. A panel reporting that three of five scenarios fail is a number
+somebody reads once; what was holding before this edit and is not now is the sentence
+that gets acted on, and two builders deciding that separately would tell two people
+different things about one edit
+([0111](../decisions/0111-a-scenario-panel-names-what-stopped-holding.md)).
+
 There are two builder interfaces over it now, and the split is the same one
 the renderers have: what decides anything is in `builder-core`, and a builder
 package is markup and a subscription. `@formancy/builder-angular` carries the
 structure tree — zoneless, `OnPush`, one signal per session, `revision()` as the
-whole subscription — and the prompt pane, in the same idiom; the rest of the
-panes remain React-only
+whole subscription — the prompt pane and the scenario panel, both in the same
+idiom; the rest of the panes remain React-only
 ([0091](../decisions/0091-a-second-builder-is-a-binding.md)).
 
 `builder-react` is the interface: a structure tree, an arrangement tree, a

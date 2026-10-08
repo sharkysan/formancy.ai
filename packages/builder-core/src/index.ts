@@ -1,6 +1,8 @@
 export { authorForm } from './authoring.js'
 export { applyProposal, proposeEdit } from './proposal.js'
 export type { EditProposal } from './proposal.js'
+export { comparedToLastRun } from './scenario-runs.js'
+export type { ScenarioRunChange } from './scenario-runs.js'
 export type {
   AskModel,
   AuthoringOptions,

@@ -4,6 +4,7 @@ import {
   diffForms,
   getForm,
   listForms,
+  checkScenarios,
   proposeFormEdit,
   publishForm,
   validateForm,
@@ -496,5 +497,79 @@ describe('publishing against the version the edit was based on', () => {
 
     expect(result.ok).toBe(true)
     expect(calls.filter((call) => call.startsWith('GET'))).toEqual([])
+  })
+})
+
+/**
+ * Checking a form against examples, through MCP.
+ *
+ * `validate_form` says a document works. It cannot say the condition is
+ * backwards, because `leaveType == 'other'` and `leaveType != 'other'` are
+ * both valid CEL and the difference is between the document and what somebody
+ * meant ([0110](../../../docs/decisions/0110-a-form-is-checked-against-examples.md)).
+ *
+ * An agent is exactly who needs telling. It writes a rule from a sentence, and
+ * the one check that can catch it writing the opposite rule is an example with
+ * its answer written down.
+ */
+describe('checking a form against examples', () => {
+  const form = {
+    specVersion: '2',
+    id: 'leave',
+    title: 'Leave',
+    model: {
+      fields: [
+        { key: 'kind', type: 'radio', label: 'Kind', options: [
+          { value: 'holiday', label: 'Holiday' },
+          { value: 'other', label: 'Other' },
+        ] },
+        { key: 'reason', type: 'text', label: 'Reason' },
+      ],
+    },
+    logic: { rules: [{ target: 'reason', kind: 'visible', cel: "kind == 'other'" }] },
+  }
+  const scenarios = [
+    { name: 'other shows the reason', changes: { kind: 'other' }, valid: true, visible: { reason: true } },
+  ]
+
+  test('says which example stopped holding, and what it expected', () => {
+    const backwards = structuredClone(form)
+    backwards.logic.rules[0]!.cel = "kind != 'other'"
+
+    const result = checkScenarios(backwards, scenarios)
+
+    expect(result.ok).toBe(false)
+    // Named and explained. "1 of 1 failed" sends an agent back to re-read its
+    // own document, which is what it just wrote.
+    expect(result.summary).toContain('other shows the reason')
+    const data = result.data as { results: { failures: { detail: string }[] }[] }
+    expect(data.results[0]?.failures.map((f) => f.detail).join(' ')).toMatch(/expected to be visible/)
+  })
+
+  test('and passes the form that does what the examples say', () => {
+    const result = checkScenarios(form, scenarios)
+
+    expect(result.ok).toBe(true)
+    expect(result.summary).toMatch(/all|hold/i)
+  })
+
+  test('refuses a document that would not have worked, rather than reporting every example as broken', () => {
+    // One fact, not one failure per example. An agent given twenty identical
+    // "no such field" lines reads the noise and not the cause.
+    const result = checkScenarios({ specVersion: '2', id: 'x' }, scenarios)
+
+    expect(result.ok).toBe(false)
+    expect(result.summary).toMatch(/would not have worked/i)
+  })
+
+  test('and refuses an empty set rather than reporting that everything holds', () => {
+    /*
+     * The vacuous pass. "All 0 scenarios hold" is true and is the single most
+     * misleading thing this tool could tell an agent about to publish.
+     */
+    const result = checkScenarios(form, [])
+
+    expect(result.ok).toBe(false)
+    expect(result.summary).toMatch(/no scenarios/i)
   })
 })

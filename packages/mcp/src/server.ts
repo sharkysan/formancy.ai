@@ -1,6 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 import {
+  checkScenarios,
   describeSpec,
   diffForms,
   getForm,
@@ -55,6 +56,12 @@ export const TOOL_DEFINITIONS = {
   diff_forms:
     'Compare two form documents and report what the change would do to submissions already ' +
     'collected: compatible, lossy, or breaking. Call this before publishing over an existing form.',
+  check_scenarios:
+    'Run a form against examples with their answers written down, and report which stopped ' +
+    'holding. The ONE check that catches a condition which compiles and is the opposite of ' +
+    'what was asked for — validate_form cannot, because both spellings are valid CEL. Needs no ' +
+    'server. Write a scenario for every rule you add: a set of answers, whether the form is ' +
+    'valid, which errors it gives, which fields are visible, and what the submission carries.',
   propose_form_edit:
     'Hold an edit up against the form that is published, WITHOUT publishing it. Answers with ' +
     'what the edit would do to submissions already collected, and with a basedOn hash. ' +
@@ -109,6 +116,17 @@ function noServer(name: string): ToolResult {
  */
 const DOCUMENT = z.unknown().describe('A formancy form document (the JSON schema object).')
 const FORM_PATH = z.string().min(1).describe("The form's path, as it appears in its URL.")
+/*
+ * The scenarios arrive loosely typed for the reason a document does: their
+ * shape belongs to `@formancy/core`, and describing it a second time in Zod
+ * would be a second authority that eventually disagrees with the first.
+ */
+const SCENARIOS = z
+  .array(z.unknown())
+  .describe(
+    'Examples with their answers: each is { name, changes, valid } and may also pin errors, ' +
+      'visible, values and absent.',
+  )
 const BASED_ON = z
   .string()
   .optional()
@@ -138,6 +156,15 @@ export function createFormancyMcpServer(options: McpServerOptions = {}): McpServ
       inputSchema: { before: DOCUMENT, after: DOCUMENT },
     },
     ({ before, after }) => respond(diffForms(before, after)),
+  )
+
+  server.registerTool(
+    'check_scenarios',
+    {
+      description: TOOL_DEFINITIONS.check_scenarios,
+      inputSchema: { document: DOCUMENT, scenarios: SCENARIOS },
+    },
+    ({ document, scenarios }) => respond(checkScenarios(document, scenarios as never)),
   )
 
   server.registerTool(

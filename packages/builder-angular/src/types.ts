@@ -26,4 +26,5 @@ export type {
   PaletteEntry,
   TreeNode,
 } from '@formancy/builder-core'
+export type { Scenario, ScenarioResult } from '@formancy/core'
 export type { DataGridColumn, FieldDef, FieldOption, FormSchema, LayoutNode, LogicRule } from '@formancy/spec'

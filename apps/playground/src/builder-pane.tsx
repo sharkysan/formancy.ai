@@ -6,12 +6,14 @@ import {
   LogicPanel,
   PromptPane,
   PropertyPanel,
+  ScenarioPane,
   useBuilder,
 } from '@formancy/builder-react'
 import { createBuilderSession } from '@formancy/builder-core'
 import type { BuilderSession } from '@formancy/builder-core'
 import { AngularBuilderPane } from './angular-builder-pane.js'
 import { DEMO_MODEL } from './demo-capabilities.js'
+import { STARTER_SAMPLE, STARTER_SCENARIOS } from './starter-scenarios.js'
 
 /**
  * The builder pane: two trees over one document, in either framework.
@@ -147,6 +149,18 @@ export function BuilderBody({
           <PromptPane session={session} ask={DEMO_MODEL} />
 
           <FormancyBuilder session={session} onSelect={setSelected} />
+
+          {/* What this form is supposed to do, rerun after every edit. The
+              check nothing else can make: a condition compiles whichever way
+              round it is written, and only an example with its answer written
+              down tells the two apart
+              ([0110](../../../docs/decisions/0110-a-form-is-checked-against-examples.md)).
+              The scenarios are the host's — here, a file beside the starter. */}
+          <ScenarioPane
+            session={session}
+            scenarios={STARTER_SCENARIOS}
+            initialValue={STARTER_SAMPLE}
+          />
 
           {editing === null ? null : (
             <>

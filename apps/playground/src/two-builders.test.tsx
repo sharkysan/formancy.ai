@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
 import { App } from './app.js'
 
@@ -23,9 +23,21 @@ import { App } from './app.js'
  * Queried by role and accessible name only ([0034]), which is also the only way
  * to compare two builders: the markup is each package's own on purpose.
  */
+/*
+ * Monaco, as a textarea.
+ *
+ * Wired to `onChange` rather than read-only, so a case can make an edit the
+ * way somebody would. It was read-only, which is fine while every case only
+ * reads the JSON — and silently does nothing the moment one tries to write,
+ * which is how the scenario case below first passed against an unedited form.
+ */
 vi.mock('@monaco-editor/react', () => ({
-  default: ({ value }: { value?: string }) => (
-    <textarea readOnly aria-label="Schema" value={value ?? ''} />
+  default: ({ value, onChange }: { value?: string; onChange?: (next: string) => void }) => (
+    <textarea
+      aria-label="Schema"
+      value={value ?? ''}
+      onChange={(event) => onChange?.(event.target.value)}
+    />
   ),
   useMonaco: () => null,
 }))
@@ -206,5 +218,71 @@ describe('describing a change in words', () => {
       ).toBe(true)
     })
     expect(undoButton().disabled).toBe(false)
+  })
+})
+
+/**
+ * The scenario pane is on screen, and it reacts to an edit.
+ *
+ * The same shape as the prompt pane above: a capability that exists in a
+ * package and nowhere a visitor can reach is documented and inert. What is
+ * pinned here is that the panel is reachable and that it answers the question
+ * it exists for — which example stopped holding — through the whole
+ * application rather than in a unit test over a three-field form
+ * ([0110](../../../docs/decisions/0110-a-form-is-checked-against-examples.md)).
+ */
+describe('what the starter form is supposed to do', () => {
+  test('is listed beside it, and holds', async () => {
+    render(<App />)
+    await builtWith('React')
+
+    await waitFor(() => {
+      const said = screen
+        .getAllByRole('status')
+        .map((region) => region.textContent ?? '')
+        .join(' | ')
+      expect(said).toContain('scenarios hold')
+    })
+  })
+
+  test('and an edit in the builder that breaks one names it, rather than counting', async () => {
+    /*
+     * Deleting a field some scenario is about. The document still validates,
+     * the engine still opens it, every other gate here is satisfied — and an
+     * answer the form used to check is no longer collected. Only an example
+     * with its answer written down notices, and it has to NAME the example:
+     * "4 of 5 hold" sends somebody back to the document to work out which.
+     *
+     * `postcode` rather than `canton`, and the reason is worth recording:
+     * deleting `canton` is **refused**, because a rule reads it and the
+     * builder will not leave a condition pointing at nothing
+     * ([0093](../../../docs/decisions/0093-a-rule-follows-the-path-it-reads.md)).
+     * So the edit that breaks a scenario here is one the builder is perfectly
+     * happy with, which is the honest case: the dangerous edits are the ones
+     * nothing else objects to.
+     */
+    const user = userEvent.setup()
+    render(<App />)
+    await builtWith('React')
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole('status').map((region) => region.textContent ?? '').join(' | '),
+      ).toContain('scenarios hold'),
+    )
+
+    const postcode = screen
+      .getAllByRole('treeitem')
+      .find((item) => /post\s*code/i.test(item.textContent ?? ''))
+    expect(postcode, 'the starter no longer has the field this case is about').toBeDefined()
+    await user.click(postcode!)
+    await user.keyboard('{Delete}')
+
+    await waitFor(() => {
+      const said = screen
+        .getAllByRole('status')
+        .map((region) => region.textContent ?? '')
+        .join(' | ')
+      expect(said).toContain('a postcode has to look like one')
+    })
   })
 })
