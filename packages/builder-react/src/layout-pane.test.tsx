@@ -405,7 +405,7 @@ describe('wrapping two items into a row, by keyboard', () => {
 
     // A dialog of what it can be wrapped with, the same shape the move
     // command uses rather than a second idiom to learn.
-    const dialog = await screen.findByRole('dialog', { name: /Wrap Email/ })
+    const dialog = await screen.findByRole('dialog', { name: /beside Email in a row/ })
     // Exact, not a pattern: the row is named "Row with First name and Last
     // name", so a substring match finds two buttons.
     await user.click(within(dialog).getByRole('button', { name: 'First name' }))
@@ -435,7 +435,7 @@ describe('wrapping two items into a row, by keyboard', () => {
 
     await user.tab()
     await user.keyboard('{ArrowDown}{ArrowDown}{ArrowDown}w')
-    const dialog = await screen.findByRole('dialog', { name: /Wrap Email/ })
+    const dialog = await screen.findByRole('dialog', { name: /beside Email in a row/ })
     // Exact, not a pattern: the row is named "Row with First name and Last
     // name", so a substring match finds two buttons.
     await user.click(within(dialog).getByRole('button', { name: 'First name' }))
@@ -454,7 +454,7 @@ describe('wrapping two items into a row, by keyboard', () => {
     await user.tab()
     await user.keyboard('w')
 
-    const dialog = await screen.findByRole('dialog', { name: /Wrap/ })
+    const dialog = await screen.findByRole('dialog', { name: /in a row\?$/ })
     // The focused node is the row at [0]; its own children are inside it, and
     // wrapping a container with its own child is refused by the session. Not
     // offering it beats offering it and explaining afterwards.
@@ -473,7 +473,7 @@ describe('wrapping two items into a row, by keyboard', () => {
     await user.tab()
     await user.keyboard('w{Escape}')
 
-    expect(screen.queryByRole('dialog', { name: /Wrap/ })).toBeNull()
+    expect(screen.queryByRole('dialog', { name: /in a row\?$/ })).toBeNull()
     expect(JSON.stringify(session.document().layouts)).toBe(before)
   })
 
@@ -627,7 +627,9 @@ describe('dragging', () => {
 
     dragFromTo('Last name', 'Email', 'bottom')
 
-    expect(screen.getByRole('status').textContent).toBe('Moved.')
+    // By name: "Moved." said that something moved and not what, which for somebody
+    // who cannot see the tree is half the sentence.
+    expect(screen.getByRole('status').textContent).toBe('Moved Last name.')
   })
 
   test('the keyboard path still works afterwards, because it never depended on this', async () => {

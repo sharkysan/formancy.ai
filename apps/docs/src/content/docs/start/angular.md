@@ -199,8 +199,8 @@ const session = createBuilderSession(schema, {
 })
 ```
 
-Its refusals, the destinations it offers, the names in the arrangement tree and
-everything the structure tree shows or announces are then German; a message a catalogue
+Its refusals and everything the structure tree and the arrangement pane show or
+announce are then German; a message a catalogue
 leaves out is English, one message at a time, so a catalogue of your own can start small.
 **The other panes are still English** — they move next, one at a time in both builders,
 and until then this is a German tree beside English panes
@@ -209,7 +209,10 @@ and until then this is a German tree beside English panes
 
 Every pane the React builder has, this one has too: the arrangement tree and the drag
 surface on the rendered form, the property and logic panels, the translations pane, and
-the prompt and scenario panes. This page said otherwise for more than a week after they shipped.
+the prompt and scenario panes. This page said otherwise for more than a week after they
+shipped — and the arrangement pane offered less than React's until both read their offer
+from `builder-core`: it could not place a field the arrangement leaves out, or add a code
+([0117](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0117-the-arrangement-pane-offers-the-same-in-both-builders.md)).
 
 ## Proof this is not a second implementation
 

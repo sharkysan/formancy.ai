@@ -947,9 +947,13 @@ and `spoken.test.ts` holds each against the document. Each builder's own tests a
 that a drop names the field that moved, and both failed on the old code with "Moved
 City." ([0116](../decisions/0116-what-a-builder-says-is-decided-once.md)).
 
-*Residual:* only the structure tree is decided in one place. The layout pane, the
-property panel and the others still word their own announcements, in two builders each,
-and could be wrong the same way. A true sentence can still go unheard — a live region's
+The arrangement pane's sentences are decided the same way, in
+`packages/builder-core/src/arrangement.ts`, and a drop there now names what moved — it
+said only "Moved." ([0117](../decisions/0117-the-arrangement-pane-offers-the-same-in-both-builders.md)).
+
+*Residual:* the structure tree and the arrangement pane are decided in one place. The
+property and logic panels and the others still word their own announcements, in two
+builders each, and could be wrong the same way. A true sentence can still go unheard — a live region's
 timing belongs to the browser and the screen reader — and no manual screen-reader audit
 has been performed (D4).
 

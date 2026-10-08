@@ -13,6 +13,7 @@ import {
 } from '@formancy/builder-core'
 import type { FormSchema } from '@formancy/spec'
 import { FormancyBuilder } from './builder.js'
+import { FormancyLayoutPane } from './layout-pane.js'
 
 afterEach(cleanup)
 
@@ -148,5 +149,118 @@ describe('the structure tree', () => {
 
     expect(screen.getByText(german('tree.empty'))).toBeTruthy()
     expect(screen.getByRole('tree', { name: german('tree.label') })).toBeTruthy()
+  })
+})
+
+describe('the arrangement pane', () => {
+  const arranged: FormSchema = {
+    specVersion: '2',
+    id: 'signup',
+    title: 'Sign up',
+    model: {
+      fields: [
+        { key: 'first', type: 'text', label: 'First name' },
+        { key: 'last', type: 'text', label: 'Last name' },
+        { key: 'email', type: 'text', label: 'Email' },
+      ],
+    },
+    layouts: [
+      {
+        name: 'web',
+        nodes: [
+          {
+            kind: 'row',
+            children: [
+              { kind: 'field', path: 'first' },
+              { kind: 'field', path: 'last' },
+            ],
+          },
+        ],
+      },
+    ],
+  }
+  const layoutWords = (document: FormSchema): string[] => [
+    document.title,
+    'web',
+    ...flatten(document).map((node) => nameOf(document, node.def)),
+    'a',
+    'm',
+    'u',
+    'w',
+  ]
+
+  test('shows nothing in English that the catalogue did not give it', async () => {
+    const user = userEvent.setup()
+    const session = createBuilderSession(arranged, { text: createBuilderText(pseudoLanguage()) })
+    const { container } = render(<FormancyLayoutPane session={session} />)
+    const seen: string[] = []
+    const look = (): void => {
+      seen.push(...shown(container))
+    }
+
+    // The tree, the unplaced field, the legend.
+    look()
+    await user.click(screen.getAllByRole('treeitem')[0]!)
+
+    // Adding a code: what, which answer, where, and the announcement.
+    await user.keyboard('a')
+    look()
+    const what = screen.getByRole('dialog')
+    await user.click(within(what).getAllByRole('button')[3]!)
+    look()
+    await user.click(within(screen.getByRole('dialog')).getAllByRole('button')[0]!)
+    look()
+    await user.click(within(screen.getByRole('dialog')).getAllByRole('button')[0]!)
+    look()
+
+    // Wrapping, with its help, and moving.
+    act(() => {
+      screen.getAllByRole('treeitem')[0]!.focus()
+    })
+    await user.keyboard('w')
+    look()
+    await user.keyboard('{Escape}m')
+    look()
+    fireEvent.click(within(screen.getByRole('dialog')).getAllByRole('button')[0]!)
+    look()
+    await user.keyboard('{Delete}')
+    look()
+
+    expect(untranslated(seen, layoutWords(session.document()))).toEqual([])
+    expect(
+      [
+        'Arrangement',
+        'Not in this arrangement',
+        'Add to the arrangement',
+        'Which answer',
+        'Where should',
+        'What should go beside',
+        'Choose the item',
+        'Move ',
+        'take it out of the arrangement',
+        'Added ',
+      ].filter((prefix) => !seen.some((text) => text.includes(prefix))),
+    ).toEqual([])
+  })
+
+  test('and a form with no arrangement, and a code it cannot have yet, likewise', async () => {
+    const user = userEvent.setup()
+    const old: FormSchema = { ...arranged, specVersion: '1', layouts: [] }
+    const session = createBuilderSession(old, { text: createBuilderText(pseudoLanguage()) })
+    const { container } = render(<FormancyLayoutPane session={session} />)
+    const seen = shown(container)
+
+    await user.click(screen.getByRole('button'))
+    // A new arrangement places nothing, so the tree itself takes the keys.
+    await user.click(screen.getByRole('tree'))
+    await user.keyboard('a')
+    seen.push(...shown(container))
+
+    expect(untranslated(seen, layoutWords(session.document()))).toEqual([])
+    expect(
+      ['has no arrangement', 'Add an arrangement', 'needs spec version'].filter(
+        (prefix) => !seen.some((text) => text.includes(prefix)),
+      ),
+    ).toEqual([])
   })
 })

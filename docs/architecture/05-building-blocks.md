@@ -233,8 +233,8 @@ rather than inline in English twice. Whole sentences per noun rather than a noun
 into a template, because German agrees an adjective with its noun; `Intl` decides
 plural forms and how a list is joined
 ([0114](../decisions/0114-the-builder-speaks-the-authors-language.md)). The structure tree
-reads it in both builders; the other surfaces have not moved yet, and until they do a
-German builder is German in its tree and English in its panes.
+and the arrangement pane read it in both builders; the other surfaces have not moved yet,
+and until they do a German builder is German in its trees and English in its panels.
 
 `spoken.ts` holds what a builder **says** after a command on the structure tree — the
 command and the sentence together, because the sentence needs what was true before the
@@ -245,6 +245,14 @@ it a page. `pseudo.ts` is how a builder proves it has no English left: every mes
 marked, the rendered tree walked, anything unmarked that is not the document's own words
 named. One judgement for both builders' guards
 ([0116](../decisions/0116-what-a-builder-says-is-decided-once.md)).
+
+`arrangement.ts` is the same for the arrangement pane, and more: what its add palette
+offers, what a new node is, and what may be wrapped with what, as well as what each
+command says. The two panes had answered the first of those separately and differently —
+the Angular one listed the fields an arrangement leaves out and gave no way to place one —
+so the offer is decided here and both panes render it
+([0117](../decisions/0117-the-arrangement-pane-offers-the-same-in-both-builders.md)).
+`messages-de.ts` is the German catalogue, apart from the English it translates.
 `navigate.ts` holds finding things — a field by key path, a container, a layout node
 by position — which left `session.ts` because none of it is a command.
 

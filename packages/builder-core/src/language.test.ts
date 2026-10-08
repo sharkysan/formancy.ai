@@ -1,7 +1,8 @@
 import type { FormSchema } from '@formancy/spec'
 import { describe, expect, test } from 'vitest'
 import { flattenLayout, describeLayoutTarget } from './layout-tree.js'
-import { BUILDER_MESSAGES_DE, createBuilderText } from './messages.js'
+import { BUILDER_MESSAGES_DE } from './messages-de.js'
+import { createBuilderText } from './messages.js'
 import { newFieldOfType } from './palette.js'
 import { applyProposal, proposeEdit } from './proposal.js'
 import { createBuilderSession } from './session.js'
@@ -115,6 +116,16 @@ describe('a session opened in German', () => {
 
     expect(rows[0]?.name).toBe(german('layout.with.row', { list: 'Vorname und Nachname' }))
     expect(rows[3]?.name).toBe(german('layout.empty.row'))
+  })
+
+  test('puts what a container holds in the case its sentence needs', () => {
+    // After "mit" German takes the dative. The first German catalogue used one
+    // form for a node in a list and a node on its own, and shipped "Abschnitt mit
+    // eine Zeile"; the list forms and the new-node forms are separate for that.
+    const nested = arranged()
+    nested.layouts = [{ name: 'web', nodes: [{ kind: 'section', children: [{ kind: 'row', children: [] }] }] }]
+
+    expect(flattenLayout(nested, 'web', german)[0]?.name).toBe('Abschnitt mit einer Zeile')
   })
 
   test('describes where a layout node would land in German', () => {

@@ -12,41 +12,29 @@ import {
   viewChildren,
 } from '@angular/core'
 import {
+  addLayoutAndSay,
   describeLayoutTarget,
+  dropLayoutAndSay,
   flattenLayout,
   layoutDropLocation,
+  layoutKeyHelp,
+  moveLayoutAndSay,
   nameOfPath,
+  redoAndSay,
+  removeLayoutAndSay,
+  undoAndSay,
+  unwrapLayoutAndSay,
+  wrapAndSay,
+  wrapCandidates,
 } from '@formancy/builder-core'
-import type {
-  BuilderSession,
-  LayoutLocation,
-  LayoutNode,
-  LayoutTreeNode,
-} from './types.js'
+import type { BuilderSession, LayoutLocation, LayoutNode, LayoutTreeNode } from './types.js'
+import { FormancyLayoutAdd } from './layout-add.js'
+import { BuilderTextPipe } from './text.pipe.js'
 import { injectBuilderView } from './view.js'
-
-/** What the legend lists. Same spelling as the React pane's, deliberately. */
-const KEY_HELP: ReadonlyArray<readonly [string, string]> = [
-  ['↑ ↓', 'move between items'],
-  ['a', 'add a row, column or section'],
-  ['m', 'move the focused item'],
-  ['u', 'unwrap a row or column, keeping what is in it'],
-  ['w', 'wrap it and another item into a row, side by side'],
-  ['Delete', 'take it out of the arrangement'],
-  ['Ctrl+Z / Ctrl+Y', 'undo / redo'],
-]
-
-/** The containers this pane can add. A field placement comes from the unplaced list. */
-const CONTAINERS = ['row', 'column', 'section'] as const
 
 interface Target {
   location: LayoutLocation
   label: string
-}
-
-/** Whether `outer` is `inner` or one of its ancestors. */
-function enclosesPath(outer: readonly number[], inner: readonly number[]): boolean {
-  return outer.length < inner.length && outer.every((step, at) => inner[at] === step)
 }
 
 function samePath(a: readonly number[], b: readonly number[]): boolean {
@@ -54,7 +42,8 @@ function samePath(a: readonly number[], b: readonly number[]): boolean {
 }
 
 /**
- * The arrangement editor for Angular: rows, columns and sections, by keyboard.
+ * The arrangement editor for Angular: rows, columns, sections, codes and fields,
+ * by keyboard.
  *
  * A separate pane rather than a mode of the structure tree, for the reason the
  * React one gives: the model answers *what does this form collect* and the
@@ -62,136 +51,145 @@ function samePath(a: readonly number[], b: readonly number[]): boolean {
  * being in the other. One tree showing both would have to pretend those are the
  * same question.
  *
- * Which destinations exist, how each is described, and what may be wrapped with
- * what all come from `@formancy/builder-core` — shared with the React pane, so
- * the two cannot offer different answers about one document.
+ * What may be added, what a new node looks like, which destinations exist and how
+ * each is described, what may be wrapped with what, and every sentence a command
+ * produces come from `@formancy/builder-core` — shared with the React pane. This
+ * pane used to answer the first of those itself, and its answer had drifted to
+ * three containers: it listed the fields the arrangement leaves out and gave no way
+ * to place one ([0116](../../../docs/decisions/0116-what-a-builder-says-is-decided-once.md)).
  */
 @Component({
   selector: 'formancy-layout-pane',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [BuilderTextPipe, FormancyLayoutAdd],
   template: `
     <div data-formancy-part="layout-pane">
-      <ul
-        #tree
-        role="tree"
-        [attr.aria-label]="label()"
-        data-formancy-part="layout-tree"
-        [attr.tabindex]="count() === 0 ? 0 : -1"
-        (keydown)="onKeyDown($event)"
-      >
-        @for (row of rows(); track row.path.join('.'); let position = $index) {
-          <!-- A second route to commands that already work without it. -->
-          <li
-            #item
-            role="treeitem"
-            [attr.aria-level]="row.depth + 1"
-            [attr.aria-selected]="position === index()"
-            data-formancy-part="layout-node"
-            [attr.data-kind]="row.node.kind"
-            [attr.tabindex]="position === index() ? 0 : -1"
-            (focus)="focusedIndex.set(position)"
-            draggable="true"
-            [attr.data-dragging]="isDragging(row) ? 'true' : null"
-            [attr.data-drop]="dropEdgeFor(position)"
-            (dragstart)="onDragStart(row, $event)"
-            (dragend)="onDragEnd()"
-            (dragover)="onDragOver(row, position, $event)"
-            (dragleave)="dropTarget.set(null)"
-            (drop)="onDrop(row, $event)"
-          >
-            {{ row.name }}
-          </li>
-        }
-      </ul>
-
-      @if (count() === 0) {
-        <p data-formancy-part="layout-empty">
-          This arrangement places nothing yet, so the form falls back to the model's own order.
-        </p>
-      }
-
-      @if (unplaced().length > 0) {
-        <!-- Named, not hidden. A field the only arrangement leaves out is
-             collected by the form and invisible to everyone filling it in, and
-             that is exactly the mistake this pane can prevent. -->
-        <div data-formancy-part="layout-unplaced">
-          <h3>Not in this arrangement</h3>
-          <ul>
-            @for (path of unplaced(); track path) {
-              <li>{{ nameOf(path) }}</li>
-            }
-          </ul>
-        </div>
-      }
-
-      @if (adding()) {
-        <div role="dialog" aria-label="Add to the arrangement" data-formancy-part="layout-add">
-          <ul>
-            @for (kind of containers; track kind) {
-              <li><button type="button" (click)="chooseContainer(kind)">{{ kind }}</button></li>
-            }
-          </ul>
-          <button type="button" (click)="cancelDialog()">Cancel</button>
-        </div>
-      }
-
-      @if (addingWhere() !== null) {
-        <div
-          role="dialog"
-          [attr.aria-label]="'Where should the ' + addingWhere() + ' go?'"
-          data-formancy-part="layout-add-where"
+      @if (name() === undefined) {
+        <p data-formancy-part="layout-empty">{{ 'layout.none' | builderText: text() }}</p>
+        <button type="button" (click)="addLayout()">
+          {{ 'layout.addLayout' | builderText: text() }}
+        </button>
+      } @else {
+        <ul
+          #tree
+          role="tree"
+          [attr.aria-label]="treeName()"
+          data-formancy-part="layout-tree"
+          [attr.tabindex]="count() === 0 ? 0 : -1"
+          (keydown)="onKeyDown($event)"
         >
-          <ul>
-            @for (target of addTargets(); track targetKey(target)) {
-              <li><button type="button" (click)="completeAdd(target)">{{ target.label }}</button></li>
-            }
-          </ul>
-          <button type="button" (click)="cancelDialog()">Cancel</button>
-        </div>
+          @for (row of rows(); track row.path.join('.'); let position = $index) {
+            <!-- A second route to commands that already work without it. -->
+            <li
+              #item
+              role="treeitem"
+              [attr.aria-level]="row.depth + 1"
+              [attr.aria-selected]="position === index()"
+              data-formancy-part="layout-node"
+              [attr.data-kind]="row.node.kind"
+              [attr.tabindex]="position === index() ? 0 : -1"
+              (focus)="focusedIndex.set(position)"
+              draggable="true"
+              [attr.data-dragging]="isDragging(row) ? 'true' : null"
+              [attr.data-drop]="dropEdgeFor(position)"
+              (dragstart)="onDragStart(row, $event)"
+              (dragend)="onDragEnd()"
+              (dragover)="onDragOver(row, position, $event)"
+              (dragleave)="dropTarget.set(null)"
+              (drop)="onDrop(row, $event)"
+            >
+              {{ row.name }}
+            </li>
+          }
+        </ul>
+
+        @if (count() === 0) {
+          <p data-formancy-part="layout-empty">
+            {{ 'layout.placesNothing' | builderText: text() }}
+          </p>
+        }
+
+        @if (unplaced().length > 0) {
+          <!-- Named, not hidden. A field the only arrangement leaves out is
+               collected by the form and invisible to everyone filling it in, and
+               that is exactly the mistake this pane can prevent. -->
+          <div data-formancy-part="layout-unplaced">
+            <h3>{{ 'layout.unplaced' | builderText: text() }}</h3>
+            <ul>
+              @for (path of unplaced(); track path) {
+                <li>{{ nameOf(path) }}</li>
+              }
+            </ul>
+          </div>
+        }
+
+        @if (adding()) {
+          <formancy-layout-add
+            [session]="session()"
+            [layout]="name()!"
+            (said)="announcement.set($event)"
+            (closed)="cancelDialog()"
+          />
+        }
       }
 
       @if (moving() !== null) {
         <div
           role="dialog"
-          [attr.aria-label]="'Move ' + moving()!.name"
+          [attr.aria-label]="'tree.moveTitle' | builderText: text() : { name: moving()!.name }"
           data-formancy-part="layout-move"
+          (keydown.escape)="onDialogEscape($event)"
         >
           <ul>
             @for (target of moveTargets(); track targetKey(target)) {
-              <li><button type="button" (click)="completeMove(target)">{{ target.label }}</button></li>
+              <li>
+                <button type="button" (click)="completeMove(target)">{{ target.label }}</button>
+              </li>
             }
           </ul>
-          <button type="button" (click)="cancelDialog()">Cancel</button>
+          <button type="button" (click)="cancelDialog()">
+            {{ 'dialog.cancel' | builderText: text() }}
+          </button>
         </div>
       }
 
       @if (wrapping() !== null) {
         <div
           role="dialog"
-          [attr.aria-label]="'What should go beside ' + wrapping()!.name + ' in a row?'"
+          [attr.aria-label]="'layout.wrapTitle' | builderText: text() : { name: wrapping()!.name }"
           data-formancy-part="layout-wrap"
+          (keydown.escape)="onDialogEscape($event)"
         >
+          <p>{{ 'layout.wrapHelp' | builderText: text() : { name: wrapping()!.name } }}</p>
           <ul>
-            @for (candidate of wrapCandidates(); track candidate.path.join('.')) {
+            @for (candidate of wrapChoices(); track candidate.path.join('.')) {
               <li>
-                <button type="button" (click)="completeWrap(candidate)">{{ candidate.name }}</button>
+                <button type="button" (click)="completeWrap(candidate)">
+                  {{ candidate.name }}
+                </button>
               </li>
             }
           </ul>
-          <button type="button" (click)="cancelDialog()">Cancel</button>
+          <button type="button" (click)="cancelDialog()">
+            {{ 'dialog.cancel' | builderText: text() }}
+          </button>
         </div>
       }
 
+      <!-- One polite region for this pane. role="status" already implies
+           aria-live="polite"; setting both announces everything twice. -->
       <p role="status" data-formancy-part="layout-status">{{ announcement() }}</p>
 
-      <dl data-formancy-part="layout-keys">
-        @for (entry of keyHelp; track entry[0]) {
-          <div>
-            <dt>{{ entry[0] }}</dt>
-            <dd>{{ entry[1] }}</dd>
-          </div>
-        }
-      </dl>
+      @if (name() !== undefined) {
+        <dl data-formancy-part="layout-keys">
+          @for (entry of keyHelp(); track entry[0]) {
+            <div>
+              <dt>{{ entry[0] }}</dt>
+              <dd>{{ entry[1] }}</dd>
+            </div>
+          }
+        </dl>
+      }
     </div>
   `,
 })
@@ -199,7 +197,8 @@ export class FormancyLayoutPane {
   readonly session = input.required<BuilderSession>()
   /** Which arrangement to edit. Defaults to the first one the form has. */
   readonly layout = input<string | undefined>(undefined)
-  readonly label = input('Arrangement')
+  /** The tree's accessible name, before the arrangement's own. The session's words by default. */
+  readonly label = input<string | undefined>(undefined)
   /**
    * The node the person is on, as its index path, or `null` when the
    * arrangement is empty. Keyed on the PATH rather than the position: an edit
@@ -207,13 +206,14 @@ export class FormancyLayoutPane {
    */
   readonly selected = output<readonly number[] | null>()
 
-  protected readonly keyHelp = KEY_HELP
-  protected readonly containers = CONTAINERS
   protected readonly view = injectBuilderView(this.session)
+  /** Every word this pane shows, in the language the session was opened in (0114). */
+  protected readonly text = computed(() => this.session().text)
+  protected readonly keyHelp = computed(() => layoutKeyHelp(this.session()))
 
   protected readonly focusedIndex = signal(0)
+  /** Whether the add conversation is open. Its three steps are `FormancyLayoutAdd`'s. */
   protected readonly adding = signal(false)
-  protected readonly addingWhere = signal<string | null>(null)
   protected readonly moving = signal<LayoutTreeNode | null>(null)
   /**
    * The item waiting to be paired into a row.
@@ -237,9 +237,15 @@ export class FormancyLayoutPane {
   protected readonly name = computed(
     () => this.layout() ?? (this.view().document.layouts ?? [])[0]?.name,
   )
+  protected readonly treeName = computed(() =>
+    this.text()('layout.treeName', {
+      label: this.label() ?? this.text()('layout.label'),
+      name: this.name() ?? '',
+    }),
+  )
   protected readonly rows = computed((): LayoutTreeNode[] => {
     const name = this.name()
-    return name === undefined ? [] : flattenLayout(this.view().document, name, this.session().text)
+    return name === undefined ? [] : flattenLayout(this.view().document, name, this.text())
   })
   protected readonly count = computed(() => this.rows().length)
   protected readonly index = computed(() =>
@@ -257,26 +263,13 @@ export class FormancyLayoutPane {
     void this.view()
     return name === undefined ? [] : this.session().unplacedFields(name)
   })
-  protected readonly addTargets = computed((): Target[] => {
-    const kind = this.addingWhere()
-    if (kind === null) return []
-    return this.targetsFor({ kind, children: [] } as unknown as LayoutNode)
-  })
   protected readonly moveTargets = computed((): Target[] => {
     const node = this.moving()
-    return node === undefined || node === null ? [] : this.targetsFor(node.path)
+    return node === null ? [] : this.targetsFor(node.path)
   })
-  /**
-   * Which items the focused one may be put in a row with.
-   *
-   * Its own descendants and its own ancestors are left out: the session refuses
-   * to wrap a container together with something inside it, and not offering a
-   * choice beats offering it and explaining afterwards.
-   */
-  protected readonly wrapCandidates = computed((): LayoutTreeNode[] => {
+  protected readonly wrapChoices = computed((): LayoutTreeNode[] => {
     const subject = this.wrapping()
-    if (subject === null) return []
-    return this.candidatesFor(subject)
+    return subject === null ? [] : wrapCandidates(this.rows(), subject)
   })
 
   constructor() {
@@ -313,8 +306,7 @@ export class FormancyLayoutPane {
       const items = this.items()
       const root = this.tree()?.nativeElement
       untracked(() => {
-        if (this.adding() || this.addingWhere() !== null) return
-        if (this.moving() !== null || this.wrapping() !== null) return
+        if (this.anyDialogOpen()) return
         const active = document.activeElement
         const inside = root !== undefined && active !== null && root.contains(active)
         if (inside || this.keepFocus) items[at]?.nativeElement.focus()
@@ -372,8 +364,8 @@ export class FormancyLayoutPane {
     const location = layoutDropLocation(this.view().document, name, from, row.path, edgeOf(event))
     if (location === undefined) return
 
-    const outcome = this.session().moveLayoutNode({ layout: name, path: from }, location)
-    this.announcement.set(outcome.ok ? 'Moved.' : `Cannot move: ${outcome.message}`)
+    // Naming what moved, which "Moved." did not.
+    this.announcement.set(dropLayoutAndSay(this.session(), { layout: name, path: from }, location))
   }
 
   protected nameOf(path: string): string {
@@ -395,10 +387,10 @@ export class FormancyLayoutPane {
       const key = event.key.toLowerCase()
       if (key === 'z') {
         event.preventDefault()
-        this.announcement.set(this.session().undo() ? 'Undone.' : 'Nothing to undo.')
+        this.announcement.set(undoAndSay(this.session()))
       } else if (key === 'y') {
         event.preventDefault()
-        this.announcement.set(this.session().redo() ? 'Redone.' : 'Nothing to redo.')
+        this.announcement.set(redoAndSay(this.session()))
       }
       return
     }
@@ -448,7 +440,7 @@ export class FormancyLayoutPane {
         // An empty palette is a real answer — the only row in a layout has
         // nowhere else to be — and saying so beats opening an empty dialog.
         if (this.targetsFor(focused.path).length === 0) {
-          this.announcement.set(`${focused.name} cannot be moved anywhere else.`)
+          this.announcement.set(this.text()('said.nowhereToMove', { name: focused.name }))
           return
         }
         this.moving.set(focused)
@@ -457,8 +449,8 @@ export class FormancyLayoutPane {
       case 'w':
       case 'W': {
         event.preventDefault()
-        if (this.candidatesFor(focused).length === 0) {
-          this.announcement.set(`There is nothing to put beside ${focused.name}.`)
+        if (wrapCandidates(this.rows(), focused).length === 0) {
+          this.announcement.set(this.text()('said.nothingBeside', { name: focused.name }))
           return
         }
         this.wrapping.set(focused)
@@ -467,24 +459,18 @@ export class FormancyLayoutPane {
       case 'u':
       case 'U': {
         event.preventDefault()
-        const outcome = this.session().unwrapLayoutNode({ layout: name, path: focused.path })
         this.announcement.set(
-          outcome.ok
-            ? `Unwrapped ${focused.name}. What was inside it stayed where it was.`
-            : `Cannot unwrap ${focused.name}: ${outcome.message}`,
+          unwrapLayoutAndSay(this.session(), { layout: name, path: focused.path }),
         )
         return
       }
       case 'Delete':
       case 'Backspace': {
         event.preventDefault()
-        const outcome = this.session().removeLayoutNode({ layout: name, path: focused.path })
+        // Said plainly by builder-core: the field is still collected, it only has
+        // no place in this arrangement. Anything else reads as a deletion.
         this.announcement.set(
-          outcome.ok
-            ? // Said plainly: the field is still collected, it just has no place
-              // in this arrangement. Anything else reads as a deletion.
-              `Took ${focused.name} out of the arrangement. The form still collects it.`
-            : `Cannot remove ${focused.name}: ${outcome.message}`,
+          removeLayoutAndSay(this.session(), { layout: name, path: focused.path }),
         )
         return
       }
@@ -493,24 +479,8 @@ export class FormancyLayoutPane {
     }
   }
 
-  protected chooseContainer(kind: string): void {
-    this.adding.set(false)
-    this.addingWhere.set(kind)
-  }
-
-  protected completeAdd(target: Target): void {
-    const kind = this.addingWhere()
-    this.addingWhere.set(null)
-    const name = this.name()
-    if (kind === null || name === undefined) return
-    const outcome = this.session().insertLayoutNode(target.location, {
-      kind,
-      children: [],
-    } as unknown as LayoutNode)
-    this.announcement.set(
-      outcome.ok ? `Added ${kind} to ${target.label}.` : `Cannot add: ${outcome.message}`,
-    )
-    this.keepFocus = true
+  protected addLayout(): void {
+    this.announcement.set(addLayoutAndSay(this.session()))
   }
 
   protected completeMove(target: Target): void {
@@ -518,12 +488,8 @@ export class FormancyLayoutPane {
     const name = this.name()
     this.moving.set(null)
     if (node === null || name === undefined) return
-    const outcome = this.session().moveLayoutNode(
-      { layout: name, path: node.path },
-      target.location,
-    )
     this.announcement.set(
-      outcome.ok ? `Moved ${node.name} to ${target.label}.` : `Cannot move: ${outcome.message}`,
+      moveLayoutAndSay(this.session(), { layout: name, path: node.path }, target),
     )
     this.keepFocus = true
   }
@@ -533,24 +499,25 @@ export class FormancyLayoutPane {
     const name = this.name()
     this.wrapping.set(null)
     if (subject === null || name === undefined) return
-
     // The focused item first, so the order is the one the person chose rather
     // than the one the document happened to have.
-    const outcome = this.session().wrapLayoutNodes(name, [subject.path, partner.path], {
-      kind: 'row',
-      children: [],
-    })
-    this.announcement.set(
-      outcome.ok
-        ? `Put ${subject.name} and ${partner.name} side by side in a row.`
-        : `Cannot wrap: ${outcome.message}`,
-    )
+    this.announcement.set(wrapAndSay(this.session(), name, subject.path, partner.path))
     this.keepFocus = true
+  }
+
+  /**
+   * Escape inside a dialog closes it. On the dialog rather than the document, so
+   * it cannot swallow the key from anything else on the page — the React pane's
+   * shape, which this one lacked: its dialogs could only be left by Cancel.
+   */
+  protected onDialogEscape(event: Event): void {
+    event.preventDefault()
+    event.stopPropagation()
+    this.cancelDialog()
   }
 
   protected cancelDialog(): void {
     this.adding.set(false)
-    this.addingWhere.set(null)
     this.moving.set(null)
     this.wrapping.set(null)
     this.keepFocus = true
@@ -558,12 +525,7 @@ export class FormancyLayoutPane {
   }
 
   private anyDialogOpen(): boolean {
-    return (
-      this.adding() ||
-      this.addingWhere() !== null ||
-      this.moving() !== null ||
-      this.wrapping() !== null
-    )
+    return this.adding() || this.moving() !== null || this.wrapping() !== null
   }
 
   private targetsFor(what: LayoutNode | readonly number[]): Target[] {
@@ -574,17 +536,8 @@ export class FormancyLayoutPane {
       .validLayoutTargets(name, what)
       .map((location) => ({
         location,
-        label: describeLayoutTarget(this.view().document, location, from, this.session().text),
+        label: describeLayoutTarget(this.view().document, location, from, this.text()),
       }))
-  }
-
-  private candidatesFor(subject: LayoutTreeNode): LayoutTreeNode[] {
-    return this.rows().filter(
-      (candidate) =>
-        !samePath(candidate.path, subject.path) &&
-        !enclosesPath(subject.path, candidate.path) &&
-        !enclosesPath(candidate.path, subject.path),
-    )
   }
 }
 

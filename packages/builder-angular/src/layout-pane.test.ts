@@ -219,6 +219,85 @@ describe('the arrangement tree', () => {
     expect(session.document().layouts?.[0]?.nodes.length).toBe(2)
   })
 
+  test('a field the arrangement leaves out can be placed, not only listed', async () => {
+    // This pane named the unplaced field under a heading and offered three
+    // containers when asked to add something — so the mistake it pointed at was
+    // one it gave no way to fix. The offer is builder-core's now, the React one.
+    const { session, tab, press, click } = await mount()
+    await tab()
+    await press('{End}')
+    await press('{Delete}')
+
+    await press('a')
+    await click(
+      within(screen.getByRole('dialog', { name: /add/i })).getByRole('button', { name: 'Email' }),
+    )
+    const where = screen.getByRole('dialog', { name: /where should email go/i })
+    await click(choices(where)[0]!)
+
+    expect(session.unplacedFields('web')).toEqual([])
+    expect(screen.getByRole('status').textContent).toMatch(/^Added Email to /)
+  })
+
+  test('a code can be added, showing an answer and labelled after it', async () => {
+    const { session, tab, press, click } = await mount()
+    await tab()
+
+    await press('a')
+    await click(
+      within(screen.getByRole('dialog', { name: /add/i })).getByRole('button', { name: 'Code' }),
+    )
+    await click(
+      within(screen.getByRole('dialog', { name: /which answer/i })).getByRole('button', {
+        name: 'Email',
+      }),
+    )
+    await click(choices(screen.getByRole('dialog', { name: /the code for email/i }))[0]!)
+
+    const nodes = JSON.stringify(session.document().layouts?.[0]?.nodes)
+    expect(nodes).toContain('"kind":"qrcode"')
+    expect(nodes).toContain('"label":"Email as a code"')
+  })
+
+  test('a code in a version 1 form is offered with the upgrade, not as a dead end', async () => {
+    const { session, tab, press, click } = await mount({
+      ...schema,
+      specVersion: '1',
+      layouts: [{ name: 'web', nodes: [{ kind: 'field', path: 'first' }] }],
+    })
+    await tab()
+
+    await press('a')
+    const dialog = screen.getByRole('dialog', { name: /add/i })
+    expect(within(dialog).queryByRole('button', { name: 'Code' })).toBeNull()
+    await click(within(dialog).getByRole('button', { name: /move it to version 2/i }))
+
+    expect(session.document().specVersion).toBe('2')
+  })
+
+  test('a form with no arrangement says what that means and offers one', async () => {
+    const { session, click } = await mount({ ...schema, layouts: [] })
+
+    expect(screen.getByText(/has no arrangement/)).toBeTruthy()
+    await click(screen.getByRole('button', { name: 'Add an arrangement' }))
+
+    expect(session.document().layouts?.map((layout) => layout.name)).toEqual(['web'])
+  })
+
+  test('Escape inside a dialog closes it, where Cancel was the only way out', async () => {
+    const { tab, press } = await mount()
+    await tab()
+    await press('a')
+    // Focus inside the dialog, so the tree's own Escape cannot be the one that answers.
+    within(screen.getByRole('dialog', { name: /add/i }))
+      .getAllByRole('button')[0]!
+      .focus()
+
+    await press('{Escape}')
+
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
   test('Ctrl+Z undoes an arrangement edit like any other', async () => {
     const { session, tab, press } = await mount()
     await tab()
@@ -285,8 +364,8 @@ describe('dragging in the arrangement', () => {
 
     expect(JSON.stringify(session.document().layouts?.[0]?.nodes)).not.toBe(before)
     // Through the same live region the keyboard path uses, so a drag is not a
-    // silent command for somebody using both.
-    expect(screen.getByRole('status').textContent).toMatch(/moved/i)
+    // silent command for somebody using both — and by name, which "Moved." was not.
+    expect(screen.getByRole('status').textContent).toBe('Moved Email.')
   })
 
   test('and a drop the session would refuse changes nothing', async () => {
