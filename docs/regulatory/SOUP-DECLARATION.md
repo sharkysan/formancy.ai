@@ -291,8 +291,10 @@ Virus scanning, resumable and multipart uploads, and presigned uploads that woul
 bytes out of the server's own data path. Also a submission token bound to the form version,
 which is the gap that keeps the public plane off a public deployment.
 
-**The server writes no log.** Fastify is constructed with the logger off, so no submission
-content can reach a log — and nothing can tell an operator why a request failed either.
+**The server writes no request log.** Fastify is constructed with the logger off, so no
+submission content can reach a request log — and nothing can tell an operator why a request
+failed either. Its background workers do print a failed pass's error to standard error,
+unredacted; hazard C3 says what that can carry.
 There is no redaction configuration, so a deployment that adds a logger owns that question
 alone. Hazard C3 has the detail.
 

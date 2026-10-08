@@ -10,6 +10,22 @@ later.
 
 ## Unreleased
 
+**`@formancy/builder-angular` logged two lines to the console on every ↓ keypress**
+in its structure tree — `PROBE before …` and `PROBE after …`, a debugging probe left
+in the key handler since the package was introduced, and so in 0.3.0.
+An application embedding the builder had its console filled with somebody else's
+diagnostics, and nothing could notice: the tests assert on the DOM and the browser gate
+collects page errors, not log lines. The probe is gone, and
+`apps/docs/src/console.test.ts` now refuses any reference to `console` in a published
+package somebody imports — a library's console is its host's
+([0115](docs/decisions/0115-a-library-writes-nothing-to-its-hosts-console.md)).
+
+Looking at the one package allowed to write found a wrong statement in the regulatory
+set: hazard C3 said the server emitted "no output of any kind". It has no request log,
+which is what the integration test asserts — but its three background workers print a
+failed pass's error to standard error, unredacted, and a Drizzle query error carries
+the query's parameters. C3 and the SOUP declaration now say so.
+
 **The builder can speak the author's language — the core of it, in this change.** Both
 builders were English and written inline, and so was `@formancy/builder-core`: every
 refusal a session issues, the move palette's "Section with A and B, between C and D", the

@@ -418,9 +418,7 @@ export class FormancyBuilder {
     switch (event.key) {
       case 'ArrowDown':
         event.preventDefault()
-        console.log('PROBE before', this.focusedIndex(), 'index', this.index(), 'count', this.count())
         this.focusedIndex.set(Math.min(this.index() + 1, this.count() - 1))
-        console.log('PROBE after', this.focusedIndex(), 'index', this.index())
         break
       case 'ArrowUp':
         event.preventDefault()
