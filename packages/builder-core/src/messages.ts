@@ -278,6 +278,29 @@ export const BUILDER_MESSAGES = {
   'layoutProps.heading.column': 'This column',
   'layoutProps.heading.tabs': 'This tab strip',
   'layoutProps.heading.table': 'This grid',
+  // ------------------------------------------------------------------ the logic panel
+  'logic.heading': 'Rules',
+  'logic.empty': 'This field always behaves the same way.',
+  'logic.remove': 'Remove the rule “{rule}” on {target}',
+  'logic.add': 'Add a rule',
+  'logic.what': 'What the rule does',
+  'logic.check': 'Which check',
+  // Examples in the box, not values: a check's name and a calculation in CEL.
+  'logic.check.example': 'email-not-taken',
+  'logic.calculation': 'The calculation',
+  'logic.calculation.example': 'qty * unitPrice',
+  'logic.match': 'Match',
+  'logic.join.all': 'all of these',
+  'logic.join.any': 'any of these',
+  'logic.field': 'Field',
+  'logic.field.numbered': 'Field {number}',
+  'logic.comparison': 'Comparison',
+  'logic.comparison.numbered': 'Comparison {number}',
+  'logic.value': 'Value',
+  'logic.value.numbered': 'Value {number}',
+  'logic.removeComparison': 'Remove comparison {number}',
+  'logic.addComparison': 'Add a comparison',
+  'logic.addRule': 'Add rule',
 
   // ----------------------------------------- what a new field starts out holding
   // Written into the document, so they are in the author's language: somebody

@@ -18,6 +18,7 @@ import { FormancyBuilder } from './builder.js'
 import { FormancyLayoutPane } from './layout-pane.js'
 import { ColumnsEditor } from './columns-editor.js'
 import { LayoutPropertyPanel } from './layout-property-panel.js'
+import { LogicPanel } from './logic-panel.js'
 import { OptionsEditor } from './options-editor.js'
 import { PropertyPanel } from './property-panel.js'
 
@@ -61,6 +62,8 @@ function shown(root: HTMLElement): string[] {
   const out: string[] = []
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
   for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
+    // Code is not language: a rule's CEL is shown as it is written.
+    if (node.parentElement?.closest('code') !== null) continue
     out.push(node.nodeValue ?? '')
   }
   for (const element of root.querySelectorAll('*')) {
@@ -385,6 +388,66 @@ describe('the property panels and their editors', () => {
         'This grid',
         'No choices yet',
         'No columns configured',
+      ].filter((prefix) => !seen.some((text) => text.includes(prefix))),
+    ).toEqual([])
+  })
+})
+
+describe('the logic panel', () => {
+  const ruled: FormSchema = {
+    specVersion: '3',
+    id: 'order',
+    title: 'Order',
+    model: {
+      fields: [
+        { key: 'country', type: 'text', label: 'Country' },
+        { key: 'canton', type: 'text', label: 'Canton' },
+      ],
+    },
+    logic: { rules: [{ target: 'canton', kind: 'visible', cel: 'country == "CH"' }] },
+  }
+
+  test('shows nothing in English that the catalogue did not give it', async () => {
+    const user = userEvent.setup()
+    const session = createBuilderSession(ruled, { text: createBuilderText(pseudoLanguage()) })
+    const { container } = render(<LogicPanel session={session} keyPath={['canton']} />)
+    const seen = shown(container)
+
+    // A draft with two comparisons: the join, the numbered labels, the remove button.
+    await user.click(screen.getAllByRole('button').at(-1)!)
+    await user.click(
+      screen
+        .getAllByRole('button')
+        .find((button) => button.textContent?.includes('Add a comparison'))!,
+    )
+    seen.push(...shown(container))
+    // A check, and a calculation, each with its own box and example.
+    const kind = container.querySelector('select')!
+    await user.selectOptions(kind, 'check')
+    seen.push(...shown(container))
+    await user.selectOptions(kind, 'computed')
+    seen.push(...shown(container))
+
+    const words = [
+      ruled.title,
+      ...flatten(ruled).flatMap((node) => [nameOf(ruled, node.def), node.def.key]),
+    ]
+    expect(untranslated(seen, words)).toEqual([])
+    expect(
+      [
+        'Rules',
+        'Remove the rule',
+        'What the rule does',
+        'Match',
+        'Field 2',
+        'Comparison 2',
+        'Remove comparison 2',
+        'Which check',
+        'email-not-taken',
+        'The calculation',
+        'Add rule',
+        'Show this field when',
+        'is not answered',
       ].filter((prefix) => !seen.some((text) => text.includes(prefix))),
     ).toEqual([])
   })

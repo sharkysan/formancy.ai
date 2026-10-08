@@ -242,14 +242,20 @@ describe('existing rules', () => {
   test('each remove button says which rule it removes', () => {
     mount(withRule)
 
-    expect(screen.getByRole('button', { name: 'Remove the visible rule on canton' })).toBeTruthy()
+    // By what the rule does, in words: "the visible rule" named it by an id from the
+    // format, which is not a word in any language a builder speaks.
+    expect(
+      screen.getByRole('button', { name: 'Remove the rule “Show this field when” on canton' }),
+    ).toBeTruthy()
   })
 
   test('removing one takes it out of the document', async () => {
     const user = userEvent.setup()
     const session = mount(withRule)
 
-    await user.click(screen.getByRole('button', { name: 'Remove the visible rule on canton' }))
+    await user.click(
+      screen.getByRole('button', { name: 'Remove the rule “Show this field when” on canton' }),
+    )
 
     expect(rulesOf(session)).toEqual([])
   })

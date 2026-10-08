@@ -1,16 +1,19 @@
 import { useState } from 'react'
 import type { ReactElement } from 'react'
-import type { BuilderSession } from '@formancy/builder-core'
+import type { BuilderSession, BuilderText } from '@formancy/builder-core'
 import type { LogicRule } from '@formancy/spec'
 import {
   OPERATORS,
-  RULE_KIND_CHOICES,
+  comparisonLabel,
   composeRule,
   draftIsComplete,
   emptyRow,
   kindWrites,
   nameOf,
+  operatorLabel,
   rowTakesValue,
+  ruleKindHint,
+  ruleKindLabel,
   ruleKindsFor,
   ruleTargetFor,
 } from '@formancy/builder-core'
@@ -39,6 +42,7 @@ export interface LogicPanelProps {
 
 export function LogicPanel({ session, keyPath }: LogicPanelProps): ReactElement {
   const view = useBuilder(session)
+  const { text } = session
   const [drafting, setDrafting] = useState(false)
 
   // Both halves come from the core, so the two builders cannot address a rule
@@ -53,26 +57,26 @@ export function LogicPanel({ session, keyPath }: LogicPanelProps): ReactElement 
 
   return (
     <div data-formancy-part="logic-panel">
-      <h3>Rules</h3>
+      <h3>{text('logic.heading')}</h3>
 
       {mine.length === 0 ? (
-        <p data-formancy-part="logic-empty">This field always behaves the same way.</p>
+        <p data-formancy-part="logic-empty">{text('logic.empty')}</p>
       ) : (
         <ul data-formancy-part="logic-list">
           {mine.map(({ rule, index }) => (
             <li key={index} data-formancy-part="logic-rule">
               <span data-formancy-part="logic-kind">
-                {RULE_KIND_CHOICES.find((kind) => kind.id === rule.kind)?.label ?? rule.kind}
+                {ruleKindLabel(rule.kind, text)}
               </span>
               {/* The expression, shown. A developer should not have to guess
                   what the condition compiled to. */}
               <code>{rule.cel}</code>
               <button
                 type="button"
-                aria-label={`Remove the ${rule.kind} rule on ${target}`}
+                aria-label={text('logic.remove', { rule: ruleKindLabel(rule.kind, text), target })}
                 onClick={() => session.removeRule(index)}
               >
-                Remove
+                {text('list.remove')}
               </button>
             </li>
           ))}
@@ -89,6 +93,7 @@ export function LogicPanel({ session, keyPath }: LogicPanelProps): ReactElement 
               path: candidate.keyPath.join('.'),
               label: nameOf(view.document, candidate.def),
             }))}
+          text={text}
           onCancel={() => setDrafting(false)}
           onAdd={(rule) => {
             setDrafting(false)
@@ -97,7 +102,7 @@ export function LogicPanel({ session, keyPath }: LogicPanelProps): ReactElement 
         />
       ) : (
         <button type="button" onClick={() => setDrafting(true)}>
-          Add a rule
+          {text('logic.add')}
         </button>
       )}
     </div>
@@ -108,6 +113,7 @@ function RuleDraft({
   on,
   target,
   fields,
+  text,
   onAdd,
   onCancel,
 }: {
@@ -116,6 +122,7 @@ function RuleDraft({
   /** What the rule will be addressed by, decided by the core. */
   target: string
   fields: ReadonlyArray<{ path: string; label: string }>
+  text: BuilderText
   onAdd: (rule: LogicRule) => void
   onCancel: () => void
 }): ReactElement {
@@ -135,7 +142,7 @@ function RuleDraft({
    */
   const [rows, setRows] = useState<readonly ConditionRow[]>([emptyRow(fields[0]?.path ?? '')])
 
-  const hint = RULE_KIND_CHOICES.find((candidate) => candidate.id === kind)?.hint ?? ''
+  const hint = ruleKindHint(kind, text)
 
   const group: ConditionGroup = { join, conditions: rows.map(conditionOf) }
 
@@ -143,18 +150,19 @@ function RuleDraft({
     setRows((before) => before.map((row, index) => (index === at ? { ...row, ...change } : row)))
   }
 
-  // Numbered from 1, and only when there is more than one: "Field 1" on a form
-  // with a single comparison is a number somebody has to wonder about.
-  const suffix = (at: number): string => (rows.length > 1 ? ` ${String(at + 1)}` : '')
+  // Numbered from 1, and only when there is more than one — builder-core decides,
+  // for this panel and the Angular one.
+  const labelOf = (part: 'field' | 'comparison' | 'value', at: number): string =>
+    comparisonLabel(part, at, rows.length, text)
 
   return (
     <div data-formancy-part="logic-draft">
       <label>
-        What the rule does
+        {text('logic.what')}
         <select value={kind} onChange={(event) => setKind(event.target.value as LogicRule['kind'])}>
           {applicable.map((candidate) => (
             <option key={candidate.id} value={candidate.id}>
-              {candidate.label}
+              {ruleKindLabel(candidate.id, text)}
             </option>
           ))}
         </select>
@@ -162,12 +170,12 @@ function RuleDraft({
 
       {writes !== 'check' ? null : (
         <label>
-          Which check
+          {text('logic.check')}
           <input
             type="text"
             value={check}
             onChange={(event) => setCheck(event.target.value)}
-            placeholder="email-not-taken"
+            placeholder={text('logic.check.example')}
           />
         </label>
       )}
@@ -178,13 +186,13 @@ function RuleDraft({
           control somebody has to work out is irrelevant. */}
       {rows.length > 1 ? (
         <label>
-          Match
+          {text('logic.match')}
           <select
             value={join}
             onChange={(event) => setJoin(event.target.value as ConditionGroup['join'])}
           >
-            <option value="all">all of these</option>
-            <option value="any">any of these</option>
+            <option value="all">{text('logic.join.all')}</option>
+            <option value="any">{text('logic.join.any')}</option>
           </select>
         </label>
       ) : null}
@@ -194,7 +202,7 @@ function RuleDraft({
         return (
           <div key={at} data-formancy-part="logic-comparison">
             <label>
-              {`Field${suffix(at)}`}
+              {labelOf('field', at)}
               <select value={row.field} onChange={(event) => update(at, { field: event.target.value })}>
                 {fields.map((candidate) => (
                   <option key={candidate.path} value={candidate.path}>
@@ -205,14 +213,14 @@ function RuleDraft({
             </label>
 
             <label>
-              {`Comparison${suffix(at)}`}
+              {labelOf('comparison', at)}
               <select
                 value={row.operator}
                 onChange={(event) => update(at, { operator: event.target.value as Operator })}
               >
                 {OPERATORS.map((candidate) => (
                   <option key={candidate.id} value={candidate.id}>
-                    {candidate.label}
+                    {operatorLabel(candidate.id, text)}
                   </option>
                 ))}
               </select>
@@ -220,7 +228,7 @@ function RuleDraft({
 
             {takesValue ? (
               <label>
-                {`Value${suffix(at)}`}
+                {labelOf('value', at)}
                 <input
                   type="text"
                   value={row.text}
@@ -237,7 +245,7 @@ function RuleDraft({
                 type="button"
                 onClick={() => setRows((before) => before.filter((_, index) => index !== at))}
               >
-                {`Remove comparison ${String(at + 1)}`}
+                {text('logic.removeComparison', { number: at + 1 })}
               </button>
             )}
           </div>
@@ -253,7 +261,7 @@ function RuleDraft({
           ])
         }
       >
-        Add a comparison
+        {text('logic.addComparison')}
       </button>
 
         <p data-formancy-part="logic-hint">{hint}</p>
@@ -267,12 +275,12 @@ function RuleDraft({
       {writes !== 'expression' ? null : (
         <>
           <label>
-            The calculation
+            {text('logic.calculation')}
             <input
               type="text"
               value={expression}
               onChange={(event) => setExpression(event.target.value)}
-              placeholder="qty * unitPrice"
+              placeholder={text('logic.calculation.example')}
             />
           </label>
           {/* CEL, and said so: a calculation produces a VALUE rather than a
@@ -303,10 +311,10 @@ function RuleDraft({
           }
           disabled={!draftIsComplete({ kind, rows, check, expression })}
         >
-          Add rule
+          {text('logic.addRule')}
         </button>
         <button type="button" onClick={onCancel}>
-          Cancel
+          {text('dialog.cancel')}
         </button>
       </div>
     </div>
