@@ -112,6 +112,11 @@ function themes(): Array<{ name: string; css: string }> {
     .filter(({ css }) => css.includes('data-formancy-theme'))
 }
 
+/** A stylesheet with its comments gone, so prose about a side is not a side. */
+function withoutComments(css: string): string {
+  return css.replace(/\/\*[\s\S]*?\*\//g, ' ')
+}
+
 describe('what a theme must not try to own', () => {
   test('whether a touch drag on the signature surface scrolls the page', () => {
     /*
@@ -851,5 +856,154 @@ describe('the theme contract', () => {
       .map(({ name }) => name)
 
     expect(gaps).toEqual([])
+  })
+})
+
+/**
+ * A theme says which side a thing is on in reading order, never in pixels.
+ *
+ * Every shipped theme is already written this way — zero physical directional
+ * properties across all five, and twenty to twenty-nine logical ones each —
+ * and that was nobody's decision. It is the kind of fact that holds until the
+ * first person who reaches for `padding-left` because it is what their
+ * fingers type, and then an Arabic or Hebrew form has its labels, its error
+ * marks and its repeater controls on the wrong side with nothing reporting it.
+ *
+ * So the property is held forwards rather than measured: a stylesheet may not
+ * name a side. `margin-inline-start` flips with the document and
+ * `margin-left` does not, and that difference is the whole of right-to-left
+ * support in a product that ships no layout of its own.
+ *
+ * Not a count. A count would pass the day somebody adds one physical property
+ * and removes another, and the point is that there are none
+ * ([0113](../../../docs/decisions/0113-a-theme-is-written-in-reading-order.md)).
+ */
+/**
+ * Just the parts of a stylesheet that apply in the other reading order.
+ *
+ * Brace-matched from each `:dir(` selector rather than captured by a regular
+ * expression: a rule body here can hold a data URI with a brace in it, and a
+ * lazy match would stop at the first one and hand back half a rule.
+ */
+function directionScoped(css: string): string {
+  const found: string[] = []
+  let at = css.indexOf(':dir(')
+  while (at !== -1) {
+    const open = css.indexOf('{', at)
+    if (open === -1) break
+    let depth = 1
+    let cursor = open + 1
+    while (cursor < css.length && depth > 0) {
+      if (css[cursor] === '{') depth += 1
+      else if (css[cursor] === '}') depth -= 1
+      cursor += 1
+    }
+    found.push(css.slice(at, cursor))
+    at = css.indexOf(':dir(', cursor)
+  }
+  return found.join('\n')
+}
+
+describe('which side a theme puts things on', () => {
+  /**
+   * The properties that name a side, and the logical property each has.
+   *
+   * `left` and `right` as box offsets are in the list; `background-position`
+   * and the `left`/`right` keywords of `float` or `clear` are not, because
+   * those take a side as a *value* and the pattern would have to understand
+   * the difference. A theme reaching for `float` has a larger problem than
+   * this guard.
+   */
+  const PHYSICAL: ReadonlyArray<{ pattern: RegExp; instead: string }> = [
+    { pattern: /(^|[\s;{])margin-left\s*:/m, instead: 'margin-inline-start' },
+    { pattern: /(^|[\s;{])margin-right\s*:/m, instead: 'margin-inline-end' },
+    { pattern: /(^|[\s;{])padding-left\s*:/m, instead: 'padding-inline-start' },
+    { pattern: /(^|[\s;{])padding-right\s*:/m, instead: 'padding-inline-end' },
+    { pattern: /(^|[\s;{])border-left\b[^:]*:/m, instead: 'border-inline-start' },
+    { pattern: /(^|[\s;{])border-right\b[^:]*:/m, instead: 'border-inline-end' },
+    { pattern: /(^|[\s;{])left\s*:/m, instead: 'inset-inline-start' },
+    { pattern: /(^|[\s;{])right\s*:/m, instead: 'inset-inline-end' },
+    { pattern: /text-align\s*:\s*(left|right)\b/m, instead: 'text-align: start / end' },
+  ]
+
+  test('is reading order, never a side', () => {
+    const named = themes().flatMap(({ name, css }) =>
+      PHYSICAL.filter(({ pattern }) => pattern.test(withoutComments(css))).map(
+        ({ instead }) => `${name}: use ${instead}`,
+      ),
+    )
+
+    expect(named, 'a theme that names a side is a theme that cannot be read right to left').toEqual(
+      [],
+    )
+  })
+
+  test('and a side named as a VALUE is named again for the other reading order', () => {
+    /*
+     * The case the first one was written to exclude, and the exclusion was
+     * wrong. `background-position: right 0.75rem center` names a side as a
+     * VALUE rather than as a property, so no amount of logical properties
+     * catches it — and the padding that makes room for the icon IS logical,
+     * so in Arabic or Hebrew the two part company and the icon lands on top
+     * of the text.
+     *
+     * Found by writing the first case, watching it pass, and then reading what
+     * it had been told to ignore. All four themes that draw an icon had it.
+     *
+     * CSS has no logical `background-position`, so the side has to be named
+     * twice. This checks the second naming exists and is scoped to the other
+     * reading order — not by counting declarations, which one `:dir(rtl)` rule
+     * covering three input types would fail for no reason, but by asking
+     * whether each side named outside a `:dir()` rule has its opposite inside
+     * one.
+     *
+     * It has to be a source check. The icons live inside
+     * `@supports (-webkit-touch-callout: none)`, which is iOS WebKit alone, so
+     * the browser gate runs in a Chromium that never applies the rule.
+     */
+    const opposite: Readonly<Record<string, string>> = { left: 'right', right: 'left' }
+
+    const sidesIn = (text: string): Set<string> =>
+      new Set(
+        [...text.matchAll(/background-position:\s*(left|right)\b/g)].map((match) => match[1]!),
+      )
+
+    const unpaired = themes().flatMap(({ name, css }) => {
+      const clean = withoutComments(css)
+      const flipped = directionScoped(clean)
+      const plain = flipped === '' ? clean : clean.split(flipped).join(' ')
+
+      const inside = sidesIn(flipped)
+      return [...sidesIn(plain)]
+        .filter((side) => !inside.has(opposite[side]!))
+        .map(
+          (side) =>
+            `${name}: background-position names ${side}, and nothing names ${opposite[side]!} for :dir(rtl)`,
+        )
+    })
+
+    expect(
+      unpaired,
+      'a theme puts an icon on a fixed side while its padding moves with the reading order',
+    ).toEqual([])
+  })
+
+  test('and every theme really does say which side in reading order somewhere', () => {
+    /*
+     * The guard on the guard, and it is not decoration: the case above is an
+     * assertion of absence, and a stylesheet that positioned nothing at all
+     * would satisfy it completely. Each theme has to be *using* the logical
+     * properties for their absence to mean anything.
+     */
+    const silent = themes()
+      .filter(
+        ({ css }) =>
+          !/margin-inline|padding-inline|inset-inline|border-inline|text-align\s*:\s*(start|end)/.test(
+            css,
+          ),
+      )
+      .map(({ name }) => name)
+
+    expect(silent, 'a theme positions nothing, so the case above asserts nothing').toEqual([])
   })
 })

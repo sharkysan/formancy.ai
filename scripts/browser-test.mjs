@@ -432,6 +432,136 @@ async function run() {
     }
 
     /*
+     * The same form, read right to left.
+     *
+     * Every shipped theme is written in reading order — `padding-inline-start`
+     * rather than `padding-left` — and `apps/docs/src/themes.test.ts` keeps it
+     * that way by refusing a stylesheet that names a side. That guard reads
+     * the source; this one reads the browser, and the two are different
+     * claims. A stylesheet full of logical properties still lays out wrongly
+     * if nothing ever sets `dir`, if a renderer hard-codes an arrow, or if a
+     * control's own markup assumes an order.
+     *
+     * jsdom cannot answer either half: it resolves no logical property to a
+     * physical one, because it performs no layout at all.
+     */
+    {
+      const page = await browser.newPage({ viewport: { width: 1180, height: 820 } })
+      await page.goto(url, { waitUntil: 'load' })
+      await page.waitForSelector('[data-formancy-part="signature-surface"]', { timeout: 30_000 })
+      console.log('\nright to left — 1180×820')
+
+      const flipped = await page.evaluate(async () => {
+        const wait = () => new Promise((done) => setTimeout(done, 150))
+        const sheet = document.querySelector('.sheet[data-formancy-theme]')
+        if (sheet === null) return { error: 'no themed form on the page' }
+
+        /*
+         * A control whose theme gives it asymmetric inline padding, found
+         * rather than named: the point is that SOME themed element flips, and
+         * hunting for one by selector would be a case that breaks when a theme
+         * restyles the control it happened to pick.
+         */
+        const SIDED = [
+          ['paddingLeft', 'paddingRight'],
+          ['marginLeft', 'marginRight'],
+          ['borderLeftWidth', 'borderRightWidth'],
+        ]
+
+        /*
+         * EVERY asymmetry in the form, not the first one found.
+         *
+         * The first version took one element and checked that it flipped, and
+         * pinning three properties in a theme reddened nothing — because some
+         * other element was still asymmetric and still flipped, so the case
+         * proved only that the document responds to `dir` at all. Each one has
+         * to flip, or the case cannot catch the rule that stopped.
+         */
+        const describe = (element) => {
+          const part = element.getAttribute('data-formancy-part')
+          return part ?? `${element.tagName.toLowerCase()}.${String(element.className).slice(0, 20)}`
+        }
+
+        const sided = []
+        for (const element of sheet.querySelectorAll('*')) {
+          const style = getComputedStyle(element)
+          for (const [left, right] of SIDED) {
+            if (style[left] === style[right]) continue
+            sided.push({
+              element,
+              left,
+              right,
+              was: { left: style[left], right: style[right] },
+            })
+          }
+        }
+        if (sided.length === 0) {
+          return { error: 'nothing in the form is laid out asymmetrically, so nothing can flip' }
+        }
+
+        document.documentElement.setAttribute('dir', 'rtl')
+        await wait()
+
+        const stuck = []
+        for (const entry of sided) {
+          const style = getComputedStyle(entry.element)
+          if (style[entry.left] === entry.was.right && style[entry.right] === entry.was.left) {
+            continue
+          }
+          stuck.push(
+            `${describe(entry.element)} ${entry.left.replace(/Left$/, '')}: ` +
+              `${entry.was.left}/${entry.was.right} stayed ${style[entry.left]}/${style[entry.right]}`,
+          )
+        }
+
+        const slack = document.documentElement.scrollWidth - document.documentElement.clientWidth
+        document.documentElement.removeAttribute('dir')
+
+        return { measured: sided.length, stuck: [...new Set(stuck)].slice(0, 5), slack }
+      })
+
+      /*
+       * What this measures, said exactly.
+       *
+       * Four asymmetries in the rendered form, and they come from the
+       * RENDERER and the user-agent stylesheet rather than from a theme —
+       * measured by pinning a side in all four themes and watching this stay
+       * green. So it holds the renderer's own layout and the document's
+       * response to `dir`, and the THEMES are held by
+       * `apps/docs/src/themes.test.ts`, which reads the stylesheets and is
+       * proved against four physical properties and an unpaired
+       * `background-position`.
+       *
+       * Worth keeping at that narrower claim rather than deleting: a renderer
+       * that emitted a hard-coded arrow or an order its markup assumed would
+       * fail here and nowhere else.
+       */
+      check(
+        'the rendered form responds to the reading order, and none of its layout stays pinned',
+        flipped.error ??
+          (flipped.stuck.length === 0
+            ? null
+            : `${String(flipped.stuck.length)} of ${String(flipped.measured)} did not flip — ${flipped.stuck.join('; ')}`),
+      )
+
+      check(
+        'and there was something to measure, which is the guard on that one',
+        flipped.error !== undefined || flipped.measured >= 3
+          ? null
+          : `only ${String(flipped.measured)} asymmetries found; the case above would pass on a form that lays out nothing`,
+      )
+
+      check(
+        'and the page does not scroll sideways once it is mirrored',
+        flipped.error !== undefined || flipped.slack <= 0
+          ? null
+          : `${String(flipped.slack)}px of horizontal overflow in right-to-left`,
+      )
+
+      await page.close()
+    }
+
+    /*
      * The two pages of the site, side by side.
      *
      * The gate was written for the playground's cascade defects. These are the

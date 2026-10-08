@@ -24,6 +24,26 @@ import { App } from './app.js'
  *   property lands on the themed host; that it *works* is checked in Chromium by
  *   `pnpm test:browser`, which reads the computed colour of a real control.
  */
+/*
+ * This file mounts the WHOLE application per case — both renderers, the builder,
+ * the editor — because the theme editor discovers its controls from the live
+ * stylesheet and writes to the themed host, and neither exists without them.
+ *
+ * So it is heavier than anything `RENDER_TIMEOUT_MS` in `vitest.coverage.ts` was
+ * measured against. Measured here: the slowest case runs in 5.6s locally, and
+ * this file exceeded the shared 20s under coverage on a loaded runner twice in
+ * one day (#158 and #164), each time on a case that passes in under 3s locally.
+ * The shared constant's own reasoning applies unchanged — a timeout is here to
+ * catch a hang, not to police the speed of somebody else's runner — and the
+ * factor it records, up to fourteen, puts a 5.6s case well past 20s.
+ *
+ * The per-key typing that used to drive these cases is gone too: pasting is the
+ * same user action in one render rather than seven, and two of the cases are
+ * ABOUT a pasted value. That did not fix the timeout — the cost is the mount, not
+ * the keystrokes — and is kept because it is the more faithful interaction.
+ */
+vi.setConfig({ testTimeout: 60_000 })
+
 vi.mock('@monaco-editor/react', () => ({
   default: ({ value }: { value?: string }) => (
     <textarea readOnly aria-label="Schema" value={value ?? ''} />
@@ -160,7 +180,7 @@ describe('the theme editor', () => {
 
     const ink = screen.getByRole('textbox', { name: 'ink' })
     await user.clear(ink)
-    await user.type(ink, '#ff0000')
+    await user.paste('#ff0000')
 
     expect(host().style.getPropertyValue('--fm-ink')).toBe('#ff0000')
   })
@@ -175,7 +195,7 @@ describe('the theme editor', () => {
 
     const radius = screen.getByRole('textbox', { name: 'radius' })
     await user.clear(radius)
-    await user.type(radius, '14px')
+    await user.paste('14px')
 
     const output = screen.getByLabelText('Theme CSS').textContent ?? ''
     expect(output).toContain('--fm-radius: 14px;')
@@ -189,7 +209,7 @@ describe('the theme editor', () => {
 
     const ink = screen.getByRole('textbox', { name: 'ink' })
     await user.clear(ink)
-    await user.type(ink, '#ff0000')
+    await user.paste('#ff0000')
     expect(host().style.getPropertyValue('--fm-ink')).toBe('#ff0000')
 
     await user.click(screen.getByRole('button', { name: /^Reset/ }))
@@ -212,7 +232,7 @@ describe('the theme editor', () => {
 
     const ink = screen.getByRole('textbox', { name: 'ink' })
     await user.clear(ink)
-    await user.type(ink, '#ff0000')
+    await user.paste('#ff0000')
     expect(host().style.getPropertyValue('--fm-ink')).toBe('#ff0000')
 
     await user.clear(ink)
@@ -238,7 +258,7 @@ describe('the theme editor', () => {
     expect(themeValue, 'the control opened with no value at all').not.toBe('')
 
     await user.clear(ink)
-    await user.type(ink, '#ff0000')
+    await user.paste('#ff0000')
 
     /*
      * Away and back, which is what makes this reachable at all. The baseline is
@@ -282,7 +302,7 @@ describe('the theme editor', () => {
 
     const ink = screen.getByRole('textbox', { name: 'ink' })
     await user.clear(ink)
-    await user.type(ink, '   ')
+    await user.paste('   ')
 
     expect(host().style.getPropertyValue('--fm-ink'), 'whitespace was applied as a value').toBe('')
     expect(screen.getByLabelText('Theme CSS').textContent).toContain('nothing changed yet')
@@ -301,7 +321,7 @@ describe('the theme editor', () => {
 
     const ink = screen.getByRole('textbox', { name: 'ink' })
     await user.clear(ink)
-    await user.type(ink, '  #ff0000  ')
+    await user.paste('  #ff0000  ')
 
     expect(host().style.getPropertyValue('--fm-ink')).toBe('#ff0000')
     expect(screen.getByLabelText('Theme CSS').textContent).toContain('--fm-ink: #ff0000;')
@@ -328,7 +348,7 @@ describe('the theme editor', () => {
 
     const ink = screen.getByRole('textbox', { name: 'ink' })
     await user.clear(ink)
-    await user.type(ink, '#ff0000')
+    await user.paste('#ff0000')
 
     await user.selectOptions(screen.getByRole('combobox', { name: /theme/i }), 'dusk')
     expect(host().style.getPropertyValue('--fm-ink'), 'an edit followed the theme switch').toBe('')
