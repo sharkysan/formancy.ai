@@ -336,6 +336,14 @@ credentials**, so an agent can write a whole form and be told exactly what is
 wrong with it before anybody deploys anything. Set `FORMANCY_URL` and
 `FORMANCY_API_KEY` together to add publishing and reading submissions.
 
+Every tool says what it will do before it is called — read-only or not, open world
+or closed — so a host can run the five local checks without asking and still stop at
+a publish. Each answers with a structured result beside the prose rather than JSON
+glued to the end of a sentence. And three prompts ship with the server:
+`build_a_form`, `change_a_form` and `embed_a_form`, which give the **order** rather
+than the tool names — a model that writes a document before calling `describe_spec`
+has already invented `type: "email"`.
+
 `check_scenarios` is the one that catches a rule written backwards.
 `leaveType == 'other'` and `leaveType != 'other'` are both valid CEL and both pass
 every other check here — the difference is between the document and what somebody

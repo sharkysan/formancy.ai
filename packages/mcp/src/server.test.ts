@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
-import { TOOL_DEFINITIONS, createFormancyMcpServer } from './server.js'
+import { PACKAGE_VERSION, TOOL_DEFINITIONS, createFormancyMcpServer } from './server.js'
 import type { ServerAccess } from './tools.js'
 
 /**
@@ -26,6 +26,19 @@ async function connect(access?: ServerAccess): Promise<Client> {
 const textOf = (result: unknown): string =>
   ((result as { content: { text?: string }[] }).content ?? [])
     .map((part) => part.text ?? '')
+    .join('\n')
+
+/**
+ * What a prompt actually says, narrowed to its text parts.
+ *
+ * A prompt message's content is a union — text, image, audio, a resource —
+ * and only one of them has words in it. Narrowed rather than cast: a cast
+ * would keep compiling the day a prompt grows a second kind of part, and
+ * would quietly stop reading half of it.
+ */
+const promptText = (messages: readonly { content: { type: string; text?: string } }[]): string =>
+  messages
+    .map((message) => (message.content.type === 'text' ? (message.content.text ?? '') : ''))
     .join('\n')
 
 describe('the tools a client can see', () => {
@@ -196,5 +209,227 @@ describe('with a server', () => {
 
     expect(result.isError).toBe(true)
     expect(called).toBe(false)
+  })
+})
+
+/**
+ * What a client is told about a tool before it calls one.
+ *
+ * A description says when to reach for a tool. **Annotations say what it will
+ * do**, and they are the only thing a client has to decide whether a call
+ * needs a person's agreement: a host that auto-approves read-only tools and
+ * asks about the rest cannot tell `validate_form` from `publish_form` without
+ * them, so it either asks about everything or asks about nothing.
+ *
+ * Every one of these was absent. An unannotated tool defaults to
+ * `readOnlyHint: false`, `destructiveHint: true`, `openWorldHint: true` — so
+ * the eight local, read-only checks in this server were all advertised as
+ * potentially destructive calls into an open world, which is the opposite of
+ * true in every case ([0112](../../../docs/decisions/0112-the-mcp-server-says-what-its-tools-do.md)).
+ */
+describe('what a tool says about itself', () => {
+  test('every one carries annotations, because an unannotated tool reads as destructive', async () => {
+    const client = await connect()
+
+    const { tools } = await client.listTools()
+
+    const unannotated = tools.filter((tool) => tool.annotations === undefined).map((t) => t.name)
+    expect(unannotated).toEqual([])
+  })
+
+  test('the local checks say they change nothing and reach nowhere', async () => {
+    /*
+     * Four tools that need no server and no credentials. Saying so is what
+     * lets a host run them without asking, which is the difference between an
+     * agent that checks its work and one that checks it once.
+     */
+    const client = await connect()
+    const { tools } = await client.listTools()
+    const by = new Map(tools.map((tool) => [tool.name, tool.annotations]))
+
+    for (const name of ['describe_spec', 'validate_form', 'diff_forms', 'check_scenarios']) {
+      expect(by.get(name)?.readOnlyHint, name).toBe(true)
+      // No network: these are the ones that work before a server exists.
+      expect(by.get(name)?.openWorldHint, name).toBe(false)
+    }
+  })
+
+  test('and the one that writes says so, without claiming to be destructive', async () => {
+    /*
+     * Publishing is additive by construction: a published version is
+     * immutable and a publish inserts a new row
+     * ([0025](../../../docs/decisions/0025-immutability-in-the-database.md)).
+     * Nothing is overwritten, so `destructiveHint: false` is the truth — and
+     * it is the kind of claim worth a test, because the default is the
+     * opposite and the default would be wrong in the cautious direction.
+     */
+    const client = await connect()
+    const { tools } = await client.listTools()
+    const publish = tools.find((tool) => tool.name === 'publish_form')?.annotations
+
+    expect(publish?.readOnlyHint).toBe(false)
+    expect(publish?.destructiveHint).toBe(false)
+    expect(publish?.openWorldHint).toBe(true)
+  })
+
+  test('and the server reports the version it actually is', async () => {
+    /*
+     * It said `0.1.0` while the package was on 0.3.0 — a wrong statement in
+     * the one field a client uses to tell two installations apart, and
+     * exactly the hand-typed number this repository keeps finding stale.
+     * Derived from the manifest now.
+     */
+    const client = await connect()
+
+    const info = client.getServerVersion()
+
+    expect(info?.name).toBe('formancy')
+    expect(info?.version).toBe(PACKAGE_VERSION)
+  })
+})
+
+/**
+ * The answer, in both readings.
+ *
+ * Every tool used to answer with prose and a JSON blob glued to the end of
+ * it, so a client wanting the structure had to find the blank line and parse
+ * what came after. `structuredContent` is the protocol's own answer to that,
+ * and the envelope is the same for all nine tools: did it work, one sentence
+ * a person can read, and the part an agent acts on
+ * ([0112](../../../docs/decisions/0112-the-mcp-server-says-what-its-tools-do.md)).
+ */
+describe('the shape of an answer', () => {
+  test('carries the structure beside the prose, not inside it', async () => {
+    const client = await connect()
+
+    const result = await client.callTool({ name: 'describe_spec', arguments: {} })
+
+    const structured = (result as { structuredContent?: Record<string, unknown> }).structuredContent
+    expect(structured, 'a client has to parse the text to get at the data').toBeDefined()
+    expect(structured?.ok).toBe(true)
+    expect(typeof structured?.summary).toBe('string')
+    expect(structured?.data).toBeDefined()
+    // And the prose is still there: it is what the model reads.
+    expect(textOf(result).length).toBeGreaterThan(20)
+  })
+
+  test('and a refusal is structured too, rather than being only a sentence', async () => {
+    /*
+     * The half that is easy to leave out. A refusal is the answer a client
+     * most needs to act on — retry, ask a person, give up — and one that
+     * arrives as prose alone makes that a reading-comprehension problem.
+     */
+    const client = await connect()
+
+    const result = await client.callTool({
+      name: 'validate_form',
+      arguments: { document: { specVersion: '2', id: 'x' } },
+    })
+
+    expect((result as { isError?: boolean }).isError).toBe(true)
+    const structured = (result as { structuredContent?: Record<string, unknown> }).structuredContent
+    expect(structured?.ok).toBe(false)
+    expect(structured?.data).toBeDefined()
+  })
+
+  test('and every tool declares that shape, so a client learns it once', async () => {
+    // Nine schemas would be nine places for `data` to drift from what the
+    // tool returns.
+    const client = await connect()
+
+    const { tools } = await client.listTools()
+
+    const without = tools.filter((tool) => tool.outputSchema === undefined).map((t) => t.name)
+    expect(without).toEqual([])
+  })
+})
+
+/**
+ * The three things somebody asks an agent to do with a form.
+ *
+ * A tool says what a model *can* call. A prompt says what the model should do
+ * with the set of them, in order — which is the difference between an agent
+ * that calls `describe_spec` because it happened to and one that calls it
+ * first because writing a form starts there.
+ *
+ * MCP's own answer to a skill pack, so it arrives with the server rather than
+ * being documentation somebody has to find and paste
+ * ([0112](../../../docs/decisions/0112-the-mcp-server-says-what-its-tools-do.md)).
+ */
+describe('the prompts a client can see', () => {
+  test('three, named for what somebody is doing rather than for the tools', async () => {
+    const client = await connect()
+
+    const { prompts } = await client.listPrompts()
+
+    expect(prompts.map((prompt) => prompt.name).sort()).toEqual([
+      'build_a_form',
+      'change_a_form',
+      'embed_a_form',
+    ])
+    for (const prompt of prompts) expect(prompt.description ?? '').not.toBe('')
+  })
+
+  test('and building one tells the model the order, not just the tool names', async () => {
+    /*
+     * The order is the whole value. A model that writes the document first
+     * and calls `describe_spec` afterwards has already invented
+     * `type: "email"`, and the correction costs a turn. The same for
+     * scenarios: written after the rules they are supposed to check, they
+     * tend to agree with whatever the rules happen to say.
+     */
+    const client = await connect()
+
+    const { messages } = await client.getPrompt({
+      name: 'build_a_form',
+      arguments: { description: 'a contact form with an optional phone number' },
+    })
+
+    const said = promptText(messages)
+    expect(said).toContain('describe_spec')
+    expect(said).toContain('check_scenarios')
+    // And the instruction itself, so the prompt is about this form rather
+    // than a lecture the model has to apply.
+    expect(said).toContain('optional phone number')
+  })
+
+  test('and changing one points at the two-step path rather than at publish', async () => {
+    // The lost update is the mistake an agent makes that nobody sees until
+    // the form is wrong, and the prompt is where it is cheapest to prevent.
+    const client = await connect()
+
+    const { messages } = await client.getPrompt({
+      name: 'change_a_form',
+      arguments: { path: 'contact-us', change: 'make the phone number required' },
+    })
+
+    const said = promptText(messages)
+    expect(said).toContain('propose_form_edit')
+    expect(said).toContain('contact-us')
+    /*
+     * The two in ONE line, not both somewhere in the text. The first version
+     * asked for `basedOn` anywhere, and removing the instruction that
+     * actually matters — publish with the hash — left the word in step 3's
+     * description and the case stayed green. Found by mutating it.
+     */
+    const instruction = said
+      .split('\n')
+      .find((line) => line.includes('publish_form') && line.includes('basedOn'))
+    expect(instruction, 'nothing tells the model to publish with the hash').toBeDefined()
+  })
+
+  test('and embedding one says which package, in which framework', async () => {
+    const client = await connect()
+
+    const { messages } = await client.getPrompt({
+      name: 'embed_a_form',
+      arguments: { framework: 'angular' },
+    })
+
+    const said = promptText(messages)
+    expect(said).toContain('@formancy/angular')
+    // And not the other one: a prompt that lists both makes the model choose
+    // again, having just been told.
+    expect(said).not.toContain('@formancy/react')
   })
 })
