@@ -214,3 +214,4 @@ listed under the sections they belong to above.
 | [0111](0111-a-scenario-panel-names-what-stopped-holding.md) | A scenario panel names what stopped holding, and the scenarios are the host's | accepted |
 | [0112](0112-the-mcp-server-says-what-its-tools-do.md) | The MCP server says what its tools do, answers in structure, and ships the order of operations | accepted |
 | [0113](0113-a-theme-is-written-in-reading-order.md) | A theme is written in reading order, and something fails when it is not | accepted |
+| [0114](0114-the-builder-speaks-the-authors-language.md) | The builder speaks the author's language, from one catalogue both builders read | accepted |

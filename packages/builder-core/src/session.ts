@@ -1,3 +1,15 @@
+import { createBuilderText } from './messages.js'
+import type { BuilderText } from './messages.js'
+import {
+  CONTAINER_TYPES,
+  containerAt,
+  containerPaths,
+  dataPathOf,
+  layoutPointer,
+  locate,
+  locateLayout,
+  neighbouringPage,
+} from './navigate.js'
 import type { FieldDef, FormSchema, LayoutNode, LogicRule, SpecVersion, Text } from '@formancy/spec'
 import {
   CURRENT_SPEC_VERSION,
@@ -95,6 +107,12 @@ export interface Location {
 }
 
 export interface BuilderSession {
+  /**
+   * The language this session speaks to the person building, so everything
+   * holding a session — both builders, a proposal being applied — says the
+   * same thing the same way (0114).
+   */
+  readonly text: BuilderText
   /** The current document: frozen, and never the caller's object. */
   document(): FormSchema
   /** A mutable deep copy, safe to hand to anything. */
@@ -358,7 +376,6 @@ export interface BuilderSession {
   upgradeSpec(to?: SpecVersion): CommandOutcome
 }
 
-const CONTAINER_TYPES = new Set(['group', 'page', 'repeater'])
 
 /** Document order: earlier position first, and a parent before its child. */
 function comparePaths(a: readonly number[], b: readonly number[]): number {
@@ -369,7 +386,11 @@ function comparePaths(a: readonly number[], b: readonly number[]): number {
   return a.length - b.length
 }
 
-export function createBuilderSession(initial: FormSchema): BuilderSession {
+export function createBuilderSession(
+  initial: FormSchema,
+  // The language the session refuses in. English by default (0114).
+  { text = createBuilderText() }: { text?: BuilderText } = {},
+): BuilderSession {
   const opened = deepFreeze(copy(initial))
   const verdict = verdictFor(opened)
   if (!verdict.valid) {
@@ -377,9 +398,9 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
     // the caller could not tell whether their command broke the form or merely
     // failed to fix it.
     throw new Error(
-      `Cannot open this document in a builder session: ${verdict.errors
-        .map((error) => `${error.path} ${error.message}`)
-        .join('; ')}`,
+      text('refuse.cannotOpen', {
+        reasons: verdict.errors.map((error) => `${error.path} ${error.message}`).join('; '),
+      }),
     )
   }
 
@@ -433,6 +454,7 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
   }
 
   return {
+    text,
     document: () => present,
     exportDocument: () => copy(present),
     revision: () => revision,
@@ -499,7 +521,7 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
       return attempt((draft) => {
         const container = containerAt(draft, location.parent)
         if (container === undefined) {
-          return refuse('/model/fields', `No container at "${location.parent.join('.')}".`)
+          return refuse('/model/fields', text('refuse.noContainer', { path: location.parent.join('.') }))
         }
         container.splice(clampIndex(location.index, container.length), 0, copy(def))
         return undefined
@@ -509,7 +531,7 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
     removeField(keyPath) {
       return attempt((draft) => {
         const found = locate(draft, keyPath)
-        if (found === undefined) return refuse('/model/fields', `No field at "${keyPath.join('.')}".`)
+        if (found === undefined) return refuse('/model/fields', text('refuse.noField', { path: keyPath.join('.') }))
         // Read before the removal: afterwards the path cannot be resolved.
         const dataPath = dataPathOf(draft, keyPath)
         const removed = found.siblings[found.index]!
@@ -533,20 +555,20 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
     unwrapField(keyPath) {
       return attempt((draft) => {
         const found = locate(draft, keyPath)
-        if (found === undefined) return refuse('/model/fields', `No field at "${keyPath.join('.')}".`)
+        if (found === undefined) return refuse('/model/fields', text('refuse.noField', { path: keyPath.join('.') }))
         const field = found.siblings[found.index]!
         const where = keyPath.join('.')
 
         if (!CONTAINER_TYPES.has(field.type)) {
           return refuse(
             '/model/fields',
-            `"${where}" holds one answer. There is nothing inside it to keep, and unwrapping is not another word for deleting.`,
+            text('refuse.unwrapLeaf', { where }),
           )
         }
         if (field.type === 'repeater') {
           return refuse(
             '/model/fields',
-            `"${where}" is a repeater, and the fields inside it describe one ROW rather than a list of questions. Lifting them out would turn every row's answers into one answer each and lose every row after the first — and nothing would say so, because the form that came out would be perfectly valid. Move the fields out one at a time if that is what you meant.`,
+            text('refuse.unwrapRepeater', { where }),
           )
         }
 
@@ -577,7 +599,7 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
             if (refused !== undefined) {
               return refuse(
                 '/logic/rules',
-                `Unwrapping "${where}" renames every answer inside it — "${from}" becomes "${to}" — and ${refused}`,
+                text('refuse.unwrapRenames', { where, from, to, refused }),
               )
             }
           }
@@ -612,16 +634,16 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
       if (isPrefix(from, to.parent)) {
         return refuse(
           '/model/fields',
-          `Cannot move "${from.join('.')}" inside itself or one of its own children.`,
+          text('refuse.moveIntoItself', { path: from.join('.') }),
         )
       }
       return attempt((draft) => {
         const found = locate(draft, from)
-        if (found === undefined) return refuse('/model/fields', `No field at "${from.join('.')}".`)
+        if (found === undefined) return refuse('/model/fields', text('refuse.noField', { path: from.join('.') }))
         const [moved] = found.siblings.splice(found.index, 1)
         const container = containerAt(draft, to.parent)
         if (container === undefined) {
-          return refuse('/model/fields', `No container at "${to.parent.join('.')}".`)
+          return refuse('/model/fields', text('refuse.noContainer', { path: to.parent.join('.') }))
         }
         container.splice(clampIndex(to.index, container.length), 0, moved!)
         return undefined
@@ -631,7 +653,7 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
     renameField(keyPath, newKey) {
       return attempt((draft) => {
         const found = locate(draft, keyPath)
-        if (found === undefined) return refuse('/model/fields', `No field at "${keyPath.join('.')}".`)
+        if (found === undefined) return refuse('/model/fields', text('refuse.noField', { path: keyPath.join('.') }))
         const field = found.siblings[found.index]!
         const baseline = baselineByCurrentKey.get(field.key) ?? field.key
 
@@ -659,7 +681,7 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
           if (refused !== undefined) {
             return refuse(
               '/logic/rules',
-              `Renaming "${before}" to "${after}" means every rule naming it has to follow, and ${refused}`,
+              text('refuse.renameFollows', { before, after, refused }),
             )
           }
         }
@@ -671,7 +693,7 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
     setFieldProperty(keyPath, property, value) {
       return attempt((draft) => {
         const found = locate(draft, keyPath)
-        if (found === undefined) return refuse('/model/fields', `No field at "${keyPath.join('.')}".`)
+        if (found === undefined) return refuse('/model/fields', text('refuse.noField', { path: keyPath.join('.') }))
         const field = found.siblings[found.index]! as unknown as Record<string, unknown>
         if (value === undefined) delete field[property]
         else field[property] = copy(value)
@@ -683,7 +705,7 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
       return attempt((draft) => {
         const found = locate(draft, keyPath)
         if (found === undefined) {
-          return refuse('/model/fields', `No field at "${keyPath.join('.')}".`)
+          return refuse('/model/fields', text('refuse.noField', { path: keyPath.join('.') }))
         }
         const field = found.siblings[found.index] as unknown as Record<string, unknown>
         const current = field[property]
@@ -781,16 +803,16 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
       })
     },
 
-    setMessage(locale, id, text) {
+    setMessage(locale, id, message) {
       return attempt((draft) => {
         if (draft.i18n === undefined) {
-          return refuse('/i18n', 'This form has no translations yet. Extract a label first.')
+          return refuse('/i18n', text('refuse.i18nNoneYet'))
         }
         draft.i18n = {
           ...draft.i18n,
           messages: {
             ...draft.i18n.messages,
-            [locale]: { ...draft.i18n.messages[locale], [id]: text },
+            [locale]: { ...draft.i18n.messages[locale], [id]: message },
           },
         }
         return undefined
@@ -856,7 +878,7 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
     addLocale(locale) {
       return attempt((draft) => {
         if (draft.i18n === undefined) {
-          return refuse('/i18n', 'This form has no translations yet. Extract a label first.')
+          return refuse('/i18n', text('refuse.i18nNoneYet'))
         }
         // Present with nothing in it, so a translator can open the language and work
         // through it rather than having to translate something before it exists.
@@ -870,7 +892,7 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
 
     removeLocale(locale) {
       return attempt((draft) => {
-        if (draft.i18n === undefined) return refuse('/i18n', 'This form has no translations.')
+        if (draft.i18n === undefined) return refuse('/i18n', text('refuse.i18nNone'))
         if (draft.i18n.defaultLocale === locale) {
           return refuse(
             '/i18n/defaultLocale',
@@ -923,7 +945,7 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
       return attempt((draft) => {
         const rules = draft.logic?.rules
         if (rules === undefined || index < 0 || index >= rules.length) {
-          return refuse('/logic/rules', `No rule at index ${index}.`)
+          return refuse('/logic/rules', text('refuse.noRule', { index }))
         }
         rules[index] = copy(rule)
         return undefined
@@ -934,7 +956,7 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
       return attempt((draft) => {
         const rules = draft.logic?.rules
         if (rules === undefined || index < 0 || index >= rules.length) {
-          return refuse('/logic/rules', `No rule at index ${index}.`)
+          return refuse('/logic/rules', text('refuse.noRule', { index }))
         }
         rules.splice(index, 1)
         return undefined
@@ -955,7 +977,7 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
       return attempt((draft) => {
         const at = draft.layouts?.findIndex((layout) => layout.name === name) ?? -1
         if (at === -1 || draft.layouts === undefined) {
-          return refuse('/layouts', `No layout called "${name}".`)
+          return refuse('/layouts', text('refuse.noLayout', { name }))
         }
         draft.layouts.splice(at, 1)
         // An empty list and no list at all mean the same thing to a renderer,
@@ -968,7 +990,7 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
     insertLayoutNode(location, node) {
       return attempt((draft) => {
         const container = layoutChildrenAt(draft, location.layout, location.parent)
-        if (container === undefined) return noSuchContainer(location)
+        if (container === undefined) return noSuchContainer(text, location)
         container.splice(clampIndex(location.index, container.length), 0, copy(node))
         return undefined
       })
@@ -977,7 +999,7 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
     removeLayoutNode(address) {
       return attempt((draft) => {
         const found = locateLayout(draft, address)
-        if (found === undefined) return noSuchNode(address)
+        if (found === undefined) return noSuchNode(text, address)
         found.siblings.splice(found.index, 1)
         return undefined
       })
@@ -986,12 +1008,12 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
     unwrapLayoutNode(address) {
       return attempt((draft) => {
         const found = locateLayout(draft, address)
-        if (found === undefined) return noSuchNode(address)
+        if (found === undefined) return noSuchNode(text, address)
         const node = found.siblings[found.index]!
         if (!isLayoutContainer(node)) {
           return refuse(
             layoutPointer(address),
-            'A field node places one field. There is nothing inside it to keep.',
+            text('refuse.fieldNodeHoldsNothing'),
           )
         }
         found.siblings.splice(found.index, 1, ...node.children)
@@ -1003,14 +1025,14 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
       if (addresses.length < 2) {
         return refuse(
           `/layouts/${layout}`,
-          'Wrapping needs at least two nodes. Use insertLayoutNode for one.',
+          text('refuse.wrapNeedsTwo'),
         )
       }
 
       if (!isLayoutContainer(container)) {
         return refuse(
           `/layouts/${layout}`,
-          'The wrapper has to be a container. A field node cannot hold anything.',
+          text('refuse.wrapperNotContainer'),
         )
       }
 
@@ -1024,13 +1046,13 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
             // positions, which stays syntactically fine and fails at publish.
             return refuse(
               layoutPointer({ layout, path: a }),
-              'That node is listed twice. Each one can only go in once.',
+              text('refuse.nodeListedTwice'),
             )
           }
           if (encloses(a, b)) {
             return refuse(
               layoutPointer({ layout, path: a }),
-              'Cannot wrap a container together with something inside it.',
+              text('refuse.wrapContainerWithChild'),
             )
           }
         }
@@ -1043,7 +1065,7 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
         const taken: LayoutNode[] = []
         for (const path of addresses) {
           const found = locateLayout(draft, { layout, path })
-          if (found === undefined) return noSuchNode({ layout, path })
+          if (found === undefined) return noSuchNode(text, { layout, path })
           taken.push(found.siblings[found.index]!)
         }
 
@@ -1056,7 +1078,7 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
             ? positionOf
             : [...addresses].sort(comparePaths)[0]!
         const home = locateLayout(draft, { layout, path: anchorPath })
-        if (home === undefined) return noSuchNode({ layout, path: anchorPath })
+        if (home === undefined) return noSuchNode(text, { layout, path: anchorPath })
         const parent = home.siblings
         const at = home.index
 
@@ -1064,7 +1086,7 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
         // address of another still to be removed.
         for (const path of [...addresses].sort(comparePaths).reverse()) {
           const found = locateLayout(draft, { layout, path })
-          if (found === undefined) return noSuchNode({ layout, path })
+          if (found === undefined) return noSuchNode(text, { layout, path })
           found.siblings.splice(found.index, 1)
         }
 
@@ -1080,19 +1102,19 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
       if (from.layout !== to.layout) {
         return refuse(
           layoutPointer(from),
-          `Cannot move between the "${from.layout}" and "${to.layout}" layouts. Remove it from one and place it in the other.`,
+          text('refuse.crossLayout', { from: from.layout, to: to.layout }),
         )
       }
       if (encloses(from.path, to.parent)) {
         return refuse(
           layoutPointer(from),
-          'Cannot move this inside itself or one of its own children.',
+          text('refuse.moveNodeIntoItself'),
         )
       }
 
       return attempt((draft) => {
         const found = locateLayout(draft, from)
-        if (found === undefined) return noSuchNode(from)
+        if (found === undefined) return noSuchNode(text, from)
         const [moved] = found.siblings.splice(found.index, 1)
         // `to.parent` addresses the container as the CALLER sees it, before
         // anything is lifted — so it is corrected here, once, in the one place
@@ -1101,7 +1123,7 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
         // Splitting it this way is what lets the self-containment check above
         // compare two paths in the same frame of reference.
         const container = layoutChildrenAt(draft, to.layout, shiftAfterLift(to.parent, from.path))
-        if (container === undefined) return noSuchContainer(to)
+        if (container === undefined) return noSuchContainer(text, to)
         container.splice(clampIndex(to.index, container.length), 0, moved!)
         return undefined
       })
@@ -1110,10 +1132,10 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
     setLayoutNodeLabel(address, label) {
       return attempt((draft) => {
         const found = locateLayout(draft, address)
-        if (found === undefined) return noSuchNode(address)
+        if (found === undefined) return noSuchNode(text, address)
         const node = found.siblings[found.index]!
         if (!isLayoutContainer(node)) {
-          return refuse(layoutPointer(address), 'A field node takes its name from the field it places.')
+          return refuse(layoutPointer(address), text('refuse.fieldNodeName'))
         }
         if (label === undefined) delete node.label
         else node.label = copy(label)
@@ -1124,7 +1146,7 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
     setLayoutNodeProperty(address, property, value) {
       return attempt((draft) => {
         const found = locateLayout(draft, address)
-        if (found === undefined) return noSuchNode(address)
+        if (found === undefined) return noSuchNode(text, address)
         if (STRUCTURAL_LAYOUT_PROPERTIES.has(property)) {
           return refuse(
             `${layoutPointer(address)}/${property}`,
@@ -1209,7 +1231,7 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
         if (draft.specVersion > to) {
           return refuse(
             '/specVersion',
-            `This form is written against spec ${draft.specVersion} and cannot go back to ${to}: whatever the newer version added has nowhere to go, so it would be data loss rather than a change.`,
+            text('refuse.downgrade', { from: draft.specVersion, to }),
           )
         }
         draft.specVersion = to
@@ -1274,62 +1296,9 @@ export function createBuilderSession(initial: FormSchema): BuilderSession {
   }
 }
 
-// ---------------------------------------------------------------- navigation
-
-interface Located {
-  siblings: FieldDef[]
-  index: number
-}
-
-/** The child list of the container at `keyPath` — the root list for []. */
-function containerAt(document: FormSchema, keyPath: readonly string[]): FieldDef[] | undefined {
-  if (keyPath.length === 0) return document.model.fields
-  const found = locate(document, keyPath)
-  if (found === undefined) return undefined
-  const field = found.siblings[found.index]!
-  if (!CONTAINER_TYPES.has(field.type)) return undefined
-  field.fields = field.fields ?? []
-  return field.fields
-}
-
-function locate(document: FormSchema, keyPath: readonly string[]): Located | undefined {
-  if (keyPath.length === 0) return undefined
-  let siblings: FieldDef[] = document.model.fields
-  for (let depth = 0; depth < keyPath.length; depth++) {
-    const index = siblings.findIndex((field) => field.key === keyPath[depth])
-    if (index === -1) return undefined
-    if (depth === keyPath.length - 1) return { siblings, index }
-    const next = siblings[index]!.fields
-    if (next === undefined) return undefined
-    siblings = next
-  }
-  return undefined
-}
-
-/** Every container's key path, root first. */
-function containerPaths(document: FormSchema): string[][] {
-  const paths: string[][] = [[]]
-  const walk = (fields: readonly FieldDef[], prefix: string[]): void => {
-    for (const field of fields) {
-      if (!CONTAINER_TYPES.has(field.type)) continue
-      const here = [...prefix, field.key]
-      paths.push(here)
-      walk(field.fields ?? [], here)
-    }
-  }
-  walk(document.model.fields, [])
-  return paths
-}
 
 // ----------------------------------------------- keeping layouts in step
 
-/**
- * The data path of a field, which is not its key path.
- *
- * A page contributes no segment — a layout arranges what a person sees, and
- * `page1.email` is not what the engine calls that answer. Undefined when the
- * key path reaches nothing, or passes through something that holds no fields.
- */
 /**
  * Layout node properties that are not settings.
  *
@@ -1340,83 +1309,25 @@ function containerPaths(document: FormSchema): string[][] {
  */
 const STRUCTURAL_LAYOUT_PROPERTIES = new Set(['kind', 'children', 'path'])
 
-/**
- * The path a rule and a layout node address a field by, which is not its key path.
- *
- * Pages are transparent for data, so a field inside one is addressed without the
- * page: `about.needsVisa` in the tree is `needsVisa` in the model. Exported
- * because the logic panel composed a rule target by joining the key path, and a
- * rule on any field inside a page was therefore refused with "No field has the
- * data path" — in the builder, for as long as pages have existed.
- */
-export function dataPathOf(document: FormSchema, keyPath: readonly string[]): string | undefined {
-  const segments: string[] = []
-  let fields: readonly FieldDef[] = document.model.fields
 
-  for (const [depth, key] of keyPath.entries()) {
-    const field = fields.find((candidate) => candidate.key === key)
-    if (field === undefined) return undefined
-    if (field.type !== 'page') segments.push(key)
-    if (depth === keyPath.length - 1) return segments.join('.')
-    fields = field.fields ?? []
-  }
-  return undefined
-}
 
-/**
- * The page a page's questions should join, or nothing if there is no other.
- *
- * The page before, and the page after when there is none before — which is the
- * choice that keeps the document in its order either way, rather than the choice
- * between two directions it might look like. Nothing when this is the only page,
- * and the form then stops being a wizard.
- */
-function neighbouringPage(fields: readonly FieldDef[], at: number): number | undefined {
-  for (let before = at - 1; before >= 0; before -= 1) {
-    if (fields[before]!.type === 'page') return before
-  }
-  for (let after = at + 1; after < fields.length; after += 1) {
-    if (fields[after]!.type === 'page') return after
-  }
-  return undefined
-}
 
-// ----------------------------------------------------------- layout helpers
-
-interface LocatedNode {
-  siblings: LayoutNode[]
-  index: number
-}
-
-function locateLayout(document: FormSchema, address: LayoutAddress): LocatedNode | undefined {
-  if (address.path.length === 0) return undefined
-  const siblings = layoutChildrenAt(document, address.layout, address.path.slice(0, -1))
-  if (siblings === undefined) return undefined
-  const index = address.path[address.path.length - 1]!
-  if (index < 0 || index >= siblings.length) return undefined
-  return { siblings, index }
-}
-
-function layoutPointer(address: LayoutAddress): string {
-  return `/layouts/${address.layout}/nodes/${address.path.join('/')}`
-}
-
-function noSuchNode(address: LayoutAddress): Refusal {
+function noSuchNode(text: BuilderText, address: LayoutAddress): Refusal {
   return {
     ok: false,
     path: layoutPointer(address),
-    message: `Nothing at that position in the "${address.layout}" layout.`,
+    message: text('refuse.noLayoutNode', { layout: address.layout }),
   }
 }
 
-function noSuchContainer(location: LayoutLocation): Refusal {
+function noSuchContainer(text: BuilderText, location: LayoutLocation): Refusal {
   return {
     ok: false,
     path: `/layouts/${location.layout}/nodes/${location.parent.join('/')}`,
     message:
       location.parent.length === 0
-        ? `No layout called "${location.layout}".`
-        : `Nothing at that position in the "${location.layout}" layout holds other nodes.`,
+        ? text('refuse.noLayout', { name: location.layout })
+        : text('refuse.notAContainerNode', { layout: location.layout }),
   }
 }
 

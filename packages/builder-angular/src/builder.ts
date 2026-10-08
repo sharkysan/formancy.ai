@@ -579,7 +579,7 @@ export class FormancyBuilder {
     const existing = new Set(
       this.view().nodes.map((node) => node.keyPath[node.keyPath.length - 1] ?? ''),
     )
-    return newFieldOfType(type, existing)
+    return newFieldOfType(type, existing, this.session().text)
   }
 
   private announce(message: string): void {

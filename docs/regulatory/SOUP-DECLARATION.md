@@ -69,7 +69,7 @@ What it does **not** do, and must not be assumed to do:
 
 | Layer | Requirement |
 |---|---|
-| Runtime (engine, spec, expressions, builder-core) | Any ECMAScript 2023 environment. **No DOM and no Node APIs are used** ([0008](../decisions/0008-layered-packages.md)) |
+| Runtime (engine, spec, expressions, builder-core) | Any ECMAScript 2023 environment. **No DOM and no Node APIs are used** ([0008](../decisions/0008-layered-packages.md)). `builder-core` additionally uses the ECMA-402 `Intl.PluralRules` and `Intl.ListFormat` for the builder's own words ([0114](../decisions/0114-the-builder-speaks-the-authors-language.md)). Every current browser and the official Node builds carry the locale data; a runtime without data for the builder's language — Node built with `small-icu` — words counts and joins lists in English, and says nothing |
 | Runtime (server) | Node.js `>=22.12.0`; developed and tested against Node 22.12 |
 | Renderer (React) | React `^19.0.0` (peer dependency) |
 | Renderer (Angular) | `@angular/core` `^22.0.0` (peer dependency), zoneless change detection. **Under a strict `style-src` Content Security Policy this package needs Angular's `ngCspNonce`**: it ships one component stylesheet, `:host { display: contents }`, which takes the recursing layout component's host element out of the box tree so a consumer's grid sees the same children it sees in React ([0073](../decisions/0073-a-host-element-is-not-a-layout.md)). Without it a table layout collapses to one column |

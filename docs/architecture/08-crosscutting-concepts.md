@@ -145,6 +145,16 @@ Snapshots carry the resolved label, and `engine.text()` handles option labels
 and anything else. Neither renderer reads `def.label` directly, which is how
 they are kept from disagreeing.
 
+**The builder's own words are a second, separate catalogue**, and the two are not
+to be merged. The document's catalogue is the form's, for the people filling it in,
+and is published with the form. The builder's is for the person building it, who may
+work in a different language from the form they are building: `@formancy/builder-core`
+ships English and German, a session carries one, and both builders read it. A message a
+translation lacks falls back to English one message at a time, and a locale the runtime
+has no data for is English rather than whatever the machine is set to — measured, the
+other answer joined one document's lists differently on two machines
+([0114](../decisions/0114-the-builder-speaks-the-authors-language.md)).
+
 ## 8.9 Error handling
 
 **Fail open on metadata, fail closed on validation**

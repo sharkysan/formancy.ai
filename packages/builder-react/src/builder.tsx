@@ -309,7 +309,7 @@ export function FormancyBuilder({
   const locked = typesNeedingUpgrade(view.document.specVersion)
 
   const insertTargets = (type: string): MoveTarget[] =>
-    view.insertTargetsFor(newFieldOfType(type, existingKeys))
+    view.insertTargetsFor(newFieldOfType(type, existingKeys, session.text))
 
   const cancelDialog = (): void => {
     setAdding(null)
@@ -321,7 +321,7 @@ export function FormancyBuilder({
 
   const completeAdd = (type: string, target: MoveTarget): void => {
     setAdding(null)
-    const def = newFieldOfType(type, existingKeys)
+    const def = newFieldOfType(type, existingKeys, session.text)
     const outcome = session.insertField(target.location, def)
     announce(
       outcome.ok
