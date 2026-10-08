@@ -51,7 +51,7 @@ export function pseudoLanguage(): BuilderLanguage {
  * value: "⟦⟦Removed intro.⟧ The form is not a wizard any more.⟧".
  */
 export function untranslated(shown: Iterable<string>, ownWords: Iterable<string>): string[] {
-  const allowed = new Set([...ownWords].map((word) => word.trim()))
+  const allowed = new Set([...ownWords].map(bare))
   const found = new Set<string>()
   const innermost = new RegExp(`${OPEN}[^${OPEN}${CLOSE}]*${CLOSE}`, 'g')
 
@@ -63,9 +63,22 @@ export function untranslated(shown: Iterable<string>, ownWords: Iterable<string>
     }
     for (const fragment of rest.split('\u0000')) {
       const word = fragment.trim()
-      if (word === '' || /^[\p{P}\p{S}\p{N}\s]+$/u.test(word) || allowed.has(word)) continue
+      if (word === '' || /^[\p{P}\p{S}\p{N}\s]+$/u.test(word) || allowed.has(bare(word))) continue
       found.add(word)
     }
   }
   return [...found].sort()
+}
+
+/**
+ * A fragment without the punctuation at its edges.
+ *
+ * A renderer may set a document's word and the punctuation beside it into one
+ * text node — Angular's `<code>{{ id }}</code>: {{ source }}` is the text ": Gone",
+ * where React makes two — and ": Gone" is the document's word all the same.
+ * Compared bare on both sides, so a word allowed with its full stop is still
+ * allowed without one.
+ */
+function bare(text: string): string {
+  return text.trim().replace(/^[\p{P}\p{S}\s]+|[\p{P}\p{S}\s]+$/gu, '')
 }

@@ -1,7 +1,8 @@
 import { diffSchemas, schemaHash } from '@formancy/spec'
 import type { FormSchema } from '@formancy/spec'
 import { describe, expect, test } from 'vitest'
-import { applyProposal, proposeEdit } from './proposal.js'
+import { createBuilderText } from './messages.js'
+import { applyProposal, proposalStatus, proposeEdit } from './proposal.js'
 import { createBuilderSession } from './session.js'
 import { base, clone } from './session.test.js'
 
@@ -178,5 +179,48 @@ describe('what the review shows', () => {
 
     expect(proposal.costsAnswers).toBe(true)
     expect(proposeEdit(base, withPhone(base)).costsAnswers).toBe(false)
+  })
+})
+
+describe('what the prompt pane says', () => {
+  const english = createBuilderText()
+  const idle = {
+    busy: false,
+    attempts: undefined,
+    failed: false,
+    proposal: undefined,
+    refusal: undefined,
+  }
+
+  test('a refusal outranks a proposal, because it is about the button just pressed', () => {
+    const proposal = proposeEdit(base, withPhone(base))
+
+    expect(proposalStatus({ ...idle, proposal, refusal: 'The form changed.' }, english)).toBe(
+      'Not applied. The form changed.',
+    )
+  })
+
+  test('counts changes in the language’s plural, which "1 changes, none of which" did not', () => {
+    const one = proposeEdit(base, withPhone(base))
+
+    expect(proposalStatus({ ...idle, proposal: one, attempts: 1 }, english)).toBe(
+      english('prompt.status.ready', { count: 1 }),
+    )
+    expect(english('prompt.status.ready', { count: 1 })).toContain('1 change, which does not')
+  })
+
+  test('says how many goes the model took when it took more than one', () => {
+    const proposal = proposeEdit(base, withPhone(base))
+
+    expect(proposalStatus({ ...idle, proposal, attempts: 3 }, english)).toContain(
+      'after 3 attempts',
+    )
+  })
+
+  test('and says nothing was applied when every attempt failed', () => {
+    expect(proposalStatus({ ...idle, failed: true, attempts: 2 }, english)).toBe(
+      english('prompt.status.failed', { count: 2 }),
+    )
+    expect(proposalStatus(idle, english)).toBe('')
   })
 })

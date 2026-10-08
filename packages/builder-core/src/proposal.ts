@@ -1,5 +1,6 @@
 import { diffSchemas, schemaHash } from '@formancy/spec'
 import type { Change, FormSchema } from '@formancy/spec'
+import type { BuilderText } from './messages.js'
 import type { BuilderSession, CommandOutcome } from './session.js'
 
 /**
@@ -101,4 +102,41 @@ export function applyProposal(session: BuilderSession, proposal: EditProposal): 
   }
 
   return session.replaceDocument(proposal.document)
+}
+
+/**
+ * The one sentence a prompt pane's live region carries.
+ *
+ * A four-way choice both builders wrote out by hand. The order matters: a
+ * refusal outranks a proposal, because it is about the button somebody just
+ * pressed. How many goes the model took is said when it took more than one: a
+ * model that needed correcting is one to read more carefully, and this is the
+ * moment somebody is deciding how closely.
+ */
+export function proposalStatus(
+  state: {
+    busy: boolean
+    attempts: number | undefined
+    failed: boolean
+    proposal: EditProposal | undefined
+    refusal: string | undefined
+  },
+  text: BuilderText,
+): string {
+  if (state.busy) return text('prompt.status.writing')
+  if (state.refusal !== undefined) return text('prompt.status.refused', { reason: state.refusal })
+  if (state.proposal !== undefined) {
+    const count = state.proposal.changes.length
+    const costs = state.proposal.costsAnswers
+    const attempts = state.attempts ?? 1
+    if (attempts > 1) {
+      return text(costs ? 'prompt.status.readyAfterCosts' : 'prompt.status.readyAfter', {
+        count,
+        attempts,
+      })
+    }
+    return text(costs ? 'prompt.status.readyCosts' : 'prompt.status.ready', { count })
+  }
+  if (state.failed) return text('prompt.status.failed', { count: state.attempts ?? 1 })
+  return ''
 }

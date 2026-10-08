@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactElement, ReactNode } from 'react'
 import type { ArrangeDrop, BuilderSession } from '@formancy/builder-core'
 import { arrangeDrop } from '@formancy/builder-core'
-import { describeLayoutTarget, flattenLayout } from '@formancy/builder-core'
+import { arrangeDropAndSay, flattenLayout } from '@formancy/builder-core'
 import { useBuilder } from './use-builder.js'
 
 /**
@@ -214,36 +214,11 @@ export function FormancyArrangeSurface({
 
         // Announced through a live region either way, because a drag that
         // changes the document silently is a change somebody using a screen
-        // reader with a pointer never hears about.
-        if (target.kind === 'wrap') {
-          // The side aimed at decides the order, which is the whole point of
-          // having two zones rather than one. The same command the `w` key in
-          // the arrangement pane calls.
-          const outcome = session.wrapLayoutNodes(
-            layout,
-            // The side aimed at decides the order.
-            target.side === 'start' ? [from, target.over] : [target.over, from],
-            { kind: 'row', children: [] },
-            // And the row belongs where the thing dropped ON was, not where the
-            // dragged node came from. Without this, dragging a field out of a
-            // row onto a top-level field nests the new row inside the old one,
-            // which is not what anybody aimed at.
-            target.over,
-          )
-          setAnnouncement(
-            outcome.ok
-              ? `Put them side by side in a row.`
-              : `Cannot put them side by side: ${outcome.message}`,
-          )
-          return
-        }
-
-        const outcome = session.moveLayoutNode({ layout, path: from }, target.location)
-        setAnnouncement(
-          outcome.ok
-            ? `Moved to ${describeLayoutTarget(view.document, target.location, from, session.text)}.`
-            : `Cannot move: ${outcome.message}`,
-        )
+        // reader with a pointer never hears about. What it does and says is
+        // builder-core's: the side aimed at decides the order, and a new row goes
+        // where the thing dropped ON was — the same decision the Angular surface
+        // reads (0117).
+        setAnnouncement(arrangeDropAndSay(session, layout, from, target))
       }}
     >
       {children}

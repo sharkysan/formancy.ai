@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { ReactElement } from 'react'
 import { referencedMessages } from '@formancy/builder-core'
-import type { BuilderSession, CatalogueFile } from '@formancy/builder-core'
+import type { BuilderSession, BuilderText, CatalogueFile } from '@formancy/builder-core'
 import { createFormEngine } from '@formancy/core'
 import { FormancyForm, FormancyProvider } from '@formancy/react'
 import type { FormSchema } from '@formancy/spec'
@@ -29,6 +29,7 @@ import { useBuilder } from './use-builder.js'
  */
 export function TranslationsPane({ session }: { session: BuilderSession }): ReactElement {
   const view = useBuilder(session)
+  const { text } = session
   const document = view.document
   const i18n = document.i18n
   const defaultLocale = i18n?.defaultLocale ?? 'en'
@@ -48,11 +49,7 @@ export function TranslationsPane({ session }: { session: BuilderSession }): Reac
   const unused =
     orphaned.length === 0 ? null : (
       <div data-formancy-part="translations-orphaned">
-        <p>
-          These messages are no longer used by the form. They are kept rather than removed —
-          a field can come back, and a year of somebody&rsquo;s translations should not
-          disappear because a key changed.
-        </p>
+        <p>{text('translations.orphaned')}</p>
         <ul>
           {orphaned.map((id) => (
             <li key={id}>
@@ -70,11 +67,7 @@ export function TranslationsPane({ session }: { session: BuilderSession }): Reac
   if (referenced.length === 0) {
     return (
       <div data-formancy-part="translations">
-        <p data-formancy-part="translations-hint">
-          Nothing in this form is translatable yet: its words are written into the document
-          rather than referred to. Extracting them keeps what they say and lets a language be
-          added beside them.
-        </p>
+        <p data-formancy-part="translations-hint">{text('translations.none')}</p>
         <button
           type="button"
           onClick={() => {
@@ -84,7 +77,7 @@ export function TranslationsPane({ session }: { session: BuilderSession }): Reac
             session.extractAllText()
           }}
         >
-          Make this form translatable
+          {text('translations.extract')}
         </button>
         {unused}
       </div>
@@ -95,23 +88,23 @@ export function TranslationsPane({ session }: { session: BuilderSession }): Reac
     <div data-formancy-part="translations">
       <div data-formancy-part="translations-toolbar">
         <label>
-          Language
+          {text('translations.language')}
           <select value={chosen} onChange={(event) => setShowing(event.target.value)}>
             {locales.map((locale) => (
               <option key={locale} value={locale}>
-                {locale === defaultLocale ? `${locale} (default)` : locale}
+                {locale === defaultLocale ? text('translations.default', { locale }) : locale}
               </option>
             ))}
           </select>
         </label>
 
         <label>
-          New language
+          {text('translations.new')}
           <input
             type="text"
             value={adding}
             onChange={(event) => setAdding(event.target.value)}
-            placeholder="it"
+            placeholder={text('translations.new.example')}
           />
         </label>
         <button
@@ -123,7 +116,7 @@ export function TranslationsPane({ session }: { session: BuilderSession }): Reac
             setAdding('')
           }}
         >
-          Add language
+          {text('translations.add')}
         </button>
 
         {/* For a team with a vendor and a translation memory, who work in a file
@@ -143,11 +136,11 @@ export function TranslationsPane({ session }: { session: BuilderSession }): Reac
             URL.revokeObjectURL(url)
           }}
         >
-          Download {chosen}
+          {text('translations.download', { locale: chosen })}
         </button>
 
         <label>
-          Upload a translated file
+          {text('translations.upload')}
           <input
             type="file"
             accept="application/json,.json"
@@ -180,20 +173,12 @@ export function TranslationsPane({ session }: { session: BuilderSession }): Reac
 
       {report === undefined ? null : (
         <div data-formancy-part="translations-report">
-          <p>
-            {report.written} {report.written === 1 ? 'translation' : 'translations'} written.
-          </p>
+          <p>{text('translations.written', { count: report.written })}</p>
           {report.unknown.length === 0 ? null : (
-            <p>
-              Not written, because this form no longer has them — the file was exported before
-              a field was removed: {report.unknown.join(', ')}
-            </p>
+            <p>{text('translations.unknown', { list: text.list(report.unknown) })}</p>
           )}
           {report.stale.length === 0 ? null : (
-            <p>
-              Written, but translated from wording that has since changed, so worth a look:{' '}
-              {report.stale.join(', ')}
-            </p>
+            <p>{text('translations.stale', { list: text.list(report.stale) })}</p>
           )}
         </div>
       )}
@@ -232,7 +217,9 @@ export function TranslationsPane({ session }: { session: BuilderSession }): Reac
                         onChange={(event) => session.setMessage(chosen, id, event.target.value)}
                       />
                       {translated === undefined || translated === '' ? (
-                        <span data-formancy-part="translations-missing">Not translated</span>
+                        <span data-formancy-part="translations-missing">
+                          {text('translations.missing')}
+                        </span>
                       ) : null}
                     </>
                   )}
@@ -243,7 +230,7 @@ export function TranslationsPane({ session }: { session: BuilderSession }): Reac
         </tbody>
       </table>
 
-      <Preview document={document} locale={chosen} />
+      <Preview document={document} locale={chosen} text={text} />
 
       {unused}
     </div>
@@ -265,7 +252,15 @@ export function TranslationsPane({ session }: { session: BuilderSession }): Reac
  * teach a translator that the fallback is broken when the fallback is the
  * feature.
  */
-function Preview({ document, locale }: { document: FormSchema; locale: string }): ReactElement {
+function Preview({
+  document,
+  locale,
+  text,
+}: {
+  document: FormSchema
+  locale: string
+  text: BuilderText
+}): ReactElement {
   const engine = useMemo(() => {
     try {
       return createFormEngine({
@@ -290,12 +285,15 @@ function Preview({ document, locale }: { document: FormSchema; locale: string })
       // Named, so a test can ask about the preview rather than about the pane —
       // the table's own inputs carry the source text as their accessible name,
       // and an unscoped query finds those instead.
-      aria-label={`Preview in ${locale}`}
+      aria-label={text('translations.preview', { locale })}
       data-formancy-part="translations-preview"
     >
       {engine === undefined ? null : (
         <FormancyProvider engine={engine}>
-          <FormancyForm submitLabel="Submit" onSubmit={() => undefined} />
+          <FormancyForm
+            submitLabel={text('translations.previewSubmit')}
+            onSubmit={() => undefined}
+          />
         </FormancyProvider>
       )}
     </section>

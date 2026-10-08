@@ -8,7 +8,7 @@ import {
   untracked,
   viewChild,
 } from '@angular/core'
-import { arrangeDrop, describeLayoutTarget, flattenLayout } from '@formancy/builder-core'
+import { arrangeDrop, arrangeDropAndSay, flattenLayout } from '@formancy/builder-core'
 import type { ArrangeDrop, BuilderSession } from './types.js'
 import { injectBuilderView } from './view.js'
 
@@ -252,33 +252,9 @@ export class FormancyArrangeSurface {
 
     // Announced through a live region either way, because a drag that changes
     // the document silently is a change somebody using a screen reader with a
-    // pointer never hears about.
-    if (target.kind === 'wrap') {
-      const outcome = session.wrapLayoutNodes(
-        this.layout(),
-        // The side aimed at decides the order, which is the whole point of
-        // having two zones rather than one.
-        target.side === 'start' ? [from, target.over] : [target.over, from],
-        { kind: 'row', children: [] },
-        // And the row belongs where the thing dropped ON was, not where the
-        // dragged node came from. Without this, dragging a field out of a row
-        // onto a top-level field nests the new row inside the old one, which is
-        // not what anybody aimed at.
-        target.over,
-      )
-      this.announcement.set(
-        outcome.ok
-          ? 'Put them side by side in a row.'
-          : `Cannot put them side by side: ${outcome.message}`,
-      )
-      return
-    }
-
-    const outcome = session.moveLayoutNode({ layout: this.layout(), path: from }, target.location)
-    this.announcement.set(
-      outcome.ok
-        ? `Moved to ${describeLayoutTarget(this.view().document, target.location, from, this.session().text)}.`
-        : `Cannot move: ${outcome.message}`,
-    )
+    // pointer never hears about. What it does and says is builder-core's: the side
+    // aimed at decides the order, and a new row goes where the thing dropped ON
+    // was — the same decision the React surface reads (0117).
+    this.announcement.set(arrangeDropAndSay(session, this.layout(), from, target))
   }
 }

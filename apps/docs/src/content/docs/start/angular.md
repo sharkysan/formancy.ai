@@ -199,14 +199,14 @@ const session = createBuilderSession(schema, {
 })
 ```
 
-Its refusals, everything the structure tree and the arrangement pane show or announce,
-the property panels' own words and the logic panel are then German — a property's title and description
-are the spec's and stay as the schema words them; a message a catalogue
+Every surface of both builders is then German — a property's title and description are
+the spec's and stay as the schema words them, and a validator's or parser's message is
+its package's; a message a catalogue
 leaves out is English, one message at a time, so a catalogue of your own can start small.
-**The other panes are still English** — they move next, one at a time in both builders,
-and until then this is a German tree beside English panes
+A session's language is fixed for its lifetime: to change it, open a session again over
+the same document
 ([0114](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0114-the-builder-speaks-the-authors-language.md),
-[0116](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0116-what-a-builder-says-is-decided-once.md)).
+[0120](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0120-a-sessions-language-is-fixed-for-its-lifetime.md)).
 
 Every pane the React builder has, this one has too: the arrangement tree and the drag
 surface on the rendered form, the property and logic panels, the translations pane, and

@@ -1,4 +1,5 @@
 import type { ScenarioResult } from '@formancy/core'
+import type { BuilderText } from './messages.js'
 
 /**
  * What changed between two runs of the same scenarios.
@@ -58,4 +59,33 @@ export function comparedToLastRun(
   }
 
   return { regressions, repaired }
+}
+
+/**
+ * The one sentence a scenario panel's live region carries.
+ *
+ * A regression outranks a total, because it is the only part that is about the
+ * edit somebody just made. The repairs come next, so a panel that otherwise only
+ * reports bad news says when something worked. Both builders wrote this by hand.
+ */
+export function scenarioStatus(
+  total: number,
+  failing: number,
+  change: ScenarioRunChange,
+  text: BuilderText,
+): string {
+  if (total === 0) return text('scenarios.none')
+  const parts: string[] = []
+  if (change.regressions.length > 0) {
+    parts.push(text('scenarios.stopped', { list: text.list(change.regressions) }))
+  }
+  if (change.repaired.length > 0) {
+    parts.push(text('scenarios.again', { list: text.list(change.repaired) }))
+  }
+  parts.push(
+    failing === 0
+      ? text('scenarios.allHold', { count: total })
+      : text('scenarios.someFail', { count: failing, total }),
+  )
+  return parts.join(' ')
 }

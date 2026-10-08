@@ -232,9 +232,9 @@ and a layout node's name are worded once, in the language of the person building
 rather than inline in English twice. Whole sentences per noun rather than a noun slotted
 into a template, because German agrees an adjective with its noun; `Intl` decides
 plural forms and how a list is joined
-([0114](../decisions/0114-the-builder-speaks-the-authors-language.md)). The structure tree,
-the arrangement pane, the property editors and the logic panel read it in both builders;
-the translations, prompt and scenario panes have not moved yet. A property's own title and
+([0114](../decisions/0114-the-builder-speaks-the-authors-language.md)). Every surface of
+both builders reads it, and a session's language is fixed for its lifetime
+([0120](../decisions/0120-a-sessions-language-is-fixed-for-its-lifetime.md)). A property's own title and
 description are the spec's JSON Schema's words and are not translated here.
 
 `spoken.ts` holds what a builder **says** after a command on the structure tree — the

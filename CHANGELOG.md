@@ -10,6 +10,25 @@ later.
 
 ## Unreleased
 
+**Every surface of both builders speaks the author's language.** The translations, prompt
+and scenario panes and the drop surface over the rendered form were the last; each read
+the catalogue now, and the three decisions both builders had still written by hand are
+`builder-core`'s: what a drop on the form does and says (`arrangeDropAndSay` — a wrap now
+names both items rather than "them"), what the prompt pane's live region says
+(`proposalStatus` — "1 change, none of which affect" is "1 change, which does not affect"),
+and the scenario panel's (`scenarioStatus` — "1 of 3 do not hold" is "1 of 3 does not
+hold"). The playground's Language switch changes the builder as well as the form: choose
+Deutsch and both builders are German
+([0120](docs/decisions/0120-a-sessions-language-is-fixed-for-its-lifetime.md)). A session's
+language is fixed for its lifetime, as an engine's locale is, so the switch opens the same
+text again — and drops the undo history, which is the cost.
+
+What stays English, deliberately: a property's title and description, which are the spec's
+JSON Schema's words; a validator's or parser's message, which is its package's; and the
+problems the model is told, which the prompt pane shows as they were told. The pseudo-
+language check now knows a document's word with the punctuation a renderer set beside it
+in one text node — Angular's `: Gone`, which React renders as two.
+
 **"Every refusal a session issues" was not every refusal.** The change that moved the
 builder's words into a catalogue said so, and four were still English in `session.ts` —
 removing the default language, extracting a property that is not text, and two about

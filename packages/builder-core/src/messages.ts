@@ -314,6 +314,84 @@ export const BUILDER_MESSAGES = {
   'logic.removeComparison': 'Remove comparison {number}',
   'logic.addComparison': 'Add a comparison',
   'logic.addRule': 'Add rule',
+  // ------------------------------------------- the arrangement on the rendered form
+  'said.movedTo': 'Moved to {where}.',
+
+  // ----------------------------------------------------------- the translations pane
+  'translations.orphaned':
+    'These messages are no longer used by the form. They are kept rather than removed — a field can come back, and a year of somebody’s translations should not disappear because a key changed.',
+  'translations.none':
+    'Nothing in this form is translatable yet: its words are written into the document rather than referred to. Extracting them keeps what they say and lets a language be added beside them.',
+  'translations.extract': 'Make this form translatable',
+  'translations.language': 'Language',
+  'translations.default': '{locale} (default)',
+  'translations.new': 'New language',
+  // An example in the box: a language tag, not a word.
+  'translations.new.example': 'it',
+  'translations.add': 'Add language',
+  'translations.download': 'Download {locale}',
+  'translations.upload': 'Upload a translated file',
+  'translations.written': { one: '{count} translation written.', other: '{count} translations written.' },
+  'translations.unknown':
+    'Not written, because this form no longer has them — the file was exported before a field was removed: {list}',
+  'translations.stale':
+    'Written, but translated from wording that has since changed, so worth a look: {list}',
+  'translations.missing': 'Not translated',
+  'translations.preview': 'Preview in {locale}',
+  'translations.previewSubmit': 'Submit',
+
+  // ------------------------------------------------------------------ the prompt pane
+  'prompt.label': 'Describe the form, or the change you want',
+  'prompt.example':
+    'A contact form with an email address and a message, and a phone number only if they ask to be called back',
+  'prompt.write': 'Write it',
+  'prompt.writing': 'Writing…',
+  'prompt.review': 'Review these changes',
+  'prompt.review.costs': 'Review these changes — some affect answers already collected',
+  'prompt.apply': 'Apply these changes',
+  'prompt.discard': 'Discard',
+  'prompt.lastAnswer': 'What the model last answered',
+  'prompt.status.writing': 'Writing the form, and checking it.',
+  'prompt.status.refused': 'Not applied. {reason}',
+  'prompt.status.ready': {
+    one: 'Ready to review: {count} change, which does not affect answers already collected. Nothing has been applied.',
+    other:
+      'Ready to review: {count} changes, none of which affect answers already collected. Nothing has been applied.',
+  },
+  'prompt.status.readyCosts': {
+    one: 'Ready to review: {count} change, and it affects answers already collected. Nothing has been applied.',
+    other:
+      'Ready to review: {count} changes, and some of them affect answers already collected. Nothing has been applied.',
+  },
+  // Said when the model needed correcting: one to read more carefully.
+  'prompt.status.readyAfter': {
+    one: 'Ready to review after {attempts} attempts: {count} change, which does not affect answers already collected. Nothing has been applied.',
+    other:
+      'Ready to review after {attempts} attempts: {count} changes, none of which affect answers already collected. Nothing has been applied.',
+  },
+  'prompt.status.readyAfterCosts': {
+    one: 'Ready to review after {attempts} attempts: {count} change, and it affects answers already collected. Nothing has been applied.',
+    other:
+      'Ready to review after {attempts} attempts: {count} changes, and some of them affect answers already collected. Nothing has been applied.',
+  },
+  'prompt.status.failed': {
+    one: 'Nothing was applied. {count} attempt, and the document still did not work.',
+    other: 'Nothing was applied. {count} attempts, and the document still did not work.',
+  },
+
+  // --------------------------------------------------------------- the scenario panel
+  'scenarios.label': 'Scenarios',
+  'scenarios.none': 'No scenarios.',
+  'scenarios.empty':
+    'No scenarios yet. One is an example with its answer written down — what this form should make of a particular set of answers — and it is the only check that can tell a working condition from the right one.',
+  'scenarios.stopped': 'Stopped holding: {list}.',
+  'scenarios.again': 'Holds again: {list}.',
+  'scenarios.allHold': { one: 'The one scenario holds.', other: 'All {count} scenarios hold.' },
+  'scenarios.someFail': {
+    one: '{count} of {total} does not hold.',
+    other: '{count} of {total} do not hold.',
+  },
+  'scenarios.remove': 'Remove {name}',
 
   // ----------------------------------------- what a new field starts out holding
   // Written into the document, so they are in the author's language: somebody

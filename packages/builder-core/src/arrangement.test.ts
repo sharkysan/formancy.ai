@@ -2,6 +2,7 @@ import type { FormSchema } from '@formancy/spec'
 import { describe, expect, test } from 'vitest'
 import {
   addLayoutAndSay,
+  arrangeDropAndSay,
   codeAnswers,
   dropLayoutAndSay,
   insertLayoutAndSay,
@@ -13,7 +14,7 @@ import {
   wrapAndSay,
   wrapCandidates,
 } from './arrangement.js'
-import { flattenLayout } from './layout-tree.js'
+import { describeLayoutTarget, flattenLayout } from './layout-tree.js'
 import { BUILDER_MESSAGES_DE } from './messages-de.js'
 import { createBuilderText } from './messages.js'
 import { createBuilderSession } from './session.js'
@@ -225,5 +226,42 @@ describe('the legend', () => {
 
     expect(legend.get('w')).toBe(german('keys.layout.wrap.what'))
     expect(legend.get(german('keys.delete.key'))).toBe(german('keys.layout.delete.what'))
+  })
+})
+
+describe('a drop on the rendered form', () => {
+  test('wraps in the order the side aimed at says, and names both', () => {
+    // Dropping Email on the START side of the row puts Email first.
+    const session = createBuilderSession(arranged())
+    session.insertLayoutNode(
+      { layout: 'web', parent: [], index: 1 },
+      { kind: 'field', path: 'email' },
+    )
+    const rowName = flattenLayout(session.document(), 'web')[0]!.name
+
+    const said = arrangeDropAndSay(session, 'web', [1], { kind: 'wrap', side: 'start', over: [0] })
+
+    expect(said).toBe(english('said.wrapped', { first: 'Email', second: rowName }))
+    const row = session.document().layouts?.[0]?.nodes[0]
+    expect(row?.kind === 'row' && row.children[0]).toEqual({ kind: 'field', path: 'email' })
+  })
+
+  test('moves and says where, described before the move', () => {
+    const session = createBuilderSession(arranged())
+    session.insertLayoutNode(
+      { layout: 'web', parent: [], index: 1 },
+      { kind: 'field', path: 'email' },
+    )
+    const location = { layout: 'web', parent: [0], index: 0 }
+    const where = describeLayoutTarget(session.document(), location, [1], english)
+
+    expect(
+      arrangeDropAndSay(session, 'web', [1], {
+        kind: 'move',
+        location,
+        edge: 'before',
+        axis: 'inline',
+      }),
+    ).toBe(english('said.movedTo', { where }))
   })
 })

@@ -1,8 +1,9 @@
 import { SPEC_1_LAYOUT_KINDS, modelDataPaths } from '@formancy/spec'
 import type { LayoutNode } from '@formancy/spec'
-import { flattenLayout, nameOfPath } from './layout-tree.js'
+import { describeLayoutTarget, flattenLayout, nameOfPath } from './layout-tree.js'
 import type { LayoutTreeNode } from './layout-tree.js'
 import type { LayoutAddress, LayoutLocation } from './layout.js'
+import type { ArrangeDrop } from './arrange.js'
 import { nextSpecVersion } from './palette.js'
 import type { BuilderSession } from './session.js'
 
@@ -211,16 +212,24 @@ export function removeLayoutAndSay(session: BuilderSession, address: LayoutAddre
     : session.text('said.cannotRemove', { name, reason: outcome.message })
 }
 
-/** Put two items side by side in a new row, the first one chosen first. */
+/**
+ * Put two items side by side in a new row, the first one chosen first. `at` is
+ * where the row goes when it is not where the first of them was.
+ */
 export function wrapAndSay(
   session: BuilderSession,
   layout: string,
   first: readonly number[],
   second: readonly number[],
+  at?: readonly number[],
 ): string {
   const one = nodeName(session, { layout, path: first })
   const other = nodeName(session, { layout, path: second })
-  const outcome = session.wrapLayoutNodes(layout, [first, second], { kind: 'row', children: [] })
+  const row: LayoutNode = { kind: 'row', children: [] }
+  const outcome =
+    at === undefined
+      ? session.wrapLayoutNodes(layout, [first, second], row)
+      : session.wrapLayoutNodes(layout, [first, second], row, at)
   return outcome.ok
     ? session.text('said.wrapped', { first: one, second: other })
     : session.text('said.cannotWrap', { reason: outcome.message })
@@ -254,4 +263,33 @@ function samePath(a: readonly number[], b: readonly number[]): boolean {
 /** Whether `outer` is a strict ancestor of `inner`. */
 function encloses(outer: readonly number[], inner: readonly number[]): boolean {
   return outer.length < inner.length && outer.every((step, at) => inner[at] === step)
+}
+
+/**
+ * A drop on the rendered form, done and said.
+ *
+ * Both builders' drag surfaces made these two decisions by hand. The side aimed
+ * at decides the order, which is the point of having two zones rather than one;
+ * and the row belongs where the thing dropped ON was — without that, dragging a
+ * field out of a row onto a top-level field nested the new row inside the old one,
+ * which is not what anybody aimed at. The sentence names both items, where the
+ * surfaces said "Put them side by side".
+ */
+export function arrangeDropAndSay(
+  session: BuilderSession,
+  layout: string,
+  from: readonly number[],
+  drop: ArrangeDrop,
+): string {
+  if (drop.kind === 'wrap') {
+    const [first, second] = drop.side === 'start' ? [from, drop.over] : [drop.over, from]
+    return wrapAndSay(session, layout, first, second, drop.over)
+  }
+  // Described against the document before the move, excluding the traveller,
+  // which is what makes the sentence true.
+  const where = describeLayoutTarget(session.document(), drop.location, from, session.text)
+  const outcome = session.moveLayoutNode({ layout, path: from }, drop.location)
+  return outcome.ok
+    ? session.text('said.movedTo', { where })
+    : session.text('said.cannotMove', { reason: outcome.message })
 }

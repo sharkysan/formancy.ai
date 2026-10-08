@@ -1,6 +1,6 @@
 import { useId, useState } from 'react'
 import type { ReactElement } from 'react'
-import { applyProposal, authorForm, proposeEdit } from '@formancy/builder-core'
+import { applyProposal, authorForm, proposalStatus, proposeEdit } from '@formancy/builder-core'
 import type {
   AskModel,
   AuthoringResult,
@@ -53,6 +53,8 @@ export interface PromptPaneProps {
 }
 
 export function PromptPane({ session, ask, attempts }: PromptPaneProps): ReactElement | null {
+  // Every word this pane shows, in the language the session was opened in (0114).
+  const { text } = session
   const [instruction, setInstruction] = useState('')
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<AuthoringResult | undefined>(undefined)
@@ -117,21 +119,30 @@ export function PromptPane({ session, ask, attempts }: PromptPaneProps): ReactEl
 
   return (
     <section data-formancy-part="prompt-pane">
-      <label htmlFor={inputId}>Describe the form, or the change you want</label>
+      <label htmlFor={inputId}>{text('prompt.label')}</label>
       <textarea
         id={inputId}
         rows={3}
         value={instruction}
         disabled={busy}
-        placeholder="A contact form with an email address and a message, and a phone number only if they ask to be called back"
+        placeholder={text('prompt.example')}
         onChange={(event) => setInstruction(event.target.value)}
       />
       <button type="button" disabled={busy || instruction.trim() === ''} onClick={() => void run()}>
-        {busy ? 'Writing…' : 'Write it'}
+        {busy ? text('prompt.writing') : text('prompt.write')}
       </button>
 
       <p role="status" data-formancy-part="prompt-status">
-        {statusOf({ busy, result, proposal, refusal })}
+        {proposalStatus(
+          {
+            busy,
+            attempts: result?.attempts,
+            failed: result !== undefined && !result.ok,
+            proposal,
+            refusal,
+          },
+          text,
+        )}
       </p>
 
       {proposal === undefined ? null : (
@@ -143,9 +154,7 @@ export function PromptPane({ session, ask, attempts }: PromptPaneProps): ReactEl
              after a status message. */
         >
           <h3 id={reviewId}>
-            {proposal.costsAnswers
-              ? 'Review these changes — some affect answers already collected'
-              : 'Review these changes'}
+            {text(proposal.costsAnswers ? 'prompt.review.costs' : 'prompt.review')}
           </h3>
           <ul data-formancy-part="prompt-changes">
             {proposal.changes.map((change) => (
@@ -157,7 +166,7 @@ export function PromptPane({ session, ask, attempts }: PromptPaneProps): ReactEl
             ))}
           </ul>
           <button type="button" onClick={apply}>
-            Apply these changes
+            {text('prompt.apply')}
           </button>
           <button
             type="button"
@@ -167,7 +176,7 @@ export function PromptPane({ session, ask, attempts }: PromptPaneProps): ReactEl
               setResult(undefined)
             }}
           >
-            Discard
+            {text('prompt.discard')}
           </button>
         </section>
       )}
@@ -183,7 +192,7 @@ export function PromptPane({ session, ask, attempts }: PromptPaneProps): ReactEl
           </ul>
           {result.lastAnswer === '' ? null : (
             <details>
-              <summary>What the model last answered</summary>
+              <summary>{text('prompt.lastAnswer')}</summary>
               <pre>{result.lastAnswer}</pre>
             </details>
           )}
@@ -191,43 +200,4 @@ export function PromptPane({ session, ask, attempts }: PromptPaneProps): ReactEl
       ) : null}
     </section>
   )
-}
-
-/**
- * The one sentence the live region carries.
- *
- * Its own function because it is a four-way choice and inlining it put four
- * nested ternaries in the middle of the markup. The order matters: a refusal
- * is the most recent thing that happened and outranks the proposal still on
- * screen behind it.
- */
-function statusOf({
-  busy,
-  result,
-  proposal,
-  refusal,
-}: {
-  busy: boolean
-  result: AuthoringResult | undefined
-  proposal: EditProposal | undefined
-  refusal: string | undefined
-}): string {
-  if (busy) return 'Writing the form, and checking it.'
-  if (refusal !== undefined) return `Not applied. ${refusal}`
-  if (proposal !== undefined) {
-    const count = proposal.changes.length
-    const what = `${String(count)} change${count === 1 ? '' : 's'}`
-    /* How many goes it took, when it took more than one. Worth saying rather
-       than hiding: a model that needed correcting is one to read more
-       carefully, and this is the moment somebody is deciding how closely. */
-    const tries =
-      result?.ok === true && result.attempts > 1 ? ` after ${String(result.attempts)} attempts` : ''
-    return proposal.costsAnswers
-      ? `Ready to review${tries}: ${what}, and some of them affect answers already collected. Nothing has been applied.`
-      : `Ready to review${tries}: ${what}, none of which affect answers already collected. Nothing has been applied.`
-  }
-  if (result === undefined) return ''
-  return result.ok
-    ? ''
-    : `Nothing was applied. ${String(result.attempts)} attempt(s), and the document still did not work.`
 }

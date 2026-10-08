@@ -264,6 +264,81 @@ export const BUILDER_MESSAGES_DE = {
   // Not "Regel hinzufügen" again: in German the draft's submit and the button that
   // opens the draft would otherwise share a name.
   'logic.addRule': 'Regel anlegen',
+  'said.movedTo': 'Verschoben: {where}.',
+
+  'translations.orphaned':
+    'Diese Meldungen verwendet das Formular nicht mehr. Sie bleiben, statt entfernt zu werden – ein Feld kann zurückkommen, und ein Jahr Übersetzungsarbeit soll nicht verschwinden, weil sich ein Schlüssel geändert hat.',
+  'translations.none':
+    'In diesem Formular ist noch nichts übersetzbar: Seine Wörter stehen im Dokument, statt darauf zu verweisen. Sie herauszulösen behält, was sie sagen, und erlaubt, eine Sprache daneben zu stellen.',
+  'translations.extract': 'Dieses Formular übersetzbar machen',
+  'translations.language': 'Sprache',
+  'translations.default': '{locale} (Standard)',
+  'translations.new': 'Neue Sprache',
+  'translations.new.example': 'fr',
+  'translations.add': 'Sprache hinzufügen',
+  'translations.download': '{locale} herunterladen',
+  'translations.upload': 'Übersetzte Datei hochladen',
+  'translations.written': {
+    one: '{count} Übersetzung geschrieben.',
+    other: '{count} Übersetzungen geschrieben.',
+  },
+  'translations.unknown':
+    'Nicht geschrieben, weil dieses Formular sie nicht mehr hat – die Datei wurde exportiert, bevor ein Feld entfernt wurde: {list}',
+  'translations.stale':
+    'Geschrieben, aber aus einem Wortlaut übersetzt, der sich inzwischen geändert hat – einen Blick wert: {list}',
+  'translations.missing': 'Nicht übersetzt',
+  'translations.preview': 'Vorschau auf {locale}',
+  'translations.previewSubmit': 'Absenden',
+
+  'prompt.label': 'Beschreib das Formular oder die Änderung, die du willst',
+  'prompt.example':
+    'Ein Kontaktformular mit E-Mail-Adresse und Nachricht, und einer Telefonnummer nur, wenn jemand um Rückruf bittet',
+  'prompt.write': 'Schreiben',
+  'prompt.writing': 'Wird geschrieben …',
+  'prompt.review': 'Diese Änderungen prüfen',
+  'prompt.review.costs': 'Diese Änderungen prüfen – einige betreffen bereits erfasste Antworten',
+  'prompt.apply': 'Diese Änderungen übernehmen',
+  'prompt.discard': 'Verwerfen',
+  'prompt.lastAnswer': 'Was das Modell zuletzt geantwortet hat',
+  'prompt.status.writing': 'Das Formular wird geschrieben und geprüft.',
+  'prompt.status.refused': 'Nicht übernommen. {reason}',
+  'prompt.status.ready': {
+    one: 'Bereit zur Prüfung: {count} Änderung, die keine bereits erfassten Antworten betrifft. Nichts wurde übernommen.',
+    other:
+      'Bereit zur Prüfung: {count} Änderungen, von denen keine bereits erfasste Antworten betrifft. Nichts wurde übernommen.',
+  },
+  'prompt.status.readyCosts': {
+    one: 'Bereit zur Prüfung: {count} Änderung, und sie betrifft bereits erfasste Antworten. Nichts wurde übernommen.',
+    other:
+      'Bereit zur Prüfung: {count} Änderungen, und einige davon betreffen bereits erfasste Antworten. Nichts wurde übernommen.',
+  },
+  'prompt.status.readyAfter': {
+    one: 'Bereit zur Prüfung nach {attempts} Versuchen: {count} Änderung, die keine bereits erfassten Antworten betrifft. Nichts wurde übernommen.',
+    other:
+      'Bereit zur Prüfung nach {attempts} Versuchen: {count} Änderungen, von denen keine bereits erfasste Antworten betrifft. Nichts wurde übernommen.',
+  },
+  'prompt.status.readyAfterCosts': {
+    one: 'Bereit zur Prüfung nach {attempts} Versuchen: {count} Änderung, und sie betrifft bereits erfasste Antworten. Nichts wurde übernommen.',
+    other:
+      'Bereit zur Prüfung nach {attempts} Versuchen: {count} Änderungen, und einige davon betreffen bereits erfasste Antworten. Nichts wurde übernommen.',
+  },
+  'prompt.status.failed': {
+    one: 'Nichts wurde übernommen. {count} Versuch, und das Dokument funktionierte immer noch nicht.',
+    other: 'Nichts wurde übernommen. {count} Versuche, und das Dokument funktionierte immer noch nicht.',
+  },
+
+  'scenarios.label': 'Szenarien',
+  'scenarios.none': 'Keine Szenarien.',
+  'scenarios.empty':
+    'Noch keine Szenarien. Eines ist ein Beispiel mit aufgeschriebener Antwort – was dieses Formular aus bestimmten Antworten machen soll – und es ist die einzige Prüfung, die eine funktionierende Bedingung von der richtigen unterscheiden kann.',
+  'scenarios.stopped': 'Gilt nicht mehr: {list}.',
+  'scenarios.again': 'Gilt wieder: {list}.',
+  'scenarios.allHold': { one: 'Das eine Szenario gilt.', other: 'Alle {count} Szenarien gelten.' },
+  'scenarios.someFail': {
+    one: '{count} von {total} gilt nicht.',
+    other: '{count} von {total} gelten nicht.',
+  },
+  'scenarios.remove': '{name} entfernen',
 
   'palette.newField': 'Neues Feld',
   'palette.firstOption': 'Erste Option',
