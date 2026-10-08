@@ -115,13 +115,23 @@ export const BUILDER_MESSAGES = {
   'layout.inList.section': 'a section',
   'layout.inList.row': 'a row',
   'layout.inList.column': 'a column',
-  'layout.inList.tabs': 'a tabs',
+  'layout.inList.tabs': 'a set of tabs',
   'layout.inList.table': 'a table',
   'layout.inList.named.section': 'the “{label}” section',
   'layout.inList.named.row': 'the “{label}” row',
   'layout.inList.named.column': 'the “{label}” column',
   'layout.inList.named.tabs': 'the “{label}” tabs',
   'layout.inList.named.table': 'the “{label}” table',
+  // A node about to be added, on its own in a sentence: "Where should a row go?".
+  // Separate from the list forms above because in German they take different
+  // cases — a list after "mit" is dative, a subject is nominative — and one form
+  // for both shipped "Abschnitt mit eine Zeile".
+  'layout.new.section': 'a section',
+  'layout.new.row': 'a row',
+  'layout.new.column': 'a column',
+  'layout.new.tabs': 'a set of tabs',
+  'layout.new.table': 'a table',
+  'layout.new.qrcode': 'the code for {name}',
 
   // ------------------------------------------- where a move or an insertion lands
   // Read out by a screen reader while somebody moves a field without a mouse, so
@@ -191,6 +201,48 @@ export const BUILDER_MESSAGES = {
   'said.upgraded': 'Moved this form to spec version {version}. Nothing else changed.',
   'said.cannotUpgrade': 'Cannot upgrade: {reason}',
   'said.alreadyNewest': 'already at the newest version',
+  // ---------------------------------------------------------- the arrangement pane
+  'layout.label': 'Arrangement',
+  'layout.treeName': '{label}: {name}',
+  'layout.none':
+    'This form has no arrangement. Without one the renderers show every field in the order the model lists them, one per line — which is a perfectly good form. Add an arrangement to put fields side by side.',
+  'layout.addLayout': 'Add an arrangement',
+  'layout.placesNothing':
+    "This arrangement places nothing yet, so the form falls back to the model's own order.",
+  'layout.unplaced': 'Not in this arrangement',
+  'layout.addTitle': 'Add to the arrangement',
+  'layout.addWhere': 'Where should {what} go?',
+  'layout.codeWhich': 'Which answer should the code hold?',
+  'layout.kind.row': 'Row',
+  'layout.kind.column': 'Column',
+  'layout.kind.section': 'Section',
+  'layout.kind.qrcode': 'Code',
+  'layout.hint.row':
+    'Puts what is inside it side by side, and back into one column when there is no width for two.',
+  'layout.hint.column': 'One side of a row.',
+  'layout.hint.section': 'A named group of items, announced as one.',
+  'layout.hint.qrcode':
+    'A scannable code drawn from an answer. Collects nothing itself, and shows the answer as text beside it.',
+  'layout.codeLocked':
+    'A scannable code needs spec version {version}. This form says version {current}.',
+  'layout.hint.unplaced': 'Not placed anywhere yet.',
+  // Written into the document as the code's label, so it is in the author's language.
+  'layout.newCode': '{name} as a code',
+  'layout.wrapTitle': 'What should go beside {name} in a row?',
+  'layout.wrapHelp':
+    'Choose the item to put beside {name}. Both go into a new row, with {name} first.',
+  'keys.layout.arrows.what': 'move between items',
+  'keys.layout.add.what': 'add a row, column, section, code or field',
+  'keys.layout.move.what': 'move the focused item',
+  'keys.layout.unwrap.what': 'unwrap a row or column, keeping what is in it',
+  'keys.layout.wrap.what': 'wrap it and another item into a row, side by side',
+  'keys.layout.delete.what': 'take it out of the arrangement',
+  'said.layoutAdded': 'Added a {name} arrangement.',
+  'said.layoutUnwrapped': 'Unwrapped {name}. What was inside it stayed where it was.',
+  'said.layoutRemoved': 'Took {name} out of the arrangement. The form still collects it.',
+  'said.wrapped': 'Put {first} and {second} side by side in a row.',
+  'said.cannotWrap': 'Cannot wrap: {reason}',
+  'said.nothingBeside': 'There is nothing to put beside {name}.',
 
   // ----------------------------------------- what a new field starts out holding
   // Written into the document, so they are in the author's language: somebody
@@ -230,185 +282,6 @@ export type BuilderMessageId = keyof typeof BUILDER_MESSAGES
 
 /** A translation: any subset of the ids, each the same kind of message as its English. */
 export type BuilderCatalogue = { readonly [Id in BuilderMessageId]?: Message }
-
-/**
- * German, shipped and complete.
- *
- * Complete because a shipped catalogue with a gap is a builder that is half
- * German, which reads worse than one that is all English. A host translating
- * into a language not shipped here may leave gaps; this one may not, and
- * `messages.test.ts` fails when it does.
- *
- * Written for somebody building a form, in the informal register the rest of
- * the product's German uses: "du", not "Sie", because a tool talking to its user
- * is not a letter from an office.
- */
-export const BUILDER_MESSAGES_DE = {
-  'tree.empty': 'Dieses Formular hat noch keine Felder.',
-  'tree.fieldCount': { one: '{count} Feld', other: '{count} Felder' },
-  'palette.title': 'Feld hinzufügen',
-
-  'refuse.cannotOpen': 'Dieses Dokument lässt sich nicht im Builder öffnen: {reasons}',
-  'refuse.noContainer': 'Kein Container bei „{path}“.',
-  'refuse.noField': 'Kein Feld bei „{path}“.',
-  'refuse.moveIntoItself':
-    '„{path}“ lässt sich nicht in sich selbst oder eines seiner eigenen Kinder verschieben.',
-  'refuse.unwrapRenames':
-    'Wenn du „{where}“ auflöst, bekommt jede Antwort darin einen neuen Namen – aus „{from}“ wird „{to}“ –, und {refused}',
-  'refuse.renameFollows':
-    'Wenn du „{before}“ in „{after}“ umbenennst, muss jede Regel mit diesem Namen folgen, und {refused}',
-  'refuse.noRule': 'Keine Regel an Position {index}.',
-  'refuse.noLayout': 'Kein Layout namens „{name}“.',
-  'refuse.crossLayout':
-    'Zwischen den Layouts „{from}“ und „{to}“ lässt sich nicht verschieben. Entferne es aus dem einen und platziere es im anderen.',
-  'refuse.downgrade':
-    'Dieses Formular ist gegen Spec {from} geschrieben und kann nicht auf {to} zurück: Was die neuere Version hinzugefügt hat, hätte dort keinen Platz – es wäre Datenverlust statt einer Änderung.',
-  'refuse.noLayoutNode': 'An dieser Stelle im Layout „{layout}“ ist nichts.',
-  'refuse.notAContainerNode':
-    'An dieser Stelle im Layout „{layout}“ ist nichts, das andere Knoten aufnehmen kann.',
-  'refuse.unwrapLeaf':
-    '„{where}“ hält eine einzige Antwort. Darin gibt es nichts zu behalten, und Auflösen ist kein anderes Wort für Löschen.',
-  'refuse.unwrapRepeater':
-    '„{where}“ ist eine Wiederholung, und die Felder darin beschreiben eine ZEILE, keine Liste von Fragen. Sie herauszulösen würde aus den Antworten jeder Zeile je eine einzige Antwort machen und jede Zeile nach der ersten verlieren – und nichts würde es melden, weil das entstehende Formular vollkommen gültig wäre. Verschieb die Felder einzeln, wenn du das gemeint hast.',
-
-  'proposal.stale':
-    'Das Formular hat sich seit diesem Vorschlag geändert; ihn anzuwenden würde diese Änderung verwerfen. Frag noch einmal, um einen Vorschlag für das Formular in seinem jetzigen Zustand zu bekommen.',
-  'proposal.empty': 'Dieser Vorschlag ändert nichts am Formular.',
-  'refuse.i18nNoneYet':
-    'Dieses Formular hat noch keine Übersetzungen. Mach zuerst eine Beschriftung übersetzbar.',
-  'refuse.i18nNone': 'Dieses Formular hat keine Übersetzungen.',
-  'refuse.fieldNodeHoldsNothing':
-    'Ein Feldknoten platziert genau ein Feld. Darin gibt es nichts zu behalten.',
-  'refuse.wrapNeedsTwo':
-    'Zum Zusammenfassen braucht es mindestens zwei Knoten. Für einen einzelnen nimm insertLayoutNode.',
-  'refuse.wrapperNotContainer':
-    'Die Hülle muss ein Container sein. Ein Feldknoten kann nichts aufnehmen.',
-  'refuse.nodeListedTwice': 'Dieser Knoten ist zweimal aufgeführt. Jeder kann nur einmal hinein.',
-  'refuse.wrapContainerWithChild':
-    'Ein Container lässt sich nicht zusammen mit etwas aus seinem Inneren zusammenfassen.',
-  'refuse.moveNodeIntoItself':
-    'Das lässt sich nicht in sich selbst oder eines seiner eigenen Kinder verschieben.',
-  'refuse.fieldNodeName': 'Ein Feldknoten trägt den Namen des Feldes, das er platziert.',
-
-  'layout.codeFor': 'Code für {name}',
-  'layout.codeFor.inList': 'Code für {name}',
-  'layout.named.section': 'Abschnitt „{label}“',
-  'layout.named.row': 'Zeile „{label}“',
-  'layout.named.column': 'Spalte „{label}“',
-  'layout.named.tabs': 'Reiter „{label}“',
-  'layout.named.table': 'Tabelle „{label}“',
-  'layout.empty.section': 'Leerer Abschnitt',
-  'layout.empty.row': 'Leere Zeile',
-  'layout.empty.column': 'Leere Spalte',
-  'layout.empty.tabs': 'Leere Reiter',
-  'layout.empty.table': 'Leere Tabelle',
-  'layout.with.section': 'Abschnitt mit {list}',
-  'layout.with.row': 'Zeile mit {list}',
-  'layout.with.column': 'Spalte mit {list}',
-  'layout.with.tabs': 'Reiter mit {list}',
-  'layout.with.table': 'Tabelle mit {list}',
-  'layout.inList.section': 'ein Abschnitt',
-  'layout.inList.row': 'eine Zeile',
-  'layout.inList.column': 'eine Spalte',
-  'layout.inList.tabs': 'Reiter',
-  'layout.inList.table': 'eine Tabelle',
-  'layout.inList.named.section': 'der Abschnitt „{label}“',
-  'layout.inList.named.row': 'die Zeile „{label}“',
-  'layout.inList.named.column': 'die Spalte „{label}“',
-  'layout.inList.named.tabs': 'die Reiter „{label}“',
-  'layout.inList.named.table': 'die Tabelle „{label}“',
-
-  'target.layout': 'das Layout „{layout}“',
-  'target.firstField': '{where}, als erstes Feld',
-  'target.firstItem': '{where}, als erstes Element',
-  'target.before': '{where}, vor {name}',
-  'target.after': '{where}, nach {name}',
-  'target.between': '{where}, zwischen {before} und {after}',
-  'tree.label': 'Formularstruktur',
-  'tree.addWhere': 'Wohin mit „{type}“?',
-  'tree.moveTitle': '{name} verschieben',
-  'tree.locked': {
-    one: '{types} braucht eine neuere Spec-Version. Dieses Formular nennt Version {version}.',
-    other: '{types} brauchen eine neuere Spec-Version. Dieses Formular nennt Version {version}.',
-  },
-  'tree.upgrade': 'Auf Version {version} anheben',
-  'dialog.cancel': 'Abbrechen',
-  'palette.newPage': 'Seite {number}',
-
-  'keys.arrows.what': 'zwischen Feldern wechseln',
-  'keys.add.what': 'Feld hinzufügen',
-  'keys.addPage.what': 'Seite hinzufügen; das Formular wird mehrstufig',
-  'keys.unwrap.what': 'Container auflösen und den Inhalt behalten',
-  'keys.move.what': 'das gewählte Feld verschieben',
-  'keys.delete.key': 'Entf',
-  'keys.delete.what': 'es entfernen',
-  'keys.undo.key': 'Strg+Z / Strg+Y',
-  'keys.undo.what': 'rückgängig / wiederherstellen',
-
-  'said.undone': 'Rückgängig gemacht.',
-  'said.nothingToUndo': 'Nichts rückgängig zu machen.',
-  'said.redone': 'Wiederhergestellt.',
-  'said.nothingToRedo': 'Nichts wiederherzustellen.',
-  'said.nowhereToMove': '{name} lässt sich nirgendwo anders hin verschieben.',
-  'said.pageAdded': '{page} hinzugefügt.',
-  'said.firstPageAdded': {
-    one: '{page} hinzugefügt; sie enthält das eine Feld, das auf oberster Ebene war. Das Formular ist jetzt mehrstufig.',
-    other:
-      '{page} hinzugefügt; sie enthält die {count} Felder, die auf oberster Ebene waren. Das Formular ist jetzt mehrstufig.',
-  },
-  'said.cannotAddPage': 'Die Seite lässt sich nicht hinzufügen: {reason}',
-  'said.unwrappedEmpty': '{name} war leer und ist entfernt.',
-  'said.unwrappedPage': {
-    one: 'Seite {name} entfernt. Ihre eine Frage ist jetzt auf {host}.',
-    other: 'Seite {name} entfernt. Ihre {count} Fragen sind jetzt auf {host}.',
-  },
-  'said.unwrapped': {
-    one: '{name} entfernt; die eine Frage darin ist geblieben.',
-    other: '{name} entfernt; die {count} Fragen darin sind geblieben.',
-  },
-  'said.notAWizard': '{said} Das Formular ist nicht mehr mehrstufig.',
-  'said.cannotUnwrap': '{name} lässt sich nicht auflösen: {reason}',
-  'said.removed': '{name} entfernt.',
-  'said.cannotRemove': '{name} lässt sich nicht entfernen: {reason}',
-  'said.added': '{what} hinzugefügt: {where}.',
-  'said.cannotAdd': 'Lässt sich nicht hinzufügen: {reason}',
-  'said.moved': '{name} verschoben: {where}.',
-  'said.dropped': '{name} verschoben.',
-  'said.cannotMove': 'Lässt sich nicht verschieben: {reason}',
-  'said.upgraded':
-    'Dieses Formular steht jetzt auf Spec-Version {version}. Sonst hat sich nichts geändert.',
-  'said.cannotUpgrade': 'Lässt sich nicht anheben: {reason}',
-  'said.alreadyNewest': 'es ist bereits auf der neuesten Version',
-
-  'palette.newField': 'Neues Feld',
-  'palette.firstOption': 'Erste Option',
-
-  'rule.visible.label': 'Zeige dieses Feld, wenn',
-  'rule.visible.hint':
-    'Sonst verborgen, und seine Antwort wird geleert, sofern das Feld es nicht anders festlegt.',
-  'rule.required.label': 'Verlange eine Antwort, wenn',
-  'rule.required.hint': 'Nur solange die Bedingung gilt.',
-  'rule.disabled.label': 'Sperre dieses Feld, wenn',
-  'rule.disabled.hint': 'Sichtbar, aber nicht bearbeitbar.',
-  'rule.validate.label': 'Lehne die Antwort ab, außer wenn',
-  'rule.validate.hint': 'Die Bedingung muss gelten, damit das Formular abgeschickt werden kann.',
-  'rule.check.label': 'Frag die Installation nach der Antwort',
-  'rule.check.hint':
-    'Nennt eine Prüfung, die diese Installation beantwortet – ist diese E-Mail schon registriert, gibt es diese Referenz. Eine Prüfung, die die Installation nicht bereitstellt, lehnt die Antwort ab, statt sie durchzulassen.',
-  'rule.computed.label': 'Berechne dieses Feld als',
-  'rule.computed.hint':
-    'Ein CEL-Ausdruck, der die Antwort liefert und neu berechnet wird, sobald sich ändert, was er liest. Das Feld wird ausgefüllt statt erfragt, also wird ersetzt, was jemand eingetippt hat.',
-  'rule.skip.label': 'Überspringe diese Seite, wenn',
-  'rule.skip.hint':
-    'Die Seite wird in beide Richtungen übergangen, und ihre Fragen werden weder gestellt noch geprüft.',
-
-  'operator.is': 'ist',
-  'operator.isNot': 'ist nicht',
-  'operator.isMoreThan': 'ist mehr als',
-  'operator.isLessThan': 'ist weniger als',
-  'operator.isAnswered': 'ist beantwortet',
-  'operator.isNotAnswered': 'ist nicht beantwortet',
-} as const satisfies Record<BuilderMessageId, Message>
 
 /** A message, in the language a builder was given, with its placeholders filled. */
 export interface BuilderText {

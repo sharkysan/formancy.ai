@@ -16,6 +16,7 @@ import {
 import type { BuilderText } from '@formancy/builder-core'
 import type { FormSchema } from '@formancy/spec'
 import { FormancyBuilder } from './builder'
+import { FormancyLayoutPane } from './layout-pane'
 
 afterEach(() => {
   TestBed.resetTestingModule()
@@ -155,5 +156,136 @@ describe('the structure tree', () => {
 
     expect(screen.getByText(german('tree.empty'))).toBeTruthy()
     expect(screen.getByRole('tree', { name: german('tree.label') })).toBeTruthy()
+  })
+})
+
+describe('the arrangement pane', () => {
+  const arranged: FormSchema = {
+    specVersion: '2',
+    id: 'signup',
+    title: 'Sign up',
+    model: {
+      fields: [
+        { key: 'first', type: 'text', label: 'First name' },
+        { key: 'last', type: 'text', label: 'Last name' },
+        { key: 'email', type: 'text', label: 'Email' },
+      ],
+    },
+    layouts: [
+      {
+        name: 'web',
+        nodes: [
+          {
+            kind: 'row',
+            children: [
+              { kind: 'field', path: 'first' },
+              { kind: 'field', path: 'last' },
+            ],
+          },
+        ],
+      },
+    ],
+  }
+  const layoutWords = (document: FormSchema): string[] => [
+    document.title,
+    'web',
+    ...flatten(document).map((node) => nameOf(document, node.def)),
+    'a',
+    'm',
+    'u',
+    'w',
+  ]
+
+  async function mountPane(schema: FormSchema) {
+    const session = createBuilderSession(schema, { text: createBuilderText(pseudoLanguage()) })
+    const view = await render(FormancyLayoutPane, {
+      componentInputs: { session },
+      providers: [provideZonelessChangeDetection()],
+    })
+    await view.fixture.whenStable()
+    const user = userEvent.setup()
+    const settle = async (): Promise<void> => {
+      await view.fixture.whenStable()
+    }
+    return {
+      session,
+      root: view.container as Element,
+      press: async (keys: string) => {
+        await user.keyboard(keys)
+        await settle()
+      },
+      click: async (element: Element) => {
+        await user.click(element as HTMLElement)
+        await settle()
+      },
+    }
+  }
+
+  test('shows nothing in English that the catalogue did not give it', async () => {
+    const { session, root, press, click } = await mountPane(arranged)
+    const seen: string[] = []
+    const look = (): void => {
+      seen.push(...shown(root))
+    }
+
+    look()
+    await click(screen.getAllByRole('treeitem')[0]!)
+
+    await press('a')
+    look()
+    await click(within(screen.getByRole('dialog')).getAllByRole('button')[3]!)
+    look()
+    await click(within(screen.getByRole('dialog')).getAllByRole('button')[0]!)
+    look()
+    await click(within(screen.getByRole('dialog')).getAllByRole('button')[0]!)
+    look()
+
+    await click(screen.getAllByRole('treeitem')[0]!)
+    await press('w')
+    look()
+    await press('{Escape}')
+    await press('m')
+    look()
+    await click(within(screen.getByRole('dialog')).getAllByRole('button')[0]!)
+    look()
+    await press('{Delete}')
+    look()
+
+    expect(untranslated(seen, layoutWords(session.document()))).toEqual([])
+    expect(
+      [
+        'Arrangement',
+        'Not in this arrangement',
+        'Add to the arrangement',
+        'Which answer',
+        'Where should',
+        'What should go beside',
+        'Choose the item',
+        'Move ',
+        'take it out of the arrangement',
+        'Added ',
+      ].filter((prefix) => !seen.some((text) => text.includes(prefix))),
+    ).toEqual([])
+  })
+
+  test('and a form with no arrangement, and a code it cannot have yet, likewise', async () => {
+    const { session, root, press, click } = await mountPane({
+      ...arranged,
+      specVersion: '1',
+      layouts: [],
+    })
+    const seen = shown(root)
+
+    await click(screen.getByRole('button'))
+    await click(screen.getByRole('tree'))
+    await press('a')
+    seen.push(...shown(root))
+
+    expect(untranslated(seen, layoutWords(session.document()))).toEqual([])
+    expect(
+      ['has no arrangement', 'Add an arrangement', 'needs spec version'].filter(
+        (prefix) => !seen.some((text) => text.includes(prefix)),
+      ),
+    ).toEqual([])
   })
 })

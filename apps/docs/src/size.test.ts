@@ -79,10 +79,6 @@ const CEILINGS: Record<string, { lines: number; why: string }> = {
     lines: 688,
     why: 'Executing a fixture against a driver. One subject.',
   },
-  'packages/builder-react/src/layout-pane.tsx': {
-    lines: 678,
-    why: 'Tree, dialogs and three drag surfaces. The seam is the drag surface.',
-  },
 }
 
 const ROOTS = ['packages', 'apps']

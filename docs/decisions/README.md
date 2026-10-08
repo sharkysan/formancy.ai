@@ -217,3 +217,4 @@ listed under the sections they belong to above.
 | [0114](0114-the-builder-speaks-the-authors-language.md) | The builder speaks the author's language, from one catalogue both builders read | accepted |
 | [0115](0115-a-library-writes-nothing-to-its-hosts-console.md) | A library writes nothing to its host's console | accepted |
 | [0116](0116-what-a-builder-says-is-decided-once.md) | What a builder says after a command is decided once, and checked for English left behind | accepted |
+| [0117](0117-the-arrangement-pane-offers-the-same-in-both-builders.md) | The arrangement pane offers the same things in both builders | accepted |

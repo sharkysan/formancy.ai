@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest'
-import { BUILDER_MESSAGES, BUILDER_MESSAGES_DE, createBuilderText } from './messages.js'
+import { BUILDER_MESSAGES, createBuilderText } from './messages.js'
+import { BUILDER_MESSAGES_DE } from './messages-de.js'
 import type { BuilderMessageId } from './messages.js'
 
 /**

@@ -13,7 +13,8 @@ export type {
 // The builder’s own words, in the language of the person building (0114). A
 // session carries one; the functions that name things take one and default to
 // English, so a caller that never asks for a language gets the words it always had.
-export { BUILDER_MESSAGES, BUILDER_MESSAGES_DE, createBuilderText } from './messages.js'
+export { BUILDER_MESSAGES, createBuilderText } from './messages.js'
+export { BUILDER_MESSAGES_DE } from './messages-de.js'
 export { pseudoLanguage, untranslated } from './pseudo.js'
 export type {
   BuilderCatalogue,
@@ -87,6 +88,24 @@ export {
   unwrapAndSay,
   upgradeAndSay,
 } from './spoken.js'
+// What the arrangement pane offers and says, decided once for both builders.
+export {
+  LAYOUT_CONTAINERS,
+  addLayoutAndSay,
+  codeAnswers,
+  dropLayoutAndSay,
+  insertLayoutAndSay,
+  layoutAdditions,
+  layoutKeyHelp,
+  layoutNodeFor,
+  moveLayoutAndSay,
+  nameOfAddition,
+  removeLayoutAndSay,
+  unwrapLayoutAndSay,
+  wrapAndSay,
+  wrapCandidates,
+} from './arrangement.js'
+export type { LayoutAddition } from './arrangement.js'
 export { builderView } from './view.js'
 export type { BuilderView, MoveTarget } from './view.js'
 export {

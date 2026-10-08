@@ -10,6 +10,31 @@ later.
 
 ## Unreleased
 
+**The arrangement pane offers the same things in both builders, and says them in the
+author's language.** Reading the two panes side by side to move their words into the
+catalogue found that they did not offer the same things for one document
+([0117](docs/decisions/0117-the-arrangement-pane-offers-the-same-in-both-builders.md)):
+
+- **The Angular pane could not place a field.** It listed the fields the arrangement
+  leaves out under "Not in this arrangement" and offered three containers when asked to
+  add something — the mistake the heading pointed at was one it gave no way to fix. It
+  had no code in its palette, nothing to say about a form with no arrangement, and
+  dialogs that only Cancel could close. It has all four now.
+- **The React pane announced a drop as "Moved."** without saying what; it names it now.
+- The wrap dialog had two names; both builders ask "What should go beside Email in a
+  row?".
+
+What the palette offers, what a new node is, what may be wrapped with what, and every
+sentence a command produces now come from `builder-core` (`arrangement.ts`), and both
+panes render them. Adding is its own component in both builders, which takes the React pane
+off the size allow-list.
+
+**German put a node in the wrong case.** "Abschnitt mit eine Zeile": after *mit* German
+takes the dative, and the first catalogue used one form for a node in a list and a node on
+its own. The list forms are dative now ("einer Zeile") and a node about to be added has its
+own ("eine Zeile"). English "a tabs" is "a set of tabs". The German catalogue moved to its
+own file, `messages-de.ts`.
+
 **The structure tree speaks the author's language, in both builders — and saying it once
 found three things both builders said wrong.** Every command on the tree is announced in
 a live region, and for somebody building by keyboard with a screen reader that sentence is
