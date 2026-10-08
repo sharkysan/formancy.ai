@@ -402,11 +402,23 @@ organisation must provide that boundary itself.
 
 ### C3. Submission content is written to logs
 
-*Constraint:* **there is no log.** `@formancy/server` constructs Fastify with
-`logger: false`, so the server emits no request line, no error line and no output of any
-kind — submission content cannot reach a log that does not exist. Asserted on the
+*Constraint:* **there is no request log.** `@formancy/server` constructs Fastify with
+`logger: false`, so handling a request writes no request line and no error line —
+submission content cannot reach a request log that does not exist. Asserted on the
 constructed app in `packages/server/src/server.integration.test.ts`, which fails if a
 logger is enabled.
+
+*Corrected 2026-10-09.* This entry said the server emitted "no output of any kind". The
+process writes to its own standard streams in six places: refusing to start without
+`DATABASE_URL`, warning that it generated an ephemeral `FORMANCY_AUTH_SECRET`, the line
+saying it is listening, and an error from each of three background workers — the outbox,
+the file collector and the challenge sweeper — when a pass fails. **Those three print
+whatever was thrown, unredacted**, and a Drizzle query error carries the failing query's
+text and its parameters in its message. The queries those passes make today carry
+identifiers, timestamps, delivery state and a delivery's last error rather than
+submission content — but that is a property of today's queries, not a constraint, and
+nothing fails if a worker starts handling content. The libraries are held to writing
+nothing at all ([0115](../decisions/0115-a-library-writes-nothing-to-its-hosts-console.md)).
 
 *Corrected 2026-09-28.* This entry previously said "structured logging with configurable
 PII redaction; submission `data` is not logged by default". **Neither half was true:**
