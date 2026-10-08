@@ -139,10 +139,7 @@ export function FormancyLayoutPane({
     const from = Array.isArray(what) ? (what as readonly number[]) : undefined
     return session
       .validLayoutTargets(name, what)
-      .map((location) => ({
-        location,
-        label: describeLayoutTarget(view.document, location, from, session.text),
-      }))
+      .map((location) => ({ location, label: describeLayoutTarget(view.document, location, from, session.text) }))
   }
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLUListElement>): void => {
