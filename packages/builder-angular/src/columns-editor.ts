@@ -1,5 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core'
+import { createBuilderText } from '@formancy/builder-core'
+import type { BuilderText } from '@formancy/builder-core'
 import type { DataGridColumn, FieldDef } from './types.js'
+import { BuilderTextPipe } from './text.pipe.js'
+
+const ENGLISH = createBuilderText()
 
 let nextId = 0
 
@@ -24,15 +29,15 @@ let nextId = 0
 @Component({
   selector: 'formancy-columns-editor',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [BuilderTextPipe],
   template: `
     <div data-formancy-part="columns-editor">
-      <div [attr.id]="headingId" data-formancy-part="columns-heading">Columns</div>
+      <div [attr.id]="headingId" data-formancy-part="columns-heading">
+        {{ 'columns.heading' | builderText: text() }}
+      </div>
 
       @if (draft().length === 0) {
-        <p data-formancy-part="columns-empty">
-          No columns configured. Every answer still gets one, in the order the fields are
-          declared.
-        </p>
+        <p data-formancy-part="columns-empty">{{ 'columns.empty' | builderText: text() }}</p>
       } @else {
         <ul [attr.aria-labelledby]="headingId" data-formancy-part="columns-list">
           <!-- Keyed by position: a column has no identity of its own, and keying
@@ -42,13 +47,15 @@ let nextId = 0
             <li data-formancy-part="column-row">
               <!-- A choice and never a text box: a column names a child that
                    exists, and a typed name is a column over nothing. -->
-              <label [attr.for]="fieldId(at)">Answer</label>
+              <label [attr.for]="fieldId(at)">{{ 'columns.answer' | builderText: text() }}</label>
               <select [attr.id]="fieldId(at)" (change)="setField(at, $event)">
                 <!-- The one it names, even if that child is gone — so the panel
                      shows what the document says rather than silently rewriting
                      it. -->
                 @if (!names(column.field)) {
-                  <option [value]="column.field" selected>{{ column.field }} — no such field</option>
+                  <option [value]="column.field" selected>
+                    {{ 'columns.noSuchField' | builderText: text() : { name: column.field } }}
+                  </option>
                 }
                 @for (child of children(); track child.key) {
                   <option [value]="child.key" [selected]="child.key === column.field">
@@ -60,7 +67,7 @@ let nextId = 0
               <!-- A ratio, never a length: a length in a document is the format
                    choosing the consumer's design system for them, and no renderer
                    can honour one on a narrow screen. -->
-              <label [attr.for]="widthId(at)">Width, as a share</label>
+              <label [attr.for]="widthId(at)">{{ 'columns.width' | builderText: text() }}</label>
               <input
                 [attr.id]="widthId(at)"
                 type="number"
@@ -70,18 +77,26 @@ let nextId = 0
                 (input)="setWidth(at, $event)"
               />
 
-              <label [attr.for]="alignId(at)">Align</label>
+              <label [attr.for]="alignId(at)">{{ 'columns.align' | builderText: text() }}</label>
               <select [attr.id]="alignId(at)" (change)="setAlign(at, $event)">
-                <option value="" [selected]="column.align === undefined">Default</option>
-                <option value="start" [selected]="column.align === 'start'">Start</option>
-                <option value="center" [selected]="column.align === 'center'">Center</option>
-                <option value="end" [selected]="column.align === 'end'">End</option>
+                <option value="" [selected]="column.align === undefined">
+                  {{ 'columns.align.default' | builderText: text() }}
+                </option>
+                <option value="start" [selected]="column.align === 'start'">
+                  {{ 'columns.align.start' | builderText: text() }}
+                </option>
+                <option value="center" [selected]="column.align === 'center'">
+                  {{ 'columns.align.center' | builderText: text() }}
+                </option>
+                <option value="end" [selected]="column.align === 'end'">
+                  {{ 'columns.align.end' | builderText: text() }}
+                </option>
               </select>
 
               <!-- Shortens the HEADING and never the question: the field's own
                    label is still what a screen reader announces for every answer
                    in the column. -->
-              <label [attr.for]="headerId(at)">Short heading</label>
+              <label [attr.for]="headerId(at)">{{ 'columns.header' | builderText: text() }}</label>
               <input
                 [attr.id]="headerId(at)"
                 type="text"
@@ -93,10 +108,10 @@ let nextId = 0
                    are four identical announcements. -->
               <button
                 type="button"
-                [attr.aria-label]="'Remove the ' + column.field + ' column'"
+                [attr.aria-label]="'columns.remove' | builderText: text() : { name: column.field }"
                 (click)="remove(at)"
               >
-                Remove
+                {{ 'list.remove' | builderText: text() }}
               </button>
             </li>
           }
@@ -104,13 +119,10 @@ let nextId = 0
       }
 
       @if (unnamed().length === 0) {
-        <p data-formancy-part="columns-all-named">
-          Every answer has a column. The ones above are sized and ordered; removing one puts
-          its answer back at the end rather than taking it off the form.
-        </p>
+        <p data-formancy-part="columns-all-named">{{ 'columns.allNamed' | builderText: text() }}</p>
       } @else {
         <button type="button" (click)="configure()">
-          {{ 'Configure the ' + unnamed()[0]!.key + ' column' }}
+          {{ 'columns.configure' | builderText: text() : { name: unnamed()[0]!.key } }}
         </button>
       }
     </div>
@@ -120,6 +132,8 @@ export class FormancyColumnsEditor {
   readonly columns = input<readonly DataGridColumn[]>([])
   /** The repeater's own children, which are the only things a column may name. */
   readonly children = input<readonly FieldDef[]>([])
+  /** The language to speak: the panel passes its session's. English when none is given. */
+  readonly text = input<BuilderText>(ENGLISH)
   readonly changed = output<DataGridColumn[]>()
 
   protected readonly headingId = `formancy-columns-${String((nextId += 1))}`

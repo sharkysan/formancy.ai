@@ -44,8 +44,8 @@ because the engine gives a field that is not inside a page to page one wherever
 it sits ([0081](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0081-a-page-absorbs-the-form-it-joins.md)).
 The builder's words come from one catalogue in `builder-core`, English and German: a
 session refuses, offers destinations and names layout nodes in the language it was
-opened in, and the structure tree and the arrangement pane show and announce everything
-in it, in both builders.
+opened in, and the structure tree, the arrangement pane and the property editors show
+and announce everything in it, in both builders.
 The other panes have not moved to it yet
 ([0114](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0114-the-builder-speaks-the-authors-language.md),
 [0116](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0116-what-a-builder-says-is-decided-once.md)).

@@ -106,6 +106,7 @@ export {
   wrapCandidates,
 } from './arrangement.js'
 export type { LayoutAddition } from './arrangement.js'
+export { layoutPropertyHeading, nextChoice } from './editors.js'
 export { builderView } from './view.js'
 export type { BuilderView, MoveTarget } from './view.js'
 export {

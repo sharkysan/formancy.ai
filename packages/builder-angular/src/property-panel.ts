@@ -6,7 +6,8 @@ import {
   output,
   signal,
 } from '@angular/core'
-import { editablePropertiesFor, nameOf } from '@formancy/builder-core'
+import { createBuilderText, editablePropertiesFor, nameOf } from '@formancy/builder-core'
+import type { BuilderText } from '@formancy/builder-core'
 import type {
   BuilderSession,
   DataGridColumn,
@@ -45,6 +46,7 @@ let nextId = 0
     @if (property().kind === 'options') {
       <formancy-options-editor
         [options]="asOptions(value())"
+        [text]="text()"
         (changed)="changed.emit($event.length === 0 ? undefined : $event)"
       />
     } @else if (property().kind === 'columns') {
@@ -54,6 +56,7 @@ let nextId = 0
       <formancy-columns-editor
         [columns]="asColumns(value())"
         [children]="childFields()"
+        [text]="text()"
         (changed)="changed.emit($event.length === 0 ? undefined : $event)"
       />
     } @else {
@@ -120,6 +123,8 @@ export class FormancyProperty {
   readonly value = input<unknown>(undefined)
   /** The field's own children, which only the columns editor needs. */
   readonly childFields = input<readonly FieldDef[]>([])
+  /** The session's language, for the two editors that have words of their own. */
+  readonly text = input<BuilderText>(createBuilderText())
   readonly changed = output<unknown>()
 
   protected readonly id = `formancy-property-${String((nextId += 1))}`
@@ -232,6 +237,7 @@ export class FormancyProperty {
             [property]="property"
             [value]="valueOf(property.name)"
             [childFields]="field.fields ?? []"
+            [text]="session().text"
             (changed)="set(property.name, $event)"
           />
         }

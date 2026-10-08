@@ -191,6 +191,27 @@ describe('editing a field’s choices', () => {
     expect(screen.queryByLabelText(/^options$/i)).toBeNull()
   })
 
+  test('names a choice’s box "Choice label", because the field’s own Label is another control', async () => {
+    // It was "Label" here and "Choice label" in the React editor. Two controls
+    // with one name in one panel are ambiguous read aloud — a screen reader user
+    // asked for "Label" cannot tell the field's from the choice's.
+    await mountFor('country')
+
+    expect(screen.getAllByLabelText('Choice label').map((box) => (box as HTMLInputElement).value)).toEqual([
+      'Switzerland',
+    ])
+    expect(screen.getAllByLabelText(/^label$/i)).toHaveLength(1)
+  })
+
+  test('is laid out in the parts a theme styles in the React editor', async () => {
+    // A theme written against the React editor's parts left this one bare.
+    await mountFor('country')
+
+    for (const part of ['options-heading', 'options-list', 'option-row']) {
+      expect(document.querySelector(`[data-formancy-part="${part}"]`), part).not.toBeNull()
+    }
+  })
+
   test('adding a choice writes one the document accepts', async () => {
     const { session, click } = await mountFor('country')
 

@@ -243,6 +243,41 @@ export const BUILDER_MESSAGES = {
   'said.wrapped': 'Put {first} and {second} side by side in a row.',
   'said.cannotWrap': 'Cannot wrap: {reason}',
   'said.nothingBeside': 'There is nothing to put beside {name}.',
+  // ------------------------------------------------------------- the property editors
+  'options.heading': 'Choices',
+  'options.empty': 'No choices yet. A dropdown with none cannot be answered.',
+  // "Choice label", not "Label": the panel already has a Label for the field itself,
+  // and two controls with one name are ambiguous read aloud.
+  'options.label': 'Choice label',
+  'options.value': 'Stored value',
+  'options.remove': 'Remove {name}',
+  'options.add': 'Add a choice',
+  // Written into the document, so it is in the author's language.
+  'options.newChoice': 'New choice',
+  'list.remove': 'Remove',
+  'columns.heading': 'Columns',
+  'columns.empty':
+    'No columns configured. Every answer still gets one, in the order the fields are declared.',
+  'columns.answer': 'Answer',
+  'columns.noSuchField': '{name} — no such field',
+  'columns.width': 'Width, as a share',
+  'columns.align': 'Align',
+  'columns.align.default': 'Default',
+  'columns.align.start': 'Start',
+  'columns.align.center': 'Center',
+  'columns.align.end': 'End',
+  'columns.header': 'Short heading',
+  'columns.remove': 'Remove the {name} column',
+  'columns.allNamed':
+    'Every answer has a column. The ones above are sized and ordered; removing one puts its answer back at the end rather than taking it off the form.',
+  'columns.configure': 'Configure the {name} column',
+  'layoutProps.heading.field': 'This placement',
+  'layoutProps.heading.qrcode': 'This code',
+  'layoutProps.heading.section': 'This section',
+  'layoutProps.heading.row': 'This row',
+  'layoutProps.heading.column': 'This column',
+  'layoutProps.heading.tabs': 'This tab strip',
+  'layoutProps.heading.table': 'This grid',
 
   // ----------------------------------------- what a new field starts out holding
   // Written into the document, so they are in the author's language: somebody

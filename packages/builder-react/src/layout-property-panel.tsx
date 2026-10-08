@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react'
 import type { BuilderSession, LayoutAddress } from '@formancy/builder-core'
-import { layoutNodeAt } from '@formancy/builder-core'
+import { layoutNodeAt, layoutPropertyHeading } from '@formancy/builder-core'
 import { PropertyField } from './property-panel.js'
 import { editableLayoutPropertiesFor } from '@formancy/builder-core'
 import { useBuilder } from './use-builder.js'
@@ -47,7 +47,8 @@ export function LayoutPropertyPanel({
 
   return (
     <div data-formancy-part="layout-property-panel">
-      <h2>{headingFor(node.kind)}</h2>
+      {/* The kind, not the node's own label, which is one of the properties edited here. */}
+      <h2>{layoutPropertyHeading(node.kind, session.text)}</h2>
       <p data-formancy-part="property-panel-type">{node.kind}</p>
 
       {/* No "nothing to configure" branch, because there is no such node: every
@@ -63,6 +64,7 @@ export function LayoutPropertyPanel({
           // Only a field's own children can be a datagrid's columns, and a layout
           // node has none — so this panel never renders that editor.
           childFields={[]}
+          text={session.text}
           onChange={(value) => {
             // An empty box means "no value", not "the empty string": writing ''
             // would put a property into the document the author just cleared.
@@ -76,26 +78,4 @@ export function LayoutPropertyPanel({
       ))}
     </div>
   )
-}
-
-/**
- * What to call the thing being edited.
- *
- * The node's own `label` cannot be the heading: it is one of the properties this
- * panel edits, so it would be empty exactly when somebody is about to set it, and it
- * would change under them as they typed.
- */
-function headingFor(kind: string): string {
-  switch (kind) {
-    case 'field':
-      return 'This placement'
-    case 'table':
-      return 'This grid'
-    case 'tabs':
-      return 'This tab strip'
-    case 'qrcode':
-      return 'This code'
-    default:
-      return `This ${kind}`
-  }
 }

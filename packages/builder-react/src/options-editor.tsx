@@ -1,6 +1,8 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
 import type { FieldOption } from '@formancy/spec'
+import { createBuilderText, nextChoice } from '@formancy/builder-core'
+import type { BuilderText } from '@formancy/builder-core'
 
 /**
  * The editor for a `select` or `radio` field's choices.
@@ -19,9 +21,13 @@ import type { FieldOption } from '@formancy/spec'
 export interface OptionsEditorProps {
   options: readonly FieldOption[]
   onChange: (options: FieldOption[]) => void
+  /** The language to speak: the panel passes its session's. English when none is given. */
+  text?: BuilderText
 }
 
-export function OptionsEditor({ options, onChange }: OptionsEditorProps): ReactElement {
+const ENGLISH = createBuilderText()
+
+export function OptionsEditor({ options, onChange, text = ENGLISH }: OptionsEditorProps): ReactElement {
   const id = useId()
 
   /*
@@ -64,13 +70,11 @@ export function OptionsEditor({ options, onChange }: OptionsEditorProps): ReactE
   return (
     <div data-formancy-part="options-editor">
       <div id={`${id}-heading`} data-formancy-part="options-heading">
-        Choices
+        {text('options.heading')}
       </div>
 
       {draft.length === 0 ? (
-        <p data-formancy-part="options-empty">
-          No choices yet. A dropdown with none cannot be answered.
-        </p>
+        <p data-formancy-part="options-empty">{text('options.empty')}</p>
       ) : (
         <ul aria-labelledby={`${id}-heading`} data-formancy-part="options-list">
           {draft.map((option, index) => (
@@ -81,7 +85,7 @@ export function OptionsEditor({ options, onChange }: OptionsEditorProps): ReactE
               {/* "Choice label", not "Label": the panel already has a Label
                   for the field itself, and two controls with one name is
                   ambiguous read aloud as well as in a test. */}
-              <label htmlFor={`${id}-label-${String(index)}`}>Choice label</label>
+              <label htmlFor={`${id}-label-${String(index)}`}>{text('options.label')}</label>
               <input
                 id={`${id}-label-${String(index)}`}
                 type="text"
@@ -89,7 +93,7 @@ export function OptionsEditor({ options, onChange }: OptionsEditorProps): ReactE
                 onChange={(event) => replace(index, { label: event.target.value })}
               />
 
-              <label htmlFor={`${id}-value-${String(index)}`}>Stored value</label>
+              <label htmlFor={`${id}-value-${String(index)}`}>{text('options.value')}</label>
               <input
                 id={`${id}-value-${String(index)}`}
                 type="text"
@@ -101,35 +105,21 @@ export function OptionsEditor({ options, onChange }: OptionsEditorProps): ReactE
                 type="button"
                 // Named, not an unlabelled ✕: five identical "remove" buttons
                 // are five identical announcements.
-                aria-label={`Remove ${option.label === '' ? option.value : String(option.label)}`}
+                aria-label={text('options.remove', {
+                  name: option.label === '' ? option.value : String(option.label),
+                })}
                 onClick={() => commit(draft.filter((_, at) => at !== index))}
               >
-                Remove
+                {text('list.remove')}
               </button>
             </li>
           ))}
         </ul>
       )}
 
-      <button
-        type="button"
-        onClick={() => commit([...draft, { value: nextValue(draft), label: 'New choice' }])}
-      >
-        Add a choice
+      <button type="button" onClick={() => commit([...draft, nextChoice(draft, text)])}>
+        {text('options.add')}
       </button>
     </div>
   )
-}
-
-/**
- * A value nobody is using. Duplicate values are the failure this prevents: two
- * options sharing one makes the answer ambiguous, and the validator refuses the
- * form rather than the keystroke, so the author would learn about it at publish.
- */
-function nextValue(options: readonly FieldOption[]): string {
-  const taken = new Set(options.map((option) => option.value))
-  for (let n = options.length + 1; ; n += 1) {
-    const candidate = `option-${String(n)}`
-    if (!taken.has(candidate)) return candidate
-  }
 }

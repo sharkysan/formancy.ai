@@ -10,6 +10,25 @@ later.
 
 ## Unreleased
 
+**The property editors speak the author's language, and the two options editors are one
+shape.** The panels are generated from the spec's JSON Schema, so most of what they show
+is the schema's own words; what is the builder's is in the choices and columns editors and
+in what the layout panel calls a node. Those now come from the catalogue, handed to each
+editor by its panel rather than found ambiently, because the language belongs to one
+session and two builders on a page can speak two
+([0118](docs/decisions/0118-an-editor-is-handed-its-language.md)). Used on their own,
+`OptionsEditor` and `ColumnsEditor` take a `text` and default to English, so nothing
+changes for a caller that passes none.
+
+**The Angular options editor named each choice's box "Label"** — the same name as the
+panel's own Label for the field, so a screen reader asked for "Label" could not tell
+which. It is "Choice label", as in React, with the label before the value, the React
+editor's words for an empty list, and the same parts: the workbench theme, written
+against the React editor, left the Angular one unstyled. "Add a choice" and the layout
+panel's heading are decided once in `builder-core` (`nextChoice`,
+`layoutPropertyHeading`); the new choice's label is written into the document in the
+author's language.
+
 **The arrangement pane offers the same things in both builders, and says them in the
 author's language.** Reading the two panes side by side to move their words into the
 catalogue found that they did not offer the same things for one document

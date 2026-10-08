@@ -5,6 +5,8 @@ import {
   BUILDER_MESSAGES_DE,
   createBuilderSession,
   createBuilderText,
+  editableLayoutPropertiesFor,
+  editablePropertiesFor,
   flatten,
   nameOf,
   paletteEntries,
@@ -14,6 +16,10 @@ import {
 import type { FormSchema } from '@formancy/spec'
 import { FormancyBuilder } from './builder.js'
 import { FormancyLayoutPane } from './layout-pane.js'
+import { ColumnsEditor } from './columns-editor.js'
+import { LayoutPropertyPanel } from './layout-property-panel.js'
+import { OptionsEditor } from './options-editor.js'
+import { PropertyPanel } from './property-panel.js'
 
 afterEach(cleanup)
 
@@ -261,6 +267,125 @@ describe('the arrangement pane', () => {
       ['has no arrangement', 'Add an arrangement', 'needs spec version'].filter(
         (prefix) => !seen.some((text) => text.includes(prefix)),
       ),
+    ).toEqual([])
+  })
+})
+
+describe('the property panels and their editors', () => {
+  const form = {
+    specVersion: '3',
+    id: 'order',
+    title: 'Order',
+    model: {
+      fields: [
+        {
+          key: 'country',
+          type: 'select',
+          label: 'Country',
+          options: [{ value: 'ch', label: 'Switzerland' }],
+        },
+        {
+          key: 'lines',
+          type: 'repeater',
+          label: 'Lines',
+          widget: 'datagrid',
+          // One child left unnamed, so "Configure the … column" is shown.
+          columns: [{ field: 'sku' }],
+          fields: [
+            { key: 'sku', type: 'text', label: 'SKU' },
+            { key: 'qty', type: 'number', label: 'Quantity' },
+          ],
+        },
+      ],
+    },
+    layouts: [
+      {
+        name: 'web',
+        nodes: [{ kind: 'table', columns: 2, children: [{ kind: 'field', path: 'country' }] }],
+      },
+    ],
+  } as unknown as FormSchema
+
+  /**
+   * The words that are not the builder's: the document's, and every title,
+   * description and choice the spec's JSON Schema gives a property — which is
+   * the schema's to word, and read from it here rather than listed.
+   */
+  const panelWords = (document: FormSchema): string[] => {
+    const properties = [
+      ...editablePropertiesFor('select'),
+      ...editablePropertiesFor('repeater', 'datagrid'),
+      ...editableLayoutPropertiesFor('table'),
+    ]
+    return [
+      document.title,
+      ...flatten(document).flatMap((node) => [
+        nameOf(document, node.def),
+        node.def.key,
+        node.def.type,
+      ]),
+      ...properties.flatMap((property) => [
+        property.title,
+        property.description,
+        ...(property.choices ?? []),
+      ]),
+      'table',
+      'Switzerland',
+      'ch',
+      'gone',
+    ]
+  }
+
+  test('show nothing in English that the catalogue did not give them', () => {
+    const text = createBuilderText(pseudoLanguage())
+    const session = createBuilderSession(form, { text })
+    const seen: string[] = []
+
+    for (const keyPath of [['country'], ['lines']]) {
+      const { container, unmount } = render(<PropertyPanel session={session} keyPath={keyPath} />)
+      seen.push(...shown(container))
+      unmount()
+    }
+    {
+      const { container, unmount } = render(
+        <LayoutPropertyPanel session={session} address={{ layout: 'web', path: [0] }} />,
+      )
+      seen.push(...shown(container))
+      unmount()
+    }
+    // The two empty states and a column over a child that is gone, which a valid
+    // document cannot reach through the panel — the session refuses all three.
+    for (const element of [
+      <ColumnsEditor
+        columns={[{ field: 'gone' }]}
+        children={[{ key: 'sku', type: 'text' }]}
+        onChange={() => undefined}
+        text={text}
+      />,
+      <OptionsEditor options={[]} onChange={() => undefined} text={text} />,
+      <ColumnsEditor columns={[]} children={[]} onChange={() => undefined} text={text} />,
+    ]) {
+      const { container, unmount } = render(element)
+      seen.push(...shown(container))
+      unmount()
+    }
+
+    expect(untranslated(seen, panelWords(form))).toEqual([])
+    expect(
+      [
+        'Choices',
+        'Choice label',
+        'Stored value',
+        'Add a choice',
+        'Remove ',
+        'Columns',
+        'no such field',
+        'Width, as a share',
+        'Configure the qty column',
+        'This grid',
+        'No choices yet',
+        'No columns configured',
+      ].filter((prefix) => !seen.some((text) => text.includes(prefix))),
     ).toEqual([])
   })
 })

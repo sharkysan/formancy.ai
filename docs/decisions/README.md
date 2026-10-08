@@ -218,3 +218,4 @@ listed under the sections they belong to above.
 | [0115](0115-a-library-writes-nothing-to-its-hosts-console.md) | A library writes nothing to its host's console | accepted |
 | [0116](0116-what-a-builder-says-is-decided-once.md) | What a builder says after a command is decided once, and checked for English left behind | accepted |
 | [0117](0117-the-arrangement-pane-offers-the-same-in-both-builders.md) | The arrangement pane offers the same things in both builders | accepted |
+| [0118](0118-an-editor-is-handed-its-language.md) | An editor is handed its language, and the two list editors have one shape | accepted |

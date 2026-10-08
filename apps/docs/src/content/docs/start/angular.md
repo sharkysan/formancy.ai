@@ -199,8 +199,9 @@ const session = createBuilderSession(schema, {
 })
 ```
 
-Its refusals and everything the structure tree and the arrangement pane show or
-announce are then German; a message a catalogue
+Its refusals, everything the structure tree and the arrangement pane show or announce,
+and the property panels' own words are then German — a property's title and description
+are the spec's and stay as the schema words them; a message a catalogue
 leaves out is English, one message at a time, so a catalogue of your own can start small.
 **The other panes are still English** — they move next, one at a time in both builders,
 and until then this is a German tree beside English panes
