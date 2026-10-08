@@ -927,6 +927,32 @@ visible and its wording is not. And pressing the button is one click: nothing he
 distinguishes a reviewer who read the list from one who did not, which is the limit of
 what software can assert about attention.
 
+### D11. The builder tells its author it did something other than what it did
+
+*How it arises:* every command on the structure tree is announced through one live region,
+and for somebody building a form by keyboard with a screen reader that sentence is the
+only evidence of what happened. Both builders worded those sentences by hand, from the
+same copied logic, and two of them were false: a drag announced the row the field was
+dropped on as the field that moved ("Moved City." when Customer moved), and unwrapping a
+group in a form with pages announced "Removed the page …" for a group.
+
+*Severity:* an author acts on a false account of their own edit — moves the field the
+announcement named back to where it was, or believes a step of the form is gone when it
+is not. The form that results differs from the one its author believes they built, which
+is the consequence class of D10 reached without any model involved.
+
+*Constraint:* the structure tree's sentences are decided once, in
+`packages/builder-core/src/spoken.ts`, from the document before and after the command,
+and `spoken.test.ts` holds each against the document. Each builder's own tests assert
+that a drop names the field that moved, and both failed on the old code with "Moved
+City." ([0116](../decisions/0116-what-a-builder-says-is-decided-once.md)).
+
+*Residual:* only the structure tree is decided in one place. The layout pane, the
+property panel and the others still word their own announcements, in two builders each,
+and could be wrong the same way. A true sentence can still go unheard — a live region's
+timing belongs to the browser and the screen reader — and no manual screen-reader audit
+has been performed (D4).
+
 ---
 
 ## E — Provenance is lost

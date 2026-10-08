@@ -44,8 +44,10 @@ because the engine gives a field that is not inside a page to page one wherever
 it sits ([0081](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0081-a-page-absorbs-the-form-it-joins.md)).
 The builder's words come from one catalogue in `builder-core`, English and German: a
 session refuses, offers destinations and names layout nodes in the language it was
-opened in. The builders' own buttons and headings have not moved to it yet
-([0114](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0114-the-builder-speaks-the-authors-language.md)).
+opened in, and the structure tree shows and announces everything in it, in both builders.
+The other panes have not moved to it yet
+([0114](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0114-the-builder-speaks-the-authors-language.md),
+[0116](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0116-what-a-builder-says-is-decided-once.md)).
 
 **The backend** (`@formancy/server`) — Fastify and Postgres: publish with the
 engine as the save gate, submissions replayed server-side and stored canonical,

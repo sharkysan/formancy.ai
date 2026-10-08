@@ -12,12 +12,22 @@ import {
   viewChildren,
 } from '@angular/core'
 import {
+  addPageAndSay,
   describeTarget,
+  dropAndSay,
+  insertAndSay,
+  moveAndSay,
   nameOf,
   newFieldOfType,
   nextSpecVersion,
   paletteEntries,
+  redoAndSay,
+  removeAndSay,
+  treeKeyHelp,
   typesNeedingUpgrade,
+  undoAndSay,
+  unwrapAndSay,
+  upgradeAndSay,
 } from '@formancy/builder-core'
 import type {
   BuilderSession,
@@ -28,24 +38,8 @@ import type {
   TreeNode,
 } from './types.js'
 import { dropLocation } from '@formancy/builder-core'
+import { BuilderTextPipe } from './text.pipe.js'
 import { injectBuilderView } from './view.js'
-
-/**
- * What the legend lists, which is every command this tree has.
- *
- * Shared spelling with the React builder on purpose: a shortcut that differed
- * between the two would be a thing somebody learns once and gets wrong in the
- * other, and neither page would be able to explain why.
- */
-const KEY_HELP: ReadonlyArray<readonly [string, string]> = [
-  ['↑ ↓', 'move between fields'],
-  ['a', 'add a field'],
-  ['p', 'add a page, making the form a wizard'],
-  ['u', 'take a container away and keep what is inside'],
-  ['m', 'move the focused field'],
-  ['Delete', 'remove it'],
-  ['Ctrl+Z / Ctrl+Y', 'undo / redo'],
-]
 
 /** The add palette's two steps: which type, then where it goes. */
 interface Adding {
@@ -75,12 +69,13 @@ interface Moving {
 @Component({
   selector: 'formancy-builder',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [BuilderTextPipe],
   template: `
     <div data-formancy-part="builder">
       <ul
         #tree
         role="tree"
-        [attr.aria-label]="label()"
+        [attr.aria-label]="label() ?? ('tree.label' | builderText: text())"
         data-formancy-part="builder-tree"
         [attr.tabindex]="count() === 0 ? 0 : -1"
         (keydown)="onKeyDown($event)"
@@ -112,12 +107,16 @@ interface Moving {
       </ul>
 
       @if (count() === 0) {
-        <p data-formancy-part="builder-empty">This form has no fields yet.</p>
+        <p data-formancy-part="builder-empty">{{ 'tree.empty' | builderText: text() }}</p>
       }
 
       @if (adding() !== null) {
         @if (adding()!.type === '') {
-          <div role="dialog" aria-label="Add a field" data-formancy-part="add-palette">
+          <div
+            role="dialog"
+            [attr.aria-label]="'palette.title' | builderText: text()"
+            data-formancy-part="add-palette"
+          >
             <ul>
               @for (entry of palette(); track entry.type) {
                 <li>
@@ -132,19 +131,23 @@ interface Moving {
                    that the document is written against an older version of the
                    spec and can be moved forward in one step. -->
               <p data-formancy-part="palette-locked">
-                {{ lockedNames() }} need a later spec version. This form says version
-                {{ view().document.specVersion }}.
+                {{
+                  'tree.locked'
+                    | builderText
+                      : text()
+                      : { types: lockedNames(), version: view().document.specVersion, count: locked().length }
+                }}
                 <button type="button" (click)="upgrade()">
-                  Move it to version {{ nextVersion() }}
+                  {{ 'tree.upgrade' | builderText: text() : { version: nextVersion() } }}
                 </button>
               </p>
             }
-            <button type="button" (click)="cancelDialog()">Cancel</button>
+            <button type="button" (click)="cancelDialog()">{{ 'dialog.cancel' | builderText: text() }}</button>
           </div>
         } @else {
           <div
             role="dialog"
-            [attr.aria-label]="'Where should the ' + labelForType(adding()!.type) + ' go?'"
+            [attr.aria-label]="'tree.addWhere' | builderText: text() : { type: labelForType(adding()!.type) }"
             data-formancy-part="add-where"
           >
             <ul>
@@ -154,7 +157,7 @@ interface Moving {
                 </li>
               }
             </ul>
-            <button type="button" (click)="cancelDialog()">Cancel</button>
+            <button type="button" (click)="cancelDialog()">{{ 'dialog.cancel' | builderText: text() }}</button>
           </div>
         }
       }
@@ -162,7 +165,7 @@ interface Moving {
       @if (moving() !== null) {
         <div
           role="dialog"
-          [attr.aria-label]="'Move ' + nameOfNode(moving()!.node)"
+          [attr.aria-label]="'tree.moveTitle' | builderText: text() : { name: nameOfNode(moving()!.node) }"
           data-formancy-part="move-palette"
         >
           <ul>
@@ -172,7 +175,7 @@ interface Moving {
               </li>
             }
           </ul>
-          <button type="button" (click)="cancelDialog()">Cancel</button>
+          <button type="button" (click)="cancelDialog()">{{ 'dialog.cancel' | builderText: text() }}</button>
         </div>
       }
 
@@ -183,7 +186,7 @@ interface Moving {
       <p role="status" data-formancy-part="builder-status">{{ announcement() }}</p>
 
       <dl data-formancy-part="builder-keys">
-        @for (entry of keyHelp; track entry[0]) {
+        @for (entry of keyHelp(); track entry[0]) {
           <div>
             <dt>{{ entry[0] }}</dt>
             <dd>{{ entry[1] }}</dd>
@@ -195,7 +198,8 @@ interface Moving {
 })
 export class FormancyBuilder {
   readonly session = input.required<BuilderSession>()
-  readonly label = input('Form structure')
+  /** The tree's accessible name. The session's own words by default. */
+  readonly label = input<string | undefined>(undefined)
   /**
    * The focused field's key path, for a consumer showing a property panel beside
    * the tree without reading our DOM.
@@ -206,8 +210,15 @@ export class FormancyBuilder {
    */
   readonly selected = output<readonly string[] | null>()
 
-  protected readonly keyHelp = KEY_HELP
   protected readonly view = injectBuilderView(this.session)
+  /**
+   * Every word this tree shows, in the language the session was opened in. What
+   * a command SAYS afterwards is not worded here at all: builder-core decides it,
+   * once, for this builder and the React one (0114).
+   */
+  protected readonly text = computed(() => this.session().text)
+  /** The same legend the React builder shows, from the same place. */
+  protected readonly keyHelp = computed(() => treeKeyHelp(this.session()))
 
   /** The position the arrow keys move. */
   protected readonly focusedIndex = signal(0)
@@ -251,9 +262,7 @@ export class FormancyBuilder {
     typesNeedingUpgrade(this.view().document.specVersion),
   )
   protected readonly lockedNames = computed(() =>
-    this.locked()
-      .map((entry) => entry.title)
-      .join(', '),
+    this.text().list(this.locked().map((entry) => entry.title)),
   )
   protected readonly nextVersion = computed(
     () => nextSpecVersion(this.view().document.specVersion) ?? '',
@@ -373,12 +382,10 @@ export class FormancyBuilder {
     const location = dropLocation(this.view().document, from, node.keyPath, edgeOf(event))
     if (location === undefined) return
 
-    const outcome = this.session().moveField(from, location)
     // Through the same live region the keyboard path uses, so a drag is not a
-    // silent command for somebody using both.
-    this.announce(
-      outcome.ok ? `Moved ${this.nameOfNode(node)}.` : `Cannot move: ${outcome.message}`,
-    )
+    // silent command for somebody using both — and naming the field that moved,
+    // not the row it landed on.
+    this.announce(dropAndSay(this.session(), from, location))
   }
 
   protected nameOfNode(node: TreeNode): string {
@@ -407,10 +414,10 @@ export class FormancyBuilder {
       const key = event.key.toLowerCase()
       if (key === 'z') {
         event.preventDefault()
-        this.announce(this.session().undo() ? 'Undone.' : 'Nothing to undo.')
+        this.announce(undoAndSay(this.session()))
       } else if (key === 'y') {
         event.preventDefault()
-        this.announce(this.session().redo() ? 'Redone.' : 'Nothing to redo.')
+        this.announce(redoAndSay(this.session()))
       }
       return
     }
@@ -448,76 +455,26 @@ export class FormancyBuilder {
         // An empty palette is a real answer — a page cannot go inside a group —
         // and saying so beats opening an empty dialog.
         if (targets.length === 0) {
-          this.announce(`${this.nameOfNode(focused)} cannot be moved anywhere else.`)
+          this.announce(this.text()('said.nowhereToMove', { name: this.nameOfNode(focused) }))
           return
         }
         this.moving.set({ node: focused, targets })
         break
       }
       case 'p':
-      case 'P': {
+      case 'P':
         event.preventDefault()
-        // Counted BEFORE the command, because the first page absorbs what is at
-        // the top level and the count afterwards cannot tell which case it was.
-        const loose = this.view().document.model.fields.filter((field) => field.type !== 'page')
-        const pages = this.view().document.model.fields.length - loose.length
-        const outcome = this.session().addPage(`Page ${String(pages + 1)}`)
-        this.announce(
-          !outcome.ok
-            ? `Cannot add a page: ${outcome.message}`
-            : loose.length === 0
-              ? `Added Page ${String(pages + 1)}.`
-              : // Moving every field in the form is not something to do quietly.
-                `Added Page 1, holding the ${String(loose.length)} ${loose.length === 1 ? 'field' : 'fields'} that were at the top level. The form is a wizard now.`,
-        )
+        this.announce(addPageAndSay(this.session()))
         break
-      }
       case 'u':
-      case 'U': {
+      case 'U':
         event.preventDefault()
-        // Read BEFORE the command: the container is gone afterwards, so neither
-        // its name nor what was inside it can be recovered to say what happened.
-        const name = this.nameOfNode(focused)
-        const inside = focused.def.fields ?? []
-        const wasPage = focused.def.type === 'page'
-        const count = String(inside.length)
-        const questions = `${count} ${inside.length === 1 ? 'question' : 'questions'}`
-        const outcome = this.session().unwrapField(focused.keyPath)
-        const after = this.session().document()
-        const host =
-          inside[0] === undefined
-            ? undefined
-            : after.model.fields.find(
-                (field) =>
-                  field.type === 'page' &&
-                  (field.fields ?? []).some((child) => child.key === inside[0]?.key),
-              )
-        // COUNTED, not inferred from the host: an empty page has no first
-        // question to find, and absence of a host would then read as absence of
-        // pages — which is how the React builder claimed a form had stopped
-        // being a wizard while page one was still there.
-        const stillPaged = after.model.fields.some((field) => field.type === 'page')
-        const what =
-          inside.length === 0
-            ? `Removed ${name}, which was empty.`
-            : host !== undefined
-              ? `Removed the page ${name}. Its ${questions} are on ${nameOf(after, host)} now.`
-              : `Removed ${name} and kept the ${questions} that were inside it.`
-        this.announce(
-          !outcome.ok
-            ? `Cannot unwrap ${name}: ${outcome.message}`
-            : wasPage && !stillPaged
-              ? `${what} The form is not a wizard any more.`
-              : what,
-        )
+        this.announce(unwrapAndSay(this.session(), focused.keyPath))
         break
-      }
       case 'Delete':
       case 'Backspace': {
         event.preventDefault()
-        const name = this.nameOfNode(focused)
-        const outcome = this.session().removeField(focused.keyPath)
-        this.announce(outcome.ok ? `Removed ${name}.` : `Cannot remove ${name}: ${outcome.message}`)
+        this.announce(removeAndSay(this.session(), focused.keyPath))
         break
       }
       default:
@@ -532,12 +489,7 @@ export class FormancyBuilder {
   protected completeAdd(target: MoveTarget): void {
     const type = this.adding()?.type ?? ''
     this.adding.set(null)
-    const outcome = this.session().insertField(target.location, this.newField(type))
-    this.announce(
-      outcome.ok
-        ? `Added ${this.labelForType(type)} to ${target.label}.`
-        : `Cannot add: ${outcome.message}`,
-    )
+    this.announce(insertAndSay(this.session(), this.newField(type), target))
     this.keepFocus = true
   }
 
@@ -545,12 +497,7 @@ export class FormancyBuilder {
     const node = this.moving()?.node
     this.moving.set(null)
     if (node === undefined) return
-    const outcome = this.session().moveField(node.keyPath, target.location)
-    this.announce(
-      outcome.ok
-        ? `Moved ${this.nameOfNode(node)} to ${target.label}.`
-        : `Cannot move: ${outcome.message}`,
-    )
+    this.announce(moveAndSay(this.session(), node.keyPath, target))
     this.keepFocus = true
   }
 
@@ -562,15 +509,7 @@ export class FormancyBuilder {
   }
 
   protected upgrade(): void {
-    // One step. Moving a version 1 document straight to the newest would cost it
-    // every reader pinned to 2, for a type that only needs 2.
-    const to = nextSpecVersion(this.view().document.specVersion)
-    const outcome = to === undefined ? undefined : this.session().upgradeSpec(to)
-    this.announce(
-      outcome?.ok === true
-        ? `Moved this form to spec version ${String(to)}. Nothing else changed.`
-        : `Cannot upgrade: ${outcome?.ok === false ? outcome.message : 'already at the newest version'}`,
-    )
+    this.announce(upgradeAndSay(this.session()))
   }
 
   private newField(type: string): FieldDef {

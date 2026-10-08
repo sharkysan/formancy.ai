@@ -199,16 +199,17 @@ const session = createBuilderSession(schema, {
 })
 ```
 
-Its refusals, the destinations it offers and the names in the arrangement tree are then
-German; a message a catalogue leaves out is English, one message at a time, so a
-catalogue of your own can start small. **The builders' own buttons and headings are
-still English** — they are next, and until then this is half a German builder
-([0114](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0114-the-builder-speaks-the-authors-language.md)).
+Its refusals, the destinations it offers, the names in the arrangement tree and
+everything the structure tree shows or announces are then German; a message a catalogue
+leaves out is English, one message at a time, so a catalogue of your own can start small.
+**The other panes are still English** — they move next, one at a time in both builders,
+and until then this is a German tree beside English panes
+([0114](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0114-the-builder-speaks-the-authors-language.md),
+[0116](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0116-what-a-builder-says-is-decided-once.md)).
 
-The arrangement tree, the property panel, the condition editor and the
-translations pane are React-only for now — said here rather than discovered,
-because a package that half exists is worse to meet than one that says which
-half.
+Every pane the React builder has, this one has too: the arrangement tree and the drag
+surface on the rendered form, the property and logic panels, the translations pane, and
+the prompt and scenario panes. This page said otherwise for more than a week after they shipped.
 
 ## Proof this is not a second implementation
 

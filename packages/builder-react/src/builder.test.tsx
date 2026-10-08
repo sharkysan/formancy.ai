@@ -349,8 +349,10 @@ describe('dragging', () => {
 
     dragFromTo('Customer', 'City', 'bottom')
 
-    // Otherwise a drag is a silent command for somebody using both.
-    expect(screen.getByRole('status').textContent).toMatch(/^Moved /)
+    // Otherwise a drag is a silent command for somebody using both. And by the
+    // name of the field that MOVED: both builders named the row it was dropped
+    // on, so this said "Moved City."
+    expect(screen.getByRole('status').textContent).toBe('Moved Customer.')
   })
 
   test('an illegal drop is never offered, rather than refused after the fact', () => {

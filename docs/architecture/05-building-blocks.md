@@ -231,19 +231,31 @@ German, which a session carries and both builders read — so a refusal, a move 
 and a layout node's name are worded once, in the language of the person building,
 rather than inline in English twice. Whole sentences per noun rather than a noun slotted
 into a template, because German agrees an adjective with its noun; `Intl` decides
-plural forms and how a list is joined. The builders' own buttons and headings have not
-moved to it yet, and until they do a German builder is half German
-([0114](../decisions/0114-the-builder-speaks-the-authors-language.md)).
+plural forms and how a list is joined
+([0114](../decisions/0114-the-builder-speaks-the-authors-language.md)). The structure tree
+reads it in both builders; the other surfaces have not moved yet, and until they do a
+German builder is German in its tree and English in its panes.
+
+`spoken.ts` holds what a builder **says** after a command on the structure tree — the
+command and the sentence together, because the sentence needs what was true before the
+command and a caller handed that job does it twice. Both builders had written the same
+sentences and the same counting by hand, and consolidating them found the copies wrong
+together: a drag named the row it landed on, and unwrapping a group in a paged form called
+it a page. `pseudo.ts` is how a builder proves it has no English left: every message
+marked, the rendered tree walked, anything unmarked that is not the document's own words
+named. One judgement for both builders' guards
+([0116](../decisions/0116-what-a-builder-says-is-decided-once.md)).
 `navigate.ts` holds finding things — a field by key path, a container, a layout node
 by position — which left `session.ts` because none of it is a command.
 
 There are two builder interfaces over it now, and the split is the same one
 the renderers have: what decides anything is in `builder-core`, and a builder
-package is markup and a subscription. `@formancy/builder-angular` carries the
-structure tree — zoneless, `OnPush`, one signal per session, `revision()` as the
-whole subscription — the prompt pane and the scenario panel, both in the same
-idiom; the rest of the panes remain React-only
-([0091](../decisions/0091-a-second-builder-is-a-binding.md)).
+package is markup and a subscription. `@formancy/builder-angular` carries every pane
+`builder-react` does — the structure and arrangement trees, the drag surface on the
+rendered form, the property and logic panels, the translations pane, the prompt and
+scenario panes — zoneless, `OnPush`, one signal per session, `revision()` as the whole
+subscription ([0091](../decisions/0091-a-second-builder-is-a-binding.md)). This paragraph
+said "the rest of the panes remain React-only" for more than a week after they had all shipped.
 
 `builder-react` is the interface: a structure tree, an arrangement tree, a
 property panel generated from the spec's own JSON Schema, a condition editor

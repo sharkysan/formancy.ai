@@ -397,6 +397,17 @@ describe('dragging', () => {
     expect(keys()).toEqual(['Billing address', 'Street', 'City', 'Customer'])
   })
 
+  test('a drop is announced by the name of the field that moved, not the row it landed on', async () => {
+    const { settle } = await mount()
+
+    // Both builders named the drop handler's own argument — the row under the
+    // pointer — so this said "Moved City."
+    dragFromTo('Customer', 'City', 'bottom')
+    await settle()
+
+    expect(screen.getByRole('status').textContent?.trim()).toBe('Moved Customer.')
+  })
+
   test('the upper half of a row means before it, not after', async () => {
     // The other half of the decision, and the one a test that loses clientY
     // silently cannot reach.

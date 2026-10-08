@@ -216,3 +216,4 @@ listed under the sections they belong to above.
 | [0113](0113-a-theme-is-written-in-reading-order.md) | A theme is written in reading order, and something fails when it is not | accepted |
 | [0114](0114-the-builder-speaks-the-authors-language.md) | The builder speaks the author's language, from one catalogue both builders read | accepted |
 | [0115](0115-a-library-writes-nothing-to-its-hosts-console.md) | A library writes nothing to its host's console | accepted |
+| [0116](0116-what-a-builder-says-is-decided-once.md) | What a builder says after a command is decided once, and checked for English left behind | accepted |
