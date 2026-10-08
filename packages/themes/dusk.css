@@ -1803,3 +1803,22 @@
   font-size: 0.8125rem;
   color: var(--fm-text);
 }
+
+/* And the other reading order.
+ *
+ * The icons above sit at a named side, because CSS has no logical
+ * `background-position`; the padding that makes room for them is logical and
+ * moves on its own. Without this pair the two part company in Arabic or
+ * Hebrew and the icon lands on top of the text — on iOS only, which is where
+ * the icons are drawn at all, and therefore nowhere any gate here can see it
+ * (apps/docs/src/themes.test.ts holds it instead).
+ *
+ * `:dir()` on the control rather than an `[dir="rtl"]` ancestor: direction is
+ * inherited, so a form inside a right-to-left document with no attribute of
+ * its own still reads right to left, and an ancestor selector would miss it.
+ */
+@supports (-webkit-touch-callout: none) {
+  [data-formancy-theme='dusk'] [data-formancy-part='field'] input:dir(rtl):is([type='date'], [type='datetime-local'], [type='time']) {
+    background-position: left 0.75rem center;
+  }
+}

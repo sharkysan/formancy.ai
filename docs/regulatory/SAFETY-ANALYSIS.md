@@ -674,6 +674,34 @@ device no test here can drive — what is verified is that the mechanism is pres
 a theme and that the fallback fires, not that iOS Safari behaves as expected with it.
 Listed as debt in [§11](../architecture/11-risks-and-debt.md).
 
+### D4d. A form read right to left is laid out left to right
+
+*How it arises:* this product ships no layout of its own, so a theme’s stylesheet is
+the whole of the answer. A stylesheet that names a side — `padding-left` rather than
+`padding-inline-start` — keeps that side whatever direction the document is read in,
+so an Arabic or Hebrew form has its labels, its error marks and its repeater controls
+on the wrong side of the control they belong to.
+
+*Severity:* a form that is readable and wrong rather than broken. Nothing fails, no
+answer is lost, and a reader who does not know what it should look like will complete
+it — which is why it is an entry here rather than a styling preference. The specific
+case measured was narrower and worse: four themes positioned a date icon at a fixed
+side while the padding that made room for it moved with the reading order, so the icon
+lands **on top of** the text.
+
+*Constraint:* every shipped theme is written in reading order, and
+`apps/docs/src/themes.test.ts` refuses one that is not — nine physical properties by
+name, plus a side named as a *value* that has no counterpart for the other direction
+([0113](../decisions/0113-a-theme-is-written-in-reading-order.md)). Proved against
+four physical properties and against removing a theme’s flip. The browser gate adds
+that the rendered form responds to `dir` and does not overflow when mirrored.
+
+*Residual:* the icon rules live inside `@supports (-webkit-touch-callout: none)` — iOS
+WebKit alone — so **no gate here can execute them**; they are held by a source check
+and nothing else. The browser gate holds the renderer rather than the themes: pinning
+a side in all four themes left it green. And nothing checks a right-to-left
+*language*: mirroring a layout is not translating a form.
+
 ### D5. A repeater shows the wrong number of rows
 
 *How it arises:* `minItems` was originally seeded by each renderer in a mount

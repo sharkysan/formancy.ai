@@ -10,6 +10,50 @@ later.
 
 ## Unreleased
 
+**Right to left was true by accident, and now something fails when it stops being
+true.** Every shipped theme had zero physical directional properties and twenty to
+twenty-nine logical ones — not because anybody decided it, but because the person
+writing them reached for `padding-inline-start` out of habit. A fact that holds by
+habit holds until somebody types `padding-left` because that is what their fingers do,
+and then an Arabic or Hebrew form has its labels, its error marks and its repeater
+controls on the wrong side of the control they belong to. This product ships no layout
+of its own, so a theme's stylesheet is the whole of the answer.
+
+`apps/docs/src/themes.test.ts` refuses a stylesheet that names a side — nine properties
+by name — with a guard on the guard, because an assertion of absence is satisfied by a
+theme that positions nothing.
+
+**And looking for the guard found the defect it had been told to ignore.** The first
+version of the rule excluded `background-position`, on the grounds that it takes a side
+as a *value* and the pattern would have to understand the difference. All four themes
+that draw an icon did exactly this:
+
+```css
+background-position: right 0.75rem center;
+padding-inline-end: 2.5rem;
+```
+
+The padding moves with the reading order and the icon does not, so the two part company
+and the icon lands **on top of** the text. CSS has no logical `background-position`, so
+the side is named twice now — `:dir(rtl)` on the control rather than an `[dir='rtl']`
+ancestor, because direction is inherited and a form inside a right-to-left page with no
+attribute of its own would be missed. The guard checks each side named outside a
+`:dir()` rule has its opposite inside one.
+
+**It is held by a source check and by nothing else, and that is said rather than
+implied.** Those rules live inside `@supports (-webkit-touch-callout: none)` — iOS
+WebKit alone, because mobile Safari draws no icon while Chromium and Firefox do — so
+the browser gate runs an engine that never applies them.
+
+The browser gate holds a different and narrower claim: the rendered form responds to
+`dir`, none of its own layout stays pinned, and nothing overflows once mirrored. Its
+wording says so, because the first version of it claimed to hold the themes and did
+not — pinning a side in all four left it green, while pinning one in the application's
+own stylesheet reddened it and named the three elements that stopped flipping. The four
+asymmetries it measures come from the renderer and the user-agent stylesheet
+([0113](docs/decisions/0113-a-theme-is-written-in-reading-order.md), and
+`SAFETY-ANALYSIS.md` D4d).
+
 **The MCP server now says what each tool will do, answers in structure, and ships the
 order of operations.** Four things, three of which were wrong rather than merely absent.
 
