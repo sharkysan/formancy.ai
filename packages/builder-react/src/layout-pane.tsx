@@ -104,7 +104,7 @@ export function FormancyLayoutPane({
   // without this the tree would stop answering the keyboard after a delete.
   const keepFocus = useRef(false)
 
-  const rows = name === undefined ? [] : flattenLayout(view.document, name)
+  const rows = name === undefined ? [] : flattenLayout(view.document, name, session.text)
   const count = rows.length
   const index = count === 0 ? 0 : Math.min(focusedIndex, count - 1)
   const focused = rows[index]
@@ -139,7 +139,10 @@ export function FormancyLayoutPane({
     const from = Array.isArray(what) ? (what as readonly number[]) : undefined
     return session
       .validLayoutTargets(name, what)
-      .map((location) => ({ location, label: describeLayoutTarget(view.document, location, from) }))
+      .map((location) => ({
+        location,
+        label: describeLayoutTarget(view.document, location, from, session.text),
+      }))
   }
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLUListElement>): void => {

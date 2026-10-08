@@ -1,5 +1,7 @@
 import { LAYOUT_LEAF_KINDS, layoutChildren } from '@formancy/spec'
 import type { FormSchema, LayoutNode } from '@formancy/spec'
+import { createBuilderText } from './messages.js'
+import type { BuilderText } from './messages.js'
 
 /**
  * Navigating an arrangement.
@@ -115,36 +117,46 @@ export function samePath(a: readonly number[], b: readonly number[]): boolean {
  *
  * A row has nothing to call itself, so it is named by what it holds: "Row with
  * First name and Last name" is findable in a list of six rows and "Row" is not.
+ *
+ * In the builder's language. Whole sentences per kind rather than a kind slotted
+ * into a template, because an adjective and an article agree with their noun in
+ * most languages — "Empty {kind}" has no correct German ("Leerer Abschnitt",
+ * "Leere Tabelle") — and the list is joined by the language rather than by an
+ * English "and" written into the code
+ * ([0114](../../../docs/decisions/0114-the-builder-speaks-the-authors-language.md)).
  */
-export function describeNode(node: LayoutNode, nameOfPath: (path: string) => string): string {
+export function describeNode(
+  node: LayoutNode,
+  nameOfPath: (path: string) => string,
+  text: BuilderText = createBuilderText(),
+): string {
   if (node.kind === 'field') return nameOfPath(node.path)
   // A code is named by what it encodes, not by being a code: "Code for Booking
   // reference" is findable in a tree and "Code" is not — the same reasoning a row is
   // named by what it holds.
-  if (node.kind === 'qrcode') return `Code for ${nameOfPath(node.path)}`
+  if (node.kind === 'qrcode') return text('layout.codeFor', { name: nameOfPath(node.path) })
 
   const label = typeof node.label === 'string' ? node.label : undefined
-  const kind = node.kind[0]!.toUpperCase() + node.kind.slice(1)
-  if (label !== undefined) return `${kind} “${label}”`
+  if (label !== undefined) return text(`layout.named.${node.kind}`, { label })
 
   // One level down, and no further. Recursing all the way produced "Section
   // with Row with First name and Last name and Email", where the reader has
   // no way to tell which "and" separates what. A nested container is named as
   // what it is; its own row in the tree says what is in it.
-  const inside = layoutChildren(node).map((child) => shortNameOf(child, nameOfPath))
-  if (inside.length === 0) return `Empty ${node.kind}`
-  return `${kind} with ${listOf(inside)}`
+  const inside = layoutChildren(node).map((child) => shortNameOf(child, nameOfPath, text))
+  if (inside.length === 0) return text(`layout.empty.${node.kind}`)
+  return text(`layout.with.${node.kind}`, { list: text.list(inside) })
 }
 
-function shortNameOf(node: LayoutNode, nameOfPath: (path: string) => string): string {
+function shortNameOf(
+  node: LayoutNode,
+  nameOfPath: (path: string) => string,
+  text: BuilderText,
+): string {
   if (node.kind === 'field') return nameOfPath(node.path)
-  if (node.kind === 'qrcode') return `code for ${nameOfPath(node.path)}`
+  if (node.kind === 'qrcode') return text('layout.codeFor.inList', { name: nameOfPath(node.path) })
   const label = typeof node.label === 'string' ? node.label : undefined
-  return label === undefined ? `a ${node.kind}` : `the “${label}” ${node.kind}`
-}
-
-function listOf(items: readonly string[]): string {
-  if (items.length === 1) return items[0]!
-  if (items.length === 2) return `${items[0]!} and ${items[1]!}`
-  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]!}`
+  return label === undefined
+    ? text(`layout.inList.${node.kind}`)
+    : text(`layout.inList.named.${node.kind}`, { label })
 }

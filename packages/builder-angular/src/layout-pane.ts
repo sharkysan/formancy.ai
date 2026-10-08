@@ -239,7 +239,7 @@ export class FormancyLayoutPane {
   )
   protected readonly rows = computed((): LayoutTreeNode[] => {
     const name = this.name()
-    return name === undefined ? [] : flattenLayout(this.view().document, name)
+    return name === undefined ? [] : flattenLayout(this.view().document, name, this.session().text)
   })
   protected readonly count = computed(() => this.rows().length)
   protected readonly index = computed(() =>
@@ -574,7 +574,7 @@ export class FormancyLayoutPane {
       .validLayoutTargets(name, what)
       .map((location) => ({
         location,
-        label: describeLayoutTarget(this.view().document, location, from),
+        label: describeLayoutTarget(this.view().document, location, from, this.session().text),
       }))
   }
 

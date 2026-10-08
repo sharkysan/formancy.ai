@@ -188,6 +188,23 @@ out of the spec's own JSON Schema. Two builders disagreeing about where a field
 may go would be two products
 ([0091](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0091-a-second-builder-is-a-binding.md)).
 
+So is the language it speaks to the person building. A session is opened in one, and
+both builders read it from the session:
+
+```ts
+import { BUILDER_MESSAGES_DE, createBuilderSession, createBuilderText } from '@formancy/builder-core'
+
+const session = createBuilderSession(schema, {
+  text: createBuilderText({ locale: 'de', messages: BUILDER_MESSAGES_DE }),
+})
+```
+
+Its refusals, the destinations it offers and the names in the arrangement tree are then
+German; a message a catalogue leaves out is English, one message at a time, so a
+catalogue of your own can start small. **The builders' own buttons and headings are
+still English** — they are next, and until then this is half a German builder
+([0114](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0114-the-builder-speaks-the-authors-language.md)).
+
 The arrangement tree, the property panel, the condition editor and the
 translations pane are React-only for now — said here rather than discovered,
 because a package that half exists is worse to meet than one that says which

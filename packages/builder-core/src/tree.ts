@@ -1,5 +1,7 @@
 import { resolveText } from '@formancy/spec'
 import type { FieldDef, FormSchema } from '@formancy/spec'
+import { createBuilderText } from './messages.js'
+import type { BuilderText } from './messages.js'
 // By relative path, not by this package's own name.
 //
 // `Location` is declared next door in `session.ts`, and importing it through the
@@ -116,6 +118,7 @@ export function describeTarget(
    * "after Billing". Excluding the traveller is what makes the sentence true.
    */
   moving?: readonly string[],
+  text: BuilderText = createBuilderText(),
 ): string {
   const container = containerAt(schema, location.parent)
   const where = container === undefined ? schema.title : nameOf(schema, container)
@@ -130,12 +133,16 @@ export function describeTarget(
     (field) => !(fromSameContainer && field.key === movingKey),
   )
 
-  if (siblings.length === 0) return `${where}, as its first field`
+  if (siblings.length === 0) return text('target.firstField', { where })
 
   const before = siblings[location.index - 1]
   const after = siblings[location.index]
 
-  if (before === undefined) return `${where}, before ${nameOf(schema, after!)}`
-  if (after === undefined) return `${where}, after ${nameOf(schema, before)}`
-  return `${where}, between ${nameOf(schema, before)} and ${nameOf(schema, after)}`
+  if (before === undefined) return text('target.before', { where, name: nameOf(schema, after!) })
+  if (after === undefined) return text('target.after', { where, name: nameOf(schema, before) })
+  return text('target.between', {
+    where,
+    before: nameOf(schema, before),
+    after: nameOf(schema, after),
+  })
 }

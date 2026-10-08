@@ -15,7 +15,10 @@ export interface BuilderView {
   canUndo: boolean
   canRedo: boolean
   /** The validator's verdict, so a Publish control can explain itself. */
-  publishable: { valid: boolean; errors: ReturnType<BuilderSession['canPublish']>['errors'] }
+  publishable: {
+    valid: boolean
+    errors: ReturnType<BuilderSession['canPublish']>['errors']
+  }
   /** Every legal destination for a field, already described in words. */
   moveTargetsFor(keyPath: readonly string[]): MoveTarget[]
   /** The same, for a field that does not exist yet. */
@@ -54,7 +57,10 @@ export function builderView(session: BuilderSession): BuilderView {
         .validTargets(def)
         // No `moving` argument: nothing is being lifted out, so every existing
         // field is a real neighbour.
-        .map((location) => ({ location, label: describeTarget(document, location) })),
+        .map((location) => ({
+          location,
+          label: describeTarget(document, location, undefined, session.text),
+        })),
     moveTargetsFor: (keyPath) => {
       // Where the field already is. `builder-core` offers it because it is a
       // legal destination, which is true and useless: a list whose first entry
@@ -76,7 +82,10 @@ export function builderView(session: BuilderSession): BuilderView {
               location.index === currentIndex
             ),
         )
-        .map((location) => ({ location, label: describeTarget(document, location, keyPath) }))
+        .map((location) => ({
+          location,
+          label: describeTarget(document, location, keyPath, session.text),
+        }))
     },
   }
 }

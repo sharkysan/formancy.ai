@@ -92,13 +92,12 @@ export function applyProposal(session: BuilderSession, proposal: EditProposal): 
     return {
       ok: false,
       path: '',
-      message:
-        'The form changed since this was proposed, so applying it would discard that edit. Ask again to get a proposal against the form as it is now.',
+      message: session.text('proposal.stale'),
     }
   }
 
   if (proposal.changes.length === 0) {
-    return { ok: false, path: '', message: 'That proposal changes nothing about the form.' }
+    return { ok: false, path: '', message: session.text('proposal.empty') }
   }
 
   return session.replaceDocument(proposal.document)

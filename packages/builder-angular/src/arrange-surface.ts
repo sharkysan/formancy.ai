@@ -168,7 +168,7 @@ export class FormancyArrangeSurface {
 
     const dataPath = found.getAttribute(FIELD_ATTR)
     if (dataPath === null || dataPath === '') return undefined
-    const node = flattenLayout(this.view().document, this.layout()).find(
+    const node = flattenLayout(this.view().document, this.layout(), this.session().text).find(
       (row) => row.node.kind === 'field' && row.node.path === dataPath,
     )
     return node?.path
@@ -277,7 +277,7 @@ export class FormancyArrangeSurface {
     const outcome = session.moveLayoutNode({ layout: this.layout(), path: from }, target.location)
     this.announcement.set(
       outcome.ok
-        ? `Moved to ${describeLayoutTarget(this.view().document, target.location, from)}.`
+        ? `Moved to ${describeLayoutTarget(this.view().document, target.location, from, this.session().text)}.`
         : `Cannot move: ${outcome.message}`,
     )
   }

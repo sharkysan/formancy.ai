@@ -1,6 +1,8 @@
 import schema from '@formancy/spec/schema.json' with { type: 'json' }
 import { SPEC_1_FIELD_TYPES, SPEC_2_FIELD_TYPES, SPEC_VERSIONS } from '@formancy/spec'
 import type { FieldDef, SpecVersion } from '@formancy/spec'
+import { createBuilderText } from './messages.js'
+import type { BuilderText } from './messages.js'
 
 /**
  * The list of field types a person can add, and the starting definition for
@@ -105,7 +107,11 @@ const CHOICE_TYPES = new Set(['select', 'radio', 'selectboxes'])
  * the spec requires at least one field inside one. Inserting something that is
  * immediately invalid would make the very first edit a refusal.
  */
-export function newFieldOfType(type: string, existingKeys: ReadonlySet<string>): FieldDef {
+export function newFieldOfType(
+  type: string,
+  existingKeys: ReadonlySet<string>,
+  text: BuilderText = createBuilderText(),
+): FieldDef {
   const key = uniqueKey(type, existingKeys)
   const title = paletteEntries().find((entry) => entry.type === type)?.title ?? type
 
@@ -113,14 +119,15 @@ export function newFieldOfType(type: string, existingKeys: ReadonlySet<string>):
 
   if (CONTAINERS.has(type)) {
     const childKey = uniqueKey('field', new Set([...existingKeys, key]))
-    return { ...def, fields: [{ key: childKey, type: 'text', label: 'New field' } as FieldDef] }
+    const child = { key: childKey, type: 'text', label: text('palette.newField') } as FieldDef
+    return { ...def, fields: [child] }
   }
 
   // A choice field with no options renders as an empty list, which is a
   // control nobody can answer. One starter option is something to edit; none
   // is a dead end the person has to work out how to leave.
   if (CHOICE_TYPES.has(type)) {
-    return { ...def, options: [{ value: 'option1', label: 'First option' }] }
+    return { ...def, options: [{ value: 'option1', label: text('palette.firstOption') }] }
   }
 
   return def

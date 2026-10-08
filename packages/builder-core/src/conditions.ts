@@ -1,3 +1,5 @@
+import { BUILDER_MESSAGES } from './messages.js'
+
 /**
  * Compiling a structured condition to CEL.
  *
@@ -43,14 +45,21 @@ export interface ConditionGroup {
   conditions: readonly Condition[]
 }
 
-export const OPERATORS: ReadonlyArray<{ id: Operator; label: string; takesValue: boolean }> = [
-  { id: 'is', label: 'is', takesValue: true },
-  { id: 'isNot', label: 'is not', takesValue: true },
-  { id: 'isMoreThan', label: 'is more than', takesValue: true },
-  { id: 'isLessThan', label: 'is less than', takesValue: true },
-  { id: 'isAnswered', label: 'is answered', takesValue: false },
-  { id: 'isNotAnswered', label: 'is not answered', takesValue: false },
-]
+/**
+ * The comparisons the editor offers, in English. The words are the
+ * catalogue's `operator.<id>`, read rather than copied, for the reason
+ * `RULE_KIND_CHOICES` reads its own.
+ */
+export const OPERATORS: ReadonlyArray<{ id: Operator; label: string; takesValue: boolean }> = (
+  [
+    ['is', true],
+    ['isNot', true],
+    ['isMoreThan', true],
+    ['isLessThan', true],
+    ['isAnswered', false],
+    ['isNotAnswered', false],
+  ] as const
+).map(([id, takesValue]) => ({ id, label: BUILDER_MESSAGES[`operator.${id}`], takesValue }))
 
 /**
  * A value as a CEL literal.

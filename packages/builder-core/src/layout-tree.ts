@@ -1,6 +1,8 @@
 import { describeLayoutNode, isLayoutContainer, layoutChildrenAt, nodesOfLayout } from './index.js'
 import type { LayoutLocation } from './index.js'
 import type { FieldDef, FormSchema, LayoutNode } from '@formancy/spec'
+import { createBuilderText } from './messages.js'
+import type { BuilderText } from './messages.js'
 import { nameOf } from './tree.js'
 
 /**
@@ -28,7 +30,11 @@ export interface LayoutTreeNode {
 }
 
 /** Every node of one layout, a container immediately followed by its contents. */
-export function flattenLayout(schema: FormSchema, layout: string): LayoutTreeNode[] {
+export function flattenLayout(
+  schema: FormSchema,
+  layout: string,
+  text: BuilderText = createBuilderText(),
+): LayoutTreeNode[] {
   const roots = nodesOfLayout(schema, layout)
   if (roots === undefined) return []
 
@@ -39,7 +45,7 @@ export function flattenLayout(schema: FormSchema, layout: string): LayoutTreeNod
     for (const [index, node] of nodes.entries()) {
       const path = [...prefix, index]
       const isContainer = isLayoutContainer(node)
-      rows.push({ path, node, depth, isContainer, name: describeLayoutNode(node, naming) })
+      rows.push({ path, node, depth, isContainer, name: describeLayoutNode(node, naming, text) })
       if (isContainer) walk(node.children, path, depth + 1)
     }
   }
@@ -96,23 +102,28 @@ export function describeLayoutTarget(
   schema: FormSchema,
   location: LayoutLocation,
   moving?: readonly number[],
+  text: BuilderText = createBuilderText(),
 ): string {
   const naming = (path: string): string => nameOfPath(schema, path)
   const container = containerNodeAt(schema, location)
-  const where = container === undefined ? `the ${location.layout} layout` : describeLayoutNode(container, naming)
+  const where =
+    container === undefined
+      ? text('target.layout', { layout: location.layout })
+      : describeLayoutNode(container, naming, text)
 
   const siblings = (layoutChildrenAt(schema, location.layout, location.parent) ?? []).filter(
     (_node, index) => !liftedFromHere(location, moving, index),
   )
 
-  if (siblings.length === 0) return `${where}, as its first item`
+  if (siblings.length === 0) return text('target.firstItem', { where })
 
   const before = siblings[location.index - 1]
   const after = siblings[location.index]
 
-  if (before === undefined) return `${where}, before ${describeLayoutNode(after!, naming)}`
-  if (after === undefined) return `${where}, after ${describeLayoutNode(before, naming)}`
-  return `${where}, between ${describeLayoutNode(before, naming)} and ${describeLayoutNode(after, naming)}`
+  const name = (node: LayoutNode): string => describeLayoutNode(node, naming, text)
+  if (before === undefined) return text('target.before', { where, name: name(after!) })
+  if (after === undefined) return text('target.after', { where, name: name(before) })
+  return text('target.between', { where, before: name(before), after: name(after) })
 }
 
 /** Whether index `at` in this container is the node being moved out of it. */

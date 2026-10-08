@@ -10,6 +10,40 @@ later.
 
 ## Unreleased
 
+**The builder can speak the author's language — the core of it, in this change.** Both
+builders were English and written inline, and so was `@formancy/builder-core`: every
+refusal a session issues, the move palette's "Section with A and B, between C and D", the
+label a new field starts with. A German team building a German form read all of it in
+English, and the React and Angular builders each held their own copy of the words, which
+is two implementations of one decision with nothing to notice when they part
+([0114](docs/decisions/0114-the-builder-speaks-the-authors-language.md)).
+
+`builder-core` now has one catalogue, English and a complete German, and
+`createBuilderText({ locale, messages })` returns the function a builder calls for every
+word. `createBuilderSession(document, { text })` refuses in that language and exposes it
+as `session.text`; `describeTarget`, `describeLayoutTarget`, `flattenLayout`,
+`describeLayoutNode` and `newFieldOfType` take it and default to English, so a caller that
+never asks for a language sees no change. Both builders already pass `session.text`
+wherever they call those, so a German session's refusals, move targets, layout names and
+starter labels reach the screen in German. **The builders' own buttons and headings are
+still English** — they move next, and until then a German builder is half German.
+
+- **Whole sentences per noun, not a noun in a template**, because "Empty {kind}" has no
+  correct German: "Leerer Abschnitt", "Leere Zeile".
+- **`Intl` decides plurals and lists.** The old joiner was `', '` plus a final `" and "`
+  — English grammar in code, with the one word nobody could translate.
+- **A locale the runtime has no data for is English**, not the machine's: measured, `xx`
+  resolved to `gsw-CH` on a Swiss machine, and one document's layout tree joined "A und
+  B" there and "A and B" in CI.
+- **A missing placeholder stays visible** — "No field at {path}." rather than a sentence
+  that hides that a value never came.
+- `RULE_KIND_CHOICES` and `OPERATORS` read their English from the catalogue instead of
+  holding a second copy; a rule kind with no message does not compile.
+
+`builder-core` is the first isomorphic package to use ECMA-402, and the SOUP declaration's
+required environment says so. Navigation moved from `session.ts` to `navigate.ts` on the
+way, and the file's size ceiling went down with it.
+
 **Right to left was true by accident, and now something fails when it stops being
 true.** Every shipped theme had zero physical directional properties and twenty to
 twenty-nine logical ones — not because anybody decided it, but because the person

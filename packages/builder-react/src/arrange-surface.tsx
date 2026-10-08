@@ -94,7 +94,7 @@ export function FormancyArrangeSurface({
 
       const dataPath = found.getAttribute(FIELD_ATTR)
       if (dataPath === null || dataPath === '') return undefined
-      const node = flattenLayout(view.document, layout).find(
+      const node = flattenLayout(view.document, layout, session.text).find(
         (row) => row.node.kind === 'field' && row.node.path === dataPath,
       )
       return node?.path
@@ -241,7 +241,7 @@ export function FormancyArrangeSurface({
         const outcome = session.moveLayoutNode({ layout, path: from }, target.location)
         setAnnouncement(
           outcome.ok
-            ? `Moved to ${describeLayoutTarget(view.document, target.location, from)}.`
+            ? `Moved to ${describeLayoutTarget(view.document, target.location, from, session.text)}.`
             : `Cannot move: ${outcome.message}`,
         )
       }}

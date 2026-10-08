@@ -2,7 +2,8 @@ import type { FormSchema, LogicRule } from '@formancy/spec'
 import { OPERATORS } from './conditions.js'
 import type { Condition, ConditionGroup, Operator } from './conditions.js'
 import { compileGroup } from './conditions.js'
-import { dataPathOf } from './session.js'
+import { BUILDER_MESSAGES } from './messages.js'
+import { dataPathOf } from './navigate.js'
 import { flatten } from './tree.js'
 
 /**
@@ -46,56 +47,38 @@ export interface RuleKindChoice {
  * difference ([0091](../../../docs/decisions/0091-a-second-builder-is-a-binding.md)).
  */
 export const RULE_KIND_CHOICES: readonly RuleKindChoice[] = [
-  {
-    id: 'visible',
-    label: 'Show this field when',
-    hint: 'Hidden otherwise, and its answer is cleared unless the field says not to.',
-    on: 'field',
-    writes: 'condition',
-  },
-  {
-    id: 'required',
-    label: 'Require an answer when',
-    hint: 'Only while the condition holds.',
-    on: 'field',
-    writes: 'condition',
-  },
-  {
-    id: 'disabled',
-    label: 'Disable this field when',
-    hint: 'Visible but not editable.',
-    on: 'field',
-    writes: 'condition',
-  },
-  {
-    id: 'validate',
-    label: 'Reject the answer unless',
-    hint: 'The condition must hold for the form to be submitted.',
-    on: 'field',
-    writes: 'condition',
-  },
-  {
-    id: 'check',
-    label: 'Ask the deployment about the answer',
-    hint: 'Names a check this deployment answers — is this email already registered, does this reference exist. A check the deployment has not supplied refuses the answer rather than passing it.',
-    on: 'field',
-    writes: 'check',
-  },
-  {
-    id: 'computed',
-    label: 'Calculate this field as',
-    hint: 'A CEL expression producing the answer, recomputed whenever what it reads changes. The field is filled in rather than asked, so what somebody typed is replaced.',
-    on: 'field',
-    writes: 'expression',
-  },
-  {
-    id: 'skip',
-    label: 'Skip this page when',
-    hint: 'The page is walked past, in both directions, and the questions on it are neither asked nor validated.',
-    on: 'page',
-    writes: 'condition',
-  },
+  kindChoice('visible', 'field', 'condition'),
+  kindChoice('required', 'field', 'condition'),
+  kindChoice('disabled', 'field', 'condition'),
+  kindChoice('validate', 'field', 'condition'),
+  kindChoice('check', 'field', 'check'),
+  kindChoice('computed', 'field', 'expression'),
+  kindChoice('skip', 'page', 'condition'),
 ]
+
+/**
+ * One kind, in English, with its words read from the catalogue.
+ *
+ * Read rather than written here, so there is one copy of the words and the
+ * catalogue's German is a translation of what a builder actually shows. The
+ * template-literal ids are checked by the compiler: a kind the format grows
+ * without a `rule.<kind>.label` in the catalogue does not build. A builder
+ * speaking another language reads `text(`rule.${id}.label`)` instead of
+ * `label` ([0114](../../../docs/decisions/0114-the-builder-speaks-the-authors-language.md)).
+ */
+function kindChoice(
+  id: LogicRule['kind'],
+  on: RuleKindChoice['on'],
+  writes: RuleKindChoice['writes'],
+): RuleKindChoice {
+  return {
+    id,
+    label: BUILDER_MESSAGES[`rule.${id}.label`],
+    hint: BUILDER_MESSAGES[`rule.${id}.hint`],
+    on,
+    writes,
+  }
+}
 
 /** The kinds that may be written on this node, and nothing that would be refused. */
 export function ruleKindsFor(on: 'field' | 'page'): RuleKindChoice[] {

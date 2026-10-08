@@ -226,6 +226,17 @@ that gets acted on, and two builders deciding that separately would tell two peo
 different things about one edit
 ([0111](../decisions/0111-a-scenario-panel-names-what-stopped-holding.md)).
 
+`messages.ts` holds the builder's **words**: one catalogue, English and a complete
+German, which a session carries and both builders read — so a refusal, a move target
+and a layout node's name are worded once, in the language of the person building,
+rather than inline in English twice. Whole sentences per noun rather than a noun slotted
+into a template, because German agrees an adjective with its noun; `Intl` decides
+plural forms and how a list is joined. The builders' own buttons and headings have not
+moved to it yet, and until they do a German builder is half German
+([0114](../decisions/0114-the-builder-speaks-the-authors-language.md)).
+`navigate.ts` holds finding things — a field by key path, a container, a layout node
+by position — which left `session.ts` because none of it is a command.
+
 There are two builder interfaces over it now, and the split is the same one
 the renderers have: what decides anything is in `builder-core`, and a builder
 package is markup and a subscription. `@formancy/builder-angular` carries the

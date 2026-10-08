@@ -10,7 +10,20 @@ export type {
   AuthoringProblem,
   AuthoringResult,
 } from './authoring.js'
-export { createBuilderSession, dataPathOf } from './session.js'
+// The builder’s own words, in the language of the person building (0114). A
+// session carries one; the functions that name things take one and default to
+// English, so a caller that never asks for a language gets the words it always had.
+export { BUILDER_MESSAGES, BUILDER_MESSAGES_DE, createBuilderText } from './messages.js'
+export type {
+  BuilderCatalogue,
+  BuilderLanguage,
+  BuilderMessageId,
+  BuilderText,
+  Message,
+  PluralMessage,
+} from './messages.js'
+export { createBuilderSession } from './session.js'
+export { dataPathOf } from './navigate.js'
 export type {
   BuilderSession,
   CatalogueFile,
