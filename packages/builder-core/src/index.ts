@@ -14,6 +14,7 @@ export type {
 // session carries one; the functions that name things take one and default to
 // English, so a caller that never asks for a language gets the words it always had.
 export { BUILDER_MESSAGES, BUILDER_MESSAGES_DE, createBuilderText } from './messages.js'
+export { pseudoLanguage, untranslated } from './pseudo.js'
 export type {
   BuilderCatalogue,
   BuilderLanguage,
@@ -73,6 +74,19 @@ export {
 export type { EditableProperty, PropertyKind } from './properties.js'
 export { describeTarget, flatten, nameOf } from './tree.js'
 export type { TreeNode } from './tree.js'
+// What a builder says after a command on the structure tree, decided once for both.
+export {
+  addPageAndSay,
+  dropAndSay,
+  insertAndSay,
+  moveAndSay,
+  redoAndSay,
+  removeAndSay,
+  treeKeyHelp,
+  undoAndSay,
+  unwrapAndSay,
+  upgradeAndSay,
+} from './spoken.js'
 export { builderView } from './view.js'
 export type { BuilderView, MoveTarget } from './view.js'
 export {

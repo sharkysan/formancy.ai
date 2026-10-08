@@ -3,6 +3,18 @@ import type { ReactElement } from 'react'
 import type { BuilderSession } from '@formancy/builder-core'
 import { dropLocation } from '@formancy/builder-core'
 import { newFieldOfType, nextSpecVersion, paletteEntries, typesNeedingUpgrade } from '@formancy/builder-core'
+import {
+  addPageAndSay,
+  dropAndSay,
+  insertAndSay,
+  moveAndSay,
+  redoAndSay,
+  removeAndSay,
+  treeKeyHelp,
+  undoAndSay,
+  unwrapAndSay,
+  upgradeAndSay,
+} from '@formancy/builder-core'
 import { useBuilder } from './use-builder.js'
 import type { MoveTarget } from './use-builder.js'
 import { nameOf } from '@formancy/builder-core'
@@ -24,7 +36,7 @@ import type { TreeNode } from '@formancy/builder-core'
 
 export interface BuilderProps {
   session: BuilderSession
-  /** Announced as the tree's accessible name. */
+  /** Announced as the tree's accessible name. The session's own words by default. */
   label?: string
   /**
    * The field the person is on, whenever that changes, as its key path — or `null`
@@ -38,22 +50,12 @@ export interface BuilderProps {
   onSelect?: (keyPath: readonly string[] | null) => void
 }
 
-const KEY_HELP = [
-  ['↑ ↓', 'move between fields'],
-  ['a', 'add a field'],
-  ['p', 'add a page, making the form a wizard'],
-  ['u', 'take a container away and keep what is inside'],
-  ['m', 'move the focused field'],
-  ['Delete', 'remove it'],
-  ['Ctrl+Z / Ctrl+Y', 'undo / redo'],
-] as const
-
-export function FormancyBuilder({
-  session,
-  label = 'Form structure',
-  onSelect,
-}: BuilderProps): ReactElement {
+export function FormancyBuilder({ session, label, onSelect }: BuilderProps): ReactElement {
   const view = useBuilder(session)
+  // Every word this tree shows, in the language the session was opened in. What a
+  // command SAYS afterwards is not worded here at all: builder-core decides it,
+  // once, for this builder and the Angular one (0114).
+  const { text } = session
   /**
    * Where focus is, remembered as a POSITION and corrected to the FIELD.
    *
@@ -179,10 +181,10 @@ export function FormancyBuilder({
       const key = event.key.toLowerCase()
       if (key === 'z') {
         event.preventDefault()
-        announce(session.undo() ? 'Undone.' : 'Nothing to undo.')
+        announce(undoAndSay(session))
       } else if (key === 'y') {
         event.preventDefault()
-        announce(session.redo() ? 'Redone.' : 'Nothing to redo.')
+        announce(redoAndSay(session))
       }
       return
     }
@@ -211,7 +213,7 @@ export function FormancyBuilder({
         // An empty palette is a real answer — a page cannot go inside a group —
         // and saying so is better than opening an empty dialog.
         if (targets.length === 0) {
-          announce(`${nameOf(view.document, focused.def)} cannot be moved anywhere else.`)
+          announce(text('said.nowhereToMove', { name: nameOf(view.document, focused.def) }))
           return
         }
         setMoving({ node: focused, targets })
@@ -223,80 +225,19 @@ export function FormancyBuilder({
         setAdding({ type: '' })
         break
       case 'p':
-      case 'P': {
+      case 'P':
         event.preventDefault()
-        // Counted BEFORE the command, because the first page absorbs what is at
-        // the top level and the count afterwards cannot tell which case it was.
-        const loose = view.document.model.fields.filter((field) => field.type !== 'page')
-        const pages = view.document.model.fields.length - loose.length
-        const outcome = session.addPage(`Page ${String(pages + 1)}`)
-        announce(
-          !outcome.ok
-            ? `Cannot add a page: ${outcome.message}`
-            : loose.length === 0
-              ? `Added Page ${String(pages + 1)}.`
-              : // Moving every field in the form is not something to do quietly.
-                `Added Page 1, holding the ${String(loose.length)} ${loose.length === 1 ? 'field' : 'fields'} that were at the top level. The form is a wizard now.`,
-        )
+        announce(addPageAndSay(session))
         break
-      }
       case 'u':
-      case 'U': {
+      case 'U':
         event.preventDefault()
-        // Read BEFORE the command, for the reason `p` counts before its own: the
-        // container is gone afterwards, so neither its name nor what was inside
-        // it can be recovered to say what happened.
-        const name = nameOf(view.document, focused.def)
-        const inside = focused.def.fields ?? []
-        const wasPage = focused.def.type === 'page'
-        const count = String(inside.length)
-        const questions = `${count} ${inside.length === 1 ? 'question' : 'questions'}`
-        const outcome = session.unwrapField(focused.keyPath)
-        const after = session.document()
-        // Where they went, read off the document rather than worked out twice: the
-        // page now holding the first of them. A page's questions do not stay at
-        // the top level while other pages remain, so an author has to be told
-        // which step they are on now.
-        const host =
-          inside[0] === undefined
-            ? undefined
-            : after.model.fields.find(
-                (field) =>
-                  field.type === 'page' &&
-                  (field.fields ?? []).some((child) => child.key === inside[0]?.key),
-              )
-        // COUNTED, not inferred from the host above. Inferred, an empty page read
-        // as no pages left — because an empty page has no first question to find —
-        // and the live region said the form had stopped being a wizard while page
-        // one was still there. Found by pressing the keys in the playground.
-        const stillPaged = after.model.fields.some((field) => field.type === 'page')
-        const what =
-          inside.length === 0
-            ? `Removed ${name}, which was empty.`
-            : host !== undefined
-              ? `Removed the page ${name}. Its ${questions} are on ${nameOf(after, host)} now.`
-              : `Removed ${name} and kept the ${questions} that were inside it.`
-        announce(
-          !outcome.ok
-            ? `Cannot unwrap ${name}: ${outcome.message}`
-            : wasPage && !stillPaged
-              ? // A form ceasing to have steps is the largest thing this command
-                // does and the least visible: the tree looks like a flat list of
-                // questions either way.
-                `${what} The form is not a wizard any more.`
-              : what,
-        )
+        announce(unwrapAndSay(session, focused.keyPath))
         break
-      }
       case 'Delete':
       case 'Backspace': {
         event.preventDefault()
-        const outcome = session.removeField(focused.keyPath)
-        announce(
-          outcome.ok
-            ? `Removed ${nameOf(view.document, focused.def)}.`
-            : `Cannot remove ${nameOf(view.document, focused.def)}: ${outcome.message}`,
-        )
+        announce(removeAndSay(session, focused.keyPath))
         break
       }
       default:
@@ -321,13 +262,7 @@ export function FormancyBuilder({
 
   const completeAdd = (type: string, target: MoveTarget): void => {
     setAdding(null)
-    const def = newFieldOfType(type, existingKeys, session.text)
-    const outcome = session.insertField(target.location, def)
-    announce(
-      outcome.ok
-        ? `Added ${labelForType(type)} to ${target.label}.`
-        : `Cannot add: ${outcome.message}`,
-    )
+    announce(insertAndSay(session, newFieldOfType(type, existingKeys, session.text), target))
     keepFocus.current = true
     itemRefs.current[index]?.focus()
   }
@@ -337,10 +272,7 @@ export function FormancyBuilder({
     setMoving(null)
     if (node === undefined) return
 
-    const outcome = session.moveField(node.keyPath, target.location)
-    announce(
-      outcome.ok ? `Moved ${nameOf(view.document, node.def)} to ${target.label}.` : `Cannot move: ${outcome.message}`,
-    )
+    announce(moveAndSay(session, node.keyPath, target))
     treeRef.current?.focus()
   }
 
@@ -349,7 +281,7 @@ export function FormancyBuilder({
       <ul
         ref={treeRef}
         role="tree"
-        aria-label={label}
+        aria-label={label ?? text('tree.label')}
         data-formancy-part="builder-tree"
         tabIndex={count === 0 ? 0 : -1}
         // Once, on the tree. Keys bubble from the focused item, and a handler
@@ -412,14 +344,10 @@ export function FormancyBuilder({
               const location = dropLocation(view.document, from, node.keyPath, edgeOf(event))
               if (location === undefined) return
 
-              const outcome = session.moveField(from, location)
               // Announced through the same live region the keyboard path uses,
-              // so a drag is not a silent command for somebody using both.
-              announce(
-                outcome.ok
-                  ? `Moved ${nameOf(view.document, node.def)}.`
-                  : `Cannot move: ${outcome.message}`,
-              )
+              // so a drag is not a silent command for somebody using both — and
+              // naming the field that moved, not the row it landed on.
+              announce(dropAndSay(session, from, location))
             }}
           >
             {nameOf(view.document, node.def)}
@@ -427,10 +355,10 @@ export function FormancyBuilder({
         ))}
       </ul>
 
-      {count === 0 ? <p data-formancy-part="builder-empty">This form has no fields yet.</p> : null}
+      {count === 0 ? <p data-formancy-part="builder-empty">{text('tree.empty')}</p> : null}
 
       {adding === null ? null : adding.type === '' ? (
-        <div role="dialog" aria-label="Add a field" data-formancy-part="add-palette">
+        <div role="dialog" aria-label={text('palette.title')} data-formancy-part="add-palette">
           <ul>
             {paletteEntries(view.document.specVersion).map((entry) => (
               <li key={entry.type}>
@@ -447,35 +375,24 @@ export function FormancyBuilder({
                   explanation reads as a broken builder, when what is actually
                   true is that the document is written against an older version
                   of the spec and can be moved forward in one step. */}
-              {locked.map((entry) => entry.title).join(', ')} need a later spec version. This
-              form says version {view.document.specVersion}.{' '}
-              <button
-                type="button"
-                onClick={() => {
-                  // One step. Moving a version 1 document straight to the newest
-                  // would cost it every reader pinned to 2, for a type that only
-                  // needs 2.
-                  const to = nextSpecVersion(view.document.specVersion)
-                  const outcome = to === undefined ? undefined : session.upgradeSpec(to)
-                  announce(
-                    outcome?.ok === true
-                      ? `Moved this form to spec version ${String(to)}. Nothing else changed.`
-                      : `Cannot upgrade: ${outcome?.ok === false ? outcome.message : 'already at the newest version'}`,
-                  )
-                }}
-              >
-                Move it to version {nextSpecVersion(view.document.specVersion) ?? ''}
+              {text('tree.locked', {
+                types: text.list(locked.map((entry) => entry.title)),
+                version: view.document.specVersion,
+                count: locked.length,
+              })}{' '}
+              <button type="button" onClick={() => announce(upgradeAndSay(session))}>
+                {text('tree.upgrade', { version: nextSpecVersion(view.document.specVersion) ?? '' })}
               </button>
             </p>
           )}
           <button type="button" onClick={() => cancelDialog()}>
-            Cancel
+            {text('dialog.cancel')}
           </button>
         </div>
       ) : (
         <div
           role="dialog"
-          aria-label={`Where should the ${labelForType(adding.type)} go?`}
+          aria-label={text('tree.addWhere', { type: labelForType(adding.type) })}
           data-formancy-part="add-where"
         >
           <ul>
@@ -488,13 +405,17 @@ export function FormancyBuilder({
             ))}
           </ul>
           <button type="button" onClick={() => cancelDialog()}>
-            Cancel
+            {text('dialog.cancel')}
           </button>
         </div>
       )}
 
       {moving === null ? null : (
-        <div role="dialog" aria-label={`Move ${nameOf(view.document, moving.node.def)}`} data-formancy-part="move-palette">
+        <div
+          role="dialog"
+          aria-label={text('tree.moveTitle', { name: nameOf(view.document, moving.node.def) })}
+          data-formancy-part="move-palette"
+        >
           <ul>
             {moving.targets.map((target) => (
               <li key={`${target.location.parent.join('.')}:${String(target.location.index)}`}>
@@ -511,7 +432,7 @@ export function FormancyBuilder({
               treeRef.current?.focus()
             }}
           >
-            Cancel
+            {text('dialog.cancel')}
           </button>
         </div>
       )}
@@ -525,7 +446,7 @@ export function FormancyBuilder({
       </p>
 
       <dl data-formancy-part="builder-keys">
-        {KEY_HELP.map(([keys, what]) => (
+        {treeKeyHelp(session).map(([keys, what]) => (
           <div key={keys}>
             <dt>{keys}</dt>
             <dd>{what}</dd>

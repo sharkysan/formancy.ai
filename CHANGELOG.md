@@ -10,6 +10,35 @@ later.
 
 ## Unreleased
 
+**The structure tree speaks the author's language, in both builders — and saying it once
+found three things both builders said wrong.** Every command on the tree is announced in
+a live region, and for somebody building by keyboard with a screen reader that sentence is
+the only evidence of what happened. Both builders worked the sentences out by hand from
+the same copied logic, and moving them into `@formancy/builder-core` (`spoken.ts`) to
+translate them once showed the copies had been wrong together
+([0116](docs/decisions/0116-what-a-builder-says-is-decided-once.md)):
+
+- **A drag named the wrong field.** Dragging Customer onto City announced "Moved City." —
+  the drop handler's own argument, the row under the pointer.
+- **Unwrapping a group in a form with pages called it a page**: "Removed the page Billing
+  address. Its 2 questions are on Details now."
+- "Added Page 1, holding the 1 fields that **were** at the top level" — the count was
+  pluralised by hand and the verb was not. Likewise "Signature need a later spec
+  version", and the locked types are now joined "A and B" rather than "A, B".
+
+Everything the tree shows — its name, the empty state, both dialogs, the locked-types
+note, the legend, every announcement — now comes from the session's language. The legend's
+key names are translated (`Entf`, `Strg`) and its letters are not, because they are
+bindings. `label` on `FormancyBuilder` in both packages defaults to the session's words
+instead of an English literal. The Angular builder reads its words through a pure pipe,
+`'tree.empty' | builderText: text()`, memoised on its arguments.
+
+`builder-core` also publishes `pseudoLanguage()` and `untranslated()`: every message
+marked, and whatever on screen is outside the marks and not the document's own words,
+named. Each builder's tree is walked through every state it can show and held to that —
+one judgement for both, so they cannot disagree about what counts as English left behind.
+The other panes still word their own text and move next.
+
 **`@formancy/builder-angular` logged two lines to the console on every ↓ keypress**
 in its structure tree — `PROBE before …` and `PROBE after …`, a debugging probe left
 in the key handler since the package was introduced, and so in 0.3.0.

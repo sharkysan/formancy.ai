@@ -132,6 +132,65 @@ export const BUILDER_MESSAGES = {
   'target.before': '{where}, before {name}',
   'target.after': '{where}, after {name}',
   'target.between': '{where}, between {before} and {after}',
+  // ------------------------------------------------------------ the structure tree
+  'tree.label': 'Form structure',
+  'tree.addWhere': 'Where should the {type} go?',
+  'tree.moveTitle': 'Move {name}',
+  'tree.locked': {
+    one: '{types} needs a later spec version. This form says version {version}.',
+    other: '{types} need a later spec version. This form says version {version}.',
+  },
+  'tree.upgrade': 'Move it to version {version}',
+  'dialog.cancel': 'Cancel',
+  'palette.newPage': 'Page {number}',
+
+  // The legend under the tree. The letters are bindings and are not translated;
+  // the names of other keys are, because a German keyboard says Entf and Strg.
+  'keys.arrows.what': 'move between fields',
+  'keys.add.what': 'add a field',
+  'keys.addPage.what': 'add a page, making the form a wizard',
+  'keys.unwrap.what': 'take a container away and keep what is inside',
+  'keys.move.what': 'move the focused field',
+  'keys.delete.key': 'Delete',
+  'keys.delete.what': 'remove it',
+  'keys.undo.key': 'Ctrl+Z / Ctrl+Y',
+  'keys.undo.what': 'undo / redo',
+
+  // ------------------------------------- what a builder says after a command
+  // Announced in one polite live region, so each has to make sense heard alone.
+  'said.undone': 'Undone.',
+  'said.nothingToUndo': 'Nothing to undo.',
+  'said.redone': 'Redone.',
+  'said.nothingToRedo': 'Nothing to redo.',
+  'said.nowhereToMove': '{name} cannot be moved anywhere else.',
+  'said.pageAdded': 'Added {page}.',
+  'said.firstPageAdded': {
+    one: 'Added {page}, holding the {count} field that was at the top level. The form is a wizard now.',
+    other:
+      'Added {page}, holding the {count} fields that were at the top level. The form is a wizard now.',
+  },
+  'said.cannotAddPage': 'Cannot add a page: {reason}',
+  'said.unwrappedEmpty': 'Removed {name}, which was empty.',
+  'said.unwrappedPage': {
+    one: 'Removed the page {name}. Its {count} question is on {host} now.',
+    other: 'Removed the page {name}. Its {count} questions are on {host} now.',
+  },
+  'said.unwrapped': {
+    one: 'Removed {name} and kept the {count} question that was inside it.',
+    other: 'Removed {name} and kept the {count} questions that were inside it.',
+  },
+  'said.notAWizard': '{said} The form is not a wizard any more.',
+  'said.cannotUnwrap': 'Cannot unwrap {name}: {reason}',
+  'said.removed': 'Removed {name}.',
+  'said.cannotRemove': 'Cannot remove {name}: {reason}',
+  'said.added': 'Added {what} to {where}.',
+  'said.cannotAdd': 'Cannot add: {reason}',
+  'said.moved': 'Moved {name} to {where}.',
+  'said.dropped': 'Moved {name}.',
+  'said.cannotMove': 'Cannot move: {reason}',
+  'said.upgraded': 'Moved this form to spec version {version}. Nothing else changed.',
+  'said.cannotUpgrade': 'Cannot upgrade: {reason}',
+  'said.alreadyNewest': 'already at the newest version',
 
   // ----------------------------------------- what a new field starts out holding
   // Written into the document, so they are in the author's language: somebody
@@ -265,6 +324,61 @@ export const BUILDER_MESSAGES_DE = {
   'target.before': '{where}, vor {name}',
   'target.after': '{where}, nach {name}',
   'target.between': '{where}, zwischen {before} und {after}',
+  'tree.label': 'Formularstruktur',
+  'tree.addWhere': 'Wohin mit „{type}“?',
+  'tree.moveTitle': '{name} verschieben',
+  'tree.locked': {
+    one: '{types} braucht eine neuere Spec-Version. Dieses Formular nennt Version {version}.',
+    other: '{types} brauchen eine neuere Spec-Version. Dieses Formular nennt Version {version}.',
+  },
+  'tree.upgrade': 'Auf Version {version} anheben',
+  'dialog.cancel': 'Abbrechen',
+  'palette.newPage': 'Seite {number}',
+
+  'keys.arrows.what': 'zwischen Feldern wechseln',
+  'keys.add.what': 'Feld hinzufügen',
+  'keys.addPage.what': 'Seite hinzufügen; das Formular wird mehrstufig',
+  'keys.unwrap.what': 'Container auflösen und den Inhalt behalten',
+  'keys.move.what': 'das gewählte Feld verschieben',
+  'keys.delete.key': 'Entf',
+  'keys.delete.what': 'es entfernen',
+  'keys.undo.key': 'Strg+Z / Strg+Y',
+  'keys.undo.what': 'rückgängig / wiederherstellen',
+
+  'said.undone': 'Rückgängig gemacht.',
+  'said.nothingToUndo': 'Nichts rückgängig zu machen.',
+  'said.redone': 'Wiederhergestellt.',
+  'said.nothingToRedo': 'Nichts wiederherzustellen.',
+  'said.nowhereToMove': '{name} lässt sich nirgendwo anders hin verschieben.',
+  'said.pageAdded': '{page} hinzugefügt.',
+  'said.firstPageAdded': {
+    one: '{page} hinzugefügt; sie enthält das eine Feld, das auf oberster Ebene war. Das Formular ist jetzt mehrstufig.',
+    other:
+      '{page} hinzugefügt; sie enthält die {count} Felder, die auf oberster Ebene waren. Das Formular ist jetzt mehrstufig.',
+  },
+  'said.cannotAddPage': 'Die Seite lässt sich nicht hinzufügen: {reason}',
+  'said.unwrappedEmpty': '{name} war leer und ist entfernt.',
+  'said.unwrappedPage': {
+    one: 'Seite {name} entfernt. Ihre eine Frage ist jetzt auf {host}.',
+    other: 'Seite {name} entfernt. Ihre {count} Fragen sind jetzt auf {host}.',
+  },
+  'said.unwrapped': {
+    one: '{name} entfernt; die eine Frage darin ist geblieben.',
+    other: '{name} entfernt; die {count} Fragen darin sind geblieben.',
+  },
+  'said.notAWizard': '{said} Das Formular ist nicht mehr mehrstufig.',
+  'said.cannotUnwrap': '{name} lässt sich nicht auflösen: {reason}',
+  'said.removed': '{name} entfernt.',
+  'said.cannotRemove': '{name} lässt sich nicht entfernen: {reason}',
+  'said.added': '{what} hinzugefügt: {where}.',
+  'said.cannotAdd': 'Lässt sich nicht hinzufügen: {reason}',
+  'said.moved': '{name} verschoben: {where}.',
+  'said.dropped': '{name} verschoben.',
+  'said.cannotMove': 'Lässt sich nicht verschieben: {reason}',
+  'said.upgraded':
+    'Dieses Formular steht jetzt auf Spec-Version {version}. Sonst hat sich nichts geändert.',
+  'said.cannotUpgrade': 'Lässt sich nicht anheben: {reason}',
+  'said.alreadyNewest': 'es ist bereits auf der neuesten Version',
 
   'palette.newField': 'Neues Feld',
   'palette.firstOption': 'Erste Option',
