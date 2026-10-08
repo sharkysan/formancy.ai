@@ -869,8 +869,19 @@ screen built on it would have shown nothing while being read as proof. For an ag
 same shape is `propose_form_edit`, which answers with the change list and publishes
 nothing.
 
+One thing does reach further than a review: an example with its answer written down.
+`runScenarios` executes a form against saved examples and reports which stopped holding,
+which is the only check in this product that can tell a condition that compiles from the
+condition that was asked for — both spellings of an inverted rule are valid CEL
+([0110](../decisions/0110-a-form-is-checked-against-examples.md)). Both builders carry a
+panel that reruns them after every edit and **names** what broke, and `check_scenarios`
+is the same check for an agent
+([0111](../decisions/0111-a-scenario-panel-names-what-stopped-holding.md)).
+
 *Residual:* the review shows what changed, not whether it is what was asked for — that
-judgement is the person's and cannot be delegated to the thing being judged. It is a
+judgement is the person's and cannot be delegated to the thing being judged. Scenarios
+narrow it rather than close it: they check the rules somebody thought to write an
+example for, and a form has no way to know which rules those are not. It is a
 change list rather than a side-by-side of the two documents, so an edit's *shape* is
 visible and its wording is not. And pressing the button is one click: nothing here
 distinguishes a reviewer who read the list from one who did not, which is the limit of

@@ -1,7 +1,8 @@
 import { authoringFacts, diffSchemas, schemaHash } from '@formancy/spec'
 import { validateSchema } from '@formancy/spec/validate'
 import type { Change, FormSchema } from '@formancy/spec'
-import { engineRefusal, expressionProblems } from '@formancy/core'
+import { engineRefusal, expressionProblems, runScenarios } from '@formancy/core'
+import type { Scenario } from '@formancy/core'
 
 /**
  * What formancy can be asked to do by a coding agent, as plain functions.
@@ -219,6 +220,63 @@ export async function publishForm(
     method: 'POST',
     body: JSON.stringify({ path, schema: document }),
   })
+}
+
+/**
+ * A form run against examples with their answers written down.
+ *
+ * The check nothing else here can make. `validate_form` says a document
+ * works; it cannot say the condition is backwards, because
+ * `kind == 'other'` and `kind != 'other'` are both valid CEL and the
+ * difference is between the document and what somebody meant
+ * ([0110](../../../docs/decisions/0110-a-form-is-checked-against-examples.md)).
+ *
+ * An agent is exactly who needs telling: it writes a rule from a sentence,
+ * and an example is the one thing that catches it writing the opposite rule.
+ * Local — no server, no credentials — so it can run before anything is
+ * published.
+ */
+export function checkScenarios(document: unknown, scenarios: readonly Scenario[]): ToolResult {
+  if (scenarios.length === 0) {
+    /*
+     * The vacuous pass. "All 0 scenarios hold" is true, and it is the single
+     * most misleading sentence this tool could give an agent about to
+     * publish.
+     */
+    return {
+      ok: false,
+      summary:
+        'No scenarios to check, so this says nothing about the form. A scenario is a set of ' +
+        'answers and what the form should make of them — whether it validates, which errors ' +
+        'it gives, which fields are visible, and what the submission carries.',
+    }
+  }
+
+  const checked = validateForm(document)
+  if (!checked.ok) {
+    // One fact, not one failure per example: an agent given twenty identical
+    // "no such field" lines reads the noise and not the cause.
+    return {
+      ok: false,
+      summary: `Nothing was checked, because the document would not have worked. ${checked.summary}`,
+      data: checked.data,
+    }
+  }
+
+  const results = runScenarios(document as FormSchema, scenarios)
+  const broken = results.filter((result) => !result.passed)
+
+  return {
+    ok: broken.length === 0,
+    summary:
+      broken.length === 0
+        ? `All ${String(results.length)} scenarios hold.`
+        : `${String(broken.length)} of ${String(results.length)} scenarios no longer hold: ` +
+          `${broken.map((result) => `"${result.name}"`).join(', ')}. Each one below says what it ` +
+          `expected and what happened — a rule that compiles can still be the opposite of the ` +
+          `rule that was asked for.`,
+    data: { results },
+  }
 }
 
 /**

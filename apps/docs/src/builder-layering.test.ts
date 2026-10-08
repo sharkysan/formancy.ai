@@ -160,6 +160,14 @@ describe('what the two builders each offer', () => {
       react: 'PromptPane',
       angular: 'FormancyPromptPane',
     },
+    {
+      // What the form is supposed to do, rerun after every edit. Both from
+      // the start, because what counts as a regression is one decision
+      // ([0111](../../../docs/decisions/0111-a-scenario-panel-names-what-stopped-holding.md)).
+      pane: 'checking a form against examples',
+      react: 'ScenarioPane',
+      angular: 'FormancyScenarioPane',
+    },
   ]
 
   /**

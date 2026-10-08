@@ -29,12 +29,13 @@ const textOf = (result: unknown): string =>
     .join('\n')
 
 describe('the tools a client can see', () => {
-  test('all eight, each with a description', async () => {
+  test('all nine, each with a description', async () => {
     const client = await connect()
 
     const { tools } = await client.listTools()
 
     expect(tools.map((tool) => tool.name).sort()).toEqual([
+      'check_scenarios',
       'describe_spec',
       'diff_forms',
       'get_form',
