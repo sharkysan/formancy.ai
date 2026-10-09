@@ -1,6 +1,6 @@
 # 6. Runtime view
 
-Four scenarios. The first two are the ones the whole design is arranged around.
+The flows worth drawing. The first two are the ones the whole design is arranged around.
 
 ## 6.1 A keystroke
 
@@ -226,3 +226,65 @@ at the worst possible moment and without the option to decline.
 
 **Submissions never migrate.** Only drafts do. That distinction is what makes a
 two-year-old submission readable against the schema that produced it.
+
+## 6.6 Uploading a file
+
+```
+browser                              server
+───────                              ──────
+POST /f/claim/files
+  { field, name, size,       ───▶  maySubmit — the submission's gate, the same function
+    contentType }                   the field's accept and maxFileSize, the operator's ceiling
+                                       ├─ refused ──▶ 403 · 413 · 400, before a byte is sent
+                                       ▼
+                                  INSERT the row: offered, key minted from form and id
+                      ◀───  201 { id, storageKey, uploadUrl }
+
+PUT uploadUrl  (bytes)       ───▶  this form's file, and still offered?   404 · 409 already_uploaded
+                                  the size the offer named?               400 size_mismatch
+                                       │
+                                  leaseFile   UPDATE SET receiving_until = now + 2 min
+                                              WHERE offered AND (no lease OR it has run out)
+                                       ├─ no row ──▶ 409 busy, before the bytes are scanned
+                                       ▼
+                                  the deployment's scanner, if it has one
+                                       ├─ finding ─────────▶ release · 422 refused_by_scanner
+                                       ├─ cannot be asked ─▶ release · 503 scanner_unavailable
+                                       ▼
+                                  the row still names this lease, and it has not run out?
+                                       ├─ no ──▶ release · 409 busy
+                                       ▼
+                                  put the bytes under the minted key
+                                       │
+                                  settleFile  UPDATE SET stored, receiving_until = NULL
+                                              WHERE offered AND receiving_until = this lease
+                                       ├─ no row ──▶ 409 busy: the write outlasted it
+                                       ▼
+                      ◀───  204
+
+POST /f/claim/submissions    ───▶  the replay in 6.2, then in its ONE transaction:
+  { evidence: [{ id, … }] }         UPDATE SET claimed, submission_id
+                                    WHERE id IN (…) AND stored
+                                       └─ fewer rows than named ──▶ the whole submission rolls back
+
+every 15 minutes, in the server process:
+  offered or stored, created more than a day ago ──▶ the bytes removed, then the row
+```
+
+The order is the design, in four places. **The row before the bytes**, so an upload that dies
+halfway leaves something the collector knows to look for; **the claim inside the submission's
+transaction**, so a submission exists if and only if its files belong to it
+([0055](../decisions/0055-files-are-claimed.md)). **The scan before the bytes are kept**, so a
+file the scanner refuses is never in the store
+([0131](../decisions/0131-an-upload-is-scanned-before-it-is-kept.md)). And **one request between
+the lease and the settle**, because the scan is where the time goes: a request that wrote back
+the row it read before scanning could, after a faster one's file had been claimed, put the row
+back to `stored` with no submission — for the collector, a day later
+([0153](../decisions/0153-a-file-is-received-by-one-request-at-a-time.md)).
+
+Every guarded write is one conditional `UPDATE` whose row count is the answer, so two requests
+racing each other are decided by the database rather than by whichever check ran first. Every
+way out of the `PUT` that keeps nothing releases the lease before it replies, so the retry the
+reply invites is not refused as busy. A write that outlasts its lease is the one thing the
+lease does not stop: its settle is refused, but its bytes land under the same key
+([§11.2](11-risks-and-debt.md)).

@@ -56,6 +56,7 @@ const file = (over: Partial<FileRecord> = {}): FileRecord => ({
   state: 'stored',
   createdAt: NOW.toISOString(),
   submissionId: null,
+  receivingUntil: null,
   ...over,
 })
 
@@ -256,6 +257,96 @@ describe('filesToClaim', () => {
     })
 
     expect(outcome.ok).toBe(true)
+  })
+})
+
+/**
+ * One request at a time receives a file's bytes (0153), against the in-memory storage
+ * that stands in for the conditional UPDATEs. The race itself, and the claimed row it
+ * protects, are run against PostgreSQL in `server.integration.test.ts`; these say what
+ * both implementations must do, one condition at a time.
+ *
+ * A lease is named by the instant it runs out, which the request keeps and hands back.
+ */
+describe('receiving a file', () => {
+  let storage: Storage
+  const at = (minutes: number): string => new Date(NOW.getTime() + minutes * 60_000).toISOString()
+
+  beforeEach(async () => {
+    storage = createMemoryStorage()
+    await storage.insertFile(file({ id: 'a', state: 'offered' }))
+  })
+
+  test('is one request at a time, until its lease runs out', async () => {
+    expect(await storage.leaseFile('a', at(0), at(2))).toBe(true)
+    // A second request while the first is receiving would write its bytes over the
+    // first's, and both would be told they were kept.
+    expect(await storage.leaseFile('a', at(1), at(3))).toBe(false)
+    // Run out, it may be taken: a request that died holding it does not hold it forever.
+    expect(await storage.leaseFile('a', at(2), at(4))).toBe(true)
+  })
+
+  test('is never a file whose bytes are already kept', async () => {
+    await storage.insertFile(file({ id: 'b', state: 'stored' }))
+    await storage.insertFile(file({ id: 'c', state: 'claimed', submissionId: 's1' }))
+
+    // Receiving again would replace bytes a submission may already have been accepted with.
+    expect(await storage.leaseFile('b', at(0), at(2))).toBe(false)
+    expect(await storage.leaseFile('c', at(0), at(2))).toBe(false)
+  })
+
+  test('settles to stored, and frees the file', async () => {
+    await storage.leaseFile('a', at(0), at(2))
+
+    expect(await storage.settleFile('a', at(2))).toBe(true)
+    // Without clearing the lease a stored file would still read as being received.
+    expect(await storage.getFile('a')).toMatchObject({
+      state: 'stored',
+      receivingUntil: null,
+      submissionId: null,
+    })
+  })
+
+  test('a stale settle changes nothing', async () => {
+    await storage.leaseFile('a', at(0), at(2))
+    // The first request overran; another took the file over and is writing now.
+    await storage.leaseFile('a', at(3), at(5))
+    const before = await storage.getFile('a')
+
+    // Settling for the request that overran would mark the file stored while the one that
+    // holds it is still writing — and a submission could claim it half-written.
+    expect(await storage.settleFile('a', at(2))).toBe(false)
+    expect(await storage.getFile('a')).toEqual(before)
+  })
+
+  test('settling a claimed row is refused, and it keeps its submission', async () => {
+    // A lease naming this exact instant, so only the state can be what refuses it.
+    await storage.insertFile(
+      file({ id: 'c', state: 'claimed', submissionId: 's1', receivingUntil: at(2) }),
+    )
+
+    // The defect: the write that ended an upload put the row back to `stored` with no
+    // submission, and the collector deletes an unclaimed file after a day.
+    expect(await storage.settleFile('c', at(2))).toBe(false)
+    expect(await storage.getFile('c')).toMatchObject({ state: 'claimed', submissionId: 's1' })
+  })
+
+  test('a release frees it at once, so a retry is not refused as busy', async () => {
+    await storage.leaseFile('a', at(0), at(2))
+
+    // The scanner refused the bytes or could not be asked, and the reply says try again.
+    expect(await storage.releaseFile('a', at(2))).toBe(true)
+    expect(await storage.leaseFile('a', at(0), at(2))).toBe(true)
+  })
+
+  test('a stale release frees nothing', async () => {
+    await storage.leaseFile('a', at(0), at(2))
+    await storage.leaseFile('a', at(3), at(5))
+
+    // A request that overran and then failed must not give away the lease of the one
+    // receiving now, or a third could start writing beside it.
+    expect(await storage.releaseFile('a', at(2))).toBe(false)
+    expect(await storage.leaseFile('a', at(4), at(6))).toBe(false)
   })
 })
 

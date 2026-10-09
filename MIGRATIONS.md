@@ -298,6 +298,40 @@ again.
   exists for exactly that, and `runsOn` is already in place so the ordering question can
   be answered without restructuring anything.
 
+## A file is received by one request at a time (Unreleased)
+
+**The database.** `files` gains a nullable `receiving_until timestamptz`, which the server adds
+on start with `ADD COLUMN IF NOT EXISTS`, as it added the access and webhook-health columns
+before it. There is nothing to run and nothing to backfill: null means nobody is receiving the file, which is true
+of every row that exists when you upgrade. The `CHECK` on `state` is unchanged — still
+`offered`, `stored`, `claimed`
+([0153](docs/decisions/0153-a-file-is-received-by-one-request-at-a-time.md)).
+
+**If you implement `Storage` yourself**, rather than using `@formancy/server`'s PostgreSQL one,
+remove `updateFile` and implement three methods. Each must be **one atomic conditional write**
+that returns whether it matched — the shape of `spendChallenge`, and for its reason: two
+requests for one file both pass every check made before it, and only the storage can decide.
+
+| Method | Writes | Only when |
+|---|---|---|
+| `leaseFile(id, nowIso, untilIso)` | `receivingUntil = untilIso` | the file is `offered`, and `receivingUntil` is null or not after `nowIso` |
+| `settleFile(id, untilIso)` | `state = 'stored'`, `receivingUntil = null` | the file is `offered`, and `receivingUntil` equals `untilIso` |
+| `releaseFile(id, untilIso)` | `receivingUntil = null` | `receivingUntil` equals `untilIso` |
+
+`settleFile` writes the state and the lease and **never the submission**. A file's submission is
+written only by `insertSubmission`'s claim; the write that ended an upload setting it is the
+defect this change removes. `getFile` and `abandonedFiles` return `receivingUntil`, null when
+nobody holds the file, and `insertFile` stores it. `createMemoryStorage` in
+`@formancy/server-core` is a second implementation to read beside your own, and the
+*receiving a file* cases in the repository's `packages/server-core/src/uploads.test.ts` say what
+each condition prevents.
+
+**A client may see a new answer.** `PUT /f/:path/files/:id` can reply
+`409 { error: "busy", message }`: another request is receiving that file, or this one took
+longer than the server holds a file for one request. Either way this upload was not accepted,
+and sending the bytes again is the remedy. A client that shows the server's `message` when an upload fails, as the
+admin's does, needs nothing new.
+
 ## Drafts need a token (0.2.0)
 
 **Why you cannot skip this.** The previous draft routes let anybody read or

@@ -3,7 +3,7 @@ import type { StartedPostgreSqlContainer } from '@testcontainers/postgresql'
 import { randomUUID } from 'node:crypto'
 import { Readable } from 'node:stream'
 import postgres from 'postgres'
-import { afterAll, beforeAll, describe, expect, test } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, test, vi } from 'vitest'
 import type { FastifyInstance } from 'fastify'
 import type { FormSchema } from '@formancy/spec'
 import { bootstrapSchema } from './db.js'
@@ -57,8 +57,16 @@ function asAdmin(headers: Record<string, string> = {}): Record<string, string> {
  * tests.
  */
 const bytes = new Map<string, Buffer>()
+/** Set by a case that needs a write held open: the next `put` waits for it. */
+let nextWrite: { reached: () => void; finished: Promise<void> } | undefined
 const fileStore: FileStore = {
   put: async (key, body) => {
+    const held = nextWrite
+    nextWrite = undefined
+    if (held !== undefined) {
+      held.reached()
+      await held.finished
+    }
     bytes.set(key, body)
   },
   open: async (key) => {
@@ -1070,6 +1078,269 @@ describe('an upload the deployment scans', () => {
 
     expect(again.statusCode).toBe(204)
     expect(bytes.get(file.storageKey)).toEqual(body)
+  })
+
+  /**
+   * One request receives a file's bytes at a time (0153).
+   *
+   * The PUT reads the row, waits for the scanner, writes the bytes and then the row. It used
+   * to write back what it had read with `stored` in it, unconditionally — so a request that
+   * read the file before a faster one stored it, and a submission claimed it, put the row
+   * back to `stored` with no submission, and wrote its own bytes over the claimed ones. The
+   * collector deletes an unclaimed file after a day. The scanner holding the first request
+   * open is the window; the doubles below hold it open on purpose.
+   */
+  describe('one request at a time', () => {
+    /** The first scan waits until `open()`; any later one is clean at once. */
+    function holdTheFirstScan(): { asked: Promise<void>; open: () => void; scans: () => number } {
+      let open = (): void => {}
+      let entered = (): void => {}
+      const asked = new Promise<void>((resolve) => {
+        entered = resolve
+      })
+      const held = new Promise<ScanVerdict>((resolve) => {
+        open = () => resolve({ clean: true })
+      })
+      let calls = 0
+      verdict = () => {
+        calls += 1
+        if (calls > 1) return Promise.resolve({ clean: true })
+        entered()
+        return held
+      }
+      return { asked, open, scans: () => calls }
+    }
+
+    /** The next write waits until `finish()`, or throws at `fail()`. */
+    function holdTheNextWrite(): {
+      reached: Promise<void>
+      finish: () => void
+      fail: (error: Error) => void
+    } {
+      let finish = (): void => {}
+      let fail = (_error: Error): void => {}
+      let reached = (): void => {}
+      const entered = new Promise<void>((resolve) => {
+        reached = resolve
+      })
+      const finished = new Promise<void>((resolve, reject) => {
+        finish = resolve
+        fail = reject
+      })
+      nextWrite = { reached, finished }
+      return { reached: entered, finish, fail }
+    }
+
+    async function offer(size: number): Promise<{ id: string; uploadUrl: string; storageKey: string }> {
+      const offered = await scanning.inject({
+        method: 'POST',
+        url: '/f/scanned/files',
+        payload: { field: 'evidence', name: 'a.pdf', size, contentType: 'application/pdf' },
+      })
+      return offered.json() as { id: string; uploadUrl: string; storageKey: string }
+    }
+
+    const put = (file: { uploadUrl: string }, body: Buffer) =>
+      scanning.inject({
+        method: 'PUT',
+        url: file.uploadUrl,
+        headers: { 'content-type': 'application/pdf' },
+        payload: body,
+      })
+
+    const submit = (file: { id: string }) =>
+      scanning.inject({
+        method: 'POST',
+        url: '/f/scanned/submissions',
+        headers: { [SCHEMA_HASH_HEADER]: hash },
+        payload: { evidence: [file] },
+      })
+
+    // Two bodies of one length, so both pass the size the offer named.
+    const first = Buffer.from('%PDF-1.4 sent first, scanned slowly')
+    const second = Buffer.from('%PDF-1.4 sent second, kept at once.')
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    test('a second request while one is receiving is refused as busy, and the first is kept', async () => {
+      const file = await offer(first.byteLength)
+      const scan = holdTheFirstScan()
+
+      const slow = put(file, first)
+      await scan.asked
+      const meanwhile = await put(file, second)
+      scan.open()
+      const kept = await slow
+
+      // Without the lease the second request was stored, and the first then wrote its bytes
+      // over it: two 204s for one file, and the client that sent the second was told its
+      // bytes were kept when they were not.
+      expect(meanwhile.statusCode).toBe(409)
+      expect(meanwhile.json()).toMatchObject({ error: 'busy' })
+      expect(kept.statusCode).toBe(204)
+      expect(bytes.get(file.storageKey)).toEqual(first)
+      // Refused before its bytes were scanned: a scan for bytes that cannot be kept is the
+      // deployment's clamd time spent on nothing.
+      expect(scan.scans()).toBe(1)
+    })
+
+    test('a request that outlasts its lease cannot un-claim the file, or replace its bytes', async () => {
+      const file = await offer(first.byteLength)
+      const scan = holdTheFirstScan()
+
+      const slow = put(file, first)
+      await scan.asked
+      // The slow request's lease runs out while its scan is still waiting. Only `Date` moves:
+      // the database, Fastify and the scanner's promise keep real time.
+      vi.setSystemTime(Date.now() + 60 * 60_000)
+
+      const fast = await put(file, second)
+      expect(fast.statusCode).toBe(204)
+      const submitted = await submit(file)
+      expect(submitted.statusCode).toBe(201)
+
+      scan.open()
+      const late = await slow
+
+      // The accepted submission still owns its attachment, and it is the bytes it was
+      // accepted with. Before, this row read `stored` with no submission — collected a day
+      // later — and the store held the slow request's bytes.
+      const [row] = await sql`SELECT state, submission_id FROM files WHERE id = ${file.id}`
+      expect(row?.['state']).toBe('claimed')
+      expect(row?.['submission_id']).toBe((submitted.json() as { id: string }).id)
+      expect(bytes.get(file.storageKey)).toEqual(second)
+      expect(late.statusCode).toBe(409)
+    })
+
+    test('a write that outlasts its lease leaves the row alone, and is the residual', async () => {
+      verdict = async () => ({ clean: true })
+      const file = await offer(first.byteLength)
+      const write = holdTheNextWrite()
+
+      const slow = put(file, first)
+      await write.reached
+      // Scanned, re-checked and writing — and the write is what runs past the lease.
+      vi.setSystemTime(Date.now() + 60 * 60_000)
+      const fast = await put(file, second)
+      expect(fast.statusCode).toBe(204)
+      const submitted = await submit(file)
+      expect(submitted.statusCode).toBe(201)
+
+      write.finish()
+      const late = await slow
+
+      // The settle is refused, so the row is still the submission's.
+      const [row] = await sql`SELECT state, submission_id FROM files WHERE id = ${file.id}`
+      expect(row?.['state']).toBe('claimed')
+      expect(row?.['submission_id']).toBe((submitted.json() as { id: string }).id)
+      expect(late.statusCode).toBe(409)
+      // What 0153 accepts, pinned so that closing it is deliberate: the slow write landed
+      // after the fast one under the same key, and the store holds bytes the submission was
+      // not accepted with. Both were scanned and both were the size offered; a lease bounds
+      // how late a write may start, not how long it may take.
+      expect(bytes.get(file.storageKey)).toEqual(first)
+    })
+
+    test('a write that throws gives the file back, so the retry is not busy', async () => {
+      verdict = async () => ({ clean: true })
+      const file = await offer(first.byteLength)
+      const write = holdTheNextWrite()
+
+      const failing = put(file, first)
+      await write.reached
+      write.fail(new Error('ENOSPC: no space left on device'))
+      expect((await failing).statusCode).toBe(500)
+
+      // Without the release a full disk, once cleared, would still refuse this file as busy
+      // for two minutes, to a person who was told nothing about why.
+      const again = await put(file, first)
+      expect(again.statusCode).toBe(204)
+      expect(bytes.get(file.storageKey)).toEqual(first)
+    })
+
+    test('a database from before the lease gains its column on start, and holds no file', async () => {
+      const file = await offer(10)
+      // The table as it was: no lease column. Bootstrapping again is what a start does.
+      await sql`ALTER TABLE files DROP COLUMN receiving_until`
+      await bootstrapSchema(sql)
+
+      // In the CREATE alone, the column would exist on a fresh database and never arrive on
+      // an existing one — where every upload would then fail on a column that is not there.
+      const [column] = await sql`
+        SELECT data_type, is_nullable FROM information_schema.columns
+        WHERE table_name = 'files' AND column_name = 'receiving_until'`
+      expect(column).toMatchObject({ data_type: 'timestamp with time zone', is_nullable: 'YES' })
+      // Null is nobody receiving it, which is true of every file there was before.
+      const storage = createPostgresStorage(sql)
+      expect((await storage.getFile(file.id))?.receivingUntil).toBeNull()
+      const now = new Date()
+      expect(
+        await storage.leaseFile(file.id, now.toISOString(), new Date(now.getTime() + 1000).toISOString()),
+      ).toBe(true)
+    })
+
+    test('two leases taken at once on real SQL: exactly one wins', async () => {
+      const storage = createPostgresStorage(sql)
+      const now = new Date()
+      const until = (ms: number): string => new Date(now.getTime() + ms).toISOString()
+      // Several files, two requests each, all at once: a read and then a write loses this
+      // on most of them, and one pair alone could be lucky.
+      const files = await Promise.all(Array.from({ length: 8 }, () => offer(10)))
+
+      const outcomes = await Promise.all(
+        files.map((file) =>
+          Promise.all([
+            storage.leaseFile(file.id, now.toISOString(), until(60_000)),
+            storage.leaseFile(file.id, now.toISOString(), until(60_001)),
+          ]),
+        ),
+      )
+
+      // Each pair found the file offered and free. The second UPDATE waits on the row the
+      // first is changing and re-reads it once that commits — held by then, so it matches
+      // nothing. A lease that read first and wrote second would hand the file to both.
+      for (const won of outcomes) expect(won.filter(Boolean)).toHaveLength(1)
+      // And the row names the winner's lease, so the loser could not settle it either.
+      for (const [index, file] of files.entries()) {
+        const winner = outcomes[index]?.[0] === true ? until(60_000) : until(60_001)
+        expect((await storage.getFile(file.id))?.receivingUntil).toBe(winner)
+      }
+    })
+
+    test('on real SQL, only the holding lease settles or releases, and a claimed row is left alone', async () => {
+      const storage = createPostgresStorage(sql)
+      const file = await offer(second.byteLength)
+      const now = Date.now()
+      const at = (minutes: number): string => new Date(now + minutes * 60_000).toISOString()
+
+      expect(await storage.leaseFile(file.id, at(0), at(2))).toBe(true)
+      // The first lease ran out and a second request took the file over.
+      expect(await storage.leaseFile(file.id, at(3), at(5))).toBe(true)
+
+      // Settling for the request that overran would mark the file stored mid-write.
+      expect(await storage.settleFile(file.id, at(2))).toBe(false)
+      expect(await storage.settleFile(file.id, at(5))).toBe(true)
+      bytes.set(file.storageKey, second)
+      const submitted = await submit(file)
+      expect(submitted.statusCode).toBe(201)
+
+      // The write that ended an upload used to set the state and the submission
+      // unconditionally; now it may set neither on a claimed row, whatever it is handed.
+      expect(await storage.settleFile(file.id, at(5))).toBe(false)
+      expect(await storage.releaseFile(file.id, at(5))).toBe(false)
+      // And it is never leased again, so no request can start receiving bytes for it.
+      expect(await storage.leaseFile(file.id, at(6), at(8))).toBe(false)
+      // Nor when the row names that very lease. The port cannot leave one so — claiming needs
+      // `stored`, and storing clears the lease — so it is written here, to show the state
+      // alone refuses it, as it does in memory.
+      await sql`UPDATE files SET receiving_until = ${at(5)}::timestamptz WHERE id = ${file.id}`
+      expect(await storage.settleFile(file.id, at(5))).toBe(false)
+      const [row] = await sql`SELECT state, submission_id FROM files WHERE id = ${file.id}`
+      expect(row?.['state']).toBe('claimed')
+      expect(row?.['submission_id']).toBe((submitted.json() as { id: string }).id)
+    })
   })
 })
 

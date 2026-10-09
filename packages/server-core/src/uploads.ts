@@ -88,6 +88,7 @@ export async function offerUpload(deps: OfferDeps, input: OfferInput): Promise<O
     state: 'offered',
     createdAt: deps.now().toISOString(),
     submissionId: null,
+    receivingUntil: null,
   }
 
   await deps.storage.insertFile(file)

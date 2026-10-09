@@ -530,6 +530,42 @@ whether a missing row was skipped or overlooked. The condition editor's "is answ
 *any* row is; a rule that needs every row is written in CEL. A radio cannot be unticked, so a
 row answered by mistake stays answered unless the author offers a column for "does not apply".
 
+### B10. An accepted submission's attachment changes or is collected
+
+*How it arises:* two requests send the bytes of one offered file — the ordinary way is a retry
+while the first is still being scanned. Before 0153, the request that finished last wrote back
+the row it had read before its scan: `stored`, with no submission. If the faster request's
+file had been claimed by a submission in between, the slower one put the claimed row back to
+`stored` with no submission and wrote its bytes over the ones the submission was accepted with,
+and the collector deletes an unclaimed file after a day. Reproduced on real PostgreSQL with a
+scanner double holding the first request open: the row read `stored`, its submission was null,
+and the store held the slower request's bytes.
+
+*Severity:* the submission was accepted with an attachment, then carried a different one, then
+none, and nothing in the submission records either change. It still names the file; the file is
+gone when somebody asks for it. On evidence attached to a claim or a declaration, that is the
+answer the form existed to collect.
+
+*Constraint:* one request at a time receives a file's bytes. It takes a lease on the row with a
+conditional update, a second request is refused as `busy` before its bytes are scanned, the
+lease is checked again before the write, and the row is settled by a conditional update that
+sets the state and clears the lease — never the submission — and only while the file is
+`offered` and the lease is still that request's, so a request receiving bytes cannot write a
+claimed row
+([0153](../decisions/0153-a-file-is-received-by-one-request-at-a-time.md)). Held by
+`server.integration.test.ts` on real PostgreSQL, the sequence above observed failing before the
+change, with two leases taken at once and every condition of the settle; and by `uploads.test.ts`
+against the in-memory storage, one condition at a time.
+
+*Residual:* **a lease bounds when a write may start, not how long it takes.** A request whose
+scan and write together outlast its two minutes can write its bytes after the request that took
+over, under the same key. Its settle is refused, so the row stays claimed by the right submission,
+but the store can hold the late request's bytes — scanned, and the size offered. The supplied
+clamd adapter and object store time out before that; a deployment's own scanner or store, or a
+stalled disk under the directory store, need not. **Nothing records that it happened** beyond
+the `409` the late request is answered with — the server has no request log (C3) — and a test
+asserts the residual so that closing it is deliberate.
+
 
 
 ### C1. An account's existence is disclosed by a failed login

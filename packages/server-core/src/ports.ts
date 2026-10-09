@@ -145,6 +145,12 @@ export interface FileRecord {
   createdAt: string
   /** The submission that claimed it, or null. One file, one submission. */
   submissionId: string | null
+  /**
+   * Until when one request holds the right to receive this file's bytes, or null when
+   * none does. Not a fourth state: the file is still `offered` while it is received, and
+   * a lease that has run out is no lease. See `leaseFile`.
+   */
+  receivingUntil: string | null
 }
 
 export interface Storage {
@@ -246,7 +252,39 @@ export interface Storage {
 
   insertFile(record: FileRecord): Promise<void>
   getFile(id: string): Promise<FileRecord | undefined>
-  updateFile(record: FileRecord): Promise<void>
+
+  /**
+   * Take the right to receive an `offered` file's bytes, until `untilIso`.
+   *
+   * Returns false when the file is not `offered`, or another request holds a lease that
+   * has not run out at `nowIso`. ATOMIC, as `spendChallenge` is and for its reason: two
+   * requests carrying bytes for one file both pass every check made before this, and only
+   * the storage can decide which of them receives. A lease that reads and then writes hands
+   * the file to both, and the second writes its bytes over the first's.
+   *
+   * `untilIso` is also the lease's name, handed back to `settleFile` and `releaseFile`. No
+   * two requests can hold one at once: a lease is taken only once the last has run out,
+   * so the next always runs out later.
+   */
+  leaseFile(id: string, nowIso: string, untilIso: string): Promise<boolean>
+
+  /**
+   * The bytes are kept: `stored`, and the lease cleared — only while the file is `offered`
+   * and the lease named `untilIso` still holds it. Returns false and changes nothing
+   * otherwise.
+   *
+   * It sets the state and nothing else. Its predecessor wrote back the whole record the
+   * request had read before its scan, so a request that outlasted a faster one put a
+   * claimed file back to `stored` with no submission, for the collector to delete.
+   */
+  settleFile(id: string, untilIso: string): Promise<boolean>
+
+  /**
+   * Give the lease back without keeping anything, so the retry a refusal invites is not
+   * refused as busy. Only the lease named `untilIso`: a request that outlasted its own
+   * must not free the one that took over.
+   */
+  releaseFile(id: string, untilIso: string): Promise<boolean>
   /** Every file in a state other than `claimed`, created before `beforeIso`. */
   abandonedFiles(beforeIso: string): Promise<FileRecord[]>
   deleteFiles(ids: readonly string[]): Promise<void>

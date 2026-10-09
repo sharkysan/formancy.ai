@@ -37,6 +37,19 @@ rubbish that nothing will ever look for; a row with no bytes is a broken
 reference that shows up the moment anybody tries to download it. Only the first
 is a problem you never find out about.
 
+**One request receives a file's bytes at a time.** A second `PUT` for a file
+while the first is still being scanned or written is answered `409 busy`
+before its bytes are scanned, and nothing it sent is kept. The first holds the
+file for two minutes at most, so a request that dies holding it keeps the retry
+waiting that long. Without this, a retry that finished first could be claimed
+by a submission and then overwritten by the original arriving late — the row
+put back to unclaimed, for the collector to delete, and the bytes replaced
+([0153](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0153-a-file-is-received-by-one-request-at-a-time.md)).
+A request whose scan and write together take longer than the two minutes is
+the case this does not close: the row stays with its submission, and its bytes
+can still replace the ones that were kept. That request is answered `409`, and
+nothing else records it — the server keeps no request log.
+
 ## Turning it on
 
 ```bash

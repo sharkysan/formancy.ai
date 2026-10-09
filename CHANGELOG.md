@@ -10,6 +10,31 @@ later.
 
 ## Unreleased
 
+**Fixed: a slow upload could take an accepted submission's attachment away from it.** The
+`PUT` that receives a file's bytes wrote the row back as it had read it before the scan:
+`stored`, with no submission. A retry sent while the first request was still being scanned
+could be stored and claimed by a submission first; the first then put the claimed row back to
+unclaimed — for the collector to delete a day later — and wrote its bytes over the ones the
+submission was accepted with. Reproduced on real PostgreSQL with a scanner held open. One
+request at a time now receives a file's bytes: it holds a two-minute lease on the row, a second
+request is answered **`409 busy`** before its bytes are scanned, the lease is checked again
+before the write, and the row is settled only while the file is still offered and the lease is
+still that request's. A refusal by the scanner gives the lease back before it replies, so the
+retry it invites is not busy. What this does not close: a request whose scan and write together
+outlast the lease can still replace the bytes, though never the row; nothing records that it
+happened beyond the `409` that request is answered with, and a test asserts it so that closing
+it is deliberate
+([0153](docs/decisions/0153-a-file-is-received-by-one-request-at-a-time.md), B10 in
+[`SAFETY-ANALYSIS.md`](docs/regulatory/SAFETY-ANALYSIS.md)).
+
+**Breaking, for anybody implementing `Storage` themselves: `updateFile` is replaced by
+`leaseFile`, `settleFile` and `releaseFile`, and `FileRecord` carries `receivingUntil`.** Each
+new method is one conditional write that answers whether it matched, as `spendChallenge` does.
+`updateFile` set the row from whatever its caller held, which was the defect above, and a port
+offering such a write invites the next caller to repeat it. `@formancy/server`'s PostgreSQL
+storage adds the nullable `receiving_until` column to `files` on start; there is nothing to run.
+What each method must do, and why, is in [`MIGRATIONS.md`](MIGRATIONS.md).
+
 **Fixed: the object store could not be used through either compose file — the server
 restart-looped.** Both files passed `FORMANCY_FILES_DIR` to the server as a literal path, so
 a deployment that set the `FORMANCY_S3_*` variables as `.env.example` says handed the server
