@@ -751,6 +751,15 @@ now has a structural contract rather than a proxy: the row may set only custom
 properties inline, so no component can shadow a media query, asserted in
 `apps/playground/src/panes.test.ts` and watched to fail.
 
+A fourth was a difference of **which questions are on the screen**, which the conformance
+suite can see and did not, because no fixture ever mounted a layout. A form with pages and a
+layout was drawn whole on every step by React — a later page's questions answerable on the
+first, and not checked by Next — and in model order by Angular, which dropped the layout and
+showed a field it leaves out. Both now draw the layout a page at a time, asking one function
+in `@formancy/spec` which nodes the page leaves empty, and a fixture naming a layout holds both
+drivers to it ([0137](../decisions/0137-a-paged-forms-layout-is-drawn-a-page-at-a-time.md)).
+It was found by reading the code, not by a person filling a form in.
+
 *Severity:* a control that is covered or missing is a control that cannot be
 operated, so this reaches the same outcome as D4 by a route D4's constraint does not
 watch.

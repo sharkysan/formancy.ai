@@ -474,6 +474,44 @@ describe('the locale a fixture mounts in', () => {
   })
 })
 
+/**
+ * The layout a fixture mounts with.
+ *
+ * A renderer given a layout name it cannot find falls back to model order — correct in a
+ * product, where a mistyped name should not empty the form, and fatal in a fixture: a case
+ * about how a layout is drawn would be run against no layout at all and pass. Refused for
+ * the reason a locale with no catalogue is.
+ */
+describe('the layout a fixture mounts with', () => {
+  const arranged = (layout: unknown): unknown =>
+    revise((draft) => {
+      draft['layout'] = layout
+      const schema = draft['schema'] as Record<string, unknown>
+      schema['model'] = { fields: [{ key: 'email', type: 'text', label: 'Email' }] }
+      schema['layouts'] = [{ name: 'web', nodes: [{ kind: 'field', path: 'email' }] }]
+    })
+
+  test('is refused when the document has no layout by that name', () => {
+    expect(validateFixture(arranged('print'))).toEqual([
+      {
+        path: 'layout',
+        message:
+          'no layout called "print": the form would be drawn in model order and assert nothing about the layout',
+      },
+    ])
+  })
+
+  test('and refused for what it is when it is not a string', () => {
+    expect(validateFixture(arranged(7))).toEqual([
+      { path: 'layout', message: 'expected a non-empty string' },
+    ])
+  })
+
+  test('but accepted when the document has it', () => {
+    expect(validateFixture(arranged('web'))).toEqual([])
+  })
+})
+
 describe('validateFixture accepts', () => {
   function fixtureWithSteps(steps: readonly unknown[]): unknown {
     return { name: 'nested', schema: nested, steps }

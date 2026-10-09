@@ -67,9 +67,15 @@ The fixture format backs this up mechanically — a case whose visible fields la
 labels is rejected by the validator, so every runnable case *carries* the
 accessible names a driver must resolve by.
 
+A fixture may also name the `locale` to mount in and the `layout` to draw the form with,
+and a driver may ignore neither. The validator refuses one the document does not have: a
+renderer falls back to the default locale, or to model order, and the case would then pass
+while asserting nothing about either.
+
 ## What the shipped fixtures cover
 
-Six cases, each encoding semantics the engine must implement:
+Each encodes semantics the engine and the renderers must implement, and
+`apps/docs/src/conformance-doc.test.ts` holds this table to the fixtures directory:
 
 | Fixture | What it pins |
 | --- | --- |
@@ -79,6 +85,11 @@ Six cases, each encoding semantics the engine must implement:
 | clear on hide | whether a hidden field's answer is dropped or kept |
 | repeating group | per-row validation, and re-indexing when a row is removed |
 | wizard page validation | next validates only the current page; submit validates everything and returns to the first page with a problem |
+| wizard with layout | a paged form drawn with a layout shows the page somebody is on, arranged as the layout says, and leaves out what the layout leaves out |
+| masked answer | a mask fills every position, and the answer holds only what was typed |
+| select boxes | several answers from one list, stored in the list's own order |
+| translated labels | a form written in message references renders in its default locale |
+| translated mounted locale | a form mounted in another locale renders in that one |
 
 ## Failures are meant to be read by strangers
 

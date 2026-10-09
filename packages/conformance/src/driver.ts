@@ -142,8 +142,10 @@ export interface AccessibilityViolation {
 
 export interface MountOptions {
   readonly initialValues?: Readonly<Record<string, JsonValue>>
-  /** BCP 47. Drivers that render one language only may ignore it. */
+  /** BCP 47. A driver may not ignore it, any more than `Fixture.locale` lets it. */
   readonly locale?: string
+  /** A named entry of the schema's `layouts` to draw the form with; absent, model order. */
+  readonly layout?: string
 }
 
 /**

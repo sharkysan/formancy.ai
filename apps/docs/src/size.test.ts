@@ -39,12 +39,8 @@ const CEILINGS: Record<string, { lines: number; why: string }> = {
     lines: 1460,
     why: 'The engine is one subject and its parts are genuinely coupled through the graph. The seam, if there is one, is the check and skip machinery — whose protocol types left for `checks.ts` to pay for the `formId` option, since this budget allows no growth at all. The machinery itself still needs the graph and the store, which is why it has not followed.',
   },
-  'packages/angular/src/form.ts': {
-    lines: 1019,
-    why: 'The form shell plus layout rendering. The seam is the layout renderer.',
-  },
   'packages/conformance/src/builtin-fixtures.ts': {
-    lines: 1219,
+    lines: 1377,
     why: 'GENERATED from fixtures/*.json. Splitting this means splitting the fixtures, which are the unit of meaning — so this number moves when the suite gains a case, which is the one entry here whose growth is not a signal.',
   },
   'apps/site/src/app.tsx': {
@@ -61,10 +57,10 @@ const CEILINGS: Record<string, { lines: number; why: string }> = {
   },
   'packages/conformance/src/validate.ts': {
     lines: 655,
-    why: 'Refusing a fixture that could not run honestly. One subject — and two have left it: the message catalogue and the names a driver searches by went to validate-text.ts when this budget refused the locale check, and the JSON predicates under them to values.ts, which both now share.',
+    why: 'Refusing a fixture that could not run honestly. One subject — and three have left it: the message catalogue and the names a driver searches by went to validate-text.ts when this budget refused the locale check, the locale and layout a fixture mounts with to mount.ts, and the JSON predicates under them to values.ts, which both now share.',
   },
   'packages/conformance/src/runner.ts': {
-    lines: 688,
+    lines: 684,
     why: 'Executing a fixture against a driver. One subject.',
   },
 }

@@ -164,6 +164,10 @@ function FieldList({ labels, registry, page, layout }: FormancyFormProps & { pag
          * still happens, inside `resolveText`, where it belongs.
          */
         locale={engine.locale()}
+        // On a paged form, the page somebody is on: the layout holds the fields of every
+        // page, and drawing it whole put questions on the screen that Next does not
+        // check (0137).
+        shows={page === undefined ? undefined : (path) => engine.pageOf(parsePath(path)) === page}
         renderField={(path) => {
           if (repeaterWires.includes(path)) {
             return <RepeaterSection key={path} wire={path} labels={labels} registry={registry} />

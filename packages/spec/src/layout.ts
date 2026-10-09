@@ -121,3 +121,21 @@ export const LAYOUT_LEAF_KINDS = new Set<LayoutNode['kind']>(['field', 'qrcode']
 export function layoutChildren(node: LayoutNode): readonly LayoutNode[] {
   return LAYOUT_LEAF_KINDS.has(node.kind) ? [] : (node as { children: LayoutNode[] }).children
 }
+
+/**
+ * Whether a layout node has anything to show, given which answers are shown: a leaf when
+ * its own answer is, a container while anything inside it is.
+ *
+ * This is how a paged form's layout is drawn one page at a time — the arrangement the
+ * author made, holding the fields of the page somebody is on, and no section heading over
+ * nothing for a page they are not on. Decided here so both renderers ask the same question:
+ * they had each answered it differently, one drawing every page's fields on every step and
+ * the other dropping the layout altogether
+ * ([0137](../../../docs/decisions/0137-a-paged-forms-layout-is-drawn-a-page-at-a-time.md)).
+ * A renderer skips a node this says no to and keeps its position, which is the address the
+ * builder's drop surface reads.
+ */
+export function layoutNodeShows(node: LayoutNode, shows: (path: string) => boolean): boolean {
+  if (LAYOUT_LEAF_KINDS.has(node.kind)) return shows((node as { path: string }).path)
+  return layoutChildren(node).some((child) => layoutNodeShows(child, shows))
+}

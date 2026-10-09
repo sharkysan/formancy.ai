@@ -24,13 +24,9 @@ export {
   FormancyTextField,
   FormancyTextareaField,
 } from './fields.js'
-export {
-  FormancyComponentOutlet,
-  FormancyFieldSlot,
-  FormancyForm,
-  FormancyRepeaterSection,
-  FormancyLayout,
-} from './form.js'
+export { FormancyComponentOutlet, FormancyFieldSlot, FormancyRepeaterSection } from './slots.js'
+export { FormancyForm } from './form.js'
+export { FormancyLayout } from './layout.js'
 export type { SubmitOutcome } from './form.js'
 export { FormancyErrorSummary } from './error-summary.js'
 export { FormancyRichInline, FormancyRichText } from './rich-text.js'

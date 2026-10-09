@@ -24,6 +24,7 @@ export {
   SPEC_1_LAYOUT_KINDS,
   LAYOUT_LEAF_KINDS,
   layoutChildren,
+  layoutNodeShows,
 } from './layout.js'
 export { acceptRemoteOptions, capRemoteOptions } from './options-source.js'
 export type { RemoteOption } from './options-source.js'

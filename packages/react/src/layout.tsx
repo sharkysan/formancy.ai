@@ -3,7 +3,7 @@ import { flushSync } from 'react-dom'
 import { useEffect, useId, useRef, useState } from 'react'
 import type { CSSProperties, ReactElement } from 'react'
 import type { FormSchema, LayoutNode } from '@formancy/spec'
-import { resolveText, LAYOUT_LEAF_KINDS, layoutChildren } from '@formancy/spec'
+import { resolveText, LAYOUT_LEAF_KINDS, layoutChildren, layoutNodeShows } from '@formancy/spec'
 import { encode } from 'uqr'
 import { useField } from './use-field.js'
 
@@ -47,6 +47,12 @@ export interface LayoutTreeProps {
   renderField: (path: string) => ReactElement | null
   /** Index path of the container these nodes are the children of. */
   at?: readonly number[]
+  /**
+   * Which answers this drawing shows — on a paged form, the page somebody is on. A node
+   * with nothing shown is skipped and keeps its position, so the index paths above stay
+   * the authored layout's (0137).
+   */
+  shows?: ((path: string) => boolean) | undefined
 }
 
 export function LayoutTree({
@@ -55,10 +61,12 @@ export function LayoutTree({
   locale,
   renderField,
   at = [],
+  shows,
 }: LayoutTreeProps): ReactElement {
   return (
     <>
       {nodes.map((node, index) => {
+        if (shows !== undefined && !layoutNodeShows(node, shows)) return null
         const view = (
           <LayoutNodeView
             // Position is the only identity a layout node has, and a layout does
@@ -69,6 +77,7 @@ export function LayoutTree({
             locale={locale}
             renderField={renderField}
             at={[...at, index]}
+            shows={shows}
           />
         )
 
@@ -109,12 +118,14 @@ function LayoutNodeView({
   locale,
   renderField,
   at,
+  shows,
 }: {
   schema: FormSchema
   node: LayoutNode
   locale: string
   renderField: (path: string) => ReactElement | null
   at: readonly number[]
+  shows: ((path: string) => boolean) | undefined
 }): ReactElement | null {
   const headingId = useId()
 
@@ -132,6 +143,7 @@ function LayoutNodeView({
       locale={locale}
       renderField={renderField}
       at={at}
+      shows={shows}
     />
   )
 
@@ -166,6 +178,7 @@ function LayoutNodeView({
         renderField={renderField}
         at={at}
         here={here}
+        shows={shows}
       />
     )
   }
@@ -241,6 +254,7 @@ function Tabs({
   renderField,
   at,
   here,
+  shows,
 }: {
   schema: FormSchema
   node: Extract<LayoutNode, { kind: 'tabs' }>
@@ -248,16 +262,24 @@ function Tabs({
   renderField: (path: string) => ReactElement | null
   at: readonly number[]
   here: string
+  shows: ((path: string) => boolean) | undefined
 }): ReactElement {
   const base = useId()
-  const [open, setOpen] = useState(0)
+  // The tabs with anything to show, each with its position in the authored layout: a tab
+  // over an empty panel is a heading over nothing. Tab state counts the shown ones.
+  const shown = node.children.flatMap((child, index) =>
+    shows === undefined || layoutNodeShows(child, shows) ? [{ child, index }] : [],
+  )
+  const [chosen, setOpen] = useState(0)
+  // A page change can leave fewer tabs than the one that was open.
+  const open = Math.min(chosen, shown.length - 1)
   const strip = useRef<HTMLDivElement | null>(null)
   const panels = useRef<Array<HTMLDivElement | null>>([])
   const tabs = useRef<Array<HTMLButtonElement | null>>([])
   /** Set only by a key press, so focus is never taken from elsewhere. */
   const moveFocus = useRef(false)
 
-  const names = node.children.map((child) =>
+  const names = shown.map(({ child }) =>
     child.kind === 'field' ? undefined : resolveText(schema, child.label, locale),
   )
 
@@ -279,10 +301,10 @@ function Tabs({
     return () => {
       for (const off of listeners) off?.()
     }
-  }, [node.children.length])
+  }, [shown.length])
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>): void => {
-    const last = node.children.length - 1
+    const last = shown.length - 1
     const next =
       event.key === 'ArrowRight'
         ? Math.min(open + 1, last)
@@ -310,9 +332,9 @@ function Tabs({
         data-formancy-part="tablist"
         onKeyDown={onKeyDown}
       >
-        {node.children.map((child, index) => (
+        {shown.map(({ index: position }, index) => (
           <button
-            key={index}
+            key={position}
             ref={(element) => {
               tabs.current[index] = element
             }}
@@ -331,9 +353,9 @@ function Tabs({
         ))}
       </div>
 
-      {node.children.map((child, index) => (
+      {shown.map(({ child, index: position }, index) => (
         <div
-          key={index}
+          key={position}
           ref={(element) => {
             panels.current[index] = element
           }}
@@ -354,7 +376,8 @@ function Tabs({
             nodes={LAYOUT_LEAF_KINDS.has(child.kind) ? [child] : layoutChildren(child)}
             locale={locale}
             renderField={renderField}
-            at={[...at, index]}
+            at={[...at, position]}
+            shows={shows}
           />
         </div>
       ))}

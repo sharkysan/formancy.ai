@@ -10,6 +10,18 @@ later.
 
 ## Unreleased
 
+**Fixed: the two renderers drew a paged form with a layout differently, and both wrongly.**
+React drew the whole layout on every step, so a later page's questions were on the first —
+answerable, and not checked by Next; Angular dropped the layout for any paged form. Both now
+draw it a page at a time: each step is the layout holding that page's fields, with no empty
+section or tab for a page somebody is not on. The decision is `layoutNodeShows` in
+`@formancy/spec`, which both ask
+([0137](docs/decisions/0137-a-paged-forms-layout-is-drawn-a-page-at-a-time.md)).
+
+**`@formancy/conformance`: a fixture can name a layout.** `layout` on a fixture and on
+`MountOptions`; the validator refuses one the document lacks. A new fixture holds both
+renderers to the paragraph above, so **a third-party driver must now pass the layout to its
+form** — it failed nowhere before only because no fixture asked.
 **formancy.ai/angular-form-builder.** A page for somebody looking for an Angular form builder,
 with the Angular starter running in it — the real application, built from the repository and
 served at `/angular-form-builder/demo/`, not a recording — the install command, an editor
