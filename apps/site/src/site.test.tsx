@@ -43,6 +43,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
+  vi.useRealTimers()
 })
 
 let observed: Element[] = []
@@ -335,16 +336,24 @@ describe('the running submission', () => {
 })
 
 describe('the ending', () => {
-  test('stamps the receipt once the last section is actually reached', async () => {
+  test('stamps the receipt once the last section is actually reached', () => {
+    // The beat is a timer, so the clock is the test's: waiting on the real one raced a
+    // 600 ms beat against `waitFor`'s one-second budget, and a loaded CI runner lost it.
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
     render(<App />)
+    const stamp = screen.getByText('201 Created')
 
     read(...JOURNEY.map((stop) => stop.section))
-    expect(screen.getByText('201 Created').className).not.toContain('landed')
+    act(() => vi.advanceTimersByTime(600))
+    expect(stamp.className).not.toContain('landed')
 
     read('finale')
 
     // A beat, so the receipt is read before the stamp lands on it.
-    await waitFor(() => expect(screen.getByText('201 Created').className).toContain('landed'))
+    act(() => vi.advanceTimersByTime(599))
+    expect(stamp.className).not.toContain('landed')
+    act(() => vi.advanceTimersByTime(1))
+    expect(stamp.className).toContain('landed')
   })
 
   test('is announced, not only shown', async () => {
