@@ -49,6 +49,7 @@ const documentFor = (cel: string): FormSchema =>
             },
           ],
         },
+        { key: 'age', type: 'number', label: 'Age' },
         { key: 'notice', type: 'static', label: 'Notice' },
       ],
     },
@@ -84,7 +85,7 @@ function verdictOf(cel: string): 'true' | 'false' | 'errors' {
  * opened is `null`, not `{}`. Both are the whole point of the table: it is the
  * nullness that makes the obvious condition error.
  */
-const EMPTY_ANSWERS: Record<string, unknown> = { needsVisa: null, address: null }
+const EMPTY_ANSWERS: Record<string, unknown> = { needsVisa: null, address: null, age: null }
 
 /**
  * Every leaf `dyn`, which is how the engine declares them.
@@ -95,7 +96,7 @@ const EMPTY_ANSWERS: Record<string, unknown> = { needsVisa: null, address: null 
  * would make `!needsVisa` type-check and evaluate, and the table would be
  * testing a form nobody can build.
  */
-const DECLARATIONS = { needsVisa: 'dyn', address: 'dyn' } as const
+const DECLARATIONS = { needsVisa: 'dyn', address: 'dyn', age: 'dyn' } as const
 
 /** The rows of the one table under the empty-answer heading. */
 function rows(): Array<{ cel: string; claim: string }> {
@@ -119,14 +120,16 @@ function rows(): Array<{ cel: string; claim: string }> {
 describe('what the empty-answer table in logic.md claims', () => {
   test('is a table at all, with every row the page shows', () => {
     // A guard on the guard. If the parse silently found nothing, every
-    // assertion below would be vacuous — and this one has five rows because
-    // five is what the prose argues with: three that error and two that work.
+    // assertion below would be vacuous — and this one has seven rows because
+    // seven is what the prose argues with: four that error and three that work.
     expect(rows().map(({ cel }) => cel)).toEqual([
       '!needsVisa',
       'address.country == "CH"',
       'address.country != null && address.country == "CH"',
+      'age > 18.0',
       'needsVisa != true',
       'has(address.country) && address.country == "CH"',
+      'age != null && age > 18.0',
     ])
   })
 

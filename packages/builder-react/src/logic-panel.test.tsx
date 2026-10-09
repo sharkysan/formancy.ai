@@ -75,7 +75,11 @@ describe('authoring a rule', () => {
         // many, which is worth more than keeping this object unchanged: the field
         // is documented as regenerated metadata, nothing reads it yet, and two
         // shapes for one field is the kind of thing that rots.
-        editor: { join: 'all', conditions: [{ field: 'country', operator: 'is', value: 'CH' }] },
+        // And what the field's answer is, which decides how the value was written (0127).
+        editor: {
+          join: 'all',
+          conditions: [{ field: 'country', operator: 'is', value: 'CH', answer: 'text' }],
+        },
       },
     ])
   })
@@ -96,7 +100,9 @@ describe('authoring a rule', () => {
     await user.selectOptions(screen.getByLabelText('Comparison 2'), 'isMoreThan')
     await user.type(screen.getByLabelText('Value 2'), '5')
 
-    expect(screen.getByText('country == "CH" && qty > 5.0')).toBeTruthy()
+    // The bound asks for a number before ordering it: unguarded it threw on an empty
+    // field and the rule failed open (0127).
+    expect(screen.getByText('country == "CH" && qty != null && qty > 5.0')).toBeTruthy()
   })
 
   test('the join can be any instead of all', async () => {
@@ -167,7 +173,7 @@ describe('authoring a rule', () => {
     await user.click(screen.getByRole('button', { name: 'Add rule' }))
 
     const rules = rulesOf(session)
-    expect(rules[0]?.cel).toBe('country == "CH" && qty > 5.0')
+    expect(rules[0]?.cel).toBe('country == "CH" && qty != null && qty > 5.0')
     // The session accepted it, which means the engine type-checked the whole
     // expression -- the point of compiling rather than concatenating.
     expect(session.canPublish().valid).toBe(true)
@@ -185,7 +191,7 @@ describe('authoring a rule', () => {
 
     // `qty > "5"` would be a type error CEL catches at save time. The double
     // is what makes it compile against a number field.
-    expect(rulesOf(session)[0]?.cel).toBe('qty > 5.0')
+    expect(rulesOf(session)[0]?.cel).toBe('qty != null && qty > 5.0')
   })
 
   test('a comparison that needs no value hides the box', async () => {
@@ -456,5 +462,121 @@ describe('the rule kind no builder could write', () => {
     expect(
       (screen.getByRole('button', { name: /^add rule$/i }) as HTMLButtonElement).disabled,
     ).toBe(true)
+  })
+})
+
+describe('the condition editor, rebuilt on one model (0127)', () => {
+  const trip: FormSchema = {
+    specVersion: '4',
+    id: 'trip',
+    title: 'Trip',
+    model: {
+      fields: [
+        {
+          key: 'about',
+          type: 'page',
+          fields: [
+            {
+              key: 'country',
+              type: 'radio',
+              label: 'Country',
+              options: [
+                { value: 'CH', label: 'Switzerland' },
+                { value: 'DE', label: 'Germany' },
+              ],
+            },
+            { key: 'age', type: 'number', label: 'Age' },
+          ],
+        },
+        { key: 'terms', type: 'checkbox', label: 'Terms' },
+        { key: 'leave', type: 'date', label: 'Leaving' },
+        { key: 'canton', type: 'text', label: 'Canton' },
+      ],
+    },
+  } as FormSchema
+
+  const open = async () => {
+    const user = userEvent.setup()
+    const session = createBuilderSession(trip)
+    render(<LogicPanel session={session} keyPath={['canton']} />)
+    await user.click(screen.getByRole('button', { name: 'Add a rule' }))
+    return { user, session }
+  }
+
+  test('a field inside a page is compared at the path the engine reads', async () => {
+    // Joined from the tree, it was "about.country" — a path no field has.
+    const { user } = await open()
+
+    await user.selectOptions(screen.getByLabelText('Value'), 'CH')
+
+    expect(screen.getByText('country == "CH"')).toBeTruthy()
+  })
+
+  test('a choice is compared with one of its own options, offered by label', async () => {
+    const { user } = await open()
+
+    const value = screen.getByLabelText('Value')
+    expect(value.tagName).toBe('SELECT')
+    expect([...(value as HTMLSelectElement).options].map((option) => option.text)).toEqual([
+      'Choose a value',
+      'Switzerland',
+      'Germany',
+    ])
+    await user.selectOptions(value, 'DE')
+    expect(screen.getByText('country == "DE"')).toBeTruthy()
+  })
+
+  test('a checkbox is compared with yes or no, and a date with a date', async () => {
+    const { user } = await open()
+
+    await user.selectOptions(screen.getByLabelText('Field'), 'terms')
+    expect([...(screen.getByLabelText('Value') as HTMLSelectElement).options].map((o) => o.text)).toEqual(
+      ['Yes', 'No'],
+    )
+
+    await user.selectOptions(screen.getByLabelText('Field'), 'leave')
+    expect((screen.getByLabelText('Value') as HTMLInputElement).type).toBe('date')
+  })
+
+  test('and the comparisons offered are the ones the field can take', async () => {
+    const { user } = await open()
+    const offered = () =>
+      [...(screen.getByLabelText('Comparison') as HTMLSelectElement).options].map((o) => o.value)
+
+    await user.selectOptions(screen.getByLabelText('Field'), 'leave')
+    expect(offered()).toContain('isBefore')
+    expect(offered()).not.toContain('contains')
+
+    await user.selectOptions(screen.getByLabelText('Field'), 'canton')
+    expect(offered()).toContain('contains')
+    expect(offered()).not.toContain('isBefore')
+  })
+
+  test('"(A and B) or C" can be built, and is written as one expression the engine accepts', async () => {
+    const { user, session } = await open()
+    await user.selectOptions(screen.getByLabelText('Value'), 'CH')
+
+    await user.click(screen.getByRole('button', { name: 'Add a group' }))
+    await user.selectOptions(screen.getByLabelText('Field 2'), 'age')
+    await user.selectOptions(screen.getByLabelText('Comparison 2'), 'isAtLeast')
+    await user.type(screen.getByLabelText('Value 2'), '18')
+    await user.click(screen.getByRole('button', { name: 'Add a comparison to group 1' }))
+    await user.selectOptions(screen.getByLabelText('Field 3'), 'terms')
+    await user.selectOptions(screen.getByLabelText('Match'), 'any')
+    await user.click(screen.getByRole('button', { name: 'Add rule' }))
+
+    expect(session.document().logic?.rules[0]?.cel).toBe(
+      'country == "CH" || (age != null && age >= 18.0 && terms == true)',
+    )
+    expect(session.canPublish().valid).toBe(true)
+  })
+
+  test('and a group can be taken back out, naming which', async () => {
+    const { user } = await open()
+    await user.click(screen.getByRole('button', { name: 'Add a group' }))
+
+    await user.click(screen.getByRole('button', { name: 'Remove group 1' }))
+
+    expect(screen.queryByRole('group', { name: 'Group 1' })).toBeNull()
   })
 })

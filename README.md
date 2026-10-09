@@ -159,7 +159,9 @@ submitted. Switch language or theme without reloading.
 
 - **Conditional fields and calculations.** Build questions that adapt to
   previous answers, conditional required fields and automatically calculated
-  totals. Use the condition editor or CEL expressions for more complex rules.
+  totals. The condition editor writes "(A and B) or C", offers the comparisons a
+  field can take and a value control of the field's own kind, and guards every
+  read so a rule never fails open on an empty form; CEL is there for the rest.
 - **Files and formatted text.** Collect attachments with type and size limits,
   and let people write answers with bold, italic, links and lists.
 - **Validation in the browser and on the server.** Give immediate feedback,

@@ -1,7 +1,8 @@
 import type { FormSchema, LogicRule } from '@formancy/spec'
-import { OPERATORS } from './conditions.js'
-import type { Condition, ConditionGroup, Operator } from './conditions.js'
+import type { Operator } from './conditions.js'
 import { compileGroup } from './conditions.js'
+import { groupOf, rowsOf } from './condition-draft.js'
+import type { ConditionDraft, ConditionField } from './condition-draft.js'
 import { BUILDER_MESSAGES } from './messages.js'
 import type { BuilderText } from './messages.js'
 import { dataPathOf } from './navigate.js'
@@ -156,47 +157,6 @@ export function ruleTargetFor(
   return { target: dataPathOf(document, keyPath) ?? keyPath.join('.'), on: 'field' }
 }
 
-/** One row of the condition editor, as a person has it on screen. */
-export interface ConditionRow {
-  field: string
-  operator: Operator
-  /**
-   * What was typed, kept as text rather than as the narrowed value, so it
-   * survives switching to a comparison that takes no value and back.
-   */
-  text: string
-}
-
-/** A fresh row, aimed at the first field a builder can offer. */
-export function emptyRow(firstField: string): ConditionRow {
-  return { field: firstField, operator: 'is', text: '' }
-}
-
-/**
- * One row as a condition, with the typed text narrowed to what CEL will compare.
- *
- * A number typed into a box is still a string, and comparing a number field to
- * `"5"` is a type error CEL catches at save time — so the narrowing happens here,
- * where the author can still see what happened, rather than at publish.
- */
-export function conditionOf(row: ConditionRow): Condition {
-  const takesValue = OPERATORS.find((candidate) => candidate.id === row.operator)?.takesValue ?? true
-  const value: Condition['value'] =
-    row.text === 'true'
-      ? true
-      : row.text === 'false'
-        ? false
-        : row.text !== '' && !Number.isNaN(Number(row.text))
-          ? Number(row.text)
-          : row.text
-  return { field: row.field, operator: row.operator, ...(takesValue ? { value } : {}) }
-}
-
-/** Whether the comparison this row names takes a value at all. */
-export function rowTakesValue(row: ConditionRow): boolean {
-  return OPERATORS.find((candidate) => candidate.id === row.operator)?.takesValue ?? true
-}
-
 /**
  * The rule a builder is about to add, composed once for both of them.
  *
@@ -207,13 +167,14 @@ export function rowTakesValue(row: ConditionRow): boolean {
 export function composeRule(input: {
   kind: LogicRule['kind']
   target: string
-  rows: readonly ConditionRow[]
-  join: ConditionGroup['join']
+  draft: ConditionDraft
+  /** What each compared field is, which decides how its value is written. */
+  fields: readonly ConditionField[]
   check: string
   /** Raw CEL, for a kind that writes an expression rather than a condition. */
   expression?: string
 }): LogicRule {
-  const group: ConditionGroup = { join: input.join, conditions: input.rows.map(conditionOf) }
+  const group = groupOf(input.draft, input.fields)
   const written =
     kindWrites(input.kind) === 'check'
       ? { check: input.check }
@@ -234,7 +195,7 @@ export function composeRule(input: {
 /** Whether what is on screen is enough to add. */
 export function draftIsComplete(input: {
   kind: LogicRule['kind']
-  rows: readonly ConditionRow[]
+  draft: ConditionDraft
   check: string
   expression?: string
 }): boolean {
@@ -247,7 +208,7 @@ export function draftIsComplete(input: {
     case 'expression':
       return (input.expression ?? '').trim() !== ''
     default:
-      return input.rows.every((row) => row.field !== '')
+      return rowsOf(input.draft).every((row) => row.field !== '')
   }
 }
 

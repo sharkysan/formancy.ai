@@ -10,6 +10,22 @@ later.
 
 ## Unreleased
 
+**The condition editor nests one level, offers what a field can take, and no longer fails
+open.** Both builders' logic panels can write "(A and B) or C": a group of comparisons
+inside a condition, joined its own way. The comparisons offered follow the field — before
+and after for a date, contains for text, at least and at most for a number, includes for a
+list of ticks — and so does the value control: a choice's own options by label, yes or no
+for a checkbox, a number or date box. Rebuilding it found four shipped defects, all fixed: a
+builder-written `visible` rule on a field inside a group showed its field on every
+untouched form (the read into a null group threw, and a rule that throws fails open); so did
+a bound on an empty number; a field inside a page was compared at its tree path,
+`about.country`, which no field has; and a choice whose value looks like a number was
+compared as a number. The editor now guards every read (`has()`, `!= null`, a length for a
+list), and the draft and every edit to it live in `builder-core`, so the two builders cannot
+disagree. **Rules written by an earlier builder keep their expression** until written again;
+the logic documentation's table shows how to recognise an unguarded one
+([0127](docs/decisions/0127-a-condition-nests-one-level.md)).
+
 **Choices with pictures** (spec version 4). An option on a radio group or a set of checkboxes
 can carry `image: { src, alt? }`, drawn inside the option's label so pressing the picture
 chooses it and its text alternative joins the option's name. The answer is still the option's

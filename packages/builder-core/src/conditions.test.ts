@@ -48,9 +48,15 @@ describe('compileCondition', () => {
     )
   })
 
-  test('orders numbers as numbers', () => {
-    expect(compileCondition({ field: 'qty', operator: 'isMoreThan', value: 5 })).toBe('qty > 5.0')
-    expect(compileCondition({ field: 'qty', operator: 'isLessThan', value: 5 })).toBe('qty < 5.0')
+  test('orders numbers as numbers, once there is a number to order', () => {
+    // `qty > 5.0` alone has no overload for null, so it threw on an empty field and
+    // the rule failed open — showing what it was meant to hide (0127).
+    expect(compileCondition({ field: 'qty', operator: 'isMoreThan', value: 5 })).toBe(
+      'qty != null && qty > 5.0',
+    )
+    expect(compileCondition({ field: 'qty', operator: 'isAtMost', value: 5 })).toBe(
+      'qty != null && qty <= 5.0',
+    )
   })
 
   test('"is answered" is a null check, not a truthiness check', () => {
@@ -72,13 +78,30 @@ describe('compileCondition', () => {
     // has to say so — `qty` alone would look for a top-level field.
     expect(
       compileCondition({ field: 'items[].qty', operator: 'isMoreThan', value: 0 }),
-    ).toBe('item.qty > 0.0')
+    ).toBe('item.qty != null && item.qty > 0.0')
   })
 
-  test('a grouped field keeps its dotted path', () => {
+  test('a grouped field keeps its dotted path, and is asked for before it is read', () => {
+    // Reading into a group nobody has touched throws, because the group itself is
+    // null — and `has()` is the one guard that answers. Unguarded, the builder's
+    // own `visible` rule showed its field on every empty form (0127).
     expect(compileCondition({ field: 'billing.city', operator: 'is', value: 'Bern' })).toBe(
-      'billing.city == "Bern"',
+      'has(billing.city) && billing.city != null && billing.city == "Bern"',
     )
+    expect(compileCondition({ field: 'billing.city', operator: 'isNot', value: 'Bern' })).toBe(
+      '!has(billing.city) || billing.city == null || billing.city != "Bern"',
+    )
+  })
+
+  test('a list is asked by its length and its members, never compared with null', () => {
+    // The checker refuses `list != null`; an untouched list answers `size()` and
+    // `in` as empty, and both renderers store a fully unticked one as [].
+    expect(compileCondition({ field: 'extras', operator: 'isAnswered', answer: 'list' })).toBe(
+      'size(extras) > 0',
+    )
+    expect(
+      compileCondition({ field: 'extras', operator: 'includes', value: 'wrap', answer: 'list' }),
+    ).toBe('"wrap" in extras')
   })
 
   test('a value with a quote in it survives the round trip into CEL', () => {
@@ -190,7 +213,7 @@ describe('combining more than one comparison', () => {
     // `100.0`, not `100`: CEL does not convert implicitly and every number a
     // form collects is a double, so the integer literal would be a type error at
     // check time. My first expectation here said `100` and the code was right.
-    expect(cel).toBe('country == "CH" && total > 100.0')
+    expect(cel).toBe('country == "CH" && total != null && total > 100.0')
   })
 
   test('any of them becomes ||', () => {
@@ -214,10 +237,7 @@ describe('combining more than one comparison', () => {
     expect(compileGroup({ join: 'all', conditions: [one] })).toBe(compileCondition(one))
   })
 
-  test('mixing all and any is not possible, so no parentheses are needed', () => {
-    // Stated as a test because it is the reason the output has none. A flat
-    // group has one join, so precedence cannot surprise anybody -- and if
-    // nesting is ever added, this case fails and forces the question.
+  test('a flat group of one join needs no parentheses', () => {
     const cel = compileGroup({
       join: 'any',
       conditions: [
@@ -229,6 +249,55 @@ describe('combining more than one comparison', () => {
 
     expect(cel).toBe('a != null || b != null || c != null')
     expect(cel).not.toContain('(')
+  })
+
+  test('a group inside a group is parenthesised, so the preview shows the grouping built', () => {
+    // "(A and B) or C" — the case a flat list could not say (0127).
+    const cel = compileGroup({
+      join: 'any',
+      conditions: [
+        {
+          join: 'all',
+          conditions: [
+            { field: 'country', operator: 'is', value: 'CH' },
+            { field: 'age', operator: 'isAtLeast', value: 18 },
+          ],
+        },
+        { field: 'guardian', operator: 'isAnswered' },
+      ],
+    })
+
+    expect(cel).toBe('(country == "CH" && age != null && age >= 18.0) || guardian != null')
+  })
+
+  test('and an "or" a comparison compiles to is parenthesised inside an "and"', () => {
+    // `!has(a.b) || a.b == null || a.b != "x"` joined by && without parentheses would
+    // bind its last part to the next comparison — precedence, not intent.
+    const cel = compileGroup({
+      join: 'all',
+      conditions: [
+        { field: 'billing.city', operator: 'isNot', value: 'Bern' },
+        { field: 'country', operator: 'is', value: 'CH' },
+      ],
+    })
+
+    expect(cel).toBe(
+      '(!has(billing.city) || billing.city == null || billing.city != "Bern") && country == "CH"',
+    )
+  })
+
+  test('and a third level is refused, as the editor cannot build one', () => {
+    const deep = {
+      join: 'all' as const,
+      conditions: [
+        {
+          join: 'all' as const,
+          conditions: [{ join: 'all' as const, conditions: [{ field: 'a', operator: 'isAnswered' as const }] }],
+        },
+      ],
+    }
+
+    expect(() => compileGroup(deep)).toThrow(/inside a group inside a group/)
   })
 
   test('an empty group is refused rather than compiled to nothing', () => {
@@ -248,6 +317,6 @@ describe('combining more than one comparison', () => {
 
     // `item.` is what a rule inside a repeater scopes to, and it has to survive
     // being combined -- it would be easy to prefix only the first.
-    expect(cel).toBe('item.qty > 0.0 && item.name != null')
+    expect(cel).toBe('item.qty != null && item.qty > 0.0 && item.name != null')
   })
 })

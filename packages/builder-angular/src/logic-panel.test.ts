@@ -246,3 +246,108 @@ describe('authoring a rule', () => {
     expect(rulesOf(session)).toEqual([])
   })
 })
+
+describe('the condition editor, rebuilt on one model (0127)', () => {
+  // The cases React's panel is held to, near-copied on purpose.
+  const trip: FormSchema = {
+    specVersion: '4',
+    id: 'trip',
+    title: 'Trip',
+    model: {
+      fields: [
+        {
+          key: 'about',
+          type: 'page',
+          fields: [
+            {
+              key: 'country',
+              type: 'radio',
+              label: 'Country',
+              options: [
+                { value: 'CH', label: 'Switzerland' },
+                { value: 'DE', label: 'Germany' },
+              ],
+            },
+            { key: 'age', type: 'number', label: 'Age' },
+          ],
+        },
+        { key: 'terms', type: 'checkbox', label: 'Terms' },
+        { key: 'leave', type: 'date', label: 'Leaving' },
+        { key: 'canton', type: 'text', label: 'Canton' },
+      ],
+    },
+  } as FormSchema
+
+  const open = async () => {
+    const session = createBuilderSession(trip)
+    const view = await render(FormancyLogicPanel, {
+      componentInputs: { session, keyPath: ['canton'] },
+      providers: [provideZonelessChangeDetection()],
+    })
+    const user = userEvent.setup()
+    const settle = async (): Promise<void> => void (await view.fixture.whenStable())
+    await settle()
+    await user.click(screen.getByRole('button', { name: 'Add a rule' }))
+    await settle()
+    return { session, user, settle }
+  }
+
+  test('a field inside a page is compared at the path the engine reads', async () => {
+    const { user, settle } = await open()
+
+    await user.selectOptions(screen.getByLabelText('Value'), 'CH')
+    await settle()
+
+    expect(screen.getByText('country == "CH"')).toBeTruthy()
+  })
+
+  test('a choice is compared with one of its own options, and a date with a date', async () => {
+    const { user, settle } = await open()
+
+    expect([...(screen.getByLabelText('Value') as HTMLSelectElement).options].map((o) => o.text.trim())).toEqual(
+      ['Choose a value', 'Switzerland', 'Germany'],
+    )
+    await user.selectOptions(screen.getByLabelText('Field'), 'leave')
+    await settle()
+    expect((screen.getByLabelText('Value') as HTMLInputElement).type).toBe('date')
+  })
+
+  test('and the comparisons offered are the ones the field can take', async () => {
+    const { user, settle } = await open()
+    const offered = () =>
+      [...(screen.getByLabelText('Comparison') as HTMLSelectElement).options].map((o) => o.value)
+
+    await user.selectOptions(screen.getByLabelText('Field'), 'leave')
+    await settle()
+    expect(offered()).toContain('isBefore')
+    expect(offered()).not.toContain('contains')
+  })
+
+  test('"(A and B) or C" can be built, and is written as one expression the engine accepts', async () => {
+    const { session, user, settle } = await open()
+    await user.selectOptions(screen.getByLabelText('Value'), 'CH')
+    await settle()
+
+    await user.click(screen.getByRole('button', { name: 'Add a group' }))
+    await settle()
+    await user.selectOptions(screen.getByLabelText('Field 2'), 'age')
+    await settle()
+    await user.selectOptions(screen.getByLabelText('Comparison 2'), 'isAtLeast')
+    await settle()
+    await user.type(screen.getByLabelText('Value 2'), '18')
+    await settle()
+    await user.click(screen.getByRole('button', { name: 'Add a comparison to group 1' }))
+    await settle()
+    await user.selectOptions(screen.getByLabelText('Field 3'), 'terms')
+    await settle()
+    await user.selectOptions(screen.getByLabelText('Match'), 'any')
+    await settle()
+    await user.click(screen.getByRole('button', { name: 'Add rule' }))
+    await settle()
+
+    expect(session.document().logic?.rules[0]?.cel).toBe(
+      'country == "CH" || (age != null && age >= 18.0 && terms == true)',
+    )
+    expect(session.canPublish().valid).toBe(true)
+  })
+})

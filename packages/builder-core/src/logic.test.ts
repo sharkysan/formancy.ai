@@ -4,14 +4,11 @@ import {
   RULE_KIND_CHOICES,
   comparisonLabel,
   composeRule,
-  conditionOf,
   draftIsComplete,
-  emptyRow,
   kindCarriesCondition,
   kindWrites,
   operatorLabel,
   referencedMessages,
-  rowTakesValue,
   ruleKindHint,
   ruleKindLabel,
   ruleKindsFor,
@@ -20,6 +17,10 @@ import {
 import { RULE_KINDS } from '@formancy/spec'
 import { BUILDER_MESSAGES_DE } from './messages-de.js'
 import { createBuilderText } from './messages.js'
+import type { ConditionDraft, ConditionField } from './condition-draft.js'
+
+/** A draft of nothing yet, for the kinds that write no condition. */
+const NOTHING: ConditionDraft = { join: 'all', items: [] }
 
 /**
  * What a builder offers when somebody writes a rule.
@@ -102,8 +103,8 @@ describe('what the editor composes', () => {
     const rule = composeRule({
       kind: 'visible',
       target: 'passport',
-      rows: [{ field: 'needsVisa', operator: 'is', text: 'true' }],
-      join: 'all',
+      draft: { join: 'all', items: [{ field: 'needsVisa', operator: 'is', text: 'true' }] },
+      fields: [{ path: 'needsVisa', label: 'Needs a visa', kind: 'boolean', options: [] }],
       check: '',
     })
 
@@ -120,8 +121,8 @@ describe('what the editor composes', () => {
     const rule = composeRule({
       kind: 'check',
       target: 'email',
-      rows: [],
-      join: 'all',
+      draft: NOTHING,
+      fields: [],
       check: 'email-not-taken',
     })
 
@@ -132,37 +133,28 @@ describe('what the editor composes', () => {
     expect(rule.editor).toBeUndefined()
   })
 
-  test('a number typed into a box is compared as a number', () => {
-    // Comparing a number field to "5" is a type error CEL catches at save time,
-    // so the narrowing happens where the author can still see what happened.
-    expect(conditionOf({ field: 'qty', operator: 'is', text: '5' }).value).toBe(5)
-    expect(conditionOf({ field: 'ok', operator: 'is', text: 'true' }).value).toBe(true)
-    expect(conditionOf({ field: 'name', operator: 'is', text: 'Zug' }).value).toBe('Zug')
-  })
-
-  test('and a comparison that takes no value carries none', () => {
-    const condition = conditionOf({ field: 'note', operator: 'isAnswered', text: 'ignored' })
-
-    expect('value' in condition).toBe(false)
-  })
 })
 
 describe('when a draft is enough to add', () => {
   test('a condition rule needs every comparison to name a field', () => {
     expect(
-      draftIsComplete({ kind: 'visible', rows: [{ field: '', operator: 'is', text: '' }], check: '' }),
+      draftIsComplete({
+        kind: 'visible',
+        draft: { join: 'all', items: [{ field: '', operator: 'is', text: '' }] },
+        check: '',
+      }),
     ).toBe(false)
   })
 
   test('and a check needs a name, because a check with none asks nobody', () => {
-    expect(draftIsComplete({ kind: 'check', rows: [], check: '   ' })).toBe(false)
-    expect(draftIsComplete({ kind: 'check', rows: [], check: 'visa-eligible' })).toBe(true)
+    expect(draftIsComplete({ kind: 'check', draft: NOTHING, check: '   ' })).toBe(false)
+    expect(draftIsComplete({ kind: 'check', draft: NOTHING, check: 'visa-eligible' })).toBe(true)
   })
 
   test('and a calculation needs an expression, because an empty one calculates nothing', () => {
-    expect(draftIsComplete({ kind: 'computed', rows: [], check: '', expression: ' ' })).toBe(false)
+    expect(draftIsComplete({ kind: 'computed', draft: NOTHING, check: '', expression: ' ' })).toBe(false)
     expect(
-      draftIsComplete({ kind: 'computed', rows: [], check: '', expression: 'qty * price' }),
+      draftIsComplete({ kind: 'computed', draft: NOTHING, check: '', expression: 'qty * price' }),
     ).toBe(true)
   })
 
@@ -173,8 +165,8 @@ describe('when a draft is enough to add', () => {
     const rule = composeRule({
       kind: 'computed',
       target: 'total',
-      rows: [],
-      join: 'all',
+      draft: NOTHING,
+      fields: [],
       check: '',
       expression: 'qty * price',
     })
@@ -222,45 +214,6 @@ describe('what a kind is written with', () => {
      */
     expect(kindWrites('invented' as never)).toBe('condition')
     expect(kindCarriesCondition('invented' as never)).toBe(true)
-  })
-})
-
-describe('a fresh comparison row', () => {
-  test('is aimed at a field, so the first thing an author sees is answerable', () => {
-    // A row with no field is a row whose operator and value mean nothing, and the
-    // builder has to offer SOME field — the palette has already decided which.
-    expect(emptyRow('email')).toEqual({ field: 'email', operator: 'is', text: '' })
-  })
-
-  test('and opens on "is", which is the comparison that needs no explaining', () => {
-    // Asserted separately because it is a product decision rather than a shape:
-    // opening on `is not` or on a bound would make the common case two edits.
-    expect(emptyRow('x').operator).toBe('is')
-    expect(rowTakesValue(emptyRow('x'))).toBe(true)
-  })
-})
-
-describe('whether a row takes a value at all', () => {
-  test('yes for a comparison, no for one that asks about emptiness', () => {
-    /*
-     * The UI hides the value box when this is false. If it answered yes for
-     * `is empty`, an author would type into a box whose contents are discarded —
-     * and `conditionOf` drops the value, so the typed text would vanish on save
-     * with no explanation.
-     */
-    expect(rowTakesValue({ field: 'a', operator: 'is', text: '1' })).toBe(true)
-    // `isAnswered`, not `isEmpty`: the operator asks whether there IS an answer,
-    // which reads the way a person says it. Guessing the other name got the
-    // `true` fallback, which is the same lesson as above.
-    expect(rowTakesValue({ field: 'a', operator: 'isAnswered', text: '' })).toBe(false)
-    expect(rowTakesValue({ field: 'a', operator: 'isNotAnswered', text: '' })).toBe(false)
-  })
-
-  test('and yes for an operator it does not know, which keeps the box rather than losing it', () => {
-    // The same reasoning as `kindWrites`' fallback: showing a box that may be
-    // unnecessary costs an author a glance, and hiding one that is necessary
-    // costs them the answer.
-    expect(rowTakesValue({ field: 'a', operator: 'invented' as never, text: '' })).toBe(true)
   })
 })
 
@@ -389,33 +342,6 @@ describe('which messages a document refers to', () => {
     })
 
     expect(nested).toEqual(['group.label', 'inner.label', 'after.label'])
-  })
-})
-
-describe('how typed text is narrowed', () => {
-  test('a boolean typed as a word is compared as a boolean', () => {
-    /*
-     * `true` in a text box is a string, and comparing a checkbox to `"true"` is a
-     * CEL type error caught at save time. The narrowing happens where the author
-     * can still see what happened rather than at publish — and the existing cases
-     * covered the number path and not this one.
-     */
-    expect(conditionOf({ field: 'agreed', operator: 'is', text: 'true' }).value).toBe(true)
-    expect(conditionOf({ field: 'agreed', operator: 'is', text: 'false' }).value).toBe(false)
-  })
-
-  test('and empty text stays a string rather than becoming zero', () => {
-    // `Number('')` is 0, so a nullish check would compare an empty box to the
-    // number zero — which is a comparison that quietly succeeds against any
-    // field whose answer is 0.
-    expect(conditionOf({ field: 'qty', operator: 'is', text: '' }).value).toBe('')
-  })
-
-  test('and text that merely starts with digits stays text', () => {
-    // `Number('5 apples')` is NaN, so this is the branch that keeps a postcode
-    // like `8001 Zurich` a string. Without it the comparison would be against
-    // NaN, which is false for everything including itself.
-    expect(conditionOf({ field: 'postcode', operator: 'is', text: '8001 Zurich' }).value).toBe('8001 Zurich')
   })
 })
 
