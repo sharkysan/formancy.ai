@@ -10,6 +10,13 @@ later.
 
 ## Unreleased
 
+**Corrected: three documents said uploads are not scanned.** The documentation's front page,
+the self-hosting guide and the SOUP declaration's list of what is still absent all said so, while
+0.4.0 scans every upload before keeping it when a deployment runs ClamAV
+([0131](docs/decisions/0131-an-upload-is-scanned-before-it-is-kept.md)) — and the SOUP
+declaration said so too, a section earlier. No check caught it: each is a sentence about what
+the server does not do, and nothing compares such a sentence with the server.
+
 **Fixed: the Angular starter looks like the Material application it is.** Material's type
 tokens name Roboto with no fallback and nothing loaded it, so every Material label was drawn in
 the browser's serif; the builder beside the form had no styling; and the submit and repeater

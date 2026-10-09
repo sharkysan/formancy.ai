@@ -7,8 +7,8 @@ description: Run the formancy backend locally with Docker and Postgres, and walk
 This backend has authentication, role-based authorization, per-IP rate limiting, a
 per-form origin allowlist, a request body cap, file uploads, drafts that carry their own
 key, audit logging and an opt-in proof-of-work challenge
-(`FORMANCY_CHALLENGE_SECRET`, below) — but no submission tokens and no virus scanning of
-what people attach.
+(`FORMANCY_CHALLENGE_SECRET`, below), and it scans every upload before keeping it when you
+run ClamAV (`FORMANCY_CLAMD_HOST`, below) — but no submission tokens.
 
 It also writes **no log**: Fastify is constructed with the logger off, which is why no
 submission content can leak into one and also why nothing will tell you why a request

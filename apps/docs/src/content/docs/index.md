@@ -26,8 +26,9 @@ their APIs will still change before 1.0.
 
 The server has authentication, role-based authorization, per-IP rate limiting, a per-form
 origin allowlist, audit logging, drafts that carry their own key, and an opt-in
-proof-of-work challenge for anonymous submissions. What it does not have is a submission
-token bound to the form version, and no virus scanning of what people attach. It also
+proof-of-work challenge for anonymous submissions, and it scans every upload before keeping it
+when the deployment runs ClamAV. What it does not have is a submission token bound to the form
+version. It also
 writes **no log at all** — Fastify is constructed with the logger off, so nothing can leak
 a submission into one and nothing can tell you why a request failed either. Do not deploy
 it anywhere public yet.
