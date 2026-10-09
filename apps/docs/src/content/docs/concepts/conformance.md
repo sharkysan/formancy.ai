@@ -88,6 +88,7 @@ Each encodes semantics the engine and the renderers must implement, and
 | wizard with layout | a paged form drawn with a layout shows the page somebody is on, arranged as the layout says, and leaves out what the layout leaves out |
 | masked answer | a mask fills every position, and the answer holds only what was typed |
 | select boxes | several answers from one list, stored in the list's own order |
+| ranking | the order chosen is the answer, and an untouched ranking holds nothing |
 | translated labels | a form written in message references renders in its default locale |
 | translated mounted locale | a form mounted in another locale renders in that one |
 

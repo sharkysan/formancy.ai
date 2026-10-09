@@ -170,4 +170,13 @@ export const SCHEMA_WORDS_FR: SchemaWords = {
   Signature: 'Signature',
   'A mark somebody draws, or their name typed. Stored as points rather than as a picture, so it scales, diffs and means something to a reader that is not a browser — and never as stroke timing, which is what would make it biometric data.':
     'Une marque que quelqu’un dessine, ou son nom saisi. Enregistrée comme des points plutôt que comme une image, afin qu’elle s’adapte à toute taille, se compare et ait un sens hors d’un navigateur — et jamais comme le rythme des traits, qui en ferait une donnée biométrique.',
+  Ranking: 'Classement',
+  'Options put in order of preference. The answer is the values of the options in the order chosen, most preferred first, and an option nobody ranked is not in it — so to ask for a complete order, set the fewest ranked to the number of options.':
+    'Des options mises par ordre de préférence. La réponse est la liste des valeurs des options dans l’ordre choisi, la préférée en premier, et une option que personne n’a classée n’y figure pas — pour demander un ordre complet, réglez « Classées au minimum » sur le nombre d’options.',
+  'Fewest ranked': 'Classées au minimum',
+  'How many options must be put in order. Set it to the number of options to ask for a complete order; leave it unset and any number may be ranked — use `required` rather than a minimum of 1, so the reader is told before they start.':
+    'Combien d’options doivent être mises en ordre. Réglez-le sur le nombre d’options pour demander un ordre complet ; sans valeur, on peut en classer autant qu’on veut — utilisez `required` plutôt qu’un minimum de 1, pour que la personne le sache avant de commencer.',
+  'Most ranked': 'Classées au maximum',
+  'How many options may be put in order, which is how \"your top three\" is asked.':
+    'Combien d’options peuvent être mises en ordre : c’est ainsi qu’on demande « vos trois premiers ».',
 }

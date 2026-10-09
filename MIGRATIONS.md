@@ -28,6 +28,15 @@ document rather than ignoring the part it does not know
 
 ### What version 4 added
 
+One field type:
+
+- `ranking` — options put in order. The answer is the chosen values in the order chosen,
+  most preferred first, and an option nobody ranked is not in it; it starts empty rather
+  than in the options' written order. `minItems` and `maxItems` bound how many are ranked,
+  at least two options are required and no two may share a value. A version 3 reader refuses
+  a document carrying one, and is told it needs version 4
+  ([0138](docs/decisions/0138-a-ranking-stores-the-order-chosen.md)).
+
 Two widgets, both on `number`:
 
 - `rating` — stars, or a scale of numbers, between the field's `min` and `max`. An NPS
@@ -54,8 +63,8 @@ And three properties:
 
 **Both are widgets rather than types, and that is the design.** Each stores exactly what a
 `number` field already stores, so the control differs and the answer does not. A construct
-that changed the answer — a ranking's chosen order, a matrix's row-to-column map — is a
-type, and those are not here yet.
+that changes the answer is a type, which is why `ranking` is one: no existing type stores
+an order somebody chose. A matrix's row-to-column map is the other, and is not here yet.
 
 It is still a version, for the reason every widget is: the format is closed, so a version 3
 reader does not shrug at `widget: "rating"` — it refuses the document. A version that

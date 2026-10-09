@@ -238,3 +238,4 @@ listed under the sections they belong to above.
 | [0135](0135-a-block-is-a-field-with-its-rules.md) | A block is a field with its rules and its words, and the host keeps it | accepted |
 | [0136](0136-the-angular-page-runs-the-starter.md) | The Angular page runs the starter, and dates what it says about others | accepted |
 | [0137](0137-a-paged-forms-layout-is-drawn-a-page-at-a-time.md) | A paged form's layout is drawn a page at a time | accepted |
+| [0138](0138-a-ranking-stores-the-order-chosen.md) | A ranking stores the order chosen, starts empty, and is put in order with buttons | accepted |

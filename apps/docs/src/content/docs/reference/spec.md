@@ -128,6 +128,7 @@ What kind of answer the field collects, or — for a group, a page or a repeater
 - `"select"` — **Dropdown.** One answer picked from a list, shown collapsed. Best when the list is long.
 - `"radio"` — **Radio buttons.** One answer picked from a list, with every option visible at once. Best for a handful of options.
 - `"selectboxes"` — **Checkboxes.** Several answers picked from a list, every option visible at once. The answer is the list of values chosen, so an option removed later leaves the submissions that chose it unchanged.
+- `"ranking"` — **Ranking.** Options put in order of preference. The answer is the values of the options in the order chosen, most preferred first, and an option nobody ranked is not in it — so to ask for a complete order, set the fewest ranked to the number of options.
 - `"date"` — **Date.** A calendar date, with no time of day.
 - `"time"` — **Time.** A time of day, with no date and no time zone: opening hours, an appointment slot. Stored as "HH:MM" on a 24-hour clock, zero-padded, so that comparing two answers as text gives the same order as comparing them as times. Because it carries no zone it is not an instant and cannot be compared with the current time.
 - `"datetime"` — **Date and time.** One moment in time, stored as "YYYY-MM-DDTHH:MM:SSZ" — always UTC, always with seconds. A reader types and reads it in their own zone; the answer records the instant. Numeric offsets are refused because "…10:00:00+03:00" sorts after "…08:00:00Z" as text while being earlier in fact, and the ordering is what makes an earliest or latest bound mean anything.
@@ -165,7 +166,7 @@ Each item:
 
 Every other type is an answer field: a field that collects one answer and holds no other fields.
 
-#### `select`, `radio`, `selectboxes`
+#### `select`, `radio`, `selectboxes`, `ranking`
 
 ##### `options`
 
@@ -284,6 +285,24 @@ optional · integer · minimum 1 · maximum 1000
 optional · string · min length 1 · max length 64 · pattern `^[a-z][a-z0-9-]*$`
 
 **Options source.** Where this field's answers come from, when there are too many to write into the form or they change too often. This is a NAME the deployment resolves to a list — never an address: the form never says where to look, so moving it between staging and production changes nothing here. The value that gets stored is a code only that source can decode, and a published version is frozen forever, so it has to still mean the same thing in a year. Leave it out and the field offers the options written above.
+
+#### `ranking`
+
+##### `options`
+
+required · array · at least 2 items
+
+##### `minItems`
+
+optional · integer · minimum 0 · maximum 1000
+
+**Fewest ranked.** How many options must be put in order. Set it to the number of options to ask for a complete order; leave it unset and any number may be ranked — use `required` rather than a minimum of 1, so the reader is told before they start.
+
+##### `maxItems`
+
+optional · integer · minimum 1 · maximum 1000
+
+**Most ranked.** How many options may be put in order, which is how "your top three" is asked.
 
 #### `file`
 

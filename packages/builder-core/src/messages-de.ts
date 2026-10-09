@@ -402,6 +402,7 @@ export const BUILDER_MESSAGES_DE = {
 
   'palette.newField': 'Neues Feld',
   'palette.firstOption': 'Erste Option',
+  'palette.secondOption': 'Zweite Option',
 
   'rule.visible.label': 'Zeige dieses Feld, wenn',
   'rule.visible.hint':

@@ -306,6 +306,7 @@ describe('the spec version 2 freeze', () => {
     widgets: string[]
     widgetsInThree: string[]
     widgetsInFour: string[]
+    typesInFour: string[]
   } => {
     /*
      * Both files, because the layout vocabulary moved out of `types.ts` when spec
@@ -343,9 +344,15 @@ describe('the spec version 2 freeze', () => {
     // source reads the five literals and not the spread. Reading only those five
     // made every version 1 type look like a version 3 addition.
     const inTwo = new Set([...list('SPEC_1_FIELD_TYPES'), ...list('SPEC_2_FIELD_TYPES')])
+    // And again for version 3, whose list spreads version 2's: its literals ARE its
+    // additions. "Every type not in version 2" was version 3's answer only while 3 was the
+    // newest — the moment version 4 added `ranking`, that subtraction handed version 3's
+    // section a type it has never had.
+    const inThree = new Set([...inTwo, ...list('SPEC_3_FIELD_TYPES')])
     return {
       types: list('SPEC_2_FIELD_TYPES').filter((type) => !inOne.has(type)),
-      typesInThree: list('FIELD_TYPES').filter((type) => !inTwo.has(type)),
+      typesInThree: list('SPEC_3_FIELD_TYPES').filter((type) => !inTwo.has(type)),
+      typesInFour: list('FIELD_TYPES').filter((type) => !inThree.has(type)),
       kinds: kinds.filter((kind) => !kindsInOne.has(kind)),
       // Widgets belong to versions too, which they did not while there were two:
       // `widget` itself arrived in 2, so every widget looked like a version 2
@@ -421,11 +428,14 @@ describe('the spec version 2 freeze', () => {
      * matters most, because it is **not frozen** — anybody reading it is reading
      * a moving target and the list is how they tell what has moved so far.
      */
-    const { widgetsInFour } = additions()
+    const { widgetsInFour, typesInFour } = additions()
     expect(widgetsInFour.length, 'version 4 has added no widget to name').toBeGreaterThan(0)
+    expect(typesInFour.length, 'version 4 has added no field type to name').toBeGreaterThan(0)
 
     const text = under('### What version 4 added')
-    expect(widgetsInFour.filter((name) => !text.includes(`\`${name}\``))).toEqual([])
+    expect(
+      [...widgetsInFour, ...typesInFour].filter((name) => !text.includes(`\`${name}\``)),
+    ).toEqual([])
   })
 
   test('and says that version 4 is open rather than frozen, which no other version is', () => {

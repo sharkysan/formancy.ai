@@ -39,6 +39,8 @@ export const SCHEMA_ERRORS_DE: SchemaErrorSentences = {
     'Ein Dropdown kann kein Bild zeigen, dieses Bild wäre also nie zu sehen. Mach das Feld zu einer Gruppe von Optionsfeldern oder entferne das Bild.',
   'option.imageInChips':
     'Eine Tag-Auswahl zeigt ihre Optionen als Chips, die kein Bild zeigen können, dieses Bild wäre also nie zu sehen. Nimm die Tag-Auswahl weg oder entferne das Bild.',
+  'ranking.duplicateOption':
+    'Zwei Optionen dieser Rangfolge haben den Wert «{value}». Eine Rangfolge speichert Werte und könnte also nicht sagen, welche der beiden zuerst kam – gib jeder Option einen eigenen Wert.',
   'mask.noPositions':
     'Diese Maske hat keine Stelle zum Tippen, das Feld könnte also keine Antwort aufnehmen. Verwende 9 für eine Ziffer, a für einen Buchstaben oder * für beides.',
 

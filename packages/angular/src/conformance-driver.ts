@@ -171,6 +171,28 @@ export function createAngularDriver(
       // Checkboxes answering one question, the same shape as a radio group.
       // The value is the whole list, so every box is set to match it rather
       // than one being toggled.
+      // As the React driver does it, and as a person does: everything taken out, then
+      // each option ranked in turn, by the buttons' names.
+      if (def?.type === 'ranking') {
+        const group = screen.getByRole('group', { name: labelOf(path) })
+        for (;;) {
+          const out = within(group).queryAllByRole('button', { name: /^Take .+ out of the order$/ })[0]
+          if (out === undefined) break
+          fireEvent.click(out)
+          await settle()
+        }
+        for (const wanted of Array.isArray(value) ? value : []) {
+          const option = (def.options ?? []).find((candidate) => candidate.value === wanted)
+          fireEvent.click(
+            within(group).getByRole('button', {
+              name: `Rank ${textOf(option?.label) ?? String(wanted)}`,
+            }),
+          )
+          await settle()
+        }
+        return
+      }
+
       if (def?.type === 'selectboxes') {
         const group = screen.getByRole('group', { name: labelOf(path) })
         const wanted = new Set((Array.isArray(value) ? value : []).map(String))
@@ -257,6 +279,18 @@ export function createAngularDriver(
           .getAllByRole('radio')
           .find((radio) => (radio as HTMLInputElement).checked)
         return checked === undefined ? null : (checked as HTMLInputElement).value
+      }
+      if (def?.type === 'ranking') {
+        // The order on screen, read from the move buttons' names, as the React driver reads it.
+        const group = screen.getByRole('group', { name: labelOf(path) })
+        return within(group)
+          .queryAllByRole('button', { name: /^Move .+ up$/ })
+          .map((button) => /^Move (.+) up$/.exec(button.getAttribute('aria-label') ?? '')?.[1] ?? '')
+          .map(
+            (shown) =>
+              (def.options ?? []).find((option) => textOf(option.label as Text) === shown)?.value ??
+              shown,
+          )
       }
       if (def?.type === 'selectboxes') {
         const group = screen.getByRole('group', { name: labelOf(path) })

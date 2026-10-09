@@ -142,6 +142,17 @@ export function newFieldOfType(
     return { ...def, options: [{ value: 'option1', label: text('palette.firstOption') }] }
   }
 
+  // Two for a ranking, which the spec requires: one option is not an order (0138).
+  if (type === 'ranking') {
+    return {
+      ...def,
+      options: [
+        { value: 'option1', label: text('palette.firstOption') },
+        { value: 'option2', label: text('palette.secondOption') },
+      ],
+    }
+  }
+
   return def
 }
 

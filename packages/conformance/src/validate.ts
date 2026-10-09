@@ -8,7 +8,7 @@
  */
 
 import { SPEC_VERSIONS, modelDataPaths } from '@formancy/spec'
-import type { FieldDef, FieldType, RuleKind } from '@formancy/spec'
+import type { FieldDef } from '@formancy/spec'
 import { COMMAND_SEPARATOR, fieldAtPath, pageKeys } from './paths.js'
 import type { ConformanceSchema, Fixture, FixtureStep, StepKind } from './types.js'
 import {
@@ -16,6 +16,14 @@ import {
   messageCatalogue,
   validateI18n,
 } from './validate-text.js'
+import {
+  CONTAINER_TYPE_SET,
+  FIELD_TYPES,
+  FIELD_TYPE_SET,
+  RULE_KINDS,
+  RULE_KIND_SET,
+  UNLABELLED_TYPES,
+} from './vocabulary.js'
 import { validateMount } from './mount.js'
 import { asRecord, describeValue, isJsonValue, isStringArray } from './values.js'
 
@@ -83,66 +91,6 @@ export function stepKind(step: FixtureStep): StepKind {
   if (keys.length !== 1) throw new TypeError(`Not a step: ${JSON.stringify(step)}`)
   return keys[0] as StepKind
 }
-
-/**
- * Mirrors `FieldType` from @formancy/spec. Declared as a total record so the
- * compiler fails here the day the spec adds or drops a field type, rather than
- * the validator silently accepting a type the renderers cannot draw.
- */
-const FIELD_TYPES: Record<FieldType, true> = {
-  text: true,
-  textarea: true,
-  number: true,
-  checkbox: true,
-  select: true,
-  radio: true,
-  selectboxes: true,
-  date: true,
-  time: true,
-  datetime: true,
-  file: true,
-  richtext: true,
-  signature: true,
-  hidden: true,
-  static: true,
-  group: true,
-  page: true,
-  repeater: true,
-}
-
-const FIELD_TYPE_SET: ReadonlySet<string> = new Set(Object.keys(FIELD_TYPES))
-
-/** Types that hold other fields, and are the only types allowed to declare them. */
-const CONTAINER_TYPES: Partial<Record<FieldType, true>> = {
-  group: true,
-  page: true,
-  repeater: true,
-}
-
-const CONTAINER_TYPE_SET: ReadonlySet<string> = new Set(Object.keys(CONTAINER_TYPES))
-
-/**
- * Types that carry no accessible name of their own: `hidden` never renders and
- * `static` is prose, not a control. Every other leaf is a control a driver has
- * to find by its label.
- */
-const UNLABELLED_TYPES: ReadonlySet<string> = new Set(['hidden', 'static'])
-
-/**
- * Mirrors `RuleKind` from @formancy/spec, total for the same reason as
- * `FIELD_TYPES`: the compiler fails here the day the spec grows a kind.
- */
-const RULE_KINDS: Record<RuleKind, true> = {
-  visible: true,
-  disabled: true,
-  required: true,
-  computed: true,
-  validate: true,
-  check: true,
-  skip: true,
-}
-
-const RULE_KIND_SET: ReadonlySet<string> = new Set(Object.keys(RULE_KINDS))
 
 /**
  * Field properties the pre-spec fixture dialect used and the spec then landed

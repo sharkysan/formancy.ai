@@ -53,7 +53,7 @@ formancy
 | Cold graph compile | 30 ms | ≈1.7 ms |
 | `@formancy/core` bundle | 18 kB brotli | **20.1 kB** — over, measured 2026-10-09 |
 | `@formancy/spec` bundle | — | 25.0 kB for the whole barrel — the index and the chunk it shares with `/validate`, measured 2026-10-09 |
-| `@formancy/react` bundle | 4 kB brotli | **23.0 kB** for the whole barrel, measured 2026-10-09 |
+| `@formancy/react` bundle | 4 kB brotli | **23.9 kB** for the whole barrel, measured 2026-10-09 |
 | `uqr`, the QR encoder | — | 6.6 kB brotli, **external** rather than bundled, measured 2026-09-27 |
 
 The performance gate is written to fail on a regression greater than 15%,

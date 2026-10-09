@@ -44,7 +44,7 @@ field the layout leaves out stays out on every page
 
 ## The answer shape each type stores
 
-Most types store one value. Three do not, and the difference matters more than
+Most types store one value. Some do not, and the difference matters more than
 the control does — it is what a consumer reading the submission gets.
 
 | Type | Answer | Added in |
@@ -54,7 +54,11 @@ the control does — it is what a consumer reading the submission gets.
 | `checkbox` | a boolean — a required one is a consent gate, so only a tick satisfies it | 1 |
 | `select`, `radio` | the chosen option's `value` | 1 |
 | `selectboxes` | the chosen values, **in the options' declared order** so two people who choose the same answers store the same array | 2 |
+| `time`, `datetime` | one fixed-width string — a wall clock with no zone, or an instant in UTC | 2 |
 | `file` | `{ id, name, size, contentType, storageKey }` per attachment — never the bytes | 2 |
+| `richtext` | a string in the [formatted-text grammar](#formatted-text-is-not-html) | 2 |
+| `signature` | `{ drawn }`, the strokes as points, or `{ typed }`, a name — never both, and never stroke timing | 3 |
+| `ranking` | the chosen values **in the order chosen**, most preferred first — an option nobody ranked is not in it ([0138](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0138-a-ranking-stores-the-order-chosen.md)) | 4 |
 
 A `file` answer is written by the upload endpoints rather than typed: the
 client asks `POST /f/:path/files` where to put a file, PUTs the bytes to the
@@ -62,12 +66,14 @@ URL it gets back, and puts the reply in the submission. The server claims those
 files inside the submission's own transaction, so a submission exists if and
 only if the files it names belong to it, and a file nobody claims is deleted a
 day later ([0055](../../../../../docs/decisions/0055-files-are-claimed.md)).
-| `richtext` | a string in the [formatted-text grammar](#formatted-text-is-not-html) | 2 |
 
 `minItems` and `maxItems` bound the list types, the same two properties a
 repeater uses: "how many" is one question however it is asked. An empty list is
 not an answer, so `required` is what makes a choice compulsory rather than a
-minimum of one.
+minimum of one. On a ranking they bound how many options are put in order: "your
+top three" is `maxItems: 3`, and a complete order is `minItems` set to the number of
+options. A ranking starts empty rather than in the options' written order, because an
+order nobody chose is not an answer.
 
 An option on a `radio` or `selectboxes` field may carry a picture, which changes
 nothing about the answer:

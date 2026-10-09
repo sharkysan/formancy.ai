@@ -175,4 +175,13 @@ export const SCHEMA_WORDS_DE: SchemaWords = {
   Signature: 'Unterschrift',
   'A mark somebody draws, or their name typed. Stored as points rather than as a picture, so it scales, diffs and means something to a reader that is not a browser — and never as stroke timing, which is what would make it biometric data.':
     'Ein Zeichen, das jemand zeichnet, oder der getippte Name. Gespeichert als Punkte statt als Bild, sodass es skaliert, sich vergleichen lässt und auch außerhalb eines Browsers etwas bedeutet – und nie als Strich-Timing, das es zu biometrischen Daten machen würde.',
+  Ranking: 'Rangfolge',
+  'Options put in order of preference. The answer is the values of the options in the order chosen, most preferred first, and an option nobody ranked is not in it — so to ask for a complete order, set the fewest ranked to the number of options.':
+    'Optionen, in eine Reihenfolge der Vorliebe gebracht. Die Antwort sind die Werte der Optionen in der gewählten Reihenfolge, die liebste zuerst, und eine Option, die niemand eingereiht hat, ist nicht darin – für eine vollständige Rangfolge setze «Wenigste eingereiht» auf die Zahl der Optionen.',
+  'Fewest ranked': 'Wenigste eingereiht',
+  'How many options must be put in order. Set it to the number of options to ask for a complete order; leave it unset and any number may be ranked — use `required` rather than a minimum of 1, so the reader is told before they start.':
+    'Wie viele Optionen in eine Reihenfolge gebracht werden müssen. Setze es auf die Zahl der Optionen, um eine vollständige Reihenfolge zu verlangen; ohne Wert darf beliebig viel eingereiht werden – verwende `required` statt eines Minimums von 1, damit die ausfüllende Person es vor dem Beginn erfährt.',
+  'Most ranked': 'Höchstens eingereiht',
+  'How many options may be put in order, which is how \"your top three\" is asked.':
+    'Wie viele Optionen in eine Reihenfolge gebracht werden dürfen – so fragt man nach den «ersten drei».',
 }
