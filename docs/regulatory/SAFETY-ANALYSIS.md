@@ -687,6 +687,14 @@ markup is not navigable fails the test suite
 *Residual:* automated checking is a floor. **No manual screen-reader audit has
 been performed.** See [`SOUP-DECLARATION.md`](SOUP-DECLARATION.md).
 
+*And a design system's controls are held to the same evidence.* The Angular Material adapter
+runs the shared conformance fixtures through the same driver, axe included, with its registry
+provided ([0132](../decisions/0132-material-draws-what-it-has-an-equivalent-for.md)). Writing it
+found two ways a design system's control loses what the engine owns: Material's input never
+showed an error without Angular forms, and an error summary's link did nothing when the
+engine's id was on a component's host — both fixed, both held by tests. One divergence is kept
+and said: Material does not mark an empty required field `aria-invalid`.
+
 ### D4a. A form is laid out differently by the two renderers, and nothing reports it
 
 *How it arises:* the renderers emit their own markup on purpose, and a consumer's

@@ -13,9 +13,15 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "noEmit": false,
-    "outDir": "out-tsc"
+    "outDir": "out-tsc",
+    "paths": {
+      "@formancy/angular": [
+        "./src/index.ts"
+      ]
+    }
   },
   "include": [
-    "src/**/*.ts"
+    "src/**/*.ts",
+    "material/src/**/*.ts"
   ]
 }

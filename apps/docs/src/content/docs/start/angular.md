@@ -151,6 +151,38 @@ providers: [
 ]
 ```
 
+### With Angular Material
+
+`@formancy/angular/material` is that registry, filled with Angular Material:
+
+```bash
+npm install @angular/material @angular/cdk
+```
+
+```ts
+import { provideFormancyMaterial } from '@formancy/angular/material'
+
+providers: [provideFormancy(engine), provideFormancyMaterial()]
+```
+
+Include a Material theme as you would for any Material component; the adapter ships no CSS.
+Text, paragraph, number, date and time are a `matInput` in `<mat-form-field>`; a list is the
+platform's `<select>` under `matNativeControl`; ticks and radios are Material's. **What Material
+has no equivalent for is drawn by the default control** — a mask, a scanner, a rating or a
+slider, a typeahead, a tag picker, a list from a source, a picture on an option, a date-time, a
+file, a signature — so no feature disappears. To keep some of your own controls as well, spread
+`FORMANCY_MATERIAL_CONTROLS` into your own `byType`.
+
+Two choices worth knowing. A list is the native `<select>`, not `mat-select`, which is a
+different control with different keys. A date is the platform's date input inside Material's
+field, not Material's datepicker, which converts a calendar day through a `Date` — how a day
+becomes the day before in half the world. And one difference from the default controls that
+is Material's own: an **empty** required field is never marked `aria-invalid`; the error is
+still its description.
+
+It is held to the same conformance fixtures as the default controls, through the same driver,
+axe audit included ([0132](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0132-material-draws-what-it-has-an-equivalent-for.md)).
+
 ## Editing a form, from Angular
 
 `@formancy/builder-angular` is the builder's structure tree over the same

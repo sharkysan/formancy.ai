@@ -1,4 +1,5 @@
 import { provideZonelessChangeDetection } from '@angular/core'
+import type { Provider } from '@angular/core'
 import type { ComponentFixture } from '@angular/core/testing'
 import { TestBed } from '@angular/core/testing'
 import { fireEvent, render, screen, within } from '@testing-library/angular'
@@ -43,7 +44,13 @@ import type { SubmitOutcome } from './index.js'
  * macrotask is for the wizard, whose `next()` resolves a promise before the
  * page signal moves.
  */
-export function createAngularDriver(): RendererDriver {
+export function createAngularDriver(
+  /**
+   * Providers added to every mount — how the Material adapter runs this suite with its
+   * registry in place, so a design system is held to the same fixtures as the defaults.
+   */
+  extra: { providers?: readonly Provider[] } = {},
+): RendererDriver {
   let engine: FormEngine | undefined
   let schema: ConformanceSchema | undefined
   let fixture: ComponentFixture<FormancyForm> | undefined
@@ -133,7 +140,11 @@ export function createAngularDriver(): RendererDriver {
         },
       })
       const view = await render(FormancyForm, {
-        providers: [provideZonelessChangeDetection(), provideFormancy(engine)],
+        providers: [
+          provideZonelessChangeDetection(),
+          provideFormancy(engine),
+          ...(extra.providers ?? []),
+        ],
         inputs: { submitLabel: SUBMIT_LABEL },
         on: { submitted: (outcome: SubmitOutcome) => (lastOutcome = outcome) },
       })

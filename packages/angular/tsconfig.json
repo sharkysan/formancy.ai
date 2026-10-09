@@ -1,7 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "rootDir": "src",
+    "rootDir": ".",
     "outDir": "out-tsc",
     "lib": [
       "ES2023",
@@ -11,9 +11,15 @@
     "module": "preserve",
     "moduleResolution": "bundler",
     "noEmit": true,
-    "verbatimModuleSyntax": false
+    "verbatimModuleSyntax": false,
+    "paths": {
+      "@formancy/angular": [
+        "./src/index.ts"
+      ]
+    }
   },
   "include": [
-    "src/**/*.ts"
+    "src/**/*.ts",
+    "material/src/**/*.ts"
   ]
 }
