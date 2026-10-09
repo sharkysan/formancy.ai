@@ -2,7 +2,8 @@
 
 Reusable starting forms for HR, sales, customer service, events, operations and
 healthcare administration. The JSON documents carry their own field labels,
-choices, section layout, validation and conditional questions. English (`en`),
+choices, section layout, validation and conditional questions — and the job
+application is a wizard, its questions on pages answered a step at a time. English (`en`),
 Swiss High German (`de`) and French (`fr`) catalogues are complete for the
 text authored in these forms.
 

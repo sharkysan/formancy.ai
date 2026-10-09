@@ -5,81 +5,108 @@
   "model": {
     "fields": [
       {
-        "key": "intro",
-        "type": "static",
+        "key": "aboutYou",
+        "type": "page",
         "label": {
-          "$t": "intro"
-        }
-      },
-      {
-        "key": "fullName",
-        "type": "text",
-        "label": {
-          "$t": "fullName"
+          "$t": "page.1"
         },
-        "required": true,
-        "maxLength": 160
+        "fields": [
+          {
+            "key": "intro",
+            "type": "static",
+            "label": {
+              "$t": "intro"
+            }
+          },
+          {
+            "key": "fullName",
+            "type": "text",
+            "label": {
+              "$t": "fullName"
+            },
+            "required": true,
+            "maxLength": 160
+          },
+          {
+            "key": "email",
+            "type": "text",
+            "label": {
+              "$t": "email"
+            },
+            "required": true,
+            "format": "email",
+            "maxLength": 254
+          },
+          {
+            "key": "position",
+            "type": "text",
+            "label": {
+              "$t": "position"
+            },
+            "required": true,
+            "maxLength": 160
+          }
+        ]
       },
       {
-        "key": "email",
-        "type": "text",
+        "key": "yourExperience",
+        "type": "page",
         "label": {
-          "$t": "email"
+          "$t": "page.2"
         },
-        "required": true,
-        "format": "email",
-        "maxLength": 254
+        "fields": [
+          {
+            "key": "experience",
+            "type": "textarea",
+            "label": {
+              "$t": "experience"
+            },
+            "required": true,
+            "minLength": 20,
+            "maxLength": 4000
+          },
+          {
+            "key": "profileUrl",
+            "type": "text",
+            "label": {
+              "$t": "profileUrl"
+            },
+            "format": "url",
+            "maxLength": 500
+          },
+          {
+            "key": "availableFrom",
+            "type": "date",
+            "label": {
+              "$t": "availableFrom"
+            },
+            "required": true
+          }
+        ]
       },
       {
-        "key": "position",
-        "type": "text",
+        "key": "interview",
+        "type": "page",
         "label": {
-          "$t": "position"
+          "$t": "page.3"
         },
-        "required": true,
-        "maxLength": 160
-      },
-      {
-        "key": "experience",
-        "type": "textarea",
-        "label": {
-          "$t": "experience"
-        },
-        "required": true,
-        "minLength": 20,
-        "maxLength": 4000
-      },
-      {
-        "key": "profileUrl",
-        "type": "text",
-        "label": {
-          "$t": "profileUrl"
-        },
-        "format": "url",
-        "maxLength": 500
-      },
-      {
-        "key": "availableFrom",
-        "type": "date",
-        "label": {
-          "$t": "availableFrom"
-        },
-        "required": true
-      },
-      {
-        "key": "needsInterviewAdjustment",
-        "type": "checkbox",
-        "label": {
-          "$t": "needsInterviewAdjustment"
-        }
-      },
-      {
-        "key": "interviewAdjustment",
-        "type": "textarea",
-        "label": {
-          "$t": "interviewAdjustment"
-        },
-        "maxLength": 800
+        "fields": [
+          {
+            "key": "needsInterviewAdjustment",
+            "type": "checkbox",
+            "label": {
+              "$t": "needsInterviewAdjustment"
+            }
+          },
+          {
+            "key": "interviewAdjustment",
+            "type": "textarea",
+            "label": {
+              "$t": "interviewAdjustment"
+            },
+            "maxLength": 800
+          }
+        ]
       }
     ]
   },
@@ -142,7 +169,15 @@
             {
               "kind": "field",
               "path": "availableFrom"
-            },
+            }
+          ]
+        },
+        {
+          "kind": "section",
+          "label": {
+            "$t": "section.3"
+          },
+          "children": [
             {
               "kind": "field",
               "path": "needsInterviewAdjustment"
@@ -170,7 +205,11 @@
         "profileUrl": "CV or portfolio link (optional)",
         "availableFrom": "Available from",
         "needsInterviewAdjustment": "I would like to discuss interview arrangements",
-        "interviewAdjustment": "Requested arrangements; no medical details needed"
+        "interviewAdjustment": "Requested arrangements; no medical details needed",
+        "page.1": "About you",
+        "page.2": "Experience",
+        "page.3": "Interview",
+        "section.3": "Interview arrangements"
       },
       "de": {
         "intro": "Bewerben Sie sich auf eine Stelle und beschreiben Sie Ihre relevante Erfahrung.",
@@ -183,7 +222,11 @@
         "profileUrl": "Link zu Lebenslauf oder Portfolio (optional)",
         "availableFrom": "Verfügbar ab",
         "needsInterviewAdjustment": "Ich möchte die Rahmenbedingungen für das Gespräch besprechen",
-        "interviewAdjustment": "Gewünschte Rahmenbedingungen; keine medizinischen Angaben nötig"
+        "interviewAdjustment": "Gewünschte Rahmenbedingungen; keine medizinischen Angaben nötig",
+        "page.1": "Zu Ihrer Person",
+        "page.2": "Erfahrung",
+        "page.3": "Gespräch",
+        "section.3": "Rahmenbedingungen für das Gespräch"
       },
       "fr": {
         "intro": "Postulez à un poste et présentez votre expérience pertinente.",
@@ -196,7 +239,11 @@
         "profileUrl": "Lien vers le CV ou le portfolio (facultatif)",
         "availableFrom": "Disponible à partir du",
         "needsInterviewAdjustment": "Je souhaite discuter des modalités de l’entretien",
-        "interviewAdjustment": "Modalités souhaitées ; aucune information médicale nécessaire"
+        "interviewAdjustment": "Modalités souhaitées ; aucune information médicale nécessaire",
+        "page.1": "Vous concernant",
+        "page.2": "Expérience",
+        "page.3": "Entretien",
+        "section.3": "Modalités de l’entretien"
       }
     }
   }

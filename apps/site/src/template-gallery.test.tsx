@@ -22,6 +22,30 @@ test('the catalogue can be filtered and a template downloaded without entering t
   expect(screen.getByRole('link', { name: 'Edit Leave request in playground' }).getAttribute('href')).toContain('template=hr-leave-request')
 })
 
+test('a card says how many steps a wizard has, read from the template', () => {
+  // The job application is the gallery's wizard. A card that did not say so would hide the
+  // one thing about it a person choosing between templates would want to know.
+  render(<TemplateGallery />)
+  const card = within(screen.getByRole('article', { name: 'Job application' }))
+
+  expect(card.getByText('3 steps')).toBeTruthy()
+  expect(card.getByText('3 languages')).toBeTruthy()
+  expect(within(screen.getByRole('article', { name: 'Leave request' })).queryByText(/steps/)).toBeNull()
+})
+
+test('a preview of a wizard is a step at a time, in its layout', async () => {
+  // The gallery draws every template with its `web` layout, so this is the case 0137 fixed:
+  // a paged form with a layout showed every step's questions on the first.
+  const user = userEvent.setup()
+  render(<TemplateGallery />)
+  await user.click(screen.getByRole('button', { name: 'Preview Job application' }))
+  const dialog = within(screen.getByRole('dialog', { name: 'Job application' }))
+
+  expect(dialog.getByRole('textbox', { name: 'Full name' })).toBeTruthy()
+  expect(dialog.queryByRole('textbox', { name: 'Relevant experience' })).toBeNull()
+  expect(dialog.getByRole('navigation', { name: 'Progress' }).textContent).toContain('Experience')
+})
+
 test('a preview is a real translated form, with conditional fields and no submission endpoint', async () => {
   // A screenshot would not reveal a hidden branch that cannot be completed.
   const user = userEvent.setup()
