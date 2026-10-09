@@ -12,6 +12,8 @@
  * budget refused the next thing added to it. This is the family the refusal
  * named: eight functions, one subject.
  */
+import { ruleKindLabel } from './logic.js'
+import type { BuilderText } from './messages.js'
 import type { FieldDef, FormSchema, LayoutNode, LogicRule } from '@formancy/spec'
 import { PAGE_TARGETED_RULE_KINDS, layoutChildren } from '@formancy/spec'
 import { rewritePath } from '@formancy/expressions'
@@ -94,7 +96,12 @@ export function unskipEverywhere(draft: FormSchema, pageKey: string): void {
  * deployment answers, never a data path
  * ([0086](../../../docs/decisions/0086-a-check-is-named-and-answered-elsewhere.md)).
  */
-export function repathRules(draft: FormSchema, before: string, after: string): string | undefined {
+export function repathRules(
+  draft: FormSchema,
+  before: string,
+  after: string,
+  text: BuilderText,
+): string | undefined {
   const rules = draft.logic?.rules ?? []
   // Every rule is rewritten into a copy first, so a refusal on rule 4 does not
   // leave rules 1 to 3 changed. `attempt` discards the draft on a refusal, but
@@ -102,7 +109,6 @@ export function repathRules(draft: FormSchema, before: string, after: string): s
   const rewrites = new Map<number, LogicRule>()
 
   for (const [index, rule] of rules.entries()) {
-    const named = `rule ${String(index + 1)} (${rule.kind} on "${rule.target}")`
     const next: LogicRule = { ...rule }
 
     // A page-targeted rule names a PAGE KEY, which is not a data path and does
@@ -118,7 +124,14 @@ export function repathRules(draft: FormSchema, before: string, after: string): s
     if (rule.cel !== undefined) {
       const outcome = rewritePath(rule.cel, before, after)
       if (!outcome.ok) {
-        return `${named} cannot follow the change: ${outcome.error.message} Change or delete the rule first.`
+        // In the session's language, because it is set into a refusal that is:
+        // half a German sentence and half an English one was what this said.
+        return text('refuse.ruleCannotFollow', {
+          number: index + 1,
+          kind: ruleKindLabel(rule.kind, text),
+          target: rule.target,
+          reason: outcome.error.message,
+        })
       }
       if (outcome.changed) next.cel = outcome.source
     }

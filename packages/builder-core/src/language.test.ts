@@ -161,3 +161,63 @@ describe('a session opened with no language', () => {
     expect(session.text.locale).toBe('en-GB')
   })
 })
+
+describe('the refusals the first catalogue missed', () => {
+  /*
+   * Four refusals were still written in English in `session.ts`, and a rename a
+   * rule could not follow set an English clause into a German sentence. Each is
+   * reached here through the command, in German.
+   */
+  const translated = (): FormSchema => ({
+    specVersion: '2',
+    id: 'contact',
+    title: 'Kontakt',
+    model: {
+      fields: [
+        { key: 'postcode', type: 'text', label: 'PLZ' },
+        { key: 'note', type: 'text', label: { $t: 'note.label' } },
+      ],
+    },
+    logic: { rules: [{ kind: 'visible', target: 'note', cel: 'postcode ==' }] },
+    i18n: { defaultLocale: 'de', messages: { de: { 'note.label': 'Notiz' } } },
+    layouts: [{ name: 'web', nodes: [{ kind: 'field', path: 'postcode' }] }],
+  })
+
+  test('a rename a rule cannot follow is refused in one language, not two', () => {
+    const session = createBuilderSession(translated(), { text: german })
+
+    const message = refusal(session.renameField(['postcode'], 'zip'))
+
+    expect(message).toContain(
+      german('refuse.ruleCannotFollow', {
+        number: 1,
+        kind: german('rule.visible.label'),
+        target: 'note',
+        reason: '',
+      }).split(':')[0]!,
+    )
+    expect(message).not.toMatch(/cannot follow/)
+  })
+
+  test('removing the default language is refused in German', () => {
+    const session = createBuilderSession(translated(), { text: german })
+
+    expect(refusal(session.removeLocale('de'))).toBe(german('refuse.defaultLocale', { locale: 'de' }))
+  })
+
+  test('a layout setting that is not a setting is refused in German', () => {
+    const session = createBuilderSession(translated(), { text: german })
+
+    expect(refusal(session.setLayoutNodeProperty({ layout: 'web', path: [0] }, 'kind', 'row'))).toBe(
+      german('refuse.notASetting', { property: 'kind' }),
+    )
+  })
+
+  test('a file that is not a catalogue is refused in words rather than thrown', () => {
+    // It threw "file.messages is not iterable", and both builders showed that
+    // to a translator as the reason their upload did nothing.
+    const session = createBuilderSession(translated(), { text: german })
+
+    expect(refusal(session.importCatalogue({ hello: 1 } as never))).toBe(german('refuse.notACatalogue'))
+  })
+})

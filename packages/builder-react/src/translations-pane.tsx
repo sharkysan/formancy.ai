@@ -154,16 +154,22 @@ export function TranslationsPane({ session }: { session: BuilderSession }): Reac
             onChange={(event) => {
               const picked = event.target.files?.[0]
               if (picked === undefined) return
-              void picked.text().then((text) => {
+              void picked.text().then((content) => {
+                // Said rather than swallowed, either way: a silent no-op after a
+                // translator uploads an afternoon's work is the worst available
+                // outcome. Not JSON at all is the builder's sentence — the parser's
+                // own names a token and a position, which is an engine talking to a
+                // developer. Not a catalogue is the session's refusal, which this
+                // pane used to drop on the floor.
+                let file: unknown
                 try {
-                  session.importCatalogue(JSON.parse(text) as CatalogueFile)
-                  setProblem(null)
-                } catch (error) {
-                  // A file that is not one of ours, or not JSON at all. Said
-                  // rather than swallowed: a silent no-op after a translator
-                  // uploads an afternoon's work is the worst available outcome.
-                  setProblem(error instanceof Error ? error.message : 'That file could not be read.')
+                  file = JSON.parse(content)
+                } catch {
+                  setProblem(session.text('translations.unreadable'))
+                  return
                 }
+                const outcome = session.importCatalogue(file as CatalogueFile)
+                setProblem(outcome.ok ? null : outcome.message)
               })
             }}
           />

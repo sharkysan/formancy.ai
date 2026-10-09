@@ -291,16 +291,21 @@ export class FormancyTranslationsPane {
   protected upload(event: Event): void {
     const picked = (event.target as HTMLInputElement).files?.[0]
     if (picked === undefined) return
-    void picked.text().then((text) => {
+    void picked.text().then((content) => {
+      // Said rather than swallowed, either way: a silent no-op after a translator
+      // uploads an afternoon's work is the worst available outcome. Not JSON at
+      // all is the builder's sentence — the parser's own names a token and a
+      // position — and not a catalogue is the session's refusal, which this pane
+      // used to drop on the floor.
+      let file: unknown
       try {
-        this.session().importCatalogue(JSON.parse(text) as CatalogueFile)
-        this.problem.set(null)
-      } catch (error) {
-        // A file that is not one of ours, or not JSON at all. Said rather than
-        // swallowed: a silent no-op after a translator uploads an afternoon's
-        // work is the worst available outcome.
-        this.problem.set(error instanceof Error ? error.message : 'That file could not be read.')
+        file = JSON.parse(content)
+      } catch {
+        this.problem.set(this.session().text('translations.unreadable'))
+        return
       }
+      const outcome = this.session().importCatalogue(file as CatalogueFile)
+      this.problem.set(outcome.ok ? null : outcome.message)
     })
   }
 }

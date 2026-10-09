@@ -260,7 +260,11 @@ session's language rather than finding it, because it belongs to one session and
 builders on a page can speak two
 ([0118](../decisions/0118-an-editor-is-handed-its-language.md)).
 `navigate.ts` holds finding things — a field by key path, a container, a layout node
-by position — which left `session.ts` because none of it is a command.
+by position — which left `session.ts` because none of it is a command. `translation.ts`
+holds the translation commands — extracting a form's words, the languages, the file a
+translator works in — over the session's attempt-and-commit core, and left for the reason
+the size budget names: one concern per file. No sentence in this package is a literal; the
+compiler is asked ([0119](../decisions/0119-a-sentence-in-builder-core-comes-from-the-catalogue.md)).
 
 There are two builder interfaces over it now, and the split is the same one
 the renderers have: what decides anything is in `builder-core`, and a builder

@@ -3,7 +3,7 @@ import { TestBed } from '@angular/core/testing'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/angular'
 import { userEvent } from '@testing-library/user-event'
-import { createBuilderSession } from '@formancy/builder-core'
+import { createBuilderSession, createBuilderText } from '@formancy/builder-core'
 import type { BuilderSession } from '@formancy/builder-core'
 import type { FormSchema } from '@formancy/spec'
 import { FormancyTranslationsPane } from './translations-pane'
@@ -349,6 +349,34 @@ describe('the catalogue leaving and coming back, as it does in React', () => {
       const said = document.querySelector('[data-formancy-part="translations-problem"]')
       expect(said, 'an unreadable file was accepted in silence').not.toBeNull()
       expect((said?.textContent ?? '').length).toBeGreaterThan(0)
+    })
+  })
+
+  test('and a JSON file that is not a catalogue is reported with the session’s reason', async () => {
+    // The pane dropped every outcome `importCatalogue` returned, so a refusal
+    // from the session was a silent no-op after an upload.
+    await translated()
+
+    fireEvent.change(screen.getByLabelText(/upload/i), {
+      target: { files: [new File(['{"hello":1}'], 'other.json', { type: 'application/json' })] },
+    })
+
+    await waitFor(() => {
+      const said = document.querySelector('[data-formancy-part="translations-problem"]')
+      expect(said?.textContent?.trim()).toBe(createBuilderText()('refuse.notACatalogue'))
+    })
+  })
+
+  test('and a file that is not JSON says so in the builder’s words, not the parser’s', async () => {
+    await translated()
+
+    fireEvent.change(screen.getByLabelText(/upload/i), {
+      target: { files: [new File(['this is not json'], 'notes.txt', { type: 'text/plain' })] },
+    })
+
+    await waitFor(() => {
+      const said = document.querySelector('[data-formancy-part="translations-problem"]')
+      expect(said?.textContent?.trim()).toBe(createBuilderText()('translations.unreadable'))
     })
   })
 

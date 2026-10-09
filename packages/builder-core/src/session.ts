@@ -1,5 +1,6 @@
 import { createBuilderText } from './messages.js'
 import type { BuilderText } from './messages.js'
+import { translationCommands } from './translation.js'
 import {
   CONTAINER_TYPES,
   containerAt,
@@ -444,8 +445,6 @@ export function createBuilderSession(
   }
 
   /** Apply `edit` to a working copy and commit if the validator agrees. */
-  let lastImport: ImportReport | undefined
-
   function attempt(edit: (draft: FormSchema) => Refusal | undefined): CommandOutcome {
     const draft = copy(present)
     const problem = edit(draft)
@@ -595,7 +594,7 @@ export function createBuilderSession(
             // refusal, on the grounds that a condition is CEL and rewriting it
             // meant pattern-matching source — true at the time, and no longer:
             // `rewritePath` splices the spans the parser reports.
-            const refused = repathRules(draft, from, to)
+            const refused = repathRules(draft, from, to, text)
             if (refused !== undefined) {
               return refuse(
                 '/logic/rules',
@@ -677,7 +676,7 @@ export function createBuilderSession(
           // fail: the condition went on compiling against a path no field had,
           // evaluated as null, and silently held a conditional field hidden
           // for the life of the form.
-          const refused = repathRules(draft, before, after)
+          const refused = repathRules(draft, before, after, text)
           if (refused !== undefined) {
             return refuse(
               '/logic/rules',
@@ -701,237 +700,8 @@ export function createBuilderSession(
       })
     },
 
-    extractText(keyPath, property, locale) {
-      return attempt((draft) => {
-        const found = locate(draft, keyPath)
-        if (found === undefined) {
-          return refuse('/model/fields', text('refuse.noField', { path: keyPath.join('.') }))
-        }
-        const field = found.siblings[found.index] as unknown as Record<string, unknown>
-        const current = field[property]
-        // Already a reference: nothing to extract, and re-seeding would overwrite a
-        // translation with the language it came from.
-        if (typeof current === 'object' && current !== null && '$t' in current) return undefined
-        if (typeof current !== 'string') {
-          return refuse(
-            `/model/fields/${String(found.index)}/${property}`,
-            `"${property}" on "${keyPath.join('.')}" is not text, so there is nothing to translate.`,
-          )
-        }
-
-        const defaultLocale = draft.i18n?.defaultLocale ?? locale ?? 'en'
-        const id = `${keyPath.join('.')}.${property}`
-        draft.i18n = {
-          defaultLocale,
-          messages: { ...draft.i18n?.messages },
-        }
-        draft.i18n.messages[defaultLocale] = {
-          ...draft.i18n.messages[defaultLocale],
-          [id]: current,
-        }
-        field[property] = { $t: id }
-        return undefined
-      })
-    },
-
-    extractAllText(locale) {
-      return attempt((draft) => {
-        const defaultLocale = draft.i18n?.defaultLocale ?? locale ?? 'en'
-        const catalogue: Record<string, string> = { ...draft.i18n?.messages[defaultLocale] }
-        const taken = new Set(Object.keys(catalogue))
-
-        /** A readable id nothing else is using. */
-        const mint = (base: string): string => {
-          if (!taken.has(base)) {
-            taken.add(base)
-            return base
-          }
-          let counter = 2
-          while (taken.has(`${base}.${String(counter)}`)) counter += 1
-          const id = `${base}.${String(counter)}`
-          taken.add(id)
-          return id
-        }
-
-        /** Replace one property with a reference, keeping what it said. */
-        const lift = (holder: Record<string, unknown>, property: string, base: string): void => {
-          const current = holder[property]
-          if (typeof current !== 'string') return
-          const id = mint(base)
-          catalogue[id] = current
-          holder[property] = { $t: id }
-        }
-
-        const fields = (defs: FieldDef[], parent: readonly string[]): void => {
-          for (const def of defs) {
-            const at = [...parent, def.key]
-            const path = at.join('.')
-            lift(def as unknown as Record<string, unknown>, 'label', `${path}.label`)
-            for (const option of def.options ?? []) {
-              // By VALUE rather than by index: an option's value is its identity,
-              // so the id reads as the thing it names rather than as a position.
-              lift(option as unknown as Record<string, unknown>, 'label', `${path}.option.${option.value}`)
-            }
-            for (const column of def.columns ?? []) {
-              lift(column as unknown as Record<string, unknown>, 'header', `${path}.column.${column.field}`)
-            }
-            fields(def.fields ?? [], at)
-          }
-        }
-        fields(draft.model.fields, [])
-
-        for (const layout of draft.layouts ?? []) {
-          const walk = (nodes: LayoutNode[], trail: string): void => {
-            for (const [index, node] of nodes.entries()) {
-              const at = `${trail}.${node.kind}${String(index)}`
-              lift(node as unknown as Record<string, unknown>, 'label', `${at}.label`)
-              walk(layoutChildren(node) as LayoutNode[], at)
-            }
-          }
-          walk(layout.nodes, layout.name)
-        }
-
-        // Nothing to lift: leave the document exactly as it was rather than
-        // attaching an empty catalogue to a form nobody is translating.
-        if (Object.keys(catalogue).length === 0) return undefined
-
-        draft.i18n = {
-          defaultLocale,
-          messages: { ...draft.i18n?.messages, [defaultLocale]: catalogue },
-        }
-        return undefined
-      })
-    },
-
-    setMessage(locale, id, message) {
-      return attempt((draft) => {
-        if (draft.i18n === undefined) {
-          return refuse('/i18n', text('refuse.i18nNoneYet'))
-        }
-        draft.i18n = {
-          ...draft.i18n,
-          messages: {
-            ...draft.i18n.messages,
-            [locale]: { ...draft.i18n.messages[locale], [id]: message },
-          },
-        }
-        return undefined
-      })
-    },
-
-    exportCatalogue(locale) {
-      const defaultLocale = present.i18n?.defaultLocale ?? 'en'
-      const source = present.i18n?.messages[defaultLocale] ?? {}
-      const target = present.i18n?.messages[locale] ?? {}
-      // Every id the DOCUMENT refers to, not every id the catalogue holds: an
-      // orphan is somebody's kept work and not a thing to send out for
-      // translation again.
-      const live = referencedIds(present)
-      return {
-        locale,
-        defaultLocale,
-        messages: [...live].map((id) => ({
-          id,
-          source: source[id] ?? '',
-          target: target[id] ?? '',
-        })),
-      }
-    },
-
-    importCatalogue(file) {
-      const live = referencedIds(present)
-      const report: ImportReport = { written: 0, unknown: [], stale: [] }
-      const source = present.i18n?.messages[present.i18n.defaultLocale] ?? {}
-
-      const outcome = attempt((draft) => {
-        const existing = { ...draft.i18n?.messages[file.locale] }
-        for (const message of file.messages) {
-          if (!live.has(message.id)) {
-            report.unknown.push(message.id)
-            continue
-          }
-          // Translated from words that have since changed. Written anyway --
-          // something is better than nothing and the translator may well be
-          // right -- and named, because it is the one a reviewer has to look at.
-          if (message.source !== '' && source[message.id] !== message.source) {
-            report.stale.push(message.id)
-          }
-          if (message.target === '') continue
-          existing[message.id] = message.target
-          report.written += 1
-        }
-
-        const defaultLocale = draft.i18n?.defaultLocale ?? file.defaultLocale
-        draft.i18n = {
-          defaultLocale,
-          messages: { ...draft.i18n?.messages, [file.locale]: existing },
-        }
-        return undefined
-      })
-
-      if (outcome.ok) lastImport = report
-      return outcome
-    },
-
-    lastImportReport: () => lastImport,
-
-    addLocale(locale) {
-      return attempt((draft) => {
-        if (draft.i18n === undefined) {
-          return refuse('/i18n', text('refuse.i18nNoneYet'))
-        }
-        // Present with nothing in it, so a translator can open the language and work
-        // through it rather than having to translate something before it exists.
-        draft.i18n = {
-          ...draft.i18n,
-          messages: { ...draft.i18n.messages, [locale]: { ...draft.i18n.messages[locale] } },
-        }
-        return undefined
-      })
-    },
-
-    removeLocale(locale) {
-      return attempt((draft) => {
-        if (draft.i18n === undefined) return refuse('/i18n', text('refuse.i18nNone'))
-        if (draft.i18n.defaultLocale === locale) {
-          return refuse(
-            '/i18n/defaultLocale',
-            `"${locale}" is the default locale: every other locale falls back to it, so removing it would leave every untranslated message with nothing to resolve to.`,
-          )
-        }
-        const messages = { ...draft.i18n.messages }
-        delete messages[locale]
-        draft.i18n = { ...draft.i18n, messages }
-        return undefined
-      })
-    },
-
-    orphanedMessages() {
-      const referenced = new Set<string>()
-      const walk = (value: unknown): void => {
-        if (Array.isArray(value)) {
-          for (const item of value) walk(item)
-          return
-        }
-        if (typeof value !== 'object' || value === null) return
-        const record = value as Record<string, unknown>
-        if (typeof record['$t'] === 'string') {
-          referenced.add(record['$t'])
-          return
-        }
-        for (const item of Object.values(record)) walk(item)
-      }
-      // The model and the layouts, and NOT `i18n` itself -- walking the catalogue
-      // would find every id in it and report none of them.
-      walk(present.model)
-      walk(present.layouts)
-
-      const known = new Set<string>()
-      for (const catalogue of Object.values(present.i18n?.messages ?? {})) {
-        for (const id of Object.keys(catalogue)) known.add(id)
-      }
-      return [...known].filter((id) => !referenced.has(id)).sort()
-    },
+    // Translation: one concern, its own file, over this session's core.
+    ...translationCommands({ document: () => present, attempt, refuse, text }),
 
     addRule(rule) {
       return attempt((draft) => {
@@ -1150,13 +920,13 @@ export function createBuilderSession(
         if (STRUCTURAL_LAYOUT_PROPERTIES.has(property)) {
           return refuse(
             `${layoutPointer(address)}/${property}`,
-            `"${property}" is not a setting. It is what the node is, or where it sits, and the arrangement's own commands change it.`,
+            text('refuse.notASetting', { property }),
           )
         }
         if (property === '__proto__' || property === 'prototype' || property === 'constructor') {
           return refuse(
             `${layoutPointer(address)}/${property}`,
-            `"${property}" is not allowed as a layout node setting name.`,
+            text('refuse.settingName', { property }),
           )
         }
         const node = found.siblings[found.index]! as unknown as Record<string, unknown>
@@ -1443,26 +1213,4 @@ function deepFreeze<T>(value: T): T {
   if (value === null || typeof value !== 'object') return value
   for (const nested of Object.values(value as Record<string, unknown>)) deepFreeze(nested)
   return Object.freeze(value)
-}
-
-/** Every message id the document refers to. Shared by the export and the import,
- *  so the two can never disagree about which messages are live. */
-function referencedIds(document: FormSchema): Set<string> {
-  const found = new Set<string>()
-  const walk = (value: unknown): void => {
-    if (Array.isArray(value)) {
-      for (const item of value) walk(item)
-      return
-    }
-    if (typeof value !== 'object' || value === null) return
-    const record = value as Record<string, unknown>
-    if (typeof record['$t'] === 'string') {
-      found.add(record['$t'])
-      return
-    }
-    for (const item of Object.values(record)) walk(item)
-  }
-  walk(document.model)
-  walk(document.layouts)
-  return found
 }
