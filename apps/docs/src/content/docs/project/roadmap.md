@@ -112,9 +112,11 @@ answer holding only what was typed — `(999) 999-9999` stores `5551234567`
   a rename carries `item.` references along
   ([0129](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0129-a-row-rule-is-written-in-the-row.md)).
   What is not built is a verdict per row in the rules overview.
-- **Virus scanning** of uploaded files, and **resumable uploads**. Files
-  themselves work; a stored file is trusted the moment its bytes land, and the
-  deployment's byte ceiling is also the largest single file.
+- ~~**Virus scanning** of uploaded files~~ **Built**, when a deployment runs ClamAV: an
+  upload is scanned before it is kept and refused when it cannot be
+  ([0131](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0131-an-upload-is-scanned-before-it-is-kept.md)).
+- **Resumable uploads.** The deployment's byte ceiling is also the largest single
+  file.
 - ~~**Per-file upload progress.**~~ **Built**, with cancelling, retrying,
   reordering and thumbnails: the `Uploader` is told the field, a signal and a
   progress callback, and each file is its own upload

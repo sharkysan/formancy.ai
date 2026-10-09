@@ -8,6 +8,7 @@ import type { FastifyInstance } from 'fastify'
 import type { FormSchema } from '@formancy/spec'
 import { bootstrapSchema } from './db.js'
 import { solveChallenge } from '@formancy/server-core'
+import type { ScanVerdict } from '@formancy/server-core'
 import { createApp, SCHEMA_HASH_HEADER } from './app.js'
 import { createPostgresStorage } from './postgres-storage.js'
 import type { FileStore } from './file-store.js'
@@ -946,6 +947,131 @@ describe('uploaded files', () => {
   })
 })
 
+
+/**
+ * An upload the deployment scans (0131), on an app of its own so the scanner's verdict
+ * is the test's to choose. Against real SQL because the claim is what matters: a file
+ * the scanner refused must not be claimable by a submission, and that is a row's state.
+ */
+describe('an upload the deployment scans', () => {
+  const scanned: FormSchema = {
+    specVersion: '2',
+    id: 'scanned',
+    title: 'Scanned',
+    model: { fields: [{ key: 'evidence', type: 'file', label: 'Evidence' }] },
+  }
+  let verdict: () => Promise<ScanVerdict>
+  const seen: Buffer[] = []
+  let scanning: FastifyInstance
+  let hash = ''
+
+  beforeAll(async () => {
+    scanning = await createApp(createPostgresStorage(sql), {
+      authSecret: 'integration-test-secret-with-length',
+      submissionRateLimit: { max: 10_000, timeWindowMs: 60_000 },
+      fileStore,
+      scanner: {
+        scan: async (_file, scannedBytes) => {
+          seen.push(Buffer.from(scannedBytes))
+          return verdict()
+        },
+      },
+    })
+    const published = await app.inject({
+      method: 'POST',
+      url: '/forms',
+      headers: asAdmin(),
+      payload: { path: 'scanned', schema: scanned },
+    })
+    hash = (published.json() as { schemaHash: string }).schemaHash
+    await app.inject({ method: 'PUT', url: '/f/scanned/access', headers: asAdmin(), payload: { submit: 'public' } })
+  })
+
+  afterAll(async () => {
+    await scanning?.close()
+  })
+
+  /** Offer, then send the bytes; the reply to the bytes, and the file's row. */
+  async function send(body: Buffer) {
+    const offered = await scanning.inject({
+      method: 'POST',
+      url: '/f/scanned/files',
+      payload: { field: 'evidence', name: 'a.pdf', size: body.byteLength, contentType: 'application/pdf' },
+    })
+    const file = offered.json() as { id: string; uploadUrl: string; storageKey: string }
+    const put = await scanning.inject({
+      method: 'PUT',
+      url: file.uploadUrl,
+      headers: { 'content-type': 'application/pdf' },
+      payload: body,
+    })
+    return { put, file }
+  }
+
+  test('a clean file is kept, and the scanner was shown exactly the bytes that arrived', async () => {
+    verdict = async () => ({ clean: true })
+    const body = Buffer.from('%PDF-1.4 clean')
+
+    const { put, file } = await send(body)
+
+    expect(put.statusCode).toBe(204)
+    expect(seen.at(-1)).toEqual(body)
+    expect(bytes.get(file.storageKey)).toEqual(body)
+  })
+
+  test('a file the scanner refuses is not kept, says why, and cannot be claimed', async () => {
+    verdict = async () => ({ clean: false, finding: 'Eicar-Test-Signature' })
+
+    const { put, file } = await send(Buffer.from('%PDF-1.4 the scanner says no'))
+
+    expect(put.statusCode).toBe(422)
+    expect(put.json()).toMatchObject({ error: 'refused_by_scanner' })
+    expect((put.json() as { message: string }).message).toContain('Eicar-Test-Signature')
+    // Never in the store, not even until the collector runs.
+    expect(bytes.has(file.storageKey)).toBe(false)
+    const submitted = await scanning.inject({
+      method: 'POST',
+      url: '/f/scanned/submissions',
+      headers: { [SCHEMA_HASH_HEADER]: hash },
+      payload: { evidence: [file] },
+    })
+    expect(submitted.statusCode).toBe(422)
+  })
+
+  test('a scanner that cannot be asked keeps nothing either, and says to try again', async () => {
+    // Fail closed: the deployment configured a scanner to keep unscanned files out.
+    verdict = async () => {
+      throw new Error('connect ECONNREFUSED 10.0.0.5:3310')
+    }
+
+    const { put, file } = await send(Buffer.from('%PDF-1.4 unscanned'))
+
+    expect(put.statusCode).toBe(503)
+    expect((put.json() as { message: string }).message).toMatch(/Try again/)
+    // The cause is the operator's, in the log; the client is not told an address.
+    expect(JSON.stringify(put.json())).not.toContain('10.0.0.5')
+    expect(bytes.has(file.storageKey)).toBe(false)
+  })
+
+  test('and the same bytes sent again once it is back are kept', async () => {
+    verdict = async () => {
+      throw new Error('timeout')
+    }
+    const body = Buffer.from('%PDF-1.4 later')
+    const { file } = await send(body)
+    verdict = async () => ({ clean: true })
+
+    const again = await scanning.inject({
+      method: 'PUT',
+      url: file.uploadUrl,
+      headers: { 'content-type': 'application/pdf' },
+      payload: body,
+    })
+
+    expect(again.statusCode).toBe(204)
+    expect(bytes.get(file.storageKey)).toEqual(body)
+  })
+})
 
 /**
  * The audit log, against real SQL.

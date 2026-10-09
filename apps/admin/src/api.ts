@@ -300,12 +300,23 @@ export async function uploadFile(
 
   const stored = (await offered.json()) as StoredFile & { uploadUrl: string }
 
-  const status = await putBytes(`${BASE}${stored.uploadUrl}`, file, stored.contentType, signal, onProgress)
-  if (status === 401) {
+  const sent = await putBytes(`${BASE}${stored.uploadUrl}`, file, stored.contentType, signal, onProgress)
+  if (sent.status === 401) {
     setToken(null)
     throw new Unauthorized()
   }
-  if (status < 200 || status >= 300) throw new Error(`The upload failed (${String(status)}).`)
+  if (sent.status < 200 || sent.status >= 300) {
+    // The server's words when it gave some: a scanner's refusal is decided after the
+    // bytes land, and "failed (422)" would leave somebody guessing whether to retry.
+    const said = (() => {
+      try {
+        return (JSON.parse(sent.body) as { message?: unknown }).message
+      } catch {
+        return undefined
+      }
+    })()
+    throw new Error(typeof said === 'string' ? said : `The upload failed (${String(sent.status)}).`)
+  }
 
   // Without uploadUrl: it is how to send the bytes, not part of the answer,
   // and storing it would put a route into somebody's submission data.
@@ -317,8 +328,8 @@ export async function uploadFile(
  * The bytes, reporting how far they have got, with the session `authed` would send.
  *
  * XHR rather than fetch, because fetch cannot report an upload's progress — the one thing
- * the field's bar needs (0130). Resolves with the status, so the caller answers a 401 the
- * way every other management call does.
+ * the field's bar needs (0130). Resolves with the status and what the server said, so the
+ * caller answers a 401 the way every other management call does.
  */
 function putBytes(
   url: string,
@@ -326,7 +337,7 @@ function putBytes(
   contentType: string,
   signal: AbortSignal,
   onProgress: (sent: number, total: number) => void,
-): Promise<number> {
+): Promise<{ status: number; body: string }> {
   return new Promise((resolve, reject) => {
     const request = new XMLHttpRequest()
     request.open('PUT', url)
@@ -336,7 +347,7 @@ function putBytes(
     request.upload.onprogress = (event) => {
       if (event.lengthComputable) onProgress(event.loaded, event.total)
     }
-    request.onload = () => resolve(request.status)
+    request.onload = () => resolve({ status: request.status, body: request.responseText })
     request.onerror = () => reject(new Error('The upload failed: the connection was lost.'))
     request.onabort = () => reject(new Error('Cancelled.'))
     signal.addEventListener('abort', () => request.abort(), { once: true })

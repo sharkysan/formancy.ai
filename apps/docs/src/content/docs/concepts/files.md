@@ -195,11 +195,52 @@ and does not is the worst outcome available here.
 supported state too: a form with no file fields needs no uploader, and throwing
 would turn a form that mostly works into a blank page.
 
+## Scanning what is uploaded
+
+Point the deployment at a ClamAV daemon and every upload is scanned before its bytes are
+kept:
+
+```bash
+FORMANCY_CLAMD_HOST=clamav
+FORMANCY_CLAMD_PORT=3310                  # optional; clamd's own default
+FORMANCY_CLAMD_MAX_BYTES=104857600        # optional; clamd's StreamMaxLength
+```
+
+**Clean is kept; anything else is not.** A finding is refused with the name clamd gives it,
+and the file field shows that as the reason the file was not attached. A scanner that cannot
+be reached — not started, restarting, timing out — refuses the file too, and says to try
+again: a deployment that configured a scanner did so to keep unscanned files out, and its
+being down is not a reason to let one in. The file field's **Try again** is how a person gets
+past a restart. A refused file is never in the store, and no submission can claim it.
+
+**Set `AlertExceedsMax yes` in `clamd.conf`.** ClamAV's own configuration says that content
+past its `MaxFileSize` or `MaxScanSize` — an archive that expands too far — is not flagged
+unless it is set, and its default is off: such a file is answered clean without being
+scanned. With it, the file is refused as `Heuristics.Limits.Exceeded`.
+
+**`FORMANCY_CLAMD_MAX_BYTES` is clamd's `StreamMaxLength`**, 100 MiB unless you changed it.
+A larger file is refused as one that could not be scanned, before a byte is sent: past that
+limit clamd closes the connection mid-stream, and its answer can be lost with it.
+
+The scanner is not checked at startup, because clamd takes minutes to load its signatures;
+until it answers, uploads are refused and everything else works. Keeping the signatures
+current is the operator's, as with any scanner. Files stored before a scanner was configured
+are not rescanned. Without `FORMANCY_CLAMD_HOST` nothing is scanned — a supported state.
+
+The scanner is a port: a deployment embedding `@formancy/server` may pass any `Scanner` to
+`createApp` — `scan(file, bytes)` resolving clean or with a finding, and throwing only when
+it could not be asked.
+
+**What has been verified, and how.** The adapter's tests run against a stand-in that speaks
+clamd's protocol; the composition was run once, on 2026-10-09, against ClamAV 1.5.4: a plain
+document was clean, the EICAR test file was found, and a stream over 100 MiB was refused. That
+run could not show what clamd does with content past its scan limits — the EICAR file is
+recognised only as itself, so it cannot be hidden in a larger one — which is why the advice
+above quotes ClamAV's configuration rather than a measurement
+([0131](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0131-an-upload-is-scanned-before-it-is-kept.md)).
+
 ## Not built yet
 
-- **Virus scanning.** A `ScanHook` with a ClamAV sidecar is designed, not
-  written. A stored file is trusted the moment its bytes land; the exposure is
-  limited to whoever deliberately downloads one.
 - **Resumable or multipart uploads.** The deployment ceiling is also the
   largest single file.
 - **A presigned upload path.** Bytes go through the server on their way to the

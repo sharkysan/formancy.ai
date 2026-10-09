@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, test } from 'vitest'
-import { collectAbandonedFiles, filesToClaim, offerUpload } from './uploads.js'
+import { collectAbandonedFiles, filesToClaim, offerUpload, screenUpload } from './uploads.js'
+import type { Scanner } from './uploads.js'
 import { createMemoryStorage } from './testing/memory-storage.js'
 import type { FileRecord, FormRecord, Storage } from './ports.js'
 import type { FormSchema } from '@formancy/spec'
@@ -307,5 +308,61 @@ describe('collectAbandonedFiles', () => {
     // rubbish; the host deletes it and then removes the rows.
     expect(collected[0]?.storageKey).toBe('k/f1')
     expect(await storage.getFile('a')).toBeDefined()
+  })
+})
+
+/**
+ * A deployment's scanner, asked before an upload's bytes are kept (0131).
+ *
+ * The three outcomes are the decision: clean is stored, a finding is refused, and a
+ * scanner that cannot be asked is refused too — a deployment that configured one
+ * did so to keep unscanned files out, and "the scanner was down" is not a reason to
+ * let one in.
+ */
+describe('screenUpload', () => {
+  const file = { name: 'invoice.pdf', contentType: 'application/pdf', size: 3 }
+  const bytes = new Uint8Array([1, 2, 3])
+
+  test('without a scanner, every upload is kept, as before there was one', async () => {
+    expect(await screenUpload(undefined, file, bytes)).toEqual({ ok: true })
+  })
+
+  test('a clean verdict keeps it, and the scanner was shown the bytes that arrived', async () => {
+    const seen: Uint8Array[] = []
+    const scanner: Scanner = {
+      scan: async (_described, scanned) => {
+        seen.push(scanned)
+        return { clean: true }
+      },
+    }
+
+    expect(await screenUpload(scanner, file, bytes)).toEqual({ ok: true })
+    expect(seen).toEqual([bytes])
+  })
+
+  test('a finding refuses it, and says what was found', async () => {
+    const scanner: Scanner = { scan: async () => ({ clean: false, finding: 'Eicar-Test-Signature' }) }
+
+    expect(await screenUpload(scanner, file, bytes)).toEqual({
+      ok: false,
+      reason: 'refused',
+      finding: 'Eicar-Test-Signature',
+    })
+  })
+
+  test('a scanner that cannot be asked refuses it rather than letting it through', async () => {
+    // Fail closed. The field offers the person a retry; the deployment keeps the
+    // promise its configuration made.
+    const scanner: Scanner = {
+      scan: async () => {
+        throw new Error('connect ECONNREFUSED 10.0.0.5:3310')
+      },
+    }
+
+    expect(await screenUpload(scanner, file, bytes)).toEqual({
+      ok: false,
+      reason: 'scanner_unavailable',
+      cause: 'connect ECONNREFUSED 10.0.0.5:3310',
+    })
   })
 })

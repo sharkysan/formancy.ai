@@ -57,6 +57,7 @@ the translated string off the document
 | Renderer conformance, both drivers | `pnpm test` | Both renderers behave identically, with no framework-specific skips |
 | axe-core after every mount and DOM-mutating change | in the same run | Zero automated accessibility violations |
 | Server integration on real PostgreSQL via Testcontainers | `pnpm test` | Versioning and submission defects only manifest against real SQL semantics |
+| An upload the scanner refuses, or cannot be asked about, is not stored and cannot be claimed; the ClamAV adapter frames its bytes and reads every answer against a protocol stand-in | `pnpm test` | Fail closed is the decision, and a claim is a row's state, so it is held on real SQL; a real clamd is in no gate and was run once by hand ([0131](../decisions/0131-an-upload-is-scanned-before-it-is-kept.md)) |
 | The official CEL corpus, counts pinned | `pnpm test` | The expression evaluator has not regressed, and its gaps are known rather than assumed |
 | Performance benchmarks | `pnpm bench` | The budgets in [§9](09-quality-requirements.md) |
 | `publint` + `attw` | `pnpm check:pkg` | The commonest cause of "it doesn't work in my app" for a multi-framework library |

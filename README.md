@@ -46,7 +46,8 @@ Apache-2.0 throughout.
    own design system.
 4. **Collect answers on your infrastructure.** The optional backend checks
    submissions with the same rules, stores them in PostgreSQL, and provides
-   drafts, file attachments, CSV export, webhooks and an audit log.
+   drafts, file attachments — scanned by ClamAV before they are kept, if you run it —
+   CSV export, webhooks and an audit log.
 
 The visual editor is built in **both Angular and React**, over one shared core
 that decides what any edit may do — so the two cannot offer different answers

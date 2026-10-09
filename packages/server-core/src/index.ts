@@ -47,9 +47,9 @@ export type {
   ListedVersion,
   ResolvedForm,
   ResumeOutcome,
-  ServerDeps,
   SubmissionOutcome,
 } from './use-cases.js'
+export type { ServerDeps } from './deps.js'
 export { unsafePatterns } from './redos.js'
 export type { UnsafePattern } from './redos.js'
 export type {
@@ -84,7 +84,15 @@ export type { DeliveryHeaders } from './webhook.js'
 export { afterAttempt, drainOutbox } from './outbox.js'
 export type { AttemptOutcome, OutboxDeps } from './outbox.js'
 export type { DeliveryRecord, WebhookRecord } from './ports.js'
-export { collectAbandonedFiles, filesToClaim, fileFieldPaths, offerUpload } from './uploads.js'
-export type { ClaimOutcome, OfferDeps, OfferInput, OfferOutcome } from './uploads.js'
+export { collectAbandonedFiles, filesToClaim, fileFieldPaths, offerUpload, screenUpload } from './uploads.js'
+export type {
+  ClaimOutcome,
+  OfferDeps,
+  OfferInput,
+  OfferOutcome,
+  Scanner,
+  ScanVerdict,
+  ScreenOutcome,
+} from './uploads.js'
 export { publishForm } from './publishing.js'
 export type { PublishOutcome } from './publishing.js'

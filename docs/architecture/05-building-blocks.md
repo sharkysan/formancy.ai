@@ -360,7 +360,12 @@ with the most of its own vocabulary — `server-core/publishing.ts` holds
 `server/routes/publish.ts` is the matching Fastify plugin, and
 `server/headers.ts` holds the one header name both the submission route and the
 publish plugin read. Two spellings of one header is a bug nobody sees until a
-client sends the other one.
+client sends the other one. Files followed: `server/routes/files.ts` offers, receives and
+serves them, and asks `screenUpload` in `server-core/uploads.ts` whether a file's bytes may
+be kept, against the deployment's `Scanner` — `server/clamd-scanner.ts` speaks ClamAV's
+INSTREAM, with no dependency ([0131](../decisions/0131-an-upload-is-scanned-before-it-is-kept.md)).
+`ServerDeps`, what a deployment supplies, left `use-cases.ts` for `server-core/deps.ts` the
+same way.
 
 The webhook outbox shows the split at its sharpest. `server-core/outbox.ts` has
 `afterAttempt` — pure, four arguments, the entire retry policy — and

@@ -86,6 +86,8 @@ wrong database — a confusing ten minutes. The compose file maps 5439 instead.
 | `FORMANCY_S3_BUCKET` / `..._REGION` | with the endpoint | No defaults: a guessed bucket uploads into nothing, and the region is part of the request signature rather than a label — a wrong one is rejected. |
 | `FORMANCY_S3_ACCESS_KEY_ID` / `..._SECRET_ACCESS_KEY` | with the endpoint | No defaults. Wrong credentials would otherwise look like a store where every file is missing. |
 | `FORMANCY_MAX_FILE_BYTES` | no | The operator's ceiling over every form's own `maxFileSize`. Defaults to 10 MB. |
+| `FORMANCY_CLAMD_HOST` | no | A ClamAV daemon asked about every upload before its bytes are kept. Unset means nothing is scanned; set, a file is refused when clamd finds something **or cannot be reached** — see [Files](/docs/concepts/files/#scanning-what-is-uploaded). |
+| `FORMANCY_CLAMD_PORT` / `..._MAX_BYTES` | no | clamd's port, 3310 by default, and its `StreamMaxLength`, 100 MiB by default. A larger file is refused before it is sent. |
 | `FORMANCY_CHALLENGE_SECRET` | no | Turns the proof-of-work challenge on for anonymous submissions; ≥ 32 characters. Unset means public forms are defended by the rate limits, the origin allowlist and the body cap alone. Separate from `FORMANCY_AUTH_SECRET` so that rotating one does not cost everybody their session. |
 | `FORMANCY_WEBHOOK_ALLOW_HTTP` / `..._ALLOW_PRIVATE` | no | Opt out of the webhook SSRF guard, per deployment and never per form. `ALLOW_PRIVATE` gives it up entirely. |
 | `PORT` / `HOST` | no | Defaults `4380` / `0.0.0.0` |

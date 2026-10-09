@@ -9,6 +9,7 @@ import { startChallengeSweeper } from './challenge-sweeper.js'
 import { createLocalFileStore } from './file-store.js'
 import type { FileStore } from './file-store.js'
 import { createS3FileStore } from './s3-file-store.js'
+import { CLAMD_DEFAULT_MAX_BYTES, createClamdScanner } from './clamd-scanner.js'
 
 // recheck ships a 23 MB JVM jar and a native binary per platform as OPTIONAL
 // dependencies and falls back to a pure-JavaScript engine without them. For
@@ -112,6 +113,30 @@ if (!Number.isFinite(maxFileBytes) || maxFileBytes <= 0) {
 }
 
 /**
+ * A ClamAV daemon to ask about every upload before its bytes are kept.
+ *
+ * Unset is a supported state: no file is scanned, which the documentation says. Set, a
+ * file is kept only once clamd has called it clean, and refused when clamd cannot be
+ * reached — the point of configuring a scanner is that nothing unscanned gets in
+ * ([0131](../../../docs/decisions/0131-an-upload-is-scanned-before-it-is-kept.md)).
+ * Not checked at startup: clamd takes minutes to load its signatures, and a server that
+ * refused to start until then would turn a slow scanner into an outage of everything.
+ */
+const clamdHost = process.env['FORMANCY_CLAMD_HOST']
+const clamdPort = Number(process.env['FORMANCY_CLAMD_PORT'] ?? 3310)
+const clamdMaxBytes = Number(process.env['FORMANCY_CLAMD_MAX_BYTES'] ?? CLAMD_DEFAULT_MAX_BYTES)
+if (!Number.isInteger(clamdPort) || clamdPort <= 0 || clamdPort > 65_535) {
+  throw new Error('FORMANCY_CLAMD_PORT must be a port number.')
+}
+if (!Number.isFinite(clamdMaxBytes) || clamdMaxBytes <= 0) {
+  throw new Error("FORMANCY_CLAMD_MAX_BYTES must be a positive number of bytes: clamd's StreamMaxLength.")
+}
+const scanner =
+  clamdHost === undefined || clamdHost === ''
+    ? undefined
+    : createClamdScanner({ host: clamdHost, port: clamdPort, maxBytes: clamdMaxBytes })
+
+/**
  * Turns the proof-of-work challenge on for anonymous submissions.
  *
  * Unset is a supported state rather than a misconfiguration: a deployment
@@ -139,6 +164,7 @@ const app = await createApp(storage, {
     : {}),
   ...(fileStore === undefined ? {} : { fileStore }),
   ...(challengeSecret === undefined ? {} : { challengeSecret }),
+  ...(scanner === undefined ? {} : { scanner }),
   maxFileBytes,
 })
 

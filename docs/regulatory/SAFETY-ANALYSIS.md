@@ -542,8 +542,10 @@ unnoticed.
 
 Nothing else needs a directive: the renderers set styles through framework bindings, which
 are CSSOM; a `qrcode` node is inline SVG built element by element rather than a `data:` URL,
-so `img-src 'self'` suffices; and there is no worker, no font and no outbound request the
-library makes on its own.
+so `img-src 'self'` suffices; a file's thumbnail is drawn on a canvas from its bytes rather
+than loaded from a `blob:` URL, so it needs no `img-src` at all
+([0130](../decisions/0130-each-file-is-its-own-upload.md)); and there is no worker, no font and
+no outbound request the library makes on its own.
 
 *Residual:* renderers emit the application's own markup. A consuming
 application that injects unsanitised HTML into a form is outside this boundary. The
@@ -609,6 +611,28 @@ the document.
 the person filling the form in that one was chosen. A deployment that must not disclose
 it should refuse such documents at publish, which formancy does not do for it, or set
 an `img-src` policy that names only itself.
+
+### C7. A file carrying malware is stored, and handed to whoever opens it
+
+*How it arises:* an attachment is accepted on its declared type and size, stored, and later
+downloaded by somebody reading the submissions — the person the file was always aimed at.
+
+*Constraint:* files are served only to an authenticated reader, as attachments, with
+`nosniff` and a sandboxing policy, so a file cannot act on the page that serves it
+([0055](../decisions/0055-files-are-claimed.md)). Since 2026-10-09 a deployment may also have
+every upload scanned before its bytes are kept, refused on a finding **and when the scanner
+cannot be asked** — a refused file is never stored and cannot be claimed
+([0131](../decisions/0131-an-upload-is-scanned-before-it-is-kept.md)). Held by
+`packages/server-core/src/uploads.test.ts` (fail closed), the clamd adapter's tests against
+a protocol stand-in, and `server.integration.test.ts` on real PostgreSQL; removing the scan
+from the route fails all four integration cases.
+
+*Residual:* **without a configured scanner nothing is scanned**, and that is the default. With
+ClamAV, detection is only as good as its signatures and their freshness, which are the
+operator's; files stored before scanning was configured are not rescanned; and ClamAV's own
+configuration says content past its `MaxFileSize` or `MaxScanSize` is answered clean unless
+`AlertExceedsMax` is set, which this product documents and cannot enforce. The adapter was run
+against a real clamd once, by hand, on 2026-10-09; no gate does.
 
 ---
 

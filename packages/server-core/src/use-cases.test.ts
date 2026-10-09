@@ -3,7 +3,7 @@ import type { FormSchema } from '@formancy/spec'
 import { MIXED_NUMERIC_LITERAL_EXAMPLE } from '@formancy/core'
 import { createSubmission, exportCsv, setFormAccess, listForms, listSubmissions, listVersions, resolveForm, resumeDraft, saveDraft, startDraft } from './use-cases.js'
 import { publishForm } from './publishing.js'
-import type { ServerDeps } from './use-cases.js'
+import type { ServerDeps } from './deps.js'
 import { createMemoryStorage } from './testing/memory-storage.js'
 
 const schema: FormSchema = {
