@@ -265,3 +265,72 @@ describe('a drop on the rendered form', () => {
     ).toBe(english('said.movedTo', { where }))
   })
 })
+
+describe('a group, in the arrangement pane', () => {
+  /**
+   * The pane offered a group among the fields to place, and placed, it broke the preview:
+   * both renderers threw `Unknown field`. A group placed whole is drawn as its fields now,
+   * so the pane offers it while none of its fields is placed — and once it is placed, not
+   * its fields, which would be drawn twice (0151).
+   */
+  const withGroup = (): FormSchema =>
+    ({
+      specVersion: '1',
+      id: 'claim',
+      title: 'Claim',
+      model: {
+        fields: [
+          { key: 'name', type: 'text', label: 'Name' },
+          {
+            key: 'address',
+            type: 'group',
+            label: 'Address',
+            fields: [
+              { key: 'street', type: 'text', label: 'Street' },
+              { key: 'city', type: 'text', label: 'City' },
+            ],
+          },
+        ],
+      },
+      layouts: [{ name: 'web', nodes: [{ kind: 'field', path: 'name' }] }],
+    }) as FormSchema
+
+  const offered = (session: ReturnType<typeof createBuilderSession>) =>
+    layoutAdditions(session, 'web').flatMap((addition) => (addition.what === 'field' ? [addition.path] : []))
+
+  test('offers it whole, places it, and then offers none of its fields', () => {
+    const session = createBuilderSession(withGroup())
+    expect(offered(session)).toEqual(['address', 'address.street', 'address.city'])
+
+    const said = insertLayoutAndSay(
+      session,
+      { kind: 'field', path: 'address' },
+      { location: { layout: 'web', parent: [], index: 1 }, label: 'the web layout, last' },
+    )
+
+    expect(said).toContain('Address')
+    expect(session.document().layouts?.[0]?.nodes).toEqual([
+      { kind: 'field', path: 'name' },
+      { kind: 'field', path: 'address' },
+    ])
+    expect(offered(session)).toEqual([])
+  })
+
+  test('and refuses one of its fields beside it, saying why', () => {
+    const session = createBuilderSession(withGroup())
+    insertLayoutAndSay(
+      session,
+      { kind: 'field', path: 'address' },
+      { location: { layout: 'web', parent: [], index: 1 }, label: 'the web layout, last' },
+    )
+
+    const said = insertLayoutAndSay(
+      session,
+      { kind: 'field', path: 'address.city' },
+      { location: { layout: 'web', parent: [], index: 0 }, label: 'the web layout, first' },
+    )
+
+    expect(said).toContain('place the group or its fields, not both')
+    expect(session.document().layouts?.[0]?.nodes).toHaveLength(2)
+  })
+})

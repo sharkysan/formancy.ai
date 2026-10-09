@@ -675,12 +675,14 @@
   align-content: start;
 }
 
-[data-formancy-theme='pop'] [data-formancy-part='layout-section'] {
+[data-formancy-theme='pop'] [data-formancy-part='layout-section'],
+[data-formancy-theme='pop'] [data-formancy-part='group'] {
   margin-block-end: calc(var(--fm-step) * 1.5);
 }
 
 /* A heading with a highlighter stroke through its lower half. */
-[data-formancy-theme='pop'] [data-formancy-part='layout-section-heading'] {
+[data-formancy-theme='pop'] [data-formancy-part='layout-section-heading'],
+[data-formancy-theme='pop'] [data-formancy-part='group-heading'] {
   justify-self: start;
   width: fit-content;
   margin: 0 0 1.125rem;

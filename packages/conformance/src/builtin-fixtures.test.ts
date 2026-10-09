@@ -56,6 +56,7 @@ describe('builtinFixtures', () => {
       'a calculated field recomputes from its inputs and is never typed into',
       'a form mounted in a locale other than the default renders in that locale',
       'a form written in message references renders in the default locale',
+      'a group a layout places whole is drawn as its fields, on the page it belongs to',
       'a hidden value is dropped only when the field asks for it',
       'a masked answer fills every position, and holds only what was typed',
       'a matrix answers one question per row, and a required one needs every row',

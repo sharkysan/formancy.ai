@@ -19,10 +19,18 @@ also walk past a repeater row's field, which no arrangement places, to the repea
 it. A test in each renderer derives the types from the spec and requires each placed field
 to name itself ([0150](docs/decisions/0150-every-field-an-arrangement-places-names-itself.md)).
 
-**Known, not fixed: a layout that places a group is valid and both renderers throw on it.**
-The validator accepts a group's path as a field node, and the arrangement pane offers a group
-among the fields to place; drawn, it is `Unknown field`. Recorded in the risks and debt until
-it is decided what a placed group should draw.
+**Fixed: a layout that places a group drew nothing — both renderers threw.** The validator
+accepts a group's path as a field node and the arrangement pane offered one, but neither
+renderer had a drawing for it, so the form did not render at all; the playground's demo block,
+a group, placed whole, broke the preview. A group placed whole is now drawn as its fields under
+its label, as a labelled section is, on the page its fields are on — decided once in
+`@formancy/core` (`placedGroup`, `placedPage`) and read by both renderers, and held by a new
+conformance fixture. **Validation is stricter in one case:** a group placed whole beside one of
+its own fields is refused as `layout.placedInGroup`, since the field would be drawn twice; any
+document doing that threw before, so none that rendered becomes invalid. `unreferencedPaths` no
+longer lists the fields of a placed group, nor a group one of whose fields is placed. The
+renderers emit two new parts, `group` and `group-heading`, which every theme dresses
+([0151](docs/decisions/0151-a-group-placed-whole-is-drawn-as-its-fields.md)).
 
 **Fixed: the Angular starter's date field had no calendar button in Chrome and Edge.**
 Material's stylesheet hides Chromium's own calendar and clock buttons on every `matInput`,

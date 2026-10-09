@@ -580,11 +580,13 @@
   align-content: start;
 }
 
-[data-formancy-theme='dusk'] [data-formancy-part='layout-section'] {
+[data-formancy-theme='dusk'] [data-formancy-part='layout-section'],
+[data-formancy-theme='dusk'] [data-formancy-part='group'] {
   margin-block-end: calc(var(--fm-step) * 1.5);
 }
 
-[data-formancy-theme='dusk'] [data-formancy-part='layout-section-heading']::before {
+[data-formancy-theme='dusk'] [data-formancy-part='layout-section-heading']::before,
+[data-formancy-theme='dusk'] [data-formancy-part='group-heading']::before {
   content: '';
   flex: none;
   width: 0.5rem;
@@ -604,7 +606,8 @@
 }
 
 /* A heading with a lit dot, the same device as the current wizard step. */
-[data-formancy-theme='dusk'] [data-formancy-part='layout-section-heading'] {
+[data-formancy-theme='dusk'] [data-formancy-part='layout-section-heading'],
+[data-formancy-theme='dusk'] [data-formancy-part='group-heading'] {
   display: flex;
   align-items: center;
   gap: 0.625rem;

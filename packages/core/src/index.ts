@@ -1,4 +1,6 @@
 export { formatPath, parsePath } from './path.js'
+export { placedGroup, placedPage } from './placed-group.js'
+export type { PlacedGroup } from './placed-group.js'
 export type { Path, PathSegment } from './path.js'
 export { arrayInsert, arrayMove, arrayRemove, getAt, setAt } from './value.js'
 export { createValueStore } from './store.js'

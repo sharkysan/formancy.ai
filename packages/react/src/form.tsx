@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import type { ComponentType, CSSProperties, KeyboardEvent, ReactNode } from 'react'
-import { parsePath } from '@formancy/core'
-import { applyRichCommand, datagridColumns, narrowOptionsByLabel } from '@formancy/spec'
+import { parsePath, placedGroup, placedPage } from '@formancy/core'
+import type { PlacedGroup } from '@formancy/core'
+import { applyRichCommand, datagridColumns, narrowOptionsByLabel, resolveText } from '@formancy/spec'
 import type { DataGridColumn, FieldDef, FieldType, RichCommand } from '@formancy/spec'
 import { LayoutTree, placedPaths } from './layout.js'
 import { useFormEngine } from './context.js'
@@ -169,10 +170,16 @@ function FieldList({ labels, registry, page, layout }: FormancyFormProps & { pag
         // On a paged form, the page somebody is on: the layout holds the fields of every
         // page, and drawing it whole put questions on the screen that Next does not
         // check (0137).
-        shows={page === undefined ? undefined : (path) => engine.pageOf(parsePath(path)) === page}
+        shows={page === undefined ? undefined : (path) => placedPage(engine, path) === page}
         renderField={(path) => {
           if (repeaterWires.includes(path)) {
             return <RepeaterSection key={path} wire={path} labels={labels} registry={registry} />
+          }
+          const group = placedGroup(engine, path)
+          if (group !== undefined) {
+            return (
+              <GroupSection key={path} path={path} group={group} labels={labels} registry={registry} />
+            )
           }
           return <FieldSlot key={path} path={path} fallbackLabel={labels?.[path]} registry={registry} />
         }}
@@ -227,6 +234,46 @@ function FieldSlot({
 
   const label = field.label ?? fallbackLabel ?? path
   return <Component path={path} label={label} />
+}
+
+/**
+ * A group an arrangement places whole: its fields, under its label, the way a labelled
+ * section is drawn — a real group when it has a name, a box when it has none. What it holds
+ * and in which order is `@formancy/core`'s, shared with the Angular renderer (0151).
+ */
+function GroupSection({
+  path,
+  group,
+  labels,
+  registry,
+}: {
+  path: string
+  group: PlacedGroup
+  labels?: Record<string, string> | undefined
+  registry?: Registry | undefined
+}) {
+  const engine = useFormEngine()
+  const headingId = useId()
+  const label = resolveText(engine.schema(), group.def.label, engine.locale())
+  return (
+    <div
+      data-formancy-part="group"
+      data-formancy-field-path={path}
+      {...(label === undefined ? {} : { role: 'group', 'aria-labelledby': headingId })}
+    >
+      {label === undefined ? null : (
+        <p id={headingId} data-formancy-part="group-heading">
+          {label}
+        </p>
+      )}
+      {group.fields.map((wire) => (
+        <FieldSlot key={wire} path={wire} fallbackLabel={labels?.[wire]} registry={registry} />
+      ))}
+      {group.repeaters.map((wire) => (
+        <RepeaterSection key={wire} wire={wire} labels={labels} registry={registry} />
+      ))}
+    </div>
+  )
 }
 
 function RepeaterSection({

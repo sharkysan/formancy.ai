@@ -83,6 +83,8 @@ export const SCHEMA_ERRORS_FR: SchemaErrorSentences = {
     'Aucun champ n’a le chemin de données « {path} » : cette disposition ne place donc rien ici.',
   'layout.placedTwice':
     '« {path} » est déjà placé dans la disposition « {layout} ». Un champ a une seule place dans un agencement.',
+  'layout.placedInGroup':
+    '« {path} » fait partie du groupe « {group} », que la disposition « {layout} » place en entier. Un champ a une seule place dans un agencement : placez le groupe ou ses champs, pas les deux.',
   'layout.tabNotSection':
     'Un nœud d’onglets contient des sections, une par onglet, et celui-ci contient un « {kind} ». Placez-le dans une section et donnez un libellé à la section — ce libellé est le nom de l’onglet.',
   'layout.tabUnnamed':
