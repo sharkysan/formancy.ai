@@ -113,6 +113,10 @@ component_management:
       name: apps/admin
       paths:
         - apps/admin/**
+    - component_id: app-angular-starter
+      name: apps/angular-starter
+      paths:
+        - apps/angular-starter/**
     - component_id: app-docs
       name: apps/docs
       paths:

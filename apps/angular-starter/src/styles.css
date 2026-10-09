@@ -1,0 +1,36 @@
+/* Angular Material's own theme: the adapter ships no CSS, so the application chooses. */
+@import '@angular/material/prebuilt-themes/azure-blue.css';
+
+/* The page around the two panes. Nothing here styles a form control: Material does. */
+html,
+body {
+  margin: 0;
+  font-family: Roboto, system-ui, sans-serif;
+  color: var(--mat-sys-on-surface);
+  background: var(--mat-sys-surface);
+}
+
+header {
+  padding: 1rem 1.5rem 0;
+}
+
+.panes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr));
+  gap: 1.5rem;
+  padding: 1rem 1.5rem 2rem;
+}
+
+.pane {
+  min-inline-size: 0;
+}
+
+mat-form-field {
+  inline-size: 100%;
+}
+
+pre {
+  overflow: auto;
+  padding: 0.75rem;
+  background: var(--mat-sys-surface-container);
+}

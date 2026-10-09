@@ -1,0 +1,17 @@
+{
+  "//": "What the Angular compiler compiles with: it has to emit, which tsconfig.json does not.",
+  "compilerOptions": {
+    "strict": true,
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "useDefineForClassFields": false,
+    "noEmit": false,
+    "outDir": "out-tsc"
+  },
+  "include": ["src/**/*.ts"]
+}

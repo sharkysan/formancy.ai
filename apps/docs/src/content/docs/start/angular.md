@@ -183,6 +183,11 @@ still its description.
 It is held to the same conformance fixtures as the default controls, through the same driver,
 axe audit included ([0132](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0132-material-draws-what-it-has-an-equivalent-for.md)).
 
+**A whole application to start from** is in the repository:
+[`apps/angular-starter`](https://github.com/sharkysan/formancy.ai/tree/main/apps/angular-starter) —
+the Angular builder and the form it builds side by side, drawn with Material, with the
+document, the panels, the submit and the uploader each in one file of their own.
+
 ## Editing a form, from Angular
 
 `@formancy/builder-angular` is the builder's structure tree over the same

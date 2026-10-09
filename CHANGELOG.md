@@ -10,6 +10,13 @@ later.
 
 ## Unreleased
 
+**An Angular starter: `apps/angular-starter`.** An Angular application with the form builder
+and the form it builds side by side — `@formancy/builder-angular` editing an expense claim,
+and the claim filled in, drawn with Angular Material, re-made whenever the document changes.
+Everything a host decides is in three files; its README says how to take it out of the
+repository and how to send files to a formancy server
+([0133](docs/decisions/0133-the-angular-starter-is-the-builder-and-the-form.md)).
+
 **Angular Material, as a registry: `@formancy/angular/material`.** `provideFormancyMaterial()`
 draws text, paragraph, number, date and time in `<mat-form-field>`, a list as the platform's
 `<select>` under `matNativeControl`, and ticks and radios as Material's. Everything Material
