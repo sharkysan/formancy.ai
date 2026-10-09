@@ -168,6 +168,14 @@ describe('what the two builders each offer', () => {
       react: 'ScenarioPane',
       angular: 'FormancyScenarioPane',
     },
+    {
+      // Every rule, and why a field is hidden now. What it says is builder-core's,
+      // so the two cannot explain the same rule differently
+      // ([0128](../../../docs/decisions/0128-a-form-says-why-a-field-is-hidden.md)).
+      pane: 'every rule in the form',
+      react: 'RulesOverview',
+      angular: 'FormancyRulesOverview',
+    },
   ]
 
   /**

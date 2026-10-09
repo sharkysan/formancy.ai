@@ -431,6 +431,8 @@ export interface BuilderText {
    * string the old joiner could not let anybody translate.
    */
   list(items: readonly string[]): string
+  /** Items offered as alternatives the way this language says it: "A, B or C", "A, B oder C". */
+  alternatives(items: readonly string[]): string
   /**
    * One of the spec's own words in this language, given the English the schema
    * writes — or that English, when the language has no translation for it.
@@ -492,6 +494,7 @@ export function createBuilderText(language?: BuilderLanguage): BuilderText {
     style: 'long',
     type: 'conjunction',
   })
+  const either = new Intl.ListFormat(locale, { style: 'long', type: 'disjunction' })
 
   const text = (id: BuilderMessageId, values: Readonly<Record<string, string | number>> = {}) => {
     const message: Message = messages[id] ?? BUILDER_MESSAGES[id]
@@ -509,6 +512,7 @@ export function createBuilderText(language?: BuilderLanguage): BuilderText {
   const errorWords = language?.errors ?? {}
   return Object.assign(text, {
     list: (items: readonly string[]) => lists.format(items),
+    alternatives: (items: readonly string[]) => either.format(items),
     schema: (english: string) => schemaWords[english] ?? english,
     error: (found: SchemaError) => {
       const sentence = errorWords[found.code]

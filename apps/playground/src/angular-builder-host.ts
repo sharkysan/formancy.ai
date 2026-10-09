@@ -5,11 +5,18 @@ import {
   FormancyLayoutPane,
   FormancyLogicPanel,
   FormancyPropertyPanel,
+  FormancyRulesOverview,
 } from '@formancy/builder-angular'
-import type { BuilderSession } from '@formancy/builder-core'
+import type { BuilderSession, Capabilities } from '@formancy/builder-core'
 
-/** Which of the two tabs the page is on. The React pane owns this. */
-export type BuilderTab = 'fields' | 'arrangement'
+/** Which of the three tabs the page is on. The React pane owns this. */
+export type BuilderTab = 'fields' | 'arrangement' | 'rules'
+
+/** What the form pane's preview holds, for the rules tab to explain (0128). */
+export interface PreviewState {
+  answers: Readonly<Record<string, unknown>>
+  capabilities: Capabilities
+}
 
 /**
  * What the playground hands the Angular builder, through the injector.
@@ -26,13 +33,15 @@ export type BuilderTab = 'fields' | 'arrangement'
 export interface PlaygroundBuilder {
   readonly session: BuilderSession
   readonly tab: WritableSignal<BuilderTab>
+  /** Pushed in by the React pane as the preview changes, so the Angular tree is not rebuilt. */
+  readonly preview: WritableSignal<PreviewState | undefined>
 }
 
 export const PLAYGROUND_BUILDER = new InjectionToken<PlaygroundBuilder>('playground builder')
 
 /** Make one, for the bootstrap to provide. */
 export function playgroundBuilder(session: BuilderSession, tab: BuilderTab): PlaygroundBuilder {
-  return { session, tab: signal(tab) }
+  return { session, tab: signal(tab), preview: signal(undefined) }
 }
 
 /**
@@ -58,10 +67,22 @@ export function playgroundBuilder(session: BuilderSession, tab: BuilderTab): Pla
   selector: 'formancy-playground-angular-builder',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormancyBuilder, FormancyLayoutPane, FormancyLogicPanel, FormancyPropertyPanel],
+  imports: [
+    FormancyBuilder,
+    FormancyLayoutPane,
+    FormancyLogicPanel,
+    FormancyPropertyPanel,
+    FormancyRulesOverview,
+  ],
   template: `
     @if (host.tab() === 'arrangement') {
       <formancy-layout-pane [session]="host.session" layout="web" />
+    } @else if (host.tab() === 'rules') {
+      <formancy-rules-overview
+        [session]="host.session"
+        [answers]="host.preview()?.answers"
+        [capabilities]="host.preview()?.capabilities"
+      />
     } @else {
       <formancy-builder [session]="host.session" (selected)="selected.set($event)" />
       @if (selected(); as keyPath) {

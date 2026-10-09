@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import {
   FormancyBuilder,
   FormancyLayoutPane,
@@ -6,6 +6,7 @@ import {
   LogicPanel,
   PromptPane,
   PropertyPanel,
+  RulesOverview,
   ScenarioPane,
   useBuilder,
 } from '@formancy/builder-react'
@@ -16,11 +17,14 @@ import {
   SCHEMA_ERRORS_FR,
   SCHEMA_WORDS_DE,
   SCHEMA_WORDS_FR,
+  captureCapabilities,
   createBuilderSession,
   createBuilderText,
 } from '@formancy/builder-core'
+import type { FormEngine } from '@formancy/core'
 import type { BuilderSession, BuilderText } from '@formancy/builder-core'
 import { AngularBuilderPane } from './angular-builder-pane.js'
+import type { BuilderTab, PreviewState } from './angular-builder-host.js'
 import { DEMO_MODEL } from './demo-capabilities.js'
 import { STARTER_SAMPLE, STARTER_SCENARIOS } from './starter-scenarios.js'
 
@@ -90,13 +94,17 @@ export function BuilderBody({
   onChange,
   tab,
   onTab,
+  preview,
 }: {
   session: BuilderSession
   onChange: (next: string) => void
-  tab: 'fields' | 'arrangement'
-  onTab: (next: 'fields' | 'arrangement') => void
+  tab: BuilderTab
+  onTab: (next: BuilderTab) => void
+  /** The form pane's engine, whose answers the rules tab explains (0128). */
+  preview: FormEngine | undefined
 }) {
   const view = useBuilder(session)
+  const explained = usePreviewState(preview)
   const [selected, setSelected] = useState<readonly string[] | null>(null)
   /** Which node the arrangement pane is on, so its property panel has something to show. */
   const [arranging, setArranging] = useState<readonly number[] | null>(null)
@@ -127,13 +135,13 @@ export function BuilderBody({
           Redo
         </button>
         <span className="builder-tabs">
-          {(['fields', 'arrangement'] as const).map((candidate) => (
+          {(['fields', 'arrangement', 'rules'] as const).map((candidate) => (
             <button
               key={candidate}
               aria-pressed={tab === candidate}
               onClick={() => onTab(candidate)}
             >
-              {candidate === 'fields' ? 'Fields' : 'Arrangement'}
+              {TAB_NAMES[candidate]}
             </button>
           ))}
         </span>
@@ -156,7 +164,16 @@ export function BuilderBody({
         /* The other builder, over the same session. An edit here moves the JSON
            and both rendered forms, which is the whole point of it being the same
            session rather than a second one. */
-        <AngularBuilderPane session={session} tab={tab} />
+        <AngularBuilderPane session={session} tab={tab} preview={explained} />
+      ) : tab === 'rules' ? (
+        /* Every rule in the form, and — from the answers typed into the form pane —
+           why each field is shown, hidden or required now. Type into the form and
+           watch a verdict change; that is the demonstration. */
+        <RulesOverview
+          session={session}
+          answers={explained?.answers}
+          capabilities={explained?.capabilities}
+        />
       ) : tab === 'arrangement' ? (
         <>
           <FormancyLayoutPane session={session} layout="web" onSelect={setArranging} />
@@ -209,5 +226,40 @@ export function BuilderBody({
         </>
       )}
     </div>
+  )
+}
+
+/** What the tabs are called. */
+const TAB_NAMES: Readonly<Record<BuilderTab, string>> = {
+  fields: 'Fields',
+  arrangement: 'Arrangement',
+  rules: 'Rules',
+}
+
+const NO_PREVIEW = (): (() => void) => () => undefined
+
+/**
+ * What the form pane's preview holds, for the rules tab to explain: its answers, and a
+ * clock read the way the preview's engine reads one, so a rule about today's date is
+ * explained by the date the preview used.
+ */
+function usePreviewState(preview: FormEngine | undefined): PreviewState | undefined {
+  const answers = useSyncExternalStore(
+    preview === undefined ? NO_PREVIEW : (listener) => preview.subscribe(listener),
+    () => preview?.value(),
+  )
+  return useMemo(
+    () =>
+      answers === undefined || answers === null || typeof answers !== 'object'
+        ? undefined
+        : {
+            answers: answers as Readonly<Record<string, unknown>>,
+            capabilities: captureCapabilities({
+              now: () => Date.now(),
+              today: () => new Date().toISOString().slice(0, 10),
+              random: () => Math.random(),
+            }),
+          },
+    [answers],
   )
 }

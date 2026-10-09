@@ -271,6 +271,35 @@ export const BUILDER_MESSAGES_DE = {
   'logic.value.yes': 'Ja',
   'logic.value.no': 'Nein',
   'logic.value.choose': 'Wert wählen',
+  'overview.heading': 'Alle Regeln dieses Formulars',
+  'overview.empty': 'Dieses Formular hat keine Regeln: Jedes Feld verhält sich immer gleich.',
+  'overview.written': 'Geschrieben als',
+  'overview.comparison': '{field} {operator} {value}',
+  'overview.comparison.noValue': '{field} {operator}',
+  'overview.notAnswered': 'nicht beantwortet',
+  'overview.because.holds': '{comparison}: ja',
+  'overview.because.fails': '{comparison}: nein – es ist {actual}',
+  'overview.because.failsEmpty': '{comparison}: nein – es ist nicht beantwortet',
+  'overview.now.visible.holds': 'Jetzt sichtbar.',
+  'overview.now.visible.fails': 'Jetzt verborgen.',
+  'overview.now.visible.undecided':
+    'Jetzt sichtbar, weil die Regel sich nicht entscheiden lässt: Eine Regel, die scheitert, zeigt das Feld, das sie verbergen sollte.',
+  'overview.now.required.holds': 'Jetzt Pflicht.',
+  'overview.now.required.fails': 'Jetzt keine Pflicht.',
+  'overview.now.required.undecided':
+    'Jetzt keine Pflicht, weil die Regel sich nicht entscheiden lässt.',
+  'overview.now.disabled.holds': 'Jetzt gesperrt.',
+  'overview.now.disabled.fails': 'Jetzt bearbeitbar.',
+  'overview.now.disabled.undecided':
+    'Jetzt bearbeitbar, weil die Regel sich nicht entscheiden lässt.',
+  'overview.now.validate.holds': 'Jetzt angenommen.',
+  'overview.now.validate.fails': 'Jetzt abgelehnt.',
+  'overview.now.validate.undecided':
+    'Jetzt abgelehnt, weil die Regel sich nicht entscheiden lässt: Eine Prüfung, die scheitert, lehnt die Antwort ab.',
+  'overview.now.skip.holds': 'Wird jetzt übersprungen.',
+  'overview.now.skip.fails': 'Wird jetzt nicht übersprungen.',
+  'overview.now.skip.undecided':
+    'Wird jetzt nicht übersprungen, weil die Regel sich nicht entscheiden lässt.',
   // Not "Regel hinzufügen" again: in German the draft's submit and the button that
   // opens the draft would otherwise share a name.
   'logic.addRule': 'Regel anlegen',

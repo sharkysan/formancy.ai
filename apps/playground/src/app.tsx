@@ -5,7 +5,6 @@ import type { Monaco } from '@monaco-editor/react'
 import { createFormEngine, parsePath } from '@formancy/core'
 import type { FormEngine } from '@formancy/core'
 import { validateSchema } from '@formancy/spec/validate'
-import type { SchemaError } from '@formancy/spec/validate'
 import formancySchemaJson from '@formancy/spec/schema.json'
 import type { FormSchema } from '@formancy/spec'
 import {
@@ -21,7 +20,7 @@ import { createRichTextEditor } from '@formancy/tiptap'
 import { playgroundUploader } from './demo-uploader.js'
 import { DEMO_OPTIONS_SOURCES, DEMO_SCANNER } from './demo-capabilities.js'
 import { createBuilderSession } from '@formancy/builder-core'
-import type { BuilderSession, BuilderText } from '@formancy/builder-core'
+import type { BuilderSession } from '@formancy/builder-core'
 import {
   FormancyArrangeSurface,
   FormancyBuilder,
@@ -46,6 +45,7 @@ import type { EditorMode } from './editor-pane.js'
 import type { PaneId } from './panes.js'
 import { BuilderBody, PLACEHOLDER_SESSION, builderTextFor } from './builder-pane.js'
 import { PLAYGROUND_CHECKS } from './demo-checks.js'
+import { Problem, SchemaProblems } from './problems.js'
 
 /**
  * The playground: the whole thesis on one screen. A schema on the left, the
@@ -135,7 +135,7 @@ export function App() {
    * tree edits. Two sessions over one document would be two documents.
    */
   const [session, setSession] = useState<BuilderSession | null>(null)
-  const [builderTab, setBuilderTab] = useState<'fields' | 'arrangement'>('fields')
+  const [builderTab, setBuilderTab] = useState<'fields' | 'arrangement' | 'rules'>('fields')
   const [shown, setShown] = useState<PaneId>('form')
 
   const panes = usePaneLayout()
@@ -358,6 +358,7 @@ export function App() {
           session={session}
           tab={builderTab}
           onTab={setBuilderTab}
+          preview={built?.engine}
           theme={theme}
           themeHost={themeHost}
           overrides={overrides}
@@ -496,28 +497,3 @@ function Mark() {
     </svg>
   )
 }
-
-function Problem({ title, detail }: { title: string; detail: string }) {
-  return (
-    <div className="problem">
-      <h3>{title}</h3>
-      <pre>{detail}</pre>
-    </div>
-  )
-}
-
-function SchemaProblems({ errors, text }: { errors: SchemaError[]; text: BuilderText }) {
-  return (
-    <div className="problem">
-      <h3>{errors.length === 1 ? 'One thing to fix' : `${errors.length} things to fix`}</h3>
-      <ul>
-        {errors.map((error, index) => (
-          <li key={index}>
-            <code>{error.path}</code> {text.error(error)}
-          </li>
-        ))}
-      </ul>
-    </div>
-  )
-}
-

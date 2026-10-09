@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
 import type { BuilderSession } from '@formancy/builder-core'
 import { mountAngularBuilder } from './angular-builder-bootstrap.js'
-import type { BuilderTab, MountedBuilder } from './angular-builder-bootstrap.js'
+import type { BuilderTab, MountedBuilder, PreviewState } from './angular-builder-bootstrap.js'
 
 /**
  * The Angular builder, as a React component.
@@ -21,9 +21,12 @@ import type { BuilderTab, MountedBuilder } from './angular-builder-bootstrap.js'
 export function AngularBuilderPane({
   session,
   tab,
+  preview,
 }: {
   session: BuilderSession
   tab: BuilderTab
+  /** What the form pane's preview holds, for the rules tab. Pushed in like the tab. */
+  preview: PreviewState | undefined
 }): ReactElement {
   const host = useRef<HTMLDivElement | null>(null)
   const mounted = useRef<MountedBuilder | undefined>(undefined)
@@ -44,8 +47,12 @@ export function AngularBuilderPane({
     setProblem(undefined)
     void mountAngularBuilder(element, session, tab)
       .then((builder) => {
-        if (cancelled) builder.unmount()
-        else mounted.current = builder
+        if (cancelled) {
+          builder.unmount()
+          return
+        }
+        mounted.current = builder
+        builder.explain(latest.current)
       })
       .catch((error: unknown) => {
         if (cancelled) return
@@ -69,6 +76,15 @@ export function AngularBuilderPane({
   useEffect(() => {
     mounted.current?.show(tab)
   }, [tab])
+
+  // And the preview, which changes with every answer typed into the form pane. Held
+  // as well as pushed, so a builder that finishes mounting after a change still
+  // starts from the latest.
+  const latest = useRef(preview)
+  useEffect(() => {
+    latest.current = preview
+    mounted.current?.explain(preview)
+  }, [preview])
 
   return (
     <div className="angular-builder-pane">

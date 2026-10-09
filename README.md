@@ -161,7 +161,9 @@ submitted. Switch language or theme without reloading.
   previous answers, conditional required fields and automatically calculated
   totals. The condition editor writes "(A and B) or C", offers the comparisons a
   field can take and a value control of the field's own kind, and guards every
-  read so a rule never fails open on an empty form; CEL is there for the rest.
+  read so a rule never fails open on an empty form; CEL is there for the rest. A rules
+  overview lists every rule in words and, against a preview's answers, says why a field
+  is hidden or required now — including a rule that cannot be decided.
 - **Files and formatted text.** Collect attachments with type and size limits,
   and let people write answers with bold, italic, links and lists.
 - **Validation in the browser and on the server.** Give immediate feedback,

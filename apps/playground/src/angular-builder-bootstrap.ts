@@ -3,14 +3,16 @@ import type { ApplicationRef } from '@angular/core'
 import { bootstrapApplication } from '@angular/platform-browser'
 import type { BuilderSession } from '@formancy/builder-core'
 import { AngularBuilderHost, PLAYGROUND_BUILDER, playgroundBuilder } from './angular-builder-host.js'
-import type { BuilderTab } from './angular-builder-host.js'
+import type { BuilderTab, PreviewState } from './angular-builder-host.js'
 
-export type { BuilderTab }
+export type { BuilderTab, PreviewState }
 
 /** A mounted Angular builder: how to retune it, and how to take it away. */
 export interface MountedBuilder {
   /** Show the other tab, without tearing the application down. */
   show(tab: BuilderTab): void
+  /** What the preview holds now, for the rules tab to explain. */
+  explain(preview: PreviewState | undefined): void
   unmount(): void
 }
 
@@ -55,6 +57,7 @@ export async function mountAngularBuilder(
 
   return {
     show: (next) => state.tab.set(next),
+    explain: (preview) => state.preview.set(preview),
     unmount: () => {
       app.destroy()
       root.remove()

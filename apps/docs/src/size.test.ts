@@ -63,10 +63,6 @@ const CEILINGS: Record<string, { lines: number; why: string }> = {
     lines: 655,
     why: 'Refusing a fixture that could not run honestly. One subject — and two have left it: the message catalogue and the names a driver searches by went to validate-text.ts when this budget refused the locale check, and the JSON predicates under them to values.ts, which both now share.',
   },
-  'apps/playground/src/app.tsx': {
-    lines: 524,
-    why: 'Three panes and their wiring. The seam is one pane per file, and six things have left: the Angular renderer pane, the capabilities this deployment supplies, the builder pane, the engine inspector, the pane list with its fold control, all of the pane state, and the editor pane itself with its Monaco palette — the last of those when a third editor mode pushed this past its ceiling and the budget turned out to be pointing at something real, since none of which pane is folded, how wide each is, or the template that follows is the page’s business.',
-  },
   'packages/conformance/src/runner.ts': {
     lines: 688,
     why: 'Executing a fixture against a driver. One subject.',
