@@ -751,3 +751,84 @@ describe('when something other than this surface redraws the preview', () => {
     expect(email.draggable).toBe(false)
   })
 })
+
+describe('a repeater on the preview', () => {
+  /**
+   * A repeater names itself on its fieldset, and its rows name their fields —
+   * `items[0].name` — which no arrangement places. The surface took the nearest element
+   * naming anything, so a pointer on a row stopped at the row's field, found no node, and
+   * aimed at nothing: the repeater could be dropped on only by its legend.
+   */
+  const repeaterSchema = (): FormSchema =>
+    ({
+      specVersion: '1',
+      id: 'order',
+      title: 'Order',
+      model: {
+        fields: [
+          {
+            key: 'items',
+            type: 'repeater',
+            label: 'Items',
+            fields: [{ key: 'name', type: 'text', label: 'Name' }],
+          },
+          { key: 'email', type: 'text', label: 'Email' },
+        ],
+      },
+      layouts: [
+        {
+          name: 'web',
+          nodes: [
+            { kind: 'field', path: 'items' },
+            { kind: 'field', path: 'email' },
+          ],
+        },
+      ],
+    }) as FormSchema
+
+  /** What a renderer draws for it: the repeater's fieldset, a row, and the row's field. */
+  function RepeaterPreview() {
+    return (
+      <div>
+        <fieldset data-formancy-part="repeater" data-formancy-field-path="items">
+          <legend>Items</legend>
+          <div data-formancy-part="row">
+            <div data-formancy-part="field" data-formancy-field-path="items[0].name">
+              Name
+            </div>
+          </div>
+        </fieldset>
+        <div data-formancy-part="field" data-formancy-field-path="email">
+          Email
+        </div>
+      </div>
+    )
+  }
+
+  const repeaterSurface = (session: BuilderSession) =>
+    render(
+      <FormancyArrangeSurface session={session} layout="web" enabled>
+        <RepeaterPreview />
+      </FormancyArrangeSurface>,
+    )
+
+  test('it can be picked up, and a row’s field cannot be on its own', () => {
+    repeaterSurface(createBuilderSession(repeaterSchema()))
+
+    expect(screen.getByRole('group', { name: 'Items' }).dataset['arrangeable']).toBe('true')
+    expect(fieldNamed('Name').dataset['arrangeable']).toBeUndefined()
+  })
+
+  test('a drop on one of its rows is a drop on the repeater', () => {
+    const session = createBuilderSession(repeaterSchema())
+    repeaterSurface(session)
+
+    // jsdom draws nothing, so the row's top half is any point above zero.
+    drag(fieldNamed('Email'), fieldNamed('Name'), boxOf(fieldNamed('Name'), 'start'))
+
+    expect(session.document().layouts?.[0]?.nodes).toEqual([
+      { kind: 'field', path: 'email' },
+      { kind: 'field', path: 'items' },
+    ])
+  })
+})

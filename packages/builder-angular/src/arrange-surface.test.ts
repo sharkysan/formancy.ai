@@ -514,3 +514,77 @@ describe('when something other than this surface redraws the preview', () => {
     expect(email.draggable).toBe(true)
   })
 })
+
+describe('a repeater on the preview', () => {
+  /**
+   * The React suite's case: a repeater names itself on its fieldset and its rows name
+   * their fields, which no arrangement places — and a pointer on a row stopped there and
+   * aimed at nothing.
+   */
+  const REPEATER_PREVIEW = `
+    <formancy-arrange-surface [session]="session" layout="web" [enabled]="true">
+      <div>
+        <fieldset data-formancy-part="repeater" data-formancy-field-path="items">
+          <legend>Items</legend>
+          <div data-formancy-part="row">
+            <div data-formancy-part="field" data-formancy-field-path="items[0].name">Name</div>
+          </div>
+        </fieldset>
+        <div data-formancy-part="field" data-formancy-field-path="email">Email</div>
+      </div>
+    </formancy-arrange-surface>
+  `
+
+  const mountRepeater = async (): Promise<Mounted> => {
+    const session = createBuilderSession({
+      specVersion: '1',
+      id: 'order',
+      title: 'Order',
+      model: {
+        fields: [
+          {
+            key: 'items',
+            type: 'repeater',
+            label: 'Items',
+            fields: [{ key: 'name', type: 'text', label: 'Name' }],
+          },
+          { key: 'email', type: 'text', label: 'Email' },
+        ],
+      },
+      layouts: [
+        {
+          name: 'web',
+          nodes: [
+            { kind: 'field', path: 'items' },
+            { kind: 'field', path: 'email' },
+          ],
+        },
+      ],
+    } as unknown as FormSchema)
+    const view = await render(REPEATER_PREVIEW, {
+      imports: [FormancyArrangeSurface],
+      componentProperties: { session },
+      providers: [provideZonelessChangeDetection()],
+    })
+    await view.fixture.whenStable()
+    return { session, settle: async () => void (await view.fixture.whenStable()) }
+  }
+
+  test('it can be picked up, and a row’s field cannot be on its own', async () => {
+    await mountRepeater()
+
+    expect(screen.getByRole('group', { name: 'Items' }).dataset['arrangeable']).toBe('true')
+    expect(fieldNamed('Name').dataset['arrangeable']).toBeUndefined()
+  })
+
+  test('a drop on one of its rows is a drop on the repeater', async () => {
+    const mounted = await mountRepeater()
+
+    await drag(mounted, fieldNamed('Email'), fieldNamed('Name'), boxOf(fieldNamed('Name'), 'start'))
+
+    expect(arrangement(mounted.session)).toEqual([
+      { kind: 'field', path: 'email' },
+      { kind: 'field', path: 'items' },
+    ])
+  })
+})

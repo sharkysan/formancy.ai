@@ -16,6 +16,12 @@ import type { FieldComponentProps } from './internals.js'
  * heading element either: the spec does not say what level it would be, and
  * guessing produces a document outline that skips levels.
  */
-export function StaticField({ label }: FieldComponentProps) {
-  return <p data-formancy-part="static">{label}</p>
+export function StaticField({ path, label }: FieldComponentProps) {
+  // The path is inert here, as on every field, and read by tools outside the renderer —
+  // without it the builder's arrange surface could not pick this up on the preview.
+  return (
+    <p data-formancy-part="static" data-formancy-field-path={path}>
+      {label}
+    </p>
+  )
 }

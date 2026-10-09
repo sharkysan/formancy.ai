@@ -119,6 +119,27 @@ export function FormancyArrangeSurface({
   )
 
   /**
+   * The nearest element under `element` that names a node of this arrangement, and the
+   * node's path.
+   *
+   * Not simply the nearest carrying an attribute: a repeater's rows name their fields —
+   * `items[0].name` — which no arrangement places, and stopping there left a pointer on a
+   * row aiming at nothing rather than at the repeater around it.
+   */
+  const nodeUnder = useCallback(
+    (element: Element | null): { element: HTMLElement; path: readonly number[] } | undefined => {
+      let at = element?.closest<HTMLElement>(SELECTOR) ?? null
+      while (at !== null) {
+        const path = pathOfElement(at)
+        if (path !== undefined) return { element: at, path }
+        at = at.parentElement?.closest<HTMLElement>(SELECTOR) ?? null
+      }
+      return undefined
+    },
+    [pathOfElement],
+  )
+
+  /**
    * Marking what can be picked up.
    *
    * Done to the DOM rather than in the markup because the markup belongs to
@@ -184,19 +205,18 @@ export function FormancyArrangeSurface({
     if (dragging === null) return undefined
     const under = event.target as Element | null
     if (under === null) return undefined
-    const element = under.closest<HTMLElement>(SELECTOR)
+    const node = nodeUnder(under)
 
     // Under nothing that names a node, the pointer is over the form itself, and the
     // form's children are the top-level nodes.
-    const over = element === null ? [] : pathOfElement(element)
-    if (over === undefined) return undefined
+    const over = node?.path ?? []
     const pointer = { x: event.clientX, y: event.clientY }
 
     // Between two children of what is under the pointer, the nearer child is aimed at;
     // anywhere else, what is under it is.
     const aimed =
-      gapNeighbour(over, drawnIn(element ?? under), pointer) ??
-      (element === null ? undefined : { element, path: over, box: element.getBoundingClientRect() })
+      gapNeighbour(over, drawnIn(node?.element ?? under), pointer) ??
+      (node === undefined ? undefined : { ...node, box: node.element.getBoundingClientRect() })
     if (aimed === undefined) return undefined
 
     const drop = arrangeDrop({
@@ -218,7 +238,7 @@ export function FormancyArrangeSurface({
       data-formancy-part="arrange-surface"
       data-arranging="true"
       onDragStart={(event) => {
-        const path = pathOfElement(event.target as Element)
+        const path = nodeUnder(event.target as Element)?.path
         if (path === undefined) return
         // The innermost arrangeable element wins, and the browser has already
         // decided that by dispatching from it.

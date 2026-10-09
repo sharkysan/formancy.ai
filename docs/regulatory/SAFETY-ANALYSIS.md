@@ -1222,6 +1222,27 @@ has been performed (D4). A translated refusal is checked for its shape and not i
 that a German or French sentence gives the reason the English gives rests on its having
 been written carefully, and no native speaker has reviewed either translation.
 
+### D12. A valid arrangement that places a group cannot be drawn
+
+*How it arises:* the validator accepts a layout node naming a group's path, since its
+placeable paths include a group's own as well as its fields', and the builder's arrangement
+pane offers a group among the fields to place. Neither renderer has a drawing for a group
+placed whole: both ask the engine for a field at that path, and the engine has none, so both
+throw `Unknown field`. Found on 2026-10-09 by the guard that requires every placed field to
+name itself ([0150](../decisions/0150-every-field-an-arrangement-places-names-itself.md)).
+
+*Severity:* the form does not render — in the builder's preview and in production alike — so
+nothing can be filled in. Loud rather than silent: nothing is shown wrongly or collected
+wrongly, and no answer is lost.
+
+*Constraint:* none yet. Refusing such a layout in the validator would make documents that are
+valid today invalid, against the contract a reader of a published version relies on
+([0097](../decisions/0097-a-publish-may-warn.md)), and drawing one needs a decision about what
+a placed group is.
+
+*Residual:* until it is decided, a manufacturer should place a group's fields one by one and
+not the group itself, and should not rely on the builder to stop an author doing otherwise.
+
 ---
 
 ## E — Provenance is lost

@@ -10,6 +10,20 @@ later.
 
 ## Unreleased
 
+**Fixed: a static text and a repeater could not be picked up on the preview.** Both
+renderers drew a static text as a bare paragraph and a repeater's fieldset naming nothing,
+while every other field carries `data-formancy-field-path`, which the builder's arrange
+surface finds fields by. Both now carry it — so a published form has the attribute on those
+two elements as well, and a selector for it matches a repeater's fieldset too. The surfaces
+also walk past a repeater row's field, which no arrangement places, to the repeater around
+it. A test in each renderer derives the types from the spec and requires each placed field
+to name itself ([0150](docs/decisions/0150-every-field-an-arrangement-places-names-itself.md)).
+
+**Known, not fixed: a layout that places a group is valid and both renderers throw on it.**
+The validator accepts a group's path as a field node, and the arrangement pane offers a group
+among the fields to place; drawn, it is `Unknown field`. Recorded in the risks and debt until
+it is decided what a placed group should draw.
+
 **Fixed: the Angular starter's date field had no calendar button in Chrome and Edge.**
 Material's stylesheet hides Chromium's own calendar and clock buttons on every `matInput`,
 because its datepicker brings a toggle of its own, and `@formancy/angular/material` draws a

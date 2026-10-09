@@ -250,3 +250,4 @@ listed under the sections they belong to above.
 | [0147](0147-a-rule-in-a-repeater-row-is-explained-row-by-row.md) | A rule in a repeater row is explained row by row | accepted |
 | [0148](0148-the-arrange-surfaces-marks-follow-the-dom.md) | The arrange surface's marks follow the DOM, not its own render | accepted |
 | [0149](0149-a-material-date-keeps-the-platforms-calendar-button.md) | A Material date keeps the platform's calendar button | accepted |
+| [0150](0150-every-field-an-arrangement-places-names-itself.md) | Every field an arrangement places names itself on the preview | accepted |
