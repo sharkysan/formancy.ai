@@ -14,7 +14,8 @@ import { LIST_VALUED_FIELD_TYPES, SPEC_1_FIELD_TYPES, SPEC_2_FIELD_TYPES, SPEC_2
 import { layoutChildren, SPEC_1_LAYOUT_KINDS } from './layout.js'
 import type { FieldDef, FormSchema } from './types.js'
 import type { LayoutNode } from './layout.js'
-import type { SchemaError } from './validate.js'
+import { schemaError } from './schema-errors.js'
+import type { SchemaError } from './schema-errors.js'
 
 /**
  * Constructs a document uses that its declared version does not define.
@@ -55,11 +56,11 @@ export function versionErrors(
   const introducedIn = (type: string): number =>
     spec1Types.has(type) ? 1 : spec2Types.has(type) ? 2 : 3
 
-  /** One sentence, so every one of these reads the same way. */
-  const needs = (what: string, version: number): string =>
-    `${what} needs specVersion "${String(version)}". This document says "${schema.specVersion}". ` +
-    `Change it to "${String(version)}" — everything already in the document keeps working, ` +
-    `because a later version only adds.`
+  /** The version a thing needs and the version this document says, for every sentence. */
+  const versions = (version: number): { version: string; declared: string } => ({
+    version: String(version),
+    declared: schema.specVersion,
+  })
 
   for (const { field, path } of fields) {
     // A PROPERTY, not only a type. This function gated field types and layout
@@ -86,10 +87,12 @@ export function versionErrors(
        */
       const arrived = spec2Widgets.has(field.widget) ? 2 : spec3Widgets.has(field.widget) ? 3 : 4
       if (arrived > declared) {
-        errors.push({
-          path: `${path}/widget`,
-          message: needs(`A "${field.widget}" widget`, arrived),
-        })
+        errors.push(
+          schemaError(`${path}/widget`, 'version.widget', {
+            widget: field.widget,
+            ...versions(arrived),
+          }),
+        )
       }
     }
 
@@ -101,7 +104,7 @@ export function versionErrors(
     // "earliest"` and refuses everything.
     for (const bound of ['earliest', 'latest'] as const) {
       if (field[bound] !== undefined && declared < 2) {
-        errors.push({ path: `${path}/${bound}`, message: needs(`A "${bound}" bound`, 2) })
+        errors.push(schemaError(`${path}/${bound}`, 'version.bound', { bound, ...versions(2) }))
       }
     }
 
@@ -110,7 +113,7 @@ export function versionErrors(
     // reason the bounds give above: an optional property only a version 4
     // document may carry takes nothing from any older document.
     if (field.step !== undefined && declared < 4) {
-      errors.push({ path: `${path}/step`, message: needs('A "step"', 4) })
+      errors.push(schemaError(`${path}/step`, 'version.step', versions(4)))
     }
 
     // Same reasoning as `widget` above: a property, not a type, and the schema is
@@ -125,13 +128,17 @@ export function versionErrors(
       // document however version 2 the property looks on its own.
       const arrived = LIST_VALUED_FIELD_TYPES.includes(field.type as never) ? 3 : 2
       if (arrived > declared) {
-        errors.push({ path: `${path}/optionsSource`, message: needs('An "optionsSource"', arrived) })
+        errors.push(
+          schemaError(`${path}/optionsSource`, 'version.optionsSource', versions(arrived)),
+        )
       }
     }
 
     const arrived = introducedIn(field.type)
     if (arrived <= declared) continue
-    errors.push({ path: `${path}/type`, message: needs(`A "${field.type}" field`, arrived) })
+    errors.push(
+      schemaError(`${path}/type`, 'version.fieldType', { type: field.type, ...versions(arrived) }),
+    )
   }
 
   // A rule KIND has a version too, and for the sharpest reason of the three: a
@@ -141,10 +148,12 @@ export function versionErrors(
   // worse than ignoring.
   for (const [index, rule] of (schema.logic?.rules ?? []).entries()) {
     if (!spec2RuleKinds.has(rule.kind) && declared < 3) {
-      errors.push({
-        path: `/logic/rules/${String(index)}/kind`,
-        message: needs(`A "${rule.kind}" rule`, 3),
-      })
+      errors.push(
+        schemaError(`/logic/rules/${String(index)}/kind`, 'version.ruleKind', {
+          kind: rule.kind,
+          ...versions(3),
+        }),
+      )
     }
   }
 
@@ -153,7 +162,9 @@ export function versionErrors(
       for (const [index, node] of nodes.entries()) {
         const at = `${base}/${String(index)}`
         if (!spec1Kinds.has(node.kind) && declared < 2) {
-          errors.push({ path: `${at}/kind`, message: needs(`A "${node.kind}" layout node`, 2) })
+          errors.push(
+            schemaError(`${at}/kind`, 'version.layoutKind', { kind: node.kind, ...versions(2) }),
+          )
         }
         // `layoutChildren` rather than a kind test: `qrcode` is childless and is not a
         // field, so `kind !== 'field'` walked straight into `undefined`.

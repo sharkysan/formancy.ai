@@ -47,7 +47,30 @@ const brotliKilobytes = (packageName: string): number => {
       `${packageName}'s dist/index.mjs is ${String(built.length)} bytes, which is not a built bundle. Something is mid-write — run \`pnpm build\` to completion before this.`,
     )
   }
-  return brotliCompressSync(built).length / 1024
+  /*
+   * The barrel and every chunk it imports, each compressed on its own as it is served.
+   *
+   * This read index.mjs alone, and the spec's barrel imports a chunk the bundler shares
+   * with `/validate`: "14.0 kB for the whole barrel" left 5.2 kB of the barrel out, and
+   * the guard agreed with it, because both measured the same one file. Found 2026-10-09
+   * when the validator's sentences moved into that chunk and the figure did not move.
+   */
+  const dist = dirname(file)
+  const loaded = new Set<string>()
+  const visit = (name: string): void => {
+    if (loaded.has(name)) return
+    loaded.add(name)
+    const code = readFileSync(join(dist, name), 'utf8')
+    // Static, side-effect and dynamic imports alike: each is a file an importer loads.
+    for (const match of code.matchAll(/\b(?:from|import)\s*\(?\s*["']\.\/([^"']+\.mjs)["']/g)) {
+      visit(match[1]!)
+    }
+  }
+  visit('index.mjs')
+  return [...loaded].reduce(
+    (total, name) => total + brotliCompressSync(readFileSync(join(dist, name))).length / 1024,
+    0,
+  )
 }
 
 const quality = readFileSync(

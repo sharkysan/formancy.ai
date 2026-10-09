@@ -192,17 +192,34 @@ So is the language it speaks to the person building. A session is opened in one,
 both builders read it from the session:
 
 ```ts
-import { BUILDER_MESSAGES_DE, createBuilderSession, createBuilderText } from '@formancy/builder-core'
+import {
+  BUILDER_MESSAGES_DE,
+  SCHEMA_ERRORS_DE,
+  SCHEMA_WORDS_DE,
+  createBuilderSession,
+  createBuilderText,
+} from '@formancy/builder-core'
 
 const session = createBuilderSession(schema, {
-  text: createBuilderText({ locale: 'de', messages: BUILDER_MESSAGES_DE }),
+  text: createBuilderText({
+    locale: 'de',
+    messages: BUILDER_MESSAGES_DE,
+    schema: SCHEMA_WORDS_DE,
+    errors: SCHEMA_ERRORS_DE,
+  }),
 })
 ```
 
-Every surface of both builders is then German — a property's title and description are
-the spec's and stay as the schema words them, and a validator's or parser's message is
-its package's; a message a catalogue
-leaves out is English, one message at a time, so a catalogue of your own can start small.
+Every surface of both builders is then German. A language has three parts: `messages`,
+the builder's own words; `schema`, the spec's — a property's title and description, a
+field type's name — keyed by the English the spec's JSON Schema writes
+([0121](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0121-the-specs-words-are-translated-beside-it.md));
+and `errors`, why the validator refused an edit, keyed by the code every validator error
+carries beside its English
+([0122](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0122-a-validator-error-has-a-code.md)).
+French ships as well, as `…_FR`. A parser's message — JSON that does not parse — stays in
+its package's words. Anything a language leaves out is English, one message at a time, so
+a catalogue of your own can start small.
 A session's language is fixed for its lifetime: to change it, open a session again over
 the same document
 ([0114](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0114-the-builder-speaks-the-authors-language.md),

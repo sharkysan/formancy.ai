@@ -57,7 +57,9 @@ also why the engine's tests never need to mock a clock.
 
 Messages in the first two tiers are written for a form author, not for a
 compiler. "There is no `en` catalogue, so the language everything falls back to
-has no words in it" is the register.
+has no words in it" is the register. Each carries a code and the values it names as
+well as that English, so a builder says it in the author's language without reading
+the English back ([0122](../decisions/0122-a-validator-error-has-a-code.md)).
 
 ## 8.5 Hidden fields
 
@@ -161,6 +163,14 @@ the JSON Schema, which the reference documentation reads, and translations sit b
 keyed by that English. The set is derived from the schema, so a reworded description fails
 a test until its translations follow
 ([0121](../decisions/0121-the-specs-words-are-translated-beside-it.md)).
+
+**The validator's sentences are a fourth**, keyed by code rather than by English: each
+error carries a stable code and the values its sentence names, the English is the spec's
+table, and German and French sit in `@formancy/builder-core`, typed as every code so a new
+sentence does not compile until it is translated. A session's refusals go through it.
+What stays English is what no table here wrote — ajv's wording for a keyword with no
+sentence of its own, and a regular-expression engine's reason
+([0122](../decisions/0122-a-validator-error-has-a-code.md)).
 
 ## 8.9 Error handling
 

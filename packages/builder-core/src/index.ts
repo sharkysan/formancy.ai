@@ -18,6 +18,8 @@ export { BUILDER_MESSAGES_DE } from './messages-de.js'
 export { BUILDER_MESSAGES_FR } from './messages-fr.js'
 export { SCHEMA_WORDS_DE } from './schema-words-de.js'
 export { SCHEMA_WORDS_FR } from './schema-words-fr.js'
+export { SCHEMA_ERRORS_DE } from './schema-errors-de.js'
+export { SCHEMA_ERRORS_FR } from './schema-errors-fr.js'
 export { schemaTexts } from './schema-words.js'
 export { pseudoLanguage, untranslated } from './pseudo.js'
 export type {
@@ -27,6 +29,8 @@ export type {
   BuilderText,
   Message,
   PluralMessage,
+  SchemaErrorSentences,
+  SchemaErrorWords,
   SchemaWords,
 } from './messages.js'
 export { createBuilderSession } from './session.js'

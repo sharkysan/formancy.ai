@@ -400,7 +400,7 @@ export function createBuilderSession(
     // failed to fix it.
     throw new Error(
       text('refuse.cannotOpen', {
-        reasons: verdict.errors.map((error) => `${error.path} ${error.message}`).join('; '),
+        reasons: verdict.errors.map((error) => `${error.path} ${text.error(error)}`).join('; '),
       }),
     )
   }
@@ -428,7 +428,7 @@ export function createBuilderSession(
     const check = verdictFor(candidate)
     if (!check.valid) {
       const first = check.errors[0]!
-      return { ok: false, path: first.path, message: first.message }
+      return { ok: false, path: first.path, message: text.error(first) }
     }
     past.push(present)
     // A new command abandons the redo branch: redoing onto a different history

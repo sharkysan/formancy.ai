@@ -1,6 +1,8 @@
+import type { FormSchema } from '@formancy/spec'
 import { describe, expect, test } from 'vitest'
 import { BUILDER_MESSAGES, createBuilderText } from './messages.js'
 import { pseudoLanguage, untranslated } from './pseudo.js'
+import { createBuilderSession } from './session.js'
 
 /**
  * The judgement both builders' language guards share.
@@ -8,6 +10,14 @@ import { pseudoLanguage, untranslated } from './pseudo.js'
  * Each case is a way the guard could pass a builder that still has English in
  * it, or fail one that does not.
  */
+/** One field called `email`, so that adding a second is refused by the validator. */
+const contact: FormSchema = {
+  specVersion: '1',
+  id: 'contact',
+  title: 'Contact',
+  model: { fields: [{ key: 'email', type: 'text' }] },
+}
+
 describe('the pseudo-language', () => {
   test('marks every message, plural forms included, so nothing from the catalogue reads as code', () => {
     const text = createBuilderText(pseudoLanguage())
@@ -15,6 +25,18 @@ describe('the pseudo-language', () => {
     expect(text('tree.empty')).toBe(`⟦${BUILDER_MESSAGES['tree.empty']}⟧`)
     expect(text('tree.fieldCount', { count: 1 })).toBe('⟦1 field⟧')
     expect(text('tree.fieldCount', { count: 2 })).toBe('⟦2 fields⟧')
+  })
+
+  test('marks the validator’s sentences too, so a refusal shown in English is seen', () => {
+    // The refusal an author meets most comes from the validator; a walk that met
+    // one unmarked could not tell it from a sentence written into a component.
+    const text = createBuilderText(pseudoLanguage())
+    const refusal = createBuilderSession(contact, { text }).insertField(
+      { parent: [], index: 0 },
+      { key: 'email', type: 'text' },
+    )
+
+    expect(refusal.ok ? '' : untranslated([refusal.message], [])).toEqual([])
   })
 })
 

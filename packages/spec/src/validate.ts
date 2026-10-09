@@ -7,14 +7,11 @@ import { SPEC_1_LAYOUT_KINDS, layoutChildren } from './layout.js'
 import type { FieldDef, FormSchema, Text } from './types.js'
 import type { LayoutNode } from './layout.js'
 import { versionErrors } from './version-errors.js'
+import { schemaError } from './schema-errors.js'
+import type { SchemaError } from './schema-errors.js'
 
 /** One reason a document is not a valid formancy form. */
-export interface SchemaError {
-  /** JSON Pointer to the offending value, e.g. `/model/fields/1/key`. */
-  path: string
-  /** What the form author has to change, in their words rather than the validator's. */
-  message: string
-}
+export type { SchemaError }
 
 export type ValidationResult =
   | { valid: true; schema: FormSchema }
@@ -65,12 +62,9 @@ function semanticErrors(schema: FormSchema): SchemaError[] {
     // answer for what a row index means two repeaters deep, and accepting the
     // document now would mean migrating whatever people built with it later.
     if (field.type === 'repeater' && insideRepeater) {
-      errors.push({
-        path: `${path}/type`,
-        // Named no version since the spec reached 2: which version forbids it is not
-        // what the author needs, and a number in a message goes stale silently.
-        message: `A repeater cannot sit inside another repeater. Move it out of the outer repeater, or make it a group.`,
-      })
+      // Named no version since the spec reached 2: which version forbids it is not
+      // what the author needs, and a number in a message goes stale silently.
+      errors.push(schemaError(`${path}/type`, 'repeater.nested'))
     }
 
     /*
@@ -96,10 +90,9 @@ function semanticErrors(schema: FormSchema): SchemaError[] {
     if (field.widget === 'datagrid') {
       for (const [index, child] of (field.fields ?? []).entries()) {
         if (child.fields === undefined) continue
-        errors.push({
-          path: `${path}/fields/${String(index)}`,
-          message: `A grid's rows are flat, and "${child.key}" holds fields of its own. Give each of those fields a column of its own, or take the grid off this repeater and its rows will be stacked.`,
-        })
+        errors.push(
+          schemaError(`${path}/fields/${String(index)}`, 'grid.rowNotFlat', { key: child.key }),
+        )
       }
     }
 
@@ -117,17 +110,11 @@ function semanticErrors(schema: FormSchema): SchemaError[] {
       for (const [index, column] of field.columns.entries()) {
         const at = `${path}/columns/${String(index)}/field`
         if (!childKeys.has(column.field)) {
-          errors.push({
-            path: at,
-            message: `No field of this grid has the key "${column.field}", so the column would show nothing. Name one of its own fields.`,
-          })
+          errors.push(schemaError(at, 'grid.columnUnknown', { field: column.field }))
           continue
         }
         if (seen.has(column.field)) {
-          errors.push({
-            path: at,
-            message: `Two columns both show "${column.field}". One answer cannot fill two columns.`,
-          })
+          errors.push(schemaError(at, 'grid.columnTwice', { field: column.field }))
         }
         seen.add(column.field)
       }
@@ -142,38 +129,28 @@ function semanticErrors(schema: FormSchema): SchemaError[] {
       field.latest !== undefined &&
       field.earliest > field.latest
     ) {
-      errors.push({
-        path: `${path}/earliest`,
-        message: `The earliest allowed value "${field.earliest}" is after the latest allowed "${field.latest}", so no answer could be accepted. Swap them, or remove one.`,
-      })
+      errors.push(
+        schemaError(`${path}/earliest`, 'bounds.crossed', {
+          earliest: field.earliest,
+          latest: field.latest,
+        }),
+      )
     }
 
     if (claimed.has(field.key)) {
-      errors.push({
-        path: `${path}/key`,
-        message: `Another field already uses the key "${field.key}". A key identifies one answer, so two fields cannot share one.`,
-      })
+      errors.push(schemaError(`${path}/key`, 'key.taken', { key: field.key }))
     }
     claimed.add(field.key)
 
     const previousKey = field.renamedFrom
     if (previousKey === field.key) {
-      errors.push({
-        path: `${path}/renamedFrom`,
-        message: `This field says it was renamed from itself. Drop "renamedFrom", or set it to the key this field used to have.`,
-      })
+      errors.push(schemaError(`${path}/renamedFrom`, 'rename.self'))
     } else if (previousKey !== undefined && liveKeys.has(previousKey)) {
-      errors.push({
-        path: `${path}/renamedFrom`,
-        message: `The key "${previousKey}" is still in use by a field in this form, so this is a copy rather than a rename. Two fields cannot claim the same answers.`,
-      })
+      errors.push(schemaError(`${path}/renamedFrom`, 'rename.keyInUse', { key: previousKey }))
     } else if (previousKey !== undefined && claimedRenames.has(previousKey)) {
       // A migration driven off two claims would copy one column's answers
       // into two fields — silently, and reported as compatible.
-      errors.push({
-        path: `${path}/renamedFrom`,
-        message: `Another field already says it was renamed from "${previousKey}". Old answers can only move to one place.`,
-      })
+      errors.push(schemaError(`${path}/renamedFrom`, 'rename.claimed', { key: previousKey }))
     }
     if (previousKey !== undefined) claimedRenames.add(previousKey)
 
@@ -183,10 +160,11 @@ function semanticErrors(schema: FormSchema): SchemaError[] {
       try {
         new RegExp(field.pattern, 'u')
       } catch (cause) {
-        errors.push({
-          path: `${path}/pattern`,
-          message: `This is not a valid regular expression: ${cause instanceof Error ? cause.message : String(cause)}.`,
-        })
+        errors.push(
+          schemaError(`${path}/pattern`, 'pattern.invalid', {
+            reason: cause instanceof Error ? cause.message : String(cause),
+          }),
+        )
       }
     }
   }
@@ -222,18 +200,22 @@ function logicErrors(schema: FormSchema): SchemaError[] {
       // text field is an author who believes they wrote a conditional page and
       // wrote a rule that can never do anything.
       if (!pageKeys.has(rule.target)) {
-        errors.push({
-          path: `/logic/rules/${String(index)}/target`,
-          message: pageKeys.size === 0
-            ? `A skip rule walks past a page, and this form has no pages. Give it a "page" field first, or remove the rule.`
-            : `"${rule.target}" is not a page. A skip rule names the key of a page — ${[...pageKeys].map((key) => `"${key}"`).join(', ')} — rather than a data path, because a page carries no answer of its own.`,
-        })
+        const at = `/logic/rules/${String(index)}/target`
+        errors.push(
+          pageKeys.size === 0
+            ? schemaError(at, 'rule.skipNoPages')
+            : schemaError(at, 'rule.skipNotAPage', {
+                target: rule.target,
+                pages: [...pageKeys].map((key) => `"${key}"`).join(', '),
+              }),
+        )
       }
     } else if (!knownPaths.has(rule.target)) {
-      errors.push({
-        path: `/logic/rules/${String(index)}/target`,
-        message: `No field has the data path "${rule.target}". A rule can only apply to a field the model defines.`,
-      })
+      errors.push(
+        schemaError(`/logic/rules/${String(index)}/target`, 'rule.unknownTarget', {
+          target: rule.target,
+        }),
+      )
     }
 
     // A VALIDATION rule may choose where it runs, and there are two kinds of
@@ -242,18 +224,19 @@ function logicErrors(schema: FormSchema): SchemaError[] {
     // a check and make it a second opinion.
     if (rule.kind !== 'validate' && rule.kind !== 'check') {
       if (rule.runsOn !== undefined) {
-        errors.push({
-          path: `/logic/rules/${String(index)}/runsOn`,
-          message: `Only a validate or check rule can choose where it runs. A ${rule.kind} rule that behaved differently in the browser and on the server would leave the server unable to check what the browser did.`,
-        })
+        errors.push(
+          schemaError(`/logic/rules/${String(index)}/runsOn`, 'rule.runsOn', { kind: rule.kind }),
+        )
       }
 
       const claim = `${rule.kind}:${rule.target}`
       if (claimedKinds.has(claim)) {
-        errors.push({
-          path: `/logic/rules/${String(index)}`,
-          message: `"${rule.target}" already has a ${rule.kind} rule. A field can carry one rule per kind, because two would have no defined winner.`,
-        })
+        errors.push(
+          schemaError(`/logic/rules/${String(index)}`, 'rule.duplicate', {
+            target: rule.target,
+            kind: rule.kind,
+          }),
+        )
       }
       claimedKinds.add(claim)
     }
@@ -277,27 +260,22 @@ function presentationErrors(schema: FormSchema): SchemaError[] {
   const i18n = schema.i18n
 
   if (i18n !== undefined && i18n.messages[i18n.defaultLocale] === undefined) {
-    errors.push({
-      path: '/i18n/defaultLocale',
-      message: `There is no "${i18n.defaultLocale}" catalogue, so the language everything falls back to has no words in it.`,
-    })
+    errors.push(
+      schemaError('/i18n/defaultLocale', 'i18n.noDefaultCatalogue', { locale: i18n.defaultLocale }),
+    )
   }
 
   const known = new Set(Object.keys(i18n?.messages[i18n.defaultLocale] ?? {}))
   const checkText = (text: Text | undefined, path: string): void => {
     if (!isMessageRef(text)) return
     if (i18n === undefined) {
-      errors.push({
-        path,
-        message: `"${text.$t}" refers to a translation, but this form has no i18n section.`,
-      })
+      errors.push(schemaError(path, 'i18n.noSection', { id: text.$t }))
       return
     }
     if (!known.has(text.$t)) {
-      errors.push({
-        path,
-        message: `No message called "${text.$t}" in the "${i18n.defaultLocale}" catalogue.`,
-      })
+      errors.push(
+        schemaError(path, 'i18n.unknownMessage', { id: text.$t, locale: i18n.defaultLocale }),
+      )
     }
   }
 
@@ -322,10 +300,7 @@ function presentationErrors(schema: FormSchema): SchemaError[] {
   for (const [index, layout] of layouts.entries()) {
     const at = `/layouts/${String(index)}`
     if (namesSeen.has(layout.name)) {
-      errors.push({
-        path: `${at}/name`,
-        message: `Another layout is already called "${layout.name}". A layout is asked for by name, so two cannot share one.`,
-      })
+      errors.push(schemaError(`${at}/name`, 'layout.nameTaken', { name: layout.name }))
     }
     namesSeen.add(layout.name)
 
@@ -350,18 +325,17 @@ function presentationErrors(schema: FormSchema): SchemaError[] {
         // it believes the arrangement they described is the one they will get.
         if (node.span !== undefined) {
           if (parent?.kind !== 'table') {
-            errors.push({
-              path: `${nodePath}/span`,
-              message: `"span" says how many of a table's columns to take, and this node is not in a table. Put it in a table node, or remove the span.`,
-            })
+            errors.push(schemaError(`${nodePath}/span`, 'layout.spanOutsideTable'))
           } else if (typeof node.span === 'number' && node.span > parent.columns) {
             // Refused rather than clamped: an author who writes 4 in a two-column table
             // believes they configured something, and silently narrowing it is the
             // failure this rule exists to make loud.
-            errors.push({
-              path: `${nodePath}/span`,
-              message: `This spans ${String(node.span)} columns in a table that has ${String(parent.columns)}. Use "all" for the full width, so it stays right if the column count changes.`,
-            })
+            errors.push(
+              schemaError(`${nodePath}/span`, 'layout.spanTooWide', {
+                span: node.span,
+                columns: parent.columns,
+              }),
+            )
           }
         }
         if (node.kind === 'qrcode') {
@@ -375,10 +349,9 @@ function presentationErrors(schema: FormSchema): SchemaError[] {
           // a form showing a booking reference as a field and again as a code is doing
           // what it meant to.
           if (!placeable.has(node.path)) {
-            errors.push({
-              path: `${nodePath}/path`,
-              message: `No field has the data path "${node.path}", so this code would encode nothing.`,
-            })
+            errors.push(
+              schemaError(`${nodePath}/path`, 'layout.codeUnknownPath', { path: node.path }),
+            )
           }
           // A code says what it IS, or it says nothing anybody can use. The picture is
           // decoration a screen reader cannot read, and the value beneath it sits in an
@@ -391,23 +364,19 @@ function presentationErrors(schema: FormSchema): SchemaError[] {
           // live here, and the same cost -- a third-party validator reading the raw
           // JSON Schema will not catch it.
           if (node.label === undefined) {
-            errors.push({
-              path: `${nodePath}/label`,
-              message: `This code needs a label saying what it is. The picture cannot be read aloud and the value under it is a bare string, so the label is the only thing a screen reader has to go on.`,
-            })
+            errors.push(schemaError(`${nodePath}/label`, 'layout.codeNeedsLabel'))
           }
         } else if (node.kind === 'field') {
           if (!placeable.has(node.path)) {
-            errors.push({
-              path: `${nodePath}/path`,
-              message: `No field has the data path "${node.path}", so this layout places nothing here.`,
-            })
+            errors.push(schemaError(`${nodePath}/path`, 'layout.unknownPath', { path: node.path }))
           } else if (placed.has(node.path)) {
             duplicates.add(node.path)
-            errors.push({
-              path: `${nodePath}/path`,
-              message: `"${node.path}" is already placed in the "${layout.name}" layout. A field has one place in an arrangement.`,
-            })
+            errors.push(
+              schemaError(`${nodePath}/path`, 'layout.placedTwice', {
+                path: node.path,
+                layout: layout.name,
+              }),
+            )
           }
           placed.add(node.path)
         } else {
@@ -421,30 +390,18 @@ function presentationErrors(schema: FormSchema): SchemaError[] {
             for (const [childIndex, child] of node.children.entries()) {
               const childPath = `${nodePath}/children/${String(childIndex)}`
               if (child.kind !== 'section') {
-                errors.push({
-                  path: childPath,
-                  message: `A tabs node holds sections, one per tab, and this one holds a "${child.kind}". Wrap it in a section and give the section a label — that label is the tab's name.`,
-                })
+                errors.push(schemaError(childPath, 'layout.tabNotSection', { kind: child.kind }))
               } else if (child.label === undefined) {
-                errors.push({
-                  path: `${childPath}/label`,
-                  message: `This tab has no name, so nobody can tell what is behind it. Give the section a label.`,
-                })
+                errors.push(schemaError(`${childPath}/label`, 'layout.tabUnnamed'))
               }
             }
             if (node.children.length === 0) {
-              errors.push({
-                path: `${nodePath}/children`,
-                message: `A tabs node with no tabs shows nothing at all.`,
-              })
+              errors.push(schemaError(`${nodePath}/children`, 'layout.tabsEmpty'))
             }
           }
 
           if (node.kind === 'table' && !Number.isInteger(node.columns)) {
-            errors.push({
-              path: `${nodePath}/columns`,
-              message: `A table's column count has to be a whole number.`,
-            })
+            errors.push(schemaError(`${nodePath}/columns`, 'layout.columnsWhole'))
           }
 
           walkNodes(layoutChildren(node), `${nodePath}/children`, node)
@@ -472,10 +429,7 @@ function reservedKeyErrors(schema: FormSchema): SchemaError[] {
     for (const [index, field] of fields.entries()) {
       const path = `${base}/${String(index)}`
       if (field.key === ROW_ID) {
-        errors.push({
-          path: `${path}/key`,
-          message: `"${ROW_ID}" is reserved: it is how a repeater row carries its identity, so no field can be called that.`,
-        })
+        errors.push(schemaError(`${path}/key`, 'key.reserved', { key: ROW_ID }))
       }
       walk(field.fields ?? [], `${path}/fields`)
     }
@@ -492,10 +446,7 @@ function forbidNestedPages(field: FieldDef, path: string, errors: SchemaError[])
   for (const [index, child] of children.entries()) {
     const childPath = `${path}/fields/${String(index)}`
     if (child.type === 'page') {
-      errors.push({
-        path: `${childPath}/type`,
-        message: `A page can only sit at the top level of a form. Move it out of "${field.key}", or make it a group.`,
-      })
+      errors.push(schemaError(`${childPath}/type`, 'page.nested', { key: field.key }))
     }
     forbidNestedPages(child, childPath, errors)
   }
@@ -553,14 +504,11 @@ function toSchemaErrors(errors: ErrorObject[], document: unknown): SchemaError[]
   const schemaErrors: SchemaError[] = []
 
   for (const error of reported) {
-    const schemaError = {
-      path: pathOf(error),
-      message: messageFor(error, errors, document),
-    }
-    const fingerprint = `${schemaError.path}\u0000${schemaError.message}`
+    const found = errorFor(error, errors, document)
+    const fingerprint = `${found.path}\u0000${found.message}`
     if (seen.has(fingerprint)) continue
     seen.add(fingerprint)
-    schemaErrors.push(schemaError)
+    schemaErrors.push(found)
   }
 
   return schemaErrors
@@ -581,7 +529,8 @@ function pathOf(error: ErrorObject): string {
   return named === undefined ? error.instancePath : `${error.instancePath}/${escapeToken(named)}`
 }
 
-function messageFor(error: ErrorObject, allErrors: ErrorObject[], document: unknown): string {
+function errorFor(error: ErrorObject, allErrors: ErrorObject[], document: unknown): SchemaError {
+  const path = pathOf(error)
   switch (error.keyword) {
     case 'false schema':
       // ajv says "Boolean schema is false", which tells an author nothing. The one
@@ -591,17 +540,24 @@ function messageFor(error: ErrorObject, allErrors: ErrorObject[], document: unkn
       // `not` inside the branch that DECLARES `optionsSource` makes the branch fail as
       // a whole -- and `unevaluatedProperties` then reports the property as unknown,
       // telling the author to check the spelling of a word they spelled correctly.
-      return error.instancePath.endsWith('/options')
-        ? 'This field both lists its options and names a source for them, and there is no rule for which wins. Keep the list, or keep the source and remove the list.'
-        : 'This is not allowed here.'
+      return schemaError(
+        path,
+        error.instancePath.endsWith('/options') ? 'options.twoSources' : 'shape.notAllowed',
+      )
 
     case 'type': {
+      // One sentence per JSON type, so a translation is a sentence and not "Must be"
+      // with an English phrase set into it.
       const type = stringParam(error, 'type') ?? 'something else'
-      return `Must be ${READABLE_TYPES[type] ?? type}.`
+      return type in TYPE_CODES
+        ? schemaError(path, TYPE_CODES[type as keyof typeof TYPE_CODES])
+        : schemaError(path, 'shape.type', { type })
     }
 
     case 'required':
-      return `Missing required property "${stringParam(error, 'missingProperty') ?? ''}".`
+      return schemaError(path, 'shape.required', {
+        property: stringParam(error, 'missingProperty') ?? '',
+      })
 
     case 'additionalProperties':
     case 'unevaluatedProperties': {
@@ -609,41 +565,47 @@ function messageFor(error: ErrorObject, allErrors: ErrorObject[], document: unkn
         stringParam(error, 'additionalProperty') ?? stringParam(error, 'unevaluatedProperty') ?? ''
       // `fields` is the one property the spec allows on some field types and not
       // others, so the generic "unknown property" wording would misdirect.
-      if (property === 'fields') {
-        return 'Only group, page and repeater fields can hold child fields.'
-      }
-      return `Unknown property "${property}". Check the spelling, or remove it.`
+      if (property === 'fields') return schemaError(path, 'shape.childFields')
+      return schemaError(path, 'shape.unknownProperty', { property })
     }
 
     case 'const':
-      return `Must be ${JSON.stringify(error.params['allowedValue'])}.`
+      return schemaError(path, 'shape.const', {
+        value: JSON.stringify(error.params['allowedValue']),
+      })
 
     case 'enum':
-      return notOneOf(document, error.instancePath, listParam(error, 'allowedValues'))
+      return notOneOf(path, document, error.instancePath, listParam(error, 'allowedValues'))
 
     case 'oneOf':
-      return notOneOf(document, error.instancePath, allowedConstants(error, allErrors))
+      return notOneOf(path, document, error.instancePath, allowedConstants(error, allErrors))
 
     case 'pattern':
-      return patternMessage(error, document)
+      return patternError(path, error, document)
 
     case 'maxLength':
-      return `Must be ${String(error.params['limit'])} characters or fewer.`
+      return schemaError(path, 'shape.maxLength', { limit: String(error.params['limit']) })
 
     case 'minLength':
       return error.params['limit'] === 1
-        ? 'Must not be empty.'
-        : `Must be at least ${String(error.params['limit'])} characters.`
+        ? schemaError(path, 'shape.empty')
+        : schemaError(path, 'shape.minLength', { limit: String(error.params['limit']) })
 
     default:
-      return asSentence(error.message ?? 'Invalid.')
+      return schemaError(path, 'shape.other', { detail: asSentence(error.message ?? 'Invalid.') })
   }
 }
 
-function notOneOf(document: unknown, instancePath: string, allowed: readonly unknown[]): string {
-  const found = JSON.stringify(resolvePointer(document, instancePath))
-  const values = allowed.map((value) => String(value)).join(', ')
-  return `${found} is not one of the allowed values: ${values}.`
+function notOneOf(
+  path: string,
+  document: unknown,
+  instancePath: string,
+  allowed: readonly unknown[],
+): SchemaError {
+  return schemaError(path, 'shape.notOneOf', {
+    found: JSON.stringify(resolvePointer(document, instancePath)),
+    allowed: allowed.map((value) => String(value)).join(', '),
+  })
 }
 
 /** The `const` of each `oneOf` branch, which is how the field type enum is
@@ -664,35 +626,30 @@ function allowedConstants(error: ErrorObject, allErrors: ErrorObject[]): unknown
   return [...new Set(values)]
 }
 
-function patternMessage(error: ErrorObject, document: unknown): string {
+function patternError(path: string, error: ErrorObject, document: unknown): SchemaError {
   const found = JSON.stringify(resolvePointer(document, error.instancePath))
 
   // Keyed on which definition rejected it rather than on the instance path, so
   // renaming a property in the schema cannot silently degrade the wording.
-  if (error.schemaPath.includes('/fieldKey/')) {
-    return `${found} is not a usable field key. Start with a letter or an underscore, then use only letters, digits and underscores.`
-  }
-  if (error.schemaPath.includes('/formId/')) {
-    return `${found} is not a usable form ID. Start with a letter or a digit, then use only letters, digits, dots, dashes and underscores.`
-  }
+  if (error.schemaPath.includes('/fieldKey/')) return schemaError(path, 'shape.fieldKey', { found })
+  if (error.schemaPath.includes('/formId/')) return schemaError(path, 'shape.formId', { found })
   // A check names a validator the deployment answers, and the mistake somebody
   // makes is writing the address of one. The generic wording would tell them the
   // pattern and leave them guessing what shape is wanted.
-  if (error.instancePath.endsWith('/check')) {
-    return `${found} is not a usable check name. Name the check and let the deployment say where to ask — an address here would be a deployment detail frozen into a published form, and a way to make a server inside a private network fetch something.`
-  }
-  return `${found} does not match the required pattern ${String(error.params['pattern'])}.`
+  if (error.instancePath.endsWith('/check')) return schemaError(path, 'shape.checkName', { found })
+  return schemaError(path, 'shape.pattern', { found, pattern: String(error.params['pattern']) })
 }
 
-const READABLE_TYPES: Record<string, string> = {
-  object: 'an object',
-  array: 'a list',
-  string: 'text',
-  number: 'a number',
-  integer: 'a whole number',
-  boolean: 'true or false',
-  null: 'null',
-}
+/** The JSON types with a sentence of their own. */
+const TYPE_CODES = {
+  object: 'shape.object',
+  array: 'shape.array',
+  string: 'shape.string',
+  number: 'shape.number',
+  integer: 'shape.integer',
+  boolean: 'shape.boolean',
+  null: 'shape.null',
+} as const
 
 function stringParam(error: ErrorObject, name: string): string | undefined {
   const value = error.params[name]
