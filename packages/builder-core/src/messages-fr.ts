@@ -163,6 +163,26 @@ export const BUILDER_MESSAGES_FR = {
   'said.cannotRemove': 'Impossible de supprimer {name} : {reason}',
   'said.added': 'Ajouté : {what} — {where}.',
   'said.cannotAdd': 'Impossible d’ajouter : {reason}',
+  'keys.block.what': 'enregistrer le champ actif comme bloc',
+  'blocks.heading': 'Vos blocs',
+  'blocks.none':
+    'Aucun bloc pour l’instant. Enregistrez un champ ou un groupe comme bloc pour le réutiliser.',
+  'blocks.save': 'Enregistrer comme bloc',
+  'blocks.name': 'Nom du bloc',
+  'blocks.saveConfirm': 'Enregistrer le bloc',
+  'blocks.addWhere': 'Où ajouter le bloc « {name} » ?',
+  'said.blockSaved': {
+    one: '« {name} » enregistré comme bloc, sans la {count} règle qui lit des champs extérieurs.',
+    other: '« {name} » enregistré comme bloc, sans les {count} règles qui lisent des champs extérieurs.',
+  },
+  'said.blockSavedWhole': '« {name} » enregistré comme bloc.',
+  'said.blockAdded': 'Bloc « {name} » ajouté — {where}.',
+  'refuse.blockIsPage':
+    'Une page n’est pas un bloc : enregistrez un champ, ou un groupe ou une répétition de champs.',
+  'refuse.blockInRow':
+    'Un champ dans une ligne de répétition ne peut pas être enregistré comme bloc : ses règles portent sur chaque ligne.',
+  'refuse.blockRulesInRow':
+    'Un bloc avec des règles ne peut pas aller dans une ligne de répétition : ses règles porteraient sur chaque ligne.',
   'said.moved': '{name} déplacé : {where}.',
   'said.dropped': '{name} déplacé.',
   'said.cannotMove': 'Impossible de déplacer : {reason}',

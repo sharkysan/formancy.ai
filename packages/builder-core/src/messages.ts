@@ -1,3 +1,4 @@
+import { BLOCK_MESSAGES } from './messages-blocks.js'
 import { LOGIC_MESSAGES } from './messages-logic.js'
 
 import { renderSchemaError } from '@formancy/spec'
@@ -409,10 +410,11 @@ const BUILDER_OWN_MESSAGES = {
 
 } as const satisfies Record<string, Message>
 
-/** The whole catalogue: the builder's own words, and the logic editor's. */
+/** The whole catalogue: the builder's own words, the logic editor's, and the blocks'. */
 export const BUILDER_MESSAGES = {
   ...BUILDER_OWN_MESSAGES,
   ...LOGIC_MESSAGES,
+  ...BLOCK_MESSAGES,
 } as const satisfies Record<string, Message>
 
 export type BuilderMessageId = keyof typeof BUILDER_MESSAGES

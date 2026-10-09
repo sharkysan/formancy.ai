@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
-import type { BuilderSession } from '@formancy/builder-core'
+import type { BuilderBlock, BuilderSession } from '@formancy/builder-core'
 import { mountAngularBuilder } from './angular-builder-bootstrap.js'
 import type { BuilderTab, MountedBuilder, PreviewState } from './angular-builder-bootstrap.js'
 
@@ -22,11 +22,16 @@ export function AngularBuilderPane({
   session,
   tab,
   preview,
+  blocks,
+  onSaveBlock,
 }: {
   session: BuilderSession
   tab: BuilderTab
   /** What the form pane's preview holds, for the rules tab. Pushed in like the tab. */
   preview: PreviewState | undefined
+  /** The page's blocks, pushed in like the preview; a block saved here goes back to the page. */
+  blocks: readonly BuilderBlock[]
+  onSaveBlock: (block: BuilderBlock) => void
 }): ReactElement {
   const host = useRef<HTMLDivElement | null>(null)
   const mounted = useRef<MountedBuilder | undefined>(undefined)
@@ -45,7 +50,7 @@ export function AngularBuilderPane({
     let cancelled = false
 
     setProblem(undefined)
-    void mountAngularBuilder(element, session, tab)
+    void mountAngularBuilder(element, session, tab, (block) => saving.current(block))
       .then((builder) => {
         if (cancelled) {
           builder.unmount()
@@ -53,6 +58,7 @@ export function AngularBuilderPane({
         }
         mounted.current = builder
         builder.explain(latest.current)
+        builder.offer(offered.current)
       })
       .catch((error: unknown) => {
         if (cancelled) return
@@ -85,6 +91,19 @@ export function AngularBuilderPane({
     latest.current = preview
     mounted.current?.explain(preview)
   }, [preview])
+
+  // And the blocks — a list saved to in either builder — held the same way.
+  const offered = useRef(blocks)
+  useEffect(() => {
+    offered.current = blocks
+    mounted.current?.offer(blocks)
+  }, [blocks])
+  // Read through a ref by the mounted application, so a new callback reaches it
+  // without a remount.
+  const saving = useRef(onSaveBlock)
+  useEffect(() => {
+    saving.current = onSaveBlock
+  }, [onSaveBlock])
 
   return (
     <div className="angular-builder-pane">

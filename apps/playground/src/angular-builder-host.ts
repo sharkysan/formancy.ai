@@ -7,7 +7,7 @@ import {
   FormancyPropertyPanel,
   FormancyRulesOverview,
 } from '@formancy/builder-angular'
-import type { BuilderSession, Capabilities } from '@formancy/builder-core'
+import type { BuilderBlock, BuilderSession, Capabilities } from '@formancy/builder-core'
 
 /** Which of the three tabs the page is on. The React pane owns this. */
 export type BuilderTab = 'fields' | 'arrangement' | 'rules'
@@ -35,13 +35,21 @@ export interface PlaygroundBuilder {
   readonly tab: WritableSignal<BuilderTab>
   /** Pushed in by the React pane as the preview changes, so the Angular tree is not rebuilt. */
   readonly preview: WritableSignal<PreviewState | undefined>
+  /** The page's blocks, pushed in the same way: one list both builders offer (0135). */
+  readonly blocks: WritableSignal<readonly BuilderBlock[]>
+  /** Hands a block saved here back to the page, which keeps it for both builders. */
+  readonly keep: (block: BuilderBlock) => void
 }
 
 export const PLAYGROUND_BUILDER = new InjectionToken<PlaygroundBuilder>('playground builder')
 
 /** Make one, for the bootstrap to provide. */
-export function playgroundBuilder(session: BuilderSession, tab: BuilderTab): PlaygroundBuilder {
-  return { session, tab: signal(tab), preview: signal(undefined) }
+export function playgroundBuilder(
+  session: BuilderSession,
+  tab: BuilderTab,
+  keep: (block: BuilderBlock) => void,
+): PlaygroundBuilder {
+  return { session, tab: signal(tab), preview: signal(undefined), blocks: signal([]), keep }
 }
 
 /**
@@ -84,7 +92,12 @@ export function playgroundBuilder(session: BuilderSession, tab: BuilderTab): Pla
         [capabilities]="host.preview()?.capabilities"
       />
     } @else {
-      <formancy-builder [session]="host.session" (selected)="selected.set($event)" />
+      <formancy-builder
+        [session]="host.session"
+        [blocks]="host.blocks()"
+        (blockSaved)="host.keep($event)"
+        (selected)="selected.set($event)"
+      />
       @if (selected(); as keyPath) {
         <formancy-property-panel [session]="host.session" [keyPath]="keyPath" />
         <formancy-logic-panel [session]="host.session" [keyPath]="keyPath" />

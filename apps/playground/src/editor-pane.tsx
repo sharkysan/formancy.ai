@@ -3,7 +3,7 @@ import type { BuilderTab } from './angular-builder-host.js'
 import { useMemo } from 'react'
 import Editor from '@monaco-editor/react'
 import type { Monaco } from '@monaco-editor/react'
-import type { BuilderSession } from '@formancy/builder-core'
+import type { BuilderBlock, BuilderSession } from '@formancy/builder-core'
 import { FoldPane } from './panes.js'
 import { BuilderBody } from './builder-pane.js'
 import { ThemePane } from './theme-pane.js'
@@ -34,6 +34,8 @@ export function EditorPane({
   session,
   tab,
   onTab,
+  blocks,
+  onSaveBlock,
   preview,
   theme,
   themeHost,
@@ -49,6 +51,9 @@ export function EditorPane({
   session: BuilderSession | null
   tab: BuilderTab
   onTab: (tab: BuilderTab) => void
+  /** The page's blocks, which both builders offer, and where a saved one goes. */
+  blocks: readonly BuilderBlock[]
+  onSaveBlock: (block: BuilderBlock) => void
   /** The form pane's engine, whose answers the rules tab explains. */
   preview: FormEngine | undefined
   theme: string
@@ -108,6 +113,8 @@ export function EditorPane({
             onChange={onSource}
             tab={tab}
             onTab={onTab}
+            blocks={blocks}
+            onSaveBlock={onSaveBlock}
             preview={preview}
           />
         )}

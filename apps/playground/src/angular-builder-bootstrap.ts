@@ -1,7 +1,7 @@
 import { provideZonelessChangeDetection } from '@angular/core'
 import type { ApplicationRef } from '@angular/core'
 import { bootstrapApplication } from '@angular/platform-browser'
-import type { BuilderSession } from '@formancy/builder-core'
+import type { BuilderBlock, BuilderSession } from '@formancy/builder-core'
 import { AngularBuilderHost, PLAYGROUND_BUILDER, playgroundBuilder } from './angular-builder-host.js'
 import type { BuilderTab, PreviewState } from './angular-builder-host.js'
 
@@ -13,6 +13,8 @@ export interface MountedBuilder {
   show(tab: BuilderTab): void
   /** What the preview holds now, for the rules tab to explain. */
   explain(preview: PreviewState | undefined): void
+  /** The page's blocks now, for the palette to offer. */
+  offer(blocks: readonly BuilderBlock[]): void
   unmount(): void
 }
 
@@ -32,13 +34,14 @@ export async function mountAngularBuilder(
   host: HTMLElement,
   session: BuilderSession,
   tab: BuilderTab,
+  keep: (block: BuilderBlock) => void,
 ): Promise<MountedBuilder> {
   // Angular bootstraps into an element matching the component's selector and
   // will not create one, so the caller does not have to know the selector.
   const root = document.createElement('formancy-playground-angular-builder')
   host.append(root)
 
-  const state = playgroundBuilder(session, tab)
+  const state = playgroundBuilder(session, tab, keep)
 
   let app: ApplicationRef
   try {
@@ -58,6 +61,7 @@ export async function mountAngularBuilder(
   return {
     show: (next) => state.tab.set(next),
     explain: (preview) => state.preview.set(preview),
+    offer: (blocks) => state.blocks.set(blocks),
     unmount: () => {
       app.destroy()
       root.remove()

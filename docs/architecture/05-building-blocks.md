@@ -287,6 +287,17 @@ translator works in — over the session's attempt-and-commit core, and left for
 the size budget names: one concern per file. No sentence in this package is a literal; the
 compiler is asked ([0119](../decisions/0119-a-sentence-in-builder-core-comes-from-the-catalogue.md)).
 
+`blocks.ts` holds a **block**: a field saved to use again with the rules that read only
+inside it and the words it names. Inserting one is a rename and a move at once — a key the
+form already uses becomes `city2`, a word id it says differently becomes `title2`, and every
+rule the block carries is re-rooted and renamed through `repath.ts` — so it is one undoable
+edit whose rules read what they read before. Where one may go is asked of a session with the
+block's words already in the form and then tried with the real insert per container: asked
+with the bare field, a translated label refused every place. The host keeps blocks; a builder
+takes a list and hands back what is saved, and `builder-angular` draws the palette's blocks
+and the naming dialog as components of their own (`blocks.ts`)
+([0135](../decisions/0135-a-block-is-a-field-with-its-rules.md)).
+
 There are two builder interfaces over it now, and the split is the same one
 the renderers have: what decides anything is in `builder-core`, and a builder
 package is markup and a subscription. `@formancy/builder-angular` carries every pane

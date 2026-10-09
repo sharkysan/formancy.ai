@@ -235,7 +235,11 @@ destinations for the same document
 ([0091](./docs/decisions/0091-a-second-builder-is-a-binding.md)). Both carry
 both trees, the property panel, the condition editor, the translations pane,
 the drop surface over the rendered form, and the prompt pane — describing a
-form in words, and reviewing what the answer does before it lands. Both speak
+form in words, and reviewing what the answer does before it lands. Both save a
+field as a **block** to use again — with the rules that live inside it and the words
+it names — and insert one with its keys made unique and its rules following them; the
+host keeps the blocks ([0135](./docs/decisions/0135-a-block-is-a-field-with-its-rules.md)).
+Both speak
 the author's language — their own words, the spec's property labels, and why the
 validator refused an edit: English, German and French are shipped, a host can add its own
 catalogue a message at a time, and the playground's Language switch shows it
