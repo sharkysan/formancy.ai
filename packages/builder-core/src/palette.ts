@@ -142,6 +142,19 @@ export function newFieldOfType(
     return { ...def, options: [{ value: 'option1', label: text('palette.firstOption') }] }
   }
 
+  // A row and two columns for a matrix, which the spec requires: a question asked of
+  // nothing, or with one possible answer, is not a matrix (0139).
+  if (type === 'matrix') {
+    return {
+      ...def,
+      rows: [{ value: 'row1', label: text('palette.firstRow') }],
+      options: [
+        { value: 'option1', label: text('palette.firstOption') },
+        { value: 'option2', label: text('palette.secondOption') },
+      ],
+    }
+  }
+
   // Two for a ranking, which the spec requires: one option is not an order (0138).
   if (type === 'ranking') {
     return {

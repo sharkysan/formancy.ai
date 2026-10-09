@@ -374,3 +374,44 @@ describe('every layout kind has something to configure', () => {
     }
   })
 })
+
+describe('a list of things the author writes out', () => {
+  /*
+   * A matrix's rows are value/label pairs, like options. Taken by name, only a property
+   * called `options` got the options editor, and the rows arrived as a text box — an
+   * author asked to type JSON into a form builder. Derived from the schema rather than by
+   * name, so the next such list cannot arrive that way either (0139).
+   */
+  test('a matrix edits its rows with the editor its options use, and without pictures', () => {
+    const rows = editablePropertiesFor('matrix').find((property) => property.name === 'rows')
+
+    expect(rows?.kind).toBe('options')
+    expect(rows?.pictures).toBe(false)
+  })
+
+  test('no field property that is a list of objects is offered as a line of text', () => {
+    const arrays = new Set<string>()
+    const collect = (node: unknown): void => {
+      if (typeof node !== 'object' || node === null) return
+      const properties = (node as { properties?: Record<string, { type?: string; items?: unknown }> })
+        .properties
+      for (const [name, property] of Object.entries(properties ?? {})) {
+        const items = property.items as { $ref?: string; type?: string } | undefined
+        if (property.type === 'array' && (items?.$ref !== undefined || items?.type === 'object')) {
+          arrays.add(name)
+        }
+      }
+    }
+    const field = (rawSchema as { $defs: { field: { allOf: Array<{ then?: unknown }> } } }).$defs
+      .field
+    for (const branch of field.allOf) collect(branch.then)
+    expect(arrays.size, 'no list-of-object properties were found to check').toBeGreaterThan(1)
+
+    const asText = FIELD_TYPES.flatMap((type) =>
+      editablePropertiesFor(type)
+        .filter((property) => arrays.has(property.name) && property.kind === 'string')
+        .map((property) => `${type}.${property.name}`),
+    )
+    expect(asText).toEqual([])
+  })
+})

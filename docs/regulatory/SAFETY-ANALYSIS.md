@@ -504,7 +504,29 @@ five options has answered, and nothing distinguishes "the other four do not matt
 "stopped halfway". A form that needs a complete order must set `minItems` to the number of
 options; the builder says so in the property's description, and nothing enforces it.
 
-## C — Data reaches the wrong party
+### B9. A matrix is accepted with a row nobody answered
+
+*How it arises:* a `matrix` field (spec 4) asks one question per row and stores the column
+chosen under each row answered. If "required" meant "something answered", a required matrix of
+ten rows with one answered would be accepted as complete, and the nine missing answers would
+look like nine rows the person had no view on
+([0139](../decisions/0139-a-matrix-answers-one-question-per-row.md)). A rule reading one row of
+an untouched matrix would also fail to evaluate if the answer were null, and a visibility rule
+that fails shows the field it was meant to hide (A5).
+
+*Constraint:* a required matrix is answered only when **every** row is, in client and server
+mode; a row the matrix does not have, a column it does not offer and anything but a map of
+strings are refused. An untouched matrix is `{}` to a rule, so `has(rating.taste)` answers
+false rather than erroring. Tested in `packages/core/src/matrix.test.ts`, in both renderers by
+the conformance fixture for matrices, and in the playground starter's scenarios, where a row
+left blank is refused.
+
+*Residual:* **an optional matrix may be answered in part**, and its stored answer does not say
+whether a missing row was skipped or overlooked. The condition editor's "is answered" means
+*any* row is; a rule that needs every row is written in CEL. A radio cannot be unticked, so a
+row answered by mistake stays answered unless the author offers a column for "does not apply".
+
+
 
 ### C1. An account's existence is disclosed by a failed login
 

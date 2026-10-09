@@ -219,6 +219,24 @@ export const STARTER_SCHEMA = {
           { value: 'fast', label: { $t: 'priorities.fast' } },
         ],
       },
+      // matrix: one question asked of several rows, the same answers for each. Required,
+      // which for a matrix means every row: answer the taste and leave the delivery, and
+      // the form is refused — a matrix half answered has not been answered (0139).
+      {
+        key: 'verdict',
+        type: 'matrix',
+        label: { $t: 'verdict' },
+        required: true,
+        rows: [
+          { value: 'taste', label: { $t: 'verdict.taste' } },
+          { value: 'delivery', label: { $t: 'verdict.delivery' } },
+        ],
+        options: [
+          { value: 'poor', label: { $t: 'verdict.poor' } },
+          { value: 'fine', label: { $t: 'verdict.fine' } },
+          { value: 'great', label: { $t: 'verdict.great' } },
+        ],
+      },
 
       { key: 'notes', type: 'textarea', label: { $t: 'notes' }, maxLength: 500 },
       // selectboxes: several answers from one list. The answer is the list of
@@ -388,6 +406,7 @@ export const STARTER_SCHEMA = {
             { kind: 'field', path: 'recommend' },
             { kind: 'field', path: 'portions' },
             { kind: 'field', path: 'priorities' },
+            { kind: 'field', path: 'verdict' },
           ],
         },
         {

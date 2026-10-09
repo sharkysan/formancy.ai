@@ -40,6 +40,12 @@ export const SCHEMA_ERRORS_FR: SchemaErrorSentences = {
     'Un sélecteur d’étiquettes affiche ses options sous forme de puces, qui ne peuvent pas afficher d’image : cette image ne serait donc jamais vue. Retirez le sélecteur d’étiquettes, ou supprimez l’image.',
   'ranking.duplicateOption':
     'Deux options de ce classement ont la valeur « {value} ». Un classement enregistre des valeurs : il ne pourrait pas dire laquelle des deux vient en premier — donnez à chaque option sa propre valeur.',
+  'option.imageNotDrawn':
+    'Un classement et une matrice affichent leurs options sans place pour une image : celle-ci ne serait jamais vue. Les images s’affichent sur les boutons radio et les cases à cocher ; retirez celle-ci.',
+  'matrix.duplicateRow':
+    'Deux lignes de cette matrice ont la valeur « {value} ». Une matrice enregistre chaque réponse sous sa ligne : elle ne pourrait pas dire quelle ligne a été répondue — donnez à chaque ligne sa propre valeur.',
+  'matrix.duplicateColumn':
+    'Deux colonnes de cette matrice ont la valeur « {value} ». Une matrice enregistre la colonne choisie : elle ne pourrait pas dire laquelle des deux — donnez à chaque colonne sa propre valeur.',
   'mask.noPositions':
     'Ce masque n’a aucune position où saisir : le champ ne pourrait recevoir aucune réponse. Utilisez 9 pour un chiffre, a pour une lettre ou * pour l’un ou l’autre.',
 

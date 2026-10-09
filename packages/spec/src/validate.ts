@@ -179,19 +179,26 @@ function semanticErrors(schema: FormSchema): SchemaError[] {
     }
 
     // A ranking stores option values, so two options sharing one would be an order that
-    // cannot say which of them was put first (0138).
-    if (field.type === 'ranking') {
-      const seen = new Set<string>()
-      field.options?.forEach((option, index) => {
-        if (seen.has(option.value)) {
-          errors.push(
-            schemaError(`${path}/options/${String(index)}/value`, 'ranking.duplicateOption', {
-              value: option.value,
-            }),
-          )
-        }
-        seen.add(option.value)
-      })
+    // cannot say which of them was put first (0138). A matrix stores a column's value under
+    // a row's, so two of either sharing one would be an answer that cannot say which (0139).
+    if (field.type === 'ranking' || field.type === 'matrix') {
+      const code = field.type === 'ranking' ? 'ranking.duplicateOption' : 'matrix.duplicateColumn'
+      for (const index of repeatedValues(field.options ?? [])) {
+        errors.push(
+          schemaError(`${path}/options/${String(index)}/value`, code, {
+            value: field.options![index]!.value,
+          }),
+        )
+      }
+    }
+    if (field.type === 'matrix') {
+      for (const index of repeatedValues(field.rows ?? [])) {
+        errors.push(
+          schemaError(`${path}/rows/${String(index)}/value`, 'matrix.duplicateRow', {
+            value: field.rows![index]!.value,
+          }),
+        )
+      }
     }
 
     // A picture where the control cannot show one would validate and show nothing:
@@ -211,6 +218,16 @@ function semanticErrors(schema: FormSchema): SchemaError[] {
   errors.push(...reservedKeyErrors(schema))
 
   return errors
+}
+
+/** The positions of every value that an earlier entry already had. */
+function repeatedValues(entries: ReadonlyArray<{ value: string }>): number[] {
+  const seen = new Set<string>()
+  return entries.flatMap((entry, index) => {
+    const repeated = seen.has(entry.value)
+    seen.add(entry.value)
+    return repeated ? [index] : []
+  })
 }
 
 /** Rules about the logic section: each rule must aim at a real field, and a

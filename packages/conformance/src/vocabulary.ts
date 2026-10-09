@@ -21,6 +21,7 @@ export const FIELD_TYPES: Record<FieldType, true> = {
   radio: true,
   selectboxes: true,
   ranking: true,
+  matrix: true,
   date: true,
   time: true,
   datetime: true,

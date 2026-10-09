@@ -18,8 +18,11 @@ import type { FieldDef } from './types.js'
  */
 export function optionImageRefusal(
   field: Pick<FieldDef, 'type' | 'widget'>,
-): 'option.imageInDropdown' | 'option.imageInChips' | undefined {
+): 'option.imageInDropdown' | 'option.imageInChips' | 'option.imageNotDrawn' | undefined {
   if (field.type === 'select') return 'option.imageInDropdown'
+  // A ranking draws its options as buttons and a matrix as columns of radios, and neither
+  // has room for a picture. The ranking accepted one it never drew when it shipped (0139).
+  if (field.type === 'ranking' || field.type === 'matrix') return 'option.imageNotDrawn'
   if (field.type === 'selectboxes' && field.widget === 'tagpicker') return 'option.imageInChips'
   return undefined
 }

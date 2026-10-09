@@ -129,6 +129,7 @@ What kind of answer the field collects, or — for a group, a page or a repeater
 - `"radio"` — **Radio buttons.** One answer picked from a list, with every option visible at once. Best for a handful of options.
 - `"selectboxes"` — **Checkboxes.** Several answers picked from a list, every option visible at once. The answer is the list of values chosen, so an option removed later leaves the submissions that chose it unchanged.
 - `"ranking"` — **Ranking.** Options put in order of preference. The answer is the values of the options in the order chosen, most preferred first, and an option nobody ranked is not in it — so to ask for a complete order, set the fewest ranked to the number of options.
+- `"matrix"` — **Matrix.** One question asked of several rows, with the same answers for each — how was the taste, the delivery, the price. The answer holds the column chosen for each row answered, under the row’s value, so a row added later leaves the answers already collected as they were.
 - `"date"` — **Date.** A calendar date, with no time of day.
 - `"time"` — **Time.** A time of day, with no date and no time zone: opening hours, an appointment slot. Stored as "HH:MM" on a 24-hour clock, zero-padded, so that comparing two answers as text gives the same order as comparing them as times. Because it carries no zone it is not an instant and cannot be compared with the current time.
 - `"datetime"` — **Date and time.** One moment in time, stored as "YYYY-MM-DDTHH:MM:SSZ" — always UTC, always with seconds. A reader types and reads it in their own zone; the answer records the instant. Numeric offsets are refused because "…10:00:00+03:00" sorts after "…08:00:00Z" as text while being earlier in fact, and the ordering is what makes an earliest or latest bound mean anything.
@@ -166,7 +167,7 @@ Each item:
 
 Every other type is an answer field: a field that collects one answer and holds no other fields.
 
-#### `select`, `radio`, `selectboxes`, `ranking`
+#### `select`, `radio`, `selectboxes`, `ranking`, `matrix`
 
 ##### `options`
 
@@ -178,7 +179,7 @@ Each item:
 
 - `value` — required · **Value.** What is stored in the submission when this option is chosen. Stable like a field key: changing it detaches the answers already collected.
 - `label` — required · **Label.** What the person choosing reads.
-- `image` — optional · **Image.** A picture shown with this option, on radio buttons and checkboxes — never in a dropdown or as a chip, which cannot show one, so the document is refused if it asks. The label still names the option and is what is announced; the picture is beside it. Needs spec version 4.
+- `image` — optional · **Image.** A picture shown with this option, on radio buttons and checkboxes — never in a dropdown, as a chip, in a ranking or in a matrix, which cannot show one, so the document is refused if it asks. The label still names the option and is what is announced; the picture is beside it. Needs spec version 4.
 
 #### `repeater`
 
@@ -303,6 +304,23 @@ optional · integer · minimum 0 · maximum 1000
 optional · integer · minimum 1 · maximum 1000
 
 **Most ranked.** How many options may be put in order, which is how "your top three" is asked.
+
+#### `matrix`
+
+##### `options`
+
+required · array · at least 2 items
+
+##### `rows`
+
+required · array of Row · at least 1 item
+
+**Rows.** The things the question is asked of, one answer each. The options are the columns every row shares.
+
+Each item:
+
+- `value` — required · **Value.** What the answer for this row is stored under. Stable like a field key: changing it detaches the answers already collected.
+- `label` — required · **Label.** What the person answering reads for this row.
 
 #### `file`
 
@@ -610,7 +628,7 @@ required · Text (see below)
 
 optional · object
 
-**Image.** A picture shown with this option, on radio buttons and checkboxes — never in a dropdown or as a chip, which cannot show one, so the document is refused if it asks. The label still names the option and is what is announced; the picture is beside it. Needs spec version 4.
+**Image.** A picture shown with this option, on radio buttons and checkboxes — never in a dropdown, as a chip, in a ranking or in a matrix, which cannot show one, so the document is refused if it asks. The label still names the option and is what is announced; the picture is beside it. Needs spec version 4.
 
 ### Message reference
 
@@ -799,3 +817,19 @@ required · array of Layout node
 min length 1 · max length 65536 · pattern `^(https://[^\s]+|/[^/\s][^\s]*|data:image/(png|jpeg|gif|webp|avif|svg\+xml)[;,].+)$`
 
 Where the picture comes from: an `https://` address, a path starting with `/` on the site that shows the form, or the picture itself as a `data:image/` address. Not `http://`, which a secure page blocks, and not a script. An address on another site tells that site who opened the form; a picture the form carries itself tells nobody.
+
+### Row
+
+One thing a matrix asks its question of.
+
+#### `value`
+
+required · string · min length 1 · max length 200
+
+**Value.** What the answer for this row is stored under. Stable like a field key: changing it detaches the answers already collected.
+
+#### `label`
+
+required · Text (see below)
+
+**Label.** What the person answering reads for this row.

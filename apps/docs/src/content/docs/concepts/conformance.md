@@ -89,6 +89,7 @@ Each encodes semantics the engine and the renderers must implement, and
 | masked answer | a mask fills every position, and the answer holds only what was typed |
 | select boxes | several answers from one list, stored in the list's own order |
 | ranking | the order chosen is the answer, and an untouched ranking holds nothing |
+| matrix | a group per row of radios named by column, the answer per row, and a required one needs every row |
 | translated labels | a form written in message references renders in its default locale |
 | translated mounted locale | a form mounted in another locale renders in that one |
 

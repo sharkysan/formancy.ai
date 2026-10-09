@@ -59,6 +59,7 @@ the control does — it is what a consumer reading the submission gets.
 | `richtext` | a string in the [formatted-text grammar](#formatted-text-is-not-html) | 2 |
 | `signature` | `{ drawn }`, the strokes as points, or `{ typed }`, a name — never both, and never stroke timing | 3 |
 | `ranking` | the chosen values **in the order chosen**, most preferred first — an option nobody ranked is not in it ([0138](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0138-a-ranking-stores-the-order-chosen.md)) | 4 |
+| `matrix` | `{ row: column }` for each row answered, under the rows' values — `{}` untouched; a required one needs every row ([0139](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0139-a-matrix-answers-one-question-per-row.md)) | 4 |
 
 A `file` answer is written by the upload endpoints rather than typed: the
 client asks `POST /f/:path/files` where to put a file, PUTs the bytes to the

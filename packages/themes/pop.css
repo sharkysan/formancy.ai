@@ -330,7 +330,7 @@
   flex-basis: 100%;
 }
 
-[data-formancy-theme='pop'] :is([data-formancy-part='radio-option'], [data-formancy-part='checkbox-option']) {
+[data-formancy-theme='pop'] :is([data-formancy-part='radio-option'], [data-formancy-part='checkbox-option'], [data-formancy-part='matrix-option']) {
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -349,28 +349,28 @@
     background-color 120ms ease;
 }
 
-[data-formancy-theme='pop'] :is([data-formancy-part='radio-option'], [data-formancy-part='checkbox-option']):hover {
+[data-formancy-theme='pop'] :is([data-formancy-part='radio-option'], [data-formancy-part='checkbox-option'], [data-formancy-part='matrix-option']):hover {
   translate: -1px -1px;
   box-shadow: 4px 4px 0 var(--fm-ink);
 }
 
-[data-formancy-theme='pop'] :is([data-formancy-part='radio-option'], [data-formancy-part='checkbox-option']):has(input:checked) {
+[data-formancy-theme='pop'] :is([data-formancy-part='radio-option'], [data-formancy-part='checkbox-option'], [data-formancy-part='matrix-option']):has(input:checked) {
   background: var(--fm-yellow);
 }
 
 /* Inside a chip the box loses its own shadow: the chip carries it. */
-[data-formancy-theme='pop'] :is([data-formancy-part='radio-option'], [data-formancy-part='checkbox-option']) input {
+[data-formancy-theme='pop'] :is([data-formancy-part='radio-option'], [data-formancy-part='checkbox-option'], [data-formancy-part='matrix-option']) input {
   box-shadow: none;
   width: 1.25rem;
   height: 1.25rem;
   border-width: 2px;
 }
 
-[data-formancy-theme='pop'] :is([data-formancy-part='radio-option'], [data-formancy-part='checkbox-option']) input:checked {
+[data-formancy-theme='pop'] :is([data-formancy-part='radio-option'], [data-formancy-part='checkbox-option'], [data-formancy-part='matrix-option']) input:checked {
   background-color: var(--fm-paper);
 }
 
-[data-formancy-theme='pop'] :is([data-formancy-part='radio-option'], [data-formancy-part='checkbox-option']) label {
+[data-formancy-theme='pop'] :is([data-formancy-part='radio-option'], [data-formancy-part='checkbox-option'], [data-formancy-part='matrix-option']) label {
   cursor: pointer;
 }
 
@@ -388,7 +388,7 @@
 }
 
 /* The label is stretched over the whole chip, so the chip is the target. */
-[data-formancy-theme='pop'] :is([data-formancy-part='radio-option'], [data-formancy-part='checkbox-option']) label::after {
+[data-formancy-theme='pop'] :is([data-formancy-part='radio-option'], [data-formancy-part='checkbox-option'], [data-formancy-part='matrix-option']) label::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -2028,4 +2028,34 @@
 [data-formancy-theme='pop'] [data-formancy-part='ranking-down'][aria-disabled='true'] {
   opacity: 0.35;
   cursor: default;
+}
+
+/* --------------------------------------------------------------- matrix */
+
+/* One question per row (0139): each row a group of radios, drawn as a line of this theme's
+   radio options under the row's name, with a rule between rows so the eye keeps its row. */
+[data-formancy-theme='pop'] [data-formancy-part='matrix'] {
+  display: grid;
+  gap: 0;
+}
+
+[data-formancy-theme='pop'] [data-formancy-part='matrix-row'] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin: 0;
+  padding-block: 0.5rem;
+  padding-inline: 0;
+  border: 0;
+  border-block-end: var(--fm-line);
+}
+
+/* A legend takes no part in a flex row unless it floats; floated across the whole line, it
+   heads the row's options rather than sitting beside the first. */
+[data-formancy-theme='pop'] [data-formancy-part='matrix-row-label'] {
+  float: inline-start;
+  inline-size: 100%;
+  padding: 0;
+  font-weight: 600;
 }

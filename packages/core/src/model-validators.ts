@@ -47,6 +47,10 @@ export function modelViolations(def: FieldDef, value: unknown): string[] {
   // anybody who posts at the endpoint instead.
   if (def.type === 'signature') return signatureViolations(def, value)
 
+  // A matrix stores a column under each row answered: the other answer here that is an
+  // object, and refused in the same way when it has a shape no control produces (0139).
+  if (def.type === 'matrix') return matrixViolations(def, value)
+
   // A chooser stores ONE OPTION'S VALUE, which is a string. Anything else is the
   // hostile-payload path, and refusing it here is what stops it from being invisible:
   // a field whose options live elsewhere (`optionsSource`) has no list to compare
@@ -178,6 +182,22 @@ export function modelViolations(def: FieldDef, value: unknown): string[] {
 const CHOOSER_TYPES = new Set(['select', 'radio'])
 
 const LIST_VALUED = new Set(['selectboxes', 'ranking', 'file'])
+
+/**
+ * What is wrong with a matrix's answer: `type` unless it is a map of strings, `row` for a
+ * key that is not one of its rows, `option` for a column it does not offer. Whether every
+ * row is answered is `required`'s question, not this one.
+ */
+function matrixViolations(def: FieldDef, value: unknown): string[] {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return ['type']
+  const entries = Object.entries(value)
+  if (entries.some(([, column]) => typeof column !== 'string')) return ['type']
+  const rows = new Set((def.rows ?? []).map((row) => row.value))
+  const codes: string[] = []
+  if (entries.some(([row]) => !rows.has(row))) codes.push('row')
+  if (!entries.every(([, column]) => offers(def, column))) codes.push('option')
+  return codes
+}
 
 /** Whether this field's document carries a list of options to be one of. */
 function offersOptions(def: FieldDef): boolean {

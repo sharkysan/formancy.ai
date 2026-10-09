@@ -268,3 +268,51 @@ describe('a choice’s picture', () => {
     expect(screen.queryByLabelText('Picture address')).toBeNull()
   })
 })
+
+describe('a matrix in the property panel', () => {
+  /*
+   * Its rows are value/label pairs like choices, and they arrived as a text box asking for
+   * JSON while the panel chose the options editor by the property's name (0139). They get
+   * that editor now, under their own words: a "Choices" heading over the rows and "New
+   * choice" added to them would name the wrong thing.
+   */
+  const matrixSchema = {
+    specVersion: '4',
+    id: 'meal',
+    title: 'Meal',
+    model: {
+      fields: [
+        {
+          key: 'rating',
+          type: 'matrix',
+          label: 'How was it?',
+          rows: [{ value: 'taste', label: 'Taste' }],
+          options: [
+            { value: 'poor', label: 'Poor' },
+            { value: 'great', label: 'Great' },
+          ],
+        },
+      ],
+    },
+  } as unknown as FormSchema
+
+  test('edits its rows as rows, beside its choices', async () => {
+    const user = userEvent.setup()
+    const session = createBuilderSession(matrixSchema)
+    render(<PropertyPanel session={session} keyPath={['rating']} />)
+
+    expect(screen.getByText('Rows')).toBeTruthy()
+    expect(
+      screen.getAllByLabelText('Row label').map((input) => (input as HTMLInputElement).value),
+    ).toEqual(['Taste'])
+
+    await user.click(screen.getByRole('button', { name: 'Add a row' }))
+
+    const field = session.document().model.fields[0] as unknown as Record<string, unknown>
+    expect(field['rows']).toEqual([
+      { value: 'taste', label: 'Taste' },
+      { value: 'row-2', label: 'New row' },
+    ])
+    expect(screen.queryByLabelText('Picture address')).toBeNull()
+  })
+})

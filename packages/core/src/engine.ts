@@ -16,6 +16,7 @@ import type { Check } from './checks.js'
 import type { FieldIds } from './ids.js'
 import { createInteractionState } from './interaction.js'
 import { modelViolations } from './model-validators.js'
+import { unanswered } from './answered.js'
 import { formatPath, parsePath } from './path.js'
 import { buildFieldProps } from './props.js'
 import type { FieldProps } from './props.js'
@@ -267,7 +268,7 @@ function otherSide(mode: 'client' | 'server'): 'client' | 'server' {
  * say they are required in their description instead. See
  * `FieldPropsInput.grouped`.
  */
-const GROUPED_TYPES: ReadonlySet<string> = new Set(['radio', 'selectboxes', 'ranking'])
+const GROUPED_TYPES: ReadonlySet<string> = new Set(['radio', 'selectboxes', 'ranking', 'matrix'])
 
 export function createFormEngine(options: FormEngineOptions): FormEngine {
   const { schema } = options
@@ -495,7 +496,13 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
   const declarations: VariableDeclarations = Object.fromEntries(
     topLevel.map((def): [string, DeclaredType] => [
       def.key,
-      def.type === 'group' ? 'map' : listValued.includes(def.type) ? 'list' : 'dyn',
+      // A matrix is a map too: seeded `{}` so `has(rating.taste)` answers on an untouched
+      // form rather than erroring, which a visibility rule would read as "show" (0139).
+      def.type === 'group' || def.type === 'matrix'
+        ? 'map'
+        : listValued.includes(def.type)
+          ? 'list'
+          : 'dyn',
     ]),
   )
 
@@ -1049,30 +1056,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
 
   function requiredViolated(node: FieldNode, value: unknown): boolean {
     const required = node.def.required === true || requiredWires.has(node.wire)
-    if (!required) return false
-    // A required checkbox is a consent gate: only an actual tick satisfies it.
-    if (node.def.type === 'checkbox') return value !== true
-    if (value === undefined || value === null) return true
-    if (typeof value === 'string') return value.trim() === ''
-    // A required list answer needs something in it. An empty array is how a
-    // selectboxes field with nothing ticked and a file field with nothing
-    // attached both arrive, and `[]` is not an answer.
-    if (Array.isArray(value)) return value.length === 0
-    // A signature is an object either way, so the generic `return false` below
-    // would accept `{ drawn: [] }` — an empty canvas presented as a signature.
-    // "Sign here" is usually the one question on a form that is not optional,
-    // and a form that accepts that is collecting consent nobody gave. A stroke
-    // with no points in it is how an empty canvas arrives when a pointer went
-    // down and came straight back up.
-    if (node.def.type === 'signature') {
-      const answer = value as { drawn?: unknown; typed?: unknown }
-      if (typeof answer.typed === 'string') return answer.typed.trim() === ''
-      if (Array.isArray(answer.drawn)) {
-        return answer.drawn.every((stroke) => Array.isArray(stroke) && stroke.length === 0)
-      }
-      return true
-    }
-    return false
+    return required && unanswered(node.def, value)
   }
 
   /** The template form of an instance wire: `items[1].qty` -> `items[].qty`.

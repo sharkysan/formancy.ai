@@ -41,9 +41,18 @@ export const STARTER_SAMPLE: Readonly<Record<string, unknown>> = {
   terms: true,
   items: [{ name: 'A widget', qty: 1, unitPrice: 10 }],
   recipients: [{ who: 'Reception' }],
+  verdict: { taste: 'great', delivery: 'fine' },
 }
 
 export const STARTER_SCENARIOS: readonly Scenario[] = [
+  {
+    // A matrix asks one question per row, so a required one with a row left blank has
+    // not been answered (0139). Written the other way, half a verdict would be accepted.
+    name: 'a verdict with a row left blank is refused',
+    changes: { verdict: { taste: 'great' } },
+    valid: false,
+    errors: { verdict: ['required'] },
+  },
   {
     /*
      * The conditional, in the direction that is easy to invert. Written the

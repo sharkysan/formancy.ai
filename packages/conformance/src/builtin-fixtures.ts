@@ -393,6 +393,119 @@ export const builtinFixtures: readonly Fixture[] = [
     ],
   },
   {
+    name: 'a matrix answers one question per row, and a required one needs every row',
+    description: 'A matrix asks the same question of several rows, with the same answers for each. It is one group named by its label, holding a group per row named by the row, holding a radio per column named by the column — so every answer is reached by role and name, and arrow keys move within a row as they do in any radio group. Its answer is the column chosen under each row answered. A required matrix half answered has not been answered: it asks one question per row.',
+    tags: [
+      'fields',
+      'spec4',
+    ],
+    schema: {
+      specVersion: '4',
+      id: 'meal',
+      title: 'How was your meal?',
+      model: {
+        fields: [
+          {
+            key: 'rating',
+            type: 'matrix',
+            label: 'How was it?',
+            required: true,
+            rows: [
+              {
+                value: 'taste',
+                label: 'Taste',
+              },
+              {
+                value: 'delivery',
+                label: 'Delivery',
+              },
+            ],
+            options: [
+              {
+                value: 'poor',
+                label: 'Poor',
+              },
+              {
+                value: 'fine',
+                label: 'Fine',
+              },
+              {
+                value: 'great',
+                label: 'Great',
+              },
+            ],
+          },
+        ],
+      },
+    },
+    steps: [
+      {
+        submit: true,
+      },
+      {
+        expectErrors: {
+          rating: [
+            'required',
+          ],
+        },
+      },
+      {
+        set: {
+          rating: {
+            taste: 'great',
+          },
+        },
+      },
+      {
+        expectValue: {
+          rating: {
+            taste: 'great',
+          },
+        },
+      },
+      {
+        submit: true,
+      },
+      {
+        expectErrors: {
+          rating: [
+            'required',
+          ],
+        },
+      },
+      {
+        set: {
+          rating: {
+            taste: 'great',
+            delivery: 'fine',
+          },
+        },
+      },
+      {
+        expectValue: {
+          rating: {
+            taste: 'great',
+            delivery: 'fine',
+          },
+        },
+      },
+      {
+        submit: true,
+      },
+      {
+        expectSubmit: {
+          status: 'accepted',
+          data: {
+            rating: {
+              taste: 'great',
+              delivery: 'fine',
+            },
+          },
+        },
+      },
+    ],
+  },
+  {
     name: 'a ranking stores the order chosen, and starts with nothing in it',
     description: 'A ranking is several controls answering one question, so it is a group with one accessible name. Its answer is the values of the options in the order the person put them, most preferred first — not the order the author wrote them in, which is why an untouched ranking holds nothing and a required one is refused until something is ranked. Moving an option changes the order and nothing else.',
     tags: [

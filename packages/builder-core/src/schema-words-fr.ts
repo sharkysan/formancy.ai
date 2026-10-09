@@ -179,4 +179,10 @@ export const SCHEMA_WORDS_FR: SchemaWords = {
   'Most ranked': 'Classées au maximum',
   'How many options may be put in order, which is how \"your top three\" is asked.':
     'Combien d’options peuvent être mises en ordre : c’est ainsi qu’on demande « vos trois premiers ».',
+  Rows: 'Lignes',
+  'The things the question is asked of, one answer each. The options are the columns every row shares.':
+    'Ce sur quoi porte la question, une réponse chacune. Les options sont les colonnes que toutes les lignes partagent.',
+  Matrix: 'Matrice',
+  'One question asked of several rows, with the same answers for each — how was the taste, the delivery, the price. The answer holds the column chosen for each row answered, under the row’s value, so a row added later leaves the answers already collected as they were.':
+    'Une même question posée pour plusieurs lignes, avec les mêmes réponses pour chacune — comment était le goût, la livraison, le prix. La réponse contient la colonne choisie pour chaque ligne répondue, sous la valeur de la ligne : une ligne ajoutée plus tard laisse intactes les réponses déjà recueillies.',
 }
