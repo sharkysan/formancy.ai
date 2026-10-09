@@ -475,3 +475,57 @@ describe('taking the patch away', () => {
     expect(text.startsWith("[data-formancy-theme='blueprint']")).toBe(true)
   })
 })
+
+describe('bringing a preset back', () => {
+  /** A file as a person picks it, holding a patch. */
+  const preset = (name: string, css: string): File => new File([css], name, { type: 'text/css' })
+
+  test('a saved patch opens where it was left: on the host, in the fields, and said', async () => {
+    /*
+     * The other half of "download CSS". Without it a preset is a file you can keep
+     * and never carry on editing — every session started from the theme again.
+     */
+    const user = await openEditor()
+
+    await user.upload(
+      screen.getByLabelText('Import CSS'),
+      preset('mine.css', "[data-formancy-theme='blueprint'] {\n  --fm-radius: 14px;\n}\n"),
+    )
+
+    await screen.findByText('Read 1 token for blueprint from mine.css.')
+    expect(host().style.getPropertyValue('--fm-radius')).toBe('14px')
+    expect((screen.getByRole('textbox', { name: 'radius' }) as HTMLInputElement).value).toBe('14px')
+  })
+
+  test('and replaces what was being edited rather than mixing two sets of changes', async () => {
+    const user = await openEditor()
+    fireEvent.change(screen.getByRole('textbox', { name: 'ink' }), { target: { value: '#ff0000' } })
+
+    await user.upload(
+      screen.getByLabelText('Import CSS'),
+      preset('mine.css', "[data-formancy-theme='blueprint'] { --fm-radius: 14px }"),
+    )
+
+    await screen.findByText('Read 1 token for blueprint from mine.css.')
+    expect(host().style.getPropertyValue('--fm-ink'), 'an edit from before the import survived it').toBe('')
+  })
+
+  test('and a file with nothing for this theme changes nothing, and says why', async () => {
+    // A dusk preset opened on blueprint: the vocabularies differ, so applying it
+    // would be guessing, and doing nothing silently would look like a broken button.
+    const user = await openEditor()
+    fireEvent.change(screen.getByRole('textbox', { name: 'ink' }), { target: { value: '#ff0000' } })
+
+    await user.upload(
+      screen.getByLabelText('Import CSS'),
+      preset('dusk.css', "[data-formancy-theme='dusk'] { --fm-edge: #111 }"),
+    )
+
+    const report = await screen.findByText(/Nothing in dusk\.css is a token blueprint declares/)
+    expect(report.getAttribute('role')).toBe('status')
+    expect(report.textContent).toContain(
+      'It also has tokens for dusk: choose that theme and import it again.',
+    )
+    expect(host().style.getPropertyValue('--fm-ink')).toBe('#ff0000')
+  })
+})

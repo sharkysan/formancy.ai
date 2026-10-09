@@ -1,5 +1,13 @@
 import { afterEach, describe, expect, test } from 'vitest'
-import { classify, declarationsOf, exportCss, themeTokens } from './theme-tokens.js'
+import {
+  classify,
+  declarationsOf,
+  describePreset,
+  exportCss,
+  readPreset,
+  rulesOfText,
+  themeTokens,
+} from './theme-tokens.js'
 
 /**
  * Finding out what a theme can be asked to change.
@@ -255,5 +263,76 @@ describe('reading real stylesheets', () => {
     expect(declarationsOf(sheets)).toEqual([
       { selectorText: "[data-formancy-theme='x']", declarations: [['--fm-ink', '#111']] },
     ])
+  })
+})
+
+describe('a preset read back', () => {
+  /** What blueprint declares, as the editor discovers it: the theme a preset is for. */
+  const blueprint = { '--fm-ink': '#17222e', '--fm-radius': '3px', '--fm-signal': '#0b5fce' }
+
+  test('is the patch the editor writes, so a file saved from it opens as it was left', () => {
+    // The round trip a preset is for. A second format would be a second thing to
+    // keep in step with the first, and the patch is already the readable one.
+    const saved = exportCss('blueprint', { '--fm-radius': '14px', '--fm-signal': 'oklch(0.6 0.2 250)' })
+
+    expect(readPreset(rulesOfText(saved), 'blueprint', blueprint).overrides).toEqual({
+      '--fm-radius': '14px',
+      '--fm-signal': 'oklch(0.6 0.2 250)',
+    })
+  })
+
+  test('and a token the theme does not declare is named, not applied', () => {
+    // Applied, it would set a property nothing in the theme reads: the editor would
+    // show it as changed and the form would look exactly the same.
+    const reading = readPreset(
+      rulesOfText("[data-formancy-theme='blueprint'] { --fm-ink: #000; --fm-glow: red }"),
+      'blueprint',
+      blueprint,
+    )
+
+    expect(reading.overrides).toEqual({ '--fm-ink': '#000' })
+    expect(reading.undeclared).toEqual(['--fm-glow'])
+  })
+
+  test('and a token declared on :root is named, because it would never reach the form', () => {
+    // The theme's own root declares the same property, and a declaration on an
+    // element beats one it inherits — the commonest way a hand-written override
+    // does nothing at all.
+    const reading = readPreset(rulesOfText(':root { --fm-ink: #000 }'), 'blueprint', blueprint)
+
+    expect(reading.overrides).toEqual({})
+    expect(reading.elsewhere).toEqual([':root'])
+  })
+
+  test('and another theme’s tokens stay that theme’s', () => {
+    // The four themes share almost no vocabulary on purpose; dusk's --fm-ink is not
+    // blueprint's, even where the name is the same.
+    const reading = readPreset(
+      rulesOfText("[data-formancy-theme='dusk'] { --fm-ink: #000 }"),
+      'blueprint',
+      blueprint,
+    )
+
+    expect(reading.overrides).toEqual({})
+    expect(reading.otherThemes).toEqual(['dusk'])
+  })
+
+  test('and what was not read is said, so half a preset does not look like all of it', () => {
+    const reading = readPreset(
+      rulesOfText(
+        "[data-formancy-theme='blueprint'] { --fm-ink: #000; --fm-glow: red } :root { --fm-x: 1 } [data-formancy-theme='dusk'] { --fm-edge: #111 }",
+      ),
+      'blueprint',
+      blueprint,
+    )
+
+    expect(describePreset('mine.css', 'blueprint', reading)).toBe(
+      'Read 1 token for blueprint from mine.css. Not read: --fm-glow, which blueprint does not declare. ' +
+        'It also has tokens for dusk: choose that theme and import it again. ' +
+        "Not read: what it declares on :root, which is not a theme's own selector and would not reach a themed form.",
+    )
+    expect(describePreset('empty.css', 'blueprint', readPreset([], 'blueprint', blueprint))).toBe(
+      'Nothing in empty.css is a token blueprint declares, so nothing changed.',
+    )
   })
 })

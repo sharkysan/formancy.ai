@@ -1161,6 +1161,46 @@ body {
   border-color: var(--client);
 }
 
+/* The file input dressed as the button beside it. Clipped rather than `display:
+   none`, which would take it out of the tab order: the label is what is seen, the
+   input is still what the keyboard reaches, and the label shows where focus is. */
+.theme-import {
+  position: relative;
+  padding: 0.375rem 0.75rem;
+  border: 1px solid var(--edge-strong);
+  border-radius: 7px;
+  background: var(--glass);
+  color: var(--text);
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.theme-import:hover,
+.theme-import:focus-within {
+  border-color: var(--client);
+}
+
+.theme-import:focus-within {
+  outline: 2px solid var(--client);
+  outline-offset: 2px;
+}
+
+.theme-import input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* Never hidden while empty: a live region has to be in the accessibility tree
+   before its text changes, or the first report is not announced. */
+.theme-report {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
 /* The patch, shown rather than only downloadable: reading it is how somebody
    learns there is nothing proprietary in the output. */
 .theme-output {
