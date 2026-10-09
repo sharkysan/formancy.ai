@@ -124,7 +124,8 @@ holding only what was typed ([0125](https://github.com/sharkysan/formancy.ai/blo
   `items[].note` compares the fields of its own row, offered as "Quantity in this row", and
   a rename carries `item.` references along
   ([0129](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0129-a-row-rule-is-written-in-the-row.md)).
-  What is not built is a verdict per row in the rules overview.
+  The rules overview gives it a verdict per row, evaluated as the engine evaluates that row
+  ([0147](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0147-a-rule-in-a-repeater-row-is-explained-row-by-row.md)).
 - ~~**Virus scanning** of uploaded files~~ **Built**, when a deployment runs ClamAV: an
   upload is scanned before it is kept and refused when it cannot be
   ([0131](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0131-an-upload-is-scanned-before-it-is-kept.md)).

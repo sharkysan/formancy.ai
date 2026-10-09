@@ -6,7 +6,7 @@ import { compileGroup } from './conditions.js'
 import type { ConditionGroup } from './conditions.js'
 import { BUILDER_MESSAGES_DE } from './messages-de.js'
 import { createBuilderText } from './messages.js'
-import { explainRule, rulesOverview } from './rules-overview.js'
+import { explainRows, explainRule, rulesOverview } from './rules-overview.js'
 
 /**
  * Every rule in a form, in words, and why a field is hidden or required now (0128).
@@ -206,5 +206,114 @@ describe('why a field is shown or hidden now', () => {
     const rule: LogicRule = { target: 'reason', kind: 'computed', cel: '"x"' }
 
     expect(explainRule(rule, form([rule]), {}, english, capabilities)).toBeUndefined()
+  })
+})
+
+describe('why a field in a repeater row is shown or hidden now, row by row', () => {
+  /**
+   * A row's rule has one verdict per row, so the overview gave it none rather than a
+   * wrong one: evaluated against the form as a whole, `item` is not a variable and the
+   * rule throws. Each row is evaluated the way the engine evaluates it — the form's
+   * answers, `item` bound to the row with every field of the row present, and `index`.
+   */
+  const engineSays = (document: FormSchema, value: Record<string, unknown>, path: (string | number)[]) =>
+    createFormEngine({ schema: document, initialValue: value, capabilities: CLOCK }).getFieldSnapshot(path)
+
+  const inRow: ConditionGroup = {
+    join: 'all',
+    conditions: [
+      { field: 'items[].qty', operator: 'isAtLeast', value: 4, answer: 'number' },
+      { field: 'country', operator: 'is', value: 'CH', answer: 'choice' },
+    ],
+  }
+  const rowRule: LogicRule = {
+    target: 'items[].note',
+    kind: 'visible',
+    cel: compileGroup(inRow),
+    editor: inRow,
+  }
+
+  test('says, for each row, what the rule does there and why', () => {
+    const rows = explainRows(
+      rowRule,
+      form([rowRule]),
+      { country: 'CH', items: [{ qty: 1 }, { qty: 5 }] },
+      english,
+      capabilities,
+    )
+
+    expect(rows).toEqual([
+      {
+        row: 1,
+        label: 'Row 1',
+        outcome: 'fails',
+        effect: 'Hidden now.',
+        because: ['Quantity in this row is at least 4: no — it is 1', 'Country is Switzerland: yes'],
+      },
+      {
+        row: 2,
+        label: 'Row 2',
+        outcome: 'holds',
+        effect: 'Shown now.',
+        because: ['Quantity in this row is at least 4: yes', 'Country is Switzerland: yes'],
+      },
+    ])
+  })
+
+  test('and agrees with the engine about every row', () => {
+    // The third row has no quantity: the engine fills the row's fields with null before
+    // evaluating, so the comparison is decided rather than thrown on a missing key.
+    const document = form([rowRule])
+    for (const answers of [
+      { country: 'CH', items: [{ qty: 1 }, { qty: 5 }, {}] },
+      { country: 'DE', items: [{ qty: 9 }] },
+      { items: [{ qty: 4 }, { note: 'x' }] },
+    ]) {
+      const rows = explainRows(rowRule, document, answers, english, capabilities) ?? []
+      expect(rows).toHaveLength(answers.items.length)
+      rows.forEach((verdict, at) => {
+        expect(verdict.outcome === 'fails', `${JSON.stringify(answers)} row ${String(at)}`).toBe(
+          !engineSays(document, answers, ['items', at, 'note']).visible,
+        )
+      })
+    }
+  })
+
+  test('and binds `index` and a field nobody typed into, as the engine does', () => {
+    // Written by hand: the second row onward, and a row whose note was never touched.
+    // Without `index` the first throws; without the row's fields present the second
+    // does, and both would be explained as "cannot be decided".
+    const byIndex: LogicRule = { target: 'items[].note', kind: 'visible', cel: 'index > 0' }
+    const untouched: LogicRule = { target: 'items[].note', kind: 'visible', cel: 'item.note == null' }
+    const answers = { items: [{ qty: 1 }, { qty: 2 }] }
+
+    expect(
+      explainRows(byIndex, form([byIndex]), answers, english, capabilities)?.map((row) => row.outcome),
+    ).toEqual(['fails', 'holds'])
+    expect(
+      explainRows(untouched, form([untouched]), answers, english, capabilities)?.map(
+        (row) => row.outcome,
+      ),
+    ).toEqual(['holds', 'holds'])
+    for (const at of [0, 1]) {
+      expect(engineSays(form([byIndex]), answers, ['items', at, 'note']).visible).toBe(at > 0)
+      expect(engineSays(form([untouched]), answers, ['items', at, 'note']).visible).toBe(true)
+    }
+  })
+
+  test('and with no rows, has nothing to say about any', () => {
+    expect(explainRows(rowRule, form([rowRule]), {}, english, capabilities)).toEqual([])
+    expect(explainRows(rowRule, form([rowRule]), { items: [] }, english, capabilities)).toEqual([])
+  })
+
+  test('in the author’s language', () => {
+    const [first] = explainRows(rowRule, form([rowRule]), { items: [{ qty: 1 }] }, german, capabilities) ?? []
+
+    expect(first?.label).toBe('Zeile 1')
+    expect(first?.effect).toBe('Jetzt verborgen.')
+  })
+
+  test('and nothing for a rule about the whole form, which `explainRule` explains', () => {
+    expect(explainRows(visibleRule, form([visibleRule]), { country: 'CH' }, english, capabilities)).toBeUndefined()
   })
 })

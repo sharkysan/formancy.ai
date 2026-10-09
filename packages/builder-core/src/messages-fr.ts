@@ -330,6 +330,8 @@ export const BUILDER_MESSAGES_FR = {
   'overview.now.skip.holds': 'Sautée maintenant.',
   'overview.now.skip.fails': 'Pas sautée maintenant.',
   'overview.now.skip.undecided': 'Pas sautée maintenant, car la règle ne peut pas être tranchée.',
+  'overview.row': 'Ligne {number}',
+  'overview.rows.none': 'L’aperçu n’a encore aucune ligne, il n’y a donc rien à trancher.',
   // Not "Ajouter une règle" again: the draft's submit and the button that opens
   // the draft would otherwise share a name.
   'logic.addRule': 'Créer la règle',

@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react'
-import { explainRule, rulesOverview } from '@formancy/builder-core'
-import type { BuilderSession, Capabilities } from '@formancy/builder-core'
+import { explainRows, explainRule, rulesOverview } from '@formancy/builder-core'
+import type { BuilderSession, Capabilities, RuleVerdict } from '@formancy/builder-core'
 import { useBuilder } from './use-builder.js'
 
 export interface RulesOverviewProps {
@@ -49,10 +49,13 @@ export function RulesOverview({
               <ul>
                 {group.rules.map((summary) => {
                   const rule = rules[summary.index]
-                  const verdict =
+                  const explained =
                     rule === undefined || answers === undefined || capabilities === undefined
                       ? undefined
-                      : explainRule(rule, view.document, answers, text, capabilities)
+                      : {
+                          verdict: explainRule(rule, view.document, answers, text, capabilities),
+                          rows: explainRows(rule, view.document, answers, text, capabilities),
+                        }
                   return (
                     <li key={summary.index} data-formancy-part="rules-overview-rule">
                       <span data-formancy-part="logic-kind">{summary.kindLabel}</span>{' '}
@@ -61,17 +64,21 @@ export function RulesOverview({
                           {text('overview.written')} <code>{summary.written}</code>
                         </>
                       )}
-                      {verdict === undefined ? null : (
-                        <div data-formancy-part="rules-overview-now" data-outcome={verdict.outcome}>
-                          <p>{verdict.effect}</p>
-                          {verdict.because.length === 0 ? null : (
-                            <ul>
-                              {verdict.because.map((line) => (
-                                <li key={line}>{line}</li>
-                              ))}
-                            </ul>
-                          )}
-                        </div>
+                      {explained?.verdict === undefined ? null : (
+                        <Verdict verdict={explained.verdict} />
+                      )}
+                      {explained?.rows === undefined ? null : explained.rows.length === 0 ? (
+                        <p data-formancy-part="rules-overview-rows-none">
+                          {text('overview.rows.none')}
+                        </p>
+                      ) : (
+                        <ul data-formancy-part="rules-overview-rows">
+                          {explained.rows.map((row) => (
+                            <li key={row.row}>
+                              <Verdict verdict={row} label={row.label} />
+                            </li>
+                          ))}
+                        </ul>
                       )}
                     </li>
                   )
@@ -82,5 +89,31 @@ export function RulesOverview({
         </ul>
       )}
     </section>
+  )
+}
+
+/**
+ * What one rule does now, and why — for the whole form, or for one row of a repeater
+ * under that row's label.
+ */
+function Verdict({ verdict, label }: { verdict: RuleVerdict; label?: string }): ReactElement {
+  return (
+    <div data-formancy-part="rules-overview-now" data-outcome={verdict.outcome}>
+      <p>
+        {label === undefined ? null : (
+          <>
+            <span data-formancy-part="rules-overview-row">{label}</span>{' '}
+          </>
+        )}
+        {verdict.effect}
+      </p>
+      {verdict.because.length === 0 ? null : (
+        <ul>
+          {verdict.because.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
+      )}
+    </div>
   )
 }

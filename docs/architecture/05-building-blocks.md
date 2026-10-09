@@ -193,8 +193,10 @@ fields it may compare at the engine's paths — a rule in a repeater row its own
 at `items[].qty` (`condition-draft.ts`,
 [0127](../decisions/0127-a-condition-nests-one-level.md),
 [0129](../decisions/0129-a-row-rule-is-written-in-the-row.md)); every rule in words and, given a
-host's preview answers and clock, why each holds now (`rules-overview.ts`,
-[0128](../decisions/0128-a-form-says-why-a-field-is-hidden.md)); where a drop lands in each
+host's preview answers and clock, why each holds now — row by row for a rule in a repeater
+row, bound as the engine binds the row (`rules-overview.ts`,
+[0128](../decisions/0128-a-form-says-why-a-field-is-hidden.md),
+[0147](../decisions/0147-a-rule-in-a-repeater-row-is-explained-row-by-row.md)); where a drop lands in each
 of the two trees **and on the rendered form** (`arrange.ts`, which takes a
 rectangle as plain numbers because this package compiles with no DOM, and reads the
 space between two nodes from where they were drawn rather than from a target the

@@ -10,6 +10,15 @@ later.
 
 ## Unreleased
 
+**Added: a rule in a repeater row says, row by row, what it does now and why.** The rules
+overview gave such a rule no verdict, because it reads an `item` the form as a whole does not
+have — so a note required in one recipient's row and not another's had no reason shown, and a
+row rule that cannot be decided, which shows its field in every row, could not be found there.
+`explainRows` in `@formancy/builder-core` evaluates each row as the engine does — `item` with
+every field of the row present, null where empty, and `index` — and both builders draw a
+verdict per row under the rule. `explainRule` still gives such a rule none
+([0147](docs/decisions/0147-a-rule-in-a-repeater-row-is-explained-row-by-row.md)).
+
 **Fixed: a node dropped in the space between two others on the preview lands between them.**
 A browser reports a pointer in that space as over the container, so a field dropped between
 two fields in a section landed above or below the whole section, and between two top-level

@@ -1,6 +1,7 @@
 # 0128 — A form says, rule by rule, why a field is hidden now
 
-- **Status:** accepted
+- **Status:** accepted; its rows given no verdict superseded by
+  [0147](0147-a-rule-in-a-repeater-row-is-explained-row-by-row.md)
 - **Date:** 2026-10-09
 - **Verified by:** `packages/builder-core/src/rules-overview.test.ts` — every rule grouped
   under its field in the form's order, in words where the condition editor wrote it and as

@@ -1,6 +1,6 @@
 import { compile, evaluate } from '@formancy/expressions'
-import type { Capabilities } from '@formancy/expressions'
-import type { FormSchema, LogicRule } from '@formancy/spec'
+import type { Capabilities, Program, VariableDeclarations } from '@formancy/expressions'
+import type { FieldDef, FormSchema, LogicRule } from '@formancy/spec'
 import { compileCondition, isGroup } from './conditions.js'
 import type { Condition, ConditionGroup } from './conditions.js'
 import { conditionFields } from './condition-draft.js'
@@ -174,29 +174,136 @@ export function explainRule(
   if (!decidesByCondition(rule.kind) || rule.cel === undefined) return undefined
   // A row's rule has a verdict per row, and reads `item`, which the form as a whole
   // does not have: evaluated here it would throw and be explained as undecided.
+  // `explainRows` gives it one per row.
   if (rule.target.includes('[]')) return undefined
-  const fields = conditionFields(document)
-  const outcome = decide(rule.cel, document, answers, capabilities)
+  return verdictOn(
+    rule.kind,
+    compiledRule(rule, document, false),
+    valuesOf(topLevelKeys(document), answers),
+    answers,
+    undefined,
+    conditionFields(document),
+    text,
+    capabilities,
+  )
+}
+
+/** One row's verdict, and which row it is. */
+export interface RowVerdict extends RuleVerdict {
+  /** Counted from one, as the preview counts its rows. */
+  row: number
+  /** "Row 2", in the author's language. */
+  label: string
+}
+
+/**
+ * A rule in a repeater row's verdict on each row the preview holds.
+ *
+ * Each row is evaluated as the engine evaluates it: the form's answers, `item` bound to
+ * the row with every field of the row present — null where nobody typed, since reading a
+ * missing key throws — and `index`. An explanation that disagreed with the preview would
+ * be worse than none ([0128](../../../docs/decisions/0128-a-form-says-why-a-field-is-hidden.md)),
+ * and a row bound any other way does: a comparison on an untouched field would be
+ * explained as undecided, about a field the engine decided.
+ *
+ * Undefined for a rule about the whole form, which `explainRule` explains, and for the
+ * kinds a condition does not decide; empty when the preview has no rows.
+ */
+export function explainRows(
+  rule: LogicRule,
+  document: FormSchema,
+  answers: Readonly<Record<string, unknown>>,
+  text: BuilderText,
+  capabilities: Capabilities,
+): RowVerdict[] | undefined {
+  if (!decidesByCondition(rule.kind) || rule.cel === undefined) return undefined
+  if (!rule.target.includes('[]')) return undefined
+  const wire = rule.target.slice(0, rule.target.indexOf('[]'))
+  const template = repeaterFieldsAt(document.model.fields, wire)
+  if (template === undefined) return undefined
+  const rows = read(answers, wire)
+  if (!Array.isArray(rows)) return []
+
+  // In the rule's own scope, so a field in its row is named as being in this row.
+  const fields = conditionFields(document, { target: rule.target, text })
+  // Compiled once and evaluated per row: compiling is most of the cost, and it is the
+  // same expression in every row.
+  const compiled = compiledRule(rule, document, true)
+  const form = valuesOf(topLevelKeys(document), answers)
+  const { kind } = rule
+  return rows.map((row: unknown, index) => {
+    const scope = { wire, item: withEveryField(template, row), index }
+    return {
+      row: index + 1,
+      label: text('overview.row', { number: index + 1 }),
+      ...verdictOn(
+        kind,
+        compiled,
+        { ...form, item: scope.item, index },
+        answers,
+        scope,
+        fields,
+        text,
+        capabilities,
+      ),
+    }
+  })
+}
+
+/** One row of a repeater, bound as the engine binds it. */
+interface RowScope {
+  /** The repeater's data path: `items` for a rule on `items[].note`. */
+  wire: string
+  item: Record<string, unknown>
+  index: number
+}
+
+/**
+ * A rule compiled for where it is read — the form, or a row of it — with every comparison
+ * the condition editor wrote, each compiled on its own so it can say whether it held.
+ */
+interface CompiledRule {
+  rule: Program | undefined
+  comparisons: ReadonlyArray<{ condition: Condition; program: Program | undefined }>
+}
+
+function compiledRule(rule: LogicRule, document: FormSchema, inRow: boolean): CompiledRule {
   const editor = asGroup(rule.editor)
-  const because =
-    editor === undefined
-      ? []
-      : comparisonsOf(editor).map((condition) => {
-          const said = describeComparison(condition, fields, text)
-          const holds = decide(compileCondition(condition), document, answers, capabilities)
-          if (holds === 'holds') return text('overview.because.holds', { comparison: said })
-          const actual = read(answers, condition.field)
-          const field = fields.find((candidate) => candidate.path === condition.field)
-          return actual === null ||
-            actual === undefined ||
-            (Array.isArray(actual) && actual.length === 0)
-            ? text('overview.because.failsEmpty', { comparison: said })
-            : text('overview.because.fails', {
-                comparison: said,
-                actual: valueInWords(actual, field, text),
-              })
-        })
-  return { outcome, effect: text(EFFECT[rule.kind][outcome]), because }
+  return {
+    rule: compiledFor(rule.cel ?? '', document, inRow),
+    comparisons:
+      editor === undefined
+        ? []
+        : comparisonsOf(editor).map((condition) => ({
+            condition,
+            program: compiledFor(compileCondition(condition), document, inRow),
+          })),
+  }
+}
+
+function verdictOn(
+  kind: keyof typeof EFFECT,
+  compiled: CompiledRule,
+  values: Readonly<Record<string, unknown>>,
+  answers: Readonly<Record<string, unknown>>,
+  row: RowScope | undefined,
+  fields: readonly ConditionField[],
+  text: BuilderText,
+  capabilities: Capabilities,
+): RuleVerdict {
+  const outcome = decide(compiled.rule, values, capabilities)
+  const because = compiled.comparisons.map(({ condition, program }) => {
+    const said = describeComparison(condition, fields, text)
+    if (decide(program, values, capabilities) === 'holds') {
+      return text('overview.because.holds', { comparison: said })
+    }
+    const actual = answerTo(condition.field, answers, row)
+    const field = fields.find((candidate) => candidate.path === condition.field)
+    return actual === null || actual === undefined || (Array.isArray(actual) && actual.length === 0)
+      ? text('overview.because.failsEmpty', { comparison: said })
+      : text('overview.because.fails', { comparison: said, actual: valueInWords(actual, field, text) })
+  })
+  return { outcome, effect: text(EFFECT[kind][outcome]), because }
 }
 
 /**
@@ -242,20 +349,38 @@ function comparisonsOf(group: ConditionGroup): Condition[] {
   return group.conditions.flatMap((item) => (isGroup(item) ? comparisonsOf(item) : [item]))
 }
 
-/** Every top-level answer is a variable, declared \`dyn\` as the engine declares them. */
-function decide(
-  cel: string,
-  document: FormSchema,
+/** What a rule in a repeater row reads beside the form's fields, typed as the engine types it. */
+const ROW_VARIABLES: VariableDeclarations = { item: 'map', index: 'int' }
+
+/**
+ * Every top-level answer is a variable, declared \`dyn\` as the engine declares them; in
+ * a row, so are the row and its index. Undefined for CEL that does not compile, which
+ * cannot be decided.
+ */
+function compiledFor(cel: string, document: FormSchema, inRow: boolean): Program | undefined {
+  const variables: VariableDeclarations = {
+    ...Object.fromEntries(topLevelKeys(document).map((key) => [key, 'dyn' as const])),
+    ...(inRow ? ROW_VARIABLES : {}),
+  }
+  const compiled = compile(cel, { kind: 'visible', variables })
+  return compiled.ok ? compiled.program : undefined
+}
+
+/** Every top-level answer, null where there is none, as the engine binds them. */
+function valuesOf(
+  keys: readonly string[],
   answers: Readonly<Record<string, unknown>>,
+): Record<string, unknown> {
+  return Object.fromEntries(keys.map((key) => [key, answers[key] ?? null]))
+}
+
+function decide(
+  program: Program | undefined,
+  values: Readonly<Record<string, unknown>>,
   capabilities: Capabilities,
 ): RuleVerdict['outcome'] {
-  const variables = Object.fromEntries(topLevelKeys(document).map((key) => [key, 'dyn' as const]))
-  const values = Object.fromEntries(
-    topLevelKeys(document).map((key) => [key, answers[key] ?? null]),
-  )
-  const compiled = compile(cel, { kind: 'visible', variables })
-  if (!compiled.ok) return 'undecided'
-  const outcome = evaluate(compiled.program, values, { capabilities })
+  if (program === undefined) return 'undecided'
+  const outcome = evaluate(program, values, { capabilities })
   if (!outcome.ok) return 'undecided'
   return outcome.value === true ? 'holds' : 'fails'
 }
@@ -270,6 +395,54 @@ function topLevelKeys(document: FormSchema): string[] {
   }
   walk(document.model.fields)
   return keys
+}
+
+/**
+ * The fields of the repeater at a data path — pages transparent, a group a dot — or
+ * undefined when nothing there is a repeater.
+ */
+function repeaterFieldsAt(fields: readonly FieldDef[], wire: string, scope = ''): readonly FieldDef[] | undefined {
+  for (const field of fields) {
+    if (field.type === 'page') {
+      const found = repeaterFieldsAt(field.fields ?? [], wire, scope)
+      if (found !== undefined) return found
+    } else if (field.type === 'group') {
+      const found = repeaterFieldsAt(field.fields ?? [], wire, `${scope}${field.key}.`)
+      if (found !== undefined) return found
+    } else if (field.type === 'repeater' && `${scope}${field.key}` === wire) {
+      return field.fields ?? []
+    }
+  }
+  return undefined
+}
+
+/**
+ * A row with every field of the repeater present, null where nobody typed — the engine's
+ * row: reading a missing key throws in CEL, and a row nobody has touched yet has none.
+ */
+function withEveryField(fields: readonly FieldDef[], row: unknown): Record<string, unknown> {
+  const item: Record<string, unknown> =
+    typeof row === 'object' && row !== null && !Array.isArray(row)
+      ? { ...(row as Record<string, unknown>) }
+      : {}
+  for (const field of fields) {
+    if (field.type === 'page') Object.assign(item, withEveryField(field.fields ?? [], item))
+    else if (field.type === 'group') item[field.key] = withEveryField(field.fields ?? [], item[field.key])
+    else if (field.type !== 'repeater' && item[field.key] === undefined) item[field.key] = null
+  }
+  return item
+}
+
+/** An answer a comparison read: in the row for a field of the row, in the form otherwise. */
+function answerTo(
+  path: string,
+  answers: Readonly<Record<string, unknown>>,
+  row: RowScope | undefined,
+): unknown {
+  const inRow = row === undefined ? undefined : `${row.wire}[].`
+  return inRow !== undefined && path.startsWith(inRow)
+    ? read(row?.item ?? {}, path.slice(inRow.length))
+    : read(answers, path)
 }
 
 function read(answers: Readonly<Record<string, unknown>>, path: string): unknown {

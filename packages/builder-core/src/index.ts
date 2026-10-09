@@ -164,8 +164,8 @@ export {
   ruleTargetFor,
 } from './logic.js'
 export type { RuleKindChoice } from './logic.js'
-export { describeCondition, explainRule, rulesOverview } from './rules-overview.js'
-export type { RuleSummary, RuleVerdict, RulesOn } from './rules-overview.js'
+export { describeCondition, explainRows, explainRule, rulesOverview } from './rules-overview.js'
+export type { RowVerdict, RuleSummary, RuleVerdict, RulesOn } from './rules-overview.js'
 // The clock an explanation is given, as the engine takes it: the host's, never ambient.
 export { captureCapabilities, fixedCapabilities } from '@formancy/expressions'
 export type { Capabilities } from '@formancy/expressions'

@@ -326,6 +326,8 @@ export const BUILDER_MESSAGES_DE = {
   'overview.now.skip.fails': 'Wird jetzt nicht übersprungen.',
   'overview.now.skip.undecided':
     'Wird jetzt nicht übersprungen, weil die Regel sich nicht entscheiden lässt.',
+  'overview.row': 'Zeile {number}',
+  'overview.rows.none': 'Die Vorschau hat noch keine Zeilen, also gibt es nichts zu entscheiden.',
   // Not "Regel hinzufügen" again: in German the draft's submit and the button that
   // opens the draft would otherwise share a name.
   'logic.addRule': 'Regel anlegen',
