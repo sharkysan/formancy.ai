@@ -27,16 +27,15 @@ const repo = join(here, '..', '..', '..')
  * completed — `<!<!-- -->-- -->` — which is also why CodeQL refused the single pass.
  */
 function code(source: string): string {
-  let before = ''
-  let after = source
-  while (after !== before) {
-    before = after
-    after = before
-      .replace(/<!--[\s\S]*?-->/g, '')
-      .replace(/\/\*[\s\S]*?\*\//g, '')
-      .replace(/^\s*\/\/.*$/gm, '')
-  }
-  return after
+  let text = source
+  let previous: string
+  do {
+    previous = text
+    text = text.replace(/<!--[\s\S]*?-->/g, '')
+    text = text.replace(/\/\*[\s\S]*?\*\//g, '')
+    text = text.replace(/^\s*\/\/.*$/gm, '')
+  } while (text !== previous)
+  return text
 }
 
 function sources(directory: string): string[] {
