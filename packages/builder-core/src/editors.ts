@@ -21,12 +21,34 @@ import type { BuilderText } from './messages.js'
  * not change, and the button would look broken. The label is written into the
  * document, so it is in the author's language.
  */
-export function nextChoice(options: readonly FieldOption[], text: BuilderText): FieldOption {
+export function nextChoice(
+  options: readonly FieldOption[],
+  text: BuilderText,
+  list: 'options' | 'rows' = 'options',
+): FieldOption {
+  const prefix = list === 'rows' ? 'row' : 'option'
   const taken = new Set(options.map((option) => String(option.value)))
   let n = options.length + 1
-  while (taken.has(`option-${String(n)}`)) n += 1
-  return { value: `option-${String(n)}`, label: text('options.newChoice') }
+  while (taken.has(`${prefix}-${String(n)}`)) n += 1
+  return {
+    value: `${prefix}-${String(n)}`,
+    label: text(list === 'rows' ? 'rows.newRow' : 'options.newChoice'),
+  }
 }
+
+/**
+ * The words an editor of value/label pairs says, by which list it edits: a field's choices
+ * or a matrix's rows. One answer for both builders (0139).
+ */
+export const LIST_WORDS = {
+  options: {
+    heading: 'options.heading',
+    empty: 'options.empty',
+    label: 'options.label',
+    add: 'options.add',
+  },
+  rows: { heading: 'rows.heading', empty: 'rows.empty', label: 'rows.label', add: 'rows.add' },
+} as const
 
 /**
  * What the layout property panel calls the node it edits.

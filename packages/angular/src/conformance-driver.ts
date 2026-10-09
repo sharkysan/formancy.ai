@@ -171,6 +171,22 @@ export function createAngularDriver(
       // Checkboxes answering one question, the same shape as a radio group.
       // The value is the whole list, so every box is set to match it rather
       // than one being toggled.
+      // Row by row, as the React driver does it: in the row's group, the column's radio.
+      if (def?.type === 'matrix') {
+        const group = screen.getByRole('group', { name: labelOf(path) })
+        const answers = typeof value === 'object' && value !== null && !Array.isArray(value) ? value : {}
+        for (const [rowValue, columnValue] of Object.entries(answers)) {
+          const row = (def.rows ?? []).find((candidate) => candidate.value === rowValue)
+          const column = (def.options ?? []).find((candidate) => candidate.value === columnValue)
+          const rowGroup = within(group).getByRole('group', { name: textOf(row?.label) ?? rowValue })
+          fireEvent.click(
+            within(rowGroup).getByRole('radio', { name: textOf(column?.label) ?? String(columnValue) }),
+          )
+          await settle()
+        }
+        return
+      }
+
       // As the React driver does it, and as a person does: everything taken out, then
       // each option ranked in turn, by the buttons' names.
       if (def?.type === 'ranking') {
@@ -279,6 +295,19 @@ export function createAngularDriver(
           .getAllByRole('radio')
           .find((radio) => (radio as HTMLInputElement).checked)
         return checked === undefined ? null : (checked as HTMLInputElement).value
+      }
+      if (def?.type === 'matrix') {
+        // Each row's checked radio, as the React driver reads it.
+        const group = screen.getByRole('group', { name: labelOf(path) })
+        const read: Record<string, string> = {}
+        for (const row of (def as { rows?: Array<{ value: string; label: Text }> }).rows ?? []) {
+          const rowGroup = within(group).getByRole('group', { name: textOf(row.label) ?? row.value })
+          const checked = within(rowGroup)
+            .getAllByRole('radio')
+            .find((radio) => (radio as HTMLInputElement).checked)
+          if (checked !== undefined) read[row.value] = (checked as HTMLInputElement).value
+        }
+        return read
       }
       if (def?.type === 'ranking') {
         // The order on screen, read from the move buttons' names, as the React driver reads it.

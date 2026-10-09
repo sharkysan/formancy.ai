@@ -1,7 +1,13 @@
 import { describe, expect, test } from 'vitest'
 import { createFormEngine } from '@formancy/core'
 import type { FormSchema } from '@formancy/spec'
-import { answerKindOf, celLiteral, compileCondition, compileGroup } from './conditions.js'
+import {
+  answerKindOf,
+  celLiteral,
+  compileCondition,
+  compileGroup,
+  operatorsFor,
+} from './conditions.js'
 import type { Condition } from './conditions.js'
 
 describe('celLiteral', () => {
@@ -364,5 +370,49 @@ describe('a ranking, to the condition editor', () => {
       })
       expect(engine.getFieldSnapshot(['why']).visible).toBe(false)
     }
+  })
+})
+
+describe('a matrix, to the condition editor', () => {
+  /*
+   * A map from row to column, `{}` untouched (0139). Taken for "some other answer", it was
+   * offered "is answered" as `rating != null` — true of the empty map, so a rule meant for a
+   * matrix somebody had filled in would have fired on one nobody touched.
+   */
+  const meal: FormSchema = {
+    specVersion: '4',
+    id: 'meal',
+    title: 'Meal',
+    model: {
+      fields: [
+        {
+          key: 'rating',
+          type: 'matrix',
+          label: 'How was it?',
+          rows: [{ value: 'taste', label: 'Taste' }],
+          options: [
+            { value: 'poor', label: 'Poor' },
+            { value: 'great', label: 'Great' },
+          ],
+        },
+        { key: 'why', type: 'text', label: 'Why?' },
+      ],
+    },
+  } as unknown as FormSchema
+
+  test('is answered when any row is, and the editor offers only that', () => {
+    expect(answerKindOf({ type: 'matrix' })).toBe('map')
+    expect(operatorsFor('map')).toEqual(['isAnswered', 'isNotAnswered'])
+
+    const cel = compileCondition({ field: 'rating', operator: 'isAnswered', answer: 'map' })
+    expect(cel).toBe('size(rating) > 0')
+
+    const engine = createFormEngine({
+      schema: { ...meal, logic: { rules: [{ target: 'why', kind: 'visible', cel }] } },
+      capabilities: { now: () => 0, today: () => '2026-10-09', random: () => 0.5 },
+    })
+    expect(engine.getFieldSnapshot(['why']).visible).toBe(false)
+    engine.setValue(['rating'], { taste: 'poor' })
+    expect(engine.getFieldSnapshot(['why']).visible).toBe(true)
   })
 })

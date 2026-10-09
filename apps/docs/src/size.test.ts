@@ -36,11 +36,11 @@ const CEILINGS: Record<string, { lines: number; why: string }> = {
     why: 'One factory holding every command. The seam is one concern per file — model, arrangement, translation, version — over a shared attempt/commit core. The repath family left for `repath.ts` when this budget refused the rule rewriting, which is the seam working as intended. Finding things — a field by key path, a container, a layout node by position — left for `navigate.ts` when the builder’s words moved into the catalogue: none of it is a command. The translation commands left for `translation.ts` the day one of them needed a line this ceiling would not give.',
   },
   'packages/core/src/engine.ts': {
-    lines: 1460,
-    why: 'The engine is one subject and its parts are genuinely coupled through the graph. The seam, if there is one, is the check and skip machinery — whose protocol types left for `checks.ts` to pay for the `formId` option, since this budget allows no growth at all. The machinery itself still needs the graph and the store, which is why it has not followed.',
+    lines: 1444,
+    why: 'The engine is one subject and its parts are genuinely coupled through the graph. The seam, if there is one, is the check and skip machinery — whose protocol types left for `checks.ts` to pay for the `formId` option, since this budget allows no growth at all; and what counts as an answer per type left for `answered.ts` when the matrix brought its own idea of one. The machinery itself still needs the graph and the store, which is why it has not followed.',
   },
   'packages/conformance/src/builtin-fixtures.ts': {
-    lines: 1478,
+    lines: 1591,
     why: 'GENERATED from fixtures/*.json. Splitting this means splitting the fixtures, which are the unit of meaning — so this number moves when the suite gains a case, which is the one entry here whose growth is not a signal.',
   },
   'apps/site/src/app.tsx': {

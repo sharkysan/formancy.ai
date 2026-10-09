@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core'
-import { createBuilderText, nextChoice, withPicture } from '@formancy/builder-core'
+import { LIST_WORDS, createBuilderText, nextChoice, withPicture } from '@formancy/builder-core'
 import type { BuilderText } from '@formancy/builder-core'
 import type { FieldOption } from './types.js'
 import { BuilderTextPipe } from './text.pipe.js'
@@ -44,10 +44,10 @@ let nextId = 0
   template: `
     <div data-formancy-part="options-editor">
       <h3 [attr.id]="headingId" data-formancy-part="options-heading">
-        {{ 'options.heading' | builderText: text() }}
+        {{ words().heading | builderText: text() }}
       </h3>
       @if (draft().length === 0) {
-        <p data-formancy-part="options-empty">{{ 'options.empty' | builderText: text() }}</p>
+        <p data-formancy-part="options-empty">{{ words().empty | builderText: text() }}</p>
       } @else {
         <ul [attr.aria-labelledby]="headingId" data-formancy-part="options-list">
           @for (option of draft(); track $index; let at = $index) {
@@ -55,7 +55,7 @@ let nextId = 0
               <!-- "Choice label", not "Label": the panel already has a Label for
                    the field itself, and two controls with one name are ambiguous
                    read aloud as well as in a test. -->
-              <label [attr.for]="labelId(at)">{{ 'options.label' | builderText: text() }}</label>
+              <label [attr.for]="labelId(at)">{{ words().label | builderText: text() }}</label>
               <input
                 [attr.id]="labelId(at)"
                 [value]="labelText(option)"
@@ -98,7 +98,7 @@ let nextId = 0
           }
         </ul>
       }
-      <button type="button" (click)="add()">{{ 'options.add' | builderText: text() }}</button>
+      <button type="button" (click)="add()">{{ words().add | builderText: text() }}</button>
     </div>
   `,
 })
@@ -112,6 +112,9 @@ export class FormancyOptionsEditor {
    * builder-core decides from the field's type and widget (0126).
    */
   readonly pictures = input(false)
+  /** A field's choices, or a matrix's rows: the same editor, its own words (0139). */
+  readonly list = input<'options' | 'rows'>('options')
+  protected readonly words = computed(() => LIST_WORDS[this.list()])
 
   protected readonly headingId = `formancy-options-${String((nextId += 1))}`
 
@@ -186,7 +189,7 @@ export class FormancyOptionsEditor {
   protected add(): void {
     // A value nothing else uses and a label in the author's language: builder-core
     // decides both, for this editor and the React one.
-    this.commit([...this.draft(), nextChoice(this.draft(), this.text())])
+    this.commit([...this.draft(), nextChoice(this.draft(), this.text(), this.list())])
   }
 
   protected remove(at: number): void {

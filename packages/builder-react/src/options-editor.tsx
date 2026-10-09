@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
 import type { FieldOption } from '@formancy/spec'
-import { createBuilderText, nextChoice, withPicture } from '@formancy/builder-core'
+import { createBuilderText, LIST_WORDS, nextChoice, withPicture } from '@formancy/builder-core'
 import type { BuilderText } from '@formancy/builder-core'
 
 /**
@@ -21,6 +21,8 @@ import type { BuilderText } from '@formancy/builder-core'
 export interface OptionsEditorProps {
   options: readonly FieldOption[]
   onChange: (options: FieldOption[]) => void
+  /** A field's choices, or a matrix's rows: the same editor, its own words (0139). */
+  list?: 'options' | 'rows'
   /** The language to speak: the panel passes its session's. English when none is given. */
   text?: BuilderText
   /**
@@ -34,6 +36,7 @@ const ENGLISH = createBuilderText()
 
 export function OptionsEditor({
   options,
+  list = 'options',
   onChange,
   text = ENGLISH,
   pictures = false,
@@ -85,11 +88,11 @@ export function OptionsEditor({
   return (
     <div data-formancy-part="options-editor">
       <div id={`${id}-heading`} data-formancy-part="options-heading">
-        {text('options.heading')}
+        {text(LIST_WORDS[list].heading)}
       </div>
 
       {draft.length === 0 ? (
-        <p data-formancy-part="options-empty">{text('options.empty')}</p>
+        <p data-formancy-part="options-empty">{text(LIST_WORDS[list].empty)}</p>
       ) : (
         <ul aria-labelledby={`${id}-heading`} data-formancy-part="options-list">
           {draft.map((option, index) => (
@@ -100,7 +103,7 @@ export function OptionsEditor({
               {/* "Choice label", not "Label": the panel already has a Label
                   for the field itself, and two controls with one name is
                   ambiguous read aloud as well as in a test. */}
-              <label htmlFor={`${id}-label-${String(index)}`}>{text('options.label')}</label>
+              <label htmlFor={`${id}-label-${String(index)}`}>{text(LIST_WORDS[list].label)}</label>
               <input
                 id={`${id}-label-${String(index)}`}
                 type="text"
@@ -155,8 +158,8 @@ export function OptionsEditor({
         </ul>
       )}
 
-      <button type="button" onClick={() => commit([...draft, nextChoice(draft, text)])}>
-        {text('options.add')}
+      <button type="button" onClick={() => commit([...draft, nextChoice(draft, text, list)])}>
+        {text(LIST_WORDS[list].add)}
       </button>
     </div>
   )

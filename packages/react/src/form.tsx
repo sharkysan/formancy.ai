@@ -25,6 +25,7 @@ import { FileField } from './fields/file-field.js'
 import { RichTextField } from './fields/rich-text-field.js'
 import { SelectBoxesSwitch } from './fields/selectboxes-field.js'
 import { RankingField } from './fields/ranking-field.js'
+import { MatrixField } from './fields/matrix-field.js'
 import { NumberSwitch } from './fields/scale-fields.js'
 import { SignatureField } from './fields/signature-field.js'
 import { StaticField } from './fields/static-field.js'
@@ -471,6 +472,7 @@ const DEFAULT_COMPONENTS: Record<FieldType, FieldComponent | null> = {
   radio: RadioGroupField,
   selectboxes: SelectBoxesSwitch,
   ranking: RankingField,
+  matrix: MatrixField,
   file: FileField,
   richtext: RichTextField,
   signature: SignatureField,

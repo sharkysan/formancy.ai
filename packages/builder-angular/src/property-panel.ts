@@ -48,6 +48,7 @@ let nextId = 0
         [options]="asOptions(value())"
         [text]="text()"
         [pictures]="property().pictures === true"
+        [list]="property().list ?? 'options'"
         (changed)="changed.emit($event.length === 0 ? undefined : $event)"
       />
     } @else if (property().kind === 'columns') {

@@ -240,6 +240,11 @@ export const BUILDER_MESSAGES_FR = {
   'options.remove': 'Supprimer {name}',
   'options.add': 'Ajouter un choix',
   'options.newChoice': 'Nouveau choix',
+  'rows.heading': 'Lignes',
+  'rows.empty': 'Aucune ligne pour l’instant. Une matrice sans ligne ne demande rien.',
+  'rows.label': 'Libellé de la ligne',
+  'rows.add': 'Ajouter une ligne',
+  'rows.newRow': 'Nouvelle ligne',
   'options.image': 'Adresse de l’image',
   'options.imageAlt': 'Ce que montre l’image',
   'list.remove': 'Supprimer',
@@ -409,6 +414,7 @@ export const BUILDER_MESSAGES_FR = {
   'palette.newField': 'Nouveau champ',
   'palette.firstOption': 'Premier choix',
   'palette.secondOption': 'Deuxième choix',
+  'palette.firstRow': 'Première ligne',
 
   'rule.visible.label': 'Afficher ce champ quand',
   'rule.visible.hint':

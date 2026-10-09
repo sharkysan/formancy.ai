@@ -10,6 +10,19 @@ later.
 
 ## Unreleased
 
+**Spec 4: `matrix`, a field type.** One question asked of several rows, with the same answers
+for each: `rows`, and the field's `options` as the columns. The answer is `{ row: column }`
+for each row answered, `{}` untouched, and a required matrix needs every row — a matrix half
+answered has not been answered. Both renderers draw a group per row of radios named by column,
+so arrow keys move within a row and every answer is reached by role and name; the four form
+themes dress the options as they dress radio options. The builder edits the rows with the
+options editor, under the words "Rows" and "Add a row" — taken by name, they were offered as a
+text box asking for JSON — and the condition editor reads a matrix as answered when any row is
+([0139](docs/decisions/0139-a-matrix-answers-one-question-per-row.md)).
+
+**Fixed: a ranking accepted pictures on its options and drew none.** A picture is refused on a
+ranking and on a matrix now, as it is in a dropdown.
+
 **Fixed: four themes kept a side when a form was read right to left.** Ten padding and
 margin shorthands named a left unlike their right — a tag picker's chips, an error message, a
 file row, a repeater legend, a drop cap — and two rules floated left. They are block and

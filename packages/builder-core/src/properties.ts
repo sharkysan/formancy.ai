@@ -50,6 +50,12 @@ export interface EditableProperty {
    * picker, which would draw nothing (0126).
    */
   pictures?: boolean
+  /**
+   * For `options`: which list it is — a field's choices, or a matrix's rows, which have the
+   * same shape and need their own words: an editor headed "Choices" over the rows, adding
+   * "New choice", would name the wrong thing (0139).
+   */
+  list?: 'options' | 'rows'
 }
 
 /**
@@ -106,10 +112,19 @@ function choicesOf(node: JsonSchemaNode): string[] | undefined {
   return undefined
 }
 
+/** Which value/label list a property is, read from what its items are. */
+function listOf(node: JsonSchemaNode, name: string): 'options' | 'rows' | undefined {
+  const items = (node.items as { $ref?: string } | undefined)?.$ref
+  if (items === '#/$defs/matrixRow') return 'rows'
+  if (name === 'options' || items === '#/$defs/fieldOption') return 'options'
+  return undefined
+}
+
 function kindOf(node: JsonSchemaNode, name: string): PropertyKind {
   // Options are a list of value/label pairs and need their own editor; the
-  // generic renderer would produce a textarea full of JSON.
-  if (name === 'options') return 'options'
+  // generic renderer would produce a textarea full of JSON. So are a matrix's rows,
+  // which arrived as a text box while this asked for the name `options` (0139).
+  if (listOf(node, name) !== undefined) return 'options'
   // A datagrid's columns are the same shape of problem: an array of objects, one of
   // which names a sibling field. Found missing by the guard in properties.test.ts
   // rather than by anybody using the builder.
@@ -129,12 +144,14 @@ function describe(name: string, raw: JsonSchemaNode): EditableProperty {
   // at the shared Text definition — and its own words win.
   const resolved = deref(raw) ?? raw
   const choices = choicesOf(resolved)
+  const list = listOf(resolved, name)
 
   return {
     name,
     title: raw.title ?? resolved.title ?? name,
     description: raw.description ?? resolved.description ?? '',
     kind: kindOf(resolved, name),
+    ...(list === undefined ? {} : { list }),
     ...(choices === undefined ? {} : { choices }),
     ...(raw.default === undefined ? {} : { default: raw.default }),
     ...(resolved.minimum === undefined ? {} : { minimum: resolved.minimum }),
@@ -198,7 +215,13 @@ export function editablePropertiesFor(
 
   const pictures = showsOptionImages({ type, widget } as Pick<FieldDef, 'type' | 'widget'>)
   return [...collected.values()].map((property) =>
-    inLanguage(property.kind === 'options' ? { ...property, pictures } : property, text),
+    inLanguage(
+      // A row never carries a picture; a choice may, where the field draws one.
+      property.kind === 'options'
+        ? { ...property, pictures: property.list === 'options' && pictures }
+        : property,
+      text,
+    ),
   )
 }
 

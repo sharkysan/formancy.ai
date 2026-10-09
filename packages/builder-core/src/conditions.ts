@@ -79,6 +79,7 @@ export type AnswerKind =
   | 'time'
   | 'datetime'
   | 'files'
+  | 'map'
   | 'other'
 
 export function answerKindOf(def: Pick<FieldDef, 'type'>): AnswerKind {
@@ -101,6 +102,10 @@ export function answerKindOf(def: Pick<FieldDef, 'type'>): AnswerKind {
       return 'list'
     case 'file':
       return 'files'
+    // A matrix's rows answered, under their values: whether any is (0139). One row's
+    // column is a comparison the editor does not offer; written in CEL, it guards with has().
+    case 'matrix':
+      return 'map'
     case 'date':
     case 'time':
     case 'datetime':
@@ -136,6 +141,7 @@ const BY_KIND: Readonly<Record<AnswerKind, readonly Operator[]>> = {
   time: ['is', 'isNot', 'isBefore', 'isAfter', 'isAnswered', 'isNotAnswered'],
   datetime: ['is', 'isNot', 'isBefore', 'isAfter', 'isAnswered', 'isNotAnswered'],
   files: ['isAnswered', 'isNotAnswered'],
+  map: ['isAnswered', 'isNotAnswered'],
   other: ['isAnswered', 'isNotAnswered'],
 }
 
@@ -257,7 +263,9 @@ function compiled(condition: Condition): Compiled {
   // touched is null rather than `[]`. Measured: `"gift" in item.tags` threw on a
   // fresh row and the rule failed open
   // ([0129](../../../docs/decisions/0129-a-row-rule-is-written-in-the-row.md)).
-  const isList = condition.answer === 'list' || condition.answer === 'files'
+  // A map is the same: `size()` answers for one nobody touched, which is `{}`.
+  const isList =
+    condition.answer === 'list' || condition.answer === 'files' || condition.answer === 'map'
   const neverNull = isList && !inRow
   const present = neverNull
     ? inGroup

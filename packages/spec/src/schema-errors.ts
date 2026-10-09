@@ -41,8 +41,14 @@ export const SCHEMA_ERRORS = {
     'A dropdown cannot show a picture, so this image would never be seen. Make the field a radio group, or remove the image.',
   'option.imageInChips':
     'A tag picker shows its options as chips, which cannot show a picture, so this image would never be seen. Take the tag picker off, or remove the image.',
+  'option.imageNotDrawn':
+    'A ranking and a matrix draw their options with no room for a picture, so this image would never be seen. Pictures are shown on radio buttons and checkboxes; remove this one.',
   'ranking.duplicateOption':
     'Two options of this ranking share the value "{value}". A ranking stores values, so it could not say which of the two was put first — give each option a value of its own.',
+  'matrix.duplicateRow':
+    'Two rows of this matrix share the value "{value}". A matrix stores each answer under its row, so it could not say which row was answered — give each row a value of its own.',
+  'matrix.duplicateColumn':
+    'Two columns of this matrix share the value "{value}". A matrix stores the column chosen, so it could not say which of the two was — give each column a value of its own.',
   'mask.noPositions':
     'This mask has nowhere to type, so the field could take no answer. Use 9 for a digit, a for a letter or * for either.',
 

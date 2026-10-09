@@ -28,7 +28,7 @@ document rather than ignoring the part it does not know
 
 ### What version 4 added
 
-One field type:
+Two field types:
 
 - `ranking` — options put in order. The answer is the chosen values in the order chosen,
   most preferred first, and an option nobody ranked is not in it; it starts empty rather
@@ -36,6 +36,15 @@ One field type:
   at least two options are required and no two may share a value. A version 3 reader refuses
   a document carrying one, and is told it needs version 4
   ([0138](docs/decisions/0138-a-ranking-stores-the-order-chosen.md)).
+- `matrix` — one question asked of several `rows`, with the field's `options` as the columns
+  every row shares. The answer is an object from row value to column value, holding the rows
+  answered — `{}` untouched — and a required matrix needs every row. At least one row and two
+  columns, no two sharing a value, and no pictures
+  ([0139](docs/decisions/0139-a-matrix-answers-one-question-per-row.md)).
+
+A picture on an option is refused on both, as it is in a dropdown: a ranking draws its options
+as buttons and a matrix as columns of radios, and the ranking accepted a picture it never drew
+when it first appeared in this source.
 
 Two widgets, both on `number`:
 
@@ -63,8 +72,8 @@ And three properties:
 
 **Both are widgets rather than types, and that is the design.** Each stores exactly what a
 `number` field already stores, so the control differs and the answer does not. A construct
-that changes the answer is a type, which is why `ranking` is one: no existing type stores
-an order somebody chose. A matrix's row-to-column map is the other, and is not here yet.
+that changes the answer is a type, which is why `ranking` and `matrix` are: no other type
+stores an order somebody chose, or an answer per row.
 
 It is still a version, for the reason every widget is: the format is closed, so a version 3
 reader does not shrug at `widget: "rating"` — it refuses the document. A version that

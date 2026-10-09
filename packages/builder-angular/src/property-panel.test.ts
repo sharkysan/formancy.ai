@@ -463,3 +463,51 @@ describe('editing a datagrid’s columns', () => {
     expect(screen.getByText(/puts its answer back at the end/i)).toBeTruthy()
   })
 })
+
+describe('a matrix in the property panel', () => {
+  /*
+   * As the React panel: the rows get the options editor under their own words, rather than
+   * a text box asking for JSON (0139).
+   */
+  test('edits its rows as rows, beside its choices', async () => {
+    const session = createBuilderSession({
+      specVersion: '4',
+      id: 'meal',
+      title: 'Meal',
+      model: {
+        fields: [
+          {
+            key: 'rating',
+            type: 'matrix',
+            label: 'How was it?',
+            rows: [{ value: 'taste', label: 'Taste' }],
+            options: [
+              { value: 'poor', label: 'Poor' },
+              { value: 'great', label: 'Great' },
+            ],
+          },
+        ],
+      },
+    } as unknown as FormSchema)
+    const view = await render(FormancyPropertyPanel, {
+      componentInputs: { session, keyPath: ['rating'] },
+      providers: [provideZonelessChangeDetection()],
+    })
+    await view.fixture.whenStable()
+
+    expect(screen.getByText('Rows')).toBeTruthy()
+    expect(
+      screen.getAllByLabelText('Row label').map((input) => (input as HTMLInputElement).value),
+    ).toEqual(['Taste'])
+
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Add a row' }))
+    await view.fixture.whenStable()
+
+    const field = session.document().model.fields[0] as unknown as Record<string, unknown>
+    expect(field['rows']).toEqual([
+      { value: 'taste', label: 'Taste' },
+      { value: 'row-2', label: 'New row' },
+    ])
+    expect(screen.queryByLabelText('Picture address')).toBeNull()
+  })
+})

@@ -171,7 +171,8 @@
          "select",
          "radio",
          "selectboxes",
-         "ranking"
+         "ranking",
+         "matrix"
         ]
        }
       }
@@ -420,6 +421,40 @@
         "type": "integer",
         "minimum": 1,
         "maximum": 1000
+       }
+      }
+     }
+    },
+    {
+     "if": {
+      "required": [
+       "type"
+      ],
+      "properties": {
+       "type": {
+        "const": "matrix"
+       }
+      }
+     },
+     "then": {
+      "required": [
+       "rows",
+       "options"
+      ],
+      "properties": {
+       "options": {
+        "type": "array",
+        "minItems": 2
+       },
+       "rows": {
+        "title": "Rows",
+        "description": "The things the question is asked of, one answer each. The options are the columns every row shares.",
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 100,
+        "items": {
+         "$ref": "#/$defs/matrixRow"
+        }
        }
       }
      }
@@ -894,6 +929,11 @@
      "description": "Options put in order of preference. The answer is the values of the options in the order chosen, most preferred first, and an option nobody ranked is not in it — so to ask for a complete order, set the fewest ranked to the number of options."
     },
     {
+     "const": "matrix",
+     "title": "Matrix",
+     "description": "One question asked of several rows, with the same answers for each — how was the taste, the delivery, the price. The answer holds the column chosen for each row answered, under the row’s value, so a row added later leaves the answers already collected as they were."
+    },
+    {
      "const": "date",
      "title": "Date",
      "description": "A calendar date, with no time of day."
@@ -1126,7 +1166,7 @@
     },
     "image": {
      "title": "Image",
-     "description": "A picture shown with this option, on radio buttons and checkboxes — never in a dropdown or as a chip, which cannot show one, so the document is refused if it asks. The label still names the option and is what is announced; the picture is beside it. Needs spec version 4.",
+     "description": "A picture shown with this option, on radio buttons and checkboxes — never in a dropdown, as a chip, in a ranking or in a matrix, which cannot show one, so the document is refused if it asks. The label still names the option and is what is announced; the picture is beside it. Needs spec version 4.",
      "type": "object",
      "required": [
       "src"
@@ -1467,6 +1507,30 @@
    "minLength": 1,
    "maxLength": 65536,
    "pattern": "^(https://[^\\s]+|/[^/\\s][^\\s]*|data:image/(png|jpeg|gif|webp|avif|svg\\+xml)[;,].+)$"
+  },
+  "matrixRow": {
+   "title": "Row",
+   "description": "One thing a matrix asks its question of.",
+   "type": "object",
+   "required": [
+    "value",
+    "label"
+   ],
+   "additionalProperties": false,
+   "properties": {
+    "value": {
+     "title": "Value",
+     "description": "What the answer for this row is stored under. Stable like a field key: changing it detaches the answers already collected.",
+     "type": "string",
+     "minLength": 1,
+     "maxLength": 200
+    },
+    "label": {
+     "title": "Label",
+     "description": "What the person answering reads for this row.",
+     "$ref": "#/$defs/text"
+    }
+   }
   }
  }
 }

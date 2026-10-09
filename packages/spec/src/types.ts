@@ -147,6 +147,7 @@ export const FIELD_TYPES = [
   'radio',
   'selectboxes',
   'ranking',
+  'matrix',
   'date',
   'time',
   'datetime',
@@ -413,6 +414,11 @@ export interface FieldDef {
   label?: Text
   options?: FieldOption[]
   /**
+   * `matrix` fields: the things the one question is asked of, each a value and a label like
+   * an option, sharing the field's `options` as their columns (0139).
+   */
+  rows?: MatrixRow[]
+  /**
    * The NAME of a list the deployment resolves, for a `select` with too many answers
    * to write down or answers that change too often.
    *
@@ -514,6 +520,12 @@ export interface FieldDef {
 /** A closed list on purpose: each entry is one well-tested check, not a
  *  per-form regular expression. */
 export type FieldFormat = 'email' | 'url' | 'uuid'
+
+/** A row of a matrix: what it stores the answer under, and what it says. No picture. */
+export interface MatrixRow {
+  value: string
+  label: Text
+}
 
 export interface FieldOption {
   /** Stored in the submission; stable like a field key. */

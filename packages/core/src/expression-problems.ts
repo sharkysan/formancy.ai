@@ -103,6 +103,7 @@ const STRICT_TYPES: Record<string, DeclaredType> = {
   checkbox: 'bool',
   selectboxes: 'list',
   ranking: 'list',
+  matrix: 'map',
   file: 'list',
   group: 'map',
   repeater: 'list',

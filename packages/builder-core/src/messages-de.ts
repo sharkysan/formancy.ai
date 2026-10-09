@@ -237,6 +237,11 @@ export const BUILDER_MESSAGES_DE = {
   'options.remove': '{name} entfernen',
   'options.add': 'Auswahl hinzufügen',
   'options.newChoice': 'Neue Auswahl',
+  'rows.heading': 'Zeilen',
+  'rows.empty': 'Noch keine Zeilen. Eine Matrix ohne Zeilen fragt nichts.',
+  'rows.label': 'Zeilenbeschriftung',
+  'rows.add': 'Zeile hinzufügen',
+  'rows.newRow': 'Neue Zeile',
   'options.image': 'Bildadresse',
   'options.imageAlt': 'Was das Bild zeigt',
   'list.remove': 'Entfernen',
@@ -403,6 +408,7 @@ export const BUILDER_MESSAGES_DE = {
   'palette.newField': 'Neues Feld',
   'palette.firstOption': 'Erste Option',
   'palette.secondOption': 'Zweite Option',
+  'palette.firstRow': 'Erste Zeile',
 
   'rule.visible.label': 'Zeige dieses Feld, wenn',
   'rule.visible.hint':

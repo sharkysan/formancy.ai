@@ -41,6 +41,12 @@ export const SCHEMA_ERRORS_DE: SchemaErrorSentences = {
     'Eine Tag-Auswahl zeigt ihre Optionen als Chips, die kein Bild zeigen können, dieses Bild wäre also nie zu sehen. Nimm die Tag-Auswahl weg oder entferne das Bild.',
   'ranking.duplicateOption':
     'Zwei Optionen dieser Rangfolge haben den Wert «{value}». Eine Rangfolge speichert Werte und könnte also nicht sagen, welche der beiden zuerst kam – gib jeder Option einen eigenen Wert.',
+  'option.imageNotDrawn':
+    'Eine Rangfolge und eine Matrix zeigen ihre Optionen ohne Platz für ein Bild, dieses Bild wäre also nie zu sehen. Bilder erscheinen bei Optionsfeldern und Kontrollkästchen; entferne dieses.',
+  'matrix.duplicateRow':
+    'Zwei Zeilen dieser Matrix haben den Wert «{value}». Eine Matrix speichert jede Antwort unter ihrer Zeile und könnte also nicht sagen, welche Zeile beantwortet wurde – gib jeder Zeile einen eigenen Wert.',
+  'matrix.duplicateColumn':
+    'Zwei Spalten dieser Matrix haben den Wert «{value}». Eine Matrix speichert die gewählte Spalte und könnte also nicht sagen, welche der beiden es war – gib jeder Spalte einen eigenen Wert.',
   'mask.noPositions':
     'Diese Maske hat keine Stelle zum Tippen, das Feld könnte also keine Antwort aufnehmen. Verwende 9 für eine Ziffer, a für einen Buchstaben oder * für beides.',
 

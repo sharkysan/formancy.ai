@@ -58,6 +58,7 @@ describe('builtinFixtures', () => {
       'a form written in message references renders in the default locale',
       'a hidden value is dropped only when the field asks for it',
       'a masked answer fills every position, and holds only what was typed',
+      'a matrix answers one question per row, and a required one needs every row',
       'a paged form drawn with a layout shows the page somebody is on, as the layout arranges it',
       'a ranking stores the order chosen, and starts with nothing in it',
       'a repeating group validates each item and re-indexes when one is removed',
