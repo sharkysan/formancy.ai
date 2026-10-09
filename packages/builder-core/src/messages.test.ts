@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { BUILDER_MESSAGES, createBuilderText } from './messages.js'
 import { BUILDER_MESSAGES_DE } from './messages-de.js'
+import { BUILDER_MESSAGES_FR } from './messages-fr.js'
 import type { BuilderMessageId } from './messages.js'
 
 /**
@@ -107,12 +108,18 @@ describe('a list', () => {
 
 describe('the catalogues', () => {
   const ids = Object.keys(BUILDER_MESSAGES) as BuilderMessageId[]
+  /** Every catalogue this package ships, each held to the same rules. */
+  const SHIPPED: ReadonlyArray<readonly [string, Record<string, unknown>]> = [
+    ['de', BUILDER_MESSAGES_DE],
+    ['fr', BUILDER_MESSAGES_FR],
+  ]
 
-  test('German says everything English says', () => {
-    // Shipped means complete. A shipped catalogue with a gap is a builder
-    // that is half German, which reads worse than one that is all English.
-    const missing = ids.filter(
-      (id) => (BUILDER_MESSAGES_DE as Record<string, unknown>)[id] === undefined,
+  test('each shipped language says everything English says', () => {
+    // Shipped means complete. A shipped catalogue with a gap is a builder that
+    // is half German or half French, which reads worse than one that is all
+    // English.
+    const missing = SHIPPED.flatMap(([locale, catalogue]) =>
+      ids.filter((id) => catalogue[id] === undefined).map((id) => `${locale}:${id}`),
     )
 
     expect(missing).toEqual([])
@@ -121,7 +128,11 @@ describe('the catalogues', () => {
   test('and nothing English does not', () => {
     // A key only one catalogue has is a message nobody can show — usually one
     // that was renamed in English and left behind in the translation.
-    const extra = Object.keys(BUILDER_MESSAGES_DE).filter((id) => !(id in BUILDER_MESSAGES))
+    const extra = SHIPPED.flatMap(([locale, catalogue]) =>
+      Object.keys(catalogue)
+        .filter((id) => !(id in BUILDER_MESSAGES))
+        .map((id) => `${locale}:${id}`),
+    )
 
     expect(extra).toEqual([])
   })
@@ -144,10 +155,10 @@ describe('the catalogues', () => {
         .join(',')
     }
 
-    const differ = ids.filter(
-      (id) =>
-        placeholders(BUILDER_MESSAGES[id]) !==
-        placeholders((BUILDER_MESSAGES_DE as Record<string, unknown>)[id] ?? ''),
+    const differ = SHIPPED.flatMap(([locale, catalogue]) =>
+      ids
+        .filter((id) => placeholders(BUILDER_MESSAGES[id]) !== placeholders(catalogue[id] ?? ''))
+        .map((id) => `${locale}:${id}`),
     )
 
     expect(differ).toEqual([])
@@ -161,9 +172,11 @@ describe('the catalogues', () => {
 
     const empty = [
       ...ids.filter((id) => blank(BUILDER_MESSAGES[id])),
-      ...Object.entries(BUILDER_MESSAGES_DE)
-        .filter(([, message]) => blank(message))
-        .map(([id]) => `de:${id}`),
+      ...SHIPPED.flatMap(([locale, catalogue]) =>
+        Object.entries(catalogue)
+          .filter(([, message]) => blank(message))
+          .map(([id]) => `${locale}:${id}`),
+      ),
     ]
 
     expect(empty).toEqual([])
@@ -174,11 +187,22 @@ describe('the catalogues', () => {
     // message without it has a number it cannot say.
     const withoutOther = [
       ...Object.entries(BUILDER_MESSAGES),
-      ...Object.entries(BUILDER_MESSAGES_DE).map(([id, message]) => [`de:${id}`, message] as const),
+      ...SHIPPED.flatMap(([locale, catalogue]) =>
+        Object.entries(catalogue).map(([id, message]) => [`${locale}:${id}`, message] as const),
+      ),
     ]
       .filter(([, message]) => typeof message === 'object' && !('other' in (message as object)))
       .map(([id]) => id)
 
     expect(withoutOther).toEqual([])
+  })
+
+  test('and French counts the way French does, which is not the way English does', () => {
+    // 0 and 1 take the same form in French — "0 champ", "1 champ", "2 champs" —
+    // and a test for `=== 1` would have said "0 champs".
+    const fr = createBuilderText({ locale: 'fr', messages: BUILDER_MESSAGES_FR })
+
+    expect(fr('tree.fieldCount', { count: 0 })).toBe('0 champ')
+    expect(fr('tree.fieldCount', { count: 2 })).toBe('2 champs')
   })
 })

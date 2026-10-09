@@ -307,5 +307,13 @@ describe('the Language switch', () => {
       () => expect(screen.getAllByRole('tree', { name: 'Formularstruktur' }).length).toBeGreaterThan(0),
       { timeout: 10_000 },
     )
+
+    // And French, which the builder ships complete.
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Language' }), 'fr')
+    await waitFor(
+      () =>
+        expect(screen.getAllByRole('tree', { name: 'Structure du formulaire' }).length).toBeGreaterThan(0),
+      { timeout: 10_000 },
+    )
   })
 })

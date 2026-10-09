@@ -10,6 +10,14 @@ later.
 
 ## Unreleased
 
+**The builder speaks French.** `BUILDER_MESSAGES_FR` ships complete beside German, held to
+the same rules by `messages.test.ts` — every message English has, the same placeholders,
+nothing empty — and the playground's Language switch now gives a French builder as well as
+French form text. Written in the register French software uses, the polite imperative,
+with French spacing before `:` `;` `?` and inside « ». French counts 0 and 1 alike —
+"0 champ" — which `Intl.PluralRules` knows and a test pins, because a test for `=== 1`
+would have said "0 champs" ([0114](docs/decisions/0114-the-builder-speaks-the-authors-language.md)).
+
 **Every surface of both builders speaks the author's language.** The translations, prompt
 and scenario panes and the drop surface over the rendered form were the last; each read
 the catalogue now, and the three decisions both builders had still written by hand are

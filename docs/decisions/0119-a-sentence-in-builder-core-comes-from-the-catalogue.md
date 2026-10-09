@@ -51,6 +51,11 @@ takes the session's language. The translation commands left `session.ts` for
 `translation.ts`: the file stood exactly at its size ceiling and the fix needed a line,
 and translation is the seam that ceiling's own note names.
 
+*Amended 2026-10-09, with French:* the catalogues are no longer listed by file name.
+A catalogue is found by what it is — a file whose exported constant `satisfies` a record
+of messages, read off the syntax tree — so the third language was exempt without being
+added to a list, and the fourth will be too.
+
 ## Consequences
 
 **A new refusal written as a literal fails the build**, wherever in the package it is
