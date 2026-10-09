@@ -2,14 +2,15 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
+  computed,
   effect,
   input,
   signal,
   untracked,
   viewChild,
 } from '@angular/core'
-import { arrangeDrop, arrangeDropAndSay, flattenLayout } from '@formancy/builder-core'
-import type { ArrangeDrop, BuilderSession } from './types.js'
+import { arrangeDrop, arrangeDropAndSay, flattenLayout, gapNeighbour } from '@formancy/builder-core'
+import type { ArrangeDrop, BuilderSession, DrawnNode } from './types.js'
 import { injectBuilderView } from './view.js'
 
 const LAYOUT_ATTR = 'data-formancy-layout-path'
@@ -18,6 +19,9 @@ const SELECTOR = `[${LAYOUT_ATTR}],[${FIELD_ATTR}]`
 
 /** A drop, plus the element to draw the indicator on. */
 type DropTarget = ArrangeDrop & { element: HTMLElement }
+
+/** A node on screen, with the element it was drawn as. */
+type Drawn = DrawnNode & { element: HTMLElement }
 
 /**
  * Whether an element already sits side by side with its siblings: a child of a
@@ -153,6 +157,20 @@ export class FormancyArrangeSurface {
   }
 
   /**
+   * The layout node each field is placed at, by its data path.
+   *
+   * Once per document rather than once per element: a pointer between two nodes
+   * asks it of everything drawn there, on every `dragover`.
+   */
+  private readonly fieldNodes = computed(() => {
+    const placed = new Map<string, readonly number[]>()
+    for (const row of flattenLayout(this.view().document, this.layout(), this.session().text)) {
+      if (row.node.kind === 'field') placed.set(row.node.path, row.path)
+    }
+    return placed
+  })
+
+  /**
    * Which layout node each element on screen came from.
    *
    * A container says so itself. A field does not — it knows its data path, not
@@ -168,10 +186,22 @@ export class FormancyArrangeSurface {
 
     const dataPath = found.getAttribute(FIELD_ATTR)
     if (dataPath === null || dataPath === '') return undefined
-    const node = flattenLayout(this.view().document, this.layout(), this.session().text).find(
-      (row) => row.node.kind === 'field' && row.node.path === dataPath,
-    )
-    return node?.path
+    return this.fieldNodes().get(dataPath)
+  }
+
+  /**
+   * Every node drawn inside `scope`, and where.
+   *
+   * A loop rather than `flatMap`: ng-packagr compiles this package against its own
+   * default library, which predates it.
+   */
+  private drawnIn(scope: Element): Drawn[] {
+    const drawn: Drawn[] = []
+    for (const element of scope.querySelectorAll<HTMLElement>(SELECTOR)) {
+      const path = this.pathOfElement(element)
+      if (path !== undefined) drawn.push({ element, path, box: element.getBoundingClientRect() })
+    }
+    return drawn
   }
 
   protected clearIndicators(): void {
@@ -185,23 +215,34 @@ export class FormancyArrangeSurface {
   private targetFor(event: MouseEvent): DropTarget | undefined {
     const dragged = this.dragging()
     if (dragged === null) return undefined
-    const element = (event.target as Element | null)?.closest<HTMLElement>(SELECTOR) ?? null
-    if (element === null) return undefined
+    const under = event.target as Element | null
+    if (under === null) return undefined
+    const element = under.closest<HTMLElement>(SELECTOR)
 
-    const over = this.pathOfElement(element)
+    // Under nothing that names a node, the pointer is over the form itself, and the
+    // form's children are the top-level nodes.
+    const over = element === null ? [] : this.pathOfElement(element)
     if (over === undefined) return undefined
+    const pointer = { x: event.clientX, y: event.clientY }
+
+    // Between two children of what is under the pointer, the nearer child is aimed at;
+    // anywhere else, what is under it is.
+    const aimed =
+      gapNeighbour(over, this.drawnIn(element ?? under), pointer) ??
+      (element === null ? undefined : { element, path: over, box: element.getBoundingClientRect() })
+    if (aimed === undefined) return undefined
 
     const drop = arrangeDrop({
       document: this.view().document,
       layout: this.layout(),
       dragged,
-      over,
-      box: element.getBoundingClientRect(),
-      pointer: { x: event.clientX, y: event.clientY },
-      sideBySide: sitsSideBySide(element),
-      direction: getComputedStyle(element).direction === 'rtl' ? 'rtl' : 'ltr',
+      over: aimed.path,
+      box: aimed.box,
+      pointer,
+      sideBySide: sitsSideBySide(aimed.element),
+      direction: getComputedStyle(aimed.element).direction === 'rtl' ? 'rtl' : 'ltr',
     })
-    return drop === undefined ? undefined : { ...drop, element }
+    return drop === undefined ? undefined : { ...drop, element: aimed.element }
   }
 
   protected onDragStart(event: DragEvent): void {

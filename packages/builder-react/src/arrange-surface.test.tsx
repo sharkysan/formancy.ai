@@ -534,3 +534,174 @@ describe('in a table', () => {
     expect(fieldNamed('First name').dataset['drop']).toBeUndefined()
   })
 })
+
+describe('dropping in the space between two nodes', () => {
+  /**
+   * The browser reports a pointer in the gap between two fields as over their
+   * container, since nothing else is there. Aimed at the container, a field dropped
+   * between two others in a section landed above or below the whole section; between
+   * two top-level fields, where the form itself carries no layout path, nothing was
+   * offered. Inserting between two siblings without aiming at either was the one
+   * arranging gesture the roadmap listed as missing.
+   */
+  const gapSchema = (): FormSchema => ({
+    specVersion: '1',
+    id: 'gaps',
+    title: 'Contact',
+    model: {
+      fields: [
+        { key: 'first', type: 'text', label: 'First name' },
+        { key: 'last', type: 'text', label: 'Last name' },
+        { key: 'email', type: 'text', label: 'Email' },
+        { key: 'phone', type: 'text', label: 'Phone' },
+      ],
+    },
+    layouts: [
+      {
+        name: 'web',
+        nodes: [
+          {
+            kind: 'section',
+            label: 'Name',
+            children: [
+              { kind: 'field', path: 'first' },
+              { kind: 'field', path: 'last' },
+            ],
+          },
+          { kind: 'field', path: 'email' },
+          { kind: 'field', path: 'phone' },
+        ],
+      },
+    ],
+  })
+
+  /** A section with a heading and two fields, then two fields on their own. */
+  function GapPreview() {
+    return (
+      <form aria-label="Contact preview">
+        <div data-formancy-part="layout-section" data-formancy-layout-path="0">
+          <p>Name</p>
+          <div data-formancy-part="field" data-formancy-field-path="first">
+            First name
+          </div>
+          <div data-formancy-part="field" data-formancy-field-path="last">
+            Last name
+          </div>
+        </div>
+        <div data-formancy-part="field" data-formancy-field-path="email">
+          Email
+        </div>
+        <div data-formancy-part="field" data-formancy-field-path="phone">
+          Phone
+        </div>
+      </form>
+    )
+  }
+
+  /** Where each element was drawn, top to bottom, 400 wide: jsdom draws nothing. */
+  const drawn = (element: HTMLElement, top: number, bottom: number): void => {
+    element.getBoundingClientRect = () =>
+      ({ left: 0, right: 400, width: 400, top, bottom, height: bottom - top, x: 0, y: top, toJSON: () => ({}) }) as DOMRect
+  }
+
+  const section = (): HTMLElement =>
+    document.querySelector<HTMLElement>('[data-formancy-layout-path="0"]')!
+
+  /**
+   * The section from 0 to 140, its heading on top and its fields 20 apart; then Email
+   * and Phone below it, 20 apart again.
+   */
+  const gapSurface = (session: BuilderSession) => {
+    render(
+      <FormancyArrangeSurface session={session} layout="web" enabled>
+        <GapPreview />
+      </FormancyArrangeSurface>,
+    )
+    drawn(section(), 0, 140)
+    drawn(fieldNamed('First name'), 40, 80)
+    drawn(fieldNamed('Last name'), 100, 140)
+    drawn(fieldNamed('Email'), 160, 200)
+    drawn(fieldNamed('Phone'), 220, 260)
+  }
+
+  const nodesOf = (session: BuilderSession) => session.document().layouts?.[0]?.nodes
+
+  test('between two fields in a section, the drop lands between them', () => {
+    const session = createBuilderSession(gapSchema())
+    gapSurface(session)
+
+    // y = 90 is the gap between First name (40–80) and Last name (100–140), which the
+    // browser reports as the section. Aimed at the section, Phone went below it.
+    drag(fieldNamed('Phone'), section(), { clientX: 200, clientY: 90 })
+
+    expect(nodesOf(session)?.[0]).toMatchObject({
+      kind: 'section',
+      children: [
+        { kind: 'field', path: 'first' },
+        { kind: 'field', path: 'phone' },
+        { kind: 'field', path: 'last' },
+      ],
+    })
+    expect(screen.getByRole('status').textContent).toContain('between First name and Last name')
+  })
+
+  test('between two top-level fields, where nothing on screen names a node, too', () => {
+    const session = createBuilderSession(gapSchema())
+    gapSurface(session)
+
+    // y = 150 is between the section (to 140) and Email (from 160). The form carries no
+    // layout path, so no drop was offered here at all.
+    drag(fieldNamed('Phone'), screen.getByRole('form', { name: 'Contact preview' }), {
+      clientX: 200,
+      clientY: 150,
+    })
+
+    expect(nodesOf(session)?.map((node) => (node.kind === 'field' ? node.path : node.kind))).toEqual([
+      'section',
+      'phone',
+      'email',
+    ])
+  })
+
+  test('the line is drawn on the nearer neighbour, on the side the gap is', () => {
+    const session = createBuilderSession(gapSchema())
+    gapSurface(session)
+    const dataTransfer = transfer()
+
+    fireEvent(fieldNamed('Phone'), dragEvent('dragstart', NOWHERE, dataTransfer))
+    fireEvent(section(), dragEvent('dragover', { clientX: 200, clientY: 95 }, dataTransfer))
+
+    // Nearer Last name, so above it — and not on the section, which is not where it lands.
+    expect(fieldNamed('Last name').dataset['drop']).toBe('before')
+    expect(section().dataset['drop']).toBeUndefined()
+  })
+
+  test('a gap beside the field being dragged moves nothing, so it offers nothing', () => {
+    const session = createBuilderSession(gapSchema())
+    gapSurface(session)
+    const before = JSON.stringify(nodesOf(session))
+
+    // Between Email and Phone, dragging Phone: the gap is where it already is.
+    drag(fieldNamed('Phone'), screen.getByRole('form', { name: 'Contact preview' }), {
+      clientX: 200,
+      clientY: 210,
+    })
+
+    expect(JSON.stringify(nodesOf(session))).toBe(before)
+  })
+
+  test("over a section's own heading, the section is still what is aimed at", () => {
+    const session = createBuilderSession(gapSchema())
+    gapSurface(session)
+
+    // y = 10 is the heading, above the section's fields: not between two of them. The
+    // top half of the section means before it, as it always did.
+    drag(fieldNamed('Phone'), section(), { clientX: 200, clientY: 10 })
+
+    expect(nodesOf(session)?.map((node) => (node.kind === 'field' ? node.path : node.kind))).toEqual([
+      'phone',
+      'section',
+      'email',
+    ])
+  })
+})

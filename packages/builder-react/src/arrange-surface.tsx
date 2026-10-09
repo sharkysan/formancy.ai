@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactElement, ReactNode } from 'react'
-import type { ArrangeDrop, BuilderSession } from '@formancy/builder-core'
-import { arrangeDrop } from '@formancy/builder-core'
+import type { ArrangeDrop, BuilderSession, DrawnNode } from '@formancy/builder-core'
+import { arrangeDrop, gapNeighbour } from '@formancy/builder-core'
 import { arrangeDropAndSay, flattenLayout } from '@formancy/builder-core'
 import { useBuilder } from './use-builder.js'
 
@@ -49,6 +49,9 @@ const SELECTOR = `[${LAYOUT_ATTR}],[${FIELD_ATTR}]`
  */
 type DropTarget = ArrangeDrop & { element: HTMLElement }
 
+/** A node on screen, with the element it was drawn as. */
+type Drawn = DrawnNode & { element: HTMLElement }
+
 /**
  * Whether an element already sits side by side with its siblings: a child of a
  * row, or of a table, which lays its children out in columns.
@@ -78,6 +81,22 @@ export function FormancyArrangeSurface({
   const [announcement, setAnnouncement] = useState('')
 
   /**
+   * The layout node each field is placed at, by its data path.
+   *
+   * Once per document rather than once per element: a pointer between two nodes
+   * asks it of everything drawn there, on every `dragover`.
+   */
+  const fieldNodes = useMemo(
+    () =>
+      new Map(
+        flattenLayout(view.document, layout, session.text).flatMap((row) =>
+          row.node.kind === 'field' ? [[row.node.path, row.path] as const] : [],
+        ),
+      ),
+    [view.document, layout, session],
+  )
+
+  /**
    * Which layout node each element on screen came from.
    *
    * A container says so itself. A field does not — it knows its data path, not
@@ -94,12 +113,9 @@ export function FormancyArrangeSurface({
 
       const dataPath = found.getAttribute(FIELD_ATTR)
       if (dataPath === null || dataPath === '') return undefined
-      const node = flattenLayout(view.document, layout, session.text).find(
-        (row) => row.node.kind === 'field' && row.node.path === dataPath,
-      )
-      return node?.path
+      return fieldNodes.get(dataPath)
     },
-    [view.document, layout],
+    [fieldNodes],
   )
 
   /**
@@ -144,25 +160,43 @@ export function FormancyArrangeSurface({
     return <div ref={surface}>{children}</div>
   }
 
+  /** Every node drawn inside `scope`, and where. */
+  const drawnIn = (scope: Element): Drawn[] =>
+    [...scope.querySelectorAll<HTMLElement>(SELECTOR)].flatMap((element) => {
+      const path = pathOfElement(element)
+      return path === undefined ? [] : [{ element, path, box: element.getBoundingClientRect() }]
+    })
+
   const targetFor = (event: React.DragEvent<HTMLDivElement>): DropTarget | undefined => {
     if (dragging === null) return undefined
-    const element = (event.target as Element | null)?.closest<HTMLElement>(SELECTOR) ?? null
-    if (element === null) return undefined
+    const under = event.target as Element | null
+    if (under === null) return undefined
+    const element = under.closest<HTMLElement>(SELECTOR)
 
-    const over = pathOfElement(element)
+    // Under nothing that names a node, the pointer is over the form itself, and the
+    // form's children are the top-level nodes.
+    const over = element === null ? [] : pathOfElement(element)
     if (over === undefined) return undefined
+    const pointer = { x: event.clientX, y: event.clientY }
+
+    // Between two children of what is under the pointer, the nearer child is aimed at;
+    // anywhere else, what is under it is.
+    const aimed =
+      gapNeighbour(over, drawnIn(element ?? under), pointer) ??
+      (element === null ? undefined : { element, path: over, box: element.getBoundingClientRect() })
+    if (aimed === undefined) return undefined
 
     const drop = arrangeDrop({
       document: view.document,
       layout,
       dragged: dragging,
-      over,
-      box: element.getBoundingClientRect(),
-      pointer: { x: event.clientX, y: event.clientY },
-      sideBySide: sitsSideBySide(element),
-      direction: getComputedStyle(element).direction === 'rtl' ? 'rtl' : 'ltr',
+      over: aimed.path,
+      box: aimed.box,
+      pointer,
+      sideBySide: sitsSideBySide(aimed.element),
+      direction: getComputedStyle(aimed.element).direction === 'rtl' ? 'rtl' : 'ltr',
     })
-    return drop === undefined ? undefined : { ...drop, element }
+    return drop === undefined ? undefined : { ...drop, element: aimed.element }
   }
 
   return (

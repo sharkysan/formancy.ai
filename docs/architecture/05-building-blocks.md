@@ -196,7 +196,9 @@ at `items[].qty` (`condition-draft.ts`,
 host's preview answers and clock, why each holds now (`rules-overview.ts`,
 [0128](../decisions/0128-a-form-says-why-a-field-is-hidden.md)); where a drop lands in each
 of the two trees **and on the rendered form** (`arrange.ts`, which takes a
-rectangle as plain numbers because this package compiles with no DOM), the
+rectangle as plain numbers because this package compiles with no DOM, and reads the
+space between two nodes from where they were drawn rather than from a target the
+renderer emits — [0146](../decisions/0146-a-drop-between-two-nodes-is-read-from-where-they-were-drawn.md)), the
 palette, the editable property list read out of the spec's own JSON Schema, and —
 in `repath.ts` — what the rest of the document does when a path moves or goes. That last one is why this package depends on
 `@formancy/expressions` at all: a field lives in the model, in the layouts that

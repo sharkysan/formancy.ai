@@ -10,6 +10,16 @@ later.
 
 ## Unreleased
 
+**Fixed: a node dropped in the space between two others on the preview lands between them.**
+A browser reports a pointer in that space as over the container, so a field dropped between
+two fields in a section landed above or below the whole section, and between two top-level
+nodes — where the form itself names no layout node — no drop was offered at all. Both builders
+now ask `gapNeighbour` in `@formancy/builder-core`, which reads the gap from where the
+container's children were drawn and aims at the nearer of them; a gap only ever moves, never
+makes a row. The renderers emit nothing new, so a published form is unchanged, and
+`test:browser` drags into the space in both renderers' markup
+([0146](docs/decisions/0146-a-drop-between-two-nodes-is-read-from-where-they-were-drawn.md)).
+
 **Fixed: everything a document can say has a spec version, and the check reads it from one
 ledger.** 0.4.0 said its freeze check covered field types and widgets but not properties or
 rule kinds. Writing that check found a rule kind outside version 2's list taken to be version

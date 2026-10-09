@@ -15,6 +15,7 @@ export type {
   BuilderView,
   CatalogueFile,
   ConditionRow,
+  DrawnNode,
   EditableProperty,
   CommandOutcome,
   LayoutAddress,

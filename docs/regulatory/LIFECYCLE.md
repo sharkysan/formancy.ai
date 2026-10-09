@@ -175,6 +175,10 @@ Each gate exists for a reason that was paid for at least once:
   itself and asks whether Material's labels are drawn in a Roboto face the document loaded,
   and whether the builder and the controls Material does not draw resolve to Material's own
   colours ([0142](../decisions/0142-the-angular-starter-is-dressed-in-materials-tokens.md)).
+  And it drags on the playground's preview: it measures the space between two stacked fields
+  and between two top-level sections, asks what a browser reports under it, drops a node there
+  in both renderers' markup and reads back where it landed
+  ([0146](../decisions/0146-a-drop-between-two-nodes-is-read-from-where-they-were-drawn.md)).
   **A different kind of test from the rest of this list**, and the reason is
   structural rather than a coverage gap: jsdom applies no CSS, resolves no media
   queries and performs no layout, so every box measures zero and every cascade
