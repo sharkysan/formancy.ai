@@ -313,8 +313,9 @@ Still from 0.2.0 and unchanged:
 
 ### Still absent, and designed only
 
-Virus scanning, resumable and multipart uploads, and presigned uploads that would keep
-bytes out of the server's own data path. Also a submission token bound to the form version,
+Resumable and multipart uploads, and presigned uploads that would keep bytes out of the
+server's own data path. (Virus scanning was in this list until 0.4.0, which scans every upload
+when a deployment runs ClamAV — above.) Also a submission token bound to the form version,
 which is the gap that keeps the public plane off a public deployment.
 
 **The server writes no request log.** Fastify is constructed with the logger off, so no
