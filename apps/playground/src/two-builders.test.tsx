@@ -376,6 +376,27 @@ describe('the examples, in either builder', () => {
 
     expect(removable(await scenarioPanel())).toEqual(offered(gone))
   })
+
+  test('and an example removed stays removed after the Schema view and back, in both builders', async () => {
+    // Why the list is the page's and not the Build pane's: switching to Schema unmounts the
+    // Build pane, so a list kept anywhere under it, even one handed to both builders, would
+    // start again from the starter's and bring the removed example back on the way in.
+    const user = userEvent.setup()
+    render(<App />)
+    await builtWith('React')
+    const gone = STARTER_SCENARIOS[1]!.name
+    await user.click(within(await scenarioPanel()).getByRole('button', { name: `Remove ${gone}` }))
+
+    await user.click(screen.getByRole('button', { name: 'Schema' }))
+    // Off screen, or the way back below would be no way back at all.
+    expect(screen.queryByRole('region', { name: 'Scenarios' })).toBeNull()
+
+    await builtWith('React')
+    expect(removable(await scenarioPanel())).toEqual(offered(gone))
+    await builtWith('Angular')
+    const angular = await scenarioPanel()
+    await waitFor(() => expect(removable(angular)).toEqual(offered(gone)), { timeout: 10_000 })
+  })
 })
 
 describe('the Language switch', () => {

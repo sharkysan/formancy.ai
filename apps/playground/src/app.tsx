@@ -153,7 +153,8 @@ export function App() {
   /**
    * The examples both builders check the form against (0111), kept up here for the
    * blocks' reasons: one list, so one removed in either builder is gone from the other,
-   * and held in memory for this visit.
+   * and held in memory for this visit. The second is why it is here and not in the Build
+   * pane, which is unmounted on the way to Schema and would start the list again.
    */
   const [scenarios, setScenarios] = useState<readonly Scenario[]>(STARTER_SCENARIOS)
   const [shown, setShown] = useState<PaneId>('form')

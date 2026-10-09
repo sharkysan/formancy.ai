@@ -18,7 +18,8 @@ list, started from the starter's, held in memory for the visit and handed to bot
 so an example removed in either is gone from the other. The scenarios are the host's
 ([0111](docs/decisions/0111-a-scenario-panel-names-what-stopped-holding.md)), and the
 playground is the host here. `two-builders.test.tsx` removes one in each builder and looks for
-it in the other; those cases failed before.
+it in the other, and again after a trip to the Schema view and back, which unmounts the Build
+pane, so a list kept inside it would start again; those cases failed before.
 
 **Added: the playground's Angular builder lists the examples too.** Its host says its panels
 mirror the React pane's, and the scenario panel was not among them, so a visitor who chose
