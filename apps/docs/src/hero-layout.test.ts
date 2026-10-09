@@ -36,10 +36,16 @@ const stylesheets = ['shell.css', 'site.css', 'hero-studio.css'].map((name) => (
   css: readFileSync(join(repo, 'apps', 'site', 'src', name), 'utf8'),
 }))
 
-/** Every rule in source order, innermost first: `@media` preludes fall out. */
+/**
+ * Every rule in source order, innermost first: `@media` preludes fall out.
+ *
+ * A selector is what follows the last `}` **or `;`**: a statement at-rule ends in a
+ * semicolon, and when `shell.css` began with `@import`s for its faces (0154) the text
+ * before `:root` read as one long selector and every case below lost the tokens.
+ */
 function rulesFor(selector: string): Array<{ where: string; body: string }> {
   return stylesheets.flatMap(({ name, css }) =>
-    [...css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]*)\{([^{}]*)\}/g)]
+    [...css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{};]*)\{([^{}]*)\}/g)]
       .filter((match) => (match[1] ?? '').trim() === selector)
       .map((match) => ({ where: name, body: match[2] ?? '' })),
   )

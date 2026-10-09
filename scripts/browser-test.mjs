@@ -39,6 +39,7 @@ import { checkAngularPage } from './angular-page-browser-test.mjs'
 import { checkUploadThumbnails } from './upload-browser-test.mjs'
 import { checkArrangeGaps } from './arrange-browser-test.mjs'
 import { checkMaterialDateButton } from './material-date-browser-test.mjs'
+import { checkNoForeignRequests } from './request-browser-test.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const site = join(root, 'apps', 'site', 'dist')
@@ -193,6 +194,7 @@ async function run() {
       )
     }
 
+    await checkNoForeignRequests(browser, origin, check)
     await checkTemplateGallery(browser, origin, check)
     await checkAngularPage(browser, origin, check)
     await checkUploadThumbnails(browser, url, check)
@@ -1057,7 +1059,7 @@ async function run() {
     throw new Error(`${String(failures.length)} browser check(s) failed:\n  ${failures.join('\n  ')}`)
   }
   console.log(
-    `browser checks passed: ${String(WIDTHS.length)} viewports of the playground, plus the site's pages, the starter embedded in one and the starter on its own, and drops into the space between two nodes and what can be picked up after, for the layout, gesture and cascade facts jsdom cannot represent`,
+    `browser checks passed: ${String(WIDTHS.length)} viewports of the playground, plus the site's pages, the starter embedded in one and the starter on its own, and drops into the space between two nodes and what can be picked up after, for the layout, gesture and cascade facts jsdom cannot represent; and every request of the pages it opens, none of them to another site`,
   )
 }
 

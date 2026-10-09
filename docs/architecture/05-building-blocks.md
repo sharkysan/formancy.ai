@@ -360,7 +360,11 @@ two design systems inside a product whose argument is that a consumer's design
 system owns the markup. The split is structural rather than a copied stylesheet:
 the navigation is one list, so a third page joins every page's bar by existing,
 and the browser gate compares the two pages' computed ground, families and bar
-against **each other** rather than against a literal.
+against **each other** rather than against a literal. The faces come with that shell too,
+from Fontsource's packages rather than a font service, and the playground serves its own
+copy of Monaco's build. The same gate opens one of each kind of page the site serves and
+aborts and names any request to another origin
+([0154](../decisions/0154-the-website-makes-no-request-to-any-other-site.md)).
 
 ### `@formancy/server-core` and `@formancy/server`
 

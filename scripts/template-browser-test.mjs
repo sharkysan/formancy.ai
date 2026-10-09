@@ -38,8 +38,8 @@ export async function checkTemplateGallery(browser, origin, check) {
       check(`templates at ${width}px: downloading returns the actual form JSON`, schema?.id === 'sales-lead-enquiry' && download.suggestedFilename() === 'lead-enquiry.form.json' ? null : 'wrong download')
       check(`templates at ${width}px: the gallery has no runtime errors`, errors.length === 0 ? null : errors.join('; '))
 
-      // The editor's optional CDN-loaded Monaco is outside this gallery check;
-      // its template and locale must still initialise when that CDN is offline.
+      // Whether Monaco arrives is the request gate's question (0154), not this
+      // gallery's; the template and locale must initialise whether or not it has.
       await page.getByRole('link', { name: 'Edit Verkaufsanfrage in playground' }).click()
       await page.getByRole('region', { name: 'React', exact: true }).getByRole('textbox', { name: 'Vor- und Nachname' }).waitFor()
       check(`templates at ${width}px: edit opens the chosen document and language`, await page.getByRole('combobox', { name: 'Demo', exact: true }).inputValue() === 'sales-lead-enquiry' && await page.getByRole('combobox', { name: 'Language', exact: true }).inputValue() === 'de' ? null : 'wrong editor state')

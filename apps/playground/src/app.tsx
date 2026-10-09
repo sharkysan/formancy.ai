@@ -177,7 +177,9 @@ export function App() {
   }, [pane, demo, locale])
 
   const monaco = useMonaco()
-  if (monaco !== null) {
+  // Truthiness, not `!== null`: the type says `null` until Monaco loads, but once
+  // `main.tsx` has configured the loader its first answer is `undefined` (0154).
+  if (monaco) {
     // The loader's bundled types stub `languages.json` as deprecated; at
     // runtime the namespace is there. One structural cast at the boundary.
     const json = (

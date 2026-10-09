@@ -16,6 +16,24 @@
  * you could see four fields of at a time.
  */
 
+/*
+ * The faces, served by the playground rather than by a font service (0154) — the
+ * landing page's, plus Space Grotesk, which Dusk and Pop ask for. Fontsource names a
+ * variable face `<Family> Variable`, so the display stack below asks for that name, and
+ * the Pop and Paper themes name it beside the plain one.
+ */
+@import '@fontsource-variable/archivo/wdth.css';
+@import '@fontsource-variable/fraunces/opsz.css';
+@import '@fontsource-variable/fraunces/opsz-italic.css';
+@import '@fontsource/ibm-plex-sans/400.css';
+@import '@fontsource/ibm-plex-sans/500.css';
+@import '@fontsource/ibm-plex-sans/600.css';
+@import '@fontsource/ibm-plex-mono/400.css';
+@import '@fontsource/ibm-plex-mono/500.css';
+@import '@fontsource/space-grotesk/400.css';
+@import '@fontsource/space-grotesk/500.css';
+@import '@fontsource/space-grotesk/600.css';
+
 :root {
   --ground: #080a12;
   --inset: #0b0f18;
@@ -33,7 +51,7 @@
 
   --sans: 'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
   --mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Code', Consolas, monospace;
-  --display: 'Archivo', 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  --display: 'Archivo Variable', 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
 
   /* The builder's own theme, workbench.css, re-pointed at a dark bench. It is
      written entirely in these variables, which is what lets the tool change

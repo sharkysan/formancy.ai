@@ -22,6 +22,26 @@
  * file, which compares the two pages' computed values to each other.
  */
 
+/*
+ * The faces, served by this site rather than by a font service (0154): every page
+ * imports this file, so every page has them, and opening one tells no other site who
+ * opened it. Fontsource's packages, the way the Angular starter loads Roboto (0142).
+ *
+ * The two variable faces keep the axes the pages set: Archivo's width, which the
+ * headlines narrow to 92 and the reading figures to 88, and Fraunces' optical size,
+ * which the italic accents in two headlines set to 96 — upright, it is the Paper
+ * theme's serif. Fontsource names a variable face `<Family> Variable`, so the stacks
+ * here ask for that name, and Pop and Paper name it beside the plain one.
+ */
+@import '@fontsource-variable/archivo/wdth.css';
+@import '@fontsource-variable/fraunces/opsz.css';
+@import '@fontsource-variable/fraunces/opsz-italic.css';
+@import '@fontsource/ibm-plex-sans/400.css';
+@import '@fontsource/ibm-plex-sans/500.css';
+@import '@fontsource/ibm-plex-sans/600.css';
+@import '@fontsource/ibm-plex-mono/400.css';
+@import '@fontsource/ibm-plex-mono/500.css';
+
 :root {
   --ground: #080a12;
   --raised: #141a29;
@@ -43,7 +63,7 @@
   --mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Code', Consolas, monospace;
   /* The display face. Archivo is a grotesque with a width axis — engineered
      rather than editorial, which is the register this product speaks in. */
-  --display: 'Archivo', 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  --display: 'Archivo Variable', 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
 
   --gutter: clamp(1.25rem, 5vw, 5rem);
   /* The page's own width, shared by every band and by the bar above them.

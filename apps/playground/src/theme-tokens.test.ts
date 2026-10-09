@@ -226,10 +226,10 @@ describe('what comes out of it', () => {
 describe('reading real stylesheets', () => {
   test('a cross-origin stylesheet is stepped over rather than thrown on', () => {
     /*
-     * Measured: the playground loads two stylesheets whose `cssRules` throw —
-     * Google Fonts, cross-origin. An adapter that did not expect that would take
-     * the whole editor down, and the editor would be empty on exactly the pages
-     * that load a webfont, which is most of them.
+     * The playground loaded two stylesheets whose `cssRules` throw — Google Fonts,
+     * cross-origin — until it served its own faces (0154). A host's page that takes
+     * its webfont from a font service still does, and an adapter that did not expect
+     * that would take the whole editor down, empty on exactly those pages.
      */
     const blocked = {
       get cssRules(): never {

@@ -185,6 +185,18 @@ Each gate exists for a reason that was paid for at least once:
   and that afterwards as much of the preview can be picked up as before, as can a field a
   rule has just shown, a static text and a repeater
   ([0150](../decisions/0150-every-field-an-arrangement-places-names-itself.md); [0148](../decisions/0148-the-arrange-surfaces-marks-follow-the-dom.md)).
+  And since 2026-10-09 it **records every request**, which is not a question about layout at
+  all and needed a browser for the same reason — jsdom, as every suite here runs it, fetches
+  nothing: the landing page, the
+  templates, the Angular page with its frame, the playground and one page of the documentation
+  are opened with every request routed through the gate, and any addressed to another origin
+  is aborted and named, as is a `preconnect` or `dns-prefetch` hint to another host. Aborted
+  rather than let through, so the answer does not depend on the runner's network. It also asks
+  whether each page's text is drawn in a face the document loaded and whether the playground's
+  editor arrived, so a page that dropped what it used to fetch elsewhere cannot pass, and
+  whether the playground's content security policy refuses a picture and a connection on
+  another host. Committed before the fix and watched failing on `main` against Google Fonts
+  and jsDelivr ([0154](../decisions/0154-the-website-makes-no-request-to-any-other-site.md)).
   **A different kind of test from the rest of this list**, and the reason is
   structural rather than a coverage gap: jsdom applies no CSS, resolves no media
   queries and performs no layout, so every box measures zero and every cascade
