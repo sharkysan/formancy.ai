@@ -261,6 +261,17 @@ whole, and stays so after the fix. Fixed after `0.4.0` for downloads, at the cos
 leaving nothing in the server to end a download whose reader has stopped reading
 ([0155](../decisions/0155-the-object-store-is-timed-on-its-silence.md)); see the changelog.
 
+**Behind a reverse proxy, every respondent shares one rate-limit budget.** `0.4.0` counts
+every public limit by the address on the socket, and behind the reverse proxy the deployment
+view draws, that address is the proxy's for every request: thirty submissions a minute
+between everybody, and the next refused with `429` for traffic that was not theirs. The
+operator is not told, because the server writes no request log, and nothing in `0.4.0` can
+be set to change it. Hazard D14 in [`SAFETY-ANALYSIS.md`](SAFETY-ANALYSIS.md) has it. The
+setting that follows `0.4.0`, `FORMANCY_TRUST_PROXY`, is in
+[`CHANGELOG.md`](../../CHANGELOG.md) under *Unreleased*; set wider than the proxy, it turns
+this into the opposite defect, a client choosing the address it is counted by
+([0156](../decisions/0156-a-proxy-is-trusted-by-its-address.md)).
+
 ### Reserved, and not implemented
 
 Each name is reserved in the sense that nothing else may take it, and **reserving is not

@@ -12,6 +12,7 @@ import { createS3FileStore } from './s3-file-store.js'
 import { fileStoreSettings } from './file-store-settings.js'
 import { CLAMD_DEFAULT_MAX_BYTES, createClamdScanner } from './clamd-scanner.js'
 import { maxFileBytesFrom } from './upload-settings.js'
+import { trustProxyFrom } from './trust-proxy.js'
 
 // recheck ships a 23 MB JVM jar and a native binary per platform as OPTIONAL
 // dependencies and falls back to a pure-JavaScript engine without them. For
@@ -106,6 +107,15 @@ if (challengeSecret !== undefined && challengeSecret.length < 32) {
   throw new Error('FORMANCY_CHALLENGE_SECRET must be at least 32 characters, or unset.')
 }
 
+/**
+ * The reverse proxies whose X-Forwarded-For names the client. Unset trusts none,
+ * which is right with nothing in front and wrong behind a proxy: every
+ * respondent would share its one rate-limit budget. Refused at startup when it
+ * is not addresses and ranges, since a server that started anyway would count
+ * the wrong client and nothing would say so.
+ */
+const trustProxy = trustProxyFrom(process.env['FORMANCY_TRUST_PROXY'])
+
 await bootstrapSchema(sql)
 const storage = createPostgresStorage(sql)
 const app = await createApp(storage, {
@@ -116,6 +126,7 @@ const app = await createApp(storage, {
   ...(fileStore === undefined ? {} : { fileStore }),
   ...(challengeSecret === undefined ? {} : { challengeSecret }),
   ...(scanner === undefined ? {} : { scanner }),
+  ...(trustProxy === undefined ? {} : { trustProxy }),
   maxFileBytes,
 })
 

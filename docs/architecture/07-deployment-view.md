@@ -104,6 +104,17 @@ form is not publicly submittable unless it says so.
   makes that survivable for a receiver that dedupes; it does not make it
   correct. `FOR UPDATE SKIP LOCKED` is the fix and is a contained change to one
   port method ([0049](../decisions/0049-one-polling-worker.md)).
+- **Name the reverse proxy, by its own address.** Every public rate limit counts the
+  client's address, and the server believes no `X-Forwarded-For` until
+  `FORMANCY_TRUST_PROXY` lists the proxy's address or range — so behind the proxy drawn
+  above, with it unset, every respondent shares the proxy's one budget. Name only proxies
+  you run: a trusted address can write any client address it likes. In a compose
+  deployment that rules out the network's range, which holds the gateway Docker hands
+  published-port connections over from — measured from the machine itself and from other
+  containers. So the proxy gets a pinned `ipv4_address`, that address alone is named, and
+  the server's port is not published behind it; the self-hosting guide has the override
+  file. Checked in `packages/server/src/rate-limit-client.test.ts`; hazard D14;
+  [0156](../decisions/0156-a-proxy-is-trusted-by-its-address.md).
 - **Uploaded files are never served from the application origin inline.** A
   separate hostname is the right answer and a single-container deployment does
   not have one, so files come back with `Content-Disposition: attachment`,

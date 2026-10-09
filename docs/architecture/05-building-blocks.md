@@ -396,7 +396,10 @@ catch-all registered on the root handed raw bytes to every route. `server/upload
 holds the ceiling on a file, which `main.ts` reads from the environment and `createApp`
 checks again, bounded by what `files.size` can record.
 `ServerDeps`, what a deployment supplies, left `use-cases.ts` for `server-core/deps.ts` the
-same way.
+same way. Webhook health and delivery replay went to `server/routes/deliveries.ts` when
+`app.ts` needed room to say which proxy it believes. That setting, `FORMANCY_TRUST_PROXY`, is
+read by `server/trust-proxy.ts` rather than inline in `main.ts`, because its refusals are the
+part worth testing and `main.ts` is a composition root no test imports.
 
 The webhook outbox shows the split at its sharpest. `server-core/outbox.ts` has
 `afterAttempt` — pure, four arguments, the entire retry policy — and

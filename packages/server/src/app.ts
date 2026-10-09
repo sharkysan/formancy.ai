@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { fileRoutes } from './routes/files.js'
 import { publishRoutes } from './routes/publish.js'
+import { deliveryRoutes } from './routes/deliveries.js'
 import { SCHEMA_HASH_HEADER } from './headers.js'
 import Fastify from 'fastify'
 import type { FileStore } from './file-store.js'
@@ -12,8 +13,6 @@ import {
   decodeSolution,
   mintChallenge,
   verifySolution,
-  healthOf,
-  replayDelivery,
   authenticateLocal,
   can,
   createApiKey,
@@ -98,6 +97,13 @@ export interface AppOptions {
   /** Login attempts per IP per minute. Defaults to 10. */
   loginRateLimit?: { max: number; timeWindowMs: number }
   /**
+   * The reverse proxies, as addresses and CIDR ranges, whose X-Forwarded-For
+   * names the client every limit above counts. Absent trusts none, so behind a
+   * proxy all respondents share its one budget; `trust-proxy.ts` says why there
+   * is no hop count and no `true`.
+   */
+  trustProxy?: string[]
+  /**
    * Largest accepted request body, in bytes. A structural cap BEFORE parsing:
    * the JSON parser should never be handed something enormous in the first
    * place, whatever the schema says afterwards.
@@ -137,9 +143,14 @@ export interface AppOptions {
  * injected and replayable.
  */
 export async function createApp(storage: Storage, options: AppOptions): Promise<FastifyInstance> {
-  // 256 kB by default. Large enough for a long form with a repeater, small
-  // enough that a request cannot cost meaningful memory before it is rejected.
-  const app = Fastify({ logger: false, bodyLimit: options.bodyLimitBytes ?? 256 * 1024 })
+  const app = Fastify({
+    logger: false,
+    // 256 kB by default. Large enough for a long form with a repeater, small
+    // enough that a request cannot cost meaningful memory before it is rejected.
+    bodyLimit: options.bodyLimitBytes ?? 256 * 1024,
+    // Which hop's word request.ip takes, and so whose budget a rate limit spends.
+    trustProxy: options.trustProxy ?? false,
+  })
 
   const maxFileBytes = checkedMaxFileBytes(options.maxFileBytes ?? DEFAULT_MAX_FILE_BYTES, 'maxFileBytes')
   const fileStore = options.fileStore
@@ -374,70 +385,8 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
     return reply.send({ entries: await deps.storage.listAudit(limit) })
   })
 
-  /**
-   * Webhook health, and the deliveries that died.
-   *
-   * The reason the breaker keeps its counters on the row rather than in the
-   * worker's memory. A self-hoster has no operations team watching a
-   * dashboard, so a destination refusing deliveries since Tuesday has to be
-   * answerable from the product — otherwise it is found when somebody asks
-   * why the CRM has no leads this week.
-   */
-  app.get('/webhooks', { preHandler: requires('form.publish') }, async (_request, reply) => {
-    const now = new Date(deps.nowIso())
-    const hooks = await deps.storage.listWebhooks()
-    return reply.send({ webhooks: hooks.map((hook) => healthOf(hook, now)) })
-  })
-
-  app.get('/deliveries/dead', { preHandler: requires('form.publish') }, async (request, reply) => {
-    const raw = (request.query as { limit?: unknown } | undefined)?.limit
-    const asked = typeof raw === 'string' ? Number.parseInt(raw, 10) : 50
-    const limit = Number.isFinite(asked) ? Math.min(Math.max(asked, 1), 200) : 50
-    const dead = await deps.storage.deadDeliveries(limit)
-    // Not the body. That is the submission's data in another coat, and this
-    // endpoint answers "what failed", not "what was in it".
-    return reply.send({
-      deliveries: dead.map((delivery) => ({
-        id: delivery.id,
-        webhookId: delivery.webhookId,
-        submissionId: delivery.submissionId,
-        eventId: delivery.eventId,
-        attempt: delivery.attempt,
-        lastError: delivery.lastError,
-      })),
-    })
-  })
-
-  app.post(
-    '/deliveries/:id/replay',
-    { preHandler: requires('form.publish') },
-    async (request, reply) => {
-      const { id } = request.params as { id: string }
-      const outcome = await replayDelivery(
-        { storage: deps.storage, now: () => new Date(deps.nowIso()) },
-        id,
-      )
-
-      if (!outcome.ok) {
-        return outcome.kind === 'unknown'
-          ? reply.code(404).send({ error: 'unknown_delivery' })
-          : reply.code(409).send({
-              error: 'not_dead',
-              state: outcome.state,
-              message:
-                'Only a dead delivery can be replayed. A pending one is already queued, and a delivered one would be sent twice.',
-            })
-      }
-
-      // Recorded: it sends data to a third party on a person's say-so.
-      await audit(request, {
-        action: 'delivery.replayed',
-        subject: id,
-        detail: { webhookId: outcome.delivery.webhookId },
-      })
-      return reply.code(202).send({ id, state: outcome.delivery.state })
-    },
-  )
+  // Webhook health, dead deliveries and replay: a route family of their own.
+  await app.register(deliveryRoutes, { deps, requires, audit })
 
   /**
    * A puzzle for an anonymous visitor to solve before submitting.
@@ -688,7 +637,8 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
     {
       // The unauthenticated write that matters most, and no longer the only
       // one: drafts write too, and are limited the same way. Keyed by IP, which
-      // is the only identity an anonymous submitter has.
+      // is the only identity an anonymous submitter has — behind a proxy, only
+      // once `trustProxy` names it; until then it is the proxy's.
       config: { rateLimit: { max: submissionLimit.max, timeWindow: submissionLimit.timeWindowMs } },
     },
     async (request, reply) => {

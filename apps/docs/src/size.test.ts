@@ -48,8 +48,8 @@ const CEILINGS: Record<string, { lines: number; why: string }> = {
     why: 'The landing page, one long document. The seam is one section per file — and the chrome has already gone that way: the bar, the footer, the brand mark and the backdrop left for `chrome.tsx` when the site grew a second page that had written its own, which is the ratchet pointing at something real rather than at a line count.',
   },
   'packages/server/src/app.ts': {
-    lines: 770,
-    why: 'The seam is one route family per Fastify plugin, which is the framework’s own unit. Publishing moved to routes/publish.ts when the budget refused the next thing added here; the rest follow the same way. The byte parser went to routes/files.ts, encapsulated with the one route that takes bytes.',
+    lines: 720,
+    why: 'The seam is one route family per Fastify plugin, which is the framework’s own unit. Publishing moved to routes/publish.ts when the budget refused the next thing added here, and webhook health and delivery replay to routes/deliveries.ts when naming a trusted proxy needed room; the rest follow the same way. The byte parser went to routes/files.ts, encapsulated with the one route that takes bytes.',
   },
   'packages/server-core/src/use-cases.ts': {
     lines: 620,

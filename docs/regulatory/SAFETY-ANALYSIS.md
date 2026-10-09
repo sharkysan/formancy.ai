@@ -595,6 +595,12 @@ more than one replica every limit counts a fraction of the traffic and permits
 a multiple of what it says. Login is limited to 10 attempts per IP per minute
 and submission to 30, both counting attempts rather than successes — but a
 distributed attacker with many addresses is not meaningfully slowed by either.
+The address counted is the socket's unless `FORMANCY_TRUST_PROXY` names a proxy
+(D14), and anything at a trusted address can write whichever client address it
+likes — so trusting an address the operator does not control hands that
+attacker as many addresses as they care to type. A compose network's range is
+such an address: it holds the gateway Docker forwards published-port
+connections from.
 
 ### C2. A submission is read by someone not entitled to it
 
@@ -1339,6 +1345,57 @@ parsers left in place beside the catch-all they fail the same way.
 that sends an empty file with no `Content-Type` at all is still answered `no_body` — Fastify
 reads a body with neither a type nor a length as absent — which the supplied uploader never
 does, since it always names a type.
+
+### D14. A respondent is refused for submissions that were not theirs
+
+*How it arises:* every limit on the public plane — a submission, a draft's write and read, a
+challenge, a file offer — counts the client's network address, and the deployment view puts a
+reverse proxy in front of the server. Behind one, every request arrives from the proxy's
+address, so a server that believes only the socket gives everybody one budget: thirty
+submissions a minute between all respondents, and the next one is answered `429` for traffic
+that was not theirs. It shipped that way until 2026-10-09: the server constructed Fastify
+trusting no proxy, and had no setting to change that.
+
+*Severity:* the form cannot be submitted, by anyone behind that proxy, until the minute is
+out. Loud to the person refused and silent to the operator, because the server writes no
+request log (C3). Nothing is stored wrongly.
+
+*Constraint:* `FORMANCY_TRUST_PROXY` names the proxies, as addresses and CIDR ranges, whose
+`X-Forwarded-For` the server then believes, so each respondent is counted by the address the
+proxy saw. `packages/server/src/trust-proxy.ts` reads it at startup and refuses anything that
+is not addresses and ranges — a hop count too, which Fastify ignores; `true`, which believes
+anybody; and names such as `uniquelocal` and netmasks, which spell a range nobody reading
+the setting can see — so a value the server cannot read stops it, rather than starting one
+that counts the wrong client ([0156](../decisions/0156-a-proxy-is-trusted-by-its-address.md)).
+`trust-proxy.test.ts` holds those refusals and checks that Fastify still ignores a hop count.
+`rate-limit-client.test.ts` drives the submission route through `createApp`: two
+respondents behind a named proxy are counted apart and each still meets the limit, with
+nothing named they share one budget, and a client that connects directly or writes its own
+entries before the proxy's is counted by an address it did not choose.
+
+The self-hosting guide tells an operator to name the proxy's own address, pinned, and to
+stop publishing the server's port behind it, and **not** to name the compose network's
+range. The range holds the network's gateway, and
+Docker hands connections to a published port over from the gateway: measured on 2026-10-09
+with Docker 29.8 on Linux, from the machine itself and from containers on other networks,
+and with the range named, 31 submissions from the machine writing different addresses were
+all admitted. `rate-limit-client.test.ts` holds the half that is Fastify's — a client at the
+gateway is believed when a named range holds it and counted by the gateway when only the
+proxy is named. The half that is Docker's is a measurement, not a gate: it needs Docker's
+networking, and Docker Desktop and rootless Docker, which were not measured, may answer
+differently.
+
+*Residual:* **unset is still the default**, because trusting nothing is the only safe default,
+so a deployment behind a proxy that does not set it has this failure and nothing detects it.
+Set too wide — the network's range is the easy way to do it — it turns into C1's residual for
+anything that arrives from the gateway. A proxy on the host itself arrives from the gateway,
+so naming it leaves every process on that machine able to choose its address; the guide says
+so. The limits are still counted per process. Respondents who really share one address — an
+office, a school, a phone network behind carrier-grade NAT — still share one budget, which a
+key made of an address cannot separate. And a trusted proxy is believed about
+`X-Forwarded-Host` and `X-Forwarded-Proto` too; no route reads either (checked 2026-10-09),
+and the first that does would take a client's word wherever the proxy passes those headers
+on unset, as nginx 1.27 did when measured — `trust-proxy.test.ts` checks that Fastify still believes them.
 
 ---
 

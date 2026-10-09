@@ -89,8 +89,125 @@ wrong database — a confusing ten minutes. The compose file maps 5439 instead.
 | `FORMANCY_CLAMD_HOST` | no | A ClamAV daemon asked about every upload before its bytes are kept. Unset means nothing is scanned; set, a file is refused when clamd finds something **or cannot be reached** — see [Files](/docs/concepts/files/#scanning-what-is-uploaded). |
 | `FORMANCY_CLAMD_PORT` / `..._MAX_BYTES` | no | clamd's port, 3310 by default, and its `StreamMaxLength`, 100 MiB by default. A larger file is refused before it is sent. |
 | `FORMANCY_CHALLENGE_SECRET` | no | Turns the proof-of-work challenge on for anonymous submissions; ≥ 32 characters. Unset means public forms are defended by the rate limits, the origin allowlist and the body cap alone. Separate from `FORMANCY_AUTH_SECRET` so that rotating one does not cost everybody their session. |
+| `FORMANCY_TRUST_PROXY` | behind a proxy | The reverse proxies whose `X-Forwarded-For` names the client: an address, or a comma-separated list of addresses and CIDR ranges. Unset trusts none, so behind a proxy every respondent shares one rate-limit budget. Name the proxy's own address, not the compose network's range: the range holds the gateway Docker forwards published ports from — see [behind a reverse proxy](#behind-a-reverse-proxy). |
 | `FORMANCY_WEBHOOK_ALLOW_HTTP` / `..._ALLOW_PRIVATE` | no | Opt out of the webhook SSRF guard, per deployment and never per form. `ALLOW_PRIVATE` gives it up entirely. |
 | `PORT` / `HOST` | no | Defaults `4380` / `0.0.0.0` |
+
+## Behind a reverse proxy
+
+Put the server behind one for TLS, as the
+[deployment view](https://github.com/sharkysan/formancy.ai/blob/main/docs/architecture/07-deployment-view.md)
+draws it — and then tell the server it is there. Every limit on the public plane counts
+the client's address, and behind a proxy every request arrives from the proxy's. Until the
+server believes the `X-Forwarded-For` header the proxy adds, all your respondents share one
+budget, and the thirty-first submission in a minute is refused whoever sends it.
+
+```bash
+FORMANCY_TRUST_PROXY=172.30.0.10                    # the proxy's address
+FORMANCY_TRUST_PROXY=172.30.0.10,198.51.100.0/24    # several proxies, or a range of them
+```
+
+The proxy has to add the header — in nginx,
+`proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;` — and every proxy in the
+chain is named: a CDN in front of nginx is two.
+
+### Name the proxy, and nothing around it
+
+**Name only proxies you run.** Anything at a trusted address can write whatever client
+address it likes into `X-Forwarded-For`, so trusting an address somebody else can send from
+lets them choose the address their limit counts — a fresh one per request, which is no
+limit. That is why `true` is refused, and a range of every address with it. A client that
+reaches the server from an address you have not named is counted by that address, whatever
+it writes.
+
+In a Docker deployment the address somebody else can send from is the one you would least
+suspect. **The compose network's range holds its gateway, and Docker hands connections over
+from the gateway.** Measured on 2026-10-09 with Docker 29.8 on Linux: a connection to the
+published port from the machine itself — over loopback or over the machine's network address
+— reached the server from the network's gateway, and so did one from a container on any
+other Docker network. With the network's range named, 31 submissions from the machine,
+each writing a different `X-Forwarded-For`, were all admitted, where the thirty-first should
+have been refused. Under Docker Desktop and rootless Docker, connections from other machines
+may arrive from the gateway too — not measured here, so assume they do.
+
+So name the proxy's own address, make that address stay put, and stop publishing the
+server's port. Which address that is depends on where the proxy runs.
+
+**A proxy in the same compose project.** Give the network a subnet and the proxy an address
+in it, and take the server's port away: the proxy reaches the server at `server:4380`, so a
+published port is only a way around it. A `compose.override.yaml` beside `compose.yaml` is
+read without being asked; with the published file, name both
+(`-f compose.published.yaml -f compose.override.yaml`).
+
+```yaml
+services:
+  server:
+    ports: !reset []              # reached through the proxy and nothing else
+  proxy:
+    image: nginx:1.27-alpine      # its configuration and certificates as usual
+    ports: ["443:443"]
+    networks:
+      default:
+        ipv4_address: 172.30.0.10
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24   # any range no other network on the machine uses
+```
+
+Then `FORMANCY_TRUST_PROXY=172.30.0.10` in `.env`, and `docker compose down` before
+`docker compose up -d`, because a network takes a subnet only when it is created. Without
+`ipv4_address` the proxy has whichever address is free when it starts, which is why it is
+written down. Measured the same day, with Compose 5.5 and nginx 1.27: `127.0.0.1:4380`
+refused the connection; a client reaching the server directly
+— from the machine at the container's address, or from another container on the network —
+was counted by the address it arrived from, whatever it wrote; two clients behind the proxy
+were counted apart, and the one that sent 31 was refused at the thirty-first; and the proxy
+came back from being recreated at the same address.
+
+**A proxy on the machine itself** — nginx or Caddy installed on the host, forwarding to
+`127.0.0.1:4380`. Its connections arrive from the gateway, so the gateway is the address to
+name, and naming it trusts everything else that arrives from there. Publish the port on
+loopback alone, as the compose files already do for Postgres — `ports: !override
+["127.0.0.1:4380:4380"]` in the override — pin the subnet as above, and name the gateway,
+which is the subnet's first address: `172.30.0.1` there. Measured: with the port on
+loopback, a container on another network could no longer connect to it. What remains is
+that **every process on that machine can choose the address it is counted by** — measured
+too, 31 from loopback with the gateway named, all admitted. That is the price of this
+arrangement, and a proxy inside the compose project does not pay it.
+
+### What the server refuses
+
+Addresses and CIDR ranges are all it reads; anything else stops it at startup with a
+sentence saying what to write. Three of the refusals are things Fastify, which the server is
+built on, would accept:
+
+- **A hop count.** Fastify takes one and ignores it, because a count cannot tell the proxy
+  from a client that connects directly — and a setting that reads as configured and does
+  nothing is worse than none.
+- **`true`**, which believes anybody.
+- **A name for a range** — `loopback`, `linklocal`, `uniquelocal` — **or a netmask** where a
+  prefix length goes. A name is a range nobody reading the setting can see, and
+  `uniquelocal` is every private address — on Docker's default address pools, every Docker
+  network's gateway with it.
+
+[0156](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0156-a-proxy-is-trusted-by-its-address.md)
+has the reasoning.
+
+### What this does not change
+
+- The limits are still counted **per process**, so behind more than one replica each counts
+  only its share of the traffic.
+- People who really do share one address — an office, a school, a phone network behind
+  carrier-grade NAT — share one budget, which no setting here can separate.
+- **A trusted proxy is believed about more than the client.** Fastify also takes
+  `X-Forwarded-Host` and `X-Forwarded-Proto` from a hop it trusts, as `request.host` and
+  `request.protocol`, and a proxy that does not set them passes on what the client wrote —
+  nginx configured as above does, measured. No route reads either today (checked
+  2026-10-09): only the rate limits read the client's address. But the first route that
+  builds a link or decides whether a request came over HTTPS from them would take a
+  client's word for it, unless the proxy sets both headers itself.
 
 ## Two planes
 
