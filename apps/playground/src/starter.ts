@@ -494,7 +494,8 @@ export const STARTER_SCHEMA = {
       // A rule on a field in a repeater row, as the builder's condition editor writes
       // it: the CEL compiled from the `editor` metadata beside it. It runs once per
       // row, with `item` bound to that row, so a large amount asks for a note in
-      // that recipient's row and no other. Open the Rules tab to read it in words.
+      // that recipient's row and no other. Open the Rules tab to read it in words, and row by
+      // row what it does now.
       {
         target: 'recipients[].note',
         kind: 'required',

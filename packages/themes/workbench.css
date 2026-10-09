@@ -791,6 +791,24 @@ kbd {
   color: var(--wb-ink);
 }
 
+/* A rule in a repeater row has a verdict per row, each under its row's name, and a
+   preview with no rows yet says so rather than showing nothing. */
+[data-formancy-part='rules-overview-rows'] {
+  display: grid;
+  gap: 0.25rem;
+}
+
+[data-formancy-part='rules-overview-row'] {
+  font-weight: 600;
+  color: var(--wb-ink);
+}
+
+[data-formancy-part='rules-overview-rows-none'] {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  color: var(--wb-muted);
+}
+
 [data-formancy-part='logic-list'] {
   list-style: none;
   margin: 0 0 0.5rem;

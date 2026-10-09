@@ -107,4 +107,7 @@ export const LOGIC_MESSAGES = {
   'overview.now.skip.holds': 'Skipped now.',
   'overview.now.skip.fails': 'Not skipped now.',
   'overview.now.skip.undecided': 'Not skipped now, because the rule cannot be decided.',
+  /** A rule in a repeater row is decided once per row; this names the row. */
+  'overview.row': 'Row {number}',
+  'overview.rows.none': 'No rows in the preview yet, so there is nothing to decide.',
 } as const satisfies Record<string, Message>

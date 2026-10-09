@@ -44,14 +44,28 @@ describe('the rules tab', () => {
     expect(within(canton).getByText('Shown now.')).toBeTruthy()
   })
 
-  test('says a rule in a repeater row in words, and which row it reads', async () => {
-    // The starter's row rule was written by the condition editor, so it has words; it
-    // has no verdict, because it has one per row (0128, 0129).
+  test('says a rule in a repeater row in words, and row by row what it does now', async () => {
+    // The starter's row rule was written by the condition editor, so it has words, and a
+    // verdict for each row the preview holds (0129, 0147). The form opens
+    // with one recipient and no amount; a large amount in that row asks for a note there.
     const user = userEvent.setup()
     render(<App />)
     await user.click(screen.getByRole('button', { name: 'Rules' }))
 
     const overview = screen.getByRole('region', { name: 'Every rule in this form' })
-    expect(within(overview).getByText(/Amount in this row is at least 1000/)).toBeTruthy()
+    const note = within(overview).getByText('Amount in this row is at least 1000').closest('li')!
+    const rows = () =>
+      [...note.querySelectorAll('[data-formancy-part="rules-overview-rows"] [data-formancy-part="rules-overview-now"] > p')].map(
+        (line) => line.textContent,
+      )
+    expect(rows()).toEqual(['Row 1 Not required now.'])
+
+    // The React preview's first recipient; the Angular one's comes after it.
+    const react = screen.getByRole('region', { name: 'React' })
+    const [amount] = within(react).getAllByRole('spinbutton', { name: /Amount|CHF/ })
+    await user.type(amount!, '1200')
+
+    expect(rows()).toEqual(['Row 1 Required now.'])
+    expect(within(note).getByText('Amount in this row is at least 1000: yes')).toBeTruthy()
   })
 })

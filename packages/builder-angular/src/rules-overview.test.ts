@@ -83,3 +83,70 @@ describe('the rules overview', () => {
     ).toBeTruthy()
   })
 })
+
+describe('a rule in a repeater row', () => {
+  /**
+   * One verdict per row, as in the React overview: such a rule had none, since
+   * evaluated against the form as a whole it reads an `item` that is not there.
+   */
+  const rowForm = {
+    specVersion: '4',
+    id: 'gifts',
+    title: 'Gifts',
+    model: {
+      fields: [
+        {
+          key: 'recipients',
+          type: 'repeater',
+          label: 'Recipients',
+          fields: [
+            { key: 'amount', type: 'number', label: 'Amount' },
+            { key: 'note', type: 'text', label: 'Note' },
+          ],
+        },
+      ],
+    },
+    logic: {
+      rules: [
+        {
+          target: 'recipients[].note',
+          kind: 'required',
+          cel: 'item.amount != null && item.amount >= 1000.0',
+          editor: {
+            join: 'all',
+            conditions: [
+              { field: 'recipients[].amount', operator: 'isAtLeast', value: 1000, answer: 'number' },
+            ],
+          },
+        },
+      ],
+    },
+  } as FormSchema
+
+  /** Each row's line, its label and effect, with Angular's template whitespace folded. */
+  const rowsSaid = (): string[] =>
+    [
+      ...document.querySelectorAll(
+        '[data-formancy-part="rules-overview-rows"] [data-formancy-part="rules-overview-now"] > p',
+      ),
+    ].map((line) => (line.textContent ?? '').replace(/\s+/g, ' ').trim())
+
+  test('says, row by row, what it does now and why', async () => {
+    await mount({
+      session: createBuilderSession(rowForm),
+      answers: { recipients: [{ amount: 50 }, { amount: 1200 }] },
+      capabilities: clock,
+    })
+
+    expect(rowsSaid()).toEqual(['Row 1 Not required now.', 'Row 2 Required now.'])
+    expect(screen.getByText('Amount in this row is at least 1000: no — it is 50')).toBeTruthy()
+    expect(screen.getByText('Amount in this row is at least 1000: yes')).toBeTruthy()
+  })
+
+  test('and with no rows in the preview, says there is nothing to decide', async () => {
+    await mount({ session: createBuilderSession(rowForm), answers: {}, capabilities: clock })
+
+    expect(rowsSaid()).toEqual([])
+    expect(screen.getByText('No rows in the preview yet, so there is nothing to decide.')).toBeTruthy()
+  })
+})
