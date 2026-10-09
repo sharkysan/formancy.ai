@@ -4,6 +4,13 @@ import { defineConfig } from 'vitest/config'
 import { RENDER_TIMEOUT_MS, coverage } from '../../vitest.coverage'
 
 export default defineConfig({
+  resolve: {
+    // The Material entry imports the renderer by its package name, as a consumer does.
+    // In these tests that name is this source, or the registry token Material provides
+    // and the form reading it would be two different objects -- one from dist, one from
+    // here -- and nothing Material drew would ever be asked for.
+    alias: { '@formancy/angular': fileURLToPath(new URL('./src/index.ts', import.meta.url)) },
+  },
   plugins: [
     angular({
       // Absolute, because the plugin otherwise guesses tsconfig.spec.json
@@ -30,7 +37,7 @@ export default defineConfig({
      * performance gate in `pnpm bench`, not by this number.
      */
     testTimeout: RENDER_TIMEOUT_MS,
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.ts', 'material/src/**/*.test.ts'],
     environment: 'jsdom',
     passWithNoTests: true,
     setupFiles: ['src/test-setup.ts'],

@@ -72,7 +72,7 @@ What it does **not** do, and must not be assumed to do:
 | Runtime (engine, spec, expressions, builder-core) | Any ECMAScript 2023 environment. **No DOM and no Node APIs are used** ([0008](../decisions/0008-layered-packages.md)). `builder-core` additionally uses the ECMA-402 `Intl.PluralRules` and `Intl.ListFormat` for the builder's own words ([0114](../decisions/0114-the-builder-speaks-the-authors-language.md)). Every current browser and the official Node builds carry the locale data; a runtime without data for the builder's language — Node built with `small-icu` — words counts and joins lists in English, and says nothing |
 | Runtime (server) | Node.js `>=22.12.0`; developed and tested against Node 22.12 |
 | Renderer (React) | React `^19.0.0` (peer dependency) |
-| Renderer (Angular) | `@angular/core` `^22.0.0` (peer dependency), zoneless change detection. **Under a strict `style-src` Content Security Policy this package needs Angular's `ngCspNonce`**: it ships one component stylesheet, `:host { display: contents }`, which takes the recursing layout component's host element out of the box tree so a consumer's grid sees the same children it sees in React ([0073](../decisions/0073-a-host-element-is-not-a-layout.md)). Without it a table layout collapses to one column |
+| Renderer (Angular) | `@angular/core` `^22.0.0` (peer dependency), zoneless change detection. **Under a strict `style-src` Content Security Policy this package needs Angular's `ngCspNonce`**: it ships one component stylesheet, `:host { display: contents }`, which takes the recursing layout component's host element out of the box tree so a consumer's grid sees the same children it sees in React ([0073](../decisions/0073-a-host-element-is-not-a-layout.md)). Without it a table layout collapses to one column. `@formancy/angular/material` additionally needs `@angular/material` and `@angular/cdk` `^22.0.0` — optional peers, tested against 22.1.7 — and a Material theme of the application's choosing ([0132](../decisions/0132-material-draws-what-it-has-an-equivalent-for.md)) |
 | Database (server only) | PostgreSQL 17 or 18 |
 | Deployment (server only) | Two compose files are supplied: `compose.yaml` builds from a checkout, `compose.published.yaml` runs the signed published image and requires `FORMANCY_VERSION` to be pinned, because no `latest` tag is published. Every variable `.env.example` documents is passed through by both, checked by `packages/server/src/compose.test.ts` |
 | Pictures on options | A host with a strict Content Security Policy needs `img-src` to allow `data:` for pictures a document carries, and the hosts it names for the others; without it the option still works and its picture does not load ([0126](../decisions/0126-an-option-may-carry-a-picture.md)) |
@@ -100,7 +100,7 @@ not separately assessing `@formancy/spec`.
 | `@formancy/builder-angular` | `tslib ^2.8.0` (Angular is a peer) |
 | `@formancy/conformance` | none |
 | `@formancy/react` | `uqr ^0.1.3` (React is a peer) |
-| `@formancy/angular` | `tslib ^2.8.0`, `uqr ^0.1.3` (Angular is a peer) |
+| `@formancy/angular` | `tslib ^2.8.0`, `uqr ^0.1.3` (Angular Material and its CDK are optional peers, for `/material` only; Angular is a peer) |
 | `@formancy/server-core` | `@noble/hashes ^2.4.0`, `recheck ^4.5.0` |
 | `@formancy/server` | `@fastify/rate-limit ^11.2.0`, `@node-rs/argon2 ^2.2.1`, `drizzle-orm ^0.45.2`, `fastify ^5.12.5`, `jose ^6.2.12`, `postgres ^3.4.9`, `undici ^8.10.2` |
 | `@formancy/mcp` | `@modelcontextprotocol/sdk ^1.30.1`, `zod ^4.6.5` |

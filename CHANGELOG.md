@@ -10,6 +10,19 @@ later.
 
 ## Unreleased
 
+**Angular Material, as a registry: `@formancy/angular/material`.** `provideFormancyMaterial()`
+draws text, paragraph, number, date and time in `<mat-form-field>`, a list as the platform's
+`<select>` under `matNativeControl`, and ticks and radios as Material's. Everything Material
+has no equivalent for — a mask, a typeahead, a rating, a picture on an option, a file — is
+drawn by the default control, so nothing disappears. It is held to the same conformance
+fixtures as the default controls, axe included. `@angular/material` and `@angular/cdk` are
+optional peers, needed only by an application importing `/material`
+([0132](docs/decisions/0132-material-draws-what-it-has-an-equivalent-for.md)).
+
+**Fixed: an error summary's link did nothing for a control whose id is on its host.** Both
+renderers' `focusControl` now moves focus to the first control inside an element that cannot
+take focus — which a design system's checkbox, Material's included, puts the engine's id on.
+
 **An upload can be scanned before it is kept.** Set `FORMANCY_CLAMD_HOST` and every upload's
 bytes go to a ClamAV daemon before they are stored: clean is kept, a finding is refused with
 its name — which the file field shows as the reason it was not attached — and a scanner that

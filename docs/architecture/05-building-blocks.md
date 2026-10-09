@@ -124,6 +124,7 @@ Deliberately small, and structurally parallel:
 | Component resolution | `context.tsx` | `registry.ts`, `provide.ts` |
 | Default controls | `form.tsx` | `fields.ts` |
 | Error summary | `error-summary.tsx` | `error-summary.ts` |
+| A design system's registry | — | `material/src/` — `@formancy/angular/material`, Angular Material for the types it has an equivalent for, the default control for the rest ([0132](../decisions/0132-material-draws-what-it-has-an-equivalent-for.md)) |
 | File uploads, drawn | `fields/file-field.tsx` | `fields/file-field.ts`, `fields/file-thumbnail.ts` |
 | Conformance driver | `conformance-driver.tsx` | `conformance-driver.ts` |
 
