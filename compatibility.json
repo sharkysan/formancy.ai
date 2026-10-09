@@ -1,0 +1,13 @@
+{
+  "//": [
+    "The versions formancy is tested with, and the one place they are written down.",
+    "",
+    "CI reads each list as a job matrix, so every entry is a run; apps/docs/src/compatibility.test.ts",
+    "requires the lowest of each to be the lower bound of the range the packages declare, and the",
+    "compatibility page to state them. A range that widens without a run at its new bound fails",
+    "that test rather than becoming a claim (0134)."
+  ],
+  "react": ["19.0.0", "^19"],
+  "angular": ["22.0.0", "^22"],
+  "node": ["22.12.0", "24"]
+}

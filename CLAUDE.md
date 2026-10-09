@@ -263,7 +263,9 @@ exactly that reason.
 ## Checks before pushing
 
 CI runs `pnpm build`, `pnpm build:web`, `pnpm typecheck`, `pnpm test:coverage`,
-`pnpm check:pkg`, `pnpm test:e2e:install` and `pnpm test:browser`. Run the ones
+`pnpm check:pkg`, `pnpm test:e2e:install`, `pnpm test:e2e:angular` and `pnpm test:browser` —
+the two install tests once per React and Angular version in `compatibility.json`, and the
+engine and server once per Node version there. Run the ones
 for the packages you changed.
 
 `build:web` is not redundant with `build`: it composes the landing page, the

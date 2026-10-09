@@ -28,14 +28,20 @@
  * That is a much smaller gap than the one it closes, and it is in the debt table
  * rather than implied.
  */
-import { execFileSync } from 'node:child_process'
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, join, resolve } from 'node:path'
+import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { pack, publishable, run } from './pack.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
-const repo = resolve(here, '..')
+
+/**
+ * The React a consumer has. CI runs this once for the lowest React the renderers'
+ * peer range admits and once for the newest (0134); a run on one machine takes the
+ * newest, which is what an `npm install` today resolves.
+ */
+const REACT = process.env.FORMANCY_REACT ?? '^19.3.0'
 
 /**
  * Packages a consumer imports, and why the others are not here.
@@ -57,42 +63,6 @@ const NOT_IMPORTED = {
   '@formancy/mcp': 'an application; its tools are driven by its own suite',
 }
 
-/** Every publishable package, as a name and the directory to pack from. */
-function publishable() {
-  const root = join(repo, 'packages')
-  return readdirSync(root, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .flatMap((entry) => {
-      const file = join(root, entry.name, 'package.json')
-      let manifest
-      try {
-        manifest = JSON.parse(readFileSync(file, 'utf8'))
-      } catch {
-        return []
-      }
-      if (manifest.private === true || manifest.name === undefined) return []
-      return [{ name: manifest.name, dir: join(root, entry.name) }]
-    })
-}
-
-/**
- * Run a Node tool, on either platform.
- *
- * `pnpm`, `npm` and `npx` are `.cmd` shims on Windows, so the bare name is
- * `spawnSync ENOENT` there — and Node 20 and later refuse to spawn a `.cmd` at
- * all without a shell, which is `EINVAL`. Both were met, in that order. So
- * Windows gets a shell with every argument quoted, and everywhere else gets the
- * executable directly, which is the safer of the two and is what CI runs.
- */
-const WINDOWS = process.platform === 'win32'
-
-const run = (command, args, cwd) => {
-  const options = { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }
-  if (!WINDOWS) return execFileSync(command, args, options)
-  const quoted = args.map((arg) => (/[\s"]/.test(arg) ? `"${arg.replaceAll('"', '\\"')}"` : arg))
-  return execFileSync(`${command}.cmd`, quoted, { ...options, shell: true })
-}
-
 const work = mkdtempSync(join(tmpdir(), 'formancy-install-'))
 let failed = false
 
@@ -102,22 +72,7 @@ try {
     throw new Error(`only found ${packages.length} publishable packages; the walk is wrong`)
   }
 
-  /*
-   * Pack them.
-   *
-   * `pnpm pack` honours `publishConfig.directory`, so an ng-packagr package
-   * packs its `dist` and everything else packs its root — the same tarball a
-   * release would push.
-   */
-  const tarballs = new Map()
-  for (const { name, dir } of packages) {
-    const out = run('pnpm', ['pack', '--pack-destination', work], dir)
-    const file = out.trim().split('\n').at(-1)
-    if (file === undefined || !file.endsWith('.tgz')) {
-      throw new Error(`pnpm pack said something unexpected for ${name}: ${out}`)
-    }
-    tarballs.set(name, file.startsWith(work) ? file : join(work, file))
-  }
+  const tarballs = pack(packages, work)
   console.log(`packed ${String(tarballs.size)} packages`)
 
   // The fixture is copied rather than generated: see the note in `consume.ts`.
@@ -138,14 +93,14 @@ try {
           // A consumer's own peers. The renderers declare React as a peer, and
           // installing without it is a different test — one about peer warnings
           // rather than about whether these packages work.
-          react: '^19.3.0',
-          'react-dom': '^19.3.0',
+          react: REACT,
+          'react-dom': REACT,
         },
         devDependencies: {
           // What any React consumer installs. Leaving these out made the first
           // run fail on `@types/react`, which is a finding about the fixture.
-          '@types/react': '^19.3.0',
-          '@types/react-dom': '^19.3.0',
+          '@types/react': REACT,
+          '@types/react-dom': REACT,
           // The TypeScript the workspace pins. A consumer on a different major
           // is its own question, and Angular fixes this one for everybody.
           typescript: '~6.0.3',
@@ -196,7 +151,7 @@ try {
          * on what npm happened to install. Named by file, there is nothing left
          * to differ.
          */
-        include: ['consume.ts', 'bundled.tsx'],
+        include: ['consume.ts', 'bundled.tsx', 'render.tsx'],
       },
       null,
       2,
@@ -215,10 +170,13 @@ try {
   console.log('running it under Node…')
   run('npx', ['tsx', 'consume.ts'], project)
 
+  console.log('rendering a form with the React it installed…')
+  run('npx', ['tsx', 'render.tsx'], project)
+
   console.log('and bundling it…')
   run('npx', ['vite', 'build', '--logLevel', 'error'], project)
 
-  console.log('\ninstall test passed: the packed tarballs work in a project that is not this one')
+  console.log('\ninstall test passed: the packed tarballs work in a project that is not this one, with React ' + REACT)
 } catch (error) {
   failed = true
   console.error('\ninstall test FAILED')
