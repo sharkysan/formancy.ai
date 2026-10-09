@@ -28,6 +28,7 @@
   --wb-derived: #6b4fbb;
   --wb-invalid: #a81d1d;
   --wb-ok: #1d7a3a;
+  --wb-caution: #8a5300;
 
   --wb-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
   --wb-mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Code', Consolas, monospace;
@@ -296,7 +297,10 @@
 [data-formancy-part='move-palette'],
 [data-formancy-part='layout-add'],
 [data-formancy-part='layout-add-where'],
-[data-formancy-part='layout-move'] {
+[data-formancy-part='layout-add-which'],
+[data-formancy-part='layout-wrap'],
+[data-formancy-part='layout-move'],
+[data-formancy-part='save-block'] {
   position: fixed;
   inset-block-start: 50%;
   inset-inline-start: 50%;
@@ -317,6 +321,8 @@
 [data-formancy-part='move-palette'] ul,
 [data-formancy-part='layout-add'] ul,
 [data-formancy-part='layout-add-where'] ul,
+[data-formancy-part='layout-add-which'] ul,
+[data-formancy-part='layout-wrap'] ul,
 [data-formancy-part='layout-move'] ul {
   list-style: none;
   margin: 0 0 0.5rem;
@@ -330,6 +336,8 @@
 [data-formancy-part='move-palette'] li,
 [data-formancy-part='layout-add'] li,
 [data-formancy-part='layout-add-where'] li,
+[data-formancy-part='layout-add-which'] li,
+[data-formancy-part='layout-wrap'] li,
 [data-formancy-part='layout-move'] li {
   display: grid;
   gap: 0.125rem;
@@ -342,6 +350,8 @@
 [data-formancy-part='move-palette'] li:hover,
 [data-formancy-part='layout-add'] li:hover,
 [data-formancy-part='layout-add-where'] li:hover,
+[data-formancy-part='layout-add-which'] li:hover,
+[data-formancy-part='layout-wrap'] li:hover,
 [data-formancy-part='layout-move'] li:hover {
   background: var(--wb-panel);
 }
@@ -351,6 +361,8 @@
 [data-formancy-part='move-palette'] li button,
 [data-formancy-part='layout-add'] li button,
 [data-formancy-part='layout-add-where'] li button,
+[data-formancy-part='layout-add-which'] li button,
+[data-formancy-part='layout-wrap'] li button,
 [data-formancy-part='layout-move'] li button {
   justify-self: start;
   border: none;
@@ -1153,4 +1165,538 @@ kbd {
 [data-formancy-part='logic-comparison'] > button:hover {
   color: var(--wb-ink);
   border-color: var(--wb-signal);
+}
+
+/* ------------------------------------------------- the panes that came later
+ *
+ * Describing a change in words, the scenarios, blocks, a datagrid's columns, a group
+ * inside a condition and the translations all arrived after this file was written, and
+ * nothing dressed them: in the playground the prompt was a textarea at the browser's
+ * default size, in its default monospace, pale grey on a dark bench. `apps/docs/src/
+ * workbench.test.ts` now fails for any part either builder draws that no rule here
+ * selects.
+ */
+
+/* Their buttons and fields, as the inspector's own. Under :where(), so a part below
+   that says more about one of its buttons keeps the last word. */
+:where(
+    [data-formancy-part='prompt-pane'],
+    [data-formancy-part='scenario-pane'],
+    [data-formancy-part='columns-editor'],
+    [data-formancy-part='logic-group'],
+    [data-formancy-part='translations'],
+    [data-formancy-part='save-block'],
+    [data-formancy-part='layout-wrap'],
+    [data-formancy-part='layout-add-which']
+  )
+  button {
+  font: inherit;
+  font-size: 0.75rem;
+  color: var(--wb-ink);
+  background: var(--wb-surface);
+  border: 1px solid var(--wb-rule);
+  border-radius: 3px;
+  padding: 0.25rem 0.625rem;
+  cursor: pointer;
+}
+
+:where(
+    [data-formancy-part='prompt-pane'],
+    [data-formancy-part='scenario-pane'],
+    [data-formancy-part='columns-editor'],
+    [data-formancy-part='logic-group'],
+    [data-formancy-part='translations'],
+    [data-formancy-part='save-block']
+  )
+  button:hover:not(:disabled) {
+  border-color: var(--wb-signal);
+  color: var(--wb-signal);
+}
+
+:where(
+    [data-formancy-part='prompt-pane'],
+    [data-formancy-part='scenario-pane'],
+    [data-formancy-part='columns-editor'],
+    [data-formancy-part='logic-group'],
+    [data-formancy-part='translations'],
+    [data-formancy-part='save-block']
+  )
+  button:disabled {
+  color: var(--wb-muted);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+:where(
+    [data-formancy-part='prompt-pane'],
+    [data-formancy-part='columns-editor'],
+    [data-formancy-part='translations'],
+    [data-formancy-part='save-block']
+  )
+  :is(input:not([type='checkbox'], [type='radio']), select, textarea) {
+  font: inherit;
+  font-size: 0.8125rem;
+  color: var(--wb-ink);
+  background: var(--wb-surface);
+  border: 1px solid var(--wb-rule);
+  border-radius: 3px;
+  padding: 0.1875rem 0.375rem;
+  min-width: 0;
+}
+
+:where(
+    [data-formancy-part='prompt-pane'],
+    [data-formancy-part='scenario-pane'],
+    [data-formancy-part='columns-editor'],
+    [data-formancy-part='logic-group'],
+    [data-formancy-part='translations'],
+    [data-formancy-part='save-block']
+  )
+  :is(button, input, select, textarea):focus-visible {
+  outline: 2px solid var(--wb-signal);
+  outline-offset: 1px;
+}
+
+/* The one action each of these exists for, drawn as the primary action. */
+[data-formancy-part='prompt-pane'] > button,
+[data-formancy-part='prompt-review'] > button:first-of-type,
+[data-formancy-part='save-block'] > button:first-of-type {
+  font-weight: 600;
+  color: var(--wb-surface);
+  background: var(--wb-signal);
+  border-color: var(--wb-signal);
+}
+
+[data-formancy-part='prompt-pane'] > button:hover:not(:disabled),
+[data-formancy-part='prompt-review'] > button:first-of-type:hover,
+[data-formancy-part='save-block'] > button:first-of-type:hover {
+  color: var(--wb-surface);
+  filter: brightness(1.1);
+}
+
+[data-formancy-part='prompt-pane'] > button:disabled {
+  color: var(--wb-muted);
+  background: var(--wb-surface);
+  border-color: var(--wb-rule);
+}
+
+/* ------------------------------------------------- describing a change in words */
+
+[data-formancy-part='prompt-pane'] {
+  display: grid;
+  gap: 0.5rem;
+  margin-block-end: 0.75rem;
+  padding-block-end: 0.75rem;
+  border-block-end: 1px solid var(--wb-rule);
+}
+
+[data-formancy-part='prompt-pane'] > label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+/* Wide enough for a sentence and tall enough for three, in the bench's own type: the
+   browser's default was a few words wide and set in monospace. */
+[data-formancy-part='prompt-pane'] textarea {
+  inline-size: 100%;
+  min-block-size: 4.5rem;
+  padding: 0.375rem 0.5rem;
+  line-height: 1.45;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+[data-formancy-part='prompt-pane'] > button {
+  justify-self: start;
+}
+
+[data-formancy-part='prompt-status'] {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--wb-muted);
+}
+
+/* What the answer would change, held for a decision: a card rather than loose lines,
+   because this is the thing being decided on. */
+[data-formancy-part='prompt-review'] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: var(--wb-surface);
+  border: 1px solid var(--wb-rule);
+  border-radius: 4px;
+}
+
+[data-formancy-part='prompt-review'] h3 {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+/* Each change marked by what it costs the answers already collected — nothing, some,
+   or the submissions' meaning — on the side a line starts. */
+[data-formancy-part='prompt-changes'] {
+  flex-basis: 100%;
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.75rem;
+}
+
+[data-formancy-part='prompt-changes'] li {
+  padding-inline-start: 0.5rem;
+  border-inline-start: 2px solid var(--wb-ok);
+}
+
+[data-formancy-part='prompt-changes'] li[data-severity='lossy'] {
+  border-inline-start-color: var(--wb-caution);
+}
+
+[data-formancy-part='prompt-changes'] li[data-severity='breaking'] {
+  border-inline-start-color: var(--wb-invalid);
+}
+
+[data-formancy-part='prompt-changes'] code {
+  font-family: var(--wb-mono);
+  font-size: 0.6875rem;
+  color: var(--wb-derived);
+}
+
+[data-formancy-part='prompt-problems'] {
+  font-size: 0.75rem;
+  color: var(--wb-invalid);
+}
+
+[data-formancy-part='prompt-problems'] ul {
+  margin: 0;
+  padding-inline-start: 1rem;
+}
+
+[data-formancy-part='prompt-problems'] summary {
+  margin-block-start: 0.375rem;
+  color: var(--wb-muted);
+  cursor: pointer;
+}
+
+[data-formancy-part='prompt-problems'] pre {
+  max-block-size: 12rem;
+  overflow: auto;
+  margin: 0.375rem 0 0;
+  padding: 0.5rem;
+  font-family: var(--wb-mono);
+  font-size: 0.6875rem;
+  color: var(--wb-ink);
+  background: var(--wb-bench);
+  border-radius: 3px;
+}
+
+/* ---------------------------------------------------------------- scenarios */
+
+[data-formancy-part='scenario-pane'] {
+  display: grid;
+  gap: 0.5rem;
+  margin-block-start: 1rem;
+  padding-block-start: 0.75rem;
+  border-block-start: 2px solid var(--wb-rule);
+}
+
+[data-formancy-part='scenario-status'] {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+[data-formancy-part='scenario-empty'] {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--wb-muted);
+}
+
+/* A checklist rather than a bulleted list of headlines: each scenario a line, marked on
+   the side a line starts by whether it holds — by colour and by its failures written
+   under it, so the colour is never the only thing that says so. */
+[data-formancy-part='scenario-list'] {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8125rem;
+}
+
+[data-formancy-part='scenario-list'] > li {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-inline-start: 2px solid var(--wb-ok);
+}
+
+[data-formancy-part='scenario-list'] > li[data-passed='false'] {
+  border-inline-start-color: var(--wb-invalid);
+}
+
+[data-formancy-part='scenario-list'] > li > strong {
+  font-weight: 500;
+}
+
+[data-formancy-part='scenario-list'] > li[data-regressed='true'] > strong {
+  color: var(--wb-invalid);
+}
+
+[data-formancy-part='scenario-list'] ul {
+  margin: 0;
+  padding-inline-start: 1rem;
+  font-size: 0.75rem;
+  color: var(--wb-invalid);
+}
+
+[data-formancy-part='scenario-list'] button {
+  justify-self: start;
+  font-size: 0.6875rem;
+}
+
+/* ------------------------------------------------------------------ blocks */
+
+[data-formancy-part='palette-blocks'] {
+  margin-block-start: 0.5rem;
+  padding-block-start: 0.5rem;
+  border-block-start: 1px solid var(--wb-rule);
+}
+
+[data-formancy-part='palette-blocks'] h3 {
+  margin: 0 0 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--wb-muted);
+}
+
+/* Said rather than silently omitted: a palette shorter than the spec, and why. */
+[data-formancy-part='palette-locked'] {
+  margin-block-start: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--wb-muted);
+}
+
+[data-formancy-part='save-block'] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+[data-formancy-part='save-block'] label {
+  flex-basis: 100%;
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+/* -------------------------------------------------- a group inside a condition */
+
+[data-formancy-part='logic-group'] {
+  display: grid;
+  gap: 0.375rem;
+  margin: 0;
+  padding: 0.5rem;
+  border: 1px dashed var(--wb-rule);
+  border-radius: 4px;
+}
+
+[data-formancy-part='logic-group'] legend {
+  padding: 0 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--wb-muted);
+}
+
+[data-formancy-part='logic-group'] > button {
+  justify-self: start;
+  font-size: 0.6875rem;
+}
+
+[data-formancy-part='rules-overview-list'] {
+  display: grid;
+}
+
+[data-formancy-part='rules-overview-empty'] {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--wb-muted);
+}
+
+/* ------------------------------------------------- a layout node's properties */
+
+[data-formancy-part='layout-property-panel'] {
+  margin-block-start: 1rem;
+  padding-block-start: 0.75rem;
+  border-block-start: 2px solid var(--wb-rule);
+}
+
+/* ------------------------------------------------------- a datagrid's columns */
+
+/* The choices editor's shape, because it is the same act: a list of rows, each one
+   thing the field shows, and a way to add the next. */
+[data-formancy-part='columns-editor'] {
+  padding-block: 0.5rem;
+  border-block-start: 1px solid var(--wb-rule);
+}
+
+[data-formancy-part='columns-heading'] {
+  margin-block-end: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+[data-formancy-part='columns-list'] {
+  display: grid;
+  gap: 0.375rem;
+  margin: 0 0 0.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+[data-formancy-part='column-row'] {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  padding: 0.5rem;
+  background: var(--wb-surface);
+  border: 1px solid var(--wb-rule);
+  border-radius: 3px;
+}
+
+[data-formancy-part='column-row'] label {
+  font-size: 0.6875rem;
+  color: var(--wb-muted);
+  white-space: nowrap;
+}
+
+[data-formancy-part='column-row'] button {
+  grid-column: 1 / -1;
+  justify-self: end;
+  font-size: 0.6875rem;
+}
+
+[data-formancy-part='columns-empty'],
+[data-formancy-part='columns-all-named'] {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  color: var(--wb-muted);
+}
+
+/* -------------------------------------------------------------- translations */
+
+/* A table a translator reads down, with the source on the left and the language being
+   written on the right. Wide rather than narrow: the words are the work, and a column of
+   truncated questions is a column nobody can translate from. Moved here from the admin's
+   own stylesheet, which dressed this pane for the admin and for nobody else. */
+[data-formancy-part='translations'] {
+  display: grid;
+  gap: 1rem;
+}
+
+[data-formancy-part='translations-toolbar'] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.75rem;
+}
+
+[data-formancy-part='translations-toolbar'] label {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+}
+
+[data-formancy-part='translations-hint'] {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--wb-muted);
+}
+
+[data-formancy-part='translations-table'] {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+[data-formancy-part='translations-table'] :is(th, td) {
+  padding-block: 0.5rem;
+  padding-inline: 0 0.75rem;
+  text-align: start;
+  vertical-align: top;
+  font-weight: 400;
+  border-block-end: 1px solid var(--wb-rule);
+}
+
+[data-formancy-part='translations-table'] input {
+  inline-size: 100%;
+  box-sizing: border-box;
+}
+
+/* Marked rather than left to the fallback: a half-finished language that looks finished
+   in the preview is how one ships. */
+[data-formancy-part='translations-missing'] {
+  display: inline-block;
+  margin-block-start: 0.25rem;
+  font-size: 0.7rem;
+  color: var(--wb-caution);
+}
+
+[data-formancy-part='translations-orphaned'] {
+  padding: 0.75rem 1rem;
+  font-size: 0.8rem;
+  border: 1px dashed var(--wb-rule);
+  border-radius: 6px;
+}
+
+[data-formancy-part='translations-orphaned'] ul {
+  margin: 0.5rem 0 0;
+  padding-inline-start: 1.1rem;
+}
+
+/* The form as the chosen language renders it, on the sheet the canvas draws a form on. */
+[data-formancy-part='translations-preview'] {
+  padding: 1rem;
+  background: var(--wb-surface);
+  border: 1px solid var(--wb-rule);
+  border-radius: 6px;
+}
+
+[data-formancy-part='translations-report'],
+[data-formancy-part='translations-problem'] {
+  grid-column: 1 / -1;
+  padding: 0.75rem 1rem;
+  font-size: 0.8rem;
+  background: var(--wb-panel);
+  border: 1px solid var(--wb-rule);
+  border-radius: 6px;
+}
+
+[data-formancy-part='translations-report'] p {
+  margin: 0 0 0.35rem;
+}
+
+[data-formancy-part='translations-problem'] {
+  color: var(--wb-invalid);
+}
+
+@media (min-width: 70rem) {
+  [data-formancy-part='translations'] {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+    align-items: start;
+  }
+
+  [data-formancy-part='translations-toolbar'],
+  [data-formancy-part='translations-orphaned'],
+  [data-formancy-part='translations-hint'] {
+    grid-column: 1 / -1;
+  }
 }

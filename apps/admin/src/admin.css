@@ -36,6 +36,7 @@
   --wb-derived: var(--server);
   --wb-invalid: var(--invalid);
   --wb-ok: var(--ok);
+  --wb-caution: #f0b429;
 
   color-scheme: dark;
 }
@@ -810,101 +811,10 @@ body::before {
 
 /* ------------------------------------------------------------- translations */
 
-/* A table a translator reads down, with the source on the left and the language
-   being written on the right. Wide rather than narrow: the words are the work,
-   and a column of truncated questions is a column nobody can translate from. */
-[data-formancy-part='translations'] {
-  display: grid;
-  gap: 1rem;
-}
-
-[data-formancy-part='translations-toolbar'] {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: end;
-  gap: 0.75rem;
-}
-
-[data-formancy-part='translations-toolbar'] label {
-  display: grid;
-  gap: 0.25rem;
-  font-size: 0.75rem;
-}
-
-[data-formancy-part='translations-table'] {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-[data-formancy-part='translations-table'] :is(th, td) {
-  text-align: start;
-  vertical-align: top;
-  padding: 0.5rem 0.75rem 0.5rem 0;
-  border-block-end: 1px solid var(--wb-edge, #2a3346);
-  font-weight: 400;
-}
-
-[data-formancy-part='translations-table'] input {
-  inline-size: 100%;
-}
-
-/* Marked rather than left to the fallback: a half-finished language that looks
-   finished in the preview is how one ships. */
-[data-formancy-part='translations-missing'] {
-  display: inline-block;
-  margin-block-start: 0.25rem;
-  font-size: 0.7rem;
-  color: #f0b429;
-}
-
-[data-formancy-part='translations-orphaned'] {
-  padding: 0.75rem 1rem;
-  border: 1px dashed var(--wb-edge, #2a3346);
-  border-radius: 8px;
-  font-size: 0.8rem;
-}
-
-[data-formancy-part='translations-orphaned'] ul {
-  margin: 0.5rem 0 0;
-  padding-inline-start: 1.1rem;
-}
-
-/* The form as the chosen language renders it, beside the table rather than under
-   it where a translator would have to scroll away from what they are typing. */
+/* The pane is the workbench's. What is the admin's own is the preview: the form as the
+   chosen language renders it, on a white sheet, because the admin renders it in a light
+   theme. */
 [data-formancy-part='translations-preview'] {
-  padding: 1rem;
-  border: 1px solid var(--wb-edge, #2a3346);
-  border-radius: 8px;
   background: #fff;
   color: #1d2433;
-}
-
-@media (min-width: 70rem) {
-  [data-formancy-part='translations'] {
-    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
-    align-items: start;
-  }
-
-  [data-formancy-part='translations-toolbar'],
-  [data-formancy-part='translations-orphaned'],
-  [data-formancy-part='translations-hint'] {
-    grid-column: 1 / -1;
-  }
-}
-
-[data-formancy-part='translations-report'],
-[data-formancy-part='translations-problem'] {
-  grid-column: 1 / -1;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  background: #1c2434;
-  font-size: 0.8rem;
-}
-
-[data-formancy-part='translations-report'] p {
-  margin: 0 0 0.35rem;
-}
-
-[data-formancy-part='translations-problem'] {
-  color: #ff9b9b;
 }
