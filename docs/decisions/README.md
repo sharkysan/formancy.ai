@@ -229,3 +229,4 @@ listed under the sections they belong to above.
 | [0126](0126-an-option-may-carry-a-picture.md) | An option may carry a picture, shown only where it can be seen | accepted |
 | [0127](0127-a-condition-nests-one-level.md) | A condition nests one level, compares by the field's kind, and asks before it reads | accepted |
 | [0128](0128-a-form-says-why-a-field-is-hidden.md) | A form says, rule by rule, why a field is hidden now | accepted |
+| [0129](0129-a-row-rule-is-written-in-the-row.md) | A rule on a field in a repeater row is written in the row's scope | accepted |

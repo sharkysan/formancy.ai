@@ -85,7 +85,14 @@ function verdictOf(cel: string): 'true' | 'false' | 'errors' {
  * opened is `null`, not `{}`. Both are the whole point of the table: it is the
  * nullness that makes the obvious condition error.
  */
-const EMPTY_ANSWERS: Record<string, unknown> = { needsVisa: null, address: null, age: null }
+const EMPTY_ANSWERS: Record<string, unknown> = {
+  needsVisa: null,
+  address: null,
+  age: null,
+  // A fresh repeater row, as a rule in that row is given it: every key, null until
+  // answered. Not assumed — the last case below asks the engine.
+  item: { tags: null },
+}
 
 /**
  * Every leaf `dyn`, which is how the engine declares them.
@@ -96,7 +103,7 @@ const EMPTY_ANSWERS: Record<string, unknown> = { needsVisa: null, address: null,
  * would make `!needsVisa` type-check and evaluate, and the table would be
  * testing a form nobody can build.
  */
-const DECLARATIONS = { needsVisa: 'dyn', address: 'dyn', age: 'dyn' } as const
+const DECLARATIONS = { needsVisa: 'dyn', address: 'dyn', age: 'dyn', item: 'dyn' } as const
 
 /** The rows of the one table under the empty-answer heading. */
 function rows(): Array<{ cel: string; claim: string }> {
@@ -120,16 +127,19 @@ function rows(): Array<{ cel: string; claim: string }> {
 describe('what the empty-answer table in logic.md claims', () => {
   test('is a table at all, with every row the page shows', () => {
     // A guard on the guard. If the parse silently found nothing, every
-    // assertion below would be vacuous — and this one has seven rows because
-    // seven is what the prose argues with: four that error and three that work.
+    // assertion below would be vacuous — so every row the prose argues with is
+    // named: the shapes that error, then the ones that work.
     expect(rows().map(({ cel }) => cel)).toEqual([
       '!needsVisa',
       'address.country == "CH"',
       'address.country != null && address.country == "CH"',
       'age > 18.0',
+      '"gift" in item.tags',
+      'has(item.tags) && "gift" in item.tags',
       'needsVisa != true',
       'has(address.country) && address.country == "CH"',
       'age != null && age > 18.0',
+      'item.tags != null && "gift" in item.tags',
     ])
   })
 
@@ -162,5 +172,53 @@ describe('what the empty-answer table in logic.md claims', () => {
     expect(form.getFieldSnapshot(['notice']).visible).toBe(false)
     form.setValue(['address', 'country'], 'CH')
     expect(form.getFieldSnapshot(['notice']).visible).toBe(true)
+  })
+
+  test('and a fresh repeater row is what the table assumes, and the row guard answers', () => {
+    /*
+     * The row cases are evaluated against an assumed row — every key, null until
+     * answered — so the assumption is asked of the engine here. Through a
+     * `required` rule, because one that errors leaves its field optional: unlike
+     * `visible`, a `true` here cannot be a failure in disguise.
+     */
+    const rowForm = (cel: string) => {
+      const form = createFormEngine({
+        schema: {
+          specVersion: '4',
+          id: 'rows',
+          title: 'Rows',
+          model: {
+            fields: [
+              {
+                key: 'items',
+                type: 'repeater',
+                label: 'Items',
+                fields: [
+                  {
+                    key: 'tags',
+                    type: 'selectboxes',
+                    label: 'Tags',
+                    options: [{ value: 'gift', label: 'Gift' }],
+                  },
+                  { key: 'note', type: 'text', label: 'Note' },
+                ],
+              },
+            ],
+          },
+          logic: { rules: [{ target: 'items[].note', kind: 'required', cel }] },
+        } as unknown as FormSchema,
+        capabilities: { now: () => 0, today: () => '2026-10-02', random: () => 0.5 },
+      })
+      form.addRow(['items'])
+      return form
+    }
+    const required = (form: ReturnType<typeof rowForm>) => form.getFieldSnapshot(['items', 0, 'note']).required
+
+    expect(required(rowForm('has(item.tags) && item.tags == null'))).toBe(true)
+
+    const guarded = rowForm('item.tags != null && "gift" in item.tags')
+    expect(required(guarded)).toBe(false)
+    guarded.setValue(['items', 0, 'tags'], ['gift'])
+    expect(required(guarded)).toBe(true)
   })
 })

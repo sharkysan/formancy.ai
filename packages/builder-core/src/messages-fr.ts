@@ -275,6 +275,7 @@ export const BUILDER_MESSAGES_FR = {
   'logic.value.yes': 'Oui',
   'logic.value.no': 'Non',
   'logic.value.choose': 'Choisir une valeur',
+  'logic.field.inRow': '{field} dans cette ligne',
   'overview.heading': 'Toutes les règles de ce formulaire',
   'overview.empty':
     'Ce formulaire n’a aucune règle : chaque champ se comporte toujours de la même façon.',

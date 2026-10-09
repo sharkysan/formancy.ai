@@ -351,3 +351,56 @@ describe('the condition editor, rebuilt on one model (0127)', () => {
     expect(session.canPublish().valid).toBe(true)
   })
 })
+
+describe('a rule on a field in a repeater row', () => {
+  // Addressed by its dotted data path, `items.note`, every rule the panel wrote on
+  // a field in a row was refused: no field has that path (0129).
+  const order = {
+    specVersion: '4',
+    id: 'order',
+    title: 'Order',
+    model: {
+      fields: [
+        { key: 'country', type: 'text', label: 'Country' },
+        {
+          key: 'items',
+          type: 'repeater',
+          label: 'Items',
+          fields: [
+            { key: 'qty', type: 'number', label: 'Quantity' },
+            { key: 'note', type: 'text', label: 'Note' },
+          ],
+        },
+      ],
+    },
+  } as unknown as FormSchema
+
+  test('compares a field of its own row, named as being in this row, and is added', async () => {
+    const session = createBuilderSession(order)
+    const view = await render(FormancyLogicPanel, {
+      componentInputs: { session, keyPath: ['items', 'note'] },
+      providers: [provideZonelessChangeDetection()],
+    })
+    const user = userEvent.setup()
+    const settle = async (): Promise<void> => void (await view.fixture.whenStable())
+    await settle()
+    await user.click(screen.getByRole('button', { name: 'Add a rule' }))
+    await settle()
+
+    const field = screen.getByLabelText('Field') as HTMLSelectElement
+    expect([...field.options].map((option) => option.text.trim())).toContain('Quantity in this row')
+    await user.selectOptions(field, 'items[].qty')
+    await settle()
+    await user.selectOptions(screen.getByLabelText('Comparison'), 'isAtLeast')
+    await settle()
+    await user.type(screen.getByLabelText('Value'), '3')
+    await settle()
+    await user.click(screen.getByRole('button', { name: 'Add rule' }))
+    await settle()
+
+    expect(session.document().logic?.rules).toMatchObject([
+      { target: 'items[].note', kind: 'visible', cel: 'item.qty != null && item.qty >= 3.0' },
+    ])
+    expect(session.canPublish().valid).toBe(true)
+  })
+})

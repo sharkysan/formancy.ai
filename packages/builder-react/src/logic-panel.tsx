@@ -103,8 +103,9 @@ export function LogicPanel({ session, keyPath }: LogicPanelProps): ReactElement 
           on={on}
           target={ruleTarget}
           // From the core, at the paths the engine reads: joining the tree's key path
-          // named a field inside a page by a path no field has (0127).
-          fields={conditionFields(view.document)}
+          // named a field inside a page by a path no field has (0127). Scoped to the
+          // rule's target, so a rule in a repeater row may compare that row (0129).
+          fields={conditionFields(view.document, { target: ruleTarget, text })}
           text={text}
           onCancel={() => setDrafting(false)}
           onAdd={(rule) => {

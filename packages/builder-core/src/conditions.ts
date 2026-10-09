@@ -207,11 +207,11 @@ export function celLiteral(value: string | number | boolean | null | undefined):
  * the same row says `item.qty`. Saying `qty` would look for a top-level field
  * that does not exist.
  */
-function reference(field: string): { path: string; inGroup: boolean } {
-  const inRow = field.indexOf('[]')
-  if (inRow === -1) return { path: field, inGroup: field.includes('.') }
-  const own = field.slice(inRow + '[].'.length)
-  return { path: `item.${own}`, inGroup: own.includes('.') }
+function reference(field: string): { path: string; inGroup: boolean; inRow: boolean } {
+  const marker = field.indexOf('[]')
+  if (marker === -1) return { path: field, inGroup: field.includes('.'), inRow: false }
+  const own = field.slice(marker + '[].'.length)
+  return { path: `item.${own}`, inGroup: own.includes('.'), inRow: true }
 }
 
 /**
@@ -242,14 +242,21 @@ export function compileCondition(condition: Condition): string {
 }
 
 function compiled(condition: Condition): Compiled {
-  const { path, inGroup } = reference(condition.field)
+  const { path, inGroup, inRow } = reference(condition.field)
   const value = celLiteral(condition.value)
   // A list is not compared with null at all: the type checker refuses `list != null`,
   // and `size()` and `in` already answer for a list nobody touched — measured. Both
   // renderers store a list with every tick taken off as `[]`, which is not an
   // answer, so for a list "answered" is a length.
+  //
+  // Except in a row. The row is read through `item`, which the checker types as
+  // dynamic, so `!= null` is allowed there — and needed: a list in a row nobody has
+  // touched is null rather than `[]`. Measured: `"gift" in item.tags` threw on a
+  // fresh row and the rule failed open
+  // ([0129](../../../docs/decisions/0129-a-row-rule-is-written-in-the-row.md)).
   const isList = condition.answer === 'list' || condition.answer === 'files'
-  const present = isList
+  const neverNull = isList && !inRow
+  const present = neverNull
     ? inGroup
       ? `has(${path})`
       : ''
@@ -273,6 +280,7 @@ function compiled(condition: Condition): Compiled {
       return { cel: present, top: inGroup ? 'and' : 'atom' }
     case 'isNotAnswered':
       if (isList) {
+        if (!neverNull) return { cel: `${absent} || size(${path}) == 0`, top: 'or' }
         return inGroup
           ? { cel: `!has(${path}) || size(${path}) == 0`, top: 'or' }
           : { cel: `size(${path}) == 0`, top: 'atom' }

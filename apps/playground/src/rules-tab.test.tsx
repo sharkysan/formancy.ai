@@ -43,4 +43,15 @@ describe('the rules tab', () => {
 
     expect(within(canton).getByText('Shown now.')).toBeTruthy()
   })
+
+  test('says a rule in a repeater row in words, and which row it reads', async () => {
+    // The starter's row rule was written by the condition editor, so it has words; it
+    // has no verdict, because it has one per row (0128, 0129).
+    const user = userEvent.setup()
+    render(<App />)
+    await user.click(screen.getByRole('button', { name: 'Rules' }))
+
+    const overview = screen.getByRole('region', { name: 'Every rule in this form' })
+    expect(within(overview).getByText(/Amount in this row is at least 1000/)).toBeTruthy()
+  })
 })

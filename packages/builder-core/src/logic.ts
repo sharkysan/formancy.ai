@@ -5,7 +5,7 @@ import { groupOf, rowsOf } from './condition-draft.js'
 import type { ConditionDraft, ConditionField } from './condition-draft.js'
 import { BUILDER_MESSAGES } from './messages.js'
 import type { BuilderText } from './messages.js'
-import { dataPathOf } from './navigate.js'
+import { dataPathOf, rulePathOf } from './navigate.js'
 import { flatten } from './tree.js'
 
 /**
@@ -139,6 +139,9 @@ export function kindCarriesCondition(kind: LogicRule['kind']): boolean {
  * inside a page was refused with *"No field has the data path"*: in the builder,
  * for as long as pages have existed.
  *
+ * A field in a repeater row is addressed as the engine scopes it to each row,
+ * `items[].note` — see `rulePathOf`.
+ *
  * A page's rules are addressed by its KEY instead, because a page carries no
  * answer and so has no path — which is why a `skip` is its own kind rather than
  * `visible` pointed at a page
@@ -154,7 +157,11 @@ export function ruleTargetFor(
   if (node?.def.type === 'page') {
     return { target: keyPath[keyPath.length - 1] ?? keyPath.join('.'), on: 'page' }
   }
-  return { target: dataPathOf(document, keyPath) ?? keyPath.join('.'), on: 'field' }
+  const dataPath = dataPathOf(document, keyPath)
+  return {
+    target: dataPath === undefined ? keyPath.join('.') : rulePathOf(document, dataPath),
+    on: 'field',
+  }
 }
 
 /**

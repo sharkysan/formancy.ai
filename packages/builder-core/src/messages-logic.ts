@@ -78,6 +78,8 @@ export const LOGIC_MESSAGES = {
   'logic.value.yes': 'Yes',
   'logic.value.no': 'No',
   'logic.value.choose': 'Choose a value',
+  /** A field in the same repeater row as the rule being written: whose answer it is. */
+  'logic.field.inRow': '{field} in this row',
   // ------------------------------------------------- every rule in the form, and why
   'overview.heading': 'Every rule in this form',
   'overview.empty': 'This form has no rules: every field always behaves the same way.',

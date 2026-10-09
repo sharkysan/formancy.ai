@@ -457,6 +457,21 @@ export const STARTER_SCHEMA = {
         cel: 'item.qty == null || item.qty > 0.0',
         code: 'notPositive',
       },
+      // A rule on a field in a repeater row, as the builder's condition editor writes
+      // it: the CEL compiled from the `editor` metadata beside it. It runs once per
+      // row, with `item` bound to that row, so a large amount asks for a note in
+      // that recipient's row and no other. Open the Rules tab to read it in words.
+      {
+        target: 'recipients[].note',
+        kind: 'required',
+        cel: 'item.amount != null && item.amount >= 1000.0',
+        editor: {
+          join: 'all',
+          conditions: [
+            { field: 'recipients[].amount', operator: 'isAtLeast', value: 1000, answer: 'number' },
+          ],
+        },
+      },
       // Express delivery needs a date; standard does not.
       { target: 'wantedBy', kind: 'required', cel: 'delivery == "express"' },
       // A rule reading a LIST answer. Untouched, `extras` is `[]` rather than

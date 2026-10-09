@@ -2,6 +2,7 @@ import { resolveText } from '@formancy/spec'
 import type { FieldDef, FormSchema } from '@formancy/spec'
 import { answerKindOf, operatorTakesValue, operatorsFor } from './conditions.js'
 import type { AnswerKind, Condition, ConditionGroup, Operator } from './conditions.js'
+import type { BuilderText } from './messages.js'
 import { nameOf } from './tree.js'
 
 /**
@@ -20,7 +21,10 @@ import { nameOf } from './tree.js'
 
 /** A field a condition may compare, with what the editor needs to offer for it. */
 export interface ConditionField {
-  /** The data path the engine reads: a page is transparent, a group is a dot. */
+  /**
+   * The data path the engine reads: a page is transparent, a group is a dot, and a
+   * field in the rule's own row is `items[].qty`, which compiles to `item.qty`.
+   */
   path: string
   label: string
   kind: AnswerKind
@@ -36,26 +40,45 @@ export interface ConditionField {
  * names a field inside a page `about.country` where the engine reads `country` — so
  * a condition on any field in a wizard compared a path no field has, evaluated as
  * null, and held its target hidden. Containers are left out, since a group or a page
- * has no answer to compare, and so is static text. So are the fields inside a
- * repeater: a rule about the whole form cannot say which row it means.
+ * has no answer to compare, and so is static text.
+ *
+ * **A repeater's fields only for a rule in its row.** A rule about the whole form
+ * cannot say which row it means, so they are left out — unless `about` is a rule
+ * target inside that repeater's row, which the engine evaluates once per row with
+ * `item` bound to it. Then they are offered, named as being in this row, because
+ * "Quantity is at least 3" under a field in the row does not say whose quantity
+ * ([0129](../../../docs/decisions/0129-a-row-rule-is-written-in-the-row.md)).
  */
-export function conditionFields(document: FormSchema): ConditionField[] {
+export function conditionFields(
+  document: FormSchema,
+  about?: { target: string; text: BuilderText },
+): ConditionField[] {
   const locale = document.i18n?.defaultLocale ?? ''
+  // `items` for a rule on `items[].note`: the one repeater whose row is in scope.
+  const row = about?.target.includes('[]')
+    ? about.target.slice(0, about.target.indexOf('[]'))
+    : undefined
   const found: ConditionField[] = []
-  const walk = (fields: readonly FieldDef[], scope: string): void => {
+  const walk = (fields: readonly FieldDef[], scope: string, inRow: boolean): void => {
     for (const field of fields) {
       if (field.type === 'page') {
-        walk(field.fields ?? [], scope)
+        walk(field.fields ?? [], scope, inRow)
         continue
       }
       if (field.type === 'group') {
-        walk(field.fields ?? [], `${scope}${field.key}.`)
+        walk(field.fields ?? [], `${scope}${field.key}.`, inRow)
         continue
       }
-      if (field.type === 'repeater' || field.type === 'static') continue
+      if (field.type === 'repeater') {
+        if (`${scope}${field.key}` === row) walk(field.fields ?? [], `${row}[].`, true)
+        continue
+      }
+      if (field.type === 'static') continue
+      const name = nameOf(document, field)
       found.push({
         path: `${scope}${field.key}`,
-        label: nameOf(document, field),
+        label:
+          inRow && about !== undefined ? about.text('logic.field.inRow', { field: name }) : name,
         kind: answerKindOf(field),
         options: (field.options ?? []).map((option) => ({
           value: option.value,
@@ -64,7 +87,7 @@ export function conditionFields(document: FormSchema): ConditionField[] {
       })
     }
   }
-  walk(document.model.fields, '')
+  walk(document.model.fields, '', false)
   return found
 }
 

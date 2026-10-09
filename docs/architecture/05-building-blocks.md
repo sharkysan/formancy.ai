@@ -184,8 +184,10 @@ It holds what a builder's interface needs and a framework does not decide: the
 compiler that turns a structured condition into CEL — one level of groups, comparisons
 chosen by what the field holds, and every read guarded so an empty form does not fail
 open (`conditions.ts`) — and the condition being written, with every edit to it and the
-fields it may compare at the engine's paths (`condition-draft.ts`,
-[0127](../decisions/0127-a-condition-nests-one-level.md)); every rule in words and, given a
+fields it may compare at the engine's paths — a rule in a repeater row its own row's too,
+at `items[].qty` (`condition-draft.ts`,
+[0127](../decisions/0127-a-condition-nests-one-level.md),
+[0129](../decisions/0129-a-row-rule-is-written-in-the-row.md)); every rule in words and, given a
 host's preview answers and clock, why each holds now (`rules-overview.ts`,
 [0128](../decisions/0128-a-form-says-why-a-field-is-hidden.md)); where a drop lands in each
 of the two trees **and on the rendered form** (`arrange.ts`, which takes a

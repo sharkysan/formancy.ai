@@ -14,13 +14,17 @@
  */
 import { ruleKindLabel } from './logic.js'
 import type { BuilderText } from './messages.js'
+import { rulePathOf } from './navigate.js'
 import type { FieldDef, FormSchema, LayoutNode, LogicRule } from '@formancy/spec'
 import { PAGE_TARGETED_RULE_KINDS, layoutChildren } from '@formancy/spec'
 import { rewritePath } from '@formancy/expressions'
 
-/** Whether `path` is `prefix` itself or a field inside it. */
+/**
+ * Whether `path` is `prefix` itself or a field inside it — including a field in its
+ * rows, `items[].qty` inside `items`, which is how a rule names one.
+ */
 export function underPath(path: string, prefix: string): boolean {
-  return path === prefix || path.startsWith(`${prefix}.`)
+  return path === prefix || path.startsWith(`${prefix}.`) || path.startsWith(`${prefix}[].`)
 }
 
 /** Drop every layout node placing `dataPath`, or anything inside it. */
@@ -107,14 +111,32 @@ export function repathRules(
   // leave rules 1 to 3 changed. `attempt` discards the draft on a refusal, but
   // relying on that would make this function correct only where it is called.
   const rewrites = new Map<number, LogicRule>()
+  // The same move as a rule names it: a field in a repeater row is `items[].qty` to
+  // a rule's target and to the editor's metadata, and `item.qty` to the condition of
+  // a rule in that row (0129). Left at the dotted path, a rename of a row field
+  // succeeded and left every rule in the row reading it under its old name: `item`
+  // is dynamic, so a field it lacks is just null, nothing refused the edit, and
+  // publishing only warned.
+  const from = rulePathOf(draft, before)
+  const to = rulePathOf(draft, after)
+  const row = readInRow(from, to)
 
   for (const [index, rule] of rules.entries()) {
     const next: LogicRule = { ...rule }
+    // In the session's language, because it is set into a refusal that is: half a
+    // German sentence and half an English one was what this said.
+    const cannotFollow = (reason: string): string =>
+      text('refuse.ruleCannotFollow', {
+        number: index + 1,
+        kind: ruleKindLabel(rule.kind, text),
+        target: rule.target,
+        reason,
+      })
 
     // A page-targeted rule names a PAGE KEY, which is not a data path and does
     // not move when a field does.
-    if (!PAGE_TARGETED_RULE_KINDS.includes(rule.kind as never) && underPath(rule.target, before)) {
-      next.target = `${after}${rule.target.slice(before.length)}`
+    if (!PAGE_TARGETED_RULE_KINDS.includes(rule.kind as never) && underPath(rule.target, from)) {
+      next.target = `${to}${rule.target.slice(from.length)}`
     }
 
     // A `check` carries no expression at all: it names a validator the
@@ -123,20 +145,21 @@ export function repathRules(
     // no third case here.
     if (rule.cel !== undefined) {
       const outcome = rewritePath(rule.cel, before, after)
-      if (!outcome.ok) {
-        // In the session's language, because it is set into a refusal that is:
-        // half a German sentence and half an English one was what this said.
-        return text('refuse.ruleCannotFollow', {
-          number: index + 1,
-          kind: ruleKindLabel(rule.kind, text),
-          target: rule.target,
-          reason: outcome.error.message,
-        })
+      if (!outcome.ok) return cannotFollow(outcome.error.message)
+      let cel = outcome.source
+      // Every rule, not only those targeting this row: only a rule in a row can read
+      // `item` at all, and keys are unique across the form, so `item.qty` in another
+      // repeater's row reads a field that row lacks — nothing before the rename and
+      // nothing after it, which publishing warns about either way (`unknownReferences`).
+      if (row !== undefined) {
+        const inRow = rewritePath(cel, row.from, row.to)
+        if (!inRow.ok) return cannotFollow(inRow.error.message)
+        cel = inRow.source
       }
-      if (outcome.changed) next.cel = outcome.source
+      if (cel !== rule.cel) next.cel = cel
     }
 
-    const editor = repathEditor(rule.editor, before, after)
+    const editor = repathEditor(rule.editor, from, to)
     if (editor !== undefined) next.editor = editor
 
     rewrites.set(index, next)
@@ -144,6 +167,22 @@ export function repathRules(
 
   for (const [index, rule] of rewrites) rules[index] = rule
   return undefined
+}
+
+/**
+ * How a rule in the row reads what moved — `item.qty` to `item.amount` — or nothing
+ * when what moved is not inside a row. Renaming the repeater itself is not a move
+ * inside its row: `item` is still `item`.
+ *
+ * Both commands that move a path keep it under the containers it was under — a
+ * rename changes the last key, an unwrap removes one group — so a path in a row
+ * stays in that row, at the same `[]`.
+ */
+function readInRow(from: string, to: string): { from: string; to: string } | undefined {
+  const marker = from.indexOf('[]')
+  if (marker === -1) return undefined
+  const member = marker + '[].'.length
+  return { from: `item.${from.slice(member)}`, to: `item.${to.slice(member)}` }
 }
 
 /**

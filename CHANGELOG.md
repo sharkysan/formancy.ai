@@ -10,6 +10,23 @@ later.
 
 ## Unreleased
 
+**A rule on a field in a repeater row, from the builder.** The logic panel addressed such a
+field by its dotted path, `items.note`, which no field has, so every rule written on one was
+refused. It is now addressed as the engine scopes it, `items[].note`; the condition may compare
+the fields of its own row, offered as "Quantity in this row"; and renaming a row field, the
+repeater, or unwrapping a group in the row carries the target, the condition (`item.qty`) and
+the editor metadata along — before, renaming a row field succeeded and left every rule in the
+row reading its old name, with nothing but a warning at publish. The playground's starter has
+one ([0129](docs/decisions/0129-a-row-rule-is-written-in-the-row.md)).
+
+**Fixed: a list compared in a repeater row failed open on a fresh row.** In a row an
+untouched list is null, not `[]` as at the top level, so `compileCondition` — exported, and
+already accepting `items[].tags` — wrote `"gift" in item.tags`, which throws there; a
+`visible` rule then showed the field it was meant to hide. It now writes
+`item.tags != null && "gift" in item.tags`. The guide's advice to use `has()` "for a path
+inside a group or a row" was wrong for a row, where every key is present and `has()` is
+always true; it now says `!= null`, and the table is checked against the engine.
+
 **Every rule in the form, and why a field is hidden now.** Both builders have a rules overview
 (`RulesOverview`, `formancy-rules-overview`): every rule grouped under the field or page it is
 about, in the form's order, with its condition in words — "Show this field when Country is
