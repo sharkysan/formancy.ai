@@ -9,6 +9,7 @@ import { startChallengeSweeper } from './challenge-sweeper.js'
 import { createLocalFileStore } from './file-store.js'
 import type { FileStore } from './file-store.js'
 import { createS3FileStore } from './s3-file-store.js'
+import { fileStoreSettings } from './file-store-settings.js'
 import { CLAMD_DEFAULT_MAX_BYTES, createClamdScanner } from './clamd-scanner.js'
 
 // recheck ships a 23 MB JVM jar and a native binary per platform as OPTIONAL
@@ -49,63 +50,14 @@ if (authSecret === undefined || authSecret === '') {
 const adminEmail = process.env['FORMANCY_ADMIN_EMAIL']
 const adminPassword = process.env['FORMANCY_ADMIN_PASSWORD']
 
-/**
- * Where uploaded bytes go.
- *
- * Absent means this deployment accepts no files, and that is a supported
- * state rather than a misconfiguration: a form with a file field still renders
- * and still submits, and the field says plainly that there is nowhere to put
- * one. Turning uploads on is naming a directory, which in a container is
- * naming a volume — and a volume is the one thing a self-hoster has to think
- * about, so it is not defaulted.
- */
-const filesDirectory = process.env['FORMANCY_FILES_DIR']
-const s3Endpoint = process.env['FORMANCY_S3_ENDPOINT']
-
-if (filesDirectory !== undefined && s3Endpoint !== undefined) {
-  // Two stores means half the files are in one and half in the other, and
-  // nothing records which -- so a later reader gets "no such file" for bytes
-  // that exist in the store it did not ask. Refusing at startup is the only
-  // point at which this is cheap to fix.
-  throw new Error(
-    'Set FORMANCY_FILES_DIR or FORMANCY_S3_ENDPOINT, not both: two stores means ' +
-      'files land in one and are looked for in the other.',
-  )
-}
-
-/**
- * The object store, when one is configured.
- *
- * Every field is required once the endpoint is set, and none is defaulted. A
- * bucket name guessed wrong is a deployment that accepts uploads into nothing;
- * credentials guessed wrong are a deployment where every file reads as missing.
- * Both fail here instead.
- */
-const s3Store = ((): FileStore | undefined => {
-  if (s3Endpoint === undefined) return undefined
-
-  const required = (name: string): string => {
-    const value = process.env[name]
-    if (value === undefined || value === '') {
-      throw new Error(`${name} is required when FORMANCY_S3_ENDPOINT is set.`)
-    }
-    return value
-  }
-
-  return createS3FileStore({
-    endpoint: s3Endpoint,
-    bucket: required('FORMANCY_S3_BUCKET'),
-    // Part of the credential scope, so a wrong region is a signature the store
-    // computes differently and rejects. Garage answers to any name and real S3
-    // does not, which is why there is no default.
-    region: required('FORMANCY_S3_REGION'),
-    accessKeyId: required('FORMANCY_S3_ACCESS_KEY_ID'),
-    secretAccessKey: required('FORMANCY_S3_SECRET_ACCESS_KEY'),
-  })
-})()
-
-const fileStore =
-  s3Store ?? (filesDirectory === undefined ? undefined : createLocalFileStore(filesDirectory))
+/** Where uploaded bytes go: the rules are in `fileStoreSettings`, which throws. */
+const storeSettings = fileStoreSettings(process.env)
+const fileStore: FileStore | undefined =
+  storeSettings.kind === 's3'
+    ? createS3FileStore(storeSettings.config)
+    : storeSettings.kind === 'local'
+      ? createLocalFileStore(storeSettings.directory)
+      : undefined
 
 const maxFileBytes = Number(process.env['FORMANCY_MAX_FILE_BYTES'] ?? 10 * 1024 * 1024)
 if (!Number.isFinite(maxFileBytes) || maxFileBytes <= 0) {

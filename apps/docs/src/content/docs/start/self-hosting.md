@@ -41,7 +41,7 @@ cp .env.example .env          # then follow what it says
 FORMANCY_VERSION=v0.2.0 docker compose -f compose.published.yaml up -d
 ```
 
-The version above is the shape, not a tag that exists. `FORMANCY_VERSION` has no
+`v0.2.0` is the oldest release with an image; pin the one you want. `FORMANCY_VERSION` has no
 default and compose stops without it, because there is no `latest` tag to fall
 back on. That is deliberate: the
 [SOUP declaration](https://github.com/sharkysan/formancy.ai/blob/main/docs/regulatory/SOUP-DECLARATION.md)
@@ -81,8 +81,8 @@ wrong database — a confusing ten minutes. The compose file maps 5439 instead.
 | `DATABASE_URL` | yes | Postgres connection string |
 | `FORMANCY_AUTH_SECRET` | in production | Signs session tokens; ≥ 32 characters. If unset, an ephemeral one is generated and every session dies on restart — the server warns when it does this. |
 | `FORMANCY_ADMIN_EMAIL` / `..._PASSWORD` | first run | Creates the first admin, and **only** while no such user exists. It cannot re-seed an admin into a running installation. |
-| `FORMANCY_FILES_DIR` | no | Where uploaded bytes go on local disk. Unset means this deployment accepts no files, which is a supported state — see [Files](/docs/concepts/files/). One replica only. |
-| `FORMANCY_S3_ENDPOINT` | no | An S3-compatible object store instead of a directory, which is what more than one replica needs. Setting it makes the four below required and refuses `FORMANCY_FILES_DIR` alongside it. |
+| `FORMANCY_FILES_DIR` | no | Where uploaded bytes go on local disk. Unset — or empty — means this deployment accepts no files, which is a supported state — see [Files](/docs/concepts/files/). One replica only. Both compose files set it to their volume unless `.env` says otherwise. |
+| `FORMANCY_S3_ENDPOINT` | no | An S3-compatible object store instead of a directory, which is what more than one replica needs. Setting it makes the four below required and refuses a non-empty `FORMANCY_FILES_DIR` alongside it. Empty is unset. |
 | `FORMANCY_S3_BUCKET` / `..._REGION` | with the endpoint | No defaults: a guessed bucket uploads into nothing, and the region is part of the request signature rather than a label — a wrong one is rejected. |
 | `FORMANCY_S3_ACCESS_KEY_ID` / `..._SECRET_ACCESS_KEY` | with the endpoint | No defaults. Wrong credentials would otherwise look like a store where every file is missing. |
 | `FORMANCY_MAX_FILE_BYTES` | no | The operator's ceiling over every form's own `maxFileSize`. Defaults to 10 MB. |
@@ -286,6 +286,39 @@ In a container that directory has to be a mounted volume, or the files
 disappear on the next deploy — `compose.yaml` wires one up. [Files](/docs/concepts/files/)
 covers the lifecycle, what is refused and where, and why a file is *claimed*
 inside the submission's transaction rather than simply uploaded.
+
+### Switching to an object store through compose
+
+Both compose files pass the five `FORMANCY_S3_*` settings through, and both point
+`FORMANCY_FILES_DIR` at their volume. Compose can blank a variable but not remove one, so
+switching is the object-store block of `.env.example` uncommented — which blanks the
+directory as well as naming the store:
+
+```bash
+FORMANCY_FILES_DIR=""
+FORMANCY_S3_ENDPOINT=http://garage:3900
+FORMANCY_S3_BUCKET=formancy
+FORMANCY_S3_REGION=garage
+FORMANCY_S3_ACCESS_KEY_ID=GK…
+FORMANCY_S3_SECRET_ACCESS_KEY=…
+```
+
+The server reads the empty directory as unset and is left one store. Leave the first line
+out and it is told about two, refuses to start, and compose restarts it into the same
+refusal for as long as you let it.
+
+:::caution[Needs a server newer than v0.4.0]
+`v0.4.0` and every image before it read `FORMANCY_FILES_DIR=""` as a directory: with the
+endpoint set they refuse two stores, and without it they switch uploads on in the
+container's working directory, which the image's user cannot write. Until a release
+carries the fix, an object store through compose means
+[a checkout](#from-a-checkout).
+:::
+
+Neither compose file runs the store itself: a fresh Garage node accepts no data until a
+layout is assigned, which is a few commands after it starts rather than anything compose
+can declare. Moving existing files from the volume to the bucket is also yours to do — the
+server looks for every file in the one store it has.
 
 ## The audit log
 
