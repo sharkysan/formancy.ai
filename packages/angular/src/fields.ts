@@ -8,6 +8,7 @@ import {
 import { FormancyFileField } from './fields/file-field.js'
 import { FormancyRichTextField } from './fields/rich-text-field.js'
 import { FormancySelectBoxesField } from './fields/selectboxes-field.js'
+import { FormancyRankingField } from './fields/ranking-field.js'
 import { FormancySignatureField } from './fields/signature-field.js'
 import { FormancyStaticField } from './fields/static-field.js'
 import {
@@ -43,6 +44,7 @@ export const DEFAULT_FIELD_COMPONENTS: Record<FieldType, Type<unknown> | null> =
   select: FormancySelectField,
   radio: FormancyRadioGroupField,
   selectboxes: FormancySelectBoxesField,
+  ranking: FormancyRankingField,
   file: FormancyFileField,
   richtext: FormancyRichTextField,
   signature: FormancySignatureField,
@@ -62,6 +64,7 @@ export {
 export { FormancyFileField } from './fields/file-field.js'
 export { FormancyRichTextField } from './fields/rich-text-field.js'
 export { FormancySelectBoxesField, FormancyTagPickerField } from './fields/selectboxes-field.js'
+export { FormancyRankingField } from './fields/ranking-field.js'
 export { FormancySignatureField } from './fields/signature-field.js'
 export { FormancyStaticField } from './fields/static-field.js'
 export { FormancyTypeaheadSelect } from './fields/typeahead-field.js'

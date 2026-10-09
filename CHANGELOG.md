@@ -10,6 +10,26 @@ later.
 
 ## Unreleased
 
+**Fixed: four themes kept a side when a form was read right to left.** Ten padding and
+margin shorthands named a left unlike their right — a tag picker's chips, an error message, a
+file row, a repeater legend, a drop cap — and two rules floated left. They are block and
+inline longhands and `float: inline-start` now, and the theme check refuses both spellings; it
+knew `padding-left` and not `padding: a b c d`. Found by the real-browser gate the first time
+a control that borrowed a chip's padding was on screen when the form was mirrored.
+
+**Spec 4: `ranking`, a field type.** Options put in order; the answer is the chosen values
+in the order chosen, most preferred first. It starts empty rather than in the options'
+written order, because an order nobody chose is not an answer, and `minItems`/`maxItems`
+bound how many are ranked ("your top two" is `maxItems: 2`). Both renderers draw it as
+two lists of buttons named after their option — move up, move down, take out, rank —
+keyboard-first, with focus following the option being moved; there is no drag. The engine
+refuses a repeated value, a value nobody offered and a string where an order belongs, on
+the server as well. The builder offers it with two starter options, and the condition
+editor treats it as a list. A version 3 document carrying one is now refused: the version check
+answered "3" for every type newer than 2, so it would have **accepted** a document that
+says version 3 and that no version 3 reader can read
+([0138](docs/decisions/0138-a-ranking-stores-the-order-chosen.md)).
+
 **The job application template is a wizard.** Its questions are on three pages, each drawn
 in the template's layout, so the gallery has a form answered a step at a time; pages hold no
 data, so its sample answers and behaviour cases did not change. A gallery card now reads its

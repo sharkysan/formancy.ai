@@ -170,7 +170,8 @@
         "enum": [
          "select",
          "radio",
-         "selectboxes"
+         "selectboxes",
+         "ranking"
         ]
        }
       }
@@ -382,6 +383,43 @@
         "minLength": 1,
         "maxLength": 64,
         "pattern": "^[a-z][a-z0-9-]*$"
+       }
+      }
+     }
+    },
+    {
+     "if": {
+      "required": [
+       "type"
+      ],
+      "properties": {
+       "type": {
+        "const": "ranking"
+       }
+      }
+     },
+     "then": {
+      "required": [
+       "options"
+      ],
+      "properties": {
+       "options": {
+        "type": "array",
+        "minItems": 2
+       },
+       "minItems": {
+        "title": "Fewest ranked",
+        "description": "How many options must be put in order. Set it to the number of options to ask for a complete order; leave it unset and any number may be ranked — use `required` rather than a minimum of 1, so the reader is told before they start.",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 1000
+       },
+       "maxItems": {
+        "title": "Most ranked",
+        "description": "How many options may be put in order, which is how \"your top three\" is asked.",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 1000
        }
       }
      }
@@ -849,6 +887,11 @@
      "const": "selectboxes",
      "title": "Checkboxes",
      "description": "Several answers picked from a list, every option visible at once. The answer is the list of values chosen, so an option removed later leaves the submissions that chose it unchanged."
+    },
+    {
+     "const": "ranking",
+     "title": "Ranking",
+     "description": "Options put in order of preference. The answer is the values of the options in the order chosen, most preferred first, and an option nobody ranked is not in it — so to ask for a complete order, set the fewest ranked to the number of options."
     },
     {
      "const": "date",

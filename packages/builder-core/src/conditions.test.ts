@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { createFormEngine } from '@formancy/core'
 import type { FormSchema } from '@formancy/spec'
-import { celLiteral, compileCondition, compileGroup } from './conditions.js'
+import { answerKindOf, celLiteral, compileCondition, compileGroup } from './conditions.js'
 import type { Condition } from './conditions.js'
 
 describe('celLiteral', () => {
@@ -318,5 +318,51 @@ describe('combining more than one comparison', () => {
     // `item.` is what a rule inside a repeater scopes to, and it has to survive
     // being combined -- it would be easy to prefix only the first.
     expect(cel).toBe('item.qty != null && item.qty > 0.0 && item.name != null')
+  })
+})
+
+describe('a ranking, to the condition editor', () => {
+  /*
+   * A list, as the ticks of a set of checkboxes are (0138). Taken for "some other answer",
+   * it was offered "is answered" compiled as `drinks != null` — which the type checker
+   * refuses for a list, so the rule the editor wrote could not be published, and an empty
+   * ranking is `[]` rather than null, so it would have read as answered if it could.
+   */
+  const ranking: FormSchema = {
+    specVersion: '4',
+    id: 'drinks',
+    title: 'Drinks',
+    model: {
+      fields: [
+        {
+          key: 'drinks',
+          type: 'ranking',
+          label: 'Order these',
+          options: [
+            { value: 'coffee', label: 'Coffee' },
+            { value: 'tea', label: 'Tea' },
+          ],
+        },
+        { key: 'why', type: 'text', label: 'Why?' },
+      ],
+    },
+  } as unknown as FormSchema
+
+  test('is a list, so answered means something ranked and includes means ranked at all', () => {
+    expect(answerKindOf({ type: 'ranking' })).toBe('list')
+
+    for (const [operator, cel] of [
+      ['isAnswered', 'size(drinks) > 0'],
+      ['includes', '"tea" in drinks'],
+    ] as const) {
+      const condition: Condition = { field: 'drinks', operator, value: 'tea', answer: 'list' }
+      expect(compileCondition(condition)).toBe(cel)
+      // And it compiles where it is going to run.
+      const engine = createFormEngine({
+        schema: { ...ranking, logic: { rules: [{ target: 'why', kind: 'visible', cel }] } },
+        capabilities: { now: () => 0, today: () => '2026-10-09', random: () => 0.5 },
+      })
+      expect(engine.getFieldSnapshot(['why']).visible).toBe(false)
+    }
   })
 })

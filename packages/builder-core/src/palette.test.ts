@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { createBuilderSession } from './index.js'
-import { FIELD_TYPES, SPEC_1_FIELD_TYPES, SPEC_2_FIELD_TYPES } from '@formancy/spec'
+import { CURRENT_SPEC_VERSION, FIELD_TYPES, SPEC_1_FIELD_TYPES, SPEC_2_FIELD_TYPES } from '@formancy/spec'
 import type { FormSchema } from '@formancy/spec'
 import { newFieldOfType, paletteEntries, typesNeedingUpgrade } from './palette.js'
 
@@ -116,10 +116,12 @@ describe('newFieldOfType', () => {
   })
 
   test('every palette entry actually inserts, which is the point of generating both', () => {
-    // Against a version 2 document, so the palette and the document agree
-    // about which types exist. Version 1 is covered by the filter test above.
-    for (const entry of paletteEntries('2')) {
-      const session = createBuilderSession({ ...schema, specVersion: '2' })
+    // Against the current version, so every type the palette can offer is asked. It was
+    // version 2, and a version 4 `ranking` — which needs two options to be valid — would
+    // have been offered and refused on insert with nothing here to say so. Version 1 is
+    // covered by the filter test above.
+    for (const entry of paletteEntries(CURRENT_SPEC_VERSION)) {
+      const session = createBuilderSession({ ...schema, specVersion: CURRENT_SPEC_VERSION })
       const def = newFieldOfType(entry.type, new Set(['text']))
       const target = session.validTargets(def)[0]
 

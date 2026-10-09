@@ -40,7 +40,7 @@ const CEILINGS: Record<string, { lines: number; why: string }> = {
     why: 'The engine is one subject and its parts are genuinely coupled through the graph. The seam, if there is one, is the check and skip machinery — whose protocol types left for `checks.ts` to pay for the `formId` option, since this budget allows no growth at all. The machinery itself still needs the graph and the store, which is why it has not followed.',
   },
   'packages/conformance/src/builtin-fixtures.ts': {
-    lines: 1377,
+    lines: 1478,
     why: 'GENERATED from fixtures/*.json. Splitting this means splitting the fixtures, which are the unit of meaning — so this number moves when the suite gains a case, which is the one entry here whose growth is not a signal.',
   },
   'apps/site/src/app.tsx': {
@@ -56,8 +56,8 @@ const CEILINGS: Record<string, { lines: number; why: string }> = {
     why: 'The seam is one use-case family per file. Publishing moved to publishing.ts when the budget refused the next thing added here; submitting, drafts and files follow the same way.',
   },
   'packages/conformance/src/validate.ts': {
-    lines: 655,
-    why: 'Refusing a fixture that could not run honestly. One subject — and three have left it: the message catalogue and the names a driver searches by went to validate-text.ts when this budget refused the locale check, the locale and layout a fixture mounts with to mount.ts, and the JSON predicates under them to values.ts, which both now share.',
+    lines: 603,
+    why: 'Refusing a fixture that could not run honestly. One subject — and four have left it: the message catalogue and the names a driver searches by went to validate-text.ts when this budget refused the locale check, the locale and layout a fixture mounts with to mount.ts, the vocabulary of the spec a fixture may use to vocabulary.ts when ranking added a type, and the JSON predicates under them to values.ts, which both now share.',
   },
   'packages/conformance/src/runner.ts': {
     lines: 684,

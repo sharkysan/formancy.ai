@@ -407,6 +407,7 @@ const BUILDER_OWN_MESSAGES = {
   // building a German form should not have to retype "New field" in every one.
   'palette.newField': 'New field',
   'palette.firstOption': 'First option',
+  'palette.secondOption': 'Second option',
 
 } as const satisfies Record<string, Message>
 

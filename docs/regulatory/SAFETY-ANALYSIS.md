@@ -484,6 +484,26 @@ and storage keeps them until the collector runs.
 
 ---
 
+### B8. A ranking stores an order the person did not choose
+
+*How it arises:* a `ranking` field (spec 4) stores an order of options. If it began in the
+options' written order, a person who never touched it would submit the author's order as
+their own preference, and the submission could not be told apart from one where they agreed
+with it. A payload posted at the endpoint could also carry an order no control produces — one
+option twice, an option the form does not offer
+([0138](../decisions/0138-a-ranking-stores-the-order-chosen.md)).
+
+*Constraint:* a ranking starts **empty**, and `required` is satisfied only by something
+ranked. The engine refuses a repeated value (`duplicate`), a value not offered (`option`) and
+a non-list (`type`) in client and server mode alike, and the document refuses two options
+sharing a value. Tested in `packages/core/src/ranking.test.ts` in both modes, and in both
+renderers by the conformance fixture for rankings.
+
+*Residual:* **a partial ranking is an answer.** Without `minItems`, a person who ranks one of
+five options has answered, and nothing distinguishes "the other four do not matter" from
+"stopped halfway". A form that needs a complete order must set `minItems` to the number of
+options; the builder says so in the property's description, and nothing enforces it.
+
 ## C — Data reaches the wrong party
 
 ### C1. An account's existence is disclosed by a failed login
@@ -878,7 +898,7 @@ side while the padding that made room for it moved with the reading order, so th
 lands **on top of** the text.
 
 *Constraint:* every shipped theme is written in reading order, and
-`apps/docs/src/themes.test.ts` refuses one that is not — nine physical properties by
+`apps/docs/src/themes.test.ts` refuses one that is not — the physical properties by
 name, plus a side named as a *value* that has no counterpart for the other direction
 ([0113](../decisions/0113-a-theme-is-written-in-reading-order.md)). Proved against
 four physical properties and against removing a theme’s flip. The browser gate adds
@@ -899,6 +919,15 @@ rewrites `:dir(rtl)` as a list of right-to-left *languages*; Vite's default did,
 repository's own site, so a page with `dir="rtl"` and any other `lang` got none of the
 mirrored rules. The site and playground now build for the browsers the stylesheets are
 written for, and the browser gate fails on the rewrite in what they serve.
+
+**And a side has more than one spelling.** The source check knew `padding-left` and not
+`padding: 0.25rem 0.375rem 0.25rem 0.625rem`, whose fourth value is the left whatever the
+reading order, nor `float: left`. Ten such shorthands and two floats had shipped in the four form
+themes — an error message, a file row, a drop cap, the chips of a tag picker — and the browser
+gate found the first when the ranking control (spec 4) borrowed a chip's padding and was on
+screen when the form was mirrored, where no chip ever had been. The source check now refuses an
+asymmetric `padding`, `margin` or `inset` shorthand and a physical `float`, and the themes use
+the block and inline longhands and `float: inline-start`.
 
 *Residual:* the icon rules live inside `@supports (-webkit-touch-callout: none)` — iOS
 WebKit alone — so **no gate here can execute them**; they are held by a source check
@@ -1276,6 +1305,34 @@ clients that declare, or restrict `form.publish` to one role. There is also
 detects two authors editing concurrently *before* one of them publishes.
 
 ---
+
+### E5. A document declares a spec version its readers cannot read
+
+*How it arises:* the spec version is a reader contract — a reader pinned to a version refuses
+a document using a construct from a later one ([0051](../decisions/0051-spec-2-adds-types.md)).
+The validator enforces the other side, refusing a construct newer than the version a document
+declares. If it attributes a construct to the wrong version, it accepts a document that says
+version N and that no version N reader can read: published, characterised as version N, and
+refused by the reader a manufacturer pinned.
+
+This happened in the code, and was found before it shipped: the version a **field type**
+arrived in was computed as "1, else 2, else 3", which answered 3 for every type newer than
+version 2. A version 3 document carrying a version 4 `ranking` was accepted
+([0138](../decisions/0138-a-ranking-stores-the-order-chosen.md)). The widget check had had the
+same shape and been fixed for widgets alone.
+
+*Constraint:* each kind of construct is now attributed from each version's own list —
+`SPEC_1_FIELD_TYPES`, `SPEC_2_FIELD_TYPES`, `SPEC_3_FIELD_TYPES`, and the widget and
+property checks beside them. Asserted per construct: a version 3 document carrying a ranking
+is refused and told version 4 (`packages/spec/src/ranking.test.ts`), and the migration guide's
+section for each version is checked to name exactly that version's additions
+(`apps/docs/src/claims.test.ts`).
+
+*Residual:* **the newest version is still the fallback.** A construct in no version's list is
+attributed to version 4, which is right while 4 is the newest and wrong the day a fifth opens.
+Opening a version has to add its list to this check, and nothing fails if it does not until
+a document using the new construct under an old version is written — the same shape as the
+mistake above, one version later.
 
 ## What a manufacturer must do with this
 

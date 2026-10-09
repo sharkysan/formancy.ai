@@ -267,7 +267,7 @@ function otherSide(mode: 'client' | 'server'): 'client' | 'server' {
  * say they are required in their description instead. See
  * `FieldPropsInput.grouped`.
  */
-const GROUPED_TYPES: ReadonlySet<string> = new Set(['radio', 'selectboxes'])
+const GROUPED_TYPES: ReadonlySet<string> = new Set(['radio', 'selectboxes', 'ranking'])
 
 export function createFormEngine(options: FormEngineOptions): FormEngine {
   const { schema } = options

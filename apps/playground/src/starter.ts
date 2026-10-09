@@ -205,6 +205,20 @@ export const STARTER_SCHEMA = {
         max: 5,
         step: 0.5,
       },
+      // ranking: options put in order, and the answer is that order. Spec 4's first new
+      // type. Bounded to two, so ranking all three shows what a bound does — "your top
+      // two" is `maxItems`, and the engine refuses a third on the server as well (0138).
+      {
+        key: 'priorities',
+        type: 'ranking',
+        label: { $t: 'priorities' },
+        maxItems: 2,
+        options: [
+          { value: 'fresh', label: { $t: 'priorities.fresh' } },
+          { value: 'local', label: { $t: 'priorities.local' } },
+          { value: 'fast', label: { $t: 'priorities.fast' } },
+        ],
+      },
 
       { key: 'notes', type: 'textarea', label: { $t: 'notes' }, maxLength: 500 },
       // selectboxes: several answers from one list. The answer is the list of
@@ -373,6 +387,7 @@ export const STARTER_SCHEMA = {
             { kind: 'field', path: 'voucher' },
             { kind: 'field', path: 'recommend' },
             { kind: 'field', path: 'portions' },
+            { kind: 'field', path: 'priorities' },
           ],
         },
         {

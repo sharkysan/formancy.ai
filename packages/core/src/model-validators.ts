@@ -30,6 +30,10 @@ export function modelViolations(def: FieldDef, value: unknown): string[] {
     if (def.minItems !== undefined && value.length < def.minItems) codes.push('minItems')
     if (def.maxItems !== undefined && value.length > def.maxItems) codes.push('maxItems')
     if (def.type === 'file') codes.push(...fileViolations(def, value))
+    // An order names each option once: a repeat would put one option both second and
+    // fourth. A ranking's alone — ticking the same box twice on a `selectboxes` has
+    // always been accepted, and refusing it now would refuse answers already stored.
+    if (def.type === 'ranking' && new Set(value).size !== value.length) codes.push('duplicate')
     // Every tick is one of the offered options, or the list is not an answer. One code
     // for the list rather than one per bad member: the field is wrong, and naming which
     // index would describe a payload rather than the question.
@@ -173,7 +177,7 @@ export function modelViolations(def: FieldDef, value: unknown): string[] {
  */
 const CHOOSER_TYPES = new Set(['select', 'radio'])
 
-const LIST_VALUED = new Set(['selectboxes', 'file'])
+const LIST_VALUED = new Set(['selectboxes', 'ranking', 'file'])
 
 /** Whether this field's document carries a list of options to be one of. */
 function offersOptions(def: FieldDef): boolean {

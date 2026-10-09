@@ -178,6 +178,22 @@ function semanticErrors(schema: FormSchema): SchemaError[] {
       errors.push(schemaError(`${path}/mask`, 'mask.noPositions'))
     }
 
+    // A ranking stores option values, so two options sharing one would be an order that
+    // cannot say which of them was put first (0138).
+    if (field.type === 'ranking') {
+      const seen = new Set<string>()
+      field.options?.forEach((option, index) => {
+        if (seen.has(option.value)) {
+          errors.push(
+            schemaError(`${path}/options/${String(index)}/value`, 'ranking.duplicateOption', {
+              value: option.value,
+            }),
+          )
+        }
+        seen.add(option.value)
+      })
+    }
+
     // A picture where the control cannot show one would validate and show nothing:
     // the documented-but-inert failure (0126).
     const hidesImages = optionImageRefusal(field)

@@ -108,8 +108,8 @@ export const ROW_ID_PREFIX = 'r'
  * `specVersion: "2"`, and `validateSchema` refuses one in a version 1 document
  * by name rather than by a schema error nobody can read.
  *
- * Still reserved, unimplemented: multiselect, combobox, signature, address,
- * rating, slider.
+ * Still reserved, unimplemented: multiselect, combobox, address. (`signature` became a
+ * type in version 3 and `ranking` in version 4; `rating` and `slider` became widgets.)
  *
  * Four things that arrived as requests for types are NOT here and will not be:
  * toggle, datagrid, autocomplete and the scanning half of qrcode. None of them
@@ -135,6 +135,9 @@ export const SPEC_2_FIELD_TYPES = [
   'richtext',
 ] as const
 
+/** Field types version 3 defines: version 2's, plus the signature. */
+export const SPEC_3_FIELD_TYPES = [...SPEC_2_FIELD_TYPES, 'signature'] as const
+
 export const FIELD_TYPES = [
   'text',
   'textarea',
@@ -143,6 +146,7 @@ export const FIELD_TYPES = [
   'select',
   'radio',
   'selectboxes',
+  'ranking',
   'date',
   'time',
   'datetime',
@@ -181,6 +185,7 @@ export type ContainerFieldType = (typeof CONTAINER_FIELD_TYPES)[number]
  */
 export const LIST_VALUED_FIELD_TYPES = [
   'selectboxes',
+  'ranking',
   'file',
   'repeater',
 ] as const satisfies readonly FieldType[]

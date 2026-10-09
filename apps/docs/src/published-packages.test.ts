@@ -97,8 +97,43 @@ function publishedPackages(): Array<{
  * stylesheet reaching one writes `@import`. A guard that knows only the shape it
  * expected reports a false positive on the most ordinary consumer there is.
  */
+/**
+ * Every source file in `packages` and `apps`, with the package or app it belongs to.
+ *
+ * Read once rather than once per package asked about: the walk is the cost, and repeating
+ * it for every published package took this file past its five seconds under a full
+ * parallel run — a guard that times out on the machine running every other test is a
+ * guard that gets its timeout raised, and then nobody knows what it costs.
+ *
+ * CSS counts: a theme's only consumer is a stylesheet or a side-effect import, and
+ * leaving it out is half of what made this report a false positive.
+ */
+let sources: ReadonlyArray<{ owner: string; text: string }> | undefined
+function allSources(): ReadonlyArray<{ owner: string; text: string }> {
+  if (sources !== undefined) return sources
+  const found: Array<{ owner: string; text: string }> = []
+  const walk = (directory: string, owner: string): void => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      if (entry.isDirectory()) {
+        if (['node_modules', 'dist', 'out-tsc', '.claude', 'coverage'].includes(entry.name)) continue
+        walk(join(directory, entry.name), owner)
+        continue
+      }
+      if (!/\.(ts|tsx|mts|css)$/.test(entry.name)) continue
+      found.push({ owner, text: readFileSync(join(directory, entry.name), 'utf8') })
+    }
+  }
+  for (const group of ['packages', 'apps']) {
+    const root = join(repo, group)
+    for (const entry of readdirSync(root, { withFileTypes: true })) {
+      if (entry.isDirectory()) walk(join(root, entry.name), `${group}/${entry.name}`)
+    }
+  }
+  sources = found
+  return found
+}
+
 function importersOf(name: string, own: string): string[] {
-  const found = new Set<string>()
   const escaped = name.replace('/', '\\/')
   const needles = [
     // `import { x } from '<name>'`, and `export … from` with it.
@@ -108,31 +143,9 @@ function importersOf(name: string, own: string): string[] {
     // `@import '<name>/…'`, from a stylesheet.
     new RegExp(`@import\\s+['"]?${escaped}`),
   ]
-
-  const walk = (directory: string, owner: string): void => {
-    for (const entry of readdirSync(directory, { withFileTypes: true })) {
-      if (entry.isDirectory()) {
-        if (['node_modules', 'dist', 'out-tsc', '.claude'].includes(entry.name)) continue
-        walk(join(directory, entry.name), owner)
-        continue
-      }
-      // CSS counts: a theme's only consumer is a stylesheet or a side-effect
-      // import, and leaving it out is half of what made this report a false
-      // positive.
-      if (!/\.(ts|tsx|mts|css)$/.test(entry.name)) continue
-      const text = readFileSync(join(directory, entry.name), 'utf8')
-      if (needles.some((needle) => needle.test(text))) found.add(owner)
-    }
-  }
-
-  for (const group of ['packages', 'apps']) {
-    const root = join(repo, group)
-    for (const entry of readdirSync(root, { withFileTypes: true })) {
-      if (!entry.isDirectory()) continue
-      const owner = `${group}/${entry.name}`
-      if (owner === own) continue
-      walk(join(root, entry.name), owner)
-    }
+  const found = new Set<string>()
+  for (const { owner, text } of allSources()) {
+    if (owner !== own && needles.some((needle) => needle.test(text))) found.add(owner)
   }
   return [...found].sort()
 }

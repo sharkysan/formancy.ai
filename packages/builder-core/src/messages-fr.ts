@@ -408,6 +408,7 @@ export const BUILDER_MESSAGES_FR = {
 
   'palette.newField': 'Nouveau champ',
   'palette.firstOption': 'Premier choix',
+  'palette.secondOption': 'Deuxième choix',
 
   'rule.visible.label': 'Afficher ce champ quand',
   'rule.visible.hint':

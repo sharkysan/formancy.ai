@@ -235,10 +235,11 @@ left out as v2-era omissions. All three are now shipped.
 Roughly in order, and subject to change. The ordering is argued below rather
 than asserted.
 
-1. **`ranking` and `matrix`, in version 4.** The two survey constructs that are types
-   rather than widgets, because each stores an answer no existing type holds: a ranking
-   stores the respondent's chosen order and a matrix a row-to-column map. They are the
-   reason version 4 is open rather than frozen — it can gain them without another bump.
+1. **`matrix`, in version 4.** The survey construct that is a type rather than a widget,
+   because it stores an answer no existing type holds: a row-to-column map. It is the
+   reason version 4 is still open rather than frozen. `ranking`, the other, is built — the
+   order chosen, most preferred first, put in order with buttons rather than a drag
+   ([0138](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0138-a-ranking-stores-the-order-chosen.md)).
    Image choices went first, being smaller: an `image` on an option of a radio group or a
    set of checkboxes, which changes no answer at all
    ([0126](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0126-an-option-may-carry-a-picture.md)).

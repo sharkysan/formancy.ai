@@ -38,6 +38,8 @@ export const SCHEMA_ERRORS_FR: SchemaErrorSentences = {
     'Une liste déroulante ne peut pas afficher d’image : cette image ne serait donc jamais vue. Faites du champ un groupe de boutons radio, ou supprimez l’image.',
   'option.imageInChips':
     'Un sélecteur d’étiquettes affiche ses options sous forme de puces, qui ne peuvent pas afficher d’image : cette image ne serait donc jamais vue. Retirez le sélecteur d’étiquettes, ou supprimez l’image.',
+  'ranking.duplicateOption':
+    'Deux options de ce classement ont la valeur « {value} ». Un classement enregistre des valeurs : il ne pourrait pas dire laquelle des deux vient en premier — donnez à chaque option sa propre valeur.',
   'mask.noPositions':
     'Ce masque n’a aucune position où saisir : le champ ne pourrait recevoir aucune réponse. Utilisez 9 pour un chiffre, a pour une lettre ou * pour l’un ou l’autre.',
 

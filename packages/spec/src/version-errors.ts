@@ -10,7 +10,14 @@
  *
  * `SchemaError` stays in `validate.ts`, which is where the public surface is.
  */
-import { LIST_VALUED_FIELD_TYPES, SPEC_1_FIELD_TYPES, SPEC_2_FIELD_TYPES, SPEC_2_WIDGETS, SPEC_3_WIDGETS } from './types.js'
+import {
+  LIST_VALUED_FIELD_TYPES,
+  SPEC_1_FIELD_TYPES,
+  SPEC_2_FIELD_TYPES,
+  SPEC_2_WIDGETS,
+  SPEC_3_FIELD_TYPES,
+  SPEC_3_WIDGETS,
+} from './types.js'
 import { SPEC_2_RULE_KINDS } from './rules.js'
 import { layoutChildren, SPEC_1_LAYOUT_KINDS } from './layout.js'
 import type { FieldDef, FormSchema } from './types.js'
@@ -48,14 +55,21 @@ export function versionErrors(
   const errors: SchemaError[] = []
   const spec1Types = new Set<string>(SPEC_1_FIELD_TYPES)
   const spec2Types = new Set<string>(SPEC_2_FIELD_TYPES)
+  const spec3Types = new Set<string>(SPEC_3_FIELD_TYPES)
   const spec2Widgets = new Set<string>(SPEC_2_WIDGETS)
   const spec3Widgets = new Set<string>(SPEC_3_WIDGETS)
   const spec2RuleKinds = new Set<string>(SPEC_2_RULE_KINDS)
   const spec1Kinds = new Set<string>(SPEC_1_LAYOUT_KINDS)
 
-  /** The version a field type first appeared in. */
+  /**
+   * The version a field type first appeared in.
+   *
+   * Per version, for the reason the widget check below gives: this read "1, else 2,
+   * else 3" and answered 3 for every type there would ever be, so a version 3 document
+   * carrying a version 4 `ranking` was told it needed version 3 — the one it declares.
+   */
   const introducedIn = (type: string): number =>
-    spec1Types.has(type) ? 1 : spec2Types.has(type) ? 2 : 3
+    spec1Types.has(type) ? 1 : spec2Types.has(type) ? 2 : spec3Types.has(type) ? 3 : 4
 
   /** The version a thing needs and the version this document says, for every sentence. */
   const versions = (version: number): { version: string; declared: string } => ({

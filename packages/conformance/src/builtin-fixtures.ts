@@ -393,6 +393,107 @@ export const builtinFixtures: readonly Fixture[] = [
     ],
   },
   {
+    name: 'a ranking stores the order chosen, and starts with nothing in it',
+    description: 'A ranking is several controls answering one question, so it is a group with one accessible name. Its answer is the values of the options in the order the person put them, most preferred first — not the order the author wrote them in, which is why an untouched ranking holds nothing and a required one is refused until something is ranked. Moving an option changes the order and nothing else.',
+    tags: [
+      'fields',
+      'spec4',
+    ],
+    schema: {
+      specVersion: '4',
+      id: 'drinks',
+      title: 'What would you drink?',
+      model: {
+        fields: [
+          {
+            key: 'drinks',
+            type: 'ranking',
+            label: 'Put these in order',
+            required: true,
+            options: [
+              {
+                value: 'coffee',
+                label: 'Coffee',
+              },
+              {
+                value: 'tea',
+                label: 'Tea',
+              },
+              {
+                value: 'water',
+                label: 'Water',
+              },
+            ],
+          },
+        ],
+      },
+    },
+    steps: [
+      {
+        submit: true,
+      },
+      {
+        expectErrors: {
+          drinks: [
+            'required',
+          ],
+        },
+      },
+      {
+        set: {
+          drinks: [
+            'tea',
+            'coffee',
+          ],
+        },
+      },
+      {
+        expectValue: {
+          drinks: [
+            'tea',
+            'coffee',
+          ],
+        },
+      },
+      {
+        expectNoErrors: true,
+      },
+      {
+        set: {
+          drinks: [
+            'water',
+            'tea',
+            'coffee',
+          ],
+        },
+      },
+      {
+        expectValue: {
+          drinks: [
+            'water',
+            'tea',
+            'coffee',
+          ],
+        },
+      },
+      {
+        submit: true,
+      },
+      {
+        expectSubmit: {
+          status: 'accepted',
+          data: {
+            drinks: [
+              'water',
+              'tea',
+              'coffee',
+            ],
+          },
+        },
+      },
+    ],
+  },
+  {
     name: 'a repeating group validates each item and re-indexes when one is removed',
     description: 'Removing an item is not the same as clearing it: everything after it moves down by one, and so do its values and its messages. A message left behind on contacts[1] after contacts[0] was removed points at a field that is no longer on screen, which is the classic repeater bug and the reason this case pins the indices so hard. The email format rule is row-scoped — it runs once per item with `item` bound to that row — so a bad address in one row must flag that row and no other.',
     tags: [

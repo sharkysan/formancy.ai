@@ -1013,6 +1013,9 @@ describe('which side a theme puts things on', () => {
     { pattern: /(^|[\s;{])left\s*:/m, instead: 'inset-inline-start' },
     { pattern: /(^|[\s;{])right\s*:/m, instead: 'inset-inline-end' },
     { pattern: /text-align\s*:\s*(left|right)\b/m, instead: 'text-align: start / end' },
+    // A side as a value after all: the paper theme's drop cap floated left, so a form read
+    // right to left had its first letter at the end of the line it starts.
+    { pattern: /(^|[\s;{])float\s*:\s*(left|right)\b/m, instead: 'float: inline-start / inline-end' },
   ]
 
   test('is reading order, never a side', () => {
@@ -1025,6 +1028,27 @@ describe('which side a theme puts things on', () => {
     expect(named, 'a theme that names a side is a theme that cannot be read right to left').toEqual(
       [],
     )
+  })
+
+  test('and names none by position either, in a shorthand with a left unlike its right', () => {
+    /*
+     * `padding: 0.25rem 0.375rem 0.25rem 0.625rem` is `padding-left: 0.625rem` spelled
+     * another way: the fourth value is the left whatever the reading order. The case above
+     * knew the longhand only, and the browser gate found the other spelling — the ranking's
+     * buttons, which borrowed a chip's padding, kept their wider side on the left when the
+     * form was mirrored. The chip had carried it unnoticed because no chip was on screen.
+     *
+     * `padding`, `margin` and `inset`. Not `border-width`: the one asymmetric use draws
+     * a tick out of two borders, a glyph that is the same in both reading orders.
+     */
+    const positioned = stylesheets().flatMap(({ name, css }) =>
+      [...withoutComments(css).matchAll(/(?:^|[\s;{])(padding|margin|inset)\s*:\s*([^;}]+)/g)]
+        .map(([, property, value]) => ({ property, values: value!.trim().split(/\s+/) }))
+        .filter(({ values }) => values.length === 4 && values[1] !== values[3])
+        .map(({ property, values }) => `${name}: ${property}: ${values.join(' ')}`),
+    )
+
+    expect(positioned, 'use the -block and -inline longhands').toEqual([])
   })
 
   test('and a side named as a VALUE is named again for the other reading order', () => {
