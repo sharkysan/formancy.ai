@@ -42,6 +42,7 @@ import type {
   Storage,
 } from '@formancy/server-core'
 import { createSessionTokens, realRandomToken, realSecretHashing } from './auth-runtime.js'
+import { checkedMaxFileBytes, DEFAULT_MAX_FILE_BYTES } from './upload-settings.js'
 
 export { SCHEMA_HASH_HEADER } from './headers.js'
 /** Base64 JSON, the shape an ALTCHA client already produces. */
@@ -112,7 +113,8 @@ export interface AppOptions {
   /**
    * Largest file this deployment will accept, whatever a form says. A form
    * author sets the per-field limit; this is the operator's ceiling over all
-   * of them, because the disk is theirs. Defaults to 10 MB.
+   * of them, because the disk is theirs. Defaults to 10 MB; a whole number no
+   * larger than `files.size` holds, or `createApp` throws (`upload-settings.ts`).
    */
   maxFileBytes?: number
   /** Asked about every upload's bytes before they are kept; absent, none is asked (0131). */
@@ -139,16 +141,8 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
   // enough that a request cannot cost meaningful memory before it is rejected.
   const app = Fastify({ logger: false, bodyLimit: options.bodyLimitBytes ?? 256 * 1024 })
 
-  const maxFileBytes = options.maxFileBytes ?? 10 * 1024 * 1024
+  const maxFileBytes = checkedMaxFileBytes(options.maxFileBytes ?? DEFAULT_MAX_FILE_BYTES, 'maxFileBytes')
   const fileStore = options.fileStore
-
-  // Bytes arrive as a body, not as JSON, so the parser is told to hand them
-  // over untouched. Registered for every content type because a file is
-  // whatever the reader had — the form's `accept` list is what decides
-  // whether it is allowed, and that is checked before the upload is offered.
-  app.addContentTypeParser('*', { parseAs: 'buffer', bodyLimit: maxFileBytes }, (_request, body, done) => {
-    done(null, body)
-  })
 
   const submissionLimit = options.submissionRateLimit ?? { max: 30, timeWindowMs: 60_000 }
   const loginLimit = options.loginRateLimit ?? { max: 10, timeWindowMs: 60_000 }
