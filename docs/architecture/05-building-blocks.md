@@ -243,9 +243,12 @@ a proposal has gone stale
 
 Before a proposal there is the asking. `answers.ts` holds what every request to a model
 shares and nothing about forms. `readAnswer` takes the JSON object out of what a model
-wrote. `askChecked` asks, checks, and asks again with only the latest complaint. The run
-ends when an answer passes, when the attempts run out, when the person stops it, or when
-the host's model cannot be asked. It resolves on each, with `ended` saying which. Each
+wrote, and reads one whose only key is the spec's `DECLINE_KEY` as the model declining.
+`askChecked` asks, checks, and asks again with only the latest complaint. The run ends when
+an answer passes, when the attempts run out, when the person stops it, when the host's model
+cannot be asked, or when the model declines, after that one turn. It resolves on each, with
+`ended` saying which. `declinedAnswer` writes a decline for a host whose model service
+refuses a request itself ([0158](../decisions/0158-a-model-may-decline.md)). Each
 turn is raced against a `Stop` from `createStop`, so a host that ignores `onCancel` cannot
 hold the run open, and an answer arriving after the stop is discarded. The stop is a
 callback rather than an `AbortSignal`, which this package's types do not have.

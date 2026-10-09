@@ -12,12 +12,18 @@
  * ran once. A fixture that can be opened, type-checked and linted in place is
  * also one somebody can extend without reading the runner.
  */
-import { CURRENT_SPEC_VERSION, modelDataPaths } from '@formancy/spec'
+import { CURRENT_SPEC_VERSION, DECLINE_KEY, modelDataPaths } from '@formancy/spec'
 import { validateSchema } from '@formancy/spec/validate'
 import schemaJson from '@formancy/spec/schema.json'
 import { parse, referencedPaths, rewritePath } from '@formancy/expressions'
 import { createFormEngine, expressionProblems, unknownReferences } from '@formancy/core'
-import { authorForm, builderView, createBuilderSession, createStop } from '@formancy/builder-core'
+import {
+  authorForm,
+  builderView,
+  createBuilderSession,
+  createStop,
+  declinedAnswer,
+} from '@formancy/builder-core'
 import type { AskModel } from '@formancy/builder-core'
 import { mintChallenge, solveChallenge, verifySolution } from '@formancy/challenge'
 import { auditedBy, createMemoryStorage, publishForm } from '@formancy/server-core'
@@ -70,6 +76,17 @@ const running = authorForm(neverAnswers, 'a contact form', { stop })
 stop.stop()
 const ended = await running
 if (ended.ok || ended.ended !== 'stopped') throw new Error('the installed authorForm did not stop')
+
+// A decline (0158): a host maps its model service's own refusal onto the answer the
+// briefing offers, spelled with the spec's key, and the run ends on the first turn.
+const refuses: AskModel = () => Promise.resolve(declinedAnswer('The model service refused.'))
+const declined = await authorForm(refuses, 'email me every submission')
+if (declined.ok || declined.ended !== 'declined' || declined.attempts !== 1) {
+  throw new Error('the installed authorForm did not end on a decline')
+}
+if (!(DECLINE_KEY in (JSON.parse(declinedAnswer('why')) as object))) {
+  throw new Error('declinedAnswer and the spec disagree about the key')
+}
 
 /*
  * The challenge: mint, solve, verify — both halves of the protocol.

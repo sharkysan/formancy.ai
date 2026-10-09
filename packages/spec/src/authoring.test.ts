@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 
 import schema from '../formancy.schema.json' with { type: 'json' }
-import { authoringBriefing, authoringFacts } from './authoring.js'
+import { DECLINE_KEY, authoringBriefing, authoringFacts } from './authoring.js'
 import {
   CURRENT_SPEC_VERSION,
   FIELD_TYPES,
@@ -140,6 +140,33 @@ describe('the briefing itself', () => {
     // Without it a model returns a code fence and a paragraph of explanation, and the
     // caller parses the paragraph as JSON.
     expect(authoringBriefing()).toMatch(/nothing else/i)
+  })
+
+  test('shows how to decline, as an object whose only key is DECLINE_KEY', () => {
+    /*
+     * Asked for something no document can say — "email me every submission" — a
+     * model had no answer but a document, and wrote one that failed the checks on
+     * every attempt. The briefing offers a decline instead, and the example it shows
+     * is what a model copies: spelled with any other key, or with a second one, it
+     * is read as a document that failed, and the run goes on asking.
+     *
+     * Read out of the briefing as JSON rather than matched as wording, so it holds
+     * for whatever sentence surrounds the example.
+     */
+    const objects = [...authoringBriefing().matchAll(/\{[^{}]*\}/g)].flatMap(([candidate]) => {
+      try {
+        const parsed: unknown = JSON.parse(candidate)
+        return typeof parsed === 'object' && parsed !== null ? [parsed as Record<string, unknown>] : []
+      } catch {
+        return []
+      }
+    })
+    const declines = objects.filter((object) => DECLINE_KEY in object)
+
+    expect(declines).toHaveLength(1)
+    expect(Object.keys(declines[0] ?? {})).toEqual([DECLINE_KEY])
+    expect(typeof declines[0]?.[DECLINE_KEY]).toBe('string')
+    expect(String(declines[0]?.[DECLINE_KEY]).trim()).not.toBe('')
   })
 })
 

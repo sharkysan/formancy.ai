@@ -156,5 +156,9 @@ export function proposalStatus(
       return result.reason === undefined
         ? text('prompt.status.unreachableNoReason')
         : text('prompt.status.unreachable', { reason: result.reason })
+    case 'declined':
+      // Without the reason, which the pane shows in place of the problems, as the
+      // model wrote it: in this sentence too it would be read out twice (0158).
+      return text('prompt.status.declined')
   }
 }

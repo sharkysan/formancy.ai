@@ -52,7 +52,7 @@ formancy
 | Keystroke, large conditional form | 1 ms | ≈0.38 ms |
 | Cold graph compile | 30 ms | ≈1.7 ms |
 | `@formancy/core` bundle | 18 kB brotli | **20.8 kB** — over, measured 2026-10-09 |
-| `@formancy/spec` bundle | — | 25.2 kB for the whole barrel — the index and the chunk it shares with `/validate`, measured 2026-10-09 |
+| `@formancy/spec` bundle | — | 25.5 kB for the whole barrel — the index and the chunk it shares with `/validate`, measured 2026-10-09 |
 | `@formancy/react` bundle | 4 kB brotli | **24.6 kB** for the whole barrel, measured 2026-10-09 |
 | `uqr`, the QR encoder | — | 6.6 kB brotli, **external** rather than bundled, measured 2026-09-27 |
 

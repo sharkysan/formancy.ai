@@ -2,7 +2,7 @@ import { authoringBriefing, canonicalize } from '@formancy/spec'
 import { validateSchema } from '@formancy/spec/validate'
 import type { FormSchema } from '@formancy/spec'
 import { engineRefusal, expressionProblems } from '@formancy/core'
-import { askChecked, readAnswer } from './answers.js'
+import { askChecked } from './answers.js'
 import type { AskModel, Stop, Verdict } from './answers.js'
 
 /**
@@ -18,7 +18,7 @@ import type { AskModel, Stop, Verdict } from './answers.js'
  * vendor, no API key, no network call and no opinion about who pays for tokens.
  */
 
-export { createStop } from './answers.js'
+export { createStop, declinedAnswer } from './answers.js'
 export type { AskModel, AskTurn, AuthoringPrompt, Stop } from './answers.js'
 
 /**
@@ -47,12 +47,15 @@ export type AuthoringResult =
        * Why there is no document. `gave-up`: every attempt answered and none
        * worked. `stopped`: the person stopped the run, and an answer still on its
        * way is discarded. `unreachable`: the host's model threw — the network, a
-       * refused key — so nothing about the instruction was tried.
+       * refused key — so nothing about the instruction was tried. `declined`: the
+       * model answered that the format cannot express what was asked, and was not
+       * asked again (0158).
        */
-      readonly ended: 'gave-up' | 'stopped' | 'unreachable'
+      readonly ended: 'gave-up' | 'stopped' | 'unreachable' | 'declined'
       /**
-       * When unreachable: the message of what the host's model threw, to be shown as
-       * text. Absent when it had none — `undefined`, an event, an empty string.
+       * When unreachable: the message of what the host's model threw, absent when it
+       * had none — `undefined`, an event, an empty string. When declined: the model's
+       * reason, as it wrote it. Either is shown as text.
        */
       readonly reason?: string
     }
@@ -110,9 +113,8 @@ export async function authorForm(
   return asked.ok ? { ok: true, document: asked.value, attempts: asked.attempts } : asked
 }
 
-/** Whether an answer is a document that works, or the first thing wrong with it. */
-function checkDocument(answer: string): Verdict<FormSchema, AuthoringProblem> {
-  const parsed = readAnswer(answer)
+/** Whether the object an answer held is a document that works, or the first thing wrong with it. */
+function checkDocument(parsed: object | undefined): Verdict<FormSchema, AuthoringProblem> {
   if (parsed === undefined) {
     return {
       ok: false,

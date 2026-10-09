@@ -1,5 +1,5 @@
 export { canonicalize } from './canonical.js'
-export { authoringBriefing, authoringFacts } from './authoring.js'
+export { DECLINE_KEY, authoringBriefing, authoringFacts } from './authoring.js'
 export type { AuthoringFacts } from './authoring.js'
 export { schemaHash } from './hash.js'
 export { diffSchemas } from './diff.js'

@@ -1384,6 +1384,18 @@ kbd {
   color: var(--wb-derived);
 }
 
+/* The model's own reason for declining, quoted: in ink rather than the problems' red,
+   because nothing was wrong with an answer — the model said what it cannot do. */
+[data-formancy-part='prompt-declined'] {
+  margin: 0;
+  padding-inline-start: 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--wb-ink);
+  border-inline-start: 2px solid var(--wb-rule);
+  white-space: pre-wrap;
+}
+
 [data-formancy-part='prompt-problems'] {
   font-size: 0.75rem;
   color: var(--wb-invalid);

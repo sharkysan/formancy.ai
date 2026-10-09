@@ -306,8 +306,10 @@ Write it
                                  │     ──▶ ended: stopped; a later answer settles nothing
                                  ├─ rejected or threw ──▶ ended: unreachable, with its reason if any
                                  ▼
-                               readAnswer → validateSchema → the engine's compile
-                                          → expressionProblems
+                               readAnswer
+                                 ├─ {"declined": why} ──▶ ended: declined, with the reason
+                                 ▼
+                               validateSchema → the engine's compile → expressionProblems
                                  ├─ refused ──▶ the complaint goes into the next turn
                                  ▼
                                ok: the document
@@ -328,3 +330,9 @@ in `proposalStatus`, and not by two panes each catching the rejection
 ([0157](../decisions/0157-a-models-turn-can-be-stopped.md)). Only the latest complaint goes
 back to the model, in `user` for a host that keeps no conversation and alone as `followUp`
 for one that does ([0056](../decisions/0056-agents-get-the-checks.md)).
+
+**A decline is an ending too.** The briefing offers the model `{"declined": "<why>"}` for a
+request the format cannot express, and an answer of exactly that shape ends the run on the
+turn it came, before any check. Another turn would be paid for to hear the same answer, or
+to talk the model out of it. The pane says the model declined and shows its reason, as text, in place of
+the problem list ([0158](../decisions/0158-a-model-may-decline.md)).

@@ -1246,6 +1246,19 @@ during the second run and asserts that nothing is proposed until the second answ
 then that the review lists the second answer's change. It fails, where *can be stopped*
 does not, for a pane that keeps one stop for its whole life.
 
+A request the format cannot express is this failure's sharpest case. Asked to email every
+submission, a model had no answer but a document, and a document that does part of the
+request — a field that mentions email, say — can pass every check while the instruction
+looks satisfied. The briefing now tells the model not to write one, and offers it a decline,
+`{"declined": "<why>"}`, which ends the run with nothing proposed and the model's reason shown
+([0158](../decisions/0158-a-model-may-decline.md)). That is an instruction to a model, not a
+control: nothing makes a model take it, no test here runs a real model, and a document that
+does part of the request still reaches the review like any other. What is held is narrower.
+`authoring.test.ts` (*a model that declines*) holds that a decline ends the run on its turn
+with no document, and that a document is never taken for one — titled "declined", or with a
+`declined` key beside its own, which the closed schema then refuses. Both builders'
+`prompt-pane.test` (*when the model declines*) hold that nothing is applied.
+
 One thing does reach further than a review: an example with its answer written down.
 `runScenarios` executes a form against saved examples and reports which stopped holding,
 which is the only check in this product that can tell a condition that compiles from the
