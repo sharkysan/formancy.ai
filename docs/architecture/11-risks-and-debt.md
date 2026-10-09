@@ -45,10 +45,12 @@ and named an Angular app, rendered and measured, as the remedy.** Both exist now
 playground mounts the Angular renderer and the Angular builder beside the React ones over the
 same document ([0095](../decisions/0095-one-schema-two-renderers.md),
 [0096](../decisions/0096-two-builders-one-session.md)); `apps/angular-starter` is an Angular
-application, which `test:e2e:angular` installs from the packed packages and runs in Chromium
-and `test:browser` loads where the site embeds it
+application, which `test:browser` loads where the site embeds it and measures in Chromium
 ([0133](../decisions/0133-the-angular-starter-is-the-builder-and-the-form.md),
-[0136](../decisions/0136-the-angular-page-runs-the-starter.md)). What is still React-only is
+[0136](../decisions/0136-the-angular-page-runs-the-starter.md),
+[0142](../decisions/0142-the-angular-starter-is-dressed-in-materials-tokens.md)), and
+`test:e2e:angular` installs the packed packages into a project of its own and runs a Material
+form there — the renderer, not the builder. What is still React-only is
 the admin, so the Angular builder's appearance is measured in the playground and the starter
 and nowhere a deployment ships it.
 

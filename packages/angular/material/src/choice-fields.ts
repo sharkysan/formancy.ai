@@ -128,7 +128,9 @@ export class FormancyMaterialCheckboxField extends MaterialFieldBase {}
  * The fieldset is what makes it a named group — `mat-radio-group` is `role="radiogroup"`
  * with no name of its own — and it carries the engine's description, as in the default
  * control, with the required hint as a real element because `role="group"` does not
- * support `aria-required`.
+ * support `aria-required`. The frame is this adapter's markup rather than Material's, so it
+ * carries the default group's hooks — `field`, `label`, `required-hint` and `data-state` —
+ * and a host styles both registries' groups with one rule.
  */
 @Component({
   selector: 'formancy-material-radio-group-field',
@@ -137,12 +139,14 @@ export class FormancyMaterialCheckboxField extends MaterialFieldBase {}
   template: `
     @if (offered(); as offered) {
       <fieldset
+        data-formancy-part="field"
         [attr.data-formancy-field-path]="context.path"
+        [attr.data-state]="showError() ? 'invalid' : 'valid'"
         [attr.aria-describedby]="control()['aria-describedby']"
       >
-        <legend>{{ context.label }}</legend>
+        <legend data-formancy-part="label">{{ context.label }}</legend>
         @if (field.snapshot().required) {
-          <span [id]="field.snapshot().ids.hint">required</span>
+          <span data-formancy-part="required-hint" [id]="field.snapshot().ids.hint">required</span>
         }
         <mat-radio-group
           [name]="control().name"
@@ -180,12 +184,14 @@ export class FormancyMaterialRadioGroupField extends MaterialFieldBase {
   template: `
     @if (offered(); as offered) {
       <fieldset
+        data-formancy-part="field"
         [attr.data-formancy-field-path]="context.path"
+        [attr.data-state]="showError() ? 'invalid' : 'valid'"
         [attr.aria-describedby]="control()['aria-describedby']"
       >
-        <legend>{{ context.label }}</legend>
+        <legend data-formancy-part="label">{{ context.label }}</legend>
         @if (field.snapshot().required) {
-          <span [id]="field.snapshot().ids.hint">required</span>
+          <span data-formancy-part="required-hint" [id]="field.snapshot().ids.hint">required</span>
         }
         @for (option of offered; track option.value) {
           <mat-checkbox

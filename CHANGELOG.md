@@ -10,6 +10,21 @@ later.
 
 ## Unreleased
 
+**Fixed: the Angular starter looks like the Material application it is.** Material's type
+tokens name Roboto with no fallback and nothing loaded it, so every Material label was drawn in
+the browser's serif; the builder beside the form had no styling; and the submit and repeater
+buttons were the platform's. The starter now loads Roboto itself rather than from a font
+service, dresses the builder with `@formancy/themes/workbench.css` recoloured by Material's
+tokens, and dresses the controls Material does not draw in those tokens too — through the
+`data-formancy-part` hooks, in its own stylesheet, which is yours to change
+([0142](docs/decisions/0142-the-angular-starter-is-dressed-in-materials-tokens.md)).
+
+**Fixed: `@formancy/angular/material`'s radio and tick groups carry the default group's
+hooks.** The fieldset around Material's radios and ticks is the adapter's own markup and had
+none of `data-formancy-part="field"`, `"label"`, `"required-hint"` or `data-state`, so a
+stylesheet that reached the default group's required hint missed Material's, and *required*
+stood as bare text before the radios.
+
 **Removed: the SurveyJS comparison from formancy.ai/angular-form-builder.** The page makes its
 case about formancy alone: the starter running, the install, saving and opening a form, and the
 tested versions ([0141](docs/decisions/0141-the-angular-page-compares-with-no-other-product.md)).

@@ -128,6 +128,16 @@ describe('saving and reloading the form', () => {
     expect(within(screen.getByRole('banner')).getByRole('status').textContent).toContain('Saved')
   })
 
+  test('Save and Reload saved are Material’s buttons, as the form’s controls are', async () => {
+    // Native buttons beside Material's fields made the page look like two applications.
+    // The class is Material's own mark on every button it draws.
+    await open()
+
+    for (const name of ['Save', 'Reload saved']) {
+      expect(screen.getByRole('button', { name }).classList).toContain('mat-mdc-button-base')
+    }
+  })
+
   test('and the app opens on what was saved', async () => {
     localStorage.setItem('formancy-starter:form', JSON.stringify(edited))
 

@@ -1,17 +1,66 @@
-/* Angular Material's own theme: the adapter ships no CSS, so the application chooses. */
+/*
+ * The page around the builder and the form, in Angular Material's own tokens: one theme
+ * decides every colour, shape and face on it, so changing the theme changes the page.
+ */
+
+/* Angular Material's theme: the adapter ships no CSS, so the application chooses. */
 @import '@angular/material/prebuilt-themes/azure-blue.css';
 
-/* The page around the two panes. Nothing here styles a form control: Material does. */
+/* Roboto, which Material's type tokens name without a fallback and nothing else loads —
+   without it every Material label is drawn in the browser's serif. Served by this app
+   rather than a font service, so the page makes no third-party request. 400 and 500 are
+   Material's body and label weights; 700 is the headings'. */
+@import '@fontsource/roboto/400.css';
+@import '@fontsource/roboto/500.css';
+@import '@fontsource/roboto/700.css';
+
+/* The builder's furniture — its tree, its key help, its property and logic panels — is
+   formancy's workbench. Material has nothing that draws a builder, so the workbench is
+   recoloured with Material's tokens instead. */
+@import '@formancy/themes/workbench.css';
+
+:root {
+  --wb-ink: var(--mat-sys-on-surface);
+  --wb-bench: var(--mat-sys-surface-container);
+  --wb-panel: var(--mat-sys-surface-container-low);
+  --wb-surface: var(--mat-sys-surface-container-lowest);
+  --wb-rule: var(--mat-sys-outline-variant);
+  --wb-muted: var(--mat-sys-on-surface-variant);
+  --wb-signal: var(--mat-sys-primary);
+  --wb-derived: var(--mat-sys-tertiary);
+  --wb-invalid: var(--mat-sys-error);
+  --wb-sans: var(--mat-sys-body-medium-font), system-ui, sans-serif;
+}
+
 html,
 body {
   margin: 0;
-  font-family: Roboto, system-ui, sans-serif;
+  font-family: var(--mat-sys-body-large-font), system-ui, sans-serif;
+  font-size: var(--mat-sys-body-large-size);
+  line-height: var(--mat-sys-body-large-line-height);
   color: var(--mat-sys-on-surface);
   background: var(--mat-sys-surface);
 }
 
+/* ------------------------------------------------------------ the page */
+
 header {
-  padding: 1rem 1.5rem 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.5rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--mat-sys-surface-container);
+}
+
+header h1 {
+  margin: 0;
+  font: var(--mat-sys-title-large);
+}
+
+header p {
+  margin: 0;
+  color: var(--mat-sys-on-surface-variant);
 }
 
 .actions {
@@ -19,25 +68,171 @@ header {
   flex-wrap: wrap;
   gap: 0.5rem;
   align-items: center;
+  margin-inline-start: auto;
 }
 
 .panes {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr));
+  align-items: start;
   gap: 1.5rem;
-  padding: 1rem 1.5rem 2rem;
+  padding: 1.5rem;
 }
 
 .pane {
   min-inline-size: 0;
+  padding: 1rem 1.5rem 1.5rem;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: var(--mat-sys-corner-large);
+  background: var(--mat-sys-surface-container-lowest);
 }
 
-mat-form-field {
-  inline-size: 100%;
+.pane > h2 {
+  margin: 0 0 1rem;
+  font: var(--mat-sys-title-large);
+}
+
+.pane h3 {
+  font: var(--mat-sys-title-medium);
+}
+
+/* The inspector under the tree, set off from it as the workbench sets the logic panel off
+   from the inspector. The workbench gives each its own pane; the starter stacks them. */
+[data-formancy-part='property-panel'] {
+  margin-block-start: 1.5rem;
+  padding-block-start: 1rem;
+  border-block-start: 2px solid var(--wb-rule);
+}
+
+/* The panels' own buttons, which the workbench dresses only inside its own panes. Under
+   :where(), so every button the workbench does draw keeps its rule. */
+:where([data-formancy-part='property-panel'], [data-formancy-part='logic-panel']) button {
+  min-block-size: 2rem;
+  padding: 0 1rem;
+  border: 1px solid var(--mat-sys-outline);
+  border-radius: var(--mat-sys-corner-full);
+  font: var(--mat-sys-label-large);
+  color: var(--mat-sys-primary);
+  background: transparent;
+  cursor: pointer;
 }
 
 pre {
   overflow: auto;
   padding: 0.75rem;
+  border-radius: var(--mat-sys-corner-small);
   background: var(--mat-sys-surface-container);
+}
+
+/* ------------------------------------------- the form, where Material draws */
+
+mat-form-field {
+  inline-size: 100%;
+}
+
+/* ------------------------------- the form, where Material has no equivalent
+ *
+ * A group's frame, a repeater, a file field and the submit button are formancy's default
+ * controls (0132), which ship no styling. They are dressed here in Material's tokens so
+ * the form reads as one thing; every rule reaches them through the `data-formancy-part`
+ * hooks both registries emit, and none touches a control Material draws.
+ */
+
+fieldset:is([data-formancy-part='field'], [data-formancy-part='repeater']) {
+  margin: 0 0 1.25rem;
+  padding: 0.5rem 1rem 1rem;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: var(--mat-sys-corner-medium);
+}
+
+fieldset[data-state='invalid'] {
+  border-color: var(--mat-sys-error);
+}
+
+fieldset > legend {
+  padding: 0 0.25rem;
+  font: var(--mat-sys-title-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+[data-formancy-part='required-hint'] {
+  display: block;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+[data-formancy-part='row'] + [data-formancy-part='row'] {
+  margin-block-start: 1rem;
+  padding-block-start: 1rem;
+  border-block-start: 1px solid var(--mat-sys-outline-variant);
+}
+
+div[data-formancy-part='field'] {
+  margin-block-end: 1.25rem;
+}
+
+div[data-formancy-part='field'] > [data-formancy-part='label'] {
+  display: block;
+  margin-block-end: 0.5rem;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+[data-formancy-part='file-status'],
+[data-formancy-part='error'] {
+  font: var(--mat-sys-body-small);
+}
+
+[data-formancy-part='error'] {
+  color: var(--mat-sys-error);
+}
+
+/* Buttons as Material draws its own: a filled one for submitting, an outlined one for
+   adding, text for what acts on one row. */
+[data-formancy-part='submit'],
+[data-formancy-part='repeater'] > button,
+[data-formancy-part='row'] button,
+[data-formancy-part='file-dropzone'] input::file-selector-button {
+  min-block-size: 2.5rem;
+  padding: 0 1.5rem;
+  border: 1px solid transparent;
+  border-radius: var(--mat-sys-corner-full);
+  font: var(--mat-sys-label-large);
+  cursor: pointer;
+}
+
+[data-formancy-part='submit'] {
+  color: var(--mat-sys-on-primary);
+  background: var(--mat-sys-primary);
+}
+
+[data-formancy-part='repeater'] > button {
+  margin-block-start: 1rem;
+  border-color: var(--mat-sys-outline);
+  color: var(--mat-sys-primary);
+  background: transparent;
+}
+
+[data-formancy-part='row'] button {
+  padding: 0 0.75rem;
+  color: var(--mat-sys-primary);
+  background: transparent;
+}
+
+[data-formancy-part='file-dropzone'] input::file-selector-button {
+  margin-inline-end: 0.75rem;
+  color: var(--mat-sys-on-secondary-container);
+  background: var(--mat-sys-secondary-container);
+}
+
+:is([data-formancy-part='submit'], [data-formancy-part='repeater'] > button, [data-formancy-part='row'] button):hover {
+  background-image: linear-gradient(
+    color-mix(in srgb, currentcolor calc(var(--mat-sys-hover-state-layer-opacity) * 100%), transparent),
+    color-mix(in srgb, currentcolor calc(var(--mat-sys-hover-state-layer-opacity) * 100%), transparent)
+  );
+}
+
+:is([data-formancy-part='submit'], [data-formancy-part='repeater'] > button, [data-formancy-part='row'] button):focus-visible {
+  outline: 2px solid var(--mat-sys-primary);
+  outline-offset: 2px;
 }

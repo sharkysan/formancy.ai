@@ -242,3 +242,4 @@ listed under the sections they belong to above.
 | [0139](0139-a-matrix-answers-one-question-per-row.md) | A matrix answers one question per row, and stores the rows answered | accepted |
 | [0140](0140-spec-4-freezes-with-the-two-types-it-opened-for.md) | Spec 4 freezes with the two types it was opened for, and nothing opens version 5 yet | accepted |
 | [0141](0141-the-angular-page-compares-with-no-other-product.md) | The Angular page compares formancy with no other product | accepted |
+| [0142](0142-the-angular-starter-is-dressed-in-materials-tokens.md) | The Angular starter is dressed in Material's tokens, and loads the face they name | accepted |

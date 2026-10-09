@@ -976,6 +976,73 @@ async function run() {
       await page.close()
     }
 
+    /*
+     * The Angular starter, as formancy.ai serves it, looks like the Material
+     * application it says it is.
+     *
+     * It did not, and no other gate could say so: Material's type tokens name
+     * Roboto with no fallback and nothing loaded it, so every Material label
+     * was drawn in the browser's serif; the builder beside the form had no
+     * styling at all; and the controls Material does not draw — the submit
+     * button, a repeater's — were the platform's grey buttons.
+     *
+     * Asked of the cascade, not the stylesheet: Roboto as a face the document
+     * actually loaded (a family merely named would pass `document.fonts.check`
+     * when no face of it exists at all), and colours compared with what
+     * Material's own token resolves to on the page, so a change of theme
+     * moves both sides and a part left in another colour does not.
+     */
+    {
+      const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
+      console.log('\nthe Angular starter — 1440×900')
+      await page.goto(`${origin}/angular-form-builder/demo/`, { waitUntil: 'load' })
+      await page.waitForSelector('mat-form-field', { timeout: 30_000 })
+      const starter = await page.evaluate(async () => {
+        await document.fonts.ready
+        const token = (name) => {
+          const probe = document.createElement('span')
+          probe.style.color = `var(${name})`
+          document.body.append(probe)
+          const value = getComputedStyle(probe).color
+          probe.remove()
+          return value
+        }
+        const label = document.querySelector('mat-form-field mat-label')
+        const selected = document.querySelector("[data-formancy-part='builder-node'][aria-selected='true']")
+        const submit = document.querySelector("[data-formancy-part='submit']")
+        const group = document.querySelector("fieldset[data-formancy-part='field']")
+        return {
+          roboto: [...document.fonts].filter((face) => face.family.replace(/["']/g, '') === 'Roboto' && face.status === 'loaded').length,
+          labelFace: label === null ? null : getComputedStyle(label).fontFamily.split(',')[0].replace(/["']/g, '').trim(),
+          primary: token('--mat-sys-primary'),
+          outline: token('--mat-sys-outline-variant'),
+          selected: selected === null ? null : getComputedStyle(selected).boxShadow,
+          submit: submit === null ? null : getComputedStyle(submit).backgroundColor,
+          frame: group === null ? null : getComputedStyle(group).borderTopColor,
+        }
+      })
+
+      check(
+        'Material’s labels are drawn in Roboto, loaded by the starter rather than named',
+        starter.roboto > 0 && starter.labelFace === 'Roboto'
+          ? null
+          : `${String(starter.roboto)} Roboto faces loaded, and the label asks for ${String(starter.labelFace)}`,
+      )
+      check(
+        'the builder is dressed, and marks its selection in Material’s primary',
+        starter.selected !== null && starter.selected.includes(starter.primary)
+          ? null
+          : `the selected node's mark is ${String(starter.selected)}, and Material's primary ${starter.primary}`,
+      )
+      check(
+        'what Material does not draw wears its colours: the submit button and a group’s frame',
+        starter.submit === starter.primary && starter.frame === starter.outline
+          ? null
+          : `submit ${String(starter.submit)} against ${starter.primary}; frame ${String(starter.frame)} against ${starter.outline}`,
+      )
+      await page.close()
+    }
+
   } finally {
     await browser.close()
     server.close()
@@ -986,7 +1053,7 @@ async function run() {
     throw new Error(`${String(failures.length)} browser check(s) failed:\n  ${failures.join('\n  ')}`)
   }
   console.log(
-    `browser checks passed: ${String(WIDTHS.length)} viewports of the playground, plus the site's pages and the starter embedded in one, for the layout, gesture and cascade facts jsdom cannot represent`,
+    `browser checks passed: ${String(WIDTHS.length)} viewports of the playground, plus the site's pages, the starter embedded in one and the starter on its own, for the layout, gesture and cascade facts jsdom cannot represent`,
   )
 }
 

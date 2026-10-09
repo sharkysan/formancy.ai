@@ -165,7 +165,11 @@ import { provideFormancyMaterial } from '@formancy/angular/material'
 providers: [provideFormancy(engine), provideFormancyMaterial()]
 ```
 
-Include a Material theme as you would for any Material component; the adapter ships no CSS.
+Include a Material theme as you would for any Material component, and load the Roboto face its
+type tokens name — they name it with no fallback, so without it every label is drawn in the
+browser's serif. The adapter ships no CSS. The fieldset around a group of radios or ticks is the
+adapter's own markup, and carries the same `data-formancy-part` hooks as the default group's, so
+one stylesheet reaches both.
 Text, paragraph, number, date and time are a `matInput` in `<mat-form-field>`; a list is the
 platform's `<select>` under `matNativeControl`; ticks and radios are Material's. **What Material
 has no equivalent for is drawn by the default control** — a mask, a scanner, a rating or a
@@ -187,7 +191,9 @@ axe audit included ([0132](https://github.com/sharkysan/formancy.ai/blob/main/do
 [`apps/angular-starter`](https://github.com/sharkysan/formancy.ai/tree/main/apps/angular-starter) —
 the Angular builder and the form it builds side by side, drawn with Material, with the
 document, the panels, the submit, the uploader and where the form is saved each in one file
-of their own. It saves the form being built and opens on it next time, and
+of their own. Its stylesheet shows the rest of the page in Material's tokens: the builder
+dressed by `@formancy/themes/workbench.css` with Material's colours, and the controls Material
+does not draw — the submit button, a repeater, a file — dressed through their hooks. It saves the form being built and opens on it next time, and
 [formancy.ai/angular-form-builder](https://formancy.ai/angular-form-builder/) runs it.
 
 ## Editing a form, from Angular

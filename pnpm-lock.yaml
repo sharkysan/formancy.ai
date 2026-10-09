@@ -287,6 +287,9 @@ importers:
       '@angular/platform-browser':
         specifier: ^22.1.7
         version: 22.1.7(@angular/common@22.1.7(@angular/core@22.1.7(@angular/compiler@22.1.7)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.7(@angular/compiler@22.1.7)(rxjs@7.8.2))
+      '@fontsource/roboto':
+        specifier: ^5.3.0
+        version: 5.3.0
       '@formancy/angular':
         specifier: workspace:*
         version: link:../../packages/angular
@@ -302,6 +305,9 @@ importers:
       '@formancy/spec':
         specifier: workspace:*
         version: link:../../packages/spec
+      '@formancy/themes':
+        specifier: workspace:*
+        version: link:../../packages/themes
       rxjs:
         specifier: ^7.8.1
         version: 7.8.2
@@ -1948,6 +1954,9 @@ packages:
 
   '@fastify/rate-limit@11.2.0':
     resolution: {integrity: sha512-X7osJd4XSvMoejYrnJkSZYYjY1eNYoBqhjlzf1RakC2204qExFqZFTKj5+T7VuzA/iUI9Z3UoSqQRkB2HpG0oQ==}
+
+  '@fontsource/roboto@5.3.0':
+    resolution: {integrity: sha512-BapRJOWYP+LZ21zp+wBQjfpPYKRoxc4LspJ/RLuI+HSMBD5u/X4O+ESDrSvEqDSy0rAl7GwBJ+09mdc16cVQ1Q==}
 
   '@grpc/grpc-js@1.14.5':
     resolution: {integrity: sha512-7VZM+SVdEcUUqSQeNI3zM8Qs/BhQKZndPo2h5VkYkAM8Iz0wJIa8mKV5ekQGqG8UUsnkQ0NMxIxwkIHYvj0qOw==}
@@ -7567,6 +7576,8 @@ snapshots:
       fastify-plugin: 6.0.0
       ip-address: 10.7.2
       toad-cache: 3.7.4
+
+  '@fontsource/roboto@5.3.0': {}
 
   '@grpc/grpc-js@1.14.5':
     dependencies:
