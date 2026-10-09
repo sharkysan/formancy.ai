@@ -22,7 +22,7 @@ import {
   createBuilderText,
 } from '@formancy/builder-core'
 import type { FormEngine } from '@formancy/core'
-import type { BuilderSession, BuilderText } from '@formancy/builder-core'
+import type { BuilderBlock, BuilderSession, BuilderText } from '@formancy/builder-core'
 import { AngularBuilderPane } from './angular-builder-pane.js'
 import type { BuilderTab, PreviewState } from './angular-builder-host.js'
 import { DEMO_MODEL } from './demo-capabilities.js'
@@ -94,12 +94,20 @@ export function BuilderBody({
   onChange,
   tab,
   onTab,
+  blocks,
+  onSaveBlock,
   preview,
 }: {
   session: BuilderSession
   onChange: (next: string) => void
   tab: BuilderTab
   onTab: (next: BuilderTab) => void
+  /**
+   * One list for both builders, kept by the page: a block saved in either is offered by
+   * the other, as an edit made in either is in the other's tree (0135).
+   */
+  blocks: readonly BuilderBlock[]
+  onSaveBlock: (block: BuilderBlock) => void
   /** The form pane's engine, whose answers the rules tab explains (0128). */
   preview: FormEngine | undefined
 }) {
@@ -164,7 +172,13 @@ export function BuilderBody({
         /* The other builder, over the same session. An edit here moves the JSON
            and both rendered forms, which is the whole point of it being the same
            session rather than a second one. */
-        <AngularBuilderPane session={session} tab={tab} preview={explained} />
+        <AngularBuilderPane
+          session={session}
+          tab={tab}
+          preview={explained}
+          blocks={blocks}
+          onSaveBlock={onSaveBlock}
+        />
       ) : tab === 'rules' ? (
         /* Every rule in the form, and — from the answers typed into the form pane —
            why each field is shown, hidden or required now. Type into the form and
@@ -203,7 +217,12 @@ export function BuilderBody({
               type-checked, diffed and held for review. */}
           <PromptPane session={session} ask={DEMO_MODEL} />
 
-          <FormancyBuilder session={session} onSelect={setSelected} />
+          <FormancyBuilder
+            session={session}
+            onSelect={setSelected}
+            blocks={blocks}
+            onSaveBlock={onSaveBlock}
+          />
 
           {/* What this form is supposed to do, rerun after every edit. The
               check nothing else can make: a condition compiles whichever way

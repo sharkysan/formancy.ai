@@ -374,6 +374,13 @@ the token comes back exactly once, because an id the caller chose meant anybody 
 guessed one could read and overwrite a stranger's part-filled form
 ([0062](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0062-a-draft-carries-its-own-key.md)).
 
+**Saving a piece of a form to use again.** Built: a field saved as a block carries the
+rules that live inside it and the words it names, and inserting one renames what clashes and
+moves its rules with it. A block is a copy rather than a reference — a published version has to
+mean the same thing for the life of its submissions — so changing a block changes no form that
+used it, and storing blocks is the host's: neither the admin nor the server keeps them yet
+([0135](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0135-a-block-is-a-field-with-its-rules.md)).
+
 **The components they charge for, or lead with** — signature, data grid, QR code,
 autocomplete, tag picker. Each is small on its own and collectively they are a
 priced tier elsewhere. See the table above for what each actually costs.

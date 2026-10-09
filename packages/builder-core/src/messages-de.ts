@@ -162,6 +162,26 @@ export const BUILDER_MESSAGES_DE = {
   'said.cannotRemove': '{name} lässt sich nicht entfernen: {reason}',
   'said.added': 'Hinzugefügt: {what} – {where}.',
   'said.cannotAdd': 'Lässt sich nicht hinzufügen: {reason}',
+  'keys.block.what': 'das Feld unter dem Fokus als Block speichern',
+  'blocks.heading': 'Deine Blöcke',
+  'blocks.none':
+    'Noch keine Blöcke. Speichere ein Feld oder eine Gruppe als Block, um sie wieder zu verwenden.',
+  'blocks.save': 'Als Block speichern',
+  'blocks.name': 'Name des Blocks',
+  'blocks.saveConfirm': 'Block speichern',
+  'blocks.addWhere': 'Wohin mit dem Block „{name}“?',
+  'said.blockSaved': {
+    one: '„{name}“ als Block gespeichert, ohne die {count} Regel, die Felder außerhalb liest.',
+    other: '„{name}“ als Block gespeichert, ohne die {count} Regeln, die Felder außerhalb lesen.',
+  },
+  'said.blockSavedWhole': '„{name}“ als Block gespeichert.',
+  'said.blockAdded': 'Block „{name}“ hinzugefügt – {where}.',
+  'refuse.blockIsPage':
+    'Eine Seite ist kein Block: Speichere ein Feld oder eine Gruppe oder Wiederholung von Feldern.',
+  'refuse.blockInRow':
+    'Ein Feld in einer Zeile einer Wiederholung lässt sich nicht als Block speichern: Seine Regeln gelten für jede Zeile.',
+  'refuse.blockRulesInRow':
+    'Ein Block mit Regeln kann nicht in die Zeile einer Wiederholung: Seine Regeln würden für jede Zeile gelten.',
   'said.moved': '{name} verschoben: {where}.',
   'said.dropped': '{name} verschoben.',
   'said.cannotMove': 'Lässt sich nicht verschieben: {reason}',

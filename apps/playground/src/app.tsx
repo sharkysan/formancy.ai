@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import type { CSSProperties } from 'react'
 import Editor, { useMonaco } from '@monaco-editor/react'
 import type { Monaco } from '@monaco-editor/react'
@@ -20,7 +20,7 @@ import { createRichTextEditor } from '@formancy/tiptap'
 import { playgroundUploader } from './demo-uploader.js'
 import { DEMO_OPTIONS_SOURCES, DEMO_SCANNER } from './demo-capabilities.js'
 import { createBuilderSession } from '@formancy/builder-core'
-import type { BuilderSession } from '@formancy/builder-core'
+import type { BuilderBlock, BuilderSession } from '@formancy/builder-core'
 import {
   FormancyArrangeSurface,
   FormancyBuilder,
@@ -44,6 +44,7 @@ import { EditorPane } from './editor-pane.js'
 import type { EditorMode } from './editor-pane.js'
 import type { PaneId } from './panes.js'
 import { BuilderBody, PLACEHOLDER_SESSION, builderTextFor } from './builder-pane.js'
+import { DEMO_BLOCKS } from './demo-blocks.js'
 import { PLAYGROUND_CHECKS } from './demo-checks.js'
 import { Problem, SchemaProblems } from './problems.js'
 
@@ -136,6 +137,16 @@ export function App() {
    */
   const [session, setSession] = useState<BuilderSession | null>(null)
   const [builderTab, setBuilderTab] = useState<'fields' | 'arrangement' | 'rules'>('fields')
+  /**
+   * The blocks both builders offer: a demo one, and whatever is saved this visit (0135).
+   * Up here because a block outlives the form it was saved from — saved from one
+   * template, it is offered in the next — and because the Build pane is unmounted when
+   * somebody switches to Schema. A real host stores them; this page holds them in memory.
+   */
+  const [blocks, setBlocks] = useState<readonly BuilderBlock[]>(DEMO_BLOCKS)
+  const keepBlock = useCallback((block: BuilderBlock) => {
+    setBlocks((current) => [...current.filter((kept) => kept.id !== block.id), block])
+  }, [])
   const [shown, setShown] = useState<PaneId>('form')
 
   const panes = usePaneLayout()
@@ -358,6 +369,8 @@ export function App() {
           session={session}
           tab={builderTab}
           onTab={setBuilderTab}
+          blocks={blocks}
+          onSaveBlock={keepBlock}
           preview={built?.engine}
           theme={theme}
           themeHost={themeHost}

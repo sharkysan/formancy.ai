@@ -169,3 +169,12 @@ export type { RuleSummary, RuleVerdict, RulesOn } from './rules-overview.js'
 // The clock an explanation is given, as the engine takes it: the host's, never ambient.
 export { captureCapabilities, fixedCapabilities } from '@formancy/expressions'
 export type { Capabilities } from '@formancy/expressions'
+export {
+  blockFrom,
+  blockTargets,
+  insertBlock,
+  insertBlockAndSay,
+  saveBlockAndSay,
+  withBlock,
+} from './blocks.js'
+export type { BlockPlaced, BlockSaved, BuilderBlock } from './blocks.js'

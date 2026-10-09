@@ -316,6 +316,36 @@ There is also no *detection* pass over documents already published this way, and
 the warning is computed from the document rather than from the stored version, so
 a form published before this existed is not revisited.
 
+### B1b. A reused piece of a form arrives with logic reading the wrong fields
+
+*How it arises:* an author saves a group as a block and inserts it into another form, or
+into the same one again ([0135](../decisions/0135-a-block-is-a-field-with-its-rules.md)).
+Its rules name fields by path, from where it was saved. Copied as they are, a rule reading
+`address.country` reads nothing once the group is called `address2`; and a rule reading a
+field **outside** the block — `region` — reads whatever the new form happens to call
+`region`, which may be a different question entirely. The first is B1a; the second is worse,
+because the condition still evaluates, against the wrong answer.
+
+*Constraint:* a block carries only the rules that are about a field inside it **and** read
+nothing outside it; the rest are left behind, counted, and the count is said when the block is
+saved. A carried rule is re-rooted to where the block lands and renamed with any key that had
+to change, through the same rewrite as B1a — so a rewrite that cannot be made safely refuses
+the insert rather than applying half of it. Keys the form already uses are renamed, and so is
+a word id the form already uses for other words, so a label never silently takes the form's
+words. A block with rules is refused inside a repeater row, where they would apply to every
+row, and the builders offer only places where the insert validates. The insert is one edit,
+undone in one step. Tested in `packages/builder-core/src/blocks.test.ts`, and end to end by
+`apps/playground/src/blocks.test.tsx`, which inserts the playground's address block into a
+form that already has every one of its keys and checks the canton is still shown only for
+Switzerland.
+
+*Residual:* **a rule left behind is gone from the copy.** A field that was required on a
+condition reading outside the block arrives never required by it; the builder says how many
+rules stayed behind at save time, and nothing says it again at insert time. Carried rules are
+carried as written, so a condition that failed open where it was saved fails open where it
+lands (see A5). And a block is a copy: a correction made to a block reaches no form that
+already used it.
+
 ### B2. A saved draft loses answers when the form changes underneath it
 
 *How it arises:* a form is republished while somebody has a draft in progress.

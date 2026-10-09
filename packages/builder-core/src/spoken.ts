@@ -178,7 +178,11 @@ export function upgradeAndSay(session: BuilderSession): string {
  * The letters are the bindings and are not translated; the names of the other
  * keys are, because a German keyboard says `Entf` and `Strg`.
  */
-export function treeKeyHelp(session: BuilderSession): ReadonlyArray<readonly [string, string]> {
+export function treeKeyHelp(
+  session: BuilderSession,
+  /** Whether the host keeps blocks: only then is saving one a command worth naming (0135). */
+  options: { blocks?: boolean } = {},
+): ReadonlyArray<readonly [string, string]> {
   const { text } = session
   return [
     ['↑ ↓', text('keys.arrows.what')],
@@ -186,6 +190,7 @@ export function treeKeyHelp(session: BuilderSession): ReadonlyArray<readonly [st
     ['p', text('keys.addPage.what')],
     ['u', text('keys.unwrap.what')],
     ['m', text('keys.move.what')],
+    ...(options.blocks === true ? [['b', text('keys.block.what')] as const] : []),
     [text('keys.delete.key'), text('keys.delete.what')],
     [text('keys.undo.key'), text('keys.undo.what')],
   ]

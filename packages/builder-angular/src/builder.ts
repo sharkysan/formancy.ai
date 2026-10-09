@@ -13,9 +13,11 @@ import {
 } from '@angular/core'
 import {
   addPageAndSay,
+  blockTargets,
   describeTarget,
   dropAndSay,
   insertAndSay,
+  insertBlockAndSay,
   moveAndSay,
   nameOf,
   newFieldOfType,
@@ -23,12 +25,14 @@ import {
   paletteEntries,
   redoAndSay,
   removeAndSay,
+  saveBlockAndSay,
   treeKeyHelp,
   typesNeedingUpgrade,
   undoAndSay,
   unwrapAndSay,
   upgradeAndSay,
 } from '@formancy/builder-core'
+import type { BuilderBlock } from '@formancy/builder-core'
 import type {
   BuilderSession,
   FieldDef,
@@ -38,12 +42,14 @@ import type {
   TreeNode,
 } from './types.js'
 import { dropLocation } from '@formancy/builder-core'
+import { FormancyPaletteBlocks, FormancySaveBlock } from './blocks.js'
 import { BuilderTextPipe } from './text.pipe.js'
 import { injectBuilderView } from './view.js'
 
-/** The add palette's two steps: which type, then where it goes. */
+/** The add palette's two steps: which type — or which block — then where it goes. */
 interface Adding {
   type: string
+  block?: BuilderBlock
 }
 
 interface Moving {
@@ -69,7 +75,7 @@ interface Moving {
 @Component({
   selector: 'formancy-builder',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [BuilderTextPipe],
+  imports: [BuilderTextPipe, FormancyPaletteBlocks, FormancySaveBlock],
   template: `
     <div data-formancy-part="builder">
       <ul
@@ -111,7 +117,7 @@ interface Moving {
       }
 
       @if (adding() !== null) {
-        @if (adding()!.type === '') {
+        @if (adding()!.type === '' && adding()!.block === undefined) {
           <div
             role="dialog"
             [attr.aria-label]="'palette.title' | builderText: text()"
@@ -125,6 +131,9 @@ interface Moving {
                 </li>
               }
             </ul>
+            @if (blocks(); as blocks) {
+              <formancy-palette-blocks [blocks]="blocks" [text]="text()" (chosen)="adding.set({ type: '', block: $event })" />
+            }
             @if (locked().length > 0) {
               <!-- Said rather than silently omitted: a shorter palette with no
                    explanation reads as a broken builder, when what is true is
@@ -147,7 +156,7 @@ interface Moving {
         } @else {
           <div
             role="dialog"
-            [attr.aria-label]="'tree.addWhere' | builderText: text() : { type: labelForType(adding()!.type) }"
+            [attr.aria-label]="whereLabel()"
             data-formancy-part="add-where"
           >
             <ul>
@@ -177,6 +186,10 @@ interface Moving {
           </ul>
           <button type="button" (click)="cancelDialog()">{{ 'dialog.cancel' | builderText: text() }}</button>
         </div>
+      }
+
+      @if (saving(); as node) {
+        <formancy-save-block [text]="text()" [initialName]="nameOfNode(node)" (save)="completeSave(node, $event)" (cancel)="cancelDialog()" />
       }
 
       <!-- One polite region for the whole builder, as in the renderers: a
@@ -209,6 +222,13 @@ export class FormancyBuilder {
    * announce a selection nobody made.
    */
   readonly selected = output<readonly string[] | null>()
+  /**
+   * Blocks to offer beside the field types: pieces of a form saved to use again. Binding
+   * this is how a host says it keeps blocks — only then is `b` a command — and
+   * `blockSaved` hands it each one saved (0135).
+   */
+  readonly blocks = input<readonly BuilderBlock[] | undefined>(undefined)
+  readonly blockSaved = output<BuilderBlock>()
 
   protected readonly view = injectBuilderView(this.session)
   /**
@@ -218,12 +238,16 @@ export class FormancyBuilder {
    */
   protected readonly text = computed(() => this.session().text)
   /** The same legend the React builder shows, from the same place. */
-  protected readonly keyHelp = computed(() => treeKeyHelp(this.session()))
+  protected readonly keyHelp = computed(() =>
+    treeKeyHelp(this.session(), { blocks: this.blocks() !== undefined }),
+  )
 
   /** The position the arrow keys move. */
   protected readonly focusedIndex = signal(0)
   protected readonly adding = signal<Adding | null>(null)
   protected readonly moving = signal<Moving | null>(null)
+  /** The field being saved as a block. */
+  protected readonly saving = signal<TreeNode | null>(null)
   protected readonly announcement = signal('')
   protected readonly dragging = signal<readonly string[] | null>(null)
   protected readonly dropTarget = signal<{ index: number; edge: 'before' | 'after' } | null>(null)
@@ -267,10 +291,20 @@ export class FormancyBuilder {
   protected readonly nextVersion = computed(
     () => nextSpecVersion(this.view().document.specVersion) ?? '',
   )
+  /** Where the new field or block may go — a block asked with its words and rules too. */
   protected readonly insertTargets = computed((): MoveTarget[] => {
-    const type = this.adding()?.type
-    if (type === undefined || type === '') return []
-    return this.view().insertTargetsFor(this.newField(type))
+    const adding = this.adding()
+    if (adding?.block !== undefined) {
+      return blockTargets(this.view().document, adding.block, this.session().text)
+    }
+    if (adding === null || adding.type === '') return []
+    return this.view().insertTargetsFor(this.newField(adding.type))
+  })
+  protected readonly whereLabel = computed(() => {
+    const adding = this.adding()
+    return adding?.block !== undefined
+      ? this.text()('blocks.addWhere', { name: adding.block.name })
+      : this.text()('tree.addWhere', { type: this.labelForType(adding?.type ?? '') })
   })
 
   constructor() {
@@ -324,7 +358,7 @@ export class FormancyBuilder {
       const items = this.items()
       const root = this.tree()?.nativeElement
       untracked(() => {
-        if (this.adding() !== null || this.moving() !== null) return
+        if (this.adding() !== null || this.moving() !== null || this.saving() !== null) return
         const active = document.activeElement
         const inside = root !== undefined && active !== null && root.contains(active)
         if (inside || this.keepFocus) items[at]?.nativeElement.focus()
@@ -466,6 +500,13 @@ export class FormancyBuilder {
         event.preventDefault()
         this.announce(addPageAndSay(this.session()))
         break
+      case 'b':
+      case 'B':
+        // Only where a host keeps blocks; otherwise the key is nobody's.
+        if (this.blocks() === undefined) break
+        event.preventDefault()
+        this.saving.set(focused)
+        break
       case 'u':
       case 'U':
         event.preventDefault()
@@ -487,10 +528,26 @@ export class FormancyBuilder {
   }
 
   protected completeAdd(target: MoveTarget): void {
-    const type = this.adding()?.type ?? ''
+    const adding = this.adding()
     this.adding.set(null)
-    this.announce(insertAndSay(this.session(), this.newField(type), target))
+    this.announce(
+      adding?.block !== undefined
+        ? insertBlockAndSay(this.session(), adding.block, target)
+        : insertAndSay(this.session(), this.newField(adding?.type ?? ''), target),
+    )
     this.keepFocus = true
+  }
+
+  protected completeSave(node: TreeNode, name: string): void {
+    this.saving.set(null)
+    const { block, said } = saveBlockAndSay(this.session(), node.keyPath, {
+      id: crypto.randomUUID(),
+      name: name.trim() === '' ? this.nameOfNode(node) : name.trim(),
+    })
+    if (block !== undefined) this.blockSaved.emit(block)
+    this.announce(said)
+    this.keepFocus = true
+    this.items()[this.index()]?.nativeElement.focus()
   }
 
   protected completeMove(target: MoveTarget): void {
@@ -504,6 +561,7 @@ export class FormancyBuilder {
   protected cancelDialog(): void {
     this.adding.set(null)
     this.moving.set(null)
+    this.saving.set(null)
     this.keepFocus = true
     this.items()[this.index()]?.nativeElement.focus()
   }

@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
-import type { BuilderSession, BuilderText } from '@formancy/builder-core'
-import { dropLocation } from '@formancy/builder-core'
+import type { BuilderBlock, BuilderSession, BuilderText } from '@formancy/builder-core'
+import { blockTargets, dropLocation } from '@formancy/builder-core'
 import { newFieldOfType, nextSpecVersion, paletteEntries, typesNeedingUpgrade } from '@formancy/builder-core'
 import {
   addPageAndSay,
   dropAndSay,
   insertAndSay,
+  insertBlockAndSay,
   moveAndSay,
   redoAndSay,
   removeAndSay,
+  saveBlockAndSay,
   treeKeyHelp,
   undoAndSay,
   unwrapAndSay,
@@ -48,9 +50,26 @@ export interface BuilderProps {
    * it, which is right only while the two lists agree about nesting.
    */
   onSelect?: (keyPath: readonly string[] | null) => void
+  /**
+   * Blocks to offer beside the field types when adding: pieces of a form saved to use
+   * again. The host keeps them — where they are stored and who sees them is the
+   * deployment's (0135).
+   */
+  blocks?: readonly BuilderBlock[]
+  /**
+   * Called with a block the person saved from the focused field, for the host to keep.
+   * Without it, saving is not a command: a block handed to nobody would be lost.
+   */
+  onSaveBlock?: (block: BuilderBlock) => void
 }
 
-export function FormancyBuilder({ session, label, onSelect }: BuilderProps): ReactElement {
+export function FormancyBuilder({
+  session,
+  label,
+  onSelect,
+  blocks,
+  onSaveBlock,
+}: BuilderProps): ReactElement {
   const view = useBuilder(session)
   // Every word this tree shows, in the language the session was opened in. What a
   // command SAYS afterwards is not worded here at all: builder-core decides it,
@@ -74,7 +93,10 @@ export function FormancyBuilder({ session, label, onSelect }: BuilderProps): Rea
   const [moving, setMoving] = useState<{ node: TreeNode; targets: MoveTarget[] } | null>(null)
   // Adding is two choices: what, then where. Kept as one piece of state so the
   // second question cannot be asked without an answer to the first.
-  const [adding, setAdding] = useState<{ type: string } | null>(null)
+  // A block is the other answer to "what": a saved piece of a form rather than a type.
+  const [adding, setAdding] = useState<{ type: string } | { block: BuilderBlock } | null>(null)
+  /** The field being saved as a block, and the name it will have. */
+  const [saving, setSaving] = useState<{ node: TreeNode; name: string } | null>(null)
   const [announcement, setAnnouncement] = useState('')
   /**
    * The drag in progress, if any.
@@ -229,6 +251,13 @@ export function FormancyBuilder({ session, label, onSelect }: BuilderProps): Rea
         event.preventDefault()
         announce(addPageAndSay(session))
         break
+      case 'b':
+      case 'B':
+        // Only where a host keeps blocks; otherwise the key is nobody's.
+        if (onSaveBlock === undefined) break
+        event.preventDefault()
+        setSaving({ node: focused, name: nameOf(view.document, focused.def) })
+        break
       case 'u':
       case 'U':
         event.preventDefault()
@@ -255,6 +284,7 @@ export function FormancyBuilder({ session, label, onSelect }: BuilderProps): Rea
   const cancelDialog = (): void => {
     setAdding(null)
     setMoving(null)
+    setSaving(null)
     keepFocus.current = true
     treeRef.current?.focus()
     itemRefs.current[index]?.focus()
@@ -263,6 +293,26 @@ export function FormancyBuilder({ session, label, onSelect }: BuilderProps): Rea
   const completeAdd = (type: string, target: MoveTarget): void => {
     setAdding(null)
     announce(insertAndSay(session, newFieldOfType(type, existingKeys, session.text), target))
+    keepFocus.current = true
+    itemRefs.current[index]?.focus()
+  }
+
+  const completeBlock = (block: BuilderBlock, target: MoveTarget): void => {
+    setAdding(null)
+    announce(insertBlockAndSay(session, block, target))
+    keepFocus.current = true
+    itemRefs.current[index]?.focus()
+  }
+
+  const completeSave = (): void => {
+    if (saving === null) return
+    const { block, said } = saveBlockAndSay(session, saving.node.keyPath, {
+      id: crypto.randomUUID(),
+      name: saving.name.trim() === '' ? nameOf(view.document, saving.node.def) : saving.name.trim(),
+    })
+    setSaving(null)
+    if (block !== undefined) onSaveBlock?.(block)
+    announce(said)
     keepFocus.current = true
     itemRefs.current[index]?.focus()
   }
@@ -357,7 +407,26 @@ export function FormancyBuilder({ session, label, onSelect }: BuilderProps): Rea
 
       {count === 0 ? <p data-formancy-part="builder-empty">{text('tree.empty')}</p> : null}
 
-      {adding === null ? null : adding.type === '' ? (
+      {adding === null ? null : 'block' in adding ? (
+        <div
+          role="dialog"
+          aria-label={text('blocks.addWhere', { name: adding.block.name })}
+          data-formancy-part="add-where"
+        >
+          <ul>
+            {blockTargets(view.document, adding.block, session.text).map((target) => (
+              <li key={`${target.location.parent.join('.')}:${String(target.location.index)}`}>
+                <button type="button" onClick={() => completeBlock(adding.block, target)}>
+                  {target.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+          <button type="button" onClick={() => cancelDialog()}>
+            {text('dialog.cancel')}
+          </button>
+        </div>
+      ) : adding.type === '' ? (
         <div role="dialog" aria-label={text('palette.title')} data-formancy-part="add-palette">
           <ul>
             {paletteEntries(view.document.specVersion, text).map((entry) => (
@@ -369,6 +438,27 @@ export function FormancyBuilder({ session, label, onSelect }: BuilderProps): Rea
               </li>
             ))}
           </ul>
+          {blocks === undefined && onSaveBlock === undefined ? null : (
+            <section data-formancy-part="palette-blocks" aria-labelledby="formancy-palette-blocks">
+              <h3 id="formancy-palette-blocks">{text('blocks.heading')}</h3>
+              {(blocks ?? []).length === 0 ? (
+                <p data-formancy-part="palette-hint">{text('blocks.none')}</p>
+              ) : (
+                <ul>
+                  {(blocks ?? []).map((block) => (
+                    <li key={block.id}>
+                      <button type="button" onClick={() => setAdding({ block })}>
+                        {block.name}
+                      </button>
+                      {block.description === undefined ? null : (
+                        <span data-formancy-part="palette-hint">{block.description}</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          )}
           {locked.length === 0 ? null : (
             <p data-formancy-part="palette-locked">
               {/* Said rather than silently omitted: a shorter palette with no
@@ -437,6 +527,29 @@ export function FormancyBuilder({ session, label, onSelect }: BuilderProps): Rea
         </div>
       )}
 
+      {saving === null ? null : (
+        <div role="dialog" aria-label={text('blocks.save')} data-formancy-part="save-block">
+          <label>
+            {text('blocks.name')}
+            <input
+              type="text"
+              value={saving.name}
+              autoFocus
+              onChange={(event) => setSaving({ ...saving, name: event.target.value })}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') completeSave()
+              }}
+            />
+          </label>
+          <button type="button" onClick={() => completeSave()}>
+            {text('blocks.saveConfirm')}
+          </button>
+          <button type="button" onClick={() => cancelDialog()}>
+            {text('dialog.cancel')}
+          </button>
+        </div>
+      )}
+
       {/* One polite region for the whole builder, as in the renderers: a
           command's result is announced once, by the thing that knows it.
           role="status" already implies aria-live="polite"; setting both is the
@@ -446,7 +559,7 @@ export function FormancyBuilder({ session, label, onSelect }: BuilderProps): Rea
       </p>
 
       <dl data-formancy-part="builder-keys">
-        {treeKeyHelp(session).map(([keys, what]) => (
+        {treeKeyHelp(session, { blocks: onSaveBlock !== undefined }).map(([keys, what]) => (
           <div key={keys}>
             <dt>{keys}</dt>
             <dd>{what}</dd>

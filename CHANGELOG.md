@@ -10,6 +10,19 @@ later.
 
 ## Unreleased
 
+**Blocks: a piece of a form saved to use again.** Both builders save the focused field —
+usually a group or a repeater — as a block with `b`, and offer blocks in the add palette
+beside the field types. A block carries the rules that read only inside it and the words its
+labels name; inserting one makes its keys unique (`country` becomes `country2`), renames a
+word the form already says differently, and re-roots and renames every rule it carries, so
+the canton still shows only for Switzerland — one edit, which undo takes back. A rule reading
+a field outside is left behind and the builder says how many. The host keeps blocks: a
+builder takes `blocks` and hands back each one saved (`onSaveBlock` in React, `blockSaved`
+in Angular), and only a host that binds the list gets the `b` command. The playground starts
+with an address block and shares one list between its two builders. Why a copy rather than a
+reference, and what a block refuses to carry, is in
+[0135](docs/decisions/0135-a-block-is-a-field-with-its-rules.md).
+
 **A tested compatibility matrix.** The lowest and newest versions of React (19.0.0 and the
 newest 19), Angular (22.0.0 and the newest 22, with Material at the same version) and Node.js
 (22.12.0 and 24) are each a CI run, read from one file, `compatibility.json`, which a test holds

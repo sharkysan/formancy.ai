@@ -219,6 +219,46 @@ is one tab stop rather than one per field, and every destination is offered as a
 sentence rather than an index. The legend under the tree lists every key, so none
 of this has to be told to anybody.
 
+### Blocks: a piece of a form, saved to use again
+
+Bind `blocks` and the add palette offers them beside the field types, and `b` saves the
+focused field — usually a group or a repeater — as a new one, handed to you through
+`blockSaved`:
+
+```ts
+@Component({
+  imports: [FormancyBuilder],
+  template: `
+    <formancy-builder
+      [session]="session"
+      [blocks]="blocks()"
+      (blockSaved)="keep($event)"
+    />
+  `,
+})
+export class Editor {
+  protected readonly session = createBuilderSession(schema)
+  protected readonly blocks = signal<readonly BuilderBlock[]>([])
+
+  protected keep(block: BuilderBlock): void {
+    this.blocks.update((kept) => [...kept, block])
+  }
+}
+```
+
+A block is plain data — the field, the rules that read only inside it, and the words its
+labels name — so keep it wherever you keep forms. **Storing them is yours**: binding the list
+is how the builder knows you do, and without it `b` is not a command. In React it is the
+same pair as props, `blocks` and `onSaveBlock`.
+
+Inserting one is a rename and a move at once. A key the form already uses becomes
+`country2`, a word id it says differently becomes `title2`, and every rule the block
+carries follows its keys to where it lands — so an address's canton still shows only for
+Switzerland. A rule that reads a field outside the block cannot travel, and saving says how
+many stayed behind. A block is a copy, not a reference: changing it later changes no form
+that used it
+([0135](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0135-a-block-is-a-field-with-its-rules.md)).
+
 What the two builders OFFER is decided once, in `@formancy/builder-core`: the
 destination list, the palette, the condition compiler and the property list read
 out of the spec's own JSON Schema. Two builders disagreeing about where a field
