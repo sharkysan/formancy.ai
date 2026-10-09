@@ -10,6 +10,30 @@ later.
 
 ## Unreleased
 
+**Fixed: a `.txt` or `.json` file could not be attached — its upload was refused as
+`no_body`.** Fastify parses `text/plain` and `application/json` bodies itself, and the server's
+catch-all byte parser only ever saw the types with no parser of their own, so those two reached
+the upload route as a string or an object whatever the form's `accept` list allowed, and a
+`.json` file that was not valid JSON was refused before the route ran. The upload route now has
+a Fastify context of its own whose only parser hands any body over as bytes, and a text, JSON or
+empty file is kept byte for byte — tested on PostgreSQL, failing first. The same move takes the
+catch-all off every other route, which keeps Fastify's JSON and text parsers: a body of any
+other type is answered 415 there, where it used to be read as raw bytes up to the file ceiling
+rather than the request body cap. A submission sent as `application/octet-stream` is the case
+the tests hold.
+
+**Fixed: an upload's offer accepted a size that is not a whole number of bytes.** A fractional
+size reached the `integer` column and failed there as a 500 that named the query; a negative one
+was stored, and no upload could ever match it. Both are refused with 400 `invalid_request`
+before a row is written. Zero is a size.
+
+**Changed: `FORMANCY_MAX_FILE_BYTES` must be a whole number from 1 to 2147483647, or the server
+does not start.** That is the most `files.size`, a PostgreSQL `integer`, can record: a larger
+ceiling let an offer through the route and failed it at the insert, and a fractional one passed
+the old check. `createApp` refuses a `maxFileBytes` outside the same range, for a deployment that
+embeds the server. The rule lives in the new `upload-settings.ts`, and a test reads the column's
+precision from the database, so the ceiling cannot outlive the column.
+
 **Fixed: a slow upload could take an accepted submission's attachment away from it**, in every
 release since uploads arrived in 0.2.0. The `PUT` that receives a file's bytes wrote the row
 back as it had read it before the write — and, from 0.4.0 with a scanner, before the scan:

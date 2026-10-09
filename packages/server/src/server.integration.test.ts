@@ -12,6 +12,7 @@ import type { ScanVerdict } from '@formancy/server-core'
 import { createApp, SCHEMA_HASH_HEADER } from './app.js'
 import { createPostgresStorage } from './postgres-storage.js'
 import type { FileStore } from './file-store.js'
+import { DEFAULT_MAX_FILE_BYTES, LARGEST_MAX_FILE_BYTES } from './upload-settings.js'
 
 /**
  * The walking skeleton's proof, against REAL Postgres — versioning and
@@ -955,6 +956,176 @@ describe('uploaded files', () => {
   })
 })
 
+/**
+ * Every file type arrives as bytes, and every size is a whole number of them.
+ *
+ * Fastify parses `text/plain` and `application/json` itself, and the catch-all byte parser
+ * only ever saw the types it had no parser for — so a `.txt` or `.json` file reached the PUT
+ * as a string or an object and was answered `no_body`, whatever the form's `accept` said.
+ */
+describe('a file of any type arrives as bytes', () => {
+  const anyType: FormSchema = {
+    specVersion: '2',
+    id: 'notes',
+    title: 'Notes',
+    model: {
+      fields: [{ key: 'notes', type: 'file', label: 'Notes', accept: ['text/plain', 'application/json'] }],
+    },
+  }
+
+  beforeAll(async () => {
+    await app.inject({ method: 'POST', url: '/forms', headers: asAdmin(), payload: { path: 'notes', schema: anyType } })
+    const opened = await app.inject({
+      method: 'PUT',
+      url: '/f/notes/access',
+      headers: asAdmin(),
+      payload: { submit: 'public' },
+    })
+    expect(opened.statusCode).toBe(204)
+  })
+
+  /**
+   * Offer it, send it as the browser would — under its own type, or `sentAs` when a client
+   * adds a parameter — and read it back.
+   */
+  async function roundTrip(name: string, contentType: string, body: Buffer, sentAs = contentType) {
+    const offered = await app.inject({
+      method: 'POST',
+      url: '/f/notes/files',
+      payload: { field: 'notes', name, size: body.byteLength, contentType },
+    })
+    expect(offered.statusCode).toBe(201)
+    const file = offered.json() as { id: string; uploadUrl: string; storageKey: string }
+    const put = await app.inject({
+      method: 'PUT',
+      url: file.uploadUrl,
+      headers: { 'content-type': sentAs },
+      payload: body,
+    })
+    const downloaded = await app.inject({
+      method: 'GET',
+      url: `/f/notes/files/${file.id}`,
+      headers: asAdmin(),
+    })
+    return { put, file, downloaded }
+  }
+
+  test('a .txt file is kept byte for byte, not parsed as text and refused as no body', async () => {
+    // A trailing newline and a non-ASCII letter: a parser that decoded and re-encoded the
+    // text would be caught by either.
+    const body = Buffer.from('Grüezi\nfrom a text file\n', 'utf8')
+
+    const { put, file, downloaded } = await roundTrip('notes.txt', 'text/plain', body)
+
+    expect(put.statusCode, put.body).toBe(204)
+    expect(bytes.get(file.storageKey)).toEqual(body)
+    expect(downloaded.rawPayload).toEqual(body)
+  })
+
+  test('so is one sent with a charset, which names the same parser', async () => {
+    // Fastify looks a parser up by the media type without its parameters, so a charset
+    // reached the text parser just the same.
+    const body = Buffer.from('mit Zeichensatz\n', 'utf8')
+
+    const { put, file } = await roundTrip('charset.txt', 'text/plain', body, 'text/plain; charset=utf-8')
+
+    expect(put.statusCode, put.body).toBe(204)
+    expect(bytes.get(file.storageKey)).toEqual(body)
+  })
+
+  test('a .json file is kept byte for byte, not parsed as the request', async () => {
+    // Whitespace JSON.parse would discard, and an object Fastify would otherwise have
+    // handed the route in place of the bytes.
+    const body = Buffer.from('{ "answer" : 42,\n  "kept": "as written" }\n', 'utf8')
+
+    const { put, file, downloaded } = await roundTrip('answers.json', 'application/json', body)
+
+    expect(put.statusCode, put.body).toBe(204)
+    expect(bytes.get(file.storageKey)).toEqual(body)
+    expect(downloaded.rawPayload).toEqual(body)
+  })
+
+  test('a .json file that is not valid JSON is kept too: it is a file, not a request', async () => {
+    // Fastify's JSON parser answers malformed JSON with its own 400 before the route runs.
+    const body = Buffer.from('{ truncated', 'utf8')
+
+    const { put, file } = await roundTrip('broken.json', 'application/json', body)
+
+    expect(put.statusCode, put.body).toBe(204)
+    expect(bytes.get(file.storageKey)).toEqual(body)
+  })
+
+  test('the byte parser is the upload route’s alone: a submission sent as bytes is refused', async () => {
+    // Registered on the root, the catch-all handed raw bytes to every route — up to the file
+    // ceiling, past the request body cap meant to stop a request before it costs memory.
+    const submitted = await app.inject({
+      method: 'POST',
+      url: '/f/notes/submissions',
+      headers: { [SCHEMA_HASH_HEADER]: 'any', 'content-type': 'application/octet-stream' },
+      payload: Buffer.from('not a submission'),
+    })
+
+    expect(submitted.statusCode, submitted.body).toBe(415)
+  })
+
+  test.each([
+    ['fractional', 1.5],
+    ['negative', -1],
+    ['beyond a safe integer', Number.MAX_SAFE_INTEGER + 2],
+  ])('an offered size that is %s is refused before a row is written', async (_label, size) => {
+    // A size is a count of bytes. A fractional one reached an `integer` column and failed
+    // there as a 500; a negative one was stored, and no upload could ever match it.
+    const before = await sql`SELECT count(*)::int AS n FROM files`
+
+    const offered = await app.inject({
+      method: 'POST',
+      url: '/f/notes/files',
+      payload: { field: 'notes', name: 'a.txt', size, contentType: 'text/plain' },
+    })
+
+    expect(offered.statusCode, offered.body).toBe(400)
+    expect((offered.json() as { error: string }).error).toBe('invalid_request')
+    const after = await sql`SELECT count(*)::int AS n FROM files`
+    expect(after[0]?.['n']).toBe(before[0]?.['n'])
+  })
+
+  test('a whole size one byte past the deployment’s ceiling is too large, not malformed', async () => {
+    // The shape check runs first and must not swallow this one: 413 tells a client the
+    // file is the problem, 400 that the request is. The field sets no limit of its own,
+    // so only the deployment's default ten megabytes can refuse it.
+    const offered = await app.inject({
+      method: 'POST',
+      url: '/f/notes/files',
+      payload: { field: 'notes', name: 'big.txt', size: DEFAULT_MAX_FILE_BYTES + 1, contentType: 'text/plain' },
+    })
+
+    expect(offered.statusCode, offered.body).toBe(413)
+    expect((offered.json() as { error: string }).error).toBe('too_large')
+  })
+
+  test('an empty file is offered and kept: zero is a whole number of bytes', async () => {
+    // Non-negative, not positive — an empty text file is a file somebody can have — and
+    // its no bytes arrive as an empty buffer rather than as no body at all.
+    const { put, file } = await roundTrip('empty.txt', 'text/plain', Buffer.alloc(0))
+
+    expect(put.statusCode, put.body).toBe(204)
+    expect(bytes.get(file.storageKey)).toEqual(Buffer.alloc(0))
+  })
+
+  test('the ceiling a deployment may set is the largest size the files table can hold', async () => {
+    // Read from the database rather than restated: if `files.size` becomes a bigint, this
+    // fails and the ceiling in upload-settings.ts can rise with it.
+    const [column] = await sql`
+      SELECT numeric_precision, numeric_precision_radix
+        FROM information_schema.columns
+       WHERE table_schema = current_schema() AND table_name = 'files' AND column_name = 'size'`
+    expect(column?.['numeric_precision_radix']).toBe(2)
+    const largest = 2 ** ((column?.['numeric_precision'] as number) - 1) - 1
+
+    expect(LARGEST_MAX_FILE_BYTES).toBe(largest)
+  })
+})
+
 
 /**
  * An upload the deployment scans (0131), on an app of its own so the scanner's verdict
@@ -1022,7 +1193,7 @@ describe('an upload the deployment scans', () => {
 
     const { put, file } = await send(body)
 
-    expect(put.statusCode).toBe(204)
+    expect(put.statusCode, put.body).toBe(204)
     expect(seen.at(-1)).toEqual(body)
     expect(bytes.get(file.storageKey)).toEqual(body)
   })

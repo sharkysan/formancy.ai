@@ -67,7 +67,7 @@ FORMANCY_MAX_FILE_BYTES=10485760          # optional; the operator's ceiling
 | Variable | Required | Meaning |
 | --- | --- | --- |
 | `FORMANCY_FILES_DIR` | no | Where uploaded bytes go. Unset means this deployment accepts none. |
-| `FORMANCY_MAX_FILE_BYTES` | no | The operator's ceiling over every form's own `maxFileSize`. Defaults to 10 MB. |
+| `FORMANCY_MAX_FILE_BYTES` | no | The operator's ceiling over every form's own `maxFileSize`, in bytes. Defaults to 10 MB. A whole number from 1 to 2147483647 — the largest size the files table records — or the server does not start. |
 
 **Leaving it unset is a supported state, not a misconfiguration.** A form with
 a file field still renders and still submits; the field says plainly that there
@@ -124,10 +124,17 @@ they arrive, which is what a second replica needs.
 **At the offer, before a byte is sent.** The field's `accept` list, its
 `maxFileSize`, and the deployment's ceiling. A browser's file picker filter is
 a convenience for the person filling the form in, and nothing at all to
-somebody posting to the endpoint directly.
+somebody posting to the endpoint directly. A size that is not a whole number of
+bytes — a fraction, a negative — is refused there too; zero is a size.
 
 The offered size is then binding: a different number of bytes is refused, or
 the size check was only a suggestion.
+
+**Not by its type, once it is offered.** The bytes are the body of a `PUT` to
+the offer's `uploadUrl`, under whatever type the file has, and they are kept as
+they arrive: a `.json` file is not parsed, a `.txt` file is not decoded, and
+neither is refused for not being the request the server expected. That route
+alone takes any body as bytes; no other route is handed them.
 
 **Being allowed to submit is not being allowed to upload… and it is the same
 rule.** The upload gate and the submission gate are one function, because a

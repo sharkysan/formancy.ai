@@ -386,6 +386,11 @@ client sends the other one. Files followed: `server/routes/files.ts` offers, rec
 serves them, and asks `screenUpload` in `server-core/uploads.ts` whether a file's bytes may
 be kept, against the deployment's `Scanner` — `server/clamd-scanner.ts` speaks ClamAV's
 INSTREAM, with no dependency ([0131](../decisions/0131-an-upload-is-scanned-before-it-is-kept.md)).
+Receiving is a Fastify context of its own, the only one whose body parser hands over bytes:
+Fastify's own parsers would turn a `.txt` or `.json` file into a string or an object, and a
+catch-all registered on the root handed raw bytes to every route. `server/upload-settings.ts`
+holds the ceiling on a file, which `main.ts` reads from the environment and `createApp`
+checks again, bounded by what `files.size` can record.
 `ServerDeps`, what a deployment supplies, left `use-cases.ts` for `server-core/deps.ts` the
 same way.
 

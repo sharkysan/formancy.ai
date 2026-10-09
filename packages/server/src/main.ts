@@ -11,6 +11,7 @@ import type { FileStore } from './file-store.js'
 import { createS3FileStore } from './s3-file-store.js'
 import { fileStoreSettings } from './file-store-settings.js'
 import { CLAMD_DEFAULT_MAX_BYTES, createClamdScanner } from './clamd-scanner.js'
+import { maxFileBytesFrom } from './upload-settings.js'
 
 // recheck ships a 23 MB JVM jar and a native binary per platform as OPTIONAL
 // dependencies and falls back to a pure-JavaScript engine without them. For
@@ -59,10 +60,8 @@ const fileStore: FileStore | undefined =
       ? createLocalFileStore(storeSettings.directory)
       : undefined
 
-const maxFileBytes = Number(process.env['FORMANCY_MAX_FILE_BYTES'] ?? 10 * 1024 * 1024)
-if (!Number.isFinite(maxFileBytes) || maxFileBytes <= 0) {
-  throw new Error('FORMANCY_MAX_FILE_BYTES must be a positive number of bytes.')
-}
+// A whole number of bytes no larger than `files.size` holds, or the server does not start.
+const maxFileBytes = maxFileBytesFrom(process.env)
 
 /**
  * A ClamAV daemon to ask about every upload before its bytes are kept.

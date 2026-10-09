@@ -1299,6 +1299,33 @@ twice through its group.
 if it runs the conformance suite. Inside a placed group the order is the model's; an arrangement
 that needs another order places the fields one by one.
 
+### D13. A file of a text type cannot be attached
+
+*How it arises:* a file's bytes are sent as the body of a request, under the file's own type.
+Fastify parses `text/plain` and `application/json` bodies itself, and the server's catch-all
+byte parser only ever saw the types with no parser of their own — so a `.txt` or `.json` file
+reached the upload route as a string or an object and was refused as `no_body`, and a `.json`
+file that was not valid JSON was refused as malformed before the route ran. The form's `accept`
+list allowed both, and the offer said so. Every release with uploads, 0.2.0 to 0.4.0, does
+this; fixed on 2026-10-09, after 0.4.0.
+
+*Severity:* the field says the upload failed, so nobody believes the file was attached; but a
+person with that file has no way to attach it, and a form that requires it cannot be
+completed. Loud rather than silent: nothing is stored, and no answer is lost.
+
+*Constraint:* the upload route has a Fastify context of its own, with every body parser
+removed and one put back that hands over any body as bytes (`routes/files.ts`). Every other
+route keeps Fastify's own parsers and is never handed raw bytes. `server.integration.test.ts`
+uploads and reads back, on real PostgreSQL, a `.txt` file with and without a charset, a
+`.json` file valid and not, and an empty one, and requires each to come back byte for byte;
+the first four failed on the old code with `no_body` or Fastify's JSON error, and with the
+parsers left in place beside the catch-all they fail the same way.
+
+*Residual:* tested through Fastify's request injection rather than from a browser. A client
+that sends an empty file with no `Content-Type` at all is still answered `no_body` — Fastify
+reads a body with neither a type nor a length as absent — which the supplied uploader never
+does, since it always names a type.
+
 ---
 
 ## E — Provenance is lost

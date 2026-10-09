@@ -105,6 +105,14 @@ export async function fileRoutes(
           message: 'Send the field, the name and the size of the file you want to upload.',
         })
       }
+      if (!Number.isSafeInteger(size) || size < 0) {
+        // A size counts bytes. A fraction reached the `integer` column and failed there as a
+        // 500; a negative one was stored, and no upload could ever match it.
+        return reply.code(400).send({
+          error: 'invalid_request',
+          message: 'The size of a file is a whole number of bytes, zero or more.',
+        })
+      }
 
       if (size > maxFileBytes) {
         return reply.code(413).send({
@@ -147,61 +155,82 @@ export async function fileRoutes(
     },
   )
 
-  /** Receive the bytes for a file that was offered. */
-  app.put('/f/:path/files/:id', async (request, reply) => {
-    if (fileStore === undefined) return reply.code(501).send({ error: 'uploads_unavailable' })
-
-    const { path, id } = request.params as { path: string; id: string }
-    const form = await storage.getFormByPath(path)
-    if (form === undefined) return reply.code(404).send({ error: 'unknown_form' })
-
-    const file = await storage.getFile(id)
-    // Checked against the form in the URL: an id alone must not be enough to
-    // write bytes into a form somebody cannot submit to.
-    if (file === undefined || file.formId !== form.id) {
-      return reply.code(404).send({ error: 'unknown_file' })
-    }
-    if (file.state !== 'offered') {
-      // An upload is once. Re-writing a claimed file would change what a
-      // stored submission says was attached to it.
-      return reply.code(409).send({ error: 'already_uploaded' })
-    }
-
-    const bytes = request.body
-    if (!Buffer.isBuffer(bytes)) return reply.code(400).send({ error: 'no_body' })
-    if (bytes.byteLength > maxFileBytes) return reply.code(413).send({ error: 'too_large' })
-    if (bytes.byteLength !== file.size) {
-      // The offer named a size and the offer is what was checked against the
-      // field's limit. Accepting a different number of bytes would make that
-      // check a suggestion.
-      return reply.code(400).send({
-        error: 'size_mismatch',
-        message: `This upload was offered as ${String(file.size)} bytes and ${String(bytes.byteLength)} arrived.`,
-      })
-    }
-
-    // One request receives a file's bytes at a time (0153). Taken after the checks above,
-    // so a request that was never going to be kept does not hold the file against one that
-    // is.
-    const now = deps.nowIso()
-    const lease = new Date(Date.parse(now) + RECEIVE_LEASE_MS).toISOString()
-    if (!(await storage.leaseFile(file.id, now, lease))) {
-      return reply.code(409).send({
-        error: 'busy',
-        message: "Another request is sending this file's bytes, so these were not kept. Try again in a moment.",
-      })
-    }
-
-    // Every way out that does not keep the bytes gives the file back, and before the reply:
-    // a client that sends this file again, as it is told to, must not find it still held.
-    const answer = await receive(fileStore, file, bytes, lease, request.log).catch(
-      async (error: unknown) => {
-        await giveBack(file.id, lease, request.log)
-        throw error
+  /**
+   * Receive the bytes for a file that was offered.
+   *
+   * In a context of its own, with every body parser removed and one put back that hands
+   * any body over as bytes. A file is whatever the reader had — the form's `accept` list
+   * decides whether it is allowed, at the offer — and Fastify parses `text/plain` and
+   * `application/json` itself: a catch-all added beside those only ever saw the types with
+   * no parser of their own, so a `.txt` or `.json` file arrived here as a string or an
+   * object and was refused as no body. Encapsulated, so that no other route is handed raw
+   * bytes, nor a body as large as a file past the request body cap.
+   */
+  await app.register(async (byteRoutes) => {
+    byteRoutes.removeAllContentTypeParsers()
+    byteRoutes.addContentTypeParser(
+      '*',
+      { parseAs: 'buffer', bodyLimit: maxFileBytes },
+      (_request, body, done) => {
+        done(null, body)
       },
     )
-    if (answer.status !== 204) await giveBack(file.id, lease, request.log)
-    return reply.code(answer.status).send(answer.body)
+
+    byteRoutes.put('/f/:path/files/:id', async (request, reply) => {
+      if (fileStore === undefined) return reply.code(501).send({ error: 'uploads_unavailable' })
+
+      const { path, id } = request.params as { path: string; id: string }
+      const form = await storage.getFormByPath(path)
+      if (form === undefined) return reply.code(404).send({ error: 'unknown_form' })
+
+      const file = await storage.getFile(id)
+      // Checked against the form in the URL: an id alone must not be enough to
+      // write bytes into a form somebody cannot submit to.
+      if (file === undefined || file.formId !== form.id) {
+        return reply.code(404).send({ error: 'unknown_file' })
+      }
+      if (file.state !== 'offered') {
+        // An upload is once. Re-writing a claimed file would change what a
+        // stored submission says was attached to it.
+        return reply.code(409).send({ error: 'already_uploaded' })
+      }
+
+      const bytes = request.body
+      if (!Buffer.isBuffer(bytes)) return reply.code(400).send({ error: 'no_body' })
+      if (bytes.byteLength > maxFileBytes) return reply.code(413).send({ error: 'too_large' })
+      if (bytes.byteLength !== file.size) {
+        // The offer named a size and the offer is what was checked against the
+        // field's limit. Accepting a different number of bytes would make that
+        // check a suggestion.
+        return reply.code(400).send({
+          error: 'size_mismatch',
+          message: `This upload was offered as ${String(file.size)} bytes and ${String(bytes.byteLength)} arrived.`,
+        })
+      }
+
+      // One request receives a file's bytes at a time (0153). Taken after the checks above,
+      // so a request that was never going to be kept does not hold the file against one that
+      // is.
+      const now = deps.nowIso()
+      const lease = new Date(Date.parse(now) + RECEIVE_LEASE_MS).toISOString()
+      if (!(await storage.leaseFile(file.id, now, lease))) {
+        return reply.code(409).send({
+          error: 'busy',
+          message: "Another request is sending this file's bytes, so these were not kept. Try again in a moment.",
+        })
+      }
+
+      // Every way out that does not keep the bytes gives the file back, and before the reply:
+      // a client that sends this file again, as it is told to, must not find it still held.
+      const answer = await receive(fileStore, file, bytes, lease, request.log).catch(
+        async (error: unknown) => {
+          await giveBack(file.id, lease, request.log)
+          throw error
+        },
+      )
+      if (answer.status !== 204) await giveBack(file.id, lease, request.log)
+      return reply.code(answer.status).send(answer.body)
+    })
   })
 
   /**
