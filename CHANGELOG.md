@@ -10,6 +10,21 @@ later.
 
 ## Unreleased
 
+**Fixed: behind a reverse proxy, every respondent shared one rate-limit budget.** Every limit
+on the public plane counts the client's address, and the server built Fastify trusting no
+proxy — so behind the proxy the deployment view draws, every request came from the proxy's
+address and the thirty-first submission in a minute was refused whoever sent it. A new
+setting, `FORMANCY_TRUST_PROXY`, names the proxies — an address, or a comma-separated list of
+addresses and CIDR ranges — whose `X-Forwarded-For` the server then believes. Unset keeps the
+old behaviour, which is still right with nothing in front. **A value that is not addresses and
+ranges stops the server at startup**, and so do two that Fastify itself accepts: a hop count,
+which Fastify, underneath the server, ignores because a count cannot tell the proxy from a client
+that connects directly, and `true`, which would let any client choose the address it is
+counted by. The limits are still counted per process. Both compose files pass the setting
+through; the self-hosting guide says when to set it and what trusting a proxy you do not run
+gives away. Hazard D13 in `SAFETY-ANALYSIS.md` is new. Webhook health and delivery replay moved
+to a route plugin of their own to make room, with no change to either.
+
 **Fixed: a download from the object store was cut off at thirty seconds.** The S3 store
 bounded each request with `AbortSignal.timeout`, which covers the body as well as the wait for
 an answer, so a file still streaming when it ran out failed mid-download however steadily it

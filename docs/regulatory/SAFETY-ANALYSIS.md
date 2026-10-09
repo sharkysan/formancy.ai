@@ -595,6 +595,10 @@ more than one replica every limit counts a fraction of the traffic and permits
 a multiple of what it says. Login is limited to 10 attempts per IP per minute
 and submission to 30, both counting attempts rather than successes — but a
 distributed attacker with many addresses is not meaningfully slowed by either.
+The address counted is the socket's unless `FORMANCY_TRUST_PROXY` names a proxy
+(D13), and anything at a trusted address can write whichever client address it
+likes — so trusting an address the operator does not control hands that
+attacker as many addresses as they care to type.
 
 ### C2. A submission is read by someone not entitled to it
 
@@ -1339,6 +1343,37 @@ parsers left in place beside the catch-all they fail the same way.
 that sends an empty file with no `Content-Type` at all is still answered `no_body` — Fastify
 reads a body with neither a type nor a length as absent — which the supplied uploader never
 does, since it always names a type.
+
+### D14. A respondent is refused for submissions that were not theirs
+
+*How it arises:* every limit on the public plane — a submission, a draft's write and read, a
+challenge, a file offer — counts the client's network address, and the deployment view puts a
+reverse proxy in front of the server. Behind one, every request arrives from the proxy's
+address, so a server that believes only the socket gives everybody one budget: thirty
+submissions a minute between all respondents, and the next one is answered `429` for traffic
+that was not theirs. It shipped that way until 2026-10-09: the server constructed Fastify
+trusting no proxy, and had no setting to change that.
+
+*Severity:* the form cannot be submitted, by anyone behind that proxy, until the minute is
+out. Loud to the person refused and silent to the operator, because the server writes no
+request log (C3). Nothing is stored wrongly.
+
+*Constraint:* `FORMANCY_TRUST_PROXY` names the proxies, as addresses and CIDR ranges, whose
+`X-Forwarded-For` the server then believes, so each respondent is counted by the address the
+proxy saw. `packages/server/src/trust-proxy.ts` reads it at startup and refuses anything that
+is not addresses and ranges — a hop count too, which Fastify ignores, and `true`, which
+believes anybody — so a value the server cannot read stops it, rather than starting one that
+counts the wrong client; `trust-proxy.test.ts` holds those refusals and checks that Fastify
+still ignores a hop count. `rate-limit-client.test.ts` drives the submission route through `createApp`: two
+respondents behind a named proxy are counted apart and each still meets the limit, with
+nothing named they share one budget, and a client that connects directly or writes its own
+entries before the proxy's is counted by an address it did not choose.
+
+*Residual:* **unset is still the default**, because trusting nothing is the only safe default,
+so a deployment behind a proxy that does not set it has this failure and nothing detects it.
+Set too wide, it turns into C1's residual. The limits are still counted per process. And
+respondents who really share one address — an office, a school, a phone network behind
+carrier-grade NAT — still share one budget, which a key made of an address cannot separate.
 
 ---
 

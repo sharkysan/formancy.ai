@@ -89,8 +89,44 @@ wrong database — a confusing ten minutes. The compose file maps 5439 instead.
 | `FORMANCY_CLAMD_HOST` | no | A ClamAV daemon asked about every upload before its bytes are kept. Unset means nothing is scanned; set, a file is refused when clamd finds something **or cannot be reached** — see [Files](/docs/concepts/files/#scanning-what-is-uploaded). |
 | `FORMANCY_CLAMD_PORT` / `..._MAX_BYTES` | no | clamd's port, 3310 by default, and its `StreamMaxLength`, 100 MiB by default. A larger file is refused before it is sent. |
 | `FORMANCY_CHALLENGE_SECRET` | no | Turns the proof-of-work challenge on for anonymous submissions; ≥ 32 characters. Unset means public forms are defended by the rate limits, the origin allowlist and the body cap alone. Separate from `FORMANCY_AUTH_SECRET` so that rotating one does not cost everybody their session. |
+| `FORMANCY_TRUST_PROXY` | behind a proxy | The reverse proxies whose `X-Forwarded-For` names the client: an address, or a comma-separated list of addresses and CIDR ranges. Unset trusts none, so behind a proxy every respondent shares one rate-limit budget. A hop count and `true` are refused at startup — see [behind a reverse proxy](#behind-a-reverse-proxy). |
 | `FORMANCY_WEBHOOK_ALLOW_HTTP` / `..._ALLOW_PRIVATE` | no | Opt out of the webhook SSRF guard, per deployment and never per form. `ALLOW_PRIVATE` gives it up entirely. |
 | `PORT` / `HOST` | no | Defaults `4380` / `0.0.0.0` |
+
+## Behind a reverse proxy
+
+Put the server behind one for TLS, as the
+[deployment view](https://github.com/sharkysan/formancy.ai/blob/main/docs/architecture/07-deployment-view.md)
+draws it — and then tell the server it is there. Every limit on the public plane counts
+the client's address, and behind a proxy every request arrives from the proxy's. Until the
+server believes the `X-Forwarded-For` header the proxy adds, all your respondents share one
+budget, and the thirty-first submission in a minute is refused whoever sends it.
+
+```bash
+FORMANCY_TRUST_PROXY=10.0.0.2                  # the proxy's address
+FORMANCY_TRUST_PROXY=10.0.0.2,172.18.0.0/16    # several proxies, or a range
+```
+
+Name every proxy in the chain: a CDN in front of nginx is two. A proxy running as a
+container on the same compose network can come back from a restart at another address, so
+name the network's range rather than the address it has today (`docker network inspect`).
+
+**Name only proxies you run.** Anything at a trusted address can write whatever client
+address it likes into `X-Forwarded-For`, so trusting an address a stranger can send from
+lets anybody choose the address their limit counts — a fresh one per request, which is no
+limit. That is why `true` is refused, and a range of every address with it. A client that
+reaches the server directly, from an address you have not named, is counted by its own
+address whatever it writes.
+
+A hop count is refused too. Fastify, which the server is built on, takes one and ignores it,
+because a count cannot tell the proxy from a client that connects directly — and a setting
+that reads as configured and does nothing is worse than none, so the server stops at
+startup and says what to write instead.
+
+What this does not change: the limits are still counted **per process**, so behind more
+than one replica each counts only its share of the traffic. And people who really do share
+one address — an office, a school, a phone network behind carrier-grade NAT — share one
+budget, which no setting here can separate.
 
 ## Two planes
 

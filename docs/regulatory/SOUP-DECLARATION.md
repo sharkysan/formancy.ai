@@ -339,7 +339,11 @@ Still from 0.2.0 and unchanged:
   breaker, and SSRF defence that validates the resolved address and connects to it.
 - **Rate limiting** at four scopes, and a **proof-of-work challenge** on the public
   submission plane. The rate limiter's default store is per process, so it is wrong behind
-  more than one replica — stated here because it is silent.
+  more than one replica — stated here because it is silent. So is this: `0.4.0` counts the
+  address on the socket, which behind a reverse proxy is the proxy's, so everybody behind
+  one shares a single budget and nothing can be set to change it. Hazard D13 in
+  [`SAFETY-ANALYSIS.md`](SAFETY-ANALYSIS.md) has it; the setting that follows `0.4.0` is in
+  [`CHANGELOG.md`](../../CHANGELOG.md) under *Unreleased*.
 - **Drafts carry their own key** ([0062](../decisions/0062-a-draft-carries-its-own-key.md)).
   A draft written under 0.1.0 cannot be resumed, because no token was ever minted for it.
 - **`optionsSource`**: a select whose answers come from the deployment rather than the

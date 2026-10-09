@@ -82,6 +82,10 @@ services:
       FORMANCY_CLAMD_HOST:
       FORMANCY_CLAMD_PORT:
       FORMANCY_CLAMD_MAX_BYTES:
+      # The reverse proxy in front, so the rate limits count respondents rather
+      # than the proxy. A bare key for the same reason: unset is how the server
+      # knows to trust no proxy.
+      FORMANCY_TRUST_PROXY:
 
       # Webhook delivery refuses plain http and private addresses by default,
       # which is what stops a form author pointing the server at the cloud

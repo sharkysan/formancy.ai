@@ -104,6 +104,12 @@ form is not publicly submittable unless it says so.
   makes that survivable for a receiver that dedupes; it does not make it
   correct. `FOR UPDATE SKIP LOCKED` is the fix and is a contained change to one
   port method ([0049](../decisions/0049-one-polling-worker.md)).
+- **Name the reverse proxy.** Every public rate limit counts the client's address, and
+  the server believes no `X-Forwarded-For` until `FORMANCY_TRUST_PROXY` lists the proxy's
+  address or range — so behind the proxy drawn above, with it unset, every respondent
+  shares the proxy's one budget. Name only proxies you run: a trusted address can write any
+  client address it likes. Checked in `packages/server/src/rate-limit-client.test.ts`;
+  hazard D13.
 - **Uploaded files are never served from the application origin inline.** A
   separate hostname is the right answer and a single-container deployment does
   not have one, so files come back with `Content-Disposition: attachment`,
