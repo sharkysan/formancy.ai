@@ -138,6 +138,93 @@ export function exportCss(theme: string, overrides: Readonly<Record<string, stri
   return `[data-formancy-theme='${theme}'] {\n${body}\n}\n`
 }
 
+/** What a preset holds for the theme on screen, and what in it will not be read. */
+export interface PresetReading {
+  /** The tokens it sets that this theme declares: what the editor applies. */
+  readonly overrides: Record<string, string>
+  /** Tokens it sets for this theme that the theme does not declare, so they would set nothing. */
+  readonly undeclared: readonly string[]
+  /** Other themes it has tokens for, which belong to those themes and not to this one. */
+  readonly otherThemes: readonly string[]
+  /** Selectors carrying a formancy token that are not a theme's own — `:root`, say. */
+  readonly elsewhere: readonly string[]
+}
+
+/**
+ * A preset read back: the patch `exportCss` writes, or one written by hand.
+ *
+ * **A preset is the patch and nothing else** — no second format to keep in step
+ * with the first, and nothing in it a person cannot read
+ * ([0124](../../../docs/decisions/0124-a-theme-preset-is-the-patch-read-back.md)).
+ * Read through the same rule the editor discovers tokens by, so a preset can set
+ * exactly what the editor offers and no more: a token the theme does not declare
+ * would set a property nothing reads, and one declared on `:root` would be
+ * overridden by the theme's own root before it reached a control. Both are reported
+ * rather than dropped — a preset that half applies and says nothing reads as one that
+ * worked.
+ */
+export function readPreset(
+  rules: ReadonlyArray<ThemeRule>,
+  theme: string,
+  declared: Readonly<Record<string, string>>,
+): PresetReading {
+  const byTheme = themeTokens(rules)
+  const forTheme = byTheme.get(theme) ?? {}
+
+  const elsewhere = rules
+    .filter(({ selectorText, declarations }) => {
+      const roots = selectorText.split(',').map((selector) => THEME_ROOT.test(selector.trim()))
+      return (
+        !roots.every(Boolean) && declarations.some(([property]) => property.startsWith('--fm-'))
+      )
+    })
+    .map(({ selectorText }) => selectorText)
+
+  return {
+    overrides: Object.fromEntries(Object.entries(forTheme).filter(([token]) => token in declared)),
+    undeclared: Object.keys(forTheme).filter((token) => !(token in declared)),
+    otherThemes: [...byTheme.keys()].filter((other) => other !== theme),
+    elsewhere: [...new Set(elsewhere)],
+  }
+}
+
+/** What reading a preset did, as one paragraph a person can act on. */
+export function describePreset(file: string, theme: string, reading: PresetReading): string {
+  const count = Object.keys(reading.overrides).length
+  const sentences = [
+    count === 0
+      ? `Nothing in ${file} is a token ${theme} declares, so nothing changed.`
+      : `Read ${String(count)} ${count === 1 ? 'token' : 'tokens'} for ${theme} from ${file}.`,
+  ]
+  if (reading.undeclared.length > 0) {
+    sentences.push(`Not read: ${reading.undeclared.join(', ')}, which ${theme} does not declare.`)
+  }
+  if (reading.otherThemes.length > 0) {
+    sentences.push(
+      `It also has tokens for ${reading.otherThemes.join(', ')}: choose that theme and import it again.`,
+    )
+  }
+  if (reading.elsewhere.length > 0) {
+    sentences.push(
+      `Not read: what it declares on ${reading.elsewhere.join(', ')}, which is not a theme's own selector and would not reach a themed form.`,
+    )
+  }
+  return sentences.join(' ')
+}
+
+/**
+ * A stylesheet's text as rules, parsed by the browser.
+ *
+ * A constructed stylesheet rather than a pattern here, so a preset is read by the
+ * parser that will apply it — comments, escapes and all — and handed to the same
+ * adapter the live stylesheets go through.
+ */
+export function rulesOfText(text: string): ThemeRule[] {
+  const sheet = new CSSStyleSheet()
+  sheet.replaceSync(text)
+  return declarationsOf([sheet])
+}
+
 /**
  * Every style rule in a set of stylesheets, reduced to `ThemeRule`.
  *

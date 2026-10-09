@@ -1,5 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
-import { applied, classify, declarationsOf, exportCss, resolve, themeTokens } from './theme-tokens.js'
+import {
+  applied,
+  classify,
+  declarationsOf,
+  describePreset,
+  exportCss,
+  readPreset,
+  resolve,
+  rulesOfText,
+  themeTokens,
+} from './theme-tokens.js'
 
 /**
  * Editing the theme that is on screen, token by token.
@@ -19,7 +29,9 @@ import { applied, classify, declarationsOf, exportCss, resolve, themeTokens } fr
  * for every element below, including the ones that compute from it.
  *
  * It does not persist. Nothing in this app does, and what comes out is a CSS
- * patch to paste into a project rather than a saved setting.
+ * patch to paste into a project rather than a saved setting. **That patch is the
+ * preset**: download it to keep it, import it to carry on editing where it was left
+ * ([0124](../../../docs/decisions/0124-a-theme-preset-is-the-patch-read-back.md)).
  */
 export function ThemePane({
   theme,
@@ -78,6 +90,21 @@ export function ThemePane({
   // Whatever was typed, blank included. See `applied` for why the blank stays.
   const set = (token: string, value: string): void => onChange({ ...overrides, [token]: value })
 
+  /**
+   * What the last import did, said where a screen reader hears it — and kept with the
+   * theme it was about, so choosing another theme does not leave a report about the
+   * first one standing under the second's controls.
+   */
+  const [report, setReport] = useState<{ theme: string; text: string } | null>(null)
+  const importPreset = async (file: File): Promise<void> => {
+    const reading = readPreset(rulesOfText(await file.text()), theme, declared)
+    // Replaced rather than merged: a preset is a whole set of changes, and one laid
+    // over edits already made would be neither. A file with nothing readable in it
+    // leaves the editor as it was, and says so.
+    if (Object.keys(reading.overrides).length > 0) onChange(reading.overrides)
+    setReport({ theme, text: describePreset(file.name, theme, reading) })
+  }
+
   const css = exportCss(theme, overrides)
   const changed = Object.keys(applied(overrides)).length
 
@@ -86,7 +113,8 @@ export function ThemePane({
       <p className="theme-intro">
         Every token the <strong>{theme}</strong> theme declares, read from its stylesheet. The four
         shipped themes declare different ones on purpose, so this list follows the theme rather than
-        the other way round — including a theme of your own.
+        the other way round — including a theme of your own. What you download is the preset:
+        import it to carry on where you left off.
       </p>
 
       <div className="theme-tokens">
@@ -152,7 +180,23 @@ export function ThemePane({
         >
           Download CSS
         </button>
+        <label className="theme-import">
+          Import CSS
+          <input
+            type="file"
+            accept=".css,text/css"
+            onChange={(event) => {
+              const file = event.target.files?.[0]
+              // Cleared, so choosing the same file again after editing reads it again.
+              event.target.value = ''
+              if (file !== undefined) void importPreset(file)
+            }}
+          />
+        </label>
       </div>
+      <p role="status" className="theme-report">
+        {report?.theme === theme ? report.text : ''}
+      </p>
 
       {/* The patch itself, because somebody reading it is how they learn there
           is nothing proprietary in the output. Only what was changed: a full

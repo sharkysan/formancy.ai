@@ -68,8 +68,12 @@ theme nobody here wrote, and what a fixed set of controls could not do: the four
 themes declare different vocabularies on purpose
 ([0103](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0103-a-theme-editor-edits-what-a-theme-declares.md)).
 It emits a patch rather than a fork, and it does not persist: what you leave with is a
-CSS file. A stored theme needs somewhere to put it, which is a backend decision nobody
-has taken.
+CSS file — and that file is the preset. **Import CSS** reads it back through the same rule
+the editor discovers tokens by, replaces what was being edited, and says what it could
+not apply: a token the theme does not declare, another theme's tokens, or a declaration
+on `:root` that would never reach a themed form
+([0124](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0124-a-theme-preset-is-the-patch-read-back.md)).
+A stored theme needs somewhere to put it, which is a backend decision nobody has taken.
 
 **Spec version 4 is open**, with `widget: "rating"`, `widget: "slider"` and the `step`
 property. Both are widgets on `number` because neither changes the answer — a rating is a

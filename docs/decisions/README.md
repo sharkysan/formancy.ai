@@ -224,3 +224,4 @@ listed under the sections they belong to above.
 | [0121](0121-the-specs-words-are-translated-beside-it.md) | The spec's words are translated beside it, keyed by the English it writes | accepted |
 | [0122](0122-a-validator-error-has-a-code.md) | A validator error has a code, and a builder translates it by that code | accepted |
 | [0123](0123-the-builder-reads-right-to-left.md) | The builder reads right to left, and the bundler is told the browsers it is for | accepted |
+| [0124](0124-a-theme-preset-is-the-patch-read-back.md) | A theme preset is the patch, read back through the editor's own rule | accepted |

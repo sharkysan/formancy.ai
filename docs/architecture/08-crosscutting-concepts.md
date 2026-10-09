@@ -145,6 +145,14 @@ older browsers rewrites it as a list of languages — so the apps here build for
 `CSS_TARGET`, and a host is told to
 ([0123](../decisions/0123-the-builder-reads-right-to-left.md)).
 
+**The playground's theme editor reads a theme rather than knowing one.** Every token a theme
+declares on its own selector gets a control, discovered from the live stylesheet because
+the shipped themes share no vocabulary, and what it hands back is a patch of only what
+changed ([0103](../decisions/0103-a-theme-editor-edits-what-a-theme-declares.md)). That
+patch is the preset: imported, it is parsed by the browser and filtered by the same rule,
+and what it cannot apply is reported rather than dropped
+([0124](../decisions/0124-a-theme-preset-is-the-patch-read-back.md)).
+
 ## 8.8 Internationalisation
 
 Optional, and resolved in the engine

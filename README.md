@@ -172,6 +172,8 @@ submitted. Switch language or theme without reloading.
 - **A visual theme editor.** Every design token the applied theme declares, read
   from its stylesheet rather than from a list — so it works on a theme you wrote,
   and what it hands back is a CSS patch that keeps inheriting rather than a fork.
+  That patch is the preset: import it and the editor opens where you left it, and
+  says what in the file it could not apply.
 - **Ratings and sliders.** A scale is a `number` field with a widget on it, so the
   answer is the same number either way — and a rating is a radio group rather than
   a row of buttons, which is one tab stop instead of eleven.

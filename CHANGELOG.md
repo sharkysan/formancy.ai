@@ -10,6 +10,15 @@ later.
 
 ## Unreleased
 
+**A theme preset can be brought back.** The theme editor's download was a file you could keep
+and never carry on editing. That CSS patch is now the preset: **Import CSS** reads it back
+and the editor opens where it was left. It is read by the browser and filtered by the same
+rule the editor discovers tokens by, so it can set exactly what the editor offers — and what
+it cannot apply is said rather than dropped: a token the theme does not declare, another
+theme's tokens, or a declaration on `:root` that the theme's own root would override before
+it reached a control. An import replaces the edits in progress. Nothing persists, as before:
+the file is the preset ([0124](docs/decisions/0124-a-theme-preset-is-the-patch-read-back.md)).
+
 **The builder reads right to left, and a bundler can no longer quietly undo it.** Verifying
 the builders under `dir="rtl"` found four things. The drag surface measured the pointer from
 the left, so a field aimed at the right of another in an Arabic or Hebrew form landed on its
