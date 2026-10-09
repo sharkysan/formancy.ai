@@ -10,6 +10,16 @@ later.
 
 ## Unreleased
 
+**Fixed: the Angular starter's date field had no calendar button in Chrome and Edge.**
+Material's stylesheet hides Chromium's own calendar and clock buttons on every `matInput`,
+because its datepicker brings a toggle of its own, and `@formancy/angular/material` draws a
+date as the platform's input instead — so a date could only be typed there. Measured in all
+three engines: Chromium lost the button, Firefox kept its own, WebKit draws none either way.
+The starter's stylesheet puts Chromium's back, the Angular guide gives the rule to every
+application using the adapter, which ships no CSS, and `test:browser` checks that the
+starter's date field shows the button
+([0149](docs/decisions/0149-a-material-date-keeps-the-platforms-calendar-button.md)).
+
 **Fixed: after one drop on the playground's preview, nothing in its Angular preview could be
 picked up again.** The arrange surface marked what could be dragged when it rendered, and the
 Angular preview it holds is redrawn after that, on Angular's schedule — 33 nodes could be

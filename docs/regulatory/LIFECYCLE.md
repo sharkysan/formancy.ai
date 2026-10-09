@@ -174,7 +174,10 @@ Each gate exists for a reason that was paid for at least once:
   ([0136](../decisions/0136-the-angular-page-runs-the-starter.md)), then opens the starter
   itself and asks whether Material's labels are drawn in a Roboto face the document loaded,
   and whether the builder and the controls Material does not draw resolve to Material's own
-  colours ([0142](../decisions/0142-the-angular-starter-is-dressed-in-materials-tokens.md)).
+  colours ([0142](../decisions/0142-the-angular-starter-is-dressed-in-materials-tokens.md)),
+  and whether its date field shows a calendar button, read from the pixels at the end of the
+  input because the button is a pseudo-element the cascade will not describe
+  ([0149](../decisions/0149-a-material-date-keeps-the-platforms-calendar-button.md)).
   And it drags on the playground's preview: it measures the space between two stacked fields
   and between two top-level sections, asks what a browser reports under it, drops a node there
   in both renderers' markup and reads back where it landed

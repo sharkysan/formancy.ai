@@ -184,6 +184,22 @@ becomes the day before in half the world. And one difference from the default co
 is Material's own: an **empty** required field is never marked `aria-invalid`; the error is
 still its description.
 
+**Put the calendar button back.** Material's stylesheet hides Chromium's own calendar and clock
+buttons on every `matInput`, because its datepicker brings a toggle of its own — so in Chrome
+and Edge a date or a time drawn by this adapter can only be typed. Firefox keeps its button,
+so the fix is to restore Chromium's rather than add one, in your stylesheet after Material's
+theme:
+
+```css
+.mat-mdc-form-field input[type='date']::-webkit-calendar-picker-indicator,
+.mat-mdc-form-field input[type='time']::-webkit-calendar-picker-indicator {
+  display: block;
+}
+```
+
+The starter below does, and `test:browser` checks that its date field shows the button
+([0149](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0149-a-material-date-keeps-the-platforms-calendar-button.md)).
+
 It is held to the same conformance fixtures as the default controls, through the same driver,
 axe audit included ([0132](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0132-material-draws-what-it-has-an-equivalent-for.md)).
 
