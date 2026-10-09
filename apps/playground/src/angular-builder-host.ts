@@ -6,11 +6,12 @@ import {
   FormancyLogicPanel,
   FormancyPropertyPanel,
   FormancyRulesOverview,
+  FormancyTranslationsPane,
 } from '@formancy/builder-angular'
 import type { BuilderBlock, BuilderSession, Capabilities } from '@formancy/builder-core'
 
-/** Which of the three tabs the page is on. The React pane owns this. */
-export type BuilderTab = 'fields' | 'arrangement' | 'rules'
+/** Which tab the page is on. The React pane owns this. */
+export type BuilderTab = 'fields' | 'arrangement' | 'rules' | 'translations'
 
 /** What the form pane's preview holds, for the rules tab to explain (0128). */
 export interface PreviewState {
@@ -68,8 +69,8 @@ export function playgroundBuilder(
  * recorded that debt).
  *
  * Which panels appear mirrors the React pane rather than being this host's own
- * idea: the same two tabs, the same panels under each, so a difference on screen
- * is a difference of builder.
+ * idea: the same tabs, the same panels under each, so a difference on screen is a
+ * difference of builder.
  */
 @Component({
   selector: 'formancy-playground-angular-builder',
@@ -81,6 +82,7 @@ export function playgroundBuilder(
     FormancyLogicPanel,
     FormancyPropertyPanel,
     FormancyRulesOverview,
+    FormancyTranslationsPane,
   ],
   template: `
     @if (host.tab() === 'arrangement') {
@@ -91,6 +93,8 @@ export function playgroundBuilder(
         [answers]="host.preview()?.answers"
         [capabilities]="host.preview()?.capabilities"
       />
+    } @else if (host.tab() === 'translations') {
+      <formancy-translations-pane [session]="host.session" />
     } @else {
       <formancy-builder
         [session]="host.session"

@@ -1,7 +1,10 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
+import { referencedMessages } from '@formancy/builder-core'
 import { App } from './app.js'
+import { builderTextFor } from './builder-pane.js'
+import { STARTER_SCHEMA } from './starter.js'
 
 /**
  * One document, two builders.
@@ -316,4 +319,98 @@ describe('the Language switch', () => {
       { timeout: 10_000 },
     )
   })
+})
+
+/**
+ * The Translations tab, in both builders.
+ *
+ * `TranslationsPane` and `formancy-translations-pane` ship in the two builder
+ * packages and were mounted only in the admin. The starter's French is
+ * half-finished on purpose, so a visitor could watch the form fall back to English
+ * and could not see the other half of the feature — where a translator finds what
+ * is missing and finishes it. The same documented-and-inert shape as the prompt
+ * pane above.
+ *
+ * What is pinned is what a translator sees on choosing French: every message the
+ * form refers to, in the order a reader meets them, with the French beside it where
+ * there is some and a mark where there is none. The expectation is derived from the
+ * starter's own catalogue rather than counted here, so a translation added to it
+ * moves the expectation with it instead of breaking a number.
+ */
+describe('the Translations tab', () => {
+  /** The pane's own mark for an untranslated message, in the words the builder ships. */
+  const missing = builderTextFor('en')('translations.missing')
+
+  const { en = {}, fr = {} } = STARTER_SCHEMA.i18n.messages
+  /** One row per referenced message: its English, its French or nothing, and whether it is marked. */
+  const expected = referencedMessages(STARTER_SCHEMA).map((id) => ({
+    source: en[id],
+    french: fr[id] ?? '',
+    marked: fr[id] === undefined,
+  }))
+
+  /**
+   * The table with a French column, among the tables in the Editor pane.
+   *
+   * Found by its column header rather than by position, because the pane's preview
+   * renders the form underneath, and the form's matrix is a table too.
+   */
+  const translationsTable = (editor: HTMLElement): HTMLElement => {
+    const table = within(editor)
+      .getAllByRole('table')
+      .find((candidate) => within(candidate).queryByRole('columnheader', { name: 'fr' }) !== null)
+    expect(table, 'no table in the Editor pane has a French column').toBeDefined()
+    return table!
+  }
+
+  /** The table as a translator reads it: the English, what is typed beside it, and the mark. */
+  const rowsOf = (table: HTMLElement) =>
+    within(table)
+      .getAllByRole('row')
+      .filter((row) => within(row).queryByRole('rowheader') !== null)
+      .map((row) => ({
+        source: within(row).getByRole('rowheader').textContent,
+        french: (within(row).getByRole('textbox') as HTMLInputElement).value,
+        marked: within(row).queryByText(missing) !== null,
+      }))
+
+  test('the starter’s French is still half-finished, so there is something to show', () => {
+    // A guard on the case below: a French catalogue somebody finished, or emptied,
+    // would let it pass while showing nothing half-finished at all.
+    expect(expected.some((row) => row.marked), 'the starter’s French is complete').toBe(true)
+    expect(expected.some((row) => !row.marked), 'the starter has no French at all').toBe(true)
+  })
+
+  test.each(['React', 'Angular'] as const)(
+    'is reached by name in the %s builder, and shows what is missing from the French',
+    async (which) => {
+      /*
+       * Prevents the pane being in a package and nowhere a visitor can reach: no
+       * Translations button, or one that opens the wrong pane, fails here before
+       * anything about the French is asked.
+       */
+      render(<App />)
+      await builtWith(which)
+      // The Angular builder bootstraps asynchronously; a tab chosen before it
+      // exists is a different question from whether the tab works.
+      if (which === 'Angular') await angularTree()
+
+      const user = userEvent.setup()
+      await user.click(screen.getByRole('button', { name: 'Translations' }))
+
+      // Scoped to the Editor pane: the page's own Language switch in the bar has the
+      // same name, and chooses the language the form is READ in rather than the one
+      // being translated.
+      const editor = screen.getByRole('region', { name: 'Editor' })
+      const language = await waitFor(
+        () => within(editor).getByRole('combobox', { name: 'Language' }),
+        { timeout: 10_000 },
+      )
+      await user.selectOptions(language, 'fr')
+
+      await waitFor(() => expect(rowsOf(translationsTable(editor))).toEqual(expected), {
+        timeout: 10_000,
+      })
+    },
+  )
 })

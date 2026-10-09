@@ -42,6 +42,7 @@ import { EngineInspector } from './engine-inspector.js'
 import { FoldPane, PANES, PaneBoundary, usePaneLayout } from './panes.js'
 import { EditorPane } from './editor-pane.js'
 import type { EditorMode } from './editor-pane.js'
+import type { BuilderTab } from './angular-builder-host.js'
 import type { PaneId } from './panes.js'
 import { BuilderBody, PLACEHOLDER_SESSION, builderTextFor } from './builder-pane.js'
 import { DEMO_BLOCKS } from './demo-blocks.js'
@@ -68,8 +69,9 @@ type ThemeId = (typeof THEMES)[number]['id']
 
 /**
  * The locales the starter schema carries. French is deliberately incomplete,
- * so switching to it shows the fallback doing its job: three labels stay
- * English rather than turning into message ids.
+ * so switching to it shows the fallback doing its job: the labels nobody has
+ * translated stay English rather than turning into message ids. The builder's
+ * Translations tab marks which ones they are.
  */
 const LOCALES = [
   { id: 'en', label: 'English' },
@@ -136,7 +138,7 @@ export function App() {
    * tree edits. Two sessions over one document would be two documents.
    */
   const [session, setSession] = useState<BuilderSession | null>(null)
-  const [builderTab, setBuilderTab] = useState<'fields' | 'arrangement' | 'rules'>('fields')
+  const [builderTab, setBuilderTab] = useState<BuilderTab>('fields')
   /**
    * The blocks both builders offer: a demo one, and whatever is saved this visit (0135).
    * Up here because a block outlives the form it was saved from — saved from one

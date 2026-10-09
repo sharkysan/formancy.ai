@@ -10,6 +10,18 @@ later.
 
 ## Unreleased
 
+**Added: the playground has a Translations tab, in both builders.** `TranslationsPane` and
+`formancy-translations-pane` shipped in `@formancy/builder-react` and
+`@formancy/builder-angular` and were mounted only in the admin. So a visitor to formancy.ai
+could watch the starter's half-finished French fall back to English, and could not see the
+other half of the feature: where a translator finds what is missing and fills it in. Build
+now has *Translations* beside *Rules* in either builder; choose French there and every
+untranslated message is marked beside its English. No package changed.
+`two-builders.test.tsx` reaches the tab by name in both builders and compares its table with
+the starter's own catalogue, and the playground's accessibility audit now covers the pane.
+The README said that in French "most of the form is French while three labels stay English",
+which was wrong — most of the starter's messages have no French — and it no longer counts.
+
 **Fixed: behind a reverse proxy, every respondent shared one rate-limit budget.** Every limit
 on the public plane counts the client's address, and the server built Fastify trusting no
 proxy — so behind the proxy the deployment view draws, every request came from the proxy's

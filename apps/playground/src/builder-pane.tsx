@@ -8,6 +8,7 @@ import {
   PropertyPanel,
   RulesOverview,
   ScenarioPane,
+  TranslationsPane,
   useBuilder,
 } from '@formancy/builder-react'
 import {
@@ -143,7 +144,7 @@ export function BuilderBody({
           Redo
         </button>
         <span className="builder-tabs">
-          {(['fields', 'arrangement', 'rules'] as const).map((candidate) => (
+          {(['fields', 'arrangement', 'rules', 'translations'] as const).map((candidate) => (
             <button
               key={candidate}
               aria-pressed={tab === candidate}
@@ -188,6 +189,11 @@ export function BuilderBody({
           answers={explained?.answers}
           capabilities={explained?.capabilities}
         />
+      ) : tab === 'translations' ? (
+        /* The starter's French is half-finished on purpose. The form pane shows the
+           fallback; this shows the other half — choose French and every message
+           nobody has translated is marked, beside the English it stands in for. */
+        <TranslationsPane session={session} />
       ) : tab === 'arrangement' ? (
         <>
           <FormancyLayoutPane session={session} layout="web" onSelect={setArranging} />
@@ -253,6 +259,7 @@ const TAB_NAMES: Readonly<Record<BuilderTab, string>> = {
   fields: 'Fields',
   arrangement: 'Arrangement',
   rules: 'Rules',
+  translations: 'Translations',
 }
 
 const NO_PREVIEW = (): (() => void) => () => undefined

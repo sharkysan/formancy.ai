@@ -268,7 +268,10 @@ untranslated label is a small problem, a message id on screen is a large one.
 
 You can see this in the playground: its demo form is written entirely in
 references, and its language switcher includes a deliberately half-finished
-French catalogue so the fallback is visible rather than described.
+French catalogue so the fallback is visible rather than described. The builder's
+**Translations** tab shows the same catalogue from the translator's side: choose
+French there and every message nobody has translated yet is marked, beside the
+English a reader is shown instead.
 
 Resolution happens in the engine, not in each renderer:
 
