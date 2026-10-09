@@ -20,23 +20,29 @@ import { describe, expect, test } from 'vitest'
 const here = dirname(fileURLToPath(import.meta.url))
 const repo = join(here, '..', '..', '..')
 
+/** `source` with every span from `open` to the next `close` taken out. */
+function without(source: string, open: string, close: string): string {
+  let kept = ''
+  let at = 0
+  for (;;) {
+    const start = source.indexOf(open, at)
+    if (start < 0) return kept + source.slice(at)
+    kept += source.slice(at, start)
+    const end = source.indexOf(close, start + open.length)
+    if (end < 0) return kept
+    at = end + close.length
+  }
+}
+
 /**
  * Comments out, in every syntax a builder source holds: a part named in prose is not drawn.
  *
- * Until nothing changes, because one pass can leave a comment that removing another one
- * completed — `<!<!-- -->-- -->` — which is also why CodeQL refused the single pass.
+ * Scanned rather than replaced by a regular expression, which CodeQL reads as an HTML
+ * sanitiser that a nested comment can defeat. This is reading source, not cleaning markup
+ * for a browser, and a scan says so without a loop to placate the query.
  */
-function code(source: string): string {
-  let text = source
-  let previous: string
-  do {
-    previous = text
-    text = text.replace(/<!--[\s\S]*?-->/g, '')
-    text = text.replace(/\/\*[\s\S]*?\*\//g, '')
-    text = text.replace(/^\s*\/\/.*$/gm, '')
-  } while (text !== previous)
-  return text
-}
+const code = (source: string): string =>
+  without(without(source, '<!--', '-->'), '/*', '*/').replace(/^\s*\/\/.*$/gm, '')
 
 function sources(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
