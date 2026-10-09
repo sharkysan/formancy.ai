@@ -159,6 +159,27 @@ describe('where Material and the engine both have an opinion', () => {
     expect(control.getAttribute('aria-required')).toBe('true')
   })
 
+  test('a group carries the default control’s hooks on the frame Material does not draw', async () => {
+    // Material draws the radios and the ticks, not the fieldset around them: that frame is
+    // this adapter's markup. Without the hooks the default group carries, a stylesheet
+    // reaches the group in one registry and not the other — the required hint stood as
+    // bare text before the radios in the Angular starter.
+    await mount(
+      form([
+        { key: 'purpose', type: 'radio', label: 'Purpose', required: true, options: [{ value: 'a', label: 'A' }] },
+        { key: 'tags', type: 'selectboxes', label: 'Tags', required: true, options: [{ value: 'b', label: 'B' }] },
+      ]),
+    )
+
+    for (const name of ['Purpose', 'Tags']) {
+      const group = screen.getByRole('group', { name })
+      expect(group.getAttribute('data-formancy-part')).toBe('field')
+      expect(group.getAttribute('data-state')).toBe('valid')
+      expect(group.querySelector('legend')?.getAttribute('data-formancy-part')).toBe('label')
+      expect(within(group).getByText('required').getAttribute('data-formancy-part')).toBe('required-hint')
+    }
+  })
+
   test('an error is shown under the engine’s id, and read out once', async () => {
     const engine = await mount(
       form([{ key: 'email', type: 'text', label: 'Email', required: true }]),

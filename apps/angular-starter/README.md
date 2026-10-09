@@ -16,7 +16,7 @@ pnpm --filter @formancy/angular-starter dev    # http://localhost:4383
 
 ## What is yours to change
 
-Everything a host decides is in four files, and nothing else in the app names a field:
+Everything a host decides is in a file of its own, and nothing else in the app names a field:
 
 | File | Decides |
 |---|---|
@@ -24,6 +24,7 @@ Everything a host decides is in four files, and nothing else in the app names a 
 | `src/app/app.ts` | which builder panels appear, and what happens to a submitted claim |
 | `src/app/preview.ts` | how a document becomes a form: the engine's clock, the Material registry, the uploader |
 | `src/app/saved-form.ts` | where the form being built is kept — the browser's storage here |
+| `src/styles.css` | how the page looks: the Material theme, the face, and everything Material does not draw |
 
 **A saved form is the browser's, for this page.** A form is JSON, so keeping one elsewhere is
 replacing two functions: `saveForm` sends `JSON.stringify(document)` to your server, and
@@ -55,6 +56,15 @@ const upload: Uploader = async (file, { field, signal, onProgress }) => {
 `upload.onprogress` for a figure on the bar. The file field shows each file's progress,
 lets it be cancelled or tried again, and keeps the answer in order either way.
 
+**The look is Material's tokens, all of it.** Material draws the form's fields, and a theme
+decides their colours; `src/styles.css` puts the rest of the page in that theme's tokens, so
+changing the theme changes the page. The builder is dressed by `@formancy/themes/workbench.css`
+with its `--wb-*` colours mapped to Material's. The controls Material has no equivalent for —
+the submit button, a repeater's frame and buttons, a file field — are formancy's default
+controls, which ship no styling; the stylesheet dresses them through their `data-formancy-part`
+hooks. Roboto, which Material's type tokens name without a fallback, is loaded from
+`@fontsource/roboto` rather than a font service, so the app makes no third-party request.
+
 ## Taking it out of this repository
 
 It builds against the workspace's own packages. Copied out, replace each `workspace:*` in
@@ -71,5 +81,8 @@ and providers are plain Angular, zoneless.
 `src/app/app.test.ts` opens it as somebody who cloned it would: the form drawn with
 Material and the receipt drawn by the default control, a large expense asking why and an
 untouched form not, a claim submitted and shown, an edit in the builder reaching the
-form, and a form saved, opened again and reloaded — but not one saved that is no longer
-valid. Each was observed failing with the thing it guards removed.
+form, a form saved, opened again and reloaded — but not one saved that is no longer
+valid — and Save and Reload saved drawn as Material's buttons. Each was observed failing with
+the thing it guards removed. What jsdom cannot see is checked in Chromium by `pnpm test:browser`,
+on the starter as formancy.ai serves it: Material's labels in a Roboto face the page loaded, and
+the builder and the controls Material does not draw in Material's own colours.

@@ -1,5 +1,6 @@
 import { JsonPipe } from '@angular/common'
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core'
+import { MatButton } from '@angular/material/button'
 import type { SubmitOutcome } from '@formancy/angular'
 import {
   FormancyBuilder,
@@ -24,14 +25,21 @@ import { saveForm, savedForm } from './saved-form.js'
 @Component({
   selector: 'starter-root',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormancyBuilder, FormancyLogicPanel, FormancyPropertyPanel, JsonPipe, StarterPreview],
+  imports: [
+    FormancyBuilder,
+    FormancyLogicPanel,
+    FormancyPropertyPanel,
+    JsonPipe,
+    MatButton,
+    StarterPreview,
+  ],
   template: `
     <header>
       <h1>{{ title() }}</h1>
       <p>Edit the form on the left; fill it in on the right.</p>
       <p class="actions">
-        <button type="button" (click)="save()">Save</button>
-        <button type="button" (click)="reload()">Reload saved</button>
+        <button matButton="filled" type="button" (click)="save()">Save</button>
+        <button matButton="outlined" type="button" (click)="reload()">Reload saved</button>
         <span role="status">{{ said() }}</span>
       </p>
     </header>

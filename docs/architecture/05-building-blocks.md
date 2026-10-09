@@ -320,7 +320,9 @@ dependency runs one way only: `@formancy/react` knows nothing about the builder.
 `apps/playground` and `apps/admin` are the two tools; `apps/docs` is the
 reference; `apps/site` is formancy.ai; `apps/angular-starter` is an Angular application to
 copy — the builder and the form it builds, drawn with Angular Material, with everything a
-host decides in three files ([0133](../decisions/0133-the-angular-starter-is-the-builder-and-the-form.md)).
+host decides in a file of its own ([0133](../decisions/0133-the-angular-starter-is-the-builder-and-the-form.md)),
+and the rest of the page dressed in Material's tokens by its own stylesheet
+([0142](../decisions/0142-the-angular-starter-is-dressed-in-materials-tokens.md)).
 
 The playground carries **two** demo documents and the pair is the unit that is
 held to covering the format. One is flat — every field type minus the two that
