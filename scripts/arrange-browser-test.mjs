@@ -1,6 +1,6 @@
 /**
- * Dropping between two nodes on the preview (0146), and picking things up again after a
- * drop (0148).
+ * Dropping between two nodes on the preview (0146), picking things up again after a drop
+ * (0148), and picking up what carried no path (0150).
  *
  * The surface tests hand every element a rectangle, because jsdom draws nothing, and
  * then say where the pointer is. That takes two facts on trust: that the theme leaves
@@ -140,6 +140,30 @@ export async function checkArrangeGaps(browser, url, check) {
       )
     } finally {
       await inSection.page.close()
+    }
+
+    // ── What carried no path: a static text and a repeater ─────────────────────────────
+    // Both renderers drew the intro as a bare paragraph and a repeater's fieldset naming
+    // nothing, so neither could be picked up on the preview (0150).
+    const unnamed = await arranging(browser, url, renderer)
+    try {
+      const { pane } = unnamed
+      for (const [what, path] of [
+        ['the static intro', 'intro'],
+        ['the items repeater', 'items'],
+      ]) {
+        const mark = await pane
+          .locator(`[data-formancy-field-path="${path}"]`)
+          .first()
+          .getAttribute('data-arrangeable', { timeout: 5000 })
+          .catch(() => 'nothing names it')
+        check(
+          `${renderer}: ${what} can be picked up`,
+          mark === 'true' ? null : `it carries no mark (${String(mark)})`,
+        )
+      }
+    } finally {
+      await unnamed.page.close()
     }
 
     // ── A field a rule shows: the canton, once Switzerland is chosen ───────────────────

@@ -407,7 +407,9 @@ function RepeaterSection({
   )
 
   return (
-    <fieldset data-formancy-part="repeater">
+    // The repeater's own path, inert, beside its rows' — the rows name their fields, and
+    // without this nothing named the repeater an arrangement places.
+    <fieldset data-formancy-part="repeater" data-formancy-field-path={wire}>
       <legend data-formancy-part="repeater-legend">{label}</legend>
       {grid ? (
         // A container inside the fieldset rather than the fieldset itself, so the legend

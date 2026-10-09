@@ -202,6 +202,26 @@ export class FormancyArrangeSurface {
   }
 
   /**
+   * The nearest element under `element` that names a node of this arrangement, and the
+   * node's path.
+   *
+   * Not simply the nearest carrying an attribute: a repeater's rows name their fields —
+   * `items[0].name` — which no arrangement places, and stopping there left a pointer on a
+   * row aiming at nothing rather than at the repeater around it.
+   */
+  private nodeUnder(
+    element: Element | null,
+  ): { element: HTMLElement; path: readonly number[] } | undefined {
+    let at = element?.closest<HTMLElement>(SELECTOR) ?? null
+    while (at !== null) {
+      const path = this.pathOfElement(at)
+      if (path !== undefined) return { element: at, path }
+      at = at.parentElement?.closest<HTMLElement>(SELECTOR) ?? null
+    }
+    return undefined
+  }
+
+  /**
    * Every node drawn inside `scope`, and where.
    *
    * A loop rather than `flatMap`: ng-packagr compiles this package against its own
@@ -229,19 +249,18 @@ export class FormancyArrangeSurface {
     if (dragged === null) return undefined
     const under = event.target as Element | null
     if (under === null) return undefined
-    const element = under.closest<HTMLElement>(SELECTOR)
+    const node = this.nodeUnder(under)
 
     // Under nothing that names a node, the pointer is over the form itself, and the
     // form's children are the top-level nodes.
-    const over = element === null ? [] : this.pathOfElement(element)
-    if (over === undefined) return undefined
+    const over = node?.path ?? []
     const pointer = { x: event.clientX, y: event.clientY }
 
     // Between two children of what is under the pointer, the nearer child is aimed at;
     // anywhere else, what is under it is.
     const aimed =
-      gapNeighbour(over, this.drawnIn(element ?? under), pointer) ??
-      (element === null ? undefined : { element, path: over, box: element.getBoundingClientRect() })
+      gapNeighbour(over, this.drawnIn(node?.element ?? under), pointer) ??
+      (node === undefined ? undefined : { ...node, box: node.element.getBoundingClientRect() })
     if (aimed === undefined) return undefined
 
     const drop = arrangeDrop({
@@ -258,7 +277,7 @@ export class FormancyArrangeSurface {
   }
 
   protected onDragStart(event: DragEvent): void {
-    const path = this.pathOfElement(event.target as Element)
+    const path = this.nodeUnder(event.target as Element)?.path
     if (path === undefined) return
     // The innermost arrangeable element wins, and the browser has already
     // decided that by dispatching from it.

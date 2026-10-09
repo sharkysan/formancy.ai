@@ -25,7 +25,9 @@ import { injectFieldContext } from '../registry.js'
 @Component({
   selector: 'formancy-static-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<p data-formancy-part="static">{{ context.label }}</p>`,
+  // The path is inert here, as on every field, and read by tools outside the renderer —
+  // without it the builder's arrange surface could not pick this up on the preview.
+  template: `<p data-formancy-part="static" [attr.data-formancy-field-path]="context.path">{{ context.label }}</p>`,
 })
 export class FormancyStaticField {
   protected readonly context = injectFieldContext()

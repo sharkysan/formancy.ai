@@ -138,7 +138,9 @@ interface RepeaterRow {
   imports: [NgTemplateOutlet, FormancyFieldSlot],
   template: `
     @if (state; as s) {
-      <fieldset data-formancy-part="repeater">
+      <!-- The repeater's own path, inert, beside its rows': the rows name their fields,
+           and without this nothing named the repeater an arrangement places. -->
+      <fieldset data-formancy-part="repeater" [attr.data-formancy-field-path]="wire()">
         <legend data-formancy-part="repeater-legend">{{ s.label }}</legend>
         <!-- The buttons a row carries, written once and used by both arrangements.
              Each one's text sits in its own element so a THEME can clip it and draw a
