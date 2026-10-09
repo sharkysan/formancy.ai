@@ -271,7 +271,8 @@ packages/expressions    CEL parse/check/compile/evaluate + deterministic meterin
 packages/core           the headless reactive engine (rules, rows, wizard, a11y ids)
 packages/react          React binding: hooks, unstyled components, error summary
 packages/angular        Angular binding: signals over the same protocol, zoneless
-packages/conformance    the behaviour + accessibility contract (7 fixtures, published)
+packages/conformance    the behaviour + accessibility contract, published so another
+                        renderer can be held to it
 packages/builder-core   headless schema editing: commands, undo/redo, valid
                         targets, and everything a builder's UI reads off a
                         session — shared by both builders
@@ -283,10 +284,13 @@ packages/builder-angular  the same builder for Angular: zoneless, one signal per
 packages/server-core    backend use-cases against storage ports
 packages/server         Fastify + Postgres: publish, resolve, replayed submissions,
                         drafts with lazy migration, CSV export
-packages/themes         two reference themes. Nothing depends on them
+packages/themes         reference themes. Nothing depends on them
+packages/tiptap         a TipTap editor held to formancy's rich-text grammar
+packages/challenge      the proof-of-work challenge: mint, solve and verify
 packages/mcp            formancy as tools for a coding agent (MCP)
 apps/site               formancy.ai — the landing page, which renders a real form
 apps/playground         the one-screen demo (editor / live form / engine state)
+apps/angular-starter    an Angular application: the builder and a Material form
 apps/admin              the self-hosted admin, v0.1 cut
 apps/docs               the documentation site (Astro Starlight)
 ```

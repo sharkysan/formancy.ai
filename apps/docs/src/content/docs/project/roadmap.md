@@ -25,13 +25,15 @@ snapshots, and engine-minted accessibility ids.
 
 **Two renderers** — `@formancy/react` (hooks, unstyled components, error
 summary) and `@formancy/angular` (signals, zoneless, DI registry). Both pass the
-same conformance fixtures.
+same conformance fixtures. `@formancy/angular/material` draws with Angular Material what
+Material has an equivalent for, held to the same fixtures
+([0132](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0132-material-draws-what-it-has-an-equivalent-for.md)).
 
 **The conformance suite** (`@formancy/conformance`) — published, so third-party
 renderers can self-certify.
 
-**The builder** (`@formancy/builder-core` and `@formancy/builder-react`) —
-schema editing as commands with undo/redo and valid-target computation, where a
+**Two builders** (`@formancy/builder-react` and `@formancy/builder-angular`, over
+`@formancy/builder-core`) — schema editing as commands with undo/redo and valid-target computation, where a
 command that would produce an invalid document is refused rather than applied,
 and a rename declares `renamedFrom` so collected answers follow the field. Over
 that: a structure tree, an arrangement tree for rows and columns, a field
@@ -42,6 +44,10 @@ columns can also be dragged on the rendered form itself. A wizard is buildable:
 `p` adds a page, and the first one takes the fields already at the top level,
 because the engine gives a field that is not inside a page to page one wherever
 it sits ([0081](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0081-a-page-absorbs-the-form-it-joins.md)).
+Both builders carry every pane, decided once in `builder-core` so the two cannot offer
+different things ([0091](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0091-a-second-builder-is-a-binding.md)), and both save a field
+as a block — with the rules that live inside it — to insert into the next form
+([0135](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0135-a-block-is-a-field-with-its-rules.md)).
 The builder's words come from one catalogue in `builder-core`, English, German and French: a
 session refuses, offers destinations and names layout nodes in the language it was
 opened in, and every surface of both builders shows and announces everything in it. The
@@ -57,10 +63,13 @@ authorization, per-IP rate limiting and per-form origin allowlists on the
 public plane, and webhooks delivered from a transactional outbox to an address
 the server resolved and checked itself.
 
-**Two apps** — a playground (schema or builder, live form and engine state side
-by side, with theme and language switchers) and the self-hosted admin (the
+**The apps** — a playground (schema or builder, live form and engine state side
+by side, with theme and language switchers), the self-hosted admin (the
 builder in a three-pane inspector, a raw schema editor, publish, version
-history, submissions and export).
+history, submissions and export), and an Angular starter — the builder and a form drawn
+with Material side by side, saving the form being built — which
+[formancy.ai/angular-form-builder](https://formancy.ai/angular-form-builder/) runs in the
+page ([0133](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0133-the-angular-starter-is-the-builder-and-the-form.md)).
 
 **A visual theme editor**, in the playground's third editor mode. Every token the
 applied theme declares, discovered from its stylesheet — which is what lets it work on a
@@ -145,9 +154,11 @@ answer holding only what was typed — `(999) 999-9999` stores `5551234567`
   look at it, and a catalogue goes out and comes back as a file carrying the source beside
   every target. Not XLIFF: that is a format with a specification and a namespace, and
   shipping half of one would be worse than shipping none.
-- **Concurrent editing of one form.** Published versions are immutable and a
-  submission carries the hash it was rendered from, so the pieces are there; two
-  people editing one draft still last-write-wins.
+- ~~**Concurrent editing of one form.**~~ **Collision control is built**: a publish that
+  declares the version it was opened from is refused with `409` when somebody else has
+  published since, with the current schema attached — see *Two people editing one form*
+  below. Not built: two people editing at the same time with their changes merged. The
+  second publish is refused rather than lost, and reconciling it is a person's job.
 - **An object store in the compose file.** The design calls for Garage and the
   compose files give a local files volume instead, so uploads do not survive more
   than one replica. (An earlier version of this entry said the one-command path
@@ -158,8 +169,9 @@ answer holding only what was typed — `(999) 999-9999` stores `5551234567`
 - **A Vue renderer.** The engine protocol is designed for one; it is not a
   commitment yet.
 
-Field **type names** for several of these are reserved — `multiselect`, `combobox`,
-`signature` and the rest are simply absent from the type list.
+Field **type names** for several of these are reserved — `multiselect` and `combobox` are
+absent from the type list, the first because several ticks from one list is already a type
+of its own and the second because one answer typed into a list is a widget on a select.
 
 **Reserving a name costs nothing; adding the type costs a spec version.** Those
 are different things, and an earlier version of this page ran them together. The
@@ -227,8 +239,9 @@ than asserted.
    rather than widgets, because each stores an answer no existing type holds: a ranking
    stores the respondent's chosen order and a matrix a row-to-column map. They are the
    reason version 4 is open rather than frozen — it can gain them without another bump.
-   Image choices are smaller and go with them: an `image` on an option plus a widget,
-   which changes no answer at all.
+   Image choices went first, being smaller: an `image` on an option of a radio group or a
+   set of checkboxes, which changes no answer at all
+   ([0126](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0126-an-option-may-carry-a-picture.md)).
 2. **XLIFF**, if somebody asks for it. The exchange format is JSON carrying the source
    beside every target, which converts to XLIFF in a script; a real XLIFF implementation
    is a specification, a namespace and versions, and half of one is worse than none.
