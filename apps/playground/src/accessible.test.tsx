@@ -94,8 +94,13 @@ const unnamed = (): string[] =>
  * and the other covered one, and nothing said which.
  *
  * `Fields` is what the tool opens on, so it needs no click.
+ *
+ * `Translations` is audited from the day it reached the page, because it brings
+ * controls no other pane has: a file input, a text box for every message, and a third
+ * rendering of the form under them. Unaudited, any of those could ship without a name
+ * and only a screen reader would find out.
  */
-const PANES = ['Fields', 'Arrangement'] as const
+const PANES = ['Fields', 'Arrangement', 'Translations'] as const
 
 async function showing(pane: (typeof PANES)[number]): Promise<void> {
   render(<App />)

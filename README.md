@@ -455,9 +455,11 @@ change.
 
 **Language** proves the i18n section. The demo form's labels are `$t`
 references into three catalogues, and French is deliberately incomplete —
-switch to it and most of the form is French while three labels stay English,
-because a missing translation falls back to the default locale rather than
-printing a message id at somebody.
+switch to it and the labels nobody has translated stay English, because a
+missing translation falls back to the default locale rather than printing a
+message id at somebody. The builder's *Translations* tab is the other side of
+it: choose French there, in either builder, and every message still to translate
+is marked beside its English.
 
 **`?dir=rtl`** opens the playground right to left: both forms and both builders follow
 the reading order — the marks on a selected node move to the side a line starts on, and a

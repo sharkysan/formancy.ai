@@ -817,7 +817,8 @@ body {
   cursor: not-allowed;
 }
 
-/* The two editors over one document: fields and the arrangement. */
+/* The builder's views of one document: its fields, its arrangement, its rules
+   and its words. */
 .builder-tabs {
   display: flex;
   gap: 0.25rem;
