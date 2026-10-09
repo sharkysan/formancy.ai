@@ -186,7 +186,9 @@ axe audit included ([0132](https://github.com/sharkysan/formancy.ai/blob/main/do
 **A whole application to start from** is in the repository:
 [`apps/angular-starter`](https://github.com/sharkysan/formancy.ai/tree/main/apps/angular-starter) —
 the Angular builder and the form it builds side by side, drawn with Material, with the
-document, the panels, the submit and the uploader each in one file of their own.
+document, the panels, the submit, the uploader and where the form is saved each in one file
+of their own. It saves the form being built and opens on it next time, and
+[formancy.ai/angular-form-builder](https://formancy.ai/angular-form-builder/) runs it.
 
 ## Editing a form, from Angular
 

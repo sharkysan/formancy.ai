@@ -18,6 +18,7 @@ export default defineConfig({
     rolldownOptions: { input: {
       main: fileURLToPath(new URL('./index.html', import.meta.url)),
       templates: fileURLToPath(new URL('./templates/index.html', import.meta.url)),
+      angular: fileURLToPath(new URL('./angular-form-builder/index.html', import.meta.url)),
     } },
   },
   server: {

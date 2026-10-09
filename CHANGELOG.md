@@ -10,6 +10,23 @@ later.
 
 ## Unreleased
 
+**formancy.ai/angular-form-builder.** A page for somebody looking for an Angular form builder,
+with the Angular starter running in it — the real application, built from the repository and
+served at `/angular-form-builder/demo/`, not a recording — the install command, an editor
+component, the save-and-reload code, the versions CI runs, and a comparison with SurveyJS
+part by part: renderer, visual builder, backend. What it says about SurveyJS is dated and
+links SurveyJS's own pages, because it is true on a day and this repository cannot keep it
+true. The install command and the snippet are checked against the packages they name
+([0136](docs/decisions/0136-the-angular-page-runs-the-starter.md)).
+
+**The Angular starter saves the form being built, and opens on it.** `saved-form.ts` keeps it
+in the browser's storage and is the one file to change to keep it on a server; a saved form
+that is no longer valid is not opened, since a session refuses one by throwing. The starter is
+now built with a relative base, so it can be served from any path, a copy of it included.
+
+**Fixed: the site's footer said "Spec version 2".** It was typed, and stayed at 2 while the spec
+reached 4. It is now the version the spec package writes.
+
 **Blocks: a piece of a form saved to use again.** Both builders save the focused field —
 usually a group or a repeater — as a block with `b`, and offer blocks in the add palette
 beside the field types. A block carries the rules that read only inside it and the words its

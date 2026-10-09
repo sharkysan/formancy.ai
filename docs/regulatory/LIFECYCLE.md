@@ -102,9 +102,10 @@ Each gate exists for a reason that was paid for at least once:
   the only thing in the repository that can say the signature is *right* rather
   than merely self-consistent — so that suite carries a case asserting a wrong
   secret is refused, without which the rest of it would prove nothing.
-- **`build:web`** — composes the landing page, the playground and the docs under
-  one origin, which `build` does not do, and carries the check for root-absolute
-  documentation links. Added as a gate after it had existed for a while as a
+- **`build:web`** — composes the landing page, the playground, the docs and the
+  Angular starter under one origin, which `build` does not do, and carries the check
+  for root-absolute documentation links and for an app's asset URLs pointing outside
+  where it is served. Added as a gate after it had existed for a while as a
   script nothing ran: two links resolving against the landing page instead of
   `/docs/` reached production, built cleanly all the way through, and were found
   in a deploy log. A guard that is not a gate is a comment.
@@ -167,7 +168,10 @@ Each gate exists for a reason that was paid for at least once:
   fails on `:dir()` rewritten as a list of languages — a file check rather than a
   browser one, placed here because this is the gate that runs on what
   `pnpm build:web` produced
-  ([0123](../decisions/0123-the-builder-reads-right-to-left.md)).
+  ([0123](../decisions/0123-the-builder-reads-right-to-left.md)). And it opens the Angular
+  page and waits for the starter inside its frame to render, the one thing on the site jsdom
+  cannot load at all
+  ([0136](../decisions/0136-the-angular-page-runs-the-starter.md)).
   **A different kind of test from the rest of this list**, and the reason is
   structural rather than a coverage gap: jsdom applies no CSS, resolves no media
   queries and performs no layout, so every box measures zero and every cascade

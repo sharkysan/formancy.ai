@@ -6,7 +6,8 @@ with [Angular Material](https://material.angular.dev) through `@formancy/angular
 
 It opens on an expense claim — a repeater of expenses with a receipt each, a reason asked
 for only when one expense is over CHF 500, a confirmation to tick — and shows a submitted
-claim as the data a server would receive.
+claim as the data a server would receive. **Save** keeps the form being built and the app
+opens on it next time; **Reload saved** puts it back without restarting.
 
 ```bash
 pnpm install
@@ -15,13 +16,20 @@ pnpm --filter @formancy/angular-starter dev    # http://localhost:4383
 
 ## What is yours to change
 
-Everything a host decides is in three files, and nothing else in the app names a field:
+Everything a host decides is in four files, and nothing else in the app names a field:
 
 | File | Decides |
 |---|---|
 | `src/app/expense-claim.ts` | the document it opens on — replace it with your own |
 | `src/app/app.ts` | which builder panels appear, and what happens to a submitted claim |
 | `src/app/preview.ts` | how a document becomes a form: the engine's clock, the Material registry, the uploader |
+| `src/app/saved-form.ts` | where the form being built is kept — the browser's storage here |
+
+**A saved form is the browser's, for this page.** A form is JSON, so keeping one elsewhere is
+replacing two functions: `saveForm` sends `JSON.stringify(document)` to your server, and
+`savedForm` fetches it back and checks it is still a form this version reads, since a session
+refuses an invalid document by throwing. Against a formancy server, saving is publishing a
+version — `POST /forms` with the document — and the server keeps every one.
 
 **The uploader keeps the bytes in the browser tab**, and its storage key says so. Replace
 `inTabUploader` with one that sends them somewhere. Against a formancy server it is two
@@ -62,5 +70,6 @@ and providers are plain Angular, zoneless.
 
 `src/app/app.test.ts` opens it as somebody who cloned it would: the form drawn with
 Material and the receipt drawn by the default control, a large expense asking why and an
-untouched form not, a claim submitted and shown, and an edit in the builder reaching the
-form. Each was observed failing with the thing it guards removed.
+untouched form not, a claim submitted and shown, an edit in the builder reaching the
+form, and a form saved, opened again and reloaded — but not one saved that is no longer
+valid. Each was observed failing with the thing it guards removed.

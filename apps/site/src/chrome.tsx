@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react'
+import { CURRENT_SPEC_VERSION } from '@formancy/spec'
 import './shell.css'
 
 /**
@@ -32,7 +33,7 @@ export const REPO = 'https://github.com/sharkysan/formancy.ai'
 export const PLAYGROUND = import.meta.env.DEV ? 'http://localhost:4381/' : '/playground/'
 
 /** Where a page can be, for the entry that marks itself as current. */
-export type Page = 'home' | 'templates'
+export type Page = 'home' | 'templates' | 'angular'
 
 /**
  * The light behind every page.
@@ -90,6 +91,7 @@ const LINKS = [
   { href: '#engine', label: 'How it works', optional: true },
   { href: '#build', label: 'Examples', optional: true },
   { href: '/templates/', label: 'Templates', page: 'templates' as Page, optional: true },
+  { href: '/angular-form-builder/', label: 'Angular', page: 'angular' as Page, optional: true },
   { href: '#run', label: 'Run it', optional: true },
   { href: PLAYGROUND, label: 'Playground' },
 ]
@@ -135,10 +137,10 @@ export function SiteBar({ current }: { current: Page }): ReactElement {
 /**
  * The footer, which says what somebody needs to check the claim above it.
  *
- * The version is injected at build time rather than typed, for the reason the
- * landing page derives its counts: a number written into prose goes stale, and
- * this one is the first thing an integrator compares against what they have
- * installed.
+ * The versions are read rather than typed, for the reason the landing page
+ * derives its counts: a number written into prose goes stale, and these are the
+ * first thing an integrator compares against what they have installed. The spec
+ * version was typed, and said 2 for two versions after the spec reached 4.
  */
 export function SiteFooter(): ReactElement {
   return (
@@ -148,7 +150,7 @@ export function SiteFooter(): ReactElement {
         Source
       </a>
       <a href="/docs">Documentation</a>
-      <span className="spacer">{`Spec version 2 · packages ${__PACKAGE_VERSION__}, beta`}</span>
+      <span className="spacer">{`Spec version ${CURRENT_SPEC_VERSION} · packages ${__PACKAGE_VERSION__}, beta`}</span>
     </footer>
   )
 }

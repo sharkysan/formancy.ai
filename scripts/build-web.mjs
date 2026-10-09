@@ -1,5 +1,6 @@
 // Build formancy.ai as one static deployment: the site at `/`, the playground
-// at `/playground/`, the documentation at `/docs/`.
+// at `/playground/`, the documentation at `/docs/`, and the Angular starter at
+// `/angular-form-builder/demo/`, which the site's Angular page embeds.
 //
 // They are two Vite apps rather than one because they are two products — a
 // landing page and a tool — and building them together would mean one bundle,
@@ -31,15 +32,29 @@ const siteDist = join(root, 'apps', 'site', 'dist')
 /**
  * Each app, where it is served from, and where its build lands.
  *
- * The base is not decoration: every one of these writes absolute asset URLs,
- * so an app built at the wrong base asks for files that belong to a different
- * app — and the page loads, the script 404s, and the deployment is blank
- * while the build log says everything succeeded.
+ * The base is not decoration: an app writing absolute asset URLs and built at
+ * the wrong base asks for files that belong to a different app — and the page
+ * loads, the script 404s, and the deployment is blank while the build log says
+ * everything succeeded. The starter is built with a relative base instead, so it
+ * can be served from anywhere, a copy of it included; the check below accepts a
+ * relative URL and nothing absolute outside the base.
+ *
+ * `listed` is whether the address is a page in the sitemap. The starter is not:
+ * it is the demo inside `/angular-form-builder/`, which is.
  */
 const NESTED = [
-  { name: 'playground', pkg: '@formancy/playground', base: '/playground/' },
-  { name: 'docs', pkg: '@formancy/docs', base: '/docs/' },
+  { name: 'playground', pkg: '@formancy/playground', base: '/playground/', listed: true },
+  { name: 'docs', pkg: '@formancy/docs', base: '/docs/', listed: false },
+  {
+    name: 'angular-starter',
+    pkg: '@formancy/angular-starter',
+    base: '/angular-form-builder/demo/',
+    listed: false,
+  },
 ]
+
+/** The site's own pages besides the landing page, each an `index.html` in its directory. */
+const PAGES = ['templates', 'angular-form-builder']
 
 function run(command, args) {
   // `shell: true` on Windows, where pnpm is a .cmd and spawn cannot exec it.
@@ -66,13 +81,15 @@ if (!existsSync(join(siteDist, 'index.html'))) {
   throw new Error(`The site build produced no index.html at ${siteDist}.`)
 }
 
-if (!existsSync(join(siteDist, 'templates', 'index.html'))) {
-  throw new Error('The site build produced no templates/index.html.')
+for (const page of PAGES) {
+  if (!existsSync(join(siteDist, page, 'index.html'))) {
+    throw new Error(`The site build produced no ${page}/index.html.`)
+  }
 }
 
 for (const app of NESTED) {
   const built = join(root, 'apps', app.name, 'dist')
-  const into = join(siteDist, app.name)
+  const into = join(siteDist, ...app.base.split('/').filter(Boolean))
 
   if (!existsSync(join(built, 'index.html'))) {
     throw new Error(`The ${app.name} build produced no index.html at ${built}.`)
@@ -88,7 +105,12 @@ for (const app of NESTED) {
   const wrong = [...html.matchAll(/(?:src|href)="(\/[^"]*)"/g)]
     .map((match) => match[1])
     .filter((url) => !url.startsWith(app.base))
+  // A page with no script of its own renders nothing, and passes the check above.
+  const scripts = [...html.matchAll(/<script[^>]*\ssrc="([^"]+)"/g)].map((match) => match[1])
 
+  if (scripts.length === 0) {
+    throw new Error(`The ${app.name} build's index.html loads no script.`)
+  }
   if (wrong.length > 0) {
     throw new Error(
       `The ${app.name} build was made for the wrong place. Its index.html asks for ` +
@@ -157,8 +179,8 @@ if (!existsSync(docsIndex)) {
 
 const expectedPages = [
   `${ORIGIN}/`,
-  ...NESTED.filter((app) => app.name !== 'docs').map((app) => `${ORIGIN}${app.base}`),
-  `${ORIGIN}/templates/`,
+  ...NESTED.filter((app) => app.listed).map((app) => `${ORIGIN}${app.base}`),
+  ...PAGES.map((page) => `${ORIGIN}/${page}/`),
 ]
 const expectedIndex = [`${ORIGIN}/sitemap-pages.xml`, ...locs(docsIndex)]
 
