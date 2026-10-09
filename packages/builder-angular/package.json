@@ -1,6 +1,6 @@
 {
   "name": "@formancy/builder-angular",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Keyboard-first Angular builder UI for formancy form documents.",
   "license": "Apache-2.0",
   "//exports": [

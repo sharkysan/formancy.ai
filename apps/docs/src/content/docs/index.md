@@ -3,15 +3,13 @@ title: What is formancy?
 description: A visual form builder for Angular and React. Conditional fields, validation and your own styling, with one engine running in the browser and on the server. Open source, with an optional self-hosted backend.
 ---
 
-:::caution[Status: beta, version 0.3.0]
-formancy is beta software: **three of the four spec versions are frozen; version `"4"` and
-the package APIs are not.**
+:::caution[Status: beta, version 0.4.0]
+formancy is beta software: **every spec version is frozen; the package APIs are not.**
 
-`specVersion: "4"` is what this source writes and is **open** — it adds the `rating` and
-`slider` widgets and the `step` property, and may still gain more, so pin a frozen version
-unless you are following the source deliberately. `specVersion: "3"` — the newest frozen
-one, and the first with `signature`, the tag picker and the `check` and `skip` rules —
-needs `0.3.0` or newer.
+`specVersion: "4"` — the newest, with the `ranking` and `matrix` field types, the `rating`
+and `slider` widgets and the `step` and `mask` properties — needs `0.4.0` or newer.
+`specVersion: "3"` — the first with `signature`, the tag picker and the `check` and
+`skip` rules — needs `0.3.0` or newer.
 `specVersion: "2"` needs `0.2.0` or newer. `0.1.0` predates spec versioning entirely: its schema pins `"specVersion"` to
 `{ "const": "1" }`, so it does not merely ignore a newer document, it refuses it. Write
 the version your installed packages actually speak, which is what the

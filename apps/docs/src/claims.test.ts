@@ -1195,3 +1195,34 @@ describe('what a reader found that nineteen guards had not', () => {
     expect(present.filter((path) => !mapped.has(path)), 'not on the README’s map').toEqual([])
   })
 })
+
+describe('the version a status note names', () => {
+  /*
+   * Read from the root manifest, which `scripts/bump.mjs` moves with every package. The
+   * README's status line, the documentation's front page and the SOUP characterisation each
+   * name the release they describe, and at 0.4.0's preparation the README still said "All
+   * three spec versions are frozen" of four and the front page called version 4 open after
+   * it froze — written by hand, and moved by hand, one at a time.
+   */
+  const version = (JSON.parse(readFileSync(join(repo, 'package.json'), 'utf8')) as { version: string })
+    .version
+
+  test('is the version the workspace is on, in each place that names one', () => {
+    const notes = {
+      'README.md': `Status: beta, version ${version}`,
+      'apps/docs/src/content/docs/index.md': `Status: beta, version ${version}`,
+      'docs/regulatory/SOUP-DECLARATION.md': `This document describes version \`${version}\``,
+    }
+    for (const [file, note] of Object.entries(notes)) {
+      expect(readFileSync(join(repo, file), 'utf8'), file).toContain(note)
+    }
+  })
+
+  test('and none counts the frozen spec versions, which is how one went stale', () => {
+    for (const file of ['README.md', 'apps/docs/src/content/docs/index.md']) {
+      expect(readFileSync(join(repo, file), 'utf8'), file).not.toMatch(
+        /\b(?:one|two|three|four|five|all \w+) (?:of the \w+ )?spec versions are frozen/i,
+      )
+    }
+  })
+})

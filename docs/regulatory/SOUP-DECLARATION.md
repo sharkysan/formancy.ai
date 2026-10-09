@@ -5,7 +5,7 @@ developed under IEC 62304, and who therefore has to record what this software
 is, what it needs, what it is known to get wrong, and what evidence exists that
 it works. Read [`MDR-CONTEXT.md`](MDR-CONTEXT.md) first.
 
-**This document describes version `0.3.0`.** Everything below is true of that
+**This document describes version `0.4.0`.** Everything below is true of that
 version and of no other. Pin an exact version; a range is not characterised
 software, and neither is `latest`.
 
@@ -17,9 +17,9 @@ software, and neither is `latest`.
 | Supplier | the formancy project (open source) |
 | Licence | Apache-2.0 for every package ([0002](../decisions/0002-apache-2-0.md)) |
 | Source | this repository, in full, including tests |
-| Package version | `0.3.0`, published to npm under the `@formancy` scope |
-| Spec version | `"3"`, **frozen as of 0.3.0** ([0088](../decisions/0088-spec-3-freezes-with-four-constructs.md)) — the version this release writes and the one this document characterises. Versions `"1"` ([0042](../decisions/0042-freeze-the-spec.md)) and `"2"` ([0051](../decisions/0051-spec-2-adds-types.md)) are frozen too and stay readable, so a deployment pinned to either is characterising a settled format. Version `"4"` is **frozen** in the source as of 2026-10-09 and unreleased until 0.4.0 ([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)); this document characterises 0.3.0 and does not characterise it. What each version added, and what freezing one costs, is in [`MIGRATIONS.md`](../../MIGRATIONS.md) |
-| Development stage | beta. 0.1.0 was the first release and predates spec versioning: it pins documents to version 1 and refuses anything later rather than ignoring the property. 0.2.0 reads version 2; 0.3.0 reads version 3 and **writes** it by default, so a form authored here is refused by a reader pinned to 0.2.0 — loudly, which is the point |
+| Package version | `0.4.0`, published to npm under the `@formancy` scope |
+| Spec version | `"4"`, **frozen as of 0.4.0** ([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)) — the version this release writes and the one this document characterises. Versions `"1"` ([0042](../decisions/0042-freeze-the-spec.md)), `"2"` ([0051](../decisions/0051-spec-2-adds-types.md)) and `"3"` ([0088](../decisions/0088-spec-3-freezes-with-four-constructs.md)) are frozen too and stay readable, so a deployment pinned to any of them is characterising a settled format. No version is open. What each version added, and what freezing one costs, is in [`MIGRATIONS.md`](../../MIGRATIONS.md) |
+| Development stage | beta. 0.1.0 was the first release and predates spec versioning: it pins documents to version 1 and refuses anything later rather than ignoring the property. 0.2.0 reads version 2; 0.3.0 reads version 3; 0.4.0 reads version 4 and **writes** it by default, so a form authored here is refused by a reader pinned to 0.3.0 — loudly, which is the point |
 | Integrity | each tarball carries a SLSA v1 provenance attestation issued by GitHub's OIDC identity for the workflow run that built it, plus a registry signature. Verify with `npm audit signatures`. The server image is published to GHCR and **signed by digest**, with the SBOM attached as a CycloneDX attestation — verify with `cosign verify` and `cosign verify-attestation` against the digest rather than the tag, since a tag is mutable. There is deliberately no `latest`, for the reason this table gives two rows down. The pipeline is described in [`RELEASING.md`](../../RELEASING.md) |
 
 The two version lines are independent and both matter. The package version
@@ -29,18 +29,16 @@ submissions*, which is the artefact with real switching costs.
 > **A manufacturer must pin the spec version as well as the package version.**
 > Each version is a superset of the one before it: it adds field types, layout kinds
 > and properties, and removes nothing, so a document characterised under version 1 is
-> unchanged and still valid under 2 or 3. But a reader that speaks only version 1
-> cannot read a version 2 document, and one that speaks only 2 cannot read a version 3
-> document — the failure is a validation error rather than a silent one
-> ([0051](../decisions/0051-spec-2-adds-types.md)). This document characterises the
-> released package, which writes version 3; version `"4"` is frozen in the source and first
-> released with 0.4.0.
+> unchanged and still valid under every later one. But a reader that speaks only one version
+> cannot read a document written against a later one — the failure is a validation error
+> rather than a silent one ([0051](../decisions/0051-spec-2-adds-types.md)). This document
+> characterises the released package, which writes version 4.
 >
-> **The data format is stable; the code is not.** Versions `"1"`, `"2"` and `"3"` are
-> frozen, so a form document written against any of them — and the submissions stored
-> against it — keeps its shape. Version `"4"` is frozen too, in the source, and is what
-> it writes ([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)). A deployment pinned to any frozen version is characterising a
-> settled format whatever the source does next. The
+> **The data format is stable; the code is not.** Every spec version is frozen, so a form
+> document written against any of them — and the submissions stored against it — keeps its
+> shape ([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)). A
+> deployment pinned to any of them is characterising a settled format whatever the source
+> does next. The
 > *packages* are pre-1.0 and their APIs will still change. A manufacturer
 > should read the two version lines separately: the one that governs stored
 > data is settled, the one that governs the software is not.
@@ -209,7 +207,7 @@ project's open-core line.
 IEC 62304 §7.1.2 asks for the supplier's published anomaly list.
 [`CHANGELOG.md`](../../CHANGELOG.md) is it: every entry says what changed and why, and the
 defects found by review are named there rather than summarised away. What follows is what a
-manufacturer characterising `0.3.0` needs on one page.
+manufacturer characterising `0.4.0` needs on one page.
 
 **Measured functional gaps.** Against the official CEL corpus: 2,344 cases
 total, 704 in scope and run, **586 passed and 118 failed**, 2 refused
@@ -246,7 +244,31 @@ software has. `signature` and `tagpicker` have since left this list the same way
 field type and a spec 3 widget — and the list is checked rather than read. `apps/docs/src/soup.test.ts` now checks every name in this list against the
 format's own vocabulary, so it cannot happen again in that direction.
 
-### Characterised by this document, and new since 0.2.0
+### Characterised by this document, and new since 0.3.0
+
+`0.4.0` reads and writes `specVersion: "4"`. Everything version 4 added is listed in
+[`MIGRATIONS.md`](../../MIGRATIONS.md); the parts that change what a *deployment* stores or
+has to configure are:
+
+- **Two answer shapes.** A `ranking` stores the chosen option values in the order chosen
+  ([0138](../decisions/0138-a-ranking-stores-the-order-chosen.md)); a `matrix` stores an
+  object from row value to column value, holding the rows answered
+  ([0139](../decisions/0139-a-matrix-answers-one-question-per-row.md)). Both are refused by
+  the engine on the server when they have a shape no control produces. A CSV export writes
+  each as JSON in one column.
+- **Each file is its own upload, and can be scanned.** An upload belongs to its row rather
+  than its control ([0130](../decisions/0130-each-file-is-its-own-upload.md)), and a
+  deployment that sets `FORMANCY_CLAMD_HOST` has every upload scanned by ClamAV before it is
+  kept, refusing it when the scanner cannot answer
+  ([0131](../decisions/0131-an-upload-is-scanned-before-it-is-kept.md)). Without the setting,
+  nothing is scanned.
+- **Angular Material is an optional peer.** `@formancy/angular/material` draws with Material
+  what it has an equivalent for and needs `@angular/material` and `@angular/cdk` only in an
+  application that imports it ([0132](../decisions/0132-material-draws-what-it-has-an-equivalent-for.md)).
+- **The tested versions are runs.** The lowest and newest React, Angular and Node.js the
+  ranges admit are each a CI run ([0134](../decisions/0134-the-versions-it-says-are-the-versions-it-runs.md)).
+
+### Characterised by an earlier version of this document, and new in 0.3.0
 
 `0.3.0` reads and writes `specVersion: "3"`. Everything version 3 added is listed in
 [`MIGRATIONS.md`](../../MIGRATIONS.md); the parts that change what a *deployment* has to

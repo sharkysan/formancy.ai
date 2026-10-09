@@ -8,7 +8,17 @@ Loosely [Keep a Changelog](https://keepachangelog.com), with reasons attached �
 a line that says only *what* changed is rarely the line you need six months
 later.
 
-## Unreleased
+## 0.4.0 — 2026-10-09
+
+**The first release since `0.3.0`, and it freezes spec version 4** — with the two survey
+types it was opened for, `ranking` and `matrix`, beside the `rating` and `slider` widgets
+and the `step`, `mask` and option `image` properties. A document written against version 4
+will validate against every future release that speaks it, and no version is open. A reader
+pinned to `0.3.0` refuses a version 4 document, loudly: upgrade the readers before the
+documents.
+
+Newest first, as it was written. Nothing was published in between, so there is no `0.4.0`
+anywhere that means something narrower.
 
 **Fixed: the error summary named fields by their data path.** Unless the host passed `labels`,
 both renderers listed a failed submit's problems as "email: required" — the key, as a link's
@@ -1375,6 +1385,39 @@ Folding pushed `app.tsx` past its size ceiling, so two more things left for the 
 already names: `engine-inspector.tsx` is the engine pane's contents, and `panes.tsx` holds which
 panes there are, how wide each is and how to fold one — one subject, since the narrow screen
 needs their names, the wide screen needs their widths, and folding needs both.
+
+### What 0.4.0 knowingly does not have
+
+`RELEASING.md` asks a release entry to say this, because the absence a reader discovers
+for themselves is the one that costs them a day. Everything 0.3.0 listed is still true
+unless it appears below; these are the ones this release adds or changes.
+
+- **The renderers' own words are English.** Next, Back, Remove, the upload buttons, and now
+  the ranking's *Move … up*, *Take … out of the order* and *Rank …* are written in each
+  binding and have no catalogue. A German form asks its questions in German around English
+  buttons; arc42 §11.2 carries it as debt.
+- **The condition editor cannot compare one row of a matrix or ask what was ranked first.**
+  It offers *is answered* for a matrix and *includes* for a ranking; anything finer is CEL,
+  which the rules overview shows as CEL.
+- **A ranking or a matrix may be answered in part unless the author says otherwise.** A
+  ranking needs `minItems` set to its number of options to demand a complete order; an
+  optional matrix accepts some rows answered. A required matrix needs every row.
+- **A ranking has no drag.** Its buttons are the control; moving the last of eight options to
+  the top is seven presses.
+- **CSV exports a ranking and a matrix as JSON in one column each.** A column per position or
+  per row is not built.
+- **A block is a copy, and nothing stores one.** Changing a block changes no form that used
+  it, and neither the admin nor the server has anywhere to keep blocks; a host keeps them.
+- **The Angular builder's appearance is measured in the playground and the Angular starter
+  only.** The admin is React, so nothing a deployment ships exercises the Angular builder.
+- **The SurveyJS comparison on formancy.ai/angular-form-builder is dated, not checked.** It
+  says what SurveyJS's own pages said on 9 October 2026, and re-reading them is a person's
+  job.
+- **The freeze check covers field types and widgets, not properties or rule kinds.** Those are
+  gated construct by construct; a new one added without its gate would be caught only by a
+  test somebody wrote for it.
+- **No spec version is open.** The next construct that changes what a document may say costs
+  a version 5, with its migration note and an upgrade for every pinned reader.
 
 ## 0.3.0 — 2026-10-04
 
