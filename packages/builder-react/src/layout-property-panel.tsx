@@ -42,7 +42,7 @@ export function LayoutPropertyPanel({
   const node = layoutNodeAt(view.document, address.layout, address.path)
   if (node === undefined) return null
 
-  const properties = editableLayoutPropertiesFor(node.kind)
+  const properties = editableLayoutPropertiesFor(node.kind, session.text)
   const current = node as unknown as Record<string, unknown>
 
   return (

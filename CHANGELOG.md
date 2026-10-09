@@ -10,6 +10,18 @@ later.
 
 ## Unreleased
 
+**Property labels and field type names in the author's language.** A German builder's
+panel still said "Required", "Minimum length" and "Single-line text": those are the spec's
+JSON Schema's words, which the reference documentation reads too, and they had stayed
+English to keep one source. They still live in the schema, in English — and German and
+French translations sit beside it, keyed by that English, in `SCHEMA_WORDS_DE` and
+`SCHEMA_WORDS_FR`. A language carries them (`createBuilderText({ …, schema })`) and the
+property panels, the palette, the locked-types note and the label a new field starts with
+all read them; a German author's new field is labelled "Einzeiliger Text" now, not
+"Single-line text". The set of texts is derived from the schema, so rewording a description
+there fails `schema-words.test.ts` until both translations follow, rather than drifting
+back to English unseen ([0121](docs/decisions/0121-the-specs-words-are-translated-beside-it.md)).
+
 **The builder speaks French.** `BUILDER_MESSAGES_FR` ships complete beside German, held to
 the same rules by `messages.test.ts` — every message English has, the same placeholders,
 nothing empty — and the playground's Language switch now gives a French builder as well as

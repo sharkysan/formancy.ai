@@ -38,6 +38,12 @@ export interface PluralMessage {
 export type Message = string | PluralMessage
 
 /**
+ * The spec's own words in one language, keyed by the English its JSON Schema writes
+ * (0121). A type of its own so that what a file is can be read off it.
+ */
+export type SchemaWords = Readonly<Record<string, string>>
+
+/**
  * English, which is the source every other catalogue translates and the fallback
  * for any message one of them leaves out.
  *
@@ -444,6 +450,11 @@ export interface BuilderText {
    */
   list(items: readonly string[]): string
   /**
+   * One of the spec's own words in this language, given the English the schema
+   * writes — or that English, when the language has no translation for it.
+   */
+  schema(english: string): string
+  /**
    * BCP 47: the locale every word is joined and counted in. The one asked for,
    * or English when the runtime has no data for it — so a caller formatting
    * anything else to match gets the same answer this did.
@@ -458,6 +469,13 @@ export interface BuilderLanguage {
    */
   readonly locale: string
   readonly messages: BuilderCatalogue
+  /**
+   * The spec's own words — a property's title and description, a field type's
+   * name — keyed by the English the spec's JSON Schema writes. Optional: a
+   * language without them shows the schema's English, which is where those words
+   * live (0121).
+   */
+  readonly schema?: SchemaWords
 }
 
 const ENGLISH = 'en-GB'
@@ -497,8 +515,10 @@ export function createBuilderText(language?: BuilderLanguage): BuilderText {
     })
   }
 
+  const schemaWords = language?.schema ?? {}
   return Object.assign(text, {
     list: (items: readonly string[]) => lists.format(items),
+    schema: (english: string) => schemaWords[english] ?? english,
     locale,
   })
 }

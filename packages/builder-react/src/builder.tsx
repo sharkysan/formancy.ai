@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
-import type { BuilderSession } from '@formancy/builder-core'
+import type { BuilderSession, BuilderText } from '@formancy/builder-core'
 import { dropLocation } from '@formancy/builder-core'
 import { newFieldOfType, nextSpecVersion, paletteEntries, typesNeedingUpgrade } from '@formancy/builder-core'
 import {
@@ -247,7 +247,7 @@ export function FormancyBuilder({ session, label, onSelect }: BuilderProps): Rea
 
   const existingKeys = new Set(view.nodes.map((node) => node.keyPath[node.keyPath.length - 1]!))
   /** Types this document's spec version does not define yet. */
-  const locked = typesNeedingUpgrade(view.document.specVersion)
+  const locked = typesNeedingUpgrade(view.document.specVersion, text)
 
   const insertTargets = (type: string): MoveTarget[] =>
     view.insertTargetsFor(newFieldOfType(type, existingKeys, session.text))
@@ -360,7 +360,7 @@ export function FormancyBuilder({ session, label, onSelect }: BuilderProps): Rea
       {adding === null ? null : adding.type === '' ? (
         <div role="dialog" aria-label={text('palette.title')} data-formancy-part="add-palette">
           <ul>
-            {paletteEntries(view.document.specVersion).map((entry) => (
+            {paletteEntries(view.document.specVersion, text).map((entry) => (
               <li key={entry.type}>
                 <button type="button" onClick={() => setAdding({ type: entry.type })}>
                   {entry.title}
@@ -392,7 +392,7 @@ export function FormancyBuilder({ session, label, onSelect }: BuilderProps): Rea
       ) : (
         <div
           role="dialog"
-          aria-label={text('tree.addWhere', { type: labelForType(adding.type) })}
+          aria-label={text('tree.addWhere', { type: labelForType(adding.type, text) })}
           data-formancy-part="add-where"
         >
           <ul>
@@ -467,8 +467,8 @@ function samePath(a: readonly string[], b: readonly string[]): boolean {
   return a.length === b.length && a.every((key, at) => key === b[at])
 }
 
-function labelForType(type: string): string {
-  return paletteEntries().find((entry) => entry.type === type)?.title ?? type
+function labelForType(type: string, text: BuilderText): string {
+  return paletteEntries(undefined, text).find((entry) => entry.type === type)?.title ?? type
 }
 
 

@@ -12,6 +12,8 @@ import {
 import {
   BUILDER_MESSAGES_DE,
   BUILDER_MESSAGES_FR,
+  SCHEMA_WORDS_DE,
+  SCHEMA_WORDS_FR,
   createBuilderSession,
   createBuilderText,
 } from '@formancy/builder-core'
@@ -49,8 +51,12 @@ import { STARTER_SAMPLE, STARTER_SCENARIOS } from './starter-scenarios.js'
  * because a shipped catalogue is a complete one.
  */
 export function builderTextFor(locale: string): BuilderText {
-  if (locale === 'de') return createBuilderText({ locale, messages: BUILDER_MESSAGES_DE })
-  if (locale === 'fr') return createBuilderText({ locale, messages: BUILDER_MESSAGES_FR })
+  if (locale === 'de') {
+    return createBuilderText({ locale, messages: BUILDER_MESSAGES_DE, schema: SCHEMA_WORDS_DE })
+  }
+  if (locale === 'fr') {
+    return createBuilderText({ locale, messages: BUILDER_MESSAGES_FR, schema: SCHEMA_WORDS_FR })
+  }
   return createBuilderText({ locale, messages: {} })
 }
 

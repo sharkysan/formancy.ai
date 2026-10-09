@@ -66,7 +66,7 @@ export class FormancyLayoutPropertyPanel {
     return node === undefined ? '' : layoutPropertyHeading(node.kind, this.session().text)
   })
   protected readonly properties = computed((): EditableProperty[] =>
-    editableLayoutPropertiesFor(this.node()?.kind ?? ''),
+    editableLayoutPropertiesFor(this.node()?.kind ?? '', this.session().text),
   )
 
   protected valueOf(name: string): unknown {

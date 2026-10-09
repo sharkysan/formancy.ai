@@ -266,7 +266,7 @@ export class FormancyPropertyPanel {
   })
   protected readonly properties = computed((): EditableProperty[] => {
     const field = this.def()
-    return field === undefined ? [] : editablePropertiesFor(field.type, field.widget)
+    return field === undefined ? [] : editablePropertiesFor(field.type, field.widget, this.session().text)
   })
 
   protected valueOf(name: string): unknown {

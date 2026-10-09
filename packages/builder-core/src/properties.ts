@@ -1,4 +1,6 @@
 import schema from '@formancy/spec/schema.json' with { type: 'json' }
+import { createBuilderText } from './messages.js'
+import type { BuilderText } from './messages.js'
 
 /**
  * What the property panel offers for a field, read out of the spec's own JSON
@@ -13,13 +15,7 @@ import schema from '@formancy/spec/schema.json' with { type: 'json' }
  */
 
 export type PropertyKind =
-  | 'string'
-  | 'number'
-  | 'boolean'
-  | 'enum'
-  | 'options'
-  | 'columns'
-  | 'strings'
+  'string' | 'number' | 'boolean' | 'enum' | 'options' | 'columns' | 'strings'
 
 export interface EditableProperty {
   name: string
@@ -161,7 +157,11 @@ function allowsANumber(node: JsonSchemaNode): boolean {
  * not configure a datagrid's columns at all. Found by the coverage guard in
  * properties.test.ts rather than by anybody using it.
  */
-export function editablePropertiesFor(type: string, widget?: string): EditableProperty[] {
+export function editablePropertiesFor(
+  type: string,
+  widget?: string,
+  text: BuilderText = createBuilderText(),
+): EditableProperty[] {
   const field = root.$defs['field']
   if (field === undefined) return []
 
@@ -187,7 +187,7 @@ export function editablePropertiesFor(type: string, widget?: string): EditablePr
     take(deref(taken)?.properties)
   }
 
-  return [...collected.values()]
+  return [...collected.values()].map((property) => inLanguage(property, text))
 }
 
 /**
@@ -210,10 +210,7 @@ function layoutBranches(): Array<{ kinds: string[]; properties: Record<string, J
     const resolved = deref(branch) ?? branch
     const properties = resolved.properties ?? {}
     const kind = properties['kind']
-    const kinds =
-      kind?.const !== undefined
-        ? [String(kind.const)]
-        : (kind?.enum ?? []).map(String)
+    const kinds = kind?.const !== undefined ? [String(kind.const)] : (kind?.enum ?? []).map(String)
     return { kinds, properties }
   })
 }
@@ -227,7 +224,10 @@ function layoutBranches(): Array<{ kinds: string[]; properties: Record<string, J
  * ([0074](../../../docs/decisions/0074-a-table-child-may-span.md)) — a property the
  * format validated, the renderers honoured, and the builder could not set.
  */
-export function editableLayoutPropertiesFor(kind: string): EditableProperty[] {
+export function editableLayoutPropertiesFor(
+  kind: string,
+  text: BuilderText = createBuilderText(),
+): EditableProperty[] {
   const collected = new Map<string, EditableProperty>()
 
   for (const branch of layoutBranches()) {
@@ -238,10 +238,23 @@ export function editableLayoutPropertiesFor(kind: string): EditableProperty[] {
     }
   }
 
-  return [...collected.values()]
+  return [...collected.values()].map((property) => inLanguage(property, text))
 }
 
 /** Every layout kind the format has, derived rather than listed. */
 export function layoutKinds(): string[] {
   return [...new Set(layoutBranches().flatMap((branch) => branch.kinds))]
+}
+
+/**
+ * A property's title and description in the builder's language. The English is
+ * the schema's, and stays the key: the reference documentation reads the same
+ * words from the same place (0121).
+ */
+function inLanguage(property: EditableProperty, text: BuilderText): EditableProperty {
+  return {
+    ...property,
+    title: text.schema(property.title),
+    description: property.description === '' ? '' : text.schema(property.description),
+  }
 }
