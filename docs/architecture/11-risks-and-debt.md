@@ -152,6 +152,13 @@ it, a generated or hand-edited document can be published with a condition that
 evaluates to null forever. Held as a roadmap item and as a test asserting the gap
 is still there, so closing it has to be deliberate.
 
+**A host's bundler can turn the themes' reading order into a question about language.**
+The cost of writing what CSS has no logical form for with `:dir(rtl)`
+([0123](../decisions/0123-the-builder-reads-right-to-left.md)). A build targeting
+browsers older than `:dir()` rewrites it as `:lang(ar), :lang(he), …`, and Vite's
+default target did. This repository's own builds are pinned and checked; a host's are
+not reachable from here, and the themes README naming the target is the mitigation.
+
 **TypeScript is pinned below `latest`.** The cost of supporting Angular as a
 co-first target ([0039](../decisions/0039-pin-typescript.md)). It will look
 arbitrary in six months, which is why it is written down.

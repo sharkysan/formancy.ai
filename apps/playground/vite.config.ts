@@ -2,6 +2,7 @@ import { fileURLToPath } from 'node:url'
 import angular from '@analogjs/vite-plugin-angular'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
+import { CSS_TARGET } from '../../css-target'
 
 /**
  * The playground is served from a subdirectory, and has to be built knowing it.
@@ -47,6 +48,8 @@ const TSCONFIG = (): string =>
 
 export default defineConfig(({ command }) => ({
   base: command === 'build' ? '/playground/' : '/',
+  // Not Vite's default, which rewrites `:dir(rtl)` as a list of languages (0123).
+  build: { cssTarget: CSS_TARGET },
   /*
    * Both frameworks, in one page.
    *

@@ -137,7 +137,11 @@ zone ([0094](../../docs/decisions/0094-the-second-builder-reaches-parity.md)).
 What is here is the Angular half: reading a pointer, marking elements draggable,
 drawing the indicator, and announcing the outcome through a live region. Every
 move goes through the same session command the arrangement tree and the keyboard
-use.
+use. The surface also reads which way the form reads, as the browser computed it, so
+read right to left the side a field is aimed at is still the side it lands on
+([0123](../../docs/decisions/0123-the-builder-reads-right-to-left.md)); if you bundle
+`workbench.css`, set your CSS target as the
+[themes README](../themes/README.md#right-to-left-and-your-bundler) says.
 
 The renderer knows nothing about it. `@formancy/angular` emits
 `data-formancy-layout-path` and `data-formancy-field-path` on what it renders,

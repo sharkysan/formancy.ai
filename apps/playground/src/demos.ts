@@ -48,6 +48,15 @@ export function initialDemo(search: string): Demo {
   return DEMOS.find((demo) => demo.id === id) ?? DEMOS[0]!
 }
 
+/**
+ * `?dir=rtl` reads the whole playground right to left — the forms and both builders —
+ * which is the only way a visitor can see that they follow the reading order without
+ * opening the developer tools (0123). Anything else is left to right.
+ */
+export function initialDirection(search: string): 'ltr' | 'rtl' {
+  return new URLSearchParams(search).get('dir') === 'rtl' ? 'rtl' : 'ltr'
+}
+
 export function initialLocale(search: string): 'en' | 'de' | 'fr' {
   const locale = new URLSearchParams(search).get('locale')
   return locale === 'de' || locale === 'fr' ? locale : 'en'

@@ -160,6 +160,7 @@ export function FormancyArrangeSurface({
       box: element.getBoundingClientRect(),
       pointer: { x: event.clientX, y: event.clientY },
       sideBySide: sitsSideBySide(element),
+      direction: getComputedStyle(element).direction === 'rtl' ? 'rtl' : 'ltr',
     })
     return drop === undefined ? undefined : { ...drop, element }
   }

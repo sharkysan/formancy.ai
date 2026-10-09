@@ -98,6 +98,12 @@ That file styles the *tool*. `blueprint.css` and `dusk.css` style the *forms*
 the tool makes. Keeping them apart is why restyling your forms cannot
 accidentally restyle the builder.
 
+Read right to left, the builder follows `dir`: its marks move to the side a line starts
+on, and a field dragged onto the rendered form lands on the side it was aimed at. If you
+bundle the stylesheet, set your CSS target as the
+[themes README](../themes/README.md#right-to-left-and-your-bundler) says — Vite's default
+rewrites `:dir(rtl)` into a list of languages.
+
 ## Logic is authored as conditions, not expressions
 
 "Country is Switzerland", chosen from three dropdowns, compiled to

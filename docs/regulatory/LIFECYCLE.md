@@ -154,6 +154,11 @@ Each gate exists for a reason that was paid for at least once:
   columns the pane row computes, and the computed `touch-action` of both
   renderers' signature surfaces with and without a theme
   ([0102](../decisions/0102-what-jsdom-cannot-see-is-checked-in-a-browser.md)).
+  It also reads the stylesheets the composed site serves, before opening a page, and
+  fails on `:dir()` rewritten as a list of languages — a file check rather than a
+  browser one, placed here because this is the gate that runs on what
+  `pnpm build:web` produced
+  ([0123](../decisions/0123-the-builder-reads-right-to-left.md)).
   **A different kind of test from the rest of this list**, and the reason is
   structural rather than a coverage gap: jsdom applies no CSS, resolves no media
   queries and performs no layout, so every box measures zero and every cascade

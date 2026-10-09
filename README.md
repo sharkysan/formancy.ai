@@ -426,6 +426,11 @@ switch to it and most of the form is French while three labels stay English,
 because a missing translation falls back to the default locale rather than
 printing a message id at somebody.
 
+**`?dir=rtl`** opens the playground right to left: both forms and both builders follow
+the reading order — the marks on a selected node move to the side a line starts on, and a
+field dragged onto the rendered form lands on the side it was aimed at
+([0123](./docs/decisions/0123-the-builder-reads-right-to-left.md)).
+
 ## Accessibility
 
 Not a workstream beside the code — a property of passing the tests.

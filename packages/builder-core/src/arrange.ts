@@ -92,22 +92,28 @@ export function arrangeDrop(input: {
    * predict.
    */
   sideBySide: boolean
+  /**
+   * Which way the node under the pointer reads, as the browser computed it.
+   *
+   * Asked of the caller for the reason `sideBySide` is: it is what the page DID,
+   * and a `dir` anywhere above the form decides it. The start of a line is its
+   * right edge in Arabic or Hebrew, and before this was asked, aiming at the right
+   * side of a field there put the new neighbour on its left.
+   */
+  direction: 'ltr' | 'rtl'
 }): ArrangeDrop | undefined {
-  const { document, layout, dragged, over, box, pointer, sideBySide } = input
+  const { document, layout, dragged, over, box, pointer, sideBySide, direction } = input
+  /** How far into the box the pointer is from the side a line starts on. */
+  const fromStart = direction === 'rtl' ? box.right - pointer.x : pointer.x - box.left
 
   // ── Making a row, by aiming at a side ──────────────────────────────────────
   //
-  // Only for something NOT already side by side with its siblings. There, left
-  // and right already mean "before" and "after", and giving them a second
+  // Only for something NOT already side by side with its siblings. There, the
+  // two sides already mean "before" and "after", and giving them a second
   // meaning would make the commonest drag in a row ambiguous.
   if (!sideBySide && box.width >= SIDE_ZONE_MINIMUM) {
     const zone = Math.min(box.width / 4, SIDE_ZONE_MAXIMUM)
-    const side =
-      pointer.x < box.left + zone
-        ? 'start'
-        : pointer.x > box.right - zone
-          ? 'end'
-          : undefined
+    const side = fromStart < zone ? 'start' : fromStart > box.width - zone ? 'end' : undefined
 
     if (side !== undefined) {
       if (samePath(dragged, over)) return undefined
@@ -118,10 +124,10 @@ export function arrangeDrop(input: {
 
   // ── Moving ─────────────────────────────────────────────────────────────────
   //
-  // Horizontal for a node already inside a row: the two halves a person aims at
-  // there are left and right, not top and bottom.
+  // Across for a node already inside a row: the two halves a person aims at
+  // there are its start and its end, not its top and bottom.
   const edge = sideBySide
-    ? pointer.x < box.left + box.width / 2
+    ? fromStart < box.width / 2
       ? 'before'
       : 'after'
     : pointer.y < box.top + box.height / 2

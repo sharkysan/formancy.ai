@@ -1244,6 +1244,11 @@
   background: color-mix(in srgb, var(--fm-ink) 6%, transparent);
 }
 
+/* The margin is on the right of a right-to-left page; CSS has no logical shadow. */
+[data-formancy-theme='paper'] [data-formancy-part='typeahead-option'][data-active='true']:dir(rtl) {
+  box-shadow: inset -0.1875rem 0 0 var(--fm-ink);
+}
+
 [data-formancy-theme='paper'] [data-formancy-part='typeahead-option'][aria-selected='true'] {
   font-style: italic;
   color: var(--fm-accent);

@@ -214,6 +214,12 @@
   box-shadow: inset 2px 0 0 var(--wb-signal);
 }
 
+/* CSS has no logical box-shadow, so every bar drawn down a side is drawn again on
+ * the other side for a right-to-left page: the mark belongs where a line starts. */
+[data-formancy-part='builder-node'][aria-selected='true']:dir(rtl) {
+  box-shadow: inset -2px 0 0 var(--wb-signal);
+}
+
 [data-formancy-part='builder-node']:focus-visible {
   outline: 2px solid var(--wb-signal);
   outline-offset: -2px;
@@ -519,6 +525,10 @@
   background: color-mix(in srgb, var(--wb-signal) 12%, transparent);
   box-shadow: inset 2px 0 0 var(--wb-signal);
   font-weight: 600;
+}
+
+.wb-nav li button[aria-current='true']:dir(rtl) {
+  box-shadow: inset -2px 0 0 var(--wb-signal);
 }
 
 .wb-nav small {
@@ -899,6 +909,10 @@ kbd {
   box-shadow: inset 2px 0 0 var(--wb-signal);
 }
 
+[data-formancy-part='layout-node'][aria-selected='true']:dir(rtl) {
+  box-shadow: inset -2px 0 0 var(--wb-signal);
+}
+
 [data-formancy-part='layout-node']:focus-visible {
   outline: 2px solid var(--wb-signal);
   outline-offset: -2px;
@@ -1031,6 +1045,16 @@ kbd {
   box-shadow: inset -3px 0 0 var(--wb-signal);
 }
 
+/* Before is the right-hand side of a field in a right-to-left row, and the surface
+ * now says so (it measured from the left whatever the page read). */
+[data-formancy-part='arrange-surface'] [data-drop='inline-before']:dir(rtl) {
+  box-shadow: inset -3px 0 0 var(--wb-signal);
+}
+
+[data-formancy-part='arrange-surface'] [data-drop='inline-after']:dir(rtl) {
+  box-shadow: inset 3px 0 0 var(--wb-signal);
+}
+
 /* A row, not a move. Down the SIDE rather than across the edge, because the
  * two gestures have to be told apart before the drop and not after it. */
 [data-formancy-layout-path][data-drop='wrap-start'],
@@ -1041,6 +1065,16 @@ kbd {
 [data-formancy-layout-path][data-drop='wrap-end'],
 [data-formancy-field-path][data-drop='wrap-end'] {
   box-shadow: inset -3px 0 0 var(--wb-signal);
+}
+
+[data-formancy-layout-path][data-drop='wrap-start']:dir(rtl),
+[data-formancy-field-path][data-drop='wrap-start']:dir(rtl) {
+  box-shadow: inset -3px 0 0 var(--wb-signal);
+}
+
+[data-formancy-layout-path][data-drop='wrap-end']:dir(rtl),
+[data-formancy-field-path][data-drop='wrap-end']:dir(rtl) {
+  box-shadow: inset 3px 0 0 var(--wb-signal);
 }
 
 /* One comparison inside a rule draft.

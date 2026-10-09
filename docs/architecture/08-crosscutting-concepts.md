@@ -134,6 +134,17 @@ different radii, typefaces, spacing, and different devices for showing an
 invalid field — because that is what falsifies the headless claim. If either
 had required a component change, the claim would be false.
 
+**Every stylesheet says which side in reading order**, the builder's included: logical
+properties, and `:dir(rtl)` for what CSS cannot write logically — an icon's
+`background-position`, a bar drawn down one side with an inset shadow
+([0113](../decisions/0113-a-theme-is-written-in-reading-order.md)). What the browser
+computes is the builder's answer to which way a form reads, too: its drag surface reads
+`direction` from the element under the pointer, so a side aimed at is the side a field
+lands on. `:dir()` only means that while it reaches the browser — a bundler targeting
+older browsers rewrites it as a list of languages — so the apps here build for
+`CSS_TARGET`, and a host is told to
+([0123](../decisions/0123-the-builder-reads-right-to-left.md)).
+
 ## 8.8 Internationalisation
 
 Optional, and resolved in the engine

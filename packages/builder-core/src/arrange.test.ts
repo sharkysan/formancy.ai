@@ -53,6 +53,7 @@ const drop = (input: Partial<Parameters<typeof arrangeDrop>[0]>) =>
     box: wide,
     pointer: { x: 100, y: 10 },
     sideBySide: false,
+    direction: 'ltr',
     ...input,
   })
 
@@ -118,6 +119,31 @@ describe('what a drag over the rendered form would do', () => {
     })
   })
 
+  test('read right to left, a line starts at its right edge, so that side is the start', () => {
+    // Aiming at the right of a field in Arabic or Hebrew put the new neighbour on
+    // its left: the zones were measured from the left whatever the page read.
+    expect(drop({ direction: 'rtl', pointer: { x: 196, y: 20 } })).toMatchObject({
+      kind: 'wrap',
+      side: 'start',
+    })
+    expect(drop({ direction: 'rtl', pointer: { x: 4, y: 20 } })).toMatchObject({
+      kind: 'wrap',
+      side: 'end',
+    })
+  })
+
+  test('and in a row read right to left, the right half is before', () => {
+    // The sibling before a field in a right-to-left row is the one to its right.
+    expect(drop({ direction: 'rtl', sideBySide: true, pointer: { x: 196, y: 20 } })).toMatchObject(
+      { kind: 'move', edge: 'before', axis: 'inline' },
+    )
+    expect(drop({ direction: 'rtl', sideBySide: true, pointer: { x: 4, y: 20 } })).toMatchObject({
+      kind: 'move',
+      edge: 'after',
+      axis: 'inline',
+    })
+  })
+
   test('and names its axis, so the indicator is drawn where the node will land', () => {
     // Left to the stylesheet to infer once, and a rule of equal weight drew the
     // line across the top of a field that was about to land beside another.
@@ -156,6 +182,7 @@ describe('what a drag over the rendered form would do', () => {
       box: wide,
       pointer: { x: 4, y: 20 },
       sideBySide: false,
+      direction: 'ltr',
     })).toBeUndefined()
   })
 })

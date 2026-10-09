@@ -112,6 +112,21 @@ function themes(): Array<{ name: string; css: string }> {
     .filter(({ css }) => css.includes('data-formancy-theme'))
 }
 
+/**
+ * Every stylesheet the package ships: the four form themes and `workbench.css`, which
+ * styles both builders.
+ *
+ * The reading-order cases read these rather than `themes()`, which keeps only the
+ * stylesheets that style a form. They read four of the five while their comment said
+ * five, and the one left out was the builder's — found 2026-10-09, verifying the
+ * builders right to left, when its drop indicators turned out to draw on a fixed side.
+ */
+function stylesheets(): Array<{ name: string; css: string }> {
+  return readdirSync(join(repo, 'packages', 'themes'))
+    .filter((name) => name.endsWith('.css'))
+    .map((name) => ({ name, css: readFileSync(join(repo, 'packages', 'themes', name), 'utf8') }))
+}
+
 /** A stylesheet with its comments gone, so prose about a side is not a side. */
 function withoutComments(css: string): string {
   return css.replace(/\/\*[\s\S]*?\*\//g, ' ')
@@ -862,8 +877,8 @@ describe('the theme contract', () => {
 /**
  * A theme says which side a thing is on in reading order, never in pixels.
  *
- * Every shipped theme is already written this way — zero physical directional
- * properties across all five, and twenty to twenty-nine logical ones each —
+ * Every shipped stylesheet is already written this way — zero physical directional
+ * properties across all five, the builder's included, and twenty-odd logical ones each —
  * and that was nobody's decision. It is the kind of fact that holds until the
  * first person who reaches for `padding-left` because it is what their
  * fingers type, and then an Arabic or Hebrew form has its labels, its error
@@ -884,8 +899,14 @@ describe('the theme contract', () => {
  * Brace-matched from each `:dir(` selector rather than captured by a regular
  * expression: a rule body here can hold a data URI with a brace in it, and a
  * lazy match would stop at the first one and hand back half a rule.
+ *
+ * Each part on its own, so a caller can take each out of the stylesheet. They were
+ * joined and the stylesheet was split on the join, which takes nothing out once
+ * there are two `:dir()` rules with anything between them — and every side named
+ * inside one then counted as named outside too. Passed while each stylesheet had a
+ * single `:dir()` rule; found 2026-10-09 by adding a second one to paper.css.
  */
-function directionScoped(css: string): string {
+function directionScoped(css: string): string[] {
   const found: string[] = []
   let at = css.indexOf(':dir(')
   while (at !== -1) {
@@ -901,7 +922,75 @@ function directionScoped(css: string): string {
     found.push(css.slice(at, cursor))
     at = css.indexOf(':dir(', cursor)
   }
-  return found.join('\n')
+  return found
+}
+
+/** Split at commas that are not inside parentheses: `color-mix(in srgb, …)` is one value. */
+function topLevelCommas(text: string): string[] {
+  const parts: string[] = []
+  let depth = 0
+  let from = 0
+  for (let at = 0; at < text.length; at += 1) {
+    if (text[at] === '(') depth += 1
+    else if (text[at] === ')') depth -= 1
+    else if (text[at] === ',' && depth === 0) {
+      parts.push(text.slice(from, at))
+      from = at + 1
+    }
+  }
+  parts.push(text.slice(from))
+  return parts.map((part) => part.trim().replace(/\s+/g, ' ')).filter((part) => part !== '')
+}
+
+/**
+ * Every rule with declarations, as its selectors and its body, at whatever depth of
+ * `@media` or `@supports` it sits. Braces inside a quoted string — a data URI — are
+ * skipped rather than counted, for the reason `directionScoped` gives.
+ */
+function rulesOf(css: string): Array<{ selectors: string[]; body: string }> {
+  const found: Array<{ selectors: string[]; body: string }> = []
+  const open: Array<{ prelude: string; at: number }> = []
+  let from = 0
+  for (let at = 0; at < css.length; at += 1) {
+    const char = css[at]
+    if (char === '"' || char === "'") {
+      at = css.indexOf(char, at + 1)
+      if (at === -1) break
+    } else if (char === '{') {
+      open.push({ prelude: css.slice(from, at), at })
+      from = at + 1
+    } else if (char === '}') {
+      const rule = open.pop()
+      if (rule !== undefined && !rule.prelude.trim().startsWith('@')) {
+        found.push({ selectors: topLevelCommas(rule.prelude), body: css.slice(rule.at + 1, at) })
+      }
+      from = at + 1
+    } else if (char === ';' && open.length === 0) {
+      from = at + 1
+    }
+  }
+  return found
+}
+
+type Side = 'left' | 'right'
+
+/** The sides a rule's inset shadows draw a bar down: a horizontal offset names one. */
+function barSides(body: string): Set<Side> {
+  const sides = new Set<Side>()
+  for (const declaration of body.matchAll(/box-shadow\s*:\s*([^;]+)/g)) {
+    for (const shadow of topLevelCommas(declaration[1]!)) {
+      if (!/\binset\b/.test(shadow)) continue
+      const offset = shadow
+        .replace(/\binset\b/, '')
+        .trim()
+        .split(' ')
+        .find((token) => /^-?(\d+\.?\d*|\.\d+)(px|rem|em)?$/.test(token))
+      if (offset !== undefined && parseFloat(offset) !== 0) {
+        sides.add(offset.startsWith('-') ? 'right' : 'left')
+      }
+    }
+  }
+  return sides
 }
 
 describe('which side a theme puts things on', () => {
@@ -927,7 +1016,7 @@ describe('which side a theme puts things on', () => {
   ]
 
   test('is reading order, never a side', () => {
-    const named = themes().flatMap(({ name, css }) =>
+    const named = stylesheets().flatMap(({ name, css }) =>
       PHYSICAL.filter(({ pattern }) => pattern.test(withoutComments(css))).map(
         ({ instead }) => `${name}: use ${instead}`,
       ),
@@ -968,10 +1057,11 @@ describe('which side a theme puts things on', () => {
         [...text.matchAll(/background-position:\s*(left|right)\b/g)].map((match) => match[1]!),
       )
 
-    const unpaired = themes().flatMap(({ name, css }) => {
+    const unpaired = stylesheets().flatMap(({ name, css }) => {
       const clean = withoutComments(css)
-      const flipped = directionScoped(clean)
-      const plain = flipped === '' ? clean : clean.split(flipped).join(' ')
+      const scoped = directionScoped(clean)
+      const flipped = scoped.join('\n')
+      const plain = scoped.reduce((rest, part) => rest.split(part).join(' '), clean)
 
       const inside = sidesIn(flipped)
       return [...sidesIn(plain)]
@@ -988,6 +1078,58 @@ describe('which side a theme puts things on', () => {
     ).toEqual([])
   })
 
+  test('and a bar drawn down one side by an inset shadow is drawn down the other for :dir(rtl)', () => {
+    /*
+     * The case above, in a property it was not written to see. `box-shadow: inset
+     * 2px 0 0` draws a bar down the LEFT edge — the mark on a selected tree item, on
+     * the option a typeahead has active, the line where a drag will land — and CSS
+     * has no logical box-shadow. Read right to left the bar stayed on the left, and
+     * the drop indicator showed a field landing on the side opposite to where it did.
+     *
+     * Per rule, not per stylesheet: the drop indicators name both sides between
+     * them, so asking whether each side is flipped *somewhere* passes with none of
+     * them flipped. Each rule that draws a bar needs a `:dir(rtl)` rule for the same
+     * selector drawing it on the other side.
+     *
+     * A shadow that is not inset is left alone: it is cast by a light, and a light
+     * does not move with the language.
+     */
+    const opposite: Readonly<Record<Side, Side>> = { left: 'right', right: 'left' }
+    let bars = 0
+
+    const unpaired = stylesheets().flatMap(({ name, css }) => {
+      const all = rulesOf(withoutComments(css))
+      const flipped = new Map<string, Set<Side>>()
+      for (const rule of all) {
+        for (const selector of rule.selectors.filter((s) => s.includes(':dir(rtl)'))) {
+          const plain = selector.replace(':dir(rtl)', '')
+          flipped.set(plain, new Set([...(flipped.get(plain) ?? []), ...barSides(rule.body)]))
+        }
+      }
+      return all.flatMap((rule) =>
+        rule.selectors
+          .filter((selector) => !selector.includes(':dir('))
+          .flatMap((selector) =>
+            [...barSides(rule.body)]
+              .filter((side) => {
+                bars += 1
+                return !flipped.get(selector)?.has(opposite[side])
+              })
+              .map(
+                (side) =>
+                  `${name}: ${selector} draws a bar on the ${side}, and no :dir(rtl) rule draws it on the ${opposite[side]}`,
+              ),
+          ),
+      )
+    })
+
+    // Absence of a fault proves nothing if no bar was found to judge.
+    expect(bars).toBeGreaterThan(5)
+    expect(unpaired, 'a marker stays on one side while the text it marks reads from the other').toEqual(
+      [],
+    )
+  })
+
   test('and every theme really does say which side in reading order somewhere', () => {
     /*
      * The guard on the guard, and it is not decoration: the case above is an
@@ -995,7 +1137,7 @@ describe('which side a theme puts things on', () => {
      * would satisfy it completely. Each theme has to be *using* the logical
      * properties for their absence to mean anything.
      */
-    const silent = themes()
+    const silent = stylesheets()
       .filter(
         ({ css }) =>
           !/margin-inline|padding-inline|inset-inline|border-inline|text-align\s*:\s*(start|end)/.test(

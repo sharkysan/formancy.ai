@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 import catalog from '../../../templates/catalog.json'
-import { DEMOS, initialDemo, initialLocale } from './demos.js'
+import { DEMOS, initialDemo, initialDirection, initialLocale } from './demos.js'
 
 test('every downloadable template can be opened directly in the editor', () => {
   // The gallery links by id. A curated subset here would make some links silently
@@ -18,4 +18,12 @@ test('unrecognised links fall back to the normal demo and locale', () => {
   expect(initialLocale('?locale=de')).toBe('de')
   expect(initialLocale('?locale=fr')).toBe('fr')
   expect(initialLocale('?locale=missing')).toBe('en')
+})
+
+test('a link can open the playground right to left, and nothing else flips it', () => {
+  // The one way to show a visitor the builders follow the reading order; a value
+  // that is not `rtl` must not leave the document in a direction nobody asked for.
+  expect(initialDirection('?dir=rtl')).toBe('rtl')
+  expect(initialDirection('?dir=auto')).toBe('ltr')
+  expect(initialDirection('')).toBe('ltr')
 })

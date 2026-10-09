@@ -252,6 +252,28 @@ describe('the indicator', () => {
     expect(last.dataset['drop']).toBe('inline-after')
   })
 
+  test('and read right to left, the right half of a field in a row is before it', async () => {
+    // The field before another in a right-to-left row is on its right. The halves
+    // were measured from the left whatever the page read, so a field aimed at the
+    // right of its neighbour landed on its left.
+    document.body.dir = 'rtl'
+    try {
+      const mounted = await mount()
+      const dataTransfer = transfer()
+
+      fieldNamed('Email').dispatchEvent(dragEvent('dragstart', NOWHERE, dataTransfer))
+      await mounted.settle()
+      const last = fieldNamed('Last name')
+      // Right of the midpoint, which `boxOf` calls the end because it reads left to right.
+      last.dispatchEvent(dragEvent('dragover', boxOf(last, 'end'), dataTransfer))
+      await mounted.settle()
+
+      expect(last.dataset['drop']).toBe('inline-before')
+    } finally {
+      document.body.removeAttribute('dir')
+    }
+  })
+
   test('is cleared when the pointer leaves', async () => {
     const mounted = await mount()
     const dataTransfer = transfer()
