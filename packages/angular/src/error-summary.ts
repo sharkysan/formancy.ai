@@ -70,7 +70,14 @@ export class FormancyErrorSummary {
   })
 
   protected labelFor(path: string): string {
-    return this.labels()?.[path] ?? this.labels()?.[path.replace(/\[\d+\]/, '[]')] ?? path
+    // The host's words first, then the field's own label in the form's language, and the
+    // path only for a field with neither — as the React summary names it.
+    return (
+      this.labels()?.[path] ??
+      this.labels()?.[path.replace(/\[\d+\]/, '[]')] ??
+      this.engine.getFieldSnapshot(parsePath(path)).label ??
+      path
+    )
   }
 
   protected controlIdOf(path: string): string {

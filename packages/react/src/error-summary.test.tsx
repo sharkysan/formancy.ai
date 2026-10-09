@@ -86,3 +86,40 @@ describe('ErrorSummary', () => {
     expect(screen.queryByRole('heading', { name: /problem/i })).toBeNull()
   })
 })
+
+describe('ErrorSummary without a labels prop', () => {
+  /*
+   * A field's label is in the document, and the engine resolves it in the form's language.
+   * The summary named a field by its data path unless the host passed `labels` — "email:
+   * required" as a link's accessible name, and "items[0].qty" for a row — so the one list a
+   * screen reader is sent to after a failed submit read like a stack trace.
+   */
+  const labelled: FormSchema = {
+    specVersion: '1',
+    id: 'contact',
+    title: 'Contact',
+    model: {
+      fields: [
+        { key: 'email', type: 'text', label: 'Your email', required: true },
+        { key: 'code', type: 'text', required: true },
+      ],
+    },
+  }
+
+  test('names each field by its own label, and by its key only when it has none', () => {
+    render(
+      <FormancyProvider engine={createFormEngine({ schema: labelled })}>
+        <ErrorSummary />
+        <FormancyForm />
+        <Submit />
+      </FormancyProvider>,
+    )
+
+    fireEvent.click(screen.getByText('send'))
+
+    expect(screen.getAllByRole('link').map((link) => link.textContent)).toEqual([
+      'Your email: required',
+      'code: required',
+    ])
+  })
+})
