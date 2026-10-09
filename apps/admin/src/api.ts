@@ -1,6 +1,6 @@
 import type { FormSchema } from '@formancy/spec'
 import type { SchemaError } from '@formancy/spec/validate'
-import type { StoredFile } from '@formancy/react'
+import type { StoredFile, UploadOptions } from '@formancy/react'
 
 /**
  * The admin's view of the server API, through the dev proxy (/api -> :4380).
@@ -276,10 +276,15 @@ export function exportUrl(path: string): string {
  * consumer's form does — including the part where a failure is said out loud
  * instead of leaving somebody believing they attached something.
  */
-export async function uploadFile(path: string, field: string, file: File): Promise<StoredFile> {
+export async function uploadFile(
+  path: string,
+  file: File,
+  { field, signal, onProgress }: UploadOptions,
+): Promise<StoredFile> {
   const offered = await authed(`${BASE}/f/${encodeURIComponent(path)}/files`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
+    signal,
     body: JSON.stringify({
       field,
       name: file.name,
@@ -295,17 +300,48 @@ export async function uploadFile(path: string, field: string, file: File): Promi
 
   const stored = (await offered.json()) as StoredFile & { uploadUrl: string }
 
-  const put = await authed(`${BASE}${stored.uploadUrl}`, {
-    method: 'PUT',
-    headers: { 'content-type': stored.contentType },
-    body: file,
-  })
-  if (!put.ok) throw new Error(`The upload failed (${String(put.status)}).`)
+  const status = await putBytes(`${BASE}${stored.uploadUrl}`, file, stored.contentType, signal, onProgress)
+  if (status === 401) {
+    setToken(null)
+    throw new Unauthorized()
+  }
+  if (status < 200 || status >= 300) throw new Error(`The upload failed (${String(status)}).`)
 
   // Without uploadUrl: it is how to send the bytes, not part of the answer,
   // and storing it would put a route into somebody's submission data.
   const { uploadUrl: _sent, ...answer } = stored
   return answer
+}
+
+/**
+ * The bytes, reporting how far they have got, with the session `authed` would send.
+ *
+ * XHR rather than fetch, because fetch cannot report an upload's progress — the one thing
+ * the field's bar needs (0130). Resolves with the status, so the caller answers a 401 the
+ * way every other management call does.
+ */
+function putBytes(
+  url: string,
+  file: File,
+  contentType: string,
+  signal: AbortSignal,
+  onProgress: (sent: number, total: number) => void,
+): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const request = new XMLHttpRequest()
+    request.open('PUT', url)
+    request.setRequestHeader('content-type', contentType)
+    const token = currentToken()
+    if (token !== null) request.setRequestHeader('authorization', `Bearer ${token}`)
+    request.upload.onprogress = (event) => {
+      if (event.lengthComputable) onProgress(event.loaded, event.total)
+    }
+    request.onload = () => resolve(request.status)
+    request.onerror = () => reject(new Error('The upload failed: the connection was lost.'))
+    request.onabort = () => reject(new Error('Cancelled.'))
+    signal.addEventListener('abort', () => request.abort(), { once: true })
+    request.send(file)
+  })
 }
 
 // --------------------------------------------------------------- the public plane

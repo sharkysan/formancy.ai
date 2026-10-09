@@ -165,8 +165,10 @@ submitted. Switch language or theme without reloading.
   rule compares the fields of its own row; CEL is there for the rest. A rules
   overview lists every rule in words and, against a preview's answers, says why a field
   is hidden or required now — including a rule that cannot be decided.
-- **Files and formatted text.** Collect attachments with type and size limits,
-  and let people write answers with bold, italic, links and lists.
+- **Files and formatted text.** Collect attachments with type and size limits —
+  each file its own upload, with its progress, a way to cancel or retry it, a place
+  in the order, and a picture of an image — and let people write answers with bold,
+  italic, links and lists.
 - **Validation in the browser and on the server.** Give immediate feedback,
   then check submissions again with the same rules in the formancy backend.
 - **Keyboard controls and accessibility checks.** The engine connects labels,

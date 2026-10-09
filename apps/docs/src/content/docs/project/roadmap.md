@@ -115,10 +115,12 @@ answer holding only what was typed — `(999) 999-9999` stores `5551234567`
 - **Virus scanning** of uploaded files, and **resumable uploads**. Files
   themselves work; a stored file is trusted the moment its bytes land, and the
   deployment's byte ceiling is also the largest single file.
-- **Per-file upload progress.** The field reports that an upload is happening,
-  not how far along each file is. Reporting it needs the `Uploader` interface to
-  emit progress, which is a wider change than the control — so it is the one
-  part of the file field still outstanding, along with thumbnails and reordering.
+- ~~**Per-file upload progress.**~~ **Built**, with cancelling, retrying,
+  reordering and thumbnails: the `Uploader` is told the field, a signal and a
+  progress callback, and each file is its own upload
+  ([0130](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0130-each-file-is-its-own-upload.md)).
+  What is not built is a thumbnail of a file stored before the page was opened,
+  whose bytes are not in the browser.
 - **A presigned upload path.** The object store landed, so bytes survive more
   than one replica — but they still travel through the server, so the request
   body cap is also the largest file anybody can send.

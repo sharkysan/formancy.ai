@@ -1,7 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { fieldUploads, thumbnailSize } from '@formancy/core'
+import type { PendingUpload, UploadQueue } from '@formancy/core'
+import { useFormEngine } from '../context.js'
 import { useField } from '../use-field.js'
 import { useUploader } from '../uploads.js'
-import type { StoredFile } from '../uploads.js'
+import type { StoredFile, Uploader } from '../uploads.js'
 import { FieldShell } from './internals.js'
 import type { FieldComponentProps } from './internals.js'
 
@@ -22,13 +25,19 @@ import type { FieldComponentProps } from './internals.js'
  *
  * Without an uploader the field is read-only and says so, rather than
  * pretending to accept a file it has nowhere to put.
+ *
+ * **Each file is its own upload** — waiting, sending with how far it has got,
+ * cancellable, and refused with a reason and a way to try again. What happens to
+ * each is `@formancy/core`'s upload queue, read by both renderers
+ * ([0130](../../../../docs/decisions/0130-each-file-is-its-own-upload.md)); this
+ * draws it.
  */
 export function FileField({ path, label }: FieldComponentProps) {
   const field = useField(path)
   const upload = useUploader()
+  const queue = useUploadQueue(path, upload)
+  const pending = useSyncExternalStore(queue.subscribe, queue.pending, queue.pending)
   const files = Array.isArray(field.value) ? (field.value as StoredFile[]) : []
-  const [busy, setBusy] = useState(false)
-  const [failure, setFailure] = useState<string | undefined>(undefined)
   const [over, setOver] = useState(false)
   /**
    * Attachments taken out of the answer but not yet forgotten.
@@ -42,46 +51,9 @@ export function FileField({ path, label }: FieldComponentProps) {
   const accept = field.def.accept
   const multiple = field.def.maxItems === undefined || field.def.maxItems > 1
 
-  const onPick = async (picked: FileList | null): Promise<void> => {
+  const onPick = (picked: FileList | null): void => {
     if (picked === null || picked.length === 0 || upload === undefined) return
-    setBusy(true)
-    setFailure(undefined)
-
-    // Each file succeeds or fails on its own.
-    //
-    // The first version collected them into an array and set the value once, so
-    // a throw on the third of five discarded the two that had ALREADY uploaded:
-    // their bytes were in storage, the submission never mentioned them, the
-    // collector reclaimed them within the day, and the person was told the
-    // upload failed when half of it had not. Whose fault the failure is does not
-    // change who loses the file.
-    const uploaded: StoredFile[] = []
-    const refused: string[] = []
-
-    for (const file of Array.from(picked)) {
-      try {
-        uploaded.push(await upload(file))
-      } catch (error) {
-        refused.push(`${file.name} (${error instanceof Error ? error.message : String(error)})`)
-      }
-    }
-
-    // Recorded before the failure is reported, so nothing that reached storage
-    // is left unclaimed while somebody reads the message.
-    if (uploaded.length > 0) field.setValue([...files, ...uploaded])
-
-    if (refused.length > 0) {
-      // Named, because "the upload failed" over a list of five attachments does
-      // not say which one to try again.
-      setFailure(
-        refused.length === 1
-          ? `${refused[0]!} was not attached.`
-          : `${String(refused.length)} files were not attached: ${refused.join(', ')}.`,
-      )
-    }
-
-    setBusy(false)
-    field.touch()
+    queue.add(Array.from(picked))
   }
 
   return (
@@ -107,46 +79,69 @@ export function FileField({ path, label }: FieldComponentProps) {
             // Without preventDefault the browser navigates to the file instead
             // of letting the page have it, which looks like the form vanishing.
             event.preventDefault()
-            if (field.disabled || busy) return
+            if (field.disabled) return
             setOver(true)
           }}
           onDragLeave={() => setOver(false)}
           onDrop={(event) => {
             event.preventDefault()
             setOver(false)
-            if (field.disabled || busy) return
-            void onPick(event.dataTransfer.files)
+            if (field.disabled) return
+            onPick(event.dataTransfer.files)
           }}
         >
+          {/* Open while files upload: a second file joins the queue rather than
+              waiting for the first to be remembered before it can be picked. */}
           <input
             {...field.controlProps}
             type="file"
             multiple={multiple}
             {...(accept === undefined ? {} : { accept: accept.join(',') })}
-            disabled={field.disabled || busy}
+            disabled={field.disabled}
             onChange={(event) => {
-              void onPick(event.target.files)
+              onPick(event.target.files)
               event.target.value = ''
             }}
           />
         </div>
       )}
 
-      {files.length === 0 && removed.length === 0 ? null : (
+      {files.length === 0 && pending.length === 0 && removed.length === 0 ? null : (
         <ul data-formancy-part="file-list">
-          {files.map((file) => (
+          {files.map((file, index) => (
             <li key={file.id} data-formancy-part="file-item">
-              <span>{file.name}</span>
+              <FileThumbnail source={queue.sourceOf(file.id)} />
+              <span data-formancy-part="file-name">{file.name}</span>
+              {/* Absent at the ends rather than disabled, as a repeater row's are: a
+                  disabled button still announces a control that does nothing. The
+                  position is in the name, so nobody counts rows before pressing. */}
+              {index > 0 ? (
+                <button
+                  type="button"
+                  data-formancy-part="file-up"
+                  disabled={field.disabled}
+                  onClick={() => field.setValue(moved(files, index, index - 1))}
+                >
+                  {`Move ${file.name}, ${String(index + 1)} of ${String(files.length)}, up`}
+                </button>
+              ) : null}
+              {index < files.length - 1 ? (
+                <button
+                  type="button"
+                  data-formancy-part="file-down"
+                  disabled={field.disabled}
+                  onClick={() => field.setValue(moved(files, index, index + 1))}
+                >
+                  {`Move ${file.name}, ${String(index + 1)} of ${String(files.length)}, down`}
+                </button>
+              ) : null}
               <button
                 type="button"
                 disabled={field.disabled}
                 onClick={() => {
                   // Out of the answer immediately, so a submit in between is
                   // correct, and remembered so it can come back.
-                  setRemoved((before) => [
-                    ...before,
-                    { at: files.findIndex((other) => other.id === file.id), file },
-                  ])
+                  setRemoved((before) => [...before, { at: index, file }])
                   field.setValue(files.filter((other) => other.id !== file.id))
                 }}
               >
@@ -156,6 +151,10 @@ export function FileField({ path, label }: FieldComponentProps) {
                 Remove {file.name}
               </button>
             </li>
+          ))}
+
+          {pending.map((entry) => (
+            <PendingRow key={entry.key} entry={entry} queue={queue} disabled={field.disabled} />
           ))}
 
           {/*
@@ -168,7 +167,7 @@ export function FileField({ path, label }: FieldComponentProps) {
            */}
           {removed.map(({ at, file }) => (
             <li key={file.id} data-formancy-part="file-item" data-state="removed">
-              <span>{file.name}</span>
+              <span data-formancy-part="file-name">{file.name}</span>
               <button
                 type="button"
                 disabled={field.disabled}
@@ -188,12 +187,141 @@ export function FileField({ path, label }: FieldComponentProps) {
         </ul>
       )}
 
-      {/* One polite region per field for the upload's own progress: the form's
+      {/* One polite region per field for the uploads' own progress: the form's
           error region belongs to validation, and an upload failure is not a
           validation error. */}
       <p role="status" data-formancy-part="file-status">
-        {busy ? 'Uploading…' : (failure ?? '')}
+        {statusOf(pending)}
       </p>
     </FieldShell>
   )
+}
+
+/** The files with one moved a place. */
+function moved(files: readonly StoredFile[], from: number, to: number): StoredFile[] {
+  const next = [...files]
+  next.splice(to, 0, ...next.splice(from, 1))
+  return next
+}
+
+/** A file not yet in the answer: waiting, being sent, or refused. */
+function PendingRow({
+  entry,
+  queue,
+  disabled,
+}: {
+  entry: PendingUpload
+  queue: UploadQueue<File>
+  disabled: boolean
+}) {
+  const failed = entry.state === 'failed'
+  return (
+    <li data-formancy-part="file-item" data-state={entry.state}>
+      <span data-formancy-part="file-name">{entry.name}</span>
+      {entry.state === 'waiting' ? <span data-formancy-part="file-waiting">Waiting</span> : null}
+      {entry.state === 'uploading' ? (
+        // Without a figure the bar is indeterminate, which is the truth about an
+        // uploader that cannot measure — not a bar stuck at zero.
+        <progress
+          data-formancy-part="file-progress"
+          aria-label={`Uploading ${entry.name}`}
+          {...(entry.total === undefined ? {} : { value: entry.sent, max: entry.total })}
+        />
+      ) : null}
+      {failed ? (
+        <span data-formancy-part="file-error">Not attached: {entry.reason}</span>
+      ) : null}
+      {failed ? (
+        <button type="button" disabled={disabled} onClick={() => queue.retry(entry.key)}>
+          Try {entry.name} again
+        </button>
+      ) : null}
+      <button type="button" disabled={disabled} onClick={() => queue.cancel(entry.key)}>
+        {failed ? `Dismiss ${entry.name}` : `Cancel uploading ${entry.name}`}
+      </button>
+    </li>
+  )
+}
+
+/** What the status region says: the file being sent, or the files refused, by name. */
+function statusOf(pending: readonly PendingUpload[]): string {
+  const sending = pending.find((entry) => entry.state === 'uploading')
+  if (sending !== undefined) return `Uploading ${sending.name}…`
+  const failed = pending.filter((entry) => entry.state === 'failed')
+  if (failed.length === 1) return `${failed[0]!.name} was not attached: ${failed[0]!.reason ?? ''}`
+  if (failed.length > 1) {
+    return `${String(failed.length)} files were not attached: ${failed.map((entry) => entry.name).join(', ')}.`
+  }
+  return ''
+}
+
+/**
+ * The field's upload queue — the form's, found by the row this control is drawn for,
+ * so a row that moves and remounts its controls keeps its uploads (0130).
+ *
+ * This control supplies only the sending: the host's uploader, given an
+ * `AbortSignal` for the queue's cancel, which `@formancy/core` has no type for.
+ */
+function useUploadQueue(wire: string, upload: Uploader | undefined): UploadQueue<File> {
+  const engine = useFormEngine()
+  const uploads = fieldUploads<File, StoredFile>(engine, wire)
+  useEffect(() => {
+    uploads.sender =
+      upload === undefined
+        ? undefined
+        : (file, attempt, field) => {
+            const controller = new AbortController()
+            attempt.onCancel(() => controller.abort())
+            return upload(file, {
+              field,
+              signal: controller.signal,
+              onProgress: (sent, total) => attempt.progress(sent, total),
+            })
+          }
+  }, [uploads, upload])
+  return uploads.queue
+}
+
+/**
+ * A picture of an image picked in this session, drawn from its bytes.
+ *
+ * **On a canvas, not an `<img>` on an object URL.** A URL is subject to the page's
+ * `img-src`, and a strict policy without `blob:` shows a broken image — while this
+ * product says a form runs under a strict CSP with no configuration. Decoding with
+ * `createImageBitmap` and drawing the bitmap involves no URL at all.
+ *
+ * Only for a file picked here: a file stored before this page has no bytes in the
+ * browser, and the renderer knows no address to fetch them from. Decorative — the
+ * name beside it is what is read out.
+ */
+function FileThumbnail({ source }: { source: File | undefined }) {
+  const canvas = useRef<HTMLCanvasElement>(null)
+  const drawable =
+    source !== undefined && source.type.startsWith('image/') && typeof createImageBitmap === 'function'
+
+  useEffect(() => {
+    if (!drawable) return
+    let current = true
+    createImageBitmap(source).then(
+      (bitmap) => {
+        const target = canvas.current
+        if (current && target !== null) {
+          // The core's size, which the Angular binding draws at too.
+          const { width, height } = thumbnailSize(bitmap.width, bitmap.height)
+          target.width = width
+          target.height = height
+          target.getContext('2d')?.drawImage(bitmap, 0, 0, target.width, target.height)
+        }
+        bitmap.close()
+      },
+      // An image the browser cannot decode gets no picture; its name is still there.
+      () => undefined,
+    )
+    return () => {
+      current = false
+    }
+  }, [source, drawable])
+
+  if (!drawable) return null
+  return <canvas ref={canvas} data-formancy-part="file-thumbnail" aria-hidden="true" width={0} height={0} />
 }

@@ -76,6 +76,7 @@ What it does **not** do, and must not be assumed to do:
 | Database (server only) | PostgreSQL 17 or 18 |
 | Deployment (server only) | Two compose files are supplied: `compose.yaml` builds from a checkout, `compose.published.yaml` runs the signed published image and requires `FORMANCY_VERSION` to be pinned, because no `latest` tag is published. Every variable `.env.example` documents is passed through by both, checked by `packages/server/src/compose.test.ts` |
 | Pictures on options | A host with a strict Content Security Policy needs `img-src` to allow `data:` for pictures a document carries, and the hosts it names for the others; without it the option still works and its picture does not load ([0126](../decisions/0126-an-option-may-carry-a-picture.md)) |
+| File uploads | A thumbnail needs `createImageBitmap` and a 2D canvas, which every browser in the stylesheet row has; without them no thumbnail is drawn and the file's name is shown alone. It needs no `img-src` permission, because it is drawn from the file's bytes and no URL is involved. A figure on the progress bar needs the host's uploader to report one, which `fetch` cannot do for an upload; a cancel stops the transfer only if the uploader passes the signal on ([0130](../decisions/0130-each-file-is-its-own-upload.md)) |
 | Stylesheets (`@formancy/themes`) | Chrome 120, Edge 120, Firefox 113, Safari 16.4 — the first releases with both `:dir()` and `color-mix()`. **A host that bundles them must target these or later**: a bundler targeting older browsers rewrites `:dir(rtl)` as a list of right-to-left languages, after which a page's `dir` no longer mirrors the layout; Vite's default target did ([0123](../decisions/0123-the-builder-reads-right-to-left.md)). Loaded with a plain `<link>`, they are not rewritten |
 | Module format | ESM only; no CommonJS build is published ([0038](../decisions/0038-esm-only.md)) |
 
@@ -319,8 +320,9 @@ name.
 **The exception is `pnpm test:browser`**, which loads the composed site in Chromium at four
 viewports and asserts that nothing scrolls sideways, how many columns the pane row computes,
 and the computed `touch-action` of both renderers' signature surfaces with and without a
-theme. It covers the two mechanisms that produced D4a's third instance and D4c, and nothing
-wider: no pixel baselines by choice, one engine rather than Safari, and one demo schema
+theme — and, since 2026-10-09, that a picked image is decoded and drawn as its thumbnail in
+both renderers, at its own shape and within the theme's size. It covers the two mechanisms
+that produced D4a's third instance and D4c, a file field's thumbnail, and nothing wider: no pixel baselines by choice, one engine rather than Safari, and one demo schema
 rather than the conformance suite. A manufacturer relying on visual correctness must still
 verify it in the browsers it ships to.
 
@@ -334,7 +336,7 @@ verify it in the browsers it ships to.
 | Property-based invariants over hide/unhide, repeater identity and evaluation order | `packages/core` |
 | The official CEL corpus, with results pinned | `packages/expressions/CEL-CONFORMANCE.md` |
 | Performance budgets, measured: keystroke ≈0.38 ms against a <1 ms budget; graph compile ≈1.7 ms against a <30 ms budget | `packages/core/bench/perf.mjs` |
-| Layout and gesture facts jsdom cannot represent — horizontal overflow, computed grid columns and computed `touch-action` for both renderers — at four viewports in Chromium against the composed site | `pnpm test:browser` |
+| Layout and gesture facts jsdom cannot represent — horizontal overflow, computed grid columns and computed `touch-action` for both renderers — at four viewports in Chromium against the composed site, and a picked image drawn as its thumbnail | `pnpm test:browser` |
 | Package-publication gates: `publint`, `@arethetypeswrong/cli` | `pnpm check:pkg` |
 | Bundle sizes, measured by hand and dated rather than gated — `size-limit` is **not** wired up, and this table named it as a gate until 2026-09-27 | [§9.3](../architecture/09-quality-requirements.md) |
 | Line coverage, reported per package and uploaded per commit — **reported and gated nowhere**, deliberately ([0099](../decisions/0099-coverage-is-reported-per-package-and-never-gated.md)) | `pnpm turbo run test:coverage`, and Codecov |

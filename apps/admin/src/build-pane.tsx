@@ -12,7 +12,7 @@ import {
 import { createFormEngine } from '@formancy/core'
 import { FormancyForm, FormancyProvider, UploaderProvider } from '@formancy/react'
 import type { Uploader } from '@formancy/react'
-import type { FieldDef, FormSchema } from '@formancy/spec'
+import type { FormSchema } from '@formancy/spec'
 import { uploadFile } from './api.js'
 import { PublishNote } from './publish-note.js'
 import type { PublishResult } from './api.js'
@@ -150,20 +150,18 @@ function BuilderWorkspace({
    *
    * Undefined until the form has been published: there is nowhere to put bytes
    * for a form the server has not heard of, and the field says so rather than
-   * accepting a file it will lose. `useMemo` because a new function identity
-   * every render would remount every file input under it.
+   * accepting a file it will lose. `useMemo` so it is one function for as long as
+   * the form path is one path: each file field hands its uploads to it afresh
+   * whenever it changes.
    */
   const uploader = useMemo<Uploader | undefined>(
     () =>
       formPath === undefined
         ? undefined
-        : // The field the file is for is not something the renderer passes, so
-          // this is per-form rather than per-field for now — the server takes
-          // the field in the offer, and the first file field is what a preview
-          // is exercising. Named here rather than hidden, because it is a real
-          // limitation of this wiring and not of the API.
-          (file: File) => uploadFile(formPath, firstFileField(view.document) ?? '', file),
-    [formPath, view.document],
+        : // The renderer says which field each file is for, so a preview with two
+          // file fields offers each against its own rules (0130).
+          (file, options) => uploadFile(formPath, file, options),
+    [formPath],
   )
   // The preview renders THROUGH the arrangement when there is one. Without
   // this, moving two fields into a row changes nothing anybody can see, which
@@ -279,26 +277,3 @@ function BuilderWorkspace({
   )
 }
 
-/**
- * The first file field in a document, as a data path.
- *
- * A stopgap: the renderer does not tell an uploader which field it is for, so
- * a preview with two file fields would offer both against the first one's
- * rules. Worth fixing by widening `Uploader` to take the field; worth naming
- * here until it is.
- */
-function firstFileField(document: FormSchema): string | undefined {
-  const walk = (fields: readonly FieldDef[], prefix: string): string | undefined => {
-    for (const field of fields) {
-      const path = field.type === 'page' ? prefix : `${prefix}${field.key}`
-      if (field.type === 'file') return path
-      const inside = walk(
-        field.fields ?? [],
-        field.type === 'page' ? prefix : field.type === 'repeater' ? `${path}[].` : `${path}.`,
-      )
-      if (inside !== undefined) return inside
-    }
-    return undefined
-  }
-  return walk(document.model.fields, '')
-}

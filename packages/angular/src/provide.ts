@@ -1,5 +1,6 @@
-import { InjectionToken, inject } from '@angular/core'
+import { DestroyRef, InjectionToken, inject } from '@angular/core'
 import type { Provider } from '@angular/core'
+import { cancelUploads } from '@formancy/core'
 import type { FormEngine } from '@formancy/core'
 
 /**
@@ -9,7 +10,18 @@ import type { FormEngine } from '@formancy/core'
 export const FORMANCY_ENGINE = new InjectionToken<FormEngine>('formancy.engine')
 
 export function provideFormancy(engine: FormEngine): Provider[] {
-  return [{ provide: FORMANCY_ENGINE, useValue: engine }]
+  return [
+    {
+      provide: FORMANCY_ENGINE,
+      // When the injector that holds the form goes, its uploads stop. Here rather than
+      // in the file field: the field is recreated whenever its row moves, and its
+      // uploads have to survive that (0130).
+      useFactory: () => {
+        inject(DestroyRef).onDestroy(() => cancelUploads(engine))
+        return engine
+      },
+    },
+  ]
 }
 
 export function injectEngine(): FormEngine {

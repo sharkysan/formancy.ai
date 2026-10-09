@@ -35,6 +35,7 @@ import { createReadStream, existsSync, readFileSync, readdirSync, statSync } fro
 import { dirname, extname, join, normalize, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { checkTemplateGallery } from './template-browser-test.mjs'
+import { checkUploadThumbnails } from './upload-browser-test.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const site = join(root, 'apps', 'site', 'dist')
@@ -190,6 +191,7 @@ async function run() {
     }
 
     await checkTemplateGallery(browser, origin, check)
+    await checkUploadThumbnails(browser, url, check)
     for (const { label, width, height } of WIDTHS) {
       const page = await browser.newPage({ viewport: { width, height } })
       await page.goto(url, { waitUntil: 'load' })

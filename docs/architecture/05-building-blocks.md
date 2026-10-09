@@ -109,6 +109,7 @@ comprehension would capture.
 | `interaction.ts` | Touched state, which decides when a message is shown |
 | `wizard.ts` | Page navigation and per-page validation semantics |
 | `strip.ts` | `clearOnHide` pruning, applied identically on client and server |
+| `uploads.ts` | A file field's uploads: one at a time, each waiting, sending with its progress, or refused; cancel and retry; kept with the form by the row's identity, so a row that moves keeps them; the thumbnail size both renderers draw at ([0130](../decisions/0130-each-file-is-its-own-upload.md)) |
 
 ### `@formancy/react` and `@formancy/angular` (L3)
 
@@ -123,6 +124,7 @@ Deliberately small, and structurally parallel:
 | Component resolution | `context.tsx` | `registry.ts`, `provide.ts` |
 | Default controls | `form.tsx` | `fields.ts` |
 | Error summary | `error-summary.tsx` | `error-summary.ts` |
+| File uploads, drawn | `fields/file-field.tsx` | `fields/file-field.ts`, `fields/file-thumbnail.ts` |
 | Conformance driver | `conformance-driver.tsx` | `conformance-driver.ts` |
 
 Neither contains a CSS file. Both resolve labels through the engine rather than

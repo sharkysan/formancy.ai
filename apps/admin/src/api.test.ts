@@ -36,6 +36,13 @@ const answering = (respond: (url: string) => Response): void => {
   )
 }
 
+/** What a file field hands an uploader: this field, nothing cancelled, progress ignored. */
+const sending = () => ({
+  field: 'evidence',
+  signal: new AbortController().signal,
+  onProgress: () => {},
+})
+
 const headerOf = (name: string, at = 0): string | undefined =>
   (fetched[at]?.init?.headers as Record<string, string> | undefined)?.[name]
 
@@ -237,10 +244,61 @@ describe('uploadFile', () => {
   const pdf = (): File =>
     new File([new Uint8Array(12)], 'plan.pdf', { type: 'application/pdf' })
 
-  test('offers the file, then sends the bytes', async () => {
-    answering((url) => (url.endsWith('/files') ? json(stored, 201) : new Response(null, { status: 204 })))
+  /**
+   * The bytes go by XHR, because fetch cannot report an upload's progress. This stands
+   * in for one: it records what was asked and answers with `status` once sent.
+   */
+  let sent: FakeRequest[]
+  class FakeRequest {
+    method = ''
+    url = ''
+    headers: Record<string, string> = {}
+    body: unknown
+    status = 0
+    aborted = false
+    readonly upload: { onprogress: ((event: ProgressEvent) => void) | null } = { onprogress: null }
+    onload: (() => void) | null = null
+    onerror: (() => void) | null = null
+    onabort: (() => void) | null = null
+    constructor() {
+      sent.push(this)
+    }
+    open(method: string, url: string): void {
+      this.method = method
+      this.url = url
+    }
+    setRequestHeader(name: string, value: string): void {
+      this.headers[name] = value
+    }
+    send(body: unknown): void {
+      this.body = body
+      if (answerAtOnce) queueMicrotask(() => this.finish())
+    }
+    finish(): void {
+      if (this.aborted) return
+      this.status = putStatus
+      this.onload?.()
+    }
+    abort(): void {
+      this.aborted = true
+      this.onabort?.()
+    }
+  }
+  let putStatus = 204
+  /** Off for a test that has something to do while the bytes are on their way. */
+  let answerAtOnce = true
 
-    await uploadFile('contact', 'evidence', pdf())
+  beforeEach(() => {
+    sent = []
+    putStatus = 204
+    answerAtOnce = true
+    vi.stubGlobal('XMLHttpRequest', FakeRequest)
+  })
+
+  test('offers the file, then sends the bytes', async () => {
+    answering(() => json(stored, 201))
+
+    await uploadFile('contact', pdf(), sending())
 
     expect(fetched[0]?.init?.method).toBe('POST')
     expect(JSON.parse(String(fetched[0]?.init?.body))).toMatchObject({
@@ -250,15 +308,56 @@ describe('uploadFile', () => {
       contentType: 'application/pdf',
     })
     // The bytes go to the address the offer handed back, not to one the
-    // client made up.
-    expect(fetched[1]?.url).toContain('/f/contact/files/f1')
-    expect(fetched[1]?.init?.method).toBe('PUT')
+    // client made up — with the session, as every management call carries it.
+    expect(sent[0]?.url).toContain('/f/contact/files/f1')
+    expect(sent[0]?.method).toBe('PUT')
+    expect(sent[0]?.headers['authorization']).toBe('Bearer t_abc')
+  })
+
+  test('offers it for the field the renderer named, whichever that is', async () => {
+    // It offered every file against the first file field in the form, because the
+    // renderer never said which field a file was for (0130).
+    answering(() => json(stored, 201))
+
+    await uploadFile('contact', pdf(), { ...sending(), field: 'items[].receipt' })
+
+    expect(JSON.parse(String(fetched[0]?.init?.body))).toMatchObject({ field: 'items[].receipt' })
+  })
+
+  test('reports how far the bytes have got', async () => {
+    answering(() => json(stored, 201))
+    answerAtOnce = false
+    const progress: Array<[number, number]> = []
+    const uploading = uploadFile('contact', pdf(), {
+      ...sending(),
+      onProgress: (done, total) => progress.push([done, total]),
+    })
+    await vi.waitFor(() => expect(sent).toHaveLength(1))
+
+    sent[0]!.upload.onprogress?.({ lengthComputable: true, loaded: 6, total: 12 } as ProgressEvent)
+    sent[0]!.finish()
+    await uploading
+
+    expect(progress).toEqual([[6, 12]])
+  })
+
+  test('stops sending when cancelled', async () => {
+    answering(() => json(stored, 201))
+    answerAtOnce = false
+    const controller = new AbortController()
+    const uploading = uploadFile('contact', pdf(), { ...sending(), signal: controller.signal })
+    await vi.waitFor(() => expect(sent).toHaveLength(1))
+
+    controller.abort()
+
+    await expect(uploading).rejects.toThrow('Cancelled.')
+    expect(sent[0]?.aborted).toBe(true)
   })
 
   test('the answer does not carry the upload address', async () => {
-    answering((url) => (url.endsWith('/files') ? json(stored, 201) : new Response(null, { status: 204 })))
+    answering(() => json(stored, 201))
 
-    const answer = await uploadFile('contact', 'evidence', pdf())
+    const answer = await uploadFile('contact', pdf(), sending())
 
     // `uploadUrl` is how to send the bytes, not part of what was attached.
     // Kept, it would write a route into somebody's submission data and sit
@@ -272,29 +371,38 @@ describe('uploadFile', () => {
 
     // The field says this out loud. Swallowed, it would leave somebody
     // believing their attachment went with the form.
-    await expect(uploadFile('contact', 'evidence', pdf())).rejects.toThrow('This field takes PDFs only.')
+    await expect(uploadFile('contact', pdf(), sending())).rejects.toThrow('This field takes PDFs only.')
   })
 
   test('a refusal with no message still says something useful', async () => {
     answering(() => new Response('gateway timeout', { status: 504 }))
 
-    await expect(uploadFile('contact', 'evidence', pdf())).rejects.toThrow('504')
+    await expect(uploadFile('contact', pdf(), sending())).rejects.toThrow('504')
   })
 
   test('bytes that do not land are an error, not a silent success', async () => {
-    answering((url) =>
-      url.endsWith('/files') ? json(stored, 201) : new Response(null, { status: 413 }),
-    )
+    answering(() => json(stored, 201))
+    putStatus = 413
 
     // The offer succeeding and the PUT failing is the worst case to get wrong:
     // there is a row in the database and no bytes behind it.
-    await expect(uploadFile('contact', 'evidence', pdf())).rejects.toThrow('413')
+    await expect(uploadFile('contact', pdf(), sending())).rejects.toThrow('413')
+  })
+
+  test('a session that ended while the bytes were on their way ends here too', async () => {
+    // Every management call clears a refused token; the bytes go a different way
+    // now, and must not be the one call that leaves a dead session in storage.
+    answering(() => json(stored, 201))
+    putStatus = 401
+
+    await expect(uploadFile('contact', pdf(), sending())).rejects.toThrow()
+    expect(currentToken()).toBeNull()
   })
 
   test('a file the browser cannot type still gets one', async () => {
-    answering((url) => (url.endsWith('/files') ? json(stored, 201) : new Response(null, { status: 204 })))
+    answering(() => json(stored, 201))
 
-    await uploadFile('contact', 'evidence', new File([new Uint8Array(1)], 'notes', { type: '' }))
+    await uploadFile('contact', new File([new Uint8Array(1)], 'notes', { type: '' }), sending())
 
     // A submission that says nothing about what was attached is worse than one
     // that admits it could not tell.

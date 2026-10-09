@@ -51,9 +51,9 @@ formancy
 |---|---|---|
 | Keystroke, large conditional form | 1 ms | ≈0.38 ms |
 | Cold graph compile | 30 ms | ≈1.7 ms |
-| `@formancy/core` bundle | 18 kB brotli | **18.7 kB** — over, measured 2026-10-08 |
+| `@formancy/core` bundle | 18 kB brotli | **20.1 kB** — over, measured 2026-10-09 |
 | `@formancy/spec` bundle | — | 24.6 kB for the whole barrel — the index and the chunk it shares with `/validate`, measured 2026-10-09 |
-| `@formancy/react` bundle | 4 kB brotli | **21.6 kB** for the whole barrel, measured 2026-10-09 |
+| `@formancy/react` bundle | 4 kB brotli | **22.8 kB** for the whole barrel, measured 2026-10-09 |
 | `uqr`, the QR encoder | — | 6.6 kB brotli, **external** rather than bundled, measured 2026-09-27 |
 
 The performance gate is written to fail on a regression greater than 15%,
@@ -90,6 +90,14 @@ imports `runScenarios` does not ship it — this row is the package, not what a 
 pulls. What would actually fix it is measuring an entry point's dependency closure
 rather than one file, which is a change to the guard rather than to the code, and is
 not being made in the same change that broke the number.
+
+**It went further over with the upload queue, and this time a renderer pays it.** 18.7 became
+20.1 when each file became its own upload, decided in the core so both renderers read one
+queue rather than keeping two ([0130](../decisions/0130-each-file-is-its-own-upload.md)), and
+the React barrel went from 21.6 to 22.8 with the control that draws it. Unlike `runScenarios`,
+the file field is in each renderer's default controls, so a form with no file field ships the
+queue too. That is the cost of the decision living in one place; the alternative was the
+measured row defect, made identically in both renderers.
 
 **The spec figure moved 4.3 kB in one change, and the reason is worth the line.**
 `diffSchemas` stopped comparing only a field's identity, its type and its `required`
@@ -141,6 +149,11 @@ rather than bundles, so the arithmetic is counted in the spec row and not twice
 **21.6 kB with pictures on options**, measured the same day: 0.3 kB for drawing a picture in
 two controls and asking the format's rule before loading it
 ([0126](../decisions/0126-an-option-may-carry-a-picture.md)).
+
+**22.8 kB with each file its own upload**, measured the same day: 1.2 kB for drawing the
+queue — a row per file with its bar, cancel, retry and order, and a thumbnail decoded onto a
+canvas. The queue's decisions are `@formancy/core`'s and counted in that row
+([0130](../decisions/0130-each-file-is-its-own-upload.md)).
 
 **`@formancy/core` is now 17.8 kB against an 18 kB budget, and that is tight enough to say
 out loud.** The last 0.5 kB is `unknown-paths.ts`, a publish-time check that reports a rule

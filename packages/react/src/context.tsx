@@ -1,5 +1,6 @@
-import { createContext, useContext } from 'react'
+import { createContext, useContext, useEffect } from 'react'
 import type { ReactNode } from 'react'
+import { cancelUploads } from '@formancy/core'
 import type { FormEngine } from '@formancy/core'
 
 /**
@@ -11,6 +12,9 @@ import type { FormEngine } from '@formancy/core'
 const FormancyContext = createContext<FormEngine | null>(null)
 
 export function FormancyProvider({ engine, children }: { engine: FormEngine; children?: ReactNode }) {
+  // A form that goes away stops its uploads. Here rather than in the file field: the
+  // field remounts whenever its row moves, and its uploads have to survive that (0130).
+  useEffect(() => () => cancelUploads(engine), [engine])
   return <FormancyContext.Provider value={engine}>{children}</FormancyContext.Provider>
 }
 

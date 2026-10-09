@@ -26,6 +26,8 @@ export type { Scenario, ScenarioFailure, ScenarioOptions, ScenarioResult, Failur
 export { unknownReferences } from './unknown-paths.js'
 export type { UnknownReference } from './unknown-paths.js'
 export type { ExpressionProblem } from './expression-problems.js'
+export { cancelUploads, fieldUploads, THUMBNAIL_SIDE, thumbnailSize } from './uploads.js'
+export type { FieldUploads, PendingUpload, UploadAttempt, UploadQueue } from './uploads.js'
 export { buildFieldProps } from './props.js'
 export type { ControlProps, FieldProps } from './props.js'
 export type { Capabilities, CapabilitySource } from '@formancy/expressions'
