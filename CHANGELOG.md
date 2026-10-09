@@ -10,6 +10,15 @@ later.
 
 ## Unreleased
 
+**A tested compatibility matrix.** The lowest and newest versions of React (19.0.0 and the
+newest 19), Angular (22.0.0 and the newest 22, with Material at the same version) and Node.js
+(22.12.0 and 24) are each a CI run, read from one file, `compatibility.json`, which a test holds
+to the ranges the packages declare. The React run now renders a form with that React rather
+than only bundling it; the Angular run is new — the packed Angular packages installed into an
+Angular project at that version, built by it and run in Chromium. The documentation has a
+Compatibility page saying what each run proves and what is not tested
+([0134](docs/decisions/0134-the-versions-it-says-are-the-versions-it-runs.md)).
+
 **An Angular starter: `apps/angular-starter`.** An Angular application with the form builder
 and the form it builds side by side — `@formancy/builder-angular` editing an expense claim,
 and the claim filled in, drawn with Angular Material, re-made whenever the document changes.

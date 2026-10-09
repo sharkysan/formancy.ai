@@ -20,6 +20,25 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # The versions formancy is tested with, read from compatibility.json -- the one place they
+  # are written. Each list below is a job matrix, so a version in the file is a run, and
+  # apps/docs/src/compatibility.test.ts holds the file to the ranges the packages declare
+  # (0134).
+  matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      react: ${{ steps.read.outputs.react }}
+      angular: ${{ steps.read.outputs.angular }}
+      node: ${{ steps.read.outputs.node }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: read
+        run: |
+          for name in react angular node; do
+            echo "$name=$(node -e "process.stdout.write(JSON.stringify(require('./compatibility.json').$name))")" >> "$GITHUB_OUTPUT"
+          done
+
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -90,8 +109,14 @@ jobs:
   # ARTEFACT rather than the tree, and keeping it separate means `verify` stays
   # the fast signal.
   install:
+    name: install (React ${{ matrix.react }})
+    needs: matrix
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        react: ${{ fromJSON(needs.matrix.outputs.react) }}
     steps:
       - uses: actions/checkout@v4
 
@@ -115,6 +140,77 @@ jobs:
       - run: pnpm build
 
       - run: pnpm test:e2e:install
+        env:
+          FORMANCY_REACT: ${{ matrix.react }}
+
+  # The Angular packages, installed into an Angular project at each version the matrix
+  # names, built by that Angular and run in Chromium. The install job above cannot: an
+  # Angular package is consumed by an Angular build, whose linker is the consumer's.
+  angular:
+    name: angular (${{ matrix.angular }})
+    needs: matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        angular: ${{ fromJSON(needs.matrix.outputs.angular) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: corepack enable pnpm
+
+      - name: Get pnpm store directory
+        id: pnpm-store
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:e2e:angular
+        env:
+          FORMANCY_ANGULAR: ${{ matrix.angular }}
+
+  # The engine and the server on each Node the matrix names: the lowest the server says it
+  # runs on, which is also the container's, and the newest LTS. The server's integration
+  # tests run here too, against real PostgreSQL and Garage, as they do in verify.
+  node:
+    name: node (${{ matrix.node }})
+    needs: matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ${{ fromJSON(needs.matrix.outputs.node) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - run: corepack enable pnpm
+
+      - name: Get pnpm store directory
+        id: pnpm-store
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-${{ runner.os }}-node${{ matrix.node }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-node${{ matrix.node }}-
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm turbo run test --filter=@formancy/spec --filter=@formancy/expressions --filter=@formancy/core --filter=@formancy/server-core --filter=@formancy/server --filter=@formancy/mcp
 
   # What jsdom structurally cannot see. jsdom applies no CSS, resolves no media
   # queries and performs no layout -- every box measures zero and every cascade

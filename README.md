@@ -153,6 +153,10 @@ submitted. Switch language or theme without reloading.
   [Angular starter](./apps/angular-starter) puts the builder and a Material form
   side by side. The shared engine handles the rules while you control how the
   form fits your product.
+- **Tested on the versions it declares.** React 19.0 and the newest 19, Angular 22.0
+  and the newest 22, Node.js 22.12 and 24 — each a CI run; the
+  [compatibility page](https://formancy.ai/docs/start/compatibility/) says what
+  each proves.
 - **Accessibility built in. Continuously checked.** Designed with WCAG 2.2 in
   mind: keyboard editing, connected labels, help text and error messages, plus
   automated accessibility checks in both renderers. Your finished form still

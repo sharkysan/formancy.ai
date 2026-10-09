@@ -85,6 +85,7 @@ pnpm typecheck
 pnpm test
 pnpm check:pkg
 pnpm test:e2e:install
+pnpm test:e2e:angular
 pnpm test:browser
 ```
 
@@ -137,7 +138,15 @@ Each gate exists for a reason that was paid for at least once:
   ([0096](../decisions/0096-two-builders-one-session.md)). Verified by breaking
   it three ways — an entry point removed, an `exports` path pointing at a file
   the tarball does not contain, and a runtime assertion inverted — and watching
-  each one fail.
+  each one fail. It runs once per React version in `compatibility.json` — the lowest the
+  peer range admits and the newest — and renders a form with that React under Node, since the
+  bundle it builds is never executed ([0134](../decisions/0134-the-versions-it-says-are-the-versions-it-runs.md)).
+- **`test:e2e:angular`** — the Angular packages' equivalent, once per Angular version in
+  `compatibility.json`: the tarballs installed into an Angular project at that version, with
+  Material at the same one, built by that project's own Angular and run in Chromium. The
+  install test above cannot: an Angular package is consumed by an Angular build, whose linker
+  is the consumer's. The engine and the server also run once per Node version, in CI's `node` job
+  ([0134](../decisions/0134-the-versions-it-says-are-the-versions-it-runs.md)).
 - **The contributor agreement**, in a workflow of its own rather than in the list
   above, because it is not a `pnpm` script and needs no install:
   `node scripts/check-cla.mjs` reads the commit authors of a pull request and
