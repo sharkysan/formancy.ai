@@ -1,6 +1,6 @@
 /**
- * How a form behaves: its rules — which kinds exist, at which spec version each
- * arrived, and what one says.
+ * How a form behaves: its rules — which kinds exist and what one says. The version each
+ * kind arrived in is `version-ledger.ts`'s.
  *
  * Out of `types.ts` for the reason the layout vocabulary left it
  * (`layout.ts`): the rules change for their own reasons — a new kind, a richer

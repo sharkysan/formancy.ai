@@ -245,3 +245,4 @@ listed under the sections they belong to above.
 | [0142](0142-the-angular-starter-is-dressed-in-materials-tokens.md) | The Angular starter is dressed in Material's tokens, and loads the face they name | accepted |
 | [0143](0143-the-workbench-dresses-every-part-a-builder-draws.md) | The workbench dresses every part a builder draws | accepted |
 | [0144](0144-one-mark-and-the-sites-favicon-is-it.md) | One mark, and the site's favicon is it | accepted |
+| [0145](0145-a-version-for-everything-a-document-can-say.md) | A version for everything a document can say | accepted |

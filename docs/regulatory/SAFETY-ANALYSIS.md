@@ -1353,8 +1353,23 @@ section for each version is checked to name exactly that version's additions
 version's list would be attributed to version 4. Since version 4 froze, that is guarded from
 outside: `packages/spec/src/spec-version.test.ts` fails when a field type or widget is in no
 version's list, so a new one cannot be added without opening version 5 and its list
-([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)). Properties and rule kinds are gated by hand, construct by construct, and
-have no such whole-vocabulary check.
+([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)).
+
+Properties, rule kinds and layout kinds had no such check until 2026-10-09: each was gated
+by a line somebody remembered, a rule kind outside version 2's list was taken to be version
+3's and a layout kind outside version 1's to be version 2's, and two version 2 properties —
+`columns` on a repeater and `span` on a layout node — were never gated by name: a version 1
+document carrying one was refused only through what carries it, the `datagrid` widget or the
+`table`, or by a structural rule that said nothing about versions. Every one
+of them now has its version in one ledger, keyed by the TypeScript type that lists them, so a
+property added to `FieldDef` without a version is a compile error; `packages/spec/src/
+version-ledger.test.ts` derives what a document may say from the document schema, requires
+each to have a version, and requires the check to refuse it one version earlier
+([0145](../decisions/0145-a-version-for-everything-a-document-can-say.md)). Watched failing
+with the property gate removed, with a property added to the type alone, and with one added
+to the schema alone. What it does not reach are the keys *inside* a property's value — a
+datagrid column's, an option image's — which arrived with the property that holds them and
+are compared with nothing.
 
 ## What a manufacturer must do with this
 

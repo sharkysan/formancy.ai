@@ -213,7 +213,12 @@ collected.
 So a version 1 document may not carry `widget`, `optionsSource`, `earliest`, `latest`,
 `span` or `columns`, even though every one of them is optional and adding one takes nothing
 away. `validateSchema` says so by name, with the fix in the message, because the author
-cannot see the reader that would refuse it.
+cannot see the reader that would refuse it. For `span` and `columns` it did not name the
+property until 2026-10-09 — a version 1 document carrying one was refused through the `table`
+or the `datagrid` widget that carries it. Every construct's version is now read from one
+ledger that a test holds to this format, so the next property cannot be forgotten the way
+those two were
+([0145](docs/decisions/0145-a-version-for-everything-a-document-can-say.md)).
 
 The consolation is that the failure is **loud**. A reader on the older version refuses the
 document rather than rendering a field it does not understand and dropping the answer, which
