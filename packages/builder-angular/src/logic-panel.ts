@@ -235,8 +235,11 @@ export class FormancyLogicPanel {
   protected readonly writes = computed(() => kindWrites(this.kind()))
   protected readonly hint = computed(() => ruleKindHint(this.kind(), this.text()))
   /** At the paths the engine reads, from the core: the tree's key path named a field
-   *  inside a page by a path no field has (0127). */
-  protected readonly fields = computed(() => conditionFields(this.view().document))
+   *  inside a page by a path no field has (0127). Scoped to the rule's target, so a
+   *  rule in a repeater row may compare that row (0129). */
+  protected readonly fields = computed(() =>
+    conditionFields(this.view().document, { target: this.target(), text: this.text() }),
+  )
   private readonly rows = computed(() => rowsOf(this.draft()))
   protected readonly count = computed(() => this.rows().length)
   protected readonly mine = computed(() => {

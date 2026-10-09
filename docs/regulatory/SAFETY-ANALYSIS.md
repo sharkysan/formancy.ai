@@ -136,6 +136,17 @@ an earlier builder keep their expression**, since the CEL is the stored truth an
 recompiles it; they are corrected only when written again, and the table above is how to
 recognise one.
 
+*And a repeater row presents an empty answer differently from the top level.* Measured
+2026-10-09: a fresh row has every key, null until answered — so an untouched list there is
+null, where at the top level it is `[]`. The compiler's list shape, a length or `in` with
+no null test, is right at the top level and threw in a row; `compileCondition` already
+accepted a row path and is exported, so a `visible` rule it wrote on a list in a row showed
+its field on every new row. It now tests `!= null` first in a row. The user documentation
+had the opposite advice — `has()` "for a path inside a group or a row" — and `has()` is
+always true in a row. Both are corrected, and `apps/docs/src/empty-answer-guards.test.ts`
+evaluates the row cases of the guide's table and asks the engine whether a fresh row is
+presented as that table assumes ([0129](../decisions/0129-a-row-rule-is-written-in-the-row.md)).
+
 ### A6. A presentation hint changes what the field collects
 
 *How it arises:* a widget replaces a control with one that can express more than the

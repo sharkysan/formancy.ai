@@ -87,6 +87,37 @@ export function dataPathOf(document: FormSchema, keyPath: readonly string[]): st
 }
 
 /**
+ * The path a rule addresses an answer by: its data path, with `[]` after a repeater
+ * whose row it is in — `items[].note`, which is how the engine scopes a rule to each
+ * row. The dotted `items.note` is no field's path, and the validator refused every
+ * rule the builder addressed by it
+ * ([0129](../../../docs/decisions/0129-a-row-rule-is-written-in-the-row.md)).
+ *
+ * A segment the walk cannot find is kept as given. That is what lets a path which
+ * was just renamed or unwrapped still be put in row form: the containers above it
+ * have not moved, and they are what decides where the `[]` goes.
+ */
+export function rulePathOf(document: FormSchema, dataPath: string): string {
+  const segments = dataPath.split('.')
+  let fields: readonly FieldDef[] = document.model.fields
+  let path = ''
+  for (const [depth, key] of segments.entries()) {
+    const field = throughPages(fields).find((candidate) => candidate.key === key)
+    path += (depth === 0 ? '' : '.') + key
+    if (field?.type === 'repeater' && depth < segments.length - 1) path += '[]'
+    fields = field?.fields ?? []
+  }
+  return path
+}
+
+/** The fields at one level of the data, with pages opened up: a page scopes nothing. */
+function throughPages(fields: readonly FieldDef[]): readonly FieldDef[] {
+  return fields.flatMap((field) =>
+    field.type === 'page' ? throughPages(field.fields ?? []) : [field],
+  )
+}
+
+/**
  * The page a page's questions should join, or nothing if there is no other.
  *
  * The page before, and the page after when there is none before — which is the

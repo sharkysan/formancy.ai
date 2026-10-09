@@ -3,6 +3,8 @@ import { unreferencedPaths } from '@formancy/spec'
 import { validateSchema } from '@formancy/spec/validate'
 import { CONTAINER_FIELD_TYPES, CURRENT_SPEC_VERSION, FIELD_TYPES, FIELD_WIDGETS } from '@formancy/spec'
 import type { FieldDef, FieldType } from '@formancy/spec'
+import { compileGroup } from '@formancy/builder-core'
+import type { ConditionGroup } from '@formancy/builder-core'
 import { STARTER_SCHEMA } from './starter.js'
 
 describe('the starter schema', () => {
@@ -160,5 +162,26 @@ describe('the starter schema', () => {
     // list above stops being a complete account of what is missing and this
     // says so rather than letting the claim quietly rot.
     expect(CONTAINER_FIELD_TYPES).toEqual(['group', 'page', 'repeater'])
+  })
+
+  test('a rule the condition editor wrote says what its metadata compiles to', () => {
+    // The CEL is what runs and the `editor` metadata is what the logic panel reopens
+    // from and recompiles. A starter rule whose CEL was edited by hand and whose
+    // metadata was not would show one condition in the Rules tab and evaluate another.
+    const written = (STARTER_SCHEMA.logic?.rules ?? []).filter((rule) => rule.editor !== undefined)
+
+    expect(written.length).toBeGreaterThan(0)
+    for (const rule of written) {
+      expect(rule.cel, rule.target).toBe(compileGroup(rule.editor as ConditionGroup))
+    }
+  })
+
+  test('demonstrates a rule on a field in a repeater row, written by the editor', () => {
+    // The builder writes one since 0129; a demo with none would leave the claim in prose.
+    const inRow = (STARTER_SCHEMA.logic?.rules ?? []).filter(
+      (rule) => rule.target.includes('[]') && rule.editor !== undefined,
+    )
+
+    expect(inRow.length).toBeGreaterThan(0)
   })
 })

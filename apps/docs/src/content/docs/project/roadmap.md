@@ -107,10 +107,11 @@ answer holding only what was typed — `(999) 999-9999` stores `5551234567`
   is where the parentheses stop being readable. The comparisons and the value control
   follow the field compared
   ([0127](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0127-a-condition-nests-one-level.md)).
-- **Rules on fields inside a repeater row**, from the builder. A rule about the whole
-  form cannot say which row it means, and one on a row field needs the row's own scope
-  and renames that follow `item.` references; the format and the engine have both, the
-  builder does not yet.
+- ~~**Rules on fields inside a repeater row**, from the builder.~~ **Built.** A rule on
+  `items[].note` compares the fields of its own row, offered as "Quantity in this row", and
+  a rename carries `item.` references along
+  ([0129](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0129-a-row-rule-is-written-in-the-row.md)).
+  What is not built is a verdict per row in the rules overview.
 - **Virus scanning** of uploaded files, and **resumable uploads**. Files
   themselves work; a stored file is trusted the moment its bytes land, and the
   deployment's byte ceiling is also the largest single file.

@@ -5,7 +5,7 @@ import { compileCondition, isGroup } from './conditions.js'
 import type { Condition, ConditionGroup } from './conditions.js'
 import { conditionFields } from './condition-draft.js'
 import type { ConditionField } from './condition-draft.js'
-import { kindWrites, operatorLabel, ruleKindLabel } from './logic.js'
+import { kindWrites, operatorLabel, ruleKindLabel, ruleTargetFor } from './logic.js'
 import type { BuilderMessageId, BuilderText } from './messages.js'
 import { flatten, nameOf } from './tree.js'
 
@@ -46,14 +46,13 @@ export interface RulesOn {
 
 /** Every rule in the form, grouped by what it is about, in document order. */
 export function rulesOverview(document: FormSchema, text: BuilderText): RulesOn[] {
-  const fields = conditionFields(document)
   const rules = document.logic?.rules ?? []
   const groups = new Map<string, RulesOn>()
 
   // In the order the form asks its questions, so the overview reads the way the form
   // does; a rule on a target the tree does not know still appears, at the end.
   for (const node of flatten(document)) {
-    const target = targetOf(document, node.keyPath, node.def.type)
+    const { target } = ruleTargetFor(document, node.keyPath)
     if (rules.some((rule) => rule.target === target)) {
       groups.set(target, { target, targetLabel: nameOf(document, node.def), rules: [] })
     }
@@ -70,29 +69,20 @@ export function rulesOverview(document: FormSchema, text: BuilderText): RulesOn[
       index,
       kind: rule.kind,
       kindLabel: ruleKindLabel(rule.kind, text),
-      ...(editor === undefined ? {} : { sentence: describeCondition(editor, fields, text) }),
+      // In the rule's own scope, so a field in its row is named as being in this row.
+      ...(editor === undefined
+        ? {}
+        : {
+            sentence: describeCondition(
+              editor,
+              conditionFields(document, { target: rule.target, text }),
+              text,
+            ),
+          }),
       written: rule.check ?? rule.cel ?? '',
     })
   })
   return [...groups.values()]
-}
-
-/**
- * A page by its key; a field by the data path its rules name — `items[].note` for a
- * field in a repeater row, which is how the engine scopes a rule to each row.
- */
-function targetOf(document: FormSchema, keyPath: readonly string[], type: string): string {
-  if (type === 'page') return keyPath[keyPath.length - 1] ?? ''
-  let target = ''
-  let fields = document.model.fields
-  for (const [index, key] of keyPath.entries()) {
-    const field = fields.find((candidate) => candidate.key === key)
-    if (field === undefined) break
-    if (field.type !== 'page') target += (target === '' ? '' : '.') + key
-    if (field.type === 'repeater' && index < keyPath.length - 1) target += '[]'
-    fields = field.fields ?? []
-  }
-  return target
 }
 
 /** The editor metadata as a condition, or nothing when it is not the shape the editor writes. */

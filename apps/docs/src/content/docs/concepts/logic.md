@@ -121,7 +121,7 @@ Fails-open is the right default and it has a consequence worth knowing before
 you write your first rule: **a condition that errors on an empty form shows the
 field it was meant to hide, from the start, with nothing to say so.**
 
-Four shapes error, and two of them look defensive:
+Several shapes error, and the worst of them look defensive:
 
 | Condition | On an untouched form |
 | --- | --- |
@@ -129,15 +129,26 @@ Four shapes error, and two of them look defensive:
 | `address.country == "CH"` | **errors** — the *group* is null, so reading a member of it fails |
 | `address.country != null && address.country == "CH"` | **errors** — it still has to read the path to compare it |
 | `age > 18.0` | **errors** — CEL has no `>` between null and a number |
+| `"gift" in item.tags` | **errors** — in a repeater row an untouched list is null, not `[]` |
+| `has(item.tags) && "gift" in item.tags` | **errors** — a row has every key, so `has()` is true and the value is still null |
 | `needsVisa != true` | `true` |
 | `has(address.country) && address.country == "CH"` | `false` |
 | `age != null && age > 18.0` | `false` |
+| `item.tags != null && "gift" in item.tags` | `false` |
 
 The pattern: comparing against `null` cannot rescue a read that fails, because
 the read happens first. For a top-level field, compare against the value you
-mean — `needsVisa != true` rather than `!needsVisa`. For a path inside a group or
-a row, test presence with **`has(...)`**, which is the only one of these that
-answers rather than failing.
+mean — `needsVisa != true` rather than `!needsVisa`. For a path inside a group,
+test presence with **`has(...)`**, which is the only one of these that answers
+rather than failing.
+
+A repeater row is the other way round. The engine presents a row with every key
+there and null until answered, so `has()` is always true in a row and answers
+nothing; there, **`!= null`** is the guard — `item.tags != null` before `in` or
+`size()`, `item.qty != null` before `>`. A list is the case to watch: at the top
+level an untouched list is `[]` and `"gift" in extras` is simply `false`, while the
+same condition in a row errors. The builder's condition editor writes these guards
+itself.
 
 Both of these shipped in this project's own demo and were found by running it
 against an engine rather than by reading it. A `visible` rule that is wrong this

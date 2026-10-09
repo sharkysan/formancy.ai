@@ -271,6 +271,7 @@ export const BUILDER_MESSAGES_DE = {
   'logic.value.yes': 'Ja',
   'logic.value.no': 'Nein',
   'logic.value.choose': 'Wert wählen',
+  'logic.field.inRow': '{field} in dieser Zeile',
   'overview.heading': 'Alle Regeln dieses Formulars',
   'overview.empty': 'Dieses Formular hat keine Regeln: Jedes Feld verhält sich immer gleich.',
   'overview.written': 'Geschrieben als',
