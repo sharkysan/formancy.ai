@@ -275,6 +275,35 @@ export const BUILDER_MESSAGES_FR = {
   'logic.value.yes': 'Oui',
   'logic.value.no': 'Non',
   'logic.value.choose': 'Choisir une valeur',
+  'overview.heading': 'Toutes les règles de ce formulaire',
+  'overview.empty':
+    'Ce formulaire n’a aucune règle : chaque champ se comporte toujours de la même façon.',
+  'overview.written': 'Écrite comme',
+  'overview.comparison': '{field} {operator} {value}',
+  'overview.comparison.noValue': '{field} {operator}',
+  'overview.notAnswered': 'sans réponse',
+  'overview.because.holds': '{comparison} : oui',
+  'overview.because.fails': '{comparison} : non — c’est {actual}',
+  'overview.because.failsEmpty': '{comparison} : non — il n’y a pas de réponse',
+  'overview.now.visible.holds': 'Affiché maintenant.',
+  'overview.now.visible.fails': 'Masqué maintenant.',
+  'overview.now.visible.undecided':
+    'Affiché maintenant, car la règle ne peut pas être tranchée : une règle qui échoue affiche le champ qu’elle devait masquer.',
+  'overview.now.required.holds': 'Obligatoire maintenant.',
+  'overview.now.required.fails': 'Facultatif maintenant.',
+  'overview.now.required.undecided':
+    'Facultatif maintenant, car la règle ne peut pas être tranchée.',
+  'overview.now.disabled.holds': 'Désactivé maintenant.',
+  'overview.now.disabled.fails': 'Modifiable maintenant.',
+  'overview.now.disabled.undecided':
+    'Modifiable maintenant, car la règle ne peut pas être tranchée.',
+  'overview.now.validate.holds': 'Accepté maintenant.',
+  'overview.now.validate.fails': 'Refusé maintenant.',
+  'overview.now.validate.undecided':
+    'Refusé maintenant, car la règle ne peut pas être tranchée : une vérification qui échoue refuse la réponse.',
+  'overview.now.skip.holds': 'Sautée maintenant.',
+  'overview.now.skip.fails': 'Pas sautée maintenant.',
+  'overview.now.skip.undecided': 'Pas sautée maintenant, car la règle ne peut pas être tranchée.',
   // Not "Ajouter une règle" again: the draft's submit and the button that opens
   // the draft would otherwise share a name.
   'logic.addRule': 'Créer la règle',

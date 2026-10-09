@@ -75,6 +75,14 @@ on `:root` that would never reach a themed form
 ([0124](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0124-a-theme-preset-is-the-patch-read-back.md)).
 A stored theme needs somewhere to put it, which is a backend decision nobody has taken.
 
+**A rules overview** in both builders: every rule in the form under the field or page it is
+about, in words where the condition editor wrote it and as CEL where somebody did. Given the
+answers a preview holds, each says what it does now and why — "Hidden now. Country is
+Switzerland: no — it is Germany" — and a rule that cannot be decided says so, and that its
+field is shown because of it. The verdicts are tested to agree with the engine; a rule on a
+field in a repeater row is listed, and has no verdict, because it has one per row
+([0128](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0128-a-form-says-why-a-field-is-hidden.md)).
+
 **Spec version 4 is open**, with `widget: "rating"`, `widget: "slider"` and the `step`
 property. Both are widgets on `number` because neither changes the answer — a rating is a
 number between two bounds and so is a slider — and `step` is a *field* property rather than

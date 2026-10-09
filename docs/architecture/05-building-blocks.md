@@ -185,7 +185,9 @@ compiler that turns a structured condition into CEL — one level of groups, com
 chosen by what the field holds, and every read guarded so an empty form does not fail
 open (`conditions.ts`) — and the condition being written, with every edit to it and the
 fields it may compare at the engine's paths (`condition-draft.ts`,
-[0127](../decisions/0127-a-condition-nests-one-level.md)); where a drop lands in each
+[0127](../decisions/0127-a-condition-nests-one-level.md)); every rule in words and, given a
+host's preview answers and clock, why each holds now (`rules-overview.ts`,
+[0128](../decisions/0128-a-form-says-why-a-field-is-hidden.md)); where a drop lands in each
 of the two trees **and on the rendered form** (`arrange.ts`, which takes a
 rectangle as plain numbers because this package compiles with no DOM), the
 palette, the editable property list read out of the spec's own JSON Schema, and —

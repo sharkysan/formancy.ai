@@ -10,6 +10,18 @@ later.
 
 ## Unreleased
 
+**Every rule in the form, and why a field is hidden now.** Both builders have a rules overview
+(`RulesOverview`, `formancy-rules-overview`): every rule grouped under the field or page it is
+about, in the form's order, with its condition in words — "Show this field when Country is
+Switzerland or (Age is at least 18 and Terms is Yes)" — or as CEL where somebody wrote it by
+hand. Given the answers a host's preview holds, and that preview's clock, each rule says what
+it does now and why: "Hidden now. Country is Switzerland: no — it is Germany". A rule that
+cannot be decided says so and says what that does — a `visible` rule that fails shows the
+field it was meant to hide, which is the case nothing on screen explained before. The verdicts
+are tested to agree with the engine for the same answers. The playground has a Rules tab fed
+from the form pane: change an answer and watch the reason change
+([0128](docs/decisions/0128-a-form-says-why-a-field-is-hidden.md)).
+
 **The condition editor nests one level, offers what a field can take, and no longer fails
 open.** Both builders' logic panels can write "(A and B) or C": a group of comparisons
 inside a condition, joined its own way. The comparisons offered follow the field — before

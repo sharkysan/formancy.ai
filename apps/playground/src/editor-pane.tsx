@@ -1,3 +1,5 @@
+import type { FormEngine } from '@formancy/core'
+import type { BuilderTab } from './angular-builder-host.js'
 import { useMemo } from 'react'
 import Editor from '@monaco-editor/react'
 import type { Monaco } from '@monaco-editor/react'
@@ -32,6 +34,7 @@ export function EditorPane({
   session,
   tab,
   onTab,
+  preview,
   theme,
   themeHost,
   overrides,
@@ -44,8 +47,10 @@ export function EditorPane({
   source: string
   onSource: (source: string) => void
   session: BuilderSession | null
-  tab: 'fields' | 'arrangement'
-  onTab: (tab: 'fields' | 'arrangement') => void
+  tab: BuilderTab
+  onTab: (tab: BuilderTab) => void
+  /** The form pane's engine, whose answers the rules tab explains. */
+  preview: FormEngine | undefined
   theme: string
   themeHost: HTMLElement | null
   overrides: Readonly<Record<string, string>>
@@ -103,6 +108,7 @@ export function EditorPane({
             onChange={onSource}
             tab={tab}
             onTab={onTab}
+            preview={preview}
           />
         )}
       </div>

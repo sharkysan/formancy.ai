@@ -732,6 +732,53 @@ kbd {
   color: var(--wb-muted);
 }
 
+/* Every rule in the form, under the field each is about, with what it does now. The
+   verdict hangs off a rule line drawn on the side a line starts, and one that cannot
+   be decided is marked as the warning it is: it shows what it was meant to hide. */
+[data-formancy-part='rules-overview'] h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+[data-formancy-part='rules-overview'] ul {
+  margin: 0;
+  padding-inline-start: 0;
+  list-style: none;
+}
+
+[data-formancy-part='rules-overview-target'] {
+  margin-block-end: 0.75rem;
+}
+
+[data-formancy-part='rules-overview-target'] h4 {
+  margin: 0 0 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+[data-formancy-part='rules-overview-rule'] {
+  padding-block: 0.25rem;
+  font-size: 0.8125rem;
+}
+
+[data-formancy-part='rules-overview-now'] {
+  margin-block-start: 0.25rem;
+  padding-inline-start: 0.5rem;
+  border-inline-start: 2px solid var(--wb-rule);
+  color: var(--wb-muted);
+  font-size: 0.75rem;
+}
+
+[data-formancy-part='rules-overview-now'] p {
+  margin: 0;
+}
+
+[data-formancy-part='rules-overview-now'][data-outcome='undecided'] {
+  border-inline-start-color: var(--wb-invalid);
+  color: var(--wb-ink);
+}
+
 [data-formancy-part='logic-list'] {
   list-style: none;
   margin: 0 0 0.5rem;

@@ -101,7 +101,11 @@ a stated behaviour is covered.
 
 *Residual:* **a form whose visibility rules are failing looks as though it is
 working, and shows more fields than intended.** This is the most
-consequential residual risk in this document. In a context where a hidden field
+consequential residual risk in this document. Since 2026-10-09 an author can see it
+before publishing: the builders' rules overview, given a preview's answers, marks a rule
+that cannot be decided and says that its field is shown because of it — tested to agree
+with the engine ([0128](../decisions/0128-a-form-says-why-a-field-is-hidden.md)). That is
+a way to find one, not a guarantee that one is found. In a context where a hidden field
 must stay hidden for reasons other than tidiness, a manufacturer should not
 rely on `visible` expressions alone.
 
