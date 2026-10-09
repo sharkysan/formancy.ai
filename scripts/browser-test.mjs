@@ -38,6 +38,7 @@ import { checkTemplateGallery } from './template-browser-test.mjs'
 import { checkAngularPage } from './angular-page-browser-test.mjs'
 import { checkUploadThumbnails } from './upload-browser-test.mjs'
 import { checkArrangeGaps } from './arrange-browser-test.mjs'
+import { checkMaterialDateButton } from './material-date-browser-test.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const site = join(root, 'apps', 'site', 'dist')
@@ -1045,6 +1046,7 @@ async function run() {
       await page.close()
     }
 
+    await checkMaterialDateButton(browser, origin, check)
   } finally {
     await browser.close()
     server.close()

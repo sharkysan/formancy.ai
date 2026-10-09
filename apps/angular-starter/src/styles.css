@@ -236,3 +236,16 @@ div[data-formancy-part='field'] > [data-formancy-part='label'] {
   outline: 2px solid var(--mat-sys-primary);
   outline-offset: 2px;
 }
+
+/* ---------------------------------------------- a date's calendar button */
+
+/* Material's text field hides Chromium's own calendar and clock buttons on every input,
+   because its datepicker brings a toggle of its own. The adapter draws a date as the
+   platform's input instead — Material's datepicker converts a calendar day through a
+   `Date` — so nothing took the button's place, and in Chrome and Edge a date could only
+   be typed. Firefox keeps its own button, so this puts Chromium's back rather than adding
+   a second (0149). */
+.mat-mdc-form-field input[type='date']::-webkit-calendar-picker-indicator,
+.mat-mdc-form-field input[type='time']::-webkit-calendar-picker-indicator {
+  display: block;
+}
