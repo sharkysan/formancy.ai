@@ -10,6 +10,12 @@ later.
 
 ## Unreleased
 
+**Fixed: one mark everywhere.** The documentation drew its own mint mark on dark green, the
+site's and the playground's favicons a darker violet and teal than the site's bar, and the
+Angular starter had no favicon. Every copy is now the site's favicon in the site's palette,
+the touch icon is re-rendered from it, and a test compares them all
+([0144](docs/decisions/0144-one-mark-and-the-sites-favicon-is-it.md)).
+
 **Fixed: every part of both builders is dressed by `@formancy/themes/workbench.css`.** The
 prompt pane was a textarea at the browser's default size and in its default monospace, beside
 a grey native button, because nothing styled it — and neither did anything style the
