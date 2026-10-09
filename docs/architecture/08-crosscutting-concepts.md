@@ -149,7 +149,7 @@ they are kept from disagreeing.
 to be merged. The document's catalogue is the form's, for the people filling it in,
 and is published with the form. The builder's is for the person building it, who may
 work in a different language from the form they are building: `@formancy/builder-core`
-ships English and German, a session carries one, and both builders read it. A message a
+ships English, German and French, a session carries one, and both builders read it. A message a
 translation lacks falls back to English one message at a time, and a locale the runtime
 has no data for is English rather than whatever the machine is set to — measured, the
 other answer joined one document's lists differently on two machines

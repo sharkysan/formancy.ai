@@ -42,7 +42,7 @@ columns can also be dragged on the rendered form itself. A wizard is buildable:
 `p` adds a page, and the first one takes the fields already at the top level,
 because the engine gives a field that is not inside a page to page one wherever
 it sits ([0081](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0081-a-page-absorbs-the-form-it-joins.md)).
-The builder's words come from one catalogue in `builder-core`, English and German: a
+The builder's words come from one catalogue in `builder-core`, English, German and French: a
 session refuses, offers destinations and names layout nodes in the language it was
 opened in, and every surface of both builders shows and announces everything in it. The
 playground's Language switch changes the builder as well as the form

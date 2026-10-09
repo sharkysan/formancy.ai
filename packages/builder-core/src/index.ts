@@ -15,6 +15,7 @@ export type {
 // English, so a caller that never asks for a language gets the words it always had.
 export { BUILDER_MESSAGES, createBuilderText } from './messages.js'
 export { BUILDER_MESSAGES_DE } from './messages-de.js'
+export { BUILDER_MESSAGES_FR } from './messages-fr.js'
 export { pseudoLanguage, untranslated } from './pseudo.js'
 export type {
   BuilderCatalogue,

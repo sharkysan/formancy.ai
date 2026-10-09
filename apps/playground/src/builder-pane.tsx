@@ -9,7 +9,12 @@ import {
   ScenarioPane,
   useBuilder,
 } from '@formancy/builder-react'
-import { BUILDER_MESSAGES_DE, createBuilderSession, createBuilderText } from '@formancy/builder-core'
+import {
+  BUILDER_MESSAGES_DE,
+  BUILDER_MESSAGES_FR,
+  createBuilderSession,
+  createBuilderText,
+} from '@formancy/builder-core'
 import type { BuilderSession, BuilderText } from '@formancy/builder-core'
 import { AngularBuilderPane } from './angular-builder-pane.js'
 import { DEMO_MODEL } from './demo-capabilities.js'
@@ -39,14 +44,14 @@ import { STARTER_SAMPLE, STARTER_SCENARIOS } from './starter-scenarios.js'
  * says the builder speaks the author's language as well as the form speaking the
  * reader's ([0114](../../../docs/decisions/0114-the-builder-speaks-the-authors-language.md)).
  *
- * German has a catalogue; French does not, and gets English one message at a
- * time — the same fallback the form shows for its three untranslated labels,
- * shown here on purpose for the same reason.
+ * Both catalogues the builder ships, and English for anything else. The FORM's
+ * French is deliberately incomplete, to show its fallback; the builder's is not,
+ * because a shipped catalogue is a complete one.
  */
 export function builderTextFor(locale: string): BuilderText {
-  return locale === 'de'
-    ? createBuilderText({ locale: 'de', messages: BUILDER_MESSAGES_DE })
-    : createBuilderText({ locale, messages: {} })
+  if (locale === 'de') return createBuilderText({ locale, messages: BUILDER_MESSAGES_DE })
+  if (locale === 'fr') return createBuilderText({ locale, messages: BUILDER_MESSAGES_FR })
+  return createBuilderText({ locale, messages: {} })
 }
 
 /**
