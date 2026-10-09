@@ -10,6 +10,22 @@ later.
 
 ## Unreleased
 
+**Fixed: a download from the object store was cut off at thirty seconds.** The S3 store
+bounded each request with `AbortSignal.timeout`, which covers the body as well as the wait for
+an answer, so a file still streaming when it ran out failed mid-download however steadily it
+was arriving — and how long a download streams is mostly the downloader's connection, which
+backpressure carries back to the store. The timeout now bounds the store's silence instead:
+the wait for the response headers, then each wait for the next chunk, and not the time a chunk
+spends with the downloader. A store that stops answering is still abandoned, and the error now
+says which wait ran out (`no answer within …`, `no data within …`) rather than `The operation
+was aborted due to timeout`. Two consequences, recorded as debt in arc42 §11 rather than fixed:
+a downloader that stops reading is no longer cut off at thirty seconds by the store, and nothing
+else in the server cuts it off either, as with the local store; and an upload is still bounded
+as a whole, because the store answers a PUT only once it has every byte. Unit tests serve a body
+that trickles past the timeout and a reader that pauses past it, and both failed before. Why
+this and not a longer timeout, a setting, or undici's own `bodyTimeout`:
+[0155](docs/decisions/0155-the-object-store-is-timed-on-its-silence.md).
+
 **Fixed: formancy.ai asked other sites for its type and its editor.** Every page of the site
 loaded its faces from Google Fonts, and the playground loaded Monaco from jsDelivr, so opening
 any of them told those companies the visitor's address. The faces are now served by the site
