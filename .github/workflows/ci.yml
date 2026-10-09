@@ -197,6 +197,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
+      # The corepack Node 22.12.0 ships cannot verify npm's current signing keys -- it
+      # failed with "Cannot find matching keyid" before installing anything -- so a current
+      # corepack is installed first. The runtime under test is still that Node.
+      - run: npm install --global corepack@latest
       - run: corepack enable pnpm
 
       - name: Get pnpm store directory
