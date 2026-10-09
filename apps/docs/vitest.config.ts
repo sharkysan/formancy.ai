@@ -19,5 +19,10 @@ export default defineConfig({
     include: ['src/**/*.test.ts'],
     environment: 'node',
     passWithNoTests: true,
+    // These tests read and parse the repository — the TypeScript compiler over a package,
+    // brotli over three bundles, every source file for its imports — and in CI under
+    // coverage two of them took 5.4 s, past the default five, while taking under one here.
+    // The work is real; the limit says so once, for the app, rather than per test.
+    testTimeout: 30_000,
   },
 })

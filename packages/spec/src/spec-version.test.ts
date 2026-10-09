@@ -1,5 +1,14 @@
 import { describe, expect, test } from 'vitest'
-import { CURRENT_SPEC_VERSION, SPEC_1_FIELD_TYPES, SPEC_VERSIONS } from './types.js'
+import {
+  CURRENT_SPEC_VERSION,
+  FIELD_TYPES,
+  FIELD_WIDGETS,
+  SPEC_1_FIELD_TYPES,
+  SPEC_3_WIDGETS,
+  SPEC_4_FIELD_TYPES,
+  SPEC_4_WIDGETS,
+  SPEC_VERSIONS,
+} from './types.js'
 import type { FormSchema } from './types.js'
 import { upgradeSpecVersion } from './upgrade.js'
 import { validateSchema } from './validate.js'
@@ -28,11 +37,25 @@ const errorsOf = (document: FormSchema): string[] => {
 
 describe('what each version defines', () => {
   test('the versions this package speaks are 1 to 4, newest by default', () => {
-    // Version 4 is **open**: it is the current one and it is not frozen, which is
-    // the one state no other version is in. `MIGRATIONS.md` says so, and
-    // `rating-slider.test.ts` covers what it has added so far.
+    // Version 4 is frozen, like the three before it, and no version is open (0140).
     expect([...SPEC_VERSIONS]).toEqual(['1', '2', '3', '4'])
     expect(CURRENT_SPEC_VERSION).toBe('4')
+  })
+
+  test('and every type and widget belongs to a version by name, so a new one opens version 5', () => {
+    /*
+     * The freeze, made mechanical. A version's constructs are its own list, and the version
+     * check attributes a construct from those lists. While a version was open the newest one
+     * was the fallback — anything in no list was taken to be in it — which is right for an
+     * open version and is exactly the leak a frozen one must not have: a type added to
+     * `FIELD_TYPES` and to no list would be accepted in a version 4 document, which version
+     * 4 readers already shipped cannot read. So the whole vocabulary must be the newest
+     * version's lists, and growing it means opening the next version first.
+     */
+    expect(new Set<string>(FIELD_TYPES)).toEqual(new Set<string>(SPEC_4_FIELD_TYPES))
+    expect(new Set<string>(FIELD_WIDGETS)).toEqual(
+      new Set<string>([...SPEC_3_WIDGETS, ...SPEC_4_WIDGETS]),
+    )
   })
 
   test('version 2 is a superset: every version 1 type is still a version 2 type', () => {

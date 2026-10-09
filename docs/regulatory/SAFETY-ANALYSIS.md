@@ -1064,10 +1064,9 @@ that spliced the questions onto the top level, which is the one that reads corre
 *Residual, and it is the substantial one:* **the format still permits it.** A document
 written by hand, by an agent through `@formancy/mcp`, or by an older version of the
 builder can place a field beside a page, and it validates. Refusing it is a spec change,
-and versions `"1"`, `"2"` and `"3"` are frozen — so it belongs to **version `"4"`, which
-is open** ([0104](../decisions/0104-spec-4-opens-with-a-widget-not-a-type.md)), where it
-would be a migration with a report rather than a silent breakage. That it is open does not
-make it decided: a version that only ever adds cannot refuse something an older one
+and versions `"1"` to `"4"` are frozen — so it would belong to **version `"5"`**, which is
+not open ([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)), where it would be a migration with a report rather than a
+silent breakage. Opening one for it would not make it decided either: a version that only ever adds cannot refuse something an older one
 allowed without breaking a document that validates today, so the honest form of this is a
 warning on publish rather than a refusal
 ([0097](../decisions/0097-a-publish-may-warn.md)). Until then the constraint covers the
@@ -1350,11 +1349,12 @@ is refused and told version 4 (`packages/spec/src/ranking.test.ts`), and the mig
 section for each version is checked to name exactly that version's additions
 (`apps/docs/src/claims.test.ts`).
 
-*Residual:* **the newest version is still the fallback.** A construct in no version's list is
-attributed to version 4, which is right while 4 is the newest and wrong the day a fifth opens.
-Opening a version has to add its list to this check, and nothing fails if it does not until
-a document using the new construct under an old version is written — the same shape as the
-mistake above, one version later.
+*Residual:* **the newest version is the fallback in the check itself.** A construct in no
+version's list would be attributed to version 4. Since version 4 froze, that is guarded from
+outside: `packages/spec/src/spec-version.test.ts` fails when a field type or widget is in no
+version's list, so a new one cannot be added without opening version 5 and its list
+([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)). Properties and rule kinds are gated by hand, construct by construct, and
+have no such whole-vocabulary check.
 
 ## What a manufacturer must do with this
 
@@ -1367,12 +1367,9 @@ mistake above, one version later.
    characterising: `"1"` ([0042](../decisions/0042-freeze-the-spec.md)), `"2"`
    ([0051](../decisions/0051-spec-2-adds-types.md)) and `"3"`
    ([0088](../decisions/0088-spec-3-freezes-with-four-constructs.md)) are all
-   frozen, so stored data written against any of them has a settled shape.
-   **Version `"4"` is open** and is what the source writes
-   ([0104](../decisions/0104-spec-4-opens-with-a-widget-not-a-type.md)): it may
-   still gain constructs, so characterise a frozen version unless you are
-   following the source deliberately. It is the software that is still moving —
-   and, for version 4, the format with it.
+   frozen, so stored data written against any of them has a settled shape — and so is
+   `"4"` ([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)), what the source writes and 0.4.0 first releases. It is the
+   software that is still moving; the format is settled in every version it has.
 3. Decide whether automated accessibility checking is sufficient evidence for
    the device's intended users, and plan a manual audit if it is not.
 4. Treat the 118 known CEL corpus failures as a functional limitation to be
