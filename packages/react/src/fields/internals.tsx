@@ -1,4 +1,5 @@
 import type { ComponentType, ReactNode } from 'react'
+import { isImageSource } from '@formancy/spec'
 import type { FieldDef, FieldType } from '@formancy/spec'
 import { useFormEngine } from '../context.js'
 import { useField } from '../use-field.js'
@@ -174,17 +175,52 @@ export function optionDomId(field: FieldBinding, value: string): string {
   return `${field.ids.control}:option:${value}`
 }
 
+/** An option as a control draws it: its words resolved, and its picture if it has one. */
+export interface ResolvedOption {
+  value: string
+  label: string
+  /** `alt` is empty when the label says everything: the picture is then decoration. */
+  image?: { src: string; alt: string }
+}
+
 /**
  * Option labels resolved to strings, since a label may be a message reference.
  * Falling back to the stored value keeps an untranslated option selectable
- * rather than blank.
+ * rather than blank. A picture from somewhere the format does not allow is left
+ * out, by the same test the Angular binding makes (0126).
  */
-export function useResolvedOptions(field: { def: FieldDef }): Array<{ value: string; label: string }> {
+export function useResolvedOptions(field: { def: FieldDef }): ResolvedOption[] {
   const engine = useFormEngine()
   return (field.def.options ?? []).map((option) => ({
     value: option.value,
     label: engine.text(option.label) ?? option.value,
+    ...(option.image !== undefined && isImageSource(option.image.src)
+      ? { image: { src: option.image.src, alt: engine.text(option.image.alt) ?? '' } }
+      : {}),
   }))
+}
+
+/**
+ * An option's picture, inside its label so that pressing it chooses the option and
+ * its text alternative joins the option's name. Lazy, because a long list of
+ * pictured options is a page of images the person may never scroll to.
+ */
+export function OptionPicture({ option }: { option: ResolvedOption }) {
+  if (option.image === undefined) return null
+  // The space is part of the picture: without it the text alternative and the label
+  // run together in the option's name — "…in the sunCat" — which is what a screen
+  // reader would say.
+  return (
+    <>
+      <img
+        data-formancy-part="option-image"
+        src={option.image.src}
+        alt={option.image.alt}
+        loading="lazy"
+        decoding="async"
+      />{' '}
+    </>
+  )
 }
 
 /** The answer a signature field holds: a mark, or a name. */

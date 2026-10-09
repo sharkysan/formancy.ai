@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { narrowOptionsByLabel } from '@formancy/spec'
 import { useField } from '../use-field.js'
-import { FieldShell, RequiredHint, useResolvedOptions } from './internals.js'
+import { FieldShell, OptionPicture, RequiredHint, useResolvedOptions } from './internals.js'
 import type { FieldComponentProps } from './internals.js'
 
 
@@ -228,7 +228,10 @@ export function SelectBoxesField({ path, label }: FieldComponentProps) {
               onChange={(event) => toggle(option.value, event.target.checked)}
               onBlur={() => field.touch()}
             />
-            <label htmlFor={optionId}>{option.label}</label>
+            <label htmlFor={optionId}>
+              <OptionPicture option={option} />
+              {option.label}
+            </label>
           </span>
         )
       })}

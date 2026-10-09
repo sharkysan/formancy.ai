@@ -10,6 +10,24 @@ later.
 
 ## Unreleased
 
+**Choices with pictures** (spec version 4). An option on a radio group or a set of checkboxes
+can carry `image: { src, alt? }`, drawn inside the option's label so pressing the picture
+chooses it and its text alternative joins the option's name. The answer is still the option's
+value. A picture on a dropdown or a tag picker would draw nothing, so the validator refuses
+it and the builder does not offer it — both builders' choice editors offer a picture address
+and a description exactly where one can be shown. A picture comes from an `https://` address,
+a path on the showing site, or the picture itself as a `data:image/` address; one from another
+site tells that site who opened the form, and the schema says so. The playground's delivery
+options have pictures, every theme draws them, and a picture changed between versions diffs as
+compatible ([0126](docs/decisions/0126-an-option-may-carry-a-picture.md)).
+
+**A list whose contents are wrong is no longer also an "unknown property".** An option value
+one character too long also reported *Unknown property "options". Check the spelling* — ajv
+calls a property unevaluated when the branch declaring it fails. The structural half now
+treats a property whose contents failed as already judged, so the author sees the one real
+problem. And the rule vocabulary moved from `types.ts` to `rules.ts`; the exports are
+unchanged.
+
 **Input masks** (spec version 4). A `text` field can carry `mask`: `9` takes a digit, `a` a
 letter, `*` either, and any other character is written by the control — `(999) 999-9999`.
 **The answer holds only what was typed**, so it stores `5551234567`, and restyling the mask

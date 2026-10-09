@@ -217,6 +217,8 @@ export const BUILDER_MESSAGES_DE = {
   'options.remove': '{name} entfernen',
   'options.add': 'Auswahl hinzufügen',
   'options.newChoice': 'Neue Auswahl',
+  'options.image': 'Bildadresse',
+  'options.imageAlt': 'Was das Bild zeigt',
   'list.remove': 'Entfernen',
   'columns.heading': 'Spalten',
   'columns.empty':

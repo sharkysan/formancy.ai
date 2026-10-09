@@ -261,6 +261,63 @@ describe('editing a field’s choices', () => {
   })
 })
 
+describe('a choice’s picture', () => {
+  // The cases React's panel is held to, for the same reasons (0126).
+  const mountPets = async (type: 'radio' | 'select', image?: { src: string }) => {
+    const session = createBuilderSession({
+      specVersion: '4',
+      id: 'pets',
+      title: 'Pets',
+      model: {
+        fields: [
+          {
+            key: 'pet',
+            type,
+            label: 'Pet',
+            options: [{ value: 'cat', label: 'Cat', ...(image === undefined ? {} : { image }) }],
+          },
+        ],
+      },
+    } as FormSchema)
+    const view = await render(FormancyPropertyPanel, {
+      componentInputs: { session, keyPath: ['pet'] },
+      providers: [provideZonelessChangeDetection()],
+    })
+    await view.fixture.whenStable()
+    const user = userEvent.setup()
+    const settle = async (): Promise<void> => void (await view.fixture.whenStable())
+    return { session, user, settle }
+  }
+
+  test('can be given and described on a radio group', async () => {
+    const { session, user, settle } = await mountPets('radio')
+
+    await user.type(screen.getByLabelText('Picture address'), '/cat.png')
+    await settle()
+    await user.type(screen.getByLabelText('What the picture shows'), 'A tabby')
+    await settle()
+
+    expect(fieldNamed('pet', session)['options']).toEqual([
+      { value: 'cat', label: 'Cat', image: { src: '/cat.png', alt: 'A tabby' } },
+    ])
+  })
+
+  test('and clearing its address takes the picture away rather than keeping it', async () => {
+    const { session, user, settle } = await mountPets('radio', { src: '/cat.png' })
+
+    await user.clear(screen.getByLabelText('Picture address'))
+    await settle()
+
+    expect(fieldNamed('pet', session)['options']).toEqual([{ value: 'cat', label: 'Cat' }])
+  })
+
+  test('is not offered on a dropdown, which could not show it', async () => {
+    await mountPets('select')
+
+    expect(screen.queryByLabelText('Picture address')).toBeNull()
+  })
+})
+
 describe('editing a datagrid’s columns', () => {
   /*
    * The other shape generation cannot produce: the schema says "array of

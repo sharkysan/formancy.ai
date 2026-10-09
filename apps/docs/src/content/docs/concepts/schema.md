@@ -64,6 +64,22 @@ repeater uses: "how many" is one question however it is asked. An empty list is
 not an answer, so `required` is what makes a choice compulsory rather than a
 minimum of one.
 
+An option on a `radio` or `selectboxes` field may carry a picture, which changes
+nothing about the answer:
+
+```jsonc
+{ "value": "express", "label": "Express", "image": { "src": "/img/express.svg", "alt": "A parcel, moving fast" } }
+```
+
+The picture is drawn inside the option's label, so pressing it chooses the
+option, and `alt` joins the option's name. Leave `alt` out when the label says
+everything: the picture is then decoration. A `select` cannot show a picture and
+neither can a tag picker's chips, so a document asking for one there is refused
+rather than quietly showing nothing. `src` is an `https://` address, a path on
+the site that shows the form, or the picture itself as a `data:image/` address —
+and an address on another site tells that site who opened the form. Spec version 4
+([0126](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0126-an-option-may-carry-a-picture.md)).
+
 ## Formatted text is not HTML
 
 A `richtext` answer is stored in a small closed grammar — paragraphs, bullet

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { layoutPropertyHeading, nextChoice } from './editors.js'
+import { layoutPropertyHeading, nextChoice, withPicture } from './editors.js'
 import { BUILDER_MESSAGES_DE } from './messages-de.js'
 import { createBuilderText } from './messages.js'
 
@@ -36,5 +36,32 @@ describe('what the layout property panel calls a node', () => {
     expect(layoutPropertyHeading('table', english)).toBe('This grid')
     expect(layoutPropertyHeading('field', german)).toBe(german('layoutProps.heading.field'))
     expect(german('layoutProps.heading.field')).not.toBe(english('layoutProps.heading.field'))
+  })
+})
+
+describe('a choice’s picture, as both options editors change it', () => {
+  const cat = { value: 'cat', label: 'Cat' }
+
+  test('an address gives it a picture, and a description describes it', () => {
+    const pictured = withPicture(withPicture(cat, { src: '/cat.png' }), { alt: 'A tabby' })
+
+    expect(pictured).toEqual({ ...cat, image: { src: '/cat.png', alt: 'A tabby' } })
+  })
+
+  test('an emptied address takes the picture away, rather than leaving one with nowhere to load from', () => {
+    // An image with an empty address is refused by the validator, so the edit would
+    // be refused and the box would snap back mid-clear.
+    expect(
+      withPicture({ ...cat, image: { src: '/cat.png', alt: 'A tabby' } }, { src: '' }),
+    ).toEqual(cat)
+  })
+
+  test('and an emptied description leaves the picture as decoration', () => {
+    expect(
+      withPicture({ ...cat, image: { src: '/cat.png', alt: 'A tabby' } }, { alt: '' }),
+    ).toEqual({
+      ...cat,
+      image: { src: '/cat.png' },
+    })
   })
 })

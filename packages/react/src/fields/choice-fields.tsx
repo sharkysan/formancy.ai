@@ -1,6 +1,6 @@
 import { useField } from '../use-field.js'
 import { useSourcedOptions } from '../use-sourced-options.js'
-import { FieldShell, RequiredHint, useResolvedOptions } from './internals.js'
+import { FieldShell, OptionPicture, RequiredHint, useResolvedOptions } from './internals.js'
 import type { FieldComponentProps } from './internals.js'
 import { TypeaheadSelectField } from './typeahead-field.js'
 
@@ -133,7 +133,10 @@ export function RadioGroupField({ path, label }: FieldComponentProps) {
               onChange={() => field.setValue(option.value)}
               onBlur={() => field.touch()}
             />
-            <label htmlFor={optionId}>{option.label}</label>
+            <label htmlFor={optionId}>
+              <OptionPicture option={option} />
+              {option.label}
+            </label>
           </span>
         )
       })}

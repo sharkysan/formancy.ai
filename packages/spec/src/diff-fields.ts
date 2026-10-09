@@ -263,6 +263,21 @@ function compareOptions(
     })
   }
 
+  // Compared here because nothing else would: `options` is excluded from the residual
+  // backstop as a property this function accounts for, so a picture changed and not
+  // compared here would diff as nothing at all (0108, 0126).
+  const repictured = [...now.keys()].filter(
+    (value) => was.has(value) && !same(was.get(value)?.image, now.get(value)?.image),
+  )
+  if (repictured.length > 0) {
+    changes.push({
+      severity: 'compatible',
+      kind: 'field.optionPictureChanged',
+      path,
+      detail: `${repictured.map((value) => `"${value}"`).join(', ')} looks different. The stored value is unchanged, so no answer moves.`,
+    })
+  }
+
   return changes
 }
 

@@ -216,3 +216,55 @@ describe('a choice can be retyped, not only appended to', () => {
     expect(options).toEqual([{ value: 'ch', label: 'Schweiz' }])
   })
 })
+
+describe('a choice’s picture', () => {
+  const pets = (type: 'radio' | 'select', image?: { src: string }) =>
+    createBuilderSession({
+      specVersion: '4',
+      id: 'pets',
+      title: 'Pets',
+      model: {
+        fields: [
+          {
+            key: 'pet',
+            type,
+            label: 'Pet',
+            options: [{ value: 'cat', label: 'Cat', ...(image === undefined ? {} : { image }) }],
+          },
+        ],
+      },
+    } as FormSchema)
+  const optionsOf = (session: ReturnType<typeof createBuilderSession>) =>
+    (session.document().model.fields[0] as unknown as Record<string, unknown>)['options']
+
+  test('can be given and described on a radio group', async () => {
+    const user = userEvent.setup()
+    const session = pets('radio')
+    render(<PropertyPanel session={session} keyPath={['pet']} />)
+
+    await user.type(screen.getByLabelText('Picture address'), '/cat.png')
+    await user.type(screen.getByLabelText('What the picture shows'), 'A tabby')
+
+    expect(optionsOf(session)).toEqual([
+      { value: 'cat', label: 'Cat', image: { src: '/cat.png', alt: 'A tabby' } },
+    ])
+  })
+
+  test('and clearing its address takes the picture away rather than keeping it', async () => {
+    // Merged into the choice as a patch, an emptied picture is a missing key, and the
+    // old picture survived it.
+    const user = userEvent.setup()
+    const session = pets('radio', { src: '/cat.png' })
+    render(<PropertyPanel session={session} keyPath={['pet']} />)
+
+    await user.clear(screen.getByLabelText('Picture address'))
+
+    expect(optionsOf(session)).toEqual([{ value: 'cat', label: 'Cat' }])
+  })
+
+  test('is not offered on a dropdown, which could not show it', () => {
+    render(<PropertyPanel session={pets('select')} keyPath={['pet']} />)
+
+    expect(screen.queryByLabelText('Picture address')).toBeNull()
+  })
+})

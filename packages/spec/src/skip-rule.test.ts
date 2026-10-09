@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { RULE_KINDS } from './types.js'
+import { RULE_KINDS } from './rules.js'
 import type { FormSchema } from './types.js'
 import { validateSchema } from './validate.js'
 

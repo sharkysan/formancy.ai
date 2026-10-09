@@ -37,6 +37,10 @@ export const SCHEMA_ERRORS = {
   'rename.claimed':
     'Another field already says it was renamed from "{key}". Old answers can only move to one place.',
   'pattern.invalid': 'This is not a valid regular expression: {reason}.',
+  'option.imageInDropdown':
+    'A dropdown cannot show a picture, so this image would never be seen. Make the field a radio group, or remove the image.',
+  'option.imageInChips':
+    'A tag picker shows its options as chips, which cannot show a picture, so this image would never be seen. Take the tag picker off, or remove the image.',
   'mask.noPositions':
     'This mask has nowhere to type, so the field could take no answer. Use 9 for a digit, a for a letter or * for either.',
 
@@ -88,6 +92,8 @@ export const SCHEMA_ERRORS = {
     'A "step" needs specVersion "{version}". This document says "{declared}". Change it to "{version}" — everything already in the document keeps working, because a later version only adds.',
   'version.mask':
     'A "mask" needs specVersion "{version}". This document says "{declared}". Change it to "{version}" — everything already in the document keeps working, because a later version only adds.',
+  'version.optionImage':
+    'An option\'s image needs specVersion "{version}". This document says "{declared}". Change it to "{version}" — everything already in the document keeps working, because a later version only adds.',
   'version.optionsSource':
     'An "optionsSource" needs specVersion "{version}". This document says "{declared}". Change it to "{version}" — everything already in the document keeps working, because a later version only adds.',
   'version.fieldType':
@@ -120,6 +126,8 @@ export const SCHEMA_ERRORS = {
     '{found} is not a usable form ID. Start with a letter or a digit, then use only letters, digits, dots, dashes and underscores.',
   'shape.checkName':
     '{found} is not a usable check name. Name the check and let the deployment say where to ask — an address here would be a deployment detail frozen into a published form, and a way to make a server inside a private network fetch something.',
+  'shape.imageSource':
+    '{found} is not an image address this form can use. Use an https:// address, a path starting with / on the site that shows the form, or a data:image/ address — not http://, which a secure page blocks.',
   'shape.pattern': '{found} does not match the required pattern {pattern}.',
   'shape.maxLength': 'Must be {limit} characters or fewer.',
   'shape.empty': 'Must not be empty.',

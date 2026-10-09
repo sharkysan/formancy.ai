@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core'
+import { isImageSource } from '@formancy/spec'
 import type { FieldOption } from '@formancy/spec'
 import { injectField } from '../field.js'
 import type { FieldBinding } from '../field.js'
@@ -70,11 +71,25 @@ export abstract class FieldComponentBase {
    * Option labels resolved to strings, since a label may be a reference into
    * the message catalogue. Falling back to the stored value keeps an
    * untranslated option selectable rather than blank.
+   *
+   * A picture is drawn only when `isImageSource` — the schema's own rule, which the
+   * React binding asks too — accepts its address, so the two renderers draw the same
+   * pictures from a document the validator never saw (0126).
    */
-  protected readonly options = computed<ReadonlyArray<{ value: string; label: string }>>(() =>
+  protected readonly options = computed<
+    ReadonlyArray<{ value: string; label: string; image?: { src: string; alt: string } }>
+  >(() =>
     (this.field.snapshot().def.options ?? []).map((option: FieldOption) => ({
       value: option.value,
       label: this.engine.text(option.label) ?? option.value,
+      ...(option.image !== undefined && isImageSource(option.image.src)
+        ? {
+            image: {
+              src: option.image.src,
+              alt: this.engine.text(option.image.alt) ?? '',
+            },
+          }
+        : {}),
     })),
   )
 

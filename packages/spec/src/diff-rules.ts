@@ -1,5 +1,6 @@
 import { same } from './canonical.js'
-import type { Change, LogicRule } from './types.js'
+import type { Change } from './types.js'
+import type { LogicRule } from './rules.js'
 
 /**
  * What changed about the form’s behaviour.

@@ -226,3 +226,4 @@ listed under the sections they belong to above.
 | [0123](0123-the-builder-reads-right-to-left.md) | The builder reads right to left, and the bundler is told the browsers it is for | accepted |
 | [0124](0124-a-theme-preset-is-the-patch-read-back.md) | A theme preset is the patch, read back through the editor's own rule | accepted |
 | [0125](0125-a-mask-stores-what-was-typed.md) | A mask stores what was typed, and one function decides where a character lands | accepted |
+| [0126](0126-an-option-may-carry-a-picture.md) | An option may carry a picture, shown only where it can be seen | accepted |

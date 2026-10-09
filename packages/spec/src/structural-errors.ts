@@ -26,17 +26,23 @@ export function toSchemaErrors(errors: ErrorObject[], document: unknown): Schema
 
   /** Instance paths some other keyword already has an opinion about. A property
    *  that failed on its own terms is not also an unexpected property: a group
-   *  whose `fields` is a string has one problem, not two. */
+   *  whose `fields` is a string has one problem, not two. Nor is one whose
+   *  CONTENTS failed: when the branch declaring a property fails, ajv also reports
+   *  the property as unevaluated, so an option value one character too long said
+   *  "Unknown property options. Check the spelling" — about a word spelled right. */
   const judged = new Set(
     errors
       .filter((error) => !NAMES_A_PROPERTY.has(error.keyword))
       .map((error) => error.instancePath),
   )
 
+  const isJudged = (path: string): boolean =>
+    judged.has(path) || [...judged].some((other) => other.startsWith(`${path}/`))
+
   const reported = errors.filter((error) => {
     // `must match "then" schema` only restates whichever branch error follows it.
     if (error.keyword === 'if') return false
-    if (NAMES_A_PROPERTY.has(error.keyword) && judged.has(pathOf(error))) return false
+    if (NAMES_A_PROPERTY.has(error.keyword) && isJudged(pathOf(error))) return false
     return !branchPrefixes.some((prefix) => error.schemaPath.startsWith(prefix))
   })
 
@@ -173,6 +179,9 @@ function patternError(path: string, error: ErrorObject, document: unknown): Sche
   // renaming a property in the schema cannot silently degrade the wording.
   if (error.schemaPath.includes('/fieldKey/')) return schemaError(path, 'shape.fieldKey', { found })
   if (error.schemaPath.includes('/formId/')) return schemaError(path, 'shape.formId', { found })
+  if (error.schemaPath.includes('/imageSource/')) {
+    return schemaError(path, 'shape.imageSource', { found })
+  }
   // A check names a validator the deployment answers, and the mistake somebody
   // makes is writing the address of one. The generic wording would tell them the
   // pattern and leave them guessing what shape is wanted.

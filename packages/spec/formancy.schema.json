@@ -1061,7 +1061,7 @@
   },
   "fieldOption": {
    "title": "Option",
-   "description": "One answer a select or radio field offers.",
+   "description": "One answer a select, radio or checkbox field offers.",
    "type": "object",
    "required": [
     "value",
@@ -1080,6 +1080,25 @@
      "title": "Label",
      "description": "What the person choosing reads.",
      "$ref": "#/$defs/text"
+    },
+    "image": {
+     "title": "Image",
+     "description": "A picture shown with this option, on radio buttons and checkboxes — never in a dropdown or as a chip, which cannot show one, so the document is refused if it asks. The label still names the option and is what is announced; the picture is beside it. Needs spec version 4.",
+     "type": "object",
+     "required": [
+      "src"
+     ],
+     "additionalProperties": false,
+     "properties": {
+      "src": {
+       "$ref": "#/$defs/imageSource"
+      },
+      "alt": {
+       "title": "Text alternative",
+       "description": "What the picture shows, for someone who cannot see it. Leave it out when the label already says everything the picture does: the picture is then decoration, and saying it twice is noise.",
+       "$ref": "#/$defs/text"
+      }
+     }
     }
    }
   },
@@ -1397,6 +1416,14 @@
      }
     }
    }
+  },
+  "imageSource": {
+   "title": "Image address",
+   "description": "Where the picture comes from: an `https://` address, a path starting with `/` on the site that shows the form, or the picture itself as a `data:image/` address. Not `http://`, which a secure page blocks, and not a script. An address on another site tells that site who opened the form; a picture the form carries itself tells nobody.",
+   "type": "string",
+   "minLength": 1,
+   "maxLength": 65536,
+   "pattern": "^(https://[^\\s]+|/[^/\\s][^\\s]*|data:image/(png|jpeg|gif|webp|avif|svg\\+xml)[;,].+)$"
   }
  }
 }

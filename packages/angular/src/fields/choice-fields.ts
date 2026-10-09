@@ -165,7 +165,12 @@ export class FormancySelectField extends FieldComponentBase {
             (change)="field.setValue(option.value)"
             (blur)="field.touch()"
           />
-          <label [attr.for]="optionId(option)">{{ option.label }}</label>
+          <!-- The picture inside the label, so pressing it chooses the option and its text
+               alternative joins the option's name. One line, because whitespace inside a
+               label leaks into that name, except the one space after the picture, which
+               is meant (&ngsp;, which Angular keeps where it strips a plain space):
+               without it the alternative and the label run together. -->
+          <label [attr.for]="optionId(option)">@if (option.image; as image) {<img data-formancy-part="option-image" [src]="image.src" [alt]="image.alt" loading="lazy" decoding="async" />&ngsp;}{{ option.label }}</label>
         </span>
       }
       @if (showError()) {

@@ -212,7 +212,8 @@ export class FormancyTagPickerField extends FieldComponentBase {
             (change)="toggle(option.value, $event)"
             (blur)="field.touch()"
           />
-          <label [attr.for]="optionId(option)">{{ option.label }}</label>
+          <!-- As the radio group draws it, and on one line for the same reason. -->
+          <label [attr.for]="optionId(option)">@if (option.image; as image) {<img data-formancy-part="option-image" [src]="image.src" [alt]="image.alt" loading="lazy" decoding="async" />&ngsp;}{{ option.label }}</label>
         </span>
       }
       @if (showError()) {

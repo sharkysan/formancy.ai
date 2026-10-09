@@ -35,6 +35,10 @@ export const SCHEMA_ERRORS_DE: SchemaErrorSentences = {
   'rename.claimed':
     'Ein anderes Feld gibt bereits an, aus „{key}“ umbenannt worden zu sein. Alte Antworten können nur an einen Ort wandern.',
   'pattern.invalid': 'Das ist kein gültiger regulärer Ausdruck: {reason}.',
+  'option.imageInDropdown':
+    'Ein Dropdown kann kein Bild zeigen, dieses Bild wäre also nie zu sehen. Mach das Feld zu einer Gruppe von Optionsfeldern oder entferne das Bild.',
+  'option.imageInChips':
+    'Eine Tag-Auswahl zeigt ihre Optionen als Chips, die kein Bild zeigen können, dieses Bild wäre also nie zu sehen. Nimm die Tag-Auswahl weg oder entferne das Bild.',
   'mask.noPositions':
     'Diese Maske hat keine Stelle zum Tippen, das Feld könnte also keine Antwort aufnehmen. Verwende 9 für eine Ziffer, a für einen Buchstaben oder * für beides.',
 
@@ -88,6 +92,8 @@ export const SCHEMA_ERRORS_DE: SchemaErrorSentences = {
     'Ein „step“ braucht specVersion „{version}“. Dieses Dokument sagt „{declared}“. Ändere es auf „{version}“ – alles, was schon im Dokument steht, funktioniert weiter, weil eine spätere Version nur hinzufügt.',
   'version.mask':
     'Eine „mask“ braucht specVersion „{version}“. Dieses Dokument sagt „{declared}“. Ändere es auf „{version}“ – alles, was schon im Dokument steht, funktioniert weiter, weil eine spätere Version nur hinzufügt.',
+  'version.optionImage':
+    'Das Bild einer Option braucht specVersion „{version}“. Dieses Dokument sagt „{declared}“. Ändere es auf „{version}“ – alles, was schon im Dokument steht, funktioniert weiter, weil eine spätere Version nur hinzufügt.',
   'version.optionsSource':
     'Eine „optionsSource“ braucht specVersion „{version}“. Dieses Dokument sagt „{declared}“. Ändere es auf „{version}“ – alles, was schon im Dokument steht, funktioniert weiter, weil eine spätere Version nur hinzufügt.',
   'version.fieldType':
@@ -121,6 +127,8 @@ export const SCHEMA_ERRORS_DE: SchemaErrorSentences = {
     '{found} ist keine brauchbare Formular-ID. Beginne mit einem Buchstaben oder einer Ziffer und verwende danach nur Buchstaben, Ziffern, Punkte, Bindestriche und Unterstriche.',
   'shape.checkName':
     '{found} ist kein brauchbarer Name für eine Prüfung. Nenne die Prüfung und lass die Installation sagen, wo gefragt wird – eine Adresse hier wäre ein Detail der Installation, eingefroren in ein veröffentlichtes Formular, und ein Weg, einen Server in einem privaten Netz etwas abrufen zu lassen.',
+  'shape.imageSource':
+    '{found} ist keine Bildadresse, die dieses Formular verwenden kann. Verwende eine https://-Adresse, einen Pfad, der mit / auf der Website beginnt, die das Formular zeigt, oder eine data:image/-Adresse – nicht http://, das eine sichere Seite blockiert.',
   'shape.pattern': '{found} passt nicht zum verlangten Muster {pattern}.',
   'shape.maxLength': 'Darf höchstens {limit} Zeichen lang sein.',
   'shape.empty': 'Darf nicht leer sein.',

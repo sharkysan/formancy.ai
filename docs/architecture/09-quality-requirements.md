@@ -52,8 +52,8 @@ formancy
 | Keystroke, large conditional form | 1 ms | ≈0.38 ms |
 | Cold graph compile | 30 ms | ≈1.7 ms |
 | `@formancy/core` bundle | 18 kB brotli | **18.7 kB** — over, measured 2026-10-08 |
-| `@formancy/spec` bundle | — | 23.7 kB for the whole barrel — the index and the chunk it shares with `/validate`, measured 2026-10-09 |
-| `@formancy/react` bundle | 4 kB brotli | **21.3 kB** for the whole barrel, measured 2026-10-09 |
+| `@formancy/spec` bundle | — | 24.6 kB for the whole barrel — the index and the chunk it shares with `/validate`, measured 2026-10-09 |
+| `@formancy/react` bundle | 4 kB brotli | **21.6 kB** for the whole barrel, measured 2026-10-09 |
 | `uqr`, the QR encoder | — | 6.6 kB brotli, **external** rather than bundled, measured 2026-09-27 |
 
 The performance gate is written to fail on a regression greater than 15%,
@@ -137,6 +137,10 @@ control.
 typed character lands is `editMasked` in `@formancy/spec`, which this package imports
 rather than bundles, so the arithmetic is counted in the spec row and not twice
 ([0125](../decisions/0125-a-mask-stores-what-was-typed.md)).
+
+**21.6 kB with pictures on options**, measured the same day: 0.3 kB for drawing a picture in
+two controls and asking the format's rule before loading it
+([0126](../decisions/0126-an-option-may-carry-a-picture.md)).
 
 **`@formancy/core` is now 17.8 kB against an 18 kB budget, and that is tight enough to say
 out loud.** The last 0.5 kB is `unknown-paths.ts`, a publish-time check that reports a rule

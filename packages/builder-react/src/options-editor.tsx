@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
 import type { FieldOption } from '@formancy/spec'
-import { createBuilderText, nextChoice } from '@formancy/builder-core'
+import { createBuilderText, nextChoice, withPicture } from '@formancy/builder-core'
 import type { BuilderText } from '@formancy/builder-core'
 
 /**
@@ -23,11 +23,21 @@ export interface OptionsEditorProps {
   onChange: (options: FieldOption[]) => void
   /** The language to speak: the panel passes its session's. English when none is given. */
   text?: BuilderText
+  /**
+   * Whether each choice may carry a picture — `EditableProperty.pictures`, which
+   * builder-core decides from the field's type and widget (0126).
+   */
+  pictures?: boolean
 }
 
 const ENGLISH = createBuilderText()
 
-export function OptionsEditor({ options, onChange, text = ENGLISH }: OptionsEditorProps): ReactElement {
+export function OptionsEditor({
+  options,
+  onChange,
+  text = ENGLISH,
+  pictures = false,
+}: OptionsEditorProps): ReactElement {
   const id = useId()
 
   /*
@@ -67,6 +77,11 @@ export function OptionsEditor({ options, onChange, text = ENGLISH }: OptionsEdit
     commit(draft.map((option, index) => (index === at ? { ...option, ...patch } : option)))
   }
 
+  /** The whole choice, not a patch: a picture taken away is a key that is gone. */
+  const put = (at: number, next: FieldOption): void => {
+    commit(draft.map((option, index) => (index === at ? next : option)))
+  }
+
   return (
     <div data-formancy-part="options-editor">
       <div id={`${id}-heading`} data-formancy-part="options-heading">
@@ -100,6 +115,29 @@ export function OptionsEditor({ options, onChange, text = ENGLISH }: OptionsEdit
                 value={option.value}
                 onChange={(event) => replace(index, { value: event.target.value })}
               />
+
+              {pictures ? (
+                <>
+                  <label htmlFor={`${id}-image-${String(index)}`}>{text('options.image')}</label>
+                  <input
+                    id={`${id}-image-${String(index)}`}
+                    type="url"
+                    value={option.image?.src ?? ''}
+                    onChange={(event) => put(index, withPicture(option, { src: event.target.value }))}
+                  />
+
+                  <label htmlFor={`${id}-alt-${String(index)}`}>{text('options.imageAlt')}</label>
+                  <input
+                    id={`${id}-alt-${String(index)}`}
+                    type="text"
+                    // Nothing to describe until there is a picture; a description typed
+                    // first would have nowhere to go.
+                    disabled={option.image === undefined}
+                    value={typeof option.image?.alt === 'string' ? option.image.alt : ''}
+                    onChange={(event) => put(index, withPicture(option, { alt: event.target.value }))}
+                  />
+                </>
+              ) : null}
 
               <button
                 type="button"

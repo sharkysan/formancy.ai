@@ -10,7 +10,8 @@
  *
  * `SchemaError` stays in `validate.ts`, which is where the public surface is.
  */
-import { LIST_VALUED_FIELD_TYPES, SPEC_1_FIELD_TYPES, SPEC_2_FIELD_TYPES, SPEC_2_RULE_KINDS, SPEC_2_WIDGETS, SPEC_3_WIDGETS } from './types.js'
+import { LIST_VALUED_FIELD_TYPES, SPEC_1_FIELD_TYPES, SPEC_2_FIELD_TYPES, SPEC_2_WIDGETS, SPEC_3_WIDGETS } from './types.js'
+import { SPEC_2_RULE_KINDS } from './rules.js'
 import { layoutChildren, SPEC_1_LAYOUT_KINDS } from './layout.js'
 import type { FieldDef, FormSchema } from './types.js'
 import type { LayoutNode } from './layout.js'
@@ -118,6 +119,15 @@ export function versionErrors(
     // The same, for the same reason: a property only a version 4 document may carry.
     if (field.mask !== undefined && declared < 4) {
       errors.push(schemaError(`${path}/mask`, 'version.mask', versions(4)))
+    }
+    // And on an option rather than the field, which is why it is looked for there.
+    if (declared < 4) {
+      field.options?.forEach((option, index) => {
+        if (option.image === undefined) return
+        errors.push(
+          schemaError(`${path}/options/${String(index)}/image`, 'version.optionImage', versions(4)),
+        )
+      })
     }
 
     // Same reasoning as `widget` above: a property, not a type, and the schema is
