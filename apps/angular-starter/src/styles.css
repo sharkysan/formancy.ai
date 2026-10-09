@@ -14,6 +14,13 @@ header {
   padding: 1rem 1.5rem 0;
 }
 
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
 .panes {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr));

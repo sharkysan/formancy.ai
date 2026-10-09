@@ -9,6 +9,9 @@ import { CSS_TARGET } from '../../css-target'
  * components and providers unchanged; only this file is different.
  */
 export default defineConfig({
+  // Relative, so the build is served from wherever it is put: formancy.ai serves it under
+  // `/angular-form-builder/demo/`, and a copy of it sits wherever its owner deploys it.
+  base: './',
   // Not Vite's default, which rewrites `:dir(rtl)` as a list of languages (0123).
   build: { cssTarget: CSS_TARGET },
   plugins: [

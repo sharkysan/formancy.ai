@@ -1,0 +1,143 @@
+/**
+ * The Angular form builder page.
+ *
+ * Tokens from `shell.css` and nothing else, as the templates gallery does: no colour is
+ * written here, so the page cannot drift from the site by a shade.
+ */
+
+.ng-page {
+  position: relative;
+  z-index: 1;
+}
+
+.ng-page main {
+  max-width: 64rem;
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+.ng-hero {
+  padding-block: clamp(3.5rem, 9vh, 6rem) clamp(1.5rem, 4vh, 2.5rem);
+}
+
+.ng-hero h1 {
+  max-width: 20ch;
+}
+
+.ng-hero h1 em {
+  font-family: 'Fraunces', Georgia, serif;
+  font-variation-settings: 'opsz' 96;
+  font-style: italic;
+  font-weight: 500;
+  background: linear-gradient(100deg, var(--client), var(--meet) 60%, var(--server));
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.ng-section {
+  padding-block: clamp(1.5rem, 4vh, 2.5rem);
+  border-block-start: 1px solid var(--edge);
+}
+
+.ng-section p,
+.ng-section li {
+  max-width: var(--measure);
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.ng-section strong {
+  color: var(--text);
+}
+
+.ng-page code {
+  font-family: var(--mono);
+  font-size: 0.875em;
+  color: var(--text);
+}
+
+/* Tall enough for the builder and the form side by side; the starter's own grid stacks
+   them below 48rem, which is when it scrolls inside the frame instead. */
+.ng-demo {
+  display: block;
+  inline-size: 100%;
+  block-size: min(52rem, 85vh);
+  border: 1px solid var(--edge-strong);
+  border-radius: var(--radius);
+  background: var(--raised);
+}
+
+.ng-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+}
+
+.ng-page a {
+  color: var(--server);
+}
+
+.ng-page .action {
+  color: var(--text);
+}
+
+.ng-code {
+  margin: 1rem 0;
+  padding: 1rem 1.25rem;
+  overflow: auto;
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  background: var(--inset);
+  font-size: 0.8125rem;
+  line-height: 1.7;
+}
+
+.ng-versions {
+  padding-inline-start: 1.25rem;
+}
+
+/* The table scrolls inside its own box at a phone's width rather than widening the page. */
+.ng-table {
+  overflow-x: auto;
+}
+
+.ng-table table {
+  inline-size: 100%;
+  min-inline-size: 36rem;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+.ng-table caption {
+  text-align: start;
+  padding-block-end: 0.75rem;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+}
+
+.ng-table th,
+.ng-table td {
+  padding: 0.75rem;
+  border-block-end: 1px solid var(--edge);
+  text-align: start;
+  vertical-align: top;
+}
+
+.ng-table thead th {
+  color: var(--text);
+}
+
+.ng-table tbody th {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.ng-table td {
+  color: var(--muted);
+}
+
+.ng-source {
+  font-size: 0.875rem;
+}

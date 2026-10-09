@@ -35,6 +35,7 @@ import { createReadStream, existsSync, readFileSync, readdirSync, statSync } fro
 import { dirname, extname, join, normalize, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { checkTemplateGallery } from './template-browser-test.mjs'
+import { checkAngularPage } from './angular-page-browser-test.mjs'
 import { checkUploadThumbnails } from './upload-browser-test.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -191,6 +192,7 @@ async function run() {
     }
 
     await checkTemplateGallery(browser, origin, check)
+    await checkAngularPage(browser, origin, check)
     await checkUploadThumbnails(browser, url, check)
     for (const { label, width, height } of WIDTHS) {
       const page = await browser.newPage({ viewport: { width, height } })
@@ -799,28 +801,29 @@ async function run() {
       }
 
       const home = await look('/')
-      const templates = await look('/templates/')
-
-      for (const part of ['ground', 'ink', 'text', 'display', 'bar']) {
+      for (const path of ['/templates/', '/angular-form-builder/']) {
+        const other = await look(path)
+        for (const part of ['ground', 'ink', 'text', 'display', 'bar']) {
+          check(
+            `${path} is drawn in the landing page's ${part}`,
+            home[part] !== null && home[part] === other[part]
+              ? null
+              : `the landing page has ${String(home[part])} and ${path} ${String(other[part])}`,
+          )
+        }
         check(
-          `both pages are drawn in the same ${part}`,
-          home[part] !== null && home[part] === templates[part]
+          `and carries the same navigation, so adding a page cannot miss one`,
+          home.links.length > 3 && home.links.join(' | ') === other.links.join(' | ')
             ? null
-            : `the landing page has ${String(home[part])} and the templates page ${String(templates[part])}`,
+            : `${home.links.join(' | ')} against ${other.links.join(' | ')}`,
+        )
+        check(
+          'and the same mark, which is the favicon rather than a letter in a box',
+          home.mark === 1 && other.mark === 1
+            ? null
+            : `${String(home.mark)} marks on the landing page and ${String(other.mark)} on ${path}`,
         )
       }
-      check(
-        'and carry the same navigation, so adding a page cannot miss one',
-        home.links.length > 3 && home.links.join(' | ') === templates.links.join(' | ')
-          ? null
-          : `${home.links.join(' | ')} against ${templates.links.join(' | ')}`,
-      )
-      check(
-        'and the same mark, which is the favicon rather than a letter in a box',
-        home.mark === 1 && templates.mark === 1
-          ? null
-          : `${String(home.mark)} marks on the landing page and ${String(templates.mark)} on the templates page`,
-      )
 
       /*
        * The form in the hero is the tone of the page it sits in.
@@ -925,7 +928,7 @@ async function run() {
        * it is what the reader is actually deprived of when a layout is too
        * wide.
        */
-      for (const path of ['/', '/templates/']) {
+      for (const path of ['/', '/templates/', '/angular-form-builder/']) {
         await page.goto(`${origin}${path}`, { waitUntil: 'load' })
         await page.waitForSelector('.bar nav a', { timeout: 30_000 })
         const reach = await page.evaluate(() => {
@@ -983,7 +986,7 @@ async function run() {
     throw new Error(`${String(failures.length)} browser check(s) failed:\n  ${failures.join('\n  ')}`)
   }
   console.log(
-    `browser checks passed: ${String(WIDTHS.length)} viewports of the playground, plus both pages of the site, for the layout, gesture and cascade facts jsdom cannot represent`,
+    `browser checks passed: ${String(WIDTHS.length)} viewports of the playground, plus the site's pages and the starter embedded in one, for the layout, gesture and cascade facts jsdom cannot represent`,
   )
 }
 

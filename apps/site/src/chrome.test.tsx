@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { cleanup, render, screen } from '@testing-library/react'
+import { CURRENT_SPEC_VERSION } from '@formancy/spec'
 import { App } from './app.js'
 import { SiteBar, SiteFooter } from './chrome.js'
 import { TemplateGallery } from './template-gallery.js'
@@ -145,5 +146,15 @@ describe('the footer', () => {
       `packages ${__PACKAGE_VERSION__}`,
     )
     expect(text).toContain('Apache-2.0')
+  })
+
+  test('and the spec version the packages write, which was typed and stayed at 2', () => {
+    // The footer said "Spec version 2" through spec 3 and into 4: a literal, in the one
+    // line an integrator reads to see which documents these packages produce.
+    render(<SiteFooter />)
+
+    expect(screen.getByRole('contentinfo').textContent).toContain(
+      `Spec version ${CURRENT_SPEC_VERSION}`,
+    )
   })
 })

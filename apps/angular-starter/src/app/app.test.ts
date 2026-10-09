@@ -3,6 +3,7 @@ import { TestBed } from '@angular/core/testing'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/angular'
 import { afterEach, describe, expect, test } from 'vitest'
 import { StarterApp } from './app'
+import { EXPENSE_CLAIM } from './expense-claim'
 
 /**
  * The starter, as somebody who cloned it meets it: the builder and the form it builds, the
@@ -12,6 +13,7 @@ import { StarterApp } from './app'
 afterEach(() => {
   TestBed.resetTestingModule()
   document.body.innerHTML = ''
+  localStorage.clear()
 })
 
 async function open() {
@@ -100,5 +102,59 @@ describe('the Angular starter', () => {
     await settle()
 
     await waitFor(() => expect(within(fill).getByLabelText('Full name')).toBeTruthy())
+  })
+})
+
+/**
+ * Saving the form somebody built, and opening it again. Where it is kept is the host's — this
+ * app keeps it in the browser's own storage, in `saved-form.ts` — and what is shown is that a
+ * document goes out as JSON and comes back as the same builder session.
+ */
+describe('saving and reloading the form', () => {
+  /** The starter's form with its first field removed: an edit somebody could have made. */
+  const edited = {
+    ...EXPENSE_CLAIM,
+    title: 'Travel claim',
+    model: { fields: EXPENSE_CLAIM.model.fields.slice(1) },
+  }
+
+  test('Save keeps the document being built', async () => {
+    const { settle } = await open()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await settle()
+
+    expect(JSON.parse(localStorage.getItem('formancy-starter:form') ?? 'null')).toEqual(EXPENSE_CLAIM)
+    expect(within(screen.getByRole('banner')).getByRole('status').textContent).toContain('Saved')
+  })
+
+  test('and the app opens on what was saved', async () => {
+    localStorage.setItem('formancy-starter:form', JSON.stringify(edited))
+
+    const { fill } = await open()
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Travel claim' })).toBeTruthy()
+    expect(within(fill).queryByLabelText('Your name')).toBeNull()
+  })
+
+  test('Reload saved puts it back without restarting the app', async () => {
+    const { fill, settle } = await open()
+    localStorage.setItem('formancy-starter:form', JSON.stringify(edited))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reload saved' }))
+    await settle()
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Travel claim' })).toBeTruthy()
+    expect(within(fill).queryByLabelText('Your name')).toBeNull()
+  })
+
+  test('but something saved that is no longer a valid form is not opened', async () => {
+    // A session refuses an invalid document by throwing, so an app opening whatever it found
+    // would not start at all — because of something it wrote itself, yesterday.
+    localStorage.setItem('formancy-starter:form', JSON.stringify({ ...edited, specVersion: '99' }))
+
+    await open()
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Expense claim' })).toBeTruthy()
   })
 })

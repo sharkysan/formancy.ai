@@ -151,7 +151,8 @@ submitted. Switch language or theme without reloading.
   and styles, or start with a supplied theme — or, in Angular, with Angular
   Material, held to the same conformance fixtures as the defaults; an
   [Angular starter](./apps/angular-starter) puts the builder and a Material form
-  side by side. The shared engine handles the rules while you control how the
+  side by side, and [formancy.ai/angular-form-builder](https://formancy.ai/angular-form-builder/)
+  runs it in the page. The shared engine handles the rules while you control how the
   form fits your product.
 - **Tested on the versions it declares.** React 19.0 and the newest 19, Angular 22.0
   and the newest 22, Node.js 22.12 and 24 — each a CI run; the
