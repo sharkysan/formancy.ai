@@ -1,8 +1,9 @@
 import { afterEach, describe, expect, test } from 'vitest'
-import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
 import {
   BUILDER_MESSAGES_DE,
+  authorForm,
   createBuilderSession,
   createBuilderText,
   editableLayoutPropertiesFor,
@@ -10,15 +11,21 @@ import {
   flatten,
   nameOf,
   paletteEntries,
+  proposeEdit,
   pseudoLanguage,
   untranslated,
 } from '@formancy/builder-core'
+import { runScenarios } from '@formancy/core'
+import type { Scenario } from '@formancy/core'
 import type { FormSchema } from '@formancy/spec'
 import { FormancyBuilder } from './builder.js'
 import { FormancyLayoutPane } from './layout-pane.js'
 import { ColumnsEditor } from './columns-editor.js'
 import { LayoutPropertyPanel } from './layout-property-panel.js'
 import { LogicPanel } from './logic-panel.js'
+import { PromptPane } from './prompt-pane.js'
+import { ScenarioPane } from './scenario-pane.js'
+import { TranslationsPane } from './translations-pane.js'
 import { OptionsEditor } from './options-editor.js'
 import { PropertyPanel } from './property-panel.js'
 
@@ -62,8 +69,8 @@ function shown(root: HTMLElement): string[] {
   const out: string[] = []
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
   for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
-    // Code is not language: a rule's CEL is shown as it is written.
-    if (node.parentElement?.closest('code') !== null) continue
+    // Code is not language: a rule's CEL, or a model's raw answer, is shown as written.
+    if (node.parentElement?.closest('code, pre') !== null) continue
     out.push(node.nodeValue ?? '')
   }
   for (const element of root.querySelectorAll('*')) {
@@ -449,6 +456,195 @@ describe('the logic panel', () => {
         'Show this field when',
         'is not answered',
       ].filter((prefix) => !seen.some((text) => text.includes(prefix))),
+    ).toEqual([])
+  })
+})
+
+describe('the translations, prompt and scenario panes', () => {
+  const translated = {
+    specVersion: '2',
+    id: 'contact',
+    title: 'Contact',
+    model: {
+      fields: [
+        { key: 'email', type: 'text', label: { $t: 'email.label' } },
+        { key: 'note', type: 'text', label: { $t: 'note.label' } },
+      ],
+    },
+    i18n: {
+      defaultLocale: 'en',
+      messages: {
+        en: { 'email.label': 'Email', 'note.label': 'Note', 'gone.label': 'Gone' },
+        de: { 'email.label': 'E-Mail' },
+      },
+    },
+  } as unknown as FormSchema
+  const catalogueWords = (document: FormSchema): string[] => [
+    document.title,
+    ...Object.keys(document.i18n?.messages ?? {}),
+    ...Object.values(document.i18n?.messages ?? {}).flatMap((messages) => [
+      ...Object.keys(messages),
+      ...Object.values(messages),
+    ]),
+  ]
+
+  test('the translations pane shows nothing in English that the catalogue did not give it', async () => {
+    const session = createBuilderSession(translated, { text: createBuilderText(pseudoLanguage()) })
+    // A report with something written, something unknown and something stale.
+    session.importCatalogue({
+      locale: 'de',
+      defaultLocale: 'en',
+      messages: [
+        // Stale, and left untranslated, so the row says so.
+        { id: 'note.label', source: 'Old note', target: '' },
+        { id: 'missing.label', source: 'Missing', target: 'Fehlt' },
+      ],
+    })
+    const { container } = render(<TranslationsPane session={session} />)
+    const user = userEvent.setup()
+    await user.selectOptions(screen.getByRole('combobox'), 'de')
+
+    // The preview is the FORM, in the renderer's words rather than the builder's —
+    // all but its name and its button, which the pane gives it.
+    const outside = container.cloneNode(true) as HTMLElement
+    const preview = outside.querySelector('[data-formancy-part="translations-preview"]')!
+    const seen = [
+      preview.getAttribute('aria-label') ?? '',
+      preview.querySelector('[data-formancy-part="submit"]')?.textContent ?? '',
+    ]
+    for (const child of [...preview.children]) child.remove()
+    seen.push(...shown(outside))
+
+    expect(untranslated(seen, [...catalogueWords(translated), 'missing.label'])).toEqual([])
+    expect(
+      [
+        'Language',
+        '(default)',
+        'New language',
+        'Add language',
+        'Download de',
+        'Upload a translated file',
+        'translations written',
+        'Not written',
+        'Written, but',
+        'Not translated',
+        'Preview in de',
+        'Submit',
+        'no longer used',
+      ].filter((prefix) => !seen.some((text) => text.includes(prefix))),
+    ).toEqual([])
+  })
+
+  test('and a form with nothing translatable yet, likewise', () => {
+    const plain = {
+      ...translated,
+      model: { fields: [{ key: 'email', type: 'text', label: 'Email' }] },
+      i18n: undefined,
+    } as unknown as FormSchema
+    const { container } = render(
+      <TranslationsPane
+        session={createBuilderSession(plain, { text: createBuilderText(pseudoLanguage()) })}
+      />,
+    )
+    const seen = shown(container)
+
+    expect(untranslated(seen, ['Contact', 'Email'])).toEqual([])
+    expect(
+      ['Nothing in this form', 'Make this form translatable'].filter(
+        (prefix) => !seen.some((text) => text.includes(prefix)),
+      ),
+    ).toEqual([])
+  })
+
+  test('the prompt pane, with a proposal and with a failure, likewise', async () => {
+    const start = {
+      specVersion: '2',
+      id: 'start',
+      title: 'Start',
+      model: { fields: [{ key: 'name', type: 'text', label: 'Name' }] },
+    } as unknown as FormSchema
+    const written = {
+      ...start,
+      model: { fields: [...start.model.fields, { key: 'email', type: 'text', label: 'Email' }] },
+    } as unknown as FormSchema
+    const user = userEvent.setup()
+    // The change list is the spec's diff, in the spec's words.
+    const words = [
+      ...proposeEdit(start, written).changes.flatMap((change) => [change.path, change.detail]),
+      'Name',
+      'Email',
+    ]
+
+    const good = createBuilderSession(start, { text: createBuilderText(pseudoLanguage()) })
+    const first = render(
+      <PromptPane session={good} ask={() => Promise.resolve(JSON.stringify(written))} />,
+    )
+    await user.type(screen.getByRole('textbox'), 'add an email')
+    await user.click(screen.getByRole('button'))
+    await waitFor(() => expect(screen.getAllByRole('button').length).toBeGreaterThan(1))
+    const seen = shown(first.container)
+    first.unmount()
+
+    // The problems are what the model was told, shown as they were told (0119).
+    const failing = (): Promise<string> => Promise.resolve('not json at all')
+    const told = await authorForm(failing, 'anything', { attempts: 1 })
+    const problems = told.ok ? [] : told.problems.map((problem) => problem.detail)
+    const bad = createBuilderSession(start, { text: createBuilderText(pseudoLanguage()) })
+    const second = render(<PromptPane session={bad} ask={failing} attempts={1} />)
+    await user.type(screen.getByRole('textbox'), 'anything')
+    await user.click(screen.getByRole('button'))
+    await waitFor(() =>
+      expect(document.querySelector('[data-formancy-part="prompt-problems"]')).not.toBeNull(),
+    )
+    seen.push(...shown(second.container))
+
+    // What the person typed is theirs, in whatever language they typed it.
+    expect(untranslated(seen, [...words, ...problems, 'add an email', 'anything'])).toEqual([])
+    expect(
+      [
+        'Describe the form',
+        'A contact form with',
+        'Write it',
+        'Ready to review',
+        'Review these changes',
+        'Apply these changes',
+        'Discard',
+        'Nothing was applied',
+        'What the model last answered',
+      ].filter((prefix) => !seen.some((text) => text.includes(prefix))),
+    ).toEqual([])
+  })
+
+  test('the scenario panel, holding and not, and empty, likewise', () => {
+    const form = {
+      specVersion: '2',
+      id: 'leave',
+      title: 'Leave',
+      model: { fields: [{ key: 'reason', type: 'text', label: 'Reason' }] },
+    } as unknown as FormSchema
+    const scenarios = [
+      { name: 'empty is valid', changes: {}, valid: true },
+      { name: 'reason is hidden', changes: {}, visible: { reason: false } },
+    ] as unknown as Scenario[]
+    // A failure says what was expected and what happened, in the engine's words.
+    const failures = runScenarios(form, scenarios).flatMap((result) =>
+      result.failures.map((failure) => failure.detail),
+    )
+    const session = createBuilderSession(form, { text: createBuilderText(pseudoLanguage()) })
+
+    const one = render(
+      <ScenarioPane session={session} scenarios={scenarios} onChange={() => undefined} />,
+    )
+    const seen = shown(one.container)
+    one.unmount()
+    const none = render(<ScenarioPane session={session} scenarios={[]} />)
+    seen.push(...shown(none.container))
+
+    expect(untranslated(seen, [...failures, 'empty is valid', 'reason is hidden'])).toEqual([])
+    expect(
+      ['Scenarios', 'does not hold', 'Remove empty is valid', 'No scenarios'].filter(
+        (prefix) => !seen.some((text) => text.includes(prefix)),
+      ),
     ).toEqual([])
   })
 })

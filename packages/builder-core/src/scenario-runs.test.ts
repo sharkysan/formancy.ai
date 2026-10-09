@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'vitest'
 import type { ScenarioResult } from '@formancy/core'
-import { comparedToLastRun } from './scenario-runs.js'
+import { comparedToLastRun, scenarioStatus } from './scenario-runs.js'
+import { BUILDER_MESSAGES_DE } from './messages-de.js'
+import { createBuilderText } from './messages.js'
 
 /**
  * What changed between two runs of the same scenarios.
@@ -92,5 +94,27 @@ describe('comparing a run with the one before it', () => {
     const changed = comparedToLastRun([result('old name', true)], [result('new name', false)])
 
     expect(changed.regressions).toEqual([])
+  })
+})
+
+describe('what the scenario panel says', () => {
+  const english = createBuilderText()
+  const german = createBuilderText({ locale: 'de', messages: BUILDER_MESSAGES_DE })
+  const none = { regressions: [], repaired: [] }
+
+  test('puts what stopped holding first, because it is about the edit just made', () => {
+    expect(
+      scenarioStatus(3, 1, { regressions: ['Swiss address'], repaired: ['Empty form'] }, english),
+    ).toBe('Stopped holding: Swiss address. Holds again: Empty form. 1 of 3 does not hold.')
+  })
+
+  test('counts in the language’s plural, which "1 of 3 do not hold" did not', () => {
+    expect(scenarioStatus(1, 0, none, english)).toBe('The one scenario holds.')
+    expect(scenarioStatus(4, 2, none, english)).toBe('2 of 4 do not hold.')
+    expect(scenarioStatus(2, 0, none, german)).toBe(german('scenarios.allHold', { count: 2 }))
+  })
+
+  test('says there are none rather than that all of none hold', () => {
+    expect(scenarioStatus(0, 0, none, english)).toBe(english('scenarios.none'))
   })
 })

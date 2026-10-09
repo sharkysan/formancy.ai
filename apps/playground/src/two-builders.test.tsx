@@ -286,3 +286,26 @@ describe('what the starter form is supposed to do', () => {
     })
   })
 })
+
+describe('the Language switch', () => {
+  test('speaks for the builder as well as the form, in both builders', async () => {
+    /*
+     * One control, two claims: the form speaks the reader's language and the
+     * builder the author's. Choosing German re-opens the same text in the
+     * builder's German words (0114) — in the React tree and the Angular one,
+     * because they share the session that carries the language.
+     */
+    render(<App />)
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Build' }))
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Language' }), 'de')
+
+    expect(await screen.findByRole('tree', { name: 'Formularstruktur' })).toBeTruthy()
+
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Builder' }), 'angular')
+    await waitFor(
+      () => expect(screen.getAllByRole('tree', { name: 'Formularstruktur' }).length).toBeGreaterThan(0),
+      { timeout: 10_000 },
+    )
+  })
+})

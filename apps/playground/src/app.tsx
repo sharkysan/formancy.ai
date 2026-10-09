@@ -44,7 +44,7 @@ import { FoldPane, PANES, PaneBoundary, usePaneLayout } from './panes.js'
 import { EditorPane } from './editor-pane.js'
 import type { EditorMode } from './editor-pane.js'
 import type { PaneId } from './panes.js'
-import { BuilderBody, PLACEHOLDER_SESSION } from './builder-pane.js'
+import { BuilderBody, PLACEHOLDER_SESSION, builderTextFor } from './builder-pane.js'
 import { PLAYGROUND_CHECKS } from './demo-checks.js'
 
 /**
@@ -141,22 +141,21 @@ export function App() {
   const panes = usePaneLayout()
 
   // Opened when the Build pane appears, from whatever the text says then, and
-  // again when a different demo is loaded.
+  // again when a different demo or language is chosen.
   //
-  // Deliberately not re-opened as `source` changes in general: the builder writes
-  // it on every edit, and re-opening each time would throw the undo stack away.
-  // A demo switch is the one case where throwing it away is right, because it is
-  // a different document rather than an edit to this one — without `demo` in the
-  // dependencies the form followed the picker and the structure tree did not,
-  // which is two panes showing two documents on the page whose whole claim is
-  // that they cannot.
+  // Not re-opened as `source` changes in general: the builder writes it on every
+  // edit, and re-opening would throw the undo stack away. A demo is a different
+  // document, so throwing it away is right — without `demo` here the form followed
+  // the picker and the structure tree did not. A language is fixed for a session's
+  // lifetime, as an engine's locale is, so the Language switch, which the form
+  // already follows, opens the same text again in the builder's new words (0114).
   useEffect(() => {
     if (pane !== 'build') {
       setSession(null)
       return
     }
     try {
-      setSession(createBuilderSession(JSON.parse(source) as FormSchema))
+      setSession(createBuilderSession(JSON.parse(source) as FormSchema, { text: builderTextFor(locale) }))
     } catch {
       // createBuilderSession refuses an invalid document on purpose, so a
       // half-typed schema sends you back to the text rather than into a
@@ -164,7 +163,7 @@ export function App() {
       setSession(null)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pane, demo])
+  }, [pane, demo, locale])
 
   const monaco = useMonaco()
   if (monaco !== null) {

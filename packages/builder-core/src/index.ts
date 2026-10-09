@@ -1,7 +1,7 @@
 export { authorForm } from './authoring.js'
-export { applyProposal, proposeEdit } from './proposal.js'
+export { applyProposal, proposalStatus, proposeEdit } from './proposal.js'
 export type { EditProposal } from './proposal.js'
-export { comparedToLastRun } from './scenario-runs.js'
+export { comparedToLastRun, scenarioStatus } from './scenario-runs.js'
 export type { ScenarioRunChange } from './scenario-runs.js'
 export type {
   AskModel,
@@ -92,6 +92,7 @@ export {
 export {
   LAYOUT_CONTAINERS,
   addLayoutAndSay,
+  arrangeDropAndSay,
   codeAnswers,
   dropLayoutAndSay,
   insertLayoutAndSay,

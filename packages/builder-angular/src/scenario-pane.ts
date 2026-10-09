@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core'
-import { comparedToLastRun } from '@formancy/builder-core'
+import { comparedToLastRun, scenarioStatus } from '@formancy/builder-core'
+import { BuilderTextPipe } from './text.pipe.js'
 import { runScenarios } from '@formancy/core'
 import type { BuilderSession, Scenario, ScenarioResult } from './types.js'
 import { injectBuilderView } from './view.js'
@@ -30,20 +31,20 @@ import { injectBuilderView } from './view.js'
  */
 @Component({
   selector: 'formancy-scenario-pane',
+  imports: [BuilderTextPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (scenarios() !== undefined) {
-      <section data-formancy-part="scenario-pane" aria-label="Scenarios">
+      <section
+        data-formancy-part="scenario-pane"
+        [attr.aria-label]="'scenarios.label' | builderText: text()"
+      >
         <!-- One polite region. A regression that only appears visually is one a
              screen-reader user learns about by submitting a broken form. -->
         <p role="status" data-formancy-part="scenario-status">{{ status() }}</p>
 
         @if (results().length === 0) {
-          <p data-formancy-part="scenario-empty">
-            No scenarios yet. One is an example with its answer written down — what this
-            form should make of a particular set of answers — and it is the only check
-            that can tell a working condition from the right one.
-          </p>
+          <p data-formancy-part="scenario-empty">{{ 'scenarios.empty' | builderText: text() }}</p>
         } @else {
           <ul data-formancy-part="scenario-list">
             @for (result of results(); track result.name) {
@@ -63,7 +64,7 @@ import { injectBuilderView } from './view.js'
                 }
                 @if (removable()) {
                   <button type="button" (click)="remove(result.name)">
-                    Remove {{ result.name }}
+                    {{ 'scenarios.remove' | builderText: text() : { name: result.name } }}
                   </button>
                 }
               </li>
@@ -128,23 +129,14 @@ export class FormancyScenarioPane {
     return compared
   })
 
+  /** Every word this panel shows, in the language the session was opened in (0114). */
+  protected readonly text = computed(() => this.session().text)
+
+  /** The one sentence the live region carries — builder-core's, as the React panel's is. */
   protected readonly status = computed(() => {
     const results = this.results()
-    if (results.length === 0) return 'No scenarios.'
-
-    const change = this.change()
     const failing = results.filter((result) => !result.passed).length
-    const parts: string[] = []
-    // A regression outranks a total: it is the only part about the edit
-    // somebody just made.
-    if (change.regressions.length > 0) parts.push(`Stopped holding: ${change.regressions.join(', ')}.`)
-    if (change.repaired.length > 0) parts.push(`Holds again: ${change.repaired.join(', ')}.`)
-    parts.push(
-      failing === 0
-        ? `All ${String(results.length)} scenarios hold.`
-        : `${String(failing)} of ${String(results.length)} do not hold.`,
-    )
-    return parts.join(' ')
+    return scenarioStatus(results.length, failing, this.change(), this.text())
   })
 
   protected remove(name: string): void {

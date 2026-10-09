@@ -951,9 +951,13 @@ The arrangement pane's sentences are decided the same way, in
 `packages/builder-core/src/arrangement.ts`, and a drop there now names what moved — it
 said only "Moved." ([0117](../decisions/0117-the-arrangement-pane-offers-the-same-in-both-builders.md)).
 
-*Residual:* the structure tree and the arrangement pane are decided in one place. The
-property and logic panels and the others still word their own announcements, in two
-builders each, and could be wrong the same way. A true sentence can still go unheard — a live region's
+So are the drop surface over the rendered form, the prompt pane's status and the scenario
+panel's (`arrangeDropAndSay`, `proposalStatus`, `scenarioStatus`), which both builders had
+also written by hand.
+
+*Residual:* every sentence a builder announces after a command is decided in one place
+now. What a sentence can still get wrong is the same in both builders at once — the cost
+of one answer is that its mistakes are shared. A true sentence can still go unheard — a live region's
 timing belongs to the browser and the screen reader — and no manual screen-reader audit
 has been performed (D4).
 

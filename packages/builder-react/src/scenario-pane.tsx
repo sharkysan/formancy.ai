@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { ReactElement } from 'react'
-import { comparedToLastRun } from '@formancy/builder-core'
+import { comparedToLastRun, scenarioStatus } from '@formancy/builder-core'
 import { runScenarios } from '@formancy/core'
 import type { BuilderSession } from '@formancy/builder-core'
 import type { Scenario, ScenarioResult } from '@formancy/core'
@@ -102,19 +102,15 @@ export function ScenarioPane({
   const failing = results.filter((result) => !result.passed)
 
   return (
-    <section data-formancy-part="scenario-pane" aria-label="Scenarios">
+    <section data-formancy-part="scenario-pane" aria-label={session.text('scenarios.label')}>
       {/* One polite region. A regression that only appears visually is one a
           screen-reader user learns about by submitting a broken form. */}
       <p role="status" data-formancy-part="scenario-status">
-        {statusOf(results.length, failing.length, change)}
+        {scenarioStatus(results.length, failing.length, change, session.text)}
       </p>
 
       {results.length === 0 ? (
-        <p data-formancy-part="scenario-empty">
-          No scenarios yet. One is an example with its answer written down — what this
-          form should make of a particular set of answers — and it is the only check
-          that can tell a working condition from the right one.
-        </p>
+        <p data-formancy-part="scenario-empty">{session.text('scenarios.empty')}</p>
       ) : (
         <ul data-formancy-part="scenario-list">
           {results.map((result) => (
@@ -140,7 +136,7 @@ export function ScenarioPane({
                   type="button"
                   onClick={() => onChange(scenarios.filter((one) => one.name !== result.name))}
                 >
-                  {`Remove ${result.name}`}
+                  {session.text('scenarios.remove', { name: result.name })}
                 </button>
               )}
             </li>
@@ -149,33 +145,4 @@ export function ScenarioPane({
       )}
     </section>
   )
-}
-
-/**
- * The one sentence the live region carries.
- *
- * A regression outranks a total, because it is the only part that is about
- * the edit somebody just made. The repairs come next, so a panel that
- * otherwise only reports bad news says when something worked.
- */
-function statusOf(
-  total: number,
-  failing: number,
-  change: { regressions: readonly string[]; repaired: readonly string[] },
-): string {
-  if (total === 0) return 'No scenarios.'
-
-  const parts: string[] = []
-  if (change.regressions.length > 0) {
-    parts.push(`Stopped holding: ${change.regressions.join(', ')}.`)
-  }
-  if (change.repaired.length > 0) {
-    parts.push(`Holds again: ${change.repaired.join(', ')}.`)
-  }
-  parts.push(
-    failing === 0
-      ? `All ${String(total)} scenarios hold.`
-      : `${String(failing)} of ${String(total)} do not hold.`,
-  )
-  return parts.join(' ')
 }

@@ -211,7 +211,10 @@ destinations for the same document
 ([0091](./docs/decisions/0091-a-second-builder-is-a-binding.md)). Both carry
 both trees, the property panel, the condition editor, the translations pane,
 the drop surface over the rendered form, and the prompt pane — describing a
-form in words, and reviewing what the answer does before it lands.
+form in words, and reviewing what the answer does before it lands. Both speak
+the author's language: English and German are shipped, a host can add its own
+catalogue a message at a time, and the playground's Language switch shows it
+([0114](./docs/decisions/0114-the-builder-speaks-the-authors-language.md)).
 
 ## How it fits your stack
 

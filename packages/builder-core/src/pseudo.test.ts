@@ -44,6 +44,14 @@ describe('what is untranslated', () => {
     expect(untranslated(['⟦⟦Removed intro.⟧ and⟧ also'], [])).toEqual(['also'])
   })
 
+  test('knows a document’s word with the punctuation a renderer set beside it', () => {
+    // Angular renders `<code>{{ id }}</code>: {{ source }}` as one text node,
+    // ": Gone"; React as two. Both are the document's word.
+    expect(untranslated([': Gone', '— Added as optional.'], ['Gone', 'Added as optional.'])).toEqual([])
+    // And only the edges: an English word inside is still found.
+    expect(untranslated([': Gone away'], ['Gone'])).toEqual([': Gone away'])
+  })
+
   test('lets punctuation, digits and symbols through, which are nobody’s language', () => {
     expect(untranslated(['↑ ↓', '—', '3', '⟦Page 2⟧, '], [])).toEqual([])
   })

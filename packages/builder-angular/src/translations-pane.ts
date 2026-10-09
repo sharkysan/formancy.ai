@@ -11,6 +11,7 @@ import {
 } from '@angular/core'
 import { NgComponentOutlet } from '@angular/common'
 import { referencedMessages } from '@formancy/builder-core'
+import { BuilderTextPipe } from './text.pipe.js'
 import { createFormEngine } from '@formancy/core'
 import { FormancyForm, provideFormancy } from '@formancy/angular'
 import type { BuilderSession, CatalogueFile, FormSchema } from './types.js'
@@ -37,46 +38,59 @@ import { injectBuilderView } from './view.js'
 @Component({
   selector: 'formancy-translations-pane',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgComponentOutlet],
+  imports: [NgComponentOutlet, BuilderTextPipe],
   template: `
     <div data-formancy-part="translations">
       @if (referenced().length === 0) {
         <p data-formancy-part="translations-hint">
-          Nothing in this form is translatable yet: its words are written into the document
-          rather than referred to. Extracting them keeps what they say and lets a language be
-          added beside them.
+          {{ 'translations.none' | builderText: text() }}
         </p>
         <!-- Every text in one step, and one undo. Field by field is a chore people
              abandon halfway, leaving a form that is half translatable and a
              catalogue that looks finished. -->
-        <button type="button" (click)="extract()">Make this form translatable</button>
+        <button type="button" (click)="extract()">
+          {{ 'translations.extract' | builderText: text() }}
+        </button>
       } @else {
         <div data-formancy-part="translations-toolbar">
           <label>
-            Language
+            {{ 'translations.language' | builderText: text() }}
             <select [value]="chosen()" (change)="onLocale($event)">
               @for (locale of locales(); track locale) {
                 <option [value]="locale" [selected]="locale === chosen()">
-                  {{ locale === defaultLocale() ? locale + ' (default)' : locale }}
+                  {{
+                    locale === defaultLocale()
+                      ? ('translations.default' | builderText: text() : { locale })
+                      : locale
+                  }}
                 </option>
               }
             </select>
           </label>
 
           <label>
-            New language
-            <input type="text" [value]="adding()" (input)="onAdding($event)" />
+            {{ 'translations.new' | builderText: text() }}
+            <input
+              type="text"
+              [value]="adding()"
+              [attr.placeholder]="'translations.new.example' | builderText: text()"
+              (input)="onAdding($event)"
+            />
           </label>
-          <button type="button" (click)="addLocale()">Add language</button>
+          <button type="button" (click)="addLocale()">
+            {{ 'translations.add' | builderText: text() }}
+          </button>
 
           <!-- For a team with a vendor and a translation memory, who work in a
                file rather than in a table in somebody's admin. The file carries
                the source beside every target, because a list of ids and blanks
                tells a translator nothing and a memory matches on source text. -->
-          <button type="button" (click)="download()">Download {{ chosen() }}</button>
+          <button type="button" (click)="download()">
+            {{ 'translations.download' | builderText: text() : { locale: chosen() } }}
+          </button>
 
           <label>
-            Upload a translated file
+            {{ 'translations.upload' | builderText: text() }}
             <input type="file" accept="application/json,.json" (change)="upload($event)" />
           </label>
         </div>
@@ -87,17 +101,20 @@ import { injectBuilderView } from './view.js'
 
         @if (report(); as written) {
           <div data-formancy-part="translations-report">
-            <p>{{ written.written }} {{ written.written === 1 ? 'translation' : 'translations' }} written.</p>
+            <p>{{ 'translations.written' | builderText: text() : { count: written.written } }}</p>
             @if (written.unknown.length > 0) {
               <p>
-                Not written, because this form no longer has them — the file was exported
-                before a field was removed: {{ written.unknown.join(', ') }}
+                {{
+                  'translations.unknown'
+                    | builderText: text() : { list: text().list(written.unknown) }
+                }}
               </p>
             }
             @if (written.stale.length > 0) {
               <p>
-                Written, but translated from wording that has since changed, so worth a look:
-                {{ written.stale.join(', ') }}
+                {{
+                  'translations.stale' | builderText: text() : { list: text().list(written.stale) }
+                }}
               </p>
             }
           </div>
@@ -125,7 +142,9 @@ import { injectBuilderView } from './view.js'
                     (input)="setMessage(row.id, $event)"
                   />
                   @if (row.missing) {
-                    <span data-formancy-part="translations-missing">Not translated</span>
+                    <span data-formancy-part="translations-missing">
+                      {{ 'translations.missing' | builderText: text() }}
+                    </span>
                   }
                 </td>
               </tr>
@@ -140,13 +159,14 @@ import { injectBuilderView } from './view.js'
              order to read it, which is then published, diffed and migrated like
              any other edit. This builds its own engine and touches nothing. -->
         <section
-          [attr.aria-label]="'Preview in ' + chosen()"
+          [attr.aria-label]="'translations.preview' | builderText: text() : { locale: chosen() }"
           data-formancy-part="translations-preview"
         >
           @if (previewInjector(); as injector) {
             <ng-container
               [ngComponentOutlet]="form"
               [ngComponentOutletInjector]="injector"
+              [ngComponentOutletInputs]="previewInputs()"
             />
           }
         </section>
@@ -158,14 +178,13 @@ import { injectBuilderView } from './view.js'
              and still has a translator's work sitting behind it, and the "nothing
              is translatable yet" branch hid exactly that case. -->
         <div data-formancy-part="translations-orphaned">
-          <p>
-            These messages are no longer used by the form. They are kept rather than removed —
-            a field can come back, and a year of somebody’s translations should not disappear
-            because a key changed.
-          </p>
+          <p>{{ 'translations.orphaned' | builderText: text() }}</p>
           <ul>
             @for (id of orphaned(); track id) {
-              <li><code>{{ id }}</code>: {{ sourceOf(id) }}</li>
+              <li>
+                <code>{{ id }}</code
+                >: {{ sourceOf(id) }}
+              </li>
             }
           </ul>
         </div>
@@ -178,6 +197,12 @@ export class FormancyTranslationsPane {
 
   protected readonly form = FormancyForm
   protected readonly view = injectBuilderView(this.session)
+  /** Every word this pane shows, in the language the session was opened in (0114). */
+  protected readonly text = computed(() => this.session().text)
+  /** The preview’s submit button, in the builder’s language as the React preview’s is. */
+  protected readonly previewInputs = computed(() => ({
+    submitLabel: this.text()('translations.previewSubmit'),
+  }))
   private readonly parent = inject(EnvironmentInjector)
 
   protected readonly showing = signal<string | null>(null)

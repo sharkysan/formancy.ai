@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core'
-import { applyProposal, authorForm, proposeEdit } from '@formancy/builder-core'
+import { applyProposal, authorForm, proposalStatus, proposeEdit } from '@formancy/builder-core'
+import { BuilderTextPipe } from './text.pipe.js'
 import type { AskModel, AuthoringResult, BuilderSession, EditProposal } from './types.js'
 
 /**
@@ -30,21 +31,22 @@ import type { AskModel, AuthoringResult, BuilderSession, EditProposal } from './
  */
 @Component({
   selector: 'formancy-prompt-pane',
+  imports: [BuilderTextPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (ask() !== undefined) {
       <section data-formancy-part="prompt-pane">
-        <label [attr.for]="inputId">Describe the form, or the change you want</label>
+        <label [attr.for]="inputId">{{ 'prompt.label' | builderText: text() }}</label>
         <textarea
           [id]="inputId"
           rows="3"
           [value]="instruction()"
           [disabled]="busy()"
-          placeholder="A contact form with an email address and a message, and a phone number only if they ask to be called back"
+          [attr.placeholder]="'prompt.example' | builderText: text()"
           (input)="instruction.set($any($event.target).value)"
         ></textarea>
         <button type="button" [disabled]="busy() || instruction().trim() === ''" (click)="run()">
-          {{ busy() ? 'Writing…' : 'Write it' }}
+          {{ (busy() ? 'prompt.writing' : 'prompt.write') | builderText: text() }}
         </button>
 
         <!-- One polite region. The work takes seconds, and a proposal that only
@@ -55,9 +57,8 @@ import type { AskModel, AuthoringResult, BuilderSession, EditProposal } from './
           <section data-formancy-part="prompt-review" [attr.aria-labelledby]="reviewId">
             <h3 [id]="reviewId">
               {{
-                waiting.costsAnswers
-                  ? 'Review these changes — some affect answers already collected'
-                  : 'Review these changes'
+                (waiting.costsAnswers ? 'prompt.review.costs' : 'prompt.review')
+                  | builderText: text()
               }}
             </h3>
             <ul data-formancy-part="prompt-changes">
@@ -69,8 +70,12 @@ import type { AskModel, AuthoringResult, BuilderSession, EditProposal } from './
                 </li>
               }
             </ul>
-            <button type="button" (click)="apply()">Apply these changes</button>
-            <button type="button" (click)="discard()">Discard</button>
+            <button type="button" (click)="apply()">
+              {{ 'prompt.apply' | builderText: text() }}
+            </button>
+            <button type="button" (click)="discard()">
+              {{ 'prompt.discard' | builderText: text() }}
+            </button>
           </section>
         }
 
@@ -85,7 +90,7 @@ import type { AskModel, AuthoringResult, BuilderSession, EditProposal } from './
             </ul>
             @if (problems.lastAnswer !== '') {
               <details>
-                <summary>What the model last answered</summary>
+                <summary>{{ 'prompt.lastAnswer' | builderText: text() }}</summary>
                 <pre>{{ problems.lastAnswer }}</pre>
               </details>
             }
@@ -119,34 +124,22 @@ export class FormancyPromptPane {
     return outcome === undefined || outcome.ok ? undefined : outcome
   })
 
-  /**
-   * The one sentence the live region carries.
-   *
-   * The order matters: a refusal is the most recent thing that happened and
-   * outranks the proposal still on screen behind it.
-   */
+  /** Every word this pane shows, in the language the session was opened in (0114). */
+  protected readonly text = computed(() => this.session().text)
+
+  /** The one sentence the live region carries — builder-core's, as the React pane's is. */
   protected readonly status = computed(() => {
-    if (this.busy()) return 'Writing the form, and checking it.'
-    const refused = this.refusal()
-    if (refused !== undefined) return `Not applied. ${refused}`
-
-    const waiting = this.proposal()
-    if (waiting !== undefined) {
-      const count = waiting.changes.length
-      const what = `${String(count)} change${count === 1 ? '' : 's'}`
-      const outcome = this.result()
-      /* How many goes it took, when it took more than one. A model that
-         needed correcting is one to read more carefully, and this is the
-         moment somebody is deciding how closely. */
-      const tries = outcome?.ok === true && outcome.attempts > 1 ? ` after ${String(outcome.attempts)} attempts` : ''
-      return waiting.costsAnswers
-        ? `Ready to review${tries}: ${what}, and some of them affect answers already collected. Nothing has been applied.`
-        : `Ready to review${tries}: ${what}, none of which affect answers already collected. Nothing has been applied.`
-    }
-
     const outcome = this.result()
-    if (outcome === undefined || outcome.ok) return ''
-    return `Nothing was applied. ${String(outcome.attempts)} attempt(s), and the document still did not work.`
+    return proposalStatus(
+      {
+        busy: this.busy(),
+        attempts: outcome?.attempts,
+        failed: outcome !== undefined && !outcome.ok,
+        proposal: this.proposal(),
+        refusal: this.refusal(),
+      },
+      this.text(),
+    )
   })
 
   protected async run(): Promise<void> {

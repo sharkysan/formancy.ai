@@ -9,8 +9,8 @@ import {
   ScenarioPane,
   useBuilder,
 } from '@formancy/builder-react'
-import { createBuilderSession } from '@formancy/builder-core'
-import type { BuilderSession } from '@formancy/builder-core'
+import { BUILDER_MESSAGES_DE, createBuilderSession, createBuilderText } from '@formancy/builder-core'
+import type { BuilderSession, BuilderText } from '@formancy/builder-core'
 import { AngularBuilderPane } from './angular-builder-pane.js'
 import { DEMO_MODEL } from './demo-capabilities.js'
 import { STARTER_SAMPLE, STARTER_SCENARIOS } from './starter-scenarios.js'
@@ -34,6 +34,21 @@ import { STARTER_SAMPLE, STARTER_SCENARIOS } from './starter-scenarios.js'
  * the current text and every edit writes it back, so the JSON is always what
  * the builder built and the builder always shows what the JSON says.
  */
+/**
+ * The builder's language for the page's Language switch, so the one control
+ * says the builder speaks the author's language as well as the form speaking the
+ * reader's ([0114](../../../docs/decisions/0114-the-builder-speaks-the-authors-language.md)).
+ *
+ * German has a catalogue; French does not, and gets English one message at a
+ * time — the same fallback the form shows for its three untranslated labels,
+ * shown here on purpose for the same reason.
+ */
+export function builderTextFor(locale: string): BuilderText {
+  return locale === 'de'
+    ? createBuilderText({ locale: 'de', messages: BUILDER_MESSAGES_DE })
+    : createBuilderText({ locale, messages: {} })
+}
+
 /**
  * A session that exists only so the preview's drop surface has one to hold
  * while the document is unopenable. It is never enabled, so nothing reaches
