@@ -1,6 +1,7 @@
 # 0136 — The Angular page runs the starter, and dates what it says about others
 
-- **Status:** accepted
+- **Status:** accepted; its comparison with SurveyJS reversed by
+  [0141](0141-the-angular-page-compares-with-no-other-product.md)
 - **Date:** 2026-10-09
 - **Deciders:** Daniel Bacher
 - **Verified by:** `pnpm test:browser` (`scripts/angular-page-browser-test.mjs`) — at 390 and

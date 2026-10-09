@@ -8,6 +8,12 @@ Loosely [Keep a Changelog](https://keepachangelog.com), with reasons attached �
 a line that says only *what* changed is rarely the line you need six months
 later.
 
+## Unreleased
+
+**Removed: the SurveyJS comparison from formancy.ai/angular-form-builder.** The page makes its
+case about formancy alone: the starter running, the install, saving and opening a form, and the
+tested versions ([0141](docs/decisions/0141-the-angular-page-compares-with-no-other-product.md)).
+
 ## 0.4.0 — 2026-10-09
 
 **The first release since `0.3.0`, and it freezes spec version 4** — with the two survey
