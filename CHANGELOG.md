@@ -10,6 +10,20 @@ later.
 
 ## Unreleased
 
+**Corrected: the documentation named `@formancy/cli`, which does not exist.** The roadmap
+said `npx @formancy/cli types` emits a TypeScript type per form — given as the reason formancy
+does not copy form.io's untyped per-form API — and the migration guide and the versioning page
+said `@formancy/cli migrate` rewrites documents forward. No such package was ever built, so the
+one command a reader could copy was a 404 from npm. Migrating a document is `upgradeSpecVersion`
+from `@formancy/spec`, a function, and those pages now say so; a command-line tool and a type
+per form are listed under what does not exist yet, with what it would take. Two sentences
+naming "a script, the CLI or an agent" lose the CLI. Nothing had compared the pages with the
+manifests: `apps/docs/src/package-references.test.ts` now reads every package's name, whether
+it is published and the commands it declares from the workspace manifests, and fails when a
+page names a package that is not there, has `npx` or another runner fetch one that is
+unpublished or has no command to run, installs a private one, or runs a `formancy…` command
+nobody declares.
+
 **Changed: an option's picture is drawn smaller in every shipped theme.** All four themes drew
 it 7rem wide in a 4:3 frame — 112 by 84 pixels, whatever the screen — so the playground's two
 delivery pictograms made a two-option question mostly picture, and it was reported as too big.

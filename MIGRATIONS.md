@@ -265,9 +265,11 @@ every repeater row an `_id`, and validate it.
 From spec `"1"` on:
 
 - a spec version bump is always a MAJOR event, announced ahead of time,
-- `@formancy/cli migrate` rewrites documents from version N to N+1 — schemas
-  are data, so the migrator is cheap to provide and it is the single strongest
-  trust signal we can offer,
+- `upgradeSpecVersion` from `@formancy/spec` moves a document from version N to
+  a later one. Schemas are data, so the migrator is cheap to provide — so far it
+  is one line, because each version has been a superset of the one before. It is
+  a function, not the command-line migrator this line used to promise, which was
+  never built,
 - submissions never migrate: they stay bound to the exact form version that
   produced them, forever. That binding is what makes an old submission
   auditable, and no upgrade may touch it.
