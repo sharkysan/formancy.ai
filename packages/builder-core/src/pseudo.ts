@@ -1,4 +1,5 @@
 import { BUILDER_MESSAGES } from './messages.js'
+import { schemaTexts } from './schema-words.js'
 import type { BuilderCatalogue, BuilderLanguage, BuilderMessageId, Message } from './messages.js'
 
 /**
@@ -6,8 +7,9 @@ import type { BuilderCatalogue, BuilderLanguage, BuilderMessageId, Message } fro
  *
  * A builder in a language nobody reads — every catalogue message wrapped in
  * `⟦ ⟧` — shows two kinds of text. What came from the catalogue is marked; what
- * did not is either the document's own words (a field's label, a type's title
- * from the spec's JSON Schema) or a sentence still written in the code. The
+ * did not is either the document's own words (a field's label, a scenario's name)
+ * or a sentence still written in the code. The spec's own words — a property's
+ * title, a field type's name — are marked too, through the language's `schema`. The
  * first kind is fine and the second is the defect, and `untranslated` tells
  * them apart.
  *
@@ -34,8 +36,13 @@ export function pseudoLanguage(): BuilderLanguage {
   const messages = Object.fromEntries(
     ids.map((id) => [id, mark(BUILDER_MESSAGES[id])]),
   ) as BuilderCatalogue
+  // The spec's own words too: a property's title is the builder's to show in the
+  // author's language, so a walk has to be able to see one that was not (0121).
+  const schema = Object.fromEntries(
+    schemaTexts().map((english) => [english, `${OPEN}${english}${CLOSE}`]),
+  )
   // English plural and list rules: the marks are what is under test, not the grammar.
-  return { locale: 'en-GB', messages }
+  return { locale: 'en-GB', messages, schema }
 }
 
 /**
@@ -43,7 +50,7 @@ export function pseudoLanguage(): BuilderLanguage {
  *
  * `shown` is every piece of text a person could read or hear — text nodes and
  * the attributes that name things. `ownWords` are the words that are not the
- * builder's to translate: the document's labels and the spec's type titles. A
+ * builder's to translate: the document's labels, a host's names, a parser's message. A
  * fragment that is only punctuation, digits or symbols ("↑ ↓", "—") is nobody's
  * language and passes.
  *

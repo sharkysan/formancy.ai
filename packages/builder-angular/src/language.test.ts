@@ -85,7 +85,8 @@ function ownWords(document: FormSchema): string[] {
   return [
     document.title,
     ...flatten(document).map((node) => nameOf(document, node.def)),
-    ...paletteEntries().flatMap((entry) => [entry.title, entry.description ?? '']),
+    // The palette's type names are NOT here: they are the spec's words, translated
+    // through the language's schema and marked like everything else (0121).
     'a',
     'p',
     'u',
@@ -354,9 +355,9 @@ describe('the property panels and their editors', () => {
         node.def.key,
         node.def.type,
       ]),
+      // A property's choices are the format's tokens; its title and description are
+      // the spec's words, translated and marked, and so not allowed here (0121).
       ...properties.flatMap((property) => [
-        property.title,
-        property.description,
         ...(property.choices ?? []),
       ]),
       'table',

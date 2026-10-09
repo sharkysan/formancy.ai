@@ -39,7 +39,7 @@ export function PropertyPanel({ session, keyPath }: PropertyPanelProps): ReactEl
   if (node === undefined) return null
 
   const def = node.def
-  const properties = editablePropertiesFor(def.type, def.widget)
+  const properties = editablePropertiesFor(def.type, def.widget, session.text)
   const current = def as unknown as Record<string, unknown>
 
   return (

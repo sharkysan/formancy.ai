@@ -65,6 +65,8 @@ function isCatalogue(file: string): boolean {
     ) {
       found = true
     }
+    // The spec's words beside the schema (0121): a constant typed as SchemaWords.
+    if (ts.isVariableDeclaration(node) && node.type?.getText(source) === 'SchemaWords') found = true
     ts.forEachChild(node, visit)
   }
   visit(source)
@@ -128,7 +130,13 @@ describe('a sentence this package says to a person', () => {
     expect(files.length).toBeGreaterThan(20)
     // And finds the catalogues by what they are: English and every shipped language.
     expect(catalogues).toEqual(
-      expect.arrayContaining(['messages.ts', 'messages-de.ts', 'messages-fr.ts']),
+      expect.arrayContaining([
+        'messages.ts',
+        'messages-de.ts',
+        'messages-fr.ts',
+        'schema-words-de.ts',
+        'schema-words-fr.ts',
+      ]),
     )
   })
 

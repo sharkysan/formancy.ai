@@ -155,6 +155,13 @@ has no data for is English rather than whatever the machine is set to — measur
 other answer joined one document's lists differently on two machines
 ([0114](../decisions/0114-the-builder-speaks-the-authors-language.md)).
 
+**The spec's own words are a third**, kept beside the schema rather than in either
+catalogue: a property's title and description and a field type's name stay English in
+the JSON Schema, which the reference documentation reads, and translations sit beside it
+keyed by that English. The set is derived from the schema, so a reworded description fails
+a test until its translations follow
+([0121](../decisions/0121-the-specs-words-are-translated-beside-it.md)).
+
 ## 8.9 Error handling
 
 **Fail open on metadata, fail closed on validation**

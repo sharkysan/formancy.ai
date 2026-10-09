@@ -221,3 +221,4 @@ listed under the sections they belong to above.
 | [0118](0118-an-editor-is-handed-its-language.md) | An editor is handed its language, and the two list editors have one shape | accepted |
 | [0119](0119-a-sentence-in-builder-core-comes-from-the-catalogue.md) | A sentence in builder-core comes from the catalogue, and the compiler is asked | accepted |
 | [0120](0120-a-sessions-language-is-fixed-for-its-lifetime.md) | A session's language is fixed for its lifetime, as an engine's locale is | accepted |
+| [0121](0121-the-specs-words-are-translated-beside-it.md) | The spec's words are translated beside it, keyed by the English it writes | accepted |

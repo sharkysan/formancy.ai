@@ -1,4 +1,5 @@
 import type { FieldDef, FormSchema } from '@formancy/spec'
+import type { BuilderText } from './messages.js'
 import { nextSpecVersion, paletteEntries } from './palette.js'
 import type { BuilderSession, Location } from './session.js'
 import { flatten, nameOf } from './tree.js'
@@ -117,7 +118,7 @@ export function insertAndSay(session: BuilderSession, def: FieldDef, target: Mov
   const { text } = session
   const outcome = session.insertField(target.location, def)
   return outcome.ok
-    ? text('said.added', { what: titleOf(def.type), where: target.label })
+    ? text('said.added', { what: titleOf(def.type, text), where: target.label })
     : text('said.cannotAdd', { reason: outcome.message })
 }
 
@@ -201,8 +202,8 @@ function nameAt(session: BuilderSession, keyPath: readonly string[]): string {
 }
 
 /** The palette's title for a type: the spec's own word for it, as the palette shows it. */
-function titleOf(type: string): string {
-  return paletteEntries().find((entry) => entry.type === type)?.title ?? type
+function titleOf(type: string, text: BuilderText): string {
+  return paletteEntries(undefined, text).find((entry) => entry.type === type)?.title ?? type
 }
 
 function samePath(a: readonly string[], b: readonly string[]): boolean {

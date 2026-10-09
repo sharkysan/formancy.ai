@@ -16,6 +16,9 @@ export type {
 export { BUILDER_MESSAGES, createBuilderText } from './messages.js'
 export { BUILDER_MESSAGES_DE } from './messages-de.js'
 export { BUILDER_MESSAGES_FR } from './messages-fr.js'
+export { SCHEMA_WORDS_DE } from './schema-words-de.js'
+export { SCHEMA_WORDS_FR } from './schema-words-fr.js'
+export { schemaTexts } from './schema-words.js'
 export { pseudoLanguage, untranslated } from './pseudo.js'
 export type {
   BuilderCatalogue,
@@ -24,6 +27,7 @@ export type {
   BuilderText,
   Message,
   PluralMessage,
+  SchemaWords,
 } from './messages.js'
 export { createBuilderSession } from './session.js'
 export { dataPathOf } from './navigate.js'

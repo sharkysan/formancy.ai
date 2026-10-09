@@ -256,10 +256,10 @@ export class FormancyBuilder {
     return node === undefined ? null : node.keyPath.join('.')
   })
   protected readonly palette = computed((): PaletteEntry[] =>
-    paletteEntries(this.view().document.specVersion),
+    paletteEntries(this.view().document.specVersion, this.text()),
   )
   protected readonly locked = computed((): PaletteEntry[] =>
-    typesNeedingUpgrade(this.view().document.specVersion),
+    typesNeedingUpgrade(this.view().document.specVersion, this.text()),
   )
   protected readonly lockedNames = computed(() =>
     this.text().list(this.locked().map((entry) => entry.title)),
@@ -397,7 +397,7 @@ export class FormancyBuilder {
   }
 
   protected labelForType(type: string): string {
-    return paletteEntries().find((entry) => entry.type === type)?.title ?? type
+    return paletteEntries(undefined, this.text()).find((entry) => entry.type === type)?.title ?? type
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
