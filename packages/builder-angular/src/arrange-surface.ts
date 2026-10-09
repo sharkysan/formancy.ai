@@ -111,7 +111,7 @@ export class FormancyArrangeSurface {
   protected readonly announcement = signal('')
 
   /** Which elements this has marked, so the marks can be taken off again. */
-  private marked: HTMLElement[] = []
+  private readonly marked = new Set<HTMLElement>()
 
   constructor() {
     /*
@@ -119,7 +119,12 @@ export class FormancyArrangeSurface {
      *
      * Done to the DOM rather than in a template because the markup belongs to
      * the renderer — the whole point of the project is that it does. Re-run on
-     * every accepted command, because the rendered tree is replaced.
+     * every accepted command, because the rendered tree is replaced, and kept up
+     * with the DOM in between: what is projected here is redrawn by whoever drew
+     * it, when they choose — a field a rule shows, or a preview in another
+     * framework — and an element arriving after this ran carried no mark and could
+     * not be picked up. Only arrivals are observed; the marks are
+     * attributes, so putting them on does not call this again.
      *
      * Reads `document()` to re-run, and writes only to the DOM: nothing here
      * touches a signal. An effect that wrote one it also read would be a cycle,
@@ -127,7 +132,7 @@ export class FormancyArrangeSurface {
      * with no error at all — which looks exactly like frozen bindings. The
      * `untracked` is belt and braces for the same reason.
      */
-    effect(() => {
+    effect((onCleanup) => {
       // Read for the dependency, not for the value: a command replaced the
       // rendered tree, so whatever was marked is gone.
       void this.view()
@@ -136,15 +141,22 @@ export class FormancyArrangeSurface {
         this.unmark()
         if (!on) return
         const root = this.surface().nativeElement
-        this.marked = [...root.querySelectorAll<HTMLElement>(SELECTOR)].filter(
-          (element) => this.pathOfElement(element) !== undefined,
-        )
-        for (const element of this.marked) {
-          element.draggable = true
-          element.dataset['arrangeable'] = 'true'
-        }
+        this.mark(root)
+        const arriving = new MutationObserver(() => this.mark(root))
+        arriving.observe(root, { childList: true, subtree: true })
+        onCleanup(() => arriving.disconnect())
       })
     })
+  }
+
+  private mark(root: HTMLElement): void {
+    for (const element of this.marked) if (!element.isConnected) this.marked.delete(element)
+    for (const element of root.querySelectorAll<HTMLElement>(SELECTOR)) {
+      if (this.marked.has(element) || this.pathOfElement(element) === undefined) continue
+      element.draggable = true
+      element.dataset['arrangeable'] = 'true'
+      this.marked.add(element)
+    }
   }
 
   private unmark(): void {
@@ -153,7 +165,7 @@ export class FormancyArrangeSurface {
       delete element.dataset['arrangeable']
       delete element.dataset['drop']
     }
-    this.marked = []
+    this.marked.clear()
   }
 
   /**

@@ -1,5 +1,6 @@
 /**
- * Dropping between two nodes on the preview (0146).
+ * Dropping between two nodes on the preview (0146), and picking things up again after a
+ * drop (0148).
  *
  * The surface tests hand every element a rectangle, because jsdom draws nothing, and
  * then say where the pointer is. That takes two facts on trust: that the theme leaves
@@ -11,6 +12,11 @@
  */
 
 const NODE = '[data-formancy-layout-path],[data-formancy-field-path]'
+
+/** How many nodes in a preview can be picked up. */
+async function pickable(pane) {
+  return pane.locator('[data-arrangeable="true"]').count()
+}
 
 /** The order the preview draws the given fields in, read from the page. */
 async function fieldOrder(pane) {
@@ -100,6 +106,7 @@ export async function checkArrangeGaps(browser, url, check) {
       const country = pane.locator('[data-formancy-field-path="country"]').first()
       await centred(phone)
       const gap = await gapBetween(page, email, phone)
+      const before = await pickable(pane)
 
       check(
         `${renderer}: two stacked nodes in a section have space between them, and it is the section's`,
@@ -119,8 +126,41 @@ export async function checkArrangeGaps(browser, url, check) {
           ? null
           : `the section draws ${drawn.join(', ')}`,
       )
+
+      // A drop redraws the preview — React's in the surface's own render, Angular's after
+      // it, on Angular's schedule — and what is redrawn must still be there to pick up.
+      // The Angular preview went from 33 such nodes to none after one drop (0148).
+      const after = await settled(
+        () => pickable(pane),
+        (count) => count === before,
+      )
+      check(
+        `${renderer}: after a drop, as much of the preview can be picked up as before`,
+        before > 0 && after === before ? null : `${String(before)} nodes before the drop, ${String(after)} after`,
+      )
     } finally {
       await inSection.page.close()
+    }
+
+    // ── A field a rule shows: the canton, once Switzerland is chosen ───────────────────
+    // A hidden field leaves the DOM, and the one a rule shows is mounted by its own slot,
+    // not by a render of the surface — so it arrived with no mark (0148).
+    const shown = await arranging(browser, url, renderer)
+    try {
+      const { pane } = shown
+      const canton = pane.locator('[data-formancy-field-path="canton"]').first()
+      await pane.getByRole('combobox', { name: 'Country' }).selectOption('CH')
+      await canton.waitFor({ timeout: 5000 })
+      const marked = await settled(
+        () => canton.getAttribute('data-arrangeable'),
+        (mark) => mark === 'true',
+      )
+      check(
+        `${renderer}: a field a rule shows while arranging can be picked up`,
+        marked === 'true' ? null : 'the canton appeared with no mark on it',
+      )
+    } finally {
+      await shown.page.close()
     }
 
     // ── At the top level: the order section into the space between the first two ───

@@ -122,23 +122,36 @@ export function FormancyArrangeSurface({
    * Marking what can be picked up.
    *
    * Done to the DOM rather than in the markup because the markup belongs to
-   * the renderer — the whole point of the project is that it does. Re-run on
-   * every accepted command, since the rendered tree is replaced.
+   * the renderer — the whole point of the project is that it does. And kept up
+   * with the DOM rather than with this component's renders, for the same reason:
+   * what is inside is redrawn by whoever drew it, when they choose. A field a rule
+   * shows is mounted by its own slot without this surface rendering, and the
+   * playground's Angular preview, held inside it, replaces its markup after a drop
+   * on Angular's schedule — before this observed the tree, the field arrived
+   * unmarked and nothing in that preview could be picked up a second time. Only elements arriving are observed; the marks themselves are
+   * attributes, so putting them on does not call this again.
    */
   useEffect(() => {
     const root = surface.current
     if (root === null) return undefined
     if (!enabled) return undefined
 
-    const marked = [...root.querySelectorAll<HTMLElement>(SELECTOR)].filter(
-      (element) => pathOfElement(element) !== undefined,
-    )
-    for (const element of marked) {
-      element.draggable = true
-      element.dataset['arrangeable'] = 'true'
+    const marked = new Set<HTMLElement>()
+    const mark = (): void => {
+      for (const element of marked) if (!element.isConnected) marked.delete(element)
+      for (const element of root.querySelectorAll<HTMLElement>(SELECTOR)) {
+        if (marked.has(element) || pathOfElement(element) === undefined) continue
+        element.draggable = true
+        element.dataset['arrangeable'] = 'true'
+        marked.add(element)
+      }
     }
+    mark()
+    const arriving = new MutationObserver(mark)
+    arriving.observe(root, { childList: true, subtree: true })
 
     return () => {
+      arriving.disconnect()
       for (const element of marked) {
         element.draggable = false
         delete element.dataset['arrangeable']
