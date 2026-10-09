@@ -29,7 +29,9 @@ import { EMPTY_PAYLOAD_SHA256, signRequest } from './sigv4.js'
  * store is being waited on, for the response headers and then for each chunk of the
  * body, and not while a chunk is in the caller's hands. A store that stops answering
  * is abandoned; a download that is still arriving is not, however long it takes.
- * `send` has the reasoning.
+ * `send` has the reasoning, and
+ * [0155](../../../docs/decisions/0155-the-object-store-is-timed-on-its-silence.md) what
+ * it costs and what it was chosen over.
  *
  * **An upload is still bounded as a whole.** The store answers a PUT once it has the
  * entire body, so sending it falls inside the wait for the headers, and a PUT that
@@ -232,6 +234,11 @@ type Answer = Pick<Response, 'ok' | 'status' | 'statusText' | 'headers'> & {
  * A clock for one request: started while the store owes something, stopped while it
  * does not, and aborting the request if it ever runs out. `owed` names what the
  * store failed to send, for the error that says so.
+ *
+ * Unref'd, as `AbortSignal.timeout` was: a deadline is not work. One is left running
+ * under every body nobody reads, and a referenced timer would hold the process it
+ * lives in for up to `timeoutMs` after everything else had finished. It still fires
+ * when it matters: a request still in flight holds the process up by its connection.
  */
 function clock(timeoutMs: number, request: string) {
   const controller = new AbortController()
@@ -242,6 +249,7 @@ function clock(timeoutMs: number, request: string) {
     timer = setTimeout(() => {
       controller.abort(new Error(`${request}: ${owed} within ${String(timeoutMs)} ms`))
     }, timeoutMs)
+    timer.unref()
   }
   return { signal: controller.signal, start, stop }
 }

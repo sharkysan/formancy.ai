@@ -255,3 +255,4 @@ listed under the sections they belong to above.
 | [0152](0152-a-merged-branch-is-deleted.md) | A merged branch is deleted | accepted |
 | [0153](0153-a-file-is-received-by-one-request-at-a-time.md) | A file is received by one request at a time | accepted |
 | [0154](0154-the-website-makes-no-request-to-any-other-site.md) | The website makes no request to any other site, and a browser gate says so | accepted |
+| [0155](0155-the-object-store-is-timed-on-its-silence.md) | The object store is timed on its silence, not on the whole request | accepted |

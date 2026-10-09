@@ -250,6 +250,17 @@ image. A blanked `FORMANCY_FILES_DIR` does not help with those images either: th
 empty string as a directory. Fixed after `0.4.0`, in the compose files and in the server
 together; see the changelog.
 
+**With the S3 object store, a download fails if it is still streaming thirty seconds after
+the server asked the store for it**, in `0.4.0` as in `0.2.0` and `0.3.0`. The store's
+timeout covers the whole request, body included, so a file still arriving when it runs out
+is cut off part-way however steadily it is arriving — and how long a download streams is
+mostly the downloader's connection, which backpressure carries back to the store. Thirty
+seconds is the store's default and the server sets no other, so no setting changes it. The
+local store has no such bound. An upload to the object store is bounded the same way, as a
+whole, and stays so after the fix. Fixed after `0.4.0` for downloads, at the cost of
+leaving nothing in the server to end a download whose reader has stopped reading
+([0155](../decisions/0155-the-object-store-is-timed-on-its-silence.md)); see the changelog.
+
 ### Reserved, and not implemented
 
 Each name is reserved in the sense that nothing else may take it, and **reserving is not

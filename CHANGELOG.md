@@ -22,7 +22,9 @@ was aborted due to timeout`. Two consequences, recorded as debt in arc42 §11 ra
 a downloader that stops reading is no longer cut off at thirty seconds by the store, and nothing
 else in the server cuts it off either, as with the local store; and an upload is still bounded
 as a whole, because the store answers a PUT only once it has every byte. Unit tests serve a body
-that trickles past the timeout and a reader that pauses past it, and both failed before.
+that trickles past the timeout and a reader that pauses past it, and both failed before. Why
+this and not a longer timeout, a setting, or undici's own `bodyTimeout`:
+[0155](docs/decisions/0155-the-object-store-is-timed-on-its-silence.md).
 
 **Fixed: formancy.ai asked other sites for its type and its editor.** Every page of the site
 loaded its faces from Google Fonts, and the playground loaded Monaco from jsDelivr, so opening

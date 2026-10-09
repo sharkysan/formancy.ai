@@ -299,7 +299,14 @@ describe('how long the store is waited on', () => {
     )
   }, 10_000)
 
-  test('lets go of the connection under a body nobody reads', async () => {
+  // Two bodies, because the client sees them differently. A few bytes leave it
+  // waiting on the store. More than every buffer between the two leaves it waiting
+  // on a reader that never comes, and paused -- the state in which undici's own
+  // `bodyTimeout` does not fire, which is why it was not the bound used (0155).
+  test.each([
+    ['a few bytes', 16],
+    ['more than every buffer', 4 * 1024 * 1024],
+  ])('lets go of the connection under a body nobody reads: %s', async (_, sent) => {
     // A path that throws on the status never reads the error document behind it,
     // and an unread body holds its connection for as long as the store keeps it
     // open. The clock starts again when the headers arrive rather than when
@@ -317,13 +324,37 @@ describe('how long the store is waited on', () => {
       (request, response) => {
         request.resume()
         response.on('close', markClosed)
-        response.writeHead(500, { 'content-length': '1024' })
-        response.write(Buffer.alloc(16))
+        response.writeHead(500, { 'content-length': String(sent * 2) })
+        response.write(Buffer.alloc(sent))
       },
       async (store) => {
         await expect(store.open('erroring')).rejects.toThrow(/500/)
         const still = delay(TIMEOUT_MS * 3).then(() => 'still open' as const)
         expect(await Promise.race([closed, still])).toBe('closed')
+      },
+    )
+  }, 10_000)
+
+  test('leaves no clock behind that keeps the process alive', async () => {
+    // A clock is a deadline, not work, and a deadline must not be what keeps a
+    // process up. One is left running whenever a body goes unread -- here a 500's
+    // error document, complete on arrival, which `open` throws on without reading
+    // -- until it runs out, thirty seconds in a deployment. `AbortSignal.timeout`,
+    // which the clock replaced, was unref'd; an ordinary timer holds whatever
+    // process the store lives in until it fires. The server's own entry point
+    // exits explicitly and would not notice. Anything else would wait.
+    const deadlines = (): number =>
+      process.getActiveResourcesInfo().filter((resource) => resource === 'Timeout').length
+    await withStore(
+      (request, response) => {
+        request.resume()
+        response.writeHead(500, { 'content-length': '8' })
+        response.end('<Error/>')
+      },
+      async (store) => {
+        const before = deadlines()
+        await expect(store.open('erroring')).rejects.toThrow(/500/)
+        expect(deadlines()).toBe(before)
       },
     )
   }, 10_000)
