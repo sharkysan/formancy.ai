@@ -1096,6 +1096,32 @@ describe('what a reader found that nineteen guards had not', () => {
     }
   })
 
+  test('and the names it says are absent from the type list are absent from it', () => {
+    /*
+     * The sentence under the missing list named `signature` as a reserved name "simply
+     * absent from the type list" for two spec versions after `signature` became a type.
+     * The table above is held by the case before this one; the sentence was not, because
+     * it is prose rather than a row.
+     */
+    const roadmap = readFileSync(
+      join(repo, 'apps', 'docs', 'src', 'content', 'docs', 'project', 'roadmap.md'),
+      'utf8',
+    )
+    const sentence = roadmap
+      .split('\n\n')
+      .find((paragraph) => paragraph.startsWith('Field **type names**'))
+    expect(sentence, 'the roadmap no longer has the reserved-names sentence').toBeDefined()
+    const names = [...(sentence ?? '').matchAll(/`([^`]+)`/g)].map((match) => match[1]!)
+    expect(names.length, 'no names were read out of the sentence').toBeGreaterThan(0)
+
+    const defined = vocabulary()
+    for (const name of names) {
+      expect(defined.has(name), `the roadmap says ${name} is absent, and the schema defines it`).toBe(
+        false,
+      )
+    }
+  })
+
   test('and no document says the editor is built in one framework when two build it', () => {
     /*
      * Derived from the packages. A builder package per framework is the fact; a
@@ -1128,5 +1154,27 @@ describe('what a reader found that nineteen guards had not', () => {
 
     expect(readme).toContain('@formancy/builder-react')
     expect(readme).toContain('@formancy/builder-angular')
+  })
+
+  test('and the README’s map of the repository names every package and app in it', () => {
+    /*
+     * Derived from the directories. The map had lost three of twenty — the proof-of-work
+     * challenge, the rich-text editor and the Angular starter — while saying "7 fixtures"
+     * of a suite with eleven and "two reference themes" of five: a map is read as complete,
+     * so a missing row reads as a missing package.
+     */
+    const readme = readFileSync(join(repo, 'README.md'), 'utf8')
+    const map = readme.slice(readme.indexOf('## Layout'))
+    const mapped = new Set(
+      [...map.matchAll(/^((?:packages|apps)\/[\w-]+)/gm)].map((match) => match[1]!),
+    )
+    const present = ['packages', 'apps'].flatMap((top) =>
+      readdirSync(join(repo, top), { withFileTypes: true })
+        .filter((entry) => entry.isDirectory() && existsSync(join(repo, top, entry.name, 'package.json')))
+        .map((entry) => `${top}/${entry.name}`),
+    )
+
+    expect(present.length, 'no packages or apps were found to compare against').toBeGreaterThan(10)
+    expect(present.filter((path) => !mapped.has(path)), 'not on the README’s map').toEqual([])
   })
 })

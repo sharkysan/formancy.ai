@@ -40,11 +40,17 @@ by role and accessible name, and axe had nothing to report. Fixed in
 [0073](../decisions/0073-a-host-element-is-not-a-layout.md), found by a person looking at
 a running page.
 
-**No application in this repository renders the Angular bindings.** The playground and the
-admin app are React; the docs quote Angular without executing it. That is the actual hole,
-and closing it — an Angular app in the repository, rendered and measured — is the remedy
-this section is here to name. Until then the Angular half of "one suite, N drivers" holds
-for behaviour and not for appearance.
+**This section once said no application in the repository rendered the Angular bindings,
+and named an Angular app, rendered and measured, as the remedy.** Both exist now. The
+playground mounts the Angular renderer and the Angular builder beside the React ones over the
+same document ([0095](../decisions/0095-one-schema-two-renderers.md),
+[0096](../decisions/0096-two-builders-one-session.md)); `apps/angular-starter` is an Angular
+application, which `test:e2e:angular` installs from the packed packages and runs in Chromium
+and `test:browser` loads where the site embeds it
+([0133](../decisions/0133-the-angular-starter-is-the-builder-and-the-form.md),
+[0136](../decisions/0136-the-angular-page-runs-the-starter.md)). What is still React-only is
+the admin, so the Angular builder's appearance is measured in the playground and the starter
+and nowhere a deployment ships it.
 
 *Residual:* Angular users will demand a position on Signal Forms. The position
 is interop, not inheritance — Signal Forms' schema is authored statically in
