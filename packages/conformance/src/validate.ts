@@ -15,8 +15,8 @@ import {
   accessibleNameProblem,
   messageCatalogue,
   validateI18n,
-  validateLocale,
 } from './validate-text.js'
+import { validateMount } from './mount.js'
 import { asRecord, describeValue, isJsonValue, isStringArray } from './values.js'
 
 export interface FixtureProblem {
@@ -206,7 +206,7 @@ export function validateFixture(value: unknown): readonly FixtureProblem[] {
     }
   }
 
-  problems.push(...validateLocale(fixture['locale'], fixture['schema']))
+  problems.push(...validateMount(fixture))
 
   const steps = fixture['steps']
   if (!Array.isArray(steps)) {

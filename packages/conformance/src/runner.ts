@@ -2,7 +2,6 @@ import type {
   AccessibilityViolation,
   ConformanceMessage,
   DriverFactory,
-  MountOptions,
   RendererDriver,
   SubmitResult,
 } from './driver.js'
@@ -10,6 +9,7 @@ import { ROW_ID } from '@formancy/spec'
 import { BACK_COMMAND, NEXT_COMMAND, addItemCommand, removeItemCommand } from './paths.js'
 import type { Fixture, FixtureStep, StepKind } from './types.js'
 import { parseFixture, stepKind } from './validate.js'
+import { mountOptionsFor } from './mount.js'
 
 export type StepStatus = 'passed' | 'failed' | 'skipped' | 'crashed'
 export type FixtureStatus = 'passed' | 'failed' | 'crashed'
@@ -584,10 +584,6 @@ async function snapshotQuietly(driver: RendererDriver): Promise<string | undefin
   } catch {
     return undefined
   }
-}
-
-function mountOptionsFor({ initialValues, locale }: Fixture): MountOptions {
-  return { ...(initialValues && { initialValues }), ...(locale !== undefined && { locale }) }
 }
 
 function codesAt(messages: readonly ConformanceMessage[], path: string): readonly string[] {

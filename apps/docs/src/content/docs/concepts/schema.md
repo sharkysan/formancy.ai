@@ -37,6 +37,11 @@ shape of every submission already collected — a data migration caused by a
 purely cosmetic decision. So pages are presentation, the payload stays flat
 across them, and a form author can reorganise steps freely.
 
+A paged form may also have a layout, and then each step is the layout holding that page's
+fields: a section, row, table or tab with nothing on the current page is not drawn, and a
+field the layout leaves out stays out on every page
+([0137](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0137-a-paged-forms-layout-is-drawn-a-page-at-a-time.md)).
+
 ## The answer shape each type stores
 
 Most types store one value. Three do not, and the difference matters more than

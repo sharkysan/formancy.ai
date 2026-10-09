@@ -183,5 +183,13 @@ export interface Fixture {
    * renderers at once.
    */
   readonly locale?: string
+  /**
+   * The named layout to draw the form with. Absent, the form is drawn in model order.
+   *
+   * The validator refuses a name the document does not have, because a renderer falls back
+   * to model order for one, and a case about how a layout is drawn would then pass against
+   * no layout. A driver may not ignore it, for the reason it may not ignore `locale`.
+   */
+  readonly layout?: string
   readonly steps: readonly FixtureStep[]
 }

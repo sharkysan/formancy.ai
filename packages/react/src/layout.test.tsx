@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'vitest'
-import { cleanup, render, screen } from '@testing-library/react'
+import { act, cleanup, render, screen } from '@testing-library/react'
 import { createFormEngine } from '@formancy/core'
 import type { FormSchema } from '@formancy/spec'
 import { FormancyForm } from './form.js'
@@ -431,5 +431,57 @@ describe('a layout in a locale that is not the default', () => {
 
     expect(screen.getByRole('textbox', { name: 'Prénom et nom' })).toBeTruthy()
     expect(screen.getByRole('group', { name: 'Employee' }), 'a gap showed the message id').toBeTruthy()
+  })
+})
+
+/**
+ * Tabs on a paged form (0137). The conformance fixture holds both renderers to drawing a
+ * paged form's layout a page at a time; a tab strip is the one container that names what
+ * it holds before anybody opens it, so it is the one that could still offer a tab over an
+ * empty panel — a name for a page somebody is not on.
+ */
+const pagedTabs: FormSchema = {
+  specVersion: '2',
+  id: 'paged-tabs',
+  title: 'Paged tabs',
+  model: {
+    fields: [
+      { key: 'one', type: 'page', label: 'One', fields: [{ key: 'alpha', type: 'text', label: 'Alpha' }] },
+      { key: 'two', type: 'page', label: 'Two', fields: [{ key: 'beta', type: 'text', label: 'Beta' }] },
+    ],
+  },
+  layouts: [
+    {
+      name: 'web',
+      nodes: [
+        {
+          kind: 'tabs',
+          children: [
+            { kind: 'section', label: 'First', children: [{ kind: 'field', path: 'alpha' }] },
+            { kind: 'section', label: 'Second', children: [{ kind: 'field', path: 'beta' }] },
+          ],
+        },
+      ],
+    },
+  ],
+}
+
+describe('a paged form with tabs', () => {
+  test('offers only the tabs with something on the page somebody is on', async () => {
+    const engine = createFormEngine({ schema: pagedTabs })
+    render(
+      <FormancyProvider engine={engine}>
+        <FormancyForm layout="web" />
+      </FormancyProvider>,
+    )
+    const tabs = (): string[] => screen.getAllByRole('tab').map((tab) => tab.textContent ?? '')
+
+    expect(tabs()).toEqual(['First'])
+    await act(async () => {
+      screen.getByRole('button', { name: 'Next' }).click()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    expect(tabs()).toEqual(['Second'])
+    expect(screen.getByRole('textbox', { name: 'Beta' })).toBeTruthy()
   })
 })

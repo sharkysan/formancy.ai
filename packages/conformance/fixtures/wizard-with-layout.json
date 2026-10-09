@@ -1,0 +1,80 @@
+{
+  "name": "a paged form drawn with a layout shows the page somebody is on, as the layout arranges it",
+  "description": "A layout arranges a form; pages divide it into steps; a form may have both, and then each step is the layout holding that page's fields. Drawing every page's fields on every step puts questions in front of somebody that Next does not check, and dropping the layout for a paged form throws away the arrangement its author made — the two renderers did one each. A field the layout leaves out stays out on every page, as it does in a form with no pages.",
+  "tags": ["wizard", "layout"],
+  "layout": "web",
+  "schema": {
+    "specVersion": "1",
+    "id": "signup",
+    "title": "Open an account",
+    "model": {
+      "fields": [
+        {
+          "key": "details",
+          "type": "page",
+          "label": "Your details",
+          "fields": [
+            { "key": "firstName", "type": "text", "label": "First name", "required": true },
+            { "key": "lastName", "type": "text", "label": "Last name" },
+            { "key": "nickname", "type": "text", "label": "Nickname" }
+          ]
+        },
+        {
+          "key": "address",
+          "type": "page",
+          "label": "Address",
+          "fields": [
+            { "key": "street", "type": "text", "label": "Street", "required": true },
+            { "key": "city", "type": "text", "label": "City" }
+          ]
+        }
+      ]
+    },
+    "layouts": [
+      {
+        "name": "web",
+        "nodes": [
+          {
+            "kind": "section",
+            "label": "About you",
+            "children": [
+              {
+                "kind": "row",
+                "children": [
+                  { "kind": "field", "path": "firstName" },
+                  { "kind": "field", "path": "lastName" }
+                ]
+              }
+            ]
+          },
+          {
+            "kind": "section",
+            "label": "Where you live",
+            "children": [
+              { "kind": "field", "path": "street" },
+              { "kind": "field", "path": "city" }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "steps": [
+    { "expectPage": "details" },
+    { "expectVisible": ["firstName", "lastName"] },
+    { "expectHidden": ["street", "city", "nickname"] },
+    { "set": { "firstName": "Ada" } },
+    { "next": true },
+    { "expectPage": "address" },
+    { "expectVisible": ["street", "city"] },
+    { "expectHidden": ["firstName", "lastName", "nickname"] },
+    { "set": { "street": "Rue de la Gare 1" } },
+    { "submit": true },
+    {
+      "expectSubmit": {
+        "status": "accepted",
+        "data": { "firstName": "Ada", "street": "Rue de la Gare 1" }
+      }
+    }
+  ]
+}

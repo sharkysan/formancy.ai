@@ -123,7 +123,11 @@ export function createReactDriver(): RendererDriver {
       await act(async () => {
         render(
           <FormancyProvider engine={engine!}>
-            <FormancyForm onSubmit={(outcome) => (lastOutcome = outcome)} submitLabel={SUBMIT_LABEL} />
+            <FormancyForm
+              onSubmit={(outcome) => (lastOutcome = outcome)}
+              submitLabel={SUBMIT_LABEL}
+              {...(options?.layout === undefined ? {} : { layout: options.layout })}
+            />
           </FormancyProvider>,
         )
         await new Promise((resolve) => setTimeout(resolve, 0))

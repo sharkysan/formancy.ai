@@ -237,3 +237,4 @@ listed under the sections they belong to above.
 | [0134](0134-the-versions-it-says-are-the-versions-it-runs.md) | The versions formancy says it supports are the versions it runs | accepted |
 | [0135](0135-a-block-is-a-field-with-its-rules.md) | A block is a field with its rules and its words, and the host keeps it | accepted |
 | [0136](0136-the-angular-page-runs-the-starter.md) | The Angular page runs the starter, and dates what it says about others | accepted |
+| [0137](0137-a-paged-forms-layout-is-drawn-a-page-at-a-time.md) | A paged form's layout is drawn a page at a time | accepted |

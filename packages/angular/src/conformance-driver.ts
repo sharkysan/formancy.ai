@@ -145,7 +145,10 @@ export function createAngularDriver(
           provideFormancy(engine),
           ...(extra.providers ?? []),
         ],
-        inputs: { submitLabel: SUBMIT_LABEL },
+        inputs: {
+          submitLabel: SUBMIT_LABEL,
+          ...(options?.layout === undefined ? {} : { layout: options.layout }),
+        },
         on: { submitted: (outcome: SubmitOutcome) => (lastOutcome = outcome) },
       })
       fixture = view.fixture

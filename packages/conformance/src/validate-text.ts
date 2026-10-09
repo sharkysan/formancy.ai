@@ -6,7 +6,8 @@ import { asRecord, describeValue } from './values.js'
  * through.
  *
  * Split out of `validate.ts` when the budget refused the locale check added
- * there. It is one reason to change: everything here is about a fixture being
+ * there; that check has since moved to `mount.ts`, beside the layout a fixture
+ * mounts with. It is one reason to change: everything here is about a fixture being
  * *findable* — by accessible name, in the language it is mounted in
  * ([0107](../../../docs/decisions/0107-layout-text-is-read-in-the-engines-locale.md)).
  *
@@ -48,31 +49,6 @@ export function messageCatalogue(value: unknown): ReadonlySet<string> | undefine
   const catalogue = asRecord(asRecord(i18n['messages'])?.[locale])
   if (catalogue === undefined) return new Set()
   return new Set(Object.keys(catalogue).filter((id) => typeof catalogue[id] === 'string'))
-}
-
-/**
- * The locale a fixture asks to be mounted in.
- *
- * Refused when the document carries no catalogue for it. `resolveText` falls
- * back to the default locale for anything it cannot find — right in a product,
- * and fatal here: the case would render wholly in the source language, find
- * every control by its source-language name and pass while certifying nothing.
- * A fixture that cannot fail is worse than one that is missing.
- */
-export function validateLocale(value: unknown, schema: unknown): FixtureProblem[] {
-  if (value === undefined) return []
-  if (typeof value !== 'string' || value === '') {
-    return [{ path: 'locale', message: 'expected a non-empty string' }]
-  }
-
-  const messages = asRecord(asRecord(asRecord(schema)?.['i18n'])?.['messages'])
-  if (asRecord(messages?.[value]) !== undefined) return []
-  return [
-    {
-      path: 'locale',
-      message: `no catalogue for "${value}": the fixture would fall back to the default locale and assert nothing`,
-    },
-  ]
 }
 
 export function validateI18n(value: unknown, at: string): FixtureProblem[] {
