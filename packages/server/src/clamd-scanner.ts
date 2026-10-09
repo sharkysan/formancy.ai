@@ -31,6 +31,11 @@ export const CLAMD_DEFAULT_MAX_BYTES = 100 * 1024 * 1024
  * as a scanner that is down and would tell the person to try again forever; the real clamd
  * measured here answered intact. Checked first, the outcome does not depend on which.
  * Set it to what clamd is configured with.
+ *
+ * **`timeoutMs` is for silence, not for the whole scan.** It is the socket's idle timeout,
+ * restarted by any traffic on the connection, so it abandons a clamd that has stopped
+ * answering and not a scan that is still moving. Nothing here bounds how long a scan takes,
+ * which is why the lease a request holds a file under can be outlasted (0153).
  */
 export function createClamdScanner({
   host,

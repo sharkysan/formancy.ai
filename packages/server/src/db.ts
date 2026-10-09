@@ -121,6 +121,7 @@ export const files = pgTable('files', {
   state: text('state').notNull().default('offered'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
   submissionId: uuid('submission_id'),
+  receivingUntil: timestamp('receiving_until', { withTimezone: true }),
 })
 
 export const submissions = pgTable('submissions', {
@@ -239,6 +240,11 @@ export async function bootstrapSchema(sql: postgres.Sql): Promise<void> {
       -- submission referencing bytes another submission owns.
       CONSTRAINT files_one_submission UNIQUE (id, submission_id)
     )`
+  // One request receives a file's bytes at a time (0153): until this instant, or nobody
+  // while it is null. A lease rather than a fourth state, so the CHECK above stands and a
+  // request that died holding it holds it only until it runs out. Added here rather than
+  // in the CREATE so a database from before it gains the column on start.
+  await sql`ALTER TABLE files ADD COLUMN IF NOT EXISTS receiving_until timestamptz`
   await sql`
     CREATE INDEX IF NOT EXISTS files_abandoned
       ON files (created_at) WHERE state <> 'claimed'`

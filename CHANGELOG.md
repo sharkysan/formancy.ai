@@ -10,6 +10,39 @@ later.
 
 ## Unreleased
 
+**Fixed: a slow upload could take an accepted submission's attachment away from it**, in every
+release since uploads arrived in 0.2.0. The `PUT` that receives a file's bytes wrote the row
+back as it had read it before the write — and, from 0.4.0 with a scanner, before the scan:
+`stored`, with no submission. A second `PUT` for the same file, sent while the first was still
+being scanned or written, could be stored and claimed by a submission first; the first then put
+the claimed row back to unclaimed — for the collector to delete a day later — and wrote its
+bytes over the ones the submission was accepted with. The supplied clients never send that
+second `PUT`: the file field's **Try again** runs the uploader again, and the admin's uploader
+offers the file anew, under a new id, every time. It comes from a proxy or HTTP library
+retrying the request, an integrator's uploader that sends the bytes again without offering
+again, or whoever holds the file's id, on purpose. Reproduced on real PostgreSQL against
+0.4.0's route, with a scanner held open and, without one, with the write held open. One request
+at a time now receives a file's bytes: it holds a two-minute lease on the row, a second request
+is answered **`409 busy`** before its bytes are scanned, the lease is checked again before the
+write, and the row is settled only while the file is still offered and the lease is still that
+request's. A refusal by the scanner gives the lease back before it replies, so the same file
+sent again is not busy, and a release that fails does not replace the reply. What this does
+not close: a request whose scan and write together outlast the lease can
+still replace the bytes, though never the row — and the supplied clamd adapter does not prevent
+it, because its 30-second timeout is for silence on the connection, not for the whole scan.
+Nothing records that it happened beyond the `409` that request is answered with, and a test
+asserts it so that closing it is deliberate
+([0153](docs/decisions/0153-a-file-is-received-by-one-request-at-a-time.md), B10 in
+[`SAFETY-ANALYSIS.md`](docs/regulatory/SAFETY-ANALYSIS.md)).
+
+**Breaking, for anybody implementing `Storage` themselves: `updateFile` is replaced by
+`leaseFile`, `settleFile` and `releaseFile`, and `FileRecord` carries `receivingUntil`.** Each
+new method is one conditional write that answers whether it matched, as `spendChallenge` does.
+`updateFile` set the row from whatever its caller held, which was the defect above, and a port
+offering such a write invites the next caller to repeat it. `@formancy/server`'s PostgreSQL
+storage adds the nullable `receiving_until` column to `files` on start; there is nothing to run.
+What each method must do, and why, is in [`MIGRATIONS.md`](MIGRATIONS.md).
+
 **Fixed: the object store could not be used through either compose file — the server
 restart-looped.** Both files passed `FORMANCY_FILES_DIR` to the server as a literal path, so
 a deployment that set the `FORMANCY_S3_*` variables as `.env.example` says handed the server

@@ -1,8 +1,36 @@
 import { randomUUID } from 'node:crypto'
-import type { FastifyInstance, FastifyRequest } from 'fastify'
+import type { FastifyBaseLogger, FastifyInstance, FastifyRequest } from 'fastify'
 import { offerUpload, resolveForm, screenUpload } from '@formancy/server-core'
-import type { Actor, ServerDeps } from '@formancy/server-core'
+import type { Actor, FileRecord, ServerDeps } from '@formancy/server-core'
 import type { FileStore } from '../file-store.js'
+
+/**
+ * How long one request holds a file while its bytes are scanned and written (0153).
+ *
+ * A judgement, not a bound the adapters guarantee. The object store this package supplies
+ * abandons a PUT after 30 seconds, as a whole; its clamd adapter's 30 seconds are of silence
+ * — any traffic on the connection restarts them — so nothing here limits how long a scan
+ * takes. Longer makes an overrun rarer, and keeps a PUT of the same file busy for longer
+ * after a request that died holding it. A request that does overrun it can still replace a
+ * claimed file's bytes, and `docs/architecture/11-risks-and-debt.md` says what that costs.
+ */
+const RECEIVE_LEASE_MS = 2 * 60_000
+
+/** What a receiving request answers, decided before it is sent. */
+interface Answer {
+  status: 204 | 409 | 422 | 503
+  body?: { error: string; message: string }
+}
+
+/** A request whose lease ran out is not accepted, whichever check found it. */
+const OUTLASTED: Answer = {
+  status: 409,
+  body: {
+    error: 'busy',
+    message:
+      'This upload took longer than the server holds a file for one request, so it was not accepted. Try again.',
+  },
+}
 
 /**
  * A form's files: offering one, receiving its bytes, and serving it back.
@@ -152,33 +180,98 @@ export async function fileRoutes(
       })
     }
 
+    // One request receives a file's bytes at a time (0153). Taken after the checks above,
+    // so a request that was never going to be kept does not hold the file against one that
+    // is.
+    const now = deps.nowIso()
+    const lease = new Date(Date.parse(now) + RECEIVE_LEASE_MS).toISOString()
+    if (!(await storage.leaseFile(file.id, now, lease))) {
+      return reply.code(409).send({
+        error: 'busy',
+        message: "Another request is sending this file's bytes, so these were not kept. Try again in a moment.",
+      })
+    }
+
+    // Every way out that does not keep the bytes gives the file back, and before the reply:
+    // a client that sends this file again, as it is told to, must not find it still held.
+    const answer = await receive(fileStore, file, bytes, lease, request.log).catch(
+      async (error: unknown) => {
+        await giveBack(file.id, lease, request.log)
+        throw error
+      },
+    )
+    if (answer.status !== 204) await giveBack(file.id, lease, request.log)
+    return reply.code(answer.status).send(answer.body)
+  })
+
+  /**
+   * Give a file back after a request that kept nothing, without letting the release decide
+   * the reply.
+   *
+   * A release that fails is most likely the database the request has already failed on, and
+   * its error would stand in for the one that says why the bytes were not kept — or turn a
+   * scanner's refusal into a 500. The lease runs out on its own, so all a failed release
+   * costs is a `PUT` of this same file being busy until it does.
+   */
+  async function giveBack(id: string, lease: string, log: FastifyBaseLogger): Promise<void> {
+    await storage.releaseFile(id, lease).catch((cause: unknown) => {
+      log.error({ file: id, cause }, 'the file could not be given back; its lease will run out')
+    })
+  }
+
+  /**
+   * Scan a file's bytes, write them and settle its row, for a request holding its lease.
+   *
+   * Returns the answer rather than sending it, so the route can give the lease back first.
+   */
+  async function receive(
+    store: FileStore,
+    file: FileRecord,
+    bytes: Buffer,
+    lease: string,
+    log: FastifyBaseLogger,
+  ): Promise<Answer> {
     // Asked before the bytes are kept, so a file the deployment's scanner refuses is never
     // in its store, not even until the collector runs. The row stays offered: a retry may
     // send the bytes again (0131).
     const screened = await screenUpload(deps.scanner, file, bytes)
     if (!screened.ok) {
       if (screened.reason === 'refused') {
-        request.log.warn(
-          { file: file.id, finding: screened.finding },
-          'upload refused by the scanner',
-        )
-        return reply.code(422).send({
-          error: 'refused_by_scanner',
-          message: `This file was refused by the deployment's virus scanner (${screened.finding}).`,
-        })
+        log.warn({ file: file.id, finding: screened.finding }, 'upload refused by the scanner')
+        return {
+          status: 422,
+          body: {
+            error: 'refused_by_scanner',
+            message: `This file was refused by the deployment's virus scanner (${screened.finding}).`,
+          },
+        }
       }
-      request.log.error({ file: file.id, cause: screened.cause }, 'the scanner could not be asked')
-      return reply.code(503).send({
-        error: 'scanner_unavailable',
-        message: 'This file could not be scanned just now, so it was not kept. Try again.',
-      })
+      log.error({ file: file.id, cause: screened.cause }, 'the scanner could not be asked')
+      return {
+        status: 503,
+        body: {
+          error: 'scanner_unavailable',
+          message: 'This file could not be scanned just now, so it was not kept. Try again.',
+        },
+      }
     }
 
-    await fileStore.put(file.storageKey, bytes)
-    await storage.updateFile({ ...file, state: 'stored' })
+    // Asked again before the write, because the scan is where the time goes: a lease that
+    // ran out meanwhile may be another request's now, whose bytes may already be kept and
+    // claimed by a submission.
+    const held = await storage.getFile(file.id)
+    if (held?.receivingUntil !== lease || Date.parse(deps.nowIso()) >= Date.parse(lease)) {
+      return OUTLASTED
+    }
 
-    return reply.code(204).send()
-  })
+    await store.put(file.storageKey, bytes)
+    if (await storage.settleFile(file.id, lease)) return { status: 204 }
+
+    // The write itself outlasted the lease. The row is untouched, but these bytes are under a
+    // key another request may also have written — the residual 0153 accepts. Nothing but this
+    // answer records it: the server has no request log (C3).
+    return OUTLASTED
+  }
 
   /**
    * Serve a file back.

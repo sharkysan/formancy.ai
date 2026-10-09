@@ -253,3 +253,4 @@ listed under the sections they belong to above.
 | [0150](0150-every-field-an-arrangement-places-names-itself.md) | Every field an arrangement places names itself on the preview | accepted; the placed group decided by 0151 |
 | [0151](0151-a-group-placed-whole-is-drawn-as-its-fields.md) | A group placed whole is drawn as its fields | accepted |
 | [0152](0152-a-merged-branch-is-deleted.md) | A merged branch is deleted | accepted |
+| [0153](0153-a-file-is-received-by-one-request-at-a-time.md) | A file is received by one request at a time | accepted |

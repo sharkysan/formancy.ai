@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, lt, lte, max, ne } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNull, lt, lte, max, ne, or } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import type postgres from 'postgres'
 import type { FormSchema } from '@formancy/spec'
@@ -240,7 +240,11 @@ export function createPostgresStorage(sql: postgres.Sql): Storage {
     },
 
     async insertFile(record) {
-      await db.insert(files).values({ ...record, createdAt: new Date(record.createdAt) })
+      await db.insert(files).values({
+        ...record,
+        createdAt: new Date(record.createdAt),
+        receivingUntil: record.receivingUntil === null ? null : new Date(record.receivingUntil),
+      })
     },
 
     async getFile(id) {
@@ -248,11 +252,39 @@ export function createPostgresStorage(sql: postgres.Sql): Storage {
       return row === undefined ? undefined : toFileRecord(row)
     },
 
-    async updateFile(record) {
-      await db
+    async leaseFile(id, nowIso, untilIso) {
+      // One conditional UPDATE, and the row count is the answer, as in `spendChallenge`.
+      // Two requests for one file both match it; the second waits on the row lock the
+      // first holds, re-reads the row once that commits, finds it held and matches nothing.
+      const free = or(isNull(files.receivingUntil), lte(files.receivingUntil, new Date(nowIso)))
+      const leased = await db
         .update(files)
-        .set({ state: record.state, submissionId: record.submissionId })
-        .where(eq(files.id, record.id))
+        .set({ receivingUntil: new Date(untilIso) })
+        .where(and(eq(files.id, id), eq(files.state, 'offered'), free))
+        .returning({ id: files.id })
+      return leased.length === 1
+    },
+
+    async settleFile(id, untilIso) {
+      // The state and the lease, never the submission: this is the write that used to put
+      // a claimed file back to `stored`. Both conditions are in the UPDATE itself, so a
+      // claim committed a moment ago is seen, not overwritten.
+      const held = eq(files.receivingUntil, new Date(untilIso))
+      const settled = await db
+        .update(files)
+        .set({ state: 'stored', receivingUntil: null })
+        .where(and(eq(files.id, id), eq(files.state, 'offered'), held))
+        .returning({ id: files.id })
+      return settled.length === 1
+    },
+
+    async releaseFile(id, untilIso) {
+      const released = await db
+        .update(files)
+        .set({ receivingUntil: null })
+        .where(and(eq(files.id, id), eq(files.receivingUntil, new Date(untilIso))))
+        .returning({ id: files.id })
+      return released.length === 1
     },
 
     async abandonedFiles(beforeIso) {
@@ -524,6 +556,7 @@ function toFileRecord(row: typeof files.$inferSelect): FileRecord {
     state: row.state as FileRecord['state'],
     createdAt: row.createdAt.toISOString(),
     submissionId: row.submissionId,
+    receivingUntil: row.receivingUntil === null ? null : row.receivingUntil.toISOString(),
   }
 }
 

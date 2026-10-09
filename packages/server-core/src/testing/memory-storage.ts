@@ -115,8 +115,30 @@ export function createMemoryStorage(): Storage {
       return found === undefined ? undefined : { ...found }
     },
 
-    updateFile: async (record) => {
-      files.set(record.id, { ...record })
+    // The three below are each one read and one write with no await between them, which
+    // is what stands in for the conditional UPDATE: nothing else runs in the middle.
+    leaseFile: async (id, nowIso, untilIso) => {
+      const file = files.get(id)
+      if (file === undefined || file.state !== 'offered') return false
+      if (file.receivingUntil !== null && file.receivingUntil > nowIso) return false
+      files.set(id, { ...file, receivingUntil: untilIso })
+      return true
+    },
+
+    settleFile: async (id, untilIso) => {
+      const file = files.get(id)
+      if (file === undefined || file.state !== 'offered' || file.receivingUntil !== untilIso) {
+        return false
+      }
+      files.set(id, { ...file, state: 'stored', receivingUntil: null })
+      return true
+    },
+
+    releaseFile: async (id, untilIso) => {
+      const file = files.get(id)
+      if (file === undefined || file.receivingUntil !== untilIso) return false
+      files.set(id, { ...file, receivingUntil: null })
+      return true
     },
 
     // A claimed file belongs to a submission and is never rubbish, however

@@ -530,6 +530,58 @@ whether a missing row was skipped or overlooked. The condition editor's "is answ
 *any* row is; a rule that needs every row is written in CEL. A radio cannot be unticked, so a
 row answered by mistake stays answered unless the author offers a column for "does not apply".
 
+### B10. An accepted submission's attachment changes or is collected
+
+*How it arises:* two requests send the bytes of one offered file. The clients this repository
+supplies do not: the file field's **Try again** runs the host's uploader again, and the
+admin's — the only uploader here that sends to the server — offers the file anew before every
+`PUT`, so a second attempt is a second file with its own id (`packages/core/src/uploads.ts`,
+`apps/admin/src/api.ts`). Two `PUT`s for one file come from a proxy or HTTP library retrying
+the request, which HTTP allows because it calls `PUT` idempotent; from an integrator's
+uploader that sends the bytes again without offering again; or from whoever holds the file's
+id, on purpose, since the `PUT` asks for the form's path and the id and nothing else. How
+often any of these happens is not known. Before 0153, the request that finished last wrote
+back the row it had read before its write — and, with a scanner, before its scan: `stored`,
+with no submission. If the faster request's file had been claimed by a submission in between,
+the slower one put the claimed row back to `stored` with no submission and wrote its bytes
+over the ones the submission was accepted with, and the collector deletes an unclaimed file
+after a day. Reproduced on real PostgreSQL with a scanner double holding the first request
+open — the row read `stored`, its submission was null, and the store held the slower request's
+bytes — and, with no scanner, with the first request's write held open instead. The releases
+this affects are in [`SOUP-DECLARATION.md`](SOUP-DECLARATION.md).
+
+*Severity:* the submission was accepted with an attachment, then carried a different one, then
+none, and nothing in the submission records either change. It still names the file; the file is
+gone when somebody asks for it. On evidence attached to a claim or a declaration, that is the
+answer the form existed to collect.
+
+*Constraint:* one request at a time receives a file's bytes. It takes a lease on the row with a
+conditional update, a second request is refused as `busy` before its bytes are scanned, the
+lease is checked again before the write, and the row is settled by a conditional update that
+sets the state and clears the lease — never the submission — and only while the file is
+`offered` and the lease is still that request's, so a request receiving bytes cannot write a
+claimed row
+([0153](../decisions/0153-a-file-is-received-by-one-request-at-a-time.md)). Held by
+`server.integration.test.ts` on real PostgreSQL — the sequence above observed failing before
+the change, the same with no scanner and the write held open, two leases taken at once and
+every condition of the settle — and by `uploads.test.ts` against the in-memory storage, one
+condition at a time.
+
+*Residual:* **a lease bounds when a write may start, not how long it takes.** A request whose
+scan and write together outlast its two minutes can write its bytes after the request that took
+over, under the same key. Its settle is refused, so the row stays claimed by the right submission,
+but the store can hold the late request's bytes — scanned, and the size offered. **The supplied
+adapters do not rule this out.** The object store abandons a `PUT` after 30 seconds, as a whole,
+but the clamd adapter's 30 seconds are an idle timeout, restarted by any traffic on the
+connection: it abandons a clamd that has gone quiet, not a scan that is still moving, so
+nothing bounds how long a scan takes (`clamd-scanner.test.ts` holds it to that, so the
+statement fails if the adapter changes). A scan that ends just inside the two minutes followed
+by a write that crosses them reaches this residual with the supplied clamd adapter and object
+store alone; so can a deployment's own scanner or store, or a stalled disk under the directory
+store. **Nothing records that it happened** beyond the `409` the late request is answered
+with — the server has no request log (C3) — and a test asserts the residual so that closing it
+is deliberate.
+
 
 
 ### C1. An account's existence is disclosed by a failed login
