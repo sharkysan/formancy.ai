@@ -246,3 +246,4 @@ listed under the sections they belong to above.
 | [0143](0143-the-workbench-dresses-every-part-a-builder-draws.md) | The workbench dresses every part a builder draws | accepted |
 | [0144](0144-one-mark-and-the-sites-favicon-is-it.md) | One mark, and the site's favicon is it | accepted |
 | [0145](0145-a-version-for-everything-a-document-can-say.md) | A version for everything a document can say | accepted |
+| [0146](0146-a-drop-between-two-nodes-is-read-from-where-they-were-drawn.md) | A drop between two nodes is read from where they were drawn | accepted |

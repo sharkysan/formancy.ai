@@ -107,11 +107,14 @@ holding only what was typed ([0125](https://github.com/sharkysan/formancy.ai/blo
 
 ## What does not exist yet
 
-- **Dropping *between* two elements** rather than onto one, which would need gap
-  targets the renderers do not emit. Dropping onto an element's side makes a row
-  and dropping onto its top or bottom moves it, so the gap is narrower than it
-  was — what is missing is inserting between two siblings without aiming at
-  either.
+- ~~**Dropping *between* two elements** rather than onto one.~~ **Built, and without the gap
+  targets this said it would need.** A pointer in the space between two nodes is over their
+  container, so the gap is read from where the container's children were drawn and the nearer
+  of them is aimed at; the renderers emit nothing new. Before, a field dropped there landed
+  above or below the whole container, and between two top-level nodes nothing was offered
+  ([0146](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0146-a-drop-between-two-nodes-is-read-from-where-they-were-drawn.md)).
+  Where a theme leaves no space between two nodes there is no gap to aim at, and the halves
+  of the neighbours decide as they did.
 - ~~**Nested condition groups** in the builder's editor.~~ **Built, one level deep.**
   "(A and B) or C" can be written; a group inside a group inside a group cannot, which
   is where the parentheses stop being readable. The comparisons and the value control

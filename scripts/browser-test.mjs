@@ -37,6 +37,7 @@ import { fileURLToPath } from 'node:url'
 import { checkTemplateGallery } from './template-browser-test.mjs'
 import { checkAngularPage } from './angular-page-browser-test.mjs'
 import { checkUploadThumbnails } from './upload-browser-test.mjs'
+import { checkArrangeGaps } from './arrange-browser-test.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const site = join(root, 'apps', 'site', 'dist')
@@ -194,6 +195,7 @@ async function run() {
     await checkTemplateGallery(browser, origin, check)
     await checkAngularPage(browser, origin, check)
     await checkUploadThumbnails(browser, url, check)
+    await checkArrangeGaps(browser, url, check)
     for (const { label, width, height } of WIDTHS) {
       const page = await browser.newPage({ viewport: { width, height } })
       await page.goto(url, { waitUntil: 'load' })
@@ -1053,7 +1055,7 @@ async function run() {
     throw new Error(`${String(failures.length)} browser check(s) failed:\n  ${failures.join('\n  ')}`)
   }
   console.log(
-    `browser checks passed: ${String(WIDTHS.length)} viewports of the playground, plus the site's pages, the starter embedded in one and the starter on its own, for the layout, gesture and cascade facts jsdom cannot represent`,
+    `browser checks passed: ${String(WIDTHS.length)} viewports of the playground, plus the site's pages, the starter embedded in one and the starter on its own, and drops into the space between two nodes, for the layout, gesture and cascade facts jsdom cannot represent`,
   )
 }
 

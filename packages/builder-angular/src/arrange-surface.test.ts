@@ -335,3 +335,160 @@ describe('after a command replaces the rendered tree', () => {
     expect(screen.getByRole('status').textContent).toMatch(/moved to|side by side/i)
   })
 })
+
+describe('dropping in the space between two nodes', () => {
+  /**
+   * The browser reports a pointer in the gap between two fields as over their
+   * container, since nothing else is there. Aimed at the container, a field dropped
+   * between two others in a section landed above or below the whole section; between
+   * two top-level fields, where the form itself carries no layout path, nothing was
+   * offered. The same cases as the React suite's, because a drop that lands somewhere
+   * else in one builder is a bug somebody finds by switching.
+   */
+  const gapSchema = (): FormSchema =>
+    ({
+      specVersion: '1',
+      id: 'gaps',
+      title: 'Contact',
+      model: {
+        fields: [
+          { key: 'first', type: 'text', label: 'First name' },
+          { key: 'last', type: 'text', label: 'Last name' },
+          { key: 'email', type: 'text', label: 'Email' },
+          { key: 'phone', type: 'text', label: 'Phone' },
+        ],
+      },
+      layouts: [
+        {
+          name: 'web',
+          nodes: [
+            {
+              kind: 'section',
+              label: 'Name',
+              children: [
+                { kind: 'field', path: 'first' },
+                { kind: 'field', path: 'last' },
+              ],
+            },
+            { kind: 'field', path: 'email' },
+            { kind: 'field', path: 'phone' },
+          ],
+        },
+      ],
+    }) as unknown as FormSchema
+
+  /** A section with a heading and two fields, then two fields on their own. */
+  const GAP_PREVIEW = `
+    <formancy-arrange-surface [session]="session" layout="web" [enabled]="true">
+      <form aria-label="Contact preview">
+        <div data-formancy-part="layout-section" data-formancy-layout-path="0">
+          <p>Name</p>
+          <div data-formancy-part="field" data-formancy-field-path="first">First name</div>
+          <div data-formancy-part="field" data-formancy-field-path="last">Last name</div>
+        </div>
+        <div data-formancy-part="field" data-formancy-field-path="email">Email</div>
+        <div data-formancy-part="field" data-formancy-field-path="phone">Phone</div>
+      </form>
+    </formancy-arrange-surface>
+  `
+
+  /** Where each element was drawn, top to bottom, 400 wide: jsdom draws nothing. */
+  const drawn = (element: HTMLElement, top: number, bottom: number): void => {
+    element.getBoundingClientRect = () =>
+      ({ left: 0, right: 400, width: 400, top, bottom, height: bottom - top, x: 0, y: top, toJSON: () => ({}) }) as DOMRect
+  }
+
+  const section = (): HTMLElement =>
+    document.querySelector<HTMLElement>('[data-formancy-layout-path="0"]')!
+  const form = (): HTMLElement => screen.getByRole('form', { name: 'Contact preview' })
+
+  /**
+   * The section from 0 to 140, its heading on top and its fields 20 apart; then Email
+   * and Phone below it, 20 apart again.
+   */
+  const mountGaps = async (): Promise<Mounted> => {
+    const session = createBuilderSession(gapSchema())
+    const view = await render(GAP_PREVIEW, {
+      imports: [FormancyArrangeSurface],
+      componentProperties: { session },
+      providers: [provideZonelessChangeDetection()],
+    })
+    await view.fixture.whenStable()
+    drawn(section(), 0, 140)
+    drawn(fieldNamed('First name'), 40, 80)
+    drawn(fieldNamed('Last name'), 100, 140)
+    drawn(fieldNamed('Email'), 160, 200)
+    drawn(fieldNamed('Phone'), 220, 260)
+    return { session, settle: async () => void (await view.fixture.whenStable()) }
+  }
+
+  const order = (session: BuilderSession): unknown =>
+    session
+      .document()
+      .layouts?.[0]?.nodes.map((node) => (node.kind === 'field' ? node.path : node.kind))
+
+  test('between two fields in a section, the drop lands between them', async () => {
+    const mounted = await mountGaps()
+
+    // y = 90 is the gap between First name (40–80) and Last name (100–140), which the
+    // browser reports as the section. Aimed at the section, Phone went below it.
+    await drag(mounted, fieldNamed('Phone'), section(), { clientX: 200, clientY: 90 })
+
+    expect(arrangement(mounted.session)).toMatchObject([
+      {
+        kind: 'section',
+        children: [
+          { kind: 'field', path: 'first' },
+          { kind: 'field', path: 'phone' },
+          { kind: 'field', path: 'last' },
+        ],
+      },
+      { kind: 'field', path: 'email' },
+    ])
+    expect(screen.getByRole('status').textContent).toContain('between First name and Last name')
+  })
+
+  test('between two top-level fields, where nothing on screen names a node, too', async () => {
+    const mounted = await mountGaps()
+
+    // y = 150 is between the section (to 140) and Email (from 160). The form carries no
+    // layout path, so no drop was offered here at all.
+    await drag(mounted, fieldNamed('Phone'), form(), { clientX: 200, clientY: 150 })
+
+    expect(order(mounted.session)).toEqual(['section', 'phone', 'email'])
+  })
+
+  test('the line is drawn on the nearer neighbour, on the side the gap is', async () => {
+    const mounted = await mountGaps()
+    const dataTransfer = transfer()
+
+    fieldNamed('Phone').dispatchEvent(dragEvent('dragstart', NOWHERE, dataTransfer))
+    await mounted.settle()
+    section().dispatchEvent(dragEvent('dragover', { clientX: 200, clientY: 95 }, dataTransfer))
+    await mounted.settle()
+
+    // Nearer Last name, so above it — and not on the section, which is not where it lands.
+    expect(fieldNamed('Last name').dataset['drop']).toBe('before')
+    expect(section().dataset['drop']).toBeUndefined()
+  })
+
+  test('a gap beside the field being dragged moves nothing, so it offers nothing', async () => {
+    const mounted = await mountGaps()
+    const before = JSON.stringify(arrangement(mounted.session))
+
+    // Between Email and Phone, dragging Phone: the gap is where it already is.
+    await drag(mounted, fieldNamed('Phone'), form(), { clientX: 200, clientY: 210 })
+
+    expect(JSON.stringify(arrangement(mounted.session))).toBe(before)
+  })
+
+  test("over a section's own heading, the section is still what is aimed at", async () => {
+    const mounted = await mountGaps()
+
+    // y = 10 is the heading, above the section's fields: not between two of them. The
+    // top half of the section means before it, as it always did.
+    await drag(mounted, fieldNamed('Phone'), section(), { clientX: 200, clientY: 10 })
+
+    expect(order(mounted.session)).toEqual(['phone', 'section', 'email'])
+  })
+})

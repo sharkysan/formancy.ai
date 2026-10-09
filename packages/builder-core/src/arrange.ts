@@ -20,6 +20,12 @@ export interface Box {
   readonly height: number
 }
 
+/** A layout node as the renderer drew it: its path, and the rectangle it occupies. */
+export interface DrawnNode {
+  readonly path: readonly number[]
+  readonly box: Box
+}
+
 /**
  * What a drop would do: move the dragged node, or put it in a new row beside
  * the node it was dropped on.
@@ -111,7 +117,11 @@ export function arrangeDrop(input: {
   // Only for something NOT already side by side with its siblings. There, the
   // two sides already mean "before" and "after", and giving them a second
   // meaning would make the commonest drag in a row ambiguous.
-  if (!sideBySide && box.width >= SIDE_ZONE_MINIMUM) {
+  //
+  // And only on the element. A side zone is part of it, and a pointer beside it —
+  // in the gap below, aimed here by `gapNeighbour` — is between two nodes, where a
+  // drop moves and never builds a row.
+  if (!sideBySide && box.width >= SIDE_ZONE_MINIMUM && contains(box, pointer)) {
     const zone = Math.min(box.width / 4, SIDE_ZONE_MAXIMUM)
     const side = fromStart < zone ? 'start' : fromStart > box.width - zone ? 'end' : undefined
 
@@ -138,4 +148,83 @@ export function arrangeDrop(input: {
   return location === undefined
     ? undefined
     : { kind: 'move', location, edge, axis: sideBySide ? 'inline' : 'block' }
+}
+
+/**
+ * Which of a container's children a pointer in the space between them is aimed at.
+ *
+ * The browser reports a pointer in the gap between two fields as over their container,
+ * because nothing else is there. Aimed at the container, a field dropped between two
+ * others in a section landed above or below the whole section; between two top-level
+ * fields, where the form itself carries no layout path, nothing was offered. So the gap
+ * is read from where the children were drawn, rather than emitted as a target by the
+ * renderer, which knows nothing about editing
+ * ([0050](../../../docs/decisions/0050-arrange-in-two-places.md)). The nearer child is
+ * the one aimed at, and `arrangeDrop` decides its edge as for any other.
+ *
+ * Generic so the caller gets back its own object — a surface passes its elements along
+ * and draws the indicator on the one returned.
+ *
+ * Returns undefined when the pointer is not between the children: on one of them, which
+ * is aimed at the ordinary way, or outside their extent, over a heading or a padding that
+ * belongs to the container.
+ */
+export function gapNeighbour<Node extends DrawnNode>(
+  /** Layout path of the container the pointer is over; `[]` for the form itself. */
+  container: readonly number[],
+  /** Everything drawn where the pointer is; only the container's own children count. */
+  nodes: readonly Node[],
+  pointer: { readonly x: number; readonly y: number },
+): Node | undefined {
+  // A hidden tab's panel, or anything else not drawn, reports a zero box at the origin,
+  // and counting it stretches the extent over whatever lies between there and the rest.
+  const drawn = nodes.filter(
+    ({ path, box }) =>
+      path.length === container.length + 1 &&
+      layoutEncloses(container, path) &&
+      box.width > 0 &&
+      box.height > 0,
+  )
+
+  // One surface can hold two drawings of one form — the playground draws it in React and
+  // in Angular, side by side. A node found twice means the pointer is between the
+  // drawings, not between two nodes of either.
+  const paths = new Set(drawn.map(({ path }) => path.join('.')))
+  if (paths.size !== drawn.length) return undefined
+
+  if (drawn.some(({ box }) => contains(box, pointer))) return undefined
+  const extent = {
+    left: Math.min(...drawn.map(({ box }) => box.left)),
+    right: Math.max(...drawn.map(({ box }) => box.right)),
+    top: Math.min(...drawn.map(({ box }) => box.top)),
+    bottom: Math.max(...drawn.map(({ box }) => box.bottom)),
+  }
+  if (!contains(extent, pointer)) return undefined
+
+  let nearest: Node | undefined
+  let nearestDistance = Infinity
+  for (const child of drawn) {
+    const distance = distanceTo(child.box, pointer)
+    if (distance < nearestDistance) {
+      nearest = child
+      nearestDistance = distance
+    }
+  }
+  return nearest
+}
+
+type Edges = Pick<Box, 'left' | 'right' | 'top' | 'bottom'>
+
+/** Edges included: a pointer on a border is on the element. */
+function contains(box: Edges, pointer: { readonly x: number; readonly y: number }): boolean {
+  return (
+    pointer.x >= box.left && pointer.x <= box.right && pointer.y >= box.top && pointer.y <= box.bottom
+  )
+}
+
+/** Squared, since only the order matters. */
+function distanceTo(box: Edges, pointer: { readonly x: number; readonly y: number }): number {
+  const across = Math.max(box.left - pointer.x, 0, pointer.x - box.right)
+  const down = Math.max(box.top - pointer.y, 0, pointer.y - box.bottom)
+  return across * across + down * down
 }
