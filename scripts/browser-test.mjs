@@ -31,7 +31,7 @@
 // `pnpm test:browser`, after `pnpm build:web`.
 
 import { createServer } from 'node:http'
-import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs'
+import { createReadStream, existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { dirname, extname, join, normalize, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { checkTemplateGallery } from './template-browser-test.mjs'
@@ -139,6 +139,56 @@ async function run() {
   }
 
   try {
+    /*
+     * The stylesheets as the site serves them, before any page is opened.
+     *
+     * The themes say right to left with `:dir()`, and Vite's default target had
+     * Lightning CSS rewrite every one as `:is(:lang(ar), :lang(he), …)` — a question
+     * about the page's language, not its direction — so the playground's builder kept
+     * its marks on the left under `dir="rtl"` while every source check was green
+     * (0123). What is looked for is that list — Arabic and Hebrew named together —
+     * and not `:lang()` as such: the documentation's own theme asks for Chinese and
+     * Japanese by `:lang()` to choose their fonts, which is what `:lang()` is for. No
+     * stylesheet of ours names a language at all, checked first. A file check, not a
+     * browser one, but it reads what `pnpm build:web` produced, and this is the gate
+     * that runs after it.
+     */
+    {
+      const cssUnder = (directory) =>
+        readdirSync(directory, { withFileTypes: true }).flatMap((entry) =>
+          entry.isDirectory()
+            ? cssUnder(join(directory, entry.name))
+            : entry.name.endsWith('.css')
+              ? [join(directory, entry.name)]
+              : [],
+        )
+      const sources = [
+        ...cssUnder(join(root, 'packages', 'themes')).filter((file) => !file.includes('node_modules')),
+        ...cssUnder(join(root, 'apps', 'site', 'src')),
+        ...cssUnder(join(root, 'apps', 'playground', 'src')),
+      ]
+      const built = cssUnder(site)
+      console.log('\nthe stylesheets as served')
+      const rewritten = (css) => css.includes(':lang(ar)') && css.includes(':lang(he)')
+      check(
+        'no stylesheet of ours names a language, so a list of them was written by the bundler',
+        sources.filter((file) => readFileSync(file, 'utf8').includes(':lang(')).join(', ') || null,
+      )
+      check(
+        'and none the site serves has :dir() rewritten as a list of languages',
+        built
+          .filter((file) => rewritten(readFileSync(file, 'utf8')))
+          .map((file) => file.slice(site.length + 1))
+          .join(', ') || null,
+      )
+      check(
+        'and the builder’s stylesheet reached the playground with :dir() intact',
+        built.some((file) => file.includes('playground') && readFileSync(file, 'utf8').includes(':dir(rtl)'))
+          ? null
+          : 'no :dir(rtl) in any playground stylesheet, so there was nothing to keep',
+      )
+    }
+
     await checkTemplateGallery(browser, origin, check)
     for (const { label, width, height } of WIDTHS) {
       const page = await browser.newPage({ viewport: { width, height } })
@@ -556,6 +606,95 @@ async function run() {
         flipped.error !== undefined || flipped.slack <= 0
           ? null
           : `${String(flipped.slack)}px of horizontal overflow in right-to-left`,
+      )
+
+      await page.close()
+    }
+
+    /*
+     * The builder, read right to left.
+     *
+     * The question above, asked of the builder's own chrome, which `workbench.css`
+     * styles and which no reading-order check read until 2026-10-09: the source guard
+     * kept only the stylesheets that style a form. And the one mark CSS cannot write
+     * in reading order — the bar down the side of the selected node, an inset shadow —
+     * has to be SEEN to move: a `:dir(rtl)` rule that lost on specificity would satisfy
+     * the source guard and change nothing on screen.
+     */
+    {
+      const page = await browser.newPage({ viewport: { width: 1180, height: 820 } })
+      await page.goto(url, { waitUntil: 'load' })
+      await page.waitForSelector('[data-formancy-part="builder-node"][aria-selected="true"]', {
+        timeout: 30_000,
+      })
+      console.log('\nthe builder, right to left — 1180×820')
+
+      const builder = await page.evaluate(async () => {
+        const wait = () => new Promise((done) => setTimeout(done, 150))
+        const root = document.querySelector('[data-formancy-part="builder"]')
+        const selected = document.querySelector(
+          '[data-formancy-part="builder-node"][aria-selected="true"]',
+        )
+        if (root === null || selected === null) {
+          return { error: 'no builder tree with a selected node on the page' }
+        }
+
+        const SIDED = [
+          ['paddingLeft', 'paddingRight'],
+          ['marginLeft', 'marginRight'],
+          ['borderLeftWidth', 'borderRightWidth'],
+        ]
+        const sided = []
+        for (const element of [root, ...root.querySelectorAll('*')]) {
+          const style = getComputedStyle(element)
+          for (const [left, right] of SIDED) {
+            if (style[left] === style[right]) continue
+            sided.push({ element, left, right, was: { left: style[left], right: style[right] } })
+          }
+        }
+        // Chromium writes a shadow as "rgb(…) 2px 0px 0px 0px inset": the first
+        // length once the colour is gone is the horizontal offset, and its sign the side.
+        const offset = () =>
+          parseFloat(getComputedStyle(selected).boxShadow.replace(/rgba?\([^)]*\)/g, '').trim())
+        const before = offset()
+
+        document.documentElement.setAttribute('dir', 'rtl')
+        await wait()
+
+        const stuck = []
+        for (const entry of sided) {
+          const style = getComputedStyle(entry.element)
+          if (style[entry.left] === entry.was.right && style[entry.right] === entry.was.left) continue
+          const part = entry.element.getAttribute('data-formancy-part') ?? entry.element.tagName
+          stuck.push(`${part} ${entry.left.replace(/Left$/, '')}`)
+        }
+        const after = offset()
+        document.documentElement.removeAttribute('dir')
+
+        return { measured: sided.length, stuck: [...new Set(stuck)].slice(0, 5), before, after }
+      })
+
+      check(
+        'the builder responds to the reading order, and none of its layout stays pinned',
+        builder.error ??
+          (builder.stuck.length === 0
+            ? null
+            : `${String(builder.stuck.length)} of ${String(builder.measured)} did not flip — ${builder.stuck.join('; ')}`),
+      )
+
+      check(
+        'and there was something in it to measure',
+        builder.error !== undefined || builder.measured >= 3
+          ? null
+          : `only ${String(builder.measured)} asymmetries found in the builder`,
+      )
+
+      check(
+        'and the bar on the selected node moves to the side a line starts on',
+        builder.error ??
+          (builder.before > 0 && builder.after < 0
+            ? null
+            : `its offset was ${String(builder.before)}px and is ${String(builder.after)}px right to left`),
       )
 
       await page.close()

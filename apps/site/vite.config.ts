@@ -1,6 +1,7 @@
 import { fileURLToPath } from 'node:url'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
+import { CSS_TARGET } from '../../css-target'
 import { countDecisionRecords, countFieldTypes, packageVersion } from './decision-records'
 
 export default defineConfig({
@@ -11,6 +12,8 @@ export default defineConfig({
     __PACKAGE_VERSION__: JSON.stringify(packageVersion()),
   },
   build: {
+    // Not Vite's default, which rewrites `:dir(rtl)` as a list of languages (0123).
+    cssTarget: CSS_TARGET,
     assetsInlineLimit: 0,
     rolldownOptions: { input: {
       main: fileURLToPath(new URL('./index.html', import.meta.url)),

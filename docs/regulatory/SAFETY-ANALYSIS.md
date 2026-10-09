@@ -708,11 +708,30 @@ name, plus a side named as a *value* that has no counterpart for the other direc
 four physical properties and against removing a theme’s flip. The browser gate adds
 that the rendered form responds to `dir` and does not overflow when mirrored.
 
+**The builder is held to the same, and was not until 2026-10-09.** The source check
+read only the stylesheets that style a form, so `workbench.css` — both builders' — was
+never read; a bar drawn down one side by an inset shadow is a side named as a value and
+was not looked for; and the drag surface measured a pointer from the left, so a field
+aimed at the right of another in a right-to-left form landed on its left — the builder
+doing something other than what its author pointed at (D11). Now the drag surface asks
+the browser which way the form reads, every bar has a `:dir(rtl)` pair the source check
+holds per rule, and the browser gate flips the builder and watches its selected node's
+bar move ([0123](../decisions/0123-the-builder-reads-right-to-left.md)).
+
+**And the bundler can undo all of it.** A build targeting browsers older than `:dir()`
+rewrites `:dir(rtl)` as a list of right-to-left *languages*; Vite's default did, in this
+repository's own site, so a page with `dir="rtl"` and any other `lang` got none of the
+mirrored rules. The site and playground now build for the browsers the stylesheets are
+written for, and the browser gate fails on the rewrite in what they serve.
+
 *Residual:* the icon rules live inside `@supports (-webkit-touch-callout: none)` — iOS
 WebKit alone — so **no gate here can execute them**; they are held by a source check
 and nothing else. The browser gate holds the renderer rather than the themes: pinning
 a side in all four themes left it green. And nothing checks a right-to-left
-*language*: mirroring a layout is not translating a form.
+*language*: mirroring a layout is not translating a form. **A host's own build is
+outside every gate here**: one that bundles the stylesheets with an older CSS target
+gets the rewrite, and the themes README naming the target is the whole of the
+mitigation. The browser gate runs Chromium alone.
 
 ### D5. A repeater shows the wrong number of rows
 

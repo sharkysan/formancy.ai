@@ -50,6 +50,31 @@ declare as `--fm-ground`, and fine on white.
 Fonts are referenced, not bundled; the demo apps load them from Google Fonts
 and every theme falls back to a system stack.
 
+## Right to left, and your bundler
+
+Every file here — the four themes and `workbench.css`, which styles the two builders —
+says which side a thing is on in reading order: logical properties, and `:dir(rtl)` where
+CSS has no logical form, as for an icon's `background-position` or the bar an inset shadow
+draws down one side of a selected item. Set `dir="rtl"` on the page, or on anything above
+the form or the builder, and the layout follows.
+
+**That holds only while `:dir()` reaches the browser as written.** A bundler targeting
+browsers older than the ones `:dir()` shipped in rewrites it. Vite's default target had
+Lightning CSS turn every `:dir(rtl)` into `:is(:lang(ar), :lang(he), …)`, which follows
+the page's *language* instead: `dir="rtl"` on a page whose `lang` is not on that list
+changes nothing, and the builder's marks stay on the left. Measured in this repository's
+own playground. Set the CSS target to the browsers these stylesheets are written for —
+each the first release with both `:dir()` and `color-mix()`:
+
+```ts
+// vite.config.ts
+export default defineConfig({
+  build: { cssTarget: ['chrome120', 'edge120', 'firefox113', 'safari16.4', 'ios16.4'] },
+})
+```
+
+A stylesheet loaded with a plain `<link>` is not rewritten and needs nothing.
+
 ## Writing your own
 
 Copy one and change it. The whole surface is these attributes:

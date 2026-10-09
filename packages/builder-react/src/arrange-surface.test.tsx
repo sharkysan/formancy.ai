@@ -272,6 +272,26 @@ describe('dropping on the side to make a row', () => {
     expect(nodes.indexOf('email')).toBeLessThan(nodes.indexOf('first'))
   })
 
+  test('read right to left, the right side is the start, so the dragged one comes first', () => {
+    // A line starts at its right edge in Arabic or Hebrew. The zones were measured
+    // from the left whatever the page read, so aiming there put the dragged field
+    // second — beside its target, on the side the author had not pointed at.
+    document.body.dir = 'rtl'
+    try {
+      const session = open()
+      surfaceWith(session)
+      const target = fieldNamed('Email')
+      withBox(target, { left: 0, width: 400 })
+
+      drag(fieldNamed('First name'), target, { clientX: 390, clientY: 20 })
+
+      const nodes = JSON.stringify(session.document().layouts?.[0]?.nodes)
+      expect(nodes.indexOf('first')).toBeLessThan(nodes.indexOf('email'))
+    } finally {
+      document.body.removeAttribute('dir')
+    }
+  })
+
   test('the middle still moves it above or below, as it did', () => {
     const session = open()
     surfaceWith(session)

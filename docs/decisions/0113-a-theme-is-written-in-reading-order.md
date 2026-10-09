@@ -86,6 +86,12 @@ layout follows the reading order it is given.
 49. The rules using it are already inside an iOS-WebKit-only block, so the practical
 floor is Safari 16.4 — well below what that block already assumes.
 
+> **Amended by [0123](0123-the-builder-reads-right-to-left.md).** A floor stated here was
+> not a floor any build used: Vite's default target rewrote these rules as a list of
+> right-to-left languages, in the site this record's checks run against. The site and the
+> playground now build for the floor, and the cases above read the builder's stylesheet
+> too, which they had not.
+
 ## Alternatives considered
 
 **Leave it as it is, since the themes already comply.** That is the state this record

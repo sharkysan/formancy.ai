@@ -10,6 +10,23 @@ later.
 
 ## Unreleased
 
+**The builder reads right to left, and a bundler can no longer quietly undo it.** Verifying
+the builders under `dir="rtl"` found four things. The drag surface measured the pointer from
+the left, so a field aimed at the right of another in an Arabic or Hebrew form landed on its
+left; `arrangeDrop` now takes the `direction` the browser computed, and both surfaces pass
+it. The bar that marks a selected tree node, the active navigation item, the active
+typeahead option (Paper) and all four drop indicators is an inset `box-shadow`, which CSS
+cannot write logically, and stayed on the left; each now has a `:dir(rtl)` pair. The source
+check that keeps the themes in reading order never read `workbench.css` — it kept only the
+stylesheets that style a form — and its `background-position` case stopped removing `:dir()`
+rules once a stylesheet had two; both fixed, and it now checks inset bars per rule. And with
+every source check green, Chromium still drew the bar on the left: **Vite's default CSS
+target had Lightning CSS rewrite every `:dir(rtl)` as `:is(:lang(ar), :lang(he), …)`**, which
+follows a page's language rather than its direction. The site and playground now build for
+`CSS_TARGET` (Chrome 120, Firefox 113, Safari 16.4), the browser gate fails on the rewrite in
+what they serve, and **a host bundling the themes needs the same target** — the themes
+README says how ([0123](docs/decisions/0123-the-builder-reads-right-to-left.md)).
+
 **Why the validator refused an edit, in the author's language.** The refusal an author meets
 most — *Another field already uses the key "email"* — came from the validator as one English
 string, inside a builder that otherwise spoke German, and translating it would have meant

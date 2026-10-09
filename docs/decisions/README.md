@@ -223,3 +223,4 @@ listed under the sections they belong to above.
 | [0120](0120-a-sessions-language-is-fixed-for-its-lifetime.md) | A session's language is fixed for its lifetime, as an engine's locale is | accepted |
 | [0121](0121-the-specs-words-are-translated-beside-it.md) | The spec's words are translated beside it, keyed by the English it writes | accepted |
 | [0122](0122-a-validator-error-has-a-code.md) | A validator error has a code, and a builder translates it by that code | accepted |
+| [0123](0123-the-builder-reads-right-to-left.md) | The builder reads right to left, and the bundler is told the browsers it is for | accepted |
