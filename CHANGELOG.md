@@ -10,6 +10,23 @@ later.
 
 ## Unreleased
 
+**Fixed: the playground's examples could not be removed.** The React builder's scenario panel
+was handed the starter's examples as a constant and nothing to tell when one was removed, so
+it drew no Remove button at all — and a page that listened but kept the constant would have
+drawn one that did nothing. The page now keeps the examples the way it keeps the blocks: one
+list, started from the starter's, held in memory for the visit and handed to both builders,
+so an example removed in either is gone from the other. The scenarios are the host's
+([0111](docs/decisions/0111-a-scenario-panel-names-what-stopped-holding.md)), and the
+playground is the host here. `two-builders.test.tsx` removes one in each builder and looks for
+it in the other; those cases failed before.
+
+**Added: the playground's Angular builder lists the examples too.** Its host says its panels
+mirror the React pane's, and the scenario panel was not among them, so a visitor who chose
+Angular saw no examples — the one check that catches a rule written backwards. It now mounts
+`formancy-scenario-pane` from `@formancy/builder-angular` over the page's list, from the same
+filled-in starter the React panel starts from, with a Remove that hands the shorter list back
+to the page.
+
 **Added: the playground has a Translations tab, in both builders.** `TranslationsPane` and
 `formancy-translations-pane` shipped in `@formancy/builder-react` and
 `@formancy/builder-angular` and were mounted only in the admin. So a visitor to formancy.ai

@@ -2,10 +2,11 @@ import { provideZonelessChangeDetection } from '@angular/core'
 import type { ApplicationRef } from '@angular/core'
 import { bootstrapApplication } from '@angular/platform-browser'
 import type { BuilderBlock, BuilderSession } from '@formancy/builder-core'
+import type { Scenario } from '@formancy/core'
 import { AngularBuilderHost, PLAYGROUND_BUILDER, playgroundBuilder } from './angular-builder-host.js'
-import type { BuilderTab, PreviewState } from './angular-builder-host.js'
+import type { BuilderTab, PreviewState, ToThePage } from './angular-builder-host.js'
 
-export type { BuilderTab, PreviewState }
+export type { BuilderTab, PreviewState, ToThePage }
 
 /** A mounted Angular builder: how to retune it, and how to take it away. */
 export interface MountedBuilder {
@@ -15,6 +16,8 @@ export interface MountedBuilder {
   explain(preview: PreviewState | undefined): void
   /** The page's blocks now, for the palette to offer. */
   offer(blocks: readonly BuilderBlock[]): void
+  /** The page's examples now, for the scenario pane to run. */
+  check(scenarios: readonly Scenario[]): void
   unmount(): void
 }
 
@@ -34,14 +37,14 @@ export async function mountAngularBuilder(
   host: HTMLElement,
   session: BuilderSession,
   tab: BuilderTab,
-  keep: (block: BuilderBlock) => void,
+  back: ToThePage,
 ): Promise<MountedBuilder> {
   // Angular bootstraps into an element matching the component's selector and
   // will not create one, so the caller does not have to know the selector.
   const root = document.createElement('formancy-playground-angular-builder')
   host.append(root)
 
-  const state = playgroundBuilder(session, tab, keep)
+  const state = playgroundBuilder(session, tab, back)
 
   let app: ApplicationRef
   try {
@@ -62,6 +65,7 @@ export async function mountAngularBuilder(
     show: (next) => state.tab.set(next),
     explain: (preview) => state.preview.set(preview),
     offer: (blocks) => state.blocks.set(blocks),
+    check: (scenarios) => state.scenarios.set(scenarios),
     unmount: () => {
       app.destroy()
       root.remove()

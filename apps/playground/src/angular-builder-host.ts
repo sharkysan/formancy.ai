@@ -7,8 +7,11 @@ import {
   FormancyPropertyPanel,
   FormancyRulesOverview,
   FormancyTranslationsPane,
+  FormancyScenarioPane,
 } from '@formancy/builder-angular'
 import type { BuilderBlock, BuilderSession, Capabilities } from '@formancy/builder-core'
+import type { Scenario } from '@formancy/core'
+import { STARTER_SAMPLE } from './starter-scenarios.js'
 
 /** Which tab the page is on. The React pane owns this. */
 export type BuilderTab = 'fields' | 'arrangement' | 'rules' | 'translations'
@@ -40,7 +43,14 @@ export interface PlaygroundBuilder {
   readonly blocks: WritableSignal<readonly BuilderBlock[]>
   /** Hands a block saved here back to the page, which keeps it for both builders. */
   readonly keep: (block: BuilderBlock) => void
+  /** The page's examples, pushed in like the blocks: one list both builders run (0111). */
+  readonly scenarios: WritableSignal<readonly Scenario[]>
+  /** Hands the shorter list back after a Remove here, for the page to keep for both. */
+  readonly keepScenarios: (next: readonly Scenario[]) => void
 }
+
+/** What this builder hands back to the page, which keeps both lists for both builders. */
+export type ToThePage = Pick<PlaygroundBuilder, 'keep' | 'keepScenarios'>
 
 export const PLAYGROUND_BUILDER = new InjectionToken<PlaygroundBuilder>('playground builder')
 
@@ -48,9 +58,16 @@ export const PLAYGROUND_BUILDER = new InjectionToken<PlaygroundBuilder>('playgro
 export function playgroundBuilder(
   session: BuilderSession,
   tab: BuilderTab,
-  keep: (block: BuilderBlock) => void,
+  back: ToThePage,
 ): PlaygroundBuilder {
-  return { session, tab: signal(tab), preview: signal(undefined), blocks: signal([]), keep }
+  return {
+    session,
+    tab: signal(tab),
+    preview: signal(undefined),
+    blocks: signal([]),
+    scenarios: signal([]),
+    ...back,
+  }
 }
 
 /**
@@ -83,6 +100,7 @@ export function playgroundBuilder(
     FormancyPropertyPanel,
     FormancyRulesOverview,
     FormancyTranslationsPane,
+    FormancyScenarioPane,
   ],
   template: `
     @if (host.tab() === 'arrangement') {
@@ -102,6 +120,15 @@ export function playgroundBuilder(
         (blockSaved)="host.keep($event)"
         (selected)="selected.set($event)"
       />
+      <!-- The page's examples, drawn from its list and handed back to it on Remove,
+           so one taken away here is gone from the React builder too. -->
+      <formancy-scenario-pane
+        [session]="host.session"
+        [scenarios]="host.scenarios()"
+        [initialValue]="sample"
+        [removable]="true"
+        (scenariosChange)="host.keepScenarios($event)"
+      />
       @if (selected(); as keyPath) {
         <formancy-property-panel [session]="host.session" [keyPath]="keyPath" />
         <formancy-logic-panel [session]="host.session" [keyPath]="keyPath" />
@@ -120,4 +147,7 @@ export class AngularBuilderHost {
    * shared; where somebody happens to be looking is not.
    */
   protected readonly selected = signal<readonly string[] | null>(null)
+
+  /** Where every example starts: the same filled-in starter the React pane is given. */
+  protected readonly sample = STARTER_SAMPLE
 }

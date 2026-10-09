@@ -3,7 +3,7 @@ import type { CSSProperties } from 'react'
 import Editor, { useMonaco } from '@monaco-editor/react'
 import type { Monaco } from '@monaco-editor/react'
 import { createFormEngine, parsePath } from '@formancy/core'
-import type { FormEngine } from '@formancy/core'
+import type { FormEngine, Scenario } from '@formancy/core'
 import { validateSchema } from '@formancy/spec/validate'
 import formancySchemaJson from '@formancy/spec/schema.json'
 import type { FormSchema } from '@formancy/spec'
@@ -46,6 +46,7 @@ import type { BuilderTab } from './angular-builder-host.js'
 import type { PaneId } from './panes.js'
 import { BuilderBody, PLACEHOLDER_SESSION, builderTextFor } from './builder-pane.js'
 import { DEMO_BLOCKS } from './demo-blocks.js'
+import { STARTER_SCENARIOS } from './starter-scenarios.js'
 import { PLAYGROUND_CHECKS } from './demo-checks.js'
 import { Problem, SchemaProblems } from './problems.js'
 
@@ -149,6 +150,12 @@ export function App() {
   const keepBlock = useCallback((block: BuilderBlock) => {
     setBlocks((current) => [...current.filter((kept) => kept.id !== block.id), block])
   }, [])
+  /**
+   * The examples both builders check the form against (0111), kept up here for the
+   * blocks' reasons: one list, so one removed in either builder is gone from the other,
+   * and held in memory for this visit.
+   */
+  const [scenarios, setScenarios] = useState<readonly Scenario[]>(STARTER_SCENARIOS)
   const [shown, setShown] = useState<PaneId>('form')
 
   const panes = usePaneLayout()
@@ -375,6 +382,8 @@ export function App() {
           onTab={setBuilderTab}
           blocks={blocks}
           onSaveBlock={keepBlock}
+          scenarios={scenarios}
+          onScenarios={setScenarios}
           preview={built?.engine}
           theme={theme}
           themeHost={themeHost}

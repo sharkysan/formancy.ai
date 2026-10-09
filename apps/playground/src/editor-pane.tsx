@@ -1,4 +1,4 @@
-import type { FormEngine } from '@formancy/core'
+import type { FormEngine, Scenario } from '@formancy/core'
 import type { BuilderTab } from './angular-builder-host.js'
 import { useMemo } from 'react'
 import Editor from '@monaco-editor/react'
@@ -36,6 +36,8 @@ export function EditorPane({
   onTab,
   blocks,
   onSaveBlock,
+  scenarios,
+  onScenarios,
   preview,
   theme,
   themeHost,
@@ -54,6 +56,9 @@ export function EditorPane({
   /** The page's blocks, which both builders offer, and where a saved one goes. */
   blocks: readonly BuilderBlock[]
   onSaveBlock: (block: BuilderBlock) => void
+  /** The page's examples, which both builders run, and where a shorter list goes. */
+  scenarios: readonly Scenario[]
+  onScenarios: (next: readonly Scenario[]) => void
   /** The form pane's engine, whose answers the rules tab explains. */
   preview: FormEngine | undefined
   theme: string
@@ -115,6 +120,8 @@ export function EditorPane({
             onTab={onTab}
             blocks={blocks}
             onSaveBlock={onSaveBlock}
+            scenarios={scenarios}
+            onScenarios={onScenarios}
             preview={preview}
           />
         )}

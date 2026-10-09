@@ -22,12 +22,12 @@ import {
   createBuilderSession,
   createBuilderText,
 } from '@formancy/builder-core'
-import type { FormEngine } from '@formancy/core'
+import type { FormEngine, Scenario } from '@formancy/core'
 import type { BuilderBlock, BuilderSession, BuilderText } from '@formancy/builder-core'
 import { AngularBuilderPane } from './angular-builder-pane.js'
 import type { BuilderTab, PreviewState } from './angular-builder-host.js'
 import { DEMO_MODEL } from './demo-capabilities.js'
-import { STARTER_SAMPLE, STARTER_SCENARIOS } from './starter-scenarios.js'
+import { STARTER_SAMPLE } from './starter-scenarios.js'
 
 /**
  * The builder pane: two trees over one document, in either framework.
@@ -97,6 +97,8 @@ export function BuilderBody({
   onTab,
   blocks,
   onSaveBlock,
+  scenarios,
+  onScenarios,
   preview,
 }: {
   session: BuilderSession
@@ -109,6 +111,12 @@ export function BuilderBody({
    */
   blocks: readonly BuilderBlock[]
   onSaveBlock: (block: BuilderBlock) => void
+  /**
+   * The examples, kept by the page the same way: one list both builders run, so one
+   * removed in either is gone from the other (0111).
+   */
+  scenarios: readonly Scenario[]
+  onScenarios: (next: readonly Scenario[]) => void
   /** The form pane's engine, whose answers the rules tab explains (0128). */
   preview: FormEngine | undefined
 }) {
@@ -179,6 +187,8 @@ export function BuilderBody({
           preview={explained}
           blocks={blocks}
           onSaveBlock={onSaveBlock}
+          scenarios={scenarios}
+          onScenarios={onScenarios}
         />
       ) : tab === 'rules' ? (
         /* Every rule in the form, and — from the answers typed into the form pane —
@@ -235,10 +245,13 @@ export function BuilderBody({
               round it is written, and only an example with its answer written
               down tells the two apart
               ([0110](../../../docs/decisions/0110-a-form-is-checked-against-examples.md)).
-              The scenarios are the host's — here, a file beside the starter. */}
+              The scenarios are the host's — here, the page's list, started from a
+              file beside the starter. Without `onChange` the pane draws no Remove
+              button, and it had none. */}
           <ScenarioPane
             session={session}
-            scenarios={STARTER_SCENARIOS}
+            scenarios={scenarios}
+            onChange={onScenarios}
             initialValue={STARTER_SAMPLE}
           />
 

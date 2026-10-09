@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
 import type { BuilderBlock, BuilderSession } from '@formancy/builder-core'
+import type { Scenario } from '@formancy/core'
 import { mountAngularBuilder } from './angular-builder-bootstrap.js'
 import type { BuilderTab, MountedBuilder, PreviewState } from './angular-builder-bootstrap.js'
 
@@ -24,6 +25,8 @@ export function AngularBuilderPane({
   preview,
   blocks,
   onSaveBlock,
+  scenarios,
+  onScenarios,
 }: {
   session: BuilderSession
   tab: BuilderTab
@@ -32,6 +35,9 @@ export function AngularBuilderPane({
   /** The page's blocks, pushed in like the preview; a block saved here goes back to the page. */
   blocks: readonly BuilderBlock[]
   onSaveBlock: (block: BuilderBlock) => void
+  /** The page's examples, pushed in like the blocks; a shorter list after a Remove goes back. */
+  scenarios: readonly Scenario[]
+  onScenarios: (next: readonly Scenario[]) => void
 }): ReactElement {
   const host = useRef<HTMLDivElement | null>(null)
   const mounted = useRef<MountedBuilder | undefined>(undefined)
@@ -50,7 +56,10 @@ export function AngularBuilderPane({
     let cancelled = false
 
     setProblem(undefined)
-    void mountAngularBuilder(element, session, tab, (block) => saving.current(block))
+    void mountAngularBuilder(element, session, tab, {
+      keep: (block) => saving.current(block),
+      keepScenarios: (next) => revising.current(next),
+    })
       .then((builder) => {
         if (cancelled) {
           builder.unmount()
@@ -59,6 +68,7 @@ export function AngularBuilderPane({
         mounted.current = builder
         builder.explain(latest.current)
         builder.offer(offered.current)
+        builder.check(examples.current)
       })
       .catch((error: unknown) => {
         if (cancelled) return
@@ -104,6 +114,17 @@ export function AngularBuilderPane({
   useEffect(() => {
     saving.current = onSaveBlock
   }, [onSaveBlock])
+
+  // And the examples, both ways, for the same reasons.
+  const examples = useRef(scenarios)
+  useEffect(() => {
+    examples.current = scenarios
+    mounted.current?.check(scenarios)
+  }, [scenarios])
+  const revising = useRef(onScenarios)
+  useEffect(() => {
+    revising.current = onScenarios
+  }, [onScenarios])
 
   return (
     <div className="angular-builder-pane">
