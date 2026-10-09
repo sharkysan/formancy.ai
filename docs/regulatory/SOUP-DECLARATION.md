@@ -261,6 +261,17 @@ whole, and stays so after the fix. Fixed after `0.4.0` for downloads, at the cos
 leaving nothing in the server to end a download whose reader has stopped reading
 ([0155](../decisions/0155-the-object-store-is-timed-on-its-silence.md)); see the changelog.
 
+**Behind a reverse proxy, every respondent shares one rate-limit budget.** `0.4.0` counts
+every public limit by the address on the socket, and behind the reverse proxy the deployment
+view draws, that address is the proxy's for every request: thirty submissions a minute
+between everybody, and the next refused with `429` for traffic that was not theirs. The
+operator is not told, because the server writes no request log, and nothing in `0.4.0` can
+be set to change it. Hazard D14 in [`SAFETY-ANALYSIS.md`](SAFETY-ANALYSIS.md) has it. The
+setting that follows `0.4.0`, `FORMANCY_TRUST_PROXY`, is in
+[`CHANGELOG.md`](../../CHANGELOG.md) under *Unreleased*; set wider than the proxy, it turns
+this into the opposite defect, a client choosing the address it is counted by
+([0156](../decisions/0156-a-proxy-is-trusted-by-its-address.md)).
+
 ### Reserved, and not implemented
 
 Each name is reserved in the sense that nothing else may take it, and **reserving is not
@@ -339,11 +350,7 @@ Still from 0.2.0 and unchanged:
   breaker, and SSRF defence that validates the resolved address and connects to it.
 - **Rate limiting** at four scopes, and a **proof-of-work challenge** on the public
   submission plane. The rate limiter's default store is per process, so it is wrong behind
-  more than one replica — stated here because it is silent. So is this: `0.4.0` counts the
-  address on the socket, which behind a reverse proxy is the proxy's, so everybody behind
-  one shares a single budget and nothing can be set to change it. Hazard D13 in
-  [`SAFETY-ANALYSIS.md`](SAFETY-ANALYSIS.md) has it; the setting that follows `0.4.0` is in
-  [`CHANGELOG.md`](../../CHANGELOG.md) under *Unreleased*.
+  more than one replica — stated here because it is silent.
 - **Drafts carry their own key** ([0062](../decisions/0062-a-draft-carries-its-own-key.md)).
   A draft written under 0.1.0 cannot be resumed, because no token was ever minted for it.
 - **`optionsSource`**: a select whose answers come from the deployment rather than the

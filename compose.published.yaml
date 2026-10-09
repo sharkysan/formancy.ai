@@ -46,6 +46,11 @@ services:
   server:
     image: ghcr.io/sharkysan/formancy-server:${FORMANCY_VERSION:?pin a version, e.g. FORMANCY_VERSION=v0.2.0 — there is no latest tag, on purpose}
     ports:
+      # Every interface, which is right with nothing in front. Behind a reverse
+      # proxy, publish nothing: this port is a way around the proxy, and Docker
+      # hands connections to it over from the network's gateway -- those from
+      # this machine and from other containers, measured. See
+      # FORMANCY_TRUST_PROXY below and the self-hosting guide.
       - "4380:4380"
     environment:
       DATABASE_URL: postgres://formancy:${POSTGRES_PASSWORD:-formancy}@postgres:5432/formancy
@@ -83,7 +88,8 @@ services:
       FORMANCY_CLAMD_PORT:
       FORMANCY_CLAMD_MAX_BYTES:
       # The reverse proxy in front, so the rate limits count respondents rather
-      # than the proxy. A bare key for the same reason: unset is how the server
+      # than the proxy: its own address, never this network's range, which holds
+      # the gateway. A bare key for the same reason: unset is how the server
       # knows to trust no proxy.
       FORMANCY_TRUST_PROXY:
 

@@ -17,12 +17,19 @@ address and the thirty-first submission in a minute was refused whoever sent it.
 setting, `FORMANCY_TRUST_PROXY`, names the proxies — an address, or a comma-separated list of
 addresses and CIDR ranges — whose `X-Forwarded-For` the server then believes. Unset keeps the
 old behaviour, which is still right with nothing in front. **A value that is not addresses and
-ranges stops the server at startup**, and so do two that Fastify itself accepts: a hop count,
-which Fastify, underneath the server, ignores because a count cannot tell the proxy from a client
-that connects directly, and `true`, which would let any client choose the address it is
-counted by. The limits are still counted per process. Both compose files pass the setting
-through; the self-hosting guide says when to set it and what trusting a proxy you do not run
-gives away. Hazard D13 in `SAFETY-ANALYSIS.md` is new. Webhook health and delivery replay moved
+ranges stops the server at startup**, including values Fastify itself accepts: a hop count,
+which Fastify, underneath the server, ignores because a count cannot tell the proxy from a
+client that connects directly; `true`, which would let any client choose the address it is
+counted by; and a name for a range, such as `uniquelocal`, or a netmask, which spell a range
+nobody reading the setting can see (decision 0156). The limits are still counted per
+process. Both compose files pass the setting through. **Name the proxy's own address, not the
+compose network's range:** the range holds the network's gateway, and Docker hands
+connections to a published port over from the gateway — with Docker 29.8 on Linux, those
+from the machine itself and from other containers, and with the range named, 31 submissions
+from the machine each writing its own `X-Forwarded-For` were all admitted. The self-hosting
+guide has an override file that pins the proxy's address and stops publishing port 4380
+behind it, and says what a proxy on the host itself costs instead. Hazard D14 in
+`SAFETY-ANALYSIS.md` is new. Webhook health and delivery replay moved
 to a route plugin of their own to make room, with no change to either.
 
 **Fixed: a download from the object store was cut off at thirty seconds.** The S3 store

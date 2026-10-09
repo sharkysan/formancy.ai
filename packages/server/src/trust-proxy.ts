@@ -21,6 +21,13 @@ const WHAT_TO_WRITE =
  *   would be a setting that reads as configured and does nothing;
  *   `trust-proxy.test.ts` checks that Fastify still ignores one.
  * - **No `true`,** which Fastify also takes, and which believes anybody.
+ * - **No names,** such as `uniquelocal`, which Fastify's `proxy-addr` expands
+ *   into ranges nobody reading the setting can see — that one is every private
+ *   address, a Docker network's gateway with it, and the gateway is where
+ *   Docker hands published-port connections over from. Refused by the address
+ *   check below, as a hostname is.
+ *
+ * Decision 0156 has the reasoning, and what was measured against Docker.
  *
  * Absent or empty returns undefined, which trusts nothing — the behaviour before
  * this setting existed, and the right one with no proxy in front. Anything else

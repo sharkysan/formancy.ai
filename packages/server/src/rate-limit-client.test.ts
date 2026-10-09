@@ -86,6 +86,25 @@ describe('the client a public rate limit counts', () => {
     expect(await submit(server, '203.0.113.2', direct)).toBe(429)
   })
 
+  test('is whatever a client at the gateway writes, once a named range holds the gateway', async () => {
+    // Why the self-hosting guide names the proxy's own address and never its
+    // compose network's range (0156). Docker hands a connection to a published
+    // port over from the network's gateway — measured from the machine itself
+    // and from containers on other networks — and the range holds the gateway,
+    // so each of those is believed about who it is. The same client, with only
+    // the proxy's address named, is counted by the gateway it arrived from.
+    const gateway = '172.30.0.1'
+    const range = await serve(['172.30.0.0/24'])
+    expect(await submit(range, '203.0.113.1', gateway)).toBe(404)
+    expect(await submit(range, '203.0.113.2', gateway)).toBe(404)
+    expect(await submit(range, '203.0.113.3', gateway)).toBe(404)
+    await range.close()
+
+    const pinned = await serve(['172.30.0.10'])
+    expect(await submit(pinned, '203.0.113.1', gateway)).toBe(404)
+    expect(await submit(pinned, '203.0.113.2', gateway)).toBe(429)
+  })
+
   test('is what the proxy saw, not what the client wrote before it', async () => {
     // A proxy appends the address it saw to whatever X-Forwarded-For the client
     // sent. Only the last entry is the proxy's word; the ones before it are the

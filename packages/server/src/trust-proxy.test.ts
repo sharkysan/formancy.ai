@@ -56,6 +56,9 @@ describe('FORMANCY_TRUST_PROXY', () => {
     ['a zero prefix, which is everybody', '10.0.0.2,0.0.0.0/0', '0.0.0.0/0'],
     ['a netmask where a prefix length goes', '10.0.0.0/255.0.0.0', '10.0.0.0/255.0.0.0'],
     ['a name for a range rather than the range', 'loopback', 'loopback'],
+    // Every private address, so every default Docker network's gateway (0156).
+    ['the name for every private range', '10.0.0.2,uniquelocal', 'uniquelocal'],
+    ['the name for the link-local ranges', 'linklocal', 'linklocal'],
     ['an empty entry after a comma', '10.0.0.2,', ''],
     ['two addresses without a comma', '10.0.0.2 10.0.0.3', '10.0.0.2 10.0.0.3'],
   ])('refuses %s, naming the variable and the entry it could not read', (_case, value, entry) => {
@@ -81,6 +84,28 @@ describe('FORMANCY_TRUST_PROXY', () => {
     // rather than quietly turned into "trust nothing", which is what a deployment
     // that wrote it did not mean.
     expect(() => trustProxyFrom(value)).toThrow('FORMANCY_TRUST_PROXY')
+  })
+
+  test('a named proxy is believed about the host and the protocol too, and nobody else is', async () => {
+    // Not what the setting is for, and no route reads either: only the rate
+    // limits read the client's address. But Fastify takes X-Forwarded-Host and
+    // X-Forwarded-Proto from any hop it trusts, and a proxy that does not set
+    // them passes on what the client wrote — nginx does, measured (0156). So the
+    // first route to read request.host or request.protocol would take a
+    // client's word for them. The self-hosting guide says so; if Fastify stops
+    // doing this, this fails and the sentence should go with it.
+    const app = Fastify({ trustProxy: trustProxyFrom('10.0.0.2') ?? false })
+    app.get('/where', (request) => ({ host: request.host, protocol: request.protocol }))
+    const written = { 'x-forwarded-host': 'attacker.example', 'x-forwarded-proto': 'https' }
+    try {
+      const viaProxy = await app.inject({ url: '/where', remoteAddress: '10.0.0.2', headers: written })
+      expect(viaProxy.json()).toEqual({ host: 'attacker.example', protocol: 'https' })
+
+      const direct = await app.inject({ url: '/where', remoteAddress: '198.51.100.9', headers: written })
+      expect(direct.json()).toEqual({ host: 'localhost:80', protocol: 'http' })
+    } finally {
+      await app.close()
+    }
   })
 
   test('refuses a hop count because Fastify ignores one', async () => {
