@@ -20,12 +20,24 @@ import { describe, expect, test } from 'vitest'
 const here = dirname(fileURLToPath(import.meta.url))
 const repo = join(here, '..', '..', '..')
 
-/** Comments out, in every syntax a builder source holds: a part named in prose is not drawn. */
-const code = (source: string): string =>
-  source
-    .replace(/<!--[\s\S]*?-->/g, '')
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/^\s*\/\/.*$/gm, '')
+/**
+ * Comments out, in every syntax a builder source holds: a part named in prose is not drawn.
+ *
+ * Until nothing changes, because one pass can leave a comment that removing another one
+ * completed — `<!<!-- -->-- -->` — which is also why CodeQL refused the single pass.
+ */
+function code(source: string): string {
+  let before = ''
+  let after = source
+  while (after !== before) {
+    before = after
+    after = before
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '')
+  }
+  return after
+}
 
 function sources(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
