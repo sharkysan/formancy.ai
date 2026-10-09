@@ -66,8 +66,8 @@ two people editing one form in the builder from silently overwriting each other
 — the loser is told what won, and shown the difference, rather than finding out
 on their next page load.
 
-**Sending it is optional**, and that is the design. A script, the CLI or an
-agent publishes a document it *composed* rather than one it *opened*; it has no
+**Sending it is optional**, and that is the design. A script or an agent
+publishes a document it *composed* rather than one it *opened*; it has no
 version to declare, and requiring the header would make every one of them fetch
 the current version first to satisfy a rule about editors. Send it when you
 opened a version and want to be told you have been overtaken; omit it and the
@@ -121,8 +121,9 @@ and unstable first, because three things about the model turned out to be
 undiscoverable without a renderer and a server in the loop: what happens to a
 hidden field's answer, how a repeating-group row keeps an identity that is not
 its position, and where a validation check runs. All three are settled, so the
-version froze. From here a spec bump is a major event,
-`@formancy/cli migrate` rewrites documents forward — and **submissions never
+version froze. From here a spec bump is a major event, a document moves forward
+with `upgradeSpecVersion` from `@formancy/spec` — one line so far, because each
+version has been a superset of the one before — and **submissions never
 migrate**. They stay bound to the exact version that produced them, which is
 what makes an old one auditable at all.
 

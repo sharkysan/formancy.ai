@@ -173,6 +173,14 @@ holding only what was typed ([0125](https://github.com/sharkysan/formancy.ai/blo
 - **Multi-tenancy, PDF output, e-signatures, analytics.**
 - **A Vue renderer.** The engine protocol is designed for one; it is not a
   commitment yet.
+- **A command-line tool.** This page credited one with emitting a TypeScript type per
+  form, and the migration guide and the versioning page with migrating documents; no such
+  package was built. Migrating a document is `upgradeSpecVersion` from `@formancy/spec`, a
+  function. A type per form has nothing behind it. What would make it go: the type derived
+  from a form's model by a function in `@formancy/spec`, so that a build script and a
+  command get one answer, and then a package whose manifest declares a `bin` that calls it.
+  Until a manifest declares it, a page that names the package or its command fails
+  `apps/docs/src/package-references.test.ts`.
 
 Field **type names** for several of these are reserved — `multiselect` and `combobox` are
 absent from the type list, the first because several ticks from one list is already a type
@@ -319,7 +327,7 @@ was simply never shown again, with nothing to say so
 started from, and one overtaken by somebody else is refused with the same **409
 `FORM_VERSION_CHANGED`** a stale submission gets, carrying the current schema so an editor
 can show what changed rather than fetching and diffing to find out why. Declaring is
-optional on purpose — a script, the CLI and an agent compose a document rather than opening
+optional on purpose — a script and an agent compose a document rather than opening
 one, and have nothing to declare; the builder opened a version, so the builder declares.
 Nothing is overwritten either way, because a published version is immutable; what was
 missing was that anybody noticed.
@@ -444,7 +452,11 @@ something rather than starting it.
 ### Deliberately not copying
 
 - **A generated API that returns `any`.** form.io's per-form endpoints hand you
-  untyped data; `npx @formancy/cli types` emits a real type per form.
+  untyped data. What exists here is the checked half: the server runs every submission
+  through the engine, against the version it was filled in on, and refuses one that fails
+  it. The typed half does not exist — both renderers hand a submission's data over as
+  `unknown` — and this line used to credit it to a command that was never built (see
+  *What does not exist yet*).
 - **Markup baked into the renderers.** Bootstrap classes in the core are the
   reason theming form.io means fighting it. Here the markup belongs to the
   consumer's design system.
