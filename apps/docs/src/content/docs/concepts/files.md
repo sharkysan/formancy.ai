@@ -39,16 +39,23 @@ is a problem you never find out about.
 
 **One request receives a file's bytes at a time.** A second `PUT` for a file
 while the first is still being scanned or written is answered `409 busy`
-before its bytes are scanned, and nothing it sent is kept. The first holds the
-file for two minutes at most, so a request that dies holding it keeps the retry
-waiting that long. Without this, a retry that finished first could be claimed
-by a submission and then overwritten by the original arriving late — the row
-put back to unclaimed, for the collector to delete, and the bytes replaced
+before its bytes are scanned, and nothing it sent is kept. The file field's
+**Try again** runs your uploader again, and an uploader that offers before it
+sends, as the admin's does, gets a new file and never meets this. A second
+`PUT` for one file comes from a proxy or HTTP library retrying it, or from an
+uploader that sends the bytes again without offering again — and the first
+request holds the file for two minutes at most, so one that dies holding it
+keeps such a `PUT` waiting that long. Without this, a second request that
+finished first could be claimed by a submission and then overwritten by the
+first arriving late — the row put back to unclaimed, for the collector to
+delete, and the bytes replaced
 ([0153](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0153-a-file-is-received-by-one-request-at-a-time.md)).
 A request whose scan and write together take longer than the two minutes is
 the case this does not close: the row stays with its submission, and its bytes
-can still replace the ones that were kept. That request is answered `409`, and
-nothing else records it — the server keeps no request log.
+can still replace the ones that were kept. The supplied clamd adapter does not
+keep a scan inside that: its 30 seconds are of silence, not of the whole scan.
+That request is answered `409`, and nothing else records it — the server keeps
+no request log.
 
 ## Turning it on
 

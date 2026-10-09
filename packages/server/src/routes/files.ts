@@ -7,11 +7,12 @@ import type { FileStore } from '../file-store.js'
 /**
  * How long one request holds a file while its bytes are scanned and written (0153).
  *
- * The clamd adapter this package supplies gives up after 30 seconds without an answer, and
- * its object store after 30 seconds per request, so this outlasts the two together twice
- * over. It is also how long a request that died holding a file keeps the retry waiting. A
- * scanner or store slower than this overruns it, and `docs/architecture/11-risks-and-debt.md`
- * says what that costs.
+ * A judgement, not a bound the adapters guarantee. The object store this package supplies
+ * abandons a PUT after 30 seconds, as a whole; its clamd adapter's 30 seconds are of silence
+ * — any traffic on the connection restarts them — so nothing here limits how long a scan
+ * takes. Longer makes an overrun rarer, and keeps a PUT of the same file busy for longer
+ * after a request that died holding it. A request that does overrun it can still replace a
+ * claimed file's bytes, and `docs/architecture/11-risks-and-debt.md` says what that costs.
  */
 const RECEIVE_LEASE_MS = 2 * 60_000
 
@@ -192,16 +193,31 @@ export async function fileRoutes(
     }
 
     // Every way out that does not keep the bytes gives the file back, and before the reply:
-    // a client told to try again must not find it still held.
+    // a client that sends this file again, as it is told to, must not find it still held.
     const answer = await receive(fileStore, file, bytes, lease, request.log).catch(
       async (error: unknown) => {
-        await storage.releaseFile(file.id, lease)
+        await giveBack(file.id, lease, request.log)
         throw error
       },
     )
-    if (answer.status !== 204) await storage.releaseFile(file.id, lease)
+    if (answer.status !== 204) await giveBack(file.id, lease, request.log)
     return reply.code(answer.status).send(answer.body)
   })
+
+  /**
+   * Give a file back after a request that kept nothing, without letting the release decide
+   * the reply.
+   *
+   * A release that fails is most likely the database the request has already failed on, and
+   * its error would stand in for the one that says why the bytes were not kept — or turn a
+   * scanner's refusal into a 500. The lease runs out on its own, so all a failed release
+   * costs is a `PUT` of this same file being busy until it does.
+   */
+  async function giveBack(id: string, lease: string, log: FastifyBaseLogger): Promise<void> {
+    await storage.releaseFile(id, lease).catch((cause: unknown) => {
+      log.error({ file: id, cause }, 'the file could not be given back; its lease will run out')
+    })
+  }
 
   /**
    * Scan a file's bytes, write them and settle its row, for a request holding its lease.

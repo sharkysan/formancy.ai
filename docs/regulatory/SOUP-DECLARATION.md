@@ -209,6 +209,24 @@ IEC 62304 §7.1.2 asks for the supplier's published anomaly list.
 defects found by review are named there rather than summarised away. What follows is what a
 manufacturer characterising `0.4.0` needs on one page.
 
+**`0.2.0`, `0.3.0` and `0.4.0` can take an accepted submission's attachment away, and replace
+its bytes.** The `PUT` that receives a file's bytes writes the row back as it read it before
+the write — and, in `0.4.0` with a scanner, before the scan — as `stored` with no submission,
+unconditionally. If a second `PUT` for the same file is stored and claimed by a submission
+while the first is still being written or scanned, the first puts the claimed row back to
+unclaimed, for the collector to delete a day later, and its bytes replace the ones the
+submission was accepted with. Nothing in the submission records either. The clients this
+repository supplies never send that second `PUT` — the admin's uploader offers the file anew,
+under a new id, for every attempt — so it takes a proxy or HTTP library retrying the request,
+an integrator's uploader that sends the bytes again without offering again, or whoever holds
+the file's id, on purpose. Reproduced on real PostgreSQL against `0.4.0`'s route, with a
+scanner held open and, without one, with the write held open; `0.2.0` and `0.3.0` have the same
+sequence without the scan, read in their source but not run. Fixed after `0.4.0`, with a
+residual: a request whose scan and write together outlast two minutes can still replace the
+bytes, though not the row, and the supplied clamd adapter does not keep a scan inside that.
+Hazard B10 in [`SAFETY-ANALYSIS.md`](SAFETY-ANALYSIS.md) has both, and
+[0153](../decisions/0153-a-file-is-received-by-one-request-at-a-time.md) the fix.
+
 **Measured functional gaps.** Against the official CEL corpus: 2,344 cases
 total, 704 in scope and run, **586 passed and 118 failed**, 2 refused
 deliberately by formancy's own policy, 1,638 excluded as out of scope. The 118

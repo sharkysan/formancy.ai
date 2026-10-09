@@ -1140,8 +1140,8 @@ describe('an upload the deployment scans', () => {
       return offered.json() as { id: string; uploadUrl: string; storageKey: string }
     }
 
-    const put = (file: { uploadUrl: string }, body: Buffer) =>
-      scanning.inject({
+    const put = (file: { uploadUrl: string }, body: Buffer, on: FastifyInstance = scanning) =>
+      on.inject({
         method: 'PUT',
         url: file.uploadUrl,
         headers: { 'content-type': 'application/pdf' },
@@ -1184,6 +1184,26 @@ describe('an upload the deployment scans', () => {
       // Refused before its bytes were scanned: a scan for bytes that cannot be kept is the
       // deployment's clamd time spent on nothing.
       expect(scan.scans()).toBe(1)
+    })
+
+    test('without a scanner the write is the window, and a second request is refused as busy', async () => {
+      // `app` scans nothing, as a deployment without FORMANCY_CLAMD_HOST does and as 0.2.0
+      // and 0.3.0 did. There the unconditional write-back had the write alone to lose in:
+      // run on main with the write held open like this, the second request got 204, was
+      // claimed, and the first then put the row back to stored with no submission.
+      const file = await offer(first.byteLength)
+      const write = holdTheNextWrite()
+
+      const slow = put(file, first, app)
+      await write.reached
+      const meanwhile = await put(file, second, app)
+      write.finish()
+      const kept = await slow
+
+      expect(meanwhile.statusCode).toBe(409)
+      expect(meanwhile.json()).toMatchObject({ error: 'busy' })
+      expect(kept.statusCode).toBe(204)
+      expect(bytes.get(file.storageKey)).toEqual(first)
     })
 
     test('a request that outlasts its lease cannot un-claim the file, or replace its bytes', async () => {
@@ -1254,10 +1274,67 @@ describe('an upload the deployment scans', () => {
       expect((await failing).statusCode).toBe(500)
 
       // Without the release a full disk, once cleared, would still refuse this file as busy
-      // for two minutes, to a person who was told nothing about why.
+      // for two minutes to whatever sends it again — a proxy's retry, an integrator's
+      // uploader; the file field's Try again offers anew — told nothing about why.
       const again = await put(file, first)
       expect(again.statusCode).toBe(204)
       expect(bytes.get(file.storageKey)).toEqual(first)
+    })
+
+    /**
+     * Giving the file back can fail as well — most likely on the database the request has
+     * already failed on. Its error must not stand in for the answer the request had: the
+     * lease runs out on its own, and the reply is what says why the bytes were not kept.
+     */
+    describe('when giving the file back fails', () => {
+      let releasing: FastifyInstance
+
+      beforeAll(async () => {
+        releasing = await createApp(
+          {
+            ...createPostgresStorage(sql),
+            releaseFile: () => Promise.reject(new Error('Connection terminated unexpectedly')),
+          },
+          {
+            authSecret: 'integration-test-secret-with-length',
+            submissionRateLimit: { max: 10_000, timeWindowMs: 60_000 },
+            fileStore,
+            scanner: { scan: () => verdict() },
+          },
+        )
+      })
+
+      afterAll(async () => {
+        await releasing?.close()
+      })
+
+      test('a write that throws is answered with its own error, not the release\'s', async () => {
+        verdict = async () => ({ clean: true })
+        const file = await offer(first.byteLength)
+        const write = holdTheNextWrite()
+
+        const failing = put(file, first, releasing)
+        await write.reached
+        write.fail(new Error('ENOSPC: no space left on device'))
+        const answered = await failing
+
+        // Rethrown after a release that failed, the release's error replaced it: a reply
+        // about a dropped connection, for a disk that had filled.
+        expect(answered.statusCode).toBe(500)
+        expect(answered.json()).toMatchObject({ message: 'ENOSPC: no space left on device' })
+      })
+
+      test('a file the scanner refused is still answered as refused', async () => {
+        verdict = async () => ({ clean: false, finding: 'Eicar-Test-Signature' })
+        const file = await offer(first.byteLength)
+
+        const answered = await put(file, first, releasing)
+
+        // A release that failed turned it into a 500: a refused file read as a fault on the
+        // server, which the person is invited to send again rather than told was refused.
+        expect(answered.statusCode).toBe(422)
+        expect(answered.json()).toMatchObject({ error: 'refused_by_scanner' })
+      })
     })
 
     test('a database from before the lease gains its column on start, and holds no file', async () => {

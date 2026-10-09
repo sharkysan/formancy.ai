@@ -20,8 +20,14 @@ afterEach(async () => {
 
 const file = { name: 'a.pdf', contentType: 'application/pdf', size: 0 }
 
-/** Starts the stand-in; `answer` sees the bytes it received, and may say nothing at all. */
-async function clamd(answer: (bytes: Buffer) => string | undefined, limit = Infinity) {
+/**
+ * Starts the stand-in; `answer` sees the bytes it received, and may say nothing at all.
+ * `limit` is its stream limit; `paceMs` sends the answer a byte at a time, that far apart.
+ */
+async function clamd(
+  answer: (bytes: Buffer) => string | undefined,
+  { limit = Infinity, paceMs }: { limit?: number; paceMs?: number } = {},
+) {
   const received: Buffer[] = []
   const server = createServer((socket) => {
     let pending = Buffer.alloc(0)
@@ -46,7 +52,20 @@ async function clamd(answer: (bytes: Buffer) => string | undefined, limit = Infi
           const bytes = Buffer.concat(pieces)
           received.push(bytes)
           const reply = answer(bytes)
-          if (reply !== undefined) socket.end(`${reply}\0`)
+          if (reply === undefined) return
+          if (paceMs === undefined) {
+            socket.end(`${reply}\0`)
+            return
+          }
+          const trickle = (at: number): void => {
+            if (at === reply.length) {
+              socket.end('\0')
+              return
+            }
+            socket.write(reply[at]!)
+            setTimeout(() => trickle(at + 1), paceMs)
+          }
+          trickle(0)
           return
         }
         if (pending.length < 4 + length) return
@@ -96,7 +115,7 @@ describe('the ClamAV scanner', () => {
     // connection, and the answer was lost to ECONNRESET. Read as a scanner that is down,
     // the person would be told to try again, forever. So the limit is known here, and
     // checked first.
-    const daemon = await clamd(() => 'stream: OK', 1000)
+    const daemon = await clamd(() => 'stream: OK', { limit: 1000 })
 
     const verdict = await createClamdScanner({
       host: '127.0.0.1',
@@ -151,5 +170,24 @@ describe('the ClamAV scanner', () => {
         Buffer.from('x'),
       ),
     ).rejects.toThrow(/did not answer within 200 ms/)
+  })
+
+  test('its time limit is for silence, not for the whole scan', async () => {
+    // An answer a byte at a time: each gap well inside the limit, the whole well past it.
+    // 0153 and hazard B10 rest on this — the adapter abandons a clamd that has gone quiet,
+    // not a scan that is still moving, so nothing supplied keeps a scan inside the two
+    // minutes a request holds a file for. Made a deadline, this fails, and those documents
+    // are wrong in the other direction.
+    const daemon = await clamd(() => 'stream: OK', { paceMs: 40 })
+    const started = Date.now()
+
+    const verdict = await createClamdScanner({
+      host: '127.0.0.1',
+      port: daemon.port,
+      timeoutMs: 150,
+    }).scan(file, Buffer.from('x'))
+
+    expect(verdict).toEqual({ clean: true })
+    expect(Date.now() - started).toBeGreaterThan(150)
   })
 })

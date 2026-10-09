@@ -284,7 +284,8 @@ back to `stored` with no submission — for the collector, a day later
 
 Every guarded write is one conditional `UPDATE` whose row count is the answer, so two requests
 racing each other are decided by the database rather than by whichever check ran first. Every
-way out of the `PUT` that keeps nothing releases the lease before it replies, so the retry the
-reply invites is not refused as busy. A write that outlasts its lease is the one thing the
-lease does not stop: its settle is refused, but its bytes land under the same key
+way out of the `PUT` that keeps nothing releases the lease before it replies, so a `PUT` of the
+same file sent again, as the reply invites, is not refused as busy; a release that fails leaves
+the reply as it was, and the lease runs out on its own. A write that outlasts its lease is the
+one thing the lease does not stop: its settle is refused, but its bytes land under the same key
 ([§11.2](11-risks-and-debt.md)).
