@@ -79,6 +79,9 @@ const quality = readFileSync(
 )
 
 describe('the bundle figures in §9.3', () => {
+  // Brotli at its default quality, which is what the figures are quoted in, is slow on purpose:
+  // measured 0.25 to 0.9 s here for the three bundles, and 5.4 s in CI under coverage, where it
+  // timed out at the default five. The work is real, so the limit says so.
   test('are the figures a fresh measurement gives', () => {
     // One decimal place, because that is the precision the document quotes. A figure that
     // has drifted by more than that is a figure somebody has to re-measure, which is the
@@ -105,7 +108,7 @@ describe('the bundle figures in §9.3', () => {
         `§9.3 says @formancy/${packageName} is ${String(quoted)} kB; it measures ${measured.toFixed(1)} kB`,
       ).toBeLessThan(0.15)
     }
-  })
+  }, 30_000)
 
   test('are dated, because they are re-measured rather than incremented', () => {
     // The repository's rule for a number that cannot be derived at build time. Without the
