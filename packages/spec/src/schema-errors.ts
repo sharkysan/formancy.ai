@@ -100,6 +100,8 @@ export const SCHEMA_ERRORS = {
     'A "step" needs specVersion "{version}". This document says "{declared}". Change it to "{version}" — everything already in the document keeps working, because a later version only adds.',
   'version.mask':
     'A "mask" needs specVersion "{version}". This document says "{declared}". Change it to "{version}" — everything already in the document keeps working, because a later version only adds.',
+  'version.property':
+    'A "{property}" needs specVersion "{version}". This document says "{declared}". Change it to "{version}" — everything already in the document keeps working, because a later version only adds.',
   'version.optionImage':
     'An option\'s image needs specVersion "{version}". This document says "{declared}". Change it to "{version}" — everything already in the document keeps working, because a later version only adds.',
   'version.optionsSource':

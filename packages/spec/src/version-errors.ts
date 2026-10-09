@@ -10,20 +10,52 @@
  *
  * `SchemaError` stays in `validate.ts`, which is where the public surface is.
  */
-import {
-  LIST_VALUED_FIELD_TYPES,
-  SPEC_1_FIELD_TYPES,
-  SPEC_2_FIELD_TYPES,
-  SPEC_2_WIDGETS,
-  SPEC_3_FIELD_TYPES,
-  SPEC_3_WIDGETS,
-} from './types.js'
-import { SPEC_2_RULE_KINDS } from './rules.js'
-import { layoutChildren, SPEC_1_LAYOUT_KINDS } from './layout.js'
+import { SPEC_2_WIDGETS, SPEC_3_WIDGETS } from './types.js'
 import type { FieldDef, FormSchema } from './types.js'
+import { layoutChildren } from './layout.js'
 import type { LayoutNode } from './layout.js'
 import { schemaError } from './schema-errors.js'
 import type { SchemaError } from './schema-errors.js'
+import {
+  DOCUMENT_PROPERTY_SINCE,
+  FIELD_PROPERTY_SINCE,
+  LAYOUT_KIND_SINCE,
+  LAYOUT_NODE_PROPERTY_SINCE,
+  MATRIX_ROW_PROPERTY_SINCE,
+  OPTION_PROPERTY_SINCE,
+  RULE_KIND_SINCE,
+  RULE_PROPERTY_SINCE,
+  fieldPropertySince,
+  fieldTypeSince,
+} from './version-ledger.js'
+
+type Versions = { version: string; declared: string }
+
+/**
+ * A property newer than the thing that carries it.
+ *
+ * Under the code a builder already translates, for the properties that were gated one by
+ * one before the ledger and had a sentence of their own; under `version.property` for
+ * every other. This list does not grow: a property arriving in a later version is named
+ * by the general sentence.
+ */
+function propertyError(path: string, property: string, versions: Versions): SchemaError {
+  switch (property) {
+    case 'earliest':
+    case 'latest':
+      return schemaError(path, 'version.bound', { bound: property, ...versions })
+    case 'step':
+      return schemaError(path, 'version.step', versions)
+    case 'mask':
+      return schemaError(path, 'version.mask', versions)
+    case 'optionsSource':
+      return schemaError(path, 'version.optionsSource', versions)
+    case 'image':
+      return schemaError(path, 'version.optionImage', versions)
+    default:
+      return schemaError(path, 'version.property', { property, ...versions })
+  }
+}
 
 /**
  * Constructs a document uses that its declared version does not define.
@@ -38,12 +70,18 @@ import type { SchemaError } from './schema-errors.js'
  * later than the one it declares. The reverse is fine, because every version here
  * is a superset of the one before it. That is the whole compatibility story.
  *
- * Written per construct rather than per version. It used to open with
- * `if (specVersion !== '1') return []`, which was right while there were two
- * versions and silently wrong the moment there was a third: a `richtext` in a
- * version 1 document would have been waved through by a function that had stopped
- * looking. Each construct now names the version that introduced it, and the
- * comparison is against the document's own.
+ * **Every construct's version is read from the ledger** (`version-ledger.ts`), whose
+ * tables the compiler and `version-ledger.test.ts` hold to the document format. It was
+ * written construct by construct, each gate a line somebody remembered: the widget and
+ * field type gates each once answered "the newest version" for anything they did not
+ * list, a rule kind outside version 2's list was taken to be version 3's and a layout
+ * kind outside version 1's to be version 2's, and a property was gated only if a line
+ * named it — so `columns` on a repeater and `span` on a layout node, both version 2,
+ * were never named: a version 1 document carrying one was refused only through the
+ * widget or the table that carries it.
+ *
+ * A property is reported only when it is newer than what carries it: a version 3
+ * `box` on a `signature` field adds nothing to the field type's own error.
  */
 export function versionErrors(
   schema: FormSchema,
@@ -53,53 +91,40 @@ export function versionErrors(
   if (!Number.isFinite(declared)) return []
 
   const errors: SchemaError[] = []
-  const spec1Types = new Set<string>(SPEC_1_FIELD_TYPES)
-  const spec2Types = new Set<string>(SPEC_2_FIELD_TYPES)
-  const spec3Types = new Set<string>(SPEC_3_FIELD_TYPES)
   const spec2Widgets = new Set<string>(SPEC_2_WIDGETS)
   const spec3Widgets = new Set<string>(SPEC_3_WIDGETS)
-  const spec2RuleKinds = new Set<string>(SPEC_2_RULE_KINDS)
-  const spec1Kinds = new Set<string>(SPEC_1_LAYOUT_KINDS)
-
-  /**
-   * The version a field type first appeared in.
-   *
-   * Per version, for the reason the widget check below gives: this read "1, else 2,
-   * else 3" and answered 3 for every type there would ever be, so a version 3 document
-   * carrying a version 4 `ranking` was told it needed version 3 — the one it declares.
-   */
-  const introducedIn = (type: string): number =>
-    spec1Types.has(type) ? 1 : spec2Types.has(type) ? 2 : spec3Types.has(type) ? 3 : 4
 
   /** The version a thing needs and the version this document says, for every sentence. */
-  const versions = (version: number): { version: string; declared: string } => ({
+  const versions = (version: number): Versions => ({
     version: String(version),
     declared: schema.specVersion,
   })
 
+  /** Every key of `object` that arrived after both its holder and the declared version. */
+  const later = (
+    object: object,
+    since: Readonly<Record<string, number>>,
+    holder: number,
+    at: string,
+  ): void => {
+    for (const key of Object.keys(object)) {
+      const version = since[key]
+      if (version === undefined || version <= holder || version <= declared) continue
+      errors.push(propertyError(`${at}/${key}`, key, versions(version)))
+    }
+  }
+
+  later(schema, DOCUMENT_PROPERTY_SINCE, 1, '')
+
   for (const { field, path } of fields) {
-    // A PROPERTY, not only a type. This function gated field types and layout
-    // kinds and nothing else, which was enough while every version 2 construct
-    // was one of those two. `widget` is neither, and it cannot be waved through:
-    // the document schema is closed, so a version 1 reader answers `Unknown
-    // property "widget"` and refuses the whole document rather than ignoring the
-    // hint and rendering the default control. A version 1 document carrying one
-    // is therefore not a version 1 document, and saying so here is the only place
-    // the author finds out — they cannot see the reader that would refuse it.
+    // WHICH widget, not whether there is one. `widget` arrived in version 2, so the
+    // presence test answers yes for every widget there will ever be — and a version 2
+    // reader given a version 3 widget renders the default control, collects the same
+    // answers and looks entirely correct, which is exactly the silent failure the
+    // version line exists to prevent. Per version: this read `spec2Widgets.has(widget)
+    // ? 2 : 3` once and told a version 3 document carrying a version 4 widget that it
+    // needed version 3, which it already declared.
     if (field.widget !== undefined) {
-      // WHICH widget, not whether there is one. `widget` arrived in version 2, so
-      // the presence test answers yes for every widget there will ever be — and a
-      // version 2 reader given a version 3 widget renders the default control,
-      // collects the same answers and looks entirely correct, which is exactly the
-      // silent failure the version line exists to prevent.
-      /*
-       * Per version, which this line now has to be. It read
-       * `spec2Widgets.has(widget) ? 2 : 3` and answered **3** for every widget
-       * there would ever be — exactly the shape the comment above warns about,
-       * one version later. A version 3 document carrying a version 4 widget
-       * would have been told it needs version 3, which it already declares: an
-       * error that contradicts itself and sends the author nowhere.
-       */
       const arrived = spec2Widgets.has(field.widget) ? 2 : spec3Widgets.has(field.widget) ? 3 : 4
       if (arrived > declared) {
         errors.push(
@@ -111,62 +136,28 @@ export function versionErrors(
       }
     }
 
-    // `earliest`/`latest` land on `date` too, which IS a version 1 type -- and that
-    // is not a contradiction. The freeze promises a version 1 DOCUMENT keeps
-    // validating, and an optional property only a version 2 document may carry takes
-    // nothing from any version 1 document. It is not additive *within* version 1,
-    // because the schema is closed: a version 1 reader answers `Unknown property
-    // "earliest"` and refuses everything.
-    for (const bound of ['earliest', 'latest'] as const) {
-      if (field[bound] !== undefined && declared < 2) {
-        errors.push(schemaError(`${path}/${bound}`, 'version.bound', { bound, ...versions(2) }))
-      }
+    // Every other property, by the type it sits on: `optionsSource` arrived on a `select`
+    // in version 2 and on `selectboxes` — a version 2 type — only in version 3, because
+    // widening a property to a type is a version just as adding it was.
+    const type = fieldTypeSince(field.type)
+    for (const key of Object.keys(field)) {
+      if (key === 'widget' || !(key in FIELD_PROPERTY_SINCE)) continue
+      const version = fieldPropertySince(key as keyof FieldDef, field.type)
+      if (version <= type || version <= declared) continue
+      errors.push(propertyError(`${path}/${key}`, key, versions(version)))
     }
-
-    // A property, like `widget` and the temporal bounds. `step` landed on
-    // `number`, which is a version 1 type -- and the freeze is unharmed for the
-    // reason the bounds give above: an optional property only a version 4
-    // document may carry takes nothing from any older document.
-    if (field.step !== undefined && declared < 4) {
-      errors.push(schemaError(`${path}/step`, 'version.step', versions(4)))
-    }
-    // The same, for the same reason: a property only a version 4 document may carry.
-    if (field.mask !== undefined && declared < 4) {
-      errors.push(schemaError(`${path}/mask`, 'version.mask', versions(4)))
-    }
-    // And on an option rather than the field, which is why it is looked for there.
-    if (declared < 4) {
-      field.options?.forEach((option, index) => {
-        if (option.image === undefined) return
-        errors.push(
-          schemaError(`${path}/options/${String(index)}/image`, 'version.optionImage', versions(4)),
-        )
-      })
-    }
-
-    // Same reasoning as `widget` above: a property, not a type, and the schema is
-    // closed, so a version 1 reader answers `Unknown property "optionsSource"` and
-    // refuses the whole document rather than rendering a select with no options --
-    // which would be the same field quietly collecting nothing.
-    if (field.optionsSource !== undefined) {
-      // On a `select` since version 2; on a list-valued field since version 3,
-      // which is the tag picker's case. Widening a property to a new TYPE is a
-      // version in the same way adding the property was: a version 2 reader
-      // refuses the combination, so a document using it is not a version 2
-      // document however version 2 the property looks on its own.
-      const arrived = LIST_VALUED_FIELD_TYPES.includes(field.type as never) ? 3 : 2
-      if (arrived > declared) {
-        errors.push(
-          schemaError(`${path}/optionsSource`, 'version.optionsSource', versions(arrived)),
-        )
-      }
-    }
-
-    const arrived = introducedIn(field.type)
-    if (arrived <= declared) continue
-    errors.push(
-      schemaError(`${path}/type`, 'version.fieldType', { type: field.type, ...versions(arrived) }),
+    field.options?.forEach((option, index) =>
+      later(option, OPTION_PROPERTY_SINCE, type, `${path}/options/${String(index)}`),
     )
+    field.rows?.forEach((row, index) =>
+      later(row, MATRIX_ROW_PROPERTY_SINCE, type, `${path}/rows/${String(index)}`),
+    )
+
+    if (type > declared) {
+      errors.push(
+        schemaError(`${path}/type`, 'version.fieldType', { type: field.type, ...versions(type) }),
+      )
+    }
   }
 
   // A rule KIND has a version too, and for the sharpest reason of the three: a
@@ -175,25 +166,25 @@ export function versionErrors(
   // built — a field that should have been checked, unchecked — and guessing is
   // worse than ignoring.
   for (const [index, rule] of (schema.logic?.rules ?? []).entries()) {
-    if (!spec2RuleKinds.has(rule.kind) && declared < 3) {
-      errors.push(
-        schemaError(`/logic/rules/${String(index)}/kind`, 'version.ruleKind', {
-          kind: rule.kind,
-          ...versions(3),
-        }),
-      )
+    const at = `/logic/rules/${String(index)}`
+    const kind: number | undefined = RULE_KIND_SINCE[rule.kind]
+    // Not a kind at all, which the document schema refuses on its own.
+    if (kind === undefined) continue
+    if (kind > declared) {
+      errors.push(schemaError(`${at}/kind`, 'version.ruleKind', { kind: rule.kind, ...versions(kind) }))
     }
+    later(rule, RULE_PROPERTY_SINCE, kind, at)
   }
 
   for (const [layoutIndex, layout] of (schema.layouts ?? []).entries()) {
     const walk = (nodes: readonly LayoutNode[], base: string): void => {
       for (const [index, node] of nodes.entries()) {
         const at = `${base}/${String(index)}`
-        if (!spec1Kinds.has(node.kind) && declared < 2) {
-          errors.push(
-            schemaError(`${at}/kind`, 'version.layoutKind', { kind: node.kind, ...versions(2) }),
-          )
+        const kind: number | undefined = LAYOUT_KIND_SINCE[node.kind]
+        if (kind !== undefined && kind > declared) {
+          errors.push(schemaError(`${at}/kind`, 'version.layoutKind', { kind: node.kind, ...versions(kind) }))
         }
+        later(node, LAYOUT_NODE_PROPERTY_SINCE, kind ?? 1, at)
         // `layoutChildren` rather than a kind test: `qrcode` is childless and is not a
         // field, so `kind !== 'field'` walked straight into `undefined`.
         walk(layoutChildren(node), `${at}/children`)

@@ -10,6 +10,18 @@ later.
 
 ## Unreleased
 
+**Fixed: everything a document can say has a spec version, and the check reads it from one
+ledger.** 0.4.0 said its freeze check covered field types and widgets but not properties or
+rule kinds. Writing that check found a rule kind outside version 2's list taken to be version
+3's, a layout kind outside version 1's taken to be version 2's, and two version 2 properties,
+`columns` and `span`, never named: a version 1 document carrying one was refused only through
+the widget or the table that carries it. Every property, rule kind and layout kind now has its
+version in `version-ledger.ts`, keyed by the type that lists them, so a property added to
+`FieldDef` without one is a compile error, and a test derives from the document schema what a
+document may say and requires each to be refused one version early. A property with no sentence
+of its own is reported as the new code `version.property`, translated in German and French
+([0145](docs/decisions/0145-a-version-for-everything-a-document-can-say.md)).
+
 **Fixed: one mark everywhere.** The documentation drew its own mint mark on dark green, the
 site's and the playground's favicons a darker violet and teal than the site's bar, and the
 Angular starter had no favicon. Every copy is now the site's favicon in the site's palette,

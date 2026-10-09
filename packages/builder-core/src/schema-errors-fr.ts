@@ -95,6 +95,8 @@ export const SCHEMA_ERRORS_FR: SchemaErrorSentences = {
     'La présentation « {widget} » nécessite specVersion « {version} ». Ce document indique « {declared} ». Passez-le à « {version} » — tout ce qui se trouve déjà dans le document continue de fonctionner, car une version ultérieure ne fait qu’ajouter.',
   'version.bound':
     'Une borne « {bound} » nécessite specVersion « {version} ». Ce document indique « {declared} ». Passez-le à « {version} » — tout ce qui se trouve déjà dans le document continue de fonctionner, car une version ultérieure ne fait qu’ajouter.',
+  'version.property':
+    'Un « {property} » nécessite specVersion « {version} ». Ce document indique « {declared} ». Passez-le à « {version} » — tout ce qui se trouve déjà dans le document continue de fonctionner, car une version ultérieure ne fait qu’ajouter.',
   'version.step':
     'Un « step » nécessite specVersion « {version} ». Ce document indique « {declared} ». Passez-le à « {version} » — tout ce qui se trouve déjà dans le document continue de fonctionner, car une version ultérieure ne fait qu’ajouter.',
   'version.mask':

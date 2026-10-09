@@ -96,6 +96,8 @@ export const SCHEMA_ERRORS_DE: SchemaErrorSentences = {
     'Die Darstellung „{widget}“ braucht specVersion „{version}“. Dieses Dokument sagt „{declared}“. Ändere es auf „{version}“ – alles, was schon im Dokument steht, funktioniert weiter, weil eine spätere Version nur hinzufügt.',
   'version.bound':
     'Eine Grenze „{bound}“ braucht specVersion „{version}“. Dieses Dokument sagt „{declared}“. Ändere es auf „{version}“ – alles, was schon im Dokument steht, funktioniert weiter, weil eine spätere Version nur hinzufügt.',
+  'version.property':
+    'Ein „{property}“ braucht specVersion „{version}“. Dieses Dokument sagt „{declared}“. Ändere es auf „{version}“ – alles, was schon im Dokument steht, funktioniert weiter, weil eine spätere Version nur hinzufügt.',
   'version.step':
     'Ein „step“ braucht specVersion „{version}“. Dieses Dokument sagt „{declared}“. Ändere es auf „{version}“ – alles, was schon im Dokument steht, funktioniert weiter, weil eine spätere Version nur hinzufügt.',
   'version.mask':
