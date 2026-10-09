@@ -67,10 +67,6 @@ const CEILINGS: Record<string, { lines: number; why: string }> = {
     lines: 524,
     why: 'Three panes and their wiring. The seam is one pane per file, and six things have left: the Angular renderer pane, the capabilities this deployment supplies, the builder pane, the engine inspector, the pane list with its fold control, all of the pane state, and the editor pane itself with its Monaco palette — the last of those when a third editor mode pushed this past its ceiling and the budget turned out to be pointing at something real, since none of which pane is folded, how wide each is, or the template that follows is the page’s business.',
   },
-  'packages/spec/src/types.ts': {
-    lines: 631,
-    why: 'The format’s vocabulary, and every part of it is read beside the rest. Kept whole on purpose — except the layout vocabulary, which left when spec 4 pushed this past its ceiling: how a form is arranged is a different reason to change from what a field collects, and only types cross back so there is no cycle.',
-  },
   'packages/conformance/src/runner.ts': {
     lines: 688,
     why: 'Executing a fixture against a driver. One subject.',

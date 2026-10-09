@@ -140,6 +140,7 @@ export function PropertyField({
       <OptionsEditor
         options={Array.isArray(value) ? (value as FieldOption[]) : []}
         text={text}
+        pictures={property.pictures === true}
         onChange={(next) => onChange(next.length === 0 ? undefined : next)}
       />
     )

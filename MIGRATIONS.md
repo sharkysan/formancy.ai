@@ -34,13 +34,17 @@ Two widgets, both on `number`:
   question is this with `min: 0` and `max: 10`; it needs no name of its own.
 - `slider` — a track to drag between the same two bounds.
 
-And two properties:
+And three properties:
 
 - `step` — the granularity of a numeric answer, and the distance a slider moves. Counted
   from `min` when there is one and from zero when there is not, so `min: 2, step: 5`
   accepts 2, 7 and 12. A **field** property rather than widget configuration, because it
   says which values are valid and the server has to agree
   ([0104](docs/decisions/0104-spec-4-opens-with-a-widget-not-a-type.md)).
+- `image` — on an option of a `radio` or `selectboxes` field, a picture shown with it:
+  `{ "src": "…", "alt": "…" }`. Presentation: the answer is still the option's `value`. Not on a
+  `select` or a tag picker, which cannot show one, so the document is refused if it asks
+  ([0126](docs/decisions/0126-an-option-may-carry-a-picture.md)).
 - `mask` — on a `text` field, the shape the answer is typed into: `9` a digit, `a` a
   letter, `*` either, and any other character written by the control. **The answer holds
   only what was typed**, so `(999) 999-9999` stores `5551234567`, and one that leaves a

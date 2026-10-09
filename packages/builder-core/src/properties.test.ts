@@ -34,6 +34,18 @@ describe('editablePropertiesFor', () => {
     expect(names('select')).toEqual(expect.arrayContaining(['options']))
   })
 
+  test('choices offer a picture exactly where the document may carry one', () => {
+    // Offered on a dropdown or a tag picker, a picture would validate-fail at best and,
+    // had the validator not refused it, draw nothing (0126).
+    const pictures = (type: string, widget?: string) =>
+      editablePropertiesFor(type, widget).find((property) => property.name === 'options')?.pictures
+
+    expect(pictures('radio')).toBe(true)
+    expect(pictures('selectboxes')).toBe(true)
+    expect(pictures('select')).toBe(false)
+    expect(pictures('selectboxes', 'tagpicker')).toBe(false)
+  })
+
   test('a property belonging to another type is not offered', () => {
     expect(names('text')).not.toContain('min')
     expect(names('number')).not.toContain('pattern')

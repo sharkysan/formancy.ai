@@ -122,6 +122,24 @@ describe('validateSchema structural errors', () => {
     })
   })
 
+  test('and a list whose contents are wrong is not also an unknown property', () => {
+    // ajv reports a property as unevaluated when the branch declaring it fails, so an
+    // option value one character too long also said "Unknown property options. Check
+    // the spelling" — telling an author to fix a word they spelled right.
+    const longValue = revise((draft) => {
+      draft.model.fields.push({
+        key: 'pet',
+        type: 'radio',
+        options: [{ value: 'x'.repeat(201), label: 'Cat' }],
+      })
+    })
+
+    expect(onlyError(validateSchema(longValue))).toMatchObject({
+      path: '/model/fields/2/options/0/value',
+      code: 'shape.maxLength',
+    })
+  })
+
   test('accepts child fields on a container', () => {
     const grouped = revise((draft) => {
       draft.model.fields.push({

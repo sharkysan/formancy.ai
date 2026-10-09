@@ -220,6 +220,8 @@ export const BUILDER_MESSAGES_FR = {
   'options.remove': 'Supprimer {name}',
   'options.add': 'Ajouter un choix',
   'options.newChoice': 'Nouveau choix',
+  'options.image': 'Adresse de l’image',
+  'options.imageAlt': 'Ce que montre l’image',
   'list.remove': 'Supprimer',
   'columns.heading': 'Colonnes',
   'columns.empty':

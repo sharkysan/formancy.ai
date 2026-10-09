@@ -177,6 +177,7 @@ Each item:
 
 - `value` — required · **Value.** What is stored in the submission when this option is chosen. Stable like a field key: changing it detaches the answers already collected.
 - `label` — required · **Label.** What the person choosing reads.
+- `image` — optional · **Image.** A picture shown with this option, on radio buttons and checkboxes — never in a dropdown or as a chip, which cannot show one, so the document is refused if it asks. The label still names the option and is what is announced; the picture is beside it. Needs spec version 4.
 
 #### `repeater`
 
@@ -572,7 +573,7 @@ Examples: `"email"`, `"invoice_total"`, `"passengerCount"`
 
 ### Option
 
-One answer a select or radio field offers.
+One answer a select, radio or checkbox field offers.
 
 #### `value`
 
@@ -585,6 +586,12 @@ required · string · min length 1 · max length 200
 required · Text (see below)
 
 **Label.** What the person choosing reads.
+
+#### `image`
+
+optional · object
+
+**Image.** A picture shown with this option, on radio buttons and checkboxes — never in a dropdown or as a chip, which cannot show one, so the document is refused if it asks. The label still names the option and is what is announced; the picture is beside it. Needs spec version 4.
 
 ### Message reference
 
@@ -767,3 +774,9 @@ required · string · min length 1 · max length 64
 required · array of Layout node
 
 **Nodes.** What this arrangement places, in the order a person meets it.
+
+### Image address
+
+min length 1 · max length 65536 · pattern `^(https://[^\s]+|/[^/\s][^\s]*|data:image/(png|jpeg|gif|webp|avif|svg\+xml)[;,].+)$`
+
+Where the picture comes from: an `https://` address, a path starting with `/` on the site that shows the form, or the picture itself as a `data:image/` address. Not `http://`, which a secure page blocks, and not a script. An address on another site tells that site who opened the form; a picture the form carries itself tells nobody.

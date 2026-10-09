@@ -177,6 +177,9 @@ submitted. Switch language or theme without reloading.
 - **Ratings and sliders.** A scale is a `number` field with a widget on it, so the
   answer is the same number either way — and a rating is a radio group rather than
   a row of buttons, which is one tab stop instead of eleven.
+- **Choices with pictures.** A radio group or a set of checkboxes can show a picture with
+  each option, inside its label, so the picture chooses it and its description is part of
+  the option's name. Never on a dropdown, which cannot show one.
 - **Input masks that store the number, not its spelling.** `(999) 999-9999` shapes how
   a phone number is typed and stores `5551234567`. Where a typed, deleted or pasted
   character lands is decided once for both renderers, and the server refuses an answer

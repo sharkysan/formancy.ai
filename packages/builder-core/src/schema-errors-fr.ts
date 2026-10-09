@@ -34,6 +34,10 @@ export const SCHEMA_ERRORS_FR: SchemaErrorSentences = {
   'rename.claimed':
     'Un autre champ indique déjà avoir été renommé à partir de « {key} ». Les anciennes réponses ne peuvent aller qu’à un seul endroit.',
   'pattern.invalid': 'Ce n’est pas une expression régulière valide : {reason}.',
+  'option.imageInDropdown':
+    'Une liste déroulante ne peut pas afficher d’image : cette image ne serait donc jamais vue. Faites du champ un groupe de boutons radio, ou supprimez l’image.',
+  'option.imageInChips':
+    'Un sélecteur d’étiquettes affiche ses options sous forme de puces, qui ne peuvent pas afficher d’image : cette image ne serait donc jamais vue. Retirez le sélecteur d’étiquettes, ou supprimez l’image.',
   'mask.noPositions':
     'Ce masque n’a aucune position où saisir : le champ ne pourrait recevoir aucune réponse. Utilisez 9 pour un chiffre, a pour une lettre ou * pour l’un ou l’autre.',
 
@@ -87,6 +91,8 @@ export const SCHEMA_ERRORS_FR: SchemaErrorSentences = {
     'Un « step » nécessite specVersion « {version} ». Ce document indique « {declared} ». Passez-le à « {version} » — tout ce qui se trouve déjà dans le document continue de fonctionner, car une version ultérieure ne fait qu’ajouter.',
   'version.mask':
     'Un « mask » nécessite specVersion « {version} ». Ce document indique « {declared} ». Passez-le à « {version} » — tout ce qui se trouve déjà dans le document continue de fonctionner, car une version ultérieure ne fait qu’ajouter.',
+  'version.optionImage':
+    'L’image d’une option nécessite specVersion « {version} ». Ce document indique « {declared} ». Passez-le à « {version} » — tout ce qui se trouve déjà dans le document continue de fonctionner, car une version ultérieure ne fait qu’ajouter.',
   'version.optionsSource':
     'Une « optionsSource » nécessite specVersion « {version} ». Ce document indique « {declared} ». Passez-le à « {version} » — tout ce qui se trouve déjà dans le document continue de fonctionner, car une version ultérieure ne fait qu’ajouter.',
   'version.fieldType':
@@ -121,6 +127,8 @@ export const SCHEMA_ERRORS_FR: SchemaErrorSentences = {
     '{found} n’est pas un identifiant de formulaire utilisable. Commencez par une lettre ou un chiffre, puis n’utilisez que des lettres, des chiffres, des points, des tirets et des traits de soulignement.',
   'shape.checkName':
     '{found} n’est pas un nom de vérification utilisable. Nommez la vérification et laissez le déploiement dire où la demander — une adresse ici serait un détail de déploiement figé dans un formulaire publié, et un moyen de faire récupérer quelque chose à un serveur situé dans un réseau privé.',
+  'shape.imageSource':
+    '{found} n’est pas une adresse d’image utilisable par ce formulaire. Utilisez une adresse https://, un chemin commençant par / sur le site qui affiche le formulaire, ou une adresse data:image/ — pas http://, qu’une page sécurisée bloque.',
   'shape.pattern': '{found} ne correspond pas au motif exigé {pattern}.',
   'shape.maxLength': 'Doit compter {limit} caractères au plus.',
   'shape.empty': 'Ne doit pas être vide.',

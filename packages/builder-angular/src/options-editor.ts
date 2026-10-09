@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core'
-import { createBuilderText, nextChoice } from '@formancy/builder-core'
+import { createBuilderText, nextChoice, withPicture } from '@formancy/builder-core'
 import type { BuilderText } from '@formancy/builder-core'
 import type { FieldOption } from './types.js'
 import { BuilderTextPipe } from './text.pipe.js'
@@ -67,6 +67,24 @@ let nextId = 0
                 [value]="option.value"
                 (input)="setValue(at, $event)"
               />
+              @if (pictures()) {
+                <label [attr.for]="imageId(at)">{{ 'options.image' | builderText: text() }}</label>
+                <input
+                  type="url"
+                  [attr.id]="imageId(at)"
+                  [value]="option.image?.src ?? ''"
+                  (input)="setPicture(at, 'src', $event)"
+                />
+                <!-- Nothing to describe until there is a picture; a description typed
+                     first would have nowhere to go. -->
+                <label [attr.for]="altId(at)">{{ 'options.imageAlt' | builderText: text() }}</label>
+                <input
+                  [attr.id]="altId(at)"
+                  [disabled]="option.image === undefined"
+                  [value]="altText(option)"
+                  (input)="setPicture(at, 'alt', $event)"
+                />
+              }
               <button
                 type="button"
                 [attr.aria-label]="
@@ -89,6 +107,11 @@ export class FormancyOptionsEditor {
   /** The language to speak: the panel passes its session's. English when none is given. */
   readonly text = input<BuilderText>(ENGLISH)
   readonly changed = output<FieldOption[]>()
+  /**
+   * Whether each choice may carry a picture — `EditableProperty.pictures`, which
+   * builder-core decides from the field's type and widget (0126).
+   */
+  readonly pictures = input(false)
 
   protected readonly headingId = `formancy-options-${String((nextId += 1))}`
 
@@ -111,6 +134,31 @@ export class FormancyOptionsEditor {
 
   protected labelId(at: number): string {
     return `${this.headingId}-label-${String(at)}`
+  }
+
+  protected imageId(at: number): string {
+    return `${this.headingId}-image-${String(at)}`
+  }
+
+  protected altId(at: number): string {
+    return `${this.headingId}-alt-${String(at)}`
+  }
+
+  protected altText(option: FieldOption): string {
+    const alt = option.image?.alt
+    return typeof alt === 'string' ? alt : ''
+  }
+
+  /** The whole choice, as `withPicture` makes it: a picture taken away is a key that is gone. */
+  protected setPicture(at: number, part: 'src' | 'alt', event: Event): void {
+    const typed = (event.target as HTMLInputElement).value
+    this.commit(
+      this.draft().map((option, index) =>
+        index === at
+          ? withPicture(option, part === 'src' ? { src: typed } : { alt: typed })
+          : option,
+      ),
+    )
   }
 
   protected labelText(option: FieldOption): string {

@@ -701,6 +701,49 @@ async function run() {
     }
 
     /*
+     * An option's picture, loaded.
+     *
+     * jsdom never fetches an image, so every renderer test of a picture asserts the
+     * element and not the picture. Here the starter's delivery options carry theirs as
+     * `data:image/svg+xml` addresses, and a page that blocked or mis-encoded them would
+     * show a broken image in both renderers while every other gate passed (0126).
+     */
+    {
+      const page = await browser.newPage({ viewport: { width: 1180, height: 820 } })
+      await page.goto(url, { waitUntil: 'load' })
+      await page.waitForSelector('[data-formancy-part="option-image"]', { timeout: 30_000 })
+      console.log('\npictures on options — 1180×820')
+
+      const pictures = await page.evaluate(async () => {
+        const images = [...document.querySelectorAll('[data-formancy-part="option-image"]')]
+        // Lazy, so each is brought into view first: a lazy image off screen is never
+        // fetched, and `decode()` on it waits for good — which is how the first version
+        // of this case hung the whole gate. Bounded either way.
+        const settled = (image) =>
+          Promise.race([
+            image.decode().catch(() => undefined),
+            new Promise((done) => setTimeout(done, 5000)),
+          ])
+        for (const image of images) {
+          image.scrollIntoView({ block: 'center' })
+          await settled(image)
+        }
+        return images.map((image) => ({ loaded: image.complete && image.naturalWidth > 0 }))
+      })
+
+      check(
+        'the starter’s pictured options load in both renderers',
+        pictures.length < 4
+          ? `only ${String(pictures.length)} pictures on the page; the starter has two in each renderer`
+          : pictures.every((picture) => picture.loaded)
+            ? null
+            : `${String(pictures.filter((picture) => !picture.loaded).length)} of ${String(pictures.length)} did not load`,
+      )
+
+      await page.close()
+    }
+
+    /*
      * The two pages of the site, side by side.
      *
      * The gate was written for the playground's cascade defects. These are the

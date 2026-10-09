@@ -2,13 +2,15 @@ import type { ValidateFunction } from 'ajv/dist/2020.js'
 import documentValidatorFn from './generated/document-validator.js'
 import { modelDataPaths } from './paths.js'
 import { collectFieldPaths, isMessageRef, modelPathsForLayout } from './presentation.js'
-import { ROW_ID, SPEC_1_FIELD_TYPES, SPEC_2_FIELD_TYPES, SPEC_2_WIDGETS, SPEC_3_WIDGETS, SPEC_2_RULE_KINDS, LIST_VALUED_FIELD_TYPES } from './types.js'
+import { ROW_ID, SPEC_1_FIELD_TYPES, SPEC_2_FIELD_TYPES, SPEC_2_WIDGETS, SPEC_3_WIDGETS, LIST_VALUED_FIELD_TYPES } from './types.js'
+import { SPEC_2_RULE_KINDS } from './rules.js'
 import { SPEC_1_LAYOUT_KINDS, layoutChildren } from './layout.js'
 import type { FieldDef, FormSchema, Text } from './types.js'
 import type { LayoutNode } from './layout.js'
 import { versionErrors } from './version-errors.js'
 import { toSchemaErrors } from './structural-errors.js'
 import { maskHasPositions } from './mask.js'
+import { optionImageRefusal } from './option-image.js'
 import { schemaError } from './schema-errors.js'
 import type { SchemaError } from './schema-errors.js'
 
@@ -174,6 +176,17 @@ function semanticErrors(schema: FormSchema): SchemaError[] {
     // and a required one could never be sent.
     if (field.mask !== undefined && !maskHasPositions(field.mask)) {
       errors.push(schemaError(`${path}/mask`, 'mask.noPositions'))
+    }
+
+    // A picture where the control cannot show one would validate and show nothing:
+    // the documented-but-inert failure (0126).
+    const hidesImages = optionImageRefusal(field)
+    if (hidesImages !== undefined) {
+      field.options?.forEach((option, index) => {
+        if (option.image !== undefined) {
+          errors.push(schemaError(`${path}/options/${String(index)}/image`, hidesImages))
+        }
+      })
     }
   }
 

@@ -9,8 +9,6 @@ export {
   FIELD_TYPES,
   FIELD_WIDGETS,
   LIST_VALUED_FIELD_TYPES,
-  PAGE_TARGETED_RULE_KINDS,
-  RULE_KINDS,
   SPEC_1_FIELD_TYPES,
   SPEC_2_FIELD_TYPES,
   SPEC_VERSIONS,
@@ -18,6 +16,10 @@ export {
   TEMPORAL_SHAPES,
   WIDGETS_BY_FIELD_TYPE,
 } from './types.js'
+export {
+  PAGE_TARGETED_RULE_KINDS,
+  RULE_KINDS,
+} from './rules.js'
 export {
   SPEC_1_LAYOUT_KINDS,
   LAYOUT_LEAF_KINDS,
@@ -49,21 +51,24 @@ export type {
   FieldDef,
   FieldFormat,
   FieldOption,
+  OptionImage,
   FieldType,
   FieldWidget,
   TemporalFieldType,
-  FormLogic,
   FormI18n,
   FormModel,
   FormSchema,
   ListValuedFieldType,
   SpecVersion,
   MessageRef,
-  RunsOn,
   Text,
+} from './types.js'
+export type {
+  FormLogic,
+  RunsOn,
   LogicRule,
   RuleKind,
-} from './types.js'
+} from './rules.js'
 export type {
   FormLayout,
   LayoutNode,
@@ -72,6 +77,12 @@ export { modelDataPaths } from './paths.js'
 export { ROW_ID, ROW_ID_PREFIX } from './types.js'
 export { collectFieldPaths, isMessageRef, modelPathsForLayout, resolveText, unreferencedPaths } from './presentation.js'
 export { SCHEMA_ERRORS, renderSchemaError } from './schema-errors.js'
+export {
+  IMAGE_SOURCE,
+  isImageSource,
+  optionImageRefusal,
+  showsOptionImages,
+} from './option-image.js'
 export {
   answerFromText,
   editMasked,

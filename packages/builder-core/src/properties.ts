@@ -1,4 +1,6 @@
 import schema from '@formancy/spec/schema.json' with { type: 'json' }
+import { showsOptionImages } from '@formancy/spec'
+import type { FieldDef } from '@formancy/spec'
 import { createBuilderText } from './messages.js'
 import type { BuilderText } from './messages.js'
 
@@ -41,6 +43,13 @@ export interface EditableProperty {
    * said why. Pinned in `packages/builder-core/src/layout.test.ts`.
    */
   numericAlternative?: boolean
+  /**
+   * For `options`: whether each option may carry a picture. Decided here, from the
+   * field's type and widget, by the rule the validator applies — so a builder offers a
+   * picture exactly where the document may have one, and never on a dropdown or a tag
+   * picker, which would draw nothing (0126).
+   */
+  pictures?: boolean
 }
 
 /**
@@ -187,7 +196,10 @@ export function editablePropertiesFor(
     take(deref(taken)?.properties)
   }
 
-  return [...collected.values()].map((property) => inLanguage(property, text))
+  const pictures = showsOptionImages({ type, widget } as Pick<FieldDef, 'type' | 'widget'>)
+  return [...collected.values()].map((property) =>
+    inLanguage(property.kind === 'options' ? { ...property, pictures } : property, text),
+  )
 }
 
 /**

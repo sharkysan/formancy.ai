@@ -293,6 +293,9 @@ export const BUILDER_MESSAGES = {
   'options.add': 'Add a choice',
   // Written into the document, so it is in the author's language.
   'options.newChoice': 'New choice',
+  // Offered only where a choice can show a picture: radio buttons and checkboxes.
+  'options.image': 'Picture address',
+  'options.imageAlt': 'What the picture shows',
   'list.remove': 'Remove',
   'columns.heading': 'Columns',
   'columns.empty':

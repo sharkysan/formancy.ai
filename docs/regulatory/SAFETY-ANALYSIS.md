@@ -154,6 +154,11 @@ so a payload carrying the formatted text is not stored as an answer. Held by bot
 renderers' `masked-text` tests and the `masked-answer` conformance fixture, which fails in
 both without the engine's check.
 
+*A picture on an option is presentation, and is refused where it would be inert*
+([0126](../decisions/0126-an-option-may-carry-a-picture.md)): the answer is still the
+option's value, and a dropdown or a tag picker, which cannot show a picture, is a document
+the validator refuses rather than one that validates and shows nothing.
+
 *Residual:* the engine checks a value against the options **the document carries**. A
 field that carries none has nothing to be outside of, by design — it is the seam remote
 options will need. And a component supplied through `registry.byType` or
@@ -518,6 +523,31 @@ keyed by IP. That was a second residual when this hazard was first written up an
 is no longer one: a draft write is a database row per request and reachable
 without an account, and the limiter was only ever pointed at submissions because
 they used to be the only unauthenticated write.
+
+### C6. Opening a form tells a third party who opened it
+
+*How it arises:* an option may carry a picture
+([0126](../decisions/0126-an-option-may-carry-a-picture.md)), and a picture at an
+address on another site is fetched when the form renders — before the person has
+answered anything, and whether or not they go on. The fetch carries their network
+address and browser to whoever serves the picture. A form about a health condition
+with a picture hosted elsewhere tells that host that this address opened it.
+
+*Severity:* a disclosure of the fact of opening, not of any answer. Small for most
+forms and not small for some, and invisible to the person filling it in.
+
+*Constraint:* the format allows the two kinds of address that tell nobody — a path on
+the site that shows the form, and the picture carried in the document as a
+`data:image/` address — beside `https://` ones, and the schema's own description of
+the field says what an address on another site does, which is where the builder's
+property panel and the reference documentation both read it. Plain `http://` is
+refused. Held by `option-image.test.ts`; the playground's own pictures are carried in
+the document.
+
+*Residual:* nothing stops an author choosing a third-party address, and nothing tells
+the person filling the form in that one was chosen. A deployment that must not disclose
+it should refuse such documents at publish, which formancy does not do for it, or set
+an `img-src` policy that names only itself.
 
 ---
 
