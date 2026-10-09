@@ -9,8 +9,8 @@ text authored in these forms.
 
 These are general-purpose starting points, not official industry standards or
 approved organisational procedures. Each catalogue entry lists what to adapt.
-They use the frozen **spec version 2**, so they do not require the open version
-4 or its newer widgets. The repository's Apache-2.0 licence applies.
+They use the frozen **spec version 2**, so they do not require version 3 or 4 or
+their newer constructs. The repository's Apache-2.0 licence applies.
 
 ## Try one
 

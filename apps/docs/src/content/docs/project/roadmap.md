@@ -92,17 +92,18 @@ field is shown because of it. The verdicts are tested to agree with the engine; 
 field in a repeater row is listed, and has no verdict, because it has one per row
 ([0128](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0128-a-form-says-why-a-field-is-hidden.md)).
 
-**Spec version 4 is open**, with `widget: "rating"`, `widget: "slider"` and the `step`
-property. Both are widgets on `number` because neither changes the answer — a rating is a
-number between two bounds and so is a slider — and `step` is a *field* property rather than
-widget configuration, because it says which values are valid and the server has to agree
-([0104](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0104-spec-4-opens-with-a-widget-not-a-type.md)).
-An NPS question is `rating` with `min: 0` and `max: 10`; it needs no construct of its own.
-Options of a radio group or a set of checkboxes may carry a picture, shown inside the label
-([0126](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0126-an-option-may-carry-a-picture.md)).
-And the `mask` property on a `text` field: the shape an answer is typed into, with the
-answer holding only what was typed — `(999) 999-9999` stores `5551234567`
-([0125](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0125-a-mask-stores-what-was-typed.md)).
+**Spec version 4 is frozen**, with two field types, two widgets and three properties
+([0140](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)). The types are the
+survey constructs that store an answer no other type holds: `ranking`, the order chosen
+([0138](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0138-a-ranking-stores-the-order-chosen.md)), and `matrix`, one question per row
+([0139](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0139-a-matrix-answers-one-question-per-row.md)). The widgets, `rating` and
+`slider`, are on `number` because neither changes the answer, and `step` is a field
+property rather than widget configuration, because it says which values are valid and the
+server has to agree ([0104](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0104-spec-4-opens-with-a-widget-not-a-type.md)). An NPS
+question is `rating` with `min: 0` and `max: 10`. Options of a radio group or a set of
+checkboxes may carry a picture ([0126](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0126-an-option-may-carry-a-picture.md)), and the
+`mask` property on a `text` field is the shape an answer is typed into, with the answer
+holding only what was typed ([0125](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0125-a-mask-stores-what-was-typed.md)).
 
 ## What does not exist yet
 
@@ -235,16 +236,15 @@ left out as v2-era omissions. All three are now shipped.
 Roughly in order, and subject to change. The ordering is argued below rather
 than asserted.
 
-1. **Freezing version 4.** Both survey constructs it was opened for are built: `ranking`, the
-   order chosen ([0138](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0138-a-ranking-stores-the-order-chosen.md)), and `matrix`, one
-   question per row ([0139](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0139-a-matrix-answers-one-question-per-row.md)). What is
-   left is to close it, so a document written against it has a settled shape.
-   Image choices went first, being smaller: an `image` on an option of a radio group or a
-   set of checkboxes, which changes no answer at all
-   ([0126](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0126-an-option-may-carry-a-picture.md)).
-2. **XLIFF**, if somebody asks for it. The exchange format is JSON carrying the source
+1. **XLIFF**, if somebody asks for it. The exchange format is JSON carrying the source
    beside every target, which converts to XLIFF in a script; a real XLIFF implementation
    is a specification, a namespace and versions, and half of one is worse than none.
+
+Nothing named here needs a spec version. Version 4 is frozen with the two survey types it
+was opened for, and version 5 opens when something needs it — not before, because an open
+version is a format a document cannot be written against with confidence
+([0140](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)).
+
 ### Done since this list was written
 
 **A publish warns about a rule reading a path no field provides.** This list asked for

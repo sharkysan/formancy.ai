@@ -138,6 +138,13 @@ export const SPEC_2_FIELD_TYPES = [
 /** Field types version 3 defines: version 2's, plus the signature. */
 export const SPEC_3_FIELD_TYPES = [...SPEC_2_FIELD_TYPES, 'signature'] as const
 
+/**
+ * Field types version 4 defines: version 3's, plus the two survey types (0138, 0139). Version
+ * 4 is frozen (0140), so this list is the whole vocabulary: a type added to `FIELD_TYPES` and
+ * not here fails `spec-version.test.ts`, and adding one means opening version 5 first.
+ */
+export const SPEC_4_FIELD_TYPES = [...SPEC_3_FIELD_TYPES, 'ranking', 'matrix'] as const
+
 export const FIELD_TYPES = [
   'text',
   'textarea',

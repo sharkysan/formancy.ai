@@ -11,14 +11,12 @@ of package versions, because it is the artifact with real switching costs:
 your forms and your submissions are written against it. Packages 0.9 and 1.4
 can both speak spec `"1"`.
 
-## Spec version 4 is OPEN
+## Spec version 4 is FROZEN
 
-Spec `"4"` is **not frozen**, and it is the only version that is not. It is what this
-source writes, so a document written against it may need changing again before it freezes
-— which is the one thing none of the other three can ask of you.
-
-**Pin a frozen version unless you are following the source deliberately.** A deployment on
-`"3"` is characterising a settled format; one on `"4"` is characterising a moving one.
+Spec `"4"` is frozen as of 2026-10-09, and first released with `0.4.0`. A document that
+validates today will validate against every future release that speaks spec 4. **No version
+is open now**: the next construct that needs one opens version 5
+([0140](docs/decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)).
 
 It is a superset of version 3 and removes nothing, so upgrading is the same single line
 and `upgradeSpecVersion` still does nothing else. The direction that costs something is
@@ -79,6 +77,15 @@ It is still a version, for the reason every widget is: the format is closed, so 
 reader does not shrug at `widget: "rating"` — it refuses the document. A version that
 rendered the default control instead would collect the same answers and look entirely
 correct, which is the silent failure the version line exists to prevent.
+
+### What upgrading to version 4 costs you
+
+As for version 3, and for the same reason: **every reader of your forms has to speak version
+4** before your documents do. A deployment pinning `@formancy/*` at `0.3.0` anywhere — a
+server, a mobile build, a partner's embedded renderer — refuses a version 4 document, loudly.
+Upgrade the readers first.
+
+Nothing migrates submissions. A submission stays bound to the version it was collected under.
 
 ## Spec version 3 is FROZEN
 

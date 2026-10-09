@@ -98,15 +98,12 @@ in another.
 4. Treat [`../decisions/`](../decisions/) as design rationale you may reference
    but did not author. Decisions marked "Not mechanically enforced" are the
    ones where your own verification has to do the work.
-5. Note which version line you are relying on. Three of the four **spec**
-   versions are frozen — `"1"`, `"2"` ([0051](../decisions/0051-spec-2-adds-types.md))
-   and `"3"` ([0088](../decisions/0088-spec-3-freezes-with-four-constructs.md)) —
-   so pinning any of those settles the shape of your documents and stored
-   submissions. **Version `"4"` is open** and is what the source now writes
-   ([0104](../decisions/0104-spec-4-opens-with-a-widget-not-a-type.md)): it may
-   still gain constructs, so a deployment that pins it is pinning a format that
-   is not yet settled. Pin a frozen version unless you are following the source
-   deliberately. Version `"1"` stays frozen and readable
+5. Note which version line you are relying on. All four **spec** versions are
+   frozen — `"1"`, `"2"` ([0051](../decisions/0051-spec-2-adds-types.md)), `"3"`
+   ([0088](../decisions/0088-spec-3-freezes-with-four-constructs.md)) and `"4"`
+   ([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)) — so pinning any of them settles the shape of your documents and
+   stored submissions. Version 4 is what the source writes and is first released
+   with 0.4.0; a release before it cannot read a version 4 document. Version `"1"` stays frozen and readable
    ([0042](../decisions/0042-freeze-the-spec.md)), so the shape of your form
    documents and stored submissions is settled in either. Version 2 is a
    superset that removes nothing, so a version 1 document is also a valid

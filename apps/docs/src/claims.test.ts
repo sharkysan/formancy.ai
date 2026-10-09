@@ -420,7 +420,7 @@ describe('the spec version 2 freeze', () => {
     ).toEqual([])
   })
 
-  test('and names every widget version 4 added, which is the open one', () => {
+  test('and names every widget and field type version 4 added', () => {
     /*
      * The same shape as version 3's case, and it has to exist for the same
      * reason: a section that does not name an addition is a reader who cannot
@@ -438,15 +438,22 @@ describe('the spec version 2 freeze', () => {
     ).toEqual([])
   })
 
-  test('and says that version 4 is open rather than frozen, which no other version is', () => {
-    // The one fact about version 4 a reader must not miss. Every other version's
-    // section says FROZEN; this one says the opposite, and a copy-paste that
-    // inherited the wrong word would tell a manufacturer their format is settled
-    // when it is not.
+  test('and says every version the code speaks is frozen, and none is open', () => {
+    // Version 4 was open, and this case said so; it froze with the two types it was opened
+    // for (0140). Read from the code's own list of versions, so a version 5 the code learns
+    // to speak has to arrive with a heading here saying which it is — and while it is open,
+    // this case is where that has to be written down.
     const text = readFileSync(join(repo, 'MIGRATIONS.md'), 'utf8')
+    const types = readFileSync(join(repo, 'packages', 'spec', 'src', 'types.ts'), 'utf8')
+    const versions = [
+      ...(/export const SPEC_VERSIONS = \[([^\]]*)\]/.exec(types)?.[1] ?? '').matchAll(/'(\d+)'/g),
+    ].map((match) => match[1]!)
 
-    expect(text).toContain('## Spec version 4 is OPEN')
-    expect(under('## Spec version 4 is OPEN')).toContain('not frozen')
+    expect(versions.length, 'no versions were read out of the code').toBeGreaterThan(3)
+    for (const version of versions) {
+      expect(text, `version ${version}`).toContain(`## Spec version ${version} is FROZEN`)
+    }
+    expect(text).not.toMatch(/^## Spec version \d+ is OPEN/m)
   })
 
   test('says the version is frozen and what a version 1 document may not carry', () => {

@@ -240,3 +240,4 @@ listed under the sections they belong to above.
 | [0137](0137-a-paged-forms-layout-is-drawn-a-page-at-a-time.md) | A paged form's layout is drawn a page at a time | accepted |
 | [0138](0138-a-ranking-stores-the-order-chosen.md) | A ranking stores the order chosen, starts empty, and is put in order with buttons | accepted |
 | [0139](0139-a-matrix-answers-one-question-per-row.md) | A matrix answers one question per row, and stores the rows answered | accepted |
+| [0140](0140-spec-4-freezes-with-the-two-types-it-opened-for.md) | Spec 4 freezes with the two types it was opened for, and nothing opens version 5 yet | accepted |

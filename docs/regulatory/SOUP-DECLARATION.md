@@ -18,7 +18,7 @@ software, and neither is `latest`.
 | Licence | Apache-2.0 for every package ([0002](../decisions/0002-apache-2-0.md)) |
 | Source | this repository, in full, including tests |
 | Package version | `0.3.0`, published to npm under the `@formancy` scope |
-| Spec version | `"3"`, **frozen as of 0.3.0** ([0088](../decisions/0088-spec-3-freezes-with-four-constructs.md)) — the version this release writes and the one this document characterises. Versions `"1"` ([0042](../decisions/0042-freeze-the-spec.md)) and `"2"` ([0051](../decisions/0051-spec-2-adds-types.md)) are frozen too and stay readable, so a deployment pinned to either is characterising a settled format. Version `"4"` is **open** in the source and unreleased ([0104](../decisions/0104-spec-4-opens-with-a-widget-not-a-type.md)); this document characterises 0.3.0 and does not characterise it. What each version added, and what freezing one costs, is in [`MIGRATIONS.md`](../../MIGRATIONS.md) |
+| Spec version | `"3"`, **frozen as of 0.3.0** ([0088](../decisions/0088-spec-3-freezes-with-four-constructs.md)) — the version this release writes and the one this document characterises. Versions `"1"` ([0042](../decisions/0042-freeze-the-spec.md)) and `"2"` ([0051](../decisions/0051-spec-2-adds-types.md)) are frozen too and stay readable, so a deployment pinned to either is characterising a settled format. Version `"4"` is **frozen** in the source as of 2026-10-09 and unreleased until 0.4.0 ([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)); this document characterises 0.3.0 and does not characterise it. What each version added, and what freezing one costs, is in [`MIGRATIONS.md`](../../MIGRATIONS.md) |
 | Development stage | beta. 0.1.0 was the first release and predates spec versioning: it pins documents to version 1 and refuses anything later rather than ignoring the property. 0.2.0 reads version 2; 0.3.0 reads version 3 and **writes** it by default, so a form authored here is refused by a reader pinned to 0.2.0 — loudly, which is the point |
 | Integrity | each tarball carries a SLSA v1 provenance attestation issued by GitHub's OIDC identity for the workflow run that built it, plus a registry signature. Verify with `npm audit signatures`. The server image is published to GHCR and **signed by digest**, with the SBOM attached as a CycloneDX attestation — verify with `cosign verify` and `cosign verify-attestation` against the digest rather than the tag, since a tag is mutable. There is deliberately no `latest`, for the reason this table gives two rows down. The pipeline is described in [`RELEASING.md`](../../RELEASING.md) |
 
@@ -33,14 +33,14 @@ submissions*, which is the artefact with real switching costs.
 > cannot read a version 2 document, and one that speaks only 2 cannot read a version 3
 > document — the failure is a validation error rather than a silent one
 > ([0051](../decisions/0051-spec-2-adds-types.md)). This document characterises the
-> released package, which writes version 3; version `"4"` is open in the source.
+> released package, which writes version 3; version `"4"` is frozen in the source and first
+> released with 0.4.0.
 >
 > **The data format is stable; the code is not.** Versions `"1"`, `"2"` and `"3"` are
 > frozen, so a form document written against any of them — and the submissions stored
-> against it — keeps its shape. Version `"4"` is **not** frozen and is what the source
-> writes ([0104](../decisions/0104-spec-4-opens-with-a-widget-not-a-type.md)), so it may
-> still gain constructs. A deployment pinned to a frozen version is characterising a
-> settled format whatever the source does next; one following version 4 is not. The
+> against it — keeps its shape. Version `"4"` is frozen too, in the source, and is what
+> it writes ([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)). A deployment pinned to any frozen version is characterising a
+> settled format whatever the source does next. The
 > *packages* are pre-1.0 and their APIs will still change. A manufacturer
 > should read the two version lines separately: the one that governs stored
 > data is settled, the one that governs the software is not.

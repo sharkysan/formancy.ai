@@ -10,6 +10,14 @@ later.
 
 ## Unreleased
 
+**Spec version 4 is frozen.** It holds the `ranking` and `matrix` field types, the `rating`
+and `slider` widgets, and the `step`, `mask` and option `image` properties; a document that
+validates against it now will validate against every release that speaks it. **No version is
+open**: the next construct that changes what a document may say opens version 5. The freeze is
+a test as well as a heading — a field type or widget in no version's list fails the spec's
+suite, where it used to be taken for the newest version
+([0140](docs/decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)).
+
 **Spec 4: `matrix`, a field type.** One question asked of several rows, with the same answers
 for each: `rows`, and the field's `options` as the columns. The answer is `{ row: column }`
 for each row answered, `{}` untouched, and a required matrix needs every row — a matrix half
