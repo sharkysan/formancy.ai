@@ -24,4 +24,4 @@ export type {
   RichTextEditorHandle,
   RichTextEditorMount,
 } from './rich-text-editor.js'
-export type { StoredFile, Uploader } from './uploads.js'
+export type { StoredFile, Uploader, UploadOptions } from './uploads.js'

@@ -693,6 +693,47 @@
   font-size: 0.9375rem;
 }
 
+/* Each file is its own upload (0130): a picture, its name, how far it has got, and
+   what can be done with it. The name takes the room and wraps, so a long filename
+   moves its buttons onto the next line rather than out of the row. */
+[data-formancy-theme='blueprint'] [data-formancy-part='file-item'] {
+  flex-wrap: wrap;
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='file-name'] {
+  flex: 1 1 8rem;
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Drawn at most 64 pixels on its longer side and shown at half that, so a dense screen
+   gets every pixel. Only maxima are set: a canvas keeps the image's shape on its own. */
+[data-formancy-theme='blueprint'] [data-formancy-part='file-thumbnail'] {
+  max-inline-size: 2rem;
+  max-block-size: 2rem;
+  border-radius: var(--fm-radius);
+}
+
+[data-formancy-theme='blueprint'] [data-formancy-part='file-progress'] {
+  flex: 0 1 8rem;
+  accent-color: var(--fm-signal);
+}
+
+[data-formancy-theme='blueprint'] :is([data-formancy-part='file-waiting'], [data-formancy-part='file-error']) {
+  font-size: 0.875rem;
+  color: var(--fm-muted);
+}
+
+/* Refused, in the theme's invalid colour — and in words, "Not attached", so the colour
+   is never the only thing saying it. */
+[data-formancy-theme='blueprint'] [data-formancy-part='file-error'] {
+  color: var(--fm-invalid);
+}
+
+[data-formancy-theme='blueprint'] :is([data-formancy-part='file-up'], [data-formancy-part='file-down']) {
+  font-size: 0.875rem;
+}
+
 [data-formancy-theme='blueprint'] [data-formancy-part='file-unavailable'] {
   margin: 0;
   font-size: 0.875rem;

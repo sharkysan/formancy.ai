@@ -79,6 +79,13 @@ describe('the file field', () => {
     expect(react.queryByText(/no upload destination has been configured/i)).toBeNull()
   })
 
+  /** What the field hands an uploader: nothing cancelled, progress ignored. */
+  const sending = () => ({
+    field: 'evidence',
+    signal: new AbortController().signal,
+    onProgress: () => {},
+  })
+
   test('records where the bytes went, and does not pretend they left the tab', async () => {
     // The landing page's uploader says the bytes went nowhere because it is a pitch; this
     // one keeps them for the session and says so. Either way the storage key must be
@@ -87,6 +94,7 @@ describe('the file field', () => {
     const { playgroundUploader } = await import('./demo-uploader.js')
     const stored = await playgroundUploader(
       new File(['hello'], 'note.txt', { type: 'text/plain' }),
+      sending(),
     )
     expect(stored.storageKey).toMatch(/^playground:in-this-tab\//)
     expect(stored.name).toBe('note.txt')
@@ -97,8 +105,42 @@ describe('the file field', () => {
     // A browser leaves `type` empty for a type it does not know, and a submission that says
     // nothing about what was attached is worse than one saying it could not tell.
     const { playgroundUploader } = await import('./demo-uploader.js')
-    const stored = await playgroundUploader(new File(['x'], 'mystery.qqq', { type: '' }))
+    const stored = await playgroundUploader(new File(['x'], 'mystery.qqq', { type: '' }), sending())
     expect(stored.contentType).toBe('application/octet-stream')
+  })
+
+  test('reports the copy into the tab as it goes, so the progress bar is of real work', async () => {
+    const { playgroundUploader } = await import('./demo-uploader.js')
+    const progress: Array<[number, number]> = []
+    const big = new File([new Uint8Array(600 * 1024)], 'scan.tiff', { type: 'image/tiff' })
+
+    await playgroundUploader(big, { ...sending(), onProgress: (sent, total) => progress.push([sent, total]) })
+
+    // Pieces of 256 KiB: three reports, the last of them the whole file.
+    expect(progress).toEqual([
+      [256 * 1024, big.size],
+      [512 * 1024, big.size],
+      [big.size, big.size],
+    ])
+  })
+
+  test('stops copying when cancelled, and attaches nothing', async () => {
+    const { playgroundUploader } = await import('./demo-uploader.js')
+    const controller = new AbortController()
+    const big = new File([new Uint8Array(600 * 1024)], 'scan.tiff', { type: 'image/tiff' })
+    const pieces: number[] = []
+
+    const copying = playgroundUploader(big, {
+      field: 'evidence',
+      signal: controller.signal,
+      onProgress: (sent) => {
+        pieces.push(sent)
+        controller.abort()
+      },
+    })
+
+    await expect(copying).rejects.toThrow('Cancelled.')
+    expect(pieces).toEqual([256 * 1024])
   })
 })
 

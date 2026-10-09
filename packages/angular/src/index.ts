@@ -55,4 +55,4 @@ export type { OptionsRequest, OptionsSource, OptionsSources } from './options-so
 export { FORMANCY_SCANNER, injectScanner, provideFormancyScanner } from './scanning.js'
 export type { ScanRequest, Scanner } from './scanning.js'
 export { FORMANCY_UPLOADER, injectUploader, provideFormancyUploader } from './uploads.js'
-export type { StoredFile, Uploader } from './uploads.js'
+export type { StoredFile, Uploader, UploadOptions } from './uploads.js'

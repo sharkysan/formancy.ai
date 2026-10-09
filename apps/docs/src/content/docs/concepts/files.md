@@ -143,13 +143,49 @@ import { UploaderProvider } from '@formancy/react'
 ```ts
 import type { Uploader } from '@formancy/react'
 
-const upload: Uploader = async (file) => {
+const upload: Uploader = async (file, { field, signal, onProgress }) => {
   // …put it somewhere, and report what was stored
   return { id, name: file.name, size: file.size, contentType: file.type, storageKey }
 }
 ```
 
 Angular takes the same function through `provideFormancyUploader(upload)`.
+
+**The second argument is optional to read.** `field` is the data path of the field the
+file is for, as a server looks it up — `items[].receipt` for a file field in any row of a
+repeater. `signal` is aborted when the person cancels the file: hand it to `fetch` and the
+transfer stops. `onProgress(sent, total)` draws the file's progress bar — but `fetch`
+cannot report how far an upload has got, so an uploader that wants a figure sends the bytes
+with `XMLHttpRequest` and its `upload.onprogress`. An uploader that ignores all three still
+works: the bar has no figure, and a cancel stops waiting for the file rather than stopping
+the transfer.
+
+## Each file is its own upload
+
+The field sends one file at a time, in the order they were picked, and shows each: waiting
+its turn, uploading with how far it has got, or refused with the reason the uploader gave —
+with **Cancel**, **Try again** and **Dismiss** where they apply. The picker stays open
+meanwhile, so a second file joins the queue. A failure on one file does not stop the others,
+and a file that did upload is recorded at once, so nothing that reached storage is left
+unclaimed while somebody reads a message.
+
+**A cancelled upload is not attached**, even if the uploader finishes it anyway — the person
+took it back, and bytes nobody claims are collected after a day.
+
+**A file belongs to its row.** In a repeater, a row that moves while its file uploads keeps
+the file: it lands in that row wherever it now is, and in no row if the row was removed.
+
+Attached files can be **moved up or down**, with the file's position in the button's name;
+the order is the person's, and it is kept in the answer.
+
+**An image picked in this session gets a thumbnail**, decoded from its bytes and drawn on a
+canvas rather than loaded from an object URL — so a page whose Content-Security-Policy does
+not allow `blob:` images still shows it. A file stored before the page was opened has none:
+its bytes are not in the browser, and the renderer knows no address to fetch them from.
+Without `createImageBitmap` there is no thumbnail, and the name is shown alone.
+
+What happens to each file is decided once, in `@formancy/core`, and both renderers draw it
+([0130](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0130-each-file-is-its-own-upload.md)).
 
 **Rejecting is a real answer.** Throw, and the field says so out loud rather
 than dropping the file — a submission somebody believes carries their evidence

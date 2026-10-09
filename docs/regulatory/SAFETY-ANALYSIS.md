@@ -420,6 +420,38 @@ speak filling in and clicking by accessible name and cannot say "draw", so point
 behaviour is held by hand in each renderer, twice over, and a gesture whose tail nobody
 thought of is a gesture nobody tested. This one was found by a person using the playground.
 
+### B7. An attachment is recorded against the wrong row of a repeater
+
+*How it arises:* a file field inside a repeater row, and the row moves while one of its
+files is uploading. A row that moves remounts its controls in both renderers, and the field
+wrote the finished file to the position it had held when the file was picked. Measured
+2026-10-09 in the React binding, before the change: an expense claim with a taxi row and a
+hotel row, the taxi row moved down while its receipt uploaded, and the taxi receipt was
+recorded on the hotel row. The Angular binding's code captured the path the same way; that
+was read, not run. The first version of the fix, which kept the uploads with the control, was
+measured too: the move cancelled the upload with the control, and nothing was attached
+anywhere.
+
+*Severity:* the submission is valid and wrong. Every answer is present and every file is a
+real file; one of them is evidence for a different line than the one it is attached to, and
+nothing about the submission says so. Of the two first-version outcomes, the silent loss is
+the less bad, and it is still a file somebody believes they attached.
+
+*Constraint:* uploads belong to the form, not to the control, found by the row's identity
+rather than its position; a finished file is written to its own row wherever that row now
+is, and to none if the row was removed. A cancelled upload is not recorded even when the
+uploader completes it, and its bytes are left to the collector
+([0055](../decisions/0055-files-are-claimed.md),
+[0130](../decisions/0130-each-file-is-its-own-upload.md)). Held by
+`packages/core/src/uploads.test.ts` and by a case in each renderer's `file-upload.test`
+that moves the row mid-upload and asserts where the file landed, observed failing in the
+React binding before the change.
+
+*Residual:* an upload whose row was removed runs to its end; its result is dropped and its
+bytes collected, but the transfer is not stopped. And an uploader that ignores the cancel
+signal goes on sending: the field does not record the file, the bytes still reach storage,
+and storage keeps them until the collector runs.
+
 ---
 
 ## C — Data reaches the wrong party

@@ -10,6 +10,32 @@ later.
 
 ## Unreleased
 
+**Each file is its own upload.** A file field shows every file it is sending — waiting its
+turn, uploading with how far it has got, or refused with the uploader's reason — with a way
+to cancel it, to try it again, or to dismiss it; the picker stays open while files upload;
+attached files can be moved up or down; and an image picked in the session gets a thumbnail.
+What happens to each file is `@formancy/core`'s (`fieldUploads`), read by both renderers.
+The thumbnail is decoded and drawn on a canvas rather than loaded from an object URL, so it
+needs no `blob:` in a page's `img-src`
+([0130](docs/decisions/0130-each-file-is-its-own-upload.md)).
+
+**`Uploader` takes `(file, options)`.** `options.field` is the data path a server reads
+(`items[].receipt` in any row), `options.signal` is aborted when the person cancels, and
+`options.onProgress(sent, total)` draws the bar. An uploader of the file alone still is one;
+code that calls an `Uploader` itself has to pass the options. The admin's preview uses all
+three: it offered every file against the first file field in the form until the renderer
+said which field a file was for, and it now sends the bytes by XHR, because `fetch` cannot
+report an upload's progress.
+
+**Fixed: a file finishing after its row moved was attached to another row.** A row that moves
+remounts its controls, and the field wrote the finished file to the position it had when the
+file was picked — measured, a taxi receipt landed on the hotel row. Uploads now belong to the
+form, found by the row's identity, and a finished file goes to its own row wherever it is, or
+to none if the row was removed.
+
+The playground's uploader copies the bytes into the tab in pieces and reports each, so its
+progress bar is of real work; it kept only a handle on the file on disk before.
+
 **A rule on a field in a repeater row, from the builder.** The logic panel addressed such a
 field by its dotted path, `items.note`, which no field has, so every rule written on one was
 refused. It is now addressed as the engine scopes it, `items[].note`; the condition may compare
