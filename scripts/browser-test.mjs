@@ -39,6 +39,7 @@ import { checkAngularPage } from './angular-page-browser-test.mjs'
 import { checkUploadThumbnails } from './upload-browser-test.mjs'
 import { checkArrangeGaps } from './arrange-browser-test.mjs'
 import { checkMaterialDateButton } from './material-date-browser-test.mjs'
+import { checkNoForeignRequests } from './request-browser-test.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const site = join(root, 'apps', 'site', 'dist')
@@ -193,6 +194,7 @@ async function run() {
       )
     }
 
+    await checkNoForeignRequests(browser, origin, check)
     await checkTemplateGallery(browser, origin, check)
     await checkAngularPage(browser, origin, check)
     await checkUploadThumbnails(browser, url, check)
