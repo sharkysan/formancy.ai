@@ -1,5 +1,5 @@
 <!--
-  The same mark as formancy.ai, so a tab says "formancy" before it says which part of it.
+  The same mark as formancy.ai, which serves this starter. Replace it with your own.
   apps/docs/src/mark.test.ts holds every copy to apps/site/public/favicon.svg.
 -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">

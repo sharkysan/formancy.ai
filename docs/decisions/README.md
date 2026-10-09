@@ -244,3 +244,4 @@ listed under the sections they belong to above.
 | [0141](0141-the-angular-page-compares-with-no-other-product.md) | The Angular page compares formancy with no other product | accepted |
 | [0142](0142-the-angular-starter-is-dressed-in-materials-tokens.md) | The Angular starter is dressed in Material's tokens, and loads the face they name | accepted |
 | [0143](0143-the-workbench-dresses-every-part-a-builder-draws.md) | The workbench dresses every part a builder draws | accepted |
+| [0144](0144-one-mark-and-the-sites-favicon-is-it.md) | One mark, and the site's favicon is it | accepted |

@@ -1,12 +1,12 @@
 <!--
-  The same F as the playground's mark, in the site's own palette: the violet
-  is the browser and the teal is the server, which is the one idea the whole
-  page is about. Two colours rather than one because a single-colour F says
-  nothing the wordmark does not already say.
+  The mark: violet for the browser and teal for the server, the one idea the whole site is
+  about, in the site's own palette — `--client` and `--server` in shell.css, which colour
+  it on the bar. Every other copy of it is compared with this file by
+  apps/docs/src/mark.test.ts.
 -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <rect width="64" height="64" rx="18" fill="#10141c"/>
-  <rect x="14" y="14" width="12" height="36" rx="6" fill="#7c6bf5"/>
-  <rect x="30" y="14" width="20" height="12" rx="6" fill="#3fd0c9"/>
-  <rect x="30" y="30" width="14" height="12" rx="6" fill="#3fd0c9"/>
+  <rect x="14" y="14" width="12" height="36" rx="6" fill="#8b7bff"/>
+  <rect x="30" y="14" width="20" height="12" rx="6" fill="#3fe0d5"/>
+  <rect x="30" y="30" width="14" height="12" rx="6" fill="#3fe0d5"/>
 </svg>
