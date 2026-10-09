@@ -33,6 +33,10 @@ export const STARTER_SCHEMA = {
       { key: 'firstName', type: 'text', label: { $t: 'firstName' }, required: true },
       { key: 'lastName', type: 'text', label: { $t: 'lastName' }, required: true },
       { key: 'email', type: 'text', label: { $t: 'email' }, format: 'email', required: true },
+      // A mask: the control writes "+41" and the spaces, the answer holds the nine
+      // digits typed. Paste "+41 79 123 45 67" and it is read as one number, not as
+      // a 4 and a 1 followed by seven more.
+      { key: 'phone', type: 'text', label: { $t: 'phone' }, mask: '+41 99 999 99 99' },
 
       {
         key: 'country',
@@ -304,6 +308,7 @@ export const STARTER_SCHEMA = {
               ],
             },
             { kind: 'field', path: 'email' },
+            { kind: 'field', path: 'phone' },
           ],
         },
         {
@@ -446,6 +451,7 @@ export const STARTER_SCHEMA = {
         firstName: 'First name',
         lastName: 'Last name',
         email: 'Email',
+        phone: 'Mobile',
         country: 'Country',
         'country.ch': 'Switzerland',
         'country.de': 'Germany',
@@ -504,6 +510,7 @@ export const STARTER_SCHEMA = {
         firstName: 'Vorname',
         lastName: 'Nachname',
         email: 'E-Mail',
+        phone: 'Mobiltelefon',
         country: 'Land',
         'country.ch': 'Schweiz',
         'country.de': 'Deutschland',
@@ -564,6 +571,7 @@ export const STARTER_SCHEMA = {
         firstName: 'Prénom',
         lastName: 'Nom',
         email: 'Courriel',
+        phone: 'Portable',
         country: 'Pays',
         'country.ch': 'Suisse',
         'country.de': 'Allemagne',

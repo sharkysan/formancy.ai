@@ -29,6 +29,9 @@ export const SCHEMA_WORDS_DE: SchemaWords = {
   'A regular expression the whole answer must match. Checked when the form is saved, so a broken or dangerous pattern never reaches a person filling the form in.':
     'Ein regulärer Ausdruck, auf den die ganze Antwort passen muss. Geprüft beim Speichern des Formulars, sodass ein fehlerhaftes oder gefährliches Muster nie bei einer ausfüllenden Person ankommt.',
   Format: 'Format',
+  'Input mask': 'Eingabemaske',
+  'The shape the answer is typed into, one character per position: `9` takes a digit, `a` a letter and `*` either, and any other character is written by the control rather than typed — `(999) 999-9999`. A backslash makes the next character one the control writes: `\\9`. The answer holds only what was typed into the positions, so `(999) 999-9999` stores `5551234567`, and an answer that leaves a position empty is refused. Needs spec version 4.':
+    'Die Form, in die die Antwort getippt wird, ein Zeichen pro Stelle: `9` nimmt eine Ziffer, `a` einen Buchstaben und `*` beides, und jedes andere Zeichen schreibt das Eingabefeld selbst, statt dass es getippt wird – `(999) 999-9999`. Ein Backslash macht das nächste Zeichen zu einem, das das Feld schreibt: `\\9`. Die Antwort enthält nur, was in die Stellen getippt wurde, also speichert `(999) 999-9999` den Wert `5551234567`, und eine Antwort, die eine Stelle leer lässt, wird abgelehnt. Braucht Spec-Version 4.',
   'A named shape the answer must have. A closed list on purpose: each entry is one well-tested check, not a per-form regular expression.':
     'Eine benannte Form, die die Antwort haben muss. Bewusst eine geschlossene Liste: Jeder Eintrag ist eine gut getestete Prüfung, kein regulärer Ausdruck pro Formular.',
   Widget: 'Darstellung',

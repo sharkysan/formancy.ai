@@ -81,6 +81,9 @@ number between two bounds and so is a slider — and `step` is a *field* propert
 widget configuration, because it says which values are valid and the server has to agree
 ([0104](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0104-spec-4-opens-with-a-widget-not-a-type.md)).
 An NPS question is `rating` with `min: 0` and `max: 10`; it needs no construct of its own.
+And the `mask` property on a `text` field: the shape an answer is typed into, with the
+answer holding only what was typed — `(999) 999-9999` stores `5551234567`
+([0125](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0125-a-mask-stores-what-was-typed.md)).
 
 ## What does not exist yet
 

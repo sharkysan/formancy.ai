@@ -6,8 +6,8 @@ import { describe, expect, test } from 'vitest'
 /**
  * A budget on the size of a source file, with a ratchet.
  *
- * Size is a signal rather than a verdict — `validate.ts` is one subject and reads
- * top to bottom — so this is not a rule against long files. It is a rule against
+ * Size is a signal rather than a verdict — `engine.ts` is one subject, its parts
+ * coupled through the graph — so this is not a rule against long files. It is a rule against
  * a file quietly becoming *the place things go*, which is what every one of the
  * entries below did.
  *
@@ -44,7 +44,7 @@ const CEILINGS: Record<string, { lines: number; why: string }> = {
     why: 'The form shell plus layout rendering. The seam is the layout renderer.',
   },
   'packages/conformance/src/builtin-fixtures.ts': {
-    lines: 1153,
+    lines: 1219,
     why: 'GENERATED from fixtures/*.json. Splitting this means splitting the fixtures, which are the unit of meaning — so this number moves when the suite gains a case, which is the one entry here whose growth is not a signal.',
   },
   'apps/site/src/app.tsx': {
@@ -54,10 +54,6 @@ const CEILINGS: Record<string, { lines: number; why: string }> = {
   'packages/server/src/app.ts': {
     lines: 928,
     why: 'The seam is one route family per Fastify plugin, which is the framework’s own unit. Publishing moved to routes/publish.ts when the budget refused the next thing added here; the rest follow the same way.',
-  },
-  'packages/spec/src/validate.ts': {
-    lines: 692,
-    why: 'One subject, read top to bottom: what makes a document invalid. Kept deliberately whole.',
   },
   'packages/server-core/src/use-cases.ts': {
     lines: 663,

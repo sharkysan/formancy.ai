@@ -1,4 +1,4 @@
-import { TEMPORAL_SHAPES } from '@formancy/spec'
+import { TEMPORAL_SHAPES, fitsMask } from '@formancy/spec'
 import type { FieldDef, FieldFormat } from '@formancy/spec'
 
 /**
@@ -145,6 +145,14 @@ export function modelViolations(def: FieldDef, value: unknown): string[] {
 
   if (def.format !== undefined && text !== undefined && !FORMAT_CHECKS[def.format](text)) {
     codes.push(def.format)
+  }
+
+  // An answer fills its mask, or it is not one: a character in every position, each
+  // the kind the position takes, and none of the characters the mask writes. Here
+  // rather than in the control because a payload posted straight at the server never
+  // went through one (0125). A value that is not text at all fails it too.
+  if (def.mask !== undefined && (text === undefined || !fitsMask(def.mask, text))) {
+    codes.push('mask')
   }
 
   return codes

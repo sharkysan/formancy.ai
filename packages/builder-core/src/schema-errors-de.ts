@@ -35,6 +35,8 @@ export const SCHEMA_ERRORS_DE: SchemaErrorSentences = {
   'rename.claimed':
     'Ein anderes Feld gibt bereits an, aus „{key}“ umbenannt worden zu sein. Alte Antworten können nur an einen Ort wandern.',
   'pattern.invalid': 'Das ist kein gültiger regulärer Ausdruck: {reason}.',
+  'mask.noPositions':
+    'Diese Maske hat keine Stelle zum Tippen, das Feld könnte also keine Antwort aufnehmen. Verwende 9 für eine Ziffer, a für einen Buchstaben oder * für beides.',
 
   // -------------------------------------------------------------- logic
   'rule.skipNoPages':
@@ -84,6 +86,8 @@ export const SCHEMA_ERRORS_DE: SchemaErrorSentences = {
     'Eine Grenze „{bound}“ braucht specVersion „{version}“. Dieses Dokument sagt „{declared}“. Ändere es auf „{version}“ – alles, was schon im Dokument steht, funktioniert weiter, weil eine spätere Version nur hinzufügt.',
   'version.step':
     'Ein „step“ braucht specVersion „{version}“. Dieses Dokument sagt „{declared}“. Ändere es auf „{version}“ – alles, was schon im Dokument steht, funktioniert weiter, weil eine spätere Version nur hinzufügt.',
+  'version.mask':
+    'Eine „mask“ braucht specVersion „{version}“. Dieses Dokument sagt „{declared}“. Ändere es auf „{version}“ – alles, was schon im Dokument steht, funktioniert weiter, weil eine spätere Version nur hinzufügt.',
   'version.optionsSource':
     'Eine „optionsSource“ braucht specVersion „{version}“. Dieses Dokument sagt „{declared}“. Ändere es auf „{version}“ – alles, was schon im Dokument steht, funktioniert weiter, weil eine spätere Version nur hinzufügt.',
   'version.fieldType':

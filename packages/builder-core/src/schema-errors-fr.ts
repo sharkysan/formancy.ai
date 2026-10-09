@@ -34,6 +34,8 @@ export const SCHEMA_ERRORS_FR: SchemaErrorSentences = {
   'rename.claimed':
     'Un autre champ indique déjà avoir été renommé à partir de « {key} ». Les anciennes réponses ne peuvent aller qu’à un seul endroit.',
   'pattern.invalid': 'Ce n’est pas une expression régulière valide : {reason}.',
+  'mask.noPositions':
+    'Ce masque n’a aucune position où saisir : le champ ne pourrait recevoir aucune réponse. Utilisez 9 pour un chiffre, a pour une lettre ou * pour l’un ou l’autre.',
 
   // -------------------------------------------------------------- logic
   'rule.skipNoPages':
@@ -83,6 +85,8 @@ export const SCHEMA_ERRORS_FR: SchemaErrorSentences = {
     'Une borne « {bound} » nécessite specVersion « {version} ». Ce document indique « {declared} ». Passez-le à « {version} » — tout ce qui se trouve déjà dans le document continue de fonctionner, car une version ultérieure ne fait qu’ajouter.',
   'version.step':
     'Un « step » nécessite specVersion « {version} ». Ce document indique « {declared} ». Passez-le à « {version} » — tout ce qui se trouve déjà dans le document continue de fonctionner, car une version ultérieure ne fait qu’ajouter.',
+  'version.mask':
+    'Un « mask » nécessite specVersion « {version} ». Ce document indique « {declared} ». Passez-le à « {version} » — tout ce qui se trouve déjà dans le document continue de fonctionner, car une version ultérieure ne fait qu’ajouter.',
   'version.optionsSource':
     'Une « optionsSource » nécessite specVersion « {version} ». Ce document indique « {declared} ». Passez-le à « {version} » — tout ce qui se trouve déjà dans le document continue de fonctionner, car une version ultérieure ne fait qu’ajouter.',
   'version.fieldType':

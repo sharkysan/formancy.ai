@@ -552,6 +552,13 @@
         "enum": [
          "scanner"
         ]
+       },
+       "mask": {
+        "title": "Input mask",
+        "description": "The shape the answer is typed into, one character per position: `9` takes a digit, `a` a letter and `*` either, and any other character is written by the control rather than typed — `(999) 999-9999`. A backslash makes the next character one the control writes: `\\9`. The answer holds only what was typed into the positions, so `(999) 999-9999` stores `5551234567`, and an answer that leaves a position empty is refused. Needs spec version 4.",
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 100
        }
       }
      }

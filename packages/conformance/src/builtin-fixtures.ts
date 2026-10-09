@@ -327,6 +327,72 @@ export const builtinFixtures: readonly Fixture[] = [
     ],
   },
   {
+    name: 'a masked answer fills every position, and holds only what was typed',
+    description: 'An input mask shapes how an answer is typed — a phone number shown as (555) 123-4567 — while the answer holds only the characters typed into its positions, so what the server stores is the number rather than one spelling of it. An answer that leaves a position empty is refused with its own code, by the engine on both sides, so a payload posted straight at the server is held to the same mask as one typed into either renderer.',
+    tags: [
+      'validation',
+    ],
+    schema: {
+      specVersion: '4',
+      id: 'contact',
+      title: 'Contact us',
+      model: {
+        fields: [
+          {
+            key: 'phone',
+            type: 'text',
+            label: 'Phone',
+            mask: '(999) 999-9999',
+            required: true,
+          },
+        ],
+      },
+    },
+    steps: [
+      {
+        set: {
+          phone: '555123',
+        },
+      },
+      {
+        submit: true,
+      },
+      {
+        expectSubmit: {
+          status: 'rejected',
+        },
+      },
+      {
+        expectErrors: {
+          phone: [
+            'mask',
+          ],
+        },
+      },
+      {
+        set: {
+          phone: '5551234567',
+        },
+      },
+      {
+        expectValue: {
+          phone: '5551234567',
+        },
+      },
+      {
+        expectNoErrors: true,
+      },
+      {
+        submit: true,
+      },
+      {
+        expectSubmit: {
+          status: 'accepted',
+        },
+      },
+    ],
+  },
+  {
     name: 'a repeating group validates each item and re-indexes when one is removed',
     description: 'Removing an item is not the same as clearing it: everything after it moves down by one, and so do its values and its messages. A message left behind on contacts[1] after contacts[0] was removed points at a field that is no longer on screen, which is the classic repeater bug and the reason this case pins the indices so hard. The email format rule is row-scoped — it runs once per item with `item` bound to that row — so a bad address in one row must flag that row and no other.',
     tags: [
