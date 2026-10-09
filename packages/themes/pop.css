@@ -378,7 +378,7 @@
    here has. */
 [data-formancy-theme='pop'] [data-formancy-part='option-image'] {
   display: block;
-  inline-size: 7rem;
+  inline-size: 4rem;
   aspect-ratio: 4 / 3;
   object-fit: cover;
   margin-block-end: 0.5rem;

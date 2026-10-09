@@ -10,6 +10,13 @@ later.
 
 ## Unreleased
 
+**Changed: an option's picture is drawn smaller in every shipped theme.** All four themes drew
+it 7rem wide in a 4:3 frame — 112 by 84 pixels, whatever the screen — so the playground's two
+delivery pictograms made a two-option question mostly picture, and it was reported as too big.
+They are 4rem wide now, 64 by 48 pixels, the same fixed shape so a row of pictured options
+still lines up. A stylesheet that wants them larger sets `inline-size` on
+`[data-formancy-part='option-image']`.
+
 **Fixed: a static text and a repeater could not be picked up on the preview.** Both
 renderers drew a static text as a bare paragraph and a repeater's fieldset naming nothing,
 while every other field carries `data-formancy-field-path`, which the builder's arrange
