@@ -86,6 +86,7 @@ Each encodes semantics the engine and the renderers must implement, and
 | repeating group | per-row validation, and re-indexing when a row is removed |
 | wizard page validation | next validates only the current page; submit validates everything and returns to the first page with a problem |
 | wizard with layout | a paged form drawn with a layout shows the page somebody is on, arranged as the layout says, and leaves out what the layout leaves out |
+| placed group | a group a layout places whole is drawn as its fields, on the page they are on — where both renderers threw |
 | masked answer | a mask fills every position, and the answer holds only what was typed |
 | select boxes | several answers from one list, stored in the list's own order |
 | ranking | the order chosen is the answer, and an untouched ranking holds nothing |

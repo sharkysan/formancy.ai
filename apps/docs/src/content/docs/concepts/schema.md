@@ -314,6 +314,11 @@ consent checkbox is doing its job — but it may not place one twice, and it may
 not name a path the model does not define. `unreferencedPaths(schema, 'web')`
 tells a builder what a given arrangement is not showing.
 
+A node may name a **group**, which places it whole: it is drawn as its fields, in
+the order the model declares them, under the group's label the way a labelled
+section is. Its fields are then placed, so none of them may be placed again
+beside it — place the group or its fields, not both.
+
 Layouts are optional too. Without any, fields render in the order the model
 declares them, which is what the renderers did before this section existed and
 still do.

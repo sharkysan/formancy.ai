@@ -46,10 +46,7 @@ const MINIMAL: Record<FieldType, Partial<FieldDef> | { notDrawn: string }> = {
   static: {},
   repeater: { fields: [{ key: 'x', type: 'text', label: 'X' }] },
   hidden: { notDrawn: 'it is collected without being shown, so there is nothing to pick up' },
-  group: {
-    notDrawn:
-      'what a placed group should draw is not decided: the validator accepts one, and both renderers throw on it',
-  },
+  group: { fields: [{ key: 'x', type: 'text', label: 'X' }] },
   page: { notDrawn: 'a page cannot be placed, since an arrangement reads through it' },
 }
 

@@ -360,6 +360,8 @@ function presentationErrors(schema: FormSchema): SchemaError[] {
     // A field has one place in a given arrangement; twice would render it
     // twice, bound to the same answer, which no form means.
     const placed = new Set<string>()
+    /** Where each field was first placed, for the rule about groups below. */
+    const placedAt = new Map<string, string>()
     const duplicates = new Set<string>()
     const walkNodes = (
       nodes: readonly LayoutNode[],
@@ -432,6 +434,7 @@ function presentationErrors(schema: FormSchema): SchemaError[] {
             )
           }
           placed.add(node.path)
+          if (!placedAt.has(node.path)) placedAt.set(node.path, `${nodePath}/path`)
         } else {
           if (node.kind !== 'tabs') checkText(node.label, `${nodePath}/label`)
 
@@ -462,6 +465,21 @@ function presentationErrors(schema: FormSchema): SchemaError[] {
       }
     }
     walkNodes(layout.nodes, `${at}/nodes`)
+
+    // A group placed whole draws its fields, so one of them placed as well is the duplicate
+    // above reached through a group. Reported at the field, wherever the two stand.
+    for (const [path, pointer] of placedAt) {
+      const segments = path.split('.')
+      for (let end = 1; end < segments.length; end += 1) {
+        const group = segments.slice(0, end).join('.')
+        if (placedAt.has(group)) {
+          errors.push(
+            schemaError(pointer, 'layout.placedInGroup', { path, group, layout: layout.name }),
+          )
+          break
+        }
+      }
+    }
     void duplicates
     void collectFieldPaths
   }

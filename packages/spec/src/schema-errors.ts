@@ -84,6 +84,8 @@ export const SCHEMA_ERRORS = {
   'layout.unknownPath': 'No field has the data path "{path}", so this layout places nothing here.',
   'layout.placedTwice':
     '"{path}" is already placed in the "{layout}" layout. A field has one place in an arrangement.',
+  'layout.placedInGroup':
+    '"{path}" is in the group "{group}", which the "{layout}" layout places whole. A field has one place in an arrangement: place the group or its fields, not both.',
   'layout.tabNotSection':
     'A tabs node holds sections, one per tab, and this one holds a "{kind}". Wrap it in a section and give the section a label — that label is the tab\'s name.',
   'layout.tabUnnamed':

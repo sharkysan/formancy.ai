@@ -40,7 +40,7 @@ const CEILINGS: Record<string, { lines: number; why: string }> = {
     why: 'The engine is one subject and its parts are genuinely coupled through the graph. The seam, if there is one, is the check and skip machinery — whose protocol types left for `checks.ts` to pay for the `formId` option, since this budget allows no growth at all; and what counts as an answer per type left for `answered.ts` when the matrix brought its own idea of one. The machinery itself still needs the graph and the store, which is why it has not followed.',
   },
   'packages/conformance/src/builtin-fixtures.ts': {
-    lines: 1591,
+    lines: 1721,
     why: 'GENERATED from fixtures/*.json. Splitting this means splitting the fixtures, which are the unit of meaning — so this number moves when the suite gains a case, which is the one entry here whose growth is not a signal.',
   },
   'apps/site/src/app.tsx': {

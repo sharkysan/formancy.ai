@@ -63,7 +63,13 @@ export function unreferencedPaths(schema: FormSchema, layoutName: string): strin
   const placed = new Set<string>()
   collectFieldPaths(layout.nodes, placed)
 
-  return modelPathsForLayout(schema.model.fields, '').filter((path) => !placed.has(path))
+  // A group placed whole places its fields, and a group one of whose fields is placed cannot
+  // be placed as well. Listing either offered a builder a placement the validator refuses.
+  const within = (path: string, group: string): boolean => path.startsWith(`${group}.`)
+  return modelPathsForLayout(schema.model.fields, '').filter(
+    (path) =>
+      !placed.has(path) && ![...placed].some((other) => within(path, other) || within(other, path)),
+  )
 }
 
 /** Every path a layout node tree places, in no particular order. */

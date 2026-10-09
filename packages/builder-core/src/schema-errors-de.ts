@@ -84,6 +84,8 @@ export const SCHEMA_ERRORS_DE: SchemaErrorSentences = {
     'Kein Feld hat den Datenpfad „{path}“, dieses Layout platziert hier also nichts.',
   'layout.placedTwice':
     '„{path}“ ist im Layout „{layout}“ bereits platziert. Ein Feld hat in einer Anordnung einen Platz.',
+  'layout.placedInGroup':
+    '„{path}“ gehört zur Gruppe „{group}“, die das Layout „{layout}“ als Ganzes platziert. Ein Feld hat in einer Anordnung einen Platz: Platzieren Sie die Gruppe oder ihre Felder, nicht beides.',
   'layout.tabNotSection':
     'Ein Reiterknoten enthält Abschnitte, einen pro Reiter, und dieser enthält ein „{kind}“. Pack es in einen Abschnitt und gib dem Abschnitt eine Beschriftung – diese Beschriftung ist der Name des Reiters.',
   'layout.tabUnnamed':

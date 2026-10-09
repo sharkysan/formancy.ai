@@ -426,3 +426,52 @@ describe('a paged form with tabs', () => {
     expect(screen.getByRole('textbox', { name: 'Beta' })).toBeTruthy()
   })
 })
+
+describe('a group placed whole', () => {
+  /**
+   * The React suite's case: a layout placing a group's path, which both renderers threw on.
+   * It is drawn as its fields, under its label, the way a labelled section is (0151).
+   */
+  const grouped = {
+    specVersion: '4',
+    id: 'claim',
+    title: 'Claim',
+    model: {
+      fields: [
+        { key: 'name', type: 'text', label: 'Name' },
+        {
+          key: 'address',
+          type: 'group',
+          label: 'Address',
+          fields: [
+            { key: 'street', type: 'text', label: 'Street' },
+            { key: 'city', type: 'text', label: 'City' },
+          ],
+        },
+      ],
+    },
+    layouts: [
+      {
+        name: 'web',
+        nodes: [
+          { kind: 'field', path: 'address' },
+          { kind: 'field', path: 'name' },
+        ],
+      },
+    ],
+  } as FormSchema
+
+  test('is drawn as its fields, in a group named by its label, where the layout puts it', async () => {
+    const view = await render(FormancyForm, {
+      inputs: { layout: 'web' },
+      providers: [provideZonelessChangeDetection(), provideFormancy(createFormEngine({ schema: grouped }))],
+    })
+    await view.fixture.whenStable()
+
+    const address = screen.getByRole('group', { name: 'Address' })
+    expect(address.contains(screen.getByLabelText('Street'))).toBe(true)
+    expect(address.contains(screen.getByLabelText('City'))).toBe(true)
+    expect(address.contains(screen.getByLabelText('Name'))).toBe(false)
+    expect(labelOrder()).toEqual(['Street', 'City', 'Name'])
+  })
+})

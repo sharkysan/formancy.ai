@@ -1,6 +1,7 @@
 # 0150 — Every field an arrangement places names itself on the preview
 
-- **Status:** accepted
+- **Status:** accepted; what a placed group draws decided by
+  [0151](0151-a-group-placed-whole-is-drawn-as-its-fields.md)
 - **Date:** 2026-10-09
 - **Deciders:** Daniel Bacher
 - **Verified by:** `packages/react/src/field-path.test.tsx` and

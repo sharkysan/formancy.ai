@@ -1224,24 +1224,28 @@ been written carefully, and no native speaker has reviewed either translation.
 
 ### D12. A valid arrangement that places a group cannot be drawn
 
-*How it arises:* the validator accepts a layout node naming a group's path, since its
-placeable paths include a group's own as well as its fields', and the builder's arrangement
-pane offers a group among the fields to place. Neither renderer has a drawing for a group
-placed whole: both ask the engine for a field at that path, and the engine has none, so both
-throw `Unknown field`. Found on 2026-10-09 by the guard that requires every placed field to
-name itself ([0150](../decisions/0150-every-field-an-arrangement-places-names-itself.md)).
+*How it arises:* a layout node names a group's path, which the validator accepts and the
+builder's arrangement pane offers. A renderer with no drawing for a group placed whole asks the
+engine for a field at that path and throws `Unknown field`, and on a paged form throws earlier,
+asking which page the group is on. Both renderers did, until 2026-10-09; found by the guard
+that requires every placed field to name itself
+([0150](../decisions/0150-every-field-an-arrangement-places-names-itself.md)).
 
 *Severity:* the form does not render — in the builder's preview and in production alike — so
 nothing can be filled in. Loud rather than silent: nothing is shown wrongly or collected
 wrongly, and no answer is lost.
 
-*Constraint:* none yet. Refusing such a layout in the validator would make documents that are
-valid today invalid, against the contract a reader of a published version relies on
-([0097](../decisions/0097-a-publish-may-warn.md)), and drawing one needs a decision about what
-a placed group is.
+*Constraint:* both renderers draw a group placed whole as its fields, on the page its fields
+are on, from one answer in `@formancy/core` (`placedGroup`, `placedPage`)
+([0151](../decisions/0151-a-group-placed-whole-is-drawn-as-its-fields.md)). The conformance
+fixture *a group a layout places whole is drawn as its fields, on the page it belongs to* holds
+both renderers to it through their drivers, and failed each of them as they were. A group placed
+beside one of its own fields is refused as `layout.placedInGroup`, so a field cannot be drawn
+twice through its group.
 
-*Residual:* until it is decided, a manufacturer should place a group's fields one by one and
-not the group itself, and should not rely on the builder to stop an author doing otherwise.
+*Residual:* a renderer outside this repository has the same obligation, and is held to it only
+if it runs the conformance suite. Inside a placed group the order is the model's; an arrangement
+that needs another order places the fields one by one.
 
 ---
 

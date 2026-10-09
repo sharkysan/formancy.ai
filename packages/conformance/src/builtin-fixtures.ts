@@ -506,6 +506,136 @@ export const builtinFixtures: readonly Fixture[] = [
     ],
   },
   {
+    name: 'a group a layout places whole is drawn as its fields, on the page it belongs to',
+    description: 'A layout may place a group\'s path rather than each of its fields, and the validator accepts it. Both renderers asked the engine for a field at that path and threw, so the form did not render at all — in a preview and in production alike. Placed whole, a group is drawn as its fields, in the order a form with no layout draws them; on a paged form it is drawn on the page its fields are on, and on no other.',
+    tags: [
+      'layout',
+      'wizard',
+    ],
+    layout: 'web',
+    schema: {
+      specVersion: '1',
+      id: 'claim',
+      title: 'Expense claim',
+      model: {
+        fields: [
+          {
+            key: 'you',
+            type: 'page',
+            label: 'You',
+            fields: [
+              {
+                key: 'name',
+                type: 'text',
+                label: 'Name',
+                required: true,
+              },
+            ],
+          },
+          {
+            key: 'where',
+            type: 'page',
+            label: 'Where',
+            fields: [
+              {
+                key: 'address',
+                type: 'group',
+                label: 'Address',
+                fields: [
+                  {
+                    key: 'street',
+                    type: 'text',
+                    label: 'Street',
+                    required: true,
+                  },
+                  {
+                    key: 'city',
+                    type: 'text',
+                    label: 'City',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      layouts: [
+        {
+          name: 'web',
+          nodes: [
+            {
+              kind: 'field',
+              path: 'name',
+            },
+            {
+              kind: 'field',
+              path: 'address',
+            },
+          ],
+        },
+      ],
+    },
+    steps: [
+      {
+        expectPage: 'you',
+      },
+      {
+        expectVisible: [
+          'name',
+        ],
+      },
+      {
+        expectHidden: [
+          'address.street',
+          'address.city',
+        ],
+      },
+      {
+        set: {
+          name: 'Ada',
+        },
+      },
+      {
+        next: true,
+      },
+      {
+        expectPage: 'where',
+      },
+      {
+        expectVisible: [
+          'address.street',
+          'address.city',
+        ],
+      },
+      {
+        expectHidden: [
+          'name',
+        ],
+      },
+      {
+        set: {
+          'address.street': 'Rue de la Gare 1',
+          'address.city': 'Bern',
+        },
+      },
+      {
+        submit: true,
+      },
+      {
+        expectSubmit: {
+          status: 'accepted',
+          data: {
+            name: 'Ada',
+            address: {
+              street: 'Rue de la Gare 1',
+              city: 'Bern',
+            },
+          },
+        },
+      },
+    ],
+  },
+  {
     name: 'a ranking stores the order chosen, and starts with nothing in it',
     description: 'A ranking is several controls answering one question, so it is a group with one accessible name. Its answer is the values of the options in the order the person put them, most preferred first — not the order the author wrote them in, which is why an untouched ranking holds nothing and a required one is refused until something is ranked. Moving an option changes the order and nothing else.',
     tags: [

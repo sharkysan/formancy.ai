@@ -575,14 +575,16 @@
   align-content: start;
 }
 
-[data-formancy-theme='paper'] [data-formancy-part='layout-section'] {
+[data-formancy-theme='paper'] [data-formancy-part='layout-section'],
+[data-formancy-theme='paper'] [data-formancy-part='group'] {
   counter-increment: fm-section;
   margin-block-end: calc(var(--fm-step) * 1.5);
 }
 
 /* Sections are numbered like the parts of an essay. The numeral is
    decorative, so it is given an empty alternative and not read out. */
-[data-formancy-theme='paper'] [data-formancy-part='layout-section-heading'] {
+[data-formancy-theme='paper'] [data-formancy-part='layout-section-heading'],
+[data-formancy-theme='paper'] [data-formancy-part='group-heading'] {
   display: flex;
   align-items: baseline;
   gap: 0.625rem;
@@ -596,7 +598,8 @@
   line-height: 1.15;
 }
 
-[data-formancy-theme='paper'] [data-formancy-part='layout-section'] > [data-formancy-part='layout-section-heading']::before {
+[data-formancy-theme='paper'] [data-formancy-part='layout-section'] > [data-formancy-part='layout-section-heading']::before,
+[data-formancy-theme='paper'] [data-formancy-part='group'] > [data-formancy-part='group-heading']::before {
   content: counter(fm-section, upper-roman) '.' / '';
   font-style: normal;
   font-size: 0.875rem;

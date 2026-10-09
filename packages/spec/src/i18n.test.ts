@@ -142,6 +142,35 @@ describe('the layout section', () => {
     expect(validateSchema(broken).valid).toBe(false)
   })
 
+  test('accepts a group placed whole, which draws its fields', () => {
+    const whole = JSON.parse(JSON.stringify(withLayout)) as FormSchema
+    whole.layouts![0]!.nodes[0] = { kind: 'section', label: 'Who', children: [{ kind: 'field', path: 'address' }] }
+
+    expect(validateSchema(whole).valid).toBe(true)
+  })
+
+  test('rejects a group placed whole beside one of its own fields, in either order', () => {
+    // The group draws `address.city` already; placing the field as well would draw it a
+    // second time, bound to the same answer -- the duplicate above, reached through a
+    // group. Reported at the field, wherever it stands.
+    for (const order of [
+      [{ kind: 'field', path: 'address' }, { kind: 'field', path: 'address.city' }],
+      [{ kind: 'field', path: 'address.city' }, { kind: 'field', path: 'address' }],
+    ] as const) {
+      const both = JSON.parse(JSON.stringify(withLayout)) as FormSchema
+      both.layouts![0]!.nodes = [...order]
+
+      const result = validateSchema(both)
+
+      expect(result.valid).toBe(false)
+      if (!result.valid) {
+        expect(result.errors.map((error) => [error.code, error.path])).toEqual([
+          ['layout.placedInGroup', `/layouts/0/nodes/${order[0].path === 'address' ? 1 : 0}/path`],
+        ])
+      }
+    }
+  })
+
   test('but the same field may appear in DIFFERENT layouts', () => {
     // `customer` is in both web and print already.
     expect(validateSchema(withLayout).valid).toBe(true)
@@ -174,7 +203,16 @@ describe('unreferencedPaths', () => {
   })
 
   test('is empty for a layout that places everything', () => {
-    expect(unreferencedPaths(withLayout, 'web')).toEqual(['address'])
+    // It named `address` here: a group whose only field is placed, offered by the builder
+    // as a field still to place, and refused once placed beside its own field.
+    expect(unreferencedPaths(withLayout, 'web')).toEqual([])
+  })
+
+  test('counts the fields of a group placed whole as placed', () => {
+    const whole = JSON.parse(JSON.stringify(withLayout)) as FormSchema
+    whole.layouts![1]!.nodes.push({ kind: 'field', path: 'address' })
+
+    expect(unreferencedPaths(whole, 'print')).toEqual(['notes'])
   })
 
   test('returns undefined for a layout name that does not exist', () => {

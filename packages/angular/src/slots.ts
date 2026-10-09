@@ -12,9 +12,10 @@ import {
   runInInjectionContext,
 } from '@angular/core'
 import type { ComponentRef, OnChanges, OnDestroy, OnInit, Signal, Type } from '@angular/core'
-import type { FieldSnapshot } from '@formancy/core'
+import type { FieldSnapshot, PlacedGroup } from '@formancy/core'
 import {
   datagridColumns,
+  resolveText,
 } from '@formancy/spec'
 import type { FieldDef } from '@formancy/spec'
 import { DEFAULT_FIELD_COMPONENTS } from './fields.js'
@@ -373,4 +374,47 @@ export class FormancyRepeaterSection implements OnInit {
     const template = instanceWire.replace(/\[\d+\]/, '[]')
     return this.labels()?.[template] ?? this.labels()?.[instanceWire]
   }
+}
+
+/**
+ * A group an arrangement places whole: its fields, under its label, the way a labelled
+ * section is drawn — a real group when it has a name, a box when it has none. What it holds
+ * and in which order is `@formancy/core`'s, shared with the React renderer (0151).
+ */
+@Component({
+  selector: 'formancy-group',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FormancyFieldSlot, FormancyRepeaterSection],
+  template: `
+    <div
+      data-formancy-part="group"
+      [attr.data-formancy-field-path]="path()"
+      [attr.role]="label() === undefined ? null : 'group'"
+      [attr.aria-labelledby]="label() === undefined ? null : headingId"
+    >
+      @if (label(); as text) {
+        <p [id]="headingId" data-formancy-part="group-heading">{{ text }}</p>
+      }
+      @for (wire of group().fields; track wire) {
+        <formancy-field [path]="wire" [fallbackLabel]="labels()?.[wire]" />
+      }
+      @for (wire of group().repeaters; track wire) {
+        <formancy-repeater [wire]="wire" [labels]="labels()" />
+      }
+    </div>
+  `,
+})
+export class FormancyGroupSection {
+  private static counter = 0
+  private readonly engine = injectEngine()
+
+  readonly path = input.required<string>()
+  readonly group = input.required<PlacedGroup>()
+  readonly labels = input<Record<string, string>>()
+
+  protected readonly headingId = `formancy-group-${String((FormancyGroupSection.counter += 1))}`
+  protected readonly label = computed(() => {
+    const text = resolveText(this.engine.schema(), this.group().def.label, this.engine.locale())
+    return text === '' ? undefined : text
+  })
 }

@@ -15,7 +15,8 @@ import {
 } from '@angular/core'
 import type { OnInit } from '@angular/core'
 import { encode } from 'uqr'
-import { parsePath } from '@formancy/core'
+import { parsePath, placedGroup, placedPage } from '@formancy/core'
+import type { PlacedGroup } from '@formancy/core'
 import {
   resolveText,
   LAYOUT_LEAF_KINDS,
@@ -24,7 +25,7 @@ import {
 } from '@formancy/spec'
 import type { LayoutNode } from '@formancy/spec'
 import { injectEngine } from './provide.js'
-import { FormancyFieldSlot, FormancyRepeaterSection } from './slots.js'
+import { FormancyFieldSlot, FormancyGroupSection, FormancyRepeaterSection } from './slots.js'
 
 /**
  * Rendering a named `layouts` entry — fields side by side, in sections, in the
@@ -133,7 +134,7 @@ export class FormancyTabs {
       .filter(
         ({ node }) =>
           page === undefined ||
-          layoutNodeShows(node, (path) => this.engine.pageOf(parsePath(path)) === page),
+          layoutNodeShows(node, (path) => placedPage(this.engine, path) === page),
       )
   })
 
@@ -344,7 +345,14 @@ export class FormancyCode implements OnInit {
 @Component({
   selector: 'formancy-layout',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgTemplateOutlet, FormancyFieldSlot, FormancyRepeaterSection, FormancyTabs, FormancyCode],
+  imports: [
+    NgTemplateOutlet,
+    FormancyFieldSlot,
+    FormancyGroupSection,
+    FormancyRepeaterSection,
+    FormancyTabs,
+    FormancyCode,
+  ],
   /**
    * Undoing an element rather than styling one.
    *
@@ -404,6 +412,8 @@ export class FormancyCode implements OnInit {
       @if (node.kind === 'field') {
         @if (isRepeater(node.path)) {
           <formancy-repeater [wire]="node.path" [labels]="labels()" />
+        } @else if (groupAt(node.path); as group) {
+          <formancy-group [path]="node.path" [group]="group" [labels]="labels()" />
         } @else {
           <formancy-field [path]="node.path" />
         }
@@ -499,7 +509,7 @@ export class FormancyLayout {
     const page = this.page()
     return (
       page === undefined ||
-      layoutNodeShows(node, (path) => this.engine.pageOf(parsePath(path)) === page)
+      layoutNodeShows(node, (path) => placedPage(this.engine, path) === page)
     )
   }
 
@@ -541,6 +551,11 @@ export class FormancyLayout {
 
   protected isRepeater(path: string): boolean {
     return this.engine.repeaterPaths().includes(path)
+  }
+
+  /** A group placed whole, which is drawn as its fields (0151). */
+  protected groupAt(path: string): PlacedGroup | undefined {
+    return placedGroup(this.engine, path)
   }
 
   protected headingFor(node: LayoutNode): { id: string; text: string } | null {
