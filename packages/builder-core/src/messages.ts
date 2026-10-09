@@ -1,3 +1,5 @@
+import { LOGIC_MESSAGES } from './messages-logic.js'
+
 import { renderSchemaError } from '@formancy/spec'
 import type { SchemaError, SchemaErrorCode } from '@formancy/spec'
 
@@ -70,7 +72,7 @@ export type SchemaErrorSentences = Readonly<Record<SchemaErrorCode, string>>
  * Ids are grouped by where the words appear, so a translator working down the
  * list meets a pane's words together.
  */
-export const BUILDER_MESSAGES = {
+const BUILDER_OWN_MESSAGES = {
   // ---------------------------------------------------------------- the tree
   'tree.empty': 'This form has no fields yet.',
   'tree.fieldCount': { one: '{count} field', other: '{count} fields' },
@@ -320,29 +322,6 @@ export const BUILDER_MESSAGES = {
   'layoutProps.heading.column': 'This column',
   'layoutProps.heading.tabs': 'This tab strip',
   'layoutProps.heading.table': 'This grid',
-  // ------------------------------------------------------------------ the logic panel
-  'logic.heading': 'Rules',
-  'logic.empty': 'This field always behaves the same way.',
-  'logic.remove': 'Remove the rule “{rule}” on {target}',
-  'logic.add': 'Add a rule',
-  'logic.what': 'What the rule does',
-  'logic.check': 'Which check',
-  // Examples in the box, not values: a check's name and a calculation in CEL.
-  'logic.check.example': 'email-not-taken',
-  'logic.calculation': 'The calculation',
-  'logic.calculation.example': 'qty * unitPrice',
-  'logic.match': 'Match',
-  'logic.join.all': 'all of these',
-  'logic.join.any': 'any of these',
-  'logic.field': 'Field',
-  'logic.field.numbered': 'Field {number}',
-  'logic.comparison': 'Comparison',
-  'logic.comparison.numbered': 'Comparison {number}',
-  'logic.value': 'Value',
-  'logic.value.numbered': 'Value {number}',
-  'logic.removeComparison': 'Remove comparison {number}',
-  'logic.addComparison': 'Add a comparison',
-  'logic.addRule': 'Add rule',
   // ------------------------------------------- the arrangement on the rendered form
   'said.movedTo': 'Moved to {where}.',
 
@@ -428,32 +407,12 @@ export const BUILDER_MESSAGES = {
   'palette.newField': 'New field',
   'palette.firstOption': 'First option',
 
-  // ---------------------------------------------------------------- rule kinds
-  'rule.visible.label': 'Show this field when',
-  'rule.visible.hint': 'Hidden otherwise, and its answer is cleared unless the field says not to.',
-  'rule.required.label': 'Require an answer when',
-  'rule.required.hint': 'Only while the condition holds.',
-  'rule.disabled.label': 'Disable this field when',
-  'rule.disabled.hint': 'Visible but not editable.',
-  'rule.validate.label': 'Reject the answer unless',
-  'rule.validate.hint': 'The condition must hold for the form to be submitted.',
-  'rule.check.label': 'Ask the deployment about the answer',
-  'rule.check.hint':
-    'Names a check this deployment answers — is this email already registered, does this reference exist. A check the deployment has not supplied refuses the answer rather than passing it.',
-  'rule.computed.label': 'Calculate this field as',
-  'rule.computed.hint':
-    'A CEL expression producing the answer, recomputed whenever what it reads changes. The field is filled in rather than asked, so what somebody typed is replaced.',
-  'rule.skip.label': 'Skip this page when',
-  'rule.skip.hint':
-    'The page is walked past, in both directions, and the questions on it are neither asked nor validated.',
+} as const satisfies Record<string, Message>
 
-  // ----------------------------------------------------------------- operators
-  'operator.is': 'is',
-  'operator.isNot': 'is not',
-  'operator.isMoreThan': 'is more than',
-  'operator.isLessThan': 'is less than',
-  'operator.isAnswered': 'is answered',
-  'operator.isNotAnswered': 'is not answered',
+/** The whole catalogue: the builder's own words, and the logic editor's. */
+export const BUILDER_MESSAGES = {
+  ...BUILDER_OWN_MESSAGES,
+  ...LOGIC_MESSAGES,
 } as const satisfies Record<string, Message>
 
 export type BuilderMessageId = keyof typeof BUILDER_MESSAGES

@@ -181,7 +181,11 @@ Legality is decided by *trying* an edit rather than by a second implementation
 of the validator's rules, which would drift from it.
 
 It holds what a builder's interface needs and a framework does not decide: the
-compiler that turns a structured condition into CEL, where a drop lands in each
+compiler that turns a structured condition into CEL — one level of groups, comparisons
+chosen by what the field holds, and every read guarded so an empty form does not fail
+open (`conditions.ts`) — and the condition being written, with every edit to it and the
+fields it may compare at the engine's paths (`condition-draft.ts`,
+[0127](../decisions/0127-a-condition-nests-one-level.md)); where a drop lands in each
 of the two trees **and on the rendered form** (`arrange.ts`, which takes a
 rectangle as plain numbers because this package compiles with no DOM), the
 palette, the editable property list read out of the spec's own JSON Schema, and —

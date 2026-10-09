@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import type { FormSchema, LogicRule } from '@formancy/spec'
 import { createBuilderSession } from './session.js'
-import type { ConditionGroup } from './conditions.js'
+import type { Condition, ConditionGroup } from './conditions.js'
 
 /**
  * A rule's paths follow the field it names.
@@ -65,6 +65,37 @@ describe('renameField and the rules that name the field', () => {
     expect(rulesOf(session.document())[0]?.target).toBe('zip')
   })
 
+  test('and follows into a group of comparisons, and into the guard that reads it', () => {
+    // A condition the editor writes now asks `has()` before reading into a group, and
+    // may hold a group of comparisons (0127). A rename that rewrote the read and not
+    // the guard would leave `has(address.city)` asking about a field that is gone.
+    const session = createBuilderSession(
+      schema([
+        {
+          kind: 'visible',
+          target: 'note',
+          cel: '(has(address.city) && address.city != null && address.city == "Bern") || postcode == "8000"',
+          editor: {
+            join: 'any',
+            conditions: [
+              { join: 'all', conditions: [{ field: 'address.city', operator: 'is', value: 'Bern' }] },
+              { field: 'postcode', operator: 'is', value: '8000' },
+            ],
+          },
+        } as unknown as LogicRule,
+      ]),
+    )
+
+    expect(session.renameField(['address', 'city'], 'town').ok).toBe(true)
+
+    const rule = rulesOf(session.document())[0]!
+    expect(rule.cel).toBe(
+      '(has(address.town) && address.town != null && address.town == "Bern") || postcode == "8000"',
+    )
+    const inner = (rule.editor as ConditionGroup).conditions[0] as ConditionGroup
+    expect((inner.conditions[0] as Condition).field).toBe('address.town')
+  })
+
   test('and rewrites the editor metadata, so reopening the panel does not undo it', () => {
     /*
      * `editor` is the structured condition the visual panel reads back, and
@@ -95,7 +126,10 @@ describe('renameField and the rules that name the field', () => {
     expect(session.renameField(['postcode'], 'zip').ok).toBe(true)
 
     const editor = rulesOf(session.document())[0]?.editor as ConditionGroup
-    expect(editor.conditions.map((condition) => condition.field)).toEqual(['zip', 'note'])
+    expect(editor.conditions.map((condition) => (condition as Condition).field)).toEqual([
+      'zip',
+      'note',
+    ])
     // The row that did not move kept everything else about it too.
     expect(editor.conditions[1]).toEqual({ field: 'note', operator: 'isAnswered' })
   })

@@ -227,3 +227,4 @@ listed under the sections they belong to above.
 | [0124](0124-a-theme-preset-is-the-patch-read-back.md) | A theme preset is the patch, read back through the editor's own rule | accepted |
 | [0125](0125-a-mask-stores-what-was-typed.md) | A mask stores what was typed, and one function decides where a character lands | accepted |
 | [0126](0126-an-option-may-carry-a-picture.md) | An option may carry a picture, shown only where it can be seen | accepted |
+| [0127](0127-a-condition-nests-one-level.md) | A condition nests one level, compares by the field's kind, and asks before it reads | accepted |

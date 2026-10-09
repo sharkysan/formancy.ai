@@ -66,8 +66,38 @@ export type { LayoutAddress, LayoutContainerKind, LayoutLocation } from './layou
 //
 // They belong here for the same reason `@formancy/core` exists: the hard part is
 // framework-free, and a binding should be the part that is not.
-export { OPERATORS, celLiteral, compileCondition, compileGroup } from './conditions.js'
-export type { Condition, ConditionGroup, Operator } from './conditions.js'
+export {
+  OPERATORS,
+  answerKindOf,
+  celLiteral,
+  compileCondition,
+  compileGroup,
+  isGroup,
+  operatorTakesValue,
+  operatorsFor,
+} from './conditions.js'
+export type { AnswerKind, Condition, ConditionGroup, Operator } from './conditions.js'
+export {
+  addGroup,
+  addRow,
+  conditionFields,
+  conditionOf,
+  emptyDraft,
+  emptyRow,
+  groupOf,
+  isRowGroup,
+  removeFromDraft,
+  rowsOf,
+  setJoin,
+  updateRow,
+} from './condition-draft.js'
+export type {
+  ConditionDraft,
+  ConditionField,
+  ConditionRow,
+  DraftPlace,
+  RowGroup,
+} from './condition-draft.js'
 export { dropLocation } from './drop.js'
 export { layoutDropLocation } from './layout-drop.js'
 export { SIDE_ZONE_MINIMUM, arrangeDrop } from './arrange.js'
@@ -123,17 +153,14 @@ export {
   RULE_KIND_CHOICES,
   comparisonLabel,
   composeRule,
-  conditionOf,
   draftIsComplete,
   operatorLabel,
   ruleKindHint,
   ruleKindLabel,
-  emptyRow,
   kindCarriesCondition,
   kindWrites,
-  rowTakesValue,
   ruleKindsFor,
   referencedMessages,
   ruleTargetFor,
 } from './logic.js'
-export type { ConditionRow, RuleKindChoice } from './logic.js'
+export type { RuleKindChoice } from './logic.js'

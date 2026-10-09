@@ -118,6 +118,20 @@ than against null. Measured and held by
 `apps/docs/src/empty-answer-guards.test.ts`, which parses the table in the user
 documentation and evaluates every row.
 
+*And the builder wrote those shapes itself, until 2026-10-09.* Its condition editor
+compiled "City is Bern" on a field inside a group to `address.city == "Bern"` and "Age is
+more than 18" to `age > 18.0` — the second throws on an empty number, since CEL has no
+`>` between null and a double. A `visible` rule written in the builder on either kind of
+field showed its target on every form nobody had touched. Measured before the fix: the
+target of a builder-written rule on a group child was visible on an empty form. The
+editor now asks first — `has()` before reading into a group, `!= null` before ordering or
+searching a value, and a length for a list, which the checker will not compare with null
+— and `condition-draft.test.ts` runs each comparison it builds against an empty form in
+the engine ([0127](../decisions/0127-a-condition-nests-one-level.md)). **Rules written by
+an earlier builder keep their expression**, since the CEL is the stored truth and nothing
+recompiles it; they are corrected only when written again, and the table above is how to
+recognise one.
+
 ### A6. A presentation hint changes what the field collects
 
 *How it arises:* a widget replaces a control with one that can express more than the

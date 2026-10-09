@@ -164,6 +164,11 @@ function repathEditor(editor: unknown, before: string, after: string): unknown {
     ...editor,
     conditions: group.conditions.map((condition: unknown) => {
       if (typeof condition !== 'object' || condition === null) return condition
+      // A group inside the group (0127), repathed the same way one level down. Left
+      // flat, a renamed field inside "(A and B) or C" would reopen under its old name.
+      if (Array.isArray((condition as { conditions?: unknown }).conditions)) {
+        return repathEditor(condition, before, after)
+      }
       const field = (condition as { field?: unknown }).field
       if (typeof field !== 'string' || !underPath(field, before)) return condition
       return { ...condition, field: `${after}${field.slice(before.length)}` }

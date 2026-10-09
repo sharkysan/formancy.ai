@@ -267,6 +267,14 @@ export const BUILDER_MESSAGES_FR = {
   'logic.value.numbered': 'Valeur {number}',
   'logic.removeComparison': 'Supprimer la comparaison {number}',
   'logic.addComparison': 'Ajouter une comparaison',
+  'logic.addGroup': 'Ajouter un groupe',
+  'logic.group': 'Groupe {number}',
+  'logic.group.match': 'Dans le groupe {number}, doivent être vraies',
+  'logic.group.add': 'Ajouter une comparaison au groupe {number}',
+  'logic.group.remove': 'Supprimer le groupe {number}',
+  'logic.value.yes': 'Oui',
+  'logic.value.no': 'Non',
+  'logic.value.choose': 'Choisir une valeur',
   // Not "Ajouter une règle" again: the draft's submit and the button that opens
   // the draft would otherwise share a name.
   'logic.addRule': 'Créer la règle',
@@ -376,4 +384,12 @@ export const BUILDER_MESSAGES_FR = {
   'operator.isLessThan': 'est inférieur à',
   'operator.isAnswered': 'a une réponse',
   'operator.isNotAnswered': 'n’a pas de réponse',
+  'operator.isAtLeast': 'est au moins',
+  'operator.isAtMost': 'est au plus',
+  'operator.isBefore': 'est avant',
+  'operator.isAfter': 'est après',
+  'operator.contains': 'contient',
+  'operator.doesNotContain': 'ne contient pas',
+  'operator.includes': 'inclut',
+  'operator.doesNotInclude': 'n’inclut pas',
 } as const satisfies Record<BuilderMessageId, Message>

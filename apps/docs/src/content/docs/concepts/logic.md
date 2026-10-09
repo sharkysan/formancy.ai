@@ -121,15 +121,17 @@ Fails-open is the right default and it has a consequence worth knowing before
 you write your first rule: **a condition that errors on an empty form shows the
 field it was meant to hide, from the start, with nothing to say so.**
 
-Three shapes error, and two of them look defensive:
+Four shapes error, and two of them look defensive:
 
 | Condition | On an untouched form |
 | --- | --- |
 | `!needsVisa` | **errors** — CEL has no `!` for null |
 | `address.country == "CH"` | **errors** — the *group* is null, so reading a member of it fails |
 | `address.country != null && address.country == "CH"` | **errors** — it still has to read the path to compare it |
+| `age > 18.0` | **errors** — CEL has no `>` between null and a number |
 | `needsVisa != true` | `true` |
 | `has(address.country) && address.country == "CH"` | `false` |
+| `age != null && age > 18.0` | `false` |
 
 The pattern: comparing against `null` cannot rescue a read that fails, because
 the read happens first. For a top-level field, compare against the value you
@@ -141,6 +143,14 @@ Both of these shipped in this project's own demo and were found by running it
 against an engine rather than by reading it. A `visible` rule that is wrong this
 way is invisible precisely because it fails open: the field is simply always
 there.
+
+**The builder's condition editor wrote two of these shapes itself** — a comparison
+on a field inside a group, and a bound on a number — until 2026-10-09. It now asks
+first: `has(...)` before reading into a group, `!= null` before ordering or
+searching a value, and a length for a list of ticks, which an empty list does not
+have. A rule written by an earlier builder keeps the expression it was written with,
+because the expression is what is stored; this table is how to recognise one
+([0127](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0127-a-condition-nests-one-level.md)).
 
 ## Nothing ambient
 
