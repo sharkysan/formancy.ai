@@ -307,7 +307,9 @@ dependency runs one way only: `@formancy/react` knows nothing about the builder.
 ### The applications
 
 `apps/playground` and `apps/admin` are the two tools; `apps/docs` is the
-reference; `apps/site` is formancy.ai.
+reference; `apps/site` is formancy.ai; `apps/angular-starter` is an Angular application to
+copy — the builder and the form it builds, drawn with Angular Material, with everything a
+host decides in three files ([0133](../decisions/0133-the-angular-starter-is-the-builder-and-the-form.md)).
 
 The playground carries **two** demo documents and the pair is the unit that is
 held to covering the format. One is flat — every field type minus the two that

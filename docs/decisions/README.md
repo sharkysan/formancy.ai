@@ -233,3 +233,4 @@ listed under the sections they belong to above.
 | [0130](0130-each-file-is-its-own-upload.md) | Each file is its own upload, and belongs to its row rather than its control | accepted |
 | [0131](0131-an-upload-is-scanned-before-it-is-kept.md) | An upload is scanned before it is kept, and refused when it cannot be | accepted |
 | [0132](0132-material-draws-what-it-has-an-equivalent-for.md) | Angular Material draws what it has an equivalent for, and is held to the same fixtures | accepted |
+| [0133](0133-the-angular-starter-is-the-builder-and-the-form.md) | The Angular starter is the builder and the form, side by side | accepted |

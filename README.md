@@ -149,8 +149,10 @@ submitted. Switch language or theme without reloading.
   errors. The same checks help validate forms written by coding agents.
 - **Your components. Your design system.** Connect your own field components
   and styles, or start with a supplied theme — or, in Angular, with Angular
-  Material, held to the same conformance fixtures as the defaults. The shared
-  engine handles the rules while you control how the form fits your product.
+  Material, held to the same conformance fixtures as the defaults; an
+  [Angular starter](./apps/angular-starter) puts the builder and a Material form
+  side by side. The shared engine handles the rules while you control how the
+  form fits your product.
 - **Accessibility built in. Continuously checked.** Designed with WCAG 2.2 in
   mind: keyboard editing, connected labels, help text and error messages, plus
   automated accessibility checks in both renderers. Your finished form still
