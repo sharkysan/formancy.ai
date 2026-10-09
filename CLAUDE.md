@@ -112,6 +112,11 @@ another say "supersedes #N" in the description rather than stacking on it.
 Before pushing to a branch you have been away from, check that its pull request
 is still open — a commit pushed onto an already-merged branch goes nowhere.
 
+**A merged branch is deleted**, on `origin` by the repository setting and locally
+by whoever made it; one deleted by hand first has its pull request merged with
+the branch's tip as the merged head
+([0152](docs/decisions/0152-a-merged-branch-is-deleted.md)).
+
 **Commit as `Daniel Bacher <dbacher@gmail.com>`**, never
 `daniel.bacher@ergon.ch`.
 

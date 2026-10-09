@@ -58,3 +58,12 @@ search results.
 ```bash
 gh repo edit sharkysan/formancy.ai --homepage https://formancy.ai
 ```
+
+## Merged branches
+
+Deleted when their pull request merges, by the setting rather than by hand
+([0152](../docs/decisions/0152-a-merged-branch-is-deleted.md)).
+
+```bash
+gh repo edit sharkysan/formancy.ai --delete-branch-on-merge
+```
