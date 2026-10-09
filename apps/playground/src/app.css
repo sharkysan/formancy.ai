@@ -48,6 +48,7 @@
   --wb-derived: var(--server);
   --wb-invalid: var(--invalid);
   --wb-ok: #4fdc8a;
+  --wb-caution: #f0b429;
   --wb-sans: var(--sans);
   --wb-mono: var(--mono);
 

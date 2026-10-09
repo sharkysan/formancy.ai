@@ -145,6 +145,14 @@ older browsers rewrites it as a list of languages — so the apps here build for
 `CSS_TARGET`, and a host is told to
 ([0123](../decisions/0123-the-builder-reads-right-to-left.md)).
 
+**The builders are dressed by one stylesheet**, `workbench.css`, and an application changes
+how they look through its `--wb-*` tokens rather than with rules of its own — the playground
+and the admin point them at a dark bench, the Angular starter at Material's tokens. Every part
+either builder draws has a rule there, which `apps/docs/src/workbench.test.ts` derives from
+the builders' sources and checks; the prompt pane, the scenarios and seven other panes had
+none until it did
+([0143](../decisions/0143-the-workbench-dresses-every-part-a-builder-draws.md)).
+
 **The playground's theme editor reads a theme rather than knowing one.** Every token a theme
 declares on its own selector gets a control, discovered from the live stylesheet because
 the shipped themes share no vocabulary, and what it hands back is a patch of only what

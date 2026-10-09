@@ -50,6 +50,24 @@ declare as `--fm-ground`, and fine on white.
 Fonts are referenced, not bundled; the demo apps load them from Google Fonts
 and every theme falls back to a system stack.
 
+## The builders: `workbench.css`
+
+`workbench.css` dresses both builders — the tree, the palettes, the inspector, the logic
+panel, the prompt pane, the scenarios, blocks, a datagrid's columns and the translations —
+through the `data-formancy-part` hooks they emit, and every part they emit has a rule here.
+It is not a form theme and nothing depends on it. Change how it looks through its tokens
+rather than with rules of your own:
+
+| Token | What it colours |
+|---|---|
+| `--wb-ink`, `--wb-muted` | text, and quiet text |
+| `--wb-bench`, `--wb-panel`, `--wb-surface` | the ground, a pane, a control or a card |
+| `--wb-rule` | lines and borders |
+| `--wb-signal` | the selection, focus and the primary action |
+| `--wb-derived` | what the builder worked out rather than what was typed: a type, a path |
+| `--wb-invalid`, `--wb-ok`, `--wb-caution` | broken, fine, and costing something |
+| `--wb-sans`, `--wb-mono` | the two faces |
+
 ## Right to left, and your bundler
 
 Every file here — the four themes and `workbench.css`, which styles the two builders —

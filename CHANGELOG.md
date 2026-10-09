@@ -10,6 +10,16 @@ later.
 
 ## Unreleased
 
+**Fixed: every part of both builders is dressed by `@formancy/themes/workbench.css`.** The
+prompt pane was a textarea at the browser's default size and in its default monospace, beside
+a grey native button, because nothing styled it — and neither did anything style the
+scenarios, blocks, a datagrid's columns, a group inside a condition, a layout node's
+properties, two layout dialogs or the translations, which only the admin's own stylesheet
+dressed, for the admin. A test now derives the parts from both builders' sources and fails
+for one the workbench does not select. The workbench gains one token, `--wb-caution`, for a
+change that costs some answers and a translation still missing
+([0143](docs/decisions/0143-the-workbench-dresses-every-part-a-builder-draws.md)).
+
 **Corrected: three documents said uploads are not scanned.** The documentation's front page,
 the self-hosting guide and the SOUP declaration's list of what is still absent all said so, while
 0.4.0 scans every upload before keeping it when a deployment runs ClamAV
