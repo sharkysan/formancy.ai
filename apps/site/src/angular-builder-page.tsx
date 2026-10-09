@@ -31,15 +31,6 @@ export function testedOn(versions: readonly string[]): string {
   return said.length === 2 ? `${said[0]} and ${said[1]}` : said.join(', ')
 }
 
-/** The day the SurveyJS paragraph was checked against SurveyJS's own pages. */
-export const SURVEYJS_CHECKED = '9 October 2026'
-
-const SURVEYJS = {
-  licensing: 'https://surveyjs.io/licensing',
-  creator: 'https://surveyjs.io/survey-creator/documentation/overview',
-  architecture: 'https://surveyjs.io/documentation/surveyjs-architecture',
-}
-
 export function AngularBuilderPage(): ReactElement {
   return (
     <div className="ng-page">
@@ -146,75 +137,6 @@ export function AngularBuilderPage(): ReactElement {
           </p>
         </section>
 
-        <section className="ng-section" aria-labelledby="ng-surveyjs">
-          <h2 id="ng-surveyjs">If you are comparing it with SurveyJS</h2>
-          <p>
-            SurveyJS also has an Angular form builder. The two divide into the same three parts —
-            and differ in which of them you may ship without a licence.
-          </p>
-          <div className="ng-table">
-            <table>
-              <caption>formancy and SurveyJS, part by part</caption>
-              <thead>
-                <tr>
-                  <th scope="col">Part</th>
-                  <th scope="col">formancy</th>
-                  <th scope="col">SurveyJS</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <th scope="row">The renderer — draws a form, collects the answers</th>
-                  <td>Apache-2.0. Angular and React.</td>
-                  <td>Form Library, MIT. Angular, React, Vue and plain JavaScript.</td>
-                </tr>
-                <tr>
-                  <th scope="row">The visual builder — where forms are edited</th>
-                  <td>Apache-2.0. The whole builder, in Angular and in React.</td>
-                  <td>
-                    Survey Creator: a commercial licence for each developer who works with it.
-                  </td>
-                </tr>
-                <tr>
-                  <th scope="row">The backend — keeps forms and answers, checks what comes back</th>
-                  <td>
-                    Optional and self-hosted, Apache-2.0: versioned forms, every submission
-                    re-checked by the engine the browser ran, files, webhooks.
-                  </td>
-                  <td>
-                    None: client-side libraries, joined to a backend you write. Its form model can
-                    validate answers in Node.js.
-                  </td>
-                </tr>
-                <tr>
-                  <th scope="row">PDF and dashboards</th>
-                  <td>Not built.</td>
-                  <td>PDF Generator and Dashboard, each under the commercial licence.</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <p>
-            What SurveyJS has that this does not: Vue and plain JavaScript, a PDF generator, a
-            dashboard, and maturity — formancy&rsquo;s packages are beta.
-          </p>
-          <p className="ng-source">
-            SurveyJS&rsquo;s side is as its own{' '}
-            <a href={SURVEYJS.licensing} rel="noreferrer noopener">
-              licensing page
-            </a>
-            ,{' '}
-            <a href={SURVEYJS.creator} rel="noreferrer noopener">
-              Survey Creator documentation
-            </a>{' '}
-            and{' '}
-            <a href={SURVEYJS.architecture} rel="noreferrer noopener">
-              architecture page
-            </a>{' '}
-            stated them on {SURVEYJS_CHECKED}. A licence is its vendor&rsquo;s to change; read
-            theirs before you decide.
-          </p>
-        </section>
       </main>
       <SiteFooter />
     </div>

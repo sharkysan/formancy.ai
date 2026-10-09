@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test } from 'vitest'
 import { cleanup, render, screen, within } from '@testing-library/react'
 import compatibility from '../../../compatibility.json'
-import { AngularBuilderPage, STARTER, SURVEYJS_CHECKED, testedOn } from './angular-builder-page.js'
+import { AngularBuilderPage, STARTER, testedOn } from './angular-builder-page.js'
 
 /**
  * `/angular-form-builder/`. Its prose is the kind that drifts, so what can be derived is —
@@ -37,32 +37,5 @@ describe('the Angular form builder page', () => {
       expect(versions.getByText(testedOn(list), { exact: false })).toBeTruthy()
     }
     expect(testedOn(['22.0.0', '^22'])).toBe('22.0.0 and the newest 22')
-  })
-
-  test('compares with SurveyJS part by part, dated and pointing at SurveyJS’s own pages', () => {
-    // A statement about somebody else's licence is true on a day. Undated, it is a claim
-    // this repository cannot keep true, about a thing it does not control.
-    render(<AngularBuilderPage />)
-    const section = within(
-      screen.getByRole('region', { name: 'If you are comparing it with SurveyJS' }),
-    )
-
-    const table = section.getByRole('table', { name: 'formancy and SurveyJS, part by part' })
-    expect(
-      within(table)
-        .getAllByRole('rowheader')
-        .map((row) => row.textContent),
-    ).toEqual([
-      'The renderer — draws a form, collects the answers',
-      'The visual builder — where forms are edited',
-      'The backend — keeps forms and answers, checks what comes back',
-      'PDF and dashboards',
-    ])
-    expect(section.getByText(new RegExp(SURVEYJS_CHECKED))).toBeTruthy()
-    const sources = section
-      .getAllByRole('link')
-      .map((link) => link.getAttribute('href') ?? '')
-      .filter((href) => href.startsWith('https://surveyjs.io/'))
-    expect(sources).toHaveLength(3)
   })
 })

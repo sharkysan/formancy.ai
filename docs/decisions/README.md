@@ -236,8 +236,9 @@ listed under the sections they belong to above.
 | [0133](0133-the-angular-starter-is-the-builder-and-the-form.md) | The Angular starter is the builder and the form, side by side | accepted |
 | [0134](0134-the-versions-it-says-are-the-versions-it-runs.md) | The versions formancy says it supports are the versions it runs | accepted |
 | [0135](0135-a-block-is-a-field-with-its-rules.md) | A block is a field with its rules and its words, and the host keeps it | accepted |
-| [0136](0136-the-angular-page-runs-the-starter.md) | The Angular page runs the starter, and dates what it says about others | accepted |
+| [0136](0136-the-angular-page-runs-the-starter.md) | The Angular page runs the starter, and dates what it says about others | accepted; comparison reversed by 0141 |
 | [0137](0137-a-paged-forms-layout-is-drawn-a-page-at-a-time.md) | A paged form's layout is drawn a page at a time | accepted |
 | [0138](0138-a-ranking-stores-the-order-chosen.md) | A ranking stores the order chosen, starts empty, and is put in order with buttons | accepted |
 | [0139](0139-a-matrix-answers-one-question-per-row.md) | A matrix answers one question per row, and stores the rows answered | accepted |
 | [0140](0140-spec-4-freezes-with-the-two-types-it-opened-for.md) | Spec 4 freezes with the two types it was opened for, and nothing opens version 5 yet | accepted |
+| [0141](0141-the-angular-page-compares-with-no-other-product.md) | The Angular page compares formancy with no other product | accepted |
