@@ -1,7 +1,10 @@
 import { diffSchemas, schemaHash } from '@formancy/spec'
 import type { FormSchema } from '@formancy/spec'
 import { describe, expect, test } from 'vitest'
+import type { AuthoringResult } from './authoring.js'
 import { createBuilderText } from './messages.js'
+import { BUILDER_MESSAGES_DE } from './messages-de.js'
+import { BUILDER_MESSAGES_FR } from './messages-fr.js'
 import { applyProposal, proposalStatus, proposeEdit } from './proposal.js'
 import { createBuilderSession } from './session.js'
 import { base, clone } from './session.test.js'
@@ -186,11 +189,28 @@ describe('what the prompt pane says', () => {
   const english = createBuilderText()
   const idle = {
     busy: false,
-    attempts: undefined,
-    failed: false,
+    result: undefined,
     proposal: undefined,
     refusal: undefined,
   }
+  /** A run's ending, as `authorForm` reports it. */
+  const ended = (
+    how: 'gave-up' | 'stopped' | 'unreachable',
+    attempts: number,
+    reason?: string,
+  ): AuthoringResult => ({
+    ok: false,
+    attempts,
+    problems: [],
+    lastAnswer: '',
+    ended: how,
+    ...(reason === undefined ? {} : { reason }),
+  })
+  const written = (attempts: number): AuthoringResult => ({
+    ok: true,
+    document: withPhone(base),
+    attempts,
+  })
 
   test('a refusal outranks a proposal, because it is about the button just pressed', () => {
     const proposal = proposeEdit(base, withPhone(base))
@@ -203,7 +223,7 @@ describe('what the prompt pane says', () => {
   test('counts changes in the language’s plural, which "1 changes, none of which" did not', () => {
     const one = proposeEdit(base, withPhone(base))
 
-    expect(proposalStatus({ ...idle, proposal: one, attempts: 1 }, english)).toBe(
+    expect(proposalStatus({ ...idle, proposal: one, result: written(1) }, english)).toBe(
       english('prompt.status.ready', { count: 1 }),
     )
     expect(english('prompt.status.ready', { count: 1 })).toContain('1 change, which does not')
@@ -212,15 +232,54 @@ describe('what the prompt pane says', () => {
   test('says how many goes the model took when it took more than one', () => {
     const proposal = proposeEdit(base, withPhone(base))
 
-    expect(proposalStatus({ ...idle, proposal, attempts: 3 }, english)).toContain(
+    expect(proposalStatus({ ...idle, proposal, result: written(3) }, english)).toContain(
       'after 3 attempts',
     )
   })
 
   test('and says nothing was applied when every attempt failed', () => {
-    expect(proposalStatus({ ...idle, failed: true, attempts: 2 }, english)).toBe(
+    expect(proposalStatus({ ...idle, result: ended('gave-up', 2) }, english)).toBe(
       english('prompt.status.failed', { count: 2 }),
     )
     expect(proposalStatus(idle, english)).toBe('')
+  })
+
+  test('a model that could not be reached is said to be that, with the host’s reason', () => {
+    /*
+     * The panes built this failure by hand with `attempts: 0`, and the status
+     * read "0 attempts, and the document still did not work" — so a person
+     * reworded an instruction that had never reached a model, while the network
+     * was down or the key was refused.
+     */
+    const said = proposalStatus({ ...idle, result: ended('unreachable', 1, 'fetch failed') }, english)
+
+    expect(said).toBe('Nothing was applied. The model could not be reached: fetch failed')
+    expect(said).not.toMatch(/attempt|did not work/)
+  })
+
+  test('a run the person stopped is said to be stopped, not failed', () => {
+    // A stop after two corrections is not a document that failed twice.
+    const said = proposalStatus({ ...idle, result: ended('stopped', 2) }, english)
+
+    expect(said).toBe('Stopped. Nothing was applied.')
+  })
+
+  test('and both are said in the author’s language', () => {
+    // The catalogues are complete by type; this is that the status reads them.
+    const german = createBuilderText({ locale: 'de', messages: BUILDER_MESSAGES_DE })
+    const french = createBuilderText({ locale: 'fr', messages: BUILDER_MESSAGES_FR })
+    const unreachable = { ...idle, result: ended('unreachable', 1, 'fetch failed') }
+    const stopped = { ...idle, result: ended('stopped', 1) }
+
+    expect(proposalStatus(unreachable, german)).toBe(
+      german('prompt.status.unreachable', { reason: 'fetch failed' }),
+    )
+    expect(proposalStatus(stopped, german)).toBe(german('prompt.status.stopped'))
+    expect(proposalStatus(unreachable, french)).toBe(
+      french('prompt.status.unreachable', { reason: 'fetch failed' }),
+    )
+    expect(proposalStatus(stopped, french)).toBe(french('prompt.status.stopped'))
+    expect(german('prompt.status.stopped')).not.toBe(english('prompt.status.stopped'))
+    expect(french('prompt.status.stopped')).not.toBe(english('prompt.status.stopped'))
   })
 })

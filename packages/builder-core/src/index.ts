@@ -1,14 +1,16 @@
-export { authorForm } from './authoring.js'
+export { authorForm, createStop } from './authoring.js'
 export { applyProposal, proposalStatus, proposeEdit } from './proposal.js'
 export type { EditProposal } from './proposal.js'
 export { comparedToLastRun, scenarioStatus } from './scenario-runs.js'
 export type { ScenarioRunChange } from './scenario-runs.js'
 export type {
   AskModel,
+  AskTurn,
   AuthoringOptions,
   AuthoringPrompt,
   AuthoringProblem,
   AuthoringResult,
+  Stop,
 } from './authoring.js'
 // The builder’s own words, in the language of the person building (0114). A
 // session carries one; the functions that name things take one and default to

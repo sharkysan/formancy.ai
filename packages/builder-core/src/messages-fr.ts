@@ -367,6 +367,7 @@ export const BUILDER_MESSAGES_FR = {
     'Un formulaire de contact avec une adresse e-mail et un message, et un numéro de téléphone seulement si la personne demande à être rappelée',
   'prompt.write': 'Rédiger',
   'prompt.writing': 'Rédaction…',
+  'prompt.stop': 'Arrêter',
   'prompt.review': 'Examiner ces modifications',
   'prompt.review.costs':
     'Examiner ces modifications — certaines touchent des réponses déjà recueillies',
@@ -399,6 +400,8 @@ export const BUILDER_MESSAGES_FR = {
     one: 'Rien n’a été appliqué. {count} tentative, et le document ne fonctionnait toujours pas.',
     other: 'Rien n’a été appliqué. {count} tentatives, et le document ne fonctionnait toujours pas.',
   },
+  'prompt.status.stopped': 'Arrêté. Rien n’a été appliqué.',
+  'prompt.status.unreachable': 'Rien n’a été appliqué. Le modèle n’a pas pu être joint : {reason}',
 
   'scenarios.label': 'Scénarios',
   'scenarios.none': 'Aucun scénario.',

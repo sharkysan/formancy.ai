@@ -53,12 +53,26 @@ const say = (...answers: string[]) => {
   return vi.fn(() => Promise.resolve(answers[Math.min(at++, answers.length - 1)] ?? ''))
 }
 
+/** A model that waits to be told what to say, and records whether it was told to stop. */
+const held = () => {
+  let release: (answer: string) => void = () => undefined
+  const cancelled = vi.fn()
+  const model = vi.fn<AskModel>(
+    (_prompt, turn) =>
+      new Promise<string>((resolve) => {
+        release = resolve
+        turn.onCancel(cancelled)
+      }),
+  )
+  return { model, cancelled, release: (answer: string) => release(answer) }
+}
+
 async function mount(
   session: ReturnType<typeof createBuilderSession>,
   ask?: AskModel,
   attempts?: number,
-): Promise<void> {
-  await render(FormancyPromptPane, {
+) {
+  return render(FormancyPromptPane, {
     // `componentInputs` would be the typed route; this component's inputs are
     // a session, a function and a number, and the helper is what keeps the
     // cases about the behaviour rather than about mounting.
@@ -183,6 +197,27 @@ describe('when it cannot', () => {
     expect(session.document()).toEqual(START)
   })
 
+  test('a model that cannot be reached is said to be that, not a document that failed', async () => {
+    /*
+     * The pane caught the rejection and built a failure with `attempts: 0`, and
+     * the status read "0 attempts, and the document still did not work" — so a
+     * person reworded an instruction that never reached a model.
+     */
+    const user = userEvent.setup()
+    const session = createBuilderSession(START)
+    await mount(session, () => Promise.reject(new Error('fetch failed')))
+
+    await instruct(user, 'a contact form')
+
+    await waitFor(() =>
+      expect(screen.getByRole('status').textContent).toBe(
+        'Nothing was applied. The model could not be reached: fetch failed',
+      ),
+    )
+    // Nothing was wrong with an answer, because there was none: no problem list.
+    expect(screen.queryByRole('listitem')).toBeNull()
+  })
+
   test('a model that throws is reported rather than swallowed', async () => {
     const user = userEvent.setup()
     const session = createBuilderSession(START)
@@ -193,5 +228,59 @@ describe('when it cannot', () => {
     // A network failure, a rate limit, a missing key. A button that silently
     // does nothing is the worst version of this.
     await waitFor(() => expect(screen.getByText(/429 rate limited/)).toBeTruthy())
+  })
+})
+
+describe('while it is working', () => {
+  test('can be stopped, and an answer that arrives afterwards is never proposed', async () => {
+    /*
+     * Nothing could stop a run: a slow model held the pane busy for as long as
+     * it liked. And the answer to an instruction somebody has walked away from
+     * must not turn up later as a proposal, where it reads as the answer to
+     * whatever they asked next.
+     */
+    const user = userEvent.setup()
+    const session = createBuilderSession(START)
+    const slow = held()
+    await mount(session, slow.model)
+
+    await instruct(user, 'a contact form')
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Stop' })).toBeTruthy())
+    await user.click(screen.getByRole('button', { name: 'Stop' }))
+
+    await waitFor(() =>
+      expect(screen.getByRole('status').textContent).toBe('Stopped. Nothing was applied.'),
+    )
+    // The host was told, so it can abandon the request rather than pay for it.
+    expect(slow.cancelled).toHaveBeenCalledTimes(1)
+    expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull()
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Write it' }).disabled).toBe(false)
+
+    slow.release(JSON.stringify(WRITTEN))
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(screen.queryByRole('heading', { name: /Review/ })).toBeNull()
+    expect(screen.getByRole('status').textContent).toBe('Stopped. Nothing was applied.')
+    expect(session.document()).toEqual(START)
+  })
+
+  test('a pane that is destroyed stops its run', async () => {
+    // Otherwise the host's request runs on for an answer nothing will show —
+    // a builder closed mid-run, or the pane swapped for another.
+    const user = userEvent.setup()
+    const session = createBuilderSession(START)
+    const slow = held()
+    const { fixture } = await mount(session, slow.model)
+
+    await instruct(user, 'a contact form')
+    await waitFor(() => expect(slow.model).toHaveBeenCalled())
+    fixture.destroy()
+
+    expect(slow.cancelled).toHaveBeenCalledTimes(1)
+  })
+
+  test('offers no stop when there is nothing to stop', async () => {
+    await mount(createBuilderSession(START), say(JSON.stringify(WRITTEN)))
+
+    expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull()
   })
 })

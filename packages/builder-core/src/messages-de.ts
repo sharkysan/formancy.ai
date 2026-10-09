@@ -362,6 +362,7 @@ export const BUILDER_MESSAGES_DE = {
     'Ein Kontaktformular mit E-Mail-Adresse und Nachricht, und einer Telefonnummer nur, wenn jemand um Rückruf bittet',
   'prompt.write': 'Schreiben',
   'prompt.writing': 'Wird geschrieben …',
+  'prompt.stop': 'Anhalten',
   'prompt.review': 'Diese Änderungen prüfen',
   'prompt.review.costs': 'Diese Änderungen prüfen – einige betreffen bereits erfasste Antworten',
   'prompt.apply': 'Diese Änderungen übernehmen',
@@ -393,6 +394,8 @@ export const BUILDER_MESSAGES_DE = {
     one: 'Nichts wurde übernommen. {count} Versuch, und das Dokument funktionierte immer noch nicht.',
     other: 'Nichts wurde übernommen. {count} Versuche, und das Dokument funktionierte immer noch nicht.',
   },
+  'prompt.status.stopped': 'Angehalten. Nichts wurde übernommen.',
+  'prompt.status.unreachable': 'Nichts wurde übernommen. Das Modell war nicht erreichbar: {reason}',
 
   'scenarios.label': 'Szenarien',
   'scenarios.none': 'Keine Szenarien.',

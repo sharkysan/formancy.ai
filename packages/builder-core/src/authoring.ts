@@ -3,7 +3,7 @@ import { validateSchema } from '@formancy/spec/validate'
 import type { FormSchema } from '@formancy/spec'
 import { engineRefusal, expressionProblems } from '@formancy/core'
 import { askChecked, readAnswer } from './answers.js'
-import type { AskModel, Verdict } from './answers.js'
+import type { AskModel, Stop, Verdict } from './answers.js'
 
 /**
  * Writing a form from an instruction, and refusing to hand back one that does not work.
@@ -18,7 +18,8 @@ import type { AskModel, Verdict } from './answers.js'
  * vendor, no API key, no network call and no opinion about who pays for tokens.
  */
 
-export type { AskModel, AuthoringPrompt } from './answers.js'
+export { createStop } from './answers.js'
+export type { AskModel, AskTurn, AuthoringPrompt, Stop } from './answers.js'
 
 /**
  * Why an attempt was rejected, in the words the model is given back.
@@ -36,10 +37,21 @@ export type AuthoringResult =
   | { readonly ok: true; readonly document: FormSchema; readonly attempts: number }
   | {
       readonly ok: false
+      /** Turns asked, counting one that was stopped or could not be made. */
       readonly attempts: number
+      /** What was wrong with each answer that came, in order. */
       readonly problems: readonly AuthoringProblem[]
-      /** The last thing the model said, so a person can see what went wrong. */
+      /** The last answer that was checked, so a person can see what went wrong. */
       readonly lastAnswer: string
+      /**
+       * Why there is no document. `gave-up`: every attempt answered and none
+       * worked. `stopped`: the person stopped the run, and an answer still on its
+       * way is discarded. `unreachable`: the host's model threw — the network, a
+       * refused key — so nothing about the instruction was tried.
+       */
+      readonly ended: 'gave-up' | 'stopped' | 'unreachable'
+      /** When unreachable: the message of what the host's model threw, to be shown as text. */
+      readonly reason?: string
     }
 
 export interface AuthoringOptions {
@@ -56,8 +68,21 @@ export interface AuthoringOptions {
    * different request and produces a different answer.
    */
   readonly current?: FormSchema
+  /**
+   * The person's stop, from `createStop`. Pressed while a turn waits, the run
+   * ends at once as `stopped` — whether or not the host's model listens for
+   * it — and whatever that turn answers later is discarded.
+   */
+  readonly stop?: Stop
 }
 
+/**
+ * A working form from an instruction, or why there is none.
+ *
+ * Resolves on every ending, the host's model throwing included: an unreachable
+ * model is a way the run ended, not an error in it, and a caller that had to
+ * catch it built the failure by hand and called it a document that did not work.
+ */
 export async function authorForm(
   ask: AskModel,
   instruction: string,
@@ -69,9 +94,15 @@ export async function authorForm(
     (latest: AuthoringProblem | undefined) => ({
       system,
       user: userPrompt(instruction, options.current, latest),
+      // For a host that keeps a conversation: the model has its last answer
+      // already, and needs only what was wrong with it.
+      ...(latest === undefined ? {} : { followUp: complaint(latest) }),
     }),
     checkDocument,
-    options.attempts === undefined ? {} : { attempts: options.attempts },
+    {
+      ...(options.attempts === undefined ? {} : { attempts: options.attempts }),
+      ...(options.stop === undefined ? {} : { stop: options.stop }),
+    },
   )
   return asked.ok ? { ok: true, document: asked.value, attempts: asked.attempts } : asked
 }
@@ -145,11 +176,12 @@ function userPrompt(
 
   parts.push(instruction)
 
-  if (latest !== undefined) {
-    parts.push('')
-    parts.push('Your previous answer was rejected. Fix exactly this and answer again:')
-    parts.push(latest.detail)
-  }
+  if (latest !== undefined) parts.push('', complaint(latest))
 
   return parts.join('\n')
+}
+
+/** What was wrong last time, as the model is told it — in the full prompt and as a follow-up alike. */
+function complaint(problem: AuthoringProblem): string {
+  return `Your previous answer was rejected. Fix exactly this and answer again:\n${problem.detail}`
 }

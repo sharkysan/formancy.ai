@@ -1,5 +1,6 @@
 import { BLOCK_MESSAGES } from './messages-blocks.js'
 import { LOGIC_MESSAGES } from './messages-logic.js'
+import { MODEL_MESSAGES } from './messages-model.js'
 
 import { renderSchemaError } from '@formancy/spec'
 import type { SchemaError, SchemaErrorCode } from '@formancy/spec'
@@ -354,45 +355,6 @@ const BUILDER_OWN_MESSAGES = {
   'translations.preview': 'Preview in {locale}',
   'translations.previewSubmit': 'Submit',
 
-  // ------------------------------------------------------------------ the prompt pane
-  'prompt.label': 'Describe the form, or the change you want',
-  'prompt.example':
-    'A contact form with an email address and a message, and a phone number only if they ask to be called back',
-  'prompt.write': 'Write it',
-  'prompt.writing': 'Writing…',
-  'prompt.review': 'Review these changes',
-  'prompt.review.costs': 'Review these changes — some affect answers already collected',
-  'prompt.apply': 'Apply these changes',
-  'prompt.discard': 'Discard',
-  'prompt.lastAnswer': 'What the model last answered',
-  'prompt.status.writing': 'Writing the form, and checking it.',
-  'prompt.status.refused': 'Not applied. {reason}',
-  'prompt.status.ready': {
-    one: 'Ready to review: {count} change, which does not affect answers already collected. Nothing has been applied.',
-    other:
-      'Ready to review: {count} changes, none of which affect answers already collected. Nothing has been applied.',
-  },
-  'prompt.status.readyCosts': {
-    one: 'Ready to review: {count} change, and it affects answers already collected. Nothing has been applied.',
-    other:
-      'Ready to review: {count} changes, and some of them affect answers already collected. Nothing has been applied.',
-  },
-  // Said when the model needed correcting: one to read more carefully.
-  'prompt.status.readyAfter': {
-    one: 'Ready to review after {attempts} attempts: {count} change, which does not affect answers already collected. Nothing has been applied.',
-    other:
-      'Ready to review after {attempts} attempts: {count} changes, none of which affect answers already collected. Nothing has been applied.',
-  },
-  'prompt.status.readyAfterCosts': {
-    one: 'Ready to review after {attempts} attempts: {count} change, and it affects answers already collected. Nothing has been applied.',
-    other:
-      'Ready to review after {attempts} attempts: {count} changes, and some of them affect answers already collected. Nothing has been applied.',
-  },
-  'prompt.status.failed': {
-    one: 'Nothing was applied. {count} attempt, and the document still did not work.',
-    other: 'Nothing was applied. {count} attempts, and the document still did not work.',
-  },
-
   // --------------------------------------------------------------- the scenario panel
   'scenarios.label': 'Scenarios',
   'scenarios.none': 'No scenarios.',
@@ -417,11 +379,12 @@ const BUILDER_OWN_MESSAGES = {
 
 } as const satisfies Record<string, Message>
 
-/** The whole catalogue: the builder's own words, the logic editor's, and the blocks'. */
+/** The whole catalogue: the builder's own words, the logic editor's, the blocks', and the prompt pane's. */
 export const BUILDER_MESSAGES = {
   ...BUILDER_OWN_MESSAGES,
   ...LOGIC_MESSAGES,
   ...BLOCK_MESSAGES,
+  ...MODEL_MESSAGES,
 } as const satisfies Record<string, Message>
 
 export type BuilderMessageId = keyof typeof BUILDER_MESSAGES

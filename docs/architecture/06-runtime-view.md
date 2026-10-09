@@ -289,3 +289,42 @@ same file sent again, as the reply invites, is not refused as busy; a release th
 the reply as it was, and the lease runs out on its own. A write that outlasts its lease is the
 one thing the lease does not stop: its settle is refused, but its bytes land under the same key
 ([§11.2](11-risks-and-debt.md)).
+
+## 6.7 Writing a form from a sentence
+
+```
+pane                         authorForm, in builder-core                      host's AskModel
+────                         ───────────────────────────                      ───────────────
+Write it
+  stop = createStop()
+  busy, Stop shown    ───▶   for attempt 1 … limit
+                               stopped already? ──▶ ended: stopped
+                               ask({ system, user, attempt, limit,
+                                     followUp from attempt 2 }, turn)  ───▶  its request
+                                 ├─ Stop pressed, or the pane goes away
+                                 │     ──▶ turn.onCancel ──────────────────▶  abort, if it listens
+                                 │     ──▶ ended: stopped; a later answer settles nothing
+                                 ├─ rejected or threw ──▶ ended: unreachable, with the reason
+                                 ▼
+                               readAnswer → validateSchema → the engine's compile
+                                          → expressionProblems
+                                 ├─ refused ──▶ the complaint goes into the next turn
+                                 ▼
+                               ok: the document
+                             every attempt refused ──▶ ended: gave-up
+                      ◀───   resolves, however it ended
+
+  proposalStatus(result)           ──▶ the live region: one sentence for each ending
+  proposeEdit(current, document)   ──▶ the review ──▶ applyProposal (0109)
+```
+
+**The stop is the person's, and it does not wait for the host.** Each turn is raced against
+it, so the run ends the moment Stop is pressed, or the pane is unmounted or destroyed. The
+host is told through `turn.onCancel` and may abort its request. A host that ignores it is
+stopped all the same, and its answer, when it comes, resolves a promise nothing is waiting
+on. **A host's error is an ending, not an exception.** `authorForm` resolves with
+`ended: 'unreachable'` and the error's message, so the sentence the pane says is decided once,
+in `proposalStatus`, and not by two panes each catching the rejection
+([0157](../decisions/0157-a-models-turn-can-be-stopped.md)). Only the latest complaint goes
+back to the model, in `user` for a host that keeps no conversation and alone as `followUp`
+for one that does ([0056](../decisions/0056-agents-get-the-checks.md)).

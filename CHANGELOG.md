@@ -10,6 +10,40 @@ later.
 
 ## Unreleased
 
+**Fixed: a model that could not be reached was reported as "0 attempts, and the document
+still did not work."** When the host's `AskModel` rejected — the network down, a key refused —
+both prompt panes caught the error and built a failure by hand with `attempts: 0`, filing the
+error's message as an answer that was not JSON. So a person reworded an instruction that had
+never reached a model. The status now says *"Nothing was applied. The model could not be
+reached: …"* with the host's message, in English, German and French. The playground's stand-in
+model had the same shape: cancelling its dialog answered with an empty string, while its
+comment said it handed back the current document. The empty string failed as not JSON and
+opened a dialog for every remaining attempt. Cancelling now ends the run as unreachable. Each
+case failed on `main` first.
+
+**Changed: `authorForm` resolves when the host's model throws, instead of rejecting. This
+breaks a direct caller.** The run ends as `{ ok: false, ended: 'unreachable', reason }`, with
+the error's message as `reason`. Every failure now carries `ended`: `gave-up`, `stopped` or
+`unreachable`. A `catch` around `authorForm` no longer fires, and code that read `ok: false` as
+"the document did not work" has to read `ended`. `proposalStatus` takes the run's `result` in
+place of `attempts` and `failed`, so a caller of it gets a compile error rather than a silent
+change. Why: the rejection left each pane to decide what had happened, and both decided wrongly
+(the fix above). One function in `@formancy/builder-core` now decides
+([0157](docs/decisions/0157-a-models-turn-can-be-stopped.md)).
+
+**Added: a model's run can be stopped.** Both prompt panes show **Stop** while a run waits, and
+stop the run when they are unmounted or destroyed. Underneath, `authorForm` takes `stop` from the
+new `createStop()` and races each turn against it, so a run ends at once even when the host
+ignores the stop. An answer that arrives afterwards is discarded rather than proposed, where it
+would read as the answer to whatever was asked next. `AskModel` takes a second argument, `turn`,
+whose `onCancel` tells the host so it can abandon the request:
+`const c = new AbortController(); turn.onCancel(() => c.abort())`. A callback rather than an
+`AbortSignal`, because `@formancy/builder-core` has no DOM types. An `AskModel` written with one
+parameter still compiles and is still stopped. Each prompt also carries `attempt` and `limit`,
+and from the second turn `followUp`, the complaint alone, for a host that keeps a conversation
+with its model. `user` is unchanged. The quickstart for agents now shows an `AskModel` calling
+the host's own endpoint, with the key on the server.
+
 **Fixed: the playground's Angular builder lacked two panes the React one has.** Under
 *Fields* it had no prompt pane, so describing a change in words could only be tried in React,
 and under *Arrangement* nothing showed the selected layout node's properties, so a table's

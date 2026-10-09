@@ -2,6 +2,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest'
 import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
 import { createBuilderSession } from '@formancy/builder-core'
+import type { AskModel } from '@formancy/builder-core'
 import type { FormSchema } from '@formancy/spec'
 import { PromptPane } from './prompt-pane.js'
 
@@ -37,6 +38,20 @@ const WRITTEN = {
 const say = (...answers: string[]) => {
   let at = 0
   return vi.fn(() => Promise.resolve(answers[Math.min(at++, answers.length - 1)] ?? ''))
+}
+
+/** A model that waits to be told what to say, and records whether it was told to stop. */
+const held = () => {
+  let release: (answer: string) => void = () => undefined
+  const cancelled = vi.fn()
+  const model = vi.fn<AskModel>(
+    (_prompt, turn) =>
+      new Promise<string>((resolve) => {
+        release = resolve
+        turn.onCancel(cancelled)
+      }),
+  )
+  return { model, cancelled, release: (answer: string) => release(answer) }
 }
 
 const ask = async (user: ReturnType<typeof userEvent.setup>, what: string): Promise<void> => {
@@ -223,6 +238,27 @@ describe('when it cannot', () => {
     expect(screen.getByText('I am afraid I cannot')).toBeTruthy()
   })
 
+  test('a model that cannot be reached is said to be that, not a document that failed', async () => {
+    /*
+     * The pane caught the rejection and built a failure with `attempts: 0`, and
+     * the status read "0 attempts, and the document still did not work" — so a
+     * person reworded an instruction that never reached a model.
+     */
+    const user = userEvent.setup()
+    const session = createBuilderSession(START)
+    render(<PromptPane session={session} ask={() => Promise.reject(new Error('fetch failed'))} />)
+
+    await ask(user, 'a contact form')
+
+    await waitFor(() =>
+      expect(screen.getByRole('status').textContent).toBe(
+        'Nothing was applied. The model could not be reached: fetch failed',
+      ),
+    )
+    // Nothing was wrong with an answer, because there was none: no problem list.
+    expect(screen.queryByRole('listitem')).toBeNull()
+  })
+
   test('a model that throws is reported rather than swallowed', async () => {
     const user = userEvent.setup()
     const session = createBuilderSession(START)
@@ -258,6 +294,57 @@ describe('while it is working', () => {
     release(JSON.stringify(WRITTEN))
     await waitFor(() => expect(screen.getByRole('heading', { name: /Review/ })).toBeTruthy())
     expect(slow).toHaveBeenCalledTimes(1)
+  })
+
+  test('can be stopped, and an answer that arrives afterwards is never proposed', async () => {
+    /*
+     * Nothing could stop a run: a slow model held the pane busy for as long as
+     * it liked. And the answer to an instruction somebody has walked away from
+     * must not turn up later as a proposal, where it reads as the answer to
+     * whatever they asked next.
+     */
+    const user = userEvent.setup()
+    const session = createBuilderSession(START)
+    const slow = held()
+    render(<PromptPane session={session} ask={slow.model} />)
+
+    await ask(user, 'a contact form')
+    await user.click(screen.getByRole('button', { name: 'Stop' }))
+
+    await waitFor(() =>
+      expect(screen.getByRole('status').textContent).toBe('Stopped. Nothing was applied.'),
+    )
+    // The host was told, so it can abandon the request rather than pay for it.
+    expect(slow.cancelled).toHaveBeenCalledTimes(1)
+    expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull()
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Write it' }).disabled).toBe(false)
+
+    slow.release(JSON.stringify(WRITTEN))
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(screen.queryByRole('heading', { name: /Review/ })).toBeNull()
+    expect(screen.getByRole('status').textContent).toBe('Stopped. Nothing was applied.')
+    expect(session.document()).toEqual(START)
+  })
+
+  test('a pane taken off the screen stops its run', async () => {
+    // Otherwise the host's request runs on for an answer nothing will show —
+    // a builder closed mid-run, or the pane swapped for another.
+    const user = userEvent.setup()
+    const session = createBuilderSession(START)
+    const slow = held()
+    const { unmount } = render(<PromptPane session={session} ask={slow.model} />)
+
+    await ask(user, 'a contact form')
+    unmount()
+
+    expect(slow.cancelled).toHaveBeenCalledTimes(1)
+  })
+
+  test('offers no stop when there is nothing to stop', () => {
+    const session = createBuilderSession(START)
+    render(<PromptPane session={session} ask={say(JSON.stringify(WRITTEN))} />)
+
+    expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull()
   })
 
   test('an empty instruction is not sent', async () => {

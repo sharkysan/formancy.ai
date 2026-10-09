@@ -1,7 +1,21 @@
-import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core'
-import { applyProposal, authorForm, proposalStatus, proposeEdit } from '@formancy/builder-core'
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  input,
+  signal,
+} from '@angular/core'
+import {
+  applyProposal,
+  authorForm,
+  createStop,
+  proposalStatus,
+  proposeEdit,
+} from '@formancy/builder-core'
 import { BuilderTextPipe } from './text.pipe.js'
-import type { AskModel, AuthoringResult, BuilderSession, EditProposal } from './types.js'
+import type { AskModel, AuthoringResult, BuilderSession, EditProposal, Stop } from './types.js'
 
 /**
  * Describing a form in words, seeing what that did, and then deciding.
@@ -28,6 +42,11 @@ import type { AskModel, AuthoringResult, BuilderSession, EditProposal } from './
  * The host's model. `ask` is an input, exactly as it is a prop in React. No
  * vendor, no key, no network call in this package — and with no model given
  * the pane renders nothing at all rather than a button that cannot work.
+ *
+ * **A run can be stopped**, by the button while it waits and by the pane being
+ * destroyed. Either ends it at once, tells the host so it can abandon the
+ * request, and discards whatever the model says afterwards
+ * ([0157](../../../docs/decisions/0157-a-models-turn-can-be-stopped.md)).
  */
 @Component({
   selector: 'formancy-prompt-pane',
@@ -48,6 +67,9 @@ import type { AskModel, AuthoringResult, BuilderSession, EditProposal } from './
         <button type="button" [disabled]="busy() || instruction().trim() === ''" (click)="run()">
           {{ (busy() ? 'prompt.writing' : 'prompt.write') | builderText: text() }}
         </button>
+        @if (busy()) {
+          <button type="button" (click)="stop()">{{ 'prompt.stop' | builderText: text() }}</button>
+        }
 
         <!-- One polite region. The work takes seconds, and a proposal that only
              appears visually is one a screen-reader user never learns about. -->
@@ -119,28 +141,39 @@ export class FormancyPromptPane {
   protected readonly inputId = `formancy-prompt-${String(this.serial)}`
   protected readonly reviewId = `formancy-prompt-review-${String(this.serial)}`
 
+  /** A run that ended with answers that did not work — not one stopped, or unreachable, before any came. */
   protected readonly failure = computed(() => {
     const outcome = this.result()
-    return outcome === undefined || outcome.ok ? undefined : outcome
+    return outcome === undefined || outcome.ok || outcome.problems.length === 0 ? undefined : outcome
   })
+
+  /**
+   * The stop for the run in flight, if one is. A field, not a signal: pressing
+   * it changes nothing on screen by itself — the run ending does, through `busy`.
+   */
+  private running: Stop | undefined
+
+  constructor() {
+    // A pane that is destroyed stops its run, so the host's request does not
+    // run on for an answer nothing will show.
+    inject(DestroyRef).onDestroy(() => this.running?.stop())
+  }
 
   /** Every word this pane shows, in the language the session was opened in (0114). */
   protected readonly text = computed(() => this.session().text)
 
   /** The one sentence the live region carries — builder-core's, as the React pane's is. */
-  protected readonly status = computed(() => {
-    const outcome = this.result()
-    return proposalStatus(
+  protected readonly status = computed(() =>
+    proposalStatus(
       {
         busy: this.busy(),
-        attempts: outcome?.attempts,
-        failed: outcome !== undefined && !outcome.ok,
+        result: this.result(),
         proposal: this.proposal(),
         refusal: this.refusal(),
       },
       this.text(),
-    )
-  })
+    ),
+  )
 
   protected async run(): Promise<void> {
     const ask = this.ask()
@@ -150,35 +183,34 @@ export class FormancyPromptPane {
     this.result.set(undefined)
     this.proposal.set(undefined)
     this.refusal.set(undefined)
+    const stop = createStop()
+    this.running = stop
     try {
       const session = this.session()
       const current = session.document()
       const attempts = this.attempts()
+      // Resolves however the run ends — a host's model that threw included, which
+      // it reports as unreachable with the host's reason rather than as a document
+      // that failed.
       const outcome = await authorForm(ask, this.instruction(), {
         // The document being edited, so "add a phone number" is a change
         // rather than a new form written from nothing.
         current,
+        stop,
         ...(attempts === undefined ? {} : { attempts }),
       })
       this.result.set(outcome)
       // Held against the document it was written for. Applying later checks
       // that the form has not moved in the meantime.
       if (outcome.ok) this.proposal.set(proposeEdit(current, outcome.document))
-    } catch (error) {
-      // The host's model threw: a network failure, a rate limit, a missing
-      // key. Said out loud, because a button that silently does nothing is
-      // the worst version of this.
-      this.result.set({
-        ok: false,
-        attempts: 0,
-        problems: [
-          { kind: 'not-json', detail: error instanceof Error ? error.message : String(error) },
-        ],
-        lastAnswer: '',
-      })
     } finally {
+      this.running = undefined
       this.busy.set(false)
     }
+  }
+
+  protected stop(): void {
+    this.running?.stop()
   }
 
   protected apply(): void {
