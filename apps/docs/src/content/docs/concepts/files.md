@@ -80,6 +80,12 @@ missing. Both fail at startup instead. Setting this and `FORMANCY_FILES_DIR`
 together is also refused, because two stores means files land in one and are
 looked for in the other.
 
+An empty value counts as unset, for the endpoint and for the directory. That is
+how the compose files switch stores: they point `FORMANCY_FILES_DIR` at their
+volume, and `.env` blanks it with `FORMANCY_FILES_DIR=""` —
+[Self-hosting](/docs/start/self-hosting/#switching-to-an-object-store-through-compose)
+has the block, and the release it needs.
+
 The region is part of the request signature rather than a label: a wrong one is a
 signature the store computes differently and rejects. Garage answers to whatever
 its own `s3_region` says.

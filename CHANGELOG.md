@@ -10,6 +10,29 @@ later.
 
 ## Unreleased
 
+**Fixed: the object store could not be used through either compose file — the server
+restart-looped.** Both files passed `FORMANCY_FILES_DIR` to the server as a literal path, so
+a deployment that set the `FORMANCY_S3_*` variables as `.env.example` says handed the server
+two stores, and it refused them — `Set FORMANCY_FILES_DIR or FORMANCY_S3_ENDPOINT, not both`
+— on every restart; measured with the published `v0.4.0` image, and the same in every
+release since `0.2.0`. The files now read `${FORMANCY_FILES_DIR-/var/lib/formancy/files}`,
+so `.env` can blank the directory, and the object-store block of `.env.example` does, with
+`FORMANCY_FILES_DIR=""`. **The server reads an empty `FORMANCY_FILES_DIR` or
+`FORMANCY_S3_ENDPOINT` as unset**: an empty directory used to resolve to the working
+directory, and an empty endpoint to demand four more settings. Blanking therefore needs a
+server with this change; `v0.4.0` and older read the empty string as a directory. **A `.env`
+that sets `FORMANCY_FILES_DIR` to some other path is now honoured** where compose ignored
+it, and is a directory inside the container unless a volume is mounted there too.
+`compose.test.ts` follows the object-store block through both files and asks the server's
+store settings — now a function of the environment rather than lines in `main.ts` — which
+store results. Its pass-through check reads the parsed environment's keys, where a comment
+naming a variable used to satisfy it, and its check that a secret stays mandatory in both
+files no longer skips a name with a digit in it.
+
+**Fixed: `compose.published.yaml` said nothing was in the registry.** `v0.2.0` to `v0.4.0`
+are, checked 2026-10-09; `v0.1.0` and `latest` are not. The self-hosting page said the same
+of its example version.
+
 **Corrected: the documentation named `@formancy/cli`, which does not exist.** The roadmap
 said `npx @formancy/cli types` emits a TypeScript type per form — given as the reason formancy
 does not copy form.io's untyped per-form API — and the migration guide and the versioning page

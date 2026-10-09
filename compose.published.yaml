@@ -4,11 +4,11 @@
 # when you have the repository and wrong when you do not: a self-hoster who wants
 # to run the product should not need a checkout and a build toolchain to do it.
 #
-# NOTHING IS IN THE REGISTRY YET. The release workflow builds, pushes and signs
-# the image, and no release has run it: v0.1.0 predates those steps and only
-# signed the SBOM. So this file works from the NEXT release onward, and the
-# version below is the shape rather than a tag you can pull today (checked
-# 2026-09-26). Until then, use `compose.yaml` and a checkout.
+# THE IMAGE IS PUBLISHED FROM v0.2.0 ONWARD. The release workflow builds, pushes
+# and signs it; v0.1.0 predates those steps and only signed the SBOM, so there is
+# no v0.1.0 image. Checked 2026-10-09 with `docker manifest inspect`: v0.2.0,
+# v0.3.0 and v0.4.0 are in the registry, v0.1.0 and `latest` are not. Pin the
+# release you want; the version below is an example.
 #
 #   curl -O https://raw.githubusercontent.com/sharkysan/formancy.ai/main/compose.published.yaml
 #   curl -O https://raw.githubusercontent.com/sharkysan/formancy.ai/main/.env.example
@@ -69,8 +69,9 @@ services:
       FORMANCY_CHALLENGE_SECRET:
       # An S3-compatible object store instead of the volume below, for a
       # deployment with more than one replica. Bare keys, so each is passed
-      # through only when it is set: the endpoint being absent is how the server
-      # knows to use local disk, and an empty string is not absent.
+      # through only when it is set: the endpoint being unset is how the server
+      # knows to use local disk. Switching also takes `FORMANCY_FILES_DIR=""` in
+      # `.env` -- see that variable below.
       FORMANCY_S3_ENDPOINT:
       FORMANCY_S3_BUCKET:
       FORMANCY_S3_REGION:
@@ -91,7 +92,17 @@ services:
       # Uploads are off until there is somewhere to put bytes. Pointed at the
       # volume below so they survive the container — a files directory inside a
       # container's own filesystem is a directory deleted on the next deploy.
-      FORMANCY_FILES_DIR: /var/lib/formancy/files
+      #
+      # `-`, not `:-`: the volume when `.env` leaves this out, and empty when
+      # `.env` says `FORMANCY_FILES_DIR=""`, which the server reads as no
+      # directory. That is how the object store above is switched on -- compose
+      # can blank a variable but not drop one, and a server told about two stores
+      # refuses to start. Written as a literal path, it restart-looped for
+      # everybody who followed the object-store block of .env.example.
+      #
+      # The image has to be newer than v0.4.0 for that. v0.4.0 and every image
+      # before it read the empty string as a directory, and refuse two stores.
+      FORMANCY_FILES_DIR: ${FORMANCY_FILES_DIR-/var/lib/formancy/files}
       FORMANCY_MAX_FILE_BYTES: ${FORMANCY_MAX_FILE_BYTES:-10485760}
     volumes:
       - formancy-files:/var/lib/formancy/files

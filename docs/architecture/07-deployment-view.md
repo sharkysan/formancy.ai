@@ -21,12 +21,12 @@ bytes has nothing to verify, and one who pulls them can check the cosign signatu
 and the CycloneDX attestation before starting anything
 ([0063](../decisions/0063-a-compose-file-for-the-published-image.md)).
 
-**The right-hand column runs for the first time with `0.2.0`.** The release workflow
-builds, pushes and signs the image; `v0.1.0` predates those steps, so no `v0.1.0` image
-exists. The file was written ahead of the artefact deliberately — the first release to
-publish an image should not also be the release that discovers nobody can run it — and a
-reader who gets `manifest unknown` from `docker pull` is looking at a release that has not
-landed rather than at a mistake in this document.
+**The right-hand column runs from `0.2.0` onward.** The release workflow builds, pushes
+and signs the image; `v0.1.0` predates those steps, so no `v0.1.0` image exists. The file
+was written ahead of the artefact deliberately — the first release to publish an image
+should not also be the release that discovers nobody can run it. Checked 2026-10-09 with
+`docker manifest inspect`: `v0.2.0` to `v0.4.0` are in the registry, `v0.1.0` and `latest`
+are not.
 
 Host port **5439**, not 5432, and the reason is written in the compose file: a
 locally installed PostgreSQL on 5432 produces a silent collision that presents
@@ -43,7 +43,10 @@ compose files pass the settings through; what they do not do is *host* a store,
 because a fresh Garage node accepts no data until a layout is assigned, and that
 is four commands after the container starts rather than anything compose can
 declare. So the drawn default is still a local volume, and a deployment wanting
-more than one replica runs Garage itself.
+more than one replica runs Garage itself. Pointing at it blanks the volume as well —
+`FORMANCY_FILES_DIR=""` in `.env`, which the server reads as no directory — because
+compose can empty a variable but not remove one, and a server told about two stores
+refuses to start.
 
 ## The intended deployment
 

@@ -72,7 +72,7 @@ What it does **not** do, and must not be assumed to do:
 | Renderer (React) | React `^19.0.0` (peer dependency) |
 | Renderer (Angular) | `@angular/core` `^22.0.0` (peer dependency), zoneless change detection. **Under a strict `style-src` Content Security Policy this package needs Angular's `ngCspNonce`**: it ships one component stylesheet, `:host { display: contents }`, which takes the recursing layout component's host element out of the box tree so a consumer's grid sees the same children it sees in React ([0073](../decisions/0073-a-host-element-is-not-a-layout.md)). Without it a table layout collapses to one column. `@formancy/angular/material` additionally needs `@angular/material` and `@angular/cdk` `^22.0.0` — optional peers, tested against 22.1.7 — and a Material theme of the application's choosing ([0132](../decisions/0132-material-draws-what-it-has-an-equivalent-for.md)) |
 | Database (server only) | PostgreSQL 17 or 18 |
-| Deployment (server only) | Two compose files are supplied: `compose.yaml` builds from a checkout, `compose.published.yaml` runs the signed published image and requires `FORMANCY_VERSION` to be pinned, because no `latest` tag is published. Every variable `.env.example` documents is passed through by both, checked by `packages/server/src/compose.test.ts` |
+| Deployment (server only) | Two compose files are supplied: `compose.yaml` builds from a checkout, `compose.published.yaml` runs the signed published image and requires `FORMANCY_VERSION` to be pinned, because no `latest` tag is published. Every variable `.env.example` documents is passed through by both, and following its object-store block leaves the server one store — the object store — rather than two, both checked by `packages/server/src/compose.test.ts`. Switching to the object store through compose sets `FORMANCY_FILES_DIR=""`, which only a server newer than `0.4.0` reads as unset |
 | Pictures on options | A host with a strict Content Security Policy needs `img-src` to allow `data:` for pictures a document carries, and the hosts it names for the others; without it the option still works and its picture does not load ([0126](../decisions/0126-an-option-may-carry-a-picture.md)) |
 | File uploads | A thumbnail needs `createImageBitmap` and a 2D canvas, which every browser in the stylesheet row has; without them no thumbnail is drawn and the file's name is shown alone. It needs no `img-src` permission, because it is drawn from the file's bytes and no URL is involved. A figure on the progress bar needs the host's uploader to report one, which `fetch` cannot do for an upload; a cancel stops the transfer only if the uploader passes the signal on ([0130](../decisions/0130-each-file-is-its-own-upload.md)) |
 | Virus scanning (server only, optional) | A ClamAV daemon reachable over TCP when `FORMANCY_CLAMD_HOST` is set, spoken to with its INSTREAM command and no client library. Run once against ClamAV 1.5.4 (`clamav/clamav:stable`, 2026-10-09); the adapter's tests use a protocol stand-in. **Set `AlertExceedsMax yes`**: ClamAV's shipped `clamd.conf` says content past `MaxFileSize` or `MaxScanSize` is not flagged otherwise, and is answered clean. Unreachable, every upload is refused ([0131](../decisions/0131-an-upload-is-scanned-before-it-is-kept.md)) |
@@ -223,6 +223,14 @@ expressions should read that file rather than this summary.
 - A `datagrid` column may not name a group: a grid's rows are flat, because one heading
   over several answers names none of them ([0078](../decisions/0078-a-grid-row-is-flat.md)).
 - Multi-tenancy is absent entirely.
+
+**The object store cannot be used through either compose file in `0.4.0`**, nor in `0.2.0`
+or `0.3.0`. Both files pass `FORMANCY_FILES_DIR` to the server as a literal path, so a
+deployment that follows the object-store block of `.env.example` hands the server two
+stores, and it refuses to start on every restart — measured with the published `v0.4.0`
+image. A blanked `FORMANCY_FILES_DIR` does not help with those images either: they read the
+empty string as a directory. Fixed after `0.4.0`, in the compose files and in the server
+together; see the changelog.
 
 ### Reserved, and not implemented
 
