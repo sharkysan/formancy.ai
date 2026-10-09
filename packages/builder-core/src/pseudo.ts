@@ -80,5 +80,15 @@ export function untranslated(shown: Iterable<string>, ownWords: Iterable<string>
  * allowed without one.
  */
 function bare(text: string): string {
-  return text.trim().replace(/^[\p{P}\p{S}\s]+|[\p{P}\p{S}\s]+$/gu, '')
+  // Two scans rather than `/[…]+$/`, which backtracks polynomially on a long run
+  // of whitespace that does not reach the end — and what reaches this is whatever
+  // a page shows.
+  const chars = [...text]
+  let start = 0
+  let end = chars.length
+  while (start < end && EDGE.test(chars[start]!)) start += 1
+  while (end > start && EDGE.test(chars[end - 1]!)) end -= 1
+  return chars.slice(start, end).join('')
 }
+
+const EDGE = /^[\p{P}\p{S}\s]$/u
