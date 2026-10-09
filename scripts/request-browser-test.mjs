@@ -10,8 +10,10 @@
  * So each page is opened with every request routed through here, and anything addressed
  * to an origin other than the test server's is **aborted and recorded** — never let
  * through. That keeps the answer the same on a machine with no network, in CI and behind
- * a proxy: a recorder that let requests out would pass wherever the third party happened
- * to be unreachable, which is the network deciding the result.
+ * a proxy: what a page asks for next depends on what answered — `fonts.gstatic.com` only
+ * once `fonts.googleapis.com` has sent a stylesheet naming it — so a recorder that let
+ * requests out would name different hosts on different networks, and tell each of them
+ * about the machine running it.
  *
  * Routed on the context rather than the page, so the Angular page's frame is covered —
  * and the case checks that it saw the frame's own requests, because a recorder that
@@ -24,7 +26,8 @@
  * And because a page that simply stopped loading its fonts, or its editor, would pass all
  * of that, each page is also asked whether what it used to fetch elsewhere arrived from
  * here: its text is drawn in a face the document loaded, and the playground's schema
- * editor is Monaco.
+ * editor is Monaco. The playground, which renders documents other people wrote, is also
+ * asked whether its content security policy refuses what such a document could ask for.
  */
 
 /**
@@ -38,7 +41,7 @@ const PAGES = [
   { path: '/', settle: scrollThrough, ownFaces: true },
   { path: '/templates/', settle: (page) => page.getByRole('heading', { level: 1 }).waitFor(), ownFaces: true },
   { path: '/angular-form-builder/', settle: openTheStarter, ownFaces: true, frame: '/angular-form-builder/demo/' },
-  { path: '/playground/', settle: openTheSchemaEditor, ownFaces: true, editor: true },
+  { path: '/playground/', settle: openTheSchemaEditor, ownFaces: true, editor: true, policy: true },
   // A page with code on it, which is where a documentation theme reaches for a highlighter.
   { path: '/docs/start/react/', settle: scrollThrough, ownFaces: false },
 ]
@@ -82,7 +85,7 @@ async function openTheSchemaEditor(page) {
 
 export async function checkNoForeignRequests(browser, origin, check) {
   console.log('\nrequests to other sites')
-  for (const { path, settle, ownFaces, frame, editor } of PAGES) {
+  for (const { path, settle, ownFaces, frame, editor, policy } of PAGES) {
     const context = await browser.newContext({ viewport: { width: 1440, height: 900 } })
     const foreign = new Set()
     const own = []
@@ -167,6 +170,44 @@ export async function checkNoForeignRequests(browser, origin, check) {
         check(
           'and the playground’s schema editor is Monaco, which arrived rather than being dropped',
           drawn > 0 ? null : 'no Monaco editor on the page in Schema mode',
+        )
+      }
+
+      if (policy) {
+        /*
+         * And what a document asks for is held to this site by the page's own policy.
+         *
+         * The playground renders documents somebody else wrote, and an option's picture
+         * may name any https host (0126), so what was checked above holds for the starter
+         * and not for whatever is pasted in next. The policy is what holds it then, and it
+         * is asked here as a browser answers it: a picture and a connection to another
+         * host, from inside the page. Refused by the policy, neither reaches the route;
+         * without it, both would, and be aborted and named above.
+         */
+        const before = new Set(foreign)
+        const refused = await page.evaluate(async () => {
+          const violated = new Set()
+          document.addEventListener('securitypolicyviolation', (event) => violated.add(event.effectiveDirective))
+          const picture = new Image()
+          const settled = new Promise((done) => {
+            picture.onload = done
+            picture.onerror = done
+          })
+          picture.src = 'https://pictures.invalid/option.png'
+          document.body.append(picture)
+          await settled
+          picture.remove()
+          await fetch('https://answers.invalid/').catch(() => undefined)
+          await new Promise((done) => setTimeout(done, 100))
+          return [...violated].sort()
+        })
+        const leaked = [...foreign].filter((origin) => !before.has(origin))
+        check(
+          'and its policy refuses a picture or a connection on another host before it is made',
+          leaked.length === 0 && refused.join(' ') === 'connect-src img-src'
+            ? null
+            : `${leaked.length === 0 ? 'nothing left the page' : `${leaked.join(', ')} reached the network`}, ` +
+                `and the policy reported ${refused.join(', ') || 'nothing'}`,
         )
       }
     } finally {

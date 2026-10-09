@@ -10,6 +10,14 @@
       content="Edit a formancy form document and watch the form, the rules and the submission value follow as you type. Switch theme and language live. Runs entirely in your browser."
     />
     <meta name="robots" content="index, follow, max-image-preview:large" />
+    <!-- The one page of formancy.ai that renders documents somebody else wrote — a
+         visitor pasting one in, or a model — and an option's picture may name any
+         https host (0126). So pictures and connections are held to this origin and to
+         data: and blob: addresses, which carry bytes the page already holds; a document
+         pointing anywhere else shows a broken picture rather than telling that host who
+         opened it. Deliberately this narrow: a style-src policy collides with the inline
+         styles the renderers and Monaco set, and is separate work (0154). -->
+    <meta http-equiv="Content-Security-Policy" content="img-src 'self' data: blob:; connect-src 'self'" />
     <link rel="canonical" href="https://formancy.ai/playground/" />
     <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg" />
     <link rel="apple-touch-icon" href="%BASE_URL%apple-touch-icon.png" />
@@ -27,12 +35,6 @@
     <meta property="og:image:height" content="630" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="https://formancy.ai/og.png" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,500..900&family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@400;500;600&display=swap"
-      rel="stylesheet"
-    />
   </head>
   <body>
     <div id="root"></div>

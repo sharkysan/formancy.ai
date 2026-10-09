@@ -217,6 +217,7 @@ message catalogue.
 |---|---|
 | Expression sandbox | Non-Turing-complete by construction, plus structural limits, wall-clock budgets and a per-slot function allow-list ([0016](../decisions/0016-cel.md), [0017](../decisions/0017-expression-facade.md)) |
 | Content-Security-Policy | No `eval` and no dynamic function construction anywhere, so a strict CSP needs no configuration ([0040](../decisions/0040-no-eval.md)) |
+| Requests to other sites | formancy.ai serves its own faces and the playground's editor, and `test:browser` opens one of each kind of page the site serves and aborts and names any request to another origin; the playground, which renders documents other people wrote, holds pictures and connections to itself by a content security policy ([0154](../decisions/0154-the-website-makes-no-request-to-any-other-site.md)). A form's own pictures are the author's choice (C6 in the safety analysis) |
 | Trusting the client | Nothing computed by the client is trusted; everything is recomputed and overwritten ([0030](../decisions/0030-never-trust-client-state.md)) |
 | Account enumeration | A decoy hash, so both paths do the same work ([0031](../decisions/0031-enumeration-resistant-login.md)) |
 | Export injection | Type-aware formula neutralisation ([0032](../decisions/0032-csv-formula-neutralisation.md)) |

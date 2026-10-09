@@ -27,14 +27,8 @@
     <meta name="twitter:description" content="The builder, the renderer and the server, all Apache-2.0. Try the Angular starter in the page." />
     <meta name="twitter:image" content="https://formancy.ai/og.png" />
 
-    <!-- The same families, in the same request, as every page of the site: they share one
-         stylesheet, and a face this document never loads renders in whatever the machine has. -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,500..900&family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
-      rel="stylesheet"
-    />
+    <!-- No font link: the faces come with shell.css, which every page of the site imports,
+         from this site rather than a font service (0154). -->
   </head>
   <body>
     <div id="root"></div>

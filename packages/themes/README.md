@@ -47,8 +47,12 @@ subtree, so it does not depend on the host page's reset. It does not paint the
 page behind the form: Pop and Paper look best on the ground colour they
 declare as `--fm-ground`, and fine on white.
 
-Fonts are referenced, not bundled; the demo apps load them from Google Fonts
-and every theme falls back to a system stack.
+Fonts are referenced, not bundled, and every theme falls back to a system stack.
+formancy.ai serves its faces itself from Fontsource's packages rather than from a
+font service, so opening a page tells no other site who opened it. Fontsource names
+a variable face `<Family> Variable`, so Pop asks for `Archivo` then
+`Archivo Variable`, and Paper for `Fraunces` then `Fraunces Variable`: either
+spelling of the face, whichever way a page loads it.
 
 ## The builders: `workbench.css`
 

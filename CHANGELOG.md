@@ -10,6 +10,23 @@ later.
 
 ## Unreleased
 
+**Fixed: formancy.ai asked other sites for its type and its editor.** Every page of the site
+loaded its faces from Google Fonts, and the playground loaded Monaco from jsDelivr, so opening
+any of them told those companies the visitor's address. The faces are now served by the site
+from Fontsource's packages — Archivo keeps its width axis and Fraunces its optical size — and
+the playground serves its own copy of Monaco's build. The copy is whole, so the deployment
+grows by far more than a visitor ever fetches; both are measured in the record. The playground
+also sets a content security policy holding pictures and connections to its own origin,
+because it renders documents a visitor or a model wrote, and an option's picture may name any
+host. `test:browser` now opens each kind of page the site serves with every request to another
+origin aborted and named, and fails on any
+([0154](docs/decisions/0154-the-website-makes-no-request-to-any-other-site.md)).
+
+**Changed: the Pop and Paper themes name Fontsource's variable faces.** Fontsource calls a
+variable face `Archivo Variable` and `Fraunces Variable`, so a page self-hosting them that way
+drew Pop and Paper in their fallbacks. Pop now asks for `'Archivo', 'Archivo Variable'` and
+Paper for `'Fraunces', 'Fraunces Variable'`; a page loading the plain family is unaffected.
+
 **Fixed: a `.txt` or `.json` file could not be attached — its upload was refused as
 `no_body`.** Fastify parses `text/plain` and `application/json` bodies itself, and the server's
 catch-all byte parser only ever saw the types with no parser of their own, so those two reached

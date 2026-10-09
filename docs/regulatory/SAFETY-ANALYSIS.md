@@ -735,10 +735,24 @@ property panel and the reference documentation both read it. Plain `http://` is
 refused. Held by `option-image.test.ts`; the playground's own pictures are carried in
 the document.
 
+The playground on formancy.ai is the one page this project serves that renders documents
+somebody else wrote — a visitor's, or a model's — so since 2026-10-09 it sets for itself a
+policy of the kind recommended below: `img-src 'self' data: blob:; connect-src 'self'`. A document
+naming a picture on another host shows a broken picture there instead of telling that host
+who opened it. And formancy.ai's pages take their faces and the playground's editor from the
+site itself, not from a font service or a CDN. Both are held by `pnpm test:browser`, which
+opens one of each kind of page the site serves with every request to another origin aborted
+and named, and asks Chromium, from inside the playground, to fetch a picture and open a
+connection on another host: watched failing on `main` against Google Fonts and jsDelivr, and
+with the playground's policy taken out of the built page
+([0154](../decisions/0154-the-website-makes-no-request-to-any-other-site.md)).
+
 *Residual:* nothing stops an author choosing a third-party address, and nothing tells
 the person filling the form in that one was chosen. A deployment that must not disclose
 it should refuse such documents at publish, which formancy does not do for it, or set
-an `img-src` policy that names only itself.
+an `img-src` policy that names only itself. The playground's policy is the playground's:
+the renderers ship none, and a form on a host's page is held to whatever policy the host
+sets. The gate sees the pages it opens in the states it drives them to, and no others.
 
 ### C7. A file carrying malware is stored, and handed to whoever opens it
 

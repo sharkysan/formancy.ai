@@ -229,9 +229,10 @@ export function rulesOfText(text: string): ThemeRule[] {
  * Every style rule in a set of stylesheets, reduced to `ThemeRule`.
  *
  * **Cross-origin stylesheets throw on `cssRules` and are stepped over.**
- * Measured: the playground loads two that do — Google Fonts. An adapter that did
- * not expect it would take the whole editor down, and it would be empty on
- * exactly the pages that load a webfont.
+ * The playground loaded two until 2026-10-09 — Google Fonts — and serves its own
+ * faces now (0154), but a host's page taking a webfont from a font service still
+ * does. An adapter that did not expect it would take the whole editor down, and it
+ * would be empty on exactly the pages that load a webfont that way.
  *
  * Grouping rules are recursed into. No shipped theme declares a token inside
  * `@media`, but a consumer's dark-mode theme would, and an editor that silently

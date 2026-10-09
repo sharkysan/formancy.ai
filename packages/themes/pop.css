@@ -26,7 +26,7 @@
   --fm-invalid: #d6003a;
   --fm-invalid-wash: #ffe4ec;
 
-  --fm-sans: 'Archivo', 'Space Grotesk', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --fm-sans: 'Archivo', 'Archivo Variable', 'Space Grotesk', ui-sans-serif, system-ui, -apple-system, sans-serif;
   --fm-line: 2.5px solid var(--fm-ink);
   --fm-radius: 12px;
   --fm-lift: 4px 4px 0 var(--fm-ink);

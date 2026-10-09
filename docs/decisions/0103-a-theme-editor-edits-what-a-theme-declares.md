@@ -106,6 +106,11 @@ steps over it. Measured: the playground loads two — Google Fonts. A theme serv
 another origin cannot be edited here, which is a real limit and an acceptable one,
 since it also cannot be read by anything else in the page.
 
+> **Amended by [0154](0154-the-website-makes-no-request-to-any-other-site.md).** The
+> playground no longer loads Google Fonts: it serves its own faces, so none of its own
+> stylesheets is cross-origin. The editor still steps over one, because a host's page that
+> takes a webfont from a font service still has them.
+
 **A blank is kept in the editor's map and counts for nothing.** Dropping the key on the
 first empty keystroke made the field fall straight back to the theme's value, so
 clearing a control and retyping appended to it — `#17222e` became `#17222e#ff0000`.
