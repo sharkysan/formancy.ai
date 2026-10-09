@@ -248,3 +248,4 @@ listed under the sections they belong to above.
 | [0145](0145-a-version-for-everything-a-document-can-say.md) | A version for everything a document can say | accepted |
 | [0146](0146-a-drop-between-two-nodes-is-read-from-where-they-were-drawn.md) | A drop between two nodes is read from where they were drawn | accepted |
 | [0147](0147-a-rule-in-a-repeater-row-is-explained-row-by-row.md) | A rule in a repeater row is explained row by row | accepted |
+| [0148](0148-the-arrange-surfaces-marks-follow-the-dom.md) | The arrange surface's marks follow the DOM, not its own render | accepted |

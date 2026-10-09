@@ -10,6 +10,16 @@ later.
 
 ## Unreleased
 
+**Fixed: after one drop on the playground's preview, nothing in its Angular preview could be
+picked up again.** The arrange surface marked what could be dragged when it rendered, and the
+Angular preview it holds is redrawn after that, on Angular's schedule — 33 nodes could be
+picked up before a drop and none after. A field a rule shows had the same problem without a
+second framework: its own slot mounts it, and the canton appeared unmarked once Switzerland was
+chosen. Both surfaces now keep their marks up with the DOM, by observing what arrives in the
+tree under them while arranging is on, and `test:browser` checks that a preview offers as much
+after a drop as before, and that the canton can be picked up
+([0148](docs/decisions/0148-the-arrange-surfaces-marks-follow-the-dom.md)).
+
 **Added: a rule in a repeater row says, row by row, what it does now and why.** The rules
 overview gave such a rule no verdict, because it reads an `item` the form as a whole does not
 have — so a note required in one recipient's row and not another's had no reason shown, and a

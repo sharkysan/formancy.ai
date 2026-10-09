@@ -178,7 +178,9 @@ Each gate exists for a reason that was paid for at least once:
   And it drags on the playground's preview: it measures the space between two stacked fields
   and between two top-level sections, asks what a browser reports under it, drops a node there
   in both renderers' markup and reads back where it landed
-  ([0146](../decisions/0146-a-drop-between-two-nodes-is-read-from-where-they-were-drawn.md)).
+  ([0146](../decisions/0146-a-drop-between-two-nodes-is-read-from-where-they-were-drawn.md)),
+  and that afterwards as much of the preview can be picked up as before, as can a field a
+  rule has just shown ([0148](../decisions/0148-the-arrange-surfaces-marks-follow-the-dom.md)).
   **A different kind of test from the rest of this list**, and the reason is
   structural rather than a coverage gap: jsdom applies no CSS, resolves no media
   queries and performs no layout, so every box measures zero and every cascade

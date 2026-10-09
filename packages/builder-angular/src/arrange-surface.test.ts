@@ -492,3 +492,25 @@ describe('dropping in the space between two nodes', () => {
     expect(order(mounted.session)).toEqual(['phone', 'section', 'email'])
   })
 })
+
+describe('when something other than this surface redraws the preview', () => {
+  /**
+   * The same case as the React suite's: marks put on when the surface last ran, and a
+   * preview redrawn afterwards by somebody else — another framework, or a field a rule
+   * shows — whose new elements carried none.
+   */
+  test('what it draws can be picked up', async () => {
+    const mounted = await mount()
+    const before = fieldNamed('Email')
+    const email = document.createElement('div')
+    email.dataset['formancyPart'] = 'field'
+    email.dataset['formancyFieldPath'] = 'email'
+    email.textContent = 'Email'
+    before.replaceWith(email)
+    await mounted.settle()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(email.dataset['arrangeable']).toBe('true')
+    expect(email.draggable).toBe(true)
+  })
+})

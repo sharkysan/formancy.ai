@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { createBuilderSession } from '@formancy/builder-core'
 import type { BuilderSession } from '@formancy/builder-core'
 import type { FormSchema } from '@formancy/spec'
@@ -703,5 +703,51 @@ describe('dropping in the space between two nodes', () => {
       'section',
       'email',
     ])
+  })
+})
+
+describe('when something other than this surface redraws the preview', () => {
+  /**
+   * The marks were put on when this surface rendered, and the preview is not always
+   * redrawn then. The playground holds its Angular preview inside this surface, and
+   * Angular replaces that markup after a drop on its own schedule; a field a rule shows
+   * is mounted by its own slot without this surface rendering at all. Either way the
+   * new elements carried no mark and could not be picked up — measured in Chromium,
+   * the Angular preview went from 33 nodes that could be dragged to none after one
+   * drop, and the canton appeared unmarked when Switzerland was chosen.
+   */
+  const redraw = (field: string, name: string): HTMLElement => {
+    const before = fieldNamed(name)
+    const after = document.createElement('div')
+    after.dataset['formancyPart'] = 'field'
+    after.dataset['formancyFieldPath'] = field
+    after.textContent = name
+    before.replaceWith(after)
+    return after
+  }
+
+  test('what it draws can be picked up', async () => {
+    surfaceWith(open())
+
+    const email = redraw('email', 'Email')
+
+    await waitFor(() => expect(email.dataset['arrangeable']).toBe('true'))
+    expect(email.draggable).toBe(true)
+  })
+
+  test('and is let go of when arranging stops', async () => {
+    const session = open()
+    const view = surfaceWith(session)
+    const email = redraw('email', 'Email')
+    await waitFor(() => expect(email.dataset['arrangeable']).toBe('true'))
+
+    view.rerender(
+      <FormancyArrangeSurface session={session} layout="web" enabled={false}>
+        <Preview />
+      </FormancyArrangeSurface>,
+    )
+
+    expect(email.dataset['arrangeable']).toBeUndefined()
+    expect(email.draggable).toBe(false)
   })
 })

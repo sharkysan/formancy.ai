@@ -1055,7 +1055,7 @@ async function run() {
     throw new Error(`${String(failures.length)} browser check(s) failed:\n  ${failures.join('\n  ')}`)
   }
   console.log(
-    `browser checks passed: ${String(WIDTHS.length)} viewports of the playground, plus the site's pages, the starter embedded in one and the starter on its own, and drops into the space between two nodes, for the layout, gesture and cascade facts jsdom cannot represent`,
+    `browser checks passed: ${String(WIDTHS.length)} viewports of the playground, plus the site's pages, the starter embedded in one and the starter on its own, and drops into the space between two nodes and what can be picked up after, for the layout, gesture and cascade facts jsdom cannot represent`,
   )
 }
 
