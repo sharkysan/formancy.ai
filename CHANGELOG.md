@@ -10,6 +10,11 @@ later.
 
 ## Unreleased
 
+**Fixed: the error summary named fields by their data path.** Unless the host passed `labels`,
+both renderers listed a failed submit's problems as "email: required" — the key, as a link's
+accessible name — for a field whose document gives it a label. The summary now uses the field's
+own label in the form's language, and the key only for a field that has none. The Angular test
+had pinned the old text.
 **Spec version 4 is frozen.** It holds the `ranking` and `matrix` field types, the `rating`
 and `slider` widgets, and the `step`, `mask` and option `image` properties; a document that
 validates against it now will validate against every release that speaks it. **No version is

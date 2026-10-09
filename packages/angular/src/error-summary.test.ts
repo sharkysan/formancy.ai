@@ -67,7 +67,9 @@ describe('FormancyErrorSummary', () => {
 
     const links = screen.getAllByRole('link')
     expect(links).toHaveLength(2)
-    expect(links[0]?.textContent).toBe('email: required')
+    // The field's label, not its key. This line asserted "email: required" for a field
+    // labelled Email — a test written to the behaviour rather than to what a person needs.
+    expect(links[0]?.textContent).toBe('Email: required')
     const controlId = engine.getFieldSnapshot(['email']).ids.control
     expect(links[0]?.getAttribute('href')).toBe(`#${controlId}`)
 
@@ -94,5 +96,22 @@ describe('FormancyErrorSummary', () => {
     await view.fixture.whenStable()
 
     expect(document.activeElement).toBe(emailControl)
+  })
+})
+
+describe('FormancyErrorSummary without a label', () => {
+  test('falls back to the key only for a field that has no label', async () => {
+    const unlabelled: FormSchema = {
+      specVersion: '1',
+      id: 'codes',
+      title: 'Codes',
+      model: { fields: [{ key: 'code', type: 'text', required: true }] },
+    }
+    const view = await renderHost(createFormEngine({ schema: unlabelled }))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }))
+    await view.fixture.whenStable()
+
+    expect(screen.getAllByRole('link').map((link) => link.textContent)).toEqual(['code: required'])
   })
 })

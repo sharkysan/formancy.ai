@@ -33,8 +33,13 @@ export function ErrorSummary({ labels }: ErrorSummaryProps) {
 
   if (errors.length === 0) return null
 
+  // The host's words first, then the field's own label in the form's language, and the
+  // path only for a field with neither — never "email: required" for a field called Email.
   const labelFor = (path: string): string =>
-    labels?.[path] ?? labels?.[path.replace(/\[\d+\]/, '[]')] ?? path
+    labels?.[path] ??
+    labels?.[path.replace(/\[\d+\]/, '[]')] ??
+    engine.getFieldSnapshot(parsePath(path)).label ??
+    path
 
   return (
     <div data-formancy-part="error-summary" tabIndex={-1} ref={region}>
