@@ -5,7 +5,7 @@ import { fireEvent, render, screen, within } from '@testing-library/angular'
 import axe from 'axe-core'
 import { createFormEngine, parsePath } from '@formancy/core'
 import type { FormEngine } from '@formancy/core'
-import { resolveText } from '@formancy/spec'
+import { answerFromText, resolveText } from '@formancy/spec'
 import type { FormSchema, Text } from '@formancy/spec'
 import {
   ACCESSIBILITY_EXCLUSIONS,
@@ -260,6 +260,10 @@ export function createAngularDriver(): RendererDriver {
       if (def?.type === 'checkbox') return (control as HTMLInputElement).checked
       const raw = (control as HTMLInputElement).value
       if (def?.type === 'number') return raw === '' ? null : Number(raw)
+      // A masked control shows the answer in its shape; the answer is read off it the
+      // way a person reads the number off the screen, by the one function both
+      // renderers edit through. A renderer that drew the shape wrong reads back wrong.
+      if (def?.mask !== undefined) return answerFromText(def.mask, raw)
       // Read THROUGH the control: a text control cannot display null, so its
       // empty state is the empty string, verbatim.
       return raw

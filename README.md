@@ -177,6 +177,10 @@ submitted. Switch language or theme without reloading.
 - **Ratings and sliders.** A scale is a `number` field with a widget on it, so the
   answer is the same number either way — and a rating is a radio group rather than
   a row of buttons, which is one tab stop instead of eleven.
+- **Input masks that store the number, not its spelling.** `(999) 999-9999` shapes how
+  a phone number is typed and stores `5551234567`. Where a typed, deleted or pasted
+  character lands is decided once for both renderers, and the server refuses an answer
+  that does not fill the mask, because the engine does.
 - **AI-assisted authoring.** Describe a form in the builder, or give your coding
   agent the MCP tools to author and validate a form definition.
 - **No third party in the loop.** Spam protection is proof of work computed in

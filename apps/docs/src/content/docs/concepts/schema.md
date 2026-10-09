@@ -158,6 +158,7 @@ Beyond `required`, the model carries the checks that need no expression:
 { "key": "name",  "type": "text",   "minLength": 2, "maxLength": 50 }
 { "key": "code",  "type": "text",   "pattern": "[A-Z]{3}" }
 { "key": "email", "type": "text",   "format": "email" }
+{ "key": "phone", "type": "text",   "mask": "(999) 999-9999" }
 ```
 
 Three things are deliberate here:
@@ -170,6 +171,15 @@ Three things are deliberate here:
   well-tested check rather than a regular expression pasted into every form.
   And a `pattern` that does not compile fails the *author* when they save, not
   the person filling in the form mid-keystroke.
+- **A mask stores what was typed, not what was shown.** `9` takes a digit, `a`
+  a letter and `*` either; any other character — the brackets, the space, the
+  dash — is written by the control, and a backslash before `9`, `a` or `*` makes
+  the control write it (`+4\9` writes the 9 of +49). The answer above is `5551234567`, so
+  changing how the mask is drawn never orphans a stored answer, and the server
+  receives the number rather than one spelling of it. An answer that leaves a
+  position empty is refused with the code `mask` — by the engine, so a payload
+  posted straight at the server is held to it too. Spec version 4
+  ([0125](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0125-a-mask-stores-what-was-typed.md)).
 
 ## Validation happens when you save
 

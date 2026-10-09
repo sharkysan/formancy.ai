@@ -72,4 +72,16 @@ export { modelDataPaths } from './paths.js'
 export { ROW_ID, ROW_ID_PREFIX } from './types.js'
 export { collectFieldPaths, isMessageRef, modelPathsForLayout, resolveText, unreferencedPaths } from './presentation.js'
 export { SCHEMA_ERRORS, renderSchemaError } from './schema-errors.js'
+export {
+  answerFromText,
+  editMasked,
+  fitsMask,
+  fitsSlot,
+  formatMasked,
+  maskHasPositions,
+  maskIsNumeric,
+  maskPlaceholder,
+  maskPositions,
+} from './mask.js'
+export type { MaskPosition, MaskSlot } from './mask.js'
 export type { SchemaError, SchemaErrorCode, SchemaErrorValues } from './schema-errors.js'

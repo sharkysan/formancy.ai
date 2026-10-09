@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core'
 import type { Type } from '@angular/core'
+import { answerFromText, editMasked, formatMasked, maskIsNumeric, maskPlaceholder } from '@formancy/spec'
 import { injectScanner } from '../scanning.js'
 import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
 
@@ -38,6 +39,8 @@ import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
         [attr.aria-describedby]="control()['aria-describedby']"
         [disabled]="control().disabled === true"
         [value]="text()"
+        [attr.placeholder]="placeholder()"
+        [attr.inputmode]="inputMode()"
         (input)="onInput($event)"
         (blur)="field.touch()"
       />
@@ -71,9 +74,29 @@ export class FormancyTextField extends FieldComponentBase {
   /** A device failure, held here rather than in the field's errors. See above. */
   private readonly trouble = signal<string | undefined>(undefined)
 
-  protected readonly text = computed(() => {
+  /**
+   * The answer, and with a mask the answer in its shape. Where a typed, deleted or
+   * pasted character lands is `editMasked`'s, in `@formancy/spec`, which the React
+   * binding calls too — two answers to one keystroke would be the drift 0091 exists to
+   * prevent (0125).
+   */
+  private readonly mask = computed(() => this.field.snapshot().def.mask)
+  private readonly answer = computed(() => {
     const value = this.field.snapshot().value
     return typeof value === 'string' ? value : ''
+  })
+  protected readonly text = computed(() => {
+    const mask = this.mask()
+    return mask === undefined ? this.answer() : formatMasked(mask, this.answer())
+  })
+  /** The shape as the hint, and a keypad when every position takes a digit. */
+  protected readonly placeholder = computed(() => {
+    const mask = this.mask()
+    return mask === undefined ? null : maskPlaceholder(mask)
+  })
+  protected readonly inputMode = computed(() => {
+    const mask = this.mask()
+    return mask !== undefined && maskIsNumeric(mask) ? 'numeric' : null
   })
 
   /**
@@ -90,7 +113,24 @@ export class FormancyTextField extends FieldComponentBase {
   )
 
   protected onInput(event: Event): void {
-    this.commit((event.target as HTMLInputElement).value)
+    const input = event.target as HTMLInputElement
+    const mask = this.mask()
+    if (mask === undefined) {
+      this.commit(input.value)
+      return
+    }
+    const forward = (event as InputEvent).inputType === 'deleteContentForward'
+    const edit = editMasked(mask, this.answer(), input.value, {
+      caret: input.selectionStart,
+      direction: forward ? 'forward' : 'backward',
+    })
+    // Written to the control here rather than left to the binding: a refused character
+    // leaves the answer — and so `text()` — unchanged, and Angular writes a bound value
+    // only when it changes, so the character would stay on screen. And the caret can
+    // only be placed in text that is already there.
+    input.value = formatMasked(mask, edit.answer)
+    input.setSelectionRange(edit.caret, edit.caret)
+    this.commit(edit.answer)
   }
 
   /**
@@ -132,8 +172,10 @@ export class FormancyTextField extends FieldComponentBase {
       // Stored as typed, THEN touched — so a value the field's `pattern` refuses
       // shows the engine's own error rather than being dropped. Dropping it would
       // discard the only record of what the camera read and leave the field looking
-      // empty, which is the worse of the two failures by some distance.
-      this.commit(text)
+      // empty, which is the worse of the two failures by some distance. A masked
+      // field reads it the way it reads a paste.
+      const mask = this.mask()
+      this.commit(mask === undefined ? text : answerFromText(mask, text))
       this.field.touch()
     } catch (error) {
       this.trouble.set(

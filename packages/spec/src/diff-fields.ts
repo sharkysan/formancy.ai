@@ -145,6 +145,7 @@ const CONSTRAINT_DIRECTION: Readonly<Record<string, 'higher' | 'lower' | 'either
   maxPoints: 'lower',
   latest: 'lower',
   pattern: 'either',
+  mask: 'either',
   format: 'either',
   step: 'either',
   accept: 'either',

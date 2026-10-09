@@ -144,12 +144,26 @@ own schema documented "The answer is still one of the options offered". `modelVi
 now refuses a value no option offers, with the code `option`, in the one function the
 browser and the server both run.
 
+*An input mask is the case where a control is meant to store less than it shows*
+([0125](../decisions/0125-a-mask-stores-what-was-typed.md)): the brackets and spaces are
+drawn, not stored. What keeps that from becoming this hazard is that the control's text is
+always rendered *from* the stored answer — `formatMasked` after every edit, written to the
+control by both renderers — so a character that was refused, cut off or not stored is not on
+screen either; and the engine refuses, with `mask`, an answer that does not fill the mask,
+so a payload carrying the formatted text is not stored as an answer. Held by both
+renderers' `masked-text` tests and the `masked-answer` conformance fixture, which fails in
+both without the engine's check.
+
 *Residual:* the engine checks a value against the options **the document carries**. A
 field that carries none has nothing to be outside of, by design — it is the seam remote
 options will need. And a component supplied through `registry.byType` or
 `registry.byPath` renders in the same slot and can still store whatever the engine
 accepts for every other kind of field; nothing in the renderers constrains a consumer's
-own component, and the engine validates the value rather than its provenance.
+own component, and the engine validates the value rather than its provenance. **An
+answer stored before a mask was added**, and not fitting it, is shown position by position
+and refused by the engine; the first keystroke in that control drops the characters no
+position takes. An author adding a mask to a field with stored drafts should expect those
+answers to need retyping — which is why `diffSchemas` reports adding one as lossy.
 
 ---
 

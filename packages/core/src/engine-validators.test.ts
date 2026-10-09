@@ -46,6 +46,27 @@ describe('model validators', () => {
     expect(errorsFor({ code: 'xxABCxx' })['code']).toEqual(['pattern'])
   })
 
+  test('a masked answer fills every position with what it takes, and holds only that', () => {
+    // The engine's check is the one the server runs: an answer posted straight at it
+    // never went through a control, so "5551234" or the formatted text is refused here
+    // or nowhere (0125).
+    const masked: FormSchema = {
+      specVersion: '4',
+      id: 'contact',
+      title: 'Contact',
+      model: { fields: [{ key: 'phone', type: 'text', mask: '(999) 999-9999' }] },
+    }
+    const errors = (phone: unknown) =>
+      createFormEngine({ schema: masked, initialValue: { phone } }).validate().errors['phone']
+
+    expect(errors('5551234567')).toBeUndefined()
+    expect(errors('5551234')).toEqual(['mask'])
+    expect(errors('(555) 123-4567')).toEqual(['mask'])
+    expect(errors(5551234567)).toEqual(['mask'])
+    // Emptiness stays required's, as for every model validator.
+    expect(errors('')).toBeUndefined()
+  })
+
   test('formats carry their own name as the error code', () => {
     expect(errorsFor({ email: 'not-an-email' })['email']).toEqual(['email'])
     expect(errorsFor({ email: 'a@b.ch' })['email']).toBeUndefined()

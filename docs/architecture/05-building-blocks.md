@@ -57,7 +57,9 @@ The data contract, and nothing that evaluates it.
 |---|---|
 | `types.ts` | The document's TypeScript shape |
 | `formancy.schema.json` | JSON Schema 2020-12. Every property carries a title and description, enforced by a test |
-| `validate.ts` | Structural validation via a precompiled ajv validator, then semantic rules ajv cannot express: duplicate keys, rename legality, nested repeaters, pages below top level, uncompilable patterns, logic targets, unresolvable message references |
+| `validate.ts` | Structural validation via a precompiled ajv validator, then semantic rules ajv cannot express: duplicate keys, rename legality, nested repeaters, pages below top level, uncompilable patterns, a mask with nowhere to type, logic targets, unresolvable message references |
+| `structural-errors.ts` | ajv's reports turned into one error per thing to fix, pointed at the property to edit. Left `validate.ts` when that file reached its size ceiling with a rule still to add: it changes when ajv or the schema's shape does, not when a rule about how fields relate does ([0125](../decisions/0125-a-mask-stores-what-was-typed.md)) |
+| `mask.ts` | An input mask: whether an answer fills it, how the control shows it, and `editMasked` — where a typed, deleted or pasted character lands. Here because the engine and both renderers act on a mask and must agree ([0125](../decisions/0125-a-mask-stores-what-was-typed.md)) |
 | `schema-errors.ts` | Every reason a document is refused, by code, in English. An error carries its code and the values its sentence names beside the English, so a builder can say it in another language; `schemaError` takes exactly the values a code's sentence names, checked by the compiler ([0122](../decisions/0122-a-validator-error-has-a-code.md)) |
 | `canonical.ts` | Deterministic serialisation. **Throws** rather than dropping undefined, NaN or Infinity ([0010](../decisions/0010-canonical-hash.md)) |
 | `hash.ts` | sha256 over the canonical form, via `@noble/hashes` because the builder hashes in a browser |

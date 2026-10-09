@@ -356,6 +356,12 @@ optional · one of `"scanner"`
 
 **Widget.** How this field should look. Presentation only: it never changes what the field collects or what is stored. Leave it out for the default control. Offer a camera route to a value somebody could otherwise type, such as reading a QR code. The answer is still the same string, and typing it must stay possible.
 
+##### `mask`
+
+optional · string · min length 1 · max length 100
+
+**Input mask.** The shape the answer is typed into, one character per position: `9` takes a digit, `a` a letter and `*` either, and any other character is written by the control rather than typed — `(999) 999-9999`. A backslash makes the next character one the control writes: `\9`. The answer holds only what was typed into the positions, so `(999) 999-9999` stores `5551234567`, and an answer that leaves a position empty is refused. Needs spec version 4.
+
 #### With `widget: "datagrid"`
 
 ##### `columns`

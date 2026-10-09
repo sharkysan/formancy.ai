@@ -493,16 +493,16 @@ export interface FieldDef {
    * would have been presentation, and a value the client accepted and the server
    * refused is the drift this project exists to prevent.
    *
-   * Counted from `min` when there is one, and from zero when there is not. Must
-   * be greater than zero: a step of 0 makes every answer invalid and a negative
-   * one reads as a direction.
+   * Counted from `min` when there is one, and from zero when there is not. Must be greater
+   * than zero: a step of 0 makes every answer invalid and a negative one reads as a direction.
    */
   step?: number
-  /** text fields: bounds, a whole-match pattern, and a named format. */
+  /** text fields: bounds, a whole-match pattern, a named format, and an input mask (`mask.ts`). */
   minLength?: number
   maxLength?: number
   pattern?: string
   format?: FieldFormat
+  mask?: string
 }
 
 /** A closed list on purpose: each entry is one well-tested check, not a

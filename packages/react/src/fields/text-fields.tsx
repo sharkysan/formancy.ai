@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { answerFromText, editMasked, formatMasked, maskIsNumeric, maskPlaceholder } from '@formancy/spec'
 import { useField } from '../use-field.js'
 import { useScanner } from '../scanning.js'
 import { FieldShell } from './internals.js'
@@ -49,6 +50,16 @@ export function TextField({ path, label }: FieldComponentProps) {
     // not implement the sanitiser either, so nothing here notices unless it is asserted.
     field.setValue(text.replace(/[\r\n]/g, ''))
 
+  /*
+   * With a mask, the control shows the answer in its shape and the answer holds only
+   * what was typed into the positions. Where a typed, deleted or pasted character
+   * lands is `editMasked`'s, in `@formancy/spec`, which the Angular binding calls too —
+   * two answers to one keystroke would be the drift 0091 exists to prevent (0125).
+   */
+  const mask = field.def.mask
+  const answer = typeof field.value === 'string' ? field.value : ''
+  const shown = mask === undefined ? answer : formatMasked(mask, answer)
+
   const read = async (): Promise<void> => {
     // Re-entrancy, which `disabled` used to prevent: a second press while a scan is in
     // flight is ignored rather than opening a second camera session.
@@ -73,8 +84,9 @@ export function TextField({ path, label }: FieldComponentProps) {
       // Stored as typed, THEN touched — so a value the field's `pattern` refuses
       // shows the engine's own error rather than being dropped. Dropping it would
       // discard the only record of what the camera read and leave the field looking
-      // empty, which is the worse of the two failures by some distance.
-      commit(text)
+      // empty, which is the worse of the two failures by some distance. A masked
+      // field reads it the way it reads a paste.
+      commit(mask === undefined ? text : answerFromText(mask, text))
       field.touch()
     } catch (error) {
       setTrouble(
@@ -92,8 +104,29 @@ export function TextField({ path, label }: FieldComponentProps) {
       <input
         type="text"
         {...field.controlProps}
-        value={typeof field.value === 'string' ? field.value : ''}
-        onChange={(event) => commit(event.target.value)}
+        value={shown}
+        // The shape as the hint, and a keypad when every position takes a digit.
+        placeholder={mask === undefined ? undefined : maskPlaceholder(mask)}
+        inputMode={mask !== undefined && maskIsNumeric(mask) ? 'numeric' : undefined}
+        onChange={(event) => {
+          if (mask === undefined) {
+            commit(event.target.value)
+            return
+          }
+          const input = event.target
+          const forward = (event.nativeEvent as InputEvent).inputType === 'deleteContentForward'
+          const edit = editMasked(mask, answer, input.value, {
+            caret: input.selectionStart,
+            direction: forward ? 'forward' : 'backward',
+          })
+          // Written to the control before React renders, so the caret can be placed in
+          // the text it belongs to: React would write the same text a moment later and
+          // leave the caret at its end. (A refused character React removes by itself,
+          // restoring the controlled value — measured, not assumed.)
+          input.value = formatMasked(mask, edit.answer)
+          input.setSelectionRange(edit.caret, edit.caret)
+          commit(edit.answer)
+        }}
         onBlur={() => field.touch()}
       />
       {field.def.widget === 'scanner' && scan !== undefined ? (

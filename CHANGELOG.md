@@ -10,6 +10,20 @@ later.
 
 ## Unreleased
 
+**Input masks** (spec version 4). A `text` field can carry `mask`: `9` takes a digit, `a` a
+letter, `*` either, and any other character is written by the control — `(999) 999-9999`.
+**The answer holds only what was typed**, so it stores `5551234567`, and restyling the mask
+never orphans a stored answer. The engine refuses an answer that does not fill the mask with
+the code `mask`, so a payload posted straight at the server is held to it too. Where a typed,
+deleted or pasted character lands is one function in `@formancy/spec`, `editMasked`, which
+both renderers call: the caret stays where you type, backspace after a bracket deletes the
+digit before it, and a pasted `+41 79 123 45 67` is read as nine digits rather than as the
+`41` the mask writes plus seven. The builder offers `mask` on text fields in English,
+German and French, the playground's starter has a masked phone number, and `diffSchemas`
+treats a mask added or changed as a tightening
+([0125](docs/decisions/0125-a-mask-stores-what-was-typed.md)). To make room for the rule,
+`validate.ts` gave its ajv half to `structural-errors.ts` and left the size allow-list.
+
 **A theme preset can be brought back.** The theme editor's download was a file you could keep
 and never carry on editing. That CSS patch is now the preset: **Import CSS** reads it back
 and the editor opens where it was left. It is read by the browser and filtered by the same

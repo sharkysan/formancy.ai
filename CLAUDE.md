@@ -191,8 +191,8 @@ out?"**
 
 ### Size is a signal, and there is a gate on it
 
-A long file is not automatically wrong — `validate.ts` is one subject and reads
-top to bottom. What is wrong is a file that has become the place things go. So
+A long file is not automatically wrong — `engine.ts` is one subject, its parts
+coupled through the graph. What is wrong is a file that has become the place things go. So
 there is a budget, and `apps/docs/src/size.test.ts` enforces it:
 
 - **600 lines** for a source file, tests excluded.

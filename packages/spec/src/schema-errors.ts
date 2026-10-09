@@ -37,6 +37,8 @@ export const SCHEMA_ERRORS = {
   'rename.claimed':
     'Another field already says it was renamed from "{key}". Old answers can only move to one place.',
   'pattern.invalid': 'This is not a valid regular expression: {reason}.',
+  'mask.noPositions':
+    'This mask has nowhere to type, so the field could take no answer. Use 9 for a digit, a for a letter or * for either.',
 
   // -------------------------------------------------------------- logic
   'rule.skipNoPages':
@@ -84,6 +86,8 @@ export const SCHEMA_ERRORS = {
     'A "{bound}" bound needs specVersion "{version}". This document says "{declared}". Change it to "{version}" — everything already in the document keeps working, because a later version only adds.',
   'version.step':
     'A "step" needs specVersion "{version}". This document says "{declared}". Change it to "{version}" — everything already in the document keeps working, because a later version only adds.',
+  'version.mask':
+    'A "mask" needs specVersion "{version}". This document says "{declared}". Change it to "{version}" — everything already in the document keeps working, because a later version only adds.',
   'version.optionsSource':
     'An "optionsSource" needs specVersion "{version}". This document says "{declared}". Change it to "{version}" — everything already in the document keeps working, because a later version only adds.',
   'version.fieldType':

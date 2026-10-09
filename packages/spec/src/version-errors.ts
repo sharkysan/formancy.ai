@@ -115,6 +115,10 @@ export function versionErrors(
     if (field.step !== undefined && declared < 4) {
       errors.push(schemaError(`${path}/step`, 'version.step', versions(4)))
     }
+    // The same, for the same reason: a property only a version 4 document may carry.
+    if (field.mask !== undefined && declared < 4) {
+      errors.push(schemaError(`${path}/mask`, 'version.mask', versions(4)))
+    }
 
     // Same reasoning as `widget` above: a property, not a type, and the schema is
     // closed, so a version 1 reader answers `Unknown property "optionsSource"` and
