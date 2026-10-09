@@ -62,6 +62,8 @@ describe('validateSchema structural errors', () => {
     expect(onlyError(validateSchema(missingTitle))).toEqual({
       path: '/title',
       message: 'Missing required property "title".',
+      code: 'shape.required',
+      values: { property: 'title' },
     })
   })
 
@@ -115,6 +117,8 @@ describe('validateSchema structural errors', () => {
     expect(onlyError(validateSchema(badChildren))).toEqual({
       path: '/model/fields/2/fields',
       message: 'Must be a list.',
+      code: 'shape.array',
+      values: {},
     })
   })
 

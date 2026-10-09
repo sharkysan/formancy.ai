@@ -58,6 +58,7 @@ The data contract, and nothing that evaluates it.
 | `types.ts` | The document's TypeScript shape |
 | `formancy.schema.json` | JSON Schema 2020-12. Every property carries a title and description, enforced by a test |
 | `validate.ts` | Structural validation via a precompiled ajv validator, then semantic rules ajv cannot express: duplicate keys, rename legality, nested repeaters, pages below top level, uncompilable patterns, logic targets, unresolvable message references |
+| `schema-errors.ts` | Every reason a document is refused, by code, in English. An error carries its code and the values its sentence names beside the English, so a builder can say it in another language; `schemaError` takes exactly the values a code's sentence names, checked by the compiler ([0122](../decisions/0122-a-validator-error-has-a-code.md)) |
 | `canonical.ts` | Deterministic serialisation. **Throws** rather than dropping undefined, NaN or Infinity ([0010](../decisions/0010-canonical-hash.md)) |
 | `hash.ts` | sha256 over the canonical form, via `@noble/hashes` because the builder hashes in a browser |
 | `diff.ts` | `diffSchemas` over **data paths**, classifying compatible / lossy / breaking ([0015](../decisions/0015-diff-before-server.md)) |
@@ -226,8 +227,8 @@ that gets acted on, and two builders deciding that separately would tell two peo
 different things about one edit
 ([0111](../decisions/0111-a-scenario-panel-names-what-stopped-holding.md)).
 
-`messages.ts` holds the builder's **words**: one catalogue, English and a complete
-German, which a session carries and both builders read — so a refusal, a move target
+`messages.ts` holds the builder's **words**: one catalogue, English with a complete
+German and French, which a session carries and both builders read — so a refusal, a move target
 and a layout node's name are worded once, in the language of the person building,
 rather than inline in English twice. Whole sentences per noun rather than a noun slotted
 into a template, because German agrees an adjective with its noun; `Intl` decides
@@ -235,7 +236,12 @@ plural forms and how a list is joined
 ([0114](../decisions/0114-the-builder-speaks-the-authors-language.md)). Every surface of
 both builders reads it, and a session's language is fixed for its lifetime
 ([0120](../decisions/0120-a-sessions-language-is-fixed-for-its-lifetime.md)). A property's own title and
-description are the spec's JSON Schema's words and are not translated here.
+description are the spec's JSON Schema's words, and the validator's sentences are the
+validator's: neither is worded here, and both are translated beside the builder's words —
+`schema-words-de.ts` and `-fr.ts` keyed by the English the schema writes
+([0121](../decisions/0121-the-specs-words-are-translated-beside-it.md)), `schema-errors-de.ts`
+and `-fr.ts` by the code each error carries
+([0122](../decisions/0122-a-validator-error-has-a-code.md)).
 
 `spoken.ts` holds what a builder **says** after a command on the structure tree — the
 command and the sentence together, because the sentence needs what was true before the

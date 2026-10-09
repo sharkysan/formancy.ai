@@ -187,7 +187,15 @@ if (!result.valid) {
 }
 ```
 
-Messages are written for a form author, not a compiler.
+Messages are written for a form author, not a compiler. Each error also carries a `code`
+naming which sentence it is and the `values` that sentence names — `{ code: 'key.taken',
+values: { key: 'email' } }` beside *Another field already uses the key "email"* — so it can
+be said in another language without reading the English back. The English for every code
+is `SCHEMA_ERRORS` in `@formancy/spec`; `@formancy/builder-core` ships German and French
+(`SCHEMA_ERRORS_DE`, `SCHEMA_ERRORS_FR`), and the server's `422` for an invalid schema
+returns `code` and `values` with each error as well. Rewording a sentence is free; a code is renamed
+only with a changelog entry
+([0122](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0122-a-validator-error-has-a-code.md)).
 
 ## Words: `i18n`
 

@@ -955,11 +955,23 @@ So are the drop surface over the rendered form, the prompt pane's status and the
 panel's (`arrangeDropAndSay`, `proposalStatus`, `scenarioStatus`), which both builders had
 also written by hand.
 
+A refusal is the other thing a builder tells its author about an edit, and the commonest
+came from the validator in English inside a German builder — an author who does not read
+English is told no without being told why. Every validator error now carries a code and
+the values its sentence names, and a session refuses through `text.error`, from German and
+French sentences typed as every code the validator has. `schema-errors.test.ts` holds both
+translations to the English's placeholders and to the format's own words, and a German
+session's duplicate-key refusal to its German sentence; the compiler holds every validator
+call to the values its sentence names
+([0122](../decisions/0122-a-validator-error-has-a-code.md)).
+
 *Residual:* every sentence a builder announces after a command is decided in one place
 now. What a sentence can still get wrong is the same in both builders at once — the cost
 of one answer is that its mistakes are shared. A true sentence can still go unheard — a live region's
 timing belongs to the browser and the screen reader — and no manual screen-reader audit
-has been performed (D4).
+has been performed (D4). A translated refusal is checked for its shape and not its meaning:
+that a German or French sentence gives the reason the English gives rests on its having
+been written carefully, and no native speaker has reviewed either translation.
 
 ---
 

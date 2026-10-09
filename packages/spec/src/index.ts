@@ -71,3 +71,5 @@ export type {
 export { modelDataPaths } from './paths.js'
 export { ROW_ID, ROW_ID_PREFIX } from './types.js'
 export { collectFieldPaths, isMessageRef, modelPathsForLayout, resolveText, unreferencedPaths } from './presentation.js'
+export { SCHEMA_ERRORS, renderSchemaError } from './schema-errors.js'
+export type { SchemaError, SchemaErrorCode, SchemaErrorValues } from './schema-errors.js'

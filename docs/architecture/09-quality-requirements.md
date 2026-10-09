@@ -52,7 +52,7 @@ formancy
 | Keystroke, large conditional form | 1 ms | ≈0.38 ms |
 | Cold graph compile | 30 ms | ≈1.7 ms |
 | `@formancy/core` bundle | 18 kB brotli | **18.7 kB** — over, measured 2026-10-08 |
-| `@formancy/spec` bundle | — | 14.0 kB for the whole barrel, measured 2026-10-08 |
+| `@formancy/spec` bundle | — | 21.6 kB for the whole barrel — the index and the chunk it shares with `/validate`, measured 2026-10-09 |
 | `@formancy/react` bundle | 4 kB brotli | **21.1 kB** for the whole barrel, measured 2026-10-06 |
 | `uqr`, the QR encoder | — | 6.6 kB brotli, **external** rather than bundled, measured 2026-09-27 |
 
@@ -63,7 +63,16 @@ which converts "fast on large conditional forms" from a claim into a test.
 repository runs `size-limit` — [0038](../decisions/0038-esm-only.md) says so plainly in
 its *Verified by* line, and three other documents said the opposite, including the
 regulatory evidence table. The figures above are `brotliCompressSync` over each built
-`dist/index.mjs`, dated because they are re-measured rather than incremented.
+`dist/index.mjs` and every chunk it imports, each compressed on its own as it is served,
+dated because they are re-measured rather than incremented.
+
+**The spec row was 5.2 kB short, for the reason the next paragraph warns about.**
+`@formancy/spec` has two entries, the barrel and `/validate`, and `tsdown` puts what both
+import in a shared chunk. The guard measured `index.mjs` alone and so did the figure: 14.0 kB
+"for the whole barrel" when the barrel loaded 19.3. Found 2026-10-09, when the validator's
+English sentences moved into that chunk
+([0122](../decisions/0122-a-validator-error-has-a-code.md)) and the figure did not move. The
+guard now follows the barrel's imports, so a build that changes shape cannot shrink a row.
 
 **The core bundle is over its budget, and that is the honest word for it.** 17.8 kB
 became 18.7 against a stated 18 when `runScenarios` landed in it — the runner that

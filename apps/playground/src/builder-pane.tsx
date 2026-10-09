@@ -12,6 +12,8 @@ import {
 import {
   BUILDER_MESSAGES_DE,
   BUILDER_MESSAGES_FR,
+  SCHEMA_ERRORS_DE,
+  SCHEMA_ERRORS_FR,
   SCHEMA_WORDS_DE,
   SCHEMA_WORDS_FR,
   createBuilderSession,
@@ -52,10 +54,20 @@ import { STARTER_SAMPLE, STARTER_SCENARIOS } from './starter-scenarios.js'
  */
 export function builderTextFor(locale: string): BuilderText {
   if (locale === 'de') {
-    return createBuilderText({ locale, messages: BUILDER_MESSAGES_DE, schema: SCHEMA_WORDS_DE })
+    return createBuilderText({
+      locale,
+      messages: BUILDER_MESSAGES_DE,
+      schema: SCHEMA_WORDS_DE,
+      errors: SCHEMA_ERRORS_DE,
+    })
   }
   if (locale === 'fr') {
-    return createBuilderText({ locale, messages: BUILDER_MESSAGES_FR, schema: SCHEMA_WORDS_FR })
+    return createBuilderText({
+      locale,
+      messages: BUILDER_MESSAGES_FR,
+      schema: SCHEMA_WORDS_FR,
+      errors: SCHEMA_ERRORS_FR,
+    })
   }
   return createBuilderText({ locale, messages: {} })
 }

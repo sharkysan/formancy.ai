@@ -1,3 +1,4 @@
+import { SCHEMA_ERRORS } from '@formancy/spec'
 import { BUILDER_MESSAGES } from './messages.js'
 import { schemaTexts } from './schema-words.js'
 import type { BuilderCatalogue, BuilderLanguage, BuilderMessageId, Message } from './messages.js'
@@ -9,9 +10,9 @@ import type { BuilderCatalogue, BuilderLanguage, BuilderMessageId, Message } fro
  * `⟦ ⟧` — shows two kinds of text. What came from the catalogue is marked; what
  * did not is either the document's own words (a field's label, a scenario's name)
  * or a sentence still written in the code. The spec's own words — a property's
- * title, a field type's name — are marked too, through the language's `schema`. The
- * first kind is fine and the second is the defect, and `untranslated` tells
- * them apart.
+ * title, a field type's name — are marked too, through the language's `schema`, and
+ * so are the validator's sentences, through its `errors`. The first kind is fine
+ * and the second is the defect, and `untranslated` tells them apart.
  *
  * Here rather than in each builder's tests because it is a judgement — what
  * counts as untranslated — and two copies of a judgement are two answers
@@ -41,8 +42,12 @@ export function pseudoLanguage(): BuilderLanguage {
   const schema = Object.fromEntries(
     schemaTexts().map((english) => [english, `${OPEN}${english}${CLOSE}`]),
   )
+  // And the validator's sentences, by code, so a refusal shown in English is seen (0122).
+  const errors = Object.fromEntries(
+    Object.entries(SCHEMA_ERRORS).map(([code, sentence]) => [code, `${OPEN}${sentence}${CLOSE}`]),
+  )
   // English plural and list rules: the marks are what is under test, not the grammar.
-  return { locale: 'en-GB', messages, schema }
+  return { locale: 'en-GB', messages, schema, errors }
 }
 
 /**

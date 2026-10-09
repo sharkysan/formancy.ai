@@ -68,6 +68,10 @@ at a time — the same fallback as everywhere else.
 and do not yet carry codes a translation could key on; and a property's *choices*, which
 are the format's tokens (`email`, `datagrid`), not words.
 
+> **Amended by [0122](0122-a-validator-error-has-a-code.md).** The validator's messages carry
+> codes now, and a language translates them as `errors`. The paragraph above is how it stood
+> when this was decided.
+
 ## Alternatives considered
 
 **Put the titles and descriptions into the builder's catalogue with ids.** Two sources for

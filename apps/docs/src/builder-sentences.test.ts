@@ -65,13 +65,18 @@ function isCatalogue(file: string): boolean {
     ) {
       found = true
     }
-    // The spec's words beside the schema (0121): a constant typed as SchemaWords.
-    if (ts.isVariableDeclaration(node) && node.type?.getText(source) === 'SchemaWords') found = true
+    // The spec's words beside the schema (0121), and the validator's sentences by
+    // code (0122): a constant typed as one of the types a translation is.
+    const typed = ts.isVariableDeclaration(node) ? node.type?.getText(source) : undefined
+    if (typed !== undefined && TRANSLATION_TYPES.has(typed)) found = true
     ts.forEachChild(node, visit)
   }
   visit(source)
   return found
 }
+
+/** The types a constant translating the spec's words is declared as. */
+const TRANSLATION_TYPES = new Set(['SchemaWords', 'SchemaErrorSentences'])
 
 /** Three words in a row: a sentence, or the start of one. */
 const SENTENCE = /[A-Za-z]{2,}[,;:]?\s+[A-Za-z]{2,}[,;:]?\s+[A-Za-z]{2,}/
@@ -136,6 +141,8 @@ describe('a sentence this package says to a person', () => {
         'messages-fr.ts',
         'schema-words-de.ts',
         'schema-words-fr.ts',
+        'schema-errors-de.ts',
+        'schema-errors-fr.ts',
       ]),
     )
   })

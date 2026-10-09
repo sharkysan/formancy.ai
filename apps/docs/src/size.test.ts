@@ -56,7 +56,7 @@ const CEILINGS: Record<string, { lines: number; why: string }> = {
     why: 'The seam is one route family per Fastify plugin, which is the framework’s own unit. Publishing moved to routes/publish.ts when the budget refused the next thing added here; the rest follow the same way.',
   },
   'packages/spec/src/validate.ts': {
-    lines: 735,
+    lines: 692,
     why: 'One subject, read top to bottom: what makes a document invalid. Kept deliberately whole.',
   },
   'packages/server-core/src/use-cases.ts': {

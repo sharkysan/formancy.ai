@@ -10,6 +10,28 @@ later.
 
 ## Unreleased
 
+**Why the validator refused an edit, in the author's language.** The refusal an author meets
+most — *Another field already uses the key "email"* — came from the validator as one English
+string, inside a builder that otherwise spoke German, and translating it would have meant
+matching the English. Every validator error now carries a `code` and the `values` its
+sentence names beside its unchanged English `message`: `{ path, message, code, values }`.
+The English for every code is `SCHEMA_ERRORS` in `@formancy/spec`; German and French are
+`SCHEMA_ERRORS_DE` and `SCHEMA_ERRORS_FR` in `@formancy/builder-core`, which a language
+carries as `errors` (`createBuilderText({ …, errors })`), and a session's refusals are said
+through `text.error`. The server's 422 for an invalid schema and the MCP tools return the
+two new fields too — additive, nothing that read `message` reads anything different. The
+compiler checks every validator call against the placeholders of its sentence, so a value
+a sentence names cannot be forgotten and shown as `{key}`
+([0122](docs/decisions/0122-a-validator-error-has-a-code.md)). The Angular getting-started
+page still said a property's title stays English, a release after it stopped; it shows the
+whole language now.
+
+**§9.3's figure for `@formancy/spec` was 5.2 kB short.** It said 14.0 kB "for the whole
+barrel", and the guard behind it agreed, because both measured `dist/index.mjs` alone —
+while the barrel imports a chunk it shares with `/validate`. Found when the validator's
+sentences moved into that chunk and the figure did not move. The guard now follows the
+barrel's imports, and the figure is 21.6 kB, of which the sentences are about 2.4.
+
 **Property labels and field type names in the author's language.** A German builder's
 panel still said "Required", "Minimum length" and "Single-line text": those are the spec's
 JSON Schema's words, which the reference documentation reads too, and they had stayed

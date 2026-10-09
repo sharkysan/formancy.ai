@@ -21,7 +21,7 @@ import { createRichTextEditor } from '@formancy/tiptap'
 import { playgroundUploader } from './demo-uploader.js'
 import { DEMO_OPTIONS_SOURCES, DEMO_SCANNER } from './demo-capabilities.js'
 import { createBuilderSession } from '@formancy/builder-core'
-import type { BuilderSession } from '@formancy/builder-core'
+import type { BuilderSession, BuilderText } from '@formancy/builder-core'
 import {
   FormancyArrangeSurface,
   FormancyBuilder,
@@ -380,7 +380,7 @@ export function App() {
             {parsed.parseError !== undefined ? (
               <Problem title="Not valid JSON yet" detail={parsed.parseError} />
             ) : validated !== undefined && !validated.valid ? (
-              <SchemaProblems errors={validated.errors} />
+              <SchemaProblems errors={validated.errors} text={builderTextFor(locale)} />
             ) : built?.engineError !== undefined ? (
               <Problem title="The engine refused this schema" detail={built.engineError} />
             ) : built?.engine !== undefined ? (
@@ -506,14 +506,14 @@ function Problem({ title, detail }: { title: string; detail: string }) {
   )
 }
 
-function SchemaProblems({ errors }: { errors: SchemaError[] }) {
+function SchemaProblems({ errors, text }: { errors: SchemaError[]; text: BuilderText }) {
   return (
     <div className="problem">
       <h3>{errors.length === 1 ? 'One thing to fix' : `${errors.length} things to fix`}</h3>
       <ul>
         {errors.map((error, index) => (
           <li key={index}>
-            <code>{error.path}</code> {error.message}
+            <code>{error.path}</code> {text.error(error)}
           </li>
         ))}
       </ul>

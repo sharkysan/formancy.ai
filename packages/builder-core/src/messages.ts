@@ -1,3 +1,6 @@
+import { renderSchemaError } from '@formancy/spec'
+import type { SchemaError, SchemaErrorCode } from '@formancy/spec'
+
 /**
  * The builder's own words, in one place, in more than one language.
  *
@@ -10,9 +13,12 @@
  * ([0114](../../../docs/decisions/0114-the-builder-speaks-the-authors-language.md)).
  *
  * **What this is not**: the form's own text, which is the document's message
- * catalogue and is translated by the translations pane; and the validator's
- * messages, which come from `@formancy/spec` and are not the builder's to word.
- * This is the builder talking to the person building.
+ * catalogue and is translated by the translations pane. Nor the validator's
+ * sentences, which are `@formancy/spec`'s to word: a language translates those by
+ * the code each one carries
+ * ([0122](../../../docs/decisions/0122-a-validator-error-has-a-code.md)), as it
+ * translates the spec's other words by their English. This is the builder talking
+ * to the person building.
  *
  * **Placeholders are `{name}`**, filled from the values a call passes, and left
  * visible when a value is missing — "No field at {path}." is obviously wrong,
@@ -42,6 +48,20 @@ export type Message = string | PluralMessage
  * (0121). A type of its own so that what a file is can be read off it.
  */
 export type SchemaWords = Readonly<Record<string, string>>
+
+/**
+ * What the validator says, in one language, by the code `@formancy/spec` gives each
+ * sentence (0122). Any subset, as a host's own language may be: a code it leaves out
+ * is said in the validator's English.
+ */
+export type SchemaErrorWords = { readonly [Code in SchemaErrorCode]?: string }
+
+/**
+ * Every sentence the validator says, in one language — what a shipped translation
+ * is, so that a sentence added to the validator does not compile here until it is
+ * translated. A type of its own, so that what a file is can be read off it.
+ */
+export type SchemaErrorSentences = Readonly<Record<SchemaErrorCode, string>>
 
 /**
  * English, which is the source every other catalogue translates and the fallback
@@ -455,6 +475,12 @@ export interface BuilderText {
    */
   schema(english: string): string
   /**
+   * Why the validator refused a document, in this language: its sentence for the
+   * error's code with the error's values set in — or the validator's own English,
+   * when the language has no sentence for that code.
+   */
+  error(found: SchemaError): string
+  /**
    * BCP 47: the locale every word is joined and counted in. The one asked for,
    * or English when the runtime has no data for it — so a caller formatting
    * anything else to match gets the same answer this did.
@@ -476,6 +502,8 @@ export interface BuilderLanguage {
    * live (0121).
    */
   readonly schema?: SchemaWords
+  /** The validator's sentences, by code. Optional, as `schema` is (0122). */
+  readonly errors?: SchemaErrorWords
 }
 
 const ENGLISH = 'en-GB'
@@ -516,9 +544,14 @@ export function createBuilderText(language?: BuilderLanguage): BuilderText {
   }
 
   const schemaWords = language?.schema ?? {}
+  const errorWords = language?.errors ?? {}
   return Object.assign(text, {
     list: (items: readonly string[]) => lists.format(items),
     schema: (english: string) => schemaWords[english] ?? english,
+    error: (found: SchemaError) => {
+      const sentence = errorWords[found.code]
+      return sentence === undefined ? found.message : renderSchemaError(sentence, found.values)
+    },
     locale,
   })
 }
