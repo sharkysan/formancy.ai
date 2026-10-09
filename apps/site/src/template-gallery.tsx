@@ -30,6 +30,20 @@ const templates = catalog.templates.map((entry) => {
   return { ...entry, schemaDocument: schema, download }
 })
 type Template = (typeof templates)[number]
+
+/**
+ * What a card says about its template, read from the template: how many languages it is
+ * written in, and how many steps when it has them. Both were literals, and "3 languages"
+ * would have stayed on a card whose template gained a fourth.
+ */
+function facts(entry: Template): string[] {
+  const steps = entry.schemaDocument.model.fields.filter((field) => field.type === 'page').length
+  return [
+    `${String(entry.locales.length)} languages`,
+    ...(steps > 0 ? [`${String(steps)} steps`] : []),
+    'Conditional questions',
+  ]
+}
 const editUrl = (entry: Entry, locale: Locale): string =>
   `${PLAYGROUND}?template=${encodeURIComponent(entry.id)}&locale=${encodeURIComponent(locale)}`
 
@@ -90,7 +104,7 @@ export function TemplateGallery() {
                   <div className="template-card-top"><span className="template-category-mark" aria-hidden="true">{category.mark}</span><span>{category.label}</span></div>
                   <h2 id={`title-${entry.id}`}>{title}</h2>
                   <p>{entry.description[locale]}</p>
-                  <div className="template-card-meta"><span>3 languages</span><span>Conditional questions</span></div>
+                  <div className="template-card-meta">{facts(entry).map((fact) => <span key={fact}>{fact}</span>)}</div>
                   <div className="template-card-actions">
                     <button type="button" className="action primary" aria-label={`Preview ${title}`} onClick={() => setSelected(entry)}>Preview <span aria-hidden="true">↗</span></button>
                     <a className="action" href={editUrl(entry, locale)} aria-label={`Edit ${title} in playground`}>Use template <span aria-hidden="true">→</span></a>

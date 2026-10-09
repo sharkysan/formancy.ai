@@ -10,6 +10,11 @@ later.
 
 ## Unreleased
 
+**The job application template is a wizard.** Its questions are on three pages, each drawn
+in the template's layout, so the gallery has a form answered a step at a time; pages hold no
+data, so its sample answers and behaviour cases did not change. A gallery card now reads its
+languages and its steps from the template rather than printing "3 languages" on every card.
+
 **Fixed: the two renderers drew a paged form with a layout differently, and both wrongly.**
 React drew the whole layout on every step, so a later page's questions were on the first —
 answerable, and not checked by Next; Angular dropped the layout for any paged form. Both now

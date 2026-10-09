@@ -10,7 +10,7 @@ behaviour cases. The repository's Apache-2.0 licence applies.
 
 | Area | Templates |
 | --- | --- |
-| HR | Job application, employee onboarding, leave request |
+| HR | Job application (a wizard, one page per step), employee onboarding, leave request |
 | Sales | Sales enquiry, quotation request, customer onboarding |
 | Customer service | Support request, complaint, satisfaction survey |
 | Events | Registration, speaker submission, feedback |
@@ -25,6 +25,11 @@ you the importable document directly. **Use template** opens the selected form
 and language in the playground, where **Build** edits it and **Schema** exposes
 the JSON. Both renderers start blank. The playground also lists the collection
 in its **Demo** selector.
+
+The job application is the collection's wizard: its questions are on pages, so a person
+answers it a step at a time and Next checks only the step they are on, while its layout
+still arranges each step's questions into sections. Pages hold no data, so its sample
+answers and behaviour cases are the same as a one-page form's would be.
 
 For a direct import, use the complete `*.form.json` document as the engine's
 `schema` or the builder session's starting document. The
