@@ -10,6 +10,20 @@ later.
 
 ## Unreleased
 
+**An upload can be scanned before it is kept.** Set `FORMANCY_CLAMD_HOST` and every upload's
+bytes go to a ClamAV daemon before they are stored: clean is kept, a finding is refused with
+its name — which the file field shows as the reason it was not attached — and a scanner that
+cannot be reached refuses the file too, with "try again", because configuring a scanner is a
+promise that nothing unscanned gets in. A refused file is never in the store and cannot be
+claimed by a submission. The adapter speaks clamd's own INSTREAM protocol, so it adds no
+dependency; `Scanner` is a port, so any other scanner fits behind it. Measured once against
+ClamAV 1.5.4: set `AlertExceedsMax` in `clamd.conf`, or an archive that expands past clamd's
+limits is answered clean without being scanned
+([0131](docs/decisions/0131-an-upload-is-scanned-before-it-is-kept.md)).
+
+The admin's uploader passes on what the server said when it refuses bytes after they
+arrived, rather than "The upload failed (422)".
+
 **Each file is its own upload.** A file field shows every file it is sending — waiting its
 turn, uploading with how far it has got, or refused with the uploader's reason — with a way
 to cancel it, to try it again, or to dismiss it; the picker stays open while files upload;

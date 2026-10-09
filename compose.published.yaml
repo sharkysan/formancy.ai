@@ -76,6 +76,11 @@ services:
       FORMANCY_S3_REGION:
       FORMANCY_S3_ACCESS_KEY_ID:
       FORMANCY_S3_SECRET_ACCESS_KEY:
+      # A ClamAV daemon to scan uploads with. Bare keys for the same reason: unset is
+      # how the server knows no file is scanned.
+      FORMANCY_CLAMD_HOST:
+      FORMANCY_CLAMD_PORT:
+      FORMANCY_CLAMD_MAX_BYTES:
 
       # Webhook delivery refuses plain http and private addresses by default,
       # which is what stops a form author pointing the server at the cloud

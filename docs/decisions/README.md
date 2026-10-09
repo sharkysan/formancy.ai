@@ -231,3 +231,4 @@ listed under the sections they belong to above.
 | [0128](0128-a-form-says-why-a-field-is-hidden.md) | A form says, rule by rule, why a field is hidden now | accepted |
 | [0129](0129-a-row-rule-is-written-in-the-row.md) | A rule on a field in a repeater row is written in the row's scope | accepted |
 | [0130](0130-each-file-is-its-own-upload.md) | Each file is its own upload, and belongs to its row rather than its control | accepted |
+| [0131](0131-an-upload-is-scanned-before-it-is-kept.md) | An upload is scanned before it is kept, and refused when it cannot be | accepted |

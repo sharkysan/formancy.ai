@@ -255,6 +255,7 @@ describe('uploadFile', () => {
     headers: Record<string, string> = {}
     body: unknown
     status = 0
+    responseText = ''
     aborted = false
     readonly upload: { onprogress: ((event: ProgressEvent) => void) | null } = { onprogress: null }
     onload: (() => void) | null = null
@@ -277,6 +278,7 @@ describe('uploadFile', () => {
     finish(): void {
       if (this.aborted) return
       this.status = putStatus
+      this.responseText = putBody
       this.onload?.()
     }
     abort(): void {
@@ -285,12 +287,14 @@ describe('uploadFile', () => {
     }
   }
   let putStatus = 204
+  let putBody = ''
   /** Off for a test that has something to do while the bytes are on their way. */
   let answerAtOnce = true
 
   beforeEach(() => {
     sent = []
     putStatus = 204
+    putBody = ''
     answerAtOnce = true
     vi.stubGlobal('XMLHttpRequest', FakeRequest)
   })
@@ -387,6 +391,21 @@ describe('uploadFile', () => {
     // The offer succeeding and the PUT failing is the worst case to get wrong:
     // there is a row in the database and no bytes behind it.
     await expect(uploadFile('contact', pdf(), sending())).rejects.toThrow('413')
+  })
+
+  test('bytes the server refused once they arrived say why, in the server’s words', async () => {
+    // A scanner's refusal is decided after the bytes land (0131). "The upload failed
+    // (422)" would leave somebody guessing whether to try again.
+    answering(() => json(stored, 201))
+    putStatus = 422
+    putBody = JSON.stringify({
+      error: 'refused_by_scanner',
+      message: "This file was refused by the deployment's virus scanner (Eicar-Test-Signature).",
+    })
+
+    await expect(uploadFile('contact', pdf(), sending())).rejects.toThrow(
+      "This file was refused by the deployment's virus scanner (Eicar-Test-Signature).",
+    )
   })
 
   test('a session that ended while the bytes were on their way ends here too', async () => {

@@ -94,6 +94,61 @@ export async function offerUpload(deps: OfferDeps, input: OfferInput): Promise<O
   return { ok: true, file }
 }
 
+/** What a deployment's scanner says about an upload's bytes. */
+export type ScanVerdict = { clean: true } | { clean: false; finding: string }
+
+/**
+ * A deployment's virus scanner, asked about an upload's bytes before they are kept.
+ *
+ * A port because the deployment supplies it and there are two: the ClamAV adapter in
+ * `@formancy/server`, and the doubles that test this decision. **Throwing means it could
+ * not be asked** — a connection refused, a timeout — and never that the file is clean.
+ */
+export interface Scanner {
+  scan(
+    file: { name: string; contentType: string; size: number },
+    bytes: Uint8Array,
+  ): Promise<ScanVerdict>
+}
+
+export type ScreenOutcome =
+  | { ok: true }
+  | { ok: false; reason: 'refused'; finding: string }
+  /** `cause` is for the operator's log, never for the client: it can name an address. */
+  | { ok: false; reason: 'scanner_unavailable'; cause: string }
+
+/**
+ * Whether an upload's bytes may be kept.
+ *
+ * **Fail closed.** A scanner that cannot be asked refuses the file, the same as one that
+ * found something: a deployment that configured a scanner did so to keep unscanned files
+ * out, and its being down is not a reason to let one in. The person is told to try again,
+ * and the field offers exactly that. Without a scanner every upload is kept, as it was
+ * before there was one — a supported state, said in the documentation rather than here
+ * ([0131](../../../docs/decisions/0131-an-upload-is-scanned-before-it-is-kept.md)).
+ */
+export async function screenUpload(
+  scanner: Scanner | undefined,
+  file: { name: string; contentType: string; size: number },
+  bytes: Uint8Array,
+): Promise<ScreenOutcome> {
+  if (scanner === undefined) return { ok: true }
+  let verdict: ScanVerdict
+  try {
+    verdict = await scanner.scan(
+      { name: file.name, contentType: file.contentType, size: file.size },
+      bytes,
+    )
+  } catch (error) {
+    return {
+      ok: false,
+      reason: 'scanner_unavailable',
+      cause: error instanceof Error ? error.message : String(error),
+    }
+  }
+  return verdict.clean ? { ok: true } : { ok: false, reason: 'refused', finding: verdict.finding }
+}
+
 export type ClaimOutcome =
   | { ok: true; ids: readonly string[] }
   | { ok: false; unknown: readonly string[] }
