@@ -285,6 +285,19 @@ describe('what the form’s examples make of a proposal', () => {
     expect(proposeEdit(RIGHT, BACKWARDS).examples).toBeUndefined()
   })
 
+  test('and an empty list of examples is no examples, not a verdict that all hold', () => {
+    /*
+     * What a host passes for a form nobody wrote examples for: the playground hands every
+     * such form `[]`. Running none and comparing nothing gives `{ regressions: [],
+     * repaired: [] }`, which reads to any caller of `EditProposal` as "nothing stops
+     * holding" — the verdict the case above refuses, reached through the other door.
+     */
+    expect(proposeEdit(RIGHT, BACKWARDS, { scenarios: [] }).examples).toBeUndefined()
+    expect(
+      proposeEdit(RIGHT, BACKWARDS, { scenarios: [], initialValue: SAMPLE }).examples,
+    ).toBeUndefined()
+  })
+
   test('is the scenario panel’s own verdict: runScenarios, then comparedToLastRun', () => {
     /*
      * Not a second opinion. The panel compares the run after an edit with the run before

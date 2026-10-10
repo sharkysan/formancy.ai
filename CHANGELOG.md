@@ -21,7 +21,9 @@ hold again. `proposalHeading`, new, gives the review a heading that names what w
 holding, and `proposalStatus` adds both, in English, German and French. Both prompt panes take
 `scenarios`, `initialValue` and `mode`, as the scenario panes do, and the playground passes the
 open form's examples to both builders' prompt panes. Apply stays enabled, because a rule changed
-on purpose stops its old example holding. A rule no example pins gets no warning. `EditProposal`
+on purpose stops its old example holding. A rule no example pins gets no warning. With no
+examples — none passed, or an empty list — `examples` is `undefined` rather than an empty
+verdict, because a check that never ran has not passed. `EditProposal`
 has a new field, so an `EditProposal` built by hand rather than by `proposeEdit` must add it
 ([0160](docs/decisions/0160-a-proposal-is-checked-against-the-forms-examples.md)).
 

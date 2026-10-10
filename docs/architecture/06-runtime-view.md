@@ -319,10 +319,11 @@ Write it
 
   proposalStatus(result)           ──▶ the live region: one sentence for each ending
   proposeEdit(current, document, examples)
-    examples given ──▶ runScenarios on current and on document
-                   ──▶ comparedToLastRun ──▶ what would stop holding, and hold again
-                   ──▶ proposalHeading names the first; the status names both (0160)
-                   ──▶ the review ──▶ applyProposal (0109)
+    one or more examples ──▶ runScenarios on current and on document
+                         ──▶ comparedToLastRun ──▶ what would stop holding, and hold again
+                         ──▶ proposalHeading names the first; the status names both (0160)
+    none, or an empty list ──▶ examples is undefined: no verdict, rather than an empty one
+  ──▶ the review ──▶ applyProposal (0109)
 ```
 
 **The stop is the person's, and it does not wait for the host.** Each turn is raced against

@@ -57,7 +57,7 @@ export interface EditProposal {
   /**
    * What the form's examples make of it: which held against the current document and
    * would not against this one, and which would hold again. Undefined when no examples
-   * were given, which is not the same as none stopping
+   * were given — none passed, or an empty list — which is not the same as none stopping
    * ([0160](../../../docs/decisions/0160-a-proposal-is-checked-against-the-forms-examples.md)).
    */
   readonly examples: ScenarioRunChange | undefined
@@ -101,7 +101,12 @@ export function proposeEdit(
     document: proposed,
     changes,
     costsAnswers: changes.some((change) => change.severity !== 'compatible'),
-    examples: examples === undefined ? undefined : againstExamples(current, proposed, examples),
+    // An empty list is no examples: run, it would compare nothing with nothing and answer
+    // the empty verdict, "nothing stops holding", for a check that never ran.
+    examples:
+      examples === undefined || examples.scenarios.length === 0
+        ? undefined
+        : againstExamples(current, proposed, examples),
   }
 }
 

@@ -9,13 +9,16 @@
   exist. Each of these mutations reddens a case: swapping regressions and repairs in
   `comparedToLastRun`; dropping `initialValue` or `mode` on the way to `runScenarios`;
   running the proposed document before the current one; answering an empty verdict when no
-  examples were given; a heading that ignores the examples, or drops the costs when they
-  stop; a status that leaves out either sentence. One mutation reddened nothing at first:
-  `comparedToLastRun` counting every failure as a regression. *An example already failing
-  is not one this edit would stop* was added for it, and fails under it. *Is the scenario
-  panel's own verdict* states the equation and does not redden under a mutation to
-  `comparedToLastRun`; the literal cases do. Both builders' `prompt-pane.test`, *with the
-  form's examples*: before this change the review region was not named by the example. A
+  examples were given, or when the list given was empty; a heading that ignores the
+  examples, or drops the costs when they stop; a status that leaves out either sentence.
+  One mutation reddened nothing at first: `comparedToLastRun` counting every failure as a
+  regression. *An example already failing is not one this edit would stop* was added for
+  it, and fails under it. *Is the scenario panel's own verdict* states the equation and
+  does not redden under a mutation to `comparedToLastRun`; the literal cases do. *An empty
+  list of examples is no examples* was added in review: the first version answered
+  `{ regressions: [], repaired: [] }` for `{ scenarios: [] }`, and the case failed against
+  it. Both builders' `prompt-pane.test`, *with the form's examples*: before this change
+  the review region was not named by the example. A
   pane that drops the examples, `initialValue` or `mode`, chooses its heading by hand as
   before, or disables Apply on a regression reddens a case. *Without them the review is
   what it was* fails for a pane that assumes examples were given. Both builders'
@@ -55,8 +58,10 @@ third argument is `{ scenarios, initialValue?, mode? }`: the same three things a
 pane takes, with the same meaning. Given, `proposal.examples` is
 `comparedToLastRun(runScenarios(current, …), runScenarios(proposed, …))`. Those are the two
 functions the scenario pane runs after an edit, so the review cannot call something a
-regression that the pane would not once it is applied. Not given, `examples` is
-`undefined`, which is not an empty verdict: a check that never ran has not passed.
+regression that the pane would not once it is applied. Not given, or given as an empty
+list, `examples` is `undefined`, which is not an empty verdict: a check that never ran has
+not passed. The playground passes an empty list for every form nobody wrote examples for,
+so the empty list is the common way in, not a corner.
 
 **The review's heading names what would stop holding.** `proposalHeading` in
 `@formancy/builder-core` decides it, once, for both builders. They chose between two

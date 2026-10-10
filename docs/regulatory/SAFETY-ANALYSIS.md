@@ -1286,10 +1286,11 @@ Apply is not disabled by a regression: a rule changed on purpose stops its old e
 the person decides. What the tests show is this. `proposal.test.ts` (*what the form's
 examples make of a proposal*) holds that a rule turned round names the examples it breaks,
 that one put right names those that would hold again, and that an example already failing
-is not put down to the edit. It holds that no examples give no verdict rather than an empty
-one, and that the examples run from the sample and in the mode given. Each builder's
-`prompt-pane.test` (*with the form's examples*) holds that the review region is named by
-the example while the document is unchanged and Apply is enabled. `two-builders.test.tsx`
+is not put down to the edit. It holds that no examples, whether none are passed or the
+list is empty, give no verdict rather than an empty one, and that the examples run from
+the sample and in the mode given. Each builder's `prompt-pane.test` (*with the form's
+examples*) holds that the review region is named by the example while the document is
+unchanged and Apply is enabled. `two-builders.test.tsx`
 holds the same through the playground in both builders, with the starter's canton rule
 turned round. No test runs a real model. The verdict uses the examples as they were when
 Write was pressed, so one added while the review is open is not in it.
