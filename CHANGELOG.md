@@ -10,6 +10,42 @@ later.
 
 ## Unreleased
 
+**Added: the server keeps a request log, and a line is built from a list of fields.**
+`@formancy/server` constructed Fastify with `logger: false`, so nothing told an operator why a
+request had failed — a `500`, a webhook that never went, a respondent refused for somebody else's
+traffic behind an unnamed proxy — and what the process did write was worse than nothing: its three
+background workers printed a failed pass's error whole, and a Drizzle query error's message is the
+query followed by its parameters; postgres.js printed every database notice whole to standard
+output. Now the server writes a JSON line to standard output for every request — its method, its
+route as registered (`/f/:path/drafts/:draftId`, never the path that was asked for), its status,
+how long it took and its request id — at `error` when the status is a 5xx, so `warn` keeps a
+route's own `502` or `503`, and one for every error that answered a request, `request.refused`
+for a 4xx and `request.failed` for a 5xx, naming what was thrown by its class and its code, never
+by its message or its stack. Every request includes the ones Fastify's own line misses: a URL it
+cannot decode and an over-long path parameter, refused before routing; a request arriving while
+the server closes, refused with a `503`; and a client that left before its answer was sent, a
+`request.abandoned` line with no status. Every audit row carries the id of the request that wrote
+it: `@formancy/server-core`'s `publishForm`, `keepExamples` and `createSubmission`, which write
+their row inside their own transaction, take an optional `requestId` for it, and without it a
+publish's and a submission's row named no request. A route, a worker or a database notice adds a
+line only as an event from a fixed list. A line is assembled from a list
+of fields, each kept only when its value is of that field's kind, so a body, a query string, a
+header (`Authorization`, cookies, the API key, the challenge, a draft's key), a file's name, an
+answer, a password or an email has nowhere to go — by construction, because a filter over text
+knows only the shapes it was written for and an answer has none. `FORMANCY_LOG_LEVEL` sets the
+level: `info` when unset, pino's other names, or `off`; anything else stops the server at startup.
+`.env.example` and both compose files pass it through. `createApp` gains a `log` option and keeps
+no log without one, so a host that embeds it decides what its output is for, and the libraries
+still write nothing (0115); `startFileCollector` gains one too, and without it writes a failed
+pass to standard error by the same rule. An integration test drives every route family on real
+PostgreSQL with values planted in what each request sends, and finds none of them in the log; it
+replaces the assertion that the logger was off. **What it costs:** an error in the log says what
+was thrown, not where or why, and the log cannot say which form a line was for — the audit log
+names a subject. And a `500` still answers its client with the error's message, Fastify's default
+reply, which this does not change. "The server writes no log at all", in what `0.2.0` listed as
+knowingly missing, is no longer true
+([0168](docs/decisions/0168-the-log-is-built-from-a-list-of-fields.md)).
+
 **Fixed: every deployment's admin asked Google for its faces and jsDelivr for its editor.**
 formancy.ai's own pages stopped on 2026-10-09; the admin, which a deployment runs for its
 operators, still linked Google Fonts and left Monaco's loader at its jsDelivr default, so

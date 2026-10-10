@@ -40,6 +40,11 @@ const outcome = await createSubmission(deps, {
 })
 ```
 
+`publishForm`, `keepExamples` and `createSubmission` write their audit row inside
+the transaction of what they record. Give them a `requestId` and the row names
+that request, so it can be read beside a request log — `@formancy/server` passes
+Fastify's request id. Without one, the row names none.
+
 Authorization is one readable table (`can(actor, action)`), deliberately not
 Postgres row-level security: RLS couples the application to per-request database
 roles and hides authorization from the test suite.

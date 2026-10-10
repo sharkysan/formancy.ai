@@ -3,6 +3,7 @@ import { AUDIT_ACTIONS, auditedBy } from './audit.js'
 import type { AuditAction } from './audit.js'
 import { createMemoryStorage } from './testing/memory-storage.js'
 import { createSubmission, setFormAccess } from './use-cases.js'
+import { keepExamples } from './examples.js'
 import { publishForm } from './publishing.js'
 import type { ServerDeps } from './index.js'
 
@@ -266,5 +267,58 @@ describe('publishing', () => {
     // is present in the list and 404s when opened.
     const form = await d.storage.getFormByPath('survey')
     expect(form?.currentVersionId).toBe(published.versionId)
+  })
+})
+
+/**
+ * The request a row happened in, for the rows a use-case writes inside its own transaction.
+ *
+ * A route writing its own row hands over its request's id; these three rows are built here,
+ * where no request is in sight, so the id has to be given to the use-case. Without it a
+ * publish's row and a submission's named no request, and a server's request log could not be
+ * read beside them (0168).
+ */
+describe('a row written inside its transaction', () => {
+  test('names the request it was given: a first publish, a next version, a change of examples, a submission', async () => {
+    const { d } = await publishedForm()
+    const next = await publishForm(d, {
+      path: 'survey',
+      requestId: 'req-2',
+      schema: { ...SCHEMA, model: { fields: [...SCHEMA.model.fields, { key: 'note', type: 'text', label: 'Note' }] } },
+    })
+    if (!next.ok) throw new Error('the second version did not publish')
+    await publishForm(d, { path: 'other', schema: SCHEMA, requestId: 'req-3' })
+    await keepExamples(d, {
+      path: 'survey',
+      actor: { kind: 'user', id: 'u-ada', role: 'editor' },
+      examples: { scenarios: [] },
+      requestId: 'req-4',
+    })
+    await createSubmission(d, {
+      path: 'survey',
+      declaredSchemaHash: next.schemaHash,
+      data: { email: 'ada@example.ch' },
+      requestId: 'req-5',
+    })
+
+    const named = (await d.storage.listAudit(50)).map((row) => `${row.action} ${String(row.subject)} ${String(row.requestId)}`)
+    expect(named.sort()).toEqual(
+      [
+        // The fixture's own publish, given no request.
+        'form.published survey undefined',
+        'form.published survey req-2',
+        'form.published other req-3',
+        'form.examples.changed survey req-4',
+        'submission.created survey req-5',
+      ].sort(),
+    )
+  })
+
+  test('and names none when it was given none, rather than inventing one', async () => {
+    // A host composing its own HTTP over these use-cases may have no request id to give.
+    const { d, hash } = await publishedForm()
+    await createSubmission(d, { path: 'survey', declaredSchemaHash: hash, data: { email: 'ada@example.ch' } })
+
+    for (const row of await d.storage.listAudit(50)) expect(row).not.toHaveProperty('requestId')
   })
 })

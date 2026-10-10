@@ -28,7 +28,8 @@ export async function exampleRoutes(
     const actor = await actorOf(request)
     if (actor === undefined) return reply.code(401).send({ error: 'unauthenticated' })
     const { path } = request.params as { path: string }
-    return answer(reply, await keepExamples(deps, { path, actor, examples: request.body }))
+    // The request's id, so the audit row written with the change names this request's line (0168).
+    return answer(reply, await keepExamples(deps, { path, actor, examples: request.body, requestId: request.id }))
   })
 }
 

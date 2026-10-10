@@ -1,4 +1,6 @@
 import type { Storage } from '@formancy/server-core'
+import { workerLog } from './server-log.js'
+import type { WorkerLog } from './server-log.js'
 
 /**
  * Forgetting challenges that can no longer be replayed anyway.
@@ -25,8 +27,9 @@ export interface SweeperHandle {
 
 export function startChallengeSweeper(
   storage: Storage,
-  options: { intervalMs?: number } = {},
+  options: { intervalMs?: number; log?: WorkerLog } = {},
 ): SweeperHandle {
+  const log = workerLog(options.log)
   // Hourly. The rows expire in ten minutes and are a challenge hash each, so
   // an hour's worth of them is nothing; sweeping more often would be work
   // nobody asked for.
@@ -41,8 +44,8 @@ export function startChallengeSweeper(
       await storage.forgetExpiredChallenges(new Date().toISOString())
     } catch (error) {
       // A sweeper that throws is a sweeper that stops, and a table that grows
-      // for a reason nobody is watching.
-      console.error('challenges: a sweep failed', error)
+      // for a reason nobody is watching. Without what was thrown (C3).
+      log.error({ event: 'sweeper.failed', err: error })
     } finally {
       running = false
     }

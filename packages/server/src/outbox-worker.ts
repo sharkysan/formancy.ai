@@ -1,6 +1,8 @@
 import { drainOutbox } from '@formancy/server-core'
 import type { Storage } from '@formancy/server-core'
 import { deliver } from './deliver.js'
+import { workerLog } from './server-log.js'
+import type { WorkerLog } from './server-log.js'
 
 /**
  * Runs the outbox on a timer.
@@ -21,9 +23,10 @@ export interface WorkerHandle {
 
 export function startOutboxWorker(
   storage: Storage,
-  options: { intervalMs?: number; allowHttp?: boolean; allowPrivateAddresses?: boolean } = {},
+  options: { intervalMs?: number; allowHttp?: boolean; allowPrivateAddresses?: boolean; log?: WorkerLog } = {},
 ): WorkerHandle {
   const interval = options.intervalMs ?? 5_000
+  const log = workerLog(options.log)
   let stopped = false
   let running = false
 
@@ -56,8 +59,9 @@ export function startOutboxWorker(
     } catch (error) {
       // A worker that throws is a worker that stops. Deliveries retry on their
       // own schedule, so the right response to an unexpected failure is to
-      // complain and come back.
-      console.error('outbox: pass failed', error)
+      // complain and come back — with what was thrown as its kind and code, never
+      // its words, which for a query are its parameters (C3).
+      log.error({ event: 'outbox.failed', err: error })
     } finally {
       running = false
     }

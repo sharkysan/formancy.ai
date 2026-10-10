@@ -54,8 +54,8 @@ A request whose scan and write together take longer than the two minutes is
 the case this does not close: the row stays with its submission, and its bytes
 can still replace the ones that were kept. The supplied clamd adapter does not
 keep a scan inside that: its 30 seconds are of silence, not of the whole scan.
-That request is answered `409`, and nothing else records it — the server keeps
-no request log.
+That request is answered `409`, and nothing else tells it apart — the request
+log has a `409` on that route, as it has for every other refusal there.
 
 ## Turning it on
 

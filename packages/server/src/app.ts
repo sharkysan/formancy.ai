@@ -13,7 +13,6 @@ import type { FileStore } from './file-store.js'
 import rateLimit from '@fastify/rate-limit'
 import type { FastifyInstance, FastifyRequest, preHandlerHookHandler } from 'fastify'
 import {
-  auditedBy,
   authenticateApiKey,
   decodeSolution,
   mintChallenge,
@@ -33,7 +32,6 @@ import {
 import type {
   Action,
   Actor,
-  AuditDraft,
   AuthDeps,
   Role,
   Scanner,
@@ -43,6 +41,9 @@ import type {
 } from '@formancy/server-core'
 import { createSessionTokens, realRandomToken, realSecretHashing } from './auth-runtime.js'
 import { checkedMaxFileBytes, DEFAULT_MAX_FILE_BYTES } from './upload-settings.js'
+import { serverLogOptions } from './server-log.js'
+import type { ServerLogSettings } from './server-log.js'
+import { auditTrail } from './audit-trail.js'
 
 export { SCHEMA_HASH_HEADER } from './headers.js'
 /** Base64 JSON, the shape an ALTCHA client already produces. */
@@ -132,6 +133,12 @@ export interface AppOptions {
   model?: DeploymentModel
   /** Model requests per session per minute. Defaults to 10: a run of three turns, three times. */
   modelRateLimit?: { max: number; timeWindowMs: number }
+  /**
+   * Where the server's log goes and from which level: a line per request and per error, each
+   * built from a list of fields (`server-log.ts`, 0168). Absent, there is none — `main.ts`
+   * passes one unless `FORMANCY_LOG_LEVEL` is `off`; a host embedding the app chooses (0115).
+   */
+  log?: ServerLogSettings
 }
 
 /**
@@ -151,7 +158,7 @@ export interface AppOptions {
  */
 export async function createApp(storage: Storage, options: AppOptions): Promise<FastifyInstance> {
   const app = Fastify({
-    logger: false,
+    ...serverLogOptions(options.log),
     // 256 kB by default. Large enough for a long form with a repeater, small
     // enough that a request cannot cost meaningful memory before it is rejected.
     bodyLimit: options.bodyLimitBytes ?? 256 * 1024,
@@ -234,31 +241,8 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
     }
   }
 
-  /**
-   * Append an audit row for something that has already happened.
-   *
-   * Never throws. An export that succeeded and an audit row that did not is
-   * bad; an export that 500s because the audit row failed, after the rows have
-   * already been written to the response, is worse and helps nobody. So the
-   * failure is logged loudly at error level and the request stands.
-   *
-   * For a mutation that HAS a transaction, do not use this — pass the entry
-   * into that call so the two commit together. `insertSubmission` is currently
-   * the only one.
-   */
-  async function audit(request: FastifyRequest, draft: AuditDraft): Promise<void> {
-    const actor = (request as FastifyRequest & { actor?: Actor }).actor
-    try {
-      await deps.storage.recordAudit({
-        id: deps.newId(),
-        at: deps.nowIso(),
-        requestId: request.id,
-        ...auditedBy(actor, draft),
-      })
-    } catch (error) {
-      request.log.error({ err: error, action: draft.action }, 'audit row could not be written')
-    }
-  }
+  // Never throws: a row that cannot be written is said in the log, and the request stands.
+  const audit = auditTrail(deps)
 
   // -------------------------------------------------------------------- auth
 
@@ -565,7 +549,6 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
     // invalid credential is treated as no credential rather than as an error:
     // this route's job is to accept submissions, not to adjudicate logins.
     const actor = await actorOf(request)
-    const origin = request.headers.origin
 
     // Before the engine runs, and only for a visitor who is not signed in.
     // Somebody with a session has already paid a cost the challenge is a
@@ -580,9 +563,10 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
     const outcome = await createSubmission(deps, {
       path,
       declaredSchemaHash,
+      requestId: request.id,
       data: request.body ?? {},
       actor: actor === undefined ? 'anonymous' : 'authenticated',
-      ...(typeof origin === 'string' ? { origin } : {}),
+      ...(typeof request.headers.origin === 'string' ? { origin: request.headers.origin } : {}),
     })
 
     if (outcome.ok) return reply.code(201).send({ id: outcome.id, data: outcome.canonicalData })

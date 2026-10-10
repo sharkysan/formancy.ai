@@ -268,3 +268,4 @@ listed under the sections they belong to above.
 | [0165](0165-a-deployments-model-is-asked-through-its-server.md) | A deployment's model is asked through its server, and the server writes the briefing | accepted |
 | [0166](0166-a-deployment-keeps-a-forms-examples-and-runs-them-at-publish.md) | A deployment keeps a form's examples, and runs them at publish | accepted |
 | [0167](0167-the-relay-says-what-each-request-carries.md) | A request to a model names its kind, and the relay pane says what that kind carries | accepted |
+| [0168](0168-the-log-is-built-from-a-list-of-fields.md) | The server keeps a log, and a line is built from a list of fields | accepted |

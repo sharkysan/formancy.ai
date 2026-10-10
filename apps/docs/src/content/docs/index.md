@@ -28,10 +28,8 @@ The server has authentication, role-based authorization, per-IP rate limiting, a
 origin allowlist, audit logging, drafts that carry their own key, and an opt-in
 proof-of-work challenge for anonymous submissions, and it scans every upload before keeping it
 when the deployment runs ClamAV. What it does not have is a submission token bound to the form
-version. It also
-writes **no log at all** — Fastify is constructed with the logger off, so nothing can leak
-a submission into one and nothing can tell you why a request failed either. Do not deploy
-it anywhere public yet.
+version. Its request log says which route answered what and what was thrown, and has no
+field for an answer or a credential. Do not deploy it anywhere public yet.
 :::
 
 formancy is a modern, self-hostable form platform for React and Angular. It is

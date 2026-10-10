@@ -15,6 +15,8 @@ import { maxFileBytesFrom } from './upload-settings.js'
 import { trustProxyFrom } from './trust-proxy.js'
 import { modelSettings } from './model-settings.js'
 import { createCompleter } from './completers.js'
+import { logLevelFrom } from './log-settings.js'
+import { createServerLog, databaseNotices } from './server-log.js'
 
 // recheck ships a 23 MB JVM jar and a native binary per platform as OPTIONAL
 // dependencies and falls back to a pure-JavaScript engine without them. For
@@ -39,7 +41,18 @@ if (databaseUrl === undefined || databaseUrl === '') {
 }
 
 const port = Number(process.env['PORT'] ?? 4380)
-const sql = postgres(databaseUrl)
+
+/**
+ * The server's log, on standard output: a JSON line per request and per error, each built
+ * from a list of fields, so no body, header, query string, answer or credential has anywhere
+ * to go (0168). `info` unless `FORMANCY_LOG_LEVEL` says otherwise; `off` keeps none, and a
+ * level the server does not have stops it here. Read first, so the database's notices on the
+ * first connection go through it too rather than being printed whole by the driver.
+ */
+const logLevel = logLevelFrom(process.env)
+const sql = postgres(databaseUrl, {
+  onnotice: databaseNotices(logLevel === 'off' ? undefined : createServerLog(process.stdout, logLevel)),
+})
 
 let authSecret = process.env['FORMANCY_AUTH_SECRET']
 if (authSecret === undefined || authSecret === '') {
@@ -143,11 +156,14 @@ const app = await createApp(storage, {
   ...(scanner === undefined ? {} : { scanner }),
   ...(trustProxy === undefined ? {} : { trustProxy }),
   ...(model === undefined ? {} : { model }),
+  ...(logLevel === 'off' ? {} : { log: { sink: process.stdout, level: logLevel } }),
   maxFileBytes,
 })
 
-// Queued deliveries are useless until something sends them.
+// Queued deliveries are useless until something sends them. Each worker says a failed pass
+// in the app's log, by the same rule, and says nothing when it is off.
 const outbox = startOutboxWorker(storage, {
+  log: app.log,
   ...(process.env['FORMANCY_WEBHOOK_ALLOW_HTTP'] === 'true' ? { allowHttp: true } : {}),
   // Gives up the SSRF guard. For a sidecar receiver on a trusted network, and
   // for nothing else.
@@ -159,11 +175,11 @@ const outbox = startOutboxWorker(storage, {
 // that fills up for a reason nobody is watching is the most tedious outage
 // there is.
 const collector =
-  fileStore === undefined ? undefined : startFileCollector(storage, fileStore)
+  fileStore === undefined ? undefined : startFileCollector(storage, fileStore, { log: app.log })
 
 // Independent of the collector: a deployment can have public forms and no
 // uploads, and that deployment still accumulates spent challenges.
-const sweeper = challengeSecret === undefined ? undefined : startChallengeSweeper(storage)
+const sweeper = challengeSecret === undefined ? undefined : startChallengeSweeper(storage, { log: app.log })
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.once(signal, () => {

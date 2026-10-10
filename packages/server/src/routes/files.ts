@@ -244,7 +244,8 @@ export async function fileRoutes(
    */
   async function giveBack(id: string, lease: string, log: FastifyBaseLogger): Promise<void> {
     await storage.releaseFile(id, lease).catch((cause: unknown) => {
-      log.error({ file: id, cause }, 'the file could not be given back; its lease will run out')
+      // Its lease will run out on its own.
+      log.error({ event: 'upload.unreleased', err: cause })
     })
   }
 
@@ -266,7 +267,8 @@ export async function fileRoutes(
     const screened = await screenUpload(deps.scanner, file, bytes)
     if (!screened.ok) {
       if (screened.reason === 'refused') {
-        log.warn({ file: file.id, finding: screened.finding }, 'upload refused by the scanner')
+        // The finding is in the answer; the log says only that there was one.
+        log.warn({ event: 'upload.refused' })
         return {
           status: 422,
           body: {
@@ -275,7 +277,9 @@ export async function fileRoutes(
           },
         }
       }
-      log.error({ file: file.id, cause: screened.cause }, 'the scanner could not be asked')
+      // The cause is a sentence, and can name an address: the log says the scanner could not
+      // be asked, and its words go nowhere (0168).
+      log.error({ event: 'scanner.unreachable' })
       return {
         status: 503,
         body: {
@@ -298,7 +302,7 @@ export async function fileRoutes(
 
     // The write itself outlasted the lease. The row is untouched, but these bytes are under a
     // key another request may also have written — the residual 0153 accepts. Nothing but this
-    // answer records it: the server has no request log (C3).
+    // answer records it: the request log has a 409, as it has for every other 409 here.
     return OUTLASTED
   }
 

@@ -392,7 +392,11 @@ submission content can reach a request log — and nothing can tell an operator 
 failed either. Its background workers do print a failed pass's error to standard error,
 unredacted; hazard C3 says what that can carry.
 There is no redaction configuration, so a deployment that adds a logger owns that question
-alone. Hazard C3 has the detail.
+alone. Hazard C3 has the detail. The request log that follows `0.4.0` — a line per request and
+per error, built from a list of fields, with the workers' failures and the database's notices
+through the same rule — is in [`CHANGELOG.md`](../../CHANGELOG.md) under *Unreleased*
+([0168](../decisions/0168-the-log-is-built-from-a-list-of-fields.md)), and is what C3 now
+describes; none of it is in `0.4.0`.
 
 **Accessibility**, stated precisely because vague claims here are worse than
 none: the conformance suite structurally requires that every control be

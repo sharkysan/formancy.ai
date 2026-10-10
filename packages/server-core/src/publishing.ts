@@ -89,6 +89,8 @@ export async function publishForm(
      * asks to be told it has been overtaken.
      */
     basedOnSchemaHash?: string
+    /** The request this publish is answering, which its audit row names (`AuditEntry.requestId`). */
+    requestId?: string
   },
 ): Promise<PublishOutcome> {
   const validated = validateSchema(input.schema)
@@ -266,7 +268,7 @@ export async function publishForm(
  */
 function publishAudit(
   deps: ServerDeps,
-  input: { actor?: Actor },
+  input: { actor?: Actor; requestId?: string },
   about: { path: string; version: number; hash: string; sources: readonly string[] },
 ): AuditEntry {
   return {
@@ -277,6 +279,7 @@ function publishAudit(
     ...(input.actor === undefined
       ? {}
       : { actorKind: input.actor.kind, actorId: input.actor.id }),
+    ...(input.requestId === undefined ? {} : { requestId: input.requestId }),
     detail: {
       version: about.version,
       schemaHash: about.hash,

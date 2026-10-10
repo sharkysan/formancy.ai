@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import type { Storage } from '@formancy/server-core'
 import { startFileCollector } from './file-collector.js'
 import type { FileStore } from './file-store.js'
+import { createServerLog } from './server-log.js'
 
 /**
  * The collector deletes things, and it had no test.
@@ -138,23 +139,49 @@ describe('startFileCollector', () => {
     expect(world.order).toEqual([])
   })
 
-  test('a pass that throws complains and comes back', async () => {
-    // A collector that stops is a disk that fills up, and nothing is watching it.
-    const world = fakes([{ id: 'f1', storageKey: 'k1' }])
-    world.failAt('k1')
-    const complained = vi.spyOn(console, 'error').mockImplementation(() => undefined)
-    startFileCollector(world.storage, world.store, { intervalMs: 1000 })
+  test('a pass that throws complains, without what was thrown, and comes back', async () => {
+    // A collector that stops is a disk that fills up, and nothing is watching it. Its
+    // complaint is the error's kind, never its words: the store's error names the key,
+    // and was printed whole to standard error until the log had a rule (C3).
+    const world = fakes([{ id: 'f1', storageKey: 'planted-storage-key-2c9d' }])
+    world.failAt('planted-storage-key-2c9d')
+    const written: string[] = []
+    startFileCollector(world.storage, world.store, {
+      intervalMs: 1000,
+      log: createServerLog({ write: (line) => written.push(line) }, 'info'),
+    })
 
     await vi.advanceTimersByTimeAsync(1000)
     await settle()
-    expect(complained).toHaveBeenCalled()
+    expect(written.map((line) => JSON.parse(line) as unknown)).toEqual([
+      { time: expect.any(String), level: 'error', event: 'collector.failed', kind: 'Error' },
+    ])
+    expect(written.join('')).not.toContain('planted')
 
     // Still running: the next pass happens.
     world.failAt('nothing')
     await vi.advanceTimersByTimeAsync(1000)
     await settle()
 
-    expect(world.order).toEqual(['bytes:k1', 'rows:f1'])
+    expect(world.order).toEqual(['bytes:planted-storage-key-2c9d', 'rows:f1'])
+  })
+
+  test('given no log, it complains on standard error, through the same rule', async () => {
+    // Exported, so a host can start it without the server's log. It complained to
+    // standard error before there was a log, and still does — without the store's words.
+    const world = fakes([{ id: 'f1', storageKey: 'planted-storage-key-77e0' }])
+    world.failAt('planted-storage-key-77e0')
+    const stderr = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
+    startFileCollector(world.storage, world.store, { intervalMs: 1000 })
+
+    await vi.advanceTimersByTimeAsync(1000)
+    await settle()
+
+    const said = stderr.mock.calls.map(([chunk]) => String(chunk)).filter((chunk) => chunk.includes('"event"'))
+    expect(said.map((line) => JSON.parse(line) as unknown)).toEqual([
+      { time: expect.any(String), level: 'error', event: 'collector.failed', kind: 'Error' },
+    ])
+    expect(stderr.mock.calls.map(([chunk]) => String(chunk)).join('')).not.toContain('planted')
   })
 
   test('does not start a pass while one is still running', async () => {

@@ -85,7 +85,8 @@ export async function readExamples(
  */
 export async function keepExamples(
   deps: ServerDeps,
-  input: { path: string; actor: Actor; examples: unknown },
+  /** `requestId` is the request this change answers, which its audit row names. */
+  input: { path: string; actor: Actor; examples: unknown; requestId?: string },
 ): Promise<KeepExamplesOutcome> {
   if (!can(input.actor, 'form.publish')) return { ok: false, kind: 'forbidden' }
   const form = await deps.storage.getFormByPath(input.path)
@@ -103,6 +104,7 @@ export async function keepExamples(
       subject: input.path,
       actorKind: input.actor.kind,
       actorId: input.actor.id,
+      ...(input.requestId === undefined ? {} : { requestId: input.requestId }),
       // How many, and whether there is a sample: what changed, never what it says.
       detail: { examples: read.scenarios.length, sample: read.sample !== null },
     },

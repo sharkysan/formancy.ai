@@ -92,6 +92,13 @@ services:
       # the gateway. A bare key for the same reason: unset is how the server
       # knows to trust no proxy.
       FORMANCY_TRUST_PROXY:
+      # How much the server logs to standard output, which `docker compose logs server`
+      # reads: a line per request and per error, never a body, a header or an answer.
+      # A bare key for the same reason as the others: unset is how the server knows to
+      # log at info, and `off` is the only way to keep no log.
+      # The image has to be newer than v0.4.0: v0.4.0 and every image before it keeps no
+      # log at all, and ignores it.
+      FORMANCY_LOG_LEVEL:
       # A model for the builders, asked through this server so its key never reaches a
       # browser. Bare keys, so each is passed through only when it is set: all three unset
       # is how the server knows there is no model, and a half configuration is refused at

@@ -66,7 +66,9 @@ export interface AuditEntry {
   readonly subject?: string
   /**
    * The request it happened in, so an export and the rows it returned can be
-   * tied together later.
+   * tied together later — and a row to the line a server's request log wrote
+   * for that request. A use-case that writes its row inside its transaction
+   * takes the id in its input, and names it when it is given one.
    */
   readonly requestId?: string
   /** Identifiers and counts. Never a submission's answers. */

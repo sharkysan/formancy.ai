@@ -47,8 +47,8 @@ export interface OpenAiCompleterOptions {
  * The SDK would take an organisation and a project from the environment and send them as
  * headers — to xAI as well — so both are set to nothing here. It would take a log level
  * too, and with OPENAI_LOG=debug write a line for every request and response to the
- * console, a request log the server does not keep (SAFETY-ANALYSIS C3), so the level is
- * set. OPENAI_CUSTOM_HEADERS cannot be undone here, so `modelSettings` refuses to start
+ * console — a second request log, outside the rule the server's own is built by
+ * (SAFETY-ANALYSIS C3) — so the level is set. OPENAI_CUSTOM_HEADERS cannot be undone here, so `modelSettings` refuses to start
  * with it.
  */
 export function createOpenAiCompleter(options: OpenAiCompleterOptions): Completer {

@@ -56,15 +56,6 @@ export type SubmissionOutcome =
   | { ok: false; kind: 'source_unavailable'; source: string }
 
 /**
- * Accept one submission: resolve the version the client says it rendered,
- * replay the engine over the submitted data, and store the CANONICAL result.
- *
- * The replay is the whole point. Computed values are recomputed and overwrite
- * whatever arrived; visibility is evaluated server-side and hidden branches
- * are stripped, so a client cannot smuggle data by lying about what was shown.
- * Client validation is UX; this is truth.
- */
-/**
  * Change who may submit a form, and from where.
  *
  * Separate from publishing on purpose: access is a property of the deployment,
@@ -85,7 +76,15 @@ export async function setFormAccess(
   return { ok: true }
 }
 
-
+/**
+ * Accept one submission: resolve the version the client says it rendered,
+ * replay the engine over the submitted data, and store the CANONICAL result.
+ *
+ * The replay is the whole point. Computed values are recomputed and overwrite
+ * whatever arrived; visibility is evaluated server-side and hidden branches
+ * are stripped, so a client cannot smuggle data by lying about what was shown.
+ * Client validation is UX; this is truth.
+ */
 export async function createSubmission(
   deps: ServerDeps,
   input: {
@@ -95,6 +94,7 @@ export async function createSubmission(
     /** Defaults to anonymous: the caller must prove otherwise, not the reverse. */
     actor?: 'anonymous' | 'authenticated'
     origin?: string
+    requestId?: string
   },
 ): Promise<SubmissionOutcome> {
   const form = await deps.storage.getFormByPath(input.path)
@@ -207,9 +207,9 @@ export async function createSubmission(
       at,
       action: 'submission.created',
       subject: input.path,
+      ...(input.requestId === undefined ? {} : { requestId: input.requestId }),
       // The version, so a reader can tell which schema this answered without
-      // joining; the count, so an unusual submission is visible. Never the
-      // answers.
+      // joining. Never the answers.
       detail: {
         submissionId: id,
         version: current.version,
