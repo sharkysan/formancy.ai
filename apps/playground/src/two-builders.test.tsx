@@ -834,10 +834,25 @@ describe('a model asked for the French the starter is missing', () => {
     })),
   })
 
+  /**
+   * Every expression, code and check the starter's rules hold, as written and as JSON
+   * writes them. Read off the rules rather than typed: the request is JSON, which escapes
+   * the quote in `country == "CH"`, so the one phrase this case looked for could never
+   * match a rule that leaked, and the whole document sent along passed it in both builders.
+   */
+  const RULES = ((STARTER_SCHEMA as unknown as FormSchema).logic?.rules ?? [])
+    .flatMap((rule) => [rule.cel, rule.code, rule.check])
+    .filter((words): words is string => words !== undefined)
+  const inJson = (words: string): string => JSON.stringify(words).slice(1, -1)
+  const RULE_WORDS = RULES.flatMap((words) => [words, inJson(words)])
+
   test('the starter still leaves the message this case looks for untranslated', () => {
     // A guard on the case below: a French catalogue that already said it would let the
     // form pane read French without anything being applied.
     expect(missing).toContain('wantedBy')
+    // And the starter has rules to leak, some spelt differently in JSON, or the case below
+    // that looks for them in the request checks nothing.
+    expect(RULES.some((words) => inJson(words) !== words)).toBe(true)
   })
 
   test.each(['React', 'Angular'] as const)(
@@ -869,7 +884,7 @@ describe('a model asked for the French the starter is missing', () => {
         const relay = await screen.findByRole('region', { name: 'Take this request to a model' })
         const request = within(relay).getByRole('textbox', { name: 'The request' }) as HTMLTextAreaElement
         expect(request.value).toContain('"locale": "fr"')
-        expect(request.value).not.toContain('country == "CH"')
+        expect(RULE_WORDS.filter((words) => request.value.includes(words))).toEqual([])
 
         await user.click(within(relay).getByRole('textbox', { name: 'The model’s answer' }))
         await user.paste(ANSWER)

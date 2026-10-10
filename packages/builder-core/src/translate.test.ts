@@ -247,15 +247,22 @@ describe('the request', () => {
   test('carries none of the form’s rules, only its words and where they are used', () => {
     // Read off the rules themselves rather than off a phrase: every expression, code and
     // check the document holds. A request that sent the document, as `authorForm` does,
-    // would carry all of them to somebody else's model for no reason.
+    // would carry all of them to somebody else's model for no reason. Each is looked for
+    // as written and as JSON writes it: the request is JSON, which escapes the quote in
+    // `country == "CH"`, so a search for the raw expression alone passed with every rule
+    // sent along.
     const request = translationPrompt(order, 'fr')
     const said = `${request.system}\n${request.user}`
     const ruleWords = (order.logic?.rules ?? []).flatMap((rule) =>
       [rule.cel, rule.code, rule.check].filter((value): value is string => value !== undefined),
     )
+    const inJson = (words: string): string => JSON.stringify(words).slice(1, -1)
+    const spellings = ruleWords.flatMap((words) => [words, inJson(words)])
 
     expect(ruleWords.length).toBeGreaterThan(0)
-    expect(ruleWords.filter((words) => said.includes(words))).toEqual([])
+    // Some rule here is spelt differently in JSON, or the second spelling checks nothing.
+    expect(ruleWords.some((words) => inJson(words) !== words)).toBe(true)
+    expect(spellings.filter((words) => said.includes(words))).toEqual([])
     // And each row is the catalogue's three fields and where it is used — nothing else.
     for (const row of request.rows) expect(Object.keys(row).sort()).toEqual(['context', 'id', 'source', 'target'])
   })
