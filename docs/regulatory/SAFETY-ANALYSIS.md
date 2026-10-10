@@ -246,6 +246,54 @@ to compare a form's lists against their configuration had nowhere to read them. 
 written, and asserted in `packages/server-core/src/use-cases.test.ts` both ways round — a
 form naming sources records them, a form naming none records no such field.
 
+### A8. One response is stored twice
+
+*How it arises:* the answer to a submission never reaches the page — a dropped connection, a
+proxy that timed out, a phone that changed networks before the `201` arrived — and the page,
+or the person, sends it again. Or a request is replayed as it was sent. Until the change below,
+each copy was stored: without `FORMANCY_CHALLENGE_SECRET` an exact replay was accepted as often
+as the rate limit allowed; with it, a retry asked for a fresh challenge, solved it and was
+accepted, since a challenge proves work per attempt and cannot say two attempts are one
+response; and a signed-in submitter is never asked to solve one. Every copy is a
+submission with its own id, audit row and webhook. A delivery's event id lets a receiver drop
+a delivery it got twice; nothing let anybody tell a response sent twice from two people who
+gave the same answers — two intake records, two orders, two appointments.
+
+*Constraint:* **a response is stored once, under the id it was handed with its form**
+([0169](../decisions/0169-a-response-is-stored-once.md)). `GET /f/:path` hands out a token,
+new on every reading, naming that id and signed for that form with `FORMANCY_AUTH_SECRET`; a
+draft hands out one naming the draft, the same on every resume. An anonymous submission without
+it is refused, `400 submission_token_required`; one the server did not sign for that form is
+`400 submission_token_invalid`. The id is the submission's primary key: the insert is written
+first, with `ON CONFLICT DO NOTHING`, and when it conflicts nothing else is written — no
+delivery, no claim, no audit row — and the send is answered `409 submission_token_spent` with
+the stored id. A lookup before the replay gives a second send that answer rather than "unknown
+file" for the attachments the first one claimed. A refused attempt spends nothing. Held by
+`packages/server-core/src/submitting.test.ts` and, on real PostgreSQL, by *a response is stored
+once* in `packages/server/src/server.integration.test.ts` — including two sends held at the
+insert until both are there, which a plain insert answers with a `500` (observed) — and by
+`apps/admin/src/fill-pane.test.tsx`, *sending the response*, for the one browser client in the
+repository: it sends the draft's token once it has one, and once the response is stored — a
+`201`, or a `409 submission_token_spent` — forgets the draft and lets no save that was still
+waiting or still starting its draft leave one behind (each watched failing). The token does not
+expire, which the server-core cases hold by sending, a month on, the tokens a form and a draft
+handed out — watched failing under a seven-day expiry that every other case passed.
+
+*Residual:* **a signed-in client that sends no token is stored as often as it sends**, as
+before: an integration posting with an API key was handed no form, and is not asked for one. **A
+new reading is a new response**: a host that reads the form again for every attempt, or a
+person who reloads a page that kept no draft and sends again, makes a second response, and
+nothing here can tell it from a second person. **A page holds two tokens once a draft starts**,
+and a host that keeps sending the form's has a duplicate back through the reload that resumes
+the draft — the documentation says to send the draft's, and the admin does; nothing makes a
+host. **A draft can outlive its response** in a host that keeps the draft's key after the
+response is stored, or lets a debounced save fire after the send: the first resumes a finished
+draft whose every send is refused, the second starts a new draft holding the stored answers and
+sends its unspent token on the next visit — the duplicate again. The documentation says to
+forget the draft on a `201` and on `409 submission_token_spent` and to drop the pending save,
+and the admin does; nothing makes a host. And the token is not an anti-automation measure: a
+script reads the form for one like anybody else (C1's residual, and 0059's reasoning).
+
 ---
 
 ## B — Correct data is lost or altered
@@ -635,8 +683,8 @@ change of examples and a submission write inside their own transaction included.
 a route or a background worker writes is an event from a fixed list. A line is made from the
 listed fields only, each kept only when its value is of that field's kind, and the words of a
 call are never written; so a body, a query string, a header (`Authorization`, a cookie, the API
-key, the challenge, a draft's key), a file's name, an answer, a password or an email has no
-field to go in. The three background workers' failures go through the same rule, and so do the
+key, the challenge, a draft's key, a response's token), a file's name, an answer, a password or
+an email has no field to go in. The three background workers' failures go through the same rule, and so do the
 database's notices. On by default at `info`; `FORMANCY_LOG_LEVEL` takes pino's level names or
 `off`, and anything else stops the server at startup. `createApp` given no log keeps none, so a
 host embedding it decides, and the libraries still write nothing
@@ -644,8 +692,8 @@ host embedding it decides, and the libraries still write nothing
 
 Held by `packages/server/src/server.integration.test.ts`, *what reaches the log*, on real
 PostgreSQL: every route family is driven — a login that fails and one that works, a user, an
-API key used to publish, a draft written and read, an upload, a challenge, a submission, its
-listing, export and file, a form's examples, a model that answers `401` — with values planted
+API key used to publish, a draft written and read, an upload, a challenge, a submission sent
+with its draft's token, its listing, export and file, a form's examples, a model that answers `401` — with values planted
 in what each request sends, and a body that does not parse, a path no route has, a URL the
 router cannot decode, a parameter too long for it and a database error whose message quotes a
 planted id. What must not be logged is derived from what the requests carried and what the
@@ -1916,6 +1964,35 @@ browser names the kind from its own briefing, the model is briefed by the server
 answer is checked as the browser's version expects. Nothing checks that the two match, so
 answers can fail their checks, or pass them under rules the browser did not write, with
 nothing to say why (0165).
+
+### D18. A respondent's response is refused for the token their form was handed
+
+*How it arises:* the deployment's signing key changed between the form being read and the
+response being sent — `FORMANCY_AUTH_SECRET` rotated, or never set, so that every start
+generates a new one and a restart does this to everybody filling in a form. Or a cache in
+front of the server kept the form's reply and handed one token to everybody behind it, so every
+response after the first is refused as already sent. Or a host does not send the token at all.
+Introduced by A8's constraint, which is why it is written down with it
+([0169](../decisions/0169-a-response-is-stored-once.md)).
+
+*Constraint:* each is refused with its own `error` and a sentence a host can show as it
+stands — `submission_token_invalid` saying to read the form again for a new token,
+`submission_token_spent` saying the response is stored, `submission_token_required` naming
+the header — and none clears anything: the answers are still on the page, and a refused attempt
+spends no token. A new token is one read of the form away. The form's reply says
+`Cache-Control: no-store`, asserted in *a response is stored once*. The server warns at startup
+when it generates its key, and that warning now names drafts and forms being filled in, not
+only sessions.
+
+*Residual:* **the recovery is the host's.** A host that does not read the form again on
+`submission_token_invalid` leaves the respondent with the refusal until they reload — and a
+reload with no draft behind it loses the answers. **A cache that ignores `no-store` cannot be
+worked around from the page**: reading the form again reads the same cache, and every response
+after the first is refused until the cache is fixed. Nothing records either case beyond the
+refusals themselves, and the request log (C3) has those, at `info`, only as statuses: a line
+for each send names its route, `/f/:path/submissions`, and its `400` or `409`, but not which
+refusal it was — the route answers a stale version `409` too, and a missing schema hash or an
+unsolved challenge `400` — nor which form, since a line has no field for either.
 
 ---
 

@@ -204,6 +204,15 @@ And a browser and a server of different versions disagree without saying so: the
 briefed by the server's version and its answer checked by the browser's, and no digest of the
 briefings is exchanged to notice.
 
+**A form's reply is per reading, and a response's token depends on the signing key.** The
+cost of storing a response once under an id its form was handed out with
+([0169](../decisions/0169-a-response-is-stored-once.md)). The reply says `no-store`; a cache in
+front of the server that keeps it anyway hands one token to everybody behind it, and every
+response after the first is refused as already sent, with no way round it from the page.
+Changing `FORMANCY_AUTH_SECRET` — or leaving it unset, so that every start makes a new one —
+refuses once the response of everybody filling in a form, and recovering is the host's: read the
+form again and send the answers with the new token. Hazard D18 has both.
+
 **TypeScript is pinned below `latest`.** The cost of supporting Angular as a
 co-first target ([0039](../decisions/0039-pin-typescript.md)). It will look
 arbitrary in six months, which is why it is written down.

@@ -47,20 +47,32 @@ Measured at ≈0.38 ms against a 1 ms budget on a large form.
 ```
 browser                              server
 ───────                              ──────
+GET /f/contact-us             ───▶  the current version, and a token naming the id
+                              ◀───   this response will be stored under (no-store)
+  (a draft started or resumed hands out one naming the draft — send that one instead)
+        │
 engine validates (UX only)
         │
         ▼
-POST /f/contact-us
-  X-Formancy-Schema-Hash: abc…  ───▶  resolve the version by hash policy
-  { answers }                          │
-                                       ├─ current?      → proceed
-                                       ├─ older, diff compatible? → proceed
+POST /f/contact-us/submissions
+  X-Formancy-Schema-Hash: abc…  ───▶  anonymous and the challenge on? solved and unspent?
+  X-Formancy-Submission-Token          │      otherwise 400 challenge_*  (spends the challenge)
+  { answers }                          ▼
+                                  may this caller submit? (private until opened, origins)
+                                       │      otherwise 403
+                                       ▼
+                                  the token: present (anonymous), signed for this form,
+                                  its id not stored yet?
+                                       ├─ missing      → 400 submission_token_required
+                                       ├─ not ours     → 400 submission_token_invalid
+                                       └─ stored       → 409 submission_token_spent, with the id
+                                       │
+                                  the declared hash the current version's?
                                        └─ otherwise → 409 FORM_VERSION_CHANGED
-                                                       with the new schema
+                                                       with the current schema
                                        │
                                        ▼
                                   rebuild the engine from THAT version
-                                  (compiled program cached by schema hash)
                                        │
                                   pin the clock for this submission
                                        │
@@ -76,12 +88,29 @@ POST /f/contact-us
                                   ▼         ▼
                               invalid     valid
                                   │         │
-                          errors in the     ├─ store canonicalData, not the body
-                          identical shape   ├─ store form_version_id AND schema_hash
-                          the client uses   ├─ write the audit row
+                          errors in the     ├─ insert under the token's id — taken already?
+                          identical shape   │  then nothing below, and 409 (two sends at once)
+                          the client uses   ├─ store canonicalData, not the body,
+                                            │  bound to form_version_id
+                                            ├─ claim the files it names
+                                            ├─ write the audit row
                                             └─ enqueue the webhook job
                                                  …all in ONE transaction
 ```
+
+**A response is stored once** ([0169](../decisions/0169-a-response-is-stored-once.md)). The
+token names the id, and that id is the submission's primary key, so a response sent again —
+the retry a lost answer forces, a replay — is refused rather than stored, delivered and audited
+a second time. Nothing refused on the way spends it: not the challenge, not the version, not
+invalid answers. The lookup before the replay is what answers a second send *sent*; the insert
+is what decides between two that arrive together, since both find nothing when they look. A
+signed-in submitter may leave the token out and is stored under a fresh id.
+
+Redrawn with the token, this diagram also lost three things it used to claim and the code
+does not do: proceeding on an older version whose diff is compatible (a stale hash is
+refused, always), storing the schema hash on the submission (the version row has it, joined
+by the foreign key), and caching the compiled program by hash (the engine is built for each
+replay).
 
 The replay is a **check** rather than a second opinion only because the engine
 is the same build ([0006](../decisions/0006-one-engine-build.md)) and the clock
@@ -230,6 +259,10 @@ Migration is lazy, one draft at a time, on resume
 ([0027](../decisions/0027-lazy-draft-migration.md)). A batch migration over
 everyone's saved answers at publish time would be the same operation performed
 at the worst possible moment and without the option to decline.
+
+A resume also hands back the token the draft's response is sent with — the same one every
+time, naming the draft — so a draft is one response however late it is resumed and however
+often, and is stored once (6.2).
 
 **Submissions never migrate.** Only drafts do. That distinction is what makes a
 two-year-old submission readable against the schema that produced it.

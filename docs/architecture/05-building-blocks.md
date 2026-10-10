@@ -507,6 +507,13 @@ same way. Webhook health and delivery replay went to `server/routes/deliveries.t
 `app.ts` needed room to say which proxy it believes. That setting, `FORMANCY_TRUST_PROXY`, is
 read by `server/trust-proxy.ts` rather than inline in `main.ts`, because its refusals are the
 part worth testing and `main.ts` is a composition root no test imports.
+Submitting followed when the token a response is sent with needed room
+([0169](../decisions/0169-a-response-is-stored-once.md)): `server/routes/submissions.ts` reads
+a form, mints its challenge and takes its submissions, and `server-core/submitting.ts` holds
+`formToFill` — the form with its token — and `createSubmission`. The two keys the public plane
+hands out, a draft's and a response's, are signed side by side in `server-core/signing.ts`, so
+that what each is signed over can be read together and one cannot stand in for the other. Both
+`app.ts` and `use-cases.ts` came under the budget with it, and left the size test's list.
 
 The deployment's model is the newest family, and the port is the point of it
 ([0165](../decisions/0165-a-deployments-model-is-asked-through-its-server.md)).

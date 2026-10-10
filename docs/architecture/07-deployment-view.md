@@ -94,7 +94,7 @@ matters most to the self-hoster who has no operations team.
 | Who | Anyone, if the form opts in | Authenticated users and API keys |
 | What | Submit, save and resume drafts, per-form OpenAPI | Form CRUD, publish, versions, submissions, export, users, keys |
 | Authentication | None by default; `access.submit` defaults to `authenticated` | Session cookie (`jose` HS256) or API key (prefix + hash) |
-| Authorisation | Origin allowlist, submission token, rate limits | `can(actor, action, resource)` as a `preHandler`; 401 and 403 are distinguished |
+| Authorisation | Origin allowlist and rate limits, and the proof-of-work challenge when it is configured. Every form is also handed out with a token its response is sent back with — not authorisation, but what makes a response stored once ([0169](../decisions/0169-a-response-is-stored-once.md)) | `can(actor, action, resource)` as a `preHandler`; 401 and 403 are distinguished |
 
 The public plane is the highest-risk surface and is fail-closed by default: a
 form is not publicly submittable unless it says so.

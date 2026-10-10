@@ -269,3 +269,4 @@ listed under the sections they belong to above.
 | [0166](0166-a-deployment-keeps-a-forms-examples-and-runs-them-at-publish.md) | A deployment keeps a form's examples, and runs them at publish | accepted |
 | [0167](0167-the-relay-says-what-each-request-carries.md) | A request to a model names its kind, and the relay pane says what that kind carries | accepted |
 | [0168](0168-the-log-is-built-from-a-list-of-fields.md) | The server keeps a log, and a line is built from a list of fields | accepted |
+| [0169](0169-a-response-is-stored-once.md) | A response is stored once, under the id it was handed | accepted |

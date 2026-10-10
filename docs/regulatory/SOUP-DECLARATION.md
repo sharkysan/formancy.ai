@@ -173,7 +173,9 @@ ever pointed at a user's. Which engine it uses is chosen by the host:
 back to the pure engine itself.
 
 `@noble/hashes` computes the canonical schema hash and the proof-of-work
-challenge. It is audited, has no dependencies of its own, and replaced Web
+challenge, and its HMAC signs the two keys the public plane hands out: a draft's,
+and the token a response is sent with
+([0169](../decisions/0169-a-response-is-stored-once.md)). It is audited, has no dependencies of its own, and replaced Web
 Crypto in the challenge after measurement: a hundred thousand hashes cost
 269ms synchronously against about 4,800ms through `crypto.subtle`, and the
 overhead fell on the legitimate visitor rather than on an attacker, who
@@ -384,8 +386,10 @@ Still from 0.2.0 and unchanged:
 
 Resumable and multipart uploads, and presigned uploads that would keep bytes out of the
 server's own data path. (Virus scanning was in this list until 0.4.0, which scans every upload
-when a deployment runs ClamAV — above.) Also a submission token bound to the form version,
-which is the gap that keeps the public plane off a public deployment.
+when a deployment runs ClamAV — above. So was a submission token, until the release after it:
+every form is now handed out with one, so that a response sent twice is stored once, and it
+adds no dependency — an HMAC from `@noble/hashes`, already declared above
+([0169](../decisions/0169-a-response-is-stored-once.md)).)
 
 **The server writes no request log.** Fastify is constructed with the logger off, so no
 submission content can reach a request log — and nothing can tell an operator why a request

@@ -21,13 +21,14 @@ Application code can be bypassed. Every submission's audit story depends on its
 schema staying exactly what the person saw, so the guarantee lives where it
 cannot be.
 
-## 2. A submission binds by both key and hash
+## 2. A submission binds by key, and is accepted by hash
 
-Each submission stores a real foreign key to its version row *and* the version's
-`schemaHash`. The key gives joins and referential integrity — with
-`ON DELETE RESTRICT`, so orphaning a submission from its schema is structurally
-impossible. The hash gives tamper evidence: a hand-edited database row stops
-matching.
+Each submission stores a real foreign key to its version row, and is accepted
+only when the hash it declared is that row's `schemaHash` (rule 4). The key gives
+joins and referential integrity — with `ON DELETE RESTRICT`, so orphaning a
+submission from its schema is structurally impossible. The hash, kept on the
+version row rather than copied onto every submission, gives tamper evidence: a
+hand-edited schema stops matching it.
 
 The hash is a SHA-256 over a **canonical** serialisation, so two documents that
 differ only in key order are the same version. That canonicaliser refuses
@@ -51,6 +52,12 @@ x-formancy-schema-hash: 52b543ef…
 If the form has been republished since, the server answers
 `409 FORM_VERSION_CHANGED` **with the current schema attached**, so the client
 can re-render and preserve what it can instead of guessing why it was refused.
+
+The hash is the only thing that says which version. The token a response is sent
+with says which *response* it is, so that it is stored once, and binds no version:
+the same token, sent again after the re-render with the current hash, is accepted
+([0169](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0169-a-response-is-stored-once.md)).
+A refused attempt never spends it.
 
 ### Publishing declares it too — and may decline to
 

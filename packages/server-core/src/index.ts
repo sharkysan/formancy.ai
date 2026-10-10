@@ -28,8 +28,10 @@ export {
   mayAttempt,
 } from './breaker.js'
 export type { BreakerState, WebhookHealth } from './breaker.js'
+// Submitting, and the token a response is sent with so that it is stored once (0169).
+export { createSubmission, formToFill } from './submitting.js'
+export type { FormToFill, SubmissionOutcome } from './submitting.js'
 export {
-  createSubmission,
   exportCsv,
   listForms,
   listSubmissions,
@@ -47,7 +49,6 @@ export type {
   ListedVersion,
   ResolvedForm,
   ResumeOutcome,
-  SubmissionOutcome,
 } from './use-cases.js'
 export type { ServerDeps } from './deps.js'
 export { unsafePatterns } from './redos.js'

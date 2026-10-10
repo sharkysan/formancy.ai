@@ -9,7 +9,7 @@
   and a server-only rule does not run under `mode: 'client'`, and that the
   default is the client. `packages/spec/src/logic.test.ts` pins that a metadata
   rule carrying `runsOn` is refused and that an unknown side is refused by the
-  schema. `createSubmission` in `packages/server-core/src/use-cases.ts` passes
+  schema. `createSubmission` in `packages/server-core/src/submitting.ts` passes
   `mode: 'server'` to the replay.
 
 ## Context

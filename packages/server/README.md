@@ -35,8 +35,10 @@ semantics. Docker must be running.
 
 Beta. Has authentication, role-based authorization, per-IP rate limiting, a
 per-form origin allowlist, a request body cap, file uploads, drafts that carry
-their own key, audit logging and an opt-in proof-of-work challenge; has no
-submission tokens. Behind a reverse proxy the rate limits count the proxy
-unless `FORMANCY_TRUST_PROXY` names it. Evaluate it; do not expose it publicly.
+their own key, audit logging, an opt-in proof-of-work challenge, and a token
+every form is handed out with, so that a response sent twice is stored once —
+an anonymous submission sends it back in `X-Formancy-Submission-Token`. Behind
+a reverse proxy the rate limits count the proxy unless `FORMANCY_TRUST_PROXY`
+names it. Evaluate it; do not expose it publicly.
 
 Docs: `apps/docs` (Quickstart: self-hosting) for the full endpoint walk-through.

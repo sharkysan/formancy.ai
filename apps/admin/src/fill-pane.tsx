@@ -101,7 +101,19 @@ export function FillPane({ path, quietMs = QUIET_MS }: FillPaneProps): ReactElem
   const [generation, setGeneration] = useState(0)
 
   const draft = useRef<DraftKey | undefined>(undefined)
+  /**
+   * What the response is sent with (0169): the form's token, until a draft is started or
+   * resumed, and the draft's after that — the one a resume hands back, so a response whose
+   * answer was lost and is sent again after a reload is the same response.
+   */
+  const sendWith = useRef<string | undefined>(undefined)
   const pending = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  /**
+   * How many responses this page has seen stored. A save that was already starting its draft
+   * when one was compares it before and after, and lets the draft go: its answers are the ones
+   * just stored, and the draft's token is one nothing has spent.
+   */
+  const stored = useRef(0)
 
   useEffect(() => {
     let live = true
@@ -122,6 +134,7 @@ export function FillPane({ path, quietMs = QUIET_MS }: FillPaneProps): ReactElem
           remember(path, undefined)
         } else {
           draft.current = held
+          sendWith.current = resumed.submissionToken
           setSchema(resumed.schema)
           setSchemaHash(resumed.schemaHash)
           setInitialValue(resumed.data)
@@ -139,6 +152,7 @@ export function FillPane({ path, quietMs = QUIET_MS }: FillPaneProps): ReactElem
         const published = await fetchPublicForm(path)
         if (!live) return
         draft.current = undefined
+        sendWith.current = published.submissionToken
         setSchema(published.schema)
         setSchemaHash(published.schemaHash)
         setInitialValue(undefined)
@@ -172,13 +186,16 @@ export function FillPane({ path, quietMs = QUIET_MS }: FillPaneProps): ReactElem
     async (value: unknown): Promise<void> => {
       if (readOnly) return
       if (draft.current === undefined) {
+        const before = stored.current
         const started = await startDraft(path)
+        if (stored.current !== before) return
         if (started === undefined) {
           setSaved('Could not start a draft.')
           return
         }
-        draft.current = started
-        remember(path, started)
+        draft.current = { id: started.id, token: started.token }
+        sendWith.current = started.submissionToken
+        remember(path, draft.current)
       }
       const ok = await saveDraft(path, draft.current.id, draft.current.token, value)
       setSaved(ok ? 'Saved.' : 'Could not save.')
@@ -199,6 +216,19 @@ export function FillPane({ path, quietMs = QUIET_MS }: FillPaneProps): ReactElem
     remember(path, undefined)
     draft.current = undefined
     setGeneration((n) => n + 1)
+  }
+
+  /**
+   * The response is stored, so its draft is finished: forget the key, or the next visit
+   * resumes it as though nothing had been sent. And drop the save still waiting out the quiet —
+   * Submit pressed straight after the last keystroke leaves one — which would otherwise find no
+   * draft, start one holding the answers just stored, and remember that instead.
+   */
+  const finish = (): void => {
+    clearTimeout(pending.current)
+    stored.current += 1
+    remember(path, undefined)
+    draft.current = undefined
   }
 
   if (status.kind === 'loading') return <p className="wb-hint">Loading the published form…</p>
@@ -224,17 +254,12 @@ export function FillPane({ path, quietMs = QUIET_MS }: FillPaneProps): ReactElem
         <FormancyForm
           submitLabel="Submit"
           onSubmit={async (value) => {
-            if (readOnly) return
-            const outcome = await submitForm(path, schemaHash, value)
-            if (outcome.ok) {
-              // A submitted draft is finished, and leaving the key behind would
-              // resume it on the next visit as though nothing had been sent.
-              remember(path, undefined)
-              draft.current = undefined
-              setSent('Submitted.')
-            } else {
-              setSent(outcome.message)
-            }
+            if (readOnly || sendWith.current === undefined) return
+            const outcome = await submitForm(path, schemaHash, sendWith.current, value)
+            // Refused as already sent is stored as surely as a 201: the first send of it was
+            // (0169). The server's sentence says so, and the answers stay on the page.
+            if (outcome.ok || outcome.error === 'submission_token_spent') finish()
+            setSent(outcome.ok ? 'Submitted.' : outcome.message)
           }}
         />
       </FormancyProvider>

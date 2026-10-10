@@ -2,7 +2,8 @@ import { describe, expect, test } from 'vitest'
 import { AUDIT_ACTIONS, auditedBy } from './audit.js'
 import type { AuditAction } from './audit.js'
 import { createMemoryStorage } from './testing/memory-storage.js'
-import { createSubmission, setFormAccess } from './use-cases.js'
+import { setFormAccess } from './use-cases.js'
+import { createSubmission, formToFill } from './submitting.js'
 import { keepExamples } from './examples.js'
 import { publishForm } from './publishing.js'
 import type { ServerDeps } from './index.js'
@@ -101,6 +102,8 @@ describe('a submission', () => {
       declaredSchemaHash: hash,
       data: { email: 'ada@example.ch', salary: 120000 },
       actor: 'anonymous',
+      // An anonymous response carries the token its form was handed out with (0169).
+      token: (await formToFill(d, 'survey'))!.submissionToken,
     })
 
     const [entry] = await d.storage.listAudit(10)
@@ -117,6 +120,8 @@ describe('a submission', () => {
       declaredSchemaHash: hash,
       data: { salary: 120000 },
       actor: 'anonymous',
+      // An anonymous response carries the token its form was handed out with (0169).
+      token: (await formToFill(d, 'survey'))!.submissionToken,
     })
 
     expect(outcome.ok).toBe(false)
@@ -136,6 +141,8 @@ describe('a submission', () => {
       declaredSchemaHash: hash,
       data: { email: 'ada@example.ch' },
       actor: 'anonymous',
+      // An anonymous response carries the token its form was handed out with (0169).
+      token: (await formToFill(d, 'survey'))!.submissionToken,
     })
 
     const [entry] = await d.storage.listAudit(10)
@@ -151,6 +158,8 @@ describe('a submission', () => {
       declaredSchemaHash: hash,
       data: { email: 'ada@example.ch', salary: 120000 },
       actor: 'anonymous',
+      // An anonymous response carries the token its form was handed out with (0169).
+      token: (await formToFill(d, 'survey'))!.submissionToken,
     })
 
     const [entry] = await d.storage.listAudit(10)
@@ -299,6 +308,8 @@ describe('a row written inside its transaction', () => {
       declaredSchemaHash: next.schemaHash,
       data: { email: 'ada@example.ch' },
       requestId: 'req-5',
+      // An anonymous response carries the token its form was handed out with (0169).
+      token: (await formToFill(d, 'survey'))!.submissionToken,
     })
 
     const named = (await d.storage.listAudit(50)).map((row) => `${row.action} ${String(row.subject)} ${String(row.requestId)}`)
@@ -317,8 +328,18 @@ describe('a row written inside its transaction', () => {
   test('and names none when it was given none, rather than inventing one', async () => {
     // A host composing its own HTTP over these use-cases may have no request id to give.
     const { d, hash } = await publishedForm()
-    await createSubmission(d, { path: 'survey', declaredSchemaHash: hash, data: { email: 'ada@example.ch' } })
+    const outcome = await createSubmission(d, {
+      path: 'survey',
+      declaredSchemaHash: hash,
+      data: { email: 'ada@example.ch' },
+      token: (await formToFill(d, 'survey'))!.submissionToken,
+    })
 
-    for (const row of await d.storage.listAudit(50)) expect(row).not.toHaveProperty('requestId')
+    // Stored, so the submission's row is among those read: refused for its token, it wrote
+    // none, and this passed with nothing to say about it.
+    expect(outcome.ok).toBe(true)
+    const rows = await d.storage.listAudit(50)
+    expect(rows.map((row) => row.action)).toContain('submission.created')
+    for (const row of rows) expect(row).not.toHaveProperty('requestId')
   })
 })

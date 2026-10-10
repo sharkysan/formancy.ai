@@ -8,8 +8,8 @@ import type { FastifyInstance, HTTPMethods, InjectOptions, LightMyRequestRespons
 import type { FormSchema } from '@formancy/spec'
 import { bootstrapSchema } from './db.js'
 import { solveChallenge } from '@formancy/server-core'
-import type { ScanVerdict } from '@formancy/server-core'
-import { createApp, SCHEMA_HASH_HEADER } from './app.js'
+import type { ScanVerdict, Storage } from '@formancy/server-core'
+import { createApp, SCHEMA_HASH_HEADER, SUBMISSION_TOKEN_HEADER } from './app.js'
 import { createPostgresStorage } from './postgres-storage.js'
 import type { FileStore } from './file-store.js'
 import { DEFAULT_MAX_FILE_BYTES, LARGEST_MAX_FILE_BYTES } from './upload-settings.js'
@@ -51,6 +51,16 @@ let adminToken = ''
 /** Management requests carry the bootstrap admin's session token. */
 function asAdmin(headers: Record<string, string> = {}): Record<string, string> {
   return { authorization: `Bearer ${adminToken}`, ...headers }
+}
+
+/**
+ * What a respondent's browser sends a response with: the token handed out with the form
+ * (0169). Read fresh for every response, as a browser that loaded the form would.
+ */
+async function handedOut(path: string, on: FastifyInstance = app): Promise<Record<string, string>> {
+  const read = await on.inject({ method: 'GET', url: `/f/${path}` })
+  expect(read.statusCode).toBe(200)
+  return { [SUBMISSION_TOKEN_HEADER]: (read.json() as { submissionToken: string }).submissionToken }
 }
 
 /**
@@ -158,7 +168,7 @@ describe('the walking skeleton, end to end', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/f/contact-us/submissions',
-      headers: { [SCHEMA_HASH_HEADER]: schemaHash },
+      headers: { [SCHEMA_HASH_HEADER]: schemaHash, ...(await handedOut('contact-us')) },
       payload: { email: 'a@b.ch' },
     })
 
@@ -173,7 +183,7 @@ describe('the walking skeleton, end to end', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/f/contact-us/submissions',
-      headers: { [SCHEMA_HASH_HEADER]: schemaHash },
+      headers: { [SCHEMA_HASH_HEADER]: schemaHash, ...(await handedOut('contact-us')) },
       payload: {
         email: 'x@y.ch',
         country: 'DE',
@@ -194,7 +204,7 @@ describe('the walking skeleton, end to end', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/f/contact-us/submissions',
-      headers: { [SCHEMA_HASH_HEADER]: schemaHash },
+      headers: { [SCHEMA_HASH_HEADER]: schemaHash, ...(await handedOut('contact-us')) },
       payload: {},
     })
 
@@ -206,7 +216,7 @@ describe('the walking skeleton, end to end', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/f/contact-us/submissions',
-      headers: { [SCHEMA_HASH_HEADER]: 'deadbeef' },
+      headers: { [SCHEMA_HASH_HEADER]: 'deadbeef', ...(await handedOut('contact-us')) },
       payload: { email: 'a@b.ch' },
     })
 
@@ -229,7 +239,7 @@ describe('the walking skeleton, end to end', () => {
     const submit = await app.inject({
       method: 'POST',
       url: '/f/contact-us/submissions',
-      headers: { [SCHEMA_HASH_HEADER]: schemaHash },
+      headers: { [SCHEMA_HASH_HEADER]: schemaHash, ...(await handedOut('contact-us')) },
       payload: { email: 'a@b.ch' },
     })
     expect(submit.statusCode).toBe(409)
@@ -407,6 +417,169 @@ describe('drafts over HTTP', () => {
       headers: { 'x-formancy-draft-token': 'anything' },
     })
     expect(withToken.statusCode).toBe(404)
+  })
+})
+
+/**
+ * A response is stored once, under the id it was handed with its form (0169).
+ *
+ * Against the real table because the database is what decides: the id is the submission's
+ * primary key, and two sends of one response at once both pass every check made before the
+ * insert. Only the insert can say which of them is stored, and only Postgres can show it does.
+ */
+describe('a response is stored once', () => {
+  const count = async (): Promise<number> =>
+    Number((await sql`SELECT count(*)::int AS n FROM submissions`)[0]!['n'])
+
+  /** contact-us's hash now: the draft cases above republish it. */
+  const currentHash = async (): Promise<string> =>
+    ((await app.inject({ method: 'GET', url: '/f/contact-us' })).json() as { schemaHash: string }).schemaHash
+
+  const send = async (token: Record<string, string>, payload: object = { email: 'once@b.ch' }) =>
+    app.inject({
+      method: 'POST',
+      url: '/f/contact-us/submissions',
+      headers: { [SCHEMA_HASH_HEADER]: await currentHash(), ...token },
+      payload,
+    })
+
+  test('reading a form hands out a token, a new one every time, that no cache may keep', async () => {
+    // One token handed to two respondents makes the second one's response "already sent".
+    // A cache in front of the server that kept this reply would do exactly that, so the
+    // reply says it must not be kept.
+    const first = await app.inject({ method: 'GET', url: '/f/contact-us' })
+    const second = await app.inject({ method: 'GET', url: '/f/contact-us' })
+
+    expect(first.headers['cache-control']).toBe('no-store')
+    const tokens = [first, second].map((reply) => (reply.json() as { submissionToken: string }).submissionToken)
+    expect(tokens[0]).toMatch(/^[0-9a-f-]{36}\.[0-9a-f]{64}$/)
+    expect(tokens[0]).not.toBe(tokens[1])
+  })
+
+  test('without it, an anonymous response is refused with its own code, and nothing is stored', async () => {
+    // Its own code, so a host that left it out is told what it left out — not that the form
+    // is closed, and not a validation error that would send a respondent looking for a field.
+    const before = await count()
+
+    const refused = await send({})
+
+    expect(refused.statusCode).toBe(400)
+    expect(refused.json()).toMatchObject({ error: 'submission_token_required' })
+    expect(await count()).toBe(before)
+  })
+
+  test("another form's token is refused with its own code", async () => {
+    // Bound to the form it was handed out with, so an id cannot be spent on a form that never
+    // handed it out — including ahead of the respondent it was handed to.
+    await app.inject({ method: 'POST', url: '/forms', headers: asAdmin(), payload: { path: 'elsewhere', schema: { ...schema, id: 'elsewhere' } } })
+    const before = await count()
+
+    const refused = await send(await handedOut('elsewhere'))
+
+    expect(refused.statusCode).toBe(400)
+    expect(refused.json()).toMatchObject({ error: 'submission_token_invalid' })
+    expect(await count()).toBe(before)
+  })
+
+  test('sent twice, it is stored once, and the second is told so', async () => {
+    // The answer to the first send is lost, the page sends again: before this, two rows, two
+    // ids and two webhooks, which reach the operator as two people.
+    const token = await handedOut('contact-us')
+    const before = await count()
+
+    const first = await send(token)
+    const second = await send(token)
+
+    expect(first.statusCode).toBe(201)
+    expect(second.statusCode).toBe(409)
+    const id = (first.json() as { id: string }).id
+    expect(second.json()).toMatchObject({ error: 'submission_token_spent', id })
+    expect(await count()).toBe(before + 1)
+    const audited = await sql`SELECT 1 FROM audit_log WHERE action = 'submission.created' AND detail->>'submissionId' = ${id}`
+    expect(audited).toHaveLength(1)
+  })
+
+  test('sent twice at once, it is still stored once', async () => {
+    // Both sends find nothing stored when they look, and both pass the replay; the storage
+    // below holds each at the insert until the other is there too, which is the interleaving a
+    // busy server reaches by chance. The primary key decides inside the insert, and the second
+    // writes nothing — where a plain insert would answer it with a 500.
+    const real = createPostgresStorage(sql)
+    let release: () => void = () => undefined
+    const bothThere = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    let arrived = 0
+    const held: Storage = {
+      ...real,
+      insertSubmission: async (...args) => {
+        arrived += 1
+        if (arrived === 2) release()
+        await bothThere
+        return real.insertSubmission(...args)
+      },
+    }
+    const racing = await createApp(held, {
+      authSecret: 'integration-test-secret-with-length',
+      submissionRateLimit: { max: 10_000, timeWindowMs: 60_000 },
+    })
+
+    try {
+      const token = await handedOut('contact-us')
+      const hash = await currentHash()
+      const before = await count()
+      const sendOnce = () =>
+        racing.inject({
+          method: 'POST',
+          url: '/f/contact-us/submissions',
+          headers: { [SCHEMA_HASH_HEADER]: hash, ...token },
+          payload: { email: 'race@b.ch' },
+        })
+
+      const replies = await Promise.all([sendOnce(), sendOnce()])
+
+      expect(arrived).toBe(2)
+      expect(replies.map((reply) => reply.statusCode).sort()).toEqual([201, 409])
+      expect(await count()).toBe(before + 1)
+    } finally {
+      await racing.close()
+    }
+  })
+
+  test('a draft is one response: resumed and sent again, it is stored once', async () => {
+    // A response sent from a draft whose answer was lost is sent again after a reload, from the
+    // resumed draft. Resuming hands back the token the draft started with, so the second send
+    // is the same response.
+    const started = await app.inject({ method: 'POST', url: '/f/contact-us/drafts' })
+    const { draftId, token, submissionToken } = started.json() as {
+      draftId: string
+      token: string
+      submissionToken: string
+    }
+    await app.inject({
+      method: 'PUT',
+      url: `/f/contact-us/drafts/${draftId}`,
+      headers: { 'x-formancy-draft-token': token },
+      payload: { email: 'draft@b.ch' },
+    })
+    const resume = async (): Promise<{ submissionToken: string; data: object }> =>
+      (
+        await app.inject({
+          method: 'GET',
+          url: `/f/contact-us/drafts/${draftId}`,
+          headers: { 'x-formancy-draft-token': token },
+        })
+      ).json() as { submissionToken: string; data: object }
+
+    const resumed = await resume()
+    expect(resumed.submissionToken).toBe(submissionToken)
+    const sent = await send({ [SUBMISSION_TOKEN_HEADER]: resumed.submissionToken }, resumed.data)
+    expect(sent.statusCode).toBe(201)
+    expect((sent.json() as { id: string }).id).toBe(draftId)
+
+    const again = await resume()
+    const resent = await send({ [SUBMISSION_TOKEN_HEADER]: again.submissionToken }, again.data)
+    expect(resent.statusCode).toBe(409)
   })
 })
 
@@ -715,7 +888,7 @@ describe('the webhook outbox', () => {
     const submitted = await app.inject({
       method: 'POST',
       url: '/f/hooked/submissions',
-      headers: { [SCHEMA_HASH_HEADER]: hash },
+      headers: { [SCHEMA_HASH_HEADER]: hash, ...(await handedOut('hooked')) },
       payload: { email: 'a@b.ch' },
     })
     expect(submitted.statusCode).toBe(201)
@@ -744,12 +917,15 @@ describe('the webhook outbox', () => {
     })
 
     const before = await sql`SELECT count(*)::int AS n FROM deliveries`
-    await app.inject({
+    const submitted = await app.inject({
       method: 'POST',
       url: '/f/unhooked/submissions',
-      headers: { [SCHEMA_HASH_HEADER]: hash },
+      headers: { [SCHEMA_HASH_HEADER]: hash, ...(await handedOut('unhooked')) },
       payload: { email: 'c@d.ch' },
     })
+    // Landed, said rather than assumed: a submission refused for any reason also queues
+    // nothing, and this passed for that reason alone while the token was missing.
+    expect(submitted.statusCode).toBe(201)
     const after = await sql`SELECT count(*)::int AS n FROM deliveries`
 
     expect(after[0]!['n']).toBe(before[0]!['n'])
@@ -839,7 +1015,7 @@ describe('uploaded files', () => {
     const submitted = await app.inject({
       method: 'POST',
       url: '/f/claim/submissions',
-      headers: { [SCHEMA_HASH_HEADER]: hash },
+      headers: { [SCHEMA_HASH_HEADER]: hash, ...(await handedOut('claim')) },
       payload: { reference: 'A-1', evidence: [file] },
     })
 
@@ -856,7 +1032,7 @@ describe('uploaded files', () => {
     const submitted = await app.inject({
       method: 'POST',
       url: '/f/claim/submissions',
-      headers: { [SCHEMA_HASH_HEADER]: hash },
+      headers: { [SCHEMA_HASH_HEADER]: hash, ...(await handedOut('claim')) },
       payload: { reference: 'A-2', evidence: [{ id: '00000000-0000-4000-8000-000000000000' }] },
     })
 
@@ -867,11 +1043,12 @@ describe('uploaded files', () => {
 
   test('one file, one submission: the second one loses and rolls back', async () => {
     const file = await upload()
-    const send = (reference: string) =>
+    // Two responses, each with its own token: what races here is the file, not the response.
+    const send = async (reference: string) =>
       app.inject({
         method: 'POST',
         url: '/f/claim/submissions',
-        headers: { [SCHEMA_HASH_HEADER]: hash },
+        headers: { [SCHEMA_HASH_HEADER]: hash, ...(await handedOut('claim')) },
         payload: { reference, evidence: [file] },
       })
 
@@ -886,6 +1063,26 @@ describe('uploaded files', () => {
     const id = file['id'] as string
     const rows = await sql`SELECT submission_id FROM files WHERE id = ${id}`
     expect(rows[0]?.['submission_id']).toBe((accepted[0]!.json() as { id: string }).id)
+  })
+
+  test('a response with a file, sent again, is told it was sent rather than that its file is unknown', async () => {
+    // The first send claimed the file. A claim checked before the token would call it unknown,
+    // and a respondent told their attachment is missing uploads it again for nothing.
+    const file = await upload()
+    const token = await handedOut('claim')
+    const send = () =>
+      app.inject({
+        method: 'POST',
+        url: '/f/claim/submissions',
+        headers: { [SCHEMA_HASH_HEADER]: hash, ...token },
+        payload: { reference: 'C-1', evidence: [file] },
+      })
+
+    expect((await send()).statusCode).toBe(201)
+    const again = await send()
+
+    expect(again.statusCode).toBe(409)
+    expect(again.json()).toMatchObject({ error: 'submission_token_spent' })
   })
 
   test('the bytes come back as an attachment, never inline', async () => {
@@ -1218,7 +1415,7 @@ describe('an upload the deployment scans', () => {
     const submitted = await scanning.inject({
       method: 'POST',
       url: '/f/scanned/submissions',
-      headers: { [SCHEMA_HASH_HEADER]: hash },
+      headers: { [SCHEMA_HASH_HEADER]: hash, ...(await handedOut('scanned', scanning)) },
       payload: { evidence: [file] },
     })
     expect(submitted.statusCode).toBe(422)
@@ -1329,11 +1526,11 @@ describe('an upload the deployment scans', () => {
         payload: body,
       })
 
-    const submit = (file: { id: string }) =>
+    const submit = async (file: { id: string }) =>
       scanning.inject({
         method: 'POST',
         url: '/f/scanned/submissions',
-        headers: { [SCHEMA_HASH_HEADER]: hash },
+        headers: { [SCHEMA_HASH_HEADER]: hash, ...(await handedOut('scanned', scanning)) },
         payload: { evidence: [file] },
       })
 
@@ -1658,7 +1855,7 @@ describe('the audit log', () => {
     const submitted = await app.inject({
       method: 'POST',
       url: '/f/audited/submissions',
-      headers: { [SCHEMA_HASH_HEADER]: hash },
+      headers: { [SCHEMA_HASH_HEADER]: hash, ...(await handedOut('audited')) },
       payload: { note: 'hello' },
     })
     expect(submitted.statusCode).toBe(201)
@@ -1677,7 +1874,7 @@ describe('the audit log', () => {
     const refused = await app.inject({
       method: 'POST',
       url: '/f/audited/submissions',
-      headers: { [SCHEMA_HASH_HEADER]: hash },
+      headers: { [SCHEMA_HASH_HEADER]: hash, ...(await handedOut('audited')) },
       payload: {},
     })
 
@@ -1975,12 +2172,15 @@ describe('the proof-of-work challenge', () => {
     return Buffer.from(JSON.stringify({ ...challenge, number })).toString('base64')
   }
 
-  const submit = (header?: string) =>
+  // A fresh token for every response unless one is given, so that what these cases race and
+  // refuse is the challenge and nothing else.
+  const submit = async (header?: string, token?: Record<string, string>) =>
     guarded.inject({
       method: 'POST',
       url: '/f/challenged/submissions',
       headers: {
         [SCHEMA_HASH_HEADER]: hash,
+        ...(token ?? (await handedOut('challenged', guarded))),
         ...(header === undefined ? {} : { 'x-formancy-challenge': header }),
       },
       payload: { email: 'ada@example.ch' },
@@ -2023,6 +2223,27 @@ describe('the proof-of-work challenge', () => {
     // adjudicates, which is why this test needs a real database.
     const accepted = [first, second].filter((response) => response.statusCode === 201)
     expect(accepted).toHaveLength(1)
+  })
+
+  test('a response refused for its challenge keeps its token, and is stored once it is solved', async () => {
+    // The challenge is spent before the replay, so a refused attempt costs one. The token is
+    // spent only by a stored response, so the refusal costs the respondent nothing else.
+    const token = await handedOut('challenged', guarded)
+
+    expect((await submit(undefined, token)).statusCode).toBe(400)
+    expect((await submit(await solved(), token)).statusCode).toBe(201)
+  })
+
+  test('sent again with a fresh challenge, a response is still stored once', async () => {
+    // The challenge proves work per attempt, so a retry that pays for a new one passes it. It
+    // cannot say that this is the same response; the token is what does.
+    const token = await handedOut('challenged', guarded)
+    expect((await submit(await solved(), token)).statusCode).toBe(201)
+
+    const again = await submit(await solved(), token)
+
+    expect(again.statusCode).toBe(409)
+    expect((again.json() as { error: string }).error).toBe('submission_token_spent')
   })
 
   test('a solution nobody minted is refused as forged', async () => {
@@ -2147,11 +2368,11 @@ describe('a sourced answer, checked against the deployment’s own list', () => 
     await sourced.close()
   })
 
-  const submit = (payload: unknown) =>
+  const submit = async (payload: unknown) =>
     sourced.inject({
       method: 'POST',
       url: '/f/sourced/submissions',
-      headers: { [SCHEMA_HASH_HEADER]: hash },
+      headers: { [SCHEMA_HASH_HEADER]: hash, ...(await handedOut('sourced', sourced)) },
       payload: payload as never,
     })
 
@@ -2376,11 +2597,19 @@ describe('what reaches the log', () => {
         (await send({ method: 'PUT', url: `/f/${path}/access`, headers: withKey, payload: { submit: 'public' } })).statusCode,
       ).toBe(204)
       expect((await send({ method: 'GET', url: `/forms?cursor=${planted.query}`, headers: withKey })).statusCode).toBe(200)
-      expect((await send({ method: 'GET', url: `/f/${path}` })).statusCode).toBe(200)
+      const read = await send({ method: 'GET', url: `/f/${path}` })
+      expect(read.statusCode).toBe(200)
+      // What the form is handed out with (0169) is a secret the server hands back, like a draft's key.
+      carry((read.json() as { submissionToken: string }).submissionToken)
 
-      const draft = (await send({ method: 'POST', url: `/f/${path}/drafts` })).json() as { draftId: string; token: string }
+      const draft = (await send({ method: 'POST', url: `/f/${path}/drafts` })).json() as {
+        draftId: string
+        token: string
+        submissionToken: string
+      }
       carry(draft.draftId)
       carry(draft.token)
+      carry(draft.submissionToken)
       const draftKey = { 'x-formancy-draft-token': draft.token }
       expect(
         (
@@ -2418,7 +2647,12 @@ describe('what reaches the log', () => {
       const submitted = await send({
         method: 'POST',
         url: `/f/${path}/submissions`,
-        headers: { [SCHEMA_HASH_HEADER]: schemaHash, 'x-formancy-challenge': solution },
+        // The draft's token, as a page that started a draft sends its response with (0169).
+        headers: {
+          [SCHEMA_HASH_HEADER]: schemaHash,
+          'x-formancy-challenge': solution,
+          [SUBMISSION_TOKEN_HEADER]: draft.submissionToken,
+        },
         payload: { email: planted.email, note: planted.answer, evidence: [file] },
       })
       expect(submitted.statusCode).toBe(201)

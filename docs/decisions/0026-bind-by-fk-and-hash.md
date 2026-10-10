@@ -51,7 +51,7 @@ is reached by a join; the submission row does not yet carry its own copy, so
 tamper evidence today rests on the version row being immutable
 ([0025](0025-immutability-in-the-database.md)). And the shipped server
 implements the strict end of the policy: every mismatched hash is refused, with
-the comment in `packages/server-core/src/use-cases.ts` saying so. Accepting
+the comment in `packages/server-core/src/submitting.ts` saying so. Accepting
 compatible older versions is specified and not yet built.
 
 ## Alternatives considered

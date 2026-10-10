@@ -298,6 +298,55 @@ again.
   exists for exactly that, and `runsOn` is already in place so the ordering question can
   be answered without restructuring anything.
 
+## A response is sent with the token its form was handed out with (Unreleased)
+
+**Why you cannot skip this.** A response sent twice — the retry a dropped connection forces, a
+replay — was stored twice, with two ids and two webhooks, and nothing told the copies from two
+respondents. Now a response is stored under the id its token names, once
+([0169](docs/decisions/0169-a-response-is-stored-once.md)), and an anonymous submission without
+the token is refused.
+
+**What changes for a client.** Read the token where you already read the schema hash:
+
+```
+GET /f/:path           ->  200 { version, schemaHash, schema, submissionToken }   (no-store)
+POST /f/:path/drafts   ->  201 { draftId, token, submissionToken }
+GET /f/:path/drafts/:id ->  200 { outcome: "resumed", …, submissionToken }
+```
+
+and send it back:
+
+```
+POST /f/:path/submissions   X-Formancy-Schema-Hash: <hash>
+                            X-Formancy-Submission-Token: <submissionToken>
+```
+
+Send the draft's once a draft has started or been resumed, and the form's otherwise. Without the
+header an anonymous submission is `400 submission_token_required`; with one this server did not
+sign for that form, `400 submission_token_invalid` — read the form again for a new one; with one
+whose response is stored, `409 submission_token_spent` and the stored `id`. A `409` is therefore
+two things now: switch on `error`. A signed-in submitter or an API key may leave the header out.
+Nothing in `@formancy/react` or `@formancy/angular` changes: they send nothing.
+
+**Keep a cache off `GET /f/:path`.** The reply is per reading and says `Cache-Control:
+no-store`. A cache that keeps it anyway hands one token to everybody behind it, and every response
+after the first is refused as already sent.
+
+**The database.** Nothing changes: the token's id is the submission's id, which was already the
+primary key. Submissions stored before keep their ids, and no token names them.
+
+**If you implement `Storage` yourself**, rather than using `@formancy/server`'s PostgreSQL one:
+
+| Method | Does | Must |
+|---|---|---|
+| `insertSubmission(record, deliveries?, claimFileIds?, audit?)` | Now returns `true` when it stored, `false` when a submission with `record.id` is already stored | Decide that **atomically**, and when it is `false` write nothing at all — no delivery, no claim, no audit row. Two sends of one response both pass every check before it |
+| `hasSubmission(id)` | Whether a submission with this id is stored | — |
+
+The PostgreSQL storage inserts the submission first with `ON CONFLICT DO NOTHING` and looks at
+what came back, as `spendChallenge` does; `createMemoryStorage` is a second implementation to read
+beside yours. `ServerDeps.draftSecret` keeps its name and now signs the token as well as a
+draft's key.
+
 ## A form's examples are kept beside it (Unreleased)
 
 **The database.** The server adds a table, `form_examples`, on start with `CREATE TABLE IF NOT

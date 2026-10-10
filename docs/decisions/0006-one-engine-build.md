@@ -6,7 +6,7 @@
 - **Verified by:** `packages/core` declares no `@types/node` and
   `tsconfig.base.json` sets `lib: ["ES2023"]` with no DOM entry, so
   `pnpm --filter @formancy/core typecheck` fails the moment the engine reaches
-  for a Node or browser global. `packages/server-core/src/use-cases.ts` builds
+  for a Node or browser global. `packages/server-core/src/submitting.ts` builds
   the engine with the same `createFormEngine` the renderers use, and the test
   "never trusts the client: hidden-branch data is stripped and computed lies are
   overwritten" in `packages/server-core/src/use-cases.test.ts` fails if the

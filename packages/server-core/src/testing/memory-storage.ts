@@ -168,6 +168,9 @@ export function createMemoryStorage(): Storage {
     },
 
     insertSubmission: async (record, queued, claimFileIds, audit) => {
+      // The primary key the real table has: a response sent twice is stored once, and the
+      // second writes nothing at all.
+      if (submissions.some((stored) => stored.id === record.id)) return false
       // One step, like the real transaction it stands in for: both land or
       // neither does.
       submissions.push({ ...record })
@@ -183,7 +186,10 @@ export function createMemoryStorage(): Storage {
       // Same commit again: a submission that rolled back must leave no trace
       // saying it happened.
       if (audit !== undefined) audits.push({ ...audit })
+      return true
     },
+
+    hasSubmission: async (id) => submissions.some((stored) => stored.id === id),
 
     spendChallenge: async (challenge, expiresAtIso) => {
       // One map operation, standing in for the unique constraint the real

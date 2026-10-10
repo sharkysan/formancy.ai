@@ -7,3 +7,12 @@
  * the other one.
  */
 export const SCHEMA_HASH_HEADER = 'x-formancy-schema-hash'
+
+/** A solved proof-of-work challenge, as base64 JSON: the shape an ALTCHA client already produces. */
+export const CHALLENGE_HEADER = 'x-formancy-challenge'
+
+/**
+ * The token a response is sent with: handed out with the form, and with a draft, naming the id
+ * the response is stored under (0169). Required of an anonymous submission.
+ */
+export const SUBMISSION_TOKEN_HEADER = 'x-formancy-submission-token'

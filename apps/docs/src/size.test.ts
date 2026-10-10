@@ -47,14 +47,6 @@ const CEILINGS: Record<string, { lines: number; why: string }> = {
     lines: 896,
     why: 'The landing page, one long document. The seam is one section per file — and the chrome has already gone that way: the bar, the footer, the brand mark and the backdrop left for `chrome.tsx` when the site grew a second page that had written its own, which is the ratchet pointing at something real rather than at a line count.',
   },
-  'packages/server/src/app.ts': {
-    lines: 613,
-    why: 'The seam is one route family per Fastify plugin, which is the framework’s own unit. Publishing moved to routes/publish.ts when the budget refused the next thing added here, and webhook health and delivery replay to routes/deliveries.ts when naming a trusted proxy needed room; drafts went to routes/drafts.ts when the deployment’s model needed lines, and the model’s own routes were born in routes/model.ts. A form’s access went to routes/access.ts when the examples kept beside a form needed registering, and those were born in routes/examples.ts. The rest follow the same way. The byte parser went to routes/files.ts, encapsulated with the one route that takes bytes. The audit writer went to audit-trail.ts when the request log needed lines here, its failure being the log’s business.',
-  },
-  'packages/server-core/src/use-cases.ts': {
-    lines: 620,
-    why: 'The seam is one use-case family per file. Publishing moved to publishing.ts when the budget refused the next thing added here; submitting, drafts and files follow the same way.',
-  },
   'packages/conformance/src/validate.ts': {
     lines: 603,
     why: 'Refusing a fixture that could not run honestly. One subject — and four have left it: the message catalogue and the names a driver searches by went to validate-text.ts when this budget refused the locale check, the locale and layout a fixture mounts with to mount.ts, the vocabulary of the spec a fixture may use to vocabulary.ts when ranking added a type, and the JSON predicates under them to values.ts, which both now share.',

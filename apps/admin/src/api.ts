@@ -475,21 +475,29 @@ function putBytes(
 // and the admin calls them the same way on purpose: a demonstration that quietly
 // used the management plane would be demonstrating something else.
 
-/** The published form, as a respondent gets it. */
+/**
+ * The published form, as a respondent gets it — with the token its response is sent with,
+ * a new one each time it is read (0169).
+ */
 export async function fetchPublicForm(
   path: string,
-): Promise<{ version: number; schemaHash: string; schema: FormSchema }> {
+): Promise<{ version: number; schemaHash: string; schema: FormSchema; submissionToken: string }> {
   const response = await fetch(`${BASE}/f/${encodeURIComponent(path)}`)
   if (!response.ok) throw new Error(`This form could not be loaded (${String(response.status)}).`)
-  return (await response.json()) as { version: number; schemaHash: string; schema: FormSchema }
+  return (await response.json()) as { version: number; schemaHash: string; schema: FormSchema; submissionToken: string }
 }
 
-/** Start a draft. The server picks the id and signs it; the token comes once. */
-export async function startDraft(path: string): Promise<{ id: string; token: string } | undefined> {
+/**
+ * Start a draft. The server picks the id and signs it; the key comes once. So does the token
+ * the response is then sent with, which names the draft and is what a resume hands back.
+ */
+export async function startDraft(
+  path: string,
+): Promise<{ id: string; token: string; submissionToken: string } | undefined> {
   const response = await fetch(`${BASE}/f/${encodeURIComponent(path)}/drafts`, { method: 'POST' })
   if (!response.ok) return undefined
-  const body = (await response.json()) as { draftId: string; token: string }
-  return { id: body.draftId, token: body.token }
+  const body = (await response.json()) as { draftId: string; token: string; submissionToken: string }
+  return { id: body.draftId, token: body.token, submissionToken: body.submissionToken }
 }
 
 export async function saveDraft(
@@ -515,6 +523,8 @@ export interface ResumedDraft {
   schemaHash: string
   data: Record<string, unknown>
   migration?: { severity: 'lossy' | 'breaking'; changes: Array<{ kind: string; path?: string }> }
+  /** On `resumed`: the token the response is sent with, the same on every resume. */
+  submissionToken?: string
 }
 
 /** `undefined` for a draft that is gone OR a token that does not match: the
@@ -532,18 +542,31 @@ export async function resumeDraft(
 }
 
 /** The hash is the version the browser actually rendered, and the server
- *  decides what to do about a stale one. */
+ *  decides what to do about a stale one. The token is the one this response was handed, so
+ *  the same response sent twice is stored once (0169) — in a header, never the URL. A refusal
+ *  carries the server's `error` code beside its sentence, because one of them,
+ *  `submission_token_spent`, means the response IS stored, and the page has to tell that apart
+ *  from the ones that mean it is not. */
 export async function submitForm(
   path: string,
   schemaHash: string,
+  submissionToken: string,
   data: unknown,
-): Promise<{ ok: true } | { ok: false; message: string }> {
+): Promise<{ ok: true } | { ok: false; message: string; error?: string }> {
   const response = await authed(`${BASE}/f/${encodeURIComponent(path)}/submissions`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-formancy-schema-hash': schemaHash },
+    headers: {
+      'content-type': 'application/json',
+      'x-formancy-schema-hash': schemaHash,
+      'x-formancy-submission-token': submissionToken,
+    },
     body: JSON.stringify(data),
   })
   if (response.ok) return { ok: true }
   const body = (await response.json().catch(() => ({}))) as { message?: string; error?: string }
-  return { ok: false, message: body.message ?? body.error ?? `The server refused it (${String(response.status)}).` }
+  return {
+    ok: false,
+    message: body.message ?? body.error ?? `The server refused it (${String(response.status)}).`,
+    ...(body.error === undefined ? {} : { error: body.error }),
+  }
 }

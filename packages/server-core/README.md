@@ -27,17 +27,23 @@ server gets argon2id and a CSPRNG.
 ## Use
 
 ```ts
-import { publishForm, createSubmission, can } from '@formancy/server-core'
+import { publishForm, formToFill, createSubmission, can } from '@formancy/server-core'
 
 const published = await publishForm(deps, { path: 'contact-us', schema })
 // publishForm is the save gate: structural validation, then the engine's own
 // compile — a form that could loop is refused here and never persisted.
 
+// What a respondent is handed: the current version, and the token its response is
+// sent back with, so that a response sent twice is stored once.
+const form = await formToFill(deps, 'contact-us')
+
 const outcome = await createSubmission(deps, {
   path: 'contact-us',
-  declaredSchemaHash: published.schemaHash,
+  declaredSchemaHash: form.schemaHash,
+  token: form.submissionToken,
   data: payload,
 })
+// The same token again: { ok: false, kind: 'token_spent', id }, and nothing stored.
 ```
 
 `publishForm`, `keepExamples` and `createSubmission` write their audit row inside
