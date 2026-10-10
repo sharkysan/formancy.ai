@@ -30,9 +30,9 @@
   another form refused behind the run for the last fails *asking there ends it*; and the
   attempts left off a translation, or the names taken, the sample or the attempts left off a
   draft, fail each holder's *what the part asks with*. Both builders' `held-runs.test`:
-  against panes that ignored the run they were given, five of seven cases
-  failed in each — the two that passed hold what a pane does with no run, and that another
-  form's drafts are not drawn, which fails in each with the part drawing the run without
+  against panes that ignored the run they were given, five of the seven cases the file was
+  written with failed in each — the two that passed hold what a pane does with no run, and
+  that another form's drafts are not drawn, which fails in each with the part drawing the run without
   `draftsOn`. A translations pane that opens on the default language fails *the pane drawn next
   opens on its language* and *a run still waiting is drawn waiting*; a review part drawing the
   run under any language fails *on another language it says where the run is*. A view that
