@@ -19,6 +19,17 @@ export const MODEL_MESSAGES = {
   'prompt.stop': 'Stop',
   'prompt.review': 'Review these changes',
   'prompt.review.costs': 'Review these changes — some affect answers already collected',
+  // The form's examples, run against the proposal before it lands (0159). `{list}` is the
+  // examples' own names, as the scenario pane shows them.
+  'prompt.review.stops': {
+    one: 'Review these changes — {count} scenario would stop holding: {list}',
+    other: 'Review these changes — {count} scenarios would stop holding: {list}',
+  },
+  'prompt.review.costsStops': {
+    one: 'Review these changes — some affect answers already collected, and {count} scenario would stop holding: {list}',
+    other:
+      'Review these changes — some affect answers already collected, and {count} scenarios would stop holding: {list}',
+  },
   'prompt.apply': 'Apply these changes',
   'prompt.discard': 'Discard',
   'prompt.lastAnswer': 'What the model last answered',
@@ -45,6 +56,9 @@ export const MODEL_MESSAGES = {
     other:
       'Ready to review after {attempts} attempts: {count} changes, and some of them affect answers already collected. Nothing has been applied.',
   },
+  // After the ready sentence, in the scenario pane's order: what stops before what holds.
+  'prompt.status.wouldStop': 'Would stop holding if applied: {list}.',
+  'prompt.status.wouldHold': 'Would hold again if applied: {list}.',
   'prompt.status.failed': {
     one: 'Nothing was applied. {count} attempt, and the document still did not work.',
     other: 'Nothing was applied. {count} attempts, and the document still did not work.',

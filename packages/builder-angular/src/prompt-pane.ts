@@ -15,11 +15,19 @@ import {
   applyProposal,
   authorForm,
   createStop,
+  proposalHeading,
   proposalStatus,
   proposeEdit,
 } from '@formancy/builder-core'
 import { BuilderTextPipe } from './text.pipe.js'
-import type { AskModel, AuthoringResult, BuilderSession, EditProposal, Stop } from './types.js'
+import type {
+  AskModel,
+  AuthoringResult,
+  BuilderSession,
+  EditProposal,
+  Scenario,
+  Stop,
+} from './types.js'
 
 /**
  * Describing a form in words, seeing what that did, and then deciding.
@@ -55,6 +63,10 @@ import type { AskModel, AuthoringResult, BuilderSession, EditProposal, Stop } fr
  * **A model can decline**, when the format cannot express what was asked. The run
  * ends on that answer, and the pane shows the model's reason, as text, where the
  * problems would be ([0158](../../../docs/decisions/0158-a-model-may-decline.md)).
+ *
+ * **Given the form's examples, it runs them before Apply**, and the review names the
+ * ones the answer would stop holding
+ * ([0159](../../../docs/decisions/0159-a-proposal-is-checked-against-the-forms-examples.md)).
  */
 @Component({
   selector: 'formancy-prompt-pane',
@@ -92,12 +104,7 @@ import type { AskModel, AuthoringResult, BuilderSession, EditProposal, Stop } fr
 
         @if (proposal(); as waiting) {
           <section data-formancy-part="prompt-review" [attr.aria-labelledby]="reviewId">
-            <h3 [id]="reviewId">
-              {{
-                (waiting.costsAnswers ? 'prompt.review.costs' : 'prompt.review')
-                  | builderText: text()
-              }}
-            </h3>
+            <h3 [id]="reviewId">{{ heading() }}</h3>
             <ul data-formancy-part="prompt-changes">
               @for (change of waiting.changes; track change.kind + change.path) {
                 <!-- The path and the sentence. The kind is for machines; a person
@@ -148,6 +155,15 @@ export class FormancyPromptPane {
   readonly ask = input<AskModel | undefined>(undefined)
   /** How many times to let the model correct itself. Three by default. */
   readonly attempts = input<number | undefined>(undefined)
+  /**
+   * The form's examples, as `formancy-scenario-pane` takes them. Bound, an answer is run
+   * against them before it is shown, and the review names any that would stop holding.
+   */
+  readonly scenarios = input<readonly Scenario[] | undefined>(undefined)
+  /** Where every example starts — the form's sample, as the scenario pane takes it. */
+  readonly initialValue = input<Readonly<Record<string, unknown>> | undefined>(undefined)
+  /** `client` by default; `server` is what the publish gate and the submission endpoint run. */
+  readonly mode = input<'client' | 'server' | undefined>(undefined)
 
   protected readonly instruction = signal('')
   protected readonly busy = signal(false)
@@ -201,6 +217,12 @@ export class FormancyPromptPane {
   /** Every word this pane shows, in the language the session was opened in (0114). */
   protected readonly text = computed(() => this.session().text)
 
+  /** The review's heading and accessible name — builder-core's, as the React pane's is. */
+  protected readonly heading = computed(() => {
+    const waiting = this.proposal()
+    return waiting === undefined ? '' : proposalHeading(waiting, this.text())
+  })
+
   /** The one sentence the live region carries — builder-core's, as the React pane's is. */
   protected readonly status = computed(() =>
     proposalStatus(
@@ -228,6 +250,12 @@ export class FormancyPromptPane {
       const session = this.session()
       const current = session.document()
       const attempts = this.attempts()
+      // The examples in force with the document the answer is for, taken together.
+      const scenarios = this.scenarios()
+      const examples =
+        scenarios === undefined
+          ? undefined
+          : { scenarios, initialValue: this.initialValue(), mode: this.mode() }
       // Resolves however the run ends — a host's model that threw included, which
       // it reports as unreachable with the host's reason rather than as a document
       // that failed.
@@ -241,7 +269,7 @@ export class FormancyPromptPane {
       this.result.set(outcome)
       // Held against the document it was written for. Applying later checks
       // that the form has not moved in the meantime.
-      if (outcome.ok) this.proposal.set(proposeEdit(current, outcome.document))
+      if (outcome.ok) this.proposal.set(proposeEdit(current, outcome.document, examples))
     } finally {
       // Stop is drawn only while a run waits, so it leaves with the focus if it has
       // it, and focus falls to <body>. Read while it is still drawn; Write, where the

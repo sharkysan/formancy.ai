@@ -10,6 +10,23 @@ later.
 
 ## Unreleased
 
+**Added: a model's proposal is checked against the form's examples before it lands.** A rule
+turned the wrong way round — `country != "CH"` where `country == "CH"` was meant — passes every
+check the model loop makes, and the review listed one changed rule. The examples that tell the
+two apart ran only after Apply, in the scenario pane. `proposeEdit` in `@formancy/builder-core`
+now takes the form's examples, `{ scenarios, initialValue, mode }`, runs them against the
+document as it is and as the proposal would leave it with `runScenarios` and
+`comparedToLastRun`, and the proposal carries `examples`: what would stop holding and what would
+hold again. `proposalHeading`, new, gives the review a heading that names what would stop
+holding, and `proposalStatus` adds both, in English, German and French. Both prompt panes take
+`scenarios`, `initialValue` and `mode`, as the scenario panes do, and the playground passes the
+open form's examples to both builders' prompt panes. Apply stays enabled, because a rule changed
+on purpose stops its old example holding. A rule no example pins gets no warning. With no
+examples — none passed, or an empty list — `examples` is `undefined` rather than an empty
+verdict, because a check that never ran has not passed. `EditProposal`
+has a new field, so an `EditProposal` built by hand rather than by `proposeEdit` must add it
+([0159](docs/decisions/0159-a-proposal-is-checked-against-the-forms-examples.md)).
+
 **Added: a model may decline, and a decline ends the run after one turn.** Asked for
 something the format cannot express — "email me every submission" — a model had no answer but
 a document. It wrote one, the checks refused it, it was asked again, and the run spent every

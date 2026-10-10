@@ -23,8 +23,10 @@ import {
   createBuilderSession,
   createStop,
   declinedAnswer,
+  proposalHeading,
+  proposeEdit,
 } from '@formancy/builder-core'
-import type { AskModel } from '@formancy/builder-core'
+import type { AskModel, ProposalExamples } from '@formancy/builder-core'
 import { mintChallenge, solveChallenge, verifySolution } from '@formancy/challenge'
 import { auditedBy, createMemoryStorage, publishForm } from '@formancy/server-core'
 import type { FormSchema } from '@formancy/spec'
@@ -86,6 +88,23 @@ if (declined.ok || declined.ended !== 'declined' || declined.attempts !== 1) {
 }
 if (!(DECLINE_KEY in (JSON.parse(declinedAnswer('why')) as object))) {
   throw new Error('declinedAnswer and the spec disagree about the key')
+}
+
+// A proposal against the form's examples (0159): the installed builder-core runs them
+// through the installed core, and the review's heading names the one that would stop.
+const optional = {
+  ...schema,
+  model: { fields: [{ key: 'email', type: 'text', label: 'Email' }] },
+} as unknown as FormSchema
+const examples: ProposalExamples = {
+  scenarios: [{ name: 'an email is needed', changes: {}, valid: false, errors: { email: ['required'] } }],
+}
+const proposal = proposeEdit(schema, optional, examples)
+if (proposal.examples?.regressions[0] !== 'an email is needed') {
+  throw new Error('the installed proposeEdit did not run the examples')
+}
+if (!proposalHeading(proposal, session.text).includes('an email is needed')) {
+  throw new Error('the installed proposalHeading did not name the example')
 }
 
 /*

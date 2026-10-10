@@ -230,6 +230,23 @@ leaves your network.
 Without the prop the pane renders nothing, rather than a button that cannot
 work.
 
+**Give it the form's examples, and it runs them before you decide.** A rule turned
+the wrong way round passes every check above, and the change list says only that
+the rule changed. An example with its answer written down tells the two apart. Pass
+the pane the examples your `ScenarioPane` runs, with the same `scenarios`,
+`initialValue` and `mode`:
+
+```tsx
+<PromptPane session={session} ask={askModel} scenarios={scenarios} initialValue={sample} />
+```
+
+The pane then runs them against the form as it is and as the answer would leave it.
+The review's heading names each example that would stop holding, and the status
+names those and any that would hold again. Apply stays enabled: a rule you asked to
+change stops its old example holding, and the decision is yours. A rule no example
+pins gets no warning. Without `scenarios`, the review says nothing about examples
+([0159](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0159-a-proposal-is-checked-against-the-forms-examples.md)).
+
 ### Writing `askModel`
 
 An `AskModel` is one turn: a prompt in, the model's text out. Point it at an

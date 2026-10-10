@@ -38,6 +38,9 @@ demonstrably needs was available to this repository's own suite and to nobody el
 to a form author, not to a consumer's CI, not to an agent about to publish. It is also
 the gap [0109](0109-an-ai-edit-is-reviewed-before-it-lands.md) had to leave open in its
 residual — *the review shows what changed, not whether it is what was asked for*.
+[0159](0159-a-proposal-is-checked-against-the-forms-examples.md) later ran these examples
+against a model's proposal before it lands, so the review names one that would stop
+holding; for a rule no example pins, the gap is as this paragraph left it.
 
 ## Decision
 

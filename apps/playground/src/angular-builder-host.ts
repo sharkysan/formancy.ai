@@ -151,8 +151,14 @@ export function playgroundBuilder(
       <formancy-translations-pane [session]="host.session" />
     } @else {
       <!-- Describing a change in words, with the same stand-in model as the React pane:
-           the person plays it, and everything after the answer is real (0109). -->
-      <formancy-prompt-pane [session]="host.session" [ask]="ask" />
+           the person plays it, and everything after the answer is real (0109) — run
+           against the page's examples before it lands, as the React pane's is (0159). -->
+      <formancy-prompt-pane
+        [session]="host.session"
+        [ask]="ask"
+        [scenarios]="host.scenarios()"
+        [initialValue]="host.sample()"
+      />
       <formancy-builder
         [session]="host.session"
         [blocks]="host.blocks()"

@@ -1,3 +1,5 @@
+import { runScenarios } from '@formancy/core'
+import type { Scenario } from '@formancy/core'
 import { diffSchemas, schemaHash } from '@formancy/spec'
 import type { FormSchema } from '@formancy/spec'
 import { describe, expect, test } from 'vitest'
@@ -5,7 +7,8 @@ import type { AuthoringResult } from './authoring.js'
 import { createBuilderText } from './messages.js'
 import { BUILDER_MESSAGES_DE } from './messages-de.js'
 import { BUILDER_MESSAGES_FR } from './messages-fr.js'
-import { applyProposal, proposalStatus, proposeEdit } from './proposal.js'
+import { applyProposal, proposalHeading, proposalStatus, proposeEdit } from './proposal.js'
+import { comparedToLastRun } from './scenario-runs.js'
 import { createBuilderSession } from './session.js'
 import { base, clone } from './session.test.js'
 
@@ -185,6 +188,171 @@ describe('what the review shows', () => {
   })
 })
 
+/**
+ * A form with one rule somebody could write either way round, and an example of each side.
+ *
+ * `country == "CH"` and `country != "CH"` both pass every check `authorForm` makes. Only an
+ * example with its answer written down tells them apart (0110), and until this change that
+ * example ran after Apply, in the scenario panel — so the review a person decided on said
+ * nothing about it (0159).
+ *
+ * `name` is required and no example sets it, so every example needs the sample to start
+ * from. Without it each one fails on `required` before and after, and nothing could ever
+ * stop holding — which is how an `initialValue` dropped on the way would show up here.
+ */
+const travel = (canton: string): FormSchema => ({
+  specVersion: '1',
+  id: 'travel',
+  title: 'Travel',
+  model: {
+    fields: [
+      { key: 'name', type: 'text', required: true },
+      { key: 'country', type: 'text' },
+      { key: 'canton', type: 'text' },
+    ],
+  },
+  logic: { rules: [{ target: 'canton', kind: 'visible', cel: canton }] },
+})
+const RIGHT = travel('country == "CH"')
+const BACKWARDS = travel('country != "CH"')
+const SAMPLE = { name: 'Ada' }
+const SCENARIOS: readonly Scenario[] = [
+  {
+    name: 'Switzerland asks for a canton',
+    changes: { country: 'CH' },
+    valid: true,
+    visible: { canton: true },
+  },
+  { name: 'Germany does not', changes: { country: 'DE' }, valid: true, visible: { canton: false } },
+  // About another field: an edit to the canton rule must not name it either way.
+  { name: 'a name is needed', changes: { name: '' }, valid: false, errors: { name: ['required'] } },
+]
+const EXAMPLES = { scenarios: SCENARIOS, initialValue: SAMPLE }
+
+/**
+ * The name made optional: a change the diff calls `compatible`, since no answer already
+ * collected is lost by it. Every rule change is `lossy`, so this is the edit that stops an
+ * example holding without also costing answers.
+ */
+const nameOptional = (document: FormSchema): FormSchema => {
+  const next = clone(document)
+  delete next.model.fields[0]!.required
+  return next
+}
+
+describe('what the form’s examples make of a proposal', () => {
+  test('a rule turned the wrong way round names the examples that would stop holding', () => {
+    /*
+     * The failure this exists for. The inverted rule is valid, compiles and type-checks,
+     * so the review showed one changed rule and nothing else — and the person pressed
+     * Apply on the strength of it. The examples knew, and said so only afterwards.
+     */
+    const proposal = proposeEdit(RIGHT, BACKWARDS, EXAMPLES)
+
+    expect(proposal.examples?.regressions).toEqual([
+      'Switzerland asks for a canton',
+      'Germany does not',
+    ])
+    expect(proposal.examples?.repaired).toEqual([])
+  })
+
+  test('a rule put right names the examples that would hold again', () => {
+    // The other direction, so a review is not only ever bad news: somebody asking a model
+    // to fix a rule sees, before applying, that the fix is a fix.
+    const proposal = proposeEdit(BACKWARDS, RIGHT, EXAMPLES)
+
+    expect(proposal.examples?.repaired).toEqual([
+      'Switzerland asks for a canton',
+      'Germany does not',
+    ])
+    expect(proposal.examples?.regressions).toEqual([])
+  })
+
+  test('an example already failing is not one this edit would stop', () => {
+    /*
+     * The form arrived with the rule backwards, and the model was asked for a phone
+     * number. Naming the two canton examples as stopping would blame the edit for what it
+     * found, and a review that does that on every proposal is a review people stop reading.
+     */
+    const proposal = proposeEdit(BACKWARDS, withPhone(BACKWARDS), EXAMPLES)
+
+    expect(proposal.examples).toEqual({ regressions: [], repaired: [] })
+  })
+
+  test('with no examples there is no verdict, rather than one that says all is well', () => {
+    // A form nobody wrote examples for has not passed them. An empty verdict here would
+    // read as "nothing stops holding" for a check that never ran.
+    expect(proposeEdit(RIGHT, BACKWARDS).examples).toBeUndefined()
+  })
+
+  test('and an empty list of examples is no examples, not a verdict that all hold', () => {
+    /*
+     * What a host passes for a form nobody wrote examples for: the playground hands every
+     * such form `[]`. Running none and comparing nothing gives `{ regressions: [],
+     * repaired: [] }`, which reads to any caller of `EditProposal` as "nothing stops
+     * holding" — the verdict the case above refuses, reached through the other door.
+     */
+    expect(proposeEdit(RIGHT, BACKWARDS, { scenarios: [] }).examples).toBeUndefined()
+    expect(
+      proposeEdit(RIGHT, BACKWARDS, { scenarios: [], initialValue: SAMPLE }).examples,
+    ).toBeUndefined()
+  })
+
+  test('is the scenario panel’s own verdict: runScenarios, then comparedToLastRun', () => {
+    /*
+     * Not a second opinion. The panel compares the run after an edit with the run before
+     * it; a proposal compares the proposed document's run with the current one's, through
+     * the same two functions, so the review cannot call something a regression that the
+     * panel would not once it is applied. The cases above are literal and this one is the
+     * equation, so a change to `comparedToLastRun` reddens those and not this.
+     */
+    const options = { initialValue: SAMPLE }
+
+    expect(proposeEdit(RIGHT, BACKWARDS, EXAMPLES).examples).toEqual(
+      comparedToLastRun(
+        runScenarios(RIGHT, SCENARIOS, options),
+        runScenarios(BACKWARDS, SCENARIOS, options),
+      ),
+    )
+  })
+
+  test('and applying one that stops an example holding is still the person’s to decide', () => {
+    /*
+     * Not a refusal. A rule changed on purpose stops its old example holding — the example
+     * was written for the rule as it was — and refusing would make the examples a lock on
+     * the form rather than a check on it. The review says so; the person decides.
+     */
+    const session = createBuilderSession(RIGHT)
+    const proposal = proposeEdit(session.document(), BACKWARDS, EXAMPLES)
+
+    expect(proposal.examples?.regressions).toHaveLength(2)
+    expect(applyProposal(session, proposal).ok).toBe(true)
+    expect(session.document()).toEqual(BACKWARDS)
+  })
+
+  test('runs the examples in the mode asked for', () => {
+    /*
+     * A check marked to run on the server is what the publish gate and the submission
+     * endpoint run, and not the browser. A proposal adding one that the sample's name
+     * fails breaks nothing in the client and every example on the server — and a review
+     * that always ran the client would call that edit harmless.
+     */
+    const strict = clone(RIGHT)
+    strict.logic!.rules.push({
+      target: 'name',
+      kind: 'validate',
+      cel: 'size(name) > 3',
+      code: 'tooShort',
+      runsOn: 'server',
+    })
+
+    expect(proposeEdit(RIGHT, strict, EXAMPLES).examples?.regressions).toEqual([])
+    expect(proposeEdit(RIGHT, strict, { ...EXAMPLES, mode: 'server' }).examples?.regressions).toEqual(
+      SCENARIOS.map(({ name }) => name),
+    )
+  })
+})
+
 describe('what the prompt pane says', () => {
   const english = createBuilderText()
   const idle = {
@@ -299,6 +467,103 @@ describe('what the prompt pane says', () => {
     expect(proposalStatus(stopped, french)).toBe(french('prompt.status.stopped'))
     expect(german('prompt.status.stopped')).not.toBe(english('prompt.status.stopped'))
     expect(french('prompt.status.stopped')).not.toBe(english('prompt.status.stopped'))
+  })
+
+  test('names the examples that would stop holding, and those that would hold again', () => {
+    /*
+     * The live region is what a screen-reader user hears when the review appears. A
+     * regression that only the scenario panel announced, after Apply, is one they learn
+     * about once the rule is already in the form.
+     */
+    const stops = proposeEdit(RIGHT, BACKWARDS, EXAMPLES)
+    const mends = proposeEdit(BACKWARDS, RIGHT, EXAMPLES)
+    // A rule changed is `lossy` in the diff, so both say it affects answers.
+    const ready = english('prompt.status.readyCosts', { count: 1 })
+
+    expect(proposalStatus({ ...idle, proposal: stops, result: written(1) }, english)).toBe(
+      `${ready} Would stop holding if applied: Switzerland asks for a canton and Germany does not.`,
+    )
+    expect(proposalStatus({ ...idle, proposal: mends, result: written(1) }, english)).toBe(
+      `${ready} Would hold again if applied: Switzerland asks for a canton and Germany does not.`,
+    )
+    // And nothing extra when the examples have nothing to say about it.
+    expect(
+      proposalStatus({ ...idle, proposal: proposeEdit(RIGHT, withPhone(RIGHT), EXAMPLES) }, english),
+    ).toBe(english('prompt.status.ready', { count: 1 }))
+  })
+
+  test('the review’s heading names what would stop holding, since it names the region', () => {
+    /*
+     * The heading is the review's accessible name, so it is what somebody hears on
+     * arriving at the thing they are deciding about. "Review these changes" over an
+     * edit that stops an example holding is the sentence that let one through.
+     */
+    const stops = proposeEdit(RIGHT, nameOptional(RIGHT), EXAMPLES)
+
+    expect(stops.costsAnswers).toBe(false)
+    expect(proposalHeading(stops, english)).toBe(
+      'Review these changes — 1 scenario would stop holding: a name is needed',
+    )
+    expect(proposalHeading(proposeEdit(RIGHT, nameOptional(RIGHT)), english)).toBe(
+      'Review these changes',
+    )
+    // A repair is good news, said in the status; the heading is what to decide on. (Making
+    // the name required again is a tightening, so this one costs answers.)
+    expect(proposalHeading(proposeEdit(nameOptional(RIGHT), RIGHT, EXAMPLES), english)).toBe(
+      english('prompt.review.costs'),
+    )
+  })
+
+  test('and says both when an edit costs answers and stops an example holding', () => {
+    /*
+     * The inverted rule, which is both: a rule changed is lossy, and two examples stop
+     * holding. A heading chosen from the two that existed would have dropped one of them,
+     * and the one it kept would have been the costs — the sentence that was already there
+     * and let the inversion through.
+     */
+    const proposal = proposeEdit(RIGHT, BACKWARDS, EXAMPLES)
+
+    expect(proposalHeading(proposal, english)).toBe(
+      'Review these changes — some affect answers already collected, and 2 scenarios would stop holding: Switzerland asks for a canton and Germany does not',
+    )
+    expect(proposalHeading(proposeEdit(RIGHT, BACKWARDS), english)).toBe(
+      english('prompt.review.costs'),
+    )
+  })
+
+  test('and all of it in the author’s language', () => {
+    // The catalogues are complete by type; this is that the review reads them, and that
+    // the list is joined the way the language joins one.
+    const german = createBuilderText({ locale: 'de', messages: BUILDER_MESSAGES_DE })
+    const french = createBuilderText({ locale: 'fr', messages: BUILDER_MESSAGES_FR })
+    const one = proposeEdit(RIGHT, nameOptional(RIGHT), EXAMPLES)
+    const both = proposeEdit(RIGHT, BACKWARDS, EXAMPLES)
+    const mends = proposeEdit(BACKWARDS, RIGHT, EXAMPLES)
+
+    expect(proposalHeading(one, german)).toBe(
+      'Diese Änderungen prüfen – 1 Szenario würde nicht mehr gelten: a name is needed',
+    )
+    expect(proposalHeading(one, french)).toBe(
+      'Examiner ces modifications — 1 scénario ne tiendrait plus\u00a0: a name is needed',
+    )
+    expect(proposalHeading(both, german)).toBe(
+      'Diese Änderungen prüfen – einige betreffen bereits erfasste Antworten, und 2 Szenarien würden nicht mehr gelten: Switzerland asks for a canton und Germany does not',
+    )
+    expect(proposalHeading(both, french)).toBe(
+      'Examiner ces modifications — certaines touchent des réponses déjà recueillies, et 2 scénarios ne tiendraient plus\u00a0: Switzerland asks for a canton et Germany does not',
+    )
+    expect(proposalStatus({ ...idle, proposal: both }, german)).toContain(
+      'Würde bei Übernahme nicht mehr gelten: Switzerland asks for a canton und Germany does not.',
+    )
+    expect(proposalStatus({ ...idle, proposal: both }, french)).toContain(
+      'Ne tiendrait plus une fois appliqué\u00a0: Switzerland asks for a canton et Germany does not.',
+    )
+    expect(proposalStatus({ ...idle, proposal: mends }, german)).toContain(
+      'Würde bei Übernahme wieder gelten: Switzerland asks for a canton und Germany does not.',
+    )
+    expect(proposalStatus({ ...idle, proposal: mends }, french)).toContain(
+      'Tiendrait de nouveau une fois appliqué\u00a0: Switzerland asks for a canton et Germany does not.',
+    )
   })
 
   test('a model that declined is said to have declined, in each language', () => {

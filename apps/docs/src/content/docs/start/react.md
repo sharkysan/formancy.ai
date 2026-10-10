@@ -206,5 +206,33 @@ Note that `errors` on a field are **codes** (`"required"`, `"minLength"`,
 `"pattern"`…), not sentences: message text belongs to your message catalog, not
 to the engine.
 
+## A model's edit, checked against your examples
+
+`@formancy/builder-react` is the builder. Two of its panes belong together: `ScenarioPane`
+runs a form's examples after every edit, and `PromptPane` asks your model for a change and
+holds the answer for review ([agents](/docs/start/agents/)). Give them the same examples:
+
+```tsx
+import { PromptPane, ScenarioPane } from '@formancy/builder-react'
+
+<>
+  <PromptPane session={session} ask={askModel} scenarios={scenarios} initialValue={sample} />
+  <ScenarioPane
+    session={session}
+    scenarios={scenarios}
+    onChange={setScenarios}
+    initialValue={sample}
+  />
+</>
+```
+
+`scenarios`, `initialValue` and `mode` mean the same on both. With them the prompt pane runs
+the examples against the form as it is and as the answer would leave it, before anybody
+presses Apply. The review's heading names each example that would stop holding, and the
+status names those and any that would hold again. Apply stays enabled, because a rule
+changed on purpose stops its old example holding. A rule no example pins gets no warning,
+and without `scenarios` the review says nothing about examples
+([0159](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0159-a-proposal-is-checked-against-the-forms-examples.md)).
+
 Next: [self-host the backend](/docs/start/self-hosting/) and post the form's
 submissions to it, or read [how the schema is structured](/docs/concepts/schema/).

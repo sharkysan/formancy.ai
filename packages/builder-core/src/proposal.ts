@@ -1,7 +1,11 @@
+import { runScenarios } from '@formancy/core'
+import type { Scenario } from '@formancy/core'
 import { diffSchemas, schemaHash } from '@formancy/spec'
 import type { Change, FormSchema } from '@formancy/spec'
 import type { AuthoringResult } from './authoring.js'
 import type { BuilderText } from './messages.js'
+import { comparedToLastRun } from './scenario-runs.js'
+import type { ScenarioRunChange } from './scenario-runs.js'
 import type { BuilderSession, CommandOutcome } from './session.js'
 
 /**
@@ -50,17 +54,76 @@ export interface EditProposal {
    * rather than stored beside them, so the two cannot disagree.
    */
   readonly costsAnswers: boolean
+  /**
+   * What the form's examples make of it: which held against the current document and
+   * would not against this one, and which would hold again. Undefined when no examples
+   * were given — none passed, or an empty list — which is not the same as none stopping
+   * ([0159](../../../docs/decisions/0159-a-proposal-is-checked-against-the-forms-examples.md)).
+   */
+  readonly examples: ScenarioRunChange | undefined
 }
 
-/** Hold a model's answer against the document it was written for. */
-export function proposeEdit(current: FormSchema, proposed: FormSchema): EditProposal {
+/**
+ * The form's examples, as a scenario pane takes them: the list, where each one starts,
+ * and the engine's mode.
+ */
+export interface ProposalExamples {
+  readonly scenarios: readonly Scenario[]
+  /** Where every example starts — the form's sample. */
+  readonly initialValue?: Readonly<Record<string, unknown>> | undefined
+  /** `client` by default; `server` is what the publish gate and the submission endpoint run. */
+  readonly mode?: 'client' | 'server' | undefined
+}
+
+/**
+ * Hold a model's answer against the document it was written for.
+ *
+ * **With the form's examples, run against both.** The one check that can tell a working
+ * condition from the one that was asked for is an example with its answer written down
+ * ([0110](../../../docs/decisions/0110-a-form-is-checked-against-examples.md)), and it
+ * ran only after Apply, in the scenario panel. An inverted rule passes everything
+ * `authorForm` checks, and the review showed one changed rule. Now the examples run
+ * against the current document and the proposed one before anything lands, and the
+ * proposal says which would stop holding.
+ *
+ * Through `runScenarios` and `comparedToLastRun`, the two functions the scenario panel
+ * runs after an edit: the review cannot call something a regression that the panel would
+ * not once it is applied.
+ */
+export function proposeEdit(
+  current: FormSchema,
+  proposed: FormSchema,
+  examples?: ProposalExamples,
+): EditProposal {
   const changes = diffSchemas(current, proposed)
   return {
     basedOn: schemaHash(current),
     document: proposed,
     changes,
     costsAnswers: changes.some((change) => change.severity !== 'compatible'),
+    // An empty list is no examples: run, it would compare nothing with nothing and answer
+    // the empty verdict, "nothing stops holding", for a check that never ran.
+    examples:
+      examples === undefined || examples.scenarios.length === 0
+        ? undefined
+        : againstExamples(current, proposed, examples),
   }
+}
+
+/** The examples run against the document as it is, then as it would be. */
+function againstExamples(
+  current: FormSchema,
+  proposed: FormSchema,
+  { scenarios, initialValue, mode }: ProposalExamples,
+): ScenarioRunChange {
+  const options = {
+    ...(initialValue === undefined ? {} : { initialValue }),
+    ...(mode === undefined ? {} : { mode }),
+  }
+  return comparedToLastRun(
+    runScenarios(current, scenarios, options),
+    runScenarios(proposed, scenarios, options),
+  )
 }
 
 /**
@@ -106,6 +169,26 @@ export function applyProposal(session: BuilderSession, proposal: EditProposal): 
 }
 
 /**
+ * The review's heading, which is also its accessible name.
+ *
+ * What somebody hears on arriving at the thing they are deciding about, so it names the
+ * two things worth deciding on: answers already collected, and the examples that would
+ * stop holding. A repair is not here — it is good news, and the status says it — because
+ * a heading that grew with every outcome would bury the one to act on. Both builders
+ * chose between two headings by hand; with a third and a fourth, that choice is decided
+ * here once.
+ */
+export function proposalHeading(proposal: EditProposal, text: BuilderText): string {
+  const stops = proposal.examples?.regressions ?? []
+  const costs = proposal.costsAnswers
+  if (stops.length === 0) return text(costs ? 'prompt.review.costs' : 'prompt.review')
+  return text(costs ? 'prompt.review.costsStops' : 'prompt.review.stops', {
+    count: stops.length,
+    list: text.list(stops),
+  })
+}
+
+/**
  * The one sentence a prompt pane's live region carries.
  *
  * A choice both builders wrote out by hand. The order matters: a refusal
@@ -132,16 +215,10 @@ export function proposalStatus(
   if (state.busy) return text('prompt.status.writing')
   if (state.refusal !== undefined) return text('prompt.status.refused', { reason: state.refusal })
   if (state.proposal !== undefined) {
-    const count = state.proposal.changes.length
-    const costs = state.proposal.costsAnswers
-    const attempts = state.result?.attempts ?? 1
-    if (attempts > 1) {
-      return text(costs ? 'prompt.status.readyAfterCosts' : 'prompt.status.readyAfter', {
-        count,
-        attempts,
-      })
-    }
-    return text(costs ? 'prompt.status.readyCosts' : 'prompt.status.ready', { count })
+    return [
+      ready(state.proposal, state.result?.attempts ?? 1, text),
+      ...examplesSaid(state.proposal.examples, text),
+    ].join(' ')
   }
   const result = state.result
   if (result === undefined || result.ok) return ''
@@ -161,4 +238,30 @@ export function proposalStatus(
       // model wrote it: in this sentence too it would be read out twice (0158).
       return text('prompt.status.declined')
   }
+}
+
+/** What is ready to review, and how many goes the model took when it took more than one. */
+function ready(proposal: EditProposal, attempts: number, text: BuilderText): string {
+  const count = proposal.changes.length
+  const costs = proposal.costsAnswers
+  if (attempts > 1) {
+    return text(costs ? 'prompt.status.readyAfterCosts' : 'prompt.status.readyAfter', {
+      count,
+      attempts,
+    })
+  }
+  return text(costs ? 'prompt.status.readyCosts' : 'prompt.status.ready', { count })
+}
+
+/**
+ * What the examples would make of it, after what is ready: the scenario panel's order,
+ * what stops holding before what holds again. Nothing when they would say nothing.
+ */
+function examplesSaid(change: ScenarioRunChange | undefined, text: BuilderText): string[] {
+  const stops = change?.regressions ?? []
+  const holds = change?.repaired ?? []
+  return [
+    ...(stops.length === 0 ? [] : [text('prompt.status.wouldStop', { list: text.list(stops) })]),
+    ...(holds.length === 0 ? [] : [text('prompt.status.wouldHold', { list: text.list(holds) })]),
+  ]
 }

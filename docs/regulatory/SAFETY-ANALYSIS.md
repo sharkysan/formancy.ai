@@ -1277,6 +1277,24 @@ by name. It could name examples as broken, or repaired, that had never run again
 document open. `scenario-runs.test.ts` and each builder's `scenario-pane.test` hold the
 fix.
 
+The examples also run **before Apply**. Given the form's examples, each prompt pane runs
+them against the document as it is and as the proposal would leave it, through
+`runScenarios` and `comparedToLastRun`, the scenario panel's own two functions. The
+review's heading names each example that would stop holding, and the status names those
+and any that would hold again ([0159](../decisions/0159-a-proposal-is-checked-against-the-forms-examples.md)).
+Apply is not disabled by a regression: a rule changed on purpose stops its old example, and
+the person decides. What the tests show is this. `proposal.test.ts` (*what the form's
+examples make of a proposal*) holds that a rule turned round names the examples it breaks,
+that one put right names those that would hold again, and that an example already failing
+is not put down to the edit. It holds that no examples, whether none are passed or the
+list is empty, give no verdict rather than an empty one, and that the examples run from
+the sample and in the mode given. Each builder's `prompt-pane.test` (*with the form's
+examples*) holds that the review region is named by the example while the document is
+unchanged and Apply is enabled. `two-builders.test.tsx`
+holds the same through the playground in both builders, with the starter's canton rule
+turned round. No test runs a real model. The verdict uses the examples as they were when
+Write was pressed, so one added while the review is open is not in it.
+
 *Residual:* the review shows what changed, not whether it is what was asked for — that
 judgement is the person's and cannot be delegated to the thing being judged. Scenarios
 narrow it rather than close it: they check the rules somebody thought to write an
@@ -1284,7 +1302,8 @@ example for, and a form has no way to know which rules those are not. It is a
 change list rather than a side-by-side of the two documents, so an edit's *shape* is
 visible and its wording is not. And pressing the button is one click: nothing here
 distinguishes a reviewer who read the list from one who did not, which is the limit of
-what software can assert about attention.
+what software can assert about attention. That holds when the heading names an example
+the edit breaks, too.
 
 ### D11. The builder tells its author it did something other than what it did
 

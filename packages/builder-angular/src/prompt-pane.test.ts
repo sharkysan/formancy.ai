@@ -5,6 +5,7 @@ import { userEvent } from '@testing-library/user-event'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { createBuilderSession } from '@formancy/builder-core'
 import type { AskModel } from '@formancy/builder-core'
+import type { Scenario } from '@formancy/core'
 import { DECLINE_KEY } from '@formancy/spec'
 import type { FormSchema } from '@formancy/spec'
 import { FormancyPromptPane } from './prompt-pane.js'
@@ -193,6 +194,122 @@ describe('writing a form', () => {
     expect(session.document().model.fields[0]?.key).toBe('reference')
     // Still on screen: the person needs it in order to ask again.
     expect(screen.getByRole('button', { name: 'Apply these changes' })).toBeTruthy()
+  })
+})
+
+/**
+ * A form with a rule somebody could write backwards, and the examples that pin it — the
+ * React pane's fixture. `name` is required and no example sets it, so a pane that dropped
+ * `initialValue` would run every example into `required`, before and after, and name nothing.
+ */
+const travel = (canton: string): FormSchema => ({
+  specVersion: '2',
+  id: 'travel',
+  title: 'Travel',
+  model: {
+    fields: [
+      { key: 'name', type: 'text', label: 'Name', required: true },
+      { key: 'country', type: 'text', label: 'Country' },
+      { key: 'canton', type: 'text', label: 'Canton' },
+    ],
+  },
+  logic: { rules: [{ target: 'canton', kind: 'visible', cel: canton }] },
+})
+const RIGHT = travel('country == "CH"')
+const BACKWARDS = travel('country != "CH"')
+const SAMPLE = { name: 'Ada' }
+const CANTON: Scenario = {
+  name: 'Switzerland asks for a canton',
+  changes: { country: 'CH' },
+  valid: true,
+  visible: { canton: true },
+}
+
+/** The pane with the form's examples bound, as a host binds the scenario pane's. */
+async function mountWithExamples(
+  session: ReturnType<typeof createBuilderSession>,
+  ask: AskModel,
+  mode?: 'client' | 'server',
+) {
+  return render(FormancyPromptPane, {
+    inputs: {
+      session,
+      ask,
+      scenarios: [CANTON],
+      initialValue: SAMPLE,
+      ...(mode === undefined ? {} : { mode }),
+    } as Record<string, unknown>,
+    providers: [provideZonelessChangeDetection()],
+  })
+}
+
+describe('with the form’s examples', () => {
+  test('the review names the example an answer would stop holding, and Apply is still there', async () => {
+    /*
+     * The failure this exists for (0159). The inverted rule passes every check `authorForm`
+     * makes, so the review listed one changed rule — and the example that would have said
+     * otherwise ran only after Apply, in the scenario pane. Apply stays: a rule changed on
+     * purpose stops its old example holding, and the person decides.
+     */
+    const user = userEvent.setup()
+    const session = createBuilderSession(RIGHT)
+    await mountWithExamples(session, say(JSON.stringify(BACKWARDS)))
+
+    await instruct(user, 'show the canton outside Switzerland too')
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('region', { name: /would stop holding: Switzerland asks for a canton/ }),
+      ).toBeTruthy(),
+    )
+    expect(screen.getByRole('status').textContent).toContain(
+      'Would stop holding if applied: Switzerland asks for a canton.',
+    )
+    expect(session.document()).toEqual(RIGHT)
+    const apply = screen.getByRole('button', { name: 'Apply these changes' }) as HTMLButtonElement
+    expect(apply.disabled).toBe(false)
+    await user.click(apply)
+    expect(session.document()).toEqual(BACKWARDS)
+  })
+
+  test('and runs them in the mode it is given', async () => {
+    /*
+     * A check that runs only on the server is what the publish gate runs. A pane that
+     * dropped `mode` would run the client, call the edit harmless, and the first anybody
+     * heard of it would be a submission refused.
+     */
+    const user = userEvent.setup()
+    const strict = travel('country == "CH"')
+    strict.logic!.rules.push({
+      target: 'name',
+      kind: 'validate',
+      cel: 'size(name) > 3',
+      code: 'tooShort',
+      runsOn: 'server',
+    })
+    await mountWithExamples(createBuilderSession(RIGHT), say(JSON.stringify(strict)), 'server')
+
+    await instruct(user, 'names longer than three letters, checked on the server')
+
+    await waitFor(() =>
+      expect(screen.getByRole('status').textContent).toContain(
+        'Would stop holding if applied: Switzerland asks for a canton.',
+      ),
+    )
+  })
+
+  test('without them the review is what it was', async () => {
+    // A host that binds no examples gets no sentence about them, rather than one saying
+    // nothing would stop holding for a check that never ran.
+    const user = userEvent.setup()
+    await mount(createBuilderSession(RIGHT), say(JSON.stringify(BACKWARDS)))
+
+    await instruct(user, 'show the canton outside Switzerland too')
+
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: /Review these changes/ })).toBeTruthy(),
+    )
+    expect(screen.getByRole('status').textContent).not.toMatch(/holding/)
   })
 })
 

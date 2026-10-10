@@ -729,6 +729,58 @@ describe('the translations, prompt and scenario panes', () => {
     expect(seen.some((text) => text.includes('declined this request'))).toBe(true)
   })
 
+  test('the prompt pane, with an answer that stops an example holding, likewise', async () => {
+    // The review names the examples (0159): their names are the host's, and every word
+    // around them is the catalogue's, in the heading and in the status alike.
+    const ruled = (cel: string): FormSchema =>
+      ({
+        specVersion: '2',
+        id: 'travel',
+        title: 'Travel',
+        model: {
+          fields: [
+            { key: 'country', type: 'text', label: 'Country' },
+            { key: 'canton', type: 'text', label: 'Canton' },
+          ],
+        },
+        logic: { rules: [{ target: 'canton', kind: 'visible', cel }] },
+      }) as unknown as FormSchema
+    const right = ruled('country == "CH"')
+    const backwards = ruled('country != "CH"')
+    const example: Scenario = {
+      name: 'Switzerland asks for a canton',
+      changes: { country: 'CH' },
+      valid: true,
+      visible: { canton: true },
+    }
+    const words = [
+      ...proposeEdit(right, backwards).changes.flatMap((change) => [change.path, change.detail]),
+      example.name,
+      'invert it',
+    ]
+
+    const view = await mounted(FormancyPromptPane, {
+      session: createBuilderSession(right, { text: createBuilderText(pseudoLanguage()) }),
+      ask: () => Promise.resolve(JSON.stringify(backwards)),
+      scenarios: [example],
+    })
+    await view.user.type(screen.getByRole('textbox'), 'invert it')
+    await view.settle()
+    await view.user.click(screen.getByRole('button'))
+    await waitFor(() => {
+      expect(document.querySelector('[data-formancy-part="prompt-review"]')).not.toBeNull()
+    })
+    await view.settle()
+    const seen = shown(view.root)
+
+    expect(untranslated(seen, words)).toEqual([])
+    expect(
+      ['scenario would stop holding', 'Would stop holding if applied'].filter(
+        (prefix) => !seen.some((text) => text.includes(prefix)),
+      ),
+    ).toEqual([])
+  })
+
   test('the scenario panel, holding and not, and empty, likewise', async () => {
     const form = {
       specVersion: '2',

@@ -227,6 +227,60 @@ describe('describing a change in words', () => {
 })
 
 /**
+ * The starter's examples, run against a model's answer before it lands (0159).
+ *
+ * The page keeps each form's examples and its sample, and hands them to both builders'
+ * scenario panes; it now hands them to both prompt panes as well. Without that, the pane
+ * can run nothing: an answer that turns the canton rule round passes every check the model
+ * loop makes, the review lists one changed rule, and "Switzerland asks for a canton" is
+ * named as broken only after Apply, by the scenario pane.
+ */
+describe('a model’s answer, against the form’s examples', () => {
+  /** The starter with its canton rules the wrong way round: valid, compiled — and backwards. */
+  const backwardsCanton = (): unknown => {
+    const next = JSON.parse(JSON.stringify(STARTER_SCHEMA)) as {
+      logic: { rules: { target: string; cel?: string }[] }
+    }
+    const turned = next.logic.rules.filter((rule) => rule.target === 'canton')
+    expect(turned, 'the starter no longer has the canton rule this case turns round').not.toEqual([])
+    for (const rule of turned) rule.cel = 'country != "CH"'
+    return next
+  }
+  const pinned = STARTER_SCENARIOS.find(({ name }) => name === 'Switzerland asks for a canton')
+
+  test.each(['React', 'Angular'] as const)(
+    'in the %s builder, the review names the example it would break, before Apply',
+    async (which) => {
+      expect(pinned, 'the starter no longer pins the canton rule').toBeDefined()
+      const user = userEvent.setup()
+      render(<App />)
+      await builtWith(which)
+      // The stand-in model is `window.prompt`: the visitor plays the model, and so does this.
+      vi.spyOn(window, 'prompt').mockReturnValue(JSON.stringify(backwardsCanton()))
+
+      const instruction = await waitFor(
+        () => screen.getByRole('textbox', { name: /Describe the form/ }),
+        { timeout: 10_000 },
+      )
+      await user.type(instruction, 'ask for a canton outside Switzerland')
+      await user.click(screen.getByRole('button', { name: 'Write it' }))
+
+      const review = await waitFor(
+        () => screen.getByRole('region', { name: /would stop holding/ }),
+        { timeout: 10_000 },
+      )
+      expect(within(review).getByRole('heading').textContent).toContain(pinned!.name)
+      // Before Apply: named while nothing has landed, and Apply still there to press.
+      expect(undoButton().disabled, 'something was applied before anybody agreed to it').toBe(true)
+      expect(
+        (within(review).getByRole('button', { name: 'Apply these changes' }) as HTMLButtonElement)
+          .disabled,
+      ).toBe(false)
+    },
+  )
+})
+
+/**
  * The scenario pane is on screen, and it reacts to an edit.
  *
  * The same shape as the prompt pane above: a capability that exists in a
