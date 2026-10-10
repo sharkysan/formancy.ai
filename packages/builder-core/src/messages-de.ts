@@ -410,6 +410,28 @@ export const BUILDER_MESSAGES_DE = {
   'prompt.status.unreachableNoReason': 'Nichts wurde übernommen. Das Modell war nicht erreichbar.',
   'prompt.status.declined': 'Nichts wurde übernommen. Das Modell hat diese Anfrage abgelehnt.',
 
+  'relay.title': 'Diese Anfrage zu einem Modell bringen',
+  'relay.turn': 'Runde {attempt} von höchstens {limit}',
+  'relay.first': 'Kopiere die Anfrage in einen Chat mit einem Modell und füge seine ganze Antwort unten ein.',
+  'relay.retry':
+    'Diese Antwort hat nicht funktioniert. Kopiere, was falsch war, in denselben Chat und füge die neue Antwort unten ein.',
+  'relay.leaves':
+    'Von dieser Seite wird nichts gesendet. Beim Kopieren landet die ganze Anfrage samt Formular in deiner Zwischenablage; fügst du sie in einen Chat ein, gibst du sie diesem Dienst unter deinem eigenen Konto.',
+  'relay.system': 'Was dem Modell über das Format gesagt wird',
+  'relay.request': 'Die Anfrage',
+  'relay.copy': 'Anfrage kopieren',
+  'relay.copyFollowUp': 'Kopieren, was falsch war',
+  'relay.copyAll': 'Neuer Chat? Die ganze Anfrage kopieren',
+  'relay.open': '{name} in einem neuen Tab öffnen',
+  'relay.answer': 'Die Antwort des Modells',
+  'relay.check': 'Diese Antwort prüfen',
+  'relay.anyway': 'Trotzdem verwenden',
+  'relay.copied': 'Kopiert. Füge es in den Chat ein.',
+  'relay.copyRefused':
+    'Dieser Browser hat das Kopieren nicht erlaubt. Der Text ist im Feld der Anfrage markiert: Kopiere ihn von dort.',
+  'relay.noObject':
+    'In dieser Antwort ist kein JSON-Objekt. Kopiere die ganze Antwort samt Codeblock – oder verwende sie trotzdem, dann erfährt es das Modell.',
+
   'scenarios.label': 'Szenarien',
   'scenarios.none': 'Keine Szenarien.',
   'scenarios.empty':

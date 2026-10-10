@@ -7,13 +7,14 @@ import {
   FormancyLogicPanel,
   FormancyPromptPane,
   FormancyPropertyPanel,
+  FormancyRelayPane,
   FormancyRulesOverview,
   FormancyTranslationsPane,
   FormancyScenarioPane,
 } from '@formancy/builder-angular'
-import type { BuilderBlock, BuilderSession, Capabilities } from '@formancy/builder-core'
+import type { BuilderBlock, BuilderSession, Capabilities, Relay } from '@formancy/builder-core'
 import type { Scenario } from '@formancy/core'
-import { DEMO_MODEL } from './demo-capabilities.js'
+import { RELAY_CHAT } from './demo-capabilities.js'
 
 /** Which tab the page is on. The React pane owns this. */
 export type BuilderTab = 'fields' | 'arrangement' | 'rules' | 'translations'
@@ -51,6 +52,11 @@ export interface PlaygroundBuilder {
   readonly sample: WritableSignal<Readonly<Record<string, unknown>> | undefined>
   /** Hands the shorter list back after a Remove here, for the page to keep for both. */
   readonly keepScenarios: (next: readonly Scenario[]) => void
+  /**
+   * The page's model: a person carrying each turn (0159). Not a signal: it is the page's
+   * for its whole life, and the one the React builder asks too.
+   */
+  readonly relay: Relay
 }
 
 /** What this builder hands back to the page, which keeps both lists for both builders. */
@@ -69,6 +75,7 @@ export interface FromThePage {
   readonly blocks: readonly BuilderBlock[]
   readonly scenarios: readonly Scenario[]
   readonly sample: Readonly<Record<string, unknown>> | undefined
+  readonly relay: Relay
 }
 
 export const PLAYGROUND_BUILDER = new InjectionToken<PlaygroundBuilder>('playground builder')
@@ -87,6 +94,7 @@ export function playgroundBuilder(
     blocks: signal(from.blocks),
     scenarios: signal(from.scenarios),
     sample: signal(from.sample),
+    relay: from.relay,
     ...back,
   }
 }
@@ -122,11 +130,16 @@ export function playgroundBuilder(
     FormancyLogicPanel,
     FormancyPromptPane,
     FormancyPropertyPanel,
+    FormancyRelayPane,
     FormancyRulesOverview,
     FormancyTranslationsPane,
     FormancyScenarioPane,
   ],
   template: `
+    <!-- The turn a person is carrying to a model, above the tabs as in the React pane:
+         the same relay, and the chat this deployment names (0159). Nothing while nothing
+         waits. -->
+    <formancy-relay-pane [session]="host.session" [relay]="host.relay" [chat]="chat" />
     @if (host.tab() === 'arrangement') {
       <formancy-layout-pane
         [session]="host.session"
@@ -150,12 +163,12 @@ export function playgroundBuilder(
     } @else if (host.tab() === 'translations') {
       <formancy-translations-pane [session]="host.session" />
     } @else {
-      <!-- Describing a change in words, with the same stand-in model as the React pane:
-           the person plays it, and everything after the answer is real (0109) — run
-           against the page's examples before it lands, as the React pane's is (0159). -->
+      <!-- Describing a change in words, asking the page's relay as the React pane does:
+           the person carries the turn, and everything after the paste is real (0109) —
+           run against the page's examples before it lands, as the React pane's is (0159). -->
       <formancy-prompt-pane
         [session]="host.session"
-        [ask]="ask"
+        [ask]="host.relay.ask"
         [scenarios]="host.scenarios()"
         [initialValue]="host.sample()"
       />
@@ -196,6 +209,6 @@ export class AngularBuilderHost {
   /** The layout node this builder's arrangement pane is on; its own cursor, like `selected`. */
   protected readonly arranging = signal<readonly number[] | null>(null)
 
-  /** The model a description of a change is put to: the React pane's stand-in. */
-  protected readonly ask = DEMO_MODEL
+  /** Where the relay pane sends a person with the request: the page's one named chat. */
+  protected readonly chat = RELAY_CHAT
 }

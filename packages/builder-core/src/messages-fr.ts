@@ -416,6 +416,29 @@ export const BUILDER_MESSAGES_FR = {
   'prompt.status.unreachableNoReason': 'Rien n’a été appliqué. Le modèle n’a pas pu être joint.',
   'prompt.status.declined': 'Rien n’a été appliqué. Le modèle a refusé cette demande.',
 
+  'relay.title': 'Porter cette demande à un modèle',
+  'relay.turn': 'Tour {attempt} sur {limit} au plus',
+  'relay.first':
+    'Copiez la demande dans une conversation avec un modèle, puis collez sa réponse complète ci-dessous.',
+  'relay.retry':
+    'Cette réponse ne fonctionnait pas. Copiez ce qui n’allait pas dans la même conversation, puis collez la nouvelle réponse ci-dessous.',
+  'relay.leaves':
+    'Rien n’est envoyé depuis cette page. Copier met toute la demande dans votre presse-papiers, formulaire compris ; la coller dans une conversation la confie à ce service, sous votre propre compte.',
+  'relay.system': 'Ce que le modèle apprend du format',
+  'relay.request': 'La demande',
+  'relay.copy': 'Copier la demande',
+  'relay.copyFollowUp': 'Copier ce qui n’allait pas',
+  'relay.copyAll': 'Nouvelle conversation ? Copier toute la demande',
+  'relay.open': 'Ouvrir {name} dans un nouvel onglet',
+  'relay.answer': 'La réponse du modèle',
+  'relay.check': 'Vérifier cette réponse',
+  'relay.anyway': 'L’utiliser quand même',
+  'relay.copied': 'Copié. Collez-le dans la conversation.',
+  'relay.copyRefused':
+    'Ce navigateur n’a pas permis à la page de copier. Le texte est sélectionné dans le champ de la demande : copiez-le depuis là.',
+  'relay.noObject':
+    'Cette réponse ne contient aucun objet JSON. Copiez toute la réponse, bloc de code compris, ou utilisez-la quand même : le modèle en sera informé.',
+
   'scenarios.label': 'Scénarios',
   'scenarios.none': 'Aucun scénario.',
   'scenarios.empty':

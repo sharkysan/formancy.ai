@@ -1,6 +1,7 @@
 # 0157 — A model's turn can be stopped, and an unreachable model is not a document that failed
 
-- **Status:** accepted
+- **Status:** accepted; the playground’s stand-in dialog superseded by
+  [0159](0159-a-person-carries-the-models-turn.md)
 - **Date:** 2026-10-09
 - **Deciders:** Daniel Bacher
 - **Verified by:** `packages/builder-core/src/authoring.test.ts`, the cases under *a host

@@ -28,6 +28,12 @@
  * here: its text is drawn in a face the document loaded, and the playground's schema
  * editor is Monaco. The playground, which renders documents other people wrote, is also
  * asked whether its content security policy refuses what such a document could ask for.
+ *
+ * And the playground is opened a second time to describe a change and carry the model's
+ * turn by hand (0159): the request copied, an answer pasted back, the review read and
+ * applied. Its model is a person because the site may call none, so the round trip is the
+ * one flow on the page that exists to take something elsewhere — and the person does
+ * that, not the page. Whatever the page sends while it happens is counted like the rest.
  */
 
 /**
@@ -42,6 +48,9 @@ const PAGES = [
   { path: '/templates/', settle: (page) => page.getByRole('heading', { level: 1 }).waitFor(), ownFaces: true },
   { path: '/angular-form-builder/', settle: openTheStarter, ownFaces: true, frame: '/angular-form-builder/demo/' },
   { path: '/playground/', settle: openTheSchemaEditor, ownFaces: true, editor: true, policy: true },
+  // The same page, with a model's turn carried through it: the clipboard is the page's own
+  // origin's to write, as a visitor's browser lets it be.
+  { path: '/playground/', label: '/playground/ carrying a model’s turn', settle: carryATurn, ownFaces: false, clipboard: true },
   // A page with code on it, which is where a documentation theme reaches for a highlighter.
   { path: '/docs/start/react/', settle: scrollThrough, ownFaces: false },
 ]
@@ -83,10 +92,71 @@ async function openTheSchemaEditor(page) {
   await page.waitForSelector('.monaco-editor', { timeout: 15_000 }).catch(() => undefined)
 }
 
+/**
+ * A model's turn, carried by hand through the playground's relay (0159).
+ *
+ * Describe a change; the relay pane shows the request; Copy puts it on the clipboard, read
+ * back here as a visitor's paste would read it; an answer is pasted the way a chat gives
+ * one — a sentence, then the document in a code fence — and checked; the review appears,
+ * and Apply puts the field in the tree. The link to the chat is looked at and never
+ * followed: a link is navigation the visitor chooses, and following it would be the gate
+ * making the request it exists to refuse.
+ *
+ * Returns what it found, as checks, so a step that did not happen is a named failure
+ * rather than a page that asked nobody anything because nothing was done on it.
+ */
+async function carryATurn(page) {
+  const found = []
+  try {
+    await page.waitForSelector('[data-formancy-part="signature-surface"]', { timeout: 30_000 })
+    await page.getByRole('textbox', { name: /Describe the form/ }).fill('add a phone number')
+    await page.getByRole('button', { name: 'Write it', exact: true }).click()
+
+    const relay = page.getByRole('region', { name: 'Take this request to a model' })
+    await relay.waitFor({ timeout: 15_000 })
+    const shown = await relay.getByRole('textbox', { name: 'The request' }).inputValue()
+    await relay.getByRole('button', { name: 'Copy the request', exact: true }).click()
+    await relay.getByRole('status').filter({ hasText: /\S/ }).waitFor({ timeout: 5_000 })
+    const copied = await page.evaluate(() => navigator.clipboard.readText())
+    found.push([
+      'the relay copies the whole request, briefing first, and the request it shows ends it',
+      copied.startsWith('You are writing a formancy form document') && copied.endsWith(`\n\n${shown}`) && shown.includes('add a phone number')
+        ? null
+        : `the clipboard held ${JSON.stringify(copied.slice(0, 80))}…, and the box ${JSON.stringify(shown.slice(-80))}`,
+    ])
+
+    const chat = await relay.getByRole('link', { name: /in a new tab/ }).getAttribute('href')
+    found.push([
+      'and its link to a chat carries nothing of the request',
+      chat !== null && !chat.includes('phone') && !chat.includes('?') ? null : `the link is ${String(chat)}`,
+    ])
+
+    const answer = JSON.stringify({
+      specVersion: '2',
+      id: 'proposed',
+      title: 'Proposed',
+      model: { fields: [{ key: 'phone', type: 'text', label: 'Telephone' }] },
+    })
+    await relay
+      .getByRole('textbox', { name: 'The model’s answer' })
+      .fill(`Here is the form with a phone number:\n\n\`\`\`json\n${answer}\n\`\`\``)
+    await relay.getByRole('button', { name: 'Check this answer', exact: true }).click()
+    await page.getByRole('heading', { name: /Review these changes/ }).waitFor({ timeout: 15_000 })
+    await page.getByRole('button', { name: 'Apply these changes', exact: true }).click()
+    await page.getByRole('treeitem', { name: /Telephone/ }).first().waitFor({ timeout: 15_000 })
+    found.push(['and the answer pasted back was reviewed and applied', null])
+  } catch (error) {
+    found.push(['a model’s turn carried through the playground’s relay', String(error).split('\n')[0]])
+  }
+  return found
+}
+
 export async function checkNoForeignRequests(browser, origin, check) {
   console.log('\nrequests to other sites')
-  for (const { path, settle, ownFaces, frame, editor, policy } of PAGES) {
+  for (const { path, label = path, settle, ownFaces, frame, editor, policy, clipboard } of PAGES) {
     const context = await browser.newContext({ viewport: { width: 1440, height: 900 } })
+    // The page's own origin only, as a browser grants it to the site a visitor is on.
+    if (clipboard) await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin })
     const foreign = new Set()
     const own = []
     await context.route('**/*', (route) => {
@@ -102,7 +172,7 @@ export async function checkNoForeignRequests(browser, origin, check) {
     const page = await context.newPage()
     try {
       await page.goto(`${origin}${path}`, { waitUntil: 'load' })
-      await settle(page)
+      const settled = (await settle(page)) ?? []
       await page.waitForLoadState('networkidle')
 
       // Hints, from every frame: a connection opened is an address disclosed.
@@ -119,13 +189,15 @@ export async function checkNoForeignRequests(browser, origin, check) {
       }
 
       check(
-        `${path} asks no other site for anything`,
+        `${label} asks no other site for anything`,
         foreign.size === 0 ? null : `it asked ${[...foreign].sort().join(', ')}`,
       )
       check(
-        `and the recorder saw ${path} ask this one, so it was listening`,
+        `and the recorder saw ${label} ask this one, so it was listening`,
         own.length > 0 ? null : 'no request reached the route at all',
       )
+      // What the settling found on the way: a step that did not happen is not a clean page.
+      for (const [name, problem] of settled) check(name, problem)
       if (frame !== undefined) {
         check(
           'and it saw the embedded starter’s own requests, so a frame is covered',

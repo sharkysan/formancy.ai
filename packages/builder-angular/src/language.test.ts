@@ -1,7 +1,7 @@
 import { provideZonelessChangeDetection } from '@angular/core'
 import type { Type } from '@angular/core'
 import { TestBed } from '@angular/core/testing'
-import { afterEach, describe, expect, test } from 'vitest'
+import { afterEach, describe, expect, test, vi } from 'vitest'
 import { render, screen, waitFor, within } from '@testing-library/angular'
 import { userEvent } from '@testing-library/user-event'
 import {
@@ -9,6 +9,7 @@ import {
   authorForm,
   createBuilderSession,
   createBuilderText,
+  createRelay,
   editableLayoutPropertiesFor,
   editablePropertiesFor,
   flatten,
@@ -29,6 +30,7 @@ import { FormancyColumnsEditor } from './columns-editor'
 import { FormancyLayoutPropertyPanel } from './layout-property-panel'
 import { FormancyLogicPanel } from './logic-panel'
 import { FormancyPromptPane } from './prompt-pane'
+import { FormancyRelayPane } from './relay-pane'
 import { FormancyScenarioPane } from './scenario-pane'
 import { FormancyTranslationsPane } from './translations-pane'
 import { FormancyOptionsEditor } from './options-editor'
@@ -37,6 +39,7 @@ import { FormancyPropertyPanel } from './property-panel'
 afterEach(() => {
   TestBed.resetTestingModule()
   document.body.innerHTML = ''
+  vi.restoreAllMocks()
 })
 
 /**
@@ -778,6 +781,71 @@ describe('the translations, prompt and scenario panes', () => {
       ['scenario would stop holding', 'Would stop holding if applied'].filter(
         (prefix) => !seen.some((text) => text.includes(prefix)),
       ),
+      ).toEqual([])
+    })
+
+  test('the relay pane, on a first turn and a retry, refused a copy and given prose, likewise', async () => {
+    // The relay's words (0159), from the catalogue like the rest. The request is the
+    // model's to read and is carried as written, in English whatever the author speaks —
+    // as the prompt pane's problems are — and the chat's name is the host's.
+    const start = {
+      specVersion: '2',
+      id: 'start',
+      title: 'Start',
+      model: { fields: [{ key: 'name', type: 'text', label: 'Name' }] },
+    } as unknown as FormSchema
+    const relay = createRelay()
+    const prose = 'Sure, here is your form'
+    const view = await mounted(FormancyRelayPane, {
+      session: createBuilderSession(start, { text: createBuilderText(pseudoLanguage()) }),
+      relay,
+      chat: { name: 'Chat', href: 'https://chat.example/' },
+    })
+    vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(new Error('refused'))
+
+    void authorForm(relay.ask, 'anything', { current: start })
+    const first = relay.waiting()!
+    const buttons = () => within(view.root as HTMLElement).getAllByRole('button')
+    await waitFor(() => expect(buttons()).toHaveLength(2))
+    await view.user.click(buttons()[0]!)
+    await waitFor(() => expect(view.root.querySelector('[role="status"]')?.textContent).not.toBe(''))
+    await view.settle()
+    const seen = shown(view.root)
+
+    await view.user.click(within(view.root as HTMLElement).getAllByRole('textbox')[1]!)
+    await view.user.paste(prose)
+    await view.settle()
+    await view.user.click(buttons()[1]!)
+    await waitFor(() => expect(buttons()).toHaveLength(3))
+    await view.settle()
+    seen.push(...shown(view.root))
+    await view.user.click(buttons()[2]!)
+    await waitFor(() => expect(relay.waiting()?.prompt.attempt).toBe(2))
+    await waitFor(() => expect(buttons()).toHaveLength(3))
+    await view.settle()
+    const retry = relay.waiting()!
+    seen.push(...shown(view.root))
+
+    const carried = [first.prompt.user, first.message, retry.prompt.user, retry.followUp ?? '', retry.message]
+    expect(untranslated(seen, [...carried, prose, 'Chat'])).toEqual([])
+    expect(
+      [
+        'Take this request to a model',
+        'Turn 1 of at most',
+        'Copy the request into a chat',
+        'Nothing is sent from this page',
+        'What the model is told',
+        'Copy the request',
+        'Open Chat in a new tab',
+        'The model’s answer',
+        'Check this answer',
+        'did not let the page copy',
+        'There is no JSON object',
+        'Use it anyway',
+        'That answer did not work',
+        'Copy what was wrong',
+        'New chat?',
+      ].filter((prefix) => !seen.some((text) => text.includes(prefix))),
     ).toEqual([])
   })
 

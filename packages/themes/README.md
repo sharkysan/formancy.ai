@@ -57,8 +57,9 @@ spelling of the face, whichever way a page loads it.
 ## The builders: `workbench.css`
 
 `workbench.css` dresses both builders — the tree, the palettes, the inspector, the logic
-panel, the prompt pane, the scenarios, blocks, a datagrid's columns and the translations —
-through the `data-formancy-part` hooks they emit, and every part they emit has a rule here.
+panel, the prompt pane and the relay beside it, the scenarios, blocks, a datagrid's columns
+and the translations — through the `data-formancy-part` hooks they emit, and every part
+they emit has a rule here.
 It is not a form theme and nothing depends on it. Change how it looks through its tokens
 rather than with rules of your own:
 

@@ -8,7 +8,9 @@ import type { Message } from './messages.js'
  * reasons: a stop and a model that could not be reached arrived together
  * ([0157](../../../docs/decisions/0157-a-models-turn-can-be-stopped.md)), when
  * `messages.ts` was near its size budget, and a model that declines came next
- * ([0158](../../../docs/decisions/0158-a-model-may-decline.md)).
+ * ([0158](../../../docs/decisions/0158-a-model-may-decline.md)), and then a model whose
+ * turn a person carries, by copying the request out and the answer back
+ * ([0159](../../../docs/decisions/0159-a-person-carries-the-models-turn.md)).
  */
 export const MODEL_MESSAGES = {
   'prompt.label': 'Describe the form, or the change you want',
@@ -72,4 +74,28 @@ export const MODEL_MESSAGES = {
   // The model said the format cannot express the request. Its reason is shown beneath,
   // as it wrote it, rather than set into this sentence.
   'prompt.status.declined': 'Nothing was applied. The model declined this request.',
+
+  // The relay pane: a turn a person carries to a model of their own and back (0159). What
+  // it says about what leaves names no service, because the host names the chat.
+  'relay.title': 'Take this request to a model',
+  'relay.turn': 'Turn {attempt} of at most {limit}',
+  'relay.first': 'Copy the request into a chat with a model, then paste its whole answer below.',
+  'relay.retry':
+    'That answer did not work. Copy what was wrong into the same chat, then paste the new answer below.',
+  'relay.leaves':
+    'Nothing is sent from this page. Copying puts the whole request on your clipboard, including the form; pasting it into a chat gives it to that service under your own account.',
+  'relay.system': 'What the model is told about the format',
+  'relay.request': 'The request',
+  'relay.copy': 'Copy the request',
+  'relay.copyFollowUp': 'Copy what was wrong',
+  'relay.copyAll': 'New chat? Copy the whole request',
+  'relay.open': 'Open {name} in a new tab',
+  'relay.answer': 'The model’s answer',
+  'relay.check': 'Check this answer',
+  'relay.anyway': 'Use it anyway',
+  'relay.copied': 'Copied. Paste it into the chat.',
+  'relay.copyRefused':
+    'This browser did not let the page copy. The text is selected in the request box: copy it from there.',
+  'relay.noObject':
+    'There is no JSON object in that answer. Copy the whole answer, code block included, or use it anyway and the model is told.',
 } as const satisfies Record<string, Message>

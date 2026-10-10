@@ -6,6 +6,7 @@ import {
   LogicPanel,
   PromptPane,
   PropertyPanel,
+  RelayPane,
   RulesOverview,
   ScenarioPane,
   TranslationsPane,
@@ -23,10 +24,10 @@ import {
   createBuilderText,
 } from '@formancy/builder-core'
 import type { FormEngine, Scenario } from '@formancy/core'
-import type { BuilderBlock, BuilderSession, BuilderText } from '@formancy/builder-core'
+import type { BuilderBlock, BuilderSession, BuilderText, Relay } from '@formancy/builder-core'
 import { AngularBuilderPane } from './angular-builder-pane.js'
 import type { BuilderTab, PreviewState } from './angular-builder-host.js'
-import { DEMO_MODEL } from './demo-capabilities.js'
+import { RELAY_CHAT } from './demo-capabilities.js'
 
 /**
  * The builder pane: two trees over one document, in either framework.
@@ -100,6 +101,7 @@ export function BuilderBody({
   sample,
   onScenarios,
   preview,
+  relay,
 }: {
   session: BuilderSession
   onChange: (next: string) => void
@@ -121,6 +123,11 @@ export function BuilderBody({
   onScenarios: (next: readonly Scenario[]) => void
   /** The form pane's engine, whose answers the rules tab explains (0128). */
   preview: FormEngine | undefined
+  /**
+   * The model both builders' prompt panes ask: a person carrying each turn (0159). The
+   * page's, so a turn asked from either builder is the one relay's.
+   */
+  relay: Relay
 }) {
   const view = useBuilder(session)
   const explained = usePreviewState(preview)
@@ -182,7 +189,7 @@ export function BuilderBody({
       {builtWith === 'angular' ? (
         /* The other builder, over the same session. An edit here moves the JSON
            and both rendered forms, which is the whole point of it being the same
-           session rather than a second one. */
+           session rather than a second one. It draws its own relay pane, at its top. */
         <AngularBuilderPane
           session={session}
           tab={tab}
@@ -192,82 +199,94 @@ export function BuilderBody({
           scenarios={scenarios}
           sample={sample}
           onScenarios={onScenarios}
+          relay={relay}
         />
-      ) : tab === 'rules' ? (
-        /* Every rule in the form, and — from the answers typed into the form pane —
-           why each field is shown, hidden or required now. Type into the form and
-           watch a verdict change; that is the demonstration. */
-        <RulesOverview
-          session={session}
-          answers={explained?.answers}
-          capabilities={explained?.capabilities}
-        />
-      ) : tab === 'translations' ? (
-        /* The starter's French is half-finished on purpose. The form pane shows the
-           fallback; this shows the other half — choose French and every message
-           nobody has translated is marked, beside the English it stands in for. */
-        <TranslationsPane session={session} />
-      ) : tab === 'arrangement' ? (
-        <>
-          <FormancyLayoutPane session={session} layout="web" onSelect={setArranging} />
-
-          {/* Until this existed, NO property of a layout node could be set from the
-              builder at all: a table's `columns` and a section's `label` since the
-              day layouts existed, and `span` from the moment the format grew it.
-              The panel is generated from the JSON Schema, so the next one arrives
-              with an editor rather than needing somebody to remember. */}
-          {arranging === null ? null : (
-            <LayoutPropertyPanel session={session} address={{ layout: 'web', path: arranging }} />
-          )}
-        </>
       ) : (
         <>
-          {/* The tree reports which field it is on, rather than this app reading its
-              DOM. What was here before took the focused row's POSITION among its
-              siblings and indexed the flattened node list with it — right only while
-              those two lists agree about nesting, which they stop doing the moment a
-              container is collapsed. */}
-          {/* Describing a change in words, and reviewing what it did before it
-              lands. The model is a stand-in — the person plays it, as they
-              play the camera — because this app has no vendor and no key, and
-              that is the point of `ask` being the host's
-              ([0109](../../../docs/decisions/0109-an-ai-edit-is-reviewed-before-it-lands.md)).
-              Everything after the answer is real: parsed, validated, compiled,
-              type-checked, diffed and held for review — and run against the form's
-              examples, the list the scenario pane runs, before it lands (0159). */}
-          <PromptPane
-            session={session}
-            ask={DEMO_MODEL}
-            scenarios={scenarios}
-            initialValue={sample}
-          />
-
-          <FormancyBuilder
-            session={session}
-            onSelect={setSelected}
-            blocks={blocks}
-            onSaveBlock={onSaveBlock}
-          />
-
-          {/* What this form is supposed to do, rerun after every edit. The
-              check nothing else can make: a condition compiles whichever way
-              round it is written, and only an example with its answer written
-              down tells the two apart
-              ([0110](../../../docs/decisions/0110-a-form-is-checked-against-examples.md)).
-              The scenarios are the host's — here, the page's list, started from a
-              file beside the starter. Without `onChange` the pane draws no Remove
-              button, and it had none. */}
-          <ScenarioPane
-            session={session}
-            scenarios={scenarios}
-            onChange={onScenarios}
-            initialValue={sample}
-          />
-
-          {editing === null ? null : (
+          {/* The turn a person is carrying to a model, above the tabs rather than inside
+              one: it belongs to the run, not to a tab's layout. Nothing while nothing
+              waits — and the run is the prompt pane's, under Fields, so it ends if that
+              pane goes (0157). The chat is this deployment's choice, named in
+              `demo-capabilities.ts` and nowhere else (0159). */}
+          <RelayPane session={session} relay={relay} chat={RELAY_CHAT} />
+          {tab === 'rules' ? (
+            /* Every rule in the form, and — from the answers typed into the form pane —
+               why each field is shown, hidden or required now. Type into the form and
+               watch a verdict change; that is the demonstration. */
+            <RulesOverview
+              session={session}
+              answers={explained?.answers}
+              capabilities={explained?.capabilities}
+            />
+          ) : tab === 'translations' ? (
+            /* The starter's French is half-finished on purpose. The form pane shows the
+               fallback; this shows the other half — choose French and every message
+               nobody has translated is marked, beside the English it stands in for. */
+            <TranslationsPane session={session} />
+          ) : tab === 'arrangement' ? (
             <>
-              <PropertyPanel session={session} keyPath={editing} />
-              <LogicPanel session={session} keyPath={editing} />
+              <FormancyLayoutPane session={session} layout="web" onSelect={setArranging} />
+
+              {/* Until this existed, NO property of a layout node could be set from the
+                  builder at all: a table's `columns` and a section's `label` since the
+                  day layouts existed, and `span` from the moment the format grew it.
+                  The panel is generated from the JSON Schema, so the next one arrives
+                  with an editor rather than needing somebody to remember. */}
+              {arranging === null ? null : (
+                <LayoutPropertyPanel session={session} address={{ layout: 'web', path: arranging }} />
+              )}
+            </>
+          ) : (
+            <>
+              {/* The tree reports which field it is on, rather than this app reading its
+                  DOM. What was here before took the focused row's POSITION among its
+                  siblings and indexed the flattened node list with it — right only while
+                  those two lists agree about nesting, which they stop doing the moment a
+                  container is collapsed. */}
+              {/* Describing a change in words, and reviewing what it did before it
+                  lands. The model is the relay: the request is shown above, the visitor
+                  carries it to a chat of their own and pastes the answer back, because
+                  this site asks no other site for anything (0154, 0159). Everything
+                  after the paste is real: parsed, validated, compiled, type-checked,
+                  diffed and held for review
+                  ([0109](../../../docs/decisions/0109-an-ai-edit-is-reviewed-before-it-lands.md))
+                  — and run against the form's examples, the list the scenario pane runs,
+                  before it lands (0159). */}
+              <PromptPane
+                session={session}
+                ask={relay.ask}
+                scenarios={scenarios}
+                initialValue={sample}
+              />
+
+              <FormancyBuilder
+                session={session}
+                onSelect={setSelected}
+                blocks={blocks}
+                onSaveBlock={onSaveBlock}
+              />
+
+              {/* What this form is supposed to do, rerun after every edit. The
+                  check nothing else can make: a condition compiles whichever way
+                  round it is written, and only an example with its answer written
+                  down tells the two apart
+                  ([0110](../../../docs/decisions/0110-a-form-is-checked-against-examples.md)).
+                  The scenarios are the host's — here, the page's list, started from a
+                  file beside the starter. Without `onChange` the pane draws no Remove
+                  button, and it had none. */}
+              <ScenarioPane
+                session={session}
+                scenarios={scenarios}
+                onChange={onScenarios}
+                initialValue={sample}
+              />
+
+              {editing === null ? null : (
+                <>
+                  <PropertyPanel session={session} keyPath={editing} />
+                  <LogicPanel session={session} keyPath={editing} />
+                </>
+              )}
             </>
           )}
         </>

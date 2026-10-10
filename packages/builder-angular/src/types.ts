@@ -26,6 +26,9 @@ export type {
   MoveTarget,
   Operator,
   PaletteEntry,
+  Relay,
+  RelayChat,
+  RelayTurn,
   TreeNode,
 } from '@formancy/builder-core'
 export type { Scenario, ScenarioResult } from '@formancy/core'

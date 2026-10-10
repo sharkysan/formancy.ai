@@ -21,10 +21,12 @@ import {
   authorForm,
   builderView,
   createBuilderSession,
+  createRelay,
   createStop,
   declinedAnswer,
   proposalHeading,
   proposeEdit,
+  relayMessage,
 } from '@formancy/builder-core'
 import type { AskModel, ProposalExamples } from '@formancy/builder-core'
 import { mintChallenge, solveChallenge, verifySolution } from '@formancy/challenge'
@@ -106,6 +108,22 @@ if (proposal.examples?.regressions[0] !== 'an email is needed') {
 if (!proposalHeading(proposal, session.text).includes('an email is needed')) {
   throw new Error('the installed proposalHeading did not name the example')
 }
+
+// A relay (0159): a person carries the turn, so the host's model is the relay's `ask`.
+// The turn waiting is the prompt, a paste with no object in it is held back without
+// costing an attempt, and a working one ends the run with the document.
+const relay = createRelay()
+const relayed = authorForm(relay.ask, 'add a phone number', { current: schema })
+const turn = relay.waiting()
+if (turn === undefined || turn.message !== relayMessage(turn.prompt)) {
+  throw new Error('the installed relay shows no turn, or not the one asked')
+}
+if (relay.answer('Sure, here it is.') !== 'no-object' || relay.waiting() !== turn) {
+  throw new Error('the installed relay let a paste with no object through')
+}
+relay.answer(JSON.stringify(schema))
+const carried = await relayed
+if (!carried.ok || carried.attempts !== 1) throw new Error('the installed relay did not end the run')
 
 /*
  * The challenge: mint, solve, verify — both halves of the protocol.

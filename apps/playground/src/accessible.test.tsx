@@ -99,8 +99,12 @@ const unnamed = (): string[] =>
  * controls no other pane has: a file input, a text box for every message, and a third
  * rendering of the form under them. Unaudited, any of those could ship without a name
  * and only a screen reader would find out.
+ *
+ * And the Fields pane with a model's turn waiting to be carried (0159): the relay pane is
+ * drawn only then, so a page audited at rest never sees its two text boxes, its Copy and
+ * its link to a chat.
  */
-const PANES = ['Fields', 'Arrangement', 'Translations'] as const
+const PANES = ['Fields', 'Arrangement', 'Translations', 'Fields, with a turn to carry'] as const
 
 async function showing(pane: (typeof PANES)[number]): Promise<void> {
   render(<App />)
@@ -127,6 +131,12 @@ async function showing(pane: (typeof PANES)[number]): Promise<void> {
 
   if (pane === 'Fields') return
   const user = userEvent.setup()
+  if (pane === 'Fields, with a turn to carry') {
+    await user.type(screen.getByRole('textbox', { name: /Describe the form/ }), 'add a phone number')
+    await user.click(screen.getByRole('button', { name: 'Write it' }))
+    await screen.findByRole('region', { name: 'Take this request to a model' })
+    return
+  }
   await user.click(screen.getByRole('button', { name: pane }))
 }
 

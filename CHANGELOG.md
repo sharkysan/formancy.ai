@@ -10,6 +10,28 @@ later.
 
 ## Unreleased
 
+**Added: a model whose turn a person carries, and the playground's AI uses it.** The
+playground's "describe a change in words" was played by a stand-in: a `window.prompt` that
+showed the last line of the request and asked the visitor to type a whole form document. So
+nobody could use a real model on formancy.ai, which may ask no other site for anything
+(0154). Now `createRelay()` in `@formancy/builder-core` is an `AskModel` whose turn the
+person carries: the page shows the exact request, the visitor copies it into a chat of their
+own, pastes the answer back, and every check after that runs in the tab, the review included.
+The relay decides three things once, for both builders: one turn at a time, a second request
+refused rather than queued; a paste with no JSON object in it held back without costing an
+attempt, unless the person says to use it anyway; and a stop clearing the turn, so a late
+paste is never proposed for the next request. `RelayPane` in `@formancy/builder-react` and
+`<formancy-relay-pane>` in `@formancy/builder-angular` draw it: the briefing folded away, the
+request read-only, Copy — the follow-up alone on a retry, the whole request for a new chat —
+the text selected when the browser refuses the clipboard, and a link to a chat only when the
+host names one. Their words are in English, German and French, including what leaves:
+*"Nothing is sent from this page. Copying puts the whole request on your clipboard, including
+the form; pasting it into a chat gives it to that service under your own account."* The
+playground names Claude as that chat, in one place, and puts no prompt in a URL. A pasted
+answer is not bound to the request it answers; the review's diff against the form the run
+was asked about is what shows one that answered something else
+([0159](docs/decisions/0159-a-person-carries-the-models-turn.md)).
+
 **Added: a model's proposal is checked against the form's examples before it lands.** A rule
 turned the wrong way round — `country != "CH"` where `country == "CH"` was meant — passes every
 check the model loop makes, and the review listed one changed rule. The examples that tell the

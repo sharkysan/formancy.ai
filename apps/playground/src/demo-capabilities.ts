@@ -11,8 +11,7 @@
  * published type is a change to two packages' public surfaces.
  */
 import type { OptionsSources, Scanner } from '@formancy/react'
-import { declinedAnswer } from '@formancy/builder-core'
-import type { AskModel } from '@formancy/builder-core'
+import type { RelayChat } from '@formancy/builder-core'
 
 /**
  * What this deployment supplies, for both renderers.
@@ -94,48 +93,21 @@ export const DEMO_SCANNER: Scanner = async ({ label }) =>
   window.prompt(`Stand-in for a camera. What does the code for "${label}" read?`)
 
 /**
- * A stand-in for a model, in the same spirit as the scanner above.
+ * Where a visitor takes the model's turn: a chat of their own, in a new tab.
  *
- * The prompt pane needs an `AskModel`, and this app has no vendor, no key and
- * no business making a network call on a visitor's behalf — which is the whole
- * point of `ask` being supplied by the host rather than built in. A pane that
- * renders nothing because nobody configured a model is honest and shows
- * nothing, so the feature would be documented and invisible: the failure this
- * repository has shipped once.
+ * formancy.ai makes no request to any other site
+ * ([0154](../../../docs/decisions/0154-the-website-makes-no-request-to-any-other-site.md)),
+ * so the playground's model is a relay: both prompt panes ask it, the relay pane shows the
+ * request, the visitor copies it into a chat with a model under their own account and
+ * pastes the answer back, and every check after the paste runs in this tab
+ * ([0159](../../../docs/decisions/0159-a-person-carries-the-models-turn.md)). It replaced
+ * a stand-in that had the visitor *play* the model in a dialog showing the request's last
+ * line, so nobody could use a real one here.
  *
- * So the person plays the model, exactly as they play the camera. Everything
- * downstream is real — the answer is parsed, validated against the spec's own
- * schema, compiled by the engine, type-checked, diffed against the open
- * document and held for review — and the only part that is pretend is the
- * sentence-to-JSON step, which is the part a key would buy.
- *
- * Each dialog says which attempt it is, of how many, and from the second shows the
- * complaint alone — `followUp`, what a host keeping a conversation with its model
- * sends instead of the whole prompt again.
- *
- * **Cancelling the dialog is a model that could not be asked**, so it rejects, and
- * the run ends at once with the pane saying so
- * ([0157](../../../docs/decisions/0157-a-models-turn-can-be-stopped.md)). It used
- * to answer with an empty string while this comment said it handed back the
- * current document. An empty string is not JSON, so a cancel bought a dialog for
- * every remaining attempt and then "3 attempts, and the document still did not
- * work". Handing back the document would have meant reading it out of the prompt's
- * English, which is not a contract.
- *
- * **It also says how to decline**, as a model is told it may when the format cannot
- * express the request ([0158](../../../docs/decisions/0158-a-model-may-decline.md)).
- * Without it a visitor playing the model could only answer with a document, and
- * could not see what the pane does when a model says a form cannot do that. The
- * example is `declinedAnswer`'s, so it is the shape the run reads.
+ * **The one place a service is named**, and it is this deployment's choice: neither
+ * builder names one, and without this the pane links nowhere and the request is copied
+ * all the same. A link is navigation the visitor chooses, not a request the page makes,
+ * and the address is the chat's front door — no prompt is ever put in a URL, where it
+ * would sit in a history, a log and a referrer.
  */
-export const DEMO_MODEL: AskModel = ({ user, attempt, limit, followUp }) => {
-  const answer = window.prompt(
-    `Stand-in for a model, attempt ${String(attempt)} of ${String(limit)}. It was asked:\n\n` +
-      `${followUp ?? user.split('\n').at(-1) ?? ''}\n\n` +
-      'Answer with the whole form document, as JSON. ' +
-      `Or, if a form cannot do it, decline: ${declinedAnswer('why it cannot')}`,
-  )
-  return answer === null
-    ? Promise.reject(new Error('Nobody answered for the stand-in model.'))
-    : Promise.resolve(answer)
-}
+export const RELAY_CHAT: RelayChat = { name: 'Claude', href: 'https://claude.ai/new' }

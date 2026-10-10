@@ -1263,6 +1263,18 @@ four required properties: a push from declining towards exactly the partial docu
 paragraph is about. Both builders' `prompt-pane.test` (*when the model declines*) hold that
 nothing is applied.
 
+On formancy.ai the model is a person carrying each turn
+([0159](../decisions/0159-a-person-carries-the-models-turn.md)): the page shows the request,
+the visitor copies it into a chat of their own and pastes the answer back. That puts a hand
+between the prompt and the answer, and the hand can carry the wrong thing. What is held is
+that the relay changes nothing about the run except who answers. `relay.test.ts` holds that
+the turn shown is exactly the prompt a host's model would have been sent; that a stop clears
+the turn, so an answer pasted after it is refused rather than proposed for whatever is asked
+next — the variant above, through a person; that a second request while one waits is refused
+rather than queued, so a paste meant for one cannot be taken as the other's; and that a paste
+with no JSON object in it is held back without spending an attempt. Whatever is accepted is
+checked like any model's answer and reaches the review like any other.
+
 One thing does reach further than a review: an example with its answer written down.
 `runScenarios` executes a form against saved examples and reports which stopped holding,
 which is the only check in this product that can tell a condition that compiles from the
@@ -1304,6 +1316,15 @@ visible and its wording is not. And pressing the button is one click: nothing he
 distinguishes a reviewer who read the list from one who did not, which is the limit of
 what software can assert about attention. That holds when the heading names an example
 the edit breaks, too.
+
+Through the relay a pasted answer is **not bound to the prompt it answers**. The page cannot
+tell whether the text came from the request it showed, from an earlier turn, from a chat
+about another form, or from a person's own hand; any object that passes the checks is taken
+as the answer. The defence is the diff against the pinned basis — the document the run was
+asked against, held by `proposeEdit` — read by the person before Apply. A paste written for
+another form reads as an edit removing this form's fields, and is listed and marked as
+costing answers; a paste that differs only subtly from what was asked reads as a subtle
+edit, which is the residual above, unchanged by who carried it.
 
 ### D11. The builder tells its author it did something other than what it did
 
