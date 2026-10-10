@@ -10,6 +10,13 @@ later.
 
 ## Unreleased
 
+**Fixed: a model's answer that opened a code fence and never closed it took quadratic time
+to read.** The reader looked for the fence with a pattern that backtracked on such text.
+`authorForm` has read every answer this way since it shipped, and with the relay a person's
+paste reaches the reader directly, so a long one could hang the tab. CodeQL found it
+(js/polynomial-redos). The fence is now found with `indexOf`, and `answers.test.ts` reads
+200,000 characters of an unclosed fence within its time budget, which failed before.
+
 **Added: a model whose turn a person carries, and the playground's AI uses it.** The
 playground's "describe a change in words" was played by a stand-in: a `window.prompt` that
 showed the last line of the request and asked the visitor to type a whole form document. So
