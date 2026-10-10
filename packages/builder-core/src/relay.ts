@@ -95,8 +95,8 @@ export function createRelay(): Relay {
     // **One turn at a time.** Queued, a second request would wait behind a turn the
     // person may never answer, and a paste meant for one could be taken as the other's.
     // Refused as busy, its run ends at once, and its pane says so in the author's
-    // language: a host that asks one relay from two panes — the playground's prompt
-    // and scenario panes — reaches this from either (0162).
+    // language: a host that asks one relay from several panes — the playground's prompt,
+    // scenario and translations panes — reaches this from any of them (0162).
     if (current !== undefined) {
       return Promise.reject(new ModelBusyError())
     }

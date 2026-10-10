@@ -18,7 +18,7 @@ export const DRAFT_MESSAGES = {
   // What the request does not carry, said where the person types: the reason the drafts
   // are worth checking against the form at all. A property of the request, because that is
   // all this package can stand behind: a model that saw the form earlier in the same chat
-  // has seen its rules, and only the person can prevent that (SAFETY-ANALYSIS D10a).
+  // has seen its rules, and only the person can prevent that (SAFETY-ANALYSIS D16).
   'drafts.withheld':
     'The request carries this form’s fields and your words, never its rules: an example written from a rule agrees with it whether the rule is right or not. If you carry it to a chat, start a new one: a model that has already seen the form there has seen its rules.',
   'drafts.write': 'Draft examples',

@@ -2,8 +2,11 @@ import { describe, expect, test, vi } from 'vitest'
 import type { FormSchema } from '@formancy/spec'
 import { authorForm, createStop, declinedAnswer } from './authoring.js'
 import type { AskModel, AuthoringPrompt } from './answers.js'
+import { createBuilderText } from './messages.js'
+import { proposalStatus } from './proposal.js'
 import { createRelay, relayMessage } from './relay.js'
 import { draftScenarios } from './scenario-drafts.js'
+import { translateCatalogue, translationStatus } from './translate.js'
 import type { Relay, RelayTurn } from './relay.js'
 
 /**
@@ -244,5 +247,51 @@ describe('one turn at a time', () => {
     expect(relay.waiting()).toBe(draftTurn)
     relay.answer(JSON.stringify({ scenarios: [{ name: 'Email', changes: { email: 'a@b.ch' }, valid: true }] }))
     expect(await drafts).toMatchObject({ ok: true })
+  })
+
+  test('a translation asked while a model’s edit waits is refused as busy, and so is an edit asked while a translation waits', async () => {
+    /*
+     * The translations pane asks on the same loop, and a host may hand it the relay its
+     * prompt pane asks (0161). A translation refused that way ended busy, and its status
+     * had no sentence for busy: the part said nothing, and offered Ask again as though the
+     * press had been lost. Both directions, and each sentence is the one the prompt pane
+     * says, because the two runs met the same relay.
+     */
+    const worded = {
+      ...CURRENT,
+      model: { fields: [{ key: 'email', type: 'text', label: { $t: 'email' } }] },
+      i18n: { defaultLocale: 'en', messages: { en: { email: 'Email' }, de: {} } },
+    } as unknown as FormSchema
+    const text = createBuilderText()
+    const relay = createRelay()
+    const editing = authorForm(relay.ask, 'add a phone number', { current: CURRENT })
+    const editTurn = await nextTurn(relay, undefined)
+
+    const translating = await translateCatalogue(relay.ask, worded, 'de')
+
+    expect(translating).toMatchObject({ ok: false, ended: 'busy', attempts: 1 })
+    expect(translating).not.toHaveProperty('reason')
+    expect(translationStatus({ busy: false, result: translating, proposal: undefined, refusal: undefined }, text)).toBe(
+      text('prompt.status.busy'),
+    )
+    expect(relay.waiting()).toBe(editTurn)
+    relay.answer(WITH_PHONE)
+    expect(await editing).toMatchObject({ ok: true })
+
+    const translation = translateCatalogue(relay.ask, worded, 'de')
+    const translationTurn = await nextTurn(relay, editTurn)
+
+    const second = await authorForm(relay.ask, 'add a fax number', { current: CURRENT })
+
+    expect(second).toMatchObject({ ok: false, ended: 'busy', attempts: 1 })
+    expect(second).not.toHaveProperty('reason')
+    expect(proposalStatus({ busy: false, result: second, proposal: undefined, refusal: undefined }, text)).toBe(
+      text('prompt.status.busy'),
+    )
+    expect(relay.waiting()).toBe(translationTurn)
+    relay.answer(
+      JSON.stringify({ locale: 'de', defaultLocale: 'en', messages: [{ id: 'email', source: 'Email', target: 'E-Mail' }] }),
+    )
+    expect(await translation).toMatchObject({ ok: true })
   })
 })

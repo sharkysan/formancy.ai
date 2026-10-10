@@ -43,9 +43,11 @@ reached — untrue, since nothing was asked — with the relay's English beneath
 language, and while a draft waited that was the prompt pane's own run. The relay now rejects
 with `ModelBusyError`, exported from `@formancy/builder-core`; `authorForm` and
 `draftScenarios` end `busy` with no reason, and both panes say another request is waiting, in
-the person's language. `AuthoringResult.ended` has one more value: a host that switches over
-every ending has one more to word, and a host whose own model takes one request at a time can
-reject with `ModelBusyError` to get the same sentence
+the person's language. So does `translateCatalogue`, whose translations pane asks the same
+relay from its own tab and says it as the prompt pane does. `AuthoringResult.ended` and
+`TranslationResult.ended` have one more value: a host that switches over every ending has one
+more to word, and a host whose own model takes one request at a time can reject with
+`ModelBusyError` to get the same sentence
 ([0162](docs/decisions/0162-an-example-is-drafted-from-what-the-author-said.md), superseding
 part of [0160](docs/decisions/0160-a-person-carries-the-models-turn.md)).
 

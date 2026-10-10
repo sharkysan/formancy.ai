@@ -401,10 +401,11 @@ What the relay decides, it decides once, for both builders:
 - **A stop clears the turn.** An answer pasted after it is refused, never kept for the
   next request.
 
-The same relay can be the scenario pane's `ask`, for drafting examples, as the playground's
-is. One turn at a time holds across both, in both directions: a draft asked for while a
-model's edit waits is refused, and so is an edit asked for while a draft waits. Each ends
-`busy`, and its pane says so. Neither pane knows its `ask` is a relay, so the button that
+The same relay can be the scenario pane's `ask`, for drafting examples, and the
+translations pane's, for a language's missing messages, as the playground's is. One turn at
+a time holds across all of them, whichever asks first: a draft asked for while a model's edit
+waits is refused, and so is an edit asked for while a draft or a translation waits. Each
+ends `busy`, and its pane says so. No pane knows its `ask` is a relay, so the button that
 will be refused stays enabled while the other turn waits.
 
 **What leaves, and who carries it.** The relay and its pane send the request nowhere: Copy
@@ -445,9 +446,10 @@ downloads and uploads: `locale`, `defaultLocale`, and `messages` with `id`, `sou
 
 **What is checked.** An answer that is not JSON, not a catalogue file, or a catalogue for
 another language is asked for again, with that problem alone. A decline ends the run, as for
-a form. Anything else is kept: an id it was not asked for is dropped and listed, and a
-message it left empty — or wrote as nothing but spaces — is listed as still missing, with
-*Translate the rest* to ask for those.
+a form, and so does a model answering another request, which ends it `busy`. Anything else
+is kept: an id it was not asked for is dropped and listed, and a message it left empty — or
+wrote as nothing but spaces — is listed as still missing, with *Translate the rest* to ask
+for those.
 
 **What lands.** The answer goes through the catalogue import into a copy of the form, so the
 import's rules apply: an empty target erases nothing, and a translation made from a source

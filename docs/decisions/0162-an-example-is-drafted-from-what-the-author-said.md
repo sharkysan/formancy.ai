@@ -76,7 +76,17 @@
   unreachable. `packages/builder-core/src/relay.test.ts` (*one turn at a time*) holds the
   refusal in both directions and `authoring.test.ts` (*a model answering another request*)
   holds `ModelBusyError`, by class and by name; both fail with it not told from any other
-  error. `scripts/install-fixture/consume.ts`, under `pnpm test:e2e:install`, drafts an
+  error. A translation meets the same relay since 0161: `relay.test.ts` (*a translation
+  asked while a model's edit waits*) holds that refusal both ways, and failed with the
+  translation's status empty, because `translationStatus` had no sentence for `busy`; its
+  second half fails with the prompt pane's busy sentence worded as unreachable, and both
+  halves with the relay refusing with a plain error. `translate.test.ts` (*a model
+  answering another request is said to be busy*) holds the sentence in each language and
+  over a proposal an earlier turn left, and both builders' `translations-pane.test` (*says
+  another request is waiting while the relay carries the prompt pane's turn*) and
+  `language.test` failed with the part's status empty. `pnpm typecheck` fails in
+  `translate.ts` with `busy` taken out of `TranslationResult.ended`, or its case out of
+  `endedStatus`. `scripts/install-fixture/consume.ts`, under `pnpm test:e2e:install`, drafts an
   example through a relay with the packed packages, judges it and keeps it; with the draft
   made to answer the email it fails on the verdict. The error codes: `pnpm typecheck` fails
   in `model-validators.ts` with `mask` taken out of `BuiltInErrorCode`, and in `engine.ts`
@@ -175,8 +185,11 @@ panes, a run can find the other pane's turn waiting, in either direction. The re
 with `ModelBusyError`, exported from `@formancy/builder-core`; `askChecked` ends the run
 `busy`, with no reason, and `proposalStatus` and `draftStatus` say from the catalogue that
 another request is waiting. It ended `unreachable`, with the relay's English as the reason:
-untrue, since nothing was asked, and shown as written under German and French. This changes
-how 0160's refused run ends, and nothing else about one turn at a time: the refusal stands.
+untrue, since nothing was asked, and shown as written under German and French. A translation
+asked of a model (0161) runs on `askChecked` too, so `translateCatalogue` ends `busy` the same
+way, and `translationStatus` says it in the prompt pane's sentence: nothing was applied in
+either. This changes how 0160's refused run ends, and nothing else about one turn at a time:
+the refusal stands.
 
 ## Consequences
 
@@ -191,7 +204,8 @@ writes from the author's words. Where they say nothing, it is told to leave the 
 out, and nothing checks that it does. Where the author says something wrong, the example is
 wrong with them. A model may also misread words that are right. That is why each draft is
 shown with what it sets and expects, beside its verdict, and kept or discarded by a person.
-Nothing here judges whether a draft is a good example.
+Nothing here judges whether a draft is a good example. SAFETY-ANALYSIS D16 carries this as a
+residual.
 
 **Withholding the rules withholds what they would tell.** The model does not see that a
 field is required, or its bounds, so it cannot write an example at a bound's edge unless
@@ -219,8 +233,11 @@ relay. A draft asked for while a model's edit waits is refused, and so is an edi
 while a draft waits — 0160's own flow, which nothing could refuse before. Each ends `busy`
 and says another request is waiting. The button that will be refused stays enabled while
 the other turn waits: neither pane knows its `ask` is a relay, and 0160 declined to teach it.
-`AuthoringResult.ended` and `Drafted.ended` gained `busy`, so a host that switches over every
-ending has one more to word.
+`AuthoringResult.ended`, `Drafted.ended` and `TranslationResult.ended` gained `busy`, so a
+host that switches over every ending has one more to word. The translations pane asks the
+same relay from its own tab. Leaving Fields stops the other two panes' runs, so in the
+playground it never meets their turns; a host drawing it beside them does, and it ends
+`busy` there the same way.
 
 **Each draft is run on every edit**, beside the list the panel already runs. How long that
 takes for many drafts on a large form is not measured.

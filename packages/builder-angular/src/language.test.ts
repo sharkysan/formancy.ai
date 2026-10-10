@@ -659,6 +659,13 @@ describe('the translations, prompt and scenario panes', () => {
     seen.push(...outsidePreviews(reviewing.root))
     reset()
 
+    // A relay's turn for another pane, waiting: busy, worded by the catalogue (0162).
+    const refused = await opened(() => Promise.reject(new ModelBusyError()))
+    await waitFor(() => expect(part(refused.root, 'translate-status')!.textContent).toMatch(/Another request/))
+    await refused.settle()
+    seen.push(...outsidePreviews(refused.root))
+    reset()
+
     const failing = await opened(() => Promise.resolve('not json at all'), 1)
     await waitFor(() => expect(part(failing.root, 'translate-problems')).not.toBeNull())
     await failing.settle()
@@ -693,6 +700,7 @@ describe('the translations, prompt and scenario panes', () => {
         'still missing',
         'was still not a catalogue',
         'What the model last answered',
+        'Another request is still waiting',
       ].filter((prefix) => !seen.some((text) => text.includes(prefix))),
     ).toEqual([])
   })

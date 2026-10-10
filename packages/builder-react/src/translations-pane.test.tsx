@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
-import { createBuilderSession, createBuilderText } from '@formancy/builder-core'
+import { authorForm, createBuilderSession, createBuilderText, createRelay } from '@formancy/builder-core'
 import type { AskModel, BuilderSession } from '@formancy/builder-core'
 import type { FormSchema } from '@formancy/spec'
 import { TranslationsPane } from './translations-pane.js'
@@ -729,5 +729,28 @@ describe('asking a model for what is missing', () => {
 
     expect(screen.queryByRole('region', { name: /^Review these translations/ })).toBeNull()
     expect(screen.getByRole('button', { name: 'Ask a model for the 5 missing messages' })).toBeTruthy()
+  })
+
+  test('says another request is waiting while the relay carries the prompt pane’s turn, and takes nothing from it', async () => {
+    // A host may hand this pane the relay its prompt pane asks, and a relay carries one turn
+    // at a time (0160). Asked while the prompt pane's turn waited, the run ended busy and
+    // the status said nothing: the button came back as though the press had been lost.
+    const user = userEvent.setup()
+    const relay = createRelay()
+    const { session } = mount(relay.ask)
+    // The prompt pane's run, as it asks: the relay's one turn.
+    const editing = authorForm(relay.ask, 'add a phone number', { current: half })
+    const editTurn = await waitFor(() => relay.waiting() ?? expect.fail('no turn yet'))
+    await french(user)
+
+    await user.click(screen.getByRole('button', { name: 'Ask a model for the 3 missing messages' }))
+
+    await waitFor(() => expect(screen.getByRole('status').textContent).toBe(session.text('prompt.status.busy')))
+    expect(relay.waiting()).toBe(editTurn)
+    // Offered again, for when that turn is done — and then it asks.
+    relay.answer(JSON.stringify(half))
+    await editing
+    await user.click(screen.getByRole('button', { name: 'Ask a model for the 3 missing messages' }))
+    await waitFor(() => expect(relay.waiting()?.prompt.user).toContain('"id": "email"'))
   })
 })

@@ -61,7 +61,9 @@ export interface AuthoringPrompt {
  * from its catalogue, in the author's language, where a host's own sentence would be
  * shown as written. The playground asks one relay from its prompt pane and its scenario
  * pane, so either can find the other's turn waiting
- * ([0162](../../../docs/decisions/0162-an-example-is-drafted-from-what-the-author-said.md)).
+ * ([0162](../../../docs/decisions/0162-an-example-is-drafted-from-what-the-author-said.md)),
+ * and from its translations pane, under another tab; a host drawing that pane beside the
+ * others meets the same.
  *
  * Recognised by its `name`, as `reasonOf` reads an error by shape: one made in another
  * realm fails `instanceof`. Its message, if a host gives one, is for the host's own logs:

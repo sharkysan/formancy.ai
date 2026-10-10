@@ -632,6 +632,14 @@ describe('the translations, prompt and scenario panes', () => {
     seen.push(...outsidePreviews(reviewing.container))
     reviewing.unmount()
 
+    // A relay's turn for another pane, waiting: busy, worded by the catalogue (0162).
+    const refused = render(<TranslationsPane session={pseudo()} ask={() => Promise.reject(new ModelBusyError())} />)
+    await user.selectOptions(screen.getByRole('combobox', { name: /Language/ }), 'de')
+    await user.click(part(refused.container, 'translate').querySelector('button')!)
+    await waitFor(() => expect(part(refused.container, 'translate-status').textContent).toMatch(/Another request/))
+    seen.push(...outsidePreviews(refused.container))
+    refused.unmount()
+
     const failing = render(
       <TranslationsPane session={pseudo()} ask={() => Promise.resolve('not json at all')} attempts={1} />,
     )
@@ -669,6 +677,7 @@ describe('the translations, prompt and scenario panes', () => {
         'still missing',
         'was still not a catalogue',
         'What the model last answered',
+        'Another request is still waiting',
       ].filter((prefix) => !seen.some((text) => text.includes(prefix))),
     ).toEqual([])
   })

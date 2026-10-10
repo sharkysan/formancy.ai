@@ -381,8 +381,9 @@ Stop, or the pane goes ─▶ turn.onCancel ──────────▶ th
 what a pane cannot be trusted to decide twice — one turn at a time, a paste with no object
 in it held back, and a stop clearing the turn
 ([0160](../decisions/0160-a-person-carries-the-models-turn.md)). The playground asks it from
-two panes, the prompt pane and the scenario pane's drafting part, so the turn one of them
-holds refuses the other's: that run ends `busy`, and its pane says another request is waiting
+the prompt pane and the scenario pane's drafting part, and from the translations pane under
+its own tab (6.9), so the turn one of them holds refuses another's: that run ends `busy`, and
+its pane says another request is waiting
 ([0162](../decisions/0162-an-example-is-drafted-from-what-the-author-said.md)). The request leaves the page
 on the clipboard, by the person's press, and the answer comes back the same way. The relay
 and its pane call nothing. Each turn the pane draws takes the focus to Copy, described by the
@@ -408,6 +409,8 @@ review part (in the translations pane)   builder-core                           
                                              another locale, a decline with
                                              no reason ──▶ asked again, that problem alone
                                              a decline ──▶ ended after its turn
+                                             another pane's turn waiting ──▶ ended busy,
+                                               in the prompt pane's sentence (0162)
                                              ok ──▶ ids not asked: dropped
                                                     ids asked, empty or blank: still missing
                                                     asked: each id with the source sent

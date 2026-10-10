@@ -205,7 +205,8 @@ export function BuilderBody({
         <>
           {/* The turn a person is carrying to a model, above the tabs rather than inside
               one: it belongs to the run, not to a tab's layout. Nothing while nothing
-              waits — and the run is the prompt pane's, under Fields, so it ends if that
+              waits — and the run is the pane's that asked, the prompt or scenario pane
+              under Fields or the translations pane under Translations, so it ends if that
               pane goes (0157). The chat is this deployment's choice, named in
               `demo-capabilities.ts` and nowhere else (0160). */}
           <RelayPane session={session} relay={relay} chat={RELAY_CHAT} />

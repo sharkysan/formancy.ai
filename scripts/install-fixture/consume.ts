@@ -35,6 +35,7 @@ import {
   relayMessage,
   translateCatalogue,
   translationPrompt,
+  translationStatus,
 } from '@formancy/builder-core'
 import type { AskModel, ProposalExamples, TranslationProposal } from '@formancy/builder-core'
 import type { BuiltInErrorCode } from '@formancy/core'
@@ -185,12 +186,23 @@ if (failing.passed || !failing.failures.some((failure) => failure.detail.include
 const keptDraft = keepDraft(schema, [], draftsOut.drafts[0])
 if (!keptDraft.ok || keptDraft.scenarios.length !== 1) throw new Error('the installed keepDraft refused a failing draft')
 
-// One relay asked from two panes (0162): a second request while a turn waits ends busy,
-// through the installed relay and askChecked, and so does a host's own ModelBusyError.
+// One relay asked from several panes (0162): a second request while a turn waits ends busy,
+// through the installed relay and askChecked — a draft's, and a translation's, whose status
+// says it as the prompt pane does — and so does a host's own ModelBusyError.
 const shared = createRelay()
 const waitingEdit = authorForm(shared.ask, 'add a phone number', { current: schema })
 const refusedDraft = await draftScenarios(shared.ask, schema, 'An email is optional.')
 if (refusedDraft.ok || refusedDraft.ended !== 'busy') throw new Error('the installed relay did not refuse as busy')
+const refusedTranslation = await translateCatalogue(shared.ask, worded, 'de')
+if (refusedTranslation.ok || refusedTranslation.ended !== 'busy') {
+  throw new Error('the installed relay did not refuse a translation as busy')
+}
+const english = translating.text
+const saidBusy = translationStatus(
+  { busy: false, result: refusedTranslation, proposal: undefined, refusal: undefined },
+  english,
+)
+if (saidBusy !== english('prompt.status.busy')) throw new Error('the installed translationStatus did not say busy')
 shared.answer(JSON.stringify(schema))
 await waitingEdit
 const ownBusy = await authorForm(() => Promise.reject(new ModelBusyError()), 'anything')
