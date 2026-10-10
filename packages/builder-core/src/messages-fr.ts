@@ -439,6 +439,48 @@ export const BUILDER_MESSAGES_FR = {
   'relay.noObject':
     'Cette réponse ne contient aucun objet JSON. Copiez toute la réponse, bloc de code compris, ou utilisez-la quand même : le modèle en sera informé.',
 
+  'translate.ask': {
+    one: 'Demander à un modèle le {count} message manquant',
+    other: 'Demander à un modèle les {count} messages manquants',
+  },
+  'translate.asking': 'Demande en cours…',
+  'translate.review': 'Examiner ces traductions en {locale}',
+  'translate.review.marked': 'Examiner ces traductions en {locale} — certaines sont signalées',
+  'translate.was': 'Avant',
+  'translate.now': 'Proposé',
+  'translate.flags': 'À vérifier',
+  'translate.flag.stale': 'Traduit d’un libellé qui a changé depuis',
+  'translate.flag.unchanged': 'Identique à la source',
+  'translate.apply': 'Appliquer ces traductions',
+  'translate.rest': 'Traduire le reste',
+  'translate.preview': 'Aperçu en {locale}, tel que proposé',
+  'translate.dropped':
+    'Non écrits, parce que personne ne les a demandés ou qu’une personne les a traduits depuis : {list}',
+  'translate.status.asking': 'Demande des traductions manquantes, et vérification de la réponse.',
+  'translate.status.ready': {
+    one: 'Prêt à examiner : {count} traduction. Rien n’a été appliqué.',
+    other: 'Prêt à examiner : {count} traductions. Rien n’a été appliqué.',
+  },
+  'translate.status.readyAfter': {
+    one: 'Prêt à examiner après {attempts} tentatives : {count} traduction. Rien n’a été appliqué.',
+    other: 'Prêt à examiner après {attempts} tentatives : {count} traductions. Rien n’a été appliqué.',
+  },
+  'translate.status.none': 'Le modèle n’a traduit aucun message. Rien n’a été appliqué.',
+  'translate.status.noneWritten': {
+    one: 'Le modèle a traduit {count} message, et il n’a pas été écrit : personne ne l’a demandé, ou une personne l’a traduit depuis. Rien n’a été appliqué.',
+    other:
+      'Le modèle a traduit {count} messages, et aucun n’a été écrit : personne ne les a demandés, ou une personne les a traduits depuis. Rien n’a été appliqué.',
+  },
+  'translate.status.stillMissing': {
+    one: '{count} message manque encore.',
+    other: '{count} messages manquent encore.',
+  },
+  'translate.status.failed': {
+    one: 'Rien n’a été appliqué. {count} tentative, et la réponse n’était toujours pas un catalogue pour cette langue.',
+    other:
+      'Rien n’a été appliqué. {count} tentatives, et la réponse n’était toujours pas un catalogue pour cette langue.',
+  },
+
   'scenarios.label': 'Scénarios',
   'scenarios.none': 'Aucun scénario.',
   'scenarios.empty':

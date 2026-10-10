@@ -4,7 +4,6 @@ import {
   EnvironmentInjector,
   Injector,
   computed,
-  createEnvironmentInjector,
   inject,
   input,
   signal,
@@ -12,9 +11,10 @@ import {
 import { NgComponentOutlet } from '@angular/common'
 import { referencedMessages } from '@formancy/builder-core'
 import { BuilderTextPipe } from './text.pipe.js'
-import { createFormEngine } from '@formancy/core'
-import { FormancyForm, provideFormancy } from '@formancy/angular'
-import type { BuilderSession, CatalogueFile, FormSchema } from './types.js'
+import { FormancyForm } from '@formancy/angular'
+import { FormancyTranslationReview } from './translation-review.js'
+import { previewInjector } from './translations-preview.js'
+import type { AskModel, BuilderSession, CatalogueFile, FormSchema } from './types.js'
 import { injectBuilderView } from './view.js'
 
 /**
@@ -34,11 +34,16 @@ import { injectBuilderView } from './view.js'
  * **An untranslated message is marked rather than left to the fallback.** Falling
  * back silently is right when a form is rendered and wrong here: "it looked fine
  * in the preview" is exactly how a language ships half-finished.
+ *
+ * **Given a model, it can ask one for what is missing**, and holds the answer for review
+ * message by message — `formancy-translation-review`, in a file of its own. Without `ask`
+ * nothing of that is drawn, as the prompt pane draws nothing without one
+ * ([0161](../../../docs/decisions/0161-a-model-translates-only-what-is-missing.md)).
  */
 @Component({
   selector: 'formancy-translations-pane',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgComponentOutlet, BuilderTextPipe],
+  imports: [NgComponentOutlet, BuilderTextPipe, FormancyTranslationReview],
   template: `
     <div data-formancy-part="translations">
       @if (referenced().length === 0) {
@@ -94,6 +99,22 @@ import { injectBuilderView } from './view.js'
             <input type="file" accept="application/json,.json" (change)="upload($event)" />
           </label>
         </div>
+
+        @if (ask(); as asking) {
+          @if (chosen() !== defaultLocale()) {
+            <!-- Keyed by the language, as the React pane keys it: choosing another ends
+                 the run and the review that belong to this one, rather than leaving French
+                 under review beside German. A one-item loop is how a template says it. -->
+            @for (locale of [chosen()]; track locale) {
+              <formancy-translation-review
+                [session]="session()"
+                [ask]="asking"
+                [locale]="locale"
+                [attempts]="attempts()"
+              />
+            }
+          }
+        }
 
         @if (problem() !== null) {
           <p data-formancy-part="translations-problem">{{ problem() }}</p>
@@ -194,6 +215,13 @@ import { injectBuilderView } from './view.js'
 })
 export class FormancyTranslationsPane {
   readonly session = input.required<BuilderSession>()
+  /**
+   * How to reach a model, as the prompt pane takes it. Given, a language other than the
+   * default offers to ask it for the messages that language is missing.
+   */
+  readonly ask = input<AskModel | undefined>(undefined)
+  /** How many times to let the model correct itself. Three by default. */
+  readonly attempts = input<number | undefined>(undefined)
 
   protected readonly form = FormancyForm
   protected readonly view = injectBuilderView(this.session)
@@ -252,27 +280,9 @@ export class FormancyTranslationsPane {
    * for its lifetime — which is the whole reason this preview exists rather than
    * the pane changing `defaultLocale` to look at a language.
    */
-  protected readonly previewInjector = computed((): Injector | undefined => {
-    const document = this.view().document
-    const locale = this.chosen()
-    try {
-      const engine = createFormEngine({
-        schema: document as FormSchema,
-        locale,
-        capabilities: {
-          now: () => Date.now(),
-          today: () => new Date().toISOString().slice(0, 10),
-          random: () => Math.random(),
-        },
-      })
-      return createEnvironmentInjector([provideFormancy(engine)], this.parent)
-    } catch {
-      // A document the engine refuses is the builder's problem to report, not
-      // this pane's: a translator seeing a compile error about a colleague's
-      // expression has been handed somebody else's failure.
-      return undefined
-    }
-  })
+  protected readonly previewInjector = computed((): Injector | undefined =>
+    previewInjector(this.view().document as FormSchema, this.chosen(), this.parent),
+  )
 
   protected sourceOf(id: string): string {
     return this.view().document.i18n?.messages[this.defaultLocale()]?.[id] ?? '—'

@@ -10,6 +10,36 @@ later.
 
 ## Unreleased
 
+**Added: a model can be asked for the messages a language is missing, and its answer is
+reviewed message by message.** The playground's starter has a French catalogue left
+half-finished on purpose, and the Translations tab marked every missing message — and
+nothing helped fill them. Asked through the prompt pane, a model would have rewritten the
+whole document, its review one line per language, free to replace a person's translation
+or the English with every check passing. Now `@formancy/builder-core` asks for exactly what
+is missing. `translationPrompt(form, locale)` builds the request from the form alone: every
+live message with no target in that language, never an orphan, each with where the form
+uses it, and the language's existing translations for the register — no rule, and not the
+document. `translateCatalogue` asks on the shared loop, again for an answer that is not the
+catalogue file or is one for another language, and keeps a partial answer, listing what is
+still missing and dropping ids it did not ask for. A target of nothing but spaces counts as
+left empty, because written, it would show a blank label in place of the English.
+`proposeTranslation` writes only what is still missing, through the catalogue import into a
+copy of the form, so the import's rules apply. It marks a translation made from a source
+that has changed since the model was asked — judged by the source the request sent, not the
+one the model wrote back, which can be anything — and one equal to its source, which is
+kept, and returns an `EditProposal` with a row per message. `applyProposal` applies it:
+refused if the form moved, one undo step otherwise. `TranslationsPane` and
+`<formancy-translations-pane>` take `ask` and draw nothing new without it. With it, a review
+part — `TranslationReview`, `<formancy-translation-review>` — shows the source beside what
+was there and what is proposed, the marks, and the form as it would read in that language,
+with Apply, Discard and *Translate the rest*, in English, German and French. An answer that
+writes nothing is not held for review (`translationToReview`): the part says whether the
+model left every message empty or a person translated what it wrote first, lists what was
+dropped, and offers Ask again. The playground hands both builders' translations panes its
+relay. The review is only as good as its reader's command of the language, and once applied
+a model's message cannot be told from a person's
+([0161](docs/decisions/0161-a-model-translates-only-what-is-missing.md)).
+
 **Fixed: a model's answer that opened a code fence and never closed it took quadratic time
 to read.** The reader looked for the fence with a pattern that backtracked on such text.
 `authorForm` has read every answer this way since it shipped, and with the relay a person's

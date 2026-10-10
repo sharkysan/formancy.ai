@@ -14,6 +14,7 @@ import {
   paletteEntries,
   proposeEdit,
   pseudoLanguage,
+  translateCatalogue,
   untranslated,
 } from '@formancy/builder-core'
 import { runScenarios } from '@formancy/core'
@@ -560,6 +561,114 @@ describe('the translations, prompt and scenario panes', () => {
       ['Nothing in this form', 'Make this form translatable'].filter(
         (prefix) => !seen.some((text) => text.includes(prefix)),
       ),
+    ).toEqual([])
+  })
+
+  test('a model’s translation under review, waiting, and failing, likewise', async () => {
+    // The review's every word is the catalogue's (0161): the button, the status, the
+    // heading, the columns, the marks, the note on what was dropped and the actions. The
+    // sources and what the model wrote are the form's and the model's, in their languages.
+    // A third message, left out of the answer, so the rest is offered.
+    const three = {
+      ...translated,
+      model: { fields: [...translated.model.fields, { key: 'phone', type: 'text', label: { $t: 'phone.label' } }] },
+      i18n: {
+        ...translated.i18n!,
+        messages: { ...translated.i18n!.messages, en: { ...translated.i18n!.messages['en'], 'phone.label': 'Phone' } },
+      },
+    } as unknown as FormSchema
+    const pseudo = () => createBuilderSession(three, { text: createBuilderText(pseudoLanguage()) })
+    const user = userEvent.setup()
+    const part = (container: HTMLElement, name: string): HTMLElement =>
+      container.querySelector(`[data-formancy-part="${name}"]`) as HTMLElement
+    /** What is on screen outside the previews, which are the form in the renderer's words. */
+    const outsidePreviews = (container: HTMLElement): string[] => {
+      const copy = container.cloneNode(true) as HTMLElement
+      const kept: string[] = []
+      for (const preview of copy.querySelectorAll('[data-formancy-part="translations-preview"]')) {
+        kept.push(
+          preview.getAttribute('aria-label') ?? '',
+          preview.querySelector('[data-formancy-part="submit"]')?.textContent ?? '',
+        )
+        for (const child of [...preview.children]) child.remove()
+      }
+      return [...kept, ...shown(copy)]
+    }
+    // Written by the model: one whose English became "Remark" while it answered, which it
+    // wrote as "Remark" — so the same as its source, and from a source that has since
+    // changed — and one it was not asked for.
+    const answer = JSON.stringify({
+      locale: 'de',
+      defaultLocale: 'en',
+      messages: [
+        { id: 'note.label', source: 'Note', target: 'Remark' },
+        { id: 'gone.label', source: 'Gone', target: 'Weg' },
+      ],
+    })
+
+    const waiting = render(
+      <TranslationsPane session={pseudo()} ask={() => new Promise<string>(() => undefined)} />,
+    )
+    await user.selectOptions(screen.getByRole('combobox', { name: /Language/ }), 'de')
+    await user.click(part(waiting.container, 'translate').querySelector('button')!)
+    await waitFor(() => expect(part(waiting.container, 'translate').querySelectorAll('button')).toHaveLength(2))
+    const seen = outsidePreviews(waiting.container)
+    waiting.unmount()
+
+    const moving = pseudo()
+    const reviewing = render(
+      <TranslationsPane
+        session={moving}
+        ask={() => {
+          moving.setMessage('en', 'note.label', 'Remark')
+          return Promise.resolve(answer)
+        }}
+      />,
+    )
+    await user.selectOptions(screen.getByRole('combobox', { name: /Language/ }), 'de')
+    await user.click(part(reviewing.container, 'translate').querySelector('button')!)
+    await waitFor(() => expect(part(reviewing.container, 'translate-review')).not.toBeNull())
+    seen.push(...outsidePreviews(reviewing.container))
+    reviewing.unmount()
+
+    const failing = render(
+      <TranslationsPane session={pseudo()} ask={() => Promise.resolve('not json at all')} attempts={1} />,
+    )
+    await user.selectOptions(screen.getByRole('combobox', { name: /Language/ }), 'de')
+    await user.click(part(failing.container, 'translate').querySelector('button')!)
+    await waitFor(() => expect(part(failing.container, 'translate-problems')).not.toBeNull())
+    seen.push(...outsidePreviews(failing.container))
+    const told = await translateCatalogue(() => Promise.resolve('not json at all'), three, 'de', {
+      attempts: 1,
+    })
+    const problems = told.ok ? [] : told.problems.map((problem) => problem.detail)
+
+    expect(
+      untranslated(seen, [...catalogueWords(three), 'Remark', 'not json at all', ...problems]),
+    ).toEqual([])
+    expect(
+      [
+        'Ask a model for the',
+        'Asking…',
+        'Stop',
+        'Asking for the missing translations',
+        'Review these translations into de',
+        'Before',
+        'Proposed',
+        'To look at',
+        'The same as the source',
+        'Translated from wording',
+        'Not translated',
+        'Not written, because',
+        'Preview in de, as proposed',
+        'Apply these translations',
+        'Discard',
+        'Translate the rest',
+        'Ready to review',
+        'still missing',
+        'was still not a catalogue',
+        'What the model last answered',
+      ].filter((prefix) => !seen.some((text) => text.includes(prefix))),
     ).toEqual([])
   })
 

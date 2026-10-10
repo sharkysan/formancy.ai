@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
-import { referencedMessages } from '@formancy/builder-core'
+import { missingMessages, referencedMessages } from '@formancy/builder-core'
+import type { FormSchema } from '@formancy/spec'
 import { App } from './app.js'
 import { TAB_NAMES, builderTextFor } from './builder-pane.js'
 import { STARTER_SCHEMA } from './starter.js'
@@ -157,6 +158,30 @@ describe('switching which builder is on screen', () => {
 })
 
 /**
+ * Every way a page sends something, spied. `sendBeacon` is defined first where jsdom has
+ * none, so a call to it is recorded rather than thrown and lost in a handler. `fetch`
+ * answers nothing, so a page that called it would not reach the network from a test.
+ * And `window.open`: a pane that opened the chat itself after a copy would be the page
+ * asking another site, which a link the person follows is not.
+ */
+const outbound = () => {
+  const beacon = vi.fn(() => true)
+  const had = Object.getOwnPropertyDescriptor(navigator, 'sendBeacon')
+  Object.defineProperty(navigator, 'sendBeacon', { configurable: true, value: beacon })
+  return {
+    fetch: vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('a test reaches no network')),
+    open: vi.spyOn(XMLHttpRequest.prototype, 'open'),
+    window: vi.spyOn(window, 'open').mockReturnValue(null).mockName('window.open'),
+    beacon,
+    restore: () => {
+      vi.restoreAllMocks()
+      if (had === undefined) Reflect.deleteProperty(navigator, 'sendBeacon')
+      else Object.defineProperty(navigator, 'sendBeacon', had)
+    },
+  }
+}
+
+/**
  * The prompt pane is on screen, a person carries the model's turn, and the answer is
  * proposed rather than applied.
  *
@@ -183,30 +208,6 @@ describe('describing a change in words', () => {
     title: 'Proposed',
     model: { fields: [{ key: 'phone', type: 'text', label: 'Telephone' }] },
   })
-
-  /**
-   * Every way a page sends something, spied. `sendBeacon` is defined first where jsdom has
-   * none, so a call to it is recorded rather than thrown and lost in a handler. `fetch`
-   * answers nothing, so a page that called it would not reach the network from a test.
-   * And `window.open`: a pane that opened the chat itself after a copy would be the page
-   * asking another site, which a link the person follows is not.
-   */
-  const outbound = () => {
-    const beacon = vi.fn(() => true)
-    const had = Object.getOwnPropertyDescriptor(navigator, 'sendBeacon')
-    Object.defineProperty(navigator, 'sendBeacon', { configurable: true, value: beacon })
-    return {
-      fetch: vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('a test reaches no network')),
-      open: vi.spyOn(XMLHttpRequest.prototype, 'open'),
-      window: vi.spyOn(window, 'open').mockReturnValue(null).mockName('window.open'),
-      beacon,
-      restore: () => {
-        vi.restoreAllMocks()
-        if (had === undefined) Reflect.deleteProperty(navigator, 'sendBeacon')
-        else Object.defineProperty(navigator, 'sendBeacon', had)
-      },
-    }
-  }
 
   test('is offered in the builder', async () => {
     render(<App />)
@@ -804,6 +805,118 @@ describe('the Translations tab', () => {
       await waitFor(() => expect(rowsOf(translationsTable(editor))).toEqual(expected), {
         timeout: 10_000,
       })
+    },
+  )
+})
+
+/**
+ * The Translations tab asks a model for what the French is missing, through the page's relay.
+ *
+ * The starter's French is half-finished on purpose, and the tab marked every message
+ * missing from it — and nothing helped fill them. Now both builders' Translations panes ask
+ * the page's relay (0160) for exactly those, the visitor carries the request to a chat of
+ * their own and pastes the answer back, and the answer is reviewed message by message before
+ * it lands (0161). What is pinned is the whole round trip in either builder: the turn shown
+ * where the prompt pane's is, the review before anything is applied, Apply, and the form pane
+ * reading the French — with the page sending nothing anywhere itself.
+ */
+describe('a model asked for the French the starter is missing', () => {
+  const SOURCES = STARTER_SCHEMA.i18n.messages['en'] ?? {}
+  const missing = missingMessages(STARTER_SCHEMA as unknown as FormSchema, 'fr')
+  /** What a chat answered: every missing message, one of them in words this case looks for. */
+  const ANSWER = JSON.stringify({
+    locale: 'fr',
+    defaultLocale: 'en',
+    messages: missing.map((id) => ({
+      id,
+      source: SOURCES[id],
+      target: id === 'wantedBy' ? 'Souhaité pour le' : `${SOURCES[id] ?? id} (fr)`,
+    })),
+  })
+
+  /**
+   * Every expression, code and check the starter's rules hold, as written and as JSON
+   * writes them. Read off the rules rather than typed: the request is JSON, which escapes
+   * the quote in `country == "CH"`, so the one phrase this case looked for could never
+   * match a rule that leaked, and the whole document sent along passed it in both builders.
+   */
+  const RULES = ((STARTER_SCHEMA as unknown as FormSchema).logic?.rules ?? [])
+    .flatMap((rule) => [rule.cel, rule.code, rule.check])
+    .filter((words): words is string => words !== undefined)
+  const inJson = (words: string): string => JSON.stringify(words).slice(1, -1)
+  const RULE_WORDS = RULES.flatMap((words) => [words, inJson(words)])
+
+  test('the starter still leaves the message this case looks for untranslated', () => {
+    // A guard on the case below: a French catalogue that already said it would let the
+    // form pane read French without anything being applied.
+    expect(missing).toContain('wantedBy')
+    // And the starter has rules to leak, some spelt differently in JSON, or the case below
+    // that looks for them in the request checks nothing.
+    expect(RULES.some((words) => inJson(words) !== words)).toBe(true)
+  })
+
+  test.each(['React', 'Angular'] as const)(
+    'in the %s builder: asked through the relay, reviewed, applied, and read in the form pane — and the page sends nothing itself',
+    async (which) => {
+      const sent = outbound()
+      try {
+        const user = userEvent.setup()
+        render(<App />)
+        await builtWith(which)
+        if (which === 'Angular') await angularTree()
+        await user.click(screen.getByRole('button', { name: 'Translations' }))
+        const editor = screen.getByRole('region', { name: 'Editor' })
+        await user.selectOptions(
+          await waitFor(() => within(editor).getByRole('combobox', { name: 'Language' }), { timeout: 10_000 }),
+          'fr',
+        )
+
+        await user.click(
+          await within(editor).findByRole(
+            'button',
+            { name: `Ask a model for the ${String(missing.length)} missing messages` },
+            { timeout: 10_000 },
+          ),
+        )
+
+        // The turn is the relay's, drawn at the top of the builder as the prompt pane's is:
+        // the French asked for, by the language's tag, and the form's words, not its rules.
+        const relay = await screen.findByRole('region', { name: 'Take this request to a model' })
+        const request = within(relay).getByRole('textbox', { name: 'The request' }) as HTMLTextAreaElement
+        expect(request.value).toContain('"locale": "fr"')
+        expect(RULE_WORDS.filter((words) => request.value.includes(words))).toEqual([])
+
+        await user.click(within(relay).getByRole('textbox', { name: 'The model’s answer' }))
+        await user.paste(ANSWER)
+        await user.click(within(relay).getByRole('button', { name: 'Check this answer' }))
+
+        const review = await within(editor).findByRole(
+          'region',
+          { name: /^Review these translations into fr/ },
+          { timeout: 10_000 },
+        )
+        // Every missing message a row, and nothing applied yet.
+        const rows = within(within(review).getByRole('table')).getAllByRole('row')
+        expect(rows).toHaveLength(missing.length + 1)
+        expect(undoButton().disabled, 'something was applied before anybody agreed to it').toBe(true)
+
+        await user.click(within(review).getByRole('button', { name: 'Apply these translations' }))
+        await waitFor(() => expect(undoButton().disabled).toBe(false))
+
+        // The form pane, read in French: the message the model wrote, where English stood.
+        await user.selectOptions(screen.getAllByRole('combobox', { name: 'Language' })[0]!, 'fr')
+        const form = await waitFor(() => screen.getByRole('region', { name: 'React' }), { timeout: 10_000 })
+        await waitFor(() => expect(within(form).getByLabelText('Souhaité pour le')).toBeTruthy(), {
+          timeout: 10_000,
+        })
+
+        expect(sent.fetch).not.toHaveBeenCalled()
+        expect(sent.open).not.toHaveBeenCalled()
+        expect(sent.beacon).not.toHaveBeenCalled()
+        expect(sent.window).not.toHaveBeenCalled()
+      } finally {
+        sent.restore()
+      }
     },
   )
 })

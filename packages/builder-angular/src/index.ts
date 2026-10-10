@@ -8,6 +8,8 @@ export { FormancyLayoutPropertyPanel } from './layout-property-panel.js'
 export { FormancyLogicPanel } from './logic-panel.js'
 export { FormancyRulesOverview } from './rules-overview.js'
 export { FormancyTranslationsPane } from './translations-pane.js'
+// A model asked for what a language is missing, its answer reviewed message by message (0161).
+export { FormancyTranslationReview } from './translation-review.js'
 export { FormancyPromptPane } from './prompt-pane.js'
 export { FormancyRelayPane } from './relay-pane.js'
 export { FormancyScenarioPane } from './scenario-pane.js'

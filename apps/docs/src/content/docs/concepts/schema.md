@@ -273,6 +273,21 @@ French catalogue so the fallback is visible rather than described. The builder's
 French there and every message nobody has translated yet is marked, beside the
 English a reader is shown instead.
 
+The tab can also ask a model for what is missing. Choose French, and a button above the
+table asks a model for every message with no French yet. The request holds those
+messages, the English each translates, where the form uses each — *label of a select
+question "Country"*, *option of "Country"* — and the French the form already has, so the
+register matches. It holds nothing else: no rule, and not the document. On the website
+you carry the request to a chat of your own and paste the answer back, as for describing
+a change in words. The answer is the same catalogue file a translator downloads, and it
+is reviewed message by message before anything lands: the English beside what was there
+and what is proposed, a mark where a translation was made from English that has since
+changed or is the same as its English, and the form as it would read in French. Apply
+writes it as one undo step. Only messages nobody has translated are asked for or written,
+so a translation somebody made is never replaced. The review is only as good as your
+French: a fluent translation that asks a different question passes every check
+([0161](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0161-a-model-translates-only-what-is-missing.md)).
+
 Resolution happens in the engine, not in each renderer:
 
 ```ts

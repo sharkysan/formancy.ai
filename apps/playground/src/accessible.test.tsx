@@ -10,7 +10,10 @@ import {
   ACCESSIBILITY_UNMEASURABLE_IN_JSDOM,
 } from '@formancy/conformance'
 
+import { missingMessages } from '@formancy/builder-core'
+import type { FormSchema } from '@formancy/spec'
 import { App } from './app.js'
+import { STARTER_SCHEMA } from './starter.js'
 
 /**
  * Every control on the playground has a name a screen reader can say.
@@ -103,8 +106,19 @@ const unnamed = (): string[] =>
  * And the Fields pane with a model's turn waiting to be carried (0160): the relay pane is
  * drawn only then, so a page audited at rest never sees its two text boxes, its Copy and
  * its link to a chat.
+ *
+ * And the Translations pane with a model's French under review (0161): a table of what it
+ * would write, its actions, and a fourth rendering of the form — the French as proposed,
+ * beside the pane's own preview of the form as it is. Two previews of one form mint every
+ * id twice unless the second is given ids of its own, which is what axe is here to see.
  */
-const PANES = ['Fields', 'Arrangement', 'Translations', 'Fields, with a turn to carry'] as const
+const PANES = [
+  'Fields',
+  'Arrangement',
+  'Translations',
+  'Fields, with a turn to carry',
+  'Translations, with French to review',
+] as const
 
 async function showing(pane: (typeof PANES)[number]): Promise<void> {
   render(<App />)
@@ -135,6 +149,29 @@ async function showing(pane: (typeof PANES)[number]): Promise<void> {
     await user.type(screen.getByRole('textbox', { name: /Describe the form/ }), 'add a phone number')
     await user.click(screen.getByRole('button', { name: 'Write it' }))
     await screen.findByRole('region', { name: 'Take this request to a model' })
+    return
+  }
+  if (pane === 'Translations, with French to review') {
+    await user.click(screen.getByRole('button', { name: 'Translations' }))
+    const editor = screen.getByRole('region', { name: 'Editor' })
+    await user.selectOptions(within(editor).getByRole('combobox', { name: 'Language' }), 'fr')
+    await user.click(within(editor).getByRole('button', { name: /^Ask a model for the/ }))
+    // Every missing message answered, as a chat would, through the page's relay.
+    const english = STARTER_SCHEMA.i18n.messages['en'] ?? {}
+    const answer = JSON.stringify({
+      locale: 'fr',
+      defaultLocale: 'en',
+      messages: missingMessages(STARTER_SCHEMA as unknown as FormSchema, 'fr').map((id) => ({
+        id,
+        source: english[id],
+        target: `${english[id] ?? id} (fr)`,
+      })),
+    })
+    const relay = await screen.findByRole('region', { name: 'Take this request to a model' })
+    await user.click(within(relay).getByRole('textbox', { name: 'The model’s answer' }))
+    await user.paste(answer)
+    await user.click(within(relay).getByRole('button', { name: 'Check this answer' }))
+    await within(editor).findByRole('region', { name: /^Review these translations into fr/ }, { timeout: 10_000 })
     return
   }
   await user.click(screen.getByRole('button', { name: pane }))

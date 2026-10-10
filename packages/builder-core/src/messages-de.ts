@@ -432,6 +432,48 @@ export const BUILDER_MESSAGES_DE = {
   'relay.noObject':
     'In dieser Antwort ist kein JSON-Objekt. Kopiere die ganze Antwort samt Codeblock – oder verwende sie trotzdem, dann erfährt es das Modell.',
 
+  'translate.ask': {
+    one: 'Ein Modell um die {count} fehlende Meldung bitten',
+    other: 'Ein Modell um die {count} fehlenden Meldungen bitten',
+  },
+  'translate.asking': 'Wird angefragt …',
+  'translate.review': 'Diese Übersetzungen auf {locale} prüfen',
+  'translate.review.marked': 'Diese Übersetzungen auf {locale} prüfen – einige sind zum Ansehen markiert',
+  'translate.was': 'Vorher',
+  'translate.now': 'Vorgeschlagen',
+  'translate.flags': 'Ansehen',
+  'translate.flag.stale': 'Aus einem Wortlaut übersetzt, der sich inzwischen geändert hat',
+  'translate.flag.unchanged': 'Gleich wie die Quelle',
+  'translate.apply': 'Diese Übersetzungen übernehmen',
+  'translate.rest': 'Den Rest übersetzen',
+  'translate.preview': 'Vorschau auf {locale}, wie vorgeschlagen',
+  'translate.dropped':
+    'Nicht geschrieben, weil niemand danach gefragt hat oder eine Person sie inzwischen übersetzt hat: {list}',
+  'translate.status.asking': 'Die fehlenden Übersetzungen werden angefragt und die Antwort geprüft.',
+  'translate.status.ready': {
+    one: 'Bereit zur Prüfung: {count} Übersetzung. Nichts wurde übernommen.',
+    other: 'Bereit zur Prüfung: {count} Übersetzungen. Nichts wurde übernommen.',
+  },
+  'translate.status.readyAfter': {
+    one: 'Bereit zur Prüfung nach {attempts} Versuchen: {count} Übersetzung. Nichts wurde übernommen.',
+    other: 'Bereit zur Prüfung nach {attempts} Versuchen: {count} Übersetzungen. Nichts wurde übernommen.',
+  },
+  'translate.status.none': 'Das Modell hat keine Meldung übersetzt. Nichts wurde übernommen.',
+  'translate.status.noneWritten': {
+    one: 'Das Modell hat {count} Meldung übersetzt, und sie wurde nicht geschrieben: Niemand hat danach gefragt, oder eine Person hat sie inzwischen übersetzt. Nichts wurde übernommen.',
+    other:
+      'Das Modell hat {count} Meldungen übersetzt, und keine wurde geschrieben: Niemand hat danach gefragt, oder eine Person hat sie inzwischen übersetzt. Nichts wurde übernommen.',
+  },
+  'translate.status.stillMissing': {
+    one: '{count} Meldung fehlt noch.',
+    other: '{count} Meldungen fehlen noch.',
+  },
+  'translate.status.failed': {
+    one: 'Nichts wurde übernommen. {count} Versuch, und die Antwort war immer noch kein Katalog für diese Sprache.',
+    other:
+      'Nichts wurde übernommen. {count} Versuche, und die Antwort war immer noch kein Katalog für diese Sprache.',
+  },
+
   'scenarios.label': 'Szenarien',
   'scenarios.none': 'Keine Szenarien.',
   'scenarios.empty':

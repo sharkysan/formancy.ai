@@ -17,6 +17,7 @@ import {
   paletteEntries,
   proposeEdit,
   pseudoLanguage,
+  translateCatalogue,
   untranslated,
 } from '@formancy/builder-core'
 import { runScenarios } from '@formancy/core'
@@ -579,6 +580,118 @@ describe('the translations, prompt and scenario panes', () => {
         'Preview in de',
         'Submit',
         'no longer used',
+      ].filter((prefix) => !seen.some((text) => text.includes(prefix))),
+    ).toEqual([])
+  })
+
+  test('a model’s translation under review, waiting, and failing, likewise', async () => {
+    // The review's every word is the catalogue's (0161), as in the React part. The sources
+    // and what the model wrote are the form's and the model's, in their languages.
+    const three = {
+      ...translated,
+      model: { fields: [...translated.model.fields, { key: 'phone', type: 'text', label: { $t: 'phone.label' } }] },
+      i18n: {
+        ...translated.i18n!,
+        messages: { ...translated.i18n!.messages, en: { ...translated.i18n!.messages['en'], 'phone.label': 'Phone' } },
+      },
+    } as unknown as FormSchema
+    const pseudo = () => createBuilderSession(three, { text: createBuilderText(pseudoLanguage()) })
+    const part = (root: Element, name: string): Element | null =>
+      root.querySelector(`[data-formancy-part="${name}"]`)
+    /** What is on screen outside the previews, which are the form in the renderer's words. */
+    const outsidePreviews = (root: Element): string[] => {
+      const copy = root.cloneNode(true) as Element
+      const kept: string[] = []
+      for (const preview of copy.querySelectorAll('[data-formancy-part="translations-preview"]')) {
+        kept.push(
+          preview.getAttribute('aria-label') ?? '',
+          preview.querySelector('[data-formancy-part="submit"]')?.textContent ?? '',
+        )
+        for (const child of [...preview.children]) child.remove()
+      }
+      return [...kept, ...shown(copy)]
+    }
+    // Written by the model, as in the React part: one whose English became "Remark" while it
+    // answered, written as "Remark" — the same as its source, and from a source that has
+    // since changed — and one it was not asked for.
+    const answer = JSON.stringify({
+      locale: 'de',
+      defaultLocale: 'en',
+      messages: [
+        { id: 'note.label', source: 'Note', target: 'Remark' },
+        { id: 'gone.label', source: 'Gone', target: 'Weg' },
+      ],
+    })
+    const reset = (): void => {
+      TestBed.resetTestingModule()
+      document.body.innerHTML = ''
+    }
+    const opened = async (ask: unknown, attempts?: number, session = pseudo()) => {
+      const view = await mounted(FormancyTranslationsPane, {
+        session,
+        ask,
+        ...(attempts === undefined ? {} : { attempts }),
+      })
+      await view.user.selectOptions(screen.getAllByRole('combobox')[0]!, 'de')
+      await view.settle()
+      await view.user.click(part(view.root, 'translate')!.querySelector('button')!)
+      return view
+    }
+
+    const waiting = await opened(() => new Promise<string>(() => undefined))
+    await waitFor(() => expect(part(waiting.root, 'translate')!.querySelectorAll('button')).toHaveLength(2))
+    await waiting.settle()
+    const seen = outsidePreviews(waiting.root)
+    reset()
+
+    const moving = pseudo()
+    const reviewing = await opened(
+      () => {
+        moving.setMessage('en', 'note.label', 'Remark')
+        return Promise.resolve(answer)
+      },
+      undefined,
+      moving,
+    )
+    await waitFor(() => expect(part(reviewing.root, 'translate-review')).not.toBeNull())
+    await reviewing.settle()
+    seen.push(...outsidePreviews(reviewing.root))
+    reset()
+
+    const failing = await opened(() => Promise.resolve('not json at all'), 1)
+    await waitFor(() => expect(part(failing.root, 'translate-problems')).not.toBeNull())
+    await failing.settle()
+    seen.push(...outsidePreviews(failing.root))
+    const told = await translateCatalogue(() => Promise.resolve('not json at all'), three, 'de', {
+      attempts: 1,
+    })
+    const problems = told.ok ? [] : told.problems.map((problem) => problem.detail)
+
+    expect(
+      untranslated(seen, [...catalogueWords(three), 'Remark', 'not json at all', ...problems]),
+    ).toEqual([])
+    expect(
+      [
+        'Ask a model for the',
+        'Asking…',
+        'Stop',
+        'Asking for the missing translations',
+        'Review these translations into de',
+        'Before',
+        'Proposed',
+        'To look at',
+        'The same as the source',
+        'Translated from wording',
+        'Not translated',
+        'Not written, because',
+        'Preview in de, as proposed',
+        'Apply these translations',
+        'Discard',
+        'Translate the rest',
+        'Ready to review',
+        'still missing',
+        'was still not a catalogue',
+        'What the model last answered',
       ].filter((prefix) => !seen.some((text) => text.includes(prefix))),
     ).toEqual([])
   })

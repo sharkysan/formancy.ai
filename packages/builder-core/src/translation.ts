@@ -177,25 +177,7 @@ export function translationCommands(core: SessionCore): TranslationCommands {
       })
     },
 
-    exportCatalogue(locale) {
-      const present = core.document()
-      const defaultLocale = present.i18n?.defaultLocale ?? 'en'
-      const source = present.i18n?.messages[defaultLocale] ?? {}
-      const target = present.i18n?.messages[locale] ?? {}
-      // Every id the DOCUMENT refers to, not every id the catalogue holds: an
-      // orphan is somebody's kept work and not a thing to send out for
-      // translation again.
-      const live = referencedIds(present)
-      return {
-        locale,
-        defaultLocale,
-        messages: [...live].map((id) => ({
-          id,
-          source: source[id] ?? '',
-          target: target[id] ?? '',
-        })),
-      }
-    },
+    exportCatalogue: (locale) => catalogueFile(core.document(), locale),
 
     importCatalogue(file) {
       // Read off the file rather than trusted: it comes from disk, from somebody
@@ -282,8 +264,31 @@ export function translationCommands(core: SessionCore): TranslationCommands {
   }
 }
 
+/**
+ * A document's catalogue for one locale, as the file a translator works in.
+ *
+ * Every id the DOCUMENT refers to, not every id the catalogue holds: an orphan is
+ * somebody's kept work and not a thing to send out for translation again. A function
+ * of the document rather than of a session, because a model is asked from one too
+ * (`translationPrompt`), and the two must not disagree about what is left to translate.
+ */
+export function catalogueFile(document: FormSchema, locale: string): CatalogueFile {
+  const defaultLocale = document.i18n?.defaultLocale ?? 'en'
+  const source = document.i18n?.messages[defaultLocale] ?? {}
+  const target = document.i18n?.messages[locale] ?? {}
+  return {
+    locale,
+    defaultLocale,
+    messages: [...referencedIds(document)].map((id) => ({
+      id,
+      source: source[id] ?? '',
+      target: target[id] ?? '',
+    })),
+  }
+}
+
 /** Whether something read from a file has the shape of a catalogue file at all. */
-function isCatalogueFile(file: unknown): file is CatalogueFile {
+export function isCatalogueFile(file: unknown): file is CatalogueFile {
   if (typeof file !== 'object' || file === null) return false
   const record = file as Record<string, unknown>
   return typeof record['locale'] === 'string' && Array.isArray(record['messages'])
@@ -291,7 +296,7 @@ function isCatalogueFile(file: unknown): file is CatalogueFile {
 
 /** Every message id the document refers to. Shared by the export, the import and
  *  the orphan list, so the three can never disagree about which messages are live. */
-function referencedIds(document: FormSchema): Set<string> {
+export function referencedIds(document: FormSchema): Set<string> {
   const found = new Set<string>()
   const walk = (value: unknown): void => {
     if (Array.isArray(value)) {

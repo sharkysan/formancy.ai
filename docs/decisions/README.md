@@ -261,3 +261,4 @@ listed under the sections they belong to above.
 | [0158](0158-a-model-may-decline.md) | A model may decline, and a decline ends the run after one turn | accepted; the playground’s stand-in dialog superseded by 0160 |
 | [0159](0159-a-proposal-is-checked-against-the-forms-examples.md) | A proposal is checked against the form's examples before it lands | accepted |
 | [0160](0160-a-person-carries-the-models-turn.md) | On the website a person carries the model's turn, and the relay is decided once in builder-core | accepted |
+| [0161](0161-a-model-translates-only-what-is-missing.md) | A model translates only what is missing, answers with the catalogue file, and is reviewed message by message | accepted |
