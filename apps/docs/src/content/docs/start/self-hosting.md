@@ -548,12 +548,13 @@ what you pay for. A wrong or retired id is found at the first request, not at st
 
 **What leaves, and where to.** With a model set, the server makes HTTPS requests to that
 provider's API — `api.anthropic.com`, `api.openai.com` or `api.x.ai` — and nowhere else for
-it. Each request carries the form it is about: the whole document when a form is written or
-changed, its words and where each is used when a language is translated, and its fields,
-labels, options, starting answers and what the author said when examples are drafted. Never a
-submission, unless somebody types one into an instruction. OpenAI and xAI are asked not to
-store the request; what any provider keeps under its own terms is the provider's. The admin
-says which provider and model a request goes to before anybody asks.
+it. Each request carries the form it is about: the whole document, its rules included, when a
+form is written or changed, and part of it and none of its rules when a language is
+translated or examples are drafted — the
+[agents guide](/docs/start/agents/#through-formancys-server-the-deployment-path) says which
+part. Never a submission, unless somebody types one into an instruction. OpenAI and xAI are
+asked not to store the request; what any provider keeps under its own terms is the
+provider's. The admin says which provider and model a request goes to before anybody asks.
 
 **What it answers.** `POST /model/complete` takes `{ "kind": …, "user": … }`, where `kind` is
 `authoring`, `translation` or `scenarios` — the three requests the builders make — and

@@ -96,16 +96,17 @@ const LEAVES: Readonly<Record<ModelRequestKind, BuilderMessageId>> = {
  * What leaves with a request, said for its kind: one of the catalogue's sentences.
  *
  * **One per kind, because the requests carry different things.** A form's edit carries the
- * person's words and the whole document, rules included; a translation carries the
- * messages a language is missing, where each is used and the translations it has, and none
- * of the rules ([0161](../../../docs/decisions/0161-a-model-translates-only-what-is-missing.md));
- * a request for examples carries the fields, their labels and options, the codes, where
- * examples start, the names already taken and the author's words, and none of the rules
- * ([0162](../../../docs/decisions/0162-an-example-is-drafted-from-what-the-author-said.md)).
- * One sentence said "including the form" of all three, which was true of the first and
- * overstated the other two
+ * person's words and the whole document, rules included; a translation
+ * ([0161](../../../docs/decisions/0161-a-model-translates-only-what-is-missing.md)) and a
+ * request for examples
+ * ([0162](../../../docs/decisions/0162-an-example-is-drafted-from-what-the-author-said.md))
+ * each carry part of the form and none of its rules, and each kind's sentence says which
+ * part. One sentence said "including the form" of all three, which was true of the first
+ * and overstated the other two
  * ([0167](../../../docs/decisions/0167-the-relay-says-what-each-request-carries.md)).
- * `relay.test.ts` checks each sentence's claims against the request its run builds.
+ * `relay.test.ts` checks each run's request against a list of what its sentence claims, and
+ * pins the sentence beside the list in every language: reworded, a sentence fails there,
+ * and the list has to be read again. The words themselves are not parsed.
  *
  * By the kind the run set on the prompt, never by a pane, and decided here so the two
  * builders' panes cannot say different things about one request (0091). A `Record`, so a

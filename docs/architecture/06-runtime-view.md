@@ -403,9 +403,9 @@ A turn found waiting when the pane is drawn again (6.11) takes none: the person 
 another control. What was pasted is bound to nothing but the run that is waiting: the review's
 diff against the document the run was asked against is what shows a paste that answered
 something else (SAFETY-ANALYSIS D10). What the pane says leaves is said for the turn's kind,
-which the run set on its prompt: the whole form for an edit, the missing messages and where
-each is used for a translation, the fields and the author's words for examples — the last two
-without the rules ([0167](../decisions/0167-the-relay-says-what-each-request-carries.md)).
+which the run set on its prompt: the whole form for an edit, and part of it without the rules
+for a translation or examples
+([0167](../decisions/0167-the-relay-says-what-each-request-carries.md)).
 
 ## 6.9 Asking a model for what a language is missing
 

@@ -136,8 +136,9 @@ service under your own account."*
 > **Superseded by [0167](0167-the-relay-says-what-each-request-carries.md):** one sentence
 > for every request was true of a model's edit and overstated a translation (0161) and a
 > request for examples (0162), which carry neither the whole form nor its rules. A request
-> now names its kind, and the pane says that kind's sentence, from `relayLeaves`, each
-> checked against the request its run builds. Still of the pane alone, and naming no service.
+> now names its kind, and the pane says that kind's sentence, from `relayLeaves`, each pinned
+> beside a list of its claims that is checked against the request its run builds. Still of
+> the pane alone, and naming no service.
 
 **Every turn drawn takes the focus to Copy**, whose `aria-describedby` is the turn and what
 to do with it — *"Turn 2 of at most 3. That answer did not work. Copy what was wrong…"*. From

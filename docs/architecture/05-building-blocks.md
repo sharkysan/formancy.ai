@@ -318,14 +318,15 @@ different things about one edit
 
 `scenario-drafts.ts` and `scenario-prompt.ts` write examples where a form has none. A model
 is asked, through `askChecked`, for examples of what the author says the form should do, and
-`scenario-prompt.ts` is everything it is told: the fields an example can name, by the data
-path `core`'s `formatPath` writes, their types, labels and options, the engine's error codes
-— `BUILT_IN_ERROR_CODES`, which satisfies `core`'s `BuiltInErrorCode` — and the author's
-words, and never a rule's condition, a pattern, a bound or which fields are required. Shown
-the rule, a model writes the example the rule passes. It is model-facing English, as
-`authoring.ts` is. `scenario-drafts.ts` reads the answer item by item — each through
-`scenario-shape.ts`'s `readScenario`, the reader a server keeping a form's examples uses too
-(0166) — judges a draft with
+`scenario-prompt.ts` is everything it is told: the form's title; the fields an example can
+name, by the data path `core`'s `formatPath` writes, their types, labels and options; the
+engine's error codes — `BUILT_IN_ERROR_CODES`, which satisfies `core`'s `BuiltInErrorCode` —
+and those the form's rules name, by name alone; where examples start, the names already
+taken and the author's words, and never a rule's condition, a pattern, a bound or which
+fields are required. Shown the rule, a model writes the example the rule passes. It is
+model-facing English, as `authoring.ts` is. `scenario-drafts.ts` reads the answer item by item
+— each through `scenario-shape.ts`'s `readScenario`, the reader a server keeping a form's
+examples uses too (0166) — judges a draft with
 `runScenarios` and the scenario pane's own options (`draftVerdict`), decides what may be kept
 (`keepDraft`), says what came of a run in the catalogue's words (`draftStatus`,
 `draftProblems`), and which of the model's own words are quoted beneath it (`draftQuotes`). Both builders' drafting parts, drawn inside their scenario panes, are

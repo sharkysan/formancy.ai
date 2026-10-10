@@ -227,7 +227,8 @@ form", which for a translation overstates what leaves rather than understating i
 > **Fixed by [0167](0167-the-relay-says-what-each-request-carries.md):** the request names its
 > kind, and for a translation the relay pane says what one carries — the messages the language
 > is missing, where the form uses each and its translations so far, and none of its rules.
-> `relay.test.ts` checks that against the request `translateCatalogue` sends.
+> `relay.test.ts` checks those claims against the request `translateCatalogue` sends, with the
+> sentence pinned beside them.
 
 **The run belongs to the review part.** Choosing another language, tab or builder ends it, as
 the prompt pane's run ends with that pane (0157, 0160). After Apply the review goes, and the

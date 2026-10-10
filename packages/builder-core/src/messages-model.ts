@@ -96,8 +96,10 @@ export const MODEL_MESSAGES = {
     'That answer did not work. Copy what was wrong into the same chat, then paste the new answer below.',
   // What THIS request carries, one sentence for each kind, chosen by `relayLeaves` (0167):
   // the requests carry different things, and one sentence for all three overstated two of
-  // them. Each claim is checked in `relay.test.ts` against the request its run builds, so
-  // a sentence changed here has to stay true of that request — in either direction.
+  // them. `relay.test.ts` checks each run's request against a list of what its sentence
+  // claims, and pins the sentence, in every language, beside that list: reworded here, a
+  // sentence fails there, and the list has to be read again against the new words. Nothing
+  // parses the words — whether they say what the list says is a person's reading.
   'relay.leaves.authoring':
     'This pane sends the request nowhere. Besides what the model is told about the format, the request carries your description and, when it changes a form, that whole form, its rules included. What you copy goes on your clipboard, and pasting it into a chat gives it to that service under your own account.',
   'relay.leaves.translation':

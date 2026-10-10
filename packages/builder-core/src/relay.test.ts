@@ -8,6 +8,7 @@ import { BUILDER_MESSAGES_DE } from './messages-de.js'
 import { BUILDER_MESSAGES_FR } from './messages-fr.js'
 import { createBuilderText } from './messages.js'
 import { MODEL_REQUEST_KINDS } from './model-requests.js'
+import type { ModelRequestKind } from './model-requests.js'
 import { createPromptRun } from './prompt-run.js'
 import { proposalStatus } from './proposal.js'
 import { createRelay, relayLeaves, relayMessage } from './relay.js'
@@ -362,11 +363,17 @@ describe('one turn at a time', () => {
  *
  * The pane said one sentence for every request: *"Copy puts the whole request on your
  * clipboard, including the form"*. True of a form's edit, and an overstatement for a
- * translation, which carries the form's words and never its rules (0161), and for a
- * request for examples, which carries its fields and never its rules (0162). Now each kind
- * of request has its own sentence. A sentence about what leaves the page that is wrong in
- * either direction is one this repository will not make, so each claim one makes is
- * checked here against the request its run actually builds — never against its wording.
+ * translation (0161) and a request for examples (0162), which each carry part of the form
+ * and never its rules. Now each kind of request has its own sentence. A sentence about what
+ * leaves the page that is wrong in either direction is one this repository will not make.
+ *
+ * **What is checked, and what is read.** Each kind's case lists the claims its sentence
+ * makes and checks every one against the request its run actually builds — never against
+ * the words. The words are pinned beside that list, in English, German and French, which
+ * is the only tie between the two: nothing here parses a sentence. Reworded in any
+ * language, a sentence fails the case that lists its claims, and whoever reworded it has
+ * to read that list again against the new words, and change the list, the words or the
+ * request until all three agree.
  */
 describe('what the pane says leaves with a request', () => {
   /**
@@ -436,6 +443,8 @@ describe('what the pane says leaves with a request', () => {
     createBuilderText({ locale: 'de', messages: BUILDER_MESSAGES_DE }),
     createBuilderText({ locale: 'fr', messages: BUILDER_MESSAGES_FR }),
   ]
+  /** A kind's sentence in English, German and French, as the pane draws it. */
+  const sentences = (kind: ModelRequestKind): string[] => LANGUAGES.map((text) => relayLeaves(kind, text))
 
   test.each(LANGUAGES.map((text) => [text('relay.title'), text] as const))(
     'is a sentence of its own for each kind of request, in “%s”',
@@ -457,9 +466,18 @@ describe('what the pane says leaves with a request', () => {
     },
   )
 
+  /** What the pane says leaves with an edit — the claims the next two cases check. */
+  const AUTHORING = [
+    'This pane sends the request nowhere. Besides what the model is told about the format, the request carries your description and, when it changes a form, that whole form, its rules included. What you copy goes on your clipboard, and pasting it into a chat gives it to that service under your own account.',
+    'Dieser Bereich sendet die Anfrage nirgendwohin. Außer dem, was dem Modell über das Format gesagt wird, enthält die Anfrage deine Beschreibung und, wenn sie ein Formular ändert, das ganze Formular samt seinen Regeln. Was du kopierst, landet in deiner Zwischenablage; fügst du es in einen Chat ein, gibst du es diesem Dienst unter deinem eigenen Konto.',
+    'Ce panneau n’envoie la demande nulle part. Outre ce que le modèle apprend du format, la demande contient votre description et, si elle modifie un formulaire, tout ce formulaire, règles comprises. Ce que vous copiez va dans votre presse-papiers ; le coller dans une conversation le confie à ce service, sous votre propre compte.',
+  ]
+
   test('for a form’s edit, the person’s words and the whole form, its rules included — and that is what it carries', async () => {
     // The request is the whole document. A sentence that said less would have the person
     // hand a chat the form's rules, its translations and every option believing otherwise.
+    // The sentence is pinned: reworded, it fails here, beside the list it is read against.
+    expect(sentences('authoring')).toEqual(AUTHORING)
     const turn = await turnOf((ask) => authorForm(ask, 'Ask for a postcode too.', { current: STAY }))
 
     expect(turn.prompt.kind).toBe('authoring')
@@ -475,15 +493,25 @@ describe('what the pane says leaves with a request', () => {
   test('for a form written from nothing, the person’s words alone — the form only “when it changes one”', async () => {
     // With no form to change there is none to send, and a sentence that named one would
     // overstate. The request's own part is then exactly what was typed.
+    expect(sentences('authoring')).toEqual(AUTHORING)
     const turn = await turnOf((ask) => authorForm(ask, 'A contact form.'))
 
     expect(turn.prompt.kind).toBe('authoring')
     expect(turn.prompt.user).toBe('A contact form.')
   })
 
+  /** What the pane says leaves with a translation — the claims the next case checks. */
+  const TRANSLATION = [
+    'This pane sends the request nowhere. Besides what the model is told about the format, the request carries the messages this language is missing, where the form uses each, and the form’s translations into this language so far, but none of its rules. What you copy goes on your clipboard, and pasting it into a chat gives it to that service under your own account.',
+    'Dieser Bereich sendet die Anfrage nirgendwohin. Außer dem, was dem Modell über das Format gesagt wird, enthält die Anfrage die Meldungen, die dieser Sprache fehlen, wo das Formular jede davon verwendet, und seine bisherigen Übersetzungen in diese Sprache, aber keine seiner Regeln. Was du kopierst, landet in deiner Zwischenablage; fügst du es in einen Chat ein, gibst du es diesem Dienst unter deinem eigenen Konto.',
+    'Ce panneau n’envoie la demande nulle part. Outre ce que le modèle apprend du format, la demande contient les messages qui manquent à cette langue, l’endroit où le formulaire utilise chacun et ses traductions existantes dans cette langue, mais aucune de ses règles. Ce que vous copiez va dans votre presse-papiers ; le coller dans une conversation le confie à ce service, sous votre propre compte.',
+  ]
+
   test('for a translation, the missing messages, where each is used and the translations so far, and none of the rules — and that is what it carries', async () => {
     // Said of the whole form, as it was, it overstated (0161); said of less than this, it
-    // would understate. Each claim is read off the request the run sent.
+    // would understate. Each claim is read off the request the run sent; the sentence that
+    // makes them is pinned, so a sentence reworded fails here, beside this list.
+    expect(sentences('translation')).toEqual(TRANSLATION)
     const turn = await turnOf((ask) => translateCatalogue(ask, STAY, 'de'))
     const asked = translationPrompt(STAY, 'de')
 
@@ -499,9 +527,18 @@ describe('what the pane says leaves with a request', () => {
     expect(turn.message).not.toContain(canonicalize(STAY))
   })
 
+  /** What the pane says leaves with a request for examples — the claims the next case checks. */
+  const SCENARIOS = [
+    'This pane sends the request nowhere. Besides what the model is told about the format, the request carries the form’s title, its fields with their labels and options, the error codes it can report, the answers examples start from, the names of its examples and what you said it should do, but none of its rules. What you copy goes on your clipboard, and pasting it into a chat gives it to that service under your own account.',
+    'Dieser Bereich sendet die Anfrage nirgendwohin. Außer dem, was dem Modell über das Format gesagt wird, enthält die Anfrage den Titel des Formulars, seine Felder mit ihren Beschriftungen und Optionen, die Fehlercodes, die es melden kann, die Antworten, von denen die Beispiele ausgehen, die Namen seiner Beispiele und was es laut dir tun soll, aber keine seiner Regeln. Was du kopierst, landet in deiner Zwischenablage; fügst du es in einen Chat ein, gibst du es diesem Dienst unter deinem eigenen Konto.',
+    'Ce panneau n’envoie la demande nulle part. Outre ce que le modèle apprend du format, la demande contient le titre du formulaire, ses champs avec leurs libellés et leurs options, les codes d’erreur qu’il peut signaler, les réponses dont partent les exemples, les noms de ses exemples et ce que vous avez dit qu’il doit faire, mais aucune de ses règles. Ce que vous copiez va dans votre presse-papiers ; le coller dans une conversation le confie à ce service, sous votre propre compte.',
+  ]
+
   test('for examples, the title, the fields with labels and options, the codes, the start, the names and the words, and none of the rules — and that is what it carries', async () => {
     // The drafting part says the request never carries a rule (0162); the relay pane, said
-    // of the whole form, contradicted it beside it. Each claim is read off the request.
+    // of the whole form, contradicted it beside it. Each claim is read off the request; the
+    // sentence that makes them is pinned, so a sentence reworded fails here, beside this list.
+    expect(sentences('scenarios')).toEqual(SCENARIOS)
     const existing = [{ name: 'Germany asks for no canton', changes: { country: 'DE' }, valid: true }]
     const start = { country: 'DE' }
     const turn = await turnOf((ask) =>

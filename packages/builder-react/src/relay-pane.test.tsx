@@ -450,30 +450,6 @@ describe('the relay it follows', () => {
     const first = createRelay()
     const second = createRelay()
     const session = createBuilderSession(START)
-
-/** A form with words to translate: its one label, which German does not have yet. */
-const WORDED = {
-  ...START,
-  model: { fields: [{ key: 'name', type: 'text', label: { $t: 'name' } }] },
-  i18n: { defaultLocale: 'en', messages: { en: { name: 'Name' }, de: {} } },
-} as unknown as FormSchema
-
-/** A run of each kind on the relay, as the prompt, translations and scenario panes start one. */
-const RUNS: Record<ModelRequestKind, (relay: Relay) => Promise<unknown>> = {
-  authoring: (relay) => authorForm(relay.ask, 'add a phone number', { current: START }),
-  translation: (relay) => translateCatalogue(relay.ask, WORDED, 'de'),
-  scenarios: (relay) => draftScenarios(relay.ask, START, 'A name is asked for.'),
-}
-
-/** Start a run of `kind` and wait for the pane to show its turn. */
-async function asked(relay: Relay, kind: ModelRequestKind): Promise<HTMLElement> {
-  await act(async () => {
-    void RUNS[kind](relay)
-    await Promise.resolve()
-  })
-  await waitFor(() => expect(relay.waiting()?.prompt.kind).toBe(kind))
-  return screen.findByRole('region', { name: 'Take this request to a model' })
-}
     const view = render(<RelayPane session={session} relay={first} />)
     view.rerender(<RelayPane session={session} relay={second} />)
 

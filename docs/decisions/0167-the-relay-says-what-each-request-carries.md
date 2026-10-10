@@ -10,29 +10,34 @@
   all three cases failed with no kind on the prompt, and the translation's failed on its second
   turn alone with the kind left off the retry. `pnpm typecheck` fails in `translate.ts` with
   that same omission, because the field is required. `packages/builder-core/src/relay.test.ts`
-  (*what the pane says leaves with a request*): before `relayLeaves` existed every case
-  failed; with two kinds given one sentence, *a sentence of its own for each kind* fails in
-  English, German and French, and with the German translation sentence left in English it
-  fails in German. Each sentence's claims are checked against the request its run builds,
-  never against its wording, and each check was watched failing with the request changed one
-  thing at a time: the whole document put into a translation request, or into a request for
-  examples, fails that kind's case on the fixture's rules; an edit sent without the form it
-  changes fails the edit's case, and a form written from nothing sent with anything besides
-  the person's words fails that one; the language's translations so far left out of a
-  translation request, or the examples' names out of a request for examples, fails that
-  kind's case. Both builders' `relay-pane.test`: with the pane drawing one sentence for every
-  turn, as before, the translation and examples cases and *says what the next request carries
-  when one of another kind follows* failed in each; in Angular, with the turn read untracked
-  so the sentence was computed once, the last fails alone. Both builders' `language.test`
-  (*the relay pane, for a request of each kind*) fail with one kind's sentence written into
-  the pane in English — the translation's in React, the examples' in Angular — which every
-  relay-pane case passed. `apps/playground/src/two-builders.test.tsx` (*what the relay pane
-  says leaves, for each request*), a change under Fields, the French under Translations and
-  examples drafted under Fields, in either builder: with both panes drawing one sentence and
-  the packages rebuilt, the four cases for a translation and for examples failed and the two
-  for a change passed. `apps/admin/src/server-model.test.tsx` (*refuses a system part formancy
-  did not write … whatever kind the prompt names*) fails with `askServerModel` naming the
-  request by the kind the prompt claims rather than by its briefing.
+  (*what the pane says leaves with a request*): before `relayLeaves` existed every case failed;
+  with two kinds given one sentence, *a sentence of its own for each kind* fails in English,
+  German and French, and with the German translation sentence left in English it fails in
+  German. Each kind's case lists what its sentence claims and checks the request its run builds
+  against that list, never against the words, and each check was watched failing with the
+  request changed one thing at a time: the whole document put into a translation request, or
+  into a request for examples, fails that kind's case on the fixture's rules; an edit sent
+  without the form it changes fails the edit's case, and a form written from nothing sent with
+  anything besides the person's words fails that one; the language's translations so far left
+  out of a translation request, or the examples' names out of a request for examples, fails
+  that kind's case. Each sentence is pinned, in English, German and French, in the case that
+  lists its claims: with the English translation sentence reworded to say the request carries
+  the whole form, its rules included — which every other gate passed — the translation case
+  fails; with the German examples sentence saying the rules are included, the examples case;
+  with the French edit sentence saying they are left out, both of the edit's. Both builders'
+  `relay-pane.test`: with the pane drawing one sentence for every turn, as before, the
+  translation and examples cases and *says what the next request carries when one of another
+  kind follows* failed in each; in Angular, with the turn read untracked so the sentence was
+  computed once, the last fails alone. Both builders' `language.test` (*the relay pane, for a
+  request of each kind*) fail with one kind's sentence written into the pane in English — the
+  translation's in React, the examples' in Angular — which every relay-pane case passed.
+  `apps/playground/src/two-builders.test.tsx` (*what the relay pane says leaves, for each
+  request*), a change under Fields, the French under Translations and examples drafted under
+  Fields, in either builder: with both panes drawing one sentence and the packages rebuilt, the
+  four cases for a translation and for examples failed and the two for a change passed.
+  `apps/admin/src/server-model.test.tsx` (*refuses a system part formancy did not write …
+  whatever kind the prompt names*) fails with `askServerModel` naming the request by the kind
+  the prompt claims rather than by its briefing.
 
 ## Context
 
@@ -43,14 +48,12 @@ account."* When it was written the prompt pane was the only thing that asked a r
 model's edit does carry the whole document.
 
 Two more requests came through the same relay. A translation
-([0161](0161-a-model-translates-only-what-is-missing.md)) carries the messages a language is
-missing, where each is used and the translations it already has, and none of the rules. A
-request for examples ([0162](0162-an-example-is-drafted-from-what-the-author-said.md)) carries
-the form's fields, labels and options, the codes, the starting answers, the examples' names
-and the author's words, and none of the rules — which the drafting part says, beside a relay
-pane telling the person the opposite. Both records accepted the overstatement. A sentence
-about what leaves the page that is wrong in either direction is one this repository will not
-make: an absent statement prompts the question, a wrong one answers it.
+([0161](0161-a-model-translates-only-what-is-missing.md)) and a request for examples
+([0162](0162-an-example-is-drafted-from-what-the-author-said.md)) each carry part of the form
+and none of its rules — which the drafting part says, beside a relay pane telling the person
+the opposite. Both records accepted the overstatement. A sentence about what leaves the page
+that is wrong in either direction is one this repository will not make: an absent statement
+prompts the question, a wrong one answers it.
 
 The relay could not say anything better, because it did not know which request it held. It
 had the prompt — a system part, a user part and the turn — and the request's kind existed only
@@ -85,15 +88,20 @@ sentence. Both relay panes draw `relayLeaves(turn.prompt.kind, text)` and decide
 ([0091](0091-a-second-builder-is-a-binding.md)). *What you copy* rather than *Copy puts the
 whole request*: on a retry the first Copy puts only what was wrong on the clipboard.
 
-**Each claim is checked against the request, not the words.** `relay.test.ts` runs each kind's
-run through a relay on a form whose rules can be found in either spelling, and reads the turn:
-an edit carries the person's words and the canonical document, every rule in it; a form
-written from nothing carries the words alone; a translation carries every missing message's
-source and context and the language's translations, and no condition, check, code or
-document; a request for examples carries the title, every label and option, the form's own
-codes, the starting answers, the names already taken and the words, and no condition, check
-or document. A sentence changed in the catalogue has to stay true of its request; a request
-changed in its builder fails here until its sentence is changed to match.
+**Each claim is checked against the request; the words are pinned beside the claims.**
+`relay.test.ts` runs each kind's run through a relay on a form whose rules can be found in
+either spelling, and reads the turn against a list of what that kind's sentence claims: an edit
+carries the person's words and the canonical document, every rule in it; a form written from
+nothing carries the words alone; a translation carries every missing message's source and
+context and the language's translations, and no condition, check, code or document; a request
+for examples carries the title, every label and option, the form's own codes, the starting
+answers, the names already taken and the words, and no condition, check or document. A request
+changed in its builder fails here until the list says what it now carries; whether the sentence
+then changes with the list is the reading below. The sentence itself is not parsed: no test can
+read *"none of its rules"* off a sentence in three languages. It is pinned, in English, German
+and French, in the case that lists its claims, so a sentence reworded in any language fails
+that case, and whoever rewords it has to read the list again against the new words. The tie
+between the words and the list is that reading — review, made unavoidable, not automatic.
 
 **The server path still names a request by its briefing.** `askServerModel` and the agents
 guide's example read `modelRequestKind(prompt.system)`, not `prompt.kind`, because the server
@@ -114,6 +122,11 @@ no longer compiles until it says which request it is. A wrapper that spreads the
 the kind. This is the price 0157 paid for `attempt` and `limit`, for the same reason: a
 field a run can forget is a sentence the pane can get wrong.
 
+**A reworded sentence is a failed test.** Each sentence is pinned in full, in three
+languages, so a typo fixed in one fails its case and has its new words copied in. The pin
+makes reading the list unavoidable, not correct: whoever copies the new words in can do it
+without reading what is beside them, and nothing here would know.
+
 **Only formancy's three kinds have a sentence.** A host asking a relay for something of its own
 has to name one of them, and the pane then says that kind's sentence, which may be untrue of
 the host's request. Nothing checks a hand-built prompt's kind against what it carries; the
@@ -129,8 +142,8 @@ server by what it was briefed as.
 typed `BuilderCatalogue`, fails to compile with the key unknown; one for a language the
 builders do not ship falls back to English for the three new sentences until it gives them.
 
-**Longer sentences.** The examples' sentence lists six things. Shortened, it would leave one
-out, and the one left out would be the understatement.
+**Longer sentences.** The examples' sentence names everything its request carries. Shortened,
+it would leave something out, and what was left out would be the understatement.
 
 **Still the pane's alone.** The sentences say what this request carries and that the pane
 sends it nowhere. What the rest of a host's page sends is the host's, as 0160 said, and a
@@ -162,6 +175,13 @@ briefing being read, so this is one of the two above with a field in a second pl
 **One sentence, worded for the least a request carries.** *"Copy puts the request on your
 clipboard, as shown."* True of all three, and silent about the one that sends the whole form
 with its rules — the understatement this decision exists to avoid in the other direction.
+
+**What each kind carries as data in builder-core**, which the test checks the request
+against and `relayLeaves` chooses the sentence by. One list instead of a list in the test.
+Lost because the sentences are prose in three languages, so the data could choose a sentence
+but not word one: whether the words say what the data says would still be a person's
+reading, with the data as one more place to keep in step. Composing the sentence from the
+data instead would make it a list of fragments, joined by each language's grammar.
 
 **Each pane hands the relay its own sentence.** The relay pane is drawn above the tabs and does
 not know which pane asked; and three panes in two builders each wording what leaves is the
