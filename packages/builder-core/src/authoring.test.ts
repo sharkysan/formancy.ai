@@ -528,3 +528,22 @@ describe('what the model receives on each turn', () => {
     expect(third?.user).not.toContain('That was not JSON')
   })
 })
+
+describe('the shape a host writes against', () => {
+  test('a caller of an AskModel hands on the turn, and a prompt built by hand has its attempt and limit', () => {
+    /*
+     * The half of the new shape that breaks a consumer, which the CHANGELOG says.
+     * A wrapper — logging, a cache — that called its model with the prompt alone
+     * would otherwise compile and drop the stop, so the request it wraps could
+     * never be abandoned. Both are compile errors: `pnpm typecheck` fails here if
+     * either becomes optional and that sentence stops being true.
+     */
+    const inner: AskModel = () => Promise.resolve('')
+    // @ts-expect-error -- the turn is not optional for a caller
+    const dropsTheTurn: AskModel = (prompt) => inner(prompt)
+    // @ts-expect-error -- nor are `attempt` and `limit` for a prompt built by hand
+    const handBuilt: AuthoringPrompt = { system: '', user: '' }
+
+    expect([dropsTheTurn, handBuilt]).toHaveLength(2)
+  })
+})

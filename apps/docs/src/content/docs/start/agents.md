@@ -266,7 +266,8 @@ the browser ends the call to the model as well.
 the screen, ends the run at once, calls what you gave `turn.onCancel`, and
 discards whatever the model answers afterwards. A function written without the
 second argument is stopped all the same: the pane stops waiting for it, though
-its request runs on.
+its request runs on. A function that wraps another `AskModel` hands `turn` on
+with the prompt; the types require it, so a wrapper cannot drop the stop.
 
 **When your function throws or rejects,** the pane says the model could not be
 reached, followed by your error's message, rather than that the document did not

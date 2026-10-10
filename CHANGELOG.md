@@ -29,7 +29,12 @@ the error's message as `reason`. Every failure now carries `ended`: `gave-up`, `
 `unreachable`. A `catch` around `authorForm` no longer fires, and code that read `ok: false` as
 "the document did not work" has to read `ended`. `proposalStatus` takes the run's `result` in
 place of `attempts` and `failed`, so a caller of it gets a compile error rather than a silent
-change. Why: the rejection left each pane to decide what had happened, and both decided wrongly
+change. **Also breaking, at compile time: code that calls an `AskModel`.** A wrapper around one
+— logging, a cache, a host's test calling its own — has to hand on the new second argument, and
+a prompt built by hand needs `attempt` and `limit`. Required on purpose: a wrapper that dropped
+the turn would compile and leave the request it wraps impossible to abandon. An `AskModel`
+*written* with one parameter is unaffected. Why: the rejection left each pane to decide what
+had happened, and both decided wrongly
 (the fix above). One function in `@formancy/builder-core` now decides
 ([0157](docs/decisions/0157-a-models-turn-can-be-stopped.md)).
 

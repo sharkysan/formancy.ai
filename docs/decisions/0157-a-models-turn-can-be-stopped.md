@@ -75,8 +75,8 @@ whatever that turn answers later is discarded.
 
 **A host's error resolves the run instead of rejecting it.** The failure carries `ended`:
 `gave-up` when every attempt answered and none worked, `stopped`, or `unreachable` with the
-error's message as `reason` when it has one. `proposalStatus` reads the result whole rather than a count and
-a flag each pane derived, and says each ending in the author's language. Both panes drop
+error's message as `reason` when it has one. `proposalStatus` reads the result whole rather
+than a count and a flag each pane derived, and says each ending in the author's language. Both panes drop
 their hand-built failure, show a Stop button while a run waits, and stop the run when they
 go away.
 
@@ -101,7 +101,13 @@ whatever the person asked next.
 it stops firing, because a host's error now resolves, and code that read `ok: false` as "the
 document did not work" has to read `ended`. `proposalStatus` takes the run's `result` in
 place of `attempts` and `failed`, which is a compile error for a caller rather than a silent
-change. An `AskModel` written with one parameter still compiles and is still stopped.
+change. An `AskModel` written with one parameter still compiles and is still stopped. Code
+that *calls* one with the prompt alone does not: a wrapper — logging, a cache, a host's test
+calling its own — has to hand on the turn, and a prompt built by hand needs `attempt` and
+`limit`. Both are required on purpose. A wrapper that dropped the turn would compile and
+leave the request it wraps impossible to abandon. `authoring.test.ts` (*a caller of an
+AskModel hands on the turn*) holds both as compile errors, and `pnpm typecheck` fails there
+if either becomes optional.
 
 **Stopping the run does not stop the host's spending.** A host that ignores `onCancel` keeps
 paying for a request the person abandoned. The run ends and the request does not. The race
