@@ -779,7 +779,7 @@ export function createBuilderSession(
       return attempt((draft) => {
         const found = locateLayout(draft, address)
         if (found === undefined) return noSuchNode(text, address)
-        const node = found.siblings[found.index]!
+        const node = found.node
         if (!isLayoutContainer(node)) {
           return refuse(
             layoutPointer(address),
@@ -836,7 +836,7 @@ export function createBuilderSession(
         for (const path of addresses) {
           const found = locateLayout(draft, { layout, path })
           if (found === undefined) return noSuchNode(text, { layout, path })
-          taken.push(found.siblings[found.index]!)
+          taken.push(found.node)
         }
 
         // Where the wrapper goes, read now while the addresses still mean what
@@ -903,7 +903,7 @@ export function createBuilderSession(
       return attempt((draft) => {
         const found = locateLayout(draft, address)
         if (found === undefined) return noSuchNode(text, address)
-        const node = found.siblings[found.index]!
+        const node = found.node
         if (!isLayoutContainer(node)) {
           return refuse(layoutPointer(address), text('refuse.fieldNodeName'))
         }
@@ -929,7 +929,7 @@ export function createBuilderSession(
             text('refuse.settingName', { property }),
           )
         }
-        const node = found.siblings[found.index]! as unknown as Record<string, unknown>
+        const node = found.node as unknown as Record<string, unknown>
         if (value === undefined) Reflect.deleteProperty(node, property)
         else {
           Object.defineProperty(node, property, {

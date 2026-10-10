@@ -138,6 +138,12 @@ export function neighbouringPage(fields: readonly FieldDef[], at: number): numbe
 export interface LocatedNode {
   siblings: LayoutNode[]
   index: number
+  /**
+   * The node itself, read here, behind the checks that make `index` one of the array's
+   * own positions. Read by the caller instead, the check sat in another function from
+   * the read, and CodeQL could not see that '__proto__' never reaches it.
+   */
+  node: LayoutNode
 }
 
 export function locateLayout(
@@ -148,8 +154,10 @@ export function locateLayout(
   const siblings = layoutChildrenAt(document, address.layout, address.path.slice(0, -1))
   if (siblings === undefined) return undefined
   const index = address.path[address.path.length - 1]!
-  if (!isPosition(index) || index < 0 || index >= siblings.length) return undefined
-  return { siblings, index }
+  // A whole number, and one of the array's own positions: neither '__proto__' (whose
+  // comparisons with numbers are all false) nor one past the end.
+  if (!isPosition(index) || !Object.hasOwn(siblings, index)) return undefined
+  return { siblings, index, node: siblings[index]! }
 }
 
 export function layoutPointer(address: LayoutAddress): string {
