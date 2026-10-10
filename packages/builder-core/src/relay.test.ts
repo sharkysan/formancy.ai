@@ -3,6 +3,7 @@ import type { FormSchema } from '@formancy/spec'
 import { authorForm, createStop, declinedAnswer } from './authoring.js'
 import type { AskModel, AuthoringPrompt } from './answers.js'
 import { createRelay, relayMessage } from './relay.js'
+import { draftScenarios } from './scenario-drafts.js'
 import type { Relay, RelayTurn } from './relay.js'
 
 /**
@@ -209,20 +210,39 @@ describe('a stopped run', () => {
 })
 
 describe('one turn at a time', () => {
-  test('a second run asking while one waits is refused, and the first keeps its turn', async () => {
-    // Queued silently, the second request would wait behind a turn the person may never
-    // answer, and an answer pasted for one could be taken as the other's. Refused, the
-    // second run ends at once and says why.
+  test('a second run asking while one waits is refused as busy, whichever asks, and the first keeps its turn', async () => {
+    /*
+     * Queued silently, the second request would wait behind a turn the person may never
+     * answer, and an answer pasted for one could be taken as the other's. Refused, the
+     * second run ends at once — as busy. It ended as a model that could not be reached,
+     * which is untrue: nothing was asked. And its reason was the relay's English, shown
+     * under a German or French builder, because a host's reason is shown as written.
+     *
+     * Both directions, because the playground asks one relay from two panes: a draft
+     * asked for while a model's edit waits, and an edit asked for while a draft waits
+     * ([0162](../../../docs/decisions/0162-an-example-is-drafted-from-what-the-author-said.md)).
+     */
     const relay = createRelay()
-    const first = authorForm(relay.ask, 'add a phone number', { current: CURRENT })
-    const turn = await nextTurn(relay, undefined)
+    const editing = authorForm(relay.ask, 'add a phone number', { current: CURRENT })
+    const editTurn = await nextTurn(relay, undefined)
+
+    const drafting = await draftScenarios(relay.ask, CURRENT, 'An email is asked for.')
+
+    expect(drafting).toMatchObject({ ok: false, ended: 'busy', attempts: 1 })
+    expect(drafting).not.toHaveProperty('reason')
+    expect(relay.waiting()).toBe(editTurn)
+    relay.answer(WITH_PHONE)
+    expect(await editing).toMatchObject({ ok: true })
+
+    const drafts = draftScenarios(relay.ask, CURRENT, 'An email is asked for.')
+    const draftTurn = await nextTurn(relay, editTurn)
 
     const second = await authorForm(relay.ask, 'add a fax number', { current: CURRENT })
 
-    expect(second).toMatchObject({ ok: false, ended: 'unreachable', attempts: 1 })
-    expect(second.ok ? undefined : second.reason).toEqual(expect.any(String))
-    expect(relay.waiting()).toBe(turn)
-    relay.answer(WITH_PHONE)
-    expect(await first).toMatchObject({ ok: true })
+    expect(second).toMatchObject({ ok: false, ended: 'busy', attempts: 1 })
+    expect(second).not.toHaveProperty('reason')
+    expect(relay.waiting()).toBe(draftTurn)
+    relay.answer(JSON.stringify({ scenarios: [{ name: 'Email', changes: { email: 'a@b.ch' }, valid: true }] }))
+    expect(await drafts).toMatchObject({ ok: true })
   })
 })

@@ -10,11 +10,12 @@ import { DECLINE_KEY } from '@formancy/spec'
  * be the last, so neither half knows what a form is. The caller says what to ask
  * and how to check the answer.
  *
- * **A run ends one of five ways**, and only the first is a success: an answer
+ * **A run ends one of six ways**, and only the first is a success: an answer
  * passed; every attempt was used and none did; the person stopped it; the host
- * could not ask its model at all; or the model said it cannot be done. The last
- * three are not an answer that failed, and saying "the document did not work" for
- * them sent somebody to reword an instruction when the network was down
+ * could not ask its model at all; the model was answering another request; or the
+ * model said it cannot be done. The last four are not an answer that failed, and
+ * saying "the document did not work" for them sent somebody to reword an instruction
+ * when the network was down
  * ([0157](../../../docs/decisions/0157-a-models-turn-can-be-stopped.md)), or when
  * no wording would have helped
  * ([0158](../../../docs/decisions/0158-a-model-may-decline.md)).
@@ -48,6 +49,32 @@ export interface AuthoringPrompt {
   readonly limit: number
   /** From attempt 2: the complaint alone, for a conversation that still holds the last answer. */
   readonly followUp?: string
+}
+
+/**
+ * What an `AskModel` rejects with when it is answering another request and will not take
+ * this one: a relay while a person carries another turn, or any host whose model takes
+ * one request at a time.
+ *
+ * Not a model that could not be reached. Nothing was asked and nothing is wrong with the
+ * model, so the run ends `busy` rather than `unreachable`, with no reason: a pane says so
+ * from its catalogue, in the author's language, where a host's own sentence would be
+ * shown as written. The playground asks one relay from its prompt pane and its scenario
+ * pane, so either can find the other's turn waiting
+ * ([0162](../../../docs/decisions/0162-an-example-is-drafted-from-what-the-author-said.md)).
+ *
+ * Recognised by its `name`, as `reasonOf` reads an error by shape: one made in another
+ * realm fails `instanceof`.
+ */
+export class ModelBusyError extends Error {
+  constructor(message = 'The model is answering another request.') {
+    super(message)
+    this.name = 'ModelBusyError'
+  }
+}
+
+function isBusy(error: unknown): boolean {
+  return typeof error === 'object' && error !== null && (error as { name?: unknown }).name === 'ModelBusyError'
 }
 
 /** What a turn is told while it waits. */
@@ -121,10 +148,10 @@ export type Asked<T, P> =
       readonly problems: readonly P[]
       /** The last answer that was checked, so a person can see what went wrong. */
       readonly lastAnswer: string
-      readonly ended: 'gave-up' | 'stopped' | 'unreachable' | 'declined'
+      readonly ended: 'gave-up' | 'stopped' | 'unreachable' | 'busy' | 'declined'
       /**
        * When unreachable: why, in the words of whatever the host's model threw — absent
-       * when it had none. When declined: why, in the model's.
+       * when it had none. When declined: why, in the model's. Never when busy.
        */
       readonly reason?: string
     }
@@ -143,6 +170,7 @@ type Turn =
   | { readonly kind: 'answered'; readonly answer: string }
   | { readonly kind: 'stopped' }
   | { readonly kind: 'unreachable'; readonly reason: string | undefined }
+  | { readonly kind: 'busy' }
 
 /**
  * Ask, check, and ask again with the complaint, until an answer passes or the run ends.
@@ -170,7 +198,7 @@ export async function askChecked<T, P>(
   const problems: P[] = []
   let lastAnswer = ''
   const ended = (
-    how: 'gave-up' | 'stopped' | 'unreachable' | 'declined',
+    how: 'gave-up' | 'stopped' | 'unreachable' | 'busy' | 'declined',
     attempts: number,
     reason?: string,
   ): Asked<T, P> => ({
@@ -188,6 +216,7 @@ export async function askChecked<T, P>(
     const turn = await take(ask, { ...build(problems.at(-1)), attempt, limit }, options.stop)
     if (turn.kind === 'stopped') return ended('stopped', attempt)
     if (turn.kind === 'unreachable') return ended('unreachable', attempt, turn.reason)
+    if (turn.kind === 'busy') return ended('busy', attempt)
 
     lastAnswer = turn.answer
     const read = readAnswer(turn.answer)
@@ -249,14 +278,19 @@ function take(ask: AskModel, prompt: AuthoringPrompt, stop: Stop | undefined): P
     } catch (error) {
       // Thrown before it returned a promise — a configuration read up front —
       // and still the host's failure to ask, not the run's to rethrow.
-      settle({ kind: 'unreachable', reason: reasonOf(error) })
+      settle(refused(error))
       return
     }
     answer.then(
       (text) => settle({ kind: 'answered', answer: text }),
-      (error: unknown) => settle({ kind: 'unreachable', reason: reasonOf(error) }),
+      (error: unknown) => settle(refused(error)),
     )
   })
+}
+
+/** A turn the host's model would not take: busy with another request, or not reached at all. */
+function refused(error: unknown): Turn {
+  return isBusy(error) ? { kind: 'busy' } : { kind: 'unreachable', reason: reasonOf(error) }
 }
 
 /**

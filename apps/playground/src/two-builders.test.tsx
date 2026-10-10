@@ -732,6 +732,52 @@ describe('examples drafted from what the visitor says', () => {
       }
     },
   )
+
+  test.each(['React', 'Angular'] as const)(
+    'in the %s builder: one relay, two panes — whichever asks second is told the other request is waiting',
+    async (which) => {
+      /*
+       * The page asks one relay from the prompt pane and the scenario pane, and a relay
+       * carries one turn. The refused run ended as a model that "could not be reached",
+       * with the relay's English beneath it under any language — untrue, since nothing
+       * was asked — and it happened both ways: a draft while an edit waited, and an edit
+       * while a draft waited, which is 0160's own flow refused. Each pane now says the
+       * other request is waiting, from its catalogue (0162).
+       */
+      const user = userEvent.setup()
+      const say = builderTextFor('en')
+      render(<App />)
+      await builtWith(which)
+      if (which === 'Angular') await angularTree()
+      const panel = await waitFor(() => screen.getByRole('region', { name: 'Scenarios' }), { timeout: 10_000 })
+      const status = (part: string): string =>
+        document.querySelector(`[data-formancy-part="${part}"]`)?.textContent?.trim() ?? ''
+
+      // An edit waits, and a draft asked for meanwhile is refused.
+      const instruction = await waitFor(() => screen.getByRole('textbox', { name: /Describe the form/ }), {
+        timeout: 10_000,
+      })
+      await user.type(instruction, 'add a fax number')
+      await user.click(screen.getByRole('button', { name: 'Write it' }))
+      await screen.findByRole('region', { name: 'Take this request to a model' })
+      await user.type(
+        within(panel).getByRole('textbox', { name: /What should this form do/ }),
+        'Only Switzerland asks for a canton.',
+      )
+      await user.click(within(panel).getByRole('button', { name: 'Draft examples' }))
+      await waitFor(() => expect(status('scenario-drafts-status')).toBe(say('drafts.status.busy')), {
+        timeout: 10_000,
+      })
+
+      // That edit stopped, a draft waits, and an edit asked for meanwhile is refused.
+      await user.click(screen.getByRole('button', { name: 'Stop' }))
+      await waitFor(() => expect(screen.queryByRole('region', { name: 'Take this request to a model' })).toBeNull())
+      await user.click(within(panel).getByRole('button', { name: 'Draft examples' }))
+      await screen.findByRole('region', { name: 'Take this request to a model' })
+      await user.click(screen.getByRole('button', { name: 'Write it' }))
+      await waitFor(() => expect(status('prompt-status')).toBe(say('prompt.status.busy')), { timeout: 10_000 })
+    },
+  )
 })
 
 /**

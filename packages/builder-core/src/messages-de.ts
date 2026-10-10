@@ -411,6 +411,8 @@ export const BUILDER_MESSAGES_DE = {
   'prompt.status.stopped': 'Angehalten. Nichts wurde übernommen.',
   'prompt.status.unreachable': 'Nichts wurde übernommen. Das Modell war nicht erreichbar: {reason}',
   'prompt.status.unreachableNoReason': 'Nichts wurde übernommen. Das Modell war nicht erreichbar.',
+  'prompt.status.busy':
+    'Nichts wurde übernommen. Eine andere Anfrage wartet noch auf die Antwort des Modells: Schließe sie zuerst ab oder halte sie an.',
   'prompt.status.declined': 'Nichts wurde übernommen. Das Modell hat diese Anfrage abgelehnt.',
 
   'relay.title': 'Diese Anfrage zu einem Modell bringen',

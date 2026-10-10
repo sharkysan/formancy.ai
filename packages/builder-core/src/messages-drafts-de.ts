@@ -40,6 +40,8 @@ export const DRAFT_MESSAGES_DE = {
   'drafts.status.stopped': 'Angehalten. Nichts wurde entworfen.',
   'drafts.status.unreachable': 'Nichts wurde entworfen. Das Modell war nicht erreichbar: {reason}',
   'drafts.status.unreachableNoReason': 'Nichts wurde entworfen. Das Modell war nicht erreichbar.',
+  'drafts.status.busy':
+    'Nichts wurde entworfen. Eine andere Anfrage wartet noch auf die Antwort des Modells: Schließe sie zuerst ab oder halte sie an.',
   'drafts.status.declined': 'Nichts wurde entworfen. Das Modell hat diese Anfrage abgelehnt.',
   'drafts.status.failed': {
     one: 'Nichts wurde entworfen. {count} Versuch, und die Antwort enthielt kein verwendbares Beispiel.',

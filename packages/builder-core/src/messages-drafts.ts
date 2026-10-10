@@ -47,6 +47,8 @@ export const DRAFT_MESSAGES = {
   'drafts.status.stopped': 'Stopped. Nothing was drafted.',
   'drafts.status.unreachable': 'Nothing was drafted. The model could not be reached: {reason}',
   'drafts.status.unreachableNoReason': 'Nothing was drafted. The model could not be reached.',
+  'drafts.status.busy':
+    'Nothing was drafted. Another request is still waiting for the model’s answer: finish or stop that one first.',
   'drafts.status.declined': 'Nothing was drafted. The model declined this request.',
   'drafts.status.failed': {
     one: 'Nothing was drafted. {count} attempt, and the answer held no example that could be used.',

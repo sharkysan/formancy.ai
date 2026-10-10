@@ -18,7 +18,7 @@ import type { AskModel, Checkable, Stop, Verdict } from './answers.js'
  * vendor, no API key, no network call and no opinion about who pays for tokens.
  */
 
-export { createStop, declinedAnswer } from './answers.js'
+export { createStop, declinedAnswer, ModelBusyError } from './answers.js'
 export type { AskModel, AskTurn, AuthoringPrompt, Stop } from './answers.js'
 
 /**
@@ -49,11 +49,12 @@ export type AuthoringResult =
        * Why there is no document. `gave-up`: every attempt answered and none
        * worked. `stopped`: the person stopped the run, and an answer still on its
        * way is discarded. `unreachable`: the host's model threw — the network, a
-       * refused key — so nothing about the instruction was tried. `declined`: the
-       * model answered that the format cannot express what was asked, and was not
-       * asked again (0158).
+       * refused key — so nothing about the instruction was tried. `busy`: the host's
+       * model rejected with `ModelBusyError`, answering another request — through a
+       * relay, another pane's turn (0162). `declined`: the model answered that the
+       * format cannot express what was asked, and was not asked again (0158).
        */
-      readonly ended: 'gave-up' | 'stopped' | 'unreachable' | 'declined'
+      readonly ended: 'gave-up' | 'stopped' | 'unreachable' | 'busy' | 'declined'
       /**
        * When unreachable: the message of what the host's model threw, absent when it
        * had none — `undefined`, an event, an empty string. When declined: the model's

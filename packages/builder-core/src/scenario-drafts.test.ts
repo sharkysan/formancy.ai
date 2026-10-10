@@ -356,7 +356,7 @@ describe('what the drafting part says', () => {
     // A run that ended without drafts said nothing would be indistinguishable from one
     // still going, and a stop from a model that could not be reached sends somebody to
     // check the wrong thing (0157).
-    const ended = (how: 'gave-up' | 'stopped' | 'unreachable' | 'declined', reason?: string): Drafted => ({
+    const ended = (how: 'gave-up' | 'stopped' | 'unreachable' | 'declined' | 'busy', reason?: string): Drafted => ({
       ok: false,
       attempts: 3,
       problems: [],
@@ -377,6 +377,10 @@ describe('what the drafting part says', () => {
       'Nothing was drafted. The model could not be reached: offline',
     )
     expect(say(ended('unreachable'))).toBe('Nothing was drafted. The model could not be reached.')
+    // Not unreachable: nothing was asked, because another request is waiting for the
+    // model — through the playground's one relay, a model's edit.
+    expect(say(ended('busy'))).toBe(text('drafts.status.busy'))
+    expect(say(ended('busy'))).not.toMatch(/reached/)
     expect(say(ended('gave-up'))).toContain('3 attempts')
     expect(say(ready, { kind: 'kept', name: 'a' })).toBe('Kept a. It is in the list of scenarios now.')
     expect(say(ready, { kind: 'discarded', name: 'a' })).toBe('Discarded a.')

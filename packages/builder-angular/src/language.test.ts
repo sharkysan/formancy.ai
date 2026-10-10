@@ -13,6 +13,7 @@ import {
   editableLayoutPropertiesFor,
   editablePropertiesFor,
   flatten,
+  ModelBusyError,
   nameOf,
   paletteEntries,
   proposeEdit,
@@ -1066,6 +1067,9 @@ const DRAFTING_REACHED = [
   'held no JSON object',
   'What the model last answered',
   'could not be reached: ',
+  'Another request is still waiting',
+  // The model's own reason for declining, quoted beneath the status rather than lost.
+  'the model said this',
   'Drafting…',
   'Stop drafting',
   'Stopped. Nothing was drafted.',
@@ -1084,6 +1088,9 @@ describe('the drafting part', () => {
       () => Promise.resolve('nope'),
       () => Promise.resolve('nope'),
       () => Promise.reject(new Error('offline')),
+      // A relay's turn for another pane, waiting: busy, worded by the catalogue, never
+      // the relay's own English (0162).
+      () => Promise.reject(new ModelBusyError()),
       () => new Promise<string>(() => undefined),
     ]
     const ask = () => answers.shift()!()
@@ -1118,6 +1125,7 @@ describe('the drafting part', () => {
     await user.click(button(/Discard other asks why/))
     await settle()
     seen.push(...shown(root))
+    await run()
     await run()
     await run()
     await run()

@@ -92,7 +92,7 @@ export type Drafted =
       readonly attempts: number
       readonly problems: readonly DraftProblem[]
       readonly lastAnswer: string
-      readonly ended: 'gave-up' | 'stopped' | 'unreachable' | 'declined'
+      readonly ended: 'gave-up' | 'stopped' | 'unreachable' | 'busy' | 'declined'
       readonly reason?: string
     }
 
@@ -338,6 +338,8 @@ export function draftStatus({ busy, result, note }: DraftState, text: BuilderTex
       return result.reason === undefined
         ? text('drafts.status.unreachableNoReason')
         : text('drafts.status.unreachable', { reason: result.reason })
+    case 'busy':
+      return text('drafts.status.busy')
     case 'gave-up':
       return text('drafts.status.failed', { count: result.attempts })
   }

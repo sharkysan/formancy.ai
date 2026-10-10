@@ -41,6 +41,8 @@ export const DRAFT_MESSAGES_FR = {
   'drafts.status.stopped': 'Arrêté. Rien n’a été rédigé.',
   'drafts.status.unreachable': 'Rien n’a été rédigé. Le modèle n’a pas pu être joint : {reason}',
   'drafts.status.unreachableNoReason': 'Rien n’a été rédigé. Le modèle n’a pas pu être joint.',
+  'drafts.status.busy':
+    'Rien n’a été rédigé. Une autre demande attend encore la réponse du modèle : terminez-la ou arrêtez-la d’abord.',
   'drafts.status.declined': 'Rien n’a été rédigé. Le modèle a refusé cette demande.',
   'drafts.status.failed': {
     one: 'Rien n’a été rédigé. {count} tentative, et la réponse ne contenait aucun exemple utilisable.',
