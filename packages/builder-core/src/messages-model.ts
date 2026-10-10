@@ -10,7 +10,9 @@ import type { Message } from './messages.js'
  * `messages.ts` was near its size budget, and a model that declines came next
  * ([0158](../../../docs/decisions/0158-a-model-may-decline.md)), and then a model whose
  * turn a person carries, by copying the request out and the answer back
- * ([0160](../../../docs/decisions/0160-a-person-carries-the-models-turn.md)).
+ * ([0160](../../../docs/decisions/0160-a-person-carries-the-models-turn.md)), and then a
+ * model asked for the messages a language is missing
+ * ([0161](../../../docs/decisions/0161-a-model-translates-only-what-is-missing.md)).
  */
 export const MODEL_MESSAGES = {
   'prompt.label': 'Describe the form, or the change you want',
@@ -100,4 +102,44 @@ export const MODEL_MESSAGES = {
     'This browser did not let the page copy. The text is selected in the request box: copy it from there.',
   'relay.noObject':
     'There is no JSON object in that answer. Copy the whole answer, code block included, or use it anyway and the model is told.',
+
+  // A model asked for the messages a language is missing, and its answer reviewed message by
+  // message (0161). The source column is headed by the language's tag, as the translations
+  // table is, so it has no word here.
+  'translate.ask': {
+    one: 'Ask a model for the {count} missing message',
+    other: 'Ask a model for the {count} missing messages',
+  },
+  'translate.asking': 'Asking…',
+  'translate.review': 'Review these translations into {locale}',
+  'translate.review.marked': 'Review these translations into {locale} — some are marked to look at',
+  'translate.was': 'Before',
+  'translate.now': 'Proposed',
+  'translate.flags': 'To look at',
+  'translate.flag.stale': 'Translated from wording that has since changed',
+  'translate.flag.unchanged': 'The same as the source',
+  'translate.apply': 'Apply these translations',
+  'translate.rest': 'Translate the rest',
+  'translate.preview': 'Preview in {locale}, as proposed',
+  'translate.dropped':
+    'Not written, because nobody asked for them or a person has translated them since: {list}',
+  'translate.status.asking': 'Asking for the missing translations, and checking the answer.',
+  'translate.status.ready': {
+    one: 'Ready to review: {count} translation. Nothing has been applied.',
+    other: 'Ready to review: {count} translations. Nothing has been applied.',
+  },
+  'translate.status.readyAfter': {
+    one: 'Ready to review after {attempts} attempts: {count} translation. Nothing has been applied.',
+    other: 'Ready to review after {attempts} attempts: {count} translations. Nothing has been applied.',
+  },
+  'translate.status.none': 'The model left every message untranslated. Nothing has been applied.',
+  'translate.status.stillMissing': {
+    one: '{count} message is still missing.',
+    other: '{count} messages are still missing.',
+  },
+  'translate.status.failed': {
+    one: 'Nothing was applied. {count} attempt, and the answer was still not a catalogue for this language.',
+    other:
+      'Nothing was applied. {count} attempts, and the answer was still not a catalogue for this language.',
+  },
 } as const satisfies Record<string, Message>

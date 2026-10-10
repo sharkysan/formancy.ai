@@ -113,7 +113,10 @@ and swallow the next keystroke.
 compiled to CEL, a check named for the deployment to answer, a calculation
 written as an expression. `FormancyTranslationsPane` extracts, translates, takes
 a catalogue out and brings it back, and previews the form in the language being
-worked on without editing the document to look at it.
+worked on without editing the document to look at it. Given `[ask]`, it asks a model
+for the messages a language is missing, and `FormancyTranslationReview` holds the
+answer for review message by message before it lands; a translation somebody made is
+never replaced ([0161](../../docs/decisions/0161-a-model-translates-only-what-is-missing.md)).
 
 Which kinds exist and what each is written with comes from
 `@formancy/builder-core`, so the two builders cannot offer different ones.

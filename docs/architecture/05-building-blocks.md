@@ -271,6 +271,16 @@ time, a paste with no object in it held back without costing an attempt, and a s
 clearing the turn — so the React and Angular relay panes are markup, the clipboard, the
 focus and a subscription. Moving the focus to a turn as it arrives is done in each pane,
 because it is the DOM's, and both panes' tests hold them to the same. It names no service and holds no sentence; the chat a pane links to is the host's.
+`translate.ts` is the third thing asked of a model this way: the messages a language is
+missing ([0161](../decisions/0161-a-model-translates-only-what-is-missing.md)).
+`translate-prompt.ts` builds the request from a `FormSchema` alone: the rows of the
+catalogue file the export gives, `catalogueFile` in `translation.ts`, with a target still
+empty, each with where the form uses it, found by a walk shaped like the one that finds the
+live ids. `translateCatalogue` asks and checks on `askChecked`. `proposeTranslation` filters
+the answer to what is still missing and imports it into a scratch session, so the import's
+rules decide what is written and what is stale. It returns an `EditProposal` for
+`applyProposal` with a row for every message. `translationHeading` and `translationStatus`
+say so, for both builders' review parts.
 
 `scenario-runs.ts` holds the other thing both builders must agree about: what counts
 as a **regression**. A panel reporting that three of five scenarios fail is a number
@@ -339,8 +349,9 @@ There are two builder interfaces over it now, and the split is the same one
 the renderers have: what decides anything is in `builder-core`, and a builder
 package is markup and a subscription. `@formancy/builder-angular` carries every pane
 `builder-react` does — the structure and arrangement trees, the drag surface on the
-rendered form, the property and logic panels, the translations pane, the prompt and
-scenario panes, and the relay pane beside the prompt — zoneless, `OnPush`, one signal per
+rendered form, the property and logic panels, the translations pane with a model's
+translation under review inside it, the prompt and scenario panes, and the relay pane
+beside the prompt — zoneless, `OnPush`, one signal per
 session, `revision()` as the whole subscription
 ([0091](../decisions/0091-a-second-builder-is-a-binding.md)). This paragraph
 said "the rest of the panes remain React-only" for more than a week after they had all shipped.

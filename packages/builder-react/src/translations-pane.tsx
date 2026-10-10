@@ -1,10 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import type { ReactElement } from 'react'
 import { referencedMessages } from '@formancy/builder-core'
-import type { BuilderSession, BuilderText, CatalogueFile } from '@formancy/builder-core'
-import { createFormEngine } from '@formancy/core'
-import { FormancyForm, FormancyProvider } from '@formancy/react'
-import type { FormSchema } from '@formancy/spec'
+import type { AskModel, BuilderSession, CatalogueFile } from '@formancy/builder-core'
+import { TranslationReview } from './translation-review.js'
+import { TranslationsPreview } from './translations-preview.js'
 import { useBuilder } from './use-builder.js'
 
 /**
@@ -26,8 +25,24 @@ import { useBuilder } from './use-builder.js'
  * **An untranslated message is marked rather than left to the fallback.** Falling
  * back silently is right when a form is rendered and wrong here: "it looked fine
  * in the preview" is exactly how a language ships half-finished.
+ *
+ * **Given a model, it can ask one for what is missing**, and holds the answer for review
+ * message by message — `TranslationReview`, in a file of its own. Without `ask` nothing
+ * of that is drawn, as the prompt pane draws nothing without one
+ * ([0161](../../../docs/decisions/0161-a-model-translates-only-what-is-missing.md)).
  */
-export function TranslationsPane({ session }: { session: BuilderSession }): ReactElement {
+export interface TranslationsPaneProps {
+  session: BuilderSession
+  /**
+   * How to reach a model, as the prompt pane takes it. Given, a language other than the
+   * default offers to ask it for the messages that language is missing.
+   */
+  ask?: AskModel | undefined
+  /** How many times to let the model correct itself. Three by default. */
+  attempts?: number | undefined
+}
+
+export function TranslationsPane({ session, ask, attempts }: TranslationsPaneProps): ReactElement {
   const view = useBuilder(session)
   const { text } = session
   const document = view.document
@@ -169,6 +184,18 @@ export function TranslationsPane({ session }: { session: BuilderSession }): Reac
         </label>
       </div>
 
+      {/* Keyed by the language, so choosing another ends the run and the review that
+          belong to this one, rather than leaving French under review beside German. */}
+      {ask === undefined || chosen === defaultLocale ? null : (
+        <TranslationReview
+          key={chosen}
+          session={session}
+          ask={ask}
+          locale={chosen}
+          attempts={attempts}
+        />
+      )}
+
       {problem === null ? null : <p data-formancy-part="translations-problem">{problem}</p>}
 
       {report === undefined ? null : (
@@ -230,72 +257,14 @@ export function TranslationsPane({ session }: { session: BuilderSession }): Reac
         </tbody>
       </table>
 
-      <Preview document={document} locale={chosen} text={text} />
+      <TranslationsPreview
+        document={document}
+        locale={chosen}
+        label={text('translations.preview', { locale: chosen })}
+        submitLabel={text('translations.previewSubmit')}
+      />
 
       {unused}
     </div>
-  )
-}
-
-/**
- * The form as the language being worked on renders it.
- *
- * The half that was missing when this pane shipped: a translator could write a
- * language and not see it. An engine resolves text in one locale, fixed for its
- * lifetime, so the only way to look at a translation was to change the
- * document's `defaultLocale` — an edit to the form in order to read it, which is
- * then published, diffed and migrated like any other edit.
- *
- * So the preview builds its own engine at the chosen locale and the document is
- * not touched. Untranslated messages fall back to the default exactly as they
- * will for a visitor, which is the point: a preview showing message ids would
- * teach a translator that the fallback is broken when the fallback is the
- * feature.
- */
-function Preview({
-  document,
-  locale,
-  text,
-}: {
-  document: FormSchema
-  locale: string
-  text: BuilderText
-}): ReactElement {
-  const engine = useMemo(() => {
-    try {
-      return createFormEngine({
-        schema: document,
-        locale,
-        capabilities: {
-          now: () => Date.now(),
-          today: () => new Date().toISOString().slice(0, 10),
-          random: () => Math.random(),
-        },
-      })
-    } catch {
-      // A document the engine refuses is the builder's problem to report, not
-      // this pane's: a translator seeing a compile error about their colleague's
-      // expression has been handed somebody else's failure.
-      return undefined
-    }
-  }, [document, locale])
-
-  return (
-    <section
-      // Named, so a test can ask about the preview rather than about the pane —
-      // the table's own inputs carry the source text as their accessible name,
-      // and an unscoped query finds those instead.
-      aria-label={text('translations.preview', { locale })}
-      data-formancy-part="translations-preview"
-    >
-      {engine === undefined ? null : (
-        <FormancyProvider engine={engine}>
-          <FormancyForm
-            submitLabel={text('translations.previewSubmit')}
-            onSubmit={() => undefined}
-          />
-        </FormancyProvider>
-      )}
-    </section>
   )
 }

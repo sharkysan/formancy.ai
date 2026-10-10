@@ -18,6 +18,7 @@ import schemaJson from '@formancy/spec/schema.json'
 import { parse, referencedPaths, rewritePath } from '@formancy/expressions'
 import { createFormEngine, expressionProblems, unknownReferences } from '@formancy/core'
 import {
+  applyProposal,
   authorForm,
   builderView,
   createBuilderSession,
@@ -26,9 +27,12 @@ import {
   declinedAnswer,
   proposalHeading,
   proposeEdit,
+  proposeTranslation,
   relayMessage,
+  translateCatalogue,
+  translationPrompt,
 } from '@formancy/builder-core'
-import type { AskModel, ProposalExamples } from '@formancy/builder-core'
+import type { AskModel, ProposalExamples, TranslationProposal } from '@formancy/builder-core'
 import { mintChallenge, solveChallenge, verifySolution } from '@formancy/challenge'
 import { auditedBy, createMemoryStorage, publishForm } from '@formancy/server-core'
 import type { FormSchema } from '@formancy/spec'
@@ -124,6 +128,35 @@ if (relay.answer('Sure, here it is.') !== 'no-object' || relay.waiting() !== tur
 relay.answer(JSON.stringify(schema))
 const carried = await relayed
 if (!carried.ok || carried.attempts !== 1) throw new Error('the installed relay did not end the run')
+
+// A model asked for what a language is missing (0161): the request names the one message
+// with no German, the answer lands through the import as a proposal, and applies in one step.
+const worded = {
+  ...schema,
+  model: { fields: [{ key: 'email', type: 'text', label: { $t: 'email' } }] },
+  i18n: { defaultLocale: 'en', messages: { en: { email: 'Email' }, de: {} } },
+} as unknown as FormSchema
+if (translationPrompt(worded, 'de').rows.map((row) => row.id).join() !== 'email') {
+  throw new Error('the installed translationPrompt did not ask for the missing message')
+}
+const german = await translateCatalogue(
+  () =>
+    Promise.resolve(
+      JSON.stringify({
+        locale: 'de',
+        defaultLocale: 'en',
+        messages: [{ id: 'email', source: 'Email', target: 'E-Mail' }],
+      }),
+    ),
+  worded,
+  'de',
+)
+if (!german.ok) throw new Error('the installed translateCatalogue refused a catalogue for the language asked')
+const translating = createBuilderSession(worded)
+const translation: TranslationProposal = proposeTranslation(translating, german.answer)
+if (!applyProposal(translating, translation).ok || translating.document().i18n?.messages['de']?.['email'] !== 'E-Mail') {
+  throw new Error('the installed proposeTranslation did not apply')
+}
 
 /*
  * The challenge: mint, solve, verify — both halves of the protocol.

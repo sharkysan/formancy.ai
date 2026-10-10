@@ -4,7 +4,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/angular'
 import { userEvent } from '@testing-library/user-event'
 import { createBuilderSession, createBuilderText } from '@formancy/builder-core'
-import type { BuilderSession } from '@formancy/builder-core'
+import type { AskModel, BuilderSession } from '@formancy/builder-core'
 import type { FormSchema } from '@formancy/spec'
 import { FormancyTranslationsPane } from './translations-pane'
 
@@ -388,5 +388,220 @@ describe('the catalogue leaving and coming back, as it does in React', () => {
     await Promise.resolve()
 
     expect(JSON.stringify(session.document())).toBe(before)
+  })
+})
+
+/**
+ * Asking a model for what a language is missing (0161), as the React pane does.
+ *
+ * Given a model, the pane asks for exactly the messages the language lacks, and holds the
+ * answer for review message by message — the source beside what was there and what is
+ * proposed, a mark on anything to look at, the form as the proposal would leave it — until
+ * Apply. Queried inside the review by its name: the pane's own table and preview carry the
+ * same words.
+ */
+describe('asking a model for what is missing', () => {
+  const half: FormSchema = {
+    specVersion: '4',
+    id: 'order',
+    title: 'Order',
+    model: {
+      fields: [
+        {
+          key: 'country',
+          type: 'select',
+          label: { $t: 'country' },
+          options: [
+            { value: 'CH', label: { $t: 'country.ch' } },
+            { value: 'DE', label: { $t: 'country.de' } },
+          ],
+        },
+        { key: 'canton', type: 'text', label: { $t: 'canton' } },
+        { key: 'email', type: 'text', label: { $t: 'email' } },
+      ],
+    },
+    i18n: {
+      defaultLocale: 'en',
+      messages: {
+        en: { country: 'Country', 'country.ch': 'Switzerland', 'country.de': 'Germany', canton: 'Canton', email: 'Email' },
+        fr: { country: 'Pays', 'country.ch': 'Suisse' },
+        // Started and empty: a third language to move to, which is not the default.
+        de: {},
+      },
+    },
+  }
+  const FRENCH: Readonly<Record<string, string>> = {
+    'country.de': 'Allemagne',
+    canton: 'Canton',
+    email: 'Courriel',
+  }
+  const SOURCES = half.i18n!.messages['en']!
+
+  /** A catalogue file answering every id given, as a model would write it. */
+  const answer = (targets: Readonly<Record<string, string>>): string =>
+    JSON.stringify({
+      locale: 'fr',
+      defaultLocale: 'en',
+      messages: Object.entries(targets).map(([id, target]) => ({ id, source: SOURCES[id], target })),
+    })
+
+  const mountWith = async (ask?: AskModel) => {
+    const session = createBuilderSession(half)
+    const view = await render(FormancyTranslationsPane, {
+      // As the prompt pane's tests mount it: a session and a function.
+      inputs: { session, ...(ask === undefined ? {} : { ask }) } as Record<string, unknown>,
+      providers: [provideZonelessChangeDetection()],
+    })
+    await view.fixture.whenStable()
+    return { session, user: userEvent.setup() }
+  }
+  const choose = async (user: ReturnType<typeof userEvent.setup>, locale: string): Promise<void> => {
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Language' }), locale)
+  }
+  const review = (): Promise<HTMLElement> =>
+    waitFor(() => screen.getByRole('region', { name: /^Review these translations into fr/ }))
+
+  test('offers nothing without a model, as the prompt pane does', async () => {
+    const { user } = await mountWith()
+    await choose(user, 'fr')
+
+    expect(screen.queryByRole('button', { name: /Ask a model/ })).toBeNull()
+  })
+
+  test('and nothing in the default language, which has nothing to translate into', async () => {
+    await mountWith(() => Promise.resolve(answer(FRENCH)))
+
+    expect(screen.queryByRole('button', { name: /Ask a model/ })).toBeNull()
+  })
+
+  test('asks for the missing messages, and shows the answer beside what was there before anything lands', async () => {
+    // Prevents a model's French landing unread, as in the React pane.
+    const asked: string[] = []
+    const { session, user } = await mountWith((prompt) => {
+      asked.push(prompt.user)
+      return Promise.resolve(answer(FRENCH))
+    })
+    await choose(user, 'fr')
+
+    await user.click(await waitFor(() => screen.getByRole('button', { name: 'Ask a model for the 3 missing messages' })))
+    const region = await review()
+
+    expect(asked).toHaveLength(1)
+    expect(within(region).getByRole('heading').textContent?.trim()).toBe(
+      'Review these translations into fr — some are marked to look at',
+    )
+    const rows = within(within(region).getByRole('table'))
+      .getAllByRole('row')
+      .filter((row) => within(row).queryByRole('rowheader') !== null)
+      .map((row) => [
+        within(row).getByRole('rowheader').textContent?.trim(),
+        ...within(row).getAllByRole('cell').map((cell) => cell.textContent?.trim()),
+      ])
+    expect(rows).toEqual([
+      ['Germany', 'Not translated', 'Allemagne', ''],
+      ['Canton', 'Not translated', 'Canton', 'The same as the source'],
+      ['Email', 'Not translated', 'Courriel', ''],
+    ])
+    const proposed = within(region).getByRole('region', { name: 'Preview in fr, as proposed' })
+    await waitFor(() => expect(within(proposed).getByRole('textbox', { name: 'Courriel' })).toBeTruthy())
+    expect(session.revision()).toBe(0)
+    expect(screen.getByRole('status').textContent?.trim()).toBe(
+      'Ready to review: 3 translations. Nothing has been applied.',
+    )
+  })
+
+  test('applies it as one undo step, and the language is no longer missing anything', async () => {
+    const { session, user } = await mountWith(() => Promise.resolve(answer(FRENCH)))
+    await choose(user, 'fr')
+    await user.click(await waitFor(() => screen.getByRole('button', { name: /Ask a model/ })))
+
+    await user.click(within(await review()).getByRole('button', { name: 'Apply these translations' }))
+
+    expect(session.document().i18n?.messages['fr']).toMatchObject(FRENCH)
+    await waitFor(() => expect(screen.queryByRole('region', { name: /^Review these translations/ })).toBeNull())
+    expect(screen.queryByRole('button', { name: /Ask a model/ })).toBeNull()
+    session.undo()
+    expect(session.document()).toEqual(half)
+  })
+
+  test('discards it, and nothing is written', async () => {
+    const { session, user } = await mountWith(() => Promise.resolve(answer(FRENCH)))
+    await choose(user, 'fr')
+    await user.click(await waitFor(() => screen.getByRole('button', { name: /Ask a model/ })))
+
+    await user.click(within(await review()).getByRole('button', { name: 'Discard' }))
+
+    expect(session.revision()).toBe(0)
+    await waitFor(() => expect(screen.queryByRole('region', { name: /^Review these translations/ })).toBeNull())
+  })
+
+  test('offers the rest when the model left some out, and the two land together', async () => {
+    const asked: string[] = []
+    const answers = [answer({ email: 'Courriel' }), answer({ 'country.de': 'Allemagne', canton: 'Canton' })]
+    const { session, user } = await mountWith((prompt) => {
+      asked.push(prompt.user)
+      return Promise.resolve(answers[asked.length - 1]!)
+    })
+    await choose(user, 'fr')
+    await user.click(await waitFor(() => screen.getByRole('button', { name: /Ask a model/ })))
+    const first = await review()
+    expect(screen.getByRole('status').textContent).toContain('2 messages are still missing.')
+
+    await user.click(within(first).getByRole('button', { name: 'Translate the rest' }))
+
+    await waitFor(() =>
+      expect(
+        within(screen.getByRole('region', { name: /^Review these translations/ })).getAllByRole('row'),
+      ).toHaveLength(4),
+    )
+    expect(asked[1]).toContain('"id": "canton"')
+    expect(asked[1]).not.toContain('"id": "email"')
+    await user.click(screen.getByRole('button', { name: 'Apply these translations' }))
+    expect(session.document().i18n?.messages['fr']).toMatchObject(FRENCH)
+    session.undo()
+    expect(session.document()).toEqual(half)
+  })
+
+  test('refuses to apply once the form has moved, and keeps the review on screen', async () => {
+    const { session, user } = await mountWith(() => Promise.resolve(answer(FRENCH)))
+    await choose(user, 'fr')
+    await user.click(await waitFor(() => screen.getByRole('button', { name: /Ask a model/ })))
+    const region = await review()
+    session.setMessage('fr', 'canton', 'Canton suisse')
+
+    await user.click(within(region).getByRole('button', { name: 'Apply these translations' }))
+
+    await waitFor(() =>
+      expect(screen.getByRole('status').textContent?.trim()).toBe(`Not applied. ${session.text('proposal.stale')}`),
+    )
+    expect(session.document().i18n?.messages['fr']?.['canton']).toBe('Canton suisse')
+    expect(screen.getByRole('region', { name: /^Review these translations/ })).toBeTruthy()
+  })
+
+  test('stops the run when the language changes, and the answer that comes later is not proposed', async () => {
+    // German, not the default, so the review would still be drawn if it outlived its language.
+    let release: (text: string) => void = () => undefined
+    let cancelled = false
+    const { user } = await mountWith(
+      (_prompt, turn) =>
+        new Promise<string>((resolve) => {
+          release = resolve
+          turn.onCancel(() => {
+            cancelled = true
+          })
+        }),
+    )
+    await choose(user, 'fr')
+    await user.click(await waitFor(() => screen.getByRole('button', { name: /Ask a model/ })))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Stop' })).toBeTruthy())
+
+    await choose(user, 'de')
+    release(answer(FRENCH))
+    await waitFor(() => expect(cancelled).toBe(true))
+
+    expect(screen.queryByRole('region', { name: /^Review these translations/ })).toBeNull()
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Ask a model for the 5 missing messages' })).toBeTruthy(),
+    )
   })
 })

@@ -394,3 +394,48 @@ else.
 A relay is for a page that cannot call a model. Where yours can, write an `askModel` that
 calls your own server, as above: it takes no copying, and the request goes where you
 decide.
+
+### Asking a model for a language's missing messages
+
+The translations pane takes the same `ask`. Given one, a language other than the default
+offers to ask a model for every message that language is missing, and holds the answer for
+review message by message before it lands:
+
+```tsx
+<TranslationsPane session={session} ask={askModel} />
+```
+
+In Angular it is `<formancy-translations-pane [session]="session" [ask]="askModel" />`. A
+relay's `ask` works too, and the turn is drawn by the relay pane as the prompt pane's is.
+Without `ask` the pane is the translator's table it always was.
+
+**What is sent.** The request is built from the form alone, by `translationPrompt(form,
+locale)`: every message the form refers to with no target in that language — never one
+nothing refers to any more — each with its source and where it is used, and the
+translations the language already has, for the register. The form's rules are not sent,
+and neither is the document. The model answers with the catalogue file the pane already
+downloads and uploads: `locale`, `defaultLocale`, and `messages` with `id`, `source` and
+`target`.
+
+**What is checked.** An answer that is not JSON, not a catalogue file, or a catalogue for
+another language is asked for again, with that problem alone. A decline ends the run, as for
+a form. Anything else is kept: an id it was not asked for is dropped and listed, and a
+message it left empty is listed as still missing, with *Translate the rest* to ask for those.
+
+**What lands.** The answer goes through the catalogue import into a copy of the form, so the
+import's rules apply: an empty target erases nothing, and a translation made from a source
+that has since changed is marked. A translation equal to its source is marked as well, and
+kept. Only messages still missing when the answer arrives are written, so a translation a
+person made is never replaced. The review shows each message's source, what was there, what
+is proposed and its marks, and the form as it would read in that language. Apply is
+`applyProposal`: refused if the form has changed since, one undo step otherwise.
+
+Called directly, `translateCatalogue(askModel, form, locale, { stop })` resolves however the
+run ends, as `authorForm` does, and `proposeTranslation(session, result.answer)` holds a
+successful answer as a proposal: an `EditProposal` with `rows`, `dropped` and
+`stillMissing`.
+
+The review is only as good as its reader's command of that language. A fluent translation
+that asks a different question passes every check here, and once applied a model's message
+cannot be told from a person's: where each message came from is not recorded
+([0161](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0161-a-model-translates-only-what-is-missing.md)).

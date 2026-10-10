@@ -4,6 +4,26 @@ export { applyProposal, proposalHeading, proposalStatus, proposeEdit } from './p
 export { createRelay, relayMessage } from './relay.js'
 export type { Relay, RelayAnswer, RelayChat, RelayTurn } from './relay.js'
 export type { EditProposal, ProposalExamples } from './proposal.js'
+// A model asked for the messages a language is missing, and its answer reviewed message by
+// message before it lands (0161).
+export {
+  missingMessages,
+  proposeTranslation,
+  translateCatalogue,
+  translationHeading,
+  translationStatus,
+} from './translate.js'
+export type {
+  TranslationAnswer,
+  TranslationFlag,
+  TranslationOptions,
+  TranslationProblem,
+  TranslationProposal,
+  TranslationResult,
+  TranslationRowChange,
+} from './translate.js'
+export { translationPrompt } from './translate-prompt.js'
+export type { TranslationRequest, TranslationRow } from './translate-prompt.js'
 export { comparedToLastRun, createRunHistory, scenarioStatus } from './scenario-runs.js'
 export type { RunHistory, ScenarioRunChange } from './scenario-runs.js'
 export type {

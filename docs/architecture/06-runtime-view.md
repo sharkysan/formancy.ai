@@ -382,3 +382,49 @@ turn and what to do with it: from then on the run waits on the person, and a fai
 took the pane, and the focus in it, away before the retry drew it again. What was pasted is bound to nothing but the run that is waiting: the review's
 diff against the document the run was asked against is what shows a paste that answered
 something else (SAFETY-ANALYSIS D10).
+
+## 6.9 Asking a model for what a language is missing
+
+```
+review part (in the translations pane)   builder-core                                     model (6.7, or 6.8's relay)
+──────────────────────────────────────   ────────────                                     ───────────────────────────
+"Ask a model for the N missing messages"
+  stop = createStop()             ───▶   translateCatalogue(ask, form, locale)
+                                           translationPrompt(form, locale)
+                                             rows = catalogueFile(form, locale), target ""
+                                             + where each is used (the live-id walk)
+                                             + the language's own translations, for register
+                                             nothing missing ──▶ ok, no model asked
+                                           askChecked                          ───────▶   { system, user }
+                                             not JSON, not a catalogue file,
+                                             another locale, a decline with
+                                             no reason ──▶ asked again, that problem alone
+                                             a decline ──▶ ended after its turn
+                                             ok ──▶ ids not asked: dropped
+                                                    ids asked, empty: still missing
+  proposeTranslation(session, answer[, earlier])
+                                           keep what is still missing in the form now
+                                           scratch session ← importCatalogue(kept)
+                                             the import's rules: stale named, empty erases nothing
+                                           rows { id, source, was, now, flags: stale | unchanged }
+                                           proposeEdit(form now, scratch document)
+                                           basedOn: the earlier proposal's, for the rest
+  the review: source · before · proposed · to look at,
+  the form as proposed at that locale, Apply · Discard · Translate the rest
+  Apply ──▶ applyProposal (0109): refused if the form moved, else one undo step
+```
+
+**Only what is missing, and only through the import.** The request holds the messages nobody
+has written in that language, each with where the form uses it. The form's rules are not
+sent, and neither is the document. An answer lands only where a message is still missing
+when it arrives, so a translation a person typed while the model was answering is dropped
+rather than overwritten. It lands by `importCatalogue`, in a scratch session, so the
+proposal is what the import would have written from the same file uploaded by hand
+([0161](../decisions/0161-a-model-translates-only-what-is-missing.md)).
+
+**The review belongs to its language.** The part is keyed by the locale in both builders, so
+choosing another language, like leaving the tab, ends the run (0157). Through the relay, the
+turn is drawn where the prompt pane's is (6.8), at the top of either builder.
+*Translate the rest* asks over the proposal under review, and the answer is written over it
+and held against its basis, so the two land together, or neither does if the form moved in
+between.

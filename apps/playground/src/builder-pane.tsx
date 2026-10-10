@@ -124,8 +124,8 @@ export function BuilderBody({
   /** The form pane's engine, whose answers the rules tab explains (0128). */
   preview: FormEngine | undefined
   /**
-   * The model both builders' prompt panes ask: a person carrying each turn (0160). The
-   * page's, so a turn asked from either builder is the one relay's.
+   * The model both builders' prompt and translations panes ask: a person carrying each
+   * turn (0160). The page's, so a turn asked from either builder is the one relay's.
    */
   relay: Relay
 }) {
@@ -221,8 +221,11 @@ export function BuilderBody({
           ) : tab === 'translations' ? (
             /* The starter's French is half-finished on purpose. The form pane shows the
                fallback; this shows the other half — choose French and every message
-               nobody has translated is marked, beside the English it stands in for. */
-            <TranslationsPane session={session} />
+               nobody has translated is marked, beside the English it stands in for. And
+               asks the page's relay for them: the turn is drawn above, as the prompt
+               pane's is, and the answer is reviewed message by message before it lands
+               (0161). */
+            <TranslationsPane session={session} ask={relay.ask} />
           ) : tab === 'arrangement' ? (
             <>
               <FormancyLayoutPane session={session} layout="web" onSelect={setArranging} />

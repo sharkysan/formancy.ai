@@ -161,7 +161,9 @@ export function playgroundBuilder(
         [capabilities]="host.preview()?.capabilities"
       />
     } @else if (host.tab() === 'translations') {
-      <formancy-translations-pane [session]="host.session" />
+      <!-- Asking the page's relay for what a language is missing, as the React pane does:
+           the turn is drawn above, and the answer reviewed before it lands (0161). -->
+      <formancy-translations-pane [session]="host.session" [ask]="host.relay.ask" />
     } @else {
       <!-- Describing a change in words, asking the page's relay as the React pane does:
            the person carries the turn, and everything after the paste is real (0109) —

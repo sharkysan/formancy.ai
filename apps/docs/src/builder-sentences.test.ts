@@ -43,6 +43,10 @@ const SPEAKS_FOR_ITSELF: ReadonlyArray<{ file: string; why: string }> = [
     file: 'authoring.ts',
     why: 'Instructions to a model. The model is asked in English whatever the author speaks, because that is the language its answers are checked against — and the problems it is told are shown to the author as they were told, so a person reads exactly what the model was asked to fix.',
   },
+  {
+    file: 'translate-prompt.ts',
+    why: 'Instructions to a model asked for a language’s missing messages, and where each is used in the form, for the same reason as `authoring.ts`: the request is English whatever the author speaks and whatever language is asked for, because its answer is checked against that wording — and what was wrong is shown to the person as the model was told it (0161).',
+  },
 ]
 
 /**

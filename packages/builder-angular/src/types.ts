@@ -29,6 +29,8 @@ export type {
   Relay,
   RelayChat,
   RelayTurn,
+  TranslationProposal,
+  TranslationResult,
   TreeNode,
 } from '@formancy/builder-core'
 export type { Scenario, ScenarioResult } from '@formancy/core'

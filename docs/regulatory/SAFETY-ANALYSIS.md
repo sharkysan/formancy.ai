@@ -1480,6 +1480,55 @@ key made of an address cannot separate. And a trusted proxy is believed about
 and the first that does would take a client's word wherever the proxy passes those headers
 on unset, as nginx 1.27 did when measured — `trust-proxy.test.ts` checks that Fastify still believes them.
 
+### D15. A model's translation changes what a question asks
+
+*How it arises:* a model asked for the messages a language is missing writes a target that
+reads well and asks something else. A negation is lost (*Do not call me* becomes *Call me*),
+a time frame or a unit moves, an answer's meaning shifts (*Rarely* becomes *Never*), an
+option becomes a question, or the right words arrive in another language than the one
+asked. Every check passes. The answer is a catalogue file for the language its tag names,
+the document validates and compiles, no answer moves, and `diffSchemas` calls the change
+compatible, because a catalogue says how a question reads and never what it stores.
+
+*Severity:* D9's. A question in the reader's language that asks something other than its
+source is answered as it was read, and the answer is stored as if it meant what the source
+asked. That is worse than a message nobody translated, which falls back to the default
+language and announces itself; a wrong one looks finished. And it is invisible from inside:
+the document is valid, the catalogue is complete, and a reviewer reading the JSON sees French
+where English was.
+
+*Constraint:* the translation is **shown rather than applied**, message by message
+([0161](../decisions/0161-a-model-translates-only-what-is-missing.md)). Both builders' review
+lists every message it would write, with the source beside what was there and what is
+proposed. It marks a target translated from a source that has since changed (the import's
+own stale rule), and one that is the same as its source. It shows the form as the proposal
+would leave it, rendered at that locale. Apply is `applyProposal`: refused when the form has
+moved since, one undo step otherwise ([0109](../decisions/0109-an-ai-edit-is-reviewed-before-it-lands.md)).
+The model is asked only for messages nobody has written in that language, and only those
+still missing when the answer lands are written, so a person's translation is never replaced.
+The request carries the form's words and where each is used, not its rules.
+`translate.test.ts` holds the request (exactly the live, untranslated messages, each with a
+context, and no rule), the checks (a catalogue for another language is asked for again), and
+the proposal: an id not asked for is never written, a message a person translated meanwhile
+is never overwritten, only the catalogue of the language asked changes, both marks, and the
+refusal of a stale proposal. Each builder's `translations-pane.test` holds that nothing is
+applied before Apply, that the review shows the source, what was there, what is proposed and
+the marks, with the proposed form rendered in that language, and that a refused Apply keeps
+the review on screen. `two-builders.test.tsx` holds the same through the playground's relay
+in both builders.
+
+*Residual:* **the review is only as good as its reader's command of that language.** A
+mistranslation that reads fluently passes every check here, and nothing in software can tell
+it from a right one. Both marks are hints. *The same as the source* flags words that are
+the same in both languages and right (the starter's *Canton*), and says nothing about a target
+that differs from its source and is wrong. Nothing checks that a target is written in the
+language its file names. **Provenance is not recorded**: once applied, a model's message is
+indistinguishable from a person's in the catalogue, the exported file, the diff and the next
+review. A manufacturer who needs a qualified translator's sign-off per message, as a clinical
+form in a regulated language may, keeps that record outside formancy. Pressing Apply is one
+click, as in D10. No test runs a real model, and no native speaker has reviewed the German
+or French words of the review itself (D11).
+
 ---
 
 ## E — Provenance is lost

@@ -148,6 +148,15 @@ describe('what the two builders each offer', () => {
     { pane: 'the condition editor', react: 'LogicPanel', angular: 'FormancyLogicPanel' },
     { pane: 'the translations pane', react: 'TranslationsPane', angular: 'FormancyTranslationsPane' },
     {
+      // A model asked for what a language is missing, and its answer reviewed message by
+      // message. Both from the start: what is asked, kept and marked is builder-core's, and
+      // the translations pane draws it in either builder
+      // ([0161](../../../docs/decisions/0161-a-model-translates-only-what-is-missing.md)).
+      pane: 'a model’s translation, under review',
+      react: 'TranslationReview',
+      angular: 'FormancyTranslationReview',
+    },
+    {
       pane: 'arranging on the rendered form',
       react: 'FormancyArrangeSurface',
       angular: 'FormancyArrangeSurface',
