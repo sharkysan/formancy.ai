@@ -120,18 +120,17 @@ which changes would invalidate the submissions you already have.
 ### Click an answer. Watch the form adapt.
 
 <p align="center">
-  <img src="./docs/images/readme/playground.png" alt="The playground: the builder, the live form in the Blueprint theme, and the engine's submission value and tracked fields side by side" width="100%" />
+  <img src="./docs/images/readme/playground.png" alt="The playground on a wide screen: the builder holding a request to carry to a model of your own, the same form rendered by React and by Angular side by side with the same answers typed into each, and the engine's submission value and tracked fields" width="100%" />
 </p>
 
 Use the visual builder or edit the JSON in the playground. The form is rendered
-**twice, side by side — once by Angular and once by React**, from one schema over
-two engines built from it, so the claim that the engine is framework-neutral is
-something you can look at rather than something this file asserts. Try
-conditional questions and validation, and inspect the answers that would be
-submitted. Switch language or theme without reloading.
+**twice — once by Angular and once by React** — from one schema over two engines
+built from it, side by side on a wide screen and one below the other on a narrower
+one, so the claim that the engine is framework-neutral is something you can look at
+rather than something this file asserts. Try conditional questions and validation,
+ask a model of your own for a change through the relay, and inspect the answers that
+would be submitted. Switch language or theme without reloading.
 `pnpm --filter @formancy/playground dev` runs it locally.
-
-*(The screenshot above predates the second renderer.)*
 
 ### Six reasons to build with formancy
 
@@ -309,7 +308,9 @@ packages/builder-angular  the same builder for Angular: zoneless, one signal per
                         session, the same commands and the same destinations
 packages/server-core    backend use-cases against storage ports
 packages/server         Fastify + Postgres: publish, resolve, replayed submissions,
-                        drafts with lazy migration, CSV export
+                        drafts with lazy migration, files (local or S3, scanned
+                        by ClamAV if you run it), webhooks, CSV export, a form's
+                        examples run at publish, and an opt-in model adapter
 packages/themes         reference themes. Nothing depends on them
 packages/tiptap         a TipTap editor held to formancy's rich-text grammar
 packages/challenge      the proof-of-work challenge: mint, solve and verify
@@ -317,7 +318,8 @@ packages/mcp            formancy as tools for a coding agent (MCP)
 apps/site               formancy.ai — the landing page, which renders a real form
 apps/playground         the one-screen demo (editor / live form / engine state)
 apps/angular-starter    an Angular application: the builder and a Material form
-apps/admin              the self-hosted admin, v0.1 cut
+apps/admin              the self-hosted admin: build, publish, versions,
+                        submissions, examples, and the server's model if set
 apps/docs               the documentation site (Astro Starlight)
 ```
 
@@ -388,6 +390,24 @@ Those ports are fixed rather than "the next free one", so a stale dev
 server is an error you see immediately instead of a page at an address
 nobody was told about.
 
+### The admin
+
+The admin has a **build** tab — the keyboard-driven builder in a three-pane
+inspector, beside a live preview, switching between the structure and the
+arrangement in the pane header — plus the raw schema editor, translations, a tab
+to fill the published form in against the server as a respondent would, publish, version history, submissions
+with a CSV export whose columns are unioned across schema versions, and webhooks.
+A published form's examples are kept by the server beside it:
+the build tab runs them after every edit, and every publish runs them against
+the version it replaces and names, on the `201`, each one that stops holding —
+a warning, never a refusal
+([0166](./docs/decisions/0166-a-deployment-keeps-a-forms-examples-and-runs-them-at-publish.md)).
+When the operator names a model — Anthropic's, OpenAI's or xAI's, with its key on the
+server — the build tab can describe a change in words and draft examples through it,
+the translations tab can ask it for what a language is missing, and each says which
+provider and model a request goes to before anybody asks
+([0165](./docs/decisions/0165-a-deployments-model-is-asked-through-its-server.md)).
+
 ### Use it from a coding agent
 
 ```bash
@@ -434,27 +454,25 @@ rather than publishing a form whose total silently stays empty
 
 ### Build formancy.ai
 
-The website is one static deployment: the landing page at `/`, the playground
-copied into `/playground/`.
+The website is one static deployment, composed by `scripts/build-web.mjs`: the
+landing page at `/` with its *Templates* and *Angular* pages at `/templates/` and
+`/angular-form-builder/`, the playground at `/playground/`, the documentation at
+`/docs/`, and the Angular starter at `/angular-form-builder/demo/`, which the
+Angular page embeds.
 
 ```bash
 pnpm build:web                          # -> apps/site/dist
 ```
 
-Two Vite apps rather than one, because they are two products — and serving
-them together is a copy. The playground is **built with `base: '/playground/'`**,
-which is the part that is easy to get wrong and impossible to notice: Vite
-writes absolute asset URLs, so a playground built at the default base asks for
-`/assets/index-<hash>.js`, which is the *site's* asset directory. The page
-loads, the script 404s, and the deployment is a blank screen while every build
-log says it succeeded. `scripts/build-web.mjs` reads the built HTML back and
-refuses to finish if that has happened.
-
-Three apps, one directory: the landing page at `/`, the playground at
-`/playground/`, the documentation at `/docs/`. Each is built knowing where it
-is served from, and the script refuses to finish if one of them is not — an
-app built at the wrong base asks for another app's files, which 404 while the
-build log says everything succeeded.
+Each app is its own build, because each is its own product — and serving them
+together is a copy. Each is **built knowing where it is served from**, which is
+the part that is easy to get wrong and impossible to notice: Vite writes absolute
+asset URLs, so a playground built at the default base asks for
+`/assets/index-<hash>.js`, which is the *site's* asset directory. The page loads,
+the script 404s, and the deployment is a blank screen while every build log says it
+succeeded. `scripts/build-web.mjs` reads each built page back and refuses to finish
+if that has happened. The starter, served inside another page, is built with a
+relative base instead.
 
 Deploying is whatever serves a directory. With Cloudflare:
 
@@ -463,21 +481,14 @@ pnpm build:web                          # build command
 cd apps/site && npx wrangler deploy --assets=dist   --name=formancy-ai --compatibility-date=2026-09-18
 ```
 
-The admin has a **build** tab — the keyboard-driven builder in a three-pane
-inspector, beside a live preview, switching between the structure and the
-arrangement in the pane header — plus the raw schema editor, publish, version
-history, and submissions with a CSV export whose columns are unioned across
-schema versions. A published form's examples are kept by the server beside it:
-the build tab runs them after every edit, and every publish runs them against
-the version it replaces and names, on the `201`, each one that stops holding —
-a warning, never a refusal
-([0166](./docs/decisions/0166-a-deployment-keeps-a-forms-examples-and-runs-them-at-publish.md)).
-
 The playground is the one-screen demo: schema or builder on the left, the live
 form in the middle, the engine's actual state on the right. Under **Build**,
-*Fields* and *Arrangement* are two views of one document — move a field into a
-row in either tree, or drag it on the form itself, and all three panes follow.
-Two switchers, and neither is decoration.
+*Fields*, *Arrangement*, *Rules* and *Translations* are views of one document —
+move a field into a row in either tree, or drag it on the form itself, and all
+three panes follow; *Rules* says every rule in words and, from the answers typed
+into the form, why a field is hidden or required now. Beside the fields, each
+form's own examples run after every edit. The switchers are not decoration
+either.
 
 **Theme** proves the headless claim: the renderers ship no CSS, and two themes
 that look like unrelated products swap live with no remount and no component
