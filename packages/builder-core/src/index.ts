@@ -63,6 +63,9 @@ export type {
   UnusableDraft,
   UnusableReason,
 } from './scenario-drafts.js'
+// What an example is, read from JSON somebody else wrote: a model's answer, or a stored row (0166).
+export { readScenario } from './scenario-shape.js'
+export type { ReadScenario, ScenarioShapeProblem, ScenarioShapeReason } from './scenario-shape.js'
 export { scenarioPrompt } from './scenario-prompt.js'
 export type { ScenarioPrompt, ScenarioPromptOptions } from './scenario-prompt.js'
 // The requests formancy makes of a model, by name, so a server holding the key can write

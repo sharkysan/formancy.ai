@@ -467,7 +467,11 @@ The admin has a **build** tab — the keyboard-driven builder in a three-pane
 inspector, beside a live preview, switching between the structure and the
 arrangement in the pane header — plus the raw schema editor, publish, version
 history, and submissions with a CSV export whose columns are unioned across
-schema versions.
+schema versions. A published form's examples are kept by the server beside it:
+the build tab runs them after every edit, and every publish runs them against
+the version it replaces and names, on the `201`, each one that stops holding —
+a warning, never a refusal
+([0166](./docs/decisions/0166-a-deployment-keeps-a-forms-examples-and-runs-them-at-publish.md)).
 
 The playground is the one-screen demo: schema or builder on the left, the live
 form in the middle, the engine's actual state on the right. Under **Build**,

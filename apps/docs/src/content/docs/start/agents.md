@@ -124,6 +124,16 @@ carry — the last one because validity alone cannot tell a cleared branch from 
 was never filled. Write one for every rule you add. The tool refuses an empty set rather
 than reporting that all nought scenarios hold.
 
+**A deployment can keep them, and its publish runs them.** The server keeps each form's
+examples and the sample they start from beside the form — `GET` and `PUT /f/:path/examples`,
+with the permission publishing takes — and every publish runs them against the version the
+form has and the new one. Each example that stops holding is a sentence in the `201`'s
+`warnings`, and the form is published all the same
+([0166](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0166-a-deployment-keeps-a-forms-examples-and-runs-them-at-publish.md)).
+`publish_form` hands back the server's answer as its data, so the warnings are there — beside a
+summary that says only *Done.*, so read the data. There is no tool to read or keep a form's
+examples; `check_scenarios` still runs the ones you pass it, before anything is published.
+
 ### Changing a form that exists is a two-step tool call
 
 `validate_form` says a document works. It does not say that your rewrite

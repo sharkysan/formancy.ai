@@ -809,8 +809,12 @@ the provider's SDK would add from `ANTHROPIC_CUSTOM_HEADERS` or `OPENAI_CUSTOM_H
 stop the server at startup (`model-settings.test.ts`). OpenAI and xAI are asked with `store: false`. The browser sends the
 request only to its own server, never to a provider: the key is not in the page
 (`apps/admin`'s `server-model.test.tsx`, *sends a turn to this server alone*). The admin says
-which provider and model a request goes to, above the prompt pane and the Translations tab,
-before anybody asks (*is drawn when the server has one, and says where a request goes*). The
+which provider and model a request goes to, above the prompt pane, the scenario pane and the
+Translations tab, before anybody asks (*is drawn when the server has one, and says where a
+request goes*; for drafting, `examples.test.tsx`, *asks the server's model for the scenarios
+kind*, which also holds that every request the page makes goes to its own server). The sample a
+deployment keeps for a form's examples (0166) goes with every drafting request; it is meant to
+be fictional, and nothing checks that it is. The
 requests are built from the document alone — what each carries is held by `translate.test.ts`
 and `scenario-prompt.test.ts` (D15, D16). Every request is audited, without its text (C9).
 
@@ -1438,6 +1442,29 @@ holds the same through the playground in both builders, with the starter's canto
 turned round and the answer pasted into the page's relay, as a visitor's is. No test runs a real model. The verdict uses the examples as they were when
 Write was pressed, so one added while the review is open is not in it.
 
+On a deployment the examples also run **at publish**, the last moment before a version is
+frozen ([0166](../decisions/0166-a-deployment-keeps-a-forms-examples-and-runs-them-at-publish.md)).
+The server keeps each form's examples and the sample they start from, beside the form, and
+`publishForm` runs them against the version the form has and the one being published, in
+`server` mode and from the sample, through `runScenarios` and `comparedToLastRun` again. Each
+example that stops holding is a sentence in the `201`'s `warnings`, naming it, both versions,
+and what was expected and what happened; the version is published all the same. What the tests
+show is this. `examples.test.ts` in `@formancy/server-core` holds that a rule turned round names
+each example it breaks and the version is there afterwards; that an example failing against
+both versions, and one that holds again, are not named; that the examples run from the kept
+sample and in server mode — a rule moved to the browser is named, and is not when they run as a
+browser would; that a stored row that is not an example is left out and named, when they are
+read back and at publish, and the others still run, rather than the publish failing; and that a
+viewer may neither read nor change them. `examples-route.test.ts` holds the warning on the `201`
+through `createApp`, and `server.integration.test.ts` across real HTTP and real PostgreSQL,
+including that a change whose audit row cannot be written is not kept either. In the admin, the
+scenario pane runs the kept examples in server mode and saves a removal back; a save that fails
+is said and puts the server's list back, and no change made on the list it replaced is sent, so
+the screen and the publish do not come apart over it. The prompt pane's review runs them as the
+publish will, and the publish note draws the warning (`examples.test.tsx`). Each of these failed with the code it guards changed;
+the publish note's case alone passed before, since the note already drew every warning, and
+fails with the note dropping them.
+
 *Residual:* the review shows what changed, not whether it is what was asked for — that
 judgement is the person's and cannot be delegated to the thing being judged. Scenarios
 narrow it rather than close it: they check the rules somebody thought to write an
@@ -1447,6 +1474,17 @@ visible and its wording is not. And pressing the button is one click: nothing he
 distinguishes a reviewer who read the list from one who did not, which is the limit of
 what software can assert about attention. That holds when the heading names an example
 the edit breaks, too.
+
+The check at publish is a report, not a gate: nothing in formancy fails a deployment over it,
+and a person who reads the warning can publish anyway, which is the point of a rule changed on
+purpose. It compares with the version the form has, so an example failing against both is not
+named, and a form published before it had examples, or after the one that would have warned was
+removed, is published with nothing said. The examples are kept with the last save winning: two
+people changing one form's examples at once replace each other's list whole, and a removal can
+come back or a kept example go, with nothing saying so. A change made while a save was failing
+is lost, said only as the failure. And the examples run with no answer from
+the deployment's `check` validators, in the panes as at publish, so an example cannot pin what a
+check answers.
 
 Through the relay a pasted answer is **not bound to the prompt it answers**. The page cannot
 tell whether the text came from the request it showed, from an earlier turn, from a chat

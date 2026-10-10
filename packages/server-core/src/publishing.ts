@@ -6,6 +6,7 @@ import type { ServerDeps } from './deps.js'
 import type { ResolvedForm } from './use-cases.js'
 import { createFormEngine, expressionProblems, unknownReferences } from '@formancy/core'
 import { sourceNamesIn } from './options-membership.js'
+import { examplesThatStopHolding } from './examples.js'
 import type { AuditEntry } from './audit.js'
 import type { Actor } from './auth.js'
 import { unsafePatterns } from './redos.js'
@@ -207,6 +208,10 @@ export async function publishForm(
     }
 
     const version = (await deps.storage.latestVersionNumber(existing.id)) + 1
+    // The form's examples, against the version it has and this one: each that stops holding
+    // is said, and nothing is refused for it (0166). A first publish has none to run, since
+    // examples are kept beside a form the deployment already has.
+    const stopped = await examplesThatStopHolding(deps.storage, existing.id, current, { schema, version })
     const versionId = deps.newId()
     await deps.storage.publishVersion({
       version: { id: versionId, formId: existing.id, version, schema, schemaHash: hash },
@@ -217,7 +222,7 @@ export async function publishForm(
         sources: sourceNamesIn(schema),
       }),
     })
-    return { ok: true, formId: existing.id, versionId, version, schemaHash: hash, warnings }
+    return { ok: true, formId: existing.id, versionId, version, schemaHash: hash, warnings: [...warnings, ...stopped] }
   }
 
   // A base declared for a form that has none is an editor working from something

@@ -1,7 +1,7 @@
 import type { AuditEntry } from '../audit.js'
 import type {
   DeliveryRecord,
-  WebhookRecord, ApiKeyRecord, DraftRecord, FileRecord, FormRecord, FormVersionRecord, Storage, SubmissionRecord, UserRecord } from '../ports.js'
+  WebhookRecord, ApiKeyRecord, DraftRecord, ExamplesRecord, FileRecord, FormRecord, FormVersionRecord, Storage, SubmissionRecord, UserRecord } from '../ports.js'
 
 /**
  * The in-memory Storage — the second implementation that keeps the port
@@ -20,6 +20,7 @@ export function createMemoryStorage(): Storage {
   const users = new Map<string, UserRecord>()
   const apiKeys = new Map<string, ApiKeyRecord>()
   const files = new Map<string, FileRecord>()
+  const examples = new Map<string, ExamplesRecord>()
 
   return {
     getFormByPath: async (path) => [...forms.values()].find((form) => form.path === path),
@@ -57,6 +58,20 @@ export function createMemoryStorage(): Storage {
     },
 
     getVersionById: async (id) => versions.get(id),
+
+    getExamples: async (formId) => {
+      const found = examples.get(formId)
+      return found === undefined ? undefined : { ...found }
+    },
+
+    keepExamples: async (record, audit) => {
+      // The foreign key the real table has: examples are kept beside a form, so a record
+      // for a form that is not here is refused rather than kept for whatever comes next.
+      if (!forms.has(record.formId)) throw new Error(`No form "${record.formId}"`)
+      examples.set(record.formId, { ...record })
+      if (audit !== undefined) audits.push({ ...audit })
+    },
+
 
     findVersionByHash: async (formId, hash) =>
       [...versions.values()].find(

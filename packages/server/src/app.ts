@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { fileRoutes } from './routes/files.js'
 import { publishRoutes } from './routes/publish.js'
+import { accessRoutes } from './routes/access.js'
+import { exampleRoutes } from './routes/examples.js'
 import { deliveryRoutes } from './routes/deliveries.js'
 import { draftRoutes } from './routes/drafts.js'
 import { modelRoutes } from './routes/model.js'
@@ -27,7 +29,6 @@ import {
   listVersions,
   publishForm,
   resolveForm,
-  setFormAccess,
 } from '@formancy/server-core'
 import type {
   Action,
@@ -341,40 +342,10 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
   // Fastify's own unit and what this file's size budget named as the seam.
   await app.register(publishRoutes, { deps, requires })
 
-  app.put('/f/:path/access', { preHandler: requires('form.publish') }, async (request, reply) => {
-    const { path } = request.params as { path: string }
-    const body = request.body as { submit?: unknown; allowedOrigins?: unknown } | null
-
-    const submit = body?.submit
-    if (submit !== 'authenticated' && submit !== 'public') {
-      return reply.code(400).send({
-        error: 'invalid_access',
-        message: 'submit must be "authenticated" or "public".',
-      })
-    }
-
-    const origins = body?.allowedOrigins
-    if (origins !== undefined && !(Array.isArray(origins) && origins.every((o) => typeof o === 'string'))) {
-      return reply.code(400).send({
-        error: 'invalid_access',
-        message: 'allowedOrigins must be an array of strings, or absent for no allowlist.',
-      })
-    }
-
-    const outcome = await setFormAccess(deps, {
-      path,
-      submit,
-      ...(origins === undefined ? {} : { allowedOrigins: origins as string[] }),
-    })
-    if (!outcome.ok) return reply.code(404).send({ error: 'unknown_form' })
-    // A permission change is the event a security review looks for first.
-    await audit(request, {
-      action: 'form.access.changed',
-      subject: path,
-      detail: { submit, allowedOrigins: origins === undefined ? 'unchanged' : (origins as string[]).join(' ') },
-    })
-    return reply.code(204).send()
-  })
+  // Who may submit a form, and what it is checked against: kept beside it rather than in
+  // a version, each a route family of its own (0044, 0166).
+  await app.register(accessRoutes, { deps, requires, audit })
+  await app.register(exampleRoutes, { deps, actorOf })
 
   /**
    * The log itself.

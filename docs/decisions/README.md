@@ -266,3 +266,4 @@ listed under the sections they belong to above.
 | [0163](0163-a-models-run-belongs-to-the-host.md) | A model's run belongs to the host, and outlives the pane that asked | accepted; the translations pane's run and the drafting part's not being carried superseded in part by 0164 |
 | [0164](0164-a-translation-is-held-for-its-language-and-a-draft-for-its-form.md) | A translation is held for its language, and a draft for its form | accepted |
 | [0165](0165-a-deployments-model-is-asked-through-its-server.md) | A deployment's model is asked through its server, and the server writes the briefing | accepted |
+| [0166](0166-a-deployment-keeps-a-forms-examples-and-runs-them-at-publish.md) | A deployment keeps a form's examples, and runs them at publish | accepted |

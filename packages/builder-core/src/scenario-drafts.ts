@@ -5,6 +5,8 @@ import { askChecked } from './answers.js'
 import type { AskModel, Checkable, Stop, Verdict } from './answers.js'
 import type { BuilderMessageId, BuilderText } from './messages.js'
 import { scenarioComplaint, scenarioPrompt } from './scenario-prompt.js'
+import { readScenario } from './scenario-shape.js'
+import type { ScenarioShapeReason } from './scenario-shape.js'
 
 /**
  * Examples drafted by a model from what the author said, judged by the engine, and kept
@@ -38,15 +40,7 @@ import { scenarioComplaint, scenarioPrompt } from './scenario-prompt.js'
  */
 
 /** Why one item of a model's answer could not be read as an example. */
-export type UnusableReason =
-  | 'not-an-object'
-  | 'unknown-key'
-  | 'no-name'
-  | 'name-taken'
-  | 'name-repeated'
-  | 'no-changes'
-  | 'no-verdict'
-  | 'malformed'
+export type UnusableReason = ScenarioShapeReason | 'name-taken' | 'name-repeated'
 
 /** One item of the answer that is not an example, and why — for a pane to list, and a model to be told. */
 export interface UnusableDraft {
@@ -163,26 +157,13 @@ function readDrafts(answer: Checkable, taken: ReadonlySet<string>): Verdict<Read
     : { ok: true, value: { drafts, unusable } }
 }
 
-/** The keys an example has: core's `Scenario`, and nothing a model invented beside it. */
-const KEYS: ReadonlySet<string> = new Set([
-  'name',
-  'because',
-  'changes',
-  'valid',
-  'errors',
-  'visible',
-  'values',
-  'absent',
-])
-
 /**
  * One item, as an example or as why it is not one.
  *
- * Strict about shape, because the runner is not: an `errors` that is not a map of code
- * lists would be compared as though it were, and a key the runner does not read — a model's
- * `"required": {…}` — would be dropped, leaving an example that checks less than it reads.
- * Nothing about paths: whether a path is this form's is the engine's question, and its
- * answer is in the verdict.
+ * Its shape is `readScenario`'s question, the one a server keeping a form's examples asks
+ * too (0166), so an item read here as an example is one that server keeps. What is the
+ * drafting's alone is the names: one taken by an example the form has, or repeated within
+ * the answer, is ambiguous, because a scenario's name is how its result is found.
  */
 function readDraft(
   item: unknown,
@@ -190,54 +171,12 @@ function readDraft(
   taken: ReadonlySet<string>,
   named: ReadonlySet<string>,
 ): Scenario | UnusableDraft {
-  if (!isRecord(item)) return { position, reason: 'not-an-object' }
-  const rawName = item['name']
-  const name = typeof rawName === 'string' && rawName.trim() !== '' ? rawName.trim() : undefined
-  const refuse = (reason: UnusableReason, part?: string): UnusableDraft => ({
-    position,
-    ...(name === undefined ? {} : { name }),
-    reason,
-    ...(part === undefined ? {} : { part }),
-  })
-
-  const stranger = Object.keys(item).find((key) => !KEYS.has(key))
-  if (stranger !== undefined) return refuse('unknown-key', stranger)
-  if (name === undefined) return refuse('no-name')
-  if (taken.has(name)) return refuse('name-taken')
-  if (named.has(name)) return refuse('name-repeated')
-  const { because, changes, valid, errors, visible, values, absent } = item
-  if (!isRecord(changes)) return refuse('no-changes')
-  if (typeof valid !== 'boolean') return refuse('no-verdict')
-  if (because !== undefined && typeof because !== 'string') return refuse('malformed', 'because')
-  if (errors !== undefined && !isMapOf(errors, isCodeList)) return refuse('malformed', 'errors')
-  if (visible !== undefined && !isMapOf(visible, (value) => typeof value === 'boolean')) {
-    return refuse('malformed', 'visible')
-  }
-  if (values !== undefined && !isRecord(values)) return refuse('malformed', 'values')
-  if (absent !== undefined && !isCodeList(absent)) return refuse('malformed', 'absent')
-
-  return {
-    name,
-    ...(typeof because === 'string' && because.trim() !== '' ? { because: because.trim() } : {}),
-    changes,
-    valid,
-    ...(errors === undefined ? {} : { errors: errors as Record<string, string[]> }),
-    ...(visible === undefined ? {} : { visible: visible as Record<string, boolean> }),
-    ...(values === undefined ? {} : { values }),
-    ...(absent === undefined ? {} : { absent: absent as string[] }),
-  }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-function isCodeList(value: unknown): boolean {
-  return Array.isArray(value) && value.every((entry) => typeof entry === 'string')
-}
-
-function isMapOf(value: unknown, entry: (value: unknown) => boolean): boolean {
-  return isRecord(value) && Object.values(value).every(entry)
+  const read = readScenario(item)
+  if (!read.ok) return { position, ...read.problem }
+  const { name } = read.scenario
+  if (taken.has(name)) return { position, name, reason: 'name-taken' }
+  if (named.has(name)) return { position, name, reason: 'name-repeated' }
+  return read.scenario
 }
 
 /**

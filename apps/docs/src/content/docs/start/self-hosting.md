@@ -282,9 +282,10 @@ the `409 already_published` you get for republishing an older version verbatim.
 ```
 
 The publish **succeeded** — the version is there and the form is live. The
-warnings are things worth checking that are not grounds to refuse, and today
-there is one kind: a rule whose condition reads a data path the model does not
-define.
+warnings are things worth checking that are not grounds to refuse, and there are
+two kinds: a rule whose condition reads a data path the model does not define,
+and an example the form keeps that held against the version it had and does not
+hold against this one ([below](#a-forms-examples)).
 
 That rule evaluates to nothing, so it never does anything, and nothing else will
 ever tell you. An unknown *top-level* field is refused outright (`422`) because
@@ -306,6 +307,63 @@ curl -sS -X POST localhost:4380/forms -H "authorization: Bearer $TOKEN"   -H 'co
 
 The key is omitted entirely when there is nothing to say, which is why the `//
 []` is there. Nothing in formancy fails anything over a warning.
+
+### A form's examples
+
+A form can keep examples with their answers written down — answers to set, and
+what the form should make of them — and the fictional sample they all start
+from. They are the one check that can tell a condition written backwards from
+the one that was meant, because both spellings are valid
+([0110](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0110-a-form-is-checked-against-examples.md)).
+The server keeps them beside the form, never inside a version, since a version
+is immutable and examples change while the form does not:
+
+```bash
+curl -sS -X PUT localhost:4380/f/contact-us/examples \
+  -H "authorization: Bearer $TOKEN" -H 'content-type: application/json' \
+  -d '{"scenarios":[{"name":"Switzerland asks for a canton","changes":{"country":"CH"},"valid":true,"visible":{"canton":true}}],"sample":{"email":"jane@example.ch"}}'
+# → 200 {"scenarios":[…],"sample":{…}}
+
+curl -sS localhost:4380/f/contact-us/examples -H "authorization: Bearer $TOKEN"
+# → 200 {"scenarios":[…],"sample":{…}}   ({"scenarios":[]} for a form with none)
+```
+
+A `PUT` replaces the list and the sample whole. Both routes take `form.publish`
+— editors and admins, not viewers — and need a form the server has published:
+`404 unknown_form` otherwise. A list with anything that is not an example is
+refused with `422 invalid_examples` and a sentence per item saying which and
+why, and nothing of it is kept; so are two examples with one name and a sample
+that is not answers by field. Paths are not checked against the published form,
+because an example may be written for a field the next version adds. Every
+change is in the audit log as `form.examples.changed`, with how many examples
+and whether there is a sample — never what they say.
+
+What is kept is read back the way a `PUT` is read. A row changed in the
+database by hand into something that is not an example is left out of
+`scenarios`, and the `GET` names it in `unreadable`, one sentence each; the
+next `PUT` keeps only what it is sent, so it drops it.
+
+**Publishing runs them.** Each publish runs the form's examples against the
+version it has and the one being published, as the server replays a submission
+and from the kept sample, and names on the `201` each that stops holding:
+
+```bash
+# → 201 {"version":4,"schemaHash":"…","warnings":[
+#        "The example \"Switzerland asks for a canton\" held against version 3 and does not hold against version 4: \"canton\": expected to be visible, and it is hidden."]}
+```
+
+It never refuses: a rule changed on purpose stops its old example holding, and
+the decision is yours. An example that did not hold against the old version
+either is not named, and neither is one that holds again. A first publish has
+none to run, and republishing the current document says nothing about them.
+What is kept and is not an example is not run, and one warning names it
+([0166](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0166-a-deployment-keeps-a-forms-examples-and-runs-them-at-publish.md)).
+The `jq` gate above fails on these too.
+
+:::caution[Needs a server newer than v0.4.0]
+`v0.4.0` and every image before it has no `/f/:path/examples` route, and its
+publish runs no examples.
+:::
 
 ### Read the form (public)
 
@@ -394,6 +452,8 @@ for lookup and a hash for verification. Present it as `x-formancy-api-key`.
 | `POST` | `/f/:path/files` | public | — (same gate as submitting) |
 | `PUT` | `/f/:path/files/:fileId` | public | — (the address the offer returned) |
 | `GET` | `/f/:path/files/:fileId` | management | `submission.read` |
+| `PUT` `GET` | `/f/:path/examples` | management | `form.publish` |
+| `PUT` | `/f/:path/access` | management | `form.publish` |
 | `GET` | `/model` | management | `form.publish` |
 | `POST` | `/model/complete` | management | `form.publish` (ten a minute per session) |
 
@@ -443,8 +503,8 @@ server looks for every file in the one store it has.
 
 ## The audit log
 
-Every publish, permission change, login (including the failures), submission,
-**submission read and export** is recorded. `GET /audit` reads it back, newest
+Every publish, permission change, change to a form's examples, login (including
+the failures), submission, **submission read and export** is recorded. `GET /audit` reads it back, newest
 first, and needs an admin.
 
 The reads are the point: a log of mutations tells you who changed the form, not
@@ -536,6 +596,10 @@ Both compose files pass the three variables through when they are set.
 publish, version history and a submissions table on `:4382`, proxying `/api` to
 the server. When the server has [a model](#a-model-for-the-builders), the build tab draws the
 prompt pane and the Translations tab can ask for a language's missing messages, both through
-the server. The backend sets no CORS headers on purpose — cross-origin policy is
+the server. Once a form is published, the build tab lists [its examples](#a-forms-examples),
+runs them after every edit as the publish will, saves a removal back to the server — after a
+save that fails it says so and shows the server's list again — and —
+with a model — drafts more from what you say the form should do; the prompt pane's review
+names any example a model's edit would stop. The backend sets no CORS headers on purpose — cross-origin policy is
 its own piece of work, and a permissive development default would outlive
 development.

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import Editor from '@monaco-editor/react'
 import type { Monaco } from '@monaco-editor/react'
 import { BuildPane } from './build-pane.js'
+import { useKeptExamples } from './examples-pane.js'
 import { PublishNote } from './publish-note.js'
 import { FillPane } from './fill-pane.js'
 import { TranslationsTab } from './translations-tab.js'
@@ -167,6 +168,8 @@ function FormWorkspace({
   const [source, setSource] = useState<string | undefined>(undefined)
   const [serverHash, setServerHash] = useState<string | undefined>(undefined)
   const [publishState, setPublishState] = useState<PublishResult | undefined>(undefined)
+  // The form's examples are the server's, beside a form it has: none before the first publish (0166).
+  const kept = useKeptExamples(path, serverHash !== undefined)
 
   useEffect(() => {
     fetchForm(path)
@@ -222,6 +225,8 @@ function FormWorkspace({
           onPublish={() => { void publishSource() }}
           formPath={path}
           model={model}
+          kept={kept}
+          published={serverHash !== undefined}
         />
       ) : tab === 'editor' ? (
         <EditorPane

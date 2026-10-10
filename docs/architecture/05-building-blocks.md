@@ -323,7 +323,9 @@ path `core`'s `formatPath` writes, their types, labels and options, the engine's
 — `BUILT_IN_ERROR_CODES`, which satisfies `core`'s `BuiltInErrorCode` — and the author's
 words, and never a rule's condition, a pattern, a bound or which fields are required. Shown
 the rule, a model writes the example the rule passes. It is model-facing English, as
-`authoring.ts` is. `scenario-drafts.ts` reads the answer item by item, judges a draft with
+`authoring.ts` is. `scenario-drafts.ts` reads the answer item by item — each through
+`scenario-shape.ts`'s `readScenario`, the reader a server keeping a form's examples uses too
+(0166) — judges a draft with
 `runScenarios` and the scenario pane's own options (`draftVerdict`), decides what may be kept
 (`keepDraft`), says what came of a run in the catalogue's words (`draftStatus`,
 `draftProblems`), and which of the model's own words are quoted beneath it (`draftQuotes`). Both builders' drafting parts, drawn inside their scenario panes, are
@@ -473,7 +475,7 @@ change what is missing.
 ### `@formancy/server-core` and `@formancy/server`
 
 `server-core` holds the use cases — publish, resolve, submit with replay, list,
-export, save and resume drafts, authenticate, authorise — and contains **no
+export, save and resume drafts, keep a form's examples, authenticate, authorise — and contains **no
 HTTP types at all**. Storage arrives through a ports interface, which also
 gives the tests an in-memory implementation.
 
@@ -519,6 +521,25 @@ the body cap, the per-session limit, the browser going away as a cancellation, a
 row. Drafts left `app.ts` for `server/routes/drafts.ts` to make room for it. The edge from
 the server to `builder-core` is downward, to an isomorphic package, and costs the image one
 more workspace package.
+
+A form's examples are the family after it, kept beside the form and run at publish
+([0166](../decisions/0166-a-deployment-keeps-a-forms-examples-and-runs-them-at-publish.md)).
+`server-core/examples.ts` holds `readExamples` and `keepExamples`, which take the actor and
+decide the permission themselves, read a list through `builder-core`'s `readScenario` — the
+reader the drafting part reads a model's answer through, in `builder-core/scenario-shape.ts` —
+on the way in and again on the way out, so a row edited around them is named rather than handed
+on, and `examplesThatStopHolding`, which `publishing.ts` calls with the version the form has and the
+one being published: `core`'s `runScenarios` in server mode from the kept sample, compared by
+`builder-core`'s `comparedToLastRun`, each regression a sentence among the publish's warnings.
+The port gained `getExamples` and `keepExamples`; `server/postgres-examples.ts` implements them
+over the `form_examples` table `db.ts` creates on start, beside the audit row's conversion that
+moved to `db.ts` so both storage files write it one way, and `server/routes/examples.ts` only
+authenticates and carries. The form's access route left `app.ts` for `server/routes/access.ts`
+to make room for registering it. In `apps/admin`, `examples-pane.tsx` holds the form's
+examples for its workspace — read once a form is published, saved back one save after another,
+the server's list put back after a save that fails —
+and draws `ScenarioPane` over them in server mode, with drafting through the server's model when
+it has one; `build-pane.tsx` hands the same examples to the prompt pane.
 
 The webhook outbox shows the split at its sharpest. `server-core/outbox.ts` has
 `afterAttempt` — pure, four arguments, the entire retry policy — and

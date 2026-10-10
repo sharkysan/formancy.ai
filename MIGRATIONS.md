@@ -298,6 +298,38 @@ again.
   exists for exactly that, and `runsOn` is already in place so the ordering question can
   be answered without restructuring anything.
 
+## A form's examples are kept beside it (Unreleased)
+
+**The database.** The server adds a table, `form_examples`, on start with `CREATE TABLE IF NOT
+EXISTS`, as it creates every table: one row per form, its primary key the form's id and a
+foreign key to `forms`, holding the examples and the sample as `jsonb`. There is nothing to run
+and nothing to backfill: a database from before it gains the table empty, and every form has no
+examples, which is what it had
+([0166](docs/decisions/0166-a-deployment-keeps-a-forms-examples-and-runs-them-at-publish.md)).
+If you grant the application's role privileges table by table, it needs `SELECT`, `INSERT` and
+`UPDATE` on `form_examples`: a write is an insert that replaces the form's row when there is one.
+
+**If you implement `Storage` yourself**, rather than using `@formancy/server`'s PostgreSQL one,
+add two methods. `ExamplesRecord` is `{ formId, scenarios, sample, updatedAt }`, `sample` being
+null when none was kept.
+
+| Method | Does | Must |
+|---|---|---|
+| `getExamples(formId)` | Returns the form's record, or `undefined` when none was ever kept | — |
+| `keepExamples(record, audit?)` | Replaces the form's record whole, and appends `audit` | Write both in **one commit**, as `publishVersion` does, and refuse a record for a form that is not there |
+
+Nothing in the port reads the examples: whether they are examples is `keepExamples` in
+`@formancy/server-core`'s question, asked before your method is called. `createMemoryStorage` is
+a second implementation to read beside yours, and `packages/server-core/src/examples.test.ts`
+says what each rule prevents.
+
+**A client may see more warnings.** A publish's `201` may now carry, in `warnings`, a sentence
+for each of the form's examples that held against the version it had and does not hold against
+the new one, and one naming anything kept with them that is not an example and so was not run.
+It is the same list 0097 put there, so a client that shows it needs nothing new; a
+pipeline that fails on any warning will now fail on these too. And the audit log has one more
+action, `form.examples.changed`.
+
 ## A file is received by one request at a time (Unreleased)
 
 **The database.** `files` gains a nullable `receiving_until timestamptz`, which the server adds

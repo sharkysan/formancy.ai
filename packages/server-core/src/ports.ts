@@ -1,4 +1,5 @@
 import type { AuditEntry } from './audit.js'
+import type { Scenario } from '@formancy/core'
 import type { FormSchema } from '@formancy/spec'
 import type { Role } from './auth.js'
 
@@ -153,6 +154,24 @@ export interface FileRecord {
   receivingUntil: string | null
 }
 
+/**
+ * A form's examples, and the fictional sample every one of them starts from — the pair the
+ * starter templates carry as `*.scenarios.json` and `*.sample.json`
+ * ([0166](../../../docs/decisions/0166-a-deployment-keeps-a-forms-examples-and-runs-them-at-publish.md)).
+ *
+ * Beside the form and not inside a version. A published version is immutable
+ * ([0025](../../../docs/decisions/0025-immutability-in-the-database.md)), and examples change
+ * while the form does not: written into a version, every example added would mint one. One
+ * record per form, replaced whole, because the scenario panes hand back the whole list.
+ */
+export interface ExamplesRecord {
+  formId: string
+  scenarios: readonly Scenario[]
+  /** Where every example starts, or null when none was kept. */
+  sample: Readonly<Record<string, unknown>> | null
+  updatedAt: string
+}
+
 export interface Storage {
   getFormByPath(path: string): Promise<FormRecord | undefined>
   listForms(): Promise<FormRecord[]>
@@ -188,6 +207,17 @@ export interface Storage {
     audit?: AuditEntry
   }): Promise<void>
   getVersionById(id: string): Promise<FormVersionRecord | undefined>
+  /** A form's examples, or undefined when none were ever kept for it. */
+  getExamples(formId: string): Promise<ExamplesRecord | undefined>
+  /**
+   * Replace a form's examples and sample, with the audit row, in ONE commit — as a publish
+   * carries its own: a change that rolled back must leave nothing saying it happened.
+   *
+   * The form must exist; the PostgreSQL storage has the database refuse one that does not.
+   * Nothing here reads the examples: whether they are examples is the use-case's question,
+   * asked before this is called, and again of what `getExamples` hands back.
+   */
+  keepExamples(record: ExamplesRecord, audit?: AuditEntry): Promise<void>
   findVersionByHash(formId: string, schemaHash: string): Promise<FormVersionRecord | undefined>
   latestVersionNumber(formId: string): Promise<number>
   /**
