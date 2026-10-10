@@ -120,7 +120,7 @@ describe('what the environment cannot add', () => {
   test('a second credential, or a copy of the form in the console', async () => {
     // The SDK reads ANTHROPIC_AUTH_TOKEN and sends it as `Authorization` beside the key,
     // and with ANTHROPIC_LOG=debug writes every request, the whole form, to the console —
-    // a request log the server says it does not keep (SAFETY-ANALYSIS C3). A variable set
+    // a second request log, outside the rule the server's own is built by (SAFETY-ANALYSIS C3). A variable set
     // for something else on the same host would do either without anybody reading this file.
     const ambient = { token: process.env['ANTHROPIC_AUTH_TOKEN'], log: process.env['ANTHROPIC_LOG'] }
     process.env['ANTHROPIC_AUTH_TOKEN'] = 'ambient-bearer'

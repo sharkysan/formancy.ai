@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto'
 import { Readable } from 'node:stream'
 import postgres from 'postgres'
 import { afterAll, afterEach, beforeAll, describe, expect, test, vi } from 'vitest'
-import type { FastifyInstance } from 'fastify'
+import type { FastifyInstance, HTTPMethods, InjectOptions, LightMyRequestResponse } from 'fastify'
 import type { FormSchema } from '@formancy/spec'
 import { bootstrapSchema } from './db.js'
 import { solveChallenge } from '@formancy/server-core'
@@ -13,6 +13,7 @@ import { createApp, SCHEMA_HASH_HEADER } from './app.js'
 import { createPostgresStorage } from './postgres-storage.js'
 import type { FileStore } from './file-store.js'
 import { DEFAULT_MAX_FILE_BYTES, LARGEST_MAX_FILE_BYTES } from './upload-settings.js'
+import { LOG_FIELDS } from './server-log.js'
 
 /**
  * The walking skeleton's proof, against REAL Postgres — versioning and
@@ -1143,12 +1144,16 @@ describe('an upload the deployment scans', () => {
   const seen: Buffer[] = []
   let scanning: FastifyInstance
   let hash = ''
+  /** What the scanning server wrote to its log, line by line. */
+  const logged: string[] = []
+  const said = (event: string) => logged.map((line) => JSON.parse(line) as { event: string }).filter((line) => line.event === event)
 
   beforeAll(async () => {
     scanning = await createApp(createPostgresStorage(sql), {
       authSecret: 'integration-test-secret-with-length',
       submissionRateLimit: { max: 10_000, timeWindowMs: 60_000 },
       fileStore,
+      log: { sink: { write: (line: string) => logged.push(line) }, level: 'info' },
       scanner: {
         scan: async (_file, scannedBytes) => {
           seen.push(Buffer.from(scannedBytes))
@@ -1206,6 +1211,8 @@ describe('an upload the deployment scans', () => {
     expect(put.statusCode).toBe(422)
     expect(put.json()).toMatchObject({ error: 'refused_by_scanner' })
     expect((put.json() as { message: string }).message).toContain('Eicar-Test-Signature')
+    // The operator is told a file was refused; which finding is the answer's to say.
+    expect(said('upload.refused')).toEqual([expect.objectContaining({ level: 'warn' })])
     // Never in the store, not even until the collector runs.
     expect(bytes.has(file.storageKey)).toBe(false)
     const submitted = await scanning.inject({
@@ -1227,8 +1234,11 @@ describe('an upload the deployment scans', () => {
 
     expect(put.statusCode).toBe(503)
     expect((put.json() as { message: string }).message).toMatch(/Try again/)
-    // The cause is the operator's, in the log; the client is not told an address.
+    // The client is not told an address, and nor is the log: it says the scanner could not
+    // be asked, and the cause's words go nowhere (0168).
     expect(JSON.stringify(put.json())).not.toContain('10.0.0.5')
+    expect(said('scanner.unreachable')).toEqual([expect.objectContaining({ level: 'error' })])
+    expect(logged.join('')).not.toContain('10.0.0.5')
     expect(bytes.has(file.storageKey)).toBe(false)
   })
 
@@ -1459,6 +1469,7 @@ describe('an upload the deployment scans', () => {
      */
     describe('when giving the file back fails', () => {
       let releasing: FastifyInstance
+      const released: string[] = []
 
       beforeAll(async () => {
         releasing = await createApp(
@@ -1471,6 +1482,7 @@ describe('an upload the deployment scans', () => {
             submissionRateLimit: { max: 10_000, timeWindowMs: 60_000 },
             fileStore,
             scanner: { scan: () => verdict() },
+            log: { sink: { write: (line: string) => released.push(line) }, level: 'info' },
           },
         )
       })
@@ -1493,6 +1505,12 @@ describe('an upload the deployment scans', () => {
         // about a dropped connection, for a disk that had filled.
         expect(answered.statusCode).toBe(500)
         expect(answered.json()).toMatchObject({ message: 'ENOSPC: no space left on device' })
+        // The release that failed is said in the log, as one, beside the failure it did
+        // not replace.
+        const events = released.map((line) => JSON.parse(line) as { event: string; level: string })
+        expect(events).toContainEqual(expect.objectContaining({ event: 'upload.unreleased', level: 'error' }))
+        expect(events).toContainEqual(expect.objectContaining({ event: 'request.failed', status: 500 }))
+        expect(released.join('')).not.toContain('Connection terminated')
       })
 
       test('a file the scanner refused is still answered as refused', async () => {
@@ -2209,33 +2227,263 @@ describe('a sourced answer, checked against the deployment’s own list', () => 
 })
 
 /**
- * What reaches a log.
+ * What reaches the log.
  *
- * `SAFETY-ANALYSIS.md` C3 claimed "structured logging with configurable PII redaction".
- * The server constructs Fastify with `logger: false` and nothing in this repository
- * redacts anything — a wrong statement in a document a manufacturer builds an assessment
- * on, which is worse than an absent one. C3 now says what is true: there is no log, so
- * submission content cannot reach one. This is the assertion that keeps that sentence
- * honest.
+ * `SAFETY-ANALYSIS.md` C3 once claimed "structured logging with configurable PII
+ * redaction" while the server constructed Fastify with `logger: false` and nothing in this
+ * repository redacted anything. The correction made the sentence true the other way — no
+ * log, so submission content could not reach one — and this block asserted the logger was
+ * off. The server now keeps a log, on by default (0168), and the assertion that held "there
+ * is none" is replaced by the sweep below, which holds what the log may say.
  *
- * The first version of this guard captured `process.stdout.write` around a submission
+ * The first version of the old guard captured `process.stdout.write` around a submission
  * carrying a marker string and asserted the marker never appeared. **Measured with
  * `logger: true`: it still passed.** pino writes to the file descriptor through its own
- * destination stream and never touches `process.stdout.write`, so the guard was green
- * over exactly the configuration it existed to refuse. It is recorded here because a
- * guard that cannot see the thing it watches is indistinguishable from one that works.
+ * destination stream and never touches `process.stdout.write`, so the guard was green over
+ * exactly the configuration it existed to refuse. That is why the sweep reads the sink the
+ * server is given rather than intercepting a stream: there is nothing for the log to write
+ * past.
  */
-describe('submission content and the logs', () => {
-  test('the server is built with no logger, so there is no request log to leak into', () => {
-    // Asserted on the CONSTRUCTED app rather than on the call that built it: `logger:
-    // false` gives Fastify an abstract no-op logger, which carries no level, while any
-    // pino carries one. Enable a logger and this fails, which is the point -- a
-    // deployment that wants logs owns the redaction question, and C3 says so.
+describe('what reaches the log', () => {
+  test('an app given no log keeps none, because a host that embeds it owns its output', () => {
+    // The old assertion, kept for the reason that is still true: `createApp` with no `log`
+    // is built with Fastify's no-op logger, which carries no level. Only the server's own
+    // process turns the log on (`main.ts`); a host embedding the app decides for itself
+    // what its standard output is for (0115).
     expect((app.log as { level?: string }).level).toBeUndefined()
-
-    // And the no-op is real: a call that would print an answer prints nothing, because
-    // there is nothing behind it.
     expect(app.log.info('marker-3f9c1d-never-in-a-log')).toBeUndefined()
+  })
+
+  test('nothing a request carries or a response hands out is written, on any route family', async () => {
+    // The log's whole promise. Every route family is driven — a login that fails and one
+    // that works, a user, an API key used for publishing, a draft, an upload, a challenge,
+    // a submission, the reads of it, the model — with values planted in what it sends, and
+    // a body that does not parse, a path no route has and a database error whose message
+    // quotes what was planted. A field the rule did not list, an error's words or a raw URL
+    // in any line fails it.
+    const written: string[] = []
+    const providerWords = `invalid x-api-key for planted-org-${randomUUID()}`
+    const swept = await createApp(createPostgresStorage(sql), {
+      authSecret: 'integration-test-secret-with-length',
+      submissionRateLimit: { max: 10_000, timeWindowMs: 60_000 },
+      loginRateLimit: { max: 10_000, timeWindowMs: 60_000 },
+      challengeSecret: 'challenge-signing-key-of-real-length',
+      fileStore,
+      model: {
+        provider: 'anthropic',
+        model: 'claude-test',
+        completer: { complete: () => Promise.resolve({ ok: false, failure: 'unavailable', status: 401, cause: providerWords }) },
+      },
+      log: { sink: { write: (line: string) => written.push(line) }, level: 'trace' },
+    })
+
+    /**
+     * Every string this sweep sends — header values, the path's parameters, query values
+     * and the body's leaves — and every secret the server hands back, kept as the requests
+     * are made, so the list of what must not be logged is derived from the requests rather
+     * than written beside them. A path's parameters are what Fastify's router reads as
+     * them, since the rest of the path is the route, which the log does write; a path no
+     * route has is the asker's whole. Shorter than six characters is too common to say
+     * anything (`CH`, `2`), and nothing planted is that short.
+     */
+    const carried = new Set<string>()
+    const carry = (value: string): void => {
+      if (value.length >= 6) carried.add(value)
+    }
+    const leaves = (value: unknown): void => {
+      if (typeof value === 'string') carry(value)
+      else if (Buffer.isBuffer(value)) carry(value.toString('utf8'))
+      else if (Array.isArray(value)) value.forEach(leaves)
+      else if (value !== null && typeof value === 'object') Object.values(value).forEach(leaves)
+    }
+    let sent = 0
+    const send = async (options: InjectOptions): Promise<LightMyRequestResponse> => {
+      const url = new URL(String(options.url), 'http://sweep.invalid')
+      const route = swept.findRoute({ method: String(options.method) as HTTPMethods, url: url.pathname })
+      if (route === null) carry(url.pathname)
+      else Object.values(route.params).forEach((value) => carry(String(value)))
+      url.searchParams.forEach((value) => carry(value))
+      leaves(options.headers)
+      leaves(options.payload)
+      sent += 1
+      return swept.inject(options)
+    }
+    /** A value nobody would write by accident, for this sweep to send. */
+    const plant = (what: string): string => `planted-${what}-${randomUUID()}`
+    const planted = {
+      email: `${plant('email')}@example.ch`,
+      password: plant('password'),
+      answer: plant('answer'),
+      fileName: `${plant('file-name')}.pdf`,
+      fileBytes: `%PDF-1.4 ${plant('file-bytes')}`,
+      query: plant('query'),
+      prompt: plant('prompt'),
+    }
+
+    try {
+      const admin = (
+        await send({ method: 'POST', url: '/auth/login', payload: { email: 'root@test.ch', password: 'root-password-1' } })
+      ).json() as { token: string }
+      carry(admin.token)
+      const asRoot = { authorization: `Bearer ${admin.token}` }
+
+      expect(
+        (await send({ method: 'POST', url: '/auth/login', payload: { email: planted.email, password: planted.password } }))
+          .statusCode,
+      ).toBe(401)
+      expect(
+        (
+          await send({
+            method: 'POST',
+            url: '/users',
+            headers: asRoot,
+            payload: { email: planted.email, password: planted.password, role: 'editor' },
+          })
+        ).statusCode,
+      ).toBe(201)
+
+      const key = (
+        await send({ method: 'POST', url: '/api-keys', headers: asRoot, payload: { name: plant('key-name'), role: 'admin' } })
+      ).json() as { secret: string }
+      carry(key.secret)
+      const withKey = { 'x-formancy-api-key': key.secret }
+
+      const path = plant('path')
+      const published = await send({
+        method: 'POST',
+        url: '/forms',
+        headers: withKey,
+        payload: {
+          path,
+          schema: {
+            specVersion: '2',
+            id: 'swept',
+            title: 'Swept',
+            model: {
+              fields: [
+                { key: 'email', type: 'text', label: 'Email', required: true },
+                { key: 'note', type: 'text', label: 'Note' },
+                { key: 'evidence', type: 'file', label: 'Evidence', accept: ['application/pdf'] },
+              ],
+            },
+          },
+        },
+      })
+      expect(published.statusCode).toBe(201)
+      const { schemaHash } = published.json() as { schemaHash: string }
+      expect(
+        (await send({ method: 'PUT', url: `/f/${path}/access`, headers: withKey, payload: { submit: 'public' } })).statusCode,
+      ).toBe(204)
+      expect((await send({ method: 'GET', url: `/forms?cursor=${planted.query}`, headers: withKey })).statusCode).toBe(200)
+      expect((await send({ method: 'GET', url: `/f/${path}` })).statusCode).toBe(200)
+
+      const draft = (await send({ method: 'POST', url: `/f/${path}/drafts` })).json() as { draftId: string; token: string }
+      carry(draft.draftId)
+      carry(draft.token)
+      const draftKey = { 'x-formancy-draft-token': draft.token }
+      expect(
+        (
+          await send({
+            method: 'PUT',
+            url: `/f/${path}/drafts/${draft.draftId}`,
+            headers: draftKey,
+            payload: { email: planted.email, note: planted.answer },
+          })
+        ).statusCode,
+      ).toBe(200)
+      expect(
+        (await send({ method: 'GET', url: `/f/${path}/drafts/${draft.draftId}`, headers: draftKey })).statusCode,
+      ).toBe(200)
+
+      const bytes = Buffer.from(planted.fileBytes)
+      const offered = await send({
+        method: 'POST',
+        url: `/f/${path}/files`,
+        payload: { field: 'evidence', name: planted.fileName, size: bytes.byteLength, contentType: 'application/pdf' },
+      })
+      expect(offered.statusCode).toBe(201)
+      const file = offered.json() as { id: string; storageKey: string; uploadUrl: string }
+      leaves(file)
+      expect(
+        (await send({ method: 'PUT', url: file.uploadUrl, headers: { 'content-type': 'application/pdf' }, payload: bytes }))
+          .statusCode,
+      ).toBe(204)
+
+      const minted = await send({ method: 'GET', url: `/f/${path}/challenge` })
+      const challenge = minted.json() as { salt: string; challenge: string; maxNumber: number; signature: string }
+      const solution = Buffer.from(JSON.stringify({ ...challenge, number: await solveChallenge(challenge) })).toString(
+        'base64',
+      )
+      const submitted = await send({
+        method: 'POST',
+        url: `/f/${path}/submissions`,
+        headers: { [SCHEMA_HASH_HEADER]: schemaHash, 'x-formancy-challenge': solution },
+        payload: { email: planted.email, note: planted.answer, evidence: [file] },
+      })
+      expect(submitted.statusCode).toBe(201)
+      carry((submitted.json() as { id: string }).id)
+
+      for (const url of [
+        `/f/${path}/submissions`,
+        `/f/${path}/submissions/export.csv`,
+        `/f/${path}/files/${file.id}`,
+        `/f/${path}/examples`,
+        '/deliveries/dead',
+        '/audit?limit=50',
+      ]) {
+        expect((await send({ method: 'GET', url, headers: asRoot })).statusCode, url).toBe(200)
+      }
+
+      // The provider's words are not sent by anybody here; they come back from the model,
+      // and can name the account.
+      carry(providerWords)
+      expect(
+        (
+          await send({
+            method: 'POST',
+            url: '/model/complete',
+            headers: asRoot,
+            payload: { kind: 'authoring', user: planted.prompt },
+          })
+        ).statusCode,
+      ).toBe(502)
+
+      // A body that does not parse, refused before any handler runs.
+      expect(
+        (
+          await send({
+            method: 'POST',
+            url: '/auth/login',
+            headers: { 'content-type': 'application/json' },
+            payload: `{"email":"${planted.email}","password":${planted.password}}`,
+          })
+        ).statusCode,
+      ).toBe(400)
+      // An id the database cannot read: its error's message is the query and its parameters.
+      expect(
+        (await send({ method: 'GET', url: `/f/${path}/files/${plant('file-id')}`, headers: asRoot })).statusCode,
+      ).toBe(500)
+      // A path no route has, which Fastify's own line names in full.
+      expect((await send({ method: 'GET', url: `/nowhere/${plant('segment')}?q=${planted.query}` })).statusCode).toBe(404)
+    } finally {
+      await swept.close()
+    }
+
+    const lines = written.map((line) => JSON.parse(line) as Record<string, unknown>)
+    // Not vacuous: one line for every request, and the failures written as failures.
+    expect(lines.filter((line) => line['event'] === 'request')).toHaveLength(sent)
+    expect(lines.map((line) => line['event'])).toEqual(
+      expect.arrayContaining(['request.refused', 'request.failed', 'model.unreachable']),
+    )
+    for (const line of lines) for (const field of Object.keys(line)) expect(LOG_FIELDS).toContain(field)
+
+    // What was carried is what the requests carried, so this is the check that each kind of
+    // value the sweep claims to plant was actually sent.
+    for (const [what, value] of Object.entries(planted)) expect(carried.has(value), what).toBe(true)
+
+    // Every value that reached the log, rather than the first: a leak is read by what leaked.
+    const text = written.join('')
+    expect([...carried].filter((value) => text.includes(value))).toEqual([])
   })
 })
 

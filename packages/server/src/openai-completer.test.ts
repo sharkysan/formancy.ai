@@ -108,8 +108,8 @@ describe('what the environment cannot add', () => {
     ['xAI', XAI_BASE_URL],
   ])('a request log in the console, for %s', async (_, baseURL) => {
     // With OPENAI_LOG=debug the SDK writes a line for every request and every response —
-    // where it went, its headers, how long the provider took — which is a request log the
-    // server says it does not keep (SAFETY-ANALYSIS C3), switched on by a variable nobody
+    // where it went, its headers, how long the provider took — which is a second request log,
+    // outside the rule the server's own is built by (SAFETY-ANALYSIS C3), switched on by a variable nobody
     // reading this file would see. This version writes the body's length rather than the
     // form; the form is checked for too, in case a later one does not.
     process.env['OPENAI_LOG'] = 'debug'

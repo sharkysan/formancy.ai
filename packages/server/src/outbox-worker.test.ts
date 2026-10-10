@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { createMemoryStorage } from '@formancy/server-core'
 import type { DeliveryRecord, Storage } from '@formancy/server-core'
 import { startOutboxWorker } from './outbox-worker.js'
+import { createServerLog } from './server-log.js'
 
 /**
  * The clock, which is all this file is.
@@ -107,23 +108,31 @@ describe('startOutboxWorker', () => {
     expect(due[0]?.attempt).toBe(0)
   })
 
-  test('a pass that throws does not stop the timer', async () => {
+  test('a pass that throws does not stop the timer, and says so without what was thrown', async () => {
     // A worker that dies on one bad pass is a worker that looks fine and
-    // delivers nothing, which is the failure hardest to notice.
+    // delivers nothing, which is the failure hardest to notice. And a pass's error
+    // is a query's: its message carries the parameters, which were printed whole
+    // to standard error until the log had a rule (C3).
+    const planted = 'planted-delivery-body-6a1f'
     const failing: Storage = {
       ...storage,
       claimDueDeliveries: vi
         .fn<Storage['claimDueDeliveries']>()
-        .mockRejectedValueOnce(new Error('connection terminated'))
+        .mockRejectedValueOnce(
+          Object.assign(new Error(`Failed query: update "deliveries"\nparams: ${planted}`), { code: '57P01' }),
+        )
         .mockImplementation(async (nowIso, limit) => storage.claimDueDeliveries(nowIso, limit)),
     }
-    const complained = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const written: string[] = []
 
-    startOutboxWorker(failing, { intervalMs: 1000 })
+    startOutboxWorker(failing, { intervalMs: 1000, log: createServerLog({ write: (line) => written.push(line) }, 'info') })
     await vi.advanceTimersByTimeAsync(1000)
     await settle()
 
-    expect(complained).toHaveBeenCalled()
+    expect(written.map((line) => JSON.parse(line) as unknown)).toEqual([
+      { time: expect.any(String), level: 'error', event: 'outbox.failed', kind: 'Error', code: '57P01' },
+    ])
+    expect(written.join('')).not.toContain(planted)
 
     await vi.advanceTimersByTimeAsync(1000)
     await settle()

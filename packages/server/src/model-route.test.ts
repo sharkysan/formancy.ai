@@ -18,6 +18,7 @@ import type { Cancellation, Completer, Completion, CompletionPrompt, Storage } f
 import { createApp } from './app.js'
 import { MODEL_BODY_LIMIT_BYTES } from './routes/model.js'
 import type { DeploymentModel } from './routes/model.js'
+import type { LogLevel, LogSink } from './server-log.js'
 
 /**
  * The route a builder's `AskModel` calls, through `createApp`, with a double behind the
@@ -66,6 +67,7 @@ async function serve(
   model: DeploymentModel | undefined,
   limit = { max: 1_000, timeWindowMs: 60_000 },
   storage: Storage = createMemoryStorage(),
+  log?: { sink: LogSink; level: LogLevel },
 ): Promise<Served> {
   app = await createApp(storage, {
     authSecret: SECRET,
@@ -73,6 +75,7 @@ async function serve(
     loginRateLimit: { max: 1_000, timeWindowMs: 60_000 },
     modelRateLimit: limit,
     ...(model === undefined ? {} : { model }),
+    ...(log === undefined ? {} : { log }),
   })
   const login = async (email: string, password: string): Promise<string> =>
     (
@@ -322,12 +325,16 @@ describe('what comes back when there is no answer', () => {
   test('a refused key is said as one, the provider’s own words stay on the server, and the status is audited', async () => {
     // The person reads the reason as the run's ending. "Unavailable" for a key the
     // provider refuses sends them to wait for an outage that is not happening; the
-    // provider's body can name the account. With no request log (C3), the audited status
-    // is what the operator has to go on.
+    // provider's body can name the account, so it reaches neither the person, the audit row
+    // nor the log. The operator has the status, in both of those (C3).
+    const written: string[] = []
     const { app, tokens, storage } = await serve(
       configured(
         double({ ok: false, failure: 'unavailable', status: 401, cause: 'invalid x-api-key for org-12345' }).completer,
       ),
+      undefined,
+      undefined,
+      { sink: { write: (line) => written.push(line) }, level: 'info' },
     )
     const response = await ask(app, tokens.editor, { kind: 'authoring', user: 'x' })
     expect(response.statusCode).toBe(502)
@@ -337,6 +344,10 @@ describe('what comes back when there is no answer', () => {
     const [entry] = (await storage.listAudit(10)).filter((row) => row.action === 'model.asked')
     expect(entry?.detail).toMatchObject({ outcome: 'unavailable', status: 401 })
     expect(JSON.stringify(entry)).not.toContain('org-12345')
+    expect(written.map((line) => JSON.parse(line) as unknown)).toContainEqual(
+      expect.objectContaining({ level: 'error', event: 'model.unreachable', upstream: 401 }),
+    )
+    expect(written.join('')).not.toContain('org-12345')
   })
 })
 

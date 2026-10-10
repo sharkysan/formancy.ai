@@ -1,6 +1,8 @@
 import { collectAbandonedFiles } from '@formancy/server-core'
 import type { Storage } from '@formancy/server-core'
 import type { FileStore } from './file-store.js'
+import { workerLog } from './server-log.js'
+import type { WorkerLog } from './server-log.js'
 
 /**
  * Deleting files nobody claimed.
@@ -30,9 +32,10 @@ export interface CollectorHandle {
 export function startFileCollector(
   storage: Storage,
   store: FileStore,
-  options: { intervalMs?: number; afterHours?: number } = {},
+  options: { intervalMs?: number; afterHours?: number; log?: WorkerLog } = {},
 ): CollectorHandle {
   const interval = options.intervalMs ?? 15 * 60_000
+  const log = workerLog(options.log)
   const afterHours = options.afterHours ?? 24
   let stopped = false
   let running = false
@@ -55,8 +58,8 @@ export function startFileCollector(
       await storage.deleteFiles(removed)
     } catch (error) {
       // A collector that throws is a collector that stops, and a disk that
-      // fills up. Complain and come back.
-      console.error('files: a collection pass failed', error)
+      // fills up. Complain and come back, without what was thrown (C3).
+      log.error({ event: 'collector.failed', err: error })
     } finally {
       running = false
     }

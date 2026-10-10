@@ -578,9 +578,9 @@ nothing bounds how long a scan takes (`clamd-scanner.test.ts` holds it to that, 
 statement fails if the adapter changes). A scan that ends just inside the two minutes followed
 by a write that crosses them reaches this residual with the supplied clamd adapter and object
 store alone; so can a deployment's own scanner or store, or a stalled disk under the directory
-store. **Nothing records that it happened** beyond the `409` the late request is answered
-with — the server has no request log (C3) — and a test asserts the residual so that closing it
-is deliberate.
+store. **Nothing tells it apart** from any other `409` on that route — the request log (C3)
+records the status, not which refusal it was — and a test asserts the residual so that closing
+it is deliberate.
 
 
 
@@ -616,23 +616,57 @@ organisation must provide that boundary itself.
 
 ### C3. Submission content is written to logs
 
-*Constraint:* **there is no request log.** `@formancy/server` constructs Fastify with
-`logger: false`, so handling a request writes no request line and no error line —
-submission content cannot reach a request log that does not exist. Asserted on the
-constructed app in `packages/server/src/server.integration.test.ts`, which fails if a
-logger is enabled.
+*How it arises:* a request log is where a body, a query string, a header or an error's
+message lands by default, and each of those can carry an answer, a credential or a file's
+name. A database error's message is the failing query followed by its parameters.
 
-*Corrected 2026-10-09.* This entry said the server emitted "no output of any kind". The
-process writes to its own standard streams in six places: refusing to start without
-`DATABASE_URL`, warning that it generated an ephemeral `FORMANCY_AUTH_SECRET`, the line
-saying it is listening, and an error from each of three background workers — the outbox,
-the file collector and the challenge sweeper — when a pass fails. **Those three print
-whatever was thrown, unredacted**, and a Drizzle query error carries the failing query's
-text and its parameters in its message. The queries those passes make today carry
-identifiers, timestamps, delivery state and a delivery's last error rather than
-submission content — but that is a property of today's queries, not a constraint, and
-nothing fails if a worker starts handling content. The libraries are held to writing
-nothing at all ([0115](../decisions/0115-a-library-writes-nothing-to-its-hosts-console.md)).
+*Constraint:* **the server keeps a log, and a line is built from a list of fields**
+([0168](../decisions/0168-the-log-is-built-from-a-list-of-fields.md)). `@formancy/server`'s
+process writes a JSON line to standard output for every request — its method, its route as
+the route table writes it (`/f/:path/drafts/:draftId`, never the path that was asked for), its
+status, how long it took and its request id, which the request's audit row carries too — and
+one for every error that answered a request, naming what was thrown by its class and its code,
+never by its message or its stack. Anything else a route or a background worker writes is an
+event from a fixed list. A line is made from the listed fields only, each kept only when its
+value is of that field's kind, and the words of a call are never written; so a body, a query
+string, a header (`Authorization`, a cookie, the API key, the challenge, a draft's key), a
+file's name, an answer, a password or an email has no field to go in. The three background
+workers' failures go through the same rule, and so do the database's notices. On by default at
+`info`; `FORMANCY_LOG_LEVEL` takes pino's level names or `off`, and anything else stops the
+server at startup. `createApp` given no log keeps none, so a host embedding it decides, and the
+libraries still write nothing
+([0115](../decisions/0115-a-library-writes-nothing-to-its-hosts-console.md)).
+
+Held by `packages/server/src/server.integration.test.ts`, *what reaches the log*, on real
+PostgreSQL: every route family is driven — a login that fails and one that works, a user, an
+API key used to publish, a draft written and read, an upload, a challenge, a submission, its
+listing, export and file, a model that answers `401` — with values planted in what each request
+sends, and a body that does not parse, a path no route has and a database error whose message
+quotes a planted id. What must not be logged is derived from what the requests carried and what
+the server handed back, and none of it is in the log, which has a line for every request. The
+sweep was watched failing three ways: a body on the request line, an error's message written,
+and the raw path written for the route. `server-log.test.ts` holds the line and each part of the
+rule; the three workers' tests plant a parameter in a failed pass and find a line without it;
+the scanned-upload cases find no scanner address in the log; `log-settings.test.ts` holds the
+setting's refusals.
+
+*Corrected 2026-10-10.* This entry said **there is no request log**, which held until this
+change: the integration test that asserted the logger was off is replaced by the sweep above.
+The correction below listed six places the process wrote to its standard streams and missed a
+seventh — postgres.js printing each notice the database sent, as a whole object, to standard
+output, several on every start — found by running the server for this change; notices now go to
+the log by their code. What the process still writes outside the rule: a few fixed sentences at
+startup — that it is listening, which model it asks, that it generated an ephemeral
+`FORMANCY_AUTH_SECRET` — and an error that stops it, which Node prints as it prints any: a
+setting refused at startup, `DATABASE_URL` missing, a database it cannot reach at start. Those
+carry configuration rather than anything a request sent.
+
+*Corrected 2026-10-09.* This entry said the server emitted "no output of any kind". The process
+wrote to its own standard streams in six places: refusing to start without `DATABASE_URL`,
+warning that it generated an ephemeral `FORMANCY_AUTH_SECRET`, the line saying it is listening,
+and an error from each of three background workers — the outbox, the file collector and the
+challenge sweeper — when a pass failed. **Those three printed whatever was thrown, unredacted**,
+and a Drizzle query error carries the failing query's text and its parameters in its message.
 
 *Corrected 2026-09-28.* This entry previously said "structured logging with configurable
 PII redaction; submission `data` is not logged by default". **Neither half was true:**
@@ -642,13 +676,21 @@ described a design that was planned and never built, which is the failure this d
 own preamble warns about, found by review rather than by a gate. The guard above is the
 gate it lacked.
 
-*Residual, and it is larger than the constraint:* **no log means no diagnostics.** A
-self-hoster debugging a failed webhook or a 500 has the audit log — which records
-mutations, in the same transaction, including submission reads — and nothing else. A
-deployment that adds a logger takes on the redaction question itself, and formancy offers
-it no help: there is no redaction configuration to set, and an unhandled exception carrying
-a payload would then be printed. A manufacturer needing operational logging must build it,
-and must treat submission content as reaching it.
+*Residual:* **an error says what was thrown, not where or why.** A fault in a route is a line
+naming its class on its route with a `500`; finding the line of code means reproducing it. A
+database error keeps its SQLSTATE. A model provider's and a scanner's own words go nowhere, so
+the log says the provider answered `401` or that clamd could not be asked, and not why. **The
+log cannot say which form**: the route is the pattern, so every form's submissions are one
+route; the audit log, which records a subject, is where a form is named. An error's class and
+code are what the thrown error calls itself, kept only in an identifier's shape: a dependency
+that put an answer in its error's code, in capitals and digits, would have it written, and the
+sweep catches that on the routes it drives and no further. **A `500` still tells its client what
+was thrown**: Fastify's default error reply carries the error's message — for a database error,
+the query and its parameters — to whoever made the request (`server.integration.test.ts`
+asserts a disk's `ENOSPC` reaching the client), which this change does not touch. An exception
+nothing catches is printed by Node, message and stack, outside the rule. And a deployment that
+forwards standard output somewhere sends it every line above: at `info`, one per request, a
+draft's every save included.
 
 ### C4. Arbitrary script executes in the page
 
@@ -1609,8 +1651,9 @@ that was not theirs. It shipped that way until 2026-10-09: the server constructe
 trusting no proxy, and had no setting to change that.
 
 *Severity:* the form cannot be submitted, by anyone behind that proxy, until the minute is
-out. Loud to the person refused and silent to the operator, because the server writes no
-request log (C3). Nothing is stored wrongly.
+out. Loud to the person refused. Until 2026-10-10 silent to the operator, because the server
+wrote no request log; now each refusal is a `429` line in it (C3), which names the route and
+not the address that was counted. Nothing is stored wrongly.
 
 *Constraint:* `FORMANCY_TRUST_PROXY` names the proxies, as addresses and CIDR ranges, whose
 `X-Forwarded-For` the server then believes, so each respondent is counted by the address the
@@ -1847,8 +1890,8 @@ the shapes the SDKs parse; a provider that changes its responses changes what th
 compatibility with OpenAI's client is xAI's documented claim. A retired or misspelt model is
 found at the first request rather than at startup. The SDKs retry what they call temporary
 failures twice, so a failing turn takes longer to say so. The provider's own words for a
-failure are dropped — the server keeps no request log (C3) — and the audited status is what an
-operator has; a provider whose status means something other than the route assumes gets the
+failure are dropped, from the log as well (C3), and its status — audited, and in the log's
+`model.unreachable` line — is what an operator has; a provider whose status means something other than the route assumes gets the
 wrong sentence. With Anthropic, a model without adaptive thinking answers every request with a
 400. **A translation can be too large to ask**: it repeats each question for every one of its
 answers, so a form at the server's limit with long questions and many answers makes one past

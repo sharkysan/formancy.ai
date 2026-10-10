@@ -77,10 +77,10 @@ separately in your UI and the formancy backend.
 > The server is not ready for a public deployment. It has authentication,
 > role-based authorization, forms that are private until opened, per-IP rate
 > limits, a request body cap, a publish-time check that refuses regular
-> expressions which can be made to backtrack, an audit log, drafts that carry
-> their own key and a proof-of-work challenge for anonymous submissions — but no
-> submission tokens yet, and it writes no log at all, so nothing tells you why a
-> request failed.
+> expressions which can be made to backtrack, an audit log, a request log with
+> no field for an answer or a credential, drafts that carry their own key and a
+> proof-of-work challenge for anonymous submissions — but no submission tokens
+> yet.
 
 ## What you can build
 

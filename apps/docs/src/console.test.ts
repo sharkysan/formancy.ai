@@ -28,15 +28,16 @@ const repo = join(here, '..', '..', '..')
 /**
  * Packages that own their process, with the reason.
  *
- * The server is an application, not a library: its standard error is its own,
- * and a background worker that fails says so there rather than stopping
- * silently. What it may and may not write is a different question with its own
- * answer — `SAFETY-ANALYSIS.md`, hazard C3.
+ * The server is an application, not a library: its standard output and error
+ * are its own, and its log is written there — though only when its own process
+ * turns the log on, so a host that embeds `createApp` still decides what its
+ * output is for. What the log may and may not say is a different question with
+ * its own answer — decision 0168, and `SAFETY-ANALYSIS.md`, hazard C3.
  */
 const OWNS_ITS_PROCESS: ReadonlyArray<{ name: string; why: string }> = [
   {
     name: '@formancy/server',
-    why: 'A process with a composition root. Its standard error is its own, and its workers report failures there.',
+    why: 'A process with a composition root. Its standard output and error are its own, and its log is written there.',
   },
 ]
 

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import type { Storage } from '@formancy/server-core'
 import { startChallengeSweeper } from './challenge-sweeper.js'
+import { createServerLog } from './server-log.js'
 
 /**
  * The sweeper had no test either.
@@ -11,6 +12,8 @@ import { startChallengeSweeper } from './challenge-sweeper.js'
  * a thrown pass must not stop the timer, and `stop()` must actually stop it.
  */
 
+const PLANTED = 'planted-challenge-0d4e'
+
 function fake() {
   const swept: string[] = []
   let fails = false
@@ -19,7 +22,7 @@ function fake() {
   const storage = {
     forgetExpiredChallenges: async (before: string) => {
       if (gate !== undefined) await gate
-      if (fails) throw new Error('the table is locked')
+      if (fails) throw Object.assign(new Error(`Failed query: delete\nparams: ${PLANTED}`), { code: '55P03' })
       swept.push(before)
     },
   } as unknown as Storage
@@ -72,16 +75,24 @@ describe('startChallengeSweeper', () => {
     expect(world.swept).toEqual([])
   })
 
-  test('a pass that throws complains and comes back', async () => {
-    // A sweeper that stops is a table that grows for a reason nobody is watching.
+  test('a pass that throws complains, without what was thrown, and comes back', async () => {
+    // A sweeper that stops is a table that grows for a reason nobody is watching. Its
+    // complaint is the error's kind and code, never the query's parameters, which were
+    // printed whole to standard error until the log had a rule (C3).
     const world = fake()
-    const complained = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const written: string[] = []
     world.fail(true)
-    startChallengeSweeper(world.storage, { intervalMs: 1000 })
+    startChallengeSweeper(world.storage, {
+      intervalMs: 1000,
+      log: createServerLog({ write: (line) => written.push(line) }, 'info'),
+    })
 
     await vi.advanceTimersByTimeAsync(1000)
     await settle()
-    expect(complained).toHaveBeenCalled()
+    expect(written.map((line) => JSON.parse(line) as unknown)).toEqual([
+      { time: expect.any(String), level: 'error', event: 'sweeper.failed', kind: 'Error', code: '55P03' },
+    ])
+    expect(written.join('')).not.toContain(PLANTED)
     expect(world.swept).toEqual([])
 
     world.fail(false)

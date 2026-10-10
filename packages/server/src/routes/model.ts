@@ -101,8 +101,8 @@ export async function modelRoutes(
             model: model.model,
             characters: String(body.user).length,
             outcome: outcome.ok ? 'answered' : outcome.failure,
-            // The provider's status, which is all an operator has to go on: the server
-            // keeps no request log (SAFETY-ANALYSIS C3), and its words go nowhere.
+            // The provider's status, which is what an operator has to go on, here and in
+            // the log; its words go nowhere (SAFETY-ANALYSIS C3).
             ...(!outcome.ok && outcome.failure === 'unavailable' && outcome.status !== undefined
               ? { status: outcome.status }
               : {}),
@@ -164,9 +164,9 @@ function answer(reply: FastifyReply, request: FastifyRequest, outcome: BuilderRe
       // Nobody is there to read it.
       return reply.code(499).send({ error: 'cancelled' })
     case 'unavailable':
-      // The provider's own words can name the account, so they stay on the server — written
-      // to a logger only if one is configured, which by default none is (C3).
-      request.log.error({ status: outcome.status, cause: outcome.cause }, 'the model could not be asked')
+      // The provider's own words can name the account, so they go nowhere: the log has the
+      // status it answered with (C3).
+      request.log.error({ event: 'model.unreachable', upstream: outcome.status })
       return reply.code(502).send({ error: 'model_unavailable', message: unavailableSentence(outcome.status) })
   }
 }

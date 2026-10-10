@@ -10,9 +10,9 @@ key, audit logging and an opt-in proof-of-work challenge
 (`FORMANCY_CHALLENGE_SECRET`, below), and it scans every upload before keeping it when you
 run ClamAV (`FORMANCY_CLAMD_HOST`, below) — but no submission tokens.
 
-It also writes **no log**: Fastify is constructed with the logger off, which is why no
-submission content can leak into one and also why nothing will tell you why a request
-failed. The audit log records mutations, including submission reads, and is all you get.
+It writes a [request log](#the-request-log) to standard output — a line per request and
+per error, built from a list of fields, so no answer or credential can reach it — and the
+[audit log](#the-audit-log) records what was done to whose data.
 
 Treat it as something to evaluate, not something to expose to the public internet.
 :::
@@ -92,6 +92,7 @@ wrong database — a confusing ten minutes. The compose file maps 5439 instead.
 | `FORMANCY_TRUST_PROXY` | behind a proxy | The reverse proxies whose `X-Forwarded-For` names the client: an address, or a comma-separated list of addresses and CIDR ranges. Unset trusts none, so behind a proxy every respondent shares one rate-limit budget. Name the proxy's own address, not the compose network's range: the range holds the gateway Docker forwards published ports from — see [behind a reverse proxy](#behind-a-reverse-proxy). |
 | `FORMANCY_MODEL_PROVIDER` | no | `anthropic`, `openai` or `xai`: a model for the builders, asked through this server so its key never reaches a browser. With it, the two below are required; without it, neither may be set, and a half configuration stops the server at startup. See [a model for the builders](#a-model-for-the-builders). |
 | `FORMANCY_MODEL_API_KEY` / `FORMANCY_MODEL` | with the provider | The provider's key, and the model as the provider's documentation names it. There is no default model. |
+| `FORMANCY_LOG_LEVEL` | no | How much the [request log](#the-request-log) writes: `info` by default, which is every request; `warn` or `error` for only what went wrong; `off` for nothing. `fatal`, `debug` and `trace` are the other names, pino's. Anything else, `INFO` included, stops the server at startup. |
 | `FORMANCY_WEBHOOK_ALLOW_HTTP` / `..._ALLOW_PRIVATE` | no | Opt out of the webhook SSRF guard, per deployment and never per form. `ALLOW_PRIVATE` gives it up entirely. |
 | `PORT` / `HOST` | no | Defaults `4380` / `0.0.0.0` |
 
@@ -500,6 +501,51 @@ Neither compose file runs the store itself: a fresh Garage node accepts no data 
 layout is assigned, which is a few commands after it starts rather than anything compose
 can declare. Moving existing files from the volume to the bucket is also yours to do — the
 server looks for every file in the one store it has.
+
+## The request log
+
+The server writes a JSON line to standard output for every request, once it has been
+answered, and one for every error that answered a request. `docker compose logs server`
+reads them.
+
+```json
+{"time":"2026-10-10T14:48:53.098Z","level":"info","event":"request","reqId":"req-1","method":"POST","route":"/auth/login","status":401,"ms":45}
+{"time":"2026-10-10T14:48:53.109Z","level":"info","event":"request","reqId":"req-2","method":"GET","route":"/f/:path","status":404,"ms":4}
+{"time":"2026-10-10T14:48:53.119Z","level":"info","event":"request.refused","reqId":"req-3","method":"POST","route":"/auth/login","status":400,"kind":"FastifyError","code":"FST_ERR_CTP_INVALID_JSON_BODY"}
+{"time":"2026-10-10T14:48:53.121Z","level":"info","event":"request","reqId":"req-3","method":"POST","route":"/auth/login","status":400,"ms":3}
+```
+
+- **`route`** is the route as the server registers it — `/f/:path/drafts/:draftId` — never
+  the path that was asked for, so no form's path, draft's id or query string is in it. A path
+  no route has gets a line without one.
+- **`reqId`** is the id the request's [audit row](#the-audit-log) carries, so the two can be
+  read together. It is a counter that starts again when the process does.
+- **An error** is `request.refused` at `info` when the client caused it (a 4xx) and
+  `request.failed` at `error` when the server did (a 5xx), naming what was thrown by its
+  class (`kind`) and its `code` — for a database error, PostgreSQL's SQLSTATE.
+- **Other events** say something went wrong beside an answer: `audit.unwritten` (with the
+  audit row's `action`), `upload.refused`, `scanner.unreachable`, `upload.unreleased`,
+  `model.unreachable` (with the provider's status as `upstream`), `outbox.failed`,
+  `collector.failed`, `sweeper.failed`, and `database.notice` (by `code`, at `debug`). A
+  warning from Fastify itself is `unlisted`.
+
+**What is never written:** a request's body, its query string, its headers —
+`Authorization`, cookies, `x-formancy-api-key`, the challenge, a draft's key — a file's name,
+an answer, a password, an email, and the words of any error: its message and its stack. A line
+is assembled from the fields above and nothing else, each kept only when its value is the kind
+that field holds, so none of those has anywhere to go
+([0168](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0168-the-log-is-built-from-a-list-of-fields.md)).
+
+That costs you something when a request fails. A `500` names the class of what was thrown and
+the route, not the line of code or the sentence it said; a scanner or a model provider that
+could not be reached is said to have failed, not why. And the log cannot say which form a line
+was for — the audit log names a subject. Note that a `500` still sends the client the error's
+message, which is Fastify's default reply and not the log.
+
+`FORMANCY_LOG_LEVEL` sets how much is written; `off` writes none of it. A few plain sentences
+at startup — that the server is listening, which model it asks, that it generated an ephemeral
+`FORMANCY_AUTH_SECRET` — are not part of the log and are written whatever the level, and so is
+an error that stops the server.
 
 ## The audit log
 
