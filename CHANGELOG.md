@@ -32,7 +32,10 @@ the hash does, and does not expire. `@formancy/server-core` gains `formToFill` a
 `token_required`, `token_invalid` and `token_spent` outcomes of `createSubmission`, and
 `startDraft` and `resumeDraft` return `submissionToken`; `@formancy/server` exports
 `SUBMISSION_TOKEN_HEADER`. The admin's *fill in* tab sends the form's token, and the draft's once
-it has one. Hazards A8 and D18. The public submission routes moved to `routes/submissions.ts` and
+it has one; once the response is stored — `201`, or `409 submission_token_spent` — it forgets the
+draft, and a save still waiting when Submit was pressed no longer starts a new draft for the
+answers just sent, which the next visit resumed and could send a second time. Hazards A8 and
+D18. The public submission routes moved to `routes/submissions.ts` and
 `createSubmission` to `server-core`'s `submitting.ts`, which took `app.ts` and `use-cases.ts`
 under the size budget. Redrawing the submission flow also removed three things the documentation
 said and the code never did: storing the schema hash on each submission, proceeding on an older

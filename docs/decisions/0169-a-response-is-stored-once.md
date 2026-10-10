@@ -10,9 +10,11 @@
   form's token, a forged signature, one signed under another key and one that is not a token
   are refused; a token handed out before a republish submits against the new version; a
   signed-in submitter may leave it out, and one it sends is checked and spent; a draft's
-  token names the draft, a resume hands back the same one, and a draft resumed a month later
-  submits — once. `packages/server/src/server.integration.test.ts` against real PostgreSQL,
-  *a response is stored once*: the form's reply carries a new token every time and
+  token names the draft, a resume hands back the same one, and a month after a draft started
+  the token it was handed at the start submits — once — as does a form's token sent a month
+  after it was handed out; both watched failing under a seven-day expiry that reads the clock,
+  which every other case passed. `packages/server/src/server.integration.test.ts` against
+  real PostgreSQL, *a response is stored once*: the form's reply carries a new token every time and
   `Cache-Control: no-store`; no token is `400 submission_token_required`, another form's is
   `400 submission_token_invalid`, a second send is `409 submission_token_spent` with one row
   and one audit row; two sends held at the insert until both are there store one and refuse
@@ -23,8 +25,11 @@
   solves a fresh challenge is still refused as sent. `apps/admin/src/fill-pane.test.tsx`,
   *sending the response*: the form's token in a header, the draft's once a draft has started,
   the one a resume hands back, and an already-sent refusal said while the answers stay on the
-  page. `apps/docs/src/claims.test.ts` fails on a live document that still says the server
-  has no submission token.
+  page; that refusal forgets the draft as a `201` does, so the next visit reads the form
+  rather than resuming it, and neither a save still waiting out the quiet nor one still
+  starting its draft leaves a draft behind once the response is stored — each watched failing.
+  `apps/docs/src/claims.test.ts` fails on a live document, the package READMEs among them,
+  that still says the server has no submission token.
 
 ## Context
 
@@ -134,10 +139,14 @@ The response is stored under that id, and the storage refuses it twice.**
 - **What changes for a client.** The renderers send nothing — the host holds the transport —
   so nothing in them changes. A host's own submit path reads `submissionToken` with the form,
   takes the draft's instead once it starts or resumes one, and sends it in
-  `X-Formancy-Submission-Token`. The admin's *fill in* tab does exactly that, and is the one
-  place in the repository where a browser submits to the server: formancy.ai submits nothing
-  anywhere ([0154](0154-the-website-makes-no-request-to-any-other-site.md)), and the playground
-  has no server.
+  `X-Formancy-Submission-Token`. Once the response is stored — a `201`, or a `409
+  submission_token_spent`, which says the first send was — the draft is finished: the host
+  forgets its key and drops any save still to be made, which would otherwise start a new
+  draft, with a token nothing has spent, for the answers just stored. The admin's *fill in*
+  tab does exactly that, and is the one place in the repository where a browser submits to
+  the server: formancy.ai submits nothing anywhere
+  ([0154](0154-the-website-makes-no-request-to-any-other-site.md)), and the playground has no
+  server.
 
 ## Consequences
 
@@ -157,7 +166,8 @@ Changing the signing key refuses once every response being filled in when it cha
 unset `FORMANCY_AUTH_SECRET` is a new key at every start, so a restart does that to everybody
 filling in a form, as it already lost their drafts. A page holds two tokens once a draft
 starts, and a host that keeps sending the form's has the duplicate back through the one path a
-reload takes. `Storage` gains `hasSubmission`, and `insertSubmission` now answers whether it
+reload takes; so does one that lets a debounced save start a draft after the response is stored.
+`Storage` gains `hasSubmission`, and `insertSubmission` now answers whether it
 stored, atomically — breaking for anybody implementing the port. And a response's id is known to
 the page before it is sent; nothing public is addressed by a submission's id.
 

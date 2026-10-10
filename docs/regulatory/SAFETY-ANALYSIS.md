@@ -273,7 +273,11 @@ file" for the attachments the first one claimed. A refused attempt spends nothin
 once* in `packages/server/src/server.integration.test.ts` — including two sends held at the
 insert until both are there, which a plain insert answers with a `500` (observed) — and by
 `apps/admin/src/fill-pane.test.tsx`, *sending the response*, for the one browser client in the
-repository.
+repository: it sends the draft's token once it has one, and once the response is stored — a
+`201`, or a `409 submission_token_spent` — forgets the draft and lets no save that was still
+waiting or still starting its draft leave one behind (each watched failing). The token does not
+expire, which the server-core cases hold by sending, a month on, the tokens a form and a draft
+handed out — watched failing under a seven-day expiry that every other case passed.
 
 *Residual:* **a signed-in client that sends no token is stored as often as it sends**, as
 before: an integration posting with an API key was handed no form, and is not asked for one. **A
@@ -282,8 +286,13 @@ person who reloads a page that kept no draft and sends again, makes a second res
 nothing here can tell it from a second person. **A page holds two tokens once a draft starts**,
 and a host that keeps sending the form's has a duplicate back through the reload that resumes
 the draft — the documentation says to send the draft's, and the admin does; nothing makes a
-host. And the token is not an anti-automation measure: a script reads the form for one like
-anybody else (C1's residual, and 0059's reasoning).
+host. **A draft can outlive its response** in a host that keeps the draft's key after the
+response is stored, or lets a debounced save fire after the send: the first resumes a finished
+draft whose every send is refused, the second starts a new draft holding the stored answers and
+sends its unspent token on the next visit — the duplicate again. The documentation says to
+forget the draft on a `201` and on `409 submission_token_spent` and to drop the pending save,
+and the admin does; nothing makes a host. And the token is not an anti-automation measure: a
+script reads the form for one like anybody else (C1's residual, and 0059's reasoning).
 
 ---
 

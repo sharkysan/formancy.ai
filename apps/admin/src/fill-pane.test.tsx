@@ -44,8 +44,12 @@ interface Call {
 }
 
 let calls: Call[] = []
-/** Replies keyed by `METHOD path`, so a test states only what it cares about. */
-let replies: Record<string, { status?: number; body: unknown }> = {}
+/**
+ * Replies keyed by `METHOD path`, so a test states only what it cares about. `held` keeps a
+ * reply back until the test lets it go, for a request that is still under way when something
+ * else happens.
+ */
+let replies: Record<string, { status?: number; body: unknown; held?: Promise<void> }> = {}
 
 beforeEach(() => {
   calls = []
@@ -66,6 +70,7 @@ beforeEach(() => {
     })
     const reply = replies[`${method} ${url}`]
     if (reply === undefined) return new Response('{}', { status: 404 })
+    if (reply.held !== undefined) await reply.held
     return new Response(JSON.stringify(reply.body), {
       status: reply.status ?? 200,
       headers: { 'content-type': 'application/json' },
@@ -307,5 +312,78 @@ describe('sending the response', () => {
 
     expect(await screen.findByText(/already been sent, and is stored/)).toBeTruthy()
     expect((screen.getByLabelText('Email') as HTMLInputElement).value).toBe('a@b.ch')
+  })
+
+  test('a response already sent finishes its draft, so the next visit does not resume it', async () => {
+    // The answer to the first send was lost, the page was reloaded and the draft resumed, and the
+    // second send is told it was already sent. The response is stored, so the draft is finished
+    // exactly as after a 201. Kept, it is resumed on every later visit, every Submit is refused
+    // again, typing keeps saving into it, and nothing on the page offers a way out.
+    window.localStorage.setItem('formancy.draft.contact', JSON.stringify({ id: 'd1', token: 't1' }))
+    replies['GET /api/f/contact/drafts/d1'] = {
+      body: { outcome: 'resumed', version: 3, schema, schemaHash: 'abc', data: {}, submissionToken: 'st-d1' },
+    }
+    replies['POST /api/f/contact/submissions'] = {
+      status: 409,
+      body: { error: 'submission_token_spent', id: 'd1', message: 'This response has already been sent, and is stored.' },
+    }
+    render(<FillPane path="contact" quietMs={60_000} />)
+    await fillAndSend()
+    await screen.findByText(/already been sent/)
+
+    expect(window.localStorage.getItem('formancy.draft.contact')).toBeNull()
+
+    cleanup()
+    calls = []
+    render(<FillPane path="contact" quietMs={60_000} />)
+    await screen.findByLabelText('Email')
+
+    expect(calls.map((c) => `${c.method} ${c.url}`)).toEqual(['GET /api/f/contact'])
+  })
+
+  test('a save waiting out the quiet when the response is sent starts no draft afterwards', async () => {
+    // Type the last answer and press Submit at once: the save is still waiting for the typing to
+    // stop. Left to fire after the 201 it finds no draft, starts one holding the answers just
+    // stored, and remembers it — and the next visit resumes it with a token nothing has spent,
+    // so its Submit stores the same response a second time.
+    const user = userEvent.setup()
+    render(<FillPane path="contact" quietMs={300} />)
+
+    await user.type(await screen.findByLabelText('Email'), 'a@b.ch')
+    await user.click(screen.getByRole('button', { name: 'Submit' }))
+    await screen.findByText('Submitted.')
+    // Twice the quiet: a save that was going to fire has fired.
+    await new Promise((resolve) => setTimeout(resolve, 600))
+
+    expect(sent()[0]?.headers['x-formancy-submission-token']).toBe('st-form')
+    expect(starts()).toHaveLength(0)
+    expect(window.localStorage.getItem('formancy.draft.contact')).toBeNull()
+  })
+
+  test('a draft still being started when the response is stored is not kept', async () => {
+    // The same duplicate by a narrower door: the save had fired and was waiting for the server to
+    // start its draft when Submit was pressed. That draft arrives after the response is stored,
+    // and remembering it would leave an unspent token naming answers already sent.
+    let release = (): void => undefined
+    replies['POST /api/f/contact/drafts'] = {
+      body: { draftId: 'd1', token: 't1', submissionToken: 'st-d1' },
+      held: new Promise<void>((resolve) => {
+        release = resolve
+      }),
+    }
+    const user = userEvent.setup()
+    render(<FillPane path="contact" quietMs={60} />)
+
+    await user.type(await screen.findByLabelText('Email'), 'a@b.ch')
+    await waitFor(() => {
+      expect(starts()).toHaveLength(1)
+    })
+    await user.click(screen.getByRole('button', { name: 'Submit' }))
+    await screen.findByText('Submitted.')
+    release()
+    await new Promise((resolve) => setTimeout(resolve, 120))
+
+    expect(window.localStorage.getItem('formancy.draft.contact')).toBeNull()
+    expect(saves()).toHaveLength(0)
   })
 })

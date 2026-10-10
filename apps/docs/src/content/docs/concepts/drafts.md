@@ -92,7 +92,7 @@ let sendWith = form.submissionToken          // from GET /f/:path
 // …a draft is started, or resumed:
 sendWith = draft.submissionToken
 
-await fetch(`/f/contact-us/submissions`, {
+const response = await fetch(`/f/contact-us/submissions`, {
   method: 'POST',
   headers: {
     'content-type': 'application/json',
@@ -110,10 +110,32 @@ once. With the form's, the reload sends a different token, and the response is s
 
 Keep the token in a header, as the draft's key: a URL lands in logs.
 
+**Once the response is stored, the draft is finished, so forget it.** That is a `201`, and it
+is also a `409 submission_token_spent`, which says the first send of this response was
+stored. Do the same for both: drop the draft's key, and drop the save still waiting out the
+quiet.
+
+```ts
+const refusal = response.ok ? undefined : await response.json()
+if (response.ok || refusal?.error === 'submission_token_spent') {
+  clearTimeout(pending)                       // the debounced save, below
+  localStorage.removeItem('draft.contact-us') // wherever the draft's key is kept
+}
+```
+
+Keep the key after a `409 submission_token_spent`, and every later visit resumes a draft
+whose every send is refused as already sent. Leave the save to fire, and it finds no draft,
+starts a new one holding the answers that were just stored, and remembers it. The next visit
+then resumes that draft and sends its token, which nothing has spent, and the same response is
+stored twice. Sending inside the quiet is the ordinary case: somebody types the last answer
+and presses *Send* at once. The same holds for a save already waiting on the server to start
+its draft when the response is stored: let that draft go rather than keep its key.
+
 ## Where this is demonstrated
 
 The admin's **fill in** tab does all three of the things below, against a real
-server, and sends the draft's token once it has one: `apps/admin/src/fill-pane.tsx`. It is the shortest way to see the flow work
+server. It sends the draft's token once it has one, and forgets the draft once the response
+is stored: `apps/admin/src/fill-pane.tsx`. It is the shortest way to see the flow work
 rather than read about it, and the tests beside it hold each of the three by name.
 
 One thing it does not demonstrate: the **anonymous** submission path. The admin is

@@ -543,13 +543,16 @@ export async function resumeDraft(
 
 /** The hash is the version the browser actually rendered, and the server
  *  decides what to do about a stale one. The token is the one this response was handed, so
- *  the same response sent twice is stored once (0169) — in a header, never the URL. */
+ *  the same response sent twice is stored once (0169) — in a header, never the URL. A refusal
+ *  carries the server's `error` code beside its sentence, because one of them,
+ *  `submission_token_spent`, means the response IS stored, and the page has to tell that apart
+ *  from the ones that mean it is not. */
 export async function submitForm(
   path: string,
   schemaHash: string,
   submissionToken: string,
   data: unknown,
-): Promise<{ ok: true } | { ok: false; message: string }> {
+): Promise<{ ok: true } | { ok: false; message: string; error?: string }> {
   const response = await authed(`${BASE}/f/${encodeURIComponent(path)}/submissions`, {
     method: 'POST',
     headers: {
@@ -561,5 +564,9 @@ export async function submitForm(
   })
   if (response.ok) return { ok: true }
   const body = (await response.json().catch(() => ({}))) as { message?: string; error?: string }
-  return { ok: false, message: body.message ?? body.error ?? `The server refused it (${String(response.status)}).` }
+  return {
+    ok: false,
+    message: body.message ?? body.error ?? `The server refused it (${String(response.status)}).`,
+    ...(body.error === undefined ? {} : { error: body.error }),
+  }
 }

@@ -108,6 +108,12 @@ export function FillPane({ path, quietMs = QUIET_MS }: FillPaneProps): ReactElem
    */
   const sendWith = useRef<string | undefined>(undefined)
   const pending = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  /**
+   * How many responses this page has seen stored. A save that was already starting its draft
+   * when one was compares it before and after, and lets the draft go: its answers are the ones
+   * just stored, and the draft's token is one nothing has spent.
+   */
+  const stored = useRef(0)
 
   useEffect(() => {
     let live = true
@@ -180,7 +186,9 @@ export function FillPane({ path, quietMs = QUIET_MS }: FillPaneProps): ReactElem
     async (value: unknown): Promise<void> => {
       if (readOnly) return
       if (draft.current === undefined) {
+        const before = stored.current
         const started = await startDraft(path)
+        if (stored.current !== before) return
         if (started === undefined) {
           setSaved('Could not start a draft.')
           return
@@ -210,6 +218,19 @@ export function FillPane({ path, quietMs = QUIET_MS }: FillPaneProps): ReactElem
     setGeneration((n) => n + 1)
   }
 
+  /**
+   * The response is stored, so its draft is finished: forget the key, or the next visit
+   * resumes it as though nothing had been sent. And drop the save still waiting out the quiet —
+   * Submit pressed straight after the last keystroke leaves one — which would otherwise find no
+   * draft, start one holding the answers just stored, and remember that instead.
+   */
+  const finish = (): void => {
+    clearTimeout(pending.current)
+    stored.current += 1
+    remember(path, undefined)
+    draft.current = undefined
+  }
+
   if (status.kind === 'loading') return <p className="wb-hint">Loading the published form…</p>
   if (status.kind === 'failed') return <p className="wb-hint">{status.message}</p>
   if (engine === undefined || schemaHash === undefined) return <p className="wb-hint">No form.</p>
@@ -235,15 +256,10 @@ export function FillPane({ path, quietMs = QUIET_MS }: FillPaneProps): ReactElem
           onSubmit={async (value) => {
             if (readOnly || sendWith.current === undefined) return
             const outcome = await submitForm(path, schemaHash, sendWith.current, value)
-            if (outcome.ok) {
-              // A submitted draft is finished, and leaving the key behind would
-              // resume it on the next visit as though nothing had been sent.
-              remember(path, undefined)
-              draft.current = undefined
-              setSent('Submitted.')
-            } else {
-              setSent(outcome.message)
-            }
+            // Refused as already sent is stored as surely as a 201: the first send of it was
+            // (0169). The server's sentence says so, and the answers stay on the page.
+            if (outcome.ok || outcome.error === 'submission_token_spent') finish()
+            setSent(outcome.ok ? 'Submitted.' : outcome.message)
           }}
         />
       </FormancyProvider>
