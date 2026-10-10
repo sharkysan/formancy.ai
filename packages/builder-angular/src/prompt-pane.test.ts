@@ -313,6 +313,42 @@ describe('while it is working', () => {
     expect(review.textContent).not.toContain('email')
   })
 
+  test('hands focus back to Write when Stop is pressed, rather than dropping it on the page', async () => {
+    /*
+     * Stop is drawn only while a run waits, so pressing it removes the focused
+     * button and focus fell to <body>: the next Tab started from the top of the
+     * page. Write is where the run began, and enabled again by then.
+     */
+    const user = userEvent.setup()
+    const slow = held()
+    await mount(createBuilderSession(START), slow.model)
+
+    await instruct(user, 'a contact form')
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Stop' })).toBeTruthy())
+    await user.click(screen.getByRole('button', { name: 'Stop' }))
+
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Write it' })),
+    )
+  })
+
+  test('and when the run ends by itself while Stop has focus', async () => {
+    // The same button leaves the same way when the answer arrives first.
+    const user = userEvent.setup()
+    const slow = held()
+    await mount(createBuilderSession(START), slow.model)
+
+    await instruct(user, 'a contact form')
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Stop' })).toBeTruthy())
+    screen.getByRole('button', { name: 'Stop' }).focus()
+    slow.release(JSON.stringify(WRITTEN))
+
+    await screen.findByRole('region', { name: /Review/ })
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Write it' })),
+    )
+  })
+
   test('a pane that is destroyed stops its run', async () => {
     // Otherwise the host's request runs on for an answer nothing will show —
     // a builder closed mid-run, or the pane swapped for another.

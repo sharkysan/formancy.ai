@@ -86,6 +86,20 @@ export function PromptPane({ session, ask, attempts }: PromptPaneProps): ReactEl
   // at that moment — which is why it is a ref the cleanup reads late.
   useEffect(() => () => running.current?.stop(), [])
 
+  const writeButton = useRef<HTMLButtonElement>(null)
+  const stopButton = useRef<HTMLButtonElement>(null)
+  /**
+   * Set when a run ends with focus on Stop. Stop is drawn only while a run waits,
+   * so it leaves with the focus and focus falls to <body>; Write, where the run
+   * began, takes it back once the render has enabled it again.
+   */
+  const refocus = useRef(false)
+  useEffect(() => {
+    if (busy || !refocus.current) return
+    refocus.current = false
+    writeButton.current?.focus()
+  }, [busy])
+
   if (ask === undefined) return null
 
   const run = async (): Promise<void> => {
@@ -113,6 +127,8 @@ export function PromptPane({ session, ask, attempts }: PromptPaneProps): ReactEl
       // that the form has not moved in the meantime.
       if (outcome.ok) setProposal(proposeEdit(current, outcome.document))
     } finally {
+      // Read while Stop is still drawn: once it has gone, focus is already on <body>.
+      refocus.current = stopButton.current !== null && document.activeElement === stopButton.current
       running.current = undefined
       setBusy(false)
     }
@@ -145,11 +161,16 @@ export function PromptPane({ session, ask, attempts }: PromptPaneProps): ReactEl
         placeholder={text('prompt.example')}
         onChange={(event) => setInstruction(event.target.value)}
       />
-      <button type="button" disabled={busy || instruction.trim() === ''} onClick={() => void run()}>
+      <button
+        ref={writeButton}
+        type="button"
+        disabled={busy || instruction.trim() === ''}
+        onClick={() => void run()}
+      >
         {busy ? text('prompt.writing') : text('prompt.write')}
       </button>
       {busy ? (
-        <button type="button" onClick={() => running.current?.stop()}>
+        <button ref={stopButton} type="button" onClick={() => running.current?.stop()}>
           {text('prompt.stop')}
         </button>
       ) : null}

@@ -34,7 +34,9 @@ change. Why: the rejection left each pane to decide what had happened, and both 
 ([0157](docs/decisions/0157-a-models-turn-can-be-stopped.md)).
 
 **Added: a model's run can be stopped.** Both prompt panes show **Stop** while a run waits, and
-stop the run when they are unmounted or destroyed. Underneath, `authorForm` takes `stop` from the
+stop the run when they are unmounted or destroyed. Stop is drawn only while a run waits, so when
+it goes with the focus — pressed, or the run ending under it — *Write it* takes the focus back
+rather than leaving it on the page's `<body>`. Underneath, `authorForm` takes `stop` from the
 new `createStop()` and races each turn against it, so a run ends at once even when the host
 ignores the stop. An answer that arrives afterwards is discarded rather than proposed, where it
 would read as the answer to whatever was asked next. `AskModel` takes a second argument, `turn`,

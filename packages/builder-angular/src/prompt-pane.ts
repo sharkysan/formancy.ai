@@ -2,10 +2,14 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  ElementRef,
+  Injector,
+  afterNextRender,
   computed,
   inject,
   input,
   signal,
+  viewChild,
 } from '@angular/core'
 import {
   applyProposal,
@@ -64,11 +68,18 @@ import type { AskModel, AuthoringResult, BuilderSession, EditProposal, Stop } fr
           [attr.placeholder]="'prompt.example' | builderText: text()"
           (input)="instruction.set($any($event.target).value)"
         ></textarea>
-        <button type="button" [disabled]="busy() || instruction().trim() === ''" (click)="run()">
+        <button
+          #writeButton
+          type="button"
+          [disabled]="busy() || instruction().trim() === ''"
+          (click)="run()"
+        >
           {{ (busy() ? 'prompt.writing' : 'prompt.write') | builderText: text() }}
         </button>
         @if (busy()) {
-          <button type="button" (click)="stop()">{{ 'prompt.stop' | builderText: text() }}</button>
+          <button #stopButton type="button" (click)="stop()">
+            {{ 'prompt.stop' | builderText: text() }}
+          </button>
         }
 
         <!-- One polite region. The work takes seconds, and a proposal that only
@@ -153,6 +164,10 @@ export class FormancyPromptPane {
    */
   private running: Stop | undefined
 
+  private readonly writeButton = viewChild<ElementRef<HTMLButtonElement>>('writeButton')
+  private readonly stopButton = viewChild<ElementRef<HTMLButtonElement>>('stopButton')
+  private readonly injector = inject(Injector)
+
   constructor() {
     // A pane that is destroyed stops its run, so the host's request does not
     // run on for an answer nothing will show.
@@ -204,8 +219,16 @@ export class FormancyPromptPane {
       // that the form has not moved in the meantime.
       if (outcome.ok) this.proposal.set(proposeEdit(current, outcome.document))
     } finally {
+      // Stop is drawn only while a run waits, so it leaves with the focus if it has
+      // it, and focus falls to <body>. Read while it is still drawn; Write, where the
+      // run began, takes focus back once the template has enabled it again.
+      const stopDrawn = this.stopButton()?.nativeElement
+      const refocus = stopDrawn !== undefined && document.activeElement === stopDrawn
       this.running = undefined
       this.busy.set(false)
+      if (refocus) {
+        afterNextRender(() => this.writeButton()?.nativeElement.focus(), { injector: this.injector })
+      }
     }
   }
 
