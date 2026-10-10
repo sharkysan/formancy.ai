@@ -186,7 +186,6 @@ function briefing(): string {
 }
 
 function request(document: FormSchema, intent: string, options: ScenarioPromptOptions): string {
-  const own = ownCodes(document)
   const taken = (options.existing ?? []).map((scenario) => scenario.name)
   const start = options.initialValue
   return [
@@ -196,9 +195,7 @@ function request(document: FormSchema, intent: string, options: ScenarioPromptOp
     `A field inside a group is named through the group, as ${formatPath(['address', 'street'])}, and a field in a repeater’s row by the row’s position from 0, as ${formatPath(['items', 0, 'note'])}. A group or a repeater is not itself a path.`,
     '',
     `The error codes the engine reports by itself: ${Object.keys(BUILT_IN_ERROR_CODES).join(', ')}.`,
-    own.length === 0
-      ? 'This form’s rules name no codes of their own.'
-      : `This form’s rules may also report: ${own.join(', ')}.`,
+    ...ownCodes(document),
     '',
     start === undefined || Object.keys(start).length === 0
       ? 'Every example starts from an empty form.'
@@ -213,14 +210,23 @@ function request(document: FormSchema, intent: string, options: ScenarioPromptOp
 }
 
 /**
- * The codes this form's `validate` rules name, by name alone. Never the rule: which field it
- * is on and what it says are what an example is there to check.
+ * What this form's `validate` rules may report besides the engine's own codes: the codes they
+ * name, by name alone, and that a rule may work out one of its own. Never the rule: which
+ * field it is on and what it says are what an example is there to check.
+ *
+ * A rule whose condition evaluates to a string reports that string as its code, with a
+ * `code` or without (`engine.ts`). That code is in the condition, which is withheld, so it
+ * cannot be listed; saying the rules name none would be false, and a model trusting it
+ * writes `invalid` and fails for a reason that is not about the rule.
  */
 function ownCodes(document: FormSchema): string[] {
-  const codes = (document.logic?.rules ?? [])
-    .filter((rule) => rule.kind === 'validate' && rule.code !== undefined && rule.code !== '')
-    .map((rule) => rule.code!)
-  return [...new Set(codes)].sort()
+  const rules = (document.logic?.rules ?? []).filter((rule) => rule.kind === 'validate')
+  if (rules.length === 0) return ['This form’s rules name no codes of their own.']
+  const named = [...new Set(rules.flatMap((rule) => (rule.code ? [rule.code] : [])))].sort()
+  return [
+    ...(named.length === 0 ? [] : [`This form’s rules may also report: ${named.join(', ')}.`]),
+    'A rule may also report a code its own condition works out, which this request cannot list.',
+  ]
 }
 
 const LIST_VALUED: ReadonlySet<string> = new Set(LIST_VALUED_FIELD_TYPES)

@@ -1,4 +1,4 @@
-import { runScenarios } from '@formancy/core'
+import { createFormEngine, runScenarios } from '@formancy/core'
 import type { Scenario } from '@formancy/core'
 import { canonicalize } from '@formancy/spec'
 import type { FieldDef, FormSchema, LogicRule } from '@formancy/spec'
@@ -245,6 +245,41 @@ describe('what a model drafting examples is told', () => {
     expect(Object.keys(BUILT_IN_ERROR_CODES).filter((code) => !user.includes(code))).toEqual([])
     expect(user).toContain('This form’s rules may also report: notThatAge.')
     expect(scenarioPrompt(EXAMPLE_FORM, 'anything').user).toContain('name no codes of their own')
+  })
+
+  test('never says the rules name no codes when a rule can work its own out', () => {
+    /*
+     * A `validate` rule whose condition evaluates to a string reports that string as its
+     * code, with a `code` of its own or without. Told the rules "name no codes of their
+     * own", a model writes `invalid`, and the draft fails for a reason that is not about the
+     * rule. The code is in the condition, which is withheld, so it cannot be listed — only
+     * said to be possible. The engine is asked, rather than this case trusting that it does.
+     */
+    const computes: FormSchema = {
+      specVersion: '4',
+      id: 'computes',
+      title: 'Computes',
+      model: { fields: [{ key: 'age', type: 'number', label: 'Age' }] },
+      logic: { rules: [{ target: 'age', kind: 'validate', cel: 'age < 18.0 ? "tooYoung" : ""' }] },
+    }
+    const engine = createFormEngine({
+      schema: computes,
+      capabilities: { now: () => 0, today: () => EXAMPLE_TODAY, random: () => 0.5 },
+    })
+    engine.setValue(['age'], 12)
+    const reported = engine.validate().errors['age'] ?? []
+    expect(reported.filter((code) => !Object.hasOwn(BUILT_IN_ERROR_CODES, code))).toEqual(['tooYoung'])
+
+    const named: FormSchema = {
+      ...computes,
+      logic: { rules: [{ ...computes.logic!.rules[0]!, code: 'young' }] },
+    }
+    for (const document of [computes, named, RULED]) {
+      const { user } = scenarioPrompt(document, 'anything')
+      expect(user, document.id).not.toContain('name no codes of their own')
+      expect(user, document.id).toContain('A rule may also report a code its own condition works out')
+      expect(user, document.id).not.toContain('tooYoung')
+    }
   })
 
   test('carries where examples start, the names taken but not what they expect, and the author’s words', () => {
