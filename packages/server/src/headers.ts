@@ -7,3 +7,6 @@
  * the other one.
  */
 export const SCHEMA_HASH_HEADER = 'x-formancy-schema-hash'
+
+/** A solved proof-of-work challenge, as base64 JSON: the shape an ALTCHA client already produces. */
+export const CHALLENGE_HEADER = 'x-formancy-challenge'

@@ -28,8 +28,9 @@ export {
   mayAttempt,
 } from './breaker.js'
 export type { BreakerState, WebhookHealth } from './breaker.js'
+export { createSubmission } from './submitting.js'
+export type { SubmissionOutcome } from './submitting.js'
 export {
-  createSubmission,
   exportCsv,
   listForms,
   listSubmissions,
@@ -47,7 +48,6 @@ export type {
   ListedVersion,
   ResolvedForm,
   ResumeOutcome,
-  SubmissionOutcome,
 } from './use-cases.js'
 export type { ServerDeps } from './deps.js'
 export { unsafePatterns } from './redos.js'
