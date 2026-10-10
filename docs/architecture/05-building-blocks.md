@@ -276,11 +276,13 @@ missing ([0161](../decisions/0161-a-model-translates-only-what-is-missing.md)).
 `translate-prompt.ts` builds the request from a `FormSchema` alone: the rows of the
 catalogue file the export gives, `catalogueFile` in `translation.ts`, with a target still
 empty, each with where the form uses it, found by a walk shaped like the one that finds the
-live ids. `translateCatalogue` asks and checks on `askChecked`. `proposeTranslation` filters
-the answer to what is still missing and imports it into a scratch session, so the import's
-rules decide what is written and what is stale. It returns an `EditProposal` for
-`applyProposal` with a row for every message. `translationHeading` and `translationStatus`
-say so, for both builders' review parts.
+live ids. `translateCatalogue` asks and checks on `askChecked`, and keeps the sources it
+sent beside the answer. `proposeTranslation` filters the answer to what is still missing and
+imports it into a scratch session, each message with the source the request sent, so the
+import's rules decide what is written and what is stale. It returns an `EditProposal` for
+`applyProposal` with a row for every message. `translationToReview`, `translationHeading`
+and `translationStatus` decide what is held for review and what is said, for both builders'
+review parts.
 
 `scenario-runs.ts` holds the other thing both builders must agree about: what counts
 as a **regression**. A panel reporting that three of five scenarios fail is a number

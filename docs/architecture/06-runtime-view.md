@@ -401,15 +401,19 @@ review part (in the translations pane)   builder-core                           
                                              no reason ──▶ asked again, that problem alone
                                              a decline ──▶ ended after its turn
                                              ok ──▶ ids not asked: dropped
-                                                    ids asked, empty: still missing
+                                                    ids asked, empty or blank: still missing
+                                                    asked: each id with the source sent
   proposeTranslation(session, answer[, earlier])
-                                           keep what is still missing in the form now
+                                           keep what is still missing in the form now,
+                                             each with the source sent, not the model's echo
                                            scratch session ← importCatalogue(kept)
                                              the import's rules: stale named, empty erases nothing
                                            rows { id, source, was, now, flags: stale | unchanged }
                                            proposeEdit(form now, scratch document)
                                            basedOn: the earlier proposal's, for the rest
-  the review: source · before · proposed · to look at,
+                                         translationToReview: no rows ──▶ none held
+  no rows: the status says why, the ids dropped, Ask again
+  rows: the review: source · before · proposed · to look at,
   the form as proposed at that locale, Apply · Discard · Translate the rest
   Apply ──▶ applyProposal (0109): refused if the form moved, else one undo step
 ```
@@ -419,8 +423,15 @@ has written in that language, each with where the form uses it. The form's rules
 sent, and neither is the document. An answer lands only where a message is still missing
 when it arrives, so a translation a person typed while the model was answering is dropped
 rather than overwritten. It lands by `importCatalogue`, in a scratch session, so the
-proposal is what the import would have written from the same file uploaded by hand
+proposal is what the import would have written from the same file uploaded by hand, with
+two differences the request knows better than the answer: each source is the one the model
+was sent, so *stale* means the English moved after it was asked, and a target of nothing but
+spaces is one left empty
 ([0161](../decisions/0161-a-model-translates-only-what-is-missing.md)).
+
+**An answer that writes nothing is not held.** Every message left empty, or every
+translation dropped because a person wrote it first: there is nothing to apply or discard,
+so the part offers Ask again, and the status and the list of what was dropped say which.
 
 **The review belongs to its language.** The part is keyed by the locale in both builders, so
 choosing another language, like leaving the tab, ends the run (0157). Through the relay, the

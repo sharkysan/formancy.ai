@@ -420,20 +420,25 @@ downloads and uploads: `locale`, `defaultLocale`, and `messages` with `id`, `sou
 **What is checked.** An answer that is not JSON, not a catalogue file, or a catalogue for
 another language is asked for again, with that problem alone. A decline ends the run, as for
 a form. Anything else is kept: an id it was not asked for is dropped and listed, and a
-message it left empty is listed as still missing, with *Translate the rest* to ask for those.
+message it left empty — or wrote as nothing but spaces — is listed as still missing, with
+*Translate the rest* to ask for those.
 
 **What lands.** The answer goes through the catalogue import into a copy of the form, so the
 import's rules apply: an empty target erases nothing, and a translation made from a source
-that has since changed is marked. A translation equal to its source is marked as well, and
-kept. Only messages still missing when the answer arrives are written, so a translation a
-person made is never replaced. The review shows each message's source, what was there, what
-is proposed and its marks, and the form as it would read in that language. Apply is
-`applyProposal`: refused if the form has changed since, one undo step otherwise.
+that has changed since the model was asked is marked. That is judged by the source the
+request sent, not the one the model wrote back, which it may have translated or left out. A
+translation equal to its source is marked as well, and kept. Only messages still missing
+when the answer arrives are written, so a translation a person made is never replaced. The
+review shows each message's source, what was there, what is proposed and its marks, and the
+form as it would read in that language. Apply is `applyProposal`: refused if the form has
+changed since, one undo step otherwise. An answer that writes nothing is not held for
+review: the pane says whether the model left everything empty or a person translated what it
+wrote first, lists what was dropped, and offers to ask again.
 
 Called directly, `translateCatalogue(askModel, form, locale, { stop })` resolves however the
 run ends, as `authorForm` does, and `proposeTranslation(session, result.answer)` holds a
 successful answer as a proposal: an `EditProposal` with `rows`, `dropped` and
-`stillMissing`.
+`stillMissing`. `translationToReview(proposal)` returns it only when it writes something.
 
 The review is only as good as its reader's command of that language. A fluent translation
 that asks a different question passes every check here, and once applied a model's message

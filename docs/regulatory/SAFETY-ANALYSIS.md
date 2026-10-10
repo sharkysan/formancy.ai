@@ -1500,22 +1500,31 @@ where English was.
 *Constraint:* the translation is **shown rather than applied**, message by message
 ([0161](../decisions/0161-a-model-translates-only-what-is-missing.md)). Both builders' review
 lists every message it would write, with the source beside what was there and what is
-proposed. It marks a target translated from a source that has since changed (the import's
-own stale rule), and one that is the same as its source. It shows the form as the proposal
-would leave it, rendered at that locale. Apply is `applyProposal`: refused when the form has
-moved since, one undo step otherwise ([0109](../decisions/0109-an-ai-edit-is-reviewed-before-it-lands.md)).
-The model is asked only for messages nobody has written in that language, and only those
-still missing when the answer lands are written, so a person's translation is never replaced.
-The request carries the form's words and where each is used, not its rules.
+proposed. It marks a target translated from a source that has changed since the model was
+asked — the import's own stale rule, handed the source the request sent rather than the one
+the model wrote back, which a model can translate or leave out — and one that is the same as
+its source. It shows the form as the proposal would leave it, rendered at that locale. Apply
+is `applyProposal`: refused when the form has moved since, one undo step otherwise
+([0109](../decisions/0109-an-ai-edit-is-reviewed-before-it-lands.md)). The model is asked
+only for messages nobody has written in that language, and only those still missing when the
+answer lands are written, so a person's translation is never replaced. A target of nothing
+but spaces is taken as one left empty and not written, because written, the question would
+read blank where the default language's words fall back. The request carries the form's
+words and where each is used, not its rules.
 `translate.test.ts` holds the request (exactly the live, untranslated messages, each with a
-context, and no rule), the checks (a catalogue for another language is asked for again), and
-the proposal: an id not asked for is never written, a message a person translated meanwhile
-is never overwritten, only the catalogue of the language asked changes, both marks, and the
-refusal of a stale proposal. Each builder's `translations-pane.test` holds that nothing is
-applied before Apply, that the review shows the source, what was there, what is proposed and
-the marks, with the proposed form rendered in that language, and that a refused Apply keeps
-the review on screen. `two-builders.test.tsx` holds the same through the playground's relay
-in both builders.
+context, and none of the rules' expressions, codes or checks, looked for as written and as the
+request's JSON writes them), the checks (a catalogue for another language is asked for
+again), and the proposal: an id not asked for is never written, a message a person translated
+meanwhile is never overwritten, only the catalogue of the language asked changes, both marks
+(the stale one judged by the source asked, in both directions), a blank target is not
+written, and a stale proposal is refused. Each builder's `translations-pane.test` holds that
+nothing is applied before Apply, that the review shows the source, what was there, what is
+proposed and the marks, with the proposed form rendered in that language, that a refused
+Apply keeps the review on screen, and that an answer that writes nothing says why and offers
+Ask again. `two-builders.test.tsx` holds, through the playground's relay in both builders,
+that the request names the language and carries none of the starter's rule expressions or
+codes in either spelling, that every missing message is a row, and that nothing is applied
+before Apply.
 
 *Residual:* **the review is only as good as its reader's command of that language.** A
 mistranslation that reads fluently passes every check here, and nothing in software can tell
