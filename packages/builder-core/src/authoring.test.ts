@@ -433,6 +433,34 @@ describe('stopping a run', () => {
     expect(cancelled).toHaveBeenCalledTimes(1)
   })
 
+  test('a stop in the second turn counts both, tells only that turn, and keeps the first’s problem', async () => {
+    /*
+     * 0157 says a stopped run counts the turn it abandoned, and only one-turn runs
+     * were stopped here. The first turn answered, so its host must not be told: a
+     * listener left over from it would abort a request that had already finished.
+     */
+    const told = [vi.fn(), vi.fn()]
+    const ask = vi.fn<AskModel>((_prompt, turn) => {
+      const at = ask.mock.calls.length - 1
+      turn.onCancel(told[at] ?? (() => undefined))
+      return at === 0 ? Promise.resolve('nonsense') : new Promise<string>(() => undefined)
+    })
+    const stop = createStop()
+
+    const run = authorForm(ask, 'a contact form', { stop })
+    await ticks()
+    expect(ask).toHaveBeenCalledTimes(2)
+    stop.stop()
+
+    const result = await settledSoon(run)
+    expect(result).toMatchObject({ ok: false, ended: 'stopped', attempts: 2, lastAnswer: 'nonsense' })
+    if (result !== 'still running' && !result.ok) {
+      expect(result.problems.map((problem) => problem.kind)).toEqual(['not-json'])
+    }
+    expect(told[0]).not.toHaveBeenCalled()
+    expect(told[1]).toHaveBeenCalledTimes(1)
+  })
+
   test('a stop before the run asks nothing', async () => {
     const ask = scripted(JSON.stringify(GOOD))
     const stop = createStop()

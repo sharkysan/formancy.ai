@@ -14,7 +14,9 @@
   stop after the run has ended* fails; without the catch around a host that throws instead
   of rejecting, *one that throws* fails; and with the error's message taken as it is, *an
   error with no message* fails. *One with nothing to say* failed on this record's first
-  version with `reason: 'undefined'`. `answers.test.ts` holds the stop handle.
+  version with `reason: 'undefined'`. *A stop in the second turn* holds the count under
+  *Consequences*, and fails with only the turns that answered counted, or with the first
+  turn's listener left on the stop. `answers.test.ts` holds the stop handle.
   `proposal.test.ts` holds the new sentences in English, German and French, the one without
   a reason included. Both builders'
   `prompt-pane.test` have *a model that cannot be reached*, *can be stopped*, and *a pane
