@@ -1,7 +1,9 @@
 # 0157 — A model's turn can be stopped, and an unreachable model is not a document that failed
 
 - **Status:** accepted; the playground’s stand-in dialog superseded by
-  [0160](0160-a-person-carries-the-models-turn.md)
+  [0160](0160-a-person-carries-the-models-turn.md); a pane going away stopping its run
+  superseded in part by [0163](0163-a-models-run-belongs-to-the-host.md), for a run the host
+  holds
 - **Date:** 2026-10-09
 - **Deciders:** Daniel Bacher
 - **Verified by:** `packages/builder-core/src/authoring.test.ts`, the cases under *a host
@@ -80,6 +82,11 @@ error's message as `reason` when it has one. `proposalStatus` reads the result w
 than a count and a flag each pane derived, and says each ending in the author's language. Both panes drop
 their hand-built failure, show a Stop button while a run waits, and stop the run when they
 go away.
+
+> **Superseded in part by [0163](0163-a-models-run-belongs-to-the-host.md):** a host can
+> hold the prompt pane's run itself, from `createPromptRun`, and a pane drawing a run the
+> host holds leaves it running when it goes, for the next pane to draw. A pane given no run
+> holds its own, and stops it when it goes, as decided here.
 
 **Each turn says which it is.** The prompt gains `attempt`, `limit` and, from the second
 turn, `followUp`: the complaint alone, for a conversation that already holds the last

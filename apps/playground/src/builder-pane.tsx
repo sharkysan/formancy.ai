@@ -24,7 +24,7 @@ import {
   createBuilderText,
 } from '@formancy/builder-core'
 import type { FormEngine, Scenario } from '@formancy/core'
-import type { BuilderBlock, BuilderSession, BuilderText, Relay } from '@formancy/builder-core'
+import type { BuilderBlock, BuilderSession, BuilderText, PromptRun, Relay } from '@formancy/builder-core'
 import { AngularBuilderPane } from './angular-builder-pane.js'
 import type { BuilderTab, PreviewState } from './angular-builder-host.js'
 import { RELAY_CHAT } from './demo-capabilities.js'
@@ -102,6 +102,7 @@ export function BuilderBody({
   onScenarios,
   preview,
   relay,
+  promptRun,
 }: {
   session: BuilderSession
   onChange: (next: string) => void
@@ -128,6 +129,11 @@ export function BuilderBody({
    * turn (0160). The page's, so a turn asked from either builder is the one relay's.
    */
   relay: Relay
+  /**
+   * The prompt pane's run, the page's: it goes on when this body, a tab or a builder goes,
+   * and either builder's prompt pane draws it (0163).
+   */
+  promptRun: PromptRun
 }) {
   const view = useBuilder(session)
   const explained = usePreviewState(preview)
@@ -200,13 +206,15 @@ export function BuilderBody({
           sample={sample}
           onScenarios={onScenarios}
           relay={relay}
+          promptRun={promptRun}
         />
       ) : (
         <>
           {/* The turn a person is carrying to a model, above the tabs rather than inside
               one: it belongs to the run, not to a tab's layout. Nothing while nothing
-              waits — and the run is the pane's that asked, the prompt or scenario pane
-              under Fields or the translations pane under Translations, so it ends if that
+              waits. The prompt pane's run is the page's, so its turn stays here under any
+              tab, in either builder, and after the Schema view (0163); the scenario pane's
+              drafting and the translations pane's runs are still theirs, and end if that
               pane goes (0157). The chat is this deployment's choice, named in
               `demo-capabilities.ts` and nowhere else (0160). */}
           <RelayPane session={session} relay={relay} chat={RELAY_CHAT} />
@@ -259,6 +267,7 @@ export function BuilderBody({
               <PromptPane
                 session={session}
                 ask={relay.ask}
+                run={promptRun}
                 scenarios={scenarios}
                 initialValue={sample}
               />

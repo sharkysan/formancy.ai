@@ -3,7 +3,7 @@ import type { BuilderTab } from './angular-builder-host.js'
 import { useMemo } from 'react'
 import Editor from '@monaco-editor/react'
 import type { Monaco } from '@monaco-editor/react'
-import type { BuilderBlock, BuilderSession, Relay } from '@formancy/builder-core'
+import type { BuilderBlock, BuilderSession, PromptRun, Relay } from '@formancy/builder-core'
 import { FoldPane } from './panes.js'
 import { BuilderBody } from './builder-pane.js'
 import { ThemePane } from './theme-pane.js'
@@ -41,6 +41,7 @@ export function EditorPane({
   onScenarios,
   preview,
   relay,
+  promptRun,
   theme,
   themeHost,
   overrides,
@@ -67,6 +68,8 @@ export function EditorPane({
   preview: FormEngine | undefined
   /** The page's model: a person carrying each turn, for both builders' prompt panes. */
   relay: Relay
+  /** The prompt pane's run, held by the page so it outlives the Build view (0163). */
+  promptRun: PromptRun
   theme: string
   themeHost: HTMLElement | null
   overrides: Readonly<Record<string, string>>
@@ -131,6 +134,7 @@ export function EditorPane({
             onScenarios={onScenarios}
             preview={preview}
             relay={relay}
+            promptRun={promptRun}
           />
         )}
       </div>

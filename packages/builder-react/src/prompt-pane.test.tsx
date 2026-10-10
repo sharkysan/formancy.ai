@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
-import { createBuilderSession } from '@formancy/builder-core'
+import { createBuilderSession, createPromptRun } from '@formancy/builder-core'
 import type { AskModel } from '@formancy/builder-core'
 import type { Scenario } from '@formancy/core'
 import { DECLINE_KEY } from '@formancy/spec'
@@ -582,5 +582,142 @@ describe('while it is working', () => {
 
     expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Write it' }).disabled).toBe(true)
     expect(model).not.toHaveBeenCalled()
+  })
+})
+
+/**
+ * A run the host holds ([0163](../../../docs/decisions/0163-a-models-run-belongs-to-the-host.md)).
+ *
+ * A run was the pane's, and a pane taken off the screen stopped it (0157). Through a relay
+ * a turn waits as long as a person takes to carry it, and a page draws this pane under one
+ * tab of one builder: whoever looked at anything else while their chat answered lost the
+ * turn. Given `run`, the pane draws a run the host holds and leaves it running when it
+ * goes; given only `ask`, it holds its own, as it always did — the case above.
+ */
+describe('when the host holds the run', () => {
+  test('a pane taken off the screen leaves the run waiting, and the pane drawn next shows its answer', async () => {
+    const user = userEvent.setup()
+    const session = createBuilderSession(START)
+    const slow = held()
+    const run = createPromptRun()
+    const { unmount } = render(<PromptPane session={session} ask={slow.model} run={run} />)
+
+    await ask(user, 'add a phone number')
+    await waitFor(() => expect(slow.model).toHaveBeenCalledTimes(1))
+    unmount()
+
+    expect(slow.cancelled).not.toHaveBeenCalled()
+    slow.release(JSON.stringify(WITH_PHONE))
+    await waitFor(() => expect(run.state().proposal).toBeDefined())
+
+    render(<PromptPane session={session} ask={slow.model} run={run} />)
+    const review = screen.getByRole('region', { name: /Review/ })
+    expect(review.textContent).toContain('phone')
+    // Beside the words it answers, which this pane never saw typed.
+    expect(screen.getByRole<HTMLTextAreaElement>('textbox', { name: /Describe the form/ }).value).toBe(
+      'add a phone number',
+    )
+    await user.click(within(review).getByRole('button', { name: 'Apply these changes' }))
+    expect(session.document().model.fields.map((field) => field.key)).toEqual(['name', 'phone'])
+  })
+
+  test('a proposal held for review is still held after the pane goes and comes back', async () => {
+    // Unmounted and drawn again — another tab and back — with the review open: the pane's
+    // own state went with it, and the answer had to be asked for again.
+    const user = userEvent.setup()
+    const session = createBuilderSession(START)
+    const run = createPromptRun()
+    const { unmount } = render(
+      <PromptPane session={session} ask={say(JSON.stringify(WITH_PHONE))} run={run} />,
+    )
+    await ask(user, 'add a phone number')
+    await screen.findByRole('region', { name: /Review/ })
+    unmount()
+
+    render(<PromptPane session={session} ask={say(JSON.stringify(WITH_PHONE))} run={run} />)
+
+    expect(screen.getByRole('region', { name: /Review/ }).textContent).toContain('phone')
+    expect(screen.getByRole('status').textContent).toContain('Nothing has been applied')
+    expect(session.revision()).toBe(0)
+  })
+
+  test('a review names the words it answers, whatever the box says since', async () => {
+    // Once the run has answered, the box is the person's again. A review read beside the box
+    // alone — after typing the next instruction, or in the other builder over the same run —
+    // would be read as the answer to words it never saw (SAFETY-ANALYSIS D10).
+    const user = userEvent.setup()
+    const session = createBuilderSession(START)
+    render(<PromptPane session={session} ask={say(JSON.stringify(WITH_PHONE))} run={createPromptRun()} />)
+    await ask(user, 'add a phone number')
+    const review = await screen.findByRole('region', { name: /Review/ })
+
+    const box = screen.getByRole('textbox', { name: /Describe the form/ })
+    await user.clear(box)
+    await user.type(box, 'add a fax number')
+    expect((box as HTMLTextAreaElement).value).toBe('add a fax number')
+
+    expect(within(review).getByText('In answer to “add a phone number”')).toBeTruthy()
+    expect(review.textContent).not.toContain('fax')
+  })
+
+  test('a run still waiting is drawn waiting, and Stop there ends it', async () => {
+    // The pane drawn next is the one with the Stop button now: one that showed the run idle
+    // would offer Write over a turn still with the person, and could not stop it.
+    const user = userEvent.setup()
+    const session = createBuilderSession(START)
+    const slow = held()
+    const run = createPromptRun()
+    const { unmount } = render(<PromptPane session={session} ask={slow.model} run={run} />)
+    await ask(user, 'add a phone number')
+    await waitFor(() => expect(slow.model).toHaveBeenCalledTimes(1))
+    unmount()
+    // Long enough for a run the unmount had stopped to have said so.
+    await new Promise((resolve) => setTimeout(resolve, 10))
+
+    render(<PromptPane session={session} ask={slow.model} run={run} />)
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: /Writing/ }).disabled).toBe(true)
+    expect(screen.getByRole<HTMLTextAreaElement>('textbox', { name: /Describe the form/ }).disabled).toBe(true)
+    await user.click(screen.getByRole('button', { name: 'Stop' }))
+
+    await waitFor(() =>
+      expect(screen.getByRole('status').textContent).toBe('Stopped. Nothing was applied.'),
+    )
+    expect(slow.cancelled).toHaveBeenCalledTimes(1)
+  })
+
+  test('two panes showing one run are one run: Stop in either ends it for both', async () => {
+    // A host may draw the pane twice — the playground's two builders over one session
+    // (0096). Two runs would be two turns for one instruction, and a Stop that ended only
+    // its own pane's would leave the other's request running.
+    const user = userEvent.setup()
+    const session = createBuilderSession(START)
+    const slow = held()
+    const run = createPromptRun()
+    render(
+      <>
+        <section aria-label="first">
+          <PromptPane session={session} ask={slow.model} run={run} />
+        </section>
+        <section aria-label="second">
+          <PromptPane session={session} ask={slow.model} run={run} />
+        </section>
+      </>,
+    )
+    const first = within(screen.getByRole('region', { name: 'first' }))
+    const second = within(screen.getByRole('region', { name: 'second' }))
+
+    await user.type(first.getByRole('textbox', { name: /Describe the form/ }), 'add a phone number')
+    expect(second.getByRole<HTMLTextAreaElement>('textbox', { name: /Describe the form/ }).value).toBe(
+      'add a phone number',
+    )
+    await user.click(first.getByRole('button', { name: 'Write it' }))
+    await user.click(second.getByRole('button', { name: 'Stop' }))
+
+    await waitFor(() =>
+      expect(first.getByRole('status').textContent).toBe('Stopped. Nothing was applied.'),
+    )
+    expect(second.getByRole('status').textContent).toBe('Stopped. Nothing was applied.')
+    expect(slow.model).toHaveBeenCalledTimes(1)
+    expect(slow.cancelled).toHaveBeenCalledTimes(1)
   })
 })

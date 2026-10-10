@@ -158,13 +158,16 @@ export class FormancyRelayPane {
 
   constructor() {
     let unsubscribe: (() => void) | undefined
+    // The first turn followed is the one found waiting when the pane is drawn.
+    let found = true
     effect(() => {
       const relay = this.relay()
       unsubscribe?.()
       // Untracked: `follow` reads the turn it replaces, and the subscription is to the
       // relay input alone — not renewed every time the turn it reports changes.
-      untracked(() => this.follow(relay.waiting()))
-      unsubscribe = relay.subscribe(() => this.follow(relay.waiting()))
+      untracked(() => this.follow(relay.waiting(), found))
+      found = false
+      unsubscribe = relay.subscribe(() => this.follow(relay.waiting(), false))
     })
     inject(DestroyRef).onDestroy(() => unsubscribe?.())
   }
@@ -173,19 +176,24 @@ export class FormancyRelayPane {
    * The relay's turn now. A different one starts clean: an answer pasted for one turn is
    * never offered to the next.
    *
-   * And it takes the focus to Copy, once drawn. The page is waiting on the person now, and
-   * nothing else says so: the prompt pane, where they pressed Write, still says the form is
-   * being written, and an answer that failed took this pane — and the focus in it — away
-   * before the retry drew it again. Copy's description is the turn and what to do with it,
-   * so landing there is also being told.
+   * And a turn that arrives takes the focus to Copy, once drawn. The page is waiting on the
+   * person now, and nothing else says so: the prompt pane, where they pressed Write, still
+   * says the form is being written, and an answer that failed took this pane — and the focus
+   * in it — away before the retry drew it again. Copy's description is the turn and what to
+   * do with it, so landing there is also being told.
+   *
+   * Not a turn `found` waiting when the pane is drawn. A run the host holds outlives its
+   * panes (0163), so this pane can be drawn over a turn that waited all along — because the
+   * person changed something else: a view, a builder, a language. Taking the focus from the
+   * control they used would be a change of context they did not ask for, about nothing new.
    */
-  private follow(turn: RelayTurn | undefined): void {
+  private follow(turn: RelayTurn | undefined, found: boolean): void {
     if (turn === this.turn()) return
     this.turn.set(turn)
     this.answer.set('')
     this.said.set(undefined)
     this.toCopy.set(undefined)
-    if (turn === undefined) return
+    if (turn === undefined || found) return
     afterNextRender(() => this.copyButton()?.nativeElement.focus(), { injector: this.injector })
   }
 

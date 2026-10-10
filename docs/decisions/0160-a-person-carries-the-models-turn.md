@@ -1,7 +1,9 @@
 # 0160 — On the website a person carries the model's turn, and the relay is decided once in builder-core
 
 - **Status:** accepted; a refused second turn ending `unreachable` superseded by
-  [0162](0162-an-example-is-drafted-from-what-the-author-said.md)
+  [0162](0162-an-example-is-drafted-from-what-the-author-said.md); a turn living as long as
+  the prompt pane, and a turn found waiting taking the focus to Copy, superseded by
+  [0163](0163-a-models-run-belongs-to-the-host.md)
 - **Date:** 2026-10-10
 - **Supersedes:** the playground's stand-in model in
   [0109](0109-an-ai-edit-is-reviewed-before-it-lands.md), and what
@@ -138,6 +140,13 @@ focus in it, goes before a retry draws it again. Focus is the DOM's, and `builde
 none, so each pane moves it — as each prompt pane gives Write the focus back after Stop —
 and one case in each builder's `relay-pane.test` holds them to the same.
 
+> **Superseded in part by [0163](0163-a-models-run-belongs-to-the-host.md):** a turn found
+> waiting when a relay pane is drawn takes no focus. Once a run outlives its panes, a relay
+> pane can be drawn over a turn that waited all along because the person used another
+> control — on formancy.ai, *Build* after *Schema*, the Builder select, or the Language
+> select in the Angular builder — and the focus stays on that control. A turn that arrives
+> while the pane is drawn still takes it to Copy, as decided here.
+
 **The playground has one relay** (`useState(() => createRelay())` in its page), asked by
 both builders' prompt panes and drawn at the top of both builders' bodies. It names the
 chat — Claude, at `https://claude.ai/new` — in one constant, and nowhere else. No prompt is
@@ -185,6 +194,12 @@ object but not a form is an answer, and costs one.
 builders, but a run is the prompt pane's. Switching tab, builder or editor mode takes the
 prompt pane away, which stops its run (0157) and clears the turn. A visitor mid-turn who
 looks at another tab loses it and asks again.
+
+> **Superseded by [0163](0163-a-models-run-belongs-to-the-host.md):** the playground holds
+> the prompt pane's run at the page, beside the relay, and both builders' prompt panes draw
+> it. A turn asked under *Fields* is still waiting after another tab, the other builder or
+> the *Schema* view, and the answer pasted then is reviewed there. Choosing another demo
+> ends it.
 
 **One turn at a time is said in English.** A host that wires two prompt panes to one relay
 sees the second run end as a model that could not be reached, with the relay's reason as the

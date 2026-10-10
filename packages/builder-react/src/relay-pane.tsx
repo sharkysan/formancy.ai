@@ -67,15 +67,21 @@ export function RelayPane({ session, relay, chat }: RelayPaneProps): ReactElemen
   const requestBox = useRef<HTMLTextAreaElement>(null)
   const copyButton = useRef<HTMLButtonElement>(null)
   /*
-   * Every turn drawn takes the focus to Copy. The page is waiting on the person now, and
-   * nothing else says so: the prompt pane, where they pressed Write, still says the form is
-   * being written, and an answer that failed took this pane — and the focus in it — away
-   * before the retry drew it again. Copy's description is the turn and what to do with it,
-   * so landing there is also being told.
+   * Every turn that arrives while the pane is drawn takes the focus to Copy. The page is
+   * waiting on the person now, and nothing else says so: the prompt pane, where they pressed
+   * Write, still says the form is being written, and an answer that failed took this pane —
+   * and the focus in it — away before the retry drew it again. Copy's description is the
+   * turn and what to do with it, so landing there is also being told.
+   *
+   * Not the turn found waiting when the pane is drawn. A run the host holds outlives its
+   * panes (0163), so this pane can be drawn over a turn that waited all along — because the
+   * person changed something else: a view, a builder, a language. Taking the focus from the
+   * control they used would be a change of context they did not ask for, about nothing new.
    */
+  const [found] = useState(() => relay.waiting())
   useEffect(() => {
-    if (turn !== undefined) copyButton.current?.focus()
-  }, [turn])
+    if (turn !== undefined && turn !== found) copyButton.current?.focus()
+  }, [turn, found])
   /**
    * Set when the browser refused a copy. The text goes into the request box on the next
    * render, and is selected once it is there — so the person can copy it with the keyboard.

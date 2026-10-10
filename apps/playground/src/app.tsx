@@ -19,7 +19,7 @@ import {
 import { createRichTextEditor } from '@formancy/tiptap'
 import { playgroundUploader } from './demo-uploader.js'
 import { DEMO_OPTIONS_SOURCES, DEMO_SCANNER } from './demo-capabilities.js'
-import { createBuilderSession, createRelay } from '@formancy/builder-core'
+import { createBuilderSession, createPromptRun, createRelay } from '@formancy/builder-core'
 import type { BuilderBlock, BuilderSession } from '@formancy/builder-core'
 import {
   FormancyArrangeSurface,
@@ -175,6 +175,15 @@ export function App() {
    * the way to Schema; a relay owned by either would be a second one.
    */
   const [relay] = useState(() => createRelay())
+  /**
+   * The prompt pane's run, held up here beside the relay for the same reason: a turn takes
+   * as long as the visitor takes to carry it, and while it waits they may look at the JSON,
+   * another tab or the other builder — each of which takes the prompt pane away. Held by
+   * the pane, the run stopped with it and the answer pasted afterwards had nowhere to go
+   * ([0163](../../../docs/decisions/0163-a-models-run-belongs-to-the-host.md)). One for
+   * both builders, so a proposal reviewed in one is the same proposal in the other.
+   */
+  const [promptRun] = useState(() => createPromptRun())
   const [shown, setShown] = useState<PaneId>('form')
 
   const panes = usePaneLayout()
@@ -316,6 +325,9 @@ export function App() {
               onChange={(event) => {
                 const chosen = DEMOS.find((option) => option.id === event.target.value)
                 if (chosen === undefined) return
+                // Another form: a run asked about this one is ended and forgotten, rather
+                // than left waiting above a builder showing something else (0163).
+                promptRun.discard()
                 setDemo(chosen.id)
                 // The text IS the document here — the builder writes it on every
                 // edit and everything else reads it — so loading a demo is setting
@@ -406,6 +418,7 @@ export function App() {
           onScenarios={keepScenarios}
           preview={built?.engine}
           relay={relay}
+          promptRun={promptRun}
           theme={theme}
           themeHost={themeHost}
           overrides={overrides}

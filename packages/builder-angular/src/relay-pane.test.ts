@@ -15,7 +15,7 @@ import { FormancyRelayPane } from './relay-pane.js'
  * focus are each builder's own, and what is pinned is what a person touches — what Copy
  * writes and that it sends nothing anywhere, what a refused write does, that a chat is
  * linked only when the host names one, that each turn starts clean, and that a turn
- * arriving takes the person to it.
+ * arriving takes the person to it while one found waiting does not.
  * When a paste counts is `createRelay`'s, tested once in `@formancy/builder-core`
  * ([0160](../../../docs/decisions/0160-a-person-carries-the-models-turn.md)).
  */
@@ -345,6 +345,33 @@ describe('a turn arriving', () => {
       name: 'Copy what was wrong',
       description: 'Turn 2 of at most 3 ' + session.text('relay.retry'),
     })
+    await waitFor(() => expect(document.activeElement).toBe(copy))
+  })
+
+  test('but a turn found waiting when the pane is drawn leaves the focus where the person put it', async () => {
+    /*
+     * A run the host holds outlives the panes (0163), so a relay pane can be drawn over a
+     * turn that has waited all along: the Build view after Schema, the other builder, a
+     * builder drawn again for another language. It is drawn because the person changed
+     * something else, and taking the focus from the control they used is a change of context
+     * on input (WCAG 3.2.2) — with nothing new waiting on them. A turn arriving after that
+     * still takes it.
+     */
+    const user = userEvent.setup()
+    const relay = createRelay()
+    void authorForm(relay.ask, 'add a phone number', { current: START })
+    await vi.waitFor(() => expect(relay.waiting()).toBeDefined())
+    const elsewhere = document.body.appendChild(document.createElement('select'))
+    elsewhere.focus()
+
+    const { fixture } = await mount(relay)
+    await screen.findByRole('region', { name: 'Take this request to a model' })
+    await fixture.whenStable()
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(document.activeElement).toBe(elsewhere)
+
+    await paste(user, '{}')
+    const copy = await screen.findByRole('button', { name: 'Copy what was wrong' })
     await waitFor(() => expect(document.activeElement).toBe(copy))
   })
 })

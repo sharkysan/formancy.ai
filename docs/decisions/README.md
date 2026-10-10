@@ -257,9 +257,10 @@ listed under the sections they belong to above.
 | [0154](0154-the-website-makes-no-request-to-any-other-site.md) | The website makes no request to any other site, and a browser gate says so | accepted |
 | [0155](0155-the-object-store-is-timed-on-its-silence.md) | The object store is timed on its silence, not on the whole request | accepted |
 | [0156](0156-a-proxy-is-trusted-by-its-address.md) | A proxy is trusted by its address, and by nothing else | accepted |
-| [0157](0157-a-models-turn-can-be-stopped.md) | A model's turn can be stopped, and an unreachable model is not a document that failed | accepted; the playground’s stand-in dialog superseded by 0160 |
+| [0157](0157-a-models-turn-can-be-stopped.md) | A model's turn can be stopped, and an unreachable model is not a document that failed | accepted; the playground’s stand-in dialog superseded by 0160; a pane going away stopping a run the host holds superseded in part by 0163 |
 | [0158](0158-a-model-may-decline.md) | A model may decline, and a decline ends the run after one turn | accepted; the playground’s stand-in dialog superseded by 0160 |
 | [0159](0159-a-proposal-is-checked-against-the-forms-examples.md) | A proposal is checked against the form's examples before it lands | accepted |
-| [0160](0160-a-person-carries-the-models-turn.md) | On the website a person carries the model's turn, and the relay is decided once in builder-core | accepted; a refused second turn ending `unreachable` superseded by 0162 |
+| [0160](0160-a-person-carries-the-models-turn.md) | On the website a person carries the model's turn, and the relay is decided once in builder-core | accepted; a refused second turn ending `unreachable` superseded by 0162; a turn living as long as the prompt pane, and a turn found waiting taking the focus to Copy, superseded by 0163 |
 | [0161](0161-a-model-translates-only-what-is-missing.md) | A model translates only what is missing, answers with the catalogue file, and is reviewed message by message | accepted |
-| [0162](0162-an-example-is-drafted-from-what-the-author-said.md) | An example is drafted from what the author said, judged by the engine, and kept one at a time | accepted |
+| [0162](0162-an-example-is-drafted-from-what-the-author-said.md) | An example is drafted from what the author said, judged by the engine, and kept one at a time | accepted; leaving Fields stopping the prompt pane's run in the playground superseded by 0163 |
+| [0163](0163-a-models-run-belongs-to-the-host.md) | A model's run belongs to the host, and outlives the pane that asked | accepted |

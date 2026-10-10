@@ -383,6 +383,7 @@ export const BUILDER_MESSAGES_FR = {
     other:
       'Examiner ces modifications — certaines touchent des réponses déjà recueillies, et {count} scénarios ne tiendraient plus : {list}',
   },
+  'prompt.asked': 'En réponse à « {instruction} »',
   'prompt.apply': 'Appliquer ces modifications',
   'prompt.discard': 'Abandonner',
   'prompt.lastAnswer': 'Ce que le modèle a répondu en dernier',

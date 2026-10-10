@@ -1,6 +1,7 @@
 # 0162 — An example is drafted from what the author said, judged by the engine, and kept one at a time
 
-- **Status:** accepted
+- **Status:** accepted; leaving *Fields* stopping the prompt pane's run in the playground
+  superseded by [0163](0163-a-models-run-belongs-to-the-host.md)
 - **Date:** 2026-10-10
 - **Deciders:** Daniel Bacher
 - **Verified by:** `packages/builder-core/src/scenario-prompt.test.ts`. *Never carries a rule*
@@ -238,6 +239,11 @@ host that switches over every ending has one more to word. The translations pane
 same relay from its own tab. Leaving Fields stops the other two panes' runs, so in the
 playground it never meets their turns; a host drawing it beside them does, and it ends
 `busy` there the same way.
+
+> **Superseded in part by [0163](0163-a-models-run-belongs-to-the-host.md):** the
+> playground holds the prompt pane's run at the page, so leaving *Fields* no longer stops
+> it, and the translations pane can meet its turn and end `busy`. The scenario pane's
+> drafting is still the part's, and leaving *Fields* still stops it.
 
 **Each draft is run on every edit**, beside the list the panel already runs. How long that
 takes for many drafts on a large form is not measured.

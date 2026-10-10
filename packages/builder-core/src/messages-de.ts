@@ -377,6 +377,7 @@ export const BUILDER_MESSAGES_DE = {
     other:
       'Diese Änderungen prüfen – einige betreffen bereits erfasste Antworten, und {count} Szenarien würden nicht mehr gelten: {list}',
   },
+  'prompt.asked': 'Als Antwort auf „{instruction}“',
   'prompt.apply': 'Diese Änderungen übernehmen',
   'prompt.discard': 'Verwerfen',
   'prompt.lastAnswer': 'Was das Modell zuletzt geantwortet hat',

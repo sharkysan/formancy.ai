@@ -1,20 +1,7 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore } from 'react'
 import type { ReactElement } from 'react'
-import {
-  applyProposal,
-  authorForm,
-  createStop,
-  proposalHeading,
-  proposalStatus,
-  proposeEdit,
-} from '@formancy/builder-core'
-import type {
-  AskModel,
-  AuthoringResult,
-  BuilderSession,
-  EditProposal,
-  Stop,
-} from '@formancy/builder-core'
+import { createPromptRun, proposalHeading, proposalStatus } from '@formancy/builder-core'
+import type { AskModel, BuilderSession, PromptRun } from '@formancy/builder-core'
 import type { Scenario } from '@formancy/core'
 
 /**
@@ -49,10 +36,17 @@ import type { Scenario } from '@formancy/core'
  * alone tells a screen-reader user nothing, and a proposal that only appears
  * visually is one they never learn about.
  *
- * **A run can be stopped**, by the button while it waits and by the pane going
- * away. Either ends it at once, tells the host so it can abandon the request,
- * and discards whatever the model says afterwards
- * ([0157](../../../docs/decisions/0157-a-models-turn-can-be-stopped.md)).
+ * **A run can be stopped**, by the button while it waits. That ends it at once, tells
+ * the host so it can abandon the request, and discards whatever the model says
+ * afterwards ([0157](../../../docs/decisions/0157-a-models-turn-can-be-stopped.md)).
+ *
+ * **Whose run it is, is the host's to say.** Given `run`, from `createPromptRun`, the pane
+ * draws a run the host holds: it goes on when the pane goes, and the pane drawn next — under
+ * another tab, in the other builder — shows it waiting, or what it came to. Without one the
+ * pane holds its own and stops it when it goes, as it always did
+ * ([0163](../../../docs/decisions/0163-a-models-run-belongs-to-the-host.md)). Either way the
+ * run, the proposal, Apply and Discard are `@formancy/builder-core`'s, so the Angular pane
+ * cannot decide them differently; this is the markup, the focus and a subscription.
  *
  * **A model can decline**, when the format cannot express what was asked. The run
  * ends on that answer, and the pane shows the model's reason, as text, where the
@@ -83,6 +77,12 @@ export interface PromptPaneProps {
   initialValue?: Readonly<Record<string, unknown>> | undefined
   /** `client` by default; `server` is what the publish gate and the submission endpoint run. */
   mode?: 'client' | 'server'
+  /**
+   * The run, held by the host, from `createPromptRun`: it outlives this pane, and a pane
+   * drawn over it later shows it as it is. Absent, the pane holds its own, and stops it
+   * when it goes (0157).
+   */
+  run?: PromptRun | undefined
 }
 
 export function PromptPane({
@@ -92,27 +92,18 @@ export function PromptPane({
   scenarios,
   initialValue,
   mode,
+  run: given,
 }: PromptPaneProps): ReactElement | null {
   // Every word this pane shows, in the language the session was opened in (0114).
   const { text } = session
-  const [instruction, setInstruction] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [result, setResult] = useState<AuthoringResult | undefined>(undefined)
-  const [proposal, setProposal] = useState<EditProposal | undefined>(undefined)
-  /** What applying said, when it refused. Cleared by anything that moves on. */
-  const [refusal, setRefusal] = useState<string | undefined>(undefined)
-  const inputId = useId()
-  const reviewId = useId()
-  /**
-   * The stop for the run in flight, if one is. A ref, not state: pressing it
-   * changes nothing on screen by itself — the run ending does, through `busy`.
+  /*
+   * The pane's own run, for a host that gives none. It is the pane's, so it stops when the
+   * pane goes: the host's request does not run on for an answer nothing will show (0157). A
+   * run the host gives is the host's, and nothing here ends it.
    */
-  const running = useRef<Stop | undefined>(undefined)
-
-  // A pane taken off the screen stops its run, so the host's request does not
-  // run on for an answer nothing will show. The run in flight when it goes, read
-  // at that moment — which is why it is a ref the cleanup reads late.
-  useEffect(() => () => running.current?.stop(), [])
+  const [own] = useState(createPromptRun)
+  useEffect(() => () => own.stop(), [own])
+  const run = given ?? own
 
   const writeButton = useRef<HTMLButtonElement>(null)
   const stopButton = useRef<HTMLButtonElement>(null)
@@ -122,11 +113,31 @@ export function PromptPane({
    * began, takes it back once the render has enabled it again.
    */
   const refocus = useRef(false)
+  /*
+   * Asked as the run says it ended, before React draws that: Stop is still in the document
+   * then, and once it has gone the focus is already on <body>. The run ends in a promise
+   * the pane no longer awaits — it may be another pane's, or none's — so this is the one
+   * moment every ending passes through.
+   */
+  const subscribe = useCallback(
+    (listener: () => void) =>
+      run.subscribe(() => {
+        const button = stopButton.current
+        if (!run.state().busy && button !== null && document.activeElement === button) refocus.current = true
+        listener()
+      }),
+    [run],
+  )
+  const state = useSyncExternalStore(subscribe, run.state, run.state)
+  const { instruction, asked, busy, result, proposal } = state
   useEffect(() => {
     if (busy || !refocus.current) return
     refocus.current = false
     writeButton.current?.focus()
   }, [busy])
+
+  const inputId = useId()
+  const reviewId = useId()
 
   if (ask === undefined) return null
 
@@ -140,54 +151,10 @@ export function PromptPane({
   const problems =
     failed !== undefined && failed.ended !== 'declined' && failed.problems.length > 0 ? failed : undefined
 
-  const run = async (): Promise<void> => {
-    if (instruction.trim() === '' || busy) return
-    setBusy(true)
-    setResult(undefined)
-    setProposal(undefined)
-    setRefusal(undefined)
-    const stop = createStop()
-    running.current = stop
-    try {
-      const current = session.document()
-      // The examples in force with the document the answer is for, taken together.
-      const examples = scenarios === undefined ? undefined : { scenarios, initialValue, mode }
-      // Resolves however the run ends — a host's model that threw included, which
-      // it reports as unreachable with the host's reason rather than as a document
-      // that failed.
-      const outcome = await authorForm(ask, instruction, {
-        // The document being edited, so "add a phone number" is a change
-        // rather than a new form written from nothing.
-        current,
-        stop,
-        ...(attempts === undefined ? {} : { attempts }),
-      })
-      setResult(outcome)
-      // Held against the document it was written for. Applying later checks
-      // that the form has not moved in the meantime.
-      if (outcome.ok) setProposal(proposeEdit(current, outcome.document, examples))
-    } finally {
-      // Read while Stop is still drawn: once it has gone, focus is already on <body>.
-      refocus.current = stopButton.current !== null && document.activeElement === stopButton.current
-      running.current = undefined
-      setBusy(false)
-    }
-  }
-
-  const apply = (): void => {
-    if (proposal === undefined) return
-    const outcome = applyProposal(session, proposal)
-    if (outcome.ok) {
-      setProposal(undefined)
-      setRefusal(undefined)
-      setResult(undefined)
-      setInstruction('')
-      return
-    }
-    // Kept on screen. The commonest refusal is "the form changed since this
-    // was proposed", and throwing the proposal away would lose the one thing
-    // the person needs in order to ask again.
-    setRefusal(outcome.message)
+  const write = (): void => {
+    // The examples in force with the document the answer is for, taken together.
+    const examples = scenarios === undefined ? undefined : { scenarios, initialValue, mode }
+    void run.write(ask, session, { examples, attempts })
   }
 
   return (
@@ -199,24 +166,24 @@ export function PromptPane({
         value={instruction}
         disabled={busy}
         placeholder={text('prompt.example')}
-        onChange={(event) => setInstruction(event.target.value)}
+        onChange={(event) => run.instruct(event.target.value)}
       />
       <button
         ref={writeButton}
         type="button"
         disabled={busy || instruction.trim() === ''}
-        onClick={() => void run()}
+        onClick={write}
       >
         {busy ? text('prompt.writing') : text('prompt.write')}
       </button>
       {busy ? (
-        <button ref={stopButton} type="button" onClick={() => running.current?.stop()}>
+        <button ref={stopButton} type="button" onClick={() => run.stop()}>
           {text('prompt.stop')}
         </button>
       ) : null}
 
       <p role="status" data-formancy-part="prompt-status">
-        {proposalStatus({ busy, result, proposal, refusal }, text)}
+        {proposalStatus(state, text)}
       </p>
 
       {proposal === undefined ? null : (
@@ -228,6 +195,12 @@ export function PromptPane({
              after a status message. */
         >
           <h3 id={reviewId}>{proposalHeading(proposal, text)}</h3>
+          {/* The words this answers. Once the run has answered the box above is the
+              person's again, and may say something else — typed here, or in a pane over
+              the same run in the other builder (0163). */}
+          {asked === undefined ? null : (
+            <p data-formancy-part="prompt-asked">{text('prompt.asked', { instruction: asked })}</p>
+          )}
           <ul data-formancy-part="prompt-changes">
             {proposal.changes.map((change) => (
               <li key={`${change.kind}:${change.path}`} data-severity={change.severity}>
@@ -237,17 +210,10 @@ export function PromptPane({
               </li>
             ))}
           </ul>
-          <button type="button" onClick={apply}>
+          <button type="button" onClick={() => run.apply(session)}>
             {text('prompt.apply')}
           </button>
-          <button
-            type="button"
-            onClick={() => {
-              setProposal(undefined)
-              setRefusal(undefined)
-              setResult(undefined)
-            }}
-          >
+          <button type="button" onClick={() => run.discard()}>
             {text('prompt.discard')}
           </button>
         </section>

@@ -225,6 +225,11 @@ form", which for a translation overstates what leaves rather than understating i
 the prompt pane's run ends with that pane (0157, 0160). After Apply the review goes, and the
 focus with it falls to the page's body, as it does after the prompt pane's Apply.
 
+> **Since [0163](0163-a-models-run-belongs-to-the-host.md)** a host can hold the prompt
+> pane's run, and the playground does, so that one no longer ends with its pane. This part's
+> run still does: held by the host, it would come back to a pane opened on the default
+> language, and 0163 left that decision for later.
+
 **Two renderings of the form are on screen while one is reviewed:** the pane's, of the form
 as it is, and the review's, as it would be. In the playground that is four, counting the
 form pane's two.

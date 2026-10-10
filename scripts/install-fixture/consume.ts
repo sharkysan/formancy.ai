@@ -22,6 +22,7 @@ import {
   authorForm,
   builderView,
   createBuilderSession,
+  createPromptRun,
   createRelay,
   createStop,
   declinedAnswer,
@@ -37,7 +38,7 @@ import {
   translationPrompt,
   translationStatus,
 } from '@formancy/builder-core'
-import type { AskModel, ProposalExamples, TranslationProposal } from '@formancy/builder-core'
+import type { AskModel, PromptRun, ProposalExamples, TranslationProposal } from '@formancy/builder-core'
 import type { BuiltInErrorCode } from '@formancy/core'
 import { mintChallenge, solveChallenge, verifySolution } from '@formancy/challenge'
 import { auditedBy, createMemoryStorage, publishForm } from '@formancy/server-core'
@@ -134,6 +135,26 @@ if (relay.answer('Sure, here it is.') !== 'no-object' || relay.waiting() !== tur
 relay.answer(JSON.stringify(schema))
 const carried = await relayed
 if (!carried.ok || carried.attempts !== 1) throw new Error('the installed relay did not end the run')
+
+// A run the host holds (0163): outside any pane, so a turn carried through the relay is
+// still held when nothing is listening, and lands through Apply in one step.
+const run: PromptRun = createPromptRun()
+const holding = createBuilderSession(schema)
+const holdingRelay = createRelay()
+const listening = run.subscribe(() => undefined)
+run.instruct('add a phone number')
+const writing = run.write(holdingRelay.ask, holding)
+listening()
+holdingRelay.answer(
+  JSON.stringify({
+    ...schema,
+    model: { fields: [...schema.model.fields, { key: 'phone', type: 'text', label: 'Phone' }] },
+  }),
+)
+await writing
+if (run.state().proposal === undefined || run.apply(holding)?.ok !== true || holding.revision() !== 1) {
+  throw new Error('the installed createPromptRun did not hold the answer for Apply')
+}
 
 // A model asked for what a language is missing (0161): the request names the one message
 // with no German, the answer lands through the import as a proposal, and applies in one step.

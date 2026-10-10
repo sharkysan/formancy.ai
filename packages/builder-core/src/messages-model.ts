@@ -34,6 +34,9 @@ export const MODEL_MESSAGES = {
     other:
       'Review these changes — some affect answers already collected, and {count} scenarios would stop holding: {list}',
   },
+  // In the review, under its heading: the words the run was asked with, which the box beside
+  // it may no longer say once the person has typed something else (0163).
+  'prompt.asked': 'In answer to “{instruction}”',
   'prompt.apply': 'Apply these changes',
   'prompt.discard': 'Discard',
   'prompt.lastAnswer': 'What the model last answered',

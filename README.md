@@ -482,7 +482,10 @@ other site for anything. Copy it into a chat of your own, paste the answer back,
 answer is checked, diffed against the form and held for review like any model's. Copying
 puts the whole request on your clipboard, the form included, and pasting it into a chat
 gives it to that service under your own account
-([0160](./docs/decisions/0160-a-person-carries-the-models-turn.md)).
+([0160](./docs/decisions/0160-a-person-carries-the-models-turn.md)). While your chat answers,
+look at anything — the JSON, another tab, the other builder: the request waits above the
+tabs, and the answer pasted then is held for review under *Fields*, in either builder
+([0163](./docs/decisions/0163-a-models-run-belongs-to-the-host.md)).
 
 **`?dir=rtl`** opens the playground right to left: both forms and both builders follow
 the reading order — the marks on a selected node move to the side a line starts on, and a

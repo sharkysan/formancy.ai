@@ -314,6 +314,205 @@ describe('describing a change in words', () => {
 })
 
 /**
+ * A turn being carried while the visitor looks elsewhere
+ * ([0163](../../../docs/decisions/0163-a-models-run-belongs-to-the-host.md)).
+ *
+ * A run was the prompt pane's, and the prompt pane is under Fields, in one builder, in the
+ * Build view. A visitor who carried the request to their chat and, while it answered,
+ * looked at the JSON, another tab or the other builder took the prompt pane away — which
+ * stopped the run, cleared the relay's turn, and left the answer they pasted afterwards
+ * nowhere to go. The page holds the run now, as it holds the relay, so each of the three
+ * ends with the request still in the relay pane, and the answer pasted then reviewed and
+ * applied — with nothing sent anywhere on the way.
+ */
+describe('a turn being carried while the visitor looks elsewhere', () => {
+  const ANSWER = JSON.stringify({
+    specVersion: '2',
+    id: 'proposed',
+    title: 'Proposed',
+    model: { fields: [{ key: 'phone', type: 'text', label: 'Telephone' }] },
+  })
+
+  /**
+   * Where the focus is once a relay pane drawn over the waiting turn has had every chance to
+   * take it. It is drawn again — the Build view after Schema, the other builder, a builder
+   * drawn anew for another language — because the visitor used a control, and a turn found
+   * waiting leaves the focus on it (0163): taking it to Copy would be a change of context on
+   * input (WCAG 3.2.2), about a turn that was already there. Under another tab the relay
+   * pane was never taken away.
+   */
+  const stillOn = async (control: HTMLElement): Promise<void> => {
+    await waitFor(
+      () => expect(document.querySelector('[data-formancy-part="relay-pane"] button')).not.toBeNull(),
+      { timeout: 10_000 },
+    )
+    // Past the render that would have moved it: an effect in React, `afterNextRender` in Angular.
+    await new Promise((resolve) => setTimeout(resolve, 200))
+    expect(document.activeElement).toBe(control)
+  }
+
+  /** Each way of looking elsewhere, and where the focus is after it. */
+  const away = {
+    'the Schema view and back': async (user: ReturnType<typeof userEvent.setup>) => {
+      await user.click(screen.getByRole('button', { name: 'Schema' }))
+      // Off screen, or the way back below would be no way back at all.
+      expect(screen.queryByRole('textbox', { name: /Describe the form/ })).toBeNull()
+      const build = screen.getByRole('button', { name: 'Build' })
+      await user.click(build)
+      await stillOn(build)
+    },
+    'another tab and back': async (user: ReturnType<typeof userEvent.setup>) => {
+      await user.click(screen.getByRole('button', { name: TAB_NAMES.translations }))
+      expect(screen.queryByRole('textbox', { name: /Describe the form/ })).toBeNull()
+      await user.click(screen.getByRole('button', { name: TAB_NAMES.fields }))
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: TAB_NAMES.fields }))
+    },
+    'the Angular builder': async () => {
+      await builtWith('Angular')
+      await angularTree()
+      await stillOn(screen.getByRole('combobox', { name: 'Builder' }))
+    },
+  } as const
+
+  test.each(Object.keys(away) as Array<keyof typeof away>)(
+    'a turn asked in the React builder is still waiting after %s, and its answer is reviewed and applied there',
+    async (journey) => {
+      const sent = outbound()
+      try {
+        const user = userEvent.setup()
+        render(<App />)
+        await builtWith('React')
+        const named = (): string[] =>
+          screen.getAllByRole('treeitem').map((item) => item.textContent ?? '')
+
+        await user.type(screen.getByRole('textbox', { name: /Describe the form/ }), 'add a phone number')
+        await user.click(screen.getByRole('button', { name: 'Write it' }))
+        await screen.findByRole('region', { name: 'Take this request to a model' })
+
+        await away[journey](user)
+
+        // The request is still there to carry, and the prompt pane drawn now is waiting on it.
+        const relay = await screen.findByRole(
+          'region',
+          { name: 'Take this request to a model' },
+          { timeout: 10_000 },
+        )
+        expect(
+          (within(relay).getByRole('textbox', { name: 'The request' }) as HTMLTextAreaElement).value,
+        ).toContain('add a phone number')
+        await waitFor(
+          () =>
+            expect(
+              (screen.getByRole('textbox', { name: /Describe the form/ }) as HTMLTextAreaElement).value,
+            ).toBe('add a phone number'),
+          { timeout: 10_000 },
+        )
+        expect(screen.getByRole('button', { name: 'Stop' })).toBeTruthy()
+
+        await user.click(within(relay).getByRole('textbox', { name: 'The model’s answer' }))
+        await user.paste(ANSWER)
+        await user.click(within(relay).getByRole('button', { name: 'Check this answer' }))
+
+        const review = await screen.findByRole('region', { name: /Review these changes/ }, { timeout: 10_000 })
+        expect(named().some((entry) => entry.includes('Telephone'))).toBe(false)
+        expect(undoButton().disabled, 'something was applied before anybody agreed to it').toBe(true)
+        await user.click(within(review).getByRole('button', { name: 'Apply these changes' }))
+
+        await waitFor(() => expect(named().some((entry) => entry.includes('Telephone'))).toBe(true), {
+          timeout: 10_000,
+        })
+        expect(undoButton().disabled).toBe(false)
+
+        expect(sent.fetch).not.toHaveBeenCalled()
+        expect(sent.open).not.toHaveBeenCalled()
+        expect(sent.beacon).not.toHaveBeenCalled()
+        expect(sent.window).not.toHaveBeenCalled()
+      } finally {
+        sent.restore()
+      }
+    },
+  )
+
+  test('a proposal held for review in one builder is the same proposal in the other', async () => {
+    // One session, one document (0096), and now one run: reviewed in React, it is Applied
+    // in Angular, and gone from both once it lands.
+    const user = userEvent.setup()
+    render(<App />)
+    await builtWith('React')
+    await user.type(screen.getByRole('textbox', { name: /Describe the form/ }), 'add a phone number')
+    await user.click(screen.getByRole('button', { name: 'Write it' }))
+    const relay = await screen.findByRole('region', { name: 'Take this request to a model' })
+    await user.click(within(relay).getByRole('textbox', { name: 'The model’s answer' }))
+    await user.paste(ANSWER)
+    await user.click(within(relay).getByRole('button', { name: 'Check this answer' }))
+    await screen.findByRole('region', { name: /Review these changes/ })
+    // The box is the visitor's again once the run has answered, and what they type next is
+    // not what the review answers: the review read in the other builder, beside those
+    // words, still says which words it answers (SAFETY-ANALYSIS D10).
+    const box = screen.getByRole('textbox', { name: /Describe the form/ })
+    await user.clear(box)
+    await user.type(box, 'add a fax number')
+
+    await builtWith('Angular')
+    const review = await screen.findByRole('region', { name: /Review these changes/ }, { timeout: 10_000 })
+    expect(
+      (screen.getByRole('textbox', { name: /Describe the form/ }) as HTMLTextAreaElement).value,
+    ).toBe('add a fax number')
+    expect(within(review).getByText('In answer to “add a phone number”')).toBeTruthy()
+    await user.click(within(review).getByRole('button', { name: 'Apply these changes' }))
+
+    await waitFor(() => expect(undoButton().disabled).toBe(false))
+    await builtWith('React')
+    expect(screen.queryByRole('region', { name: /Review these changes/ })).toBeNull()
+  })
+
+  test.each(['React', 'Angular'] as const)(
+    'in the %s builder, choosing another language while a turn waits leaves the focus on the Language select',
+    async (which) => {
+      // Another language is another session, and the Angular builder is drawn again over it,
+      // relay pane and all. A relay pane that took the focus to Copy for the turn it found
+      // would move the visitor off the select they are still using — in one builder and not
+      // the other.
+      const user = userEvent.setup()
+      render(<App />)
+      await builtWith(which)
+      await user.type(
+        await screen.findByRole('textbox', { name: /Describe the form/ }, { timeout: 10_000 }),
+        'add a phone number',
+      )
+      await user.click(screen.getByRole('button', { name: 'Write it' }))
+      await screen.findByRole('region', { name: 'Take this request to a model' }, { timeout: 10_000 })
+
+      const language = screen.getByRole('combobox', { name: 'Language' })
+      await user.selectOptions(language, 'de')
+      // The turn is still waiting, now in German.
+      await screen.findByRole('button', { name: 'Anfrage kopieren' }, { timeout: 10_000 })
+      await stillOn(language)
+    },
+  )
+
+  test('choosing another form ends a turn about the last one', async () => {
+    // The run is about the form it was asked over. Held by the page across another form, its
+    // request would wait above a builder showing something else, and its answer would be
+    // reviewed against a form nobody is looking at — and then refused as stale.
+    const user = userEvent.setup()
+    render(<App />)
+    await builtWith('React')
+    await user.type(screen.getByRole('textbox', { name: /Describe the form/ }), 'add a phone number')
+    await user.click(screen.getByRole('button', { name: 'Write it' }))
+    await screen.findByRole('region', { name: 'Take this request to a model' })
+
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Demo' }), 'wizard')
+
+    await waitFor(() =>
+      expect(screen.queryByRole('region', { name: 'Take this request to a model' })).toBeNull(),
+    )
+    expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull()
+    expect(screen.queryByRole('region', { name: /Review/ })).toBeNull()
+  })
+})
+
+/**
  * The starter's examples, run against a model's answer before it lands (0159).
  *
  * The page keeps each form's examples and its sample, and hands them to both builders'
