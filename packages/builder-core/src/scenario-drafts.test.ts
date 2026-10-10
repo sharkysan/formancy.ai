@@ -242,6 +242,34 @@ describe('what may be kept', () => {
     expect(keepDraft(FORM, [], ghost)).toEqual({ ok: false, refused: 'unknown-path' })
   })
 
+  test('a drafted `absent` on a field inside a group or a row is checked where the field is', () => {
+    /*
+     * The briefing offers `absent` for any path, and the inventory names fields inside a
+     * group and a row by theirs. Looked up as a key at the top of the submission, such an
+     * `absent` held whatever the form did: the draft read "holds", Keep took it, and the
+     * panel went on calling green an example that checked nothing.
+     */
+    const nested: FormSchema = {
+      specVersion: '4',
+      id: 'nested',
+      title: 'Nested',
+      model: {
+        fields: [
+          { key: 'home', type: 'group', fields: [{ key: 'street', type: 'text' }] },
+          { key: 'items', type: 'repeater', fields: [{ key: 'qty', type: 'number' }] },
+        ],
+      },
+    }
+    const stillThere = [
+      { name: 'the street is dropped', changes: { 'home.street': 'Main St' }, valid: true, absent: ['home.street'] },
+      { name: 'the quantity is dropped', changes: { 'items[0].qty': 3 }, valid: true, absent: ['items[0].qty'] },
+    ]
+
+    for (const draft of stillThere) {
+      expect(draftVerdict(nested, draft).failures.map((failure) => failure.about), draft.name).toEqual(['absent'])
+    }
+  })
+
   test('a name already in the list cannot be kept, which also stops one draft being kept twice', () => {
     const once = keepDraft(FORM, [], GERMANY_DOES_NOT)
     expect(once.ok).toBe(true)

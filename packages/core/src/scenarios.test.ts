@@ -151,6 +151,55 @@ describe('what a hidden field leaves behind', () => {
 
     expect(gone?.failures.map((failure) => failure.detail)).toEqual([])
   })
+
+  test('is looked for where the field is, inside a group or a repeater’s row', () => {
+    /*
+     * `absent` was a key looked up at the top of the submission, and no submission has a
+     * key `home.street`. So an `absent` on a field inside a group or a row held whatever
+     * the form did — green while checking nothing, the failure the path check below exists
+     * to prevent, reached through a path that is the form's own. A drafted example names
+     * those paths as readily as any other (0162).
+     */
+    const nested: FormSchema = {
+      specVersion: '2',
+      id: 'nested',
+      title: 'Nested',
+      model: {
+        fields: [
+          {
+            key: 'where',
+            type: 'radio',
+            options: [
+              { value: 'home', label: 'At home' },
+              { value: 'away', label: 'Away' },
+            ],
+          },
+          { key: 'home', type: 'group', fields: [{ key: 'street', type: 'text' }] },
+          { key: 'currency', type: 'text' },
+          { key: 'items', type: 'repeater', fields: [{ key: 'discount', type: 'number' }] },
+        ],
+      },
+      logic: {
+        rules: [
+          { target: 'home.street', kind: 'visible', cel: 'where == "home"' },
+          { target: 'items[].discount', kind: 'visible', cel: 'currency == "CHF"' },
+        ],
+      },
+    }
+    const filled = { where: 'home', home: { street: 'Main St' }, currency: 'CHF', items: [{ discount: 5 }] }
+    const absent = (changes: Record<string, unknown>, path: string) =>
+      runScenarios(nested, [{ name: path, changes, valid: true, absent: [path] }], { initialValue: filled })[0]
+
+    // Still shown, so still answered: each expectation is wrong and has to say so.
+    const street = absent({}, 'home.street')
+    expect(street?.failures.map((failure) => failure.about)).toEqual(['absent'])
+    expect(street?.failures[0]?.detail).toContain('Main St')
+    expect(absent({}, 'items[0].discount')?.failures.map((failure) => failure.about)).toEqual(['absent'])
+
+    // And hidden, so cleared where it was: the check is not simply always failing.
+    expect(absent({ where: 'away' }, 'home.street')?.failures).toEqual([])
+    expect(absent({ currency: 'EUR' }, 'items[0].discount')?.failures).toEqual([])
+  })
 })
 
 describe('a scenario that no longer holds', () => {
