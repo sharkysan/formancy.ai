@@ -151,9 +151,11 @@ type Turn =
  * three rounds of accumulated complaints starts fixing the first one again, and
  * a loop that passes one cannot be called in a way that repeats them all.
  *
- * `check` is given the object the answer held, or `undefined` when it held none,
- * and never a decline: that ends the run here, whatever was asked for, so a
- * caller cannot check one as an answer that failed and ask again.
+ * `check` is given what the answer held, and never a decline: that ends the run
+ * here, whatever was asked for, so a caller cannot check one as an answer that
+ * failed and ask again. A decline with no reason in it does reach `check`, because
+ * it is an answer that failed — the run asks again — and only the caller can word
+ * what the model is told about it.
  *
  * It resolves on every ending, a host's error included, so a caller reads what
  * happened from the result rather than from whether it threw.
@@ -161,7 +163,7 @@ type Turn =
 export async function askChecked<T, P>(
   ask: AskModel,
   build: (latest: P | undefined) => Omit<AuthoringPrompt, 'attempt' | 'limit'>,
-  check: (answer: object | undefined) => Verdict<T, P>,
+  check: (answer: Checkable) => Verdict<T, P>,
   options: AskOptions = {},
 ): Promise<Asked<T, P>> {
   const limit = Math.max(1, options.attempts ?? DEFAULT_ATTEMPTS)
@@ -192,7 +194,7 @@ export async function askChecked<T, P>(
     // Not asked again: another turn would be a call paid for — through a relay, two
     // pastes by hand — to hear the same answer, or to talk the model out of it.
     if (read?.kind === 'declined') return ended('declined', attempt, read.reason)
-    const verdict = check(read?.value)
+    const verdict = check(read)
     if (verdict.ok) return { ok: true, value: verdict.value, attempts: attempt }
     problems.push(verdict.problem)
   }
@@ -278,10 +280,17 @@ function saysSomething(text: string): string | undefined {
   return text.trim() === '' ? undefined : text
 }
 
-/** What a model's text held: an object to check, or a decline and its reason. */
+/**
+ * What a model's text held: an object to check, a decline and its reason, or a
+ * decline with no reason in it.
+ */
 export type Reading =
   | { readonly kind: 'object'; readonly value: object }
   | { readonly kind: 'declined'; readonly reason: string }
+  | { readonly kind: 'unexplained-decline' }
+
+/** What `check` is given: a reading that is not a decline, or `undefined` when there was no object. */
+export type Checkable = Exclude<Reading, { readonly kind: 'declined' }> | undefined
 
 /**
  * The JSON object in whatever the model said, or `undefined` when there is none.
@@ -297,7 +306,7 @@ export type Reading =
  * express the request. Recognised by its whole shape, never by the word, so a form
  * about declined claims is a form. Whatever is asked for this way must not itself
  * be such an object, and a form cannot be: it needs `specVersion`, `id`, `title`
- * and `model`.
+ * and `model`. That shape with no reason in it is an `unexplained-decline`.
  */
 export function readAnswer(text: string): Reading | undefined {
   const fenced = /```(?:json)?\s*([\s\S]*?)```/.exec(text)
@@ -321,11 +330,15 @@ export function readAnswer(text: string): Reading | undefined {
 }
 
 /**
- * The decline an object is, if it is one.
+ * The decline an object is, if it has a decline's shape.
  *
- * A reason with nothing in it is not one: "the model declined" and then nothing
- * gives a person nothing to act on, and asked again the model can say why — or
- * write the form after all.
+ * **One with no reason — blank, or not a string — does not end the run**: "the
+ * model declined" and then nothing gives a person nothing to act on, and asked
+ * again the model can say why, or write the form after all. Nor is it the thing
+ * asked for. Checked as a form, it draws the schema's complaints — the key is a
+ * misspelling to remove, four properties are missing — which tell a model to write
+ * a document for a request it judged no document could satisfy. So it is a reading
+ * of its own, and the caller's complaint asks for the reason.
  */
 function declineIn(parsed: object): Reading | undefined {
   const keys = Object.keys(parsed)
@@ -333,7 +346,7 @@ function declineIn(parsed: object): Reading | undefined {
   const reason: unknown = (parsed as Record<string, unknown>)[DECLINE_KEY]
   return typeof reason === 'string' && reason.trim() !== ''
     ? { kind: 'declined', reason: reason.trim() }
-    : undefined
+    : { kind: 'unexplained-decline' }
 }
 
 /**

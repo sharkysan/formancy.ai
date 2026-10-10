@@ -308,6 +308,7 @@ Write it
                                  ▼
                                readAnswer
                                  ├─ {"declined": why} ──▶ ended: declined, with the reason
+                                 ├─ {"declined": ""}  ──▶ the next turn asks for the reason
                                  ▼
                                validateSchema → the engine's compile → expressionProblems
                                  ├─ refused ──▶ the complaint goes into the next turn
@@ -335,4 +336,7 @@ for one that does ([0056](../decisions/0056-agents-get-the-checks.md)).
 request the format cannot express, and an answer of exactly that shape ends the run on the
 turn it came, before any check. Another turn would be paid for to hear the same answer, or
 to talk the model out of it. The pane says the model declined and shows its reason, as text, in place of
-the problem list ([0158](../decisions/0158-a-model-may-decline.md)).
+the problem list ([0158](../decisions/0158-a-model-may-decline.md)). The same shape with no
+reason in it is neither an ending nor a document. It is not checked as a form, whose schema
+would call the key a misspelling and tell the model to write a document after all. The
+next turn's complaint asks for the reason, and shows the decline as the briefing does.

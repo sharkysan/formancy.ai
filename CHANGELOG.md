@@ -18,13 +18,18 @@ each time, and a person sent to reword an instruction no wording could fix. The 
 offers `{"declined": "<why>"}`, spelled with `DECLINE_KEY`, new in `@formancy/spec`, and
 `authorForm` ends on that answer with `ended: 'declined'` and the model's reason. Only an
 object whose only key is `declined`, holding a reason, is a decline, so a form titled
-"declined" is still a form. Both prompt panes say *"Nothing was applied. The model declined
+"declined" is still a form. One with no reason does not end the run: the next turn asks the
+model for the reason, showing the briefing's example, rather than letting the schema tell it
+to remove the key and write a document — for a request no document can satisfy, the partial
+one the briefing asks it not to write. `AuthoringProblem.kind` gains `unexplained-decline`
+for that turn. Both prompt panes say *"Nothing was applied. The model declined
 this request."* in English, German and French, and show the reason as text where the problems
 would be. `declinedAnswer(reason)`, new in `@formancy/builder-core`, is what a host's
 `AskModel` returns when its model service refuses a request itself, so that ends the run the
 same way rather than as a model that could not be reached. The playground's stand-in dialog
-shows how to decline. A decline is the model's claim, and nothing checks it. `ended` has a new
-member, so a direct caller that handles each ending by name meets one it has not seen
+shows how to decline. A decline is the model's claim, and nothing checks it. `ended` and
+`AuthoringProblem.kind` have a new member each, so a direct caller that handles each by name
+meets one it has not seen
 ([0158](docs/decisions/0158-a-model-may-decline.md)). The spec bundle's figure in §9.3 is
 re-measured at 25.5 kB, up from 25.2, for the constant, the comment that ships beside it, and
 the briefing's new line.

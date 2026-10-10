@@ -278,7 +278,8 @@ work. Write the message for the person reading it. Something thrown without one 
 submission" is one such request: a form document says what a form asks and checks,
 not where an answer goes. The briefing tells the model not to write a document that
 does part of the request, and to answer `{"declined": "<why>"}` instead. The run
-ends on that answer rather than asking again. The pane says the model declined, and
+ends on that answer rather than asking again. A decline with no reason in it does not
+end the run: the next turn asks the model for one. The pane says the model declined, and
 shows its reason, as text, where the problems would be. Nothing is applied. The
 reason is the model's own claim, and nothing checks it: if it declined something a
 form can do, reword the instruction and ask again.

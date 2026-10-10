@@ -12,13 +12,18 @@
   so each was watched failing against a looser reader instead. Reading any object that
   holds the key as a decline fails *an object with the key and anything else*. Reading the
   word anywhere in the text fails *a valid document titled "declined"*. Accepting a blank
-  reason fails *nor is one with no reason to show*. A `declinedAnswer` that does not throw
-  fails *and is told at once*. `packages/spec/src/authoring.test.ts`, *shows how to
-  decline*, reads the example out of the briefing as JSON. It failed before the briefing
-  offered one, and again with a second key added to the example. `proposal.test.ts` holds
-  the sentence in English, German and French. Before it, the status was `undefined`. Both
-  builders' `prompt-pane.test` have *when the model declines*. Before this change, the status
-  read *"Nothing was applied. 3 attempts, and …"*. With the reason set as markup
+  reason fails *nor is one with no reason to show*. *One with no reason is asked for the
+  reason* failed against the first version of this change, which checked such an answer as
+  a form: its problem was `invalid-document`, and the next turn told the model that
+  `declined` was an unknown property to remove. It fails too with a non-string reason left
+  to the schema, and with the complaint's example spelled differently from the briefing's.
+  A `declinedAnswer` that does not throw fails *and is told at once*.
+  `packages/spec/src/authoring.test.ts`, *shows how to decline*, reads the example out of
+  the briefing as JSON. It failed before the briefing offered one, and again with a second
+  key added to the example. `proposal.test.ts` holds the sentence in English, German and
+  French. Before it, the status was `undefined`. Both builders' `prompt-pane.test` have
+  *when the model declines*. Before this change, the status read *"Nothing was applied. 3
+  attempts, and …"*. With the reason set as markup
   (`dangerouslySetInnerHTML`, `[innerHTML]`), the reason's text is not found. With the
   problem list left beside it, the list is. Both `language.test` cases fail with no
   reason on screen. `apps/docs/src/workbench.test.ts` failed on `prompt-declined` until the
@@ -60,6 +65,13 @@ holding a string that is not blank, as a decline. A form cannot have that shape:
 whatever was asked for, with `ended: 'declined'` and the model's reason, trimmed, as
 `reason`. No further turn is asked. Problems from earlier answers stay in the result.
 
+**A decline with no reason is asked for one.** The same shape holding a blank string, or
+anything but a string, does not end the run, and is not checked as a form either.
+`readAnswer` reads it as an `unexplained-decline`, and `authorForm`'s check answers it with
+a problem of that kind. The next turn tells the model a decline needs a reason for the
+person who asked, and shows the decline as the briefing does: answer that if the format
+cannot express the request, the document if it can.
+
 **A host can decline for its model.** `declinedAnswer(reason)` is the text a model would
 have written. An `AskModel` returns it when its service refuses, and the run ends the same
 way. It throws on a blank reason, because written out that is not a decline and the run
@@ -95,9 +107,11 @@ asks it not to, and nothing enforces that. A valid document that quietly leaves 
 reaches the review like any other ([0109](0109-an-ai-edit-is-reviewed-before-it-lands.md)),
 and the review is still what catches it.
 
-**`ended` gains a member.** A direct caller of `authorForm` that handles each ending by name
-meets one it has not seen. TypeScript says so only where that handling is checked to be
-exhaustive. Elsewhere a decline falls into whatever the caller does for the rest.
+**`ended` gains a member, and so does `AuthoringProblem.kind`.** A direct caller of
+`authorForm` that handles each ending by name meets one it has not seen. TypeScript says so
+only where that handling is checked to be exhaustive. Elsewhere a decline falls into whatever
+the caller does for the rest. The same holds for a caller that switches on a problem's kind
+and meets `unexplained-decline`.
 
 **Every request asked through `askChecked` inherits the shape.** Whatever it asks for must
 not itself be an object whose only key is `declined`. A form cannot be. A future request
@@ -130,6 +144,12 @@ property for a conversation would move the spec version, which is a reader contr
 **Accept a blank reason as a decline.** Lost because "the model declined" with nothing after it
 gives the person nothing to act on. Asked again, the model can say why, or write the form
 after all.
+
+**Check a decline with no reason as a form, like any other object.** This was the first
+version of this change. Lost because the schema answers it with four missing properties and
+`declined` as an unknown key to remove. That tells a model which judged the request
+impossible to write a document anyway. Where the format cannot express the request, that
+document is the partial one the briefing asks it not to write.
 
 **Put the reason in the status sentence**, as an unreachable model's message is. Lost because
 a host's message is the host's to keep short, and a model's reason is not. The live region

@@ -2,7 +2,8 @@ import { describe, expect, test, vi } from 'vitest'
 import { createStop, declinedAnswer } from './answers.js'
 import { authorForm } from './authoring.js'
 import type { AskModel, AuthoringPrompt, AuthoringResult } from './authoring.js'
-import { DECLINE_KEY } from '@formancy/spec'
+import { authoringBriefing, DECLINE_KEY } from '@formancy/spec'
+import { validateSchema } from '@formancy/spec/validate'
 import type { FormSchema } from '@formancy/spec'
 
 /**
@@ -476,6 +477,38 @@ describe('a model that declines', () => {
       )
 
       expect(result).toMatchObject({ ok: false, ended: 'gave-up' })
+    }
+  })
+
+  test('one with no reason is asked for the reason, not told to write a document', async () => {
+    /*
+     * A decline with nothing in it was checked as a form, so the model was told that
+     * `declined` is a misspelt key to remove and that four required properties are
+     * missing: told to stop declining and write a document. For a request the format
+     * cannot express, that is the document doing part of it which the briefing asks
+     * it not to write. Asked for the reason instead, it gives one and the run ends.
+     */
+    const example = [...authoringBriefing().matchAll(/\{[^{}]*\}/g)]
+      .map(([candidate]) => candidate)
+      .find((candidate) => candidate.includes(JSON.stringify(DECLINE_KEY)))
+    expect(example).toBeDefined()
+
+    for (const blank of ['', '   ', true]) {
+      const answer = { [DECLINE_KEY]: blank }
+      const ask = scripted(JSON.stringify(answer), JSON.stringify({ [DECLINE_KEY]: WHY }))
+
+      const result = await authorForm(ask, 'email me every submission')
+
+      expect(result).toMatchObject({ ok: false, ended: 'declined', reason: WHY, attempts: 2 })
+      if (!result.ok) expect(result.problems.map((problem) => problem.kind)).toEqual(['unexplained-decline'])
+      const followUp = promptsOf(ask)[1]?.followUp ?? ''
+      // Nothing the schema says about the answer as a form. Taken from the validator
+      // rather than written out here, so a reworded message cannot pass this by moving.
+      const asAForm = validateSchema(answer)
+      expect(asAForm.valid).toBe(false)
+      if (!asAForm.valid) for (const error of asAForm.errors) expect(followUp).not.toContain(error.message)
+      // The shape again, exactly as the briefing shows it, for the model to fill in.
+      expect(followUp).toContain(example)
     }
   })
 
