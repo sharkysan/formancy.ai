@@ -228,6 +228,11 @@ compilation at ≈1.7 ms against a 30 ms budget.
 - **Dependencies.** Pinned through a pnpm lockfile and a workspace catalog, so
   a version such as the TypeScript pin exists in exactly one place with the
   reason written beside it ([0039](../decisions/0039-pin-typescript.md)).
+- **CI actions.** A third-party GitHub Action runs pinned to a commit hash, with
+  its tag in a comment, because a tag can be moved to other code that would then
+  run with the workflow's secrets. `apps/docs/src/workflow-actions.test.ts` reads
+  every workflow and fails on a third-party action named by tag; GitHub's own
+  `actions/*` and `github/*` are exempt.
 - **Generated artefacts.** The ahead-of-time schema validator is committed and
   stamped with the hash of the schema it was generated from, so a stale artefact
   is detectable rather than silent ([0040](../decisions/0040-no-eval.md)).

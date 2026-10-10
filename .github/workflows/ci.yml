@@ -75,8 +75,10 @@ jobs:
       - run: pnpm build:web
       - run: pnpm typecheck
       - run: pnpm test:coverage
+      # Pinned to a commit like every third-party action, for release.yml's reason: it
+      # is handed CODECOV_TOKEN, and a tag can be moved. workflow-actions.test holds it.
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v7
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
