@@ -80,7 +80,7 @@ A deployment may also name a model for its builders, and then the server is the 
 place that talks to it: outbound HTTPS to `api.anthropic.com`, `api.openai.com` or
 `api.x.ai`, whichever `FORMANCY_MODEL_PROVIDER` names, carrying the form a builder asked
 about. The browser never calls a provider; the key never leaves the server
-([0166](../decisions/0166-a-deployments-model-is-asked-through-its-server.md)).
+([0165](../decisions/0165-a-deployments-model-is-asked-through-its-server.md)).
 
 One database serves relational data, documents, the job queue and full-text
 search. No Redis and no second store, which is a deliberate property of the
@@ -161,7 +161,7 @@ form is not publicly submittable unless it says so.
   minute per session, per replica — and every request is in the audit log as `model.asked`,
   without its text. There is no default model: name one as the provider's documentation
   does, and change it when the provider retires it
-  ([0166](../decisions/0166-a-deployments-model-is-asked-through-its-server.md); hazards C8,
+  ([0165](../decisions/0165-a-deployments-model-is-asked-through-its-server.md); hazards C8,
   C9 and D17).
 
 ## Configuration

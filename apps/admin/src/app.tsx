@@ -40,7 +40,7 @@ export function App() {
   const [selected, setSelected] = useState<string | undefined>(undefined)
   const [creating, setCreating] = useState('')
   const [signedIn, setSignedIn] = useState(() => currentToken() !== null)
-  // Whether the server has a model for the builders, asked once per sign-in (0166).
+  // Whether the server has a model for the builders, asked once per sign-in (0165).
   const [model, setModel] = useState<ServerModel | undefined>(undefined)
 
   const reloadForms = useCallback(async () => {

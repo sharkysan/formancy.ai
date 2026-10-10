@@ -785,7 +785,7 @@ against a real clamd once, by hand, on 2026-10-09; no gate does.
 ### C8. A form leaves for a model provider
 
 *How it arises:* a deployment configures a model for its builders
-([0166](../decisions/0166-a-deployments-model-is-asked-through-its-server.md)), and every
+([0165](../decisions/0165-a-deployments-model-is-asked-through-its-server.md)), and every
 request a builder makes of it is sent on by the server to the provider the operator named:
 Anthropic, OpenAI or xAI. Writing or changing a form sends the whole document; translating
 sends its words and where each is used; drafting examples sends its fields, labels and
@@ -820,7 +820,7 @@ monitoring, is under its own terms and invisible from here. The instruction is f
 and a person can paste anything into it, a submission included; nothing reads it for that.
 The admin's line naming the provider is English, as the admin is. A deployment that must not
 let forms leave should not configure a model — or should wait for a base URL of its own
-choosing, which 0166 defers. A host that writes its own `AskModel` sends what it decides; this
+choosing, which 0165 defers. A host that writes its own `AskModel` sends what it decides; this
 entry covers the admin and the server's route.
 
 ### C9. A cost is run up on the operator's key by somebody allowed to ask
@@ -1808,7 +1808,7 @@ about the largest form the server publishes when its questions are about a sente
 browser names the kind from its own briefing, the model is briefed by the server's, and the
 answer is checked as the browser's version expects. Nothing checks that the two match, so
 answers can fail their checks, or pass them under rules the browser did not write, with
-nothing to say why (0166).
+nothing to say why (0165).
 
 ---
 

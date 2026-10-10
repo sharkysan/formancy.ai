@@ -277,7 +277,7 @@ describe('following .env.example through compose', () => {
   })
 
   test('without the model block sends no form anywhere', () => {
-    // Off unless set (0166). A compose file that defaulted a provider would start every
+    // Off unless set (0165). A compose file that defaulted a provider would start every
     // deployment refusing to boot for want of a key, or worse, with one.
     for (const file of composeFiles) {
       expect(modelSettings(containerEnvironment(file, following())), file).toEqual({ kind: 'none' })

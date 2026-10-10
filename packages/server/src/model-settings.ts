@@ -5,7 +5,7 @@
  * A function of the environment rather than lines in `main.ts`, as `fileStoreSettings` is:
  * the rules are where a deployment goes wrong, and `main.ts` is a composition root no test
  * imports. Constructing the adapter stays in `main.ts`; this only says which
- * ([0166](../../../docs/decisions/0166-a-deployments-model-is-asked-through-its-server.md)).
+ * ([0165](../../../docs/decisions/0165-a-deployments-model-is-asked-through-its-server.md)).
  */
 export const MODEL_PROVIDERS = ['anthropic', 'openai', 'xai'] as const
 

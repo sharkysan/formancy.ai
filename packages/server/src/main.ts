@@ -120,7 +120,7 @@ const trustProxy = trustProxyFrom(process.env['FORMANCY_TRUST_PROXY'])
 
 /**
  * The model the builders ask through this server, with its key kept here rather than in a
- * browser (0166). Unset is a supported state and the default: no model, no prompt pane in
+ * browser (0165). Unset is a supported state and the default: no model, no prompt pane in
  * the admin, and no form sent anywhere. Half a configuration — a key with no provider, a
  * provider with no model — is refused here, because a server that started anyway would
  * have no model while the operator believed it had one. The key is never logged.

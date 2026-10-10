@@ -187,7 +187,7 @@ not reachable from here, and the themes README naming the target is the mitigati
 
 **A deployment's model is narrowed to formancy's requests, not closed to everything
 else.** The cost of pinning the briefing rather than the whole request
-([0166](../decisions/0166-a-deployments-model-is-asked-through-its-server.md)). The user
+([0165](../decisions/0165-a-deployments-model-is-asked-through-its-server.md)). The user
 part is the person's instruction, so somebody with an editor's session can still ask the
 operator's model for something other than a form under formancy's briefing. The permission,
 a limit per session, a body cap, an output limit and an audit row bound and record it; no

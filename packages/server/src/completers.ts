@@ -4,7 +4,7 @@ import { OPENAI_BASE_URL, XAI_BASE_URL, createOpenAiCompleter } from './openai-c
 import type { ModelSettings } from './model-settings.js'
 
 /**
- * The adapter for the provider the operator named (0166): Anthropic through its own SDK,
+ * The adapter for the provider the operator named (0165): Anthropic through its own SDK,
  * OpenAI and xAI through OpenAI's, at each one's base URL.
  *
  * `fetch` is for the tests, which check where each provider's requests go.

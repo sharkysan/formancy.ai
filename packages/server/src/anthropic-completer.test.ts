@@ -3,7 +3,7 @@ import type { Cancellation } from '@formancy/server-core'
 import { ANTHROPIC_MAX_OUTPUT_TOKENS, createAnthropicCompleter } from './anthropic-completer.js'
 
 /**
- * Claude, through Anthropic's own SDK, against a fake transport (0166).
+ * Claude, through Anthropic's own SDK, against a fake transport (0165).
  *
  * The SDK takes a `fetch`, so every case here is the real client — its request building,
  * its stream parser, its error classes — with only the network replaced. What is under

@@ -126,7 +126,7 @@ export interface AppOptions {
   /**
    * The deployment's model, which the builders ask through `/model/complete` under the
    * briefing this server writes. Absent, there is none: `/model` answers 404 and the admin
-   * draws no prompt pane (0166).
+   * draws no prompt pane (0165).
    */
   model?: DeploymentModel
   /** Model requests per session per minute. Defaults to 10: a run of three turns, three times. */

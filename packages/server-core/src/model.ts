@@ -6,7 +6,7 @@ import { isModelRequestKind, modelBriefing } from '@formancy/builder-core'
  * The builders ask a model through an `AskModel` the host supplies, and a key in a browser
  * is a key anybody who opens the page can read. So a deployment that has a model keeps it
  * here, behind its own sessions, and the admin's `AskModel` is a request to this server
- * ([0166](../../../docs/decisions/0166-a-deployments-model-is-asked-through-its-server.md)).
+ * ([0165](../../../docs/decisions/0165-a-deployments-model-is-asked-through-its-server.md)).
  *
  * **The server writes the briefing.** The browser names the kind of request — one of the
  * three formancy makes — and sends the user part; the system part is the one

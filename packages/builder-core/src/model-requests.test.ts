@@ -15,7 +15,7 @@ import type { ModelRequestKind } from './model-requests.js'
 
 /**
  * The requests formancy makes of a model, by name, and the briefing each is asked under
- * (0166).
+ * (0165).
  *
  * A server that holds the operator's key answers these and nothing else: the browser names
  * the kind and sends the user part, and the server supplies the briefing itself, so its

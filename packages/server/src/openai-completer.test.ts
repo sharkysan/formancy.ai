@@ -9,7 +9,7 @@ import {
 
 /**
  * OpenAI's models and xAI's Grok, through OpenAI's official SDK and its Responses API,
- * against a fake transport (0166).
+ * against a fake transport (0165).
  *
  * One adapter for both because xAI documents its API as compatible with OpenAI's SDKs at
  * its own base URL; the provider is the base URL and the key. The SDK takes a `fetch`, so

@@ -28,12 +28,12 @@ export interface DeploymentModel {
  * it answers as its context, pretty-printed and escaped again as a string.
  * `model-route.test.ts` sends all three requests about the largest questionnaire the server's
  * default limit publishes, its questions a sentence long, and they are taken. Longer
- * questions over many answers make a translation past this, refused before it is read (0166).
+ * questions over many answers make a translation past this, refused before it is read (0165).
  */
 export const MODEL_BODY_LIMIT_BYTES = 1024 * 1024
 
 /**
- * The builders' requests to the deployment's model (0166).
+ * The builders' requests to the deployment's model (0165).
  *
  * `GET /model` says whether there is one, and which, to somebody who may edit a form: the
  * admin draws the prompt pane only when there is. `POST /model/complete` takes

@@ -7,7 +7,7 @@ import { App } from './app.js'
 import { askServerModel, fetchModel, setToken } from './api.js'
 
 /**
- * The deployment's model, as the admin asks it (0166).
+ * The deployment's model, as the admin asks it (0165).
  *
  * The key is on the server, so the admin's `AskModel` is a request to it and to nothing
  * else: the prompt pane appears only when the server says it has a model, every turn goes

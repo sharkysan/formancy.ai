@@ -5,7 +5,7 @@ import type { ServerModel } from './api.js'
 const PROVIDERS: Readonly<Record<string, string>> = { anthropic: 'Anthropic', openai: 'OpenAI', xai: 'xAI' }
 
 /**
- * Where a request to the model goes, said before anybody asks (0166).
+ * Where a request to the model goes, said before anybody asks (0165).
  *
  * The request leaves: the server sends it on to the provider the operator chose, under that
  * provider's terms. Nothing here calls that private, and the person asking should not have

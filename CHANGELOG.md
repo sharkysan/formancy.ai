@@ -41,7 +41,7 @@ the server image the `builder-core` package and, as an optional peer of both SDK
 draft routes moved to a plugin of their own to make room in `app.ts`, and the check that every
 route's rate limit names `timeWindow` now reads the route plugins as well as `app.ts`, since
 it would otherwise have stopped seeing the draft routes when they moved
-([0166](docs/decisions/0166-a-deployments-model-is-asked-through-its-server.md)).
+([0165](docs/decisions/0165-a-deployments-model-is-asked-through-its-server.md)).
 
 **Fixed: on formancy.ai, a translation or examples asked of a model are no longer lost when
 the visitor looks elsewhere while their chat answers.** An entry below fixed this for the

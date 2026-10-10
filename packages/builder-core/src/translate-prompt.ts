@@ -83,7 +83,7 @@ export function translationPrompt(document: FormSchema, locale: string): Transla
 
 /**
  * The briefing, which is the same for every language and every form — and so can be pinned
- * by a server that asks the model on the browser's behalf (`model-requests.ts`, 0166).
+ * by a server that asks the model on the browser's behalf (`model-requests.ts`, 0165).
  */
 export function translationBriefing(): string {
   return [

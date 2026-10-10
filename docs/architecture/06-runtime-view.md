@@ -619,7 +619,7 @@ server never reads a system part: it asks under the briefing `builder-core` writ
 kind. That narrows the endpoint to formancy's three kinds of request without closing it — the
 user part is free text, so a session can still ask for something else under formancy's
 briefing, bounded by the permission, the limit, the cap and the audit row
-([0166](../decisions/0166-a-deployments-model-is-asked-through-its-server.md)). The versions
+([0165](../decisions/0165-a-deployments-model-is-asked-through-its-server.md)). The versions
 are not compared: the browser names the kind from its own briefing and checks the answer as
 its own version expects, while the model is briefed by the server's.
 

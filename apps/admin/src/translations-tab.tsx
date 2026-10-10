@@ -27,7 +27,7 @@ export function TranslationsTab({
 }: {
   source: string
   onChange: (next: string) => void
-  /** The server's model, when it has one: the same ask the build tab's prompt pane uses (0166). */
+  /** The server's model, when it has one: the same ask the build tab's prompt pane uses (0165). */
   model?: ServerModel | undefined
 }): ReactElement {
   const [session, setSession] = useState<BuilderSession | null>(null)

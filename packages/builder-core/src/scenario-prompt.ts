@@ -155,7 +155,7 @@ export function scenarioPrompt(
 
 /**
  * The briefing, which is the same for every form — and so can be pinned by a server that
- * asks the model on the browser's behalf (`model-requests.ts`, 0166).
+ * asks the model on the browser's behalf (`model-requests.ts`, 0165).
  */
 export function scenarioBriefing(): string {
   const decline = JSON.stringify({ [DECLINE_KEY]: '<why, for the person who asked>' })

@@ -1,4 +1,4 @@
-# 0166 — A deployment's model is asked through its server, and the server writes the briefing
+# 0165 — A deployment's model is asked through its server, and the server writes the briefing
 
 - **Status:** accepted
 - **Date:** 2026-10-10
@@ -199,8 +199,11 @@ naming a digest of each briefing, and the browser refusing when its own differs 
 done here (SAFETY-ANALYSIS D17, arc42 §11).
 
 **The admin's line about where a request goes is English**, as the rest of the admin is; the
-builders' own words stay in their catalogue. The prompt pane in the admin holds its own run,
-so leaving the build tab stops it.
+builders' own words stay in their catalogue. The admin holds none of the runs a host may hold
+([0163](0163-a-models-run-belongs-to-the-host.md),
+[0164](0164-a-translation-is-held-for-its-language-and-a-draft-for-its-form.md)): the prompt
+pane's run is its own, so leaving the build tab stops it, and the Translations tab's ends
+with the tab or when another language is chosen.
 
 `MDR-CONTEXT.md` is unchanged: what the regulatory set claims to be has not moved.
 

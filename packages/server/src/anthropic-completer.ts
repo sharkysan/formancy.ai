@@ -31,7 +31,7 @@ export interface AnthropicCompleterOptions {
 }
 
 /**
- * Claude, through Anthropic's official SDK (0166).
+ * Claude, through Anthropic's official SDK (0165).
  *
  * One system prompt and one user message, with adaptive thinking — the model decides how
  * much to think — streamed and read with the SDK's final-message helper. **The stop reason

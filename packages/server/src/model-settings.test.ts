@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest'
 import { modelSettings } from './model-settings.js'
 
 /**
- * Which model the environment names, and which configurations are refused (0166).
+ * Which model the environment names, and which configurations are refused (0165).
  *
  * Read once, at startup. A wrong answer here is a server that starts with no model while
  * the operator believes they configured one — the builders then simply draw no prompt

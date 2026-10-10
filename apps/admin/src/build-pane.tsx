@@ -42,7 +42,7 @@ export function BuildPane({
   onChange: (next: string) => void
   publishState: PublishResult | undefined
   onPublish: () => void
-  /** The server's model, when it has one: then the prompt pane is drawn, asking through it (0166). */
+  /** The server's model, when it has one: then the prompt pane is drawn, asking through it (0165). */
   model?: ServerModel | undefined
   /**
    * The form being edited, so the preview can accept files.

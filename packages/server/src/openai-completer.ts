@@ -11,7 +11,7 @@ export const OPENAI_BASE_URL = 'https://api.openai.com/v1'
 /**
  * xAI's API, which xAI documents as compatible with OpenAI's SDKs and their Responses API at
  * this base URL. Taken from xAI's documentation as a web search summarised it on
- * 2026-10-10; the pages themselves refused the fetch, and no test here reaches xAI (0166).
+ * 2026-10-10; the pages themselves refused the fetch, and no test here reaches xAI (0165).
  */
 export const XAI_BASE_URL = 'https://api.x.ai/v1'
 
@@ -35,7 +35,7 @@ export interface OpenAiCompleterOptions {
 }
 
 /**
- * OpenAI's models, or xAI's Grok, through OpenAI's official SDK and the Responses API (0166).
+ * OpenAI's models, or xAI's Grok, through OpenAI's official SDK and the Responses API (0165).
  *
  * The briefing as a system message and the request as a user message, streamed and read
  * with the SDK's final-response helper. `store: false`, so the provider keeps no copy of

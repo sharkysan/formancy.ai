@@ -4,7 +4,7 @@ import { createCompleter } from './completers.js'
 import type { ModelProvider } from './model-settings.js'
 
 /**
- * Which adapter, and so which host, each provider the operator names is sent to (0166).
+ * Which adapter, and so which host, each provider the operator names is sent to (0165).
  *
  * The provider is a word in the environment and the key goes with it. A mapping crossed
  * here sends OpenAI's key to xAI, or a form to a company the operator never chose, and

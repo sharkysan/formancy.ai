@@ -246,7 +246,7 @@ or xAI, a key and a model, and the key stays on the server, which asks under the
 writes itself and never one from the request. That narrows what the key can be spent on to
 formancy's three kinds of request; it does not close it, since the person's instruction is
 free text. The admin asks it
-([0166](./docs/decisions/0166-a-deployments-model-is-asked-through-its-server.md)). For a page
+([0165](./docs/decisions/0165-a-deployments-model-is-asked-through-its-server.md)). For a page
 that may not call one, both carry a **relay**
 pane, where a person copies each request to a chat of their own and pastes the answer
 back, and every check after the paste runs in the page

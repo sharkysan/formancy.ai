@@ -467,7 +467,7 @@ REVOKE UPDATE, DELETE, TRUNCATE ON audit_log FROM formancy;
 The builders can describe a form in words, ask for a language's missing messages and draft
 examples, all through a model. A deployment can have its server hold that model, so the key
 stays on the server and never reaches a browser
-([0166](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0166-a-deployments-model-is-asked-through-its-server.md)).
+([0165](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0165-a-deployments-model-is-asked-through-its-server.md)).
 It is off until you set all three:
 
 ```bash

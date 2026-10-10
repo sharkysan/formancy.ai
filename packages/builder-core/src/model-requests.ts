@@ -11,7 +11,7 @@ import { translationBriefing } from './translate-prompt.js'
  * supplies the briefing itself: a system part sent by the browser is never read. The
  * browser finds the kind from the briefing the run handed its `AskModel`, so one ask
  * serves every pane, and a system part formancy did not write has no kind and is not sent
- * ([0166](../../../docs/decisions/0166-a-deployments-model-is-asked-through-its-server.md)).
+ * ([0165](../../../docs/decisions/0165-a-deployments-model-is-asked-through-its-server.md)).
  *
  * One table read by both ends, so the briefing the server pins cannot drift from the one
  * the run sends; `model-requests.test.ts` runs each kind's run and compares. A browser and

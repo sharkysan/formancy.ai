@@ -38,7 +38,7 @@ COPY packages/spec/        packages/spec/
 COPY packages/challenge/   packages/challenge/
 COPY packages/expressions/ packages/expressions/
 COPY packages/core/        packages/core/
-# The briefings the server writes for each kind of model request (0166).
+# The briefings the server writes for each kind of model request (0165).
 COPY packages/builder-core/ packages/builder-core/
 COPY packages/server-core/ packages/server-core/
 COPY packages/server/      packages/server/

@@ -27,7 +27,7 @@ L0  spec                         types · JSON Schema · diff · canonical hash
     conformance                  sits beside L2: depends on spec only
     challenge                    sits beside L0: isomorphic, mint/solve/verify
     server-core                  depends on core, spec, and builder-core for the
-                                 model's briefings (0166); no HTTP types
+                                 model's briefings (0165); no HTTP types
     server                       Fastify routes, PostgreSQL, auth runtime
     mcp                          an agent's view of a running server
 ```
@@ -496,7 +496,7 @@ read by `server/trust-proxy.ts` rather than inline in `main.ts`, because its ref
 part worth testing and `main.ts` is a composition root no test imports.
 
 The deployment's model is the newest family, and the port is the point of it
-([0166](../decisions/0166-a-deployments-model-is-asked-through-its-server.md)).
+([0165](../decisions/0165-a-deployments-model-is-asked-through-its-server.md)).
 `server-core/model.ts` holds `Completer` — one system part, one user part, a
 `Cancellation`, and the text or a typed failure back — and `completeBuilderRequest`, which
 refuses a kind formancy does not make and asks under `modelBriefing(kind)` from

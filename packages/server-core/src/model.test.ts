@@ -4,7 +4,7 @@ import { completeBuilderRequest } from './model.js'
 import type { Cancellation, Completer, Completion, CompletionPrompt } from './model.js'
 
 /**
- * A builder's request to the deployment's model, as the server answers it (0166).
+ * A builder's request to the deployment's model, as the server answers it (0165).
  *
  * The operator's key pays for every call, so the server answers the requests formancy makes
  * and nothing else: the browser names the kind and sends the user part, and the briefing is

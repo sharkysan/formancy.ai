@@ -271,7 +271,7 @@ export interface ServerModel {
 }
 
 /**
- * Whether the server has a model, and which (0166).
+ * Whether the server has a model, and which (0165).
  *
  * `undefined` for none — a 404, or an answer that does not name one: a server older than
  * the route answers `/model` some other way, and reading any 200 as a model would draw a
@@ -287,7 +287,7 @@ export async function fetchModel(): Promise<ServerModel | undefined> {
 }
 
 /**
- * The builders' model, asked through this server, which holds the key (0166).
+ * The builders' model, asked through this server, which holds the key (0165).
  *
  * One `AskModel` for every pane. The kind of request is read from the briefing the run
  * handed it, and only the kind and the user part are sent: the server writes the briefing
