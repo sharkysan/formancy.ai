@@ -49,6 +49,17 @@ vi.mock('@monaco-editor/react', () => ({
 
 afterEach(cleanup)
 
+/*
+ * Longer than the shared `RENDER_TIMEOUT_MS`, for the reason `theme-editor.test.tsx` is:
+ * a timeout here catches a hang, not the speed of somebody else's runner. These cases
+ * mount the whole playground and then the Angular builder, and most of them make an edit
+ * that re-renders both previews. Measured on 2026-10-10: the slowest run in about 2.1s
+ * locally; under coverage on CI, "switching back keeps the document and the undo stack"
+ * took 15.6s on one run and passed 20s on the next with nothing changed in its path. The
+ * factor the shared constant records, up to fourteen, puts a 2s case near 30s.
+ */
+vi.setConfig({ testTimeout: 60_000 })
+
 /**
  * The toolbar's Undo, read fresh each time.
  *
