@@ -1,6 +1,8 @@
+import type { Scenario } from '@formancy/core'
 import type { FormSchema } from '@formancy/spec'
 import catalog from '../../../templates/catalog.json'
 import { STARTER_SCHEMA } from './starter.js'
+import { STARTER_SAMPLE, STARTER_SCENARIOS } from './starter-scenarios.js'
 import { WIZARD_SCHEMA } from './wizard.js'
 
 /**
@@ -19,27 +21,69 @@ import { WIZARD_SCHEMA } from './wizard.js'
  * every rule kind the format defines is on screen somewhere, derived from the
  * spec's own lists rather than from a list here that would go stale.
  */
-interface Demo { id: string; label: string; schema: FormSchema }
+interface Demo { id: string; label: string; schema: FormSchema; examples: Examples | undefined }
+
+/**
+ * What a form is supposed to do, written down (0110), and where every example starts.
+ *
+ * Per form, because an example names that form's fields: the starter's, run against a
+ * template, failed on questions the template does not ask. The wizard has none, and says so.
+ */
+export interface Examples {
+  readonly scenarios: readonly Scenario[]
+  readonly sample: Readonly<Record<string, unknown>>
+}
 
 const areas: Record<string, string> = {
   hr: 'HR', sales: 'Sales', 'customer-service': 'Customer service',
   events: 'Events', operations: 'Operations', 'healthcare-administration': 'Healthcare administration',
 }
 
-// Only form documents enter the browser bundle. Sample answers and validation
-// scenarios live alongside them for integrators, never as defaults in a live form.
+// The form documents, and beside each the examples it is checked against and the
+// fictional sample they start from — for the builders' examples panel, never as
+// defaults in a live form: a sample name appearing as an answer is how a template
+// ships somebody else's data (templates.test.tsx holds that).
 const forms = import.meta.glob<FormSchema>('../../../templates/**/*.form.json', {
   eager: true, import: 'default',
 })
+const scenarios = import.meta.glob<Scenario[]>('../../../templates/**/*.scenarios.json', {
+  eager: true, import: 'default',
+})
+const samples = import.meta.glob<Record<string, unknown>>('../../../templates/**/*.sample.json', {
+  eager: true, import: 'default',
+})
+
+/** A catalogue file by its path, which must exist: a typo is a build error, not a blank pane. */
+function shipped<T>(files: Record<string, T>, path: string): T {
+  const file = files[`../../../templates/${path}`]
+  if (file === undefined) throw new Error(`Missing template file: ${path}`)
+  return file
+}
 
 export const DEMOS: readonly Demo[] = [
-  { id: 'starter', label: 'Everything — one form, every field type', schema: STARTER_SCHEMA },
-  { id: 'wizard', label: 'A wizard — steps, a group, a skipped page', schema: WIZARD_SCHEMA },
-  ...catalog.templates.map((entry): Demo => {
-    const schema = forms[`../../../templates/${entry.schema}`]
-    if (schema === undefined) throw new Error(`Missing template: ${entry.schema}`)
-    return { id: entry.id, label: `${areas[entry.area]} — ${entry.title.en}`, schema }
-  }),
+  {
+    id: 'starter',
+    label: 'Everything — one form, every field type',
+    schema: STARTER_SCHEMA,
+    examples: { scenarios: STARTER_SCENARIOS, sample: STARTER_SAMPLE },
+  },
+  {
+    id: 'wizard',
+    label: 'A wizard — steps, a group, a skipped page',
+    schema: WIZARD_SCHEMA,
+    examples: undefined,
+  },
+  ...catalog.templates.map(
+    (entry): Demo => ({
+      id: entry.id,
+      label: `${areas[entry.area]} — ${entry.title.en}`,
+      schema: shipped(forms, entry.schema),
+      examples: {
+        scenarios: shipped(scenarios, entry.scenarios),
+        sample: shipped(samples, entry.sample),
+      },
+    }),
+  ),
 ]
 
 /** A gallery link names a document, never an arbitrary URL to fetch. */

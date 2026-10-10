@@ -113,6 +113,23 @@ describe('with scenarios', () => {
     expect(screen.getByRole('status').textContent).not.toContain('Stopped holding')
   })
 
+  test('another session is another form, not an edit of this one', async () => {
+    // A host that keeps the pane on screen and opens another document — the playground,
+    // on every switch of form — was told examples had stopped holding that had never run
+    // against the document now open.
+    const { rerender } = render(
+      <ScenarioPane session={createBuilderSession(form)} scenarios={SCENARIOS} />,
+    )
+    await waitFor(() => expect(screen.getByRole('status').textContent).toContain('All 2'))
+
+    const inverted = JSON.parse(JSON.stringify(form)) as FormSchema
+    inverted.logic!.rules[0]!.cel = "kind != 'other'"
+    rerender(<ScenarioPane session={createBuilderSession(inverted)} scenarios={SCENARIOS} />)
+
+    await waitFor(() => expect(screen.getByRole('status').textContent).toContain('do not hold'))
+    expect(screen.getByRole('status').textContent).not.toContain('Stopped holding')
+  })
+
   test('shows what was expected and what happened, not that something failed', async () => {
     const inverted = JSON.parse(JSON.stringify(form)) as FormSchema
     inverted.logic!.rules[0]!.cel = "kind != 'other'"

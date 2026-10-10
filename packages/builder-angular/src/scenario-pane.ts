@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core'
-import { comparedToLastRun, scenarioStatus } from '@formancy/builder-core'
+import { createRunHistory, scenarioStatus } from '@formancy/builder-core'
 import { BuilderTextPipe } from './text.pipe.js'
 import { runScenarios } from '@formancy/core'
 import type { BuilderSession, Scenario, ScenarioResult } from './types.js'
@@ -16,8 +16,8 @@ import { injectBuilderView } from './view.js'
  * ([0110](../../../docs/decisions/0110-a-form-is-checked-against-examples.md)).
  *
  * What counts as a regression is `comparedToLastRun` in
- * `@formancy/builder-core`, so the two builders cannot tell two people
- * different things about one edit
+ * `@formancy/builder-core`, and what it is compared with is `createRunHistory`
+ * there, so the two builders cannot tell two people different things about one edit
  * ([0091](../../../docs/decisions/0091-a-second-builder-is-a-binding.md)).
  *
  * **The scenarios are the host's**, arriving as an input and leaving through
@@ -26,8 +26,8 @@ import { injectBuilderView } from './view.js'
  *
  * Signals and `OnPush`, zoneless. The rerun is a `computed` over the session's
  * revision — the same subscription every other pane here uses — and the
- * previous run is held in a plain field, because it is read to compare and
- * never rendered on its own.
+ * previous run is held in a plain field, the history, because it is read to
+ * compare and never rendered on its own.
  */
 @Component({
   selector: 'formancy-scenario-pane',
@@ -106,7 +106,8 @@ export class FormancyScenarioPane {
   readonly removable = input(false)
 
   private readonly view = injectBuilderView(this.session)
-  private previous: readonly ScenarioResult[] | undefined = undefined
+  /** The previous run and its session; a run over another session is compared with nothing. */
+  private readonly history = createRunHistory()
 
   protected readonly results = computed<readonly ScenarioResult[]>(() => {
     const scenarios = this.scenarios()
@@ -124,9 +125,7 @@ export class FormancyScenarioPane {
 
   protected readonly change = computed(() => {
     const results = this.results()
-    const compared = comparedToLastRun(this.previous, results)
-    this.previous = results
-    return compared
+    return this.history.compare(this.session(), results)
   })
 
   /** Every word this panel shows, in the language the session was opened in (0114). */

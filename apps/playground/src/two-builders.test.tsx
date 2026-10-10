@@ -6,6 +6,7 @@ import { App } from './app.js'
 import { TAB_NAMES, builderTextFor } from './builder-pane.js'
 import { STARTER_SCHEMA } from './starter.js'
 import { STARTER_SCENARIOS } from './starter-scenarios.js'
+import REGISTRATION_SCENARIOS from '../../../templates/events/registration.scenarios.json'
 
 /**
  * One document, two builders.
@@ -397,6 +398,67 @@ describe('the examples, in either builder', () => {
     const angular = await scenarioPanel()
     await waitFor(() => expect(removable(angular)).toEqual(offered(gone)), { timeout: 10_000 })
   })
+  /*
+   * Each form its own examples.
+   *
+   * The starter's examples were the page's only list, so opening the wizard or a template
+   * ran them against a form that has none of their fields: a panel full of failures about
+   * questions nobody could see, on every form but one — while each template carries its
+   * own examples and a sample to start them from, and the playground showed neither.
+   */
+  test.each(['React', 'Angular'] as const)(
+    'a template brings its own examples, and they hold, in the %s builder',
+    async (which) => {
+      const user = userEvent.setup()
+      render(<App />)
+      await user.selectOptions(screen.getByRole('combobox', { name: 'Demo' }), 'events-registration')
+      await builtWith(which)
+
+      const panel = await scenarioPanel()
+      // Derived from the template's own file, so a scenario added there moves this too.
+      await waitFor(
+        () =>
+          expect(removable(panel)).toEqual(
+            REGISTRATION_SCENARIOS.map(({ name }) => `Remove ${name}`),
+          ),
+        { timeout: 10_000 },
+      )
+      // And they hold — which they only do from the template's sample, not from nothing.
+      expect(within(panel).getByRole('status').textContent).toBe(
+        builderTextFor('en')('scenarios.allHold', { count: REGISTRATION_SCENARIOS.length }),
+      )
+    },
+  )
+
+  test('the wizard, which has none, says so rather than failing the starter’s', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Demo' }), 'wizard')
+    await builtWith('React')
+
+    const panel = await scenarioPanel()
+    expect(within(panel).getByRole('status').textContent).toBe(builderTextFor('en')('scenarios.none'))
+  })
+
+  test('an example removed from one form is still gone after a visit to another', async () => {
+    // Kept per form: a list reset on every switch would bring a removed example back, and
+    // one shared by every form is the defect above.
+    const user = userEvent.setup()
+    render(<App />)
+    await builtWith('React')
+    const gone = STARTER_SCENARIOS[0]!.name
+    await user.click(within(await scenarioPanel()).getByRole('button', { name: `Remove ${gone}` }))
+
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Demo' }), 'events-registration')
+    await waitFor(() =>
+      expect(removable(screen.getByRole('region', { name: 'Scenarios' }))).toHaveLength(
+        REGISTRATION_SCENARIOS.length,
+      ),
+    )
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Demo' }), 'starter')
+    await waitFor(() => expect(removable(screen.getByRole('region', { name: 'Scenarios' }))).toEqual(offered(gone)))
+  })
+
   test('the Angular panel never says there are none while the page has some', async () => {
     // The Angular builder started with an empty list and was handed the page's after it had
     // drawn, so every mount first drew the empty state — and its status is a live region, so

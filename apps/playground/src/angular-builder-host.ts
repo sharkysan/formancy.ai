@@ -14,7 +14,6 @@ import {
 import type { BuilderBlock, BuilderSession, Capabilities } from '@formancy/builder-core'
 import type { Scenario } from '@formancy/core'
 import { DEMO_MODEL } from './demo-capabilities.js'
-import { STARTER_SAMPLE } from './starter-scenarios.js'
 
 /** Which tab the page is on. The React pane owns this. */
 export type BuilderTab = 'fields' | 'arrangement' | 'rules' | 'translations'
@@ -48,6 +47,8 @@ export interface PlaygroundBuilder {
   readonly keep: (block: BuilderBlock) => void
   /** The page's examples, pushed in like the blocks: one list both builders run (0111). */
   readonly scenarios: WritableSignal<readonly Scenario[]>
+  /** Where every example starts: the form's sample, pushed in with the list it belongs to. */
+  readonly sample: WritableSignal<Readonly<Record<string, unknown>> | undefined>
   /** Hands the shorter list back after a Remove here, for the page to keep for both. */
   readonly keepScenarios: (next: readonly Scenario[]) => void
 }
@@ -67,6 +68,7 @@ export interface FromThePage {
   readonly preview: PreviewState | undefined
   readonly blocks: readonly BuilderBlock[]
   readonly scenarios: readonly Scenario[]
+  readonly sample: Readonly<Record<string, unknown>> | undefined
 }
 
 export const PLAYGROUND_BUILDER = new InjectionToken<PlaygroundBuilder>('playground builder')
@@ -84,6 +86,7 @@ export function playgroundBuilder(
     preview: signal(from.preview),
     blocks: signal(from.blocks),
     scenarios: signal(from.scenarios),
+    sample: signal(from.sample),
     ...back,
   }
 }
@@ -161,7 +164,7 @@ export function playgroundBuilder(
       <formancy-scenario-pane
         [session]="host.session"
         [scenarios]="host.scenarios()"
-        [initialValue]="sample"
+        [initialValue]="host.sample()"
         [removable]="true"
         (scenariosChange)="host.keepScenarios($event)"
       />
@@ -189,7 +192,4 @@ export class AngularBuilderHost {
 
   /** The model a description of a change is put to: the React pane's stand-in. */
   protected readonly ask = DEMO_MODEL
-
-  /** Where every example starts: the same filled-in starter the React pane is given. */
-  protected readonly sample = STARTER_SAMPLE
 }

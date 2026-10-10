@@ -56,7 +56,9 @@ error-code display are separate from these message catalogues.
 Each form has a `*.sample.json` containing fictional answers and a
 `*.scenarios.json` describing changes to those answers and expected results.
 Samples are for local evaluation, not production defaults or submission API
-envelopes. The playground never loads them as answers.
+envelopes. The playground never loads them as answers. Its builders run each
+template's scenarios from its sample in the **Scenarios** panel, so a rule edited
+in the builder that breaks one is named there.
 
 The tests run each sample and scenario through the engine in client and server
 modes. They verify conditional required fields, answers cleared when a branch

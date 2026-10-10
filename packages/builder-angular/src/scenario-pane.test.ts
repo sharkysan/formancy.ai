@@ -121,6 +121,21 @@ describe('with scenarios', () => {
     expect(screen.getByRole('status').textContent).not.toContain('Stopped holding')
   })
 
+  test('another session is another form, not an edit of this one', async () => {
+    // A host that keeps the pane on screen and opens another document was told examples
+    // had stopped holding that had never run against the document now open.
+    const { fixture } = await render(FormancyScenarioPane, {
+      inputs: { session: createBuilderSession(form), scenarios: SCENARIOS },
+      providers: [provideZonelessChangeDetection()],
+    })
+    await waitFor(() => expect(screen.getByRole('status').textContent).toContain('All 2'))
+
+    fixture.componentRef.setInput('session', createBuilderSession(inverted()))
+
+    await waitFor(() => expect(screen.getByRole('status').textContent).toContain('do not hold'))
+    expect(screen.getByRole('status').textContent).not.toContain('Stopped holding')
+  })
+
   test('shows what was expected and what happened, not that something failed', async () => {
     await mount(createBuilderSession(inverted()), { scenarios: SCENARIOS })
 

@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import type { ReactElement } from 'react'
-import { comparedToLastRun, scenarioStatus } from '@formancy/builder-core'
+import { comparedToLastRun, createRunHistory, scenarioStatus } from '@formancy/builder-core'
 import { runScenarios } from '@formancy/core'
 import type { BuilderSession } from '@formancy/builder-core'
-import type { Scenario, ScenarioResult } from '@formancy/core'
+import type { Scenario } from '@formancy/core'
 
 /**
  * What this form is supposed to do, run against what it does now.
@@ -84,18 +84,19 @@ export function ScenarioPane({
   )
 
   /*
-   * The previous run, kept in a ref rather than in state.
+   * The previous run, and the session it was over, held by one history for the pane's
+   * life rather than in state.
    *
    * It is not rendered on its own and setting it would schedule a second
    * render after every edit, which is a re-render per keystroke on a panel
-   * sitting beside a form somebody is typing into.
+   * sitting beside a form somebody is typing into. A run over another session is
+   * compared with nothing: that is another document, not an edit of this one.
    */
-  const previous = useRef<readonly ScenarioResult[] | undefined>(undefined)
+  const [history] = useState(createRunHistory)
   const [change, setChange] = useState(() => comparedToLastRun(undefined, []))
   useEffect(() => {
-    setChange(comparedToLastRun(previous.current, results))
-    previous.current = results
-  }, [results])
+    setChange(history.compare(session, results))
+  }, [history, session, results])
 
   if (scenarios === undefined) return null
 

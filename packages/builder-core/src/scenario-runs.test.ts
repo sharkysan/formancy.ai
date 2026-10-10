@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import type { ScenarioResult } from '@formancy/core'
-import { comparedToLastRun, scenarioStatus } from './scenario-runs.js'
+import { comparedToLastRun, createRunHistory, scenarioStatus } from './scenario-runs.js'
 import { BUILDER_MESSAGES_DE } from './messages-de.js'
 import { createBuilderText } from './messages.js'
 
@@ -94,6 +94,34 @@ describe('comparing a run with the one before it', () => {
     const changed = comparedToLastRun([result('old name', true)], [result('new name', false)])
 
     expect(changed.regressions).toEqual([])
+  })
+})
+
+describe('the last run a pane compares with', () => {
+  test('is forgotten when the session changes, because that is another document', () => {
+    // A pane left on screen while its host opened another form compared the new form's
+    // run with the old one's by name, and said examples had stopped holding, or held
+    // again, that had never been run against this document.
+    const history = createRunHistory()
+    const before = {}
+    const after = {}
+    history.compare(before, [result('the name is required', true)])
+
+    expect(history.compare(after, [result('the name is required', false)])).toEqual({
+      regressions: [],
+      repaired: [],
+    })
+  })
+
+  test('and kept while it does not, which is what an edit is', () => {
+    const history = createRunHistory()
+    const session = {}
+    history.compare(session, [result('a', true), result('b', false)])
+
+    expect(history.compare(session, [result('a', false), result('b', true)])).toEqual({
+      regressions: ['a'],
+      repaired: ['b'],
+    })
   })
 })
 

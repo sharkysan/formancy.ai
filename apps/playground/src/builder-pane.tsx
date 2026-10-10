@@ -27,7 +27,6 @@ import type { BuilderBlock, BuilderSession, BuilderText } from '@formancy/builde
 import { AngularBuilderPane } from './angular-builder-pane.js'
 import type { BuilderTab, PreviewState } from './angular-builder-host.js'
 import { DEMO_MODEL } from './demo-capabilities.js'
-import { STARTER_SAMPLE } from './starter-scenarios.js'
 
 /**
  * The builder pane: two trees over one document, in either framework.
@@ -98,6 +97,7 @@ export function BuilderBody({
   blocks,
   onSaveBlock,
   scenarios,
+  sample,
   onScenarios,
   preview,
 }: {
@@ -116,6 +116,8 @@ export function BuilderBody({
    * removed in either is gone from the other (0111).
    */
   scenarios: readonly Scenario[]
+  /** Where every example starts: the form's fictional sample (0110). */
+  sample: Readonly<Record<string, unknown>> | undefined
   onScenarios: (next: readonly Scenario[]) => void
   /** The form pane's engine, whose answers the rules tab explains (0128). */
   preview: FormEngine | undefined
@@ -188,6 +190,7 @@ export function BuilderBody({
           blocks={blocks}
           onSaveBlock={onSaveBlock}
           scenarios={scenarios}
+          sample={sample}
           onScenarios={onScenarios}
         />
       ) : tab === 'rules' ? (
@@ -252,7 +255,7 @@ export function BuilderBody({
             session={session}
             scenarios={scenarios}
             onChange={onScenarios}
-            initialValue={STARTER_SAMPLE}
+            initialValue={sample}
           />
 
           {editing === null ? null : (
