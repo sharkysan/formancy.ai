@@ -137,6 +137,12 @@ host's page is held to whatever policy the host sets, which is C6's residual unc
 open it; it is what a deployment runs for its operators, and moving its faces is the same
 change made again. Recorded in the risks and debt rather than claimed here.
 
+> *Later, 2026-10-10 — a note, not a change to this decision.* The admin follows: its faces
+> come from Fontsource and Monaco from its own origin, through the plugin the playground used,
+> now one module both apps import (`monaco-from-this-site.ts`). It also loaded Monaco from
+> jsDelivr, which this record did not notice. `apps/admin/src/no-other-host.test.tsx` holds
+> both; the request gate still does not open the admin.
+
 ## Alternatives considered
 
 **Bundle Monaco's ES modules through Vite**, with `loader.config({ monaco })` and its workers
