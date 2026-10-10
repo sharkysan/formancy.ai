@@ -226,6 +226,13 @@ the form earlier in the same chat — the prompt pane's request carries the whol
 through the same relay — has seen its rules. The part says it that way, of the request, and
 tells the person to start a new chat for it; whether they do is theirs.
 
+> **Fixed by [0167](0167-the-relay-says-what-each-request-carries.md):** the relay pane said
+> beside the part that the request included "the form", which for examples overstated what
+> leaves and contradicted the part. The request names its kind now, and for examples the
+> relay pane says what one carries — the title, the fields with their labels and options, the
+> codes, the starting answers, the examples' names and the author's words, and none of its
+> rules. `relay.test.ts` checks that against the request `draftScenarios` sends.
+
 **A draft lives as long as the part, and its session.** The drafts waiting are the part's
 state, not the host's. Switching tab, builder or form takes the part away or hands it
 another session, which stops a run (0157) and drops what was drafted: another session is

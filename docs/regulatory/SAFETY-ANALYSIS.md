@@ -1797,7 +1797,11 @@ builds: a person who pastes the form itself into the same chat has shown the mod
 and nothing here can see that. The drafting part says it as that — what the request carries —
 and tells the person to start a new chat for it; the playground's prompt pane carries the
 whole document through the same relay, so the case is one tab away. Both builders'
-`language.test` require that advice to be drawn. Whether a person follows it is theirs. Held
+`language.test` require that advice to be drawn. The relay pane drawn above it said, until
+[0167](../decisions/0167-the-relay-says-what-each-request-carries.md), that the request
+included the form; it now says what a request for examples carries and that the rules are not
+in it, and `relay.test.ts` checks that against the request `draftScenarios` sends. Whether a
+person follows the advice is theirs. Held
 drafts take the form's id for the form: two documents with one id — a form replaced wholesale
 under *Schema* with its id kept — are one form to them, and a draft naming fields both have can
 be kept into a form it was not drafted for. The engine's verdict is computed against the form

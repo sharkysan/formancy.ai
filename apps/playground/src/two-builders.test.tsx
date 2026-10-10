@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
-import { missingMessages, referencedMessages } from '@formancy/builder-core'
+import { MODEL_REQUEST_KINDS, missingMessages, referencedMessages, relayLeaves } from '@formancy/builder-core'
+import type { ModelRequestKind } from '@formancy/builder-core'
 import type { FormSchema } from '@formancy/spec'
 import { App } from './app.js'
 import { TAB_NAMES, builderTextFor } from './builder-pane.js'
@@ -977,6 +978,87 @@ describe('examples drafted from what the visitor says', () => {
       await waitFor(() => expect(status('prompt-status')).toBe(say('prompt.status.busy')), { timeout: 10_000 })
     },
   )
+})
+
+/**
+ * What the relay pane says leaves, for each request the playground makes of a model
+ * ([0167](../../../docs/decisions/0167-the-relay-says-what-each-request-carries.md)).
+ *
+ * One relay carries all three requests here — a change described under Fields, the French
+ * asked for under Translations, examples drafted under Fields — and its pane said one
+ * sentence for all of them: that Copy puts the whole request on the clipboard, "including the
+ * form". A translation carries the form's words and none of its rules, and a request for
+ * examples its fields and none of its rules, so for two of the three the page overstated
+ * what a visitor hands their chat. Each now says its own, chosen by the kind the run set; what
+ * each sentence claims is checked against its request in builder-core's `relay.test.ts`.
+ */
+describe('what the relay pane says leaves, for each request', () => {
+  const english = builderTextFor('en')
+  const missing = missingMessages(STARTER_SCHEMA as unknown as FormSchema, 'fr')
+
+  type Visitor = ReturnType<typeof userEvent.setup>
+  /** Each request, asked the way a visitor asks it, from where they ask it. */
+  const ASKED: Record<ModelRequestKind, { from: string; ask: (user: Visitor) => Promise<void> }> = {
+    authoring: {
+      from: 'a change described under Fields',
+      ask: async (user) => {
+        const box = await screen.findByRole('textbox', { name: /Describe the form/ }, { timeout: 10_000 })
+        await user.type(box, 'add a fax number')
+        await user.click(screen.getByRole('button', { name: 'Write it' }))
+      },
+    },
+    translation: {
+      from: 'the French asked for under Translations',
+      ask: async (user) => {
+        await user.click(screen.getByRole('button', { name: 'Translations' }))
+        const editor = screen.getByRole('region', { name: 'Editor' })
+        await user.selectOptions(
+          await waitFor(() => within(editor).getByRole('combobox', { name: 'Language' }), { timeout: 10_000 }),
+          'fr',
+        )
+        await user.click(
+          await within(editor).findByRole(
+            'button',
+            { name: `Ask a model for the ${String(missing.length)} missing messages` },
+            { timeout: 10_000 },
+          ),
+        )
+      },
+    },
+    scenarios: {
+      from: 'examples drafted under Fields',
+      ask: async (user) => {
+        const panel = await waitFor(() => screen.getByRole('region', { name: 'Scenarios' }), { timeout: 10_000 })
+        await user.type(
+          within(panel).getByRole('textbox', { name: /What should this form do/ }),
+          'Only Switzerland asks for a canton.',
+        )
+        await user.click(within(panel).getByRole('button', { name: 'Draft examples' }))
+      },
+    },
+  }
+
+  test.each(
+    (['React', 'Angular'] as const).flatMap((which) =>
+      MODEL_REQUEST_KINDS.map((kind) => [which, ASKED[kind].from, kind] as const),
+    ),
+  )('in the %s builder, %s says what that request carries, and nothing another one does', async (which, _, kind) => {
+    // Through the whole page, in either builder: the relay pane is the playground's, drawn
+    // above the tabs, and both builders' panes ask it. A pane that kept the first sentence
+    // it drew, or a page that handed one pane a relay of its own, would show here.
+    const user = userEvent.setup()
+    render(<App />)
+    await builtWith(which)
+    if (which === 'Angular') await angularTree()
+
+    await ASKED[kind].ask(user)
+
+    const relay = await screen.findByRole('region', { name: 'Take this request to a model' }, { timeout: 10_000 })
+    expect(within(relay).getByText(relayLeaves(kind, english))).toBeTruthy()
+    for (const other of MODEL_REQUEST_KINDS.filter((each) => each !== kind)) {
+      expect(within(relay).queryByText(relayLeaves(other, english))).toBeNull()
+    }
+  })
 })
 
 /**

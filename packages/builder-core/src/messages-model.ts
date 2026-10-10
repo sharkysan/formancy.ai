@@ -94,8 +94,16 @@ export const MODEL_MESSAGES = {
   'relay.first': 'Copy the request into a chat with a model, then paste its whole answer below.',
   'relay.retry':
     'That answer did not work. Copy what was wrong into the same chat, then paste the new answer below.',
-  'relay.leaves':
-    'This pane sends the request nowhere. Copy puts the whole request on your clipboard, including the form; pasting it into a chat gives it to that service under your own account.',
+  // What THIS request carries, one sentence for each kind, chosen by `relayLeaves` (0167):
+  // the requests carry different things, and one sentence for all three overstated two of
+  // them. Each claim is checked in `relay.test.ts` against the request its run builds, so
+  // a sentence changed here has to stay true of that request — in either direction.
+  'relay.leaves.authoring':
+    'This pane sends the request nowhere. Besides what the model is told about the format, the request carries your description and, when it changes a form, that whole form, its rules included. What you copy goes on your clipboard, and pasting it into a chat gives it to that service under your own account.',
+  'relay.leaves.translation':
+    'This pane sends the request nowhere. Besides what the model is told about the format, the request carries the messages this language is missing, where the form uses each, and the form’s translations into this language so far, but none of its rules. What you copy goes on your clipboard, and pasting it into a chat gives it to that service under your own account.',
+  'relay.leaves.scenarios':
+    'This pane sends the request nowhere. Besides what the model is told about the format, the request carries the form’s title, its fields with their labels and options, the error codes it can report, the answers examples start from, the names of its examples and what you said it should do, but none of its rules. What you copy goes on your clipboard, and pasting it into a chat gives it to that service under your own account.',
   'relay.system': 'What the model is told about the format',
   'relay.request': 'The request',
   'relay.copy': 'Copy the request',

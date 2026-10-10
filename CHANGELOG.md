@@ -10,6 +10,30 @@ later.
 
 ## Unreleased
 
+**Fixed: the relay pane said every request included the form; it now says what each one
+carries.** The pane a person carries a model's turn through said one sentence for every
+request — *"Copy puts the whole request on your clipboard, including the form"*. That is true
+of a model's edit, which carries the whole document, and it overstated the two other requests
+the playground, and any host, makes through the same relay: a translation carries the messages
+a language is missing, where each is used and the translations it already has, never the
+rules ([0161](docs/decisions/0161-a-model-translates-only-what-is-missing.md)); a request for
+examples carries the form's fields, labels and options, the codes, the starting answers, the
+examples' names and the author's words, never the rules
+([0162](docs/decisions/0162-an-example-is-drafted-from-what-the-author-said.md)) — which the
+drafting part said beside a relay pane saying the opposite. A sentence about what leaves the
+page that is wrong in either direction is one this repository will not make. Now every prompt
+names its kind: `AuthoringPrompt.kind`, one of `MODEL_REQUEST_KINDS`, set by `authorForm`,
+`translateCatalogue` and `draftScenarios` on every turn. `relayLeaves(kind, text)` in
+`@formancy/builder-core` chooses that kind's sentence, and both relay panes draw it, in
+English, German and French. What each sentence claims is checked against the request its run
+builds, not against its wording. **Breaking for a prompt built by hand:** `kind` is required,
+as `attempt` and `limit` are, so a host test or a wrapper that builds an `AuthoringPrompt`
+itself has to name one; an `AskModel` that receives prompts is unchanged. The catalogue key
+`relay.leaves` is replaced by `relay.leaves.authoring`, `relay.leaves.translation` and
+`relay.leaves.scenarios`. The server path still names a request by its briefing, so a kind
+claimed beside a briefing formancy did not write is refused as before
+([0167](docs/decisions/0167-the-relay-says-what-each-request-carries.md)).
+
 **Added: a deployment keeps a form's examples, and publishing runs them.** Examples with their
 answers written down are the one check that tells a working condition from the one that was
 asked for, and the builders run them, review a model's edit against them and draft them — but a

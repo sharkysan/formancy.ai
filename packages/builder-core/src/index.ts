@@ -1,7 +1,7 @@
 export { authorForm, createStop, declinedAnswer, ModelBusyError } from './authoring.js'
 export { applyProposal, proposalHeading, proposalStatus, proposeEdit } from './proposal.js'
 // A model whose turn a person carries: the request copied out, the answer pasted back (0160).
-export { createRelay, relayMessage } from './relay.js'
+export { createRelay, relayLeaves, relayMessage } from './relay.js'
 export type { Relay, RelayAnswer, RelayChat, RelayTurn } from './relay.js'
 export type { EditProposal, ProposalExamples } from './proposal.js'
 // A prompt pane's run, held where the host chooses, so a turn outlives the pane that asked (0163).

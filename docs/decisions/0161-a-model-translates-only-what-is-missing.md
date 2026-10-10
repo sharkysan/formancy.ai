@@ -224,6 +224,11 @@ the language's existing translations on the clipboard (not its rules), and pasti
 chat gives it to that service. The relay pane's own sentence says the request includes "the
 form", which for a translation overstates what leaves rather than understating it.
 
+> **Fixed by [0167](0167-the-relay-says-what-each-request-carries.md):** the request names its
+> kind, and for a translation the relay pane says what one carries — the messages the language
+> is missing, where the form uses each and its translations so far, and none of its rules.
+> `relay.test.ts` checks that against the request `translateCatalogue` sends.
+
 **The run belongs to the review part.** Choosing another language, tab or builder ends it, as
 the prompt pane's run ends with that pane (0157, 0160). After Apply the review goes, and the
 focus with it falls to the page's body, as it does after the prompt pane's Apply.

@@ -278,7 +278,7 @@ time, a paste with no object in it held back without costing an attempt, and a s
 clearing the turn — so the React and Angular relay panes are markup, the clipboard, the
 focus and a subscription. Moving the focus to a turn as it arrives is done in each pane,
 because it is the DOM's, and both panes' tests hold them to the same — a turn found waiting
-when a pane is drawn moves none (0163). It names no service and holds no sentence; the chat a pane links to is the host's.
+when a pane is drawn moves none (0163). It names no service and holds no sentence; the chat a pane links to is the host's. Which of the catalogue's sentences says what leaves with a turn is `relayLeaves`, by the kind the run set on its prompt, because a form's edit, a translation and a request for examples carry different things ([0167](../decisions/0167-the-relay-says-what-each-request-carries.md)).
 `prompt-run.ts` is the prompt pane's run, held wherever the host holds it
 ([0163](../decisions/0163-a-models-run-belongs-to-the-host.md)). `createPromptRun()` gives
 the instruction, whether a run waits, the words the last run was asked with, what it came

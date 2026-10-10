@@ -3,8 +3,18 @@ import { TestBed } from '@angular/core/testing'
 import { render, screen, waitFor, within } from '@testing-library/angular'
 import { userEvent } from '@testing-library/user-event'
 import { afterEach, describe, expect, onTestFinished, test, vi } from 'vitest'
-import { authorForm, createBuilderSession, createRelay, createStop } from '@formancy/builder-core'
-import type { AuthoringResult, Relay, Stop } from '@formancy/builder-core'
+import {
+  MODEL_REQUEST_KINDS,
+  authorForm,
+  createBuilderSession,
+  createRelay,
+  createStop,
+  declinedAnswer,
+  draftScenarios,
+  relayLeaves,
+  translateCatalogue,
+} from '@formancy/builder-core'
+import type { AuthoringResult, ModelRequestKind, Relay, Stop } from '@formancy/builder-core'
 import type { FormSchema } from '@formancy/spec'
 import { FormancyRelayPane } from './relay-pane.js'
 
@@ -38,6 +48,27 @@ const WITH_PHONE = JSON.stringify({
 })
 
 const session = createBuilderSession(START)
+
+/** A form with words to translate: its one label, which German does not have yet. */
+const WORDED = {
+  ...START,
+  model: { fields: [{ key: 'name', type: 'text', label: { $t: 'name' } }] },
+  i18n: { defaultLocale: 'en', messages: { en: { name: 'Name' }, de: {} } },
+} as unknown as FormSchema
+
+/** A run of each kind on the relay, as the prompt, translations and scenario panes start one. */
+const RUNS: Record<ModelRequestKind, (relay: Relay) => Promise<unknown>> = {
+  authoring: (relay) => authorForm(relay.ask, 'add a phone number', { current: START }),
+  translation: (relay) => translateCatalogue(relay.ask, WORDED, 'de'),
+  scenarios: (relay) => draftScenarios(relay.ask, START, 'A name is asked for.'),
+}
+
+/** Start a run of `kind` and wait for the pane to show its turn. */
+async function asked(relay: Relay, kind: ModelRequestKind): Promise<HTMLElement> {
+  void RUNS[kind](relay)
+  await waitFor(() => expect(relay.waiting()?.prompt.kind).toBe(kind))
+  return screen.findByRole('region', { name: 'Take this request to a model' })
+}
 
 async function mount(relay: Relay, chat?: { name: string; href: string }) {
   return render(FormancyRelayPane, {
@@ -112,16 +143,39 @@ describe('a turn waiting', () => {
     expect(briefing?.open).toBe(false)
   })
 
-  test('says what Copy does with the request, and names no service of its own', async () => {
-    // A person copying a form into a chat is giving it to that chat's operator. The pane
-    // says so in the catalogue's sentence, whatever its wording; what the sentence claims
-    // about Copy is held by the case after this one, not by matching its words.
+  test.each(MODEL_REQUEST_KINDS)(
+    'says what a %s request carries — that kind’s sentence and no other’s — and names no service of its own',
+    async (kind) => {
+      // A person copying a request into a chat is giving it to that chat's operator, and
+      // the requests carry different things: one sentence for all of them said "including
+      // the form" of a translation and of a request for examples, which carry neither the
+      // document nor its rules (0167). The pane draws the sentence builder-core chooses for
+      // the turn's kind; what each claims is checked against its request there, and what
+      // it says about Copy by the case after this one — not by matching words here.
+      const relay = createRelay()
+      await mount(relay)
+      const pane = await asked(relay, kind)
+
+      expect(within(pane).getByText(relayLeaves(kind, session.text))).toBeTruthy()
+      for (const other of MODEL_REQUEST_KINDS.filter((each) => each !== kind)) {
+        expect(within(pane).queryByText(relayLeaves(other, session.text))).toBeNull()
+      }
+      expect(screen.queryByRole('link')).toBeNull()
+    },
+  )
+
+  test('says what the next request carries when one of another kind follows', async () => {
+    // A pane that read the sentence once, for the first turn it drew, would go on telling
+    // a person who asked for a translation that the whole form leaves with it.
     const relay = createRelay()
     await mount(relay)
-    await start(relay)
+    await asked(relay, 'authoring')
+    relay.answer(declinedAnswer('Not this one.'))
 
-    expect(screen.getByText(session.text('relay.leaves'))).toBeTruthy()
-    expect(screen.queryByRole('link')).toBeNull()
+    const pane = await asked(relay, 'translation')
+
+    await waitFor(() => expect(within(pane).getByText(relayLeaves('translation', session.text))).toBeTruthy())
+    expect(within(pane).queryByText(relayLeaves('authoring', session.text))).toBeNull()
   })
 
   test('Copy sends the request nowhere: every copy, on a first turn and a retry, only writes the clipboard', async () => {

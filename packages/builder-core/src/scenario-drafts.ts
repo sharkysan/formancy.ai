@@ -106,10 +106,10 @@ export async function draftScenarios(
   options: DraftingOptions = {},
 ): Promise<Drafted> {
   const existing = options.existing ?? []
-  const prompt = scenarioPrompt(document, intent, {
-    initialValue: options.initialValue,
-    existing,
-  })
+  const prompt = {
+    kind: 'scenarios' as const,
+    ...scenarioPrompt(document, intent, { initialValue: options.initialValue, existing }),
+  }
   const taken = new Set(existing.map((scenario) => scenario.name))
   const asked = await askChecked(
     ask,

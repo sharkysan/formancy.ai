@@ -79,6 +79,31 @@ describe('the briefing a kind of request is asked under', () => {
   })
 })
 
+describe('the kind a request carries', () => {
+  /** An `AskModel` that answers `{}` once — an object no run accepts — and then declines. */
+  function twoTurns(): { ask: AskModel; asked: AuthoringPrompt[] } {
+    const asked: AuthoringPrompt[] = []
+    return {
+      asked,
+      ask: (prompt) => {
+        asked.push(prompt)
+        return Promise.resolve(asked.length === 1 ? '{}' : declinedAnswer('Recorded, not answered.'))
+      },
+    }
+  }
+
+  test.each(MODEL_REQUEST_KINDS)('is %s, set by that run, on the first turn and the retry', async (kind) => {
+    // The relay pane says what a request carries by its kind (0167). A run that set another
+    // kind, or none on the turn that asks again, would have the pane tell the person a
+    // translation carries the whole form, or that a form's edit carries none of its rules.
+    const { ask, asked } = twoTurns()
+    await RUNS[kind](ask)
+
+    expect(asked).toHaveLength(2)
+    expect(asked.map((prompt) => prompt.kind)).toEqual([kind, kind])
+  })
+})
+
 describe('which kind a system part is', () => {
   test.each(MODEL_REQUEST_KINDS)('is %s for that kind’s briefing', (kind) => {
     // How a host's ask names the request to its server: by the briefing the run handed
