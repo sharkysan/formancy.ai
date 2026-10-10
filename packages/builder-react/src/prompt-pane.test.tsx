@@ -255,8 +255,9 @@ describe('when it cannot', () => {
         'Nothing was applied. The model could not be reached: fetch failed',
       ),
     )
-    // Nothing was wrong with an answer, because there was none: no problem list.
-    expect(screen.queryByRole('listitem')).toBeNull()
+    // Nothing was wrong with an answer, because there was none: no problem list. The
+    // list itself, not its items — an empty one is still announced as a list.
+    expect(screen.queryByRole('list')).toBeNull()
   })
 
   test('a model that throws is reported rather than swallowed', async () => {
@@ -316,6 +317,8 @@ describe('while it is working', () => {
     )
     // The host was told, so it can abandon the request rather than pay for it.
     expect(slow.cancelled).toHaveBeenCalledTimes(1)
+    // No answer came, so there is nothing wrong with one to list.
+    expect(screen.queryByRole('list')).toBeNull()
     expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull()
     expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Write it' }).disabled).toBe(false)
 
