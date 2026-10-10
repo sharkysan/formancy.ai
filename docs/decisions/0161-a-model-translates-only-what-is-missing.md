@@ -1,6 +1,9 @@
 # 0161 — A model translates only what is missing, answers with the catalogue file, and is reviewed message by message
 
-- **Status:** accepted
+- **Status:** accepted; that the run belongs to the review part and ends with it — another
+  language, tab or builder — superseded in part by
+  [0164](0164-a-translation-is-held-for-its-language-and-a-draft-for-its-form.md), for a run the
+  host holds
 - **Date:** 2026-10-10
 - **Deciders:** Daniel Bacher
 - **Verified by:** `packages/builder-core/src/translate.test.ts`, each case watched failing
@@ -229,6 +232,12 @@ focus with it falls to the page's body, as it does after the prompt pane's Apply
 > pane's run, and the playground does, so that one no longer ends with its pane. This part's
 > run still does: held by the host, it would come back to a pane opened on the default
 > language, and 0163 left that decision for later.
+>
+> **Superseded in part by [0164](0164-a-translation-is-held-for-its-language-and-a-draft-for-its-form.md):**
+> a host can hold this run too, and the playground does. A held run is held for its language:
+> it goes on when the part goes or another language is chosen, the pane drawn next opens on its
+> language, and a part on any other says where it waits and draws nothing of it. A part given
+> no run is keyed by the language and ends its own, as above.
 
 **Two renderings of the form are on screen while one is reviewed:** the pane's, of the form
 as it is, and the review's, as it would be. In the playground that is four, counting the

@@ -286,6 +286,15 @@ to, the proposal held for review and Apply's refusal, as a snapshot with a subsc
 force. A pane given one leaves it running when it goes, so a turn outlives the pane that
 asked it; a pane given none makes its own and stops it when it goes (0157). Both builders'
 prompt panes are markup, the focus and a subscription over it.
+`translation-run.ts` and `draft-run.ts` hold the other two runs the same way
+([0164](../decisions/0164-a-translation-is-held-for-its-language-and-a-draft-for-its-form.md)). `createTranslationRun()` is held for a language: it keeps the language asked
+for, the proposal and *Translate the rest*'s basis, and `translationOn` decides what a
+translations part drawn on a language shows of it — the run under its own, only where it
+waits under any other, and its Stop or its Discard under every one once its language has left
+the form. `createDraftRun()` is held for a form, by its id: `draftsOn` shows its
+drafts over any session of that form and none over another, and Keep refuses there. What the
+three holders share — the snapshot, its listeners, a stop for every run, and an ending that
+lands only on the run still in flight — is `run-holder.ts`, written once and not exported.
 `translate.ts` is the third thing asked of a model this way: the messages a language is
 missing ([0161](../decisions/0161-a-model-translates-only-what-is-missing.md)).
 `translate-prompt.ts` builds the request from a `FormSchema` alone: the rows of the
@@ -317,7 +326,8 @@ the rule, a model writes the example the rule passes. It is model-facing English
 `runScenarios` and the scenario pane's own options (`draftVerdict`), decides what may be kept
 (`keepDraft`), says what came of a run in the catalogue's words (`draftStatus`,
 `draftProblems`), and which of the model's own words are quoted beneath it (`draftQuotes`). Both builders' drafting parts, drawn inside their scenario panes, are
-markup over these ([0162](../decisions/0162-an-example-is-drafted-from-what-the-author-said.md)).
+markup over these ([0162](../decisions/0162-an-example-is-drafted-from-what-the-author-said.md)),
+and over the run `draft-run.ts` holds (0164).
 
 `messages.ts` holds the builder's **words**: one catalogue, English with a complete
 German and French, which a session carries and both builders read — so a refusal, a move target
@@ -445,7 +455,9 @@ pane's run beside the relay, so a turn outlives the tab, the builder and the *Sc
 it was asked under, and either builder reviews its answer
 ([0163](../decisions/0163-a-models-run-belongs-to-the-host.md)). Both builders' scenario
 panes ask the same relay for drafted examples, and a draft kept joins the open form's
-examples ([0162](../decisions/0162-an-example-is-drafted-from-what-the-author-said.md)).
+examples ([0162](../decisions/0162-an-example-is-drafted-from-what-the-author-said.md)). The
+page holds the translations pane's run and the drafting the same way, and discards all three
+when another demo is chosen ([0164](../decisions/0164-a-translation-is-held-for-its-language-and-a-draft-for-its-form.md)).
 
 ### `@formancy/server-core` and `@formancy/server`
 

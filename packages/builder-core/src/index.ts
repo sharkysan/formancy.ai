@@ -7,6 +7,18 @@ export type { EditProposal, ProposalExamples } from './proposal.js'
 // A prompt pane's run, held where the host chooses, so a turn outlives the pane that asked (0163).
 export { createPromptRun } from './prompt-run.js'
 export type { PromptRun, PromptRunOptions, PromptRunState } from './prompt-run.js'
+// A translation's run, held for its language, and a drafting part's, held for its form, so
+// those turns outlive their parts too (0164).
+export { createTranslationRun, translationOn } from './translation-run.js'
+export type {
+  TranslationElsewhere,
+  TranslationRun,
+  TranslationRunOptions,
+  TranslationRunState,
+  TranslationView,
+} from './translation-run.js'
+export { createDraftRun, draftsOn } from './draft-run.js'
+export type { DraftRun, DraftRunOptions, DraftRunState } from './draft-run.js'
 // A model asked for the messages a language is missing, and its answer reviewed message by
 // message before it lands (0161).
 export {

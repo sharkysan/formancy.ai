@@ -4,34 +4,27 @@ import {
   DestroyRef,
   EnvironmentInjector,
   computed,
+  effect,
   inject,
   input,
   signal,
+  untracked,
 } from '@angular/core'
 import type { Injector } from '@angular/core'
 import { NgComponentOutlet } from '@angular/common'
 import { FormancyForm } from '@formancy/angular'
 import {
-  applyProposal,
-  createStop,
+  createTranslationRun,
   missingMessages,
-  proposeTranslation,
-  translateCatalogue,
   translationHeading,
+  translationOn,
   translationStatus,
   translationToReview,
 } from '@formancy/builder-core'
 import type { BuilderMessageId } from '@formancy/builder-core'
 import { BuilderTextPipe } from './text.pipe.js'
 import { previewInjector } from './translations-preview.js'
-import type {
-  AskModel,
-  BuilderSession,
-  FormSchema,
-  Stop,
-  TranslationProposal,
-  TranslationResult,
-} from './types.js'
+import type { AskModel, BuilderSession, FormSchema, TranslationRun, TranslationRunState } from './types.js'
 import { injectBuilderView } from './view.js'
 
 /** What each mark says, in the catalogue's words. */
@@ -52,24 +45,46 @@ const FLAGS: Readonly<Record<'stale' | 'unchanged', BuilderMessageId>> = {
  * would read in that language. Apply is `applyProposal`, refused when the form has moved
  * since, one undo step otherwise.
  *
- * What is asked, kept, marked, held for review and said is `@formancy/builder-core`'s, so
- * the two builders cannot decide it differently (0091). Signals and `OnPush`, zoneless; the run is one
- * `await` inside a click, and `DestroyRef` stops it when the part goes — another language
- * chosen, another tab.
+ * What is asked, kept, marked, held for review and said — and what a part drawn on one
+ * language shows of a run for another — is `@formancy/builder-core`'s, so the two builders
+ * cannot decide it differently (0091). Signals and `OnPush`, zoneless: the run's state is
+ * one snapshot, set into a signal each time the run says it changed.
+ *
+ * **Whose run it is, is the host's to say.** Bound to `[run]`, the part draws a run the host
+ * holds, and being destroyed ends nothing; drawn on another language than the run's, it says
+ * where the run is and draws nothing of it — but its Stop, or its Discard, once that language
+ * has left the form and no pane can be drawn under it. Unbound, it holds its own, and
+ * `DestroyRef` stops it when the part goes — another language chosen, another tab
+ * ([0164](../../../docs/decisions/0164-a-translation-is-held-for-its-language-and-a-draft-for-its-form.md)).
  */
 @Component({
   selector: 'formancy-translation-review',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [BuilderTextPipe, NgComponentOutlet],
   template: `
-    @if (shown()) {
+    @if (view().elsewhere; as elsewhere) {
+      <!-- Under another language than the run's, only where it waits: nothing of it to
+           review or apply here, and no Ask that would forget it. Its Stop or its Discard only
+           once its own language has left the form, where no part can be drawn to end it
+           (0164). -->
+      <div data-formancy-part="translate">
+        @if (elsewhere.gone) {
+          @if (elsewhere.busy) {
+            <button type="button" (click)="held().stop()">{{ 'prompt.stop' | builderText: text() }}</button>
+          } @else {
+            <button type="button" (click)="held().discard()">{{ 'prompt.discard' | builderText: text() }}</button>
+          }
+        }
+        <p role="status" data-formancy-part="translate-status">{{ status() }}</p>
+      </div>
+    } @else if (shown()) {
       <div data-formancy-part="translate">
         @if (reviewed() === undefined) {
           <button
             type="button"
             data-formancy-part="translate-ask"
             [disabled]="busy()"
-            (click)="run()"
+            (click)="translate()"
           >
             {{
               busy()
@@ -79,7 +94,7 @@ const FLAGS: Readonly<Record<'stale' | 'unchanged', BuilderMessageId>> = {
           </button>
         }
         @if (busy()) {
-          <button type="button" (click)="stop()">{{ 'prompt.stop' | builderText: text() }}</button>
+          <button type="button" (click)="held().stop()">{{ 'prompt.stop' | builderText: text() }}</button>
         }
 
         <p role="status" data-formancy-part="translate-status">{{ status() }}</p>
@@ -139,14 +154,14 @@ const FLAGS: Readonly<Record<'stale' | 'unchanged', BuilderMessageId>> = {
                 />
               }
             </section>
-            <button type="button" [disabled]="busy()" (click)="apply()">
+            <button type="button" [disabled]="busy()" (click)="held().apply(session())">
               {{ 'translate.apply' | builderText: text() }}
             </button>
-            <button type="button" [disabled]="busy()" (click)="discard()">
+            <button type="button" [disabled]="busy()" (click)="held().discard()">
               {{ 'prompt.discard' | builderText: text() }}
             </button>
             @if (waiting.stillMissing.length > 0) {
-              <button type="button" [disabled]="busy()" (click)="run(waiting)">
+              <button type="button" [disabled]="busy()" (click)="rest()">
                 {{ 'translate.rest' | builderText: text() }}
               </button>
             }
@@ -182,81 +197,97 @@ export class FormancyTranslationReview {
   readonly session = input.required<BuilderSession>()
   /** How to reach a model: the host's, or a relay a person carries (0160). */
   readonly ask = input.required<AskModel>()
-  /** The language to fill in. The pane draws this only for one that is not the default. */
+  /** The language drawn. Nothing is, on the default one, but where a held run for another waits. */
   readonly locale = input.required<string>()
   /** How many times to let the model correct itself. Three by default. */
   readonly attempts = input<number | undefined>(undefined)
+  /**
+   * The run, held by the host, from `createTranslationRun`: it outlives this part. Unbound,
+   * the part holds its own, and stops it when it is destroyed — another language, another
+   * tab (0157).
+   */
+  readonly run = input<TranslationRun | undefined>(undefined)
 
   protected readonly form = FormancyForm
   protected readonly flags = FLAGS
-  protected readonly view = injectBuilderView(this.session)
+  protected readonly builderView = injectBuilderView(this.session)
   /** Every word this part shows, in the language the session was opened in (0114). */
   protected readonly text = computed(() => this.session().text)
   private readonly parent = inject(EnvironmentInjector)
 
-  protected readonly busy = signal(false)
-  protected readonly result = signal<TranslationResult | undefined>(undefined)
-  protected readonly proposal = signal<TranslationProposal | undefined>(undefined)
-  /** What applying said, when it refused. Cleared by anything that moves on. */
-  protected readonly refusal = signal<string | undefined>(undefined)
+  /**
+   * The part's own run, for a host that binds none. It is the part's, so it stops when the
+   * part is destroyed, and whatever the model answers afterwards is not proposed (0157). A
+   * run the host binds is the host's, and nothing here ends it.
+   */
+  private readonly own = createTranslationRun()
+  /** The run this part draws: the host's, or its own. */
+  protected readonly held = computed(() => this.run() ?? this.own)
+  /** What the run is doing and came to, as builder-core holds it. */
+  private readonly state = signal<TranslationRunState>(this.own.state())
+  /** The run as this language shows it: itself, or where it waits. */
+  protected readonly view = computed(() =>
+    translationOn(this.state(), this.locale(), this.builderView().document),
+  )
+  protected readonly busy = computed(() => this.view().busy)
 
   private static sequence = 0
   private readonly serial = (FormancyTranslationReview.sequence += 1)
   protected readonly reviewId = `formancy-translation-review-${String(this.serial)}`
 
-  /** The stop for the run in flight. A field: pressing it changes nothing on screen by itself. */
-  private running: Stop | undefined
-
   constructor() {
-    // Destroyed — another language chosen, another tab — the run stops, and whatever the
-    // model answers afterwards is not proposed (0157).
-    inject(DestroyRef).onDestroy(() => this.running?.stop())
+    let unsubscribe: (() => void) | undefined
+    effect(() => {
+      const run = this.held()
+      unsubscribe?.()
+      // Untracked: the subscription is to the run alone, not renewed for every state it reports.
+      untracked(() => this.state.set(run.state()))
+      unsubscribe = run.subscribe(() => this.state.set(run.state()))
+    })
+    const destroyed = inject(DestroyRef)
+    destroyed.onDestroy(() => unsubscribe?.())
+    destroyed.onDestroy(() => this.own.stop())
   }
 
-  protected readonly defaultLocale = computed(() => this.view().document.i18n?.defaultLocale ?? 'en')
+  protected readonly defaultLocale = computed(
+    () => this.builderView().document.i18n?.defaultLocale ?? 'en',
+  )
   protected readonly missing = computed(
-    () => missingMessages(this.view().document, this.locale()).length,
+    () => missingMessages(this.builderView().document, this.locale()).length,
   )
-  /** Drawn while there is something to ask for, or a run, an answer or a proposal to show. */
-  protected readonly shown = computed(
-    () =>
-      this.missing() > 0 ||
-      this.busy() ||
-      this.result() !== undefined ||
-      this.proposal() !== undefined,
-  )
+  /**
+   * Drawn, on a language other than the default, while there is something to ask for, or a
+   * run, an answer or a proposal to show.
+   */
+  protected readonly shown = computed(() => {
+    const { busy, result, proposal } = this.view()
+    return (
+      this.locale() !== this.defaultLocale() &&
+      (this.missing() > 0 || busy || result !== undefined || proposal !== undefined)
+    )
+  })
   /** The proposal under review: none when it writes nothing, and Ask is offered again. */
-  protected readonly reviewed = computed(() => translationToReview(this.proposal()))
+  protected readonly reviewed = computed(() => translationToReview(this.view().proposal))
   /** What the model wrote that was not written, when there is any. */
   protected readonly dropped = computed(() => {
-    const dropped = this.proposal()?.dropped ?? []
+    const dropped = this.view().proposal?.dropped ?? []
     return dropped.length === 0 ? undefined : dropped
   })
   protected readonly heading = computed(() => {
     const waiting = this.reviewed()
     return waiting === undefined ? '' : translationHeading(waiting, this.text())
   })
-  protected readonly status = computed(() =>
-    translationStatus(
-      {
-        busy: this.busy(),
-        result: this.result(),
-        proposal: this.proposal(),
-        refusal: this.refusal(),
-      },
-      this.text(),
-    ),
-  )
+  protected readonly status = computed(() => translationStatus(this.view(), this.text()))
   /** The model's reason, when it declined: shown in place of the problems. */
   protected readonly declined = computed(() => {
-    const outcome = this.result()
+    const outcome = this.view().result
     return outcome === undefined || outcome.ok || outcome.ended !== 'declined'
       ? undefined
       : outcome.reason
   })
   /** A run that ended with answers that did not work. */
   protected readonly failure = computed(() => {
-    const outcome = this.result()
+    const outcome = this.view().result
     return outcome === undefined ||
       outcome.ok ||
       outcome.ended === 'declined' ||
@@ -276,50 +307,18 @@ export class FormancyTranslationReview {
     submitLabel: this.text()('translations.previewSubmit'),
   }))
 
-  /** Ask for what is missing — over `after`'s document, for the rest of an answer under review. */
-  protected async run(after?: TranslationProposal): Promise<void> {
-    if (this.busy()) return
-    this.busy.set(true)
-    this.result.set(undefined)
-    this.refusal.set(undefined)
-    if (after === undefined) this.proposal.set(undefined)
-    const stop = createStop()
-    this.running = stop
-    try {
-      const session = this.session()
-      const attempts = this.attempts()
-      const outcome = await translateCatalogue(
-        this.ask(),
-        after?.document ?? session.document(),
-        this.locale(),
-        { stop, ...(attempts === undefined ? {} : { attempts }) },
-      )
-      this.result.set(outcome)
-      // Held against the form as it is now. Applying later checks it has not moved.
-      if (outcome.ok) this.proposal.set(proposeTranslation(session, outcome.answer, after))
-    } finally {
-      this.running = undefined
-      this.busy.set(false)
-    }
+  private options(): { attempts?: number } {
+    const attempts = this.attempts()
+    return attempts === undefined ? {} : { attempts }
   }
 
-  protected stop(): void {
-    this.running?.stop()
+  /** Ask for every message this language is missing. */
+  protected translate(): void {
+    void this.held().translate(this.ask(), this.session(), this.locale(), this.options())
   }
 
-  protected apply(): void {
-    const waiting = this.reviewed()
-    if (waiting === undefined) return
-    const outcome = applyProposal(this.session(), waiting)
-    // Kept on screen when refused: the commonest refusal is a form that moved, and the
-    // proposal is what the person needs to decide whether to ask again.
-    if (outcome.ok) this.discard()
-    else this.refusal.set(outcome.message)
-  }
-
-  protected discard(): void {
-    this.proposal.set(undefined)
-    this.refusal.set(undefined)
-    this.result.set(undefined)
+  /** *Translate the rest*, over the proposal under review. */
+  protected rest(): void {
+    void this.held().rest(this.ask(), this.session(), this.options())
   }
 }

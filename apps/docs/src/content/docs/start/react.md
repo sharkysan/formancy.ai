@@ -236,7 +236,10 @@ and without `scenarios` the review says nothing about examples
 
 A pane drawn under a tab stops its run when the tab changes. To keep a model's turn going
 while the person looks elsewhere, hold the run above the tabs with `createPromptRun()` and
-pass it as `run` ([agents](/docs/start/agents/)).
+pass it as `run` ([agents](/docs/start/agents/)). The translations pane takes a
+`createTranslationRun()` as `run`, and the scenario pane a `createDraftRun()` as `drafting`, for
+the same reason
+([0164](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0164-a-translation-is-held-for-its-language-and-a-draft-for-its-form.md)).
 
 ## Examples, drafted from what you say the form should do
 

@@ -1,12 +1,10 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useState, useSyncExternalStore } from 'react'
 import type { ReactElement } from 'react'
 import {
-  applyProposal,
-  createStop,
+  createTranslationRun,
   missingMessages,
-  proposeTranslation,
-  translateCatalogue,
   translationHeading,
+  translationOn,
   translationStatus,
   translationToReview,
 } from '@formancy/builder-core'
@@ -14,10 +12,8 @@ import type {
   AskModel,
   BuilderMessageId,
   BuilderSession,
-  Stop,
   TranslationFlag,
-  TranslationProposal,
-  TranslationResult,
+  TranslationRun,
 } from '@formancy/builder-core'
 import { TranslationsPreview } from './translations-preview.js'
 import { useBuilder } from './use-builder.js'
@@ -34,11 +30,17 @@ import { useBuilder } from './use-builder.js'
  * to look at, and the form as it would read in that language. Apply is `applyProposal`,
  * refused when the form has moved since, one undo step otherwise.
  *
- * What is asked, what is kept, what is marked, what is held for review and what the status
- * says are `@formancy/builder-core`'s — `translateCatalogue`, `proposeTranslation`,
- * `translationToReview`, `translationHeading`, `translationStatus` — so the Angular part
- * cannot decide any of them differently (0091). This is the markup, the run's state and its
- * stop.
+ * What is asked, kept, marked, held for review and said — and what a part drawn on one
+ * language shows of a run for another — are `@formancy/builder-core`'s:
+ * `createTranslationRun`, `translationOn`, `translationToReview`, `translationHeading`,
+ * `translationStatus`. So the Angular part cannot decide any of them differently (0091).
+ * This is the markup and a subscription.
+ *
+ * **Whose run it is, is the host's to say.** Given `run`, the part draws a run the host holds,
+ * and its going ends nothing; drawn on another language than the run's, it says where the run
+ * is and draws nothing of it — but its Stop, or its Discard, once that language has left the
+ * form and no pane can be drawn under it. Without one it holds its own, and stops it when it
+ * goes ([0164](../../../docs/decisions/0164-a-translation-is-held-for-its-language-and-a-draft-for-its-form.md)).
  *
  * Its own file so the translations pane does not become the place things go: the pane is
  * a translator's table, and this is a model's turn and its review.
@@ -47,10 +49,15 @@ export interface TranslationReviewProps {
   session: BuilderSession
   /** How to reach a model: the host's, or a relay a person carries (0160). */
   ask: AskModel
-  /** The language to fill in. The pane draws this only for one that is not the default. */
+  /** The language drawn. Nothing is, on the default one, but where a held run for another waits. */
   locale: string
   /** How many times to let the model correct itself. Three by default. */
   attempts?: number | undefined
+  /**
+   * The run, held by the host, from `createTranslationRun`: it outlives this part. Absent,
+   * the part holds its own, and stops it when it goes — another language, another tab (0157).
+   */
+  run?: TranslationRun | undefined
 }
 
 /** What each mark says, in the catalogue's words. */
@@ -64,22 +71,54 @@ export function TranslationReview({
   ask,
   locale,
   attempts,
+  run: given,
 }: TranslationReviewProps): ReactElement | null {
   const view = useBuilder(session)
   const { text } = session
-  const [busy, setBusy] = useState(false)
-  const [result, setResult] = useState<TranslationResult | undefined>(undefined)
-  const [proposal, setProposal] = useState<TranslationProposal | undefined>(undefined)
-  /** What applying said, when it refused. Cleared by anything that moves on. */
-  const [refusal, setRefusal] = useState<string | undefined>(undefined)
+  /*
+   * The part's own run, for a host that gives none. It is the part's, so it stops when the
+   * part goes — another language chosen, another tab — and whatever the model answers
+   * afterwards is not proposed (0157). A run the host gives is the host's, and nothing here
+   * ends it.
+   */
+  const [own] = useState(createTranslationRun)
+  useEffect(() => () => own.stop(), [own])
+  const run = given ?? own
+  const state = useSyncExternalStore(run.subscribe, run.state, run.state)
+  /** The run as this language shows it: itself, or where it waits. */
+  const shown = translationOn(state, locale, view.document)
+  const { busy, result, proposal } = shown
   const reviewId = useId()
-  /** The stop for the run in flight. A ref: pressing it changes nothing on screen by itself. */
-  const running = useRef<Stop | undefined>(undefined)
-  // Taken off the screen — another language chosen, another tab — the run stops, and
-  // whatever the model answers afterwards is not proposed (0157).
-  useEffect(() => () => running.current?.stop(), [])
+
+  const defaultLocale = view.document.i18n?.defaultLocale ?? 'en'
+  const status = translationStatus(shown, text)
+
+  // Under another language than the run's, only where it waits: nothing of it to review or
+  // apply here, and no Ask that would forget it. Its Stop or its Discard only once its own
+  // language has left the form, where no part can be drawn to end it (0164).
+  const elsewhere = shown.elsewhere
+  if (elsewhere !== undefined) {
+    return (
+      <div data-formancy-part="translate">
+        {!elsewhere.gone ? null : elsewhere.busy ? (
+          <button type="button" onClick={() => run.stop()}>
+            {text('prompt.stop')}
+          </button>
+        ) : (
+          <button type="button" onClick={() => run.discard()}>
+            {text('prompt.discard')}
+          </button>
+        )}
+        <p role="status" data-formancy-part="translate-status">
+          {status}
+        </p>
+      </div>
+    )
+  }
 
   const missing = missingMessages(view.document, locale).length
+  // Nothing to translate into the default language, and nothing to say where nothing is missing.
+  if (locale === defaultLocale) return null
   if (missing === 0 && !busy && result === undefined && proposal === undefined) return null
 
   /** The proposal under review: none when it writes nothing, and Ask is offered again. */
@@ -91,45 +130,7 @@ export function TranslationReview({
       ? failed
       : undefined
 
-  /** Ask for what is missing — over `after`'s document, for the rest of an answer under review. */
-  const run = async (after?: TranslationProposal): Promise<void> => {
-    if (busy) return
-    setBusy(true)
-    setResult(undefined)
-    setRefusal(undefined)
-    if (after === undefined) setProposal(undefined)
-    const stop = createStop()
-    running.current = stop
-    try {
-      const outcome = await translateCatalogue(ask, after?.document ?? session.document(), locale, {
-        stop,
-        ...(attempts === undefined ? {} : { attempts }),
-      })
-      setResult(outcome)
-      // Held against the form as it is now. Applying later checks it has not moved.
-      if (outcome.ok) setProposal(proposeTranslation(session, outcome.answer, after))
-    } finally {
-      running.current = undefined
-      setBusy(false)
-    }
-  }
-
-  const discard = (): void => {
-    setProposal(undefined)
-    setRefusal(undefined)
-    setResult(undefined)
-  }
-
-  const apply = (): void => {
-    if (reviewed === undefined) return
-    const outcome = applyProposal(session, reviewed)
-    // Kept on screen when refused: the commonest refusal is a form that moved, and the
-    // proposal is what the person needs to decide whether to ask again.
-    if (outcome.ok) discard()
-    else setRefusal(outcome.message)
-  }
-
-  const defaultLocale = view.document.i18n?.defaultLocale ?? 'en'
+  const options = attempts === undefined ? {} : { attempts }
 
   return (
     <div data-formancy-part="translate">
@@ -138,19 +139,19 @@ export function TranslationReview({
           type="button"
           data-formancy-part="translate-ask"
           disabled={busy}
-          onClick={() => void run()}
+          onClick={() => void run.translate(ask, session, locale, options)}
         >
           {busy ? text('translate.asking') : text('translate.ask', { count: missing })}
         </button>
       ) : null}
       {busy ? (
-        <button type="button" onClick={() => running.current?.stop()}>
+        <button type="button" onClick={() => run.stop()}>
           {text('prompt.stop')}
         </button>
       ) : null}
 
       <p role="status" data-formancy-part="translate-status">
-        {translationStatus({ busy, result, proposal, refusal }, text)}
+        {status}
       </p>
 
       {/* Outside the review: when everything the model wrote was dropped there is no review,
@@ -201,14 +202,14 @@ export function TranslationReview({
             submitLabel={text('translations.previewSubmit')}
             formId={`${reviewed.document.id}.proposed`}
           />
-          <button type="button" disabled={busy} onClick={apply}>
+          <button type="button" disabled={busy} onClick={() => run.apply(session)}>
             {text('translate.apply')}
           </button>
-          <button type="button" disabled={busy} onClick={discard}>
+          <button type="button" disabled={busy} onClick={() => run.discard()}>
             {text('prompt.discard')}
           </button>
           {reviewed.stillMissing.length === 0 ? null : (
-            <button type="button" disabled={busy} onClick={() => void run(reviewed)}>
+            <button type="button" disabled={busy} onClick={() => void run.rest(ask, session, options)}>
               {text('translate.rest')}
             </button>
           )}

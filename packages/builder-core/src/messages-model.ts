@@ -132,6 +132,17 @@ export const MODEL_MESSAGES = {
   'translate.dropped':
     'Not written, because nobody asked for them or a person has translated them since: {list}',
   'translate.status.asking': 'Asking for the missing translations, and checking the answer.',
+  // Said by a part drawn on another language than a held run's, and nothing else of it is
+  // drawn there (0164).
+  'translate.status.elsewhereAsking': 'A model is translating into {locale}. Choose {locale} to follow it, or to stop it.',
+  'translate.status.elsewhereHeld':
+    'A model’s translation into {locale} is waiting for review. Choose {locale} to review it. Nothing has been applied.',
+  // Said, with Stop or Discard beside it, by a part on any language once the run's own has
+  // left the form — undone, or removed — and cannot be chosen (0164).
+  'translate.status.goneAsking':
+    'A model is translating into {locale}, which is no longer one of the form’s languages. Stop it here, or add {locale} again to follow it.',
+  'translate.status.goneHeld':
+    'A model’s translation into {locale} is waiting for review, but {locale} is no longer one of the form’s languages. Discard it here, or add {locale} again to review it. Nothing has been applied.',
   'translate.status.ready': {
     one: 'Ready to review: {count} translation. Nothing has been applied.',
     other: 'Ready to review: {count} translations. Nothing has been applied.',

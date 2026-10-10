@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
-import type { BuilderBlock, BuilderSession, PromptRun, Relay } from '@formancy/builder-core'
+import type { BuilderBlock, BuilderSession, Relay } from '@formancy/builder-core'
 import type { Scenario } from '@formancy/core'
 import { mountAngularBuilder } from './angular-builder-bootstrap.js'
 import type { BuilderTab, MountedBuilder, PreviewState } from './angular-builder-bootstrap.js'
+import type { ModelRuns } from './angular-builder-host.js'
 
 /**
  * The Angular builder, as a React component.
@@ -29,7 +30,7 @@ export function AngularBuilderPane({
   sample,
   onScenarios,
   relay,
-  promptRun,
+  runs,
 }: {
   session: BuilderSession
   tab: BuilderTab
@@ -45,8 +46,8 @@ export function AngularBuilderPane({
   onScenarios: (next: readonly Scenario[]) => void
   /** The page's model, a person carrying each turn (0160): the one relay both builders ask. */
   relay: Relay
-  /** The prompt pane's run, the page's, which the React builder's prompt pane draws too (0163). */
-  promptRun: PromptRun
+  /** The page's model runs, which the React builder's panes draw too (0163, 0164). */
+  runs: ModelRuns
 }): ReactElement {
   const host = useRef<HTMLDivElement | null>(null)
   const mounted = useRef<MountedBuilder | undefined>(undefined)
@@ -70,7 +71,7 @@ export function AngularBuilderPane({
       session,
       tab,
       // Drawn on the first render, so the builder never shows the page's lists empty.
-      { preview: latest.current, blocks: offered.current, ...examples.current, relay, promptRun },
+      { preview: latest.current, blocks: offered.current, ...examples.current, relay, runs },
       {
         keep: (block) => saving.current(block),
         keepScenarios: (next) => revising.current(next),
@@ -102,10 +103,10 @@ export function AngularBuilderPane({
     }
     // The tab is deliberately not a dependency — it is pushed in below rather
     // than remounting the application. Listing it here would rebuild the tree on
-    // every tab click. The relay and the prompt pane's run are the page's for its whole
-    // life, so listing them costs nothing and says what the application was built over.
+    // every tab click. The relay and the model runs are the page's for its whole life, so
+    // listing them costs nothing and says what the application was built over.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session, relay, promptRun])
+  }, [session, relay, runs])
 
   // Pushed in, for the same reason.
   useEffect(() => {

@@ -371,6 +371,9 @@ A pane that is destroyed stops its run — under an `@if` for a tab, say. To kee
 turn going while the person looks elsewhere, hold the run where the pane's host lives with
 `createPromptRun()` and bind it as `[run]`
 ([0163](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0163-a-models-run-belongs-to-the-host.md)).
+The translations pane takes a `createTranslationRun()` as `[run]`, and the scenario pane a
+`createDraftRun()` as `[drafting]`, for the same reason
+([0164](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0164-a-translation-is-held-for-its-language-and-a-draft-for-its-form.md)).
 
 ### Examples, drafted from what you say the form should do
 

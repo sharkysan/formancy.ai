@@ -11,6 +11,8 @@ export type {
   AskModel,
   AuthoringResult,
   DraftNote,
+  DraftRun,
+  DraftRunState,
   Drafted,
   Stop,
   EditProposal,
@@ -35,6 +37,8 @@ export type {
   RelayTurn,
   TranslationProposal,
   TranslationResult,
+  TranslationRun,
+  TranslationRunState,
   TreeNode,
 } from '@formancy/builder-core'
 export type { Scenario, ScenarioResult } from '@formancy/core'

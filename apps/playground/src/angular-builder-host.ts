@@ -12,7 +12,15 @@ import {
   FormancyTranslationsPane,
   FormancyScenarioPane,
 } from '@formancy/builder-angular'
-import type { BuilderBlock, BuilderSession, Capabilities, PromptRun, Relay } from '@formancy/builder-core'
+import type {
+  BuilderBlock,
+  BuilderSession,
+  Capabilities,
+  DraftRun,
+  PromptRun,
+  Relay,
+  TranslationRun,
+} from '@formancy/builder-core'
 import type { Scenario } from '@formancy/core'
 import { RELAY_CHAT } from './demo-capabilities.js'
 
@@ -23,6 +31,20 @@ export type BuilderTab = 'fields' | 'arrangement' | 'rules' | 'translations'
 export interface PreviewState {
   answers: Readonly<Record<string, unknown>>
   capabilities: Capabilities
+}
+
+/**
+ * The page's three model runs, held beside its relay so that each outlives the panes that
+ * draw it: the prompt pane's ([0163](../../../docs/decisions/0163-a-models-run-belongs-to-the-host.md)),
+ * and the translations pane's and the drafting part's
+ * ([0164](../../../docs/decisions/0164-a-translation-is-held-for-its-language-and-a-draft-for-its-form.md)).
+ * One object because they travel the same path from the page to both builders and end
+ * together when another demo is chosen; each is drawn only by its own pane.
+ */
+export interface ModelRuns {
+  readonly prompt: PromptRun
+  readonly translation: TranslationRun
+  readonly drafting: DraftRun
 }
 
 /**
@@ -58,11 +80,11 @@ export interface PlaygroundBuilder {
    */
   readonly relay: Relay
   /**
-   * The prompt pane's run, the page's for its whole life, as the relay is: a turn asked in
-   * either builder is the one both prompt panes draw, and it outlives this application
-   * (0163).
+   * The page's model runs, for its whole life, as the relay is: a turn asked in either
+   * builder is the one both builders' panes draw, and it outlives this application (0163,
+   * 0164).
    */
-  readonly promptRun: PromptRun
+  readonly runs: ModelRuns
 }
 
 /** What this builder hands back to the page, which keeps both lists for both builders. */
@@ -82,7 +104,7 @@ export interface FromThePage {
   readonly scenarios: readonly Scenario[]
   readonly sample: Readonly<Record<string, unknown>> | undefined
   readonly relay: Relay
-  readonly promptRun: PromptRun
+  readonly runs: ModelRuns
 }
 
 export const PLAYGROUND_BUILDER = new InjectionToken<PlaygroundBuilder>('playground builder')
@@ -102,7 +124,7 @@ export function playgroundBuilder(
     scenarios: signal(from.scenarios),
     sample: signal(from.sample),
     relay: from.relay,
-    promptRun: from.promptRun,
+    runs: from.runs,
     ...back,
   }
 }
@@ -170,8 +192,14 @@ export function playgroundBuilder(
       />
     } @else if (host.tab() === 'translations') {
       <!-- Asking the page's relay for what a language is missing, as the React pane does:
-           the turn is drawn above, and the answer reviewed before it lands (0161). -->
-      <formancy-translations-pane [session]="host.session" [ask]="host.relay.ask" />
+           the turn is drawn above, and the answer reviewed before it lands (0161). The run
+           is the page's, so a translation asked in React is drawn here, on its language, and
+           one asked here outlives this builder (0164). -->
+      <formancy-translations-pane
+        [session]="host.session"
+        [ask]="host.relay.ask"
+        [run]="host.runs.translation"
+      />
     } @else {
       <!-- Describing a change in words, asking the page's relay as the React pane does:
            the person carries the turn, and everything after the paste is real (0109) —
@@ -181,7 +209,7 @@ export function playgroundBuilder(
       <formancy-prompt-pane
         [session]="host.session"
         [ask]="host.relay.ask"
-        [run]="host.promptRun"
+        [run]="host.runs.prompt"
         [scenarios]="host.scenarios()"
         [initialValue]="host.sample()"
       />
@@ -193,13 +221,16 @@ export function playgroundBuilder(
       />
       <!-- The page's examples, drawn from its list and handed back to it on Remove,
            so one taken away here is gone from the React builder too — and drafted with
-           the page's relay, a kept draft going back the same way (0162). -->
+           the page's relay, a kept draft going back the same way (0162). The drafting is
+           the page's, for this form, so drafts asked for in either builder wait in both
+           (0164). -->
       <formancy-scenario-pane
         [session]="host.session"
         [scenarios]="host.scenarios()"
         [initialValue]="host.sample()"
         [removable]="true"
         [ask]="host.relay.ask"
+        [drafting]="host.runs.drafting"
         (scenariosChange)="host.keepScenarios($event)"
       />
       @if (selected(); as keyPath) {

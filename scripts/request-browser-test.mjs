@@ -35,7 +35,9 @@
  * one flow on the page that exists to take something elsewhere — and the person does
  * that, not the page. Whatever the page sends while it happens is counted like the rest.
  * Then once more, asked in one builder and answered in the other, because the page holds
- * the run and a turn now outlives the pane that asked (0163).
+ * the run and a turn now outlives the pane that asked (0163). Before all of that, a
+ * translation is carried the same way — French asked for in React, answered in Angular —
+ * because the page holds that run too (0164).
  */
 
 /**
@@ -124,6 +126,9 @@ async function carryATurn(page) {
   } catch (error) {
     return [['the playground opened, to carry a model’s turn through it', String(error).split('\n')[0]]]
   }
+  // First, while the starter still has its half-finished French: the prompt turns below
+  // replace the whole form with one that has no catalogue.
+  await carryATranslation(page, found)
   const phone = { key: 'phone', type: 'text', label: 'Telephone' }
   await carryOne(page, found, { where: 'in the React builder', ask: 'add a phone number', word: 'phone', fields: [phone], shows: /Telephone/ })
   try {
@@ -144,6 +149,79 @@ async function carryATurn(page) {
     between: () => page.getByRole('combobox', { name: 'Builder' }).selectOption('react'),
   })
   return found
+}
+
+/**
+ * A translation's turn, carried across a switch of builder (0164).
+ *
+ * The French the starter is missing, asked for under *Translations* in React; the Builder
+ * select put on Angular while the turn is with the chat; the Angular tab opening on French
+ * over the same request; the answer — the request's own catalogue file with every target
+ * filled in, as a chat writes it — pasted into Angular's relay pane, reviewed and applied.
+ * When the run was the review part's, the switch stopped it and the paste found nothing
+ * waiting. Leaves the page on React, under *Fields*, for the turns that follow.
+ */
+async function carryATranslation(page, found) {
+  const named = (what) => `a translation asked in the React builder and answered in the Angular one, ${what}`
+  try {
+    await page.getByRole('button', { name: 'Build', exact: true }).click()
+    await page.getByRole('button', { name: 'Translations', exact: true }).click()
+    const editor = page.getByRole('region', { name: 'Editor' })
+    await editor.getByRole('combobox', { name: 'Language', exact: true }).selectOption('fr', { timeout: 30_000 })
+    await editor.getByRole('button', { name: /^Ask a model for the \d+ missing messages?$/ }).click()
+
+    const relay = page.getByRole('region', { name: 'Take this request to a model' })
+    await relay.waitFor({ timeout: 15_000 })
+    const shown = await relay.getByRole('textbox', { name: 'The request' }).inputValue()
+
+    await page.getByRole('combobox', { name: 'Builder' }).selectOption('angular')
+    // The Angular application's own Language select, not the React one it replaced.
+    const angular = page.locator('formancy-playground-angular-builder')
+    const language = angular.getByRole('combobox', { name: 'Language', exact: true })
+    await language.waitFor({ timeout: 30_000 })
+    const after = await angular.getByRole('textbox', { name: 'The request', exact: true }).inputValue({ timeout: 30_000 })
+    const opened = await language.inputValue()
+    found.push([
+      named('the turn is still waiting after the switch, the same request, and the tab opens on French'),
+      after === shown && opened === 'fr'
+        ? null
+        : `the request box held ${JSON.stringify(after.slice(-80))}, and the Language select ${JSON.stringify(opened)}`,
+    ])
+
+    // What a chat answers: the file it was given, every target written.
+    const file = JSON.parse(shown.slice(shown.indexOf('{', shown.indexOf('The catalogue file to fill in:'))))
+    const answer = {
+      ...file,
+      messages: file.messages.map(({ id, source }) => ({ id, source, target: `${source} (fr)` })),
+    }
+    const carried = angular.getByRole('region', { name: 'Take this request to a model' })
+    await carried
+      .getByRole('textbox', { name: 'The model’s answer' })
+      .fill(`Voici le fichier :\n\n\`\`\`json\n${JSON.stringify(answer, null, 2)}\n\`\`\``)
+    await carried.getByRole('button', { name: 'Check this answer', exact: true }).click()
+    const review = angular.getByRole('region', { name: /^Review these translations into fr/ })
+    await review.waitFor({ timeout: 15_000 })
+    await review.getByRole('button', { name: 'Apply these translations', exact: true }).click()
+    await review.waitFor({ state: 'detached', timeout: 15_000 })
+    const written = await angular
+      .locator('[data-formancy-part="translations-table"] input')
+      .evaluateAll((inputs) => inputs.filter((input) => input.value.endsWith(' (fr)')).length)
+    found.push([
+      named('the answer pasted back was reviewed and applied'),
+      written === answer.messages.length ? null : `${written} of ${answer.messages.length} messages read as written`,
+    ])
+  } catch (error) {
+    found.push([named('a translation’s turn carried through the relay'), String(error).split('\n')[0]])
+    // A turn left waiting would refuse every one that follows: another demo forgets it, and
+    // the starter is chosen again for them.
+    await page.getByRole('combobox', { name: 'Demo' }).selectOption('wizard').catch(() => undefined)
+    await page.getByRole('combobox', { name: 'Demo' }).selectOption('starter').catch(() => undefined)
+  } finally {
+    // The turns that follow start in React, under Fields, so a failure here is named once
+    // rather than as theirs too.
+    await page.getByRole('combobox', { name: 'Builder' }).selectOption('react').catch(() => undefined)
+    await page.getByRole('button', { name: 'Fields', exact: true }).click().catch(() => undefined)
+  }
 }
 
 /**

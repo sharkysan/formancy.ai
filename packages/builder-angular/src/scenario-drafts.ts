@@ -15,17 +15,16 @@ import {
   viewChild,
 } from '@angular/core'
 import {
-  createStop,
+  createDraftRun,
   draftExpectations,
   draftProblems,
   draftQuotes,
-  draftScenarios,
   draftStatus,
   draftVerdict,
-  keepDraft,
+  draftsOn,
 } from '@formancy/builder-core'
 import { BuilderTextPipe } from './text.pipe.js'
-import type { AskModel, BuilderSession, DraftNote, Drafted, Scenario, ScenarioResult, Stop } from './types.js'
+import type { AskModel, BuilderSession, DraftRun, DraftRunState, Scenario, ScenarioResult } from './types.js'
 import { injectBuilderView } from './view.js'
 
 /**
@@ -41,25 +40,19 @@ import { injectBuilderView } from './view.js'
  *
  * **Nothing is emitted until Keep.** A draft that fails can be kept: that failure is the
  * question — is the example wrong, or the form? — and the person answers it. What may be
- * kept, what the run says and what the engine makes of a draft are
- * `@formancy/builder-core`'s, so the two parts cannot decide them differently
- * ([0091](../../../docs/decisions/0091-a-second-builder-is-a-binding.md)).
+ * kept, what the run says, what the engine makes of a draft and which form's drafts a
+ * session is shown are `@formancy/builder-core`'s, so the two parts cannot decide them
+ * differently ([0091](../../../docs/decisions/0091-a-second-builder-is-a-binding.md)).
+ *
+ * **Whose run it is, is the host's to say.** Bound to `[drafting]`, from `createDraftRun`,
+ * the part draws a run the host holds: being destroyed ends nothing, and a part drawn over the
+ * same form — a new session of it included — shows its drafts. Unbound, the part holds its
+ * own, and ends it when it is destroyed or handed another session, as it always did
+ * ([0164](../../../docs/decisions/0164-a-translation-is-held-for-its-language-and-a-draft-for-its-form.md)).
  *
  * Signals and `OnPush`, zoneless. The verdicts are a `computed` over the session's view, so
  * an edit to the form reruns them and none is stored.
  */
-/** What a run came to, and the session it was over. */
-interface Held {
-  readonly session: BuilderSession
-  readonly result: Drafted
-  readonly drafts: readonly Scenario[]
-  /** What the last Keep or Discard did. */
-  readonly note: DraftNote | undefined
-}
-
-/** No drafts, as one constant, so the verdicts are not recomputed for a new empty list. */
-const NO_DRAFTS: readonly Scenario[] = []
-
 @Component({
   selector: 'formancy-scenario-drafts',
   imports: [BuilderTextPipe],
@@ -75,16 +68,16 @@ const NO_DRAFTS: readonly Scenario[] = []
         [disabled]="busy()"
         [attr.placeholder]="'drafts.example' | builderText: text()"
         [attr.aria-describedby]="withheldId"
-        (input)="intent.set($any($event.target).value)"
+        (input)="held().describe($any($event.target).value)"
       ></textarea>
       <p [id]="withheldId" data-formancy-part="scenario-drafts-withheld">
         {{ 'drafts.withheld' | builderText: text() }}
       </p>
-      <button type="button" [disabled]="busy() || intent().trim() === ''" (click)="run()">
+      <button type="button" [disabled]="busy() || intent().trim() === ''" (click)="write()">
         {{ (busy() ? 'drafts.writing' : 'drafts.write') | builderText: text() }}
       </button>
       @if (busy()) {
-        <button #stopButton type="button" (click)="stop()">
+        <button #stopButton type="button" (click)="held().stop()">
           {{ 'drafts.stop' | builderText: text() }}
         </button>
       }
@@ -135,7 +128,7 @@ const NO_DRAFTS: readonly Scenario[] = []
               <button type="button" (click)="keep(entry.draft)">
                 {{ 'drafts.keep' | builderText: text() : { name: entry.draft.name } }}
               </button>
-              <button type="button" (click)="done(entry.draft, 'discarded')">
+              <button type="button" (click)="discard(entry.draft)">
                 {{ 'drafts.discard' | builderText: text() : { name: entry.draft.name } }}
               </button>
             </li>
@@ -157,26 +150,38 @@ export class FormancyScenarioDrafts {
   readonly mode = input<'client' | 'server' | undefined>(undefined)
   /** How many times to ask. Three by default. */
   readonly attempts = input<number | undefined>(undefined)
+  /**
+   * The run, held by the host, from `createDraftRun`: it outlives this part. Unbound, the part
+   * holds its own, and ends it when it is destroyed or handed another session (0157, 0162).
+   */
+  readonly drafting = input<DraftRun | undefined>(undefined)
   /** The longer list, when a draft is kept. Nothing else emits it. */
   readonly scenariosChange = output<readonly Scenario[]>()
 
-  protected readonly intent = signal('')
-  protected readonly busy = signal(false)
   /**
-   * What the last run came to, tagged with the session it was over. Another session is
-   * another form: a host that replaces the session input must not be offered the last
-   * form's drafts to keep into the new one's list. Read through the tag, as the React part
-   * reads it, rather than reset by an effect.
+   * The part's own run, for a host that binds none: the part's, and its session's. Another
+   * session is another form to a part that holds its own (0162), so a new one ends the run and
+   * forgets its drafts — the words typed stay — and so does the part being destroyed (0157). A
+   * run the host binds is the host's, and nothing here ends it.
    */
-  private readonly held = signal<Held | undefined>(undefined)
-  private readonly mine = computed(() => {
-    const held = this.held()
-    return held?.session === this.session() ? held : undefined
+  private readonly own = createDraftRun()
+  /** The run this part draws: the host's, or its own. */
+  protected readonly held = computed(() => this.drafting() ?? this.own)
+  /** What the run is doing and came to, as builder-core holds it. */
+  private readonly state = signal<DraftRunState>(this.own.state())
+  private readonly view = injectBuilderView(this.session)
+  /** The run as this form shows it: itself, or only the words when it is about another. */
+  private readonly shown = computed(() => {
+    // Read for the dependency: the form's id is in the document, which the view follows.
+    this.view()
+    return draftsOn(this.state(), this.session())
   })
-  protected readonly result = computed(() => this.mine()?.result)
+  protected readonly intent = computed(() => this.shown().intent)
+  protected readonly busy = computed(() => this.shown().busy)
+  protected readonly result = computed(() => this.shown().result)
   /** The drafts still waiting: each one leaves on Keep or Discard. */
-  protected readonly drafts = computed(() => this.mine()?.drafts ?? NO_DRAFTS)
-  protected readonly note = computed(() => this.mine()?.note)
+  protected readonly drafts = computed(() => this.shown().drafts)
+  protected readonly note = computed(() => this.shown().note)
 
   private static sequence = 0
   private readonly serial = (FormancyScenarioDrafts.sequence += 1)
@@ -184,29 +189,29 @@ export class FormancyScenarioDrafts {
   protected readonly inputId = `formancy-drafts-intent-${String(this.serial)}`
   protected readonly withheldId = `formancy-drafts-withheld-${String(this.serial)}`
 
-  private readonly view = injectBuilderView(this.session)
   private readonly heading = viewChild<ElementRef<HTMLHeadingElement>>('heading')
   private readonly stopButton = viewChild<ElementRef<HTMLButtonElement>>('stopButton')
   private readonly injector = inject(Injector)
-  /** The stop for the run in flight. A field: pressing it changes nothing on screen by itself. */
-  private running: Stop | undefined
-  /** Set when the part is destroyed: the run its stop ends must not schedule a render. */
-  private destroyed = false
 
   constructor() {
-    // A part that is destroyed stops its run, and so does another session: a relay is not
-    // left holding a turn about a form nobody is looking at (0157). The effect reads the
-    // session alone; the run it stops is whatever is in flight when that changes.
+    let unsubscribe: (() => void) | undefined
+    effect(() => {
+      const run = this.held()
+      unsubscribe?.()
+      // Untracked: the subscription is to the run alone, not renewed for every state it reports.
+      untracked(() => this.state.set(run.state()))
+      unsubscribe = run.subscribe(() => this.follow(run.state()))
+    })
+    // Another session ends the part's own run: the effect reads the session alone.
     let previous: BuilderSession | undefined
     effect(() => {
       const session = this.session()
-      if (previous !== undefined && previous !== session) untracked(() => this.running?.stop())
+      if (previous !== undefined && previous !== session) untracked(() => this.own.discard())
       previous = session
     })
-    inject(DestroyRef).onDestroy(() => {
-      this.destroyed = true
-      this.running?.stop()
-    })
+    const destroyed = inject(DestroyRef)
+    destroyed.onDestroy(() => unsubscribe?.())
+    destroyed.onDestroy(() => this.own.discard())
   }
 
   /** Every word this part shows, in the language the session was opened in (0114). */
@@ -244,70 +249,48 @@ export class FormancyScenarioDrafts {
   /** The model's words quoted beneath the status — builder-core's choice, as the React part's is. */
   protected readonly quoted = computed(() => draftQuotes(this.result()))
 
-  protected async run(): Promise<void> {
-    const intent = this.intent()
-    if (intent.trim() === '' || this.busy()) return
-    this.busy.set(true)
-    this.held.set(undefined)
+  /**
+   * The run's state now. Read as the run says it changed, before the template draws it: if a
+   * run this part shows has just ended, Stop is still in the document. Once drawn, a focus
+   * with nowhere to be — on Stop, which leaves with it, or on the page's body, where a relay's
+   * pane leaves it when its answer is taken — goes to the heading, beside the drafts. A focus
+   * somebody put elsewhere stays there. The run ends in a promise this part may never have
+   * awaited: another part's, or none's, pressed Draft.
+   */
+  private follow(next: DraftRunState): void {
     const session = this.session()
-    const stop = createStop()
-    this.running = stop
-    let onStop = false
-    try {
-      const outcome = await draftScenarios(this.ask(), session.document(), intent, {
-        initialValue: this.initialValue(),
-        existing: this.scenarios(),
-        stop,
-        attempts: this.attempts(),
-      })
-      this.held.set({ session, result: outcome, drafts: outcome.ok ? outcome.drafts : [], note: undefined })
-    } finally {
-      // Read while Stop is still drawn: once it has gone, the focus is already on <body>.
-      const stopDrawn = this.stopButton()?.nativeElement
-      onStop = stopDrawn !== undefined && document.activeElement === stopDrawn
-      this.running = undefined
-      this.busy.set(false)
+    const ended = draftsOn(this.state(), session).busy && !draftsOn(next, session).busy
+    if (ended) {
+      const stop = this.stopButton()?.nativeElement
+      const onStop = stop !== undefined && document.activeElement === stop
+      afterNextRender(
+        () => {
+          if (onStop || document.activeElement === document.body) this.heading()?.nativeElement.focus()
+        },
+        { injector: this.injector },
+      )
     }
-    // A run its destruction stopped ends here: there is no view left to draw or to focus,
-    // and a render scheduled on one that has gone throws.
-    if (this.destroyed) return
-    // Once drawn, a focus with nowhere to be — on Stop, which leaves with it, or on the
-    // page's body, where a relay's pane leaves it when its answer is taken — goes to the
-    // heading, beside the drafts. A focus somebody put elsewhere stays there.
-    afterNextRender(
-      () => {
-        if (onStop || document.activeElement === document.body) this.heading()?.nativeElement.focus()
-      },
-      { injector: this.injector },
-    )
+    this.state.set(next)
   }
 
-  protected stop(): void {
-    this.running?.stop()
+  protected write(): void {
+    void this.held().draft(this.ask(), this.session(), {
+      initialValue: this.initialValue(),
+      existing: this.scenarios(),
+      attempts: this.attempts(),
+    })
   }
 
   protected keep(draft: Scenario): void {
-    const kept = keepDraft(this.session().document(), this.scenarios(), draft, this.options())
-    if (!kept.ok) {
-      this.held.update(
-        (before) => before && { ...before, note: { kind: 'refused', why: kept.refused, name: draft.name } },
-      )
-      return
-    }
+    const kept = this.held().keep(draft, this.session(), this.scenarios(), this.options())
+    if (kept?.ok !== true) return
     this.scenariosChange.emit(kept.scenarios)
-    this.done(draft, 'kept')
+    this.heading()?.nativeElement.focus()
   }
 
   /** A draft leaves the list, the status says why, and the focus goes back to the heading. */
-  protected done(draft: Scenario, kind: 'kept' | 'discarded'): void {
-    this.held.update(
-      (before) =>
-        before && {
-          ...before,
-          drafts: before.drafts.filter((one) => one !== draft),
-          note: { kind, name: draft.name },
-        },
-    )
+  protected discard(draft: Scenario): void {
+    this.held().discardDraft(draft)
     this.heading()?.nativeElement.focus()
   }
 }
