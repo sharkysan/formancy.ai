@@ -10,6 +10,53 @@ later.
 
 ## Unreleased
 
+**Added: a response is stored once, under the id it was handed with its form.** 0.2.0 named
+"no submission token bound to the form version" as the gap that kept the public plane off a
+public deployment, without saying what the token would stop, so that came first
+([0169](docs/decisions/0169-a-response-is-stored-once.md)). A token cannot stop a script that
+never loaded the form: a script reads the form for one like any browser, which is why 0059
+rejected exactly this token as a defence, and what prices a script is the proof-of-work
+challenge. A submission against another version was already refused by the schema hash. What
+was open was **one response stored twice** — a retry after an answer that never arrived, which
+with the challenge on simply solves a new one; an exact replay where the challenge is off; any
+copy from a signed-in client — each a submission with its own id, audit row and webhook, and
+nothing to tell it from a second respondent. Now `GET /f/:path` hands out `submissionToken`, new
+on every reading and sent with `Cache-Control: no-store`, naming the id the response will be
+stored under and signed for that form with `FORMANCY_AUTH_SECRET`; starting a draft and resuming
+one hand out one naming the draft, the same on every resume, so a draft resumed a month later
+still submits, once. The id is the submission's primary key: a response sent again is answered
+`409 submission_token_spent` with the stored id, and nothing is stored, delivered or audited a
+second time — two sends at once included, which the insert decides. A refused attempt — invalid
+answers, a stale hash, an unsolved challenge — spends nothing. The token binds no version, which
+the hash does, and does not expire. `@formancy/server-core` gains `formToFill` and the
+`token_required`, `token_invalid` and `token_spent` outcomes of `createSubmission`, and
+`startDraft` and `resumeDraft` return `submissionToken`; `@formancy/server` exports
+`SUBMISSION_TOKEN_HEADER`. The admin's *fill in* tab sends the form's token, and the draft's once
+it has one. Hazards A8 and D18. The public submission routes moved to `routes/submissions.ts` and
+`createSubmission` to `server-core`'s `submitting.ts`, which took `app.ts` and `use-cases.ts`
+under the size budget. Redrawing the submission flow also removed three things the documentation
+said and the code never did: storing the schema hash on each submission, proceeding on an older
+version whose diff is compatible, and caching the compiled program by hash.
+
+**Breaking, for a host that submits anonymously without the admin: send the token back.** An
+anonymous `POST /f/:path/submissions` without `X-Formancy-Submission-Token` is refused `400
+submission_token_required`, and one this server did not sign for that form — forged, another
+form's, or signed under a key it no longer has — `400 submission_token_invalid`. Send the
+`submissionToken` that came with the form, or the draft's once a draft has started: a reload
+resumes the draft, and only its token makes the response sent again after one the same response.
+There is no window in which the old request still works, because a window is a time in which a
+response is stored twice. The renderers send nothing, so nothing in them changes; a signed-in
+submitter or an API key may leave the header out and is stored under a fresh id, as before. A
+`409` now means the response was already sent as well as `FORM_VERSION_CHANGED`, so tell them
+apart by `error`. Changing `FORMANCY_AUTH_SECRET`, or restarting without one, refuses once the
+response of everybody filling in a form, who reads the form again for a new token.
+
+**Breaking, for anybody implementing `Storage` themselves:** `insertSubmission` now returns
+whether it stored, and must refuse an id already stored — atomically, writing nothing else — and
+`hasSubmission(id)` is new. `@formancy/server`'s PostgreSQL storage needs no change to the
+database: the id was already the primary key. What each must do is in
+[`MIGRATIONS.md`](MIGRATIONS.md).
+
 **Added: the server keeps a request log, and a line is built from a list of fields.**
 `@formancy/server` constructed Fastify with `logger: false`, so nothing told an operator why a
 request had failed — a `500`, a webhook that never went, a respondent refused for somebody else's

@@ -13,7 +13,7 @@ import { createMemoryStorage } from './testing/memory-storage.js'
  * What the token is for, and what it is not: it does not stop a script, which reads the form
  * and gets one like anybody else, and it does not bind the version, which the schema hash
  * already does. It stops one response being stored twice — a retry after an answer that never
- * arrived, or an exact replay where no challenge is asked — each of which was a second
+ * arrived, or an exact replay where the challenge is off — each of which was a second
  * submission, with its own id and its own webhook, that nothing told apart from a second
  * respondent.
  */

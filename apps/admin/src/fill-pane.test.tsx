@@ -298,14 +298,14 @@ describe('sending the response', () => {
       body: {
         error: 'submission_token_spent',
         id: 'st',
-        message: 'These answers were already sent, and are stored once. Nothing was stored again.',
+        message: 'This response has already been sent, and is stored. It was not stored again.',
       },
     }
     render(<FillPane path="contact" quietMs={60_000} />)
 
     await fillAndSend()
 
-    expect(await screen.findByText(/already sent, and are stored once/)).toBeTruthy()
+    expect(await screen.findByText(/already been sent, and is stored/)).toBeTruthy()
     expect((screen.getByLabelText('Email') as HTMLInputElement).value).toBe('a@b.ch')
   })
 })

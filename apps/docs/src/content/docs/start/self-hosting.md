@@ -8,7 +8,10 @@ This backend has authentication, role-based authorization, per-IP rate limiting,
 per-form origin allowlist, a request body cap, file uploads, drafts that carry their own
 key, audit logging and an opt-in proof-of-work challenge
 (`FORMANCY_CHALLENGE_SECRET`, below), and it scans every upload before keeping it when you
-run ClamAV (`FORMANCY_CLAMD_HOST`, below) — but no submission tokens.
+run ClamAV (`FORMANCY_CLAMD_HOST`, below). Every form is handed out with a token, so that a
+response sent twice is stored once ([submit](#submit-public), below) — which stops a
+duplicate, not a script: a script reads the form for a token like anybody else, and only
+the challenge and the rate limits make it pay.
 
 It writes a [request log](#the-request-log) to standard output — a line per request and
 per error, built from a list of fields, so no answer or credential can reach it — and the
@@ -79,7 +82,7 @@ wrong database — a confusing ten minutes. The compose file maps 5439 instead.
 | Variable | Required | Meaning |
 | --- | --- | --- |
 | `DATABASE_URL` | yes | Postgres connection string |
-| `FORMANCY_AUTH_SECRET` | in production | Signs session tokens; ≥ 32 characters. If unset, an ephemeral one is generated and every session dies on restart — the server warns when it does this. |
+| `FORMANCY_AUTH_SECRET` | in production | Signs session tokens, every draft's key and the token every form is handed out with; ≥ 32 characters. If unset, an ephemeral one is generated, and every restart ends every session, loses every draft and refuses once the response of everybody filling in a form — the server warns when it does this. Changing it does the same. |
 | `FORMANCY_ADMIN_EMAIL` / `..._PASSWORD` | first run | Creates the first admin, and **only** while no such user exists. It cannot re-seed an admin into a running installation. |
 | `FORMANCY_FILES_DIR` | no | Where uploaded bytes go on local disk. Unset — or empty — means this deployment accepts no files, which is a supported state — see [Files](/docs/concepts/files/). One replica only. Both compose files set it to their volume unless `.env` says otherwise. |
 | `FORMANCY_S3_ENDPOINT` | no | An S3-compatible object store instead of a directory, which is what more than one replica needs. Setting it makes the four below required and refuses a non-empty `FORMANCY_FILES_DIR` alongside it. Empty is unset. |
@@ -369,21 +372,56 @@ publish runs no examples.
 ### Read the form (public)
 
 ```bash
-curl localhost:4380/f/contact-us
-# → {"version":1,"schemaHash":"52b5…","schema":{…}}
+curl -i localhost:4380/f/contact-us
+# → cache-control: no-store
+#   {"version":1,"schemaHash":"52b5…","schema":{…},"submissionToken":"0193…a1.8f2c…"}
 ```
+
+`submissionToken` is new on every reading: it names the id this response will be stored
+under, signed for this form. Hence `no-store` — a cache in front of the server that kept
+this reply anyway would hand one token to everybody behind it, and every response after the
+first would be refused as already sent.
 
 ### Submit (public)
 
-The client must declare the schema hash it actually rendered:
+The client must declare the schema hash it actually rendered, and — when nobody is signed
+in — send back the token the form came with:
 
 ```bash
 curl -X POST localhost:4380/f/contact-us/submissions \
   -H 'content-type: application/json' \
   -H 'x-formancy-schema-hash: 52b5…' \
+  -H 'x-formancy-submission-token: 0193…a1.8f2c…' \
   -d '{"email":"someone@example.com"}'
-# → 201 {"id":"…","data":{"email":"someone@example.com"}}
+# → 201 {"id":"0193…a1","data":{"email":"someone@example.com"}}
 ```
+
+The response is stored under the token's id, and the database refuses that id twice. So the
+same request again — the retry a dropped connection forces, a double press, a replay — is
+answered, and nothing is stored, delivered or audited a second time
+([0169](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0169-a-response-is-stored-once.md)):
+
+```bash
+# → 409 {"error":"submission_token_spent","id":"0193…a1","message":"This response has already been sent, and is stored. It was not stored again."}
+```
+
+Each refusal has its own `error`, and none of them spends the token or touches what the page
+holds:
+
+| Status | `error` | Means | What the page does |
+| --- | --- | --- | --- |
+| `400` | `submission_token_required` | An anonymous submission without the header | Send the token the form came with |
+| `400` | `submission_token_invalid` | Forged, another form's, or signed under a key the server no longer has — `FORMANCY_AUTH_SECRET` changed, or was never set and the server restarted | Read the form again for a new token, and send the answers with it |
+| `409` | `submission_token_spent` | This response is stored, as `id` | Say so. To send another response, read the form again |
+
+`409` also means `FORM_VERSION_CHANGED`, so tell them apart by `error`. A refusal for
+anything else — invalid answers, a stale hash, an unsolved challenge — leaves the token
+unspent, so the same response can be sent again once it is fixed. Somebody signed in, or an
+API key, may leave the header out and is stored under a fresh id, as before; a token they do
+send is checked and spent like anybody else's.
+
+What the token does **not** do: stop a script, which reads the form for one; bind the
+version, which the schema hash does; or expire.
 
 Three things happen that are easy to miss:
 
@@ -402,12 +440,25 @@ refused.
 
 ### Drafts (public)
 
+The server picks a draft's id and signs it; the key comes back once, with the token the
+response is later sent with:
+
 ```bash
-curl -X PUT localhost:4380/f/contact-us/drafts/draft-1 \
+curl -X POST localhost:4380/f/contact-us/drafts
+# → 201 {"draftId":"0193…d1","token":"5e0a…","submissionToken":"0193…d1.77b1…"}
+
+curl -X PUT localhost:4380/f/contact-us/drafts/0193…d1 \
+  -H 'x-formancy-draft-token: 5e0a…' \
   -H 'content-type: application/json' -d '{"email":"half-way@"}'
 
-curl localhost:4380/f/contact-us/drafts/draft-1
+curl localhost:4380/f/contact-us/drafts/0193…d1 -H 'x-formancy-draft-token: 5e0a…'
+# → {"outcome":"resumed",…,"data":{"email":"half-way@"},"submissionToken":"0193…d1.77b1…"}
 ```
+
+A draft's `submissionToken` names the draft, and every resume hands back the same one —
+**send that one, not the form's, once a draft has started.** Then a response whose answer was
+lost and is sent again after a reload, from the resumed draft, is the same response, and is
+stored once. See [Drafts](/docs/concepts/drafts/) for the rest.
 
 Resuming a draft after the form was republished migrates it **lazily** — see
 [Versioning](/docs/concepts/versioning/) for the severity rules.
@@ -447,9 +498,11 @@ for lookup and a hash for verification. Present it as `x-formancy-api-key`.
 | `GET` | `/f/:path/versions` | management | `form.read` |
 | `GET` | `/f/:path/submissions` | management | `submission.read` |
 | `GET` | `/f/:path/submissions/export.csv` | management | `submission.export` |
-| `GET` | `/f/:path` | public | — |
-| `POST` | `/f/:path/submissions` | public | — |
-| `PUT` `GET` | `/f/:path/drafts/:draftId` | public | — |
+| `GET` | `/f/:path` | public | — (hands out a `submissionToken`) |
+| `GET` | `/f/:path/challenge` | public | — (404 when `FORMANCY_CHALLENGE_SECRET` is unset) |
+| `POST` | `/f/:path/submissions` | public | — (anonymous: `x-formancy-submission-token`) |
+| `POST` | `/f/:path/drafts` | public | — (hands out a draft's key and its `submissionToken`) |
+| `PUT` `GET` | `/f/:path/drafts/:draftId` | public | — (`x-formancy-draft-token`) |
 | `POST` | `/f/:path/files` | public | — (same gate as submitting) |
 | `PUT` | `/f/:path/files/:fileId` | public | — (the address the offer returned) |
 | `GET` | `/f/:path/files/:fileId` | management | `submission.read` |

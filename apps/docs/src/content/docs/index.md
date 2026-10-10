@@ -27,9 +27,9 @@ their APIs will still change before 1.0.
 The server has authentication, role-based authorization, per-IP rate limiting, a per-form
 origin allowlist, audit logging, drafts that carry their own key, and an opt-in
 proof-of-work challenge for anonymous submissions, and it scans every upload before keeping it
-when the deployment runs ClamAV. What it does not have is a submission token bound to the form
-version. Its request log says which route answered what and what was thrown, and has no
-field for an answer or a credential. Do not deploy it anywhere public yet.
+when the deployment runs ClamAV. Every form is handed out with a token, so that a response sent
+twice is stored once. Its request log says which route answered what and what was thrown, and
+has no field for an answer or a credential. Do not deploy it anywhere public yet.
 :::
 
 formancy is a modern, self-hostable form platform for React and Angular. It is

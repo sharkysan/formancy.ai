@@ -27,13 +27,16 @@ export interface ServerDeps {
   /** The clock/randomness the ENGINE sees during replay. */
   capabilities: CapabilitySource
   /**
-   * Signs the token that proves somebody started a draft.
+   * Signs the keys the public plane hands out: the one that proves somebody started a
+   * draft, and the token a response is sent with so that it is stored once (0169).
    *
    * The public plane is anonymous, so a draft has no account behind it — which
    * is exactly why it needs a secret of its own. The host's own signing key is
    * reused rather than a second one being configured: a draft token is a
    * server-signed bearer token, which is what that key is already for, and an
    * optional secret would mean drafts are unprotected whenever nobody set it.
+   * Named for the first of the two; renaming it would break every host that builds
+   * these deps, for a word.
    */
   draftSecret: string
   /**

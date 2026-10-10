@@ -16,7 +16,7 @@ POST /f/contact-us/drafts
 ```
 
 ```json
-{ "draftId": "0193…", "token": "8f2c…" }
+{ "draftId": "0193…", "token": "8f2c…", "submissionToken": "0193….77b1…" }
 ```
 
 **Save.** Send the token:
@@ -42,7 +42,8 @@ X-Formancy-Draft-Token: 8f2c…
   "schema": { "…": "…" },
   "schemaHash": "…",
   "data": { "email": "wip@example.ch" },
-  "migration": { "severity": "lossy", "changes": [{ "kind": "field.removed", "path": "fax" }] }
+  "migration": { "severity": "lossy", "changes": [{ "kind": "field.removed", "path": "fax" }] },
+  "submissionToken": "0193….77b1…"
 }
 ```
 
@@ -76,10 +77,43 @@ https://example.ch/apply?draft=0193…&token=8f2c…
 That puts the key in a URL, which means in history, in a shared screenshot and in
 any analytics that logs query strings. Decide that deliberately.
 
+## Sending it: the draft's token, not the form's
+
+A response is sent with a token naming the id it will be stored under, and stored once
+under it ([0169](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0169-a-response-is-stored-once.md)).
+Reading the form hands out one; so does starting a draft, and that one names the **draft**.
+Every resume hands back the same one, so a draft is one response however late and however
+often it is resumed — a draft picked up a month later still submits, once.
+
+So a page holds two tokens once a draft starts, and **sends the draft's**:
+
+```ts
+let sendWith = form.submissionToken          // from GET /f/:path
+// …a draft is started, or resumed:
+sendWith = draft.submissionToken
+
+await fetch(`/f/contact-us/submissions`, {
+  method: 'POST',
+  headers: {
+    'content-type': 'application/json',
+    'x-formancy-schema-hash': schemaHash,
+    'x-formancy-submission-token': sendWith,
+  },
+  body: JSON.stringify(engine.value()),
+})
+```
+
+The reason is the one path a reload takes. Somebody presses *Send*, the answer never
+arrives, they reload: the page resumes the draft and they press *Send* again. With the
+draft's token that is the same response, answered `409 submission_token_spent` and stored
+once. With the form's, the reload sends a different token, and the response is stored twice.
+
+Keep the token in a header, as the draft's key: a URL lands in logs.
+
 ## Where this is demonstrated
 
 The admin's **fill in** tab does all three of the things below, against a real
-server: `apps/admin/src/fill-pane.tsx`. It is the shortest way to see the flow work
+server, and sends the draft's token once it has one: `apps/admin/src/fill-pane.tsx`. It is the shortest way to see the flow work
 rather than read about it, and the tests beside it hold each of the three by name.
 
 One thing it does not demonstrate: the **anonymous** submission path. The admin is

@@ -57,10 +57,11 @@ const sql = postgres(databaseUrl, {
 let authSecret = process.env['FORMANCY_AUTH_SECRET']
 if (authSecret === undefined || authSecret === '') {
   // A generated secret keeps `docker compose up` working, at the cost of every
-  // session dying on restart. Say so loudly rather than failing dev cold.
+  // session, every draft's key and every token a form was handed out with dying
+  // on restart (0062, 0169). Say so loudly rather than failing dev cold.
   authSecret = randomBytes(33).toString('base64url')
   console.warn(
-    'FORMANCY_AUTH_SECRET is not set: generated an ephemeral one, sessions will not survive a restart.',
+    'FORMANCY_AUTH_SECRET is not set: generated an ephemeral one. Sessions, drafts and forms being filled in will not survive a restart.',
   )
 }
 

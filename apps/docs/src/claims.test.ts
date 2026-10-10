@@ -88,6 +88,15 @@ const capabilities = [
     evidence: join(repo, 'packages', 'server-core', 'src', 'audit.ts'),
     denied: /no audit logging/i,
   },
+  {
+    // Five live documents named its absence as the reason not to deploy, in four spellings:
+    // "no submission tokens", the same across a line break inside a quoted block, "what it does
+    // not have is a submission token", and the SOUP declaration listing one under *Still
+    // absent* (0169). The evidence is the function that signs one.
+    what: 'the submission token',
+    evidence: join(repo, 'packages', 'server-core', 'src', 'signing.ts'),
+    denied: /no\s+(?:>\s*)?submission tokens?\b|not have is a submission token|absent[\s\S]{0,400}submission token bound to the form version/i,
+  },
 ] as const
 
 describe('the spec version the documents name', () => {
@@ -717,7 +726,7 @@ describe('what the roadmap says is still to do', () => {
      * that both paths refuse a stale version, and that the list has stopped
      * asking.
      */
-    expect(kindsOf('SubmissionOutcome', 'use-cases.ts')).toContain('version_changed')
+    expect(kindsOf('SubmissionOutcome', 'submitting.ts')).toContain('version_changed')
     expect(kindsOf('PublishOutcome', 'publishing.ts')).toContain('version_changed')
 
     // The section that ASKS, not the whole document: written against the file it

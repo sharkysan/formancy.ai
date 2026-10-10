@@ -194,7 +194,9 @@ export async function submissionRoutes(
           return reply.code(409).send({
             error: 'submission_token_spent',
             id: outcome.id,
-            message: 'These answers were already sent, and are stored once. Nothing was stored again.',
+            // About the response, never "these answers": a second send may carry different ones,
+            // and it is the first that is kept.
+            message: 'This response has already been sent, and is stored. It was not stored again.',
           })
       }
     },

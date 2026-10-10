@@ -60,8 +60,11 @@ engine as the save gate, submissions replayed server-side and stored canonical,
 drafts with lazy migration, submissions listing, CSV export unioned across
 versions, a management plane behind sessions, API keys and role-based
 authorization, per-IP rate limiting and per-form origin allowlists on the
-public plane, and webhooks delivered from a transactional outbox to an address
-the server resolved and checked itself. It keeps a request log, on by default: a
+public plane, a token every form is handed out with so that a response sent
+twice is stored once
+([0169](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0169-a-response-is-stored-once.md)),
+and webhooks delivered from a transactional outbox to an address the server
+resolved and checked itself. It keeps a request log, on by default: a
 line per request and per error, built from a list of fields that has no place for
 a body, a header, an answer or an error's words
 ([0168](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0168-the-log-is-built-from-a-list-of-fields.md)).
