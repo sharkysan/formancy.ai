@@ -187,6 +187,13 @@ the request declared the version it opened?  ← optional: a script composes a
 diffSchemas(current, new) ──▶ compatible | lossy | breaking, shown to the author
    │
    ▼
+the form's kept examples, run against the current version and the new one,
+   │                     in server mode, from the kept sample, compared by the
+   │                     scenario panel's comparedToLastRun
+   ├─ held, and no longer ──▶ a sentence in the 201's warnings, naming it,
+   │                     both versions and what happened — never a refusal
+   │                     ([0166](../decisions/0166-a-deployment-keeps-a-forms-examples-and-runs-them-at-publish.md))
+   ▼
 INSERT a new form_versions row          ← never an UPDATE; a trigger enforces it
 UPDATE forms.current_version_id          ([0025](../decisions/0025-immutability-in-the-database.md))
 CREATE per-form partial indexes for fields marked indexed
@@ -631,3 +638,37 @@ the route tells the adapter, which aborts its call. A browser that left while it
 key was still being checked has closed the response before the handler ran; the route reads
 that as gone from the start, and the adapter sends nothing. A response that closes after it
 was written is how every request ends, and cancels nothing.
+
+## 6.14 Keeping a form's examples, and publishing against them
+
+```
+admin opens a published form ──▶ GET /f/:path/examples ──▶ 401 without a session
+                                   readExamples(actor)       403 for a viewer: no pane
+                                                             { scenarios, sample? }
+ScenarioPane over them, server mode, from the sample
+  Remove, or Keep on a draft ──▶ drawn at once
+                             ──▶ PUT /f/:path/examples, after the save before it
+                                   keepExamples(actor)
+                                     each item through readScenario ── any not an example
+                                     names unique, sample a map        ──▶ 422, nothing kept
+                                     one commit: form_examples row + form.examples.changed
+                             ◀── refused: said, and the list read from the server again
+  drafting (server has a model) ──▶ POST /model/complete { kind: "scenarios" } (6.13)
+PromptPane's review runs the same examples, server mode (0159)
+
+Publish ──▶ POST /forms ──▶ publishForm (6.4): examplesThatStopHolding
+         ◀── 201 { version, schemaHash, warnings: [ "The example \"…\" held against
+             version n and does not hold against version n+1: …" ] }
+PublishNote draws the warnings under the version it published
+```
+
+**The server is the host the scenarios belong to.** The panes still decide nothing about where
+they are kept ([0111](../decisions/0111-a-scenario-panel-names-what-stopped-holding.md)); the
+admin holds the list for the form's workspace, so it survives the build tab coming and going,
+and saves each change whole, one save after another, so two cannot reach the server in the
+wrong order. The publish reads them through the storage port and decides what to say; the
+route carries the sentence on the `201`
+([0166](../decisions/0166-a-deployment-keeps-a-forms-examples-and-runs-them-at-publish.md)).
+A form never published has no row to keep them beside, so the admin offers no list until it
+has one.
+

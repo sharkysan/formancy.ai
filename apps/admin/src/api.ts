@@ -1,5 +1,6 @@
 import { declinedAnswer, modelRequestKind } from '@formancy/builder-core'
 import type { AskModel } from '@formancy/builder-core'
+import type { Scenario } from '@formancy/core'
 import type { FormSchema } from '@formancy/spec'
 import type { SchemaError } from '@formancy/spec/validate'
 import type { StoredFile, UploadOptions } from '@formancy/react'
@@ -203,6 +204,51 @@ export async function fetchSubmissions(path: string): Promise<SubmissionEntry[]>
   const response = await authed(`${BASE}/f/${encodeURIComponent(path)}/submissions`)
   if (!response.ok) throw new Error(`submissions failed: ${response.status}`)
   return ((await response.json()) as { submissions: SubmissionEntry[] }).submissions
+}
+
+/**
+ * A form's examples, and the fictional sample every one starts from, as the server keeps them
+ * beside the form (0166). The pair a scenario pane takes as `scenarios` and `initialValue`.
+ */
+export interface FormExamples {
+  readonly scenarios: readonly Scenario[]
+  readonly sample?: Readonly<Record<string, unknown>>
+}
+
+/**
+ * The examples the server keeps for the form at `path`.
+ *
+ * `undefined` when it will not show them — a viewer is refused, and a form the server does not
+ * have has none — so the pane is not drawn over a list that could not be saved.
+ */
+export async function fetchExamples(path: string): Promise<FormExamples | undefined> {
+  const response = await authed(`${BASE}/f/${encodeURIComponent(path)}/examples`)
+  if (!response.ok) return undefined
+  const body = (await response.json().catch(() => ({}))) as Partial<FormExamples>
+  return Array.isArray(body.scenarios)
+    ? { scenarios: body.scenarios, ...(body.sample === undefined ? {} : { sample: body.sample }) }
+    : undefined
+}
+
+/**
+ * Replace the form's examples and sample on the server. Rejects with the server's sentences
+ * when it refuses them, so the person reads why rather than a status.
+ */
+export async function saveExamples(path: string, examples: FormExamples): Promise<void> {
+  const response = await authed(`${BASE}/f/${encodeURIComponent(path)}/examples`, {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(examples),
+  })
+  if (response.ok) return
+  const body = (await response.json().catch(() => ({}))) as { problems?: unknown; error?: unknown }
+  throw new Error(
+    Array.isArray(body.problems)
+      ? body.problems.join(' ')
+      : typeof body.error === 'string'
+        ? body.error
+        : `The server refused them (${String(response.status)}).`,
+  )
 }
 
 /**

@@ -15,6 +15,8 @@ import { FormancyForm, FormancyProvider, UploaderProvider } from '@formancy/reac
 import type { Uploader } from '@formancy/react'
 import type { FormSchema } from '@formancy/spec'
 import { askServerModel, uploadFile } from './api.js'
+import { ExamplesPart } from './examples-pane.js'
+import type { KeptExamples } from './examples-pane.js'
 import { ModelNote } from './model-note.js'
 import { PublishNote } from './publish-note.js'
 import type { PublishResult, ServerModel } from './api.js'
@@ -37,6 +39,8 @@ export function BuildPane({
   onPublish,
   formPath,
   model,
+  kept,
+  published = false,
 }: {
   source: string
   onChange: (next: string) => void
@@ -44,6 +48,13 @@ export function BuildPane({
   onPublish: () => void
   /** The server's model, when it has one: then the prompt pane is drawn, asking through it (0165). */
   model?: ServerModel | undefined
+  /**
+   * The form's examples as the server keeps them, run by the scenario pane and by the review
+   * of a model's edit, in server mode, as the publish runs them (0166). Absent, neither is drawn.
+   */
+  kept?: KeptExamples
+  /** Whether the server has this form: examples are kept only beside one it has. */
+  published?: boolean
   /**
    * The form being edited, so the preview can accept files.
    *
@@ -95,6 +106,8 @@ export function BuildPane({
       onSelect={setSelected}
       {...(formPath === undefined ? {} : { formPath })}
       model={model}
+      kept={kept}
+      published={published}
     />
   )
 }
@@ -108,6 +121,8 @@ function BuilderWorkspace({
   onSelect,
   formPath,
   model,
+  kept,
+  published,
 }: {
   session: BuilderSession
   onChange: (next: string) => void
@@ -117,6 +132,8 @@ function BuilderWorkspace({
   onSelect: (keyPath: readonly string[]) => void
   formPath?: string
   model: ServerModel | undefined
+  kept: KeptExamples | undefined
+  published: boolean
 }) {
   const view = useBuilder(session)
   /**
@@ -224,7 +241,13 @@ function BuilderWorkspace({
           {model === undefined ? null : (
             <>
               <ModelNote model={model} sends="your instruction and this whole form" />
-              <PromptPane session={session} ask={askServerModel} />
+              <PromptPane
+                session={session}
+                ask={askServerModel}
+                scenarios={kept?.examples?.scenarios}
+                initialValue={kept?.examples?.sample}
+                mode="server"
+              />
             </>
           )}
           {editor === 'structure' ? (
@@ -277,6 +300,9 @@ function BuilderWorkspace({
       <section className="wb-pane">
         <header>Properties</header>
         <div className="wb-body">
+          {kept === undefined ? null : (
+            <ExamplesPart session={session} kept={kept} published={published} model={model} />
+          )}
           {editing === null ? (
             <p className="wb-hint">
               Press <kbd>a</kbd> in the structure pane to add a field, or <kbd>p</kbd> to add a

@@ -2476,3 +2476,90 @@ describe('republishing a document this form has had before', () => {
     expect((again.json() as { version: number }).version).toBe(1)
   })
 })
+
+describe('a form’s examples, kept in PostgreSQL', () => {
+  /*
+   * The examples a deployment keeps beside a form, and the publish that runs them (0166),
+   * across real HTTP and real SQL: jsonb round trips, the foreign key, the transaction with
+   * the audit row, and the table added on start.
+   */
+  const examples = {
+    scenarios: [
+      { name: 'Switzerland asks for a canton', changes: { country: 'CH' }, valid: true, visible: { canton: true } },
+      { name: 'A price and a quantity make a total', changes: { price: 2.5, qty: 4 }, valid: true, values: { total: 10 } },
+    ],
+    sample: { email: 'jane@example.ch' },
+  }
+  const turnedRound: FormSchema = {
+    ...schema,
+    logic: {
+      rules: [
+        { target: 'canton', kind: 'visible', cel: 'country != "CH"' },
+        { target: 'total', kind: 'computed', cel: 'price * qty' },
+      ],
+    },
+  }
+
+  test('the table is added on start to a database from before it, and starts empty', async () => {
+    // The upgrade path: a deployment's database has every other table and not this one.
+    // Bootstrapping is what adds it; there is nothing to run by hand and nothing to backfill.
+    await sql`DROP TABLE IF EXISTS form_examples`
+    await bootstrapSchema(sql)
+    const [row] = await sql<Array<{ count: number }>>`SELECT count(*)::int AS count FROM form_examples`
+    expect(row?.count).toBe(0)
+  })
+
+  test('are kept and read back as written, and a second write replaces the first', async () => {
+    // jsonb keeps numbers as numbers and nested maps as maps; a list that came back with
+    // `2.5` as a string would fail every example that sets it, for no reason in the form.
+    await app.inject({ method: 'POST', url: '/forms', headers: asAdmin(), payload: { path: 'kept-examples', schema } })
+
+    const put = await app.inject({ method: 'PUT', url: '/f/kept-examples/examples', headers: asAdmin(), payload: examples })
+    expect(put.statusCode).toBe(200)
+    expect((await app.inject({ method: 'GET', url: '/f/kept-examples/examples', headers: asAdmin() })).json()).toEqual(examples)
+
+    const fewer = { scenarios: [examples.scenarios[1]] }
+    await app.inject({ method: 'PUT', url: '/f/kept-examples/examples', headers: asAdmin(), payload: fewer })
+    expect((await app.inject({ method: 'GET', url: '/f/kept-examples/examples', headers: asAdmin() })).json()).toEqual(fewer)
+  })
+
+  test('a change and its audit row commit together, with counts and not the examples', async () => {
+    await app.inject({ method: 'POST', url: '/forms', headers: asAdmin(), payload: { path: 'audited-examples', schema } })
+    await app.inject({ method: 'PUT', url: '/f/audited-examples/examples', headers: asAdmin(), payload: examples })
+
+    const rows = await sql<Array<{ detail: Record<string, unknown> }>>`
+      SELECT detail FROM audit_log WHERE action = 'form.examples.changed' AND subject = 'audited-examples'`
+    expect(rows).toHaveLength(1)
+    expect(rows[0]?.detail).toEqual({ examples: 2, sample: true })
+  })
+
+  test('the database refuses examples for a form that is not there', async () => {
+    // The foreign key, under the use-case: a list kept for no form would be found by whatever
+    // is published under that id later, if anything ever were.
+    await expect(
+      createPostgresStorage(sql).keepExamples({ formId: randomUUID(), scenarios: [], sample: null, updatedAt: new Date().toISOString() }),
+    ).rejects.toThrow()
+  })
+
+  test('publishing runs them, names each that stops holding on the 201, and publishes', async () => {
+    // The rule turned round. Everything else about the document is valid, and the example is
+    // the one thing that can say which spelling was meant — said, never refused.
+    await app.inject({ method: 'POST', url: '/forms', headers: asAdmin(), payload: { path: 'checked-examples', schema } })
+    await app.inject({ method: 'PUT', url: '/f/checked-examples/examples', headers: asAdmin(), payload: examples })
+
+    const published = await app.inject({
+      method: 'POST',
+      url: '/forms',
+      headers: asAdmin(),
+      payload: { path: 'checked-examples', schema: turnedRound },
+    })
+
+    expect(published.statusCode).toBe(201)
+    const body = published.json() as { version: number; warnings?: string[] }
+    expect(body.version).toBe(2)
+    expect(body.warnings).toEqual([
+      'The example "Switzerland asks for a canton" held against version 1 and does not hold against version 2: "canton": expected to be visible, and it is hidden.',
+    ])
+    expect((await app.inject({ method: 'GET', url: '/f/checked-examples' })).json()).toMatchObject({ version: 2 })
+  })
+})

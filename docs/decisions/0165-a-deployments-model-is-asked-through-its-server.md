@@ -123,6 +123,10 @@ goes through the server to that provider's model, with the form. The admin mount
 pane, so it does not ask for examples; the route serves that kind for a host that does. When
 there is no model, nothing new is drawn.
 
+> **Later, and not a change to this decision:** the admin mounts the scenario pane over the
+> examples the server keeps, and drafts them through this route's `scenarios` kind —
+> [0166](0166-a-deployment-keeps-a-forms-examples-and-runs-them-at-publish.md).
+
 `builder-core` on the server is an edge [0008](0008-layered-packages.md) allows: it points
 from the server to an isomorphic package with no DOM and no Node types, as the edges to
 `core` and `spec` do. It costs the image one more workspace package, which

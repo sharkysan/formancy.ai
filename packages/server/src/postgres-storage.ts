@@ -3,7 +3,8 @@ import { drizzle } from 'drizzle-orm/postgres-js'
 import type postgres from 'postgres'
 import type { FormSchema } from '@formancy/spec'
 import type { AuditEntry, FileRecord, Role, Storage } from '@formancy/server-core'
-import { apiKeys, auditLog, spentChallenges, deliveries, drafts, files, forms, formVersions, submissions, webhooks } from './db.js'
+import { apiKeys, auditLog, auditRow, spentChallenges, deliveries, drafts, files, forms, formVersions, submissions, webhooks } from './db.js'
+import { examplesStorage } from './postgres-examples.js'
 import { users } from './db.js'
 
 /** The Storage port over Postgres — the mirror of server-core's in-memory one. */
@@ -11,6 +12,9 @@ export function createPostgresStorage(sql: postgres.Sql): Storage {
   const db = drizzle(sql)
 
   return {
+    // A form's examples, beside it: their own file, by the reason they change (0166).
+    ...examplesStorage(db),
+
     async getFormByPath(path) {
       const rows = await db.select().from(forms).where(eq(forms.path, path)).limit(1)
       const row = rows[0]
@@ -569,24 +573,5 @@ function toWebhookRecord(row: typeof webhooks.$inferSelect) {
     secret: row.secret,
     consecutiveFailures: row.consecutiveFailures,
     openedAt: row.openedAt === null ? null : row.openedAt.toISOString(),
-  }
-}
-
-/**
- * An entry as the table holds it.
- *
- * Absent and null are the same thing here, and the conversion is in one place
- * so two call sites cannot disagree about which they write.
- */
-function auditRow(entry: AuditEntry) {
-  return {
-    id: entry.id,
-    at: new Date(entry.at),
-    action: entry.action,
-    actorKind: entry.actorKind ?? null,
-    actorId: entry.actorId ?? null,
-    subject: entry.subject ?? null,
-    requestId: entry.requestId ?? null,
-    detail: entry.detail ?? null,
   }
 }

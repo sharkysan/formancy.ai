@@ -1,5 +1,6 @@
 import { jsonb, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import type postgres from 'postgres'
+import type { AuditEntry } from '@formancy/server-core'
 
 /**
  * The thin slice's tables. Three rules from the design spec are enforced HERE,
@@ -110,6 +111,39 @@ export const auditLog = pgTable('audit_log', {
   requestId: text('request_id'),
   detail: jsonb('detail'),
 })
+
+/**
+ * A form's examples and the sample they start from, one row per form, beside it and never in
+ * a version (0166). The examples change while the form does not, and a version cannot.
+ */
+export const formExamples = pgTable('form_examples', {
+  formId: uuid('form_id')
+    .primaryKey()
+    .references(() => forms.id),
+  scenarios: jsonb('scenarios').notNull(),
+  sample: jsonb('sample'),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull(),
+})
+
+/**
+ * An audit entry as the table holds it.
+ *
+ * Absent and null are the same thing here, and the conversion is in one place, beside the
+ * table, so the storage's call sites — a publish, a submission, a form's examples — cannot
+ * disagree about which they write.
+ */
+export function auditRow(entry: AuditEntry): typeof auditLog.$inferInsert {
+  return {
+    id: entry.id,
+    at: new Date(entry.at),
+    action: entry.action,
+    actorKind: entry.actorKind ?? null,
+    actorId: entry.actorId ?? null,
+    subject: entry.subject ?? null,
+    requestId: entry.requestId ?? null,
+    detail: entry.detail ?? null,
+  }
+}
 
 export const files = pgTable('files', {
   id: uuid('id').primaryKey(),
@@ -308,6 +342,17 @@ export async function bootstrapSchema(sql: postgres.Sql): Promise<void> {
       data jsonb NOT NULL,
       updated_at timestamptz NOT NULL,
       PRIMARY KEY (form_id, id)
+    )`
+  // A form's examples, beside it (0166). Added on start like every table here, so a
+  // database from before them gains the table and has none kept: every form starts with
+  // no examples, which is what it had. The primary key is the form, so there is one list
+  // per form and a write replaces it; the foreign key refuses a list for no form.
+  await sql`
+    CREATE TABLE IF NOT EXISTS form_examples (
+      form_id uuid PRIMARY KEY REFERENCES forms(id),
+      scenarios jsonb NOT NULL,
+      sample jsonb,
+      updated_at timestamptz NOT NULL
     )`
   // Immutability lives in the database, not in application discipline: a
   // published version row can never change, because every submission's audit

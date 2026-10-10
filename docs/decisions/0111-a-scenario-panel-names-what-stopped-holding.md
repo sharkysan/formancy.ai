@@ -106,6 +106,12 @@ only delete is a panel somebody has to fill from a text editor first.
 > judges each draft, and a person keeps them one at a time, into the host's list through
 > the same `onChange` — [0162](0162-an-example-is-drafted-from-what-the-author-said.md).
 > Composing one by hand, the editor this paragraph names, is still not here.
+>
+> **Later, and not a change to this decision:** on a deployment the host is formancy's own
+> server, so it keeps them — per form, with the sample they start from, beside the form and not
+> in a version — and the admin's panes take them from it. Publishing runs them, and the `201`
+> names each that stops holding — [0166](0166-a-deployment-keeps-a-forms-examples-and-runs-them-at-publish.md).
+> The panes still decide nothing about where they are kept.
 
 ## Alternatives considered
 

@@ -28,6 +28,9 @@ export const AUDIT_ACTIONS = [
   'auth.login.failed',
   'form.published',
   'form.access.changed',
+  // What a form is checked against changed: its examples, or the sample they start from.
+  // With counts, never the examples (0166).
+  'form.examples.changed',
   'submission.created',
   'submission.read',
   'submission.exported',

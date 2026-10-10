@@ -10,6 +10,32 @@ later.
 
 ## Unreleased
 
+**Added: a deployment keeps a form's examples, and publishing runs them.** Examples with their
+answers written down are the one check that tells a working condition from the one that was
+asked for, and the builders run them, review a model's edit against them and draft them — but a
+deployment kept none. Its admin drew no scenario pane, and publishing, the last moment before a
+version is frozen, ran nothing. Now the server keeps, per form, its examples and the fictional
+sample they start from, beside the form and never in a version, since a version is immutable and
+examples change while the form does not. `GET` and `PUT /f/:path/examples` read and replace
+them, for whoever may edit the form (`form.publish`), a change audited as
+`form.examples.changed` with counts and never the examples. A list with anything that is not an
+example keeps nothing and says which item and why: `readScenario`, new in
+`@formancy/builder-core`, decides what an example is for the server and for the drafting part's
+reading of a model's answer alike. **A publish runs them** against the version the form has and
+the one being published, as the server replays a submission and from the kept sample, and the
+`201`'s `warnings` names each that held and no longer does, with what was expected and what
+happened. It never refuses: a rule changed on purpose stops its old example holding, and the
+person decides. The admin draws the scenario pane over them in the build tab, saves a removal or
+a kept draft back one save after another, drafts through the server's model when it has one,
+and hands the same examples to the prompt pane's review
+([0166](docs/decisions/0166-a-deployment-keeps-a-forms-examples-and-runs-them-at-publish.md)).
+
+**Breaking, for anybody implementing `Storage` themselves: it gains `getExamples` and
+`keepExamples`.** The examples are kept where the publish can read them, and the publish reads
+them through the port; `keepExamples` writes the list and its audit row in one commit, as a
+publish does. `@formancy/server`'s PostgreSQL storage adds the `form_examples` table on start;
+there is nothing to run. What each method must do is in [`MIGRATIONS.md`](MIGRATIONS.md).
+
 **Added: on formancy.ai, the starter suggests what to ask a model.** A visitor could ask a
 model of their own for a change, the French the starter is missing, or examples, through the
 relay — and met an empty box, with nothing to say that adding a country is where a condition

@@ -54,6 +54,7 @@ export { unsafePatterns } from './redos.js'
 export type { UnsafePattern } from './redos.js'
 export type {
   DraftRecord,
+  ExamplesRecord,
   FileRecord,
   FormRecord,
   FormVersionRecord,
@@ -95,6 +96,9 @@ export type {
   ScreenOutcome,
 } from './uploads.js'
 export { publishForm } from './publishing.js'
+// A form's examples, kept beside it and run at publish (0166).
+export { keepExamples, readExamples } from './examples.js'
+export type { ExamplesOutcome, FormExamples, KeepExamplesOutcome } from './examples.js'
 // The deployment's model, asked under the briefing formancy writes for each kind of request (0165).
 export { completeBuilderRequest } from './model.js'
 export type {
