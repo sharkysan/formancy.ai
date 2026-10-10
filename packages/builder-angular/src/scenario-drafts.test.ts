@@ -74,6 +74,18 @@ const STARTS_ASKING: Scenario = {
   visible: { reason: false },
 }
 const SAMPLE = { kind: 'other' }
+/** `form` with a check that runs on the server alone: the one the publish gate runs. */
+const serverChecked = (): FormSchema => {
+  const next = JSON.parse(JSON.stringify(form)) as FormSchema
+  next.logic!.rules.push({ target: 'reason', kind: 'validate', cel: "reason != 'no'", runsOn: 'server' })
+  return next
+}
+/** Holds on the client, and fails on the server: what it says depends on the mode. */
+const SAYS_NO: Scenario = {
+  name: 'no is a reason',
+  changes: { kind: 'other', reason: 'no' },
+  valid: true,
+}
 
 const answering =
   (answer: string): AskModel =>
@@ -179,15 +191,26 @@ describe('drafting', () => {
     await waitFor(() => expect(within(list).getByText(/Does not hold against the form as it is/)).toBeTruthy())
   })
 
-  test('and is the verdict the list gives it once kept', async () => {
+  test.each([
+    { with: 'sample', document: form, example: STARTS_ASKING, given: { initialValue: SAMPLE } },
+    { with: 'mode', document: serverChecked(), example: SAYS_NO, given: { mode: 'server' } },
+  ])('and is the verdict the list gives it once kept, with the pane’s $with', async (one) => {
     /*
      * The draft is run alone, the list as a whole; both with the pane's own sample and
      * mode. If they ran differently, somebody would keep an example on one verdict and
-     * read another in the list. The host holds the list, so what is kept comes back in.
+     * read another in the list. Each example here fails only with what the pane is given:
+     * from the sample, or on the server, where a host's publish gate runs it — so a part
+     * that dropped either, or a pane that did not bind it, would show it holding, and the
+     * list would then say it does not. The host holds the list, so what is kept comes back in.
      */
     const user = userEvent.setup()
     const { fixture } = await mount(
-      { session: createBuilderSession(form), scenarios: [EXISTING], initialValue: SAMPLE, ask: answering(drafting(STARTS_ASKING)) },
+      {
+        session: createBuilderSession(one.document),
+        scenarios: [EXISTING],
+        ...one.given,
+        ask: answering(drafting(one.example)),
+      },
       (next) => fixture.componentRef.setInput('scenarios', next),
     )
 
@@ -198,13 +221,13 @@ describe('drafting', () => {
       .map((item) => item.textContent)
     expect(before.length).toBeGreaterThan(0)
 
-    await user.click(screen.getByRole('button', { name: `Keep ${STARTS_ASKING.name}` }))
+    await user.click(screen.getByRole('button', { name: `Keep ${one.example.name}` }))
 
     await waitFor(() => {
       const panel = document.querySelector('[data-formancy-part="scenario-list"]') as HTMLElement
       const entry = within(panel)
         .getAllByRole('listitem')
-        .find((item) => item.querySelector('strong')?.textContent === STARTS_ASKING.name)
+        .find((item) => item.querySelector('strong')?.textContent === one.example.name)
       expect(entry?.getAttribute('data-passed')).toBe('false')
       expect([...entry!.querySelectorAll('[data-about]')].map((item) => item.textContent)).toEqual(before)
     })

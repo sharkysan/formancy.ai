@@ -73,6 +73,18 @@ const STARTS_ASKING: Scenario = {
   visible: { reason: false },
 }
 const SAMPLE = { kind: 'other' }
+/** `form` with a check that runs on the server alone: the one the publish gate runs. */
+const serverChecked = (): FormSchema => {
+  const next = JSON.parse(JSON.stringify(form)) as FormSchema
+  next.logic!.rules.push({ target: 'reason', kind: 'validate', cel: "reason != 'no'", runsOn: 'server' })
+  return next
+}
+/** Holds on the client, and fails on the server: what it says depends on the mode. */
+const SAYS_NO: Scenario = {
+  name: 'no is a reason',
+  changes: { kind: 'other', reason: 'no' },
+  valid: true,
+}
 
 /** A model answering with `answer`, recording what it was asked. */
 function model(answer: string): { ask: AskModel; asked: AuthoringPrompt[] } {
@@ -100,10 +112,12 @@ function Host({
   session,
   ask,
   initialValue,
+  mode,
 }: {
   session: BuilderSession
   ask: AskModel
-  initialValue?: Readonly<Record<string, unknown>>
+  initialValue?: Readonly<Record<string, unknown>> | undefined
+  mode?: 'client' | 'server' | undefined
 }) {
   const [scenarios, setScenarios] = useState<readonly Scenario[]>([EXISTING])
   return (
@@ -113,6 +127,7 @@ function Host({
       onChange={setScenarios}
       ask={ask}
       initialValue={initialValue}
+      {...(mode === undefined ? {} : { mode })}
     />
   )
 }
@@ -196,15 +211,22 @@ describe('drafting', () => {
     await waitFor(() => expect(within(list).getByText(/Does not hold against the form as it is/)).toBeTruthy())
   })
 
-  test('and is the verdict the list gives it once kept', async () => {
+  test.each([
+    { with: 'sample', document: form, example: STARTS_ASKING, initialValue: SAMPLE, mode: undefined },
+    { with: 'mode', document: serverChecked(), example: SAYS_NO, initialValue: undefined, mode: 'server' as const },
+  ])('and is the verdict the list gives it once kept, with the pane’s $with', async (one) => {
     /*
      * The draft is run alone, the list as a whole; both with the pane's own sample and
      * mode. If they ran differently, somebody would keep an example on one verdict and
-     * read another in the list.
+     * read another in the list. Each example here fails only with what the pane is given:
+     * from the sample, or on the server, where a host's publish gate runs it — so a part
+     * that dropped either would show it holding, and the list would then say it does not.
      */
     const user = userEvent.setup()
-    const { ask } = model(drafting(STARTS_ASKING))
-    render(<Host session={createBuilderSession(form)} ask={ask} initialValue={SAMPLE} />)
+    const { ask } = model(drafting(one.example))
+    render(
+      <Host session={createBuilderSession(one.document)} ask={ask} initialValue={one.initialValue} mode={one.mode} />,
+    )
 
     const list = await draft(user)
     const before = within(list)
@@ -213,12 +235,12 @@ describe('drafting', () => {
       .map((item) => item.textContent)
     expect(before.length).toBeGreaterThan(0)
 
-    await user.click(screen.getByRole('button', { name: `Keep ${STARTS_ASKING.name}` }))
+    await user.click(screen.getByRole('button', { name: `Keep ${one.example.name}` }))
 
     const panel = document.querySelector('[data-formancy-part="scenario-list"]') as HTMLElement
     const entry = within(panel)
       .getAllByRole('listitem')
-      .find((item) => item.querySelector('strong')?.textContent === STARTS_ASKING.name)
+      .find((item) => item.querySelector('strong')?.textContent === one.example.name)
     expect(entry?.getAttribute('data-passed')).toBe('false')
     expect([...entry!.querySelectorAll('[data-about]')].map((item) => item.textContent)).toEqual(before)
   })
