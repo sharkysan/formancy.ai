@@ -4,25 +4,33 @@
 - **Date:** 2026-10-10
 - **Deciders:** Daniel Bacher
 - **Verified by:** `packages/server/src/server.integration.test.ts`, *what reaches the log*, on
-  real PostgreSQL — every route family is driven, a login that fails and one that works, a
-  user, an API key used to publish, a draft written and read, an upload, a challenge, a
-  submission, its listing, its export and its file, a model that answers 401, a body that does
-  not parse, a path no route has and a database error whose message quotes a planted id; the
-  values that must not be logged are derived from what each request carried and what the
-  server handed back, and none of them is in the log, which has one request line for every
-  request. Watched failing three ways: a body on the request line, an error's message
-  written, and the raw path written for the route. The same file holds an app given no log
-  to none, and the scanned-upload cases to `upload.refused`, `scanner.unreachable` without the
-  scanner's address, and `upload.unreleased`. `packages/server/src/server-log.test.ts` — the
-  request line, the route as written and never the path, the second line for a thrown error
-  with its kind and code and never its words, a refusal at `info`, the request id its audit
-  row carries, an audit row that cannot be written, the level, only listed fields each by its
-  kind, `unlisted`, identifier shapes, the database's notices, a child's bindings. The three
+  real PostgreSQL — every route family is driven, a login that fails and one that works, a user,
+  an API key used to publish, a draft written and read, an upload, a challenge, a submission,
+  its listing, its export and its file, a form's examples, a model that answers 401, a body that
+  does not parse, a path no route has, a URL the router cannot decode, a parameter too long for
+  it and a database error whose message quotes a planted id; the values that must not be logged
+  are derived from what each request carried and what the server handed back, and none of them
+  is in the log, which has one request line for every request, and every audit row of the swept
+  form names a request with a line — a publish's, an examples change's and a submission's on the
+  routes that wrote them. Watched failing three ways: a body on the request line, an error's
+  message written, and the raw path written for the route; and later with the two refusals
+  before routing left to Fastify, which had no line, and with the routes not passing
+  `request.id` to the use-cases, whose three rows joined to nothing. The same file holds an app
+  given no log to none, and the scanned-upload cases to `upload.refused`, `scanner.unreachable`
+  without the scanner's address, and `upload.unreleased`.
+  `packages/server/src/server-log.test.ts` — the request line, the route as written and never
+  the path, the second line for a thrown error with its kind and code and never its words, a
+  refusal at `info`, the request id every audit row carries — a login's, a publish's, an access
+  change's, an examples change's and a submission's, each on the route that wrote it — an audit
+  row that cannot be written, the level, a route's own 5xx at `error`, a refusal before routing,
+  a `503` while closing, a client that left, only listed fields each by its kind, `unlisted`,
+  identifier shapes, the database's notices, a child's bindings; `server-core`'s `audit.test.ts`
+  the three use-cases naming the request they are given, and none when given none. The three
   workers' tests plant a parameter in a failed pass and find a line without it;
   `log-settings.test.ts` holds the setting's refusals; `model-route.test.ts` the provider's
-  words kept out; `compose.test.ts` the variable passed through both compose files, which
-  failed until it was. `apps/docs/src/console.test.ts` still holds every library to no
-  console at all (0115).
+  words kept out; `compose.test.ts` the variable passed through both compose files, which failed
+  until it was. `apps/docs/src/console.test.ts` still holds every library to no console at all
+  (0115).
 
 ## Context
 
@@ -52,10 +60,20 @@ copied from whatever a call hands over.** `server/server-log.ts` is a logger of 
 Fastify's logger interface, and a `LogController` that writes Fastify's lines about a request
 through the same rule.
 
-- **One line per request**, when it has been answered: the time, the level, `event: "request"`,
-  Fastify's request id — which the request's audit row carries too — the method, the route **as
-  the route table writes it** (`/f/:path/drafts/:draftId`, never the path that was asked for),
-  the status and the milliseconds it took. A path no route has gets a line with no route.
+- **One line per request**, when it has been answered: the time, the level — `error` for a 5xx,
+  `info` otherwise — `event: "request"`, Fastify's request id, the method, the route **as the
+  route table writes it** (`/f/:path/drafts/:draftId`, never the path that was asked for), the
+  status and the milliseconds it took. A path no route has gets a line with no route. Every audit
+  row the request writes carries the same id: the three use-cases that write their row inside
+  their own transaction — a publish, a change of examples, a submission — are handed
+  `request.id` by the route, as the audit writer reads it for the rest.
+- **Including the requests Fastify's own line misses**, which it writes once an answer has been
+  sent: a URL it cannot decode or a parameter too long for the router, which it refuses before
+  routing — answered through `frameworkErrors`, so it gets a refusal's line and its own; a request
+  arriving while the server closes, refused with a `503` before routing, whose line has its id and
+  its status and nothing else, since nothing else reaches the line; and a request whose client
+  left before its answer was sent — its response closing before it finished — written as
+  `request.abandoned`, with its route and how long it waited and no status, since none arrived.
 - **One line per error that answered a request**: `request.refused` at `info` for a 4xx and
   `request.failed` at `error` for a 5xx, with what was thrown named by its **kind** — its class —
   and its **code**, the first one along its causes, so a Drizzle error keeps PostgreSQL's
@@ -113,7 +131,9 @@ error's code, in capitals and digits, would have it written. The sweep catches t
 it drives, and no further.
 
 **One line per request at `info` is a lot of lines.** A public form writes one for every draft
-save, every challenge and every submission. `warn` keeps only what went wrong.
+save, every challenge and every submission. `warn` keeps the requests answered with a 5xx, the
+errors that answered them and the events at `warn` and above — not a 4xx, which is the client's,
+and not a client that left, whose line is at `info`.
 
 **What this does not touch.** A `500` still answers its client with the error's message —
 Fastify's default error reply — so a database error's query and parameters reach whoever made
@@ -148,6 +168,13 @@ later route adds, without anybody deciding to log it.
 
 **Messages at `debug`.** A level that writes what a request carried is the one somebody turns on
 to debug an incident in production, and the log then holds the content. No level writes words.
+
+**Fastify's `onRequestAbort` hook for a client that left.** Fastify runs it only when Node marks
+the request aborted, which Node does not for a request whose body has been read: measured on
+Fastify 5.12.5 and Node 22, a `GET` whose client left ran the hook and a `POST` did not — and a
+model's turn, the slow request a person most often gives up on, is a `POST`. A response closing
+before it has finished catches both, and is what the model route already cancels a provider's
+call on.
 
 **Hooks — `onResponse` and `onError` — with `disableRequestLogging`.** The option is deprecated in
 the Fastify this server depends on, and `onError` runs before the error handler has set the

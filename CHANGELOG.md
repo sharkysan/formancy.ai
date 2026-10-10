@@ -18,10 +18,17 @@ background workers printed a failed pass's error whole, and a Drizzle query erro
 query followed by its parameters; postgres.js printed every database notice whole to standard
 output. Now the server writes a JSON line to standard output for every request — its method, its
 route as registered (`/f/:path/drafts/:draftId`, never the path that was asked for), its status,
-how long it took and its request id, which the request's audit row carries too — and one for every
-error that answered a request, `request.refused` for a 4xx and `request.failed` for a 5xx, naming
-what was thrown by its class and its code, never by its message or its stack. A route, a worker or
-a database notice adds a line only as an event from a fixed list. A line is assembled from a list
+how long it took and its request id — at `error` when the status is a 5xx, so `warn` keeps a
+route's own `502` or `503`, and one for every error that answered a request, `request.refused`
+for a 4xx and `request.failed` for a 5xx, naming what was thrown by its class and its code, never
+by its message or its stack. Every request includes the ones Fastify's own line misses: a URL it
+cannot decode and an over-long path parameter, refused before routing; a request arriving while
+the server closes, refused with a `503`; and a client that left before its answer was sent, a
+`request.abandoned` line with no status. Every audit row carries the id of the request that wrote
+it: `@formancy/server-core`'s `publishForm`, `keepExamples` and `createSubmission`, which write
+their row inside their own transaction, take an optional `requestId` for it, and without it a
+publish's and a submission's row named no request. A route, a worker or a database notice adds a
+line only as an event from a fixed list. A line is assembled from a list
 of fields, each kept only when its value is of that field's kind, so a body, a query string, a
 header (`Authorization`, cookies, the API key, the challenge, a draft's key), a file's name, an
 answer, a password or an email has nowhere to go — by construction, because a filter over text

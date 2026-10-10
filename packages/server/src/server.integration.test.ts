@@ -2257,10 +2257,11 @@ describe('what reaches the log', () => {
   test('nothing a request carries or a response hands out is written, on any route family', async () => {
     // The log's whole promise. Every route family is driven — a login that fails and one
     // that works, a user, an API key used for publishing, a draft, an upload, a challenge,
-    // a submission, the reads of it, the model — with values planted in what it sends, and
-    // a body that does not parse, a path no route has and a database error whose message
-    // quotes what was planted. A field the rule did not list, an error's words or a raw URL
-    // in any line fails it.
+    // a submission, the reads of it, a form's examples, the model — with values planted in
+    // what it sends, and a body that does not parse, a path no route has, a URL the router
+    // cannot decode, a parameter too long for it and a database error whose message quotes
+    // what was planted. A field the rule did not list, an error's words or a raw URL in any
+    // line fails it, and so does a request with no line.
     const written: string[] = []
     const providerWords = `invalid x-api-key for planted-org-${randomUUID()}`
     const swept = await createApp(createPostgresStorage(sql), {
@@ -2319,6 +2320,7 @@ describe('what reaches the log', () => {
       query: plant('query'),
       prompt: plant('prompt'),
     }
+    const path = plant('path')
 
     try {
       const admin = (
@@ -2348,7 +2350,6 @@ describe('what reaches the log', () => {
       carry(key.secret)
       const withKey = { 'x-formancy-api-key': key.secret }
 
-      const path = plant('path')
       const published = await send({
         method: 'POST',
         url: '/forms',
@@ -2423,6 +2424,22 @@ describe('what reaches the log', () => {
       expect(submitted.statusCode).toBe(201)
       carry((submitted.json() as { id: string }).id)
 
+      // What a form is checked against: an example's answers are fictional, and still the
+      // shape of an answer.
+      expect(
+        (
+          await send({
+            method: 'PUT',
+            url: `/f/${path}/examples`,
+            headers: withKey,
+            payload: {
+              scenarios: [{ name: plant('example'), changes: { note: planted.answer }, valid: true }],
+              sample: { email: planted.email },
+            },
+          })
+        ).statusCode,
+      ).toBe(200)
+
       for (const url of [
         `/f/${path}/submissions`,
         `/f/${path}/submissions/export.csv`,
@@ -2465,6 +2482,10 @@ describe('what reaches the log', () => {
       ).toBe(500)
       // A path no route has, which Fastify's own line names in full.
       expect((await send({ method: 'GET', url: `/nowhere/${plant('segment')}?q=${planted.query}` })).statusCode).toBe(404)
+      // A URL the router cannot decode, and a parameter longer than it takes: both refused by
+      // Fastify before any route is found, and both once left no line at all.
+      expect((await send({ method: 'GET', url: `/f/${plant('bad-url')}%E0%A4%A` })).statusCode).toBe(400)
+      expect((await send({ method: 'GET', url: `/f/${plant('long-path')}${'a'.repeat(200)}` })).statusCode).toBe(414)
     } finally {
       await swept.close()
     }
@@ -2476,6 +2497,24 @@ describe('what reaches the log', () => {
       expect.arrayContaining(['request.refused', 'request.failed', 'model.unreachable']),
     )
     for (const line of lines) for (const field of Object.keys(line)) expect(LOG_FIELDS).toContain(field)
+
+    // Every audit row of the swept form names a request the log has a line for — the three a
+    // use-case writes inside its transaction among them, on the routes that wrote them. Those
+    // three named no request at all, so a publish or a submission could not be joined to its line.
+    const requests = lines.filter((line) => line['event'] === 'request')
+    const rows = (await createPostgresStorage(sql).listAudit(100_000)).filter((row) => row.subject === path)
+    const routeOf = (row: { requestId?: string }): unknown => requests.find((line) => line['reqId'] === row.requestId)?.['route']
+    expect(
+      rows
+        .filter((row) => ['form.published', 'form.examples.changed', 'submission.created'].includes(row.action))
+        .map((row) => [row.action, routeOf(row)])
+        .sort(),
+    ).toEqual([
+      ['form.examples.changed', '/f/:path/examples'],
+      ['form.published', '/forms'],
+      ['submission.created', '/f/:path/submissions'],
+    ])
+    for (const row of rows) expect(routeOf(row), row.action).toEqual(expect.any(String))
 
     // What was carried is what the requests carried, so this is the check that each kind of
     // value the sweep claims to plant was actually sent.

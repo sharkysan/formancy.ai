@@ -31,8 +31,10 @@ app.post('/forms', { preHandler: requires('form.publish') }, async (request, rep
     schema: body.schema,
     // Passed in so the audit row can be written INSIDE the publish's
     // transaction. Appended here afterwards, it would record a publish that
-    // half-applied as having happened.
+    // half-applied as having happened. The request's id goes with it, so that
+    // row names the request log's line for this request (0168).
     actor: (request as FastifyRequest & { actor: Actor }).actor,
+    requestId: request.id,
     ...(typeof basedOn === 'string' && basedOn !== '' ? { basedOnSchemaHash: basedOn } : {}),
   })
   if (!outcome.ok) {

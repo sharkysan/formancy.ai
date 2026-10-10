@@ -622,33 +622,44 @@ name. A database error's message is the failing query followed by its parameters
 
 *Constraint:* **the server keeps a log, and a line is built from a list of fields**
 ([0168](../decisions/0168-the-log-is-built-from-a-list-of-fields.md)). `@formancy/server`'s
-process writes a JSON line to standard output for every request — its method, its route as
-the route table writes it (`/f/:path/drafts/:draftId`, never the path that was asked for), its
-status, how long it took and its request id, which the request's audit row carries too — and
-one for every error that answered a request, naming what was thrown by its class and its code,
-never by its message or its stack. Anything else a route or a background worker writes is an
-event from a fixed list. A line is made from the listed fields only, each kept only when its
-value is of that field's kind, and the words of a call are never written; so a body, a query
-string, a header (`Authorization`, a cookie, the API key, the challenge, a draft's key), a
-file's name, an answer, a password or an email has no field to go in. The three background
-workers' failures go through the same rule, and so do the database's notices. On by default at
-`info`; `FORMANCY_LOG_LEVEL` takes pino's level names or `off`, and anything else stops the
-server at startup. `createApp` given no log keeps none, so a host embedding it decides, and the
-libraries still write nothing
+process writes a JSON line to standard output for every request — its method, its route as the
+route table writes it (`/f/:path/drafts/:draftId`, never the path that was asked for), its
+status, how long it took and its request id, at `error` when the status is a 5xx — and one for
+every error that answered a request, naming what was thrown by its class and its code, never by
+its message or its stack. Every request includes the ones Fastify answers past its own request
+line: a URL it cannot decode and an over-long path parameter, refused before routing; a request
+arriving while the server closes, refused with a `503` and written with only its id and status;
+and a request whose client left before its answer was sent, written as `request.abandoned` with
+no status. Every audit row a request writes carries its request id, the rows a publish, a
+change of examples and a submission write inside their own transaction included. Anything else
+a route or a background worker writes is an event from a fixed list. A line is made from the
+listed fields only, each kept only when its value is of that field's kind, and the words of a
+call are never written; so a body, a query string, a header (`Authorization`, a cookie, the API
+key, the challenge, a draft's key), a file's name, an answer, a password or an email has no
+field to go in. The three background workers' failures go through the same rule, and so do the
+database's notices. On by default at `info`; `FORMANCY_LOG_LEVEL` takes pino's level names or
+`off`, and anything else stops the server at startup. `createApp` given no log keeps none, so a
+host embedding it decides, and the libraries still write nothing
 ([0115](../decisions/0115-a-library-writes-nothing-to-its-hosts-console.md)).
 
 Held by `packages/server/src/server.integration.test.ts`, *what reaches the log*, on real
 PostgreSQL: every route family is driven — a login that fails and one that works, a user, an
 API key used to publish, a draft written and read, an upload, a challenge, a submission, its
-listing, export and file, a model that answers `401` — with values planted in what each request
-sends, and a body that does not parse, a path no route has and a database error whose message
-quotes a planted id. What must not be logged is derived from what the requests carried and what
-the server handed back, and none of it is in the log, which has a line for every request. The
-sweep was watched failing three ways: a body on the request line, an error's message written,
-and the raw path written for the route. `server-log.test.ts` holds the line and each part of the
-rule; the three workers' tests plant a parameter in a failed pass and find a line without it;
-the scanned-upload cases find no scanner address in the log; `log-settings.test.ts` holds the
-setting's refusals.
+listing, export and file, a form's examples, a model that answers `401` — with values planted
+in what each request sends, and a body that does not parse, a path no route has, a URL the
+router cannot decode, a parameter too long for it and a database error whose message quotes a
+planted id. What must not be logged is derived from what the requests carried and what the
+server handed back, and none of it is in the log, which has a line for every request; and every
+audit row of the swept form names a request with a line, the three written inside a
+transaction on the routes that wrote them. The sweep was watched failing three ways: a body on
+the request line, an error's message written, and the raw path written for the route — and
+then twice more, with the refusals before routing left to Fastify, and with the routes not
+passing the request's id to the use-cases. `server-log.test.ts` holds the line and each part of
+the rule, a route's own 5xx at `error`, the `503` while closing and a client that left, the
+last two over a real socket; `server-core`'s `audit.test.ts` holds the three use-cases to the
+request id they are given; the three workers' tests plant a parameter in a failed pass and find
+a line without it; the scanned-upload cases find no scanner address in the log;
+`log-settings.test.ts` holds the setting's refusals.
 
 *Corrected 2026-10-10.* This entry said **there is no request log**, which held until this
 change: the integration test that asserted the logger was off is replaced by the sweep above.
@@ -687,8 +698,11 @@ that put an answer in its error's code, in capitals and digits, would have it wr
 sweep catches that on the routes it drives and no further. **A `500` still tells its client what
 was thrown**: Fastify's default error reply carries the error's message — for a database error,
 the query and its parameters — to whoever made the request (`server.integration.test.ts`
-asserts a disk's `ENOSPC` reaching the client), which this change does not touch. An exception
-nothing catches is printed by Node, message and stack, outside the rule. And a deployment that
+asserts a disk's `ENOSPC` reaching the client), which this change does not touch. **Two kinds of
+line say less than the rest:** a request refused while the server closes is refused before it is
+routed, and its line has no method and no route; one whose client left has no status, because
+its answer was never sent. At `warn` and above neither a 4xx nor a client that left is written.
+An exception nothing catches is printed by Node, message and stack, outside the rule. And a deployment that
 forwards standard output somewhere sends it every line above: at `info`, one per request, a
 draft's every save included.
 

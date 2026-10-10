@@ -549,7 +549,6 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
     // invalid credential is treated as no credential rather than as an error:
     // this route's job is to accept submissions, not to adjudicate logins.
     const actor = await actorOf(request)
-    const origin = request.headers.origin
 
     // Before the engine runs, and only for a visitor who is not signed in.
     // Somebody with a session has already paid a cost the challenge is a
@@ -564,9 +563,10 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
     const outcome = await createSubmission(deps, {
       path,
       declaredSchemaHash,
+      requestId: request.id,
       data: request.body ?? {},
       actor: actor === undefined ? 'anonymous' : 'authenticated',
-      ...(typeof origin === 'string' ? { origin } : {}),
+      ...(typeof request.headers.origin === 'string' ? { origin: request.headers.origin } : {}),
     })
 
     if (outcome.ok) return reply.code(201).send({ id: outcome.id, data: outcome.canonicalData })

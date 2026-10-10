@@ -555,8 +555,9 @@ not.
 
 The log is a module of its own, because what it may say is one decision
 ([0168](../decisions/0168-the-log-is-built-from-a-list-of-fields.md)). `server/server-log.ts`
-holds the list of fields and events, the logger Fastify is handed and the `LogController` that
-writes Fastify's own lines about a request through it; `server/log-settings.ts` reads
+holds the list of fields and events, the logger Fastify is handed, the `LogController` that
+writes Fastify's own lines about a request through it, and the `frameworkErrors` handler for what
+Fastify refuses before routing; `server/log-settings.ts` reads
 `FORMANCY_LOG_LEVEL`, for the reason `trust-proxy.ts` exists. Writing an audit row left `app.ts`
 for `server/audit-trail.ts` to make room, its failure being the log's business.
 

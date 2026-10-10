@@ -1,8 +1,12 @@
+import { request as httpRequest } from 'node:http'
+import { connect } from 'node:net'
+import type { AddressInfo } from 'node:net'
 import { afterEach, describe, expect, test } from 'vitest'
 import type { FastifyInstance } from 'fastify'
 import { createMemoryStorage } from '@formancy/server-core'
-import type { Storage } from '@formancy/server-core'
-import { createApp } from './app.js'
+import type { AuditAction, Storage } from '@formancy/server-core'
+import { createApp, SCHEMA_HASH_HEADER } from './app.js'
+import type { AppOptions } from './app.js'
 import { createServerLog, databaseNotices, LOG_FIELDS } from './server-log.js'
 import type { LogLevel, LogSink } from './server-log.js'
 
@@ -34,13 +38,34 @@ afterEach(async () => {
   app = undefined
 })
 
-async function serve(level: LogLevel, storage: Storage = createMemoryStorage()) {
+async function serve(level: LogLevel, storage: Storage = createMemoryStorage(), options: Partial<AppOptions> = {}) {
   const log = capture()
   app = await createApp(storage, {
     authSecret: 'a-test-secret-that-is-long-enough-to-sign',
+    ...options,
     log: { sink: log.sink, level },
   })
   return { app, log }
+}
+
+/** A storage whose form lookup waits until it is let go, and says when it has started waiting. */
+function holding(storage: Storage = createMemoryStorage()): { storage: Storage; asked: Promise<void>; release: () => void } {
+  let entered = (): void => undefined
+  const asked = new Promise<void>((resolve) => (entered = resolve))
+  let release = (): void => undefined
+  const released = new Promise<void>((resolve) => (release = resolve))
+  return {
+    asked,
+    release,
+    storage: {
+      ...storage,
+      getFormByPath: async (path) => {
+        entered()
+        await released
+        return storage.getFormByPath(path)
+      },
+    },
+  }
 }
 
 /** What a Drizzle query error looks like: its message is the query and its parameters. */
@@ -157,6 +182,69 @@ describe('a request', () => {
     expect(log.lines()[0]?.['reqId']).toBe(row?.requestId)
   })
 
+  test('has the id its audit row has for a publish, a change of examples and a submission too', async () => {
+    // Those three rows are written by server-core inside the transaction of what they record,
+    // not by the route, and they had no request id: the audit row of a publish or of a
+    // submission — the two an operator most needs to join to a line — named no request,
+    // while every row the route wrote did. Each is driven here beside rows the route writes.
+    const storage = createMemoryStorage()
+    const { app, log } = await serve('info', storage, { bootstrapAdmin: { email: 'root@test.ch', password: 'root-password-1' } })
+    const { token } = (
+      await app.inject({ method: 'POST', url: '/auth/login', payload: { email: 'root@test.ch', password: 'root-password-1' } })
+    ).json() as { token: string }
+    const asRoot = { authorization: `Bearer ${token}` }
+    const published = await app.inject({
+      method: 'POST',
+      url: '/forms',
+      headers: asRoot,
+      payload: {
+        path: 'contact',
+        schema: { specVersion: '2', id: 'contact', title: 'Contact', model: { fields: [{ key: 'email', type: 'text', label: 'Email' }] } },
+      },
+    })
+    expect(published.statusCode).toBe(201)
+    const { schemaHash } = published.json() as { schemaHash: string }
+    expect(
+      (await app.inject({ method: 'PUT', url: '/f/contact/access', headers: asRoot, payload: { submit: 'public' } })).statusCode,
+    ).toBe(204)
+    expect(
+      (
+        await app.inject({
+          method: 'PUT',
+          url: '/f/contact/examples',
+          headers: asRoot,
+          payload: { scenarios: [{ name: 'Anybody may write', changes: { email: 'a@example.ch' }, valid: true }] },
+        })
+      ).statusCode,
+    ).toBe(200)
+    expect(
+      (
+        await app.inject({
+          method: 'POST',
+          url: '/f/contact/submissions',
+          headers: { [SCHEMA_HASH_HEADER]: schemaHash },
+          payload: { email: 'a@example.ch' },
+        })
+      ).statusCode,
+    ).toBe(201)
+
+    // Which route writes which row: the join is right only if it lands on that route's line.
+    const writtenBy: Partial<Record<AuditAction, string>> = {
+      'auth.login': '/auth/login',
+      'form.published': '/forms',
+      'form.access.changed': '/f/:path/access',
+      'form.examples.changed': '/f/:path/examples',
+      'submission.created': '/f/:path/submissions',
+    }
+    const requests = log.lines().filter((line) => line['event'] === 'request')
+    const rows = await storage.listAudit(50)
+    expect(rows.map((row) => row.action).sort()).toEqual(Object.keys(writtenBy).sort())
+    for (const row of rows) {
+      const line = requests.find((candidate) => row.requestId !== undefined && candidate['reqId'] === row.requestId)
+      expect({ action: row.action, route: line?.['route'] }).toEqual({ action: row.action, route: writtenBy[row.action] })
+    }
+  })
+
   test('whose audit row could not be written says so, by the row’s action and never its subject', async () => {
     // The audit writer promised to say so "loudly" while the server had no log to say it in.
     // The subject of a failed login is the email somebody tried, and a database error about
@@ -204,7 +292,8 @@ describe('a request', () => {
 
   test('below the level set is not written, and an error above it is', async () => {
     // A level that did not filter would be a setting that reads as configured and does
-    // nothing; one that filtered errors out would hide the lines it exists for.
+    // nothing; one that filtered errors out would hide the lines it exists for. The `500`'s
+    // own request line is a failure too, so it stays with its error.
     const storage: Storage = {
       ...createMemoryStorage(),
       getFormByPath: () => Promise.reject(new DrizzleQueryError('planted-param-1a2b')),
@@ -213,8 +302,169 @@ describe('a request', () => {
     await app.inject({ method: 'GET', url: '/nowhere' })
     await app.inject({ method: 'GET', url: '/f/contact' })
 
-    expect(log.lines()).toEqual([expect.objectContaining({ level: 'error', event: 'request.failed' })])
+    expect(log.lines()).toEqual([
+      expect.objectContaining({ level: 'error', event: 'request.failed', status: 500 }),
+      expect.objectContaining({ level: 'error', event: 'request', status: 500 }),
+    ])
   })
+
+  test('answered with a 5xx by its own route is written at error, where a level for failures keeps it', async () => {
+    // A route that answers a 5xx itself — no file store, a list that could not vouch for an
+    // answer, a model's answer cut off — throws nothing, so no `request.failed` is written.
+    // With the request line at `info` whatever its status, `warn` and `error`, the levels the
+    // guide offers for "only what went wrong", kept none of them.
+    const { app, log } = await serve('warn')
+    await app.inject({ method: 'GET', url: '/nowhere' })
+    const refused = await app.inject({
+      method: 'POST',
+      url: '/f/contact/files',
+      payload: { field: 'evidence', name: 'planted-name-6e1f.pdf', size: 10, contentType: 'application/pdf' },
+    })
+    expect(refused.statusCode).toBe(501)
+
+    expect(log.lines()).toEqual([
+      {
+        time: expect.any(String),
+        level: 'error',
+        event: 'request',
+        reqId: expect.stringMatching(/^req-/),
+        method: 'POST',
+        route: '/f/:path/files',
+        status: 501,
+        ms: expect.any(Number),
+      },
+    ])
+    expect(log.text()).not.toContain('planted')
+  })
+})
+
+describe('a request Fastify answers before a route does', () => {
+  test('because its URL cannot be read, or a parameter is too long, is a line — never with what it asked for', async () => {
+    // Fastify answers both by hand before any route is found, past the request line, so a log
+    // of "every request" left no trace of a malformed URL or an over-long path: what a scanner
+    // probing the server sends first. The refusal is named by its code, as a body that does
+    // not parse is, and the URL — which is the asker's — is not written.
+    const { app, log } = await serve('info')
+    const malformed = await app.inject({ method: 'GET', url: '/f/planted-path-4c2d%E0%A4%A' })
+    expect(malformed.statusCode).toBe(400)
+    expect(malformed.json()).toMatchObject({ code: 'FST_ERR_BAD_URL' })
+    const tooLong = await app.inject({ method: 'GET', url: `/f/planted-path-${'a'.repeat(200)}` })
+    expect(tooLong.statusCode).toBe(414)
+    expect(tooLong.json()).toMatchObject({ code: 'FST_ERR_MAX_PARAM_LENGTH' })
+
+    const refusal = (status: number, code: string) => [
+      {
+        time: expect.any(String),
+        level: 'info',
+        event: 'request.refused',
+        reqId: expect.stringMatching(/^req-/),
+        method: 'GET',
+        status,
+        kind: 'FastifyError',
+        code,
+      },
+      {
+        time: expect.any(String),
+        level: 'info',
+        event: 'request',
+        reqId: expect.stringMatching(/^req-/),
+        method: 'GET',
+        status,
+        ms: expect.any(Number),
+      },
+    ]
+    expect(log.lines()).toEqual([...refusal(400, 'FST_ERR_BAD_URL'), ...refusal(414, 'FST_ERR_MAX_PARAM_LENGTH')])
+    expect(log.text()).not.toContain('planted')
+  })
+
+  test('because the server is closing is a line with its 503, at error', async () => {
+    // A request that arrives on an open connection while the server shuts down is refused
+    // with a 503 before it is routed, and Fastify says so at `info` with words and no event —
+    // which this log drops. A deployment whose proxy still sends traffic during a restart
+    // then had refusals the log never showed.
+    const held = holding()
+    const { app: server, log } = await serve('info', held.storage)
+    await server.listen({ port: 0, host: '127.0.0.1' })
+    const { port } = server.server.address() as AddressInfo
+    const socket = connect(port, '127.0.0.1')
+    socket.on('error', () => undefined)
+    let received = ''
+    socket.on('data', (chunk: Buffer) => (received += chunk.toString('latin1')))
+    let arrived = 0
+    server.server.on('request', () => (arrived += 1))
+
+    // The first request holds the connection open while the server begins to close.
+    socket.write('GET /f/contact HTTP/1.1\r\nHost: test\r\n\r\n')
+    await held.asked
+    const closed = server.close()
+    try {
+      await expect.poll(() => server.server.listening, { timeout: 2_000 }).toBe(false)
+      socket.write('GET /f/planted-path-91be HTTP/1.1\r\nHost: test\r\n\r\n')
+      // Let the first go only once the second has arrived, so it is answered by the closing
+      // server rather than finding the connection already ended.
+      await expect.poll(() => arrived, { timeout: 2_000 }).toBe(2)
+      held.release()
+      await expect.poll(() => received.includes(' 503 '), { timeout: 2_000 }).toBe(true)
+    } finally {
+      // Released and closed whatever happened, or the server waits on this connection forever.
+      held.release()
+      socket.destroy()
+      await closed
+      // Closed here, so the hook after each case has nothing left to close.
+      app = undefined
+    }
+
+    // The second is refused as it arrives, before the first is answered; the first is then
+    // written as any request is, and not taken for a client that left — on a real socket,
+    // every response closes.
+    expect(log.lines()).toEqual([
+      {
+        time: expect.any(String),
+        level: 'error',
+        event: 'request',
+        reqId: expect.stringMatching(/^req-/),
+        status: 503,
+      },
+      expect.objectContaining({ level: 'info', event: 'request', method: 'GET', route: '/f/:path', status: 404 }),
+    ])
+    expect(log.text()).not.toContain('planted')
+  }, 10_000)
+})
+
+describe('a request whose client left before it was answered', () => {
+  test('is a line saying so, on its route, with no status, since nobody received one', async () => {
+    // Fastify writes its request line when the answer has been sent, and an answer nobody
+    // stayed for is never sent: a browser that gave up on a slow route — a model's turn, a
+    // submission waiting on a list — left no line at all, though that is the request an
+    // operator looking into slowness most needs. The route answering afterwards, into a
+    // connection that has gone, adds nothing.
+    const held = holding()
+    const { app, log } = await serve('info', held.storage)
+    await app.listen({ port: 0, host: '127.0.0.1' })
+    const { port } = app.server.address() as AddressInfo
+    const client = httpRequest({ host: '127.0.0.1', port, method: 'GET', path: '/f/planted-path-5d0e?key=planted-query-2b7c' })
+    client.on('error', () => undefined)
+    client.end()
+    await held.asked
+
+    client.destroy()
+    await expect.poll(() => log.lines().length, { timeout: 2_000 }).toBe(1)
+    held.release()
+    await new Promise((resolve) => setTimeout(resolve, 100))
+
+    expect(log.lines()).toEqual([
+      {
+        time: expect.any(String),
+        level: 'info',
+        event: 'request.abandoned',
+        reqId: expect.stringMatching(/^req-/),
+        method: 'GET',
+        route: '/f/:path',
+        ms: expect.any(Number),
+      },
+    ])
+    expect(log.text()).not.toContain('planted')
+  }, 10_000)
 })
 
 describe('what a line may hold', () => {

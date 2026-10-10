@@ -4,8 +4,8 @@ import type { FastifyBaseLogger, FastifyReply, FastifyRequest, FastifyServerOpti
 import { AUDIT_ACTIONS } from '@formancy/server-core'
 
 /**
- * The server's log: a JSON line for every request, one for every error, and one for each
- * thing a route or a background worker has to say
+ * The server's log: a JSON line for every request, one for every error that answered one, and
+ * one for each thing a route or a background worker has to say
  * ([0168](../../../docs/decisions/0168-the-log-is-built-from-a-list-of-fields.md)).
  *
  * **What keeps everything else out is construction, not a filter over text.** A line is made
@@ -41,8 +41,10 @@ export interface ServerLogSettings {
 
 /** What a line can say happened. Anything else is `unlisted`, or not written. */
 export const LOG_EVENTS = [
-  // Every request, once, when it has been answered.
+  // Every request, once, when it has been answered — at `error` when the answer is a 5xx.
   'request',
+  // A request whose client left before its answer was sent: no status, since none arrived.
+  'request.abandoned',
   // An error that answered a request: one the client caused (4xx), one the server did (5xx).
   'request.refused',
   'request.failed',
@@ -74,7 +76,8 @@ const KINDS = {
   level: (value: unknown) => (LOG_LEVELS as readonly unknown[]).includes(value),
   event: (value: unknown) => (LOG_EVENTS as readonly unknown[]).includes(value),
   // Fastify's own id, `req-` and a counter; never taken from a header, which Fastify 5 does
-  // only when told to. The audit row of the same request carries it too.
+  // only when told to. Every audit row a request writes carries it too, the rows written in
+  // a publish's, an examples change's and a submission's transaction included.
   reqId: (value: unknown) => typeof value === 'string' && /^[\w-]{1,64}$/.test(value),
   method: (value: unknown) => typeof value === 'string' && METHODS.includes(value),
   // A route as the route table writes it, `/f/:path/drafts/:draftId`: never the path asked
@@ -122,7 +125,8 @@ export function createServerLog(sink: LogSink, level: LogLevel): FastifyBaseLogg
 
 /**
  * Fastify's logger interface over the rule: each call contributes its event, its error, and
- * the code, action and upstream status a caller may name, and nothing else it was handed. A
+ * the status, code, action and upstream status a caller may name, and nothing else it was
+ * handed. A
  * child keeps the request id it is bound to, which is how Fastify gives a request's lines its
  * id, and nothing else bound beside it.
  */
@@ -139,6 +143,7 @@ function logger(write: (line: Line) => void, level: LogLevel, reqId: unknown): F
         level: lineLevel,
         event: event ?? 'unlisted',
         reqId,
+        status: given['status'],
         code: given['code'],
         ...described(given['err']),
         action: given['action'],
@@ -165,6 +170,13 @@ function logger(write: (line: Line) => void, level: LogLevel, reqId: unknown): F
  * One line when a request is answered, not one when it arrives as well — half the lines,
  * and the one that has the status. A route nobody registered gets no line of its own: its
  * request line says 404 and names no route.
+ *
+ * **Every request, including the ones Fastify answers past its own request line.** Fastify
+ * writes that line when an answer has been sent, so three kinds left none: a request whose
+ * client went away first, whose answer is never sent; one refused for an unreadable URL or an
+ * over-long parameter, answered by hand before routing unless `frameworkErrors` is set; and
+ * one that arrives while the server closes, refused with a `503` before routing and said at
+ * `info` in words, which this log drops. Each is written here as well.
  */
 class RequestLines extends LogController {
   readonly #write: (line: Line) => void
@@ -174,19 +186,48 @@ class RequestLines extends LogController {
     this.#write = write
   }
 
-  override incomingRequest(): void {}
+  /**
+   * Nothing written on arrival; but a response that closes before it has finished sending is
+   * a client that left. Read from the response's own `finish`, which a socket and an injected
+   * request both emit, rather than `writableFinished`, which an injected one never sets.
+   */
+  override incomingRequest(request: FastifyRequest, reply: FastifyReply): void {
+    let sent = false
+    reply.raw.once('finish', () => (sent = true))
+    reply.raw.once('close', () => {
+      if (sent) return
+      this.#write({ level: 'info', event: 'request.abandoned', ...where(request), ms: Math.round(reply.elapsedTime) })
+    })
+  }
 
   override routeNotFound(): void {}
 
+  /** At `error` for a 5xx, thrown or answered by a route, so a level kept for failures keeps it. */
   override requestCompleted(error: Error | null | undefined, request: FastifyRequest, reply: FastifyReply): void {
     this.#write({
-      level: error == null ? 'info' : 'error',
+      level: error != null || reply.statusCode >= 500 ? 'error' : 'info',
       event: 'request',
       ...where(request),
       status: reply.statusCode,
       ms: Math.round(reply.elapsedTime),
       ...described(error),
     })
+  }
+
+  /**
+   * A request refused before it was routed, because its URL cannot be decoded or a parameter
+   * is longer than the router takes: answered through the reply, so the error handler names it
+   * as it names any refusal, and its request line written once the answer has gone. Fastify
+   * calls this `frameworkErrors` and starts no clock for it, so `ms` is 0.
+   */
+  readonly refusedBeforeRouting = (error: Error, request: FastifyRequest, reply: FastifyReply): void => {
+    reply.raw.once('finish', () => this.requestCompleted(null, request, reply))
+    void reply.send(error)
+  }
+
+  /** Words and no event from Fastify, so written here: the `503` and the request's id. */
+  override serviceUnavailable(logger: FastifyBaseLogger): void {
+    logger.error({ event: 'request', status: 503 })
   }
 
   override defaultErrorLog(error: Error, request: FastifyRequest, reply: FastifyReply): void {
@@ -208,13 +249,16 @@ function where(request: FastifyRequest): { reqId: string; method: string; route:
 /**
  * Fastify's options for a server that keeps this log, or none for one that keeps no log —
  * `createApp` given no `log`, which is how a host embedding it keeps its own output (0115).
+ * Without one, Fastify answers what it refuses before routing by hand, as it always has; with
+ * one, through the reply so the refusal can be written — the same status and the same fields.
  */
 export function serverLogOptions(
   log: ServerLogSettings | undefined,
-): Pick<FastifyServerOptions, 'loggerInstance' | 'logController'> {
+): Pick<FastifyServerOptions, 'loggerInstance' | 'logController' | 'frameworkErrors'> {
   if (log === undefined) return {}
   const write = written(log.sink, log.level)
-  return { loggerInstance: logger(write, log.level, undefined), logController: new RequestLines(write) }
+  const lines = new RequestLines(write)
+  return { loggerInstance: logger(write, log.level, undefined), logController: lines, frameworkErrors: lines.refusedBeforeRouting }
 }
 
 /**

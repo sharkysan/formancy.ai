@@ -92,7 +92,7 @@ wrong database — a confusing ten minutes. The compose file maps 5439 instead.
 | `FORMANCY_TRUST_PROXY` | behind a proxy | The reverse proxies whose `X-Forwarded-For` names the client: an address, or a comma-separated list of addresses and CIDR ranges. Unset trusts none, so behind a proxy every respondent shares one rate-limit budget. Name the proxy's own address, not the compose network's range: the range holds the gateway Docker forwards published ports from — see [behind a reverse proxy](#behind-a-reverse-proxy). |
 | `FORMANCY_MODEL_PROVIDER` | no | `anthropic`, `openai` or `xai`: a model for the builders, asked through this server so its key never reaches a browser. With it, the two below are required; without it, neither may be set, and a half configuration stops the server at startup. See [a model for the builders](#a-model-for-the-builders). |
 | `FORMANCY_MODEL_API_KEY` / `FORMANCY_MODEL` | with the provider | The provider's key, and the model as the provider's documentation names it. There is no default model. |
-| `FORMANCY_LOG_LEVEL` | no | How much the [request log](#the-request-log) writes: `info` by default, which is every request; `warn` or `error` for only what went wrong; `off` for nothing. `fatal`, `debug` and `trace` are the other names, pino's. Anything else, `INFO` included, stops the server at startup. |
+| `FORMANCY_LOG_LEVEL` | no | How much the [request log](#the-request-log) writes: `info` by default, which is every request; `warn` or `error` for the requests answered with a 5xx, the errors that answered them and the events at that level; `off` for nothing. `fatal`, `debug` and `trace` are the other names, pino's. Anything else, `INFO` included, stops the server at startup. |
 | `FORMANCY_WEBHOOK_ALLOW_HTTP` / `..._ALLOW_PRIVATE` | no | Opt out of the webhook SSRF guard, per deployment and never per form. `ALLOW_PRIVATE` gives it up entirely. |
 | `PORT` / `HOST` | no | Defaults `4380` / `0.0.0.0` |
 
@@ -504,9 +504,9 @@ server looks for every file in the one store it has.
 
 ## The request log
 
-The server writes a JSON line to standard output for every request, once it has been
-answered, and one for every error that answered a request. `docker compose logs server`
-reads them.
+The server writes a JSON line to standard output for every request — once it has been
+answered, or once its client has gone without waiting for the answer — and one for every
+error that answered a request. `docker compose logs server` reads them.
 
 ```json
 {"time":"2026-10-10T14:48:53.098Z","level":"info","event":"request","reqId":"req-1","method":"POST","route":"/auth/login","status":401,"ms":45}
@@ -518,11 +518,23 @@ reads them.
 - **`route`** is the route as the server registers it — `/f/:path/drafts/:draftId` — never
   the path that was asked for, so no form's path, draft's id or query string is in it. A path
   no route has gets a line without one.
-- **`reqId`** is the id the request's [audit row](#the-audit-log) carries, so the two can be
-  read together. It is a counter that starts again when the process does.
+- **`reqId`** is the id every [audit row](#the-audit-log) the request wrote carries — a
+  publish's and a submission's included — so the two can be read together. It is a counter
+  that starts again when the process does.
+- **`level`** is `error` for a request answered with a 5xx, whether something was thrown or
+  the route answered it so — a model's answer cut off, a list that could not vouch for an
+  answer, no file store — and `info` otherwise.
 - **An error** is `request.refused` at `info` when the client caused it (a 4xx) and
   `request.failed` at `error` when the server did (a 5xx), naming what was thrown by its
-  class (`kind`) and its `code` — for a database error, PostgreSQL's SQLSTATE.
+  class (`kind`) and its `code` — for a database error, PostgreSQL's SQLSTATE. A URL the
+  server cannot decode is `FST_ERR_BAD_URL`, a path parameter too long for it
+  `FST_ERR_MAX_PARAM_LENGTH`; both are refused before any route is found, so their lines name
+  none.
+- **A client that left** before its answer was sent — a browser closed during a model's turn —
+  is `request.abandoned`, on its route and with how long it waited, and no status: none
+  reached anybody.
+- **A request that arrives while the server is shutting down** is refused with a `503` before
+  it is routed, and its line has only its `reqId` and its status.
 - **Other events** say something went wrong beside an answer: `audit.unwritten` (with the
   audit row's `action`), `upload.refused`, `scanner.unreachable`, `upload.unreleased`,
   `model.unreachable` (with the provider's status as `upstream`), `outbox.failed`,

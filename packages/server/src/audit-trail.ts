@@ -16,8 +16,9 @@ export type Audit = (request: FastifyRequest, draft: AuditDraft) => Promise<void
  * login is the email somebody tried — and the request stands.
  *
  * For a mutation that HAS a transaction, do not use this — pass the entry
- * into that call so the two commit together. `insertSubmission` is currently
- * the only one.
+ * into that call so the two commit together. A publish, a change to a form's
+ * examples and a submission are those: their use-cases build the row, and
+ * the route hands them `request.id` so it names the request as this one does.
  *
  * Its own module because what happens when a row cannot be written is the log's
  * business (0168), and `app.ts` had no room for it.

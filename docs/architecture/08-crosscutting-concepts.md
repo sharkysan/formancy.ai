@@ -231,11 +231,20 @@ message catalogue.
 **The server keeps a log, and a line is built from a list of fields**
 ([0168](../decisions/0168-the-log-is-built-from-a-list-of-fields.md)). Its process writes a JSON
 line to standard output for every request — method, the route as the route table writes it,
-status, milliseconds and Fastify's request id, which the request's audit row carries too — and
-one for every error that answered a request, naming what was thrown by its class and code. A
-route or a background worker adds a line by naming an event from `LOG_EVENTS` in
-`server/server-log.ts`; the outbox, the collector and the sweeper are handed the app's log, and
-so are the database's notices.
+status, milliseconds and Fastify's request id — at `error` when the status is a 5xx, and one for
+every error that answered a request, naming what was thrown by its class and code. Every audit
+row a request writes carries the same id: the route passes `request.id` to the three use-cases
+that write their row inside their own transaction — a publish, a change of examples, a
+submission — as `audit-trail.ts` does for the rest. A route or a background worker adds a line
+by naming an event from `LOG_EVENTS` in `server/server-log.ts`; the outbox, the collector and
+the sweeper are handed the app's log, and so are the database's notices.
+
+"Every request" includes three kinds Fastify's own request line misses, because it is written
+when an answer has been sent: a request refused before routing for a URL it cannot decode or a
+parameter too long for the router, answered through `frameworkErrors` so it gets the refusal's
+line and its own; one that arrives while the server closes, refused with a `503` before routing,
+whose line has only its id and status; and one whose client left before the answer was sent,
+written as `request.abandoned` when its response closes without having finished, with no status.
 
 What keeps a body, a query string, a header, an answer or a credential out is that a line is
 assembled from `LOG_FIELDS` and nothing else, each field kept only when its value is of that
@@ -246,7 +255,7 @@ server hands Fastify a `LogController` that writes them.
 
 | Who writes | Through |
 |---|---|
-| Every request, and every error that answered one | `RequestLines`, Fastify's `logController` |
+| Every request, and every error that answered one | `RequestLines`, Fastify's `logController`, and its `frameworkErrors` for what Fastify refuses before routing |
 | A route, about something beside its answer | `request.log`, with a listed event |
 | The three background workers | the app's log, from `main.ts`; to standard error by the rule when started without one |
 | The database's notices | `databaseNotices`, by SQLSTATE |
