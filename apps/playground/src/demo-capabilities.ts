@@ -108,14 +108,26 @@ export const DEMO_SCANNER: Scanner = async ({ label }) =>
  * document and held for review — and the only part that is pretend is the
  * sentence-to-JSON step, which is the part a key would buy.
  *
- * It hands back the current document when somebody cancels, so the pane's
- * "that proposal changes nothing" refusal is reachable too.
+ * Each dialog says which attempt it is, of how many, and from the second shows the
+ * complaint alone — `followUp`, what a host keeping a conversation with its model
+ * sends instead of the whole prompt again.
+ *
+ * **Cancelling the dialog is a model that could not be asked**, so it rejects, and
+ * the run ends at once with the pane saying so
+ * ([0157](../../../docs/decisions/0157-a-models-turn-can-be-stopped.md)). It used
+ * to answer with an empty string while this comment said it handed back the
+ * current document. An empty string is not JSON, so a cancel bought a dialog for
+ * every remaining attempt and then "3 attempts, and the document still did not
+ * work". Handing back the document would have meant reading it out of the prompt's
+ * English, which is not a contract.
  */
-export const DEMO_MODEL: AskModel = ({ user }) =>
-  Promise.resolve(
-    window.prompt(
-      'Stand-in for a model. It was asked:\n\n' +
-        `${user.split('\n').at(-1) ?? ''}\n\n` +
-        'Answer with the whole form document, as JSON.',
-    ) ?? '',
+export const DEMO_MODEL: AskModel = ({ user, attempt, limit, followUp }) => {
+  const answer = window.prompt(
+    `Stand-in for a model, attempt ${String(attempt)} of ${String(limit)}. It was asked:\n\n` +
+      `${followUp ?? user.split('\n').at(-1) ?? ''}\n\n` +
+      'Answer with the whole form document, as JSON.',
   )
+  return answer === null
+    ? Promise.reject(new Error('Nobody answered for the stand-in model.'))
+    : Promise.resolve(answer)
+}

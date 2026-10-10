@@ -1,6 +1,7 @@
 import { describe, expect, test, vi } from 'vitest'
+import { createStop } from './answers.js'
 import { authorForm } from './authoring.js'
-import type { AskModel } from './authoring.js'
+import type { AskModel, AuthoringPrompt, AuthoringResult } from './authoring.js'
 import type { FormSchema } from '@formancy/spec'
 
 /**
@@ -31,6 +32,40 @@ const GOOD = {
 const scripted = (...answers: string[]): AskModel => {
   let at = 0
   return vi.fn(() => Promise.resolve(answers[Math.min(at++, answers.length - 1)] ?? ''))
+}
+
+/** The prompts a scripted model was given, in the order it was given them. */
+const promptsOf = (ask: AskModel): AuthoringPrompt[] =>
+  (ask as ReturnType<typeof vi.fn>).mock.calls.map((call) => call[0] as AuthoringPrompt)
+
+/**
+ * Lets whatever has settled run its callbacks. Microtasks rather than a timer: this
+ * package has no DOM or Node types, so `setTimeout` does not exist for it.
+ */
+const ticks = async (count = 20): Promise<void> => {
+  for (let tick = 0; tick < count; tick += 1) await Promise.resolve()
+}
+
+/**
+ * What a run came to, or that it was still going once a stop had every chance to end it.
+ *
+ * A run that ignores its stop never settles, and a case awaiting it would fail on
+ * the test timeout five seconds later with nothing to say. Raced instead, so it
+ * fails at once and says what it saw.
+ */
+const settledSoon = (run: Promise<AuthoringResult>): Promise<AuthoringResult | 'still running'> =>
+  Promise.race([run, ticks().then(() => 'still running' as const)])
+
+/** A model that waits until it is told what to say. */
+const waiting = (): { ask: AskModel; answer: (text: string) => void } => {
+  let answer: (text: string) => void = () => undefined
+  const ask = vi.fn<AskModel>(
+    () =>
+      new Promise<string>((resolve) => {
+        answer = resolve
+      }),
+  )
+  return { ask, answer: (text) => answer(text) }
 }
 
 describe('a good answer', () => {
@@ -226,5 +261,298 @@ describe('the briefing', () => {
     expect(prompt.system).toContain('selectboxes')
     expect(prompt.system).toContain('4.0 rather than 4')
     expect(prompt.system).toContain('format "email"')
+  })
+})
+
+describe('a host that cannot ask its model', () => {
+  test('is not a document that failed: the run ends unreachable, with the host’s reason', async () => {
+    /*
+     * The network down, a key refused. authorForm used to reject, and both panes
+     * caught it and built a failure by hand with `attempts: 0` — which the status
+     * worded as "0 attempts, and the document still did not work", sending a
+     * person to reword an instruction when nothing had been asked at all.
+     */
+    const ask: AskModel = () => Promise.reject(new Error('fetch failed'))
+
+    const result = await authorForm(ask, 'a contact form')
+
+    expect(result).toMatchObject({
+      ok: false,
+      ended: 'unreachable',
+      reason: 'fetch failed',
+      attempts: 1,
+      problems: [],
+      lastAnswer: '',
+    })
+  })
+
+  test('after an answer that failed its check, keeps what that answer was told', async () => {
+    // The second turn is the one that could not be made. What was wrong with the
+    // first is still what the person needs in order to reword the instruction.
+    let turns = 0
+    const ask: AskModel = () =>
+      turns++ === 0 ? Promise.resolve('nonsense') : Promise.reject(new Error('401: key refused'))
+
+    const result = await authorForm(ask, 'a contact form')
+
+    expect(result).toMatchObject({
+      ok: false,
+      ended: 'unreachable',
+      reason: '401: key refused',
+      attempts: 2,
+      lastAnswer: 'nonsense',
+    })
+    if (!result.ok) expect(result.problems.map((problem) => problem.kind)).toEqual(['not-json'])
+  })
+
+  test('and one that throws rather than rejecting is the same', async () => {
+    // A host's function that fails before it returns a promise — a missing
+    // configuration read synchronously — would otherwise escape the run as a throw.
+    const ask: AskModel = () => {
+      throw new Error('no endpoint configured')
+    }
+
+    const result = await authorForm(ask, 'a contact form')
+
+    expect(result).toMatchObject({ ok: false, ended: 'unreachable', reason: 'no endpoint configured' })
+  })
+
+  test('an error with no message is named by what it is, so the sentence does not end on nothing', async () => {
+    // "The model could not be reached: " and then nothing reads as a sentence cut off.
+    const ask: AskModel = () => Promise.reject(new TypeError(''))
+
+    const result = await authorForm(ask, 'a contact form')
+
+    expect(result).toMatchObject({ ok: false, ended: 'unreachable', reason: 'TypeError' })
+  })
+
+  test('and one rejected with something other than an Error is said as text', async () => {
+    // A host's own wrapper rejecting with a status string is still the host's
+    // reason, and reading `.message` off it would have shown `undefined`.
+    const ask: AskModel = () => Promise.reject('offline' as unknown as Error)
+
+    const result = await authorForm(ask, 'a contact form')
+
+    expect(result).toMatchObject({ ok: false, ended: 'unreachable', reason: 'offline' })
+  })
+
+  test('one with nothing to say ends the run with no reason, not "undefined" or an empty one', async () => {
+    /*
+     * `String()` of whatever was thrown put "undefined" or "[object Object]" after
+     * the colon — an XHR wrapper's `onerror = reject` hands over an event, not an
+     * error — and an empty string ended the sentence on nothing. A value with no
+     * prototype could not be made text at all: `String()` threw inside the handler
+     * meant to end the run, and the run never ended.
+     */
+    const nothingToSay: unknown[] = [
+      undefined,
+      null,
+      '',
+      '  ',
+      { type: 'error' },
+      // Shaped like an error, with nothing in it and no name to fall back on.
+      { message: '' },
+      Object.create(null),
+    ]
+
+    for (const thrown of nothingToSay) {
+      const result = await settledSoon(authorForm(() => Promise.reject(thrown as Error), 'a form'))
+
+      expect(result).toMatchObject({ ok: false, ended: 'unreachable' })
+      expect(result).not.toHaveProperty('reason')
+    }
+  })
+
+  test('a run that used every attempt says it gave up, and names no reason', async () => {
+    // So the three endings are told apart by what they are, not by a count of
+    // attempts that happened to be zero.
+    const result = await authorForm(scripted('nonsense'), 'a contact form', { attempts: 2 })
+
+    expect(result).toMatchObject({ ok: false, ended: 'gave-up', attempts: 2 })
+    expect(result).not.toHaveProperty('reason')
+  })
+})
+
+describe('stopping a run', () => {
+  test('ends it at once as stopped, tells the host once, and discards an answer that arrives later', async () => {
+    /*
+     * Nothing could stop a run: a slow model held the pane busy for as long as it
+     * liked. And an answer arriving after the person had walked away would land as
+     * a proposal for an instruction they had abandoned.
+     */
+    const cancelled = vi.fn()
+    let answer: (text: string) => void = () => undefined
+    const ask = vi.fn<AskModel>(
+      (_prompt, turn) =>
+        new Promise<string>((resolve) => {
+          answer = resolve
+          turn.onCancel(cancelled)
+        }),
+    )
+    const stop = createStop()
+
+    const run = authorForm(ask, 'a contact form', { stop })
+    stop.stop()
+    stop.stop()
+
+    const result = await settledSoon(run)
+    expect(result).toMatchObject({ ok: false, ended: 'stopped', attempts: 1, problems: [] })
+    expect(result).not.toHaveProperty('reason')
+    expect(cancelled).toHaveBeenCalledTimes(1)
+
+    // A working document, late. Read, it would be a proposal nobody asked for.
+    answer(JSON.stringify(GOOD))
+    await ticks()
+    expect(ask).toHaveBeenCalledTimes(1)
+    expect(await run).toMatchObject({ ok: false, ended: 'stopped', lastAnswer: '' })
+  })
+
+  test('a host that ignores the stop is still stopped at once', async () => {
+    /*
+     * An `AskModel` written with one parameter — every one written before the
+     * second existed — never hears about the stop. The run must not wait for it:
+     * the stop is the person's, and the host's request is the host's to abandon.
+     * Typed, so `pnpm typecheck` fails if a one-parameter model stops compiling.
+     */
+    const oneParameter: AskModel = ({ user }) => new Promise<string>(() => void user)
+    const stop = createStop()
+
+    const run = authorForm(oneParameter, 'a contact form', { stop })
+    stop.stop()
+
+    expect(await settledSoon(run)).toMatchObject({ ok: false, ended: 'stopped' })
+  })
+
+  test('a host that asks to be told only after the stop is told at once', async () => {
+    // A host that registers after an await of its own would otherwise never hear,
+    // and its request would run on for an answer nobody reads.
+    const cancelled = vi.fn()
+    const ask: AskModel = async (_prompt, turn) => {
+      await ticks(2)
+      turn.onCancel(cancelled)
+      return new Promise<string>(() => undefined)
+    }
+    const stop = createStop()
+
+    const run = authorForm(ask, 'a contact form', { stop })
+    stop.stop()
+    await settledSoon(run)
+    await ticks()
+
+    expect(cancelled).toHaveBeenCalledTimes(1)
+  })
+
+  test('a stop in the second turn counts both, tells only that turn, and keeps the first’s problem', async () => {
+    /*
+     * 0157 says a stopped run counts the turn it abandoned, and only one-turn runs
+     * were stopped here. The first turn answered, so its host must not be told: a
+     * listener left over from it would abort a request that had already finished.
+     */
+    const told = [vi.fn(), vi.fn()]
+    let turns = 0
+    const ask = vi.fn<AskModel>((_prompt, turn) => {
+      const at = turns++
+      turn.onCancel(told[at] ?? (() => undefined))
+      return at === 0 ? Promise.resolve('nonsense') : new Promise<string>(() => undefined)
+    })
+    const stop = createStop()
+
+    const run = authorForm(ask, 'a contact form', { stop })
+    await ticks()
+    expect(ask).toHaveBeenCalledTimes(2)
+    stop.stop()
+
+    const result = await settledSoon(run)
+    expect(result).toMatchObject({ ok: false, ended: 'stopped', attempts: 2, lastAnswer: 'nonsense' })
+    if (result !== 'still running' && !result.ok) {
+      expect(result.problems.map((problem) => problem.kind)).toEqual(['not-json'])
+    }
+    expect(told[0]).not.toHaveBeenCalled()
+    expect(told[1]).toHaveBeenCalledTimes(1)
+  })
+
+  test('a stop before the run asks nothing', async () => {
+    const ask = scripted(JSON.stringify(GOOD))
+    const stop = createStop()
+    stop.stop()
+
+    const result = await authorForm(ask, 'a contact form', { stop })
+
+    expect(result).toMatchObject({ ok: false, ended: 'stopped', attempts: 0 })
+    expect(ask).not.toHaveBeenCalled()
+  })
+
+  test('a stop after the run has ended tells the host nothing', async () => {
+    // The turn answered; cancelling it then would abort a request that finished,
+    // and a listener left on the stop is one per turn for as long as it lives.
+    const cancelled = vi.fn()
+    const ask: AskModel = (_prompt, turn) => {
+      turn.onCancel(cancelled)
+      return Promise.resolve(JSON.stringify(GOOD))
+    }
+    const stop = createStop()
+
+    const result = await authorForm(ask, 'a contact form', { stop })
+    stop.stop()
+
+    expect(result.ok).toBe(true)
+    expect(cancelled).not.toHaveBeenCalled()
+  })
+})
+
+describe('what the model receives on each turn', () => {
+  test('which attempt this is, of how many, and from the second the complaint alone', async () => {
+    /*
+     * The prompt was the same shape on every turn, so a host keeping a
+     * conversation with its model could not tell a correction from a fresh
+     * request, and sent the instruction and the whole document again each time.
+     */
+    const ask = scripted('not json', JSON.stringify({ specVersion: '2', id: 'x' }), JSON.stringify(GOOD))
+
+    await authorForm(ask, 'a contact form')
+
+    const prompts = promptsOf(ask)
+    expect(prompts.map((prompt) => [prompt.attempt, prompt.limit])).toEqual([
+      [1, 3],
+      [2, 3],
+      [3, 3],
+    ])
+    expect(prompts[0]).not.toHaveProperty('followUp')
+    expect(prompts[1]?.followUp).toContain('That was not JSON')
+    // The complaint alone: the instruction is already in the conversation.
+    expect(prompts[1]?.followUp).not.toContain('a contact form')
+    expect(prompts[2]?.followUp).not.toContain('That was not JSON')
+  })
+
+  test('and the stateless prompt still carries the instruction and only the latest complaint', async () => {
+    // A host that sends only `user` each turn is unchanged by follow-ups (0056).
+    const ask = scripted('not json', JSON.stringify({ specVersion: '2', id: 'x' }), JSON.stringify(GOOD))
+
+    await authorForm(ask, 'a contact form')
+
+    const [, second, third] = promptsOf(ask)
+    expect(second?.user).toContain('a contact form')
+    expect(second?.user).toContain(second?.followUp ?? 'a follow-up')
+    expect(third?.user).toContain(third?.followUp ?? 'a follow-up')
+    expect(third?.user).not.toContain('That was not JSON')
+  })
+})
+
+describe('the shape a host writes against', () => {
+  test('a caller of an AskModel hands on the turn, and a prompt built by hand has its attempt and limit', () => {
+    /*
+     * The half of the new shape that breaks a consumer, which the CHANGELOG says.
+     * A wrapper — logging, a cache — that called its model with the prompt alone
+     * would otherwise compile and drop the stop, so the request it wraps could
+     * never be abandoned. Both are compile errors: `pnpm typecheck` fails here if
+     * either becomes optional and that sentence stops being true.
+     */
+    const inner: AskModel = () => Promise.resolve('')
+    // @ts-expect-error -- the turn is not optional for a caller
+    const dropsTheTurn: AskModel = (prompt) => inner(prompt)
+    // @ts-expect-error -- nor are `attempt` and `limit` for a prompt built by hand
+    const handBuilt: AuthoringPrompt = { system: '', user: '' }
+
+    expect([dropsTheTurn, handBuilt]).toHaveLength(2)
   })
 })

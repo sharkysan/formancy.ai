@@ -1,5 +1,6 @@
 import { diffSchemas, schemaHash } from '@formancy/spec'
 import type { Change, FormSchema } from '@formancy/spec'
+import type { AuthoringResult } from './authoring.js'
 import type { BuilderText } from './messages.js'
 import type { BuilderSession, CommandOutcome } from './session.js'
 
@@ -107,17 +108,22 @@ export function applyProposal(session: BuilderSession, proposal: EditProposal): 
 /**
  * The one sentence a prompt pane's live region carries.
  *
- * A four-way choice both builders wrote out by hand. The order matters: a
- * refusal outranks a proposal, because it is about the button somebody just
- * pressed. How many goes the model took is said when it took more than one: a
- * model that needed correcting is one to read more carefully, and this is the
- * moment somebody is deciding how closely.
+ * A choice both builders wrote out by hand. The order matters: a refusal
+ * outranks a proposal, because it is about the button somebody just pressed.
+ * How many goes the model took is said when it took more than one: a model that
+ * needed correcting is one to read more carefully, and this is the moment
+ * somebody is deciding how closely.
+ *
+ * It reads the run's result whole rather than a count and a flag the panes
+ * derived from it. A pane that worked out "failed" for itself is how a host's
+ * network error came to be announced as "0 attempts, and the document still did
+ * not work" ([0157](../../../docs/decisions/0157-a-models-turn-can-be-stopped.md)).
  */
 export function proposalStatus(
   state: {
     busy: boolean
-    attempts: number | undefined
-    failed: boolean
+    /** What the last run came to, until something moves on from it. */
+    result: AuthoringResult | undefined
     proposal: EditProposal | undefined
     refusal: string | undefined
   },
@@ -128,7 +134,7 @@ export function proposalStatus(
   if (state.proposal !== undefined) {
     const count = state.proposal.changes.length
     const costs = state.proposal.costsAnswers
-    const attempts = state.attempts ?? 1
+    const attempts = state.result?.attempts ?? 1
     if (attempts > 1) {
       return text(costs ? 'prompt.status.readyAfterCosts' : 'prompt.status.readyAfter', {
         count,
@@ -137,6 +143,18 @@ export function proposalStatus(
     }
     return text(costs ? 'prompt.status.readyCosts' : 'prompt.status.ready', { count })
   }
-  if (state.failed) return text('prompt.status.failed', { count: state.attempts ?? 1 })
-  return ''
+  const result = state.result
+  if (result === undefined || result.ok) return ''
+  switch (result.ended) {
+    case 'gave-up':
+      return text('prompt.status.failed', { count: result.attempts })
+    case 'stopped':
+      return text('prompt.status.stopped')
+    case 'unreachable':
+      // Without a reason, a sentence that has no place for one: the other would end
+      // on its colon, or show its placeholder.
+      return result.reason === undefined
+        ? text('prompt.status.unreachableNoReason')
+        : text('prompt.status.unreachable', { reason: result.reason })
+  }
 }

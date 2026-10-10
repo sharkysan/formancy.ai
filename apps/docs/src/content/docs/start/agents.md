@@ -224,8 +224,63 @@ point it at something on your own hardware and nothing about a form's contents
 leaves your network.
 
 ```tsx
-<PromptPane session={session} ask={myModel} />
+<PromptPane session={session} ask={askModel} />
 ```
 
 Without the prop the pane renders nothing, rather than a button that cannot
 work.
+
+### Writing `askModel`
+
+An `AskModel` is one turn: a prompt in, the model's text out. Point it at an
+endpoint **on your own server**, and keep the model's key there. A key in the
+browser is a key anybody who opens the page can read.
+
+```ts
+import type { AskModel } from '@formancy/builder-core'
+
+export const askModel: AskModel = async ({ system, user }, turn) => {
+  // The person can stop the run while this waits. Abort the request when they
+  // do, so your server stops too rather than paying for an answer nobody reads.
+  const controller = new AbortController()
+  turn.onCancel(() => controller.abort())
+
+  const response = await fetch('/api/form-model', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ system, user }),
+    signal: controller.signal,
+  })
+  if (!response.ok) throw new Error(`The model service answered ${response.status}.`)
+  const { text } = (await response.json()) as { text: string }
+  return text
+}
+```
+
+`/api/form-model` is yours to write: it adds the key, calls whichever model you
+use with `system` as the system prompt and `user` as the message, and answers
+with the text. Abort that call when the browser's request closes, and a stop in
+the browser ends the call to the model as well.
+
+**While a run waits, the pane shows Stop.** Pressing it, or taking the pane off
+the screen, ends the run at once, calls what you gave `turn.onCancel`, and
+discards whatever the model answers afterwards. A function written without the
+second argument is stopped all the same: the pane stops waiting for it, though
+its request runs on. A function that wraps another `AskModel` hands `turn` on
+with the prompt; the types require it, so a wrapper cannot drop the stop.
+
+**When your function throws or rejects,** the pane says the model could not be
+reached, followed by your error's message, rather than that the document did not
+work. Write the message for the person reading it. Something thrown without one —
+`undefined`, an event, an empty string — is said without a reason.
+
+Each turn also says which it is: `attempt` and `limit`, and from the second turn
+`followUp`, which is the complaint alone. `user` always carries the whole
+instruction with the latest complaint, so a function that keeps no conversation
+sends `user` every time. One that keeps a conversation, whose history already
+holds the model's last answer, can send `followUp` instead.
+
+Called directly, `authorForm(askModel, instruction, { current, stop })` resolves
+however the run ends. A working document is `ok: true`. Otherwise `ended` says why
+there is none: `gave-up`, `stopped`, or `unreachable` with your error's message as
+`reason`, absent when it had none. `stop` comes from `createStop()`; calling its `stop()` is the button.

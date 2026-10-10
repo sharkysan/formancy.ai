@@ -1,11 +1,18 @@
-import { useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
-import { applyProposal, authorForm, proposalStatus, proposeEdit } from '@formancy/builder-core'
+import {
+  applyProposal,
+  authorForm,
+  createStop,
+  proposalStatus,
+  proposeEdit,
+} from '@formancy/builder-core'
 import type {
   AskModel,
   AuthoringResult,
   BuilderSession,
   EditProposal,
+  Stop,
 } from '@formancy/builder-core'
 
 /**
@@ -39,6 +46,11 @@ import type {
  * what is happening, what came back and what came of applying it: a spinner
  * alone tells a screen-reader user nothing, and a proposal that only appears
  * visually is one they never learn about.
+ *
+ * **A run can be stopped**, by the button while it waits and by the pane going
+ * away. Either ends it at once, tells the host so it can abandon the request,
+ * and discards whatever the model says afterwards
+ * ([0157](../../../docs/decisions/0157-a-models-turn-can-be-stopped.md)).
  */
 
 export interface PromptPaneProps {
@@ -63,6 +75,30 @@ export function PromptPane({ session, ask, attempts }: PromptPaneProps): ReactEl
   const [refusal, setRefusal] = useState<string | undefined>(undefined)
   const inputId = useId()
   const reviewId = useId()
+  /**
+   * The stop for the run in flight, if one is. A ref, not state: pressing it
+   * changes nothing on screen by itself — the run ending does, through `busy`.
+   */
+  const running = useRef<Stop | undefined>(undefined)
+
+  // A pane taken off the screen stops its run, so the host's request does not
+  // run on for an answer nothing will show. The run in flight when it goes, read
+  // at that moment — which is why it is a ref the cleanup reads late.
+  useEffect(() => () => running.current?.stop(), [])
+
+  const writeButton = useRef<HTMLButtonElement>(null)
+  const stopButton = useRef<HTMLButtonElement>(null)
+  /**
+   * Set when a run ends with focus on Stop. Stop is drawn only while a run waits,
+   * so it leaves with the focus and focus falls to <body>; Write, where the run
+   * began, takes it back once the render has enabled it again.
+   */
+  const refocus = useRef(false)
+  useEffect(() => {
+    if (busy || !refocus.current) return
+    refocus.current = false
+    writeButton.current?.focus()
+  }, [busy])
 
   if (ask === undefined) return null
 
@@ -72,31 +108,28 @@ export function PromptPane({ session, ask, attempts }: PromptPaneProps): ReactEl
     setResult(undefined)
     setProposal(undefined)
     setRefusal(undefined)
+    const stop = createStop()
+    running.current = stop
     try {
       const current = session.document()
+      // Resolves however the run ends — a host's model that threw included, which
+      // it reports as unreachable with the host's reason rather than as a document
+      // that failed.
       const outcome = await authorForm(ask, instruction, {
         // The document being edited, so "add a phone number" is a change
         // rather than a new form written from nothing.
         current,
+        stop,
         ...(attempts === undefined ? {} : { attempts }),
       })
       setResult(outcome)
       // Held against the document it was written for. Applying later checks
       // that the form has not moved in the meantime.
       if (outcome.ok) setProposal(proposeEdit(current, outcome.document))
-    } catch (error) {
-      // The host's model threw: a network failure, a rate limit, a missing
-      // key. Said out loud, because a button that silently does nothing is
-      // the worst version of this.
-      setResult({
-        ok: false,
-        attempts: 0,
-        problems: [
-          { kind: 'not-json', detail: error instanceof Error ? error.message : String(error) },
-        ],
-        lastAnswer: '',
-      })
     } finally {
+      // Read while Stop is still drawn: once it has gone, focus is already on <body>.
+      refocus.current = stopButton.current !== null && document.activeElement === stopButton.current
+      running.current = undefined
       setBusy(false)
     }
   }
@@ -128,21 +161,22 @@ export function PromptPane({ session, ask, attempts }: PromptPaneProps): ReactEl
         placeholder={text('prompt.example')}
         onChange={(event) => setInstruction(event.target.value)}
       />
-      <button type="button" disabled={busy || instruction.trim() === ''} onClick={() => void run()}>
+      <button
+        ref={writeButton}
+        type="button"
+        disabled={busy || instruction.trim() === ''}
+        onClick={() => void run()}
+      >
         {busy ? text('prompt.writing') : text('prompt.write')}
       </button>
+      {busy ? (
+        <button ref={stopButton} type="button" onClick={() => running.current?.stop()}>
+          {text('prompt.stop')}
+        </button>
+      ) : null}
 
       <p role="status" data-formancy-part="prompt-status">
-        {proposalStatus(
-          {
-            busy,
-            attempts: result?.attempts,
-            failed: result !== undefined && !result.ok,
-            proposal,
-            refusal,
-          },
-          text,
-        )}
+        {proposalStatus({ busy, result, proposal, refusal }, text)}
       </p>
 
       {proposal === undefined ? null : (
@@ -181,7 +215,7 @@ export function PromptPane({ session, ask, attempts }: PromptPaneProps): ReactEl
         </section>
       )}
 
-      {result !== undefined && !result.ok ? (
+      {result !== undefined && !result.ok && result.problems.length > 0 ? (
         <div data-formancy-part="prompt-problems">
           {/* What was actually wrong, not "something went wrong". The person
               reading this can usually fix it by rewording one sentence. */}

@@ -153,6 +153,12 @@ The result lands through `session.replaceDocument`, which is **one undoable
 step**. Ctrl+Z after "write me a contact form" puts back what was there, which
 is the only behaviour anybody would expect.
 
+> **Later, and not a change to this decision:** a run can be stopped, a host's
+> model that throws ends it as `unreachable` with its reason rather than as a
+> document that failed, and each turn says which attempt it is, of how many,
+> with the complaint alone as a follow-up — [0157](0157-a-models-turn-can-be-stopped.md).
+> The loop is the one described here; it now lives in `answers.ts`.
+
 ## Alternatives considered (continued)
 
 **Ship an agent skills library too.** Deferred, not rejected. Skills are prose

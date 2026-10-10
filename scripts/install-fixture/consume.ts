@@ -17,7 +17,8 @@ import { validateSchema } from '@formancy/spec/validate'
 import schemaJson from '@formancy/spec/schema.json'
 import { parse, referencedPaths, rewritePath } from '@formancy/expressions'
 import { createFormEngine, expressionProblems, unknownReferences } from '@formancy/core'
-import { builderView, createBuilderSession } from '@formancy/builder-core'
+import { authorForm, builderView, createBuilderSession, createStop } from '@formancy/builder-core'
+import type { AskModel } from '@formancy/builder-core'
 import { mintChallenge, solveChallenge, verifySolution } from '@formancy/challenge'
 import { auditedBy, createMemoryStorage, publishForm } from '@formancy/server-core'
 import type { FormSchema } from '@formancy/spec'
@@ -59,6 +60,16 @@ if (unknownReferences(schema).length !== 0) throw new Error('unknownReferences i
 // The builder core: open a session over the same document.
 const session = createBuilderSession(schema)
 if (builderView(session).nodes.length !== 1) throw new Error('builderView is wrong')
+
+// A model's run, through the published types (0157). An `AskModel` written with one
+// parameter, as every host's was before the second existed, still compiles against
+// them, and a stop ends a run whose model never answers.
+const neverAnswers: AskModel = ({ user }) => new Promise<string>(() => void user)
+const stop = createStop()
+const running = authorForm(neverAnswers, 'a contact form', { stop })
+stop.stop()
+const ended = await running
+if (ended.ok || ended.ended !== 'stopped') throw new Error('the installed authorForm did not stop')
 
 /*
  * The challenge: mint, solve, verify — both halves of the protocol.

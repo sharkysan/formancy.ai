@@ -607,7 +607,8 @@ describe('the translations, prompt and scenario panes', () => {
     await good.user.click(screen.getByRole('button'))
     await waitFor(() => {
       // Synchronous: Angular's waitFor re-runs until it holds, which settles the fixture.
-      expect(screen.getAllByRole('button').length).toBeGreaterThan(1)
+      // The review, not "more than one button": while it waits the pane shows Stop too.
+      expect(document.querySelector('[data-formancy-part="prompt-review"]')).not.toBeNull()
     })
     await good.settle()
     const seen = shown(good.root)
@@ -644,6 +645,59 @@ describe('the translations, prompt and scenario panes', () => {
         'Nothing was applied',
         'What the model last answered',
       ].filter((prefix) => !seen.some((text) => text.includes(prefix))),
+    ).toEqual([])
+  })
+
+  test('the prompt pane, waiting, stopped, and with a model it cannot reach, likewise', async () => {
+    // The words a stop and an unreachable model brought (0157), from the catalogue
+    // like the rest — and the host's reason is the host's, in whatever it said.
+    const start = {
+      specVersion: '2',
+      id: 'start',
+      title: 'Start',
+      model: { fields: [{ key: 'name', type: 'text', label: 'Name' }] },
+    } as unknown as FormSchema
+    const pseudo = () => createBuilderSession(start, { text: createBuilderText(pseudoLanguage()) })
+
+    const waiting = await mounted(FormancyPromptPane, {
+      session: pseudo(),
+      ask: () => new Promise<string>(() => undefined),
+    })
+    await waiting.user.type(screen.getByRole('textbox'), 'anything')
+    await waiting.settle()
+    await waiting.user.click(screen.getByRole('button'))
+    await waitFor(() => {
+      expect(screen.getAllByRole('button')).toHaveLength(2)
+    })
+    const seen = shown(waiting.root)
+    await waiting.user.click(screen.getAllByRole('button')[1]!)
+    await waitFor(() => {
+      expect(screen.getAllByRole('button')).toHaveLength(1)
+    })
+    await waiting.settle()
+    seen.push(...shown(waiting.root))
+    TestBed.resetTestingModule()
+    document.body.innerHTML = ''
+
+    const unreachable = await mounted(FormancyPromptPane, {
+      session: pseudo(),
+      ask: () => Promise.reject(new Error('the host said this')),
+    })
+    await unreachable.user.type(screen.getByRole('textbox'), 'anything')
+    await unreachable.settle()
+    await unreachable.user.click(screen.getByRole('button'))
+    await waitFor(() => {
+      expect(screen.getByRole('status').textContent).toContain('the host said this')
+    })
+    await unreachable.settle()
+    seen.push(...shown(unreachable.root))
+
+    expect(untranslated(seen, ['anything', 'the host said this'])).toEqual([])
+    expect(seen.map((text) => text.trim())).toContain('⟦Stop⟧')
+    expect(
+      ['Writing the form', 'Stopped.', 'could not be reached'].filter(
+        (prefix) => !seen.some((text) => text.includes(prefix)),
+      ),
     ).toEqual([])
   })
 

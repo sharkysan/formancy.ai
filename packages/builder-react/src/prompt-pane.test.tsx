@@ -2,6 +2,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest'
 import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
 import { createBuilderSession } from '@formancy/builder-core'
+import type { AskModel } from '@formancy/builder-core'
 import type { FormSchema } from '@formancy/spec'
 import { PromptPane } from './prompt-pane.js'
 
@@ -34,9 +35,36 @@ const WRITTEN = {
   },
 }
 
+/** The starting form with a phone number added: an answer told apart from `WRITTEN`. */
+const WITH_PHONE = {
+  ...START,
+  model: { fields: [...START.model.fields, { key: 'phone', type: 'text', label: 'Phone' }] },
+}
+
 const say = (...answers: string[]) => {
   let at = 0
   return vi.fn(() => Promise.resolve(answers[Math.min(at++, answers.length - 1)] ?? ''))
+}
+
+/**
+ * A model that waits to be told what to say, and records whether it was told to stop.
+ * `release` answers the latest turn, or the one named — the first of two runs, say.
+ */
+const held = () => {
+  const releases: Array<(answer: string) => void> = []
+  const cancelled = vi.fn()
+  const model = vi.fn<AskModel>(
+    (_prompt, turn) =>
+      new Promise<string>((resolve) => {
+        releases.push(resolve)
+        turn.onCancel(cancelled)
+      }),
+  )
+  return {
+    model,
+    cancelled,
+    release: (answer: string, turn = releases.length - 1) => releases[turn]?.(answer),
+  }
 }
 
 const ask = async (user: ReturnType<typeof userEvent.setup>, what: string): Promise<void> => {
@@ -223,6 +251,28 @@ describe('when it cannot', () => {
     expect(screen.getByText('I am afraid I cannot')).toBeTruthy()
   })
 
+  test('a model that cannot be reached is said to be that, not a document that failed', async () => {
+    /*
+     * The pane caught the rejection and built a failure with `attempts: 0`, and
+     * the status read "0 attempts, and the document still did not work" — so a
+     * person reworded an instruction that never reached a model.
+     */
+    const user = userEvent.setup()
+    const session = createBuilderSession(START)
+    render(<PromptPane session={session} ask={() => Promise.reject(new Error('fetch failed'))} />)
+
+    await ask(user, 'a contact form')
+
+    await waitFor(() =>
+      expect(screen.getByRole('status').textContent).toBe(
+        'Nothing was applied. The model could not be reached: fetch failed',
+      ),
+    )
+    // Nothing was wrong with an answer, because there was none: no problem list. The
+    // list itself, not its items — an empty one is still announced as a list.
+    expect(screen.queryByRole('list')).toBeNull()
+  })
+
   test('a model that throws is reported rather than swallowed', async () => {
     const user = userEvent.setup()
     const session = createBuilderSession(START)
@@ -258,6 +308,123 @@ describe('while it is working', () => {
     release(JSON.stringify(WRITTEN))
     await waitFor(() => expect(screen.getByRole('heading', { name: /Review/ })).toBeTruthy())
     expect(slow).toHaveBeenCalledTimes(1)
+  })
+
+  test('can be stopped, and an answer that arrives afterwards is never proposed', async () => {
+    /*
+     * Nothing could stop a run: a slow model held the pane busy for as long as
+     * it liked. And the answer to an instruction somebody has walked away from
+     * must not turn up later as a proposal, where it reads as the answer to
+     * whatever they asked next.
+     */
+    const user = userEvent.setup()
+    const session = createBuilderSession(START)
+    const slow = held()
+    render(<PromptPane session={session} ask={slow.model} />)
+
+    await ask(user, 'a contact form')
+    await user.click(screen.getByRole('button', { name: 'Stop' }))
+
+    await waitFor(() =>
+      expect(screen.getByRole('status').textContent).toBe('Stopped. Nothing was applied.'),
+    )
+    // The host was told, so it can abandon the request rather than pay for it.
+    expect(slow.cancelled).toHaveBeenCalledTimes(1)
+    // No answer came, so there is nothing wrong with one to list.
+    expect(screen.queryByRole('list')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull()
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Write it' }).disabled).toBe(false)
+
+    slow.release(JSON.stringify(WRITTEN))
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(screen.queryByRole('heading', { name: /Review/ })).toBeNull()
+    expect(screen.getByRole('status').textContent).toBe('Stopped. Nothing was applied.')
+    expect(session.document()).toEqual(START)
+  })
+
+  test('an answer to a stopped run, arriving while the next one waits, is not taken for its answer', async () => {
+    /*
+     * The variant SAFETY-ANALYSIS D10 names: somebody stops, asks for something
+     * else, and the first model answers late. The case above releases that answer
+     * while the pane is idle, which a pane dropping answers only when idle passes
+     * too — as does one holding a single stop for its whole life, whose second run
+     * would end before it asked. Here it arrives during the second run.
+     */
+    const user = userEvent.setup()
+    const session = createBuilderSession(START)
+    const slow = held()
+    render(<PromptPane session={session} ask={slow.model} />)
+
+    await ask(user, 'a contact form')
+    await user.click(screen.getByRole('button', { name: 'Stop' }))
+    await user.clear(screen.getByRole('textbox', { name: /Describe the form/ }))
+    await ask(user, 'only a phone number')
+    await waitFor(() => expect(slow.model).toHaveBeenCalledTimes(2))
+
+    slow.release(JSON.stringify(WRITTEN), 0)
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(screen.queryByRole('heading', { name: /Review/ })).toBeNull()
+    expect(screen.getByRole('status').textContent).toBe('Writing the form, and checking it.')
+
+    slow.release(JSON.stringify(WITH_PHONE), 1)
+    const review = await screen.findByRole('region', { name: /Review/ })
+    expect(review.textContent).toContain('phone')
+    expect(review.textContent).not.toContain('email')
+  })
+
+  test('hands focus back to Write when Stop is pressed, rather than dropping it on the page', async () => {
+    /*
+     * Stop is drawn only while a run waits, so pressing it removes the focused
+     * button and focus fell to <body>: the next Tab started from the top of the
+     * page. Write is where the run began, and enabled again by then.
+     */
+    const user = userEvent.setup()
+    const slow = held()
+    render(<PromptPane session={createBuilderSession(START)} ask={slow.model} />)
+
+    await ask(user, 'a contact form')
+    await user.click(screen.getByRole('button', { name: 'Stop' }))
+
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Write it' })),
+    )
+  })
+
+  test('and when the run ends by itself while Stop has focus', async () => {
+    // The same button leaves the same way when the answer arrives first.
+    const user = userEvent.setup()
+    const slow = held()
+    render(<PromptPane session={createBuilderSession(START)} ask={slow.model} />)
+
+    await ask(user, 'a contact form')
+    screen.getByRole('button', { name: 'Stop' }).focus()
+    slow.release(JSON.stringify(WRITTEN))
+
+    await screen.findByRole('region', { name: /Review/ })
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Write it' })),
+    )
+  })
+
+  test('a pane taken off the screen stops its run', async () => {
+    // Otherwise the host's request runs on for an answer nothing will show —
+    // a builder closed mid-run, or the pane swapped for another.
+    const user = userEvent.setup()
+    const session = createBuilderSession(START)
+    const slow = held()
+    const { unmount } = render(<PromptPane session={session} ask={slow.model} />)
+
+    await ask(user, 'a contact form')
+    unmount()
+
+    expect(slow.cancelled).toHaveBeenCalledTimes(1)
+  })
+
+  test('offers no stop when there is nothing to stop', () => {
+    const session = createBuilderSession(START)
+    render(<PromptPane session={session} ask={say(JSON.stringify(WRITTEN))} />)
+
+    expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull()
   })
 
   test('an empty instruction is not sent', async () => {

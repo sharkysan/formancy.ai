@@ -2,6 +2,8 @@ import { authoringBriefing, canonicalize } from '@formancy/spec'
 import { validateSchema } from '@formancy/spec/validate'
 import type { FormSchema } from '@formancy/spec'
 import { engineRefusal, expressionProblems } from '@formancy/core'
+import { askChecked, readAnswer } from './answers.js'
+import type { AskModel, Stop, Verdict } from './answers.js'
 
 /**
  * Writing a form from an instruction, and refusing to hand back one that does not work.
@@ -16,15 +18,8 @@ import { engineRefusal, expressionProblems } from '@formancy/core'
  * vendor, no API key, no network call and no opinion about who pays for tokens.
  */
 
-/** One turn with whatever model the host has. Text in, text out. */
-export type AskModel = (prompt: AuthoringPrompt) => Promise<string>
-
-export interface AuthoringPrompt {
-  /** What the model is, and the rules of the format. Stable across turns. */
-  readonly system: string
-  /** The instruction, plus whatever went wrong last time. */
-  readonly user: string
-}
+export { createStop } from './answers.js'
+export type { AskModel, AskTurn, AuthoringPrompt, Stop } from './answers.js'
 
 /**
  * Why an attempt was rejected, in the words the model is given back.
@@ -42,10 +37,24 @@ export type AuthoringResult =
   | { readonly ok: true; readonly document: FormSchema; readonly attempts: number }
   | {
       readonly ok: false
+      /** Turns asked, counting one that was stopped or could not be made. */
       readonly attempts: number
+      /** What was wrong with each answer that came, in order. */
       readonly problems: readonly AuthoringProblem[]
-      /** The last thing the model said, so a person can see what went wrong. */
+      /** The last answer that was checked, so a person can see what went wrong. */
       readonly lastAnswer: string
+      /**
+       * Why there is no document. `gave-up`: every attempt answered and none
+       * worked. `stopped`: the person stopped the run, and an answer still on its
+       * way is discarded. `unreachable`: the host's model threw — the network, a
+       * refused key — so nothing about the instruction was tried.
+       */
+      readonly ended: 'gave-up' | 'stopped' | 'unreachable'
+      /**
+       * When unreachable: the message of what the host's model threw, to be shown as
+       * text. Absent when it had none — `undefined`, an event, an empty string.
+       */
+      readonly reason?: string
     }
 
 export interface AuthoringOptions {
@@ -62,66 +71,89 @@ export interface AuthoringOptions {
    * different request and produces a different answer.
    */
   readonly current?: FormSchema
+  /**
+   * The person's stop, from `createStop`. Pressed while a turn waits, the run
+   * ends at once as `stopped` — whether or not the host's model listens for
+   * it — and whatever that turn answers later is discarded.
+   */
+  readonly stop?: Stop
 }
 
-const DEFAULT_ATTEMPTS = 3
-
+/**
+ * A working form from an instruction, or why there is none.
+ *
+ * Resolves on every ending, the host's model throwing included: an unreachable
+ * model is a way the run ended, not an error in it, and a caller that had to
+ * catch it built the failure by hand and called it a document that did not work.
+ */
 export async function authorForm(
   ask: AskModel,
   instruction: string,
   options: AuthoringOptions = {},
 ): Promise<AuthoringResult> {
-  const limit = Math.max(1, options.attempts ?? DEFAULT_ATTEMPTS)
   const system = authoringBriefing()
-  const problems: AuthoringProblem[] = []
-  let lastAnswer = ''
+  const asked = await askChecked(
+    ask,
+    (latest: AuthoringProblem | undefined) => ({
+      system,
+      user: userPrompt(instruction, options.current, latest),
+      // For a host that keeps a conversation: the model has its last answer
+      // already, and needs only what was wrong with it.
+      ...(latest === undefined ? {} : { followUp: complaint(latest) }),
+    }),
+    checkDocument,
+    {
+      ...(options.attempts === undefined ? {} : { attempts: options.attempts }),
+      ...(options.stop === undefined ? {} : { stop: options.stop }),
+    },
+  )
+  return asked.ok ? { ok: true, document: asked.value, attempts: asked.attempts } : asked
+}
 
-  for (let attempt = 1; attempt <= limit; attempt += 1) {
-    const answer = await ask({ system, user: userPrompt(instruction, options.current, problems) })
-    lastAnswer = answer
-
-    const parsed = readDocument(answer)
-    if (parsed === undefined) {
-      problems.push({
+/** Whether an answer is a document that works, or the first thing wrong with it. */
+function checkDocument(answer: string): Verdict<FormSchema, AuthoringProblem> {
+  const parsed = readAnswer(answer)
+  if (parsed === undefined) {
+    return {
+      ok: false,
+      problem: {
         kind: 'not-json',
         detail: 'That was not JSON. Answer with the document alone: no commentary, no code fence.',
-      })
-      continue
+      },
     }
-
-    const validated = validateSchema(parsed)
-    if (!validated.valid) {
-      problems.push({
-        kind: 'invalid-document',
-        detail: validated.errors.map((error) => `${error.path}: ${error.message}`).join('\n'),
-      })
-      continue
-    }
-
-    // The engine's own compile, which is what the preview and the server run.
-    // Without it a document with one misspelled field name passed this loop,
-    // landed in the editor, and the preview could not open it.
-    const refusal = engineRefusal(parsed as FormSchema)
-    if (refusal !== undefined) {
-      problems.push({ kind: 'logic', detail: refusal })
-      continue
-    }
-
-    const silent = expressionProblems(parsed as FormSchema)
-    if (silent.length > 0) {
-      // The failure worth the whole loop. These compile and then evaluate to
-      // nothing, so the form would publish cleanly and quietly do nothing.
-      problems.push({
-        kind: 'expression',
-        detail: silent.map((problem) => problem.message).join('\n'),
-      })
-      continue
-    }
-
-    return { ok: true, document: parsed as FormSchema, attempts: attempt }
   }
 
-  return { ok: false, attempts: limit, problems, lastAnswer }
+  const validated = validateSchema(parsed)
+  if (!validated.valid) {
+    return {
+      ok: false,
+      problem: {
+        kind: 'invalid-document',
+        detail: validated.errors.map((error) => `${error.path}: ${error.message}`).join('\n'),
+      },
+    }
+  }
+
+  // The engine's own compile, which is what the preview and the server run.
+  // Without it a document with one misspelled field name passed this loop,
+  // landed in the editor, and the preview could not open it.
+  const refusal = engineRefusal(parsed as FormSchema)
+  if (refusal !== undefined) return { ok: false, problem: { kind: 'logic', detail: refusal } }
+
+  const silent = expressionProblems(parsed as FormSchema)
+  if (silent.length > 0) {
+    // The failure worth the whole loop. These compile and then evaluate to
+    // nothing, so the form would publish cleanly and quietly do nothing.
+    return {
+      ok: false,
+      problem: {
+        kind: 'expression',
+        detail: silent.map((problem) => problem.message).join('\n'),
+      },
+    }
+  }
+
+  return { ok: true, value: parsed as FormSchema }
 }
 
 /**
@@ -133,7 +165,7 @@ export async function authorForm(
 function userPrompt(
   instruction: string,
   current: FormSchema | undefined,
-  problems: readonly AuthoringProblem[],
+  latest: AuthoringProblem | undefined,
 ): string {
   const parts: string[] = []
 
@@ -147,46 +179,12 @@ function userPrompt(
 
   parts.push(instruction)
 
-  const last = problems.at(-1)
-  if (last !== undefined) {
-    parts.push('')
-    parts.push('Your previous answer was rejected. Fix exactly this and answer again:')
-    parts.push(last.detail)
-  }
+  if (latest !== undefined) parts.push('', complaint(latest))
 
   return parts.join('\n')
 }
 
-/**
- * The document out of whatever the model said.
- *
- * Models put JSON in code fences and add a sentence in front of it however
- * firmly they are told not to, and refusing those answers would spend a turn
- * on formatting rather than on the form. So a fence is stripped and, failing
- * that, the outermost braces are taken. Anything looser would start accepting
- * prose that happens to contain a bracket.
- */
-function readDocument(answer: string): unknown {
-  const fenced = /```(?:json)?\s*([\s\S]*?)```/.exec(answer)
-  const candidates = [fenced?.[1], answer, betweenBraces(answer)]
-
-  for (const candidate of candidates) {
-    if (candidate === undefined) continue
-    try {
-      const parsed: unknown = JSON.parse(candidate.trim())
-      // A bare string or number is valid JSON and is not a document; letting
-      // one through would report it as an invalid document rather than as an
-      // answer that was not one.
-      if (parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed
-    } catch {
-      // Try the next reading.
-    }
-  }
-  return undefined
-}
-
-function betweenBraces(answer: string): string | undefined {
-  const start = answer.indexOf('{')
-  const end = answer.lastIndexOf('}')
-  return start === -1 || end <= start ? undefined : answer.slice(start, end + 1)
+/** What was wrong last time, as the model is told it — in the full prompt and as a follow-up alike. */
+function complaint(problem: AuthoringProblem): string {
+  return `Your previous answer was rejected. Fix exactly this and answer again:\n${problem.detail}`
 }

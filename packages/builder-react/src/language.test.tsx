@@ -582,7 +582,10 @@ describe('the translations, prompt and scenario panes', () => {
     )
     await user.type(screen.getByRole('textbox'), 'add an email')
     await user.click(screen.getByRole('button'))
-    await waitFor(() => expect(screen.getAllByRole('button').length).toBeGreaterThan(1))
+    // The review, not "more than one button": while it waits the pane shows Stop too.
+    await waitFor(() =>
+      expect(document.querySelector('[data-formancy-part="prompt-review"]')).not.toBeNull(),
+    )
     const seen = shown(first.container)
     first.unmount()
 
@@ -613,6 +616,45 @@ describe('the translations, prompt and scenario panes', () => {
         'Nothing was applied',
         'What the model last answered',
       ].filter((prefix) => !seen.some((text) => text.includes(prefix))),
+    ).toEqual([])
+  })
+
+  test('the prompt pane, waiting, stopped, and with a model it cannot reach, likewise', async () => {
+    // The words a stop and an unreachable model brought (0157), from the catalogue
+    // like the rest — and the host's reason is the host's, in whatever it said.
+    const start = {
+      specVersion: '2',
+      id: 'start',
+      title: 'Start',
+      model: { fields: [{ key: 'name', type: 'text', label: 'Name' }] },
+    } as unknown as FormSchema
+    const pseudo = () => createBuilderSession(start, { text: createBuilderText(pseudoLanguage()) })
+    const user = userEvent.setup()
+
+    const waiting = render(<PromptPane session={pseudo()} ask={() => new Promise<string>(() => undefined)} />)
+    await user.type(screen.getByRole('textbox'), 'anything')
+    await user.click(screen.getByRole('button'))
+    await waitFor(() => expect(screen.getAllByRole('button')).toHaveLength(2))
+    const seen = shown(waiting.container)
+    await user.click(screen.getAllByRole('button')[1]!)
+    await waitFor(() => expect(screen.getAllByRole('button')).toHaveLength(1))
+    seen.push(...shown(waiting.container))
+    waiting.unmount()
+
+    const unreachable = render(
+      <PromptPane session={pseudo()} ask={() => Promise.reject(new Error('the host said this'))} />,
+    )
+    await user.type(screen.getByRole('textbox'), 'anything')
+    await user.click(screen.getByRole('button'))
+    await waitFor(() => expect(screen.getByRole('status').textContent).toContain('the host said this'))
+    seen.push(...shown(unreachable.container))
+
+    expect(untranslated(seen, ['anything', 'the host said this'])).toEqual([])
+    expect(seen).toContain('⟦Stop⟧')
+    expect(
+      ['Writing the form', 'Stopped.', 'could not be reached'].filter(
+        (prefix) => !seen.some((text) => text.includes(prefix)),
+      ),
     ).toEqual([])
   })
 
