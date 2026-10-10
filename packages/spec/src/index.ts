@@ -76,7 +76,14 @@ export type {
 } from './layout.js'
 export { modelDataPaths } from './paths.js'
 export { ROW_ID, ROW_ID_PREFIX } from './types.js'
-export { collectFieldPaths, isMessageRef, modelPathsForLayout, resolveText, unreferencedPaths } from './presentation.js'
+export {
+  collectFieldPaths,
+  isMessageRef,
+  modelPathsForLayout,
+  resolveText,
+  resolvedLocale,
+  unreferencedPaths,
+} from './presentation.js'
 export { SCHEMA_ERRORS, renderSchemaError } from './schema-errors.js'
 export {
   IMAGE_SOURCE,

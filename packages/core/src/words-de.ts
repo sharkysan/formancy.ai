@@ -83,7 +83,6 @@ export const FORM_WORDS_DE = {
   'scanner.failed': 'Scannen hat nicht funktioniert: {reason}. Geben Sie den Wert stattdessen ein.',
 
   'richtext.toolbar': 'Formatierung für {label}',
-  'richtext.toolbarUnnamed': 'Formatierung',
   'richtext.strong': 'Fett',
   'richtext.emphasis': 'Kursiv',
   'richtext.link': 'Link',

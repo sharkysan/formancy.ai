@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { resolveText, unreferencedPaths } from './presentation.js'
+import { resolveText, resolvedLocale, unreferencedPaths } from './presentation.js'
 import type { FormSchema } from './types.js'
 import { validateSchema } from './validate.js'
 
@@ -84,6 +84,36 @@ describe('resolveText', () => {
 
   test('returns undefined when given undefined', () => {
     expect(resolveText(withI18n, undefined, 'en')).toBeUndefined()
+  })
+})
+
+describe('resolvedLocale', () => {
+  // The renderers' own words are read in this, so they are in the language the questions
+  // are: chosen by the engine's locale instead, a French reader of an English and German
+  // form read English questions over French buttons (0171).
+  test('is the locale asked for when the document has a catalogue for it', () => {
+    expect(resolvedLocale(withI18n, 'de')).toBe('de')
+  })
+
+  test('is the default for a locale the document has no catalogue for, as every message is', () => {
+    expect(resolvedLocale(withI18n, 'fr')).toBe('en')
+    expect(resolveText(withI18n, { $t: 'email.label' }, 'fr')).toBe('Email address')
+  })
+
+  test('is the default for a region of a language the document has, because resolveText is', () => {
+    // A Swiss reader of a `de` catalogue reads its default: no region falls back to its
+    // language here, so the words must not either, or the buttons are German and the
+    // questions English.
+    expect(resolvedLocale(withI18n, 'de-CH')).toBe('en')
+    expect(resolveText(withI18n, { $t: 'email.label' }, 'de-CH')).toBe('Email address')
+  })
+
+  test('is the locale asked for when the document has no catalogue to read', () => {
+    // Plain strings are in whatever language the author wrote; the locale a host gave is
+    // the only thing that says which.
+    const plain: FormSchema = { specVersion: '1', id: 'p', title: 'P', model: { fields: [] } }
+    expect(resolvedLocale(plain, 'de')).toBe('de')
+    expect(resolvedLocale(plain, '')).toBe('')
   })
 })
 

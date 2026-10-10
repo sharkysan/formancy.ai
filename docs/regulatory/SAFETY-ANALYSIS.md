@@ -1414,15 +1414,26 @@ ranking's buttons, a file's Cancel uploading and Try again, the required hint, t
 summary's heading, and every live region's announcement while a file is sent, a list is
 searched or a code is scanned — was an English literal in each of React, Angular and Material.
 A form whose reader chose German asked its questions in German around English controls, and
-announced its progress in English to somebody using a screen reader in German.
+announced its progress in English to somebody using a screen reader in German. The first
+version of the fix brought it back the other way round: it read the words in the engine's
+locale as asked, so a reader who chose French on a form written in English and German got English
+questions over French buttons.
 
 *Constraint:* the renderers' words are one catalogue, `@formancy/core/words`, read in the
-engine's locale — the one the reader chose, never the browser's — with German and French
-shipped complete and a host's language or change taking precedence a message at a time over
-English ([0171](../decisions/0171-the-renderers-words-are-the-forms-language.md)).
-`apps/docs/src/renderer-words.test.ts` reads every renderer source and template and fails on a
-literal word on screen; it failed with 154 the first time. Each renderer's `words.test` finds
-every surface and live region of a German form by its German words, and the conformance
+locale the document is read in — the engine's, the one the reader chose, where the document has
+a catalogue for it, and the document's default where it has not; never the browser's — with
+German and French shipped complete and a host's language or change, English included, taking
+precedence a message at a time over English
+([0171](../decisions/0171-the-renderers-words-are-the-forms-language.md)). `resolvedLocale` in
+`@formancy/spec` decides that locale once and `resolveText` reads through it, so the questions
+and the words cannot be chosen by two rules; each renderer's `words.test` mounts a document with
+English and German for a French and a Swiss reader and requires English around English
+questions. A count and a list follow the language of the message they are put into, not the
+reader's. `apps/docs/src/renderer-words.test.ts` reads every renderer source and template and
+fails on a literal word on screen; it failed with 154 the first time. Each renderer's
+`words.test` asks for every word in the catalogue on a German form, by its German wherever
+German says it differently — all but *Link*, the same in both and pressed by its place — and
+the same guard fails when a word is asked for in neither binding's test. The conformance
 fixture `renderer-words-mounted-locale.json` drives a German form through German Next, Back,
 Submit and row buttons under the React, Angular and Material drivers, failing in each with the
 words reverted.
@@ -1434,7 +1445,12 @@ every spec version, so a form that sets them says them in the author's one langu
 host's uploader or scanner says went wrong is set into the renderer's sentence in whatever
 language the host wrote it. The resume notice speaks the form's language only under the form's
 provider, and English drawn outside it; a host drawing it apart from a German form shows an
-English notice above German questions.
+English notice above German questions. A reader of a region the document lacks — `de-CH`
+against a `de` catalogue — reads the document's default, questions and words alike, because a
+document's text does not fall back from a region to its language. A host's own words around
+the form are the host's: a `submitLabel` is one string, and this repository's admin and
+template gallery dropped theirs, or gave it per language, because each had put an English word
+under a German form.
 
 ### D10. A form is changed by a model and nobody reads what it changed
 

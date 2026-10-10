@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
 import { applyRichCommand } from '@formancy/spec'
 import type { RichCommand } from '@formancy/spec'
 import { useFormText } from '../context.js'
@@ -49,7 +48,8 @@ export function RichTextToolbar({
   onCommand,
 }: {
   disabled: boolean
-  label: ReactNode
+  /** The field's name, which is always a string: a field with no label is named by its path. */
+  label: string
   onCommand: (command: RichCommand, href?: string) => void
 }) {
   const buttons = useRef<Array<HTMLButtonElement | null>>([])
@@ -77,9 +77,7 @@ export function RichTextToolbar({
       // Named with the field, because a form may have several of these and
       // "toolbar" five times tells a screen-reader user nothing about which
       // question they are formatting the answer to.
-      aria-label={
-        typeof label === 'string' ? text('richtext.toolbar', { label }) : text('richtext.toolbarUnnamed')
-      }
+      aria-label={text('richtext.toolbar', { label })}
       data-formancy-part="richtext-toolbar"
       onKeyDown={(event) => {
         if (event.key === 'ArrowRight') {

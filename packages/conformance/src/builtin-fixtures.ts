@@ -738,7 +738,7 @@ export const builtinFixtures: readonly Fixture[] = [
   },
   {
     name: 'a form mounted in another locale says the renderer\'s own words in it too',
-    description: 'The form\'s questions are the author\'s, translated in the document; the controls around them — Next, Back, Submit, a row\'s remove button and where the row is, a ranking\'s buttons — are the renderer\'s, and were English literals in every binding, so a German form asked its questions in German around English buttons. A driver presses those controls by the words the renderer draws for them in the locale the form was mounted in, so a renderer drawing English cannot be driven through a single step here. The repeater\'s add and remove words are the document\'s own, because a fixture names what a driver presses; the row\'s position around them is the renderer\'s.',
+    description: 'The form\'s questions are the author\'s, translated in the document; the controls around them — Next, Back, Submit, a row\'s remove button and where the row is, a ranking\'s buttons — are the renderer\'s, and were English literals in every binding, so a German form asked its questions in German around English buttons. A driver presses those controls by the words the renderer draws for them in the locale the form was mounted in, so a renderer drawing English fails at the first control it names itself — the row\'s remove button, after the steps that need only the document\'s words — and goes no further. The repeater\'s add and remove words are the document\'s own, because a fixture names what a driver presses; the row\'s position around them is the renderer\'s.',
     tags: [
       'i18n',
       'wizard',

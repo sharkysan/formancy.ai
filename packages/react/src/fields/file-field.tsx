@@ -254,8 +254,9 @@ function statusOf(pending: readonly PendingUpload[], text: FormText): string {
     return text('file.status.failed', { name: failed[0]!.name, reason: failed[0]!.reason ?? '' })
   }
   if (failed.length > 1) {
-    // Joined as the language joins a list: "a.pdf, b.pdf and c.pdf", "a.pdf, b.pdf und c.pdf".
-    const names = text.list(failed.map((entry) => entry.name))
+    // Handed over as a list, so it is joined as the sentence's language joins one: "a.pdf,
+    // b.pdf und c.pdf" — and in English when the sentence fell back to English.
+    const names = failed.map((entry) => entry.name)
     return text('file.status.failedSeveral', { count: failed.length, names })
   }
   return ''

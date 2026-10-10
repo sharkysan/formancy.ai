@@ -4,7 +4,7 @@ import { createFormEngine, parsePath } from '@formancy/core'
 import type { FormEngine } from '@formancy/core'
 import { createFormText } from '@formancy/core/words'
 import type { FormText } from '@formancy/core/words'
-import { answerFromText, resolveText } from '@formancy/spec'
+import { answerFromText, resolveText, resolvedLocale } from '@formancy/spec'
 import type { FormSchema, Text } from '@formancy/spec'
 import {
   ACCESSIBILITY_EXCLUSIONS,
@@ -128,10 +128,10 @@ export function createReactDriver(): RendererDriver {
           random: () => Math.random(),
         },
       })
-      // The engine's locale, as the renderer reads it: a driver resolving the words in
-      // the default would find "Next" on a page that says "Weiter", or — worse — agree
-      // with a renderer that ignored the locale too.
-      words = createFormText({ locale: engine.locale() })
+      // The locale the document is read in, as the renderer reads it: a driver resolving
+      // the words in the default would find "Next" on a page that says "Weiter", or —
+      // worse — agree with a renderer that ignored the locale too.
+      words = createFormText({ locale: resolvedLocale(engine.schema(), engine.locale()) })
       await act(async () => {
         render(
           <FormancyProvider engine={engine!}>

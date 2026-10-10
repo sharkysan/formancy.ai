@@ -202,12 +202,16 @@ sentence of its own, and a regular-expression engine's reason
 **The renderers' own words are a fifth, and follow the form, not the builder.** Next, Back,
 Submit, a row's buttons, the error summary's heading and every live region's sentence are
 `@formancy/core/words`, an entry of `core` the engine never imports, in English, German and
-French. Both renderers and Material draw them from one function, made from the engine's
-locale — the language the reader chose for the form, never the browser's — so a host that
-builds a German engine has German buttons without saying so twice. A host adds a language or
-changes a word, keyed by locale, a message at a time over English, through `FormancyProvider`
-or `provideFormancy`; a `submitLabel`, and a repeater's own `addLabel` and `removeLabel`, still
-win. A count follows the rules of the language its message is written in. No literal word is
+French. Both renderers and Material draw them from one function, made from the locale the
+document is read in — the engine's, the language the reader chose, where the document has a
+catalogue for it, and the document's default where it has not, never the browser's — so a host
+that builds a German engine has German buttons without saying so twice, and a reader who chose
+a language the form lacks reads one language, not two. `resolvedLocale` in `@formancy/spec`
+decides that once, and `resolveText` reads through it. A host adds a language or changes a word
+— English included — keyed by locale, a message at a time over English, through
+`FormancyProvider` or `provideFormancy`; a `submitLabel`, and a repeater's own `addLabel` and
+`removeLabel`, still win. A count follows the rules, and a list the conjunction, of the language
+its message is written in. No literal word is
 left in a renderer's source, which a test reads the compiler's tree and every template for
 ([0171](../decisions/0171-the-renderers-words-are-the-forms-language.md)).
 

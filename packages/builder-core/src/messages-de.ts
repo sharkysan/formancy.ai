@@ -358,7 +358,6 @@ export const BUILDER_MESSAGES_DE = {
     'Geschrieben, aber aus einem Wortlaut übersetzt, der sich inzwischen geändert hat – einen Blick wert: {list}',
   'translations.missing': 'Nicht übersetzt',
   'translations.preview': 'Vorschau auf {locale}',
-  'translations.previewSubmit': 'Absenden',
 
   'prompt.label': 'Beschreib das Formular oder die Änderung, die du willst',
   'prompt.example':

@@ -79,7 +79,6 @@ export const FORM_WORDS_FR = {
   'scanner.failed': 'Le scan n’a pas fonctionné : {reason}. Saisissez plutôt la valeur.',
 
   'richtext.toolbar': 'Mise en forme de {label}',
-  'richtext.toolbarUnnamed': 'Mise en forme',
   'richtext.strong': 'Gras',
   'richtext.emphasis': 'Italique',
   'richtext.link': 'Lien',

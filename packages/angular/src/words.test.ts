@@ -92,8 +92,8 @@ const settle = async (): Promise<void> => {
   await new Promise((resolve) => setTimeout(resolve, 0))
 }
 
-const status = (part: string): string =>
-  document.querySelector(`[data-formancy-part="${part}"]`)?.textContent?.trim() ?? ''
+const part = (name: string): Element | null => document.querySelector(`[data-formancy-part="${name}"]`)
+const status = (name: string): string => part(name)?.textContent?.trim() ?? ''
 
 const PAGED = document_([
   { key: 'one', type: 'page', label: 'Eins', fields: [{ key: 'name', type: 'text', label: 'Name' }] },
@@ -298,11 +298,44 @@ describe('every live region in a German form', () => {
     settlers[1]!.reject(new Error('nein'))
     const text = createFormText({ locale: 'de' })
     await waitFor(() =>
-      expect(status('file-status')).toBe(
-        text('file.status.failedSeveral', { count: 2, names: text.list(['a.pdf', 'b.pdf']) }),
-      ),
+      expect(status('file-status')).toBe(text('file.status.failedSeveral', { count: 2, names: ['a.pdf', 'b.pdf'] })),
     )
     expect(status('file-status')).toContain('a.pdf und b.pdf')
+  })
+
+  test('joins the files’ names in the language of the sentence they are put into', async () => {
+    // A host's Italian with no word for the failure falls back to the English sentence,
+    // and the names were joined in Italian inside it: "2 files were not attached: a.pdf e
+    // b.pdf." — announced to a screen-reader user in neither language.
+    const settlers: Array<(error: unknown) => void> = []
+    const uploader: Uploader = () => new Promise<StoredFile>((_, reject) => settlers.push(reject))
+    await mount(document_([{ key: 'evidence', type: 'file', label: 'Prove' }]), {
+      locale: 'it',
+      words: { it: { 'form.next': 'Avanti' } },
+      providers: [provideFormancyUploader(uploader)],
+    })
+
+    fireEvent.change(screen.getByLabelText('Prove'), { target: { files: [pdf('a.pdf'), pdf('b.pdf')] } })
+    await waitFor(() => expect(settlers).toHaveLength(1))
+    settlers[0]!(new Error('no'))
+    await waitFor(() => expect(settlers).toHaveLength(2))
+    settlers[1]!(new Error('no'))
+
+    await waitFor(() => expect(status('file-status')).toBe('2 files were not attached: a.pdf and b.pdf.'))
+  })
+
+  test('says a file waits its turn in German', async () => {
+    // The visible word on a file queued behind another: the one row state no other case
+    // reached, so a literal written back there went unnoticed by every case but the guard.
+    await mount(document_([{ key: 'evidence', type: 'file', label: 'Belege' }]), {
+      providers: [provideFormancyUploader(() => new Promise<StoredFile>(() => undefined))],
+    })
+
+    fireEvent.change(screen.getByLabelText('Belege'), { target: { files: [pdf('a.pdf'), pdf('b.pdf')] } })
+
+    const waiting = await screen.findByText(de('file.waiting'))
+    expect(waiting.closest('[data-formancy-part="file-item"]')?.textContent).toContain('b.pdf')
+    expect(screen.queryByText(en('file.waiting'))).toBeNull()
   })
 
   test('names a stored file’s buttons in German, and the way back from removing one', async () => {
@@ -363,6 +396,9 @@ describe('every live region in a German form', () => {
     await waitFor(() => expect(status('typeahead-status')).toBe(de('options.searching')))
     fail(new Error('down'))
     await waitFor(() => expect(status('typeahead-status')).toBe(de('options.failed')))
+    // Every theme styles a failure by this. It was decided by whether the sentence began
+    // "The options could not", so in German a failure was drawn as a hint.
+    expect(part('typeahead-status')?.getAttribute('data-state')).toBe('failed')
   })
 
   test('says nothing matched in German', async () => {
@@ -431,7 +467,12 @@ describe('a draft that came back changed, told in German', () => {
     document.body.innerHTML = ''
 
     await mount(PAGED, { component: FormancyResumeNotice, inputs: { migration: { severity: 'breaking', changes: [] } } })
-    expect(screen.getByText(de('resume.breaking.cannotSubmit'))).toBeTruthy()
+    // All three sentences, not only the emphasised one: a paragraph whose middle is German
+    // and whose ends are English is the half-translated form at its most visible.
+    const paragraph = screen.getByText(de('resume.breaking.cannotSubmit')).parentElement!
+    expect(paragraph.textContent?.replace(/\s+/g, ' ').trim()).toBe(
+      [de('resume.breaking.kept'), de('resume.breaking.cannotSubmit'), de('resume.breaking.restart')].join(' '),
+    )
   })
 
   test('and in English outside them, which have no form to take a language from', async () => {
@@ -476,5 +517,46 @@ describe('whose words win', () => {
     await mount(document_([{ key: 'name', type: 'text', label: 'Name' }]), { locale: '' })
 
     expect(screen.getByRole('button', { name: en('form.submit') })).toBeTruthy()
+  })
+
+  test('a host’s English, on a form with no catalogue and on one in a language nobody wrote', async () => {
+    // A document with no `i18n` section gives the engine the empty locale, and the host's
+    // words were never read for it: `{ en: … }` was ignored on the commonest kind of form.
+    const words = { en: { 'form.submit': 'Send', 'form.next': 'Continue' } }
+    await mount(document_([{ key: 'name', type: 'text', label: 'Name' }]), { locale: '', words })
+    expect(screen.getByRole('button', { name: 'Send' })).toBeTruthy()
+    TestBed.resetTestingModule()
+    document.body.innerHTML = ''
+
+    // Nor was it read as the last word before the shipped English, for a language the host
+    // did not translate.
+    await mount(PAGED, { locale: 'it', words })
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeTruthy()
+  })
+})
+
+describe('the words follow the language the questions are read in', () => {
+  // English and German, and nothing else. A locale the document has no catalogue for is
+  // read in its default, English.
+  const BILINGUAL = document_([{ key: 'name', type: 'text', label: { $t: 'name' } }], {
+    i18n: { defaultLocale: 'en', messages: { en: { name: 'Your name' }, de: { name: 'Ihr Name' } } },
+  })
+
+  test.each(['fr', 'de-CH'])('a reader asking for %s, which the document lacks, reads English around English questions', async (locale) => {
+    // The words were chosen by the engine's locale and the questions by the catalogue it
+    // resolves in: English questions with "Envoyer" under them, and for a Swiss reader of
+    // a German catalogue, "Absenden" — a form in two languages, the defect turned round.
+    await mount(BILINGUAL, { locale })
+
+    expect(screen.getByRole('textbox', { name: 'Your name' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: en('form.submit') })).toBeTruthy()
+  })
+
+  test('a reader asking for a language the document has reads both in it', async () => {
+    // The same choice made the other way: a catalogue the document has is the words' too.
+    await mount(BILINGUAL, { locale: 'de' })
+
+    expect(screen.getByRole('textbox', { name: 'Ihr Name' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: de('form.submit') })).toBeTruthy()
   })
 })

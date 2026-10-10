@@ -229,10 +229,7 @@ export class FormancyRichTextField extends FieldComponentBase {
   /** Named with the field: a form may have several of these, and "toolbar"
    *  five times says nothing about which question is being answered. */
   protected toolbarLabel(): string {
-    const label = this.context.label
-    return typeof label === 'string'
-      ? this.words('richtext.toolbar', { label })
-      : this.words('richtext.toolbarUnnamed')
+    return this.words('richtext.toolbar', { label: this.context.label })
   }
 
   protected press(command: RichCommand): void {

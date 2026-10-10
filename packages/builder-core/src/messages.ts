@@ -354,7 +354,6 @@ const BUILDER_OWN_MESSAGES = {
     'Written, but translated from wording that has since changed, so worth a look: {list}',
   'translations.missing': 'Not translated',
   'translations.preview': 'Preview in {locale}',
-  'translations.previewSubmit': 'Submit',
 
   // --------------------------------------------------------------- the scenario panel
   'scenarios.label': 'Scenarios',

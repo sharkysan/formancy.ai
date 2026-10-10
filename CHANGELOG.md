@@ -18,13 +18,21 @@ while a file is sent, a list is searched or a code is scanned — was an English
 Angular and Material separately. So a form whose reader chose German asked its questions in
 German around English buttons, and told a screen-reader user its progress in English. Now
 those words are one catalogue, `@formancy/core/words` — a second entry the engine never
-imports — in English, German and French, read in the engine's locale: the language the reader
-chose for the form, never the browser's. A host that builds a German engine gets German buttons
-without saying so twice. A host adds a language or changes a word a message at a time, keyed by
-locale, through `FormancyProvider`'s new `words` or `provideFormancy(engine, { words })`;
-English fills what it leaves out. `submitLabel`, and a repeater's own `addLabel` and
-`removeLabel`, still win. A count follows the rules of the language its message is in, and a
-list of files is joined as that language joins one. React reads the words with `useFormText()`;
+imports — in English, German and French, read in the language the questions are read in: the
+engine's locale where the document has a catalogue for it, and the document's default where it
+has not, never the browser's. `resolvedLocale(schema, locale)`, new in `@formancy/spec` beside
+`resolveText`, which reads through it, says which; read in the engine's locale alone, a French
+reader of a form written in English and German got English questions over French buttons. A
+host that builds a German engine gets German buttons without saying so twice. A host adds a
+language or changes a word a message at a time, keyed by locale, through `FormancyProvider`'s
+new `words` or `provideFormancy(engine, { words })`; English fills what it leaves out, and is
+itself a language a host can change — `{ en: { 'form.submit': 'Send' } }` applies to a form
+with no catalogue too. `submitLabel`, and a repeater's own `addLabel` and `removeLabel`, still
+win. A count follows the rules of the language its message is in, and a list of files is joined
+as that language joins one — the sentence's, so a host's Italian does not put an "e" into an
+English sentence. Both builders' translation previews, the admin's fill pane and the site's
+template gallery stopped naming the form's button in their own English, which had put *Submit*
+under a French or German form. React reads the words with `useFormText()`;
 Angular with `injectFormText()` and the `formancyText` pipe, which a registry's own controls can
 use too. A test reads every renderer source and template and fails on a literal word on screen;
 it found 154. The conformance drivers press the renderers' own controls by these words in the
@@ -39,7 +47,9 @@ host test that finds a German form's controls by their English names stops findi
 resume notice's paragraph for a draft that cannot be submitted is three sentences rather than
 one with an emphasised phrase spliced into it, because a translator cannot move such a phrase;
 the English still says it *cannot be submitted*, emphasised. The conformance drivers no longer
-pass `submitLabel`, so a renderer certified with them is held to its default submit word. What
+pass `submitLabel`, so a renderer certified with them is held to its default submit word. The
+builders' catalogue loses `translations.previewSubmit`, so a host's builder translation that
+names it no longer compiles against the message type. What
 stays one language, and is listed as debt: a field's error is the engine's code (`required`)
 shown as a code, and `addLabel` and `removeLabel` are plain strings in every spec version.
 

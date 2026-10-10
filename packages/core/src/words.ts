@@ -12,8 +12,9 @@ import { FORM_WORDS_FR } from './words-fr.js'
  * so a form in German asked its questions in German around English buttons, and each new
  * control added more of them.
  *
- * **One catalogue, read in the engine's locale, which both renderers draw**
- * ([0171](../../../docs/decisions/0171-the-renderers-words-are-the-forms-language.md)).
+ * **One catalogue, read in the language the questions are, which both renderers draw**
+ * ([0171](../../../docs/decisions/0171-the-renderers-words-are-the-forms-language.md)):
+ * the engine's locale where the document has a catalogue for it, and its default where not.
  * The renderer analogue of the builders' catalogue
  * ([0114](../../../docs/decisions/0114-the-builder-speaks-the-authors-language.md)), with
  * one difference that is the point: a builder is handed its language by the host, and a
@@ -139,7 +140,6 @@ export const FORM_WORDS = {
 
   // ------------------------------------------------------------ formatted text
   'richtext.toolbar': 'Formatting for {label}',
-  'richtext.toolbarUnnamed': 'Formatting',
   'richtext.strong': 'Bold',
   'richtext.emphasis': 'Italic',
   'richtext.link': 'Link',
@@ -174,13 +174,20 @@ export type FormWords = { readonly [Id in FormWordId]?: Message }
 /** A host's words, by BCP 47 locale: languages it adds, and words it changes. */
 export type FormWordsByLocale = Readonly<Record<string, FormWords>>
 
+/** What a word's placeholders are filled with. A list is joined as the message's language joins one. */
+export type FormWordValues = Readonly<Record<string, string | number | readonly string[]>>
+
 /** A form word, in the form's language, with its placeholders filled. */
 export interface FormText {
-  (id: FormWordId, values?: Readonly<Record<string, string | number>>): string
-  /** Items joined the way this language joins them: "A, B and C", "A, B und C". */
-  list(items: readonly string[]): string
   /**
-   * BCP 47: the language the words are in — the engine's locale, or its language, when
+   * The word, with `{name}` filled from `values`. A list given as an array is joined the
+   * way the language the message is written in joins one — "a.pdf, b.pdf und c.pdf" — and
+   * never the reader's when the message fell back to English: an English sentence with an
+   * Italian "e" in it is in neither language.
+   */
+  (id: FormWordId, values?: FormWordValues): string
+  /**
+   * BCP 47: the language the words are in — the locale asked for, or its language, when
    * this has words for it; English otherwise. A host formatting anything else beside the
    * form's words gets the same answer this did.
    */
@@ -188,9 +195,15 @@ export interface FormText {
 }
 
 export interface FormTextOptions {
-  /** The engine's locale: `engine.locale()`. Empty for a document with no catalogue. */
+  /**
+   * The locale the form's document is read in: `resolvedLocale(engine.schema(),
+   * engine.locale())` from `@formancy/spec`, which is the engine's locale when the document
+   * has a catalogue for it and the document's default when it has not. Not `engine.locale()`
+   * alone: a French reader of a form with no French was shown English questions over French
+   * buttons. Empty for a document with no catalogue and no locale given, which is English.
+   */
   readonly locale: string
-  /** Languages a host adds, and words it changes in a shipped one. */
+  /** Languages a host adds, and words it changes in a shipped one — English included. */
   readonly words?: FormWordsByLocale
 }
 
@@ -210,52 +223,67 @@ const ENGLISH = 'en-GB'
  * The function a renderer calls for every word it draws.
  *
  * Built once per form rather than looked up per word, so the plural rules and the list
- * format are constructed once. The engine's locale is fixed for its lifetime, so this is
- * too.
+ * formats are constructed once each. The engine's locale is fixed for its lifetime, so
+ * this is too.
  *
  * A word is the host's for the locale, then this package's for it, then the same two for
- * its language (`de` for `de-CH`), then English — one message at a time, so a host
- * translating into a language not shipped here has a usable form at every step.
+ * its language (`de` for `de-CH`), then the host's English, then this package's — one
+ * message at a time, so a host translating into a language not shipped here has a usable
+ * form at every step, and a host that changes an English word changes it for every reader
+ * who ends up reading English, the reader of a form with no catalogue first among them.
  */
 export function createFormText(options: FormTextOptions): FormText {
   const host = options.words ?? {}
-  const tags = candidates(options.locale)
+  // English last, and addressable: `en-GB` is what this package writes and `en` what a host
+  // most likely keys its English by. The empty locale is English and nothing else.
+  const tags = [...new Set([...candidates(options.locale), ...candidates(ENGLISH)])]
   const sources = tags.flatMap((tag) => [
     ...(host[tag] === undefined ? [] : [{ tag, words: host[tag] }]),
     ...(SHIPPED[tag] === undefined ? [] : [{ tag, words: SHIPPED[tag] }]),
   ])
   const locale = sources.map((source) => source.tag).find(readable) ?? ENGLISH
 
+  // Both by the language the message is IN, which a fallback makes different from the
+  // reader's: an English sentence counted by Portuguese rules says "One question" about
+  // none, and joined by Italian ones says "a.pdf e b.pdf".
   const rules = new Map<string, Intl.PluralRules>()
-  const pluralFor = (tag: string): Intl.PluralRules => {
-    const known = rules.get(tag)
-    if (known !== undefined) return known
-    const made = new Intl.PluralRules(readable(tag) ? tag : ENGLISH)
-    rules.set(tag, made)
-    return made
-  }
-  const lists = new Intl.ListFormat(locale, { style: 'long', type: 'conjunction' })
+  const pluralFor = (tag: string): Intl.PluralRules =>
+    made(rules, tag, (readable) => new Intl.PluralRules(readable))
+  const lists = new Map<string, Intl.ListFormat>()
+  const listFor = (tag: string): Intl.ListFormat =>
+    made(lists, tag, (readable) => new Intl.ListFormat(readable, { style: 'long', type: 'conjunction' }))
 
-  const text = (id: FormWordId, values: Readonly<Record<string, string | number>> = {}): string => {
+  const text = (id: FormWordId, values: FormWordValues = {}): string => {
     const found = sources.find((source) => source.words[id] !== undefined)
-    // Counted by the rules of the language the message is IN: an English fallback
-    // counted by Portuguese rules says "One question" about none.
+    const tag = found?.tag ?? ENGLISH
     const message: Message = found?.words[id] ?? FORM_WORDS[id]
+    const count = values['count']
     const template =
       typeof message === 'string'
         ? message
-        : pluralForm(message, pluralFor(found?.tag ?? ENGLISH), values['count'])
+        : pluralForm(message, pluralFor(tag), typeof count === 'number' ? count : undefined)
     return template.replace(/\{(\w+)\}/g, (whole, name: string) => {
       const value = values[name]
       // Visible rather than emptied: "Add ." hides that a value never arrived.
-      return value === undefined ? whole : String(value)
+      if (value === undefined) return whole
+      return typeof value === 'object' ? listFor(tag).format(value) : String(value)
     })
   }
 
-  return Object.assign(text, {
-    list: (items: readonly string[]) => lists.format(items),
-    locale,
-  })
+  return Object.assign(text, { locale })
+}
+
+/** One `Intl` formatter per language, made for a tag `Intl` can read and English otherwise. */
+function made<Formatter>(
+  cache: Map<string, Formatter>,
+  tag: string,
+  make: (readable: string) => Formatter,
+): Formatter {
+  const known = cache.get(tag)
+  if (known !== undefined) return known
+  const fresh = make(readable(tag) ? tag : ENGLISH)
+  cache.set(tag, fresh)
+  return fresh
 }
 
 /** The locale, then its language: `de-CH`, then `de`. Nothing for the empty locale. */
@@ -281,13 +309,9 @@ function readable(locale: string): boolean {
   }
 }
 
-function pluralForm(
-  message: PluralMessage,
-  rules: Intl.PluralRules,
-  count: string | number | undefined,
-): string {
+function pluralForm(message: PluralMessage, rules: Intl.PluralRules, count: number | undefined): string {
   // Called without a count, the `other` form with `{count}` left visible.
-  if (typeof count !== 'number') return message.other
+  if (count === undefined) return message.other
   return message[rules.select(count)] ?? message.other
 }
 

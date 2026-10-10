@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { FormSchema } from '@formancy/spec'
 import { createFormEngine } from '@formancy/core'
 import { ErrorSummary, FormancyForm, FormancyProvider } from '@formancy/react'
+import type { FormWords } from '@formancy/react'
 import catalog from '../../../templates/catalog.json'
 import '@formancy/themes/dusk.css'
 import { Backdrop, PLAYGROUND, SiteBar, SiteFooter } from './chrome.js'
@@ -44,6 +45,19 @@ function facts(entry: Template): string[] {
     'Conditional questions',
   ]
 }
+/**
+ * The preview's one button, named for what it does here — nothing is sent — in each
+ * language a template is offered in. A `submitLabel` is one string in one language, and in
+ * a German preview it was the only English word in the form, beside "Zurück" and "Weiter"
+ * ([0171](../../../docs/decisions/0171-the-renderers-words-are-the-forms-language.md)).
+ * Outside the form, the dialog is the site's, and the site is English.
+ */
+const PREVIEW_WORDS = {
+  en: { 'form.submit': 'Check answers' },
+  de: { 'form.submit': 'Antworten prüfen' },
+  fr: { 'form.submit': 'Vérifier les réponses' },
+} satisfies Record<Locale, FormWords>
+
 const editUrl = (entry: Entry, locale: Locale): string =>
   `${PLAYGROUND}?template=${encodeURIComponent(entry.id)}&locale=${encodeURIComponent(locale)}`
 
@@ -163,11 +177,10 @@ function Preview({ entry, locale, onClose }: { entry: Template; locale: Locale; 
         {/* One submit, named for what it does. The renderer draws its own
             button, and the dialog had a second one underneath it doing the same
             thing — two controls, one action, stacked. */}
-        <FormancyProvider engine={engine}>
+        <FormancyProvider engine={engine} words={PREVIEW_WORDS}>
           <ErrorSummary />
           <FormancyForm
             layout="web"
-            submitLabel="Check answers"
             onSubmit={(result) =>
               setStatus(
                 result.ok

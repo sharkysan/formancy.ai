@@ -1,7 +1,7 @@
 import { Pipe, inject } from '@angular/core'
 import type { PipeTransform } from '@angular/core'
 import { createFormText } from '@formancy/core/words'
-import type { FormText, FormWordId } from '@formancy/core/words'
+import type { FormText, FormWordId, FormWordValues } from '@formancy/core/words'
 import { FORMANCY_TEXT } from './provide.js'
 
 let english: FormText | undefined
@@ -35,7 +35,7 @@ export function injectFormText(): FormText {
 export class FormancyTextPipe implements PipeTransform {
   private readonly text = injectFormText()
 
-  transform(id: FormWordId, values?: Readonly<Record<string, string | number>>): string {
+  transform(id: FormWordId, values?: FormWordValues): string {
     return this.text(id, values)
   }
 }

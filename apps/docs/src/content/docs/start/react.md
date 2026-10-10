@@ -118,8 +118,9 @@ background and cursor are still yours.
 The questions are yours. The words around them — Next, Back, Submit, a repeater's Add and
 Remove and which row a button acts on, the error summary's heading, and what a field
 announces while a file is sent or a list is searched — are the renderer's, and they are in
-the engine's locale: the language the reader chose for the form, never the browser's. Build
-the engine in German and the buttons are German; English, German and French ship.
+the language the questions are read in: the engine's locale when the document has a catalogue
+for it, and the document's default when it has not — never the browser's. Build the engine in
+German and the buttons are German; English, German and French ship.
 
 ```tsx
 const engine = createFormEngine({ schema, locale: 'de', capabilities })
@@ -130,7 +131,8 @@ const engine = createFormEngine({ schema, locale: 'de', capabilities })
 ```
 
 A language that does not ship, or a word you want said differently, is yours to give, by
-locale, a message at a time — anything you leave out is English:
+locale, a message at a time — anything you leave out is English. English is a language like
+the others: `en` changes it, on a form with no catalogue too.
 
 ```tsx
 import type { FormWordsByLocale } from '@formancy/react'
@@ -139,6 +141,7 @@ import type { FormWordsByLocale } from '@formancy/react'
 const WORDS: FormWordsByLocale = {
   it: { 'form.next': 'Avanti', 'form.back': 'Indietro', 'form.submit': 'Invia' },
   de: { 'form.submit': 'Senden' },
+  en: { 'form.submit': 'Send' },
 }
 
 <FormancyProvider engine={engine} words={WORDS}>

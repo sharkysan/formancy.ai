@@ -4,6 +4,7 @@ import { cancelUploads } from '@formancy/core'
 import type { FormEngine } from '@formancy/core'
 import { createFormText } from '@formancy/core/words'
 import type { FormText, FormWordsByLocale } from '@formancy/core/words'
+import { resolvedLocale } from '@formancy/spec'
 
 /**
  * The engine reaches components through DI, never through inputs drilling: a
@@ -12,15 +13,16 @@ import type { FormText, FormWordsByLocale } from '@formancy/core/words'
 export const FORMANCY_ENGINE = new InjectionToken<FormEngine>('formancy.engine')
 
 /**
- * The form's own words, in the engine's locale (0171). Beside the engine rather than on
- * it, because the engine has no buttons — the server runs the same one.
+ * The form's own words, in the language its questions are read in (0171). Beside the engine
+ * rather than on it, because the engine has no buttons — the server runs the same one.
  */
 export const FORMANCY_TEXT = new InjectionToken<FormText>('formancy.text')
 
 export interface FormancyOptions {
   /**
    * Languages a host adds, and words it changes, by locale: `{ it: { 'form.next':
-   * 'Avanti' } }`. Read in the engine's locale, a word at a time, and English for the rest.
+   * 'Avanti' } }`, or `{ en: { 'form.submit': 'Send' } }`. Read in the language the
+   * questions are, a word at a time, and English for the rest.
    */
   readonly words?: FormWordsByLocale
 }
@@ -39,11 +41,13 @@ export function provideFormancy(engine: FormEngine, options: FormancyOptions = {
     },
     {
       provide: FORMANCY_TEXT,
-      // The engine's locale is fixed for its lifetime, so its words are fixed for the
+      // In the catalogue the document is read in, not the engine's locale as asked: a French
+      // reader of a form with no French reads English questions, and read French buttons
+      // under them. Both are fixed for the engine's lifetime, so its words are fixed for the
       // injector's: one function per form, not one per word.
       useFactory: () =>
         createFormText({
-          locale: engine.locale(),
+          locale: resolvedLocale(engine.schema(), engine.locale()),
           ...(options.words === undefined ? {} : { words: options.words }),
         }),
     },

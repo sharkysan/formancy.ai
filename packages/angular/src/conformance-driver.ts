@@ -8,7 +8,7 @@ import { createFormEngine, parsePath } from '@formancy/core'
 import type { FormEngine } from '@formancy/core'
 import { createFormText } from '@formancy/core/words'
 import type { FormText } from '@formancy/core/words'
-import { answerFromText, resolveText } from '@formancy/spec'
+import { answerFromText, resolveText, resolvedLocale } from '@formancy/spec'
 import type { FormSchema, Text } from '@formancy/spec'
 import {
   ACCESSIBILITY_EXCLUSIONS,
@@ -146,8 +146,8 @@ export function createAngularDriver(
           random: () => Math.random(),
         },
       })
-      // The engine's locale, as the renderer reads it (0171).
-      words = createFormText({ locale: engine.locale() })
+      // The locale the document is read in, as the renderer reads it (0171).
+      words = createFormText({ locale: resolvedLocale(engine.schema(), engine.locale()) })
       const view = await render(FormancyForm, {
         providers: [
           provideZonelessChangeDetection(),

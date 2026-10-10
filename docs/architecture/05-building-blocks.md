@@ -70,7 +70,7 @@ The data contract, and nothing that evaluates it.
 | `hash.ts` | sha256 over the canonical form, via `@noble/hashes` because the builder hashes in a browser |
 | `diff.ts` | `diffSchemas` over **data paths**, classifying compatible / lossy / breaking ([0015](../decisions/0015-diff-before-server.md)) |
 | `paths.ts` | The single walk of the model that everything else agrees with |
-| `presentation.ts` | Message-reference resolution and layout path checks ([0014](../decisions/0014-presentation-sections.md)) |
+| `presentation.ts` | Message-reference resolution and layout path checks ([0014](../decisions/0014-presentation-sections.md)); `resolvedLocale`, the catalogue a document is read in, which `resolveText` reads through and the renderers' own words are made in ([0171](../decisions/0171-the-renderers-words-are-the-forms-language.md)) |
 | `generated/document-validator.js` | The ahead-of-time ajv artefact, stamped with the schema hash so staleness is detectable ([0040](../decisions/0040-no-eval.md)) |
 
 ### `@formancy/expressions` (L1)
@@ -113,7 +113,7 @@ comprehension would capture.
 | `interaction.ts` | Touched state, which decides when a message is shown |
 | `wizard.ts` | Page navigation and per-page validation semantics |
 | `strip.ts` | `clearOnHide` pruning, applied identically on client and server |
-| `words.ts` | **A second entry, `@formancy/core/words`**, which the engine never imports: the renderers' own words in English, German and French, and `createFormText`, which reads them in the engine's locale a message at a time over a host's ([0171](../decisions/0171-the-renderers-words-are-the-forms-language.md)) |
+| `words.ts` | **A second entry, `@formancy/core/words`**, which the engine never imports: the renderers' own words in English, German and French, and `createFormText`, which reads them in the locale the document is read in (`resolvedLocale`, from `@formancy/spec`) a message at a time over a host's ([0171](../decisions/0171-the-renderers-words-are-the-forms-language.md)) |
 | `uploads.ts` | A file field's uploads: one at a time, each waiting, sending with its progress, or refused; cancel and retry; kept with the form by the row's identity, so a row that moves keeps them; the thumbnail size both renderers draw at ([0130](../decisions/0130-each-file-is-its-own-upload.md)) |
 
 ### `@formancy/react` and `@formancy/angular` (L3)

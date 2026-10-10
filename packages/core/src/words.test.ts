@@ -59,6 +59,21 @@ describe('a form word', () => {
     expect(text.locale).toBe('it')
   })
 
+  test('a host’s English is read for a form with no locale, and before the shipped English for any', () => {
+    // An engine over a document with no `i18n` section has the empty locale, and the host's
+    // words were never looked at for it: `{ en: { 'form.submit': 'Send' } }` drew Submit on
+    // the commonest kind of form, while `locale` said the words were English.
+    const words = { en: { 'form.submit': 'Send' }, 'en-GB': { 'form.back': 'Go back' } }
+
+    expect(createFormText({ locale: '', words })('form.submit')).toBe('Send')
+    expect(createFormText({ locale: '', words })('form.back')).toBe('Go back')
+    // An Italian reader of a host that translated nothing into Italian reads the host's
+    // English, not the shipped English it replaced.
+    expect(createFormText({ locale: 'it', words })('form.submit')).toBe('Send')
+    // And a language that has the word still says it.
+    expect(createFormText({ locale: 'de', words })('form.submit')).toBe(FORM_WORDS_DE['form.submit'])
+  })
+
   test('a host overrides one word of a shipped language and keeps the others', () => {
     const text = createFormText({ locale: 'de', words: { de: { 'form.submit': 'Senden' } } })
 
@@ -105,8 +120,23 @@ describe('a form word', () => {
   })
 
   test('joins a list the way its language does', () => {
-    expect(createFormText({ locale: 'de' }).list(['a.pdf', 'b.pdf', 'c.pdf'])).toBe('a.pdf, b.pdf und c.pdf')
-    expect(createFormText({ locale: '' }).list(['a.pdf', 'b.pdf', 'c.pdf'])).toBe('a.pdf, b.pdf and c.pdf')
+    const names = ['a.pdf', 'b.pdf', 'c.pdf']
+    expect(createFormText({ locale: 'de' })('file.status.failedSeveral', { count: 3, names })).toContain(
+      'a.pdf, b.pdf und c.pdf',
+    )
+    expect(createFormText({ locale: '' })('file.status.failedSeveral', { count: 3, names })).toBe(
+      '3 files were not attached: a.pdf, b.pdf and c.pdf.',
+    )
+  })
+
+  test('and joins it in the language of the message it is put into, not the reader’s', () => {
+    // A host's Italian without the failure sentence falls back to the English one, and the
+    // names were joined in Italian inside it: "a.pdf, b.pdf e c.pdf" in an English sentence.
+    const text = createFormText({ locale: 'it', words: { it: { 'form.next': 'Avanti' } } })
+
+    expect(text('file.status.failedSeveral', { count: 3, names: ['a.pdf', 'b.pdf', 'c.pdf'] })).toBe(
+      '3 files were not attached: a.pdf, b.pdf and c.pdf.',
+    )
   })
 
   test('is read for a locale the runtime cannot parse, rather than failing the form', () => {
@@ -117,7 +147,7 @@ describe('a form word', () => {
 
     expect(text('form.submit')).toBe('Abschicken')
     expect(text('form.next')).toBe(FORM_WORDS_DE['form.next'])
-    expect(text.list(['a', 'b'])).toBe('a und b')
+    expect(text('file.status.failedSeveral', { count: 2, names: ['a', 'b'] })).toContain('a und b')
     expect(text.locale).toBe('de')
   })
 })

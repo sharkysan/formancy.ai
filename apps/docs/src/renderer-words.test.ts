@@ -3,6 +3,8 @@ import { dirname, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
 import { describe, expect, test } from 'vitest'
+import { FORM_WORDS, FORM_WORDS_DE } from '@formancy/core/words'
+import type { FormWordId } from '@formancy/core/words'
 
 /**
  * Every word a renderer shows comes from the form's words, never from a literal in a binding.
@@ -573,5 +575,45 @@ describe('the rules the guard reads by', () => {
       }
     \` }) class X {}`
     expect(inSnippet(template)).toEqual([])
+  })
+})
+
+describe('every word in the catalogue', () => {
+  /**
+   * Words a binding's `words.test` cannot find by their German, and why. Only a word German
+   * says exactly as English does belongs here: found by that name, it proves nothing about
+   * which language is on screen, so it is found by where it stands instead.
+   */
+  const NOT_BY_NAME: Readonly<Partial<Record<FormWordId, string>>> = {
+    'richtext.link': '"Link" in both: the case presses the toolbar\'s third button',
+  }
+
+  /** Every string literal a test file writes — the ids it asks the catalogue for among them. */
+  const literalsIn = (path: string): Set<string> => {
+    const found = new Set<string>()
+    const visit = (node: ts.Node): void => {
+      if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) found.add(node.text)
+      ts.forEachChild(node, visit)
+    }
+    visit(parse(path))
+    return found
+  }
+
+  test.each(['packages/react/src/words.test.tsx', 'packages/angular/src/words.test.ts'])(
+    'is asked for by name in %s',
+    (path) => {
+      // The safety analysis says each binding's words test finds every surface of a German
+      // form by its German words. Three were in no case — a queued file's "Waiting" and two
+      // of the three sentences of the resume notice — so a literal written back there was
+      // caught by the source guard above and by nothing that looks at a German form.
+      const named = literalsIn(join(repo, path))
+      const ids = Object.keys(FORM_WORDS) as FormWordId[]
+      expect(ids.filter((id) => !named.has(id) && NOT_BY_NAME[id] === undefined)).toEqual([])
+    },
+  )
+
+  test('and a word excused from that is one German says as English does', () => {
+    // An excuse that outlived its reason would hide a word nobody checks.
+    for (const id of Object.keys(NOT_BY_NAME) as FormWordId[]) expect(FORM_WORDS_DE[id], id).toEqual(FORM_WORDS[id])
   })
 })

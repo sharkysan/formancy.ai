@@ -305,11 +305,13 @@ engine.
 
 The words a form says that its author did not write — Next, Back, Submit, a repeater's Add
 and Remove and which row a button acts on, the required hint, the error summary's heading,
-what a field announces while a file is sent — follow the same locale. They are not in the
+what a field announces while a file is sent — follow the questions. They are not in the
 document: they are the renderers', in `@formancy/core/words`, shipped in English, German and
-French, and read in the engine's locale by every renderer alike. So a form whose reader chose
-German says *Weiter* and *Absenden* around its German questions, and the playground's
-Language switch changes both. The browser's language never decides them; a host adds a
+French, and every renderer alike reads them in the catalogue the questions are read in — the
+engine's locale where the document has a catalogue for it, its default where it has not, as
+`resolvedLocale` in `@formancy/spec` says. So a form whose reader chose German says *Weiter*
+and *Absenden* around its German questions, a reader who chose French on a form with no French
+reads its default language in both, and the playground's Language switch changes both. The browser's language never decides them; a host adds a
 language or changes a word through its renderer — see the
 [React](/docs/start/react/#the-forms-own-words-in-its-language) and
 [Angular](/docs/start/angular/#the-forms-own-words-in-its-language) quickstarts. What stays

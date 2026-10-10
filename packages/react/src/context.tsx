@@ -4,6 +4,7 @@ import { cancelUploads } from '@formancy/core'
 import type { FormEngine } from '@formancy/core'
 import { createFormText } from '@formancy/core/words'
 import type { FormText, FormWordsByLocale } from '@formancy/core/words'
+import { resolvedLocale } from '@formancy/spec'
 
 /**
  * The engine reaches components through context, never through props drilling:
@@ -14,8 +15,8 @@ import type { FormText, FormWordsByLocale } from '@formancy/core/words'
 const FormancyContext = createContext<FormEngine | null>(null)
 
 /**
- * The form's own words, in the engine's locale (0171). Beside the engine rather than on
- * it, because the engine has no buttons — the server runs the same one.
+ * The form's own words, in the language its questions are read in (0171). Beside the engine
+ * rather than on it, because the engine has no buttons — the server runs the same one.
  */
 const FormancyTextContext = createContext<FormText | null>(null)
 
@@ -27,9 +28,9 @@ export function FormancyProvider({
   engine: FormEngine
   /**
    * Languages a host adds, and words it changes, by locale: `{ it: { 'form.next':
-   * 'Avanti' } }`. Read in the engine's locale, a word at a time, and English for the
-   * rest. A constant, as any context value should be: a new object on every render is a
-   * new language for every control below.
+   * 'Avanti' } }`, or `{ en: { 'form.submit': 'Send' } }`. Read in the language the
+   * questions are, a word at a time, and English for the rest. A constant, as any context
+   * value should be: a new object on every render is a new language for every control below.
    */
   words?: FormWordsByLocale
   children?: ReactNode
@@ -37,9 +38,15 @@ export function FormancyProvider({
   // A form that goes away stops its uploads. Here rather than in the file field: the
   // field remounts whenever its row moves, and its uploads have to survive that (0130).
   useEffect(() => () => cancelUploads(engine), [engine])
-  // The engine's locale is fixed for its lifetime, so the words are fixed for the engine's.
+  // In the catalogue the document is read in, not the engine's locale as asked: a French
+  // reader of a form with no French reads English questions, and read French buttons under
+  // them. Both are fixed for the engine's lifetime, so the words are fixed for the engine's.
   const text = useMemo(
-    () => createFormText({ locale: engine.locale(), ...(words === undefined ? {} : { words }) }),
+    () =>
+      createFormText({
+        locale: resolvedLocale(engine.schema(), engine.locale()),
+        ...(words === undefined ? {} : { words }),
+      }),
     [engine, words],
   )
   return (
