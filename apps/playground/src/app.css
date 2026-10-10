@@ -853,6 +853,86 @@ body {
   color: var(--text);
 }
 
+/*
+ * Something to try with the model, beside the pane it fills, in either builder. The page's
+ * own rather than a package part, so dressed here, in the workbench's variables so it sits
+ * with the panes around it. Each button is the request itself, so it wraps like a sentence
+ * rather than holding the line at the width of its words; what it shows is a quieter line
+ * beneath it.
+ */
+.suggestions {
+  display: grid;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  color: var(--wb-muted);
+}
+
+.suggestions > p {
+  margin: 0;
+  font-weight: 600;
+  color: var(--wb-ink);
+}
+
+.suggestions ul {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.suggestions li {
+  display: grid;
+  gap: 0.1875rem;
+  justify-items: start;
+}
+
+.suggestions button {
+  max-inline-size: 100%;
+  font: inherit;
+  text-align: start;
+  color: var(--wb-ink);
+  background: var(--wb-surface);
+  border: 1px dashed var(--wb-rule);
+  border-radius: 3px;
+  padding: 0.25rem 0.625rem;
+  cursor: pointer;
+}
+
+.suggestions button:hover:not(:disabled) {
+  border-color: var(--wb-signal);
+  color: var(--wb-signal);
+}
+
+.suggestions button:focus-visible {
+  outline: 2px solid var(--wb-signal);
+  outline-offset: 1px;
+}
+
+.suggestions button:disabled {
+  color: var(--wb-muted);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* The Angular builder's panes are not grid items of `.builder-pane`, so the room the React
+   builder's get from its gap is a margin there: below each list, and above all but the first,
+   which already has the gap between the toolbar and the builder above it. On the list drawn,
+   not on the element holding it: that element is in the document on every demo, list or not,
+   and with the margin on it every demo but the starter had room above its prompt box where
+   nothing was drawn. `scripts/suggestions-browser-test.mjs` measures both builders. */
+formancy-playground-suggestions {
+  display: block;
+}
+
+formancy-playground-suggestions > .suggestions {
+  margin-block-end: 0.875rem;
+}
+
+formancy-playground-suggestions:not(:first-of-type) > .suggestions {
+  margin-block-start: 0.875rem;
+}
+
 /* The Angular builder's own failure, where its trees would have been. */
 .angular-builder-pane .problem {
   margin: 0 0 0.75rem;

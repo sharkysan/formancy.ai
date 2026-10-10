@@ -10,6 +10,28 @@ later.
 
 ## Unreleased
 
+**Added: on formancy.ai, the starter suggests what to ask a model.** A visitor could ask a
+model of their own for a change, the French the starter is missing, or examples, through the
+relay — and met an empty box, with nothing to say that adding a country is where a condition
+gets written backwards, that the starter's French is half-finished on purpose, or that
+drafting needs a sentence of what the form should do. So beside each of the three panes, in
+both builders, the starter now offers something to try, each chosen for what it shows there:
+*Add Austria to the countries, and ask only people in Switzerland for a canton*, whose answer,
+turned round, the starter's examples name in the review before Apply
+([0159](docs/decisions/0159-a-proposal-is-checked-against-the-forms-examples.md)); *Email me a
+copy of every order*, which a form cannot do and a model is asked to decline
+([0158](docs/decisions/0158-a-model-may-decline.md)); the French the starter is missing; and,
+under the examples, a sentence about express delivery, a rule the starter has no example of.
+A suggestion with words only fills in the box, and asks and sends nothing; the French one puts
+its request at the top of the builder for the visitor to carry, as the pane's own Ask does, and
+opens the pane on French. None can be pressed while the run it would fill waits; the French
+only where the pane's own Ask would ask for something — not while its answer is under review,
+which asking again would forget, not once nothing in French is missing, and not on a form
+with no French, where the request would ask for a language the form does not have. Other
+demos show none: the suggestions are about the starter's fields. The playground's
+accessibility audit now covers the Angular builder's *Fields* and *Translations* as well,
+since each builder draws the suggestions itself.
+
 **Added: a model for the builders on formancy's own server, of the operator's choosing —
 Claude, OpenAI's models or Grok.** A deployment had no model: the admin drew no prompt pane,
 and an operator who wanted one had to write an `AskModel`, whose shortest form puts the

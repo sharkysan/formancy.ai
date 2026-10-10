@@ -28,6 +28,8 @@ import type { BuilderBlock, BuilderSession, BuilderText, Relay } from '@formancy
 import { AngularBuilderPane } from './angular-builder-pane.js'
 import type { BuilderTab, ModelRuns, PreviewState } from './angular-builder-host.js'
 import { RELAY_CHAT } from './demo-capabilities.js'
+import { SuggestionsList } from './suggestions-list.js'
+import type { Suggestion } from './suggestions.js'
 
 /**
  * The builder pane: two trees over one document, in either framework.
@@ -103,6 +105,7 @@ export function BuilderBody({
   preview,
   relay,
   runs,
+  suggestions,
 }: {
   session: BuilderSession
   onChange: (next: string) => void
@@ -135,6 +138,8 @@ export function BuilderBody({
    * the drafting part's (0164).
    */
   runs: ModelRuns
+  /** What to try with the model on the open demo, drawn beside each pane it is for; or none. */
+  suggestions: readonly Suggestion[] | undefined
 }) {
   const view = useBuilder(session)
   const explained = usePreviewState(preview)
@@ -151,6 +156,13 @@ export function BuilderBody({
    * and the way to show it is to swap one for the other mid-edit.
    */
   const [builtWith, setBuiltWith] = useState<'react' | 'angular'>('react')
+  /**
+   * How many times the translations pane has been opened by a suggestion. A pane opens on the
+   * language of the translation the page holds, and from then on the language is the visitor's
+   * (0164) — so the French suggested from under English is shown by opening the pane again.
+   */
+  const [translationsOpened, setTranslationsOpened] = useState(0)
+  const suggesting = { suggestions, runs, relay, session }
 
   useEffect(() => {
     onChange(JSON.stringify(view.document, null, 2))
@@ -208,6 +220,7 @@ export function BuilderBody({
           onScenarios={onScenarios}
           relay={relay}
           runs={runs}
+          suggestions={suggestions}
         />
       ) : (
         <>
@@ -235,7 +248,19 @@ export function BuilderBody({
                pane's is, and the answer is reviewed message by message before it lands
                (0161). The run is the page's: asked for French and left, the tab opens on
                French again, waiting or with its answer, in either builder (0164). */
-            <TranslationsPane session={session} ask={relay.ask} run={runs.translation} />
+            <>
+              <SuggestionsList
+                feature="translation"
+                {...suggesting}
+                onTried={() => setTranslationsOpened((opened) => opened + 1)}
+              />
+              <TranslationsPane
+                key={translationsOpened}
+                session={session}
+                ask={relay.ask}
+                run={runs.translation}
+              />
+            </>
           ) : tab === 'arrangement' ? (
             <>
               <FormancyLayoutPane session={session} layout="web" onSelect={setArranging} />
@@ -264,7 +289,8 @@ export function BuilderBody({
                   diffed and held for review
                   ([0109](../../../docs/decisions/0109-an-ai-edit-is-reviewed-before-it-lands.md))
                   — and run against the form's examples, the list the scenario pane runs,
-                  before it lands (0159). */}
+                  before it lands (0159). What to ask is suggested above it, on the starter. */}
+              <SuggestionsList feature="prompt" {...suggesting} />
               <PromptPane
                 session={session}
                 ask={relay.ask}
@@ -299,6 +325,8 @@ export function BuilderBody({
                 ask={relay.ask}
                 drafting={runs.drafting}
               />
+              {/* A sentence of intent to draft from, on the starter, below the box it fills. */}
+              <SuggestionsList feature="drafting" {...suggesting} />
 
               {editing === null ? null : (
                 <>

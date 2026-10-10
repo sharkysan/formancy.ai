@@ -14,6 +14,7 @@ import { missingMessages } from '@formancy/builder-core'
 import type { FormSchema } from '@formancy/spec'
 import { App } from './app.js'
 import { STARTER_SCHEMA } from './starter.js'
+import { STARTER_SUGGESTIONS } from './starter-suggestions.js'
 
 /**
  * Every control on the playground has a name a screen reader can say.
@@ -111,6 +112,10 @@ const unnamed = (): string[] =>
  * would write, its actions, and a fourth rendering of the form — the French as proposed,
  * beside the pane's own preview of the form as it is. Two previews of one form mint every
  * id twice unless the second is given ids of its own, which is what axe is here to see.
+ *
+ * And Fields and Translations in the Angular builder, because the starter's suggestions are
+ * drawn by each builder beside its own panes: the page's markup in two frameworks, and only
+ * the React one was ever in front of this audit.
  */
 const PANES = [
   'Fields',
@@ -118,6 +123,8 @@ const PANES = [
   'Translations',
   'Fields, with a turn to carry',
   'Translations, with French to review',
+  'Fields, in the Angular builder',
+  'Translations, in the Angular builder',
 ] as const
 
 async function showing(pane: (typeof PANES)[number]): Promise<void> {
@@ -145,6 +152,18 @@ async function showing(pane: (typeof PANES)[number]): Promise<void> {
 
   if (pane === 'Fields') return
   const user = userEvent.setup()
+  if (pane === 'Fields, in the Angular builder' || pane === 'Translations, in the Angular builder') {
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Builder' }), 'angular')
+    await waitFor(() => expect(screen.getAllByRole('tree', { name: /structure/i }).length).toBeGreaterThan(0), {
+      timeout: 10_000,
+    })
+    if (pane === 'Translations, in the Angular builder') {
+      await user.click(screen.getByRole('button', { name: 'Translations' }))
+      const editor = screen.getByRole('region', { name: 'Editor' })
+      await within(editor).findByRole('combobox', { name: 'Language' }, { timeout: 10_000 })
+    }
+    return
+  }
   if (pane === 'Fields, with a turn to carry') {
     await user.type(screen.getByRole('textbox', { name: /Describe the form/ }), 'add a phone number')
     await user.click(screen.getByRole('button', { name: 'Write it' }))
@@ -178,6 +197,21 @@ async function showing(pane: (typeof PANES)[number]): Promise<void> {
 }
 
 describe('the playground itself is operable by name', () => {
+  test.each([
+    ['Fields', ['prompt', 'drafting']],
+    ['Translations', ['translation']],
+    ['Fields, in the Angular builder', ['prompt', 'drafting']],
+    ['Translations, in the Angular builder', ['translation']],
+  ] as const)('the starter’s suggestions are among what the %s pane is audited with', async (pane, features) => {
+    // A guard on the guards below: they audit what is drawn, and a suggestion that was not
+    // drawn when they ran would pass them without ever being looked at.
+    await showing(pane)
+    const expected = STARTER_SUGGESTIONS.filter(({ feature }) => (features as readonly string[]).includes(feature))
+    expect(expected).not.toEqual([])
+    const audited = operable().map((element) => computeAccessibleName(element))
+    expect(expected.filter(({ words }) => !audited.includes(words))).toEqual([])
+  })
+
   test.each(PANES)('every control in the %s pane has an accessible name', async (pane) => {
     await showing(pane)
 

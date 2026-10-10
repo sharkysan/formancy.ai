@@ -92,6 +92,7 @@ function monacoFromThisSite(): Plugin {
 const ANGULAR_SOURCES = [
   'angular-preview',
   'angular-builder-host',
+  'angular-suggestions-list',
   '@formancy/angular',
   '@formancy/builder-angular',
 ]

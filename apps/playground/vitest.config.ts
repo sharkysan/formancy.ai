@@ -37,6 +37,7 @@ export default defineConfig({
         [
           'angular-preview',
           'angular-builder-host',
+          'angular-suggestions-list',
           '@formancy/angular',
           '@formancy/builder-angular',
         ].some((part) => id.includes(part)),
