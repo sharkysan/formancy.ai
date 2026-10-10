@@ -1,6 +1,7 @@
 # 0109 — An AI edit is reviewed before it lands, and a stale one is refused
 
-- **Status:** accepted
+- **Status:** accepted; the stand-in model superseded by
+  [0160](0160-a-person-carries-the-models-turn.md)
 - **Date:** 2026-10-08
 - **Deciders:** Daniel Bacher
 - **Verified by:** `packages/builder-core/src/proposal.test.ts` for the rules,

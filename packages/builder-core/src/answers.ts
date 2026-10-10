@@ -309,8 +309,7 @@ export type Checkable = Exclude<Reading, { readonly kind: 'declined' }> | undefi
  * and `model`. That shape with no reason in it is an `unexplained-decline`.
  */
 export function readAnswer(text: string): Reading | undefined {
-  const fenced = /```(?:json)?\s*([\s\S]*?)```/.exec(text)
-  const candidates = [fenced?.[1], text, betweenBraces(text)]
+  const candidates = [insideFence(text), text, betweenBraces(text)]
 
   for (const candidate of candidates) {
     if (candidate === undefined) continue
@@ -366,6 +365,23 @@ export function declinedAnswer(reason: string): string {
     throw new Error('declinedAnswer needs a reason to show the person who asked; a blank one is not a decline.')
   }
   return JSON.stringify({ [DECLINE_KEY]: reason })
+}
+
+/**
+ * What the first code fence holds, without a leading `json` label.
+ *
+ * Found with `indexOf` rather than a pattern: a paste reaches this reader straight from
+ * the relay, and `/```(?:json)?\s*([\s\S]*?)```/` backtracks quadratically on a fence
+ * opened and never closed — a long one hung the tab (CodeQL js/polynomial-redos).
+ * Whitespace around the object is the caller's `trim()`.
+ */
+function insideFence(text: string): string | undefined {
+  const open = text.indexOf('```')
+  if (open === -1) return undefined
+  const close = text.indexOf('```', open + 3)
+  if (close === -1) return undefined
+  const inside = text.slice(open + 3, close)
+  return inside.startsWith('json') ? inside.slice('json'.length) : inside
 }
 
 function betweenBraces(text: string): string | undefined {

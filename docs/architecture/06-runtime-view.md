@@ -345,3 +345,40 @@ the problem list ([0158](../decisions/0158-a-model-may-decline.md)). The same sh
 reason in it is neither an ending nor a document. It is not checked as a form, whose schema
 would call the key a misspelling and tell the model to write a document after all. The
 next turn's complaint asks for the reason, and shows the decline as the briefing does.
+
+## 6.8 Carrying a turn by hand
+
+```
+prompt pane              authorForm (6.7)          relay, in builder-core          relay pane            person
+───────────              ────────────────          ──────────────────────          ──────────            ──────
+Write it        ───▶     ask(prompt, turn)  ───▶   one waiting already?
+                                                     └─ yes ──▶ rejects: the run ends unreachable
+                                                   waiting = { prompt, message, followUp }
+                                                   onCancel ──▶ clears it
+                                                   tells subscribers   ───▶   draws the turn,
+                                                                              focus to Copy
+                                                                              Copy ──▶ clipboard ──▶  a chat of
+                                                                              (follow-up on a retry)   their own
+                                                                                                         │
+                                                   answer(text)        ◀───   Check this answer  ◀───  pastes back
+                                                     ├─ no object, not anyway ──▶ 'no-object': the turn waits,
+                                                     │                             "Use it anyway" offered
+                                                     ├─ nothing waiting (stopped) ──▶ 'nothing-waiting'
+                                                     ▼
+                                                   clears the turn, resolves ask(text)
+                         readAnswer → checks  ◀────┘
+                         next turn, or the result ──▶ the review (0109)
+Stop, or the pane goes ─▶ turn.onCancel ──────────▶ the turn is cleared, and the pane draws nothing
+```
+
+**The relay is a host's model, and only that.** `authorForm` asks it as it asks any
+`AskModel`, races it against the stop, and checks what comes back; the relay decides only
+what a pane cannot be trusted to decide twice — one turn at a time, a paste with no object
+in it held back, and a stop clearing the turn
+([0160](../decisions/0160-a-person-carries-the-models-turn.md)). The request leaves the page
+on the clipboard, by the person's press, and the answer comes back the same way. The relay
+and its pane call nothing. Each turn the pane draws takes the focus to Copy, described by the
+turn and what to do with it: from then on the run waits on the person, and a failed answer
+took the pane, and the focus in it, away before the retry drew it again. What was pasted is bound to nothing but the run that is waiting: the review's
+diff against the document the run was asked against is what shows a paste that answered
+something else (SAFETY-ANALYSIS D10).

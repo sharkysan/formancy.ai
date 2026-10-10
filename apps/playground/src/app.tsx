@@ -19,7 +19,7 @@ import {
 import { createRichTextEditor } from '@formancy/tiptap'
 import { playgroundUploader } from './demo-uploader.js'
 import { DEMO_OPTIONS_SOURCES, DEMO_SCANNER } from './demo-capabilities.js'
-import { createBuilderSession } from '@formancy/builder-core'
+import { createBuilderSession, createRelay } from '@formancy/builder-core'
 import type { BuilderBlock, BuilderSession } from '@formancy/builder-core'
 import {
   FormancyArrangeSurface,
@@ -168,6 +168,13 @@ export function App() {
     (next: readonly Scenario[]) => setKeptExamples((current) => ({ ...current, [demo]: next })),
     [demo],
   )
+  /**
+   * The model both builders' prompt panes ask: a person, carrying each turn to a chat of
+   * their own and back (0160). One per page and up here, as the blocks are, because the
+   * builder on screen can change while a turn waits and the Build pane is unmounted on
+   * the way to Schema; a relay owned by either would be a second one.
+   */
+  const [relay] = useState(() => createRelay())
   const [shown, setShown] = useState<PaneId>('form')
 
   const panes = usePaneLayout()
@@ -398,6 +405,7 @@ export function App() {
           sample={examples?.sample}
           onScenarios={keepScenarios}
           preview={built?.engine}
+          relay={relay}
           theme={theme}
           themeHost={themeHost}
           overrides={overrides}

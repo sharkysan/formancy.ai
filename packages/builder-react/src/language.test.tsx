@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test } from 'vitest'
+import { afterEach, describe, expect, test, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
 import {
@@ -6,6 +6,7 @@ import {
   authorForm,
   createBuilderSession,
   createBuilderText,
+  createRelay,
   editableLayoutPropertiesFor,
   editablePropertiesFor,
   flatten,
@@ -25,12 +26,16 @@ import { ColumnsEditor } from './columns-editor.js'
 import { LayoutPropertyPanel } from './layout-property-panel.js'
 import { LogicPanel } from './logic-panel.js'
 import { PromptPane } from './prompt-pane.js'
+import { RelayPane } from './relay-pane.js'
 import { ScenarioPane } from './scenario-pane.js'
 import { TranslationsPane } from './translations-pane.js'
 import { OptionsEditor } from './options-editor.js'
 import { PropertyPanel } from './property-panel.js'
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  vi.restoreAllMocks()
+})
 
 /**
  * The builder speaks the session's language, and nothing on screen is English
@@ -737,6 +742,78 @@ describe('the translations, prompt and scenario panes', () => {
       ['scenario would stop holding', 'Would stop holding if applied'].filter(
         (prefix) => !seen.some((text) => text.includes(prefix)),
       ),
+    ).toEqual([])
+  })
+
+  test('the relay pane, on a first turn and a retry, a copy made and one refused, and given prose, likewise', async () => {
+    // The relay's words (0160), from the catalogue like the rest. The request is the
+    // model's to read and is carried as written, in English whatever the author speaks —
+    // as the prompt pane's problems are — and the chat's name is the host's.
+    const start = {
+      specVersion: '2',
+      id: 'start',
+      title: 'Start',
+      model: { fields: [{ key: 'name', type: 'text', label: 'Name' }] },
+    } as unknown as FormSchema
+    const session = createBuilderSession(start, { text: createBuilderText(pseudoLanguage()) })
+    const relay = createRelay()
+    const user = userEvent.setup()
+    // The first copy is let through and the second refused, so both of what Copy can say
+    // are on screen once: a walk that only ever refused never showed "Copied".
+    vi.spyOn(navigator.clipboard, 'writeText')
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValue(new Error('refused'))
+    const prose = 'Sure, here is your form'
+    const view = render(
+      <RelayPane session={session} relay={relay} chat={{ name: 'Chat', href: 'https://chat.example/' }} />,
+    )
+
+    await act(async () => {
+      void authorForm(relay.ask, 'anything', { current: start })
+      await Promise.resolve()
+    })
+    const first = relay.waiting()!
+    const buttons = () => within(view.container).getAllByRole('button')
+    const status = () => view.container.querySelector('[role="status"]')?.textContent ?? ''
+    await user.click(buttons()[0]!)
+    await waitFor(() => expect(status()).not.toBe(''))
+    const seen = shown(view.container)
+    const copied = status()
+    await user.click(buttons()[0]!)
+    await waitFor(() => expect(status()).not.toBe(copied))
+    seen.push(...shown(view.container))
+
+    await user.click(within(view.container).getAllByRole('textbox')[1]!)
+    await user.paste(prose)
+    await user.click(buttons()[1]!)
+    await waitFor(() => expect(buttons()).toHaveLength(3))
+    seen.push(...shown(view.container))
+    await user.click(buttons()[2]!)
+    await waitFor(() => expect(relay.waiting()?.prompt.attempt).toBe(2))
+    const retry = relay.waiting()!
+    seen.push(...shown(view.container))
+
+    const carried = [first.prompt.user, first.message, retry.prompt.user, retry.followUp ?? '', retry.message]
+    expect(untranslated(seen, [...carried, prose, 'Chat'])).toEqual([])
+    expect(
+      [
+        'Take this request to a model',
+        'Turn 1 of at most',
+        'Copy the request into a chat',
+        'This pane sends the request nowhere',
+        'What the model is told',
+        'Copy the request',
+        'Open Chat in a new tab',
+        'The model’s answer',
+        'Check this answer',
+        'Copied. Paste',
+        'did not let the page copy',
+        'There is no JSON object',
+        'Use it anyway',
+        'That answer did not work',
+        'Copy what was wrong',
+        'New chat?',
+      ].filter((prefix) => !seen.some((text) => text.includes(prefix))),
     ).toEqual([])
   })
 

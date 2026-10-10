@@ -161,6 +161,15 @@ describe('what the two builders each offer', () => {
       angular: 'FormancyPromptPane',
     },
     {
+      // A model's turn carried by a person, for a host whose page may not call one. Both
+      // from the start: when a paste counts is `createRelay`'s, and a turn asked from
+      // either builder's prompt pane has to be carried in that builder
+      // ([0160](../../../docs/decisions/0160-a-person-carries-the-models-turn.md)).
+      pane: 'carrying a model’s turn by hand',
+      react: 'RelayPane',
+      angular: 'FormancyRelayPane',
+    },
+    {
       // What the form is supposed to do, rerun after every edit. Both from
       // the start, because what counts as a regression is one decision
       // ([0111](../../../docs/decisions/0111-a-scenario-panel-names-what-stopped-holding.md)).

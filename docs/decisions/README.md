@@ -209,7 +209,7 @@ listed under the sections they belong to above.
 | [0106](0106-one-shell-for-every-page-of-the-site.md) | One shell for every page of the site, and the two pages are compared in a browser | accepted |
 | [0107](0107-layout-text-is-read-in-the-engines-locale.md) | Layout text is read in the engine's locale, and the suite can mount in one | accepted |
 | [0108](0108-the-diff-reports-everything-that-changed.md) | The diff reports everything that changed, and never answers nothing | accepted |
-| [0109](0109-an-ai-edit-is-reviewed-before-it-lands.md) | An AI edit is reviewed before it lands, and a stale one is refused | accepted |
+| [0109](0109-an-ai-edit-is-reviewed-before-it-lands.md) | An AI edit is reviewed before it lands, and a stale one is refused | accepted; the stand-in model superseded by 0160 |
 | [0110](0110-a-form-is-checked-against-examples.md) | A form is checked against examples, and the runner is published | accepted |
 | [0111](0111-a-scenario-panel-names-what-stopped-holding.md) | A scenario panel names what stopped holding, and the scenarios are the host's | accepted |
 | [0112](0112-the-mcp-server-says-what-its-tools-do.md) | The MCP server says what its tools do, answers in structure, and ships the order of operations | accepted |
@@ -257,6 +257,7 @@ listed under the sections they belong to above.
 | [0154](0154-the-website-makes-no-request-to-any-other-site.md) | The website makes no request to any other site, and a browser gate says so | accepted |
 | [0155](0155-the-object-store-is-timed-on-its-silence.md) | The object store is timed on its silence, not on the whole request | accepted |
 | [0156](0156-a-proxy-is-trusted-by-its-address.md) | A proxy is trusted by its address, and by nothing else | accepted |
-| [0157](0157-a-models-turn-can-be-stopped.md) | A model's turn can be stopped, and an unreachable model is not a document that failed | accepted |
-| [0158](0158-a-model-may-decline.md) | A model may decline, and a decline ends the run after one turn | accepted |
+| [0157](0157-a-models-turn-can-be-stopped.md) | A model's turn can be stopped, and an unreachable model is not a document that failed | accepted; the playground’s stand-in dialog superseded by 0160 |
+| [0158](0158-a-model-may-decline.md) | A model may decline, and a decline ends the run after one turn | accepted; the playground’s stand-in dialog superseded by 0160 |
 | [0159](0159-a-proposal-is-checked-against-the-forms-examples.md) | A proposal is checked against the form's examples before it lands | accepted |
+| [0160](0160-a-person-carries-the-models-turn.md) | On the website a person carries the model's turn, and the relay is decided once in builder-core | accepted |

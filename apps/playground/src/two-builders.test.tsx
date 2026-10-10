@@ -49,6 +49,17 @@ vi.mock('@monaco-editor/react', () => ({
 
 afterEach(cleanup)
 
+/*
+ * Longer than the shared `RENDER_TIMEOUT_MS`, for the reason `theme-editor.test.tsx` is:
+ * a timeout here catches a hang, not the speed of somebody else's runner. These cases
+ * mount the whole playground and then the Angular builder, and most of them make an edit
+ * that re-renders both previews. Measured on 2026-10-10: the slowest run in about 2.1s
+ * locally; under coverage on CI, "switching back keeps the document and the undo stack"
+ * took 15.6s on one run and passed 20s on the next with nothing changed in its path. The
+ * factor the shared constant records, up to fourteen, puts a 2s case near 30s.
+ */
+vi.setConfig({ testTimeout: 60_000 })
+
 /**
  * The toolbar's Undo, read fresh each time.
  *
@@ -146,84 +157,159 @@ describe('switching which builder is on screen', () => {
 })
 
 /**
- * The prompt pane is on screen, and it proposes rather than applies.
+ * The prompt pane is on screen, a person carries the model's turn, and the answer is
+ * proposed rather than applied.
  *
- * `@formancy/builder-react` has exported `PromptPane` for a while and **no
- * application mounted it** — the same shape as the Angular builder above, and
- * noticed the same way. A feature that exists in a package and nowhere a
- * visitor can reach is documented and inert, which is the failure this
- * repository has already shipped once.
+ * `@formancy/builder-react` had exported `PromptPane` for a while and **no application
+ * mounted it** — the same shape as the Angular builder above, and noticed the same way. A
+ * feature that exists in a package and nowhere a visitor can reach is documented and
+ * inert, which is the failure this repository has already shipped once.
  *
- * So the playground supplies a stand-in model, exactly as it supplies a
- * stand-in camera: the person plays the model and everything after the answer
- * is real. What is pinned here is that the pane is reachable and that its
- * review step is the one thing it must never skip
- * ([0109](../../../docs/decisions/0109-an-ai-edit-is-reviewed-before-it-lands.md)).
+ * formancy.ai asks no other site for anything (0154), so its model is a person: the page
+ * shows the request, the visitor copies it into a chat of their own and pastes the answer
+ * back ([0160](../../../docs/decisions/0160-a-person-carries-the-models-turn.md)). It was
+ * a `window.prompt` that showed the request's last line, so nobody could use a real model
+ * here. What is pinned is that the whole round trip works in either builder, that the
+ * review is the one step it never skips
+ * ([0109](../../../docs/decisions/0109-an-ai-edit-is-reviewed-before-it-lands.md)), and
+ * that the page itself sends nothing anywhere while it happens — every Copy pressed
+ * included, since Copy is the one control that handles the request's text.
  */
 describe('describing a change in words', () => {
-  test('is offered in the builder, with a stand-in model', async () => {
+  /** What a chat answered, pasted back: a whole document with a phone number in it. */
+  const ANSWER = JSON.stringify({
+    specVersion: '2',
+    id: 'proposed',
+    title: 'Proposed',
+    model: { fields: [{ key: 'phone', type: 'text', label: 'Telephone' }] },
+  })
+
+  /**
+   * Every way a page sends something, spied. `sendBeacon` is defined first where jsdom has
+   * none, so a call to it is recorded rather than thrown and lost in a handler. `fetch`
+   * answers nothing, so a page that called it would not reach the network from a test.
+   * And `window.open`: a pane that opened the chat itself after a copy would be the page
+   * asking another site, which a link the person follows is not.
+   */
+  const outbound = () => {
+    const beacon = vi.fn(() => true)
+    const had = Object.getOwnPropertyDescriptor(navigator, 'sendBeacon')
+    Object.defineProperty(navigator, 'sendBeacon', { configurable: true, value: beacon })
+    return {
+      fetch: vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('a test reaches no network')),
+      open: vi.spyOn(XMLHttpRequest.prototype, 'open'),
+      window: vi.spyOn(window, 'open').mockReturnValue(null).mockName('window.open'),
+      beacon,
+      restore: () => {
+        vi.restoreAllMocks()
+        if (had === undefined) Reflect.deleteProperty(navigator, 'sendBeacon')
+        else Object.defineProperty(navigator, 'sendBeacon', had)
+      },
+    }
+  }
+
+  test('is offered in the builder', async () => {
     render(<App />)
     await builtWith('React')
 
     // By accessible name, like everything else here: the label is the contract.
     expect(screen.getByRole('textbox', { name: /Describe the form/ })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Write it' })).toBeTruthy()
+    // And nothing to carry until something is asked.
+    expect(screen.queryByRole('region', { name: 'Take this request to a model' })).toBeNull()
   })
 
-  test('and an answer is reviewed before anything lands', async () => {
-    /*
-     * The whole of 0109, end to end through the application. The stand-in
-     * model is `window.prompt`, so the test answers it — and then the
-     * document must be unchanged until somebody presses apply.
-     */
-    const user = userEvent.setup()
-    render(<App />)
-    await builtWith('React')
+  test.each(['React', 'Angular'] as const)(
+    'in the %s builder: the request is copied, an answer that fails is retried, the one that works is reviewed, and the page sends nothing itself',
+    async (which) => {
+      /*
+       * The whole of it, end to end through the application: describe a change, copy the
+       * request, paste an answer that is not a form, copy what was wrong and then the whole
+       * request again, paste the answer that works, read the review, apply. The tree must
+       * not change until Apply. And through all of it the page makes no request of its own
+       * — a relay that posted the prompt anywhere, or opened the chat itself on a copy,
+       * would be the call to another site this replaces. Every Copy is pressed, in either
+       * builder: the jsdom round trip once pressed none, and a pane that sent the request
+       * on Copy passed it.
+       */
+      const sent = outbound()
+      try {
+        const user = userEvent.setup()
+        render(<App />)
+        await builtWith(which)
+        if (which === 'Angular') await angularTree()
+        // After every `userEvent.setup()`, which puts its own clipboard on the navigator.
+        const write = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined)
 
-    /*
-     * Asserted on the structure tree rather than on the JSON: the Build pane
-     * shows one editor body at a time, so the Schema view is not on screen
-     * here — and the tree is what somebody is actually looking at while they
-     * decide.
-     */
-    const tree = screen.getAllByRole('tree', { name: /structure/i })[0]!
-    const named = (): string[] =>
-      within(tree).getAllByRole('treeitem').map((item) => item.textContent ?? '')
-    expect(named().some((entry) => entry.includes('Telephone'))).toBe(false)
+        /*
+         * Asserted on the structure tree rather than on the JSON: the Build pane shows one
+         * editor body at a time, so the Schema view is not on screen here — and the tree
+         * is what somebody is actually looking at while they decide.
+         */
+        const named = (): string[] =>
+          screen.getAllByRole('treeitem').map((item) => item.textContent ?? '')
+        expect(named().some((entry) => entry.includes('Telephone'))).toBe(false)
+        expect(undoButton().disabled).toBe(true)
 
-    // Undo is the thing the old behaviour relied on. It must still be
-    // disabled after the model answers, because nothing has happened yet.
-    expect(undoButton().disabled).toBe(true)
+        await user.type(
+          await screen.findByRole('textbox', { name: /Describe the form/ }, { timeout: 10_000 }),
+          'add a phone number',
+        )
+        await user.click(screen.getByRole('button', { name: 'Write it' }))
 
-    vi.spyOn(window, 'prompt').mockReturnValue(
-      JSON.stringify({
-        specVersion: '2',
-        id: 'proposed',
-        title: 'Proposed',
-        model: { fields: [{ key: 'phone', type: 'text', label: 'Telephone' }] },
-      }),
-    )
-    await user.type(screen.getByRole('textbox', { name: /Describe the form/ }), 'add a phone number')
-    await user.click(screen.getByRole('button', { name: 'Write it' }))
+        // The request, as the person will carry it: the instruction in it, and a chat to
+        // take it to whose address carries nothing of it.
+        const relay = await screen.findByRole('region', { name: 'Take this request to a model' })
+        const request = within(relay).getByRole('textbox', { name: 'The request' }) as HTMLTextAreaElement
+        expect(request.value).toContain('add a phone number')
+        const chat = within(relay).getByRole('link', { name: 'Open Claude in a new tab' }) as HTMLAnchorElement
+        expect(chat.href).toBe('https://claude.ai/new')
 
-    await waitFor(() =>
-      expect(screen.getByRole('heading', { name: /Review these changes/ })).toBeTruthy(),
-    )
-    // Proposed, not applied.
-    expect(named().some((entry) => entry.includes('Telephone'))).toBe(false)
-    expect(undoButton().disabled, 'something was applied before anybody agreed to it').toBe(true)
+        // Copy: the briefing first, then the request the box shows.
+        await user.click(within(relay).getByRole('button', { name: 'Copy the request' }))
+        await waitFor(() => expect(write).toHaveBeenCalledTimes(1))
+        const copied = write.mock.calls[0]![0]
+        expect(copied.endsWith(`\n\n${request.value}`)).toBe(true)
+        expect(copied.length).toBeGreaterThan(request.value.length + 2)
 
-    await user.click(screen.getByRole('button', { name: 'Apply these changes' }))
+        // An object that is not a form: an answer, so it costs a turn, and the chat is asked
+        // again — what was wrong alone for the chat that holds it, the whole request for a new one.
+        await user.click(within(relay).getByRole('textbox', { name: 'The model’s answer' }))
+        await user.paste('{}')
+        await user.click(within(relay).getByRole('button', { name: 'Check this answer' }))
+        const retry = await screen.findByRole('region', { name: 'Take this request to a model' })
+        await user.click(await within(retry).findByRole('button', { name: 'Copy what was wrong' }))
+        await user.click(within(retry).getByRole('button', { name: 'New chat? Copy the whole request' }))
+        await waitFor(() => expect(write).toHaveBeenCalledTimes(3))
+        const [, wrong, whole] = write.mock.calls.map(([text]) => text)
+        expect(whole!.length).toBeGreaterThan(wrong!.length)
 
-    await waitFor(() => {
-      expect(
-        screen
-          .getAllByRole('treeitem')
-          .some((item) => (item.textContent ?? '').includes('Telephone')),
-      ).toBe(true)
-    })
-    expect(undoButton().disabled).toBe(false)
-  })
+        await user.click(within(retry).getByRole('textbox', { name: 'The model’s answer' }))
+        await user.paste(ANSWER)
+        await user.click(within(retry).getByRole('button', { name: 'Check this answer' }))
+
+        await waitFor(() =>
+          expect(screen.getByRole('heading', { name: /Review these changes/ })).toBeTruthy(),
+        )
+        expect(screen.queryByRole('region', { name: 'Take this request to a model' })).toBeNull()
+        // Proposed, not applied.
+        expect(named().some((entry) => entry.includes('Telephone'))).toBe(false)
+        expect(undoButton().disabled, 'something was applied before anybody agreed to it').toBe(true)
+
+        await user.click(screen.getByRole('button', { name: 'Apply these changes' }))
+
+        await waitFor(() => expect(named().some((entry) => entry.includes('Telephone'))).toBe(true))
+        expect(undoButton().disabled).toBe(false)
+
+        expect(sent.fetch).not.toHaveBeenCalled()
+        expect(sent.open).not.toHaveBeenCalled()
+        expect(sent.beacon).not.toHaveBeenCalled()
+        expect(sent.window).not.toHaveBeenCalled()
+      } finally {
+        sent.restore()
+      }
+    },
+  )
 })
 
 /**
@@ -234,6 +320,10 @@ describe('describing a change in words', () => {
  * can run nothing: an answer that turns the canton rule round passes every check the model
  * loop makes, the review lists one changed rule, and "Switzerland asks for a canton" is
  * named as broken only after Apply, by the scenario pane.
+ *
+ * The answer arrives the way a visitor's does, pasted into the page's relay (0160), so
+ * what is checked is the prompt pane the page actually mounts, asking the model it
+ * actually has.
  */
 describe('a model’s answer, against the form’s examples', () => {
   /** The starter with its canton rules the wrong way round: valid, compiled — and backwards. */
@@ -255,8 +345,7 @@ describe('a model’s answer, against the form’s examples', () => {
       const user = userEvent.setup()
       render(<App />)
       await builtWith(which)
-      // The stand-in model is `window.prompt`: the visitor plays the model, and so does this.
-      vi.spyOn(window, 'prompt').mockReturnValue(JSON.stringify(backwardsCanton()))
+      if (which === 'Angular') await angularTree()
 
       const instruction = await waitFor(
         () => screen.getByRole('textbox', { name: /Describe the form/ }),
@@ -264,6 +353,13 @@ describe('a model’s answer, against the form’s examples', () => {
       )
       await user.type(instruction, 'ask for a canton outside Switzerland')
       await user.click(screen.getByRole('button', { name: 'Write it' }))
+
+      // The model is the page's relay: the visitor pastes the chat's answer back, and so
+      // does this — the starter with its canton rule turned round.
+      const relay = await screen.findByRole('region', { name: 'Take this request to a model' })
+      await user.click(within(relay).getByRole('textbox', { name: 'The model’s answer' }))
+      await user.paste(JSON.stringify(backwardsCanton()))
+      await user.click(within(relay).getByRole('button', { name: 'Check this answer' }))
 
       const review = await waitFor(
         () => screen.getByRole('region', { name: /would stop holding/ }),

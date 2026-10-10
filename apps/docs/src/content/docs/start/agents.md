@@ -325,3 +325,72 @@ however the run ends. A working document is `ok: true`. Otherwise `ended` says w
 there is none: `gave-up`, `stopped`, `unreachable` with your error's message as
 `reason`, absent when it had none, or `declined` with the model's reason as `reason`.
 `stop` comes from `createStop()`; calling its `stop()` is the button.
+
+### No model on the page: a relay
+
+Some pages may not call a model at all — formancy.ai's own playground asks no other site
+for anything. For those, `@formancy/builder-core` has a **relay**: an `AskModel` whose
+turn a person carries. The page shows the exact request, the person copies it into a chat
+of their own, and pastes the answer back. Every check after the paste runs in the page, and
+the answer is held for review like any model's.
+
+```tsx
+import { useState } from 'react'
+import { createRelay } from '@formancy/builder-core'
+import type { BuilderSession } from '@formancy/builder-core'
+import { PromptPane, RelayPane } from '@formancy/builder-react'
+
+const CHAT = { name: 'Your chat', href: 'https://chat.example/' }
+
+export function Describe({ session }: { session: BuilderSession }) {
+  // One relay for the pane's life, so the turn it is waiting on is not lost on a render.
+  const [relay] = useState(() => createRelay())
+  return (
+    <>
+      <RelayPane session={session} relay={relay} chat={CHAT} />
+      <PromptPane session={session} ask={relay.ask} />
+    </>
+  )
+}
+```
+
+In Angular it is `<formancy-relay-pane [session]="session" [relay]="relay" [chat]="chat" />`
+beside `<formancy-prompt-pane [session]="session" [ask]="relay.ask" />`.
+
+The relay pane draws nothing until a turn waits. Then it shows the briefing, folded away,
+and the request in a box that cannot be edited, with **Copy**. On a retry, Copy writes only
+what was wrong, for the chat that already holds the last answer, and a second button copies
+the whole request for a new one. If the browser will not let the page write the clipboard,
+the text is selected in the box instead, and the pane says so.
+
+Each turn it draws takes the focus to Copy, whose description is the turn and what to do
+with it. The page is waiting on the person from that moment, and the prompt pane says only
+that the form is being written; an answer that failed takes the pane, and the focus in it,
+away before the retry draws it again. Each turn also starts with an empty answer box, so
+nothing pasted for one is offered to the next.
+
+`chat` is yours to name, and optional. With it, the pane links to that chat in a new tab;
+without it, there is no link and the request is copied all the same. Neither builder names
+a service. The request is never put in a URL.
+
+What the relay decides, it decides once, for both builders:
+
+- **One turn at a time.** A second request while one waits is refused, and that run ends
+  as a model that could not be reached, with the relay's reason. Give each prompt pane its
+  own relay if two can run at once.
+- **A paste with no JSON object in it is held back** and costs no attempt. The pane says
+  so and offers *Use it anyway*, which sends it as it is. A decline is an answer.
+- **A stop clears the turn.** An answer pasted after it is refused, never kept for the
+  next request.
+
+**What leaves, and who carries it.** The relay and its pane send the request nowhere: Copy
+puts the whole request on the clipboard — the briefing, the instruction and the whole form
+— and pasting it into a chat gives it to that service under the person's own account. The
+pane says so, in its own words, and says it of itself: what the rest of your page sends is
+yours, and the pane cannot know it. A pasted answer is not tied to the request it answers: the review's list
+of changes, against the form the run was asked about, is what shows an answer to something
+else.
+
+A relay is for a page that cannot call a model. Where yours can, write an `askModel` that
+calls your own server, as above: it takes no copying, and the request goes where you
+decide.

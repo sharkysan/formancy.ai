@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
-import type { BuilderBlock, BuilderSession } from '@formancy/builder-core'
+import type { BuilderBlock, BuilderSession, Relay } from '@formancy/builder-core'
 import type { Scenario } from '@formancy/core'
 import { mountAngularBuilder } from './angular-builder-bootstrap.js'
 import type { BuilderTab, MountedBuilder, PreviewState } from './angular-builder-bootstrap.js'
@@ -28,6 +28,7 @@ export function AngularBuilderPane({
   scenarios,
   sample,
   onScenarios,
+  relay,
 }: {
   session: BuilderSession
   tab: BuilderTab
@@ -41,6 +42,8 @@ export function AngularBuilderPane({
   /** Where they start: the form's sample, which changes with the form. */
   sample: Readonly<Record<string, unknown>> | undefined
   onScenarios: (next: readonly Scenario[]) => void
+  /** The page's model, a person carrying each turn (0160): the one relay both builders ask. */
+  relay: Relay
 }): ReactElement {
   const host = useRef<HTMLDivElement | null>(null)
   const mounted = useRef<MountedBuilder | undefined>(undefined)
@@ -64,7 +67,7 @@ export function AngularBuilderPane({
       session,
       tab,
       // Drawn on the first render, so the builder never shows the page's lists empty.
-      { preview: latest.current, blocks: offered.current, ...examples.current },
+      { preview: latest.current, blocks: offered.current, ...examples.current, relay },
       {
         keep: (block) => saving.current(block),
         keepScenarios: (next) => revising.current(next),
@@ -96,9 +99,10 @@ export function AngularBuilderPane({
     }
     // The tab is deliberately not a dependency — it is pushed in below rather
     // than remounting the application. Listing it here would rebuild the tree on
-    // every tab click.
+    // every tab click. The relay is the page's for its whole life, so listing it
+    // costs nothing and says what the application was built over.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session])
+  }, [session, relay])
 
   // Pushed in, for the same reason.
   useEffect(() => {

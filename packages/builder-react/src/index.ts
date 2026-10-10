@@ -21,6 +21,8 @@ export { PromptPane } from './prompt-pane.js'
 export { ScenarioPane } from './scenario-pane.js'
 export type { ScenarioPaneProps } from './scenario-pane.js'
 export type { PromptPaneProps } from './prompt-pane.js'
+export { RelayPane } from './relay-pane.js'
+export type { RelayPaneProps } from './relay-pane.js'
 
 // Moved into `@formancy/builder-core`, and re-exported here so an existing
 // import keeps working. They never mentioned React; a second builder is what
