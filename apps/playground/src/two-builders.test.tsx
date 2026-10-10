@@ -5,6 +5,7 @@ import { referencedMessages } from '@formancy/builder-core'
 import { App } from './app.js'
 import { builderTextFor } from './builder-pane.js'
 import { STARTER_SCHEMA } from './starter.js'
+import { STARTER_SCENARIOS } from './starter-scenarios.js'
 
 /**
  * One document, two builders.
@@ -287,6 +288,114 @@ describe('what the starter form is supposed to do', () => {
         .join(' | ')
       expect(said).toContain('a postcode has to look like one')
     })
+  })
+})
+
+/**
+ * The examples, in both builders, from one list the page keeps.
+ *
+ * The scenarios are the host's (0111): the pane lists, reruns and removes, and the page
+ * decides where the list lives. Here it lived nowhere. The React pane was handed the
+ * constant and no `onChange`, so it drew no Remove button, and the Angular builder — whose
+ * host says its panels mirror the React pane's — mounted no scenario panel at all. The page
+ * now keeps the list as it keeps the blocks (0135): one list, for this visit, handed to both.
+ */
+describe('the examples, in either builder', () => {
+  /** The scenario panel on screen, by its accessible name. The Angular one mounts late. */
+  const scenarioPanel = async (): Promise<HTMLElement> =>
+    waitFor(() => screen.getByRole('region', { name: 'Scenarios' }), { timeout: 10_000 })
+
+  /** What the panel offers to remove — one button per example, named after it. */
+  const removable = (panel: HTMLElement): string[] =>
+    within(panel)
+      .queryAllByRole('button', { name: /^Remove / })
+      .map((button) => (button.textContent ?? '').trim())
+
+  /** The Remove buttons the starter's examples should have, less any taken away. */
+  const offered = (...without: string[]): string[] =>
+    STARTER_SCENARIOS.filter(({ name }) => !without.includes(name)).map(({ name }) => `Remove ${name}`)
+
+  test('the Angular builder lists them as well, and they hold', async () => {
+    // An evaluator choosing Angular saw no examples at all: the one panel that catches a
+    // rule written backwards was missing from the builder that claims parity.
+    render(<App />)
+    await builtWith('Angular')
+
+    const panel = await scenarioPanel()
+    await waitFor(() => {
+      expect(within(panel).getByRole('status').textContent).toContain('scenarios hold')
+    })
+    // And it can remove one: a panel drawn read-only would be the React defect again.
+    expect(removable(panel)).toEqual(offered())
+  })
+
+  test('Remove in the React builder takes the example off the list', async () => {
+    // The React pane drew no Remove button, because nothing was listening for the change —
+    // and a host that listened and kept a constant would draw one that did nothing.
+    const user = userEvent.setup()
+    render(<App />)
+    await builtWith('React')
+    const panel = await scenarioPanel()
+    const gone = STARTER_SCENARIOS[1]!.name
+
+    await user.click(within(panel).getByRole('button', { name: `Remove ${gone}` }))
+
+    await waitFor(() => expect(removable(panel)).toEqual(offered(gone)))
+  })
+
+  test('and an example removed in the React builder is gone from the Angular one', async () => {
+    // One list, handed to both: an Angular panel reading its own copy would bring a removed
+    // example back the moment somebody switched builder.
+    const user = userEvent.setup()
+    render(<App />)
+    await builtWith('React')
+    const gone = STARTER_SCENARIOS[1]!.name
+    await user.click(within(await scenarioPanel()).getByRole('button', { name: `Remove ${gone}` }))
+
+    await builtWith('Angular')
+
+    const panel = await scenarioPanel()
+    await waitFor(() => expect(removable(panel)).toEqual(offered(gone)), { timeout: 10_000 })
+  })
+
+  test('and the other way round: removed in the Angular builder, gone from the React one', async () => {
+    // The Angular pane hands the shorter list back through an output, across the bootstrap
+    // boundary; nothing else would say that crossing had been dropped.
+    const user = userEvent.setup()
+    render(<App />)
+    await builtWith('Angular')
+    const angular = await scenarioPanel()
+    await waitFor(() => expect(removable(angular)).toEqual(offered()), { timeout: 10_000 })
+    const gone = STARTER_SCENARIOS[2]!.name
+
+    await user.click(within(angular).getByRole('button', { name: `Remove ${gone}` }))
+    // The Angular panel draws the page's list rather than its own, so this is the round trip.
+    await waitFor(() => expect(removable(angular)).toEqual(offered(gone)))
+
+    await builtWith('React')
+
+    expect(removable(await scenarioPanel())).toEqual(offered(gone))
+  })
+
+  test('and an example removed stays removed after the Schema view and back, in both builders', async () => {
+    // Why the list is the page's and not the Build pane's: switching to Schema unmounts the
+    // Build pane, so a list kept anywhere under it, even one handed to both builders, would
+    // start again from the starter's and bring the removed example back on the way in.
+    const user = userEvent.setup()
+    render(<App />)
+    await builtWith('React')
+    const gone = STARTER_SCENARIOS[1]!.name
+    await user.click(within(await scenarioPanel()).getByRole('button', { name: `Remove ${gone}` }))
+
+    await user.click(screen.getByRole('button', { name: 'Schema' }))
+    // Off screen, or the way back below would be no way back at all.
+    expect(screen.queryByRole('region', { name: 'Scenarios' })).toBeNull()
+
+    await builtWith('React')
+    expect(removable(await scenarioPanel())).toEqual(offered(gone))
+    await builtWith('Angular')
+    const angular = await scenarioPanel()
+    await waitFor(() => expect(removable(angular)).toEqual(offered(gone)), { timeout: 10_000 })
   })
 })
 
