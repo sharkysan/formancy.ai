@@ -118,8 +118,10 @@ form is not publicly submittable unless it says so.
   without one: submissions, drafts, challenges and file offers go through
   uncounted, and a login or a model request is refused with `503`. The process
   says so on standard error when the counter stops answering and when it starts
-  again. A role granted table by table needs `SELECT`, `INSERT`, `UPDATE` and
-  `DELETE` on it
+  again. The counter has four connections of its own, beside storage's up to ten,
+  so `max_connections` wants fourteen a replica; they are its own so that a lock
+  on its table holds up only the limited requests. A role granted table by table
+  needs `SELECT`, `INSERT`, `UPDATE` and `DELETE` on it
   ([0170](../decisions/0170-a-limit-is-counted-once-in-the-database-every-replica-shares.md)).
 - **Name the reverse proxy, by its own address.** Every public rate limit counts the
   client's address, and the server believes no `X-Forwarded-For` until

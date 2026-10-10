@@ -224,6 +224,11 @@ There is nothing to configure and nothing to turn off: the server adds the table
 machine, counting costs a limited request about half a millisecond; a database elsewhere adds its
 round trip to every one.
 
+**The counter has connections of its own**: four a replica, beside the up to ten the server's
+storage opens, so allow fourteen a replica in PostgreSQL's `max_connections`. They are its own so
+that a counter which cannot answer — somebody holding a lock on its table — holds up only the
+limited requests, each by a second at most, and the rest of the server answers as before.
+
 **When the database does not answer within a second**, a limit decides without a count:
 
 - **Submissions, drafts, challenges and file offers go through, uncounted.** Each needs the
@@ -232,7 +237,9 @@ round trip to every one.
 - **A sign-in and a request to the model are refused**, with `503` and the code
   `RATE_LIMIT_UNAVAILABLE`, because guessing passwords and spending your key are what those two
   limits are for. Sessions already signed in keep working; the admin says the server did not
-  take the sign-in rather than that the password was wrong.
+  take the sign-in rather than that the password was wrong. A flood of anonymous requests that
+  slows the database past the second is enough to bring this about: while it lasts, nobody can
+  sign in.
 
 The server writes one line to standard error when counting stops and one when it starts again,
 and says it nowhere else.

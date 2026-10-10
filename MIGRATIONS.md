@@ -309,13 +309,17 @@ old server did too
 It is **unlogged**: a crash empties it, and it is on no standby, which costs each client one
 fresh window. If you grant the application's role privileges table by table, it needs `SELECT`,
 `INSERT`, `UPDATE` and `DELETE` on `rate_limit_counters`; without them every count fails, nobody
-can sign in, and the public plane has no limit.
+can sign in, and the public plane has no limit. **Each server process opens four connections
+more**, the counter's own, beside the up to ten its storage opens: a database whose
+`max_connections` was sized to the server's ten a replica needs fourteen.
 
-**If you call `createApp` yourself**, rather than running the server, pass
-`rateLimitStore: createPostgresRateLimitStore(sql)` to count in the database the replicas share.
-Without it, `createApp` counts in the process, as every release before this did, and behind N
-replicas each limit allows N times what it says. The table comes from `bootstrapSchema`, as the
-others do.
+**If you call `createApp` yourself**, rather than running the server, open the counter with
+`const rateLimits = createPostgresRateLimitStore(databaseUrl)`, pass
+`rateLimitStore: rateLimits.store`, and call `rateLimits.end()` once the app is closed. It takes
+the database's address rather than your pool because it opens connections of its own, so that a
+counter which cannot answer holds none of yours. Without it, `createApp` counts in the process, as
+every release before this did, and behind N replicas each limit allows N times what it says. The
+table comes from `bootstrapSchema`, as the others do.
 
 **A client may see a new answer.** `POST /auth/login` and `POST /model/complete` answer `503`
 with `{ "code": "RATE_LIMIT_UNAVAILABLE", "message": … }` when the request could not be counted

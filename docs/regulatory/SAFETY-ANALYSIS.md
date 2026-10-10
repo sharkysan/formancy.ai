@@ -650,7 +650,9 @@ replicas on real PostgreSQL, and `rate-limit-store.test.ts` the refusal.
 *Residual:* a distributed attacker with many addresses is not meaningfully
 slowed by either limit. An embedding that calls `createApp` without the shared
 store counts per process, as every deployment did before 0170, so behind N
-replicas it permits N times what it says.
+replicas it permits N times what it says. The refusal that keeps guessing
+limited while the count cannot be had also keeps everybody else out: nobody can
+sign in then, and anonymous load that slows the database is enough (D19).
 The address counted is the socket's unless `FORMANCY_TRUST_PROXY` names a proxy
 (D14), and anything at a trusted address can write whichever client address it
 likes — so trusting an address the operator does not control hands that
@@ -2013,6 +2015,47 @@ refusals themselves, and the request log (C3) has those, at `info`, only as stat
 for each send names its route, `/f/:path/submissions`, and its `400` or `409`, but not which
 refusal it was — the route answers a stale version `409` too, and a missing schema hash or an
 unsolved challenge `400` — nor which form, since a line has no field for either.
+
+### D19. The server stops answering because its rate limits cannot be counted
+
+*How it arises:* every rate limit counts in a table in the database the replicas share
+([0170](../decisions/0170-a-limit-is-counted-once-in-the-database-every-replica-shares.md)).
+When a count cannot be had quickly — somebody holds a lock on that table, or the database is slow
+under load, which an anonymous flood on the public plane can bring about — every limited request
+waits for one. Counting on the connections everything else uses, those waits take them: a count
+waiting for a lock holds its connection, and the queries sent after it on that connection wait for
+the lock too. Found in review, before release, in the counter's first version, which counted on
+storage's connections: with the table locked, twelve submissions and a form's read after them had
+no answer within five seconds.
+
+*Severity:* nobody can open or submit any form, and nothing else that queries the database
+answers, until the lock goes — an outage of everything, caused by a fault in a defence. Loud to
+everybody; to the operator, one line on standard error.
+
+*Constraint:* **the counter has connections of its own**, four a replica, which
+`createPostgresRateLimitStore` opens from the database's address so that it cannot be handed
+storage's pool. At most thirty-two counts are sent at once; one still waiting to be sent at the
+bound is dropped unsent, and one sent is ended by the database at the bound, through those
+connections' `statement_timeout`. A count not had within a second is decided by the route's own
+declaration: submissions, drafts, challenges and file offers are admitted uncounted, so forms go
+on being opened and submitted; a sign-in and a request to the model are refused with a `503`.
+`shared-rate-limits.integration.test.ts` locks the table and holds that more submissions than
+storage has connections are each admitted within the bound and that a form's read still answers —
+red against the first version — that a count abandoned under the lock is ended by the database,
+and that no more counts land once the lock goes than had been sent; `rate-limit-store.test.ts`
+holds every registered limit to what it declares.
+
+*Residual:* **while the counter cannot answer, nobody can sign in.** A login is refused with a
+`503` whatever the password, so a form that needs a session cannot be completed by anybody not
+already signed in, and an operator cannot sign in to the admin; sessions already issued keep
+working. Anonymous load is enough to cause it: a flood on the public plane that slows the database
+past the bound refuses every sign-in for as long as it lasts, where before 0170 a slow database
+made a sign-in slow (`rate-limit-store.test.ts`, *a login is refused, and the answer says nothing
+about the database*). Meanwhile the public plane has no limit (C1, C5), and each limited request
+waits up to a second first. The counter's four connections count against the database's own limit
+on connections; where `max_connections` leaves no room for them, the counter cannot connect and
+every limit behaves as though it could not answer — a refused connection is what
+`rate-limit-store.test.ts` counts over.
 
 ---
 

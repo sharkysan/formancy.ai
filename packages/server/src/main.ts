@@ -150,11 +150,13 @@ const model =
 
 await bootstrapSchema(sql)
 const storage = createPostgresStorage(sql)
+// Every limit counts in the database, so behind any number of replicas it is the limit it says
+// rather than that many times it; on connections of its own, so a counter that cannot answer
+// holds none of the ones storage queries on. No setting turns it off (0170).
+const rateLimits = createPostgresRateLimitStore(databaseUrl)
 const app = await createApp(storage, {
   authSecret,
-  // Every limit counts in the database, so behind any number of replicas it is the limit it
-  // says rather than that many times it. No setting turns it off (0170).
-  rateLimitStore: createPostgresRateLimitStore(sql),
+  rateLimitStore: rateLimits.store,
   ...(adminEmail !== undefined && adminPassword !== undefined
     ? { bootstrapAdmin: { email: adminEmail, password: adminPassword } }
     : {}),
@@ -206,6 +208,7 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.on(signal, () => {
     void app
       .close()
+      .then(() => rateLimits.end())
       .then(() => sql.end())
       .then(() => process.exit(0))
   })

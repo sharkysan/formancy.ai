@@ -1,5 +1,4 @@
 import { channel } from 'node:diagnostics_channel'
-import postgres from 'postgres'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import type { FastifyInstance, RouteOptions } from 'fastify'
 import type { FastifyRateLimitStore, FastifyRateLimitStoreCtor, RateLimitOptions } from '@fastify/rate-limit'
@@ -33,11 +32,11 @@ interface Limit {
 }
 
 const apps: FastifyInstance[] = []
-const clients: postgres.Sql[] = []
+const counters: Array<{ end: () => Promise<void> }> = []
 
 afterEach(async () => {
   for (const app of apps.splice(0)) await app.close()
-  for (const sql of clients.splice(0)) await sql.end({ timeout: 0 })
+  for (const counter of counters.splice(0)) await counter.end()
 })
 
 /** An app, and every limit its routes registered while it was built. */
@@ -106,13 +105,13 @@ function recording(): { store: FastifyRateLimitStoreCtor; counted: string[] } {
 
 /** A store over a PostgreSQL nobody is listening for: every count fails, at once. */
 function unreachable(report: (line: string) => void = () => {}, sweepEveryMs?: number): FastifyRateLimitStoreCtor {
-  const sql = postgres('postgres://formancy:formancy@127.0.0.1:1/formancy', { max: 1, connect_timeout: 1 })
-  clients.push(sql)
-  return createPostgresRateLimitStore(sql, {
+  const counter = createPostgresRateLimitStore('postgres://formancy:formancy@127.0.0.1:1/formancy', {
     timeoutMs: 2_000,
     report,
     ...(sweepEveryMs === undefined ? {} : { sweepEveryMs }),
   })
+  counters.push(counter)
+  return counter.store
 }
 
 /** A model that records what it was asked, so a refused request can be shown to cost nothing. */

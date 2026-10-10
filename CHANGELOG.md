@@ -11,29 +11,34 @@ later.
 ## Unreleased
 
 **Fixed: behind more than one replica, every rate limit allowed that many times itself.** Each
-limit counted in the process that answered — `@fastify/rate-limit`'s default store — so behind
-N replicas, which the deployment view draws behind a reverse proxy, thirty submissions a minute
-per address were thirty per replica, ten guesses at a password ten per replica, and the model's
-ten requests a minute per session, which the operator pays for, ten per replica. Now every limit
-counts in the PostgreSQL the deployment already runs, through a store of the plugin's own
-interface: one row per route and client in a new unlogged table, `rate_limit_counters`, which the
-server adds on start, counted by one upsert that takes the row's lock, so two replicas counting
-one client are counted one after the other, and the window runs on the database's clock. There is
-nothing to configure and no setting to turn it off; measured on one machine, it costs a limited
-request about half a millisecond. **When a count does not come back within a second**, each limit
-does what it declares: submissions, drafts, challenges and file offers go through uncounted —
-each needs the database for its own work anyway, and refusing them for a fault in the counter
-would take every form down — while a sign-in or a request to the model is refused with `503` and
-`RATE_LIMIT_UNAVAILABLE`, because guessing a password and spending the operator's key are what
-those two limits are for. The process says so once on standard error, and again when counting
-resumes; the answer to the client says nothing about the database. Every route's limit is written
-with `limited(budget, 'admit' | 'refuse')`, so none can leave that unsaid, and the check that each
-names the window the plugin reads now reads the limits as Fastify registers them rather than the
-source text, beside a new one that each counts in the store `createApp` was given. The admin's
-sign-in no longer calls a `429` or a `503` a wrong password. `createApp` takes the store as
-`rateLimitStore`, and an embedding that does not pass `createPostgresRateLimitStore` still counts
-per process; [`MIGRATIONS.md`](MIGRATIONS.md) has the table's grants and the new answer. Webhooks
-still want one replica: the outbox takes no row lock
+limit counted in the process that answered — `@fastify/rate-limit`'s default store — so behind N
+replicas, which the deployment view draws behind a reverse proxy, thirty submissions a minute per
+address were thirty per replica, ten guesses at a password ten per replica, and the model's ten
+requests a minute per session, which the operator pays for, ten per replica. Now every limit counts
+in the PostgreSQL the deployment already runs, through a store of the plugin's own interface: one
+row per route and client in a new unlogged table, `rate_limit_counters`, which the server adds on
+start, counted by one upsert that takes the row's lock, so two replicas counting one client are
+counted one after the other, and the window runs on the database's clock. There is nothing to
+configure and no setting to turn it off; measured on one machine, it costs a limited request about
+half a millisecond. **The counter opens four connections of its own** in each replica, beside
+storage's ten, so that one which cannot answer — a lock held on its table — holds up only the
+limited requests: on storage's connections, a dozen limited requests under such a lock stopped
+every route, unlimited ones included. A count abandoned at the bound is ended by the database's
+`statement_timeout`, and one still waiting to be sent is dropped. **When a count does not come back
+within a second**, each limit does what it declares: submissions, drafts, challenges and file
+offers go through uncounted — each needs the database for its own work anyway, and refusing them
+for a fault in the counter would take every form down — while a sign-in or a request to the model
+is refused with `503` and `RATE_LIMIT_UNAVAILABLE`, because guessing a password and spending the
+operator's key are what those two limits are for; a flood that slows the database is enough to
+refuse every sign-in while it lasts. The process says so once on standard error, and again when
+counting resumes; the answer to the client says nothing about the database. Every route's limit is
+written with `limited(budget, 'admit' | 'refuse')`, so none can leave that unsaid, and the check
+that each names the window the plugin reads now reads the limits as Fastify registers them rather
+than the source text, beside a new one that each counts in the store `createApp` was given. The
+admin's sign-in no longer calls a `429` or a `503` a wrong password. `createApp` takes the store as
+`rateLimitStore`, and an embedding that does not pass `createPostgresRateLimitStore(databaseUrl)`'s
+store still counts per process; [`MIGRATIONS.md`](MIGRATIONS.md) has the table's grants, the
+connections and the new answer. Webhooks still want one replica: the outbox takes no row lock
 ([0170](docs/decisions/0170-a-limit-is-counted-once-in-the-database-every-replica-shares.md)).
 
 **Added: a response is stored once, under the id it was handed with its form.** 0.2.0 named

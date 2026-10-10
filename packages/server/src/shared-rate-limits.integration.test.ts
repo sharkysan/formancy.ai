@@ -3,12 +3,14 @@ import type { StartedPostgreSqlContainer } from '@testcontainers/postgresql'
 import postgres from 'postgres'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
 import type { FastifyInstance } from 'fastify'
+import type { FastifyRateLimitStore } from '@fastify/rate-limit'
 import type { Completer } from '@formancy/server-core'
 import { createApp, SCHEMA_HASH_HEADER } from './app.js'
 import type { AppOptions } from './app.js'
 import { bootstrapSchema } from './db.js'
 import { createPostgresStorage } from './postgres-storage.js'
-import { createPostgresRateLimitStore } from './postgres-rate-limits.js'
+import { COUNTS_AT_ONCE, createPostgresRateLimitStore } from './postgres-rate-limits.js'
+import type { PostgresRateLimitOptions, PostgresRateLimits } from './postgres-rate-limits.js'
 
 /**
  * Two replicas over one real PostgreSQL, each with its own connections, counting in the one
@@ -17,9 +19,11 @@ import { createPostgresRateLimitStore } from './postgres-rate-limits.js'
  * Every limit used to count in the process that answered, so behind N replicas it allowed N
  * times what it said — the login limit and the model's per session included. What is under
  * test is that the count is the database's: that a request on one replica spends the budget
- * the other one checks, that budgets stay per route and per client, that a window ends on the
- * database's clock, what happens while the counter cannot answer, and that expired counters
- * go. Real SQL because the defect is about what two processes see of one row.
+ * the other one checks, that budgets stay per route and per client, that a window runs on the
+ * database's clock from a key's first request, what happens while the counter cannot answer —
+ * and that the rest of the server does not wait with it — and that expired counters go, and
+ * only those. Real SQL because the defect is about what two processes see of one row, and the
+ * stall about what a lock does to a connection.
  */
 const SECRET = 'integration-test-secret-with-length'
 const ADMIN = { email: 'root@test.ch', password: 'root-password-1' }
@@ -55,19 +59,79 @@ function connection(): postgres.Sql {
   return own
 }
 
-/** A replica: its own connections, the shared storage and the shared counter. */
+/** The shared counter, on connections of its own, as `main.ts` opens it. */
+function counter(store: PostgresRateLimitOptions = {}): PostgresRateLimits {
+  const counting = createPostgresRateLimitStore(container.getConnectionUri(), { report: () => {}, ...store })
+  opened.push({ close: counting.end })
+  return counting
+}
+
+/** A replica, wired as `main.ts` wires one: its own connections, the shared storage and the shared counter. */
 async function replica(
   options: Omit<AppOptions, 'authSecret'> = {},
-  store: { timeoutMs?: number; sweepEveryMs?: number; report?: (line: string) => void } = {},
+  store: PostgresRateLimitOptions = {},
 ): Promise<FastifyInstance> {
   const own = connection()
   const app = await createApp(createPostgresStorage(own), {
     authSecret: SECRET,
-    rateLimitStore: createPostgresRateLimitStore(own, { report: () => {}, ...store }),
+    rateLimitStore: counter(store).store,
     ...options,
   })
   opened.push(app)
   return app
+}
+
+/**
+ * Holds `rate_limit_counters` locked from a connection of its own until the returned function
+ * is called: a database that answers everything except the counter.
+ */
+async function lockTheCounter(): Promise<() => Promise<void>> {
+  const holder = connection()
+  let release = (): void => {}
+  const released = new Promise<void>((resolve) => (release = resolve))
+  let locked = (): void => {}
+  const isLocked = new Promise<void>((resolve) => (locked = resolve))
+  const holding = holder.begin(async (tx) => {
+    await tx`LOCK TABLE rate_limit_counters IN ACCESS EXCLUSIVE MODE`
+    locked()
+    await released
+  })
+  await isLocked
+  return async () => {
+    release()
+    await holding
+  }
+}
+
+/** How many counts are on the database waiting for a lock on the counter's table. */
+async function countsWaitingForTheLock(): Promise<number> {
+  const [row] = await sql<{ waiting: number }[]>`
+    SELECT count(*)::int AS waiting FROM pg_stat_activity
+    WHERE wait_event_type = 'Lock' AND query LIKE '%INSERT INTO rate_limit_counters%'`
+  return row?.waiting ?? 0
+}
+
+/** `work`, or `'no answer'` when it has not settled within `ms`. */
+async function within<T>(ms: number, work: Promise<T>): Promise<T | 'no answer'> {
+  let timer: NodeJS.Timeout | undefined
+  const late = new Promise<'no answer'>((resolve) => (timer = setTimeout(() => resolve('no answer'), ms)))
+  try {
+    return await Promise.race([work, late])
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+/** One count on `store`, as the plugin asks for it. */
+function countOn(store: FastifyRateLimitStore, key: string, windowMs: number): Promise<{ current: number; ttl: number }> {
+  return new Promise((resolve, reject) => {
+    store.incr(key, (error, result) => (error === null && result !== undefined ? resolve(result) : reject(error)), windowMs, 1_000)
+  })
+}
+
+/** Every key in the table. */
+async function keys(): Promise<string[]> {
+  return (await sql<{ key: string }[]>`SELECT key FROM rate_limit_counters ORDER BY key`).map((row) => row.key)
 }
 
 /** One submission attempt from `client`: 404 when admitted (there is no such form), 429 when not. */
@@ -120,8 +184,7 @@ describe('two replicas over one database', () => {
     const draft = await b.inject({ method: 'POST', url: '/f/no-such-form/drafts', remoteAddress: '203.0.113.1' })
     expect(draft.statusCode).toBe(404)
 
-    const keys = (await sql<{ key: string }[]>`SELECT key FROM rate_limit_counters ORDER BY key`).map((row) => row.key)
-    expect(keys).toEqual(['POST /f/:path/drafts 203.0.113.1', 'POST /f/:path/submissions 203.0.113.1'])
+    expect(await keys()).toEqual(['POST /f/:path/drafts 203.0.113.1', 'POST /f/:path/submissions 203.0.113.1'])
   })
 
   test('share the login limit', async () => {
@@ -180,14 +243,37 @@ describe('two replicas over one database', () => {
 })
 
 describe('the window', () => {
-  test("is the database's, so it ends for both replicas at once", async () => {
-    // One clock for every replica: a window kept by each process's own clock would end at
-    // different moments on each, and a skewed one would hand out a fresh budget early.
-    const limit = { submissionRateLimit: { max: 1, timeWindowMs: 1_000 } }
+  test("runs on the database's clock, so a replica whose clock runs ahead does not end it early", async () => {
+    // A window kept by each process's own clock ends at a different moment on each, and on a
+    // replica whose clock runs ahead it has already ended: that one hands out a fresh budget
+    // early. Both replicas share this process, so its clock is moved on to tell them apart.
+    const limit = { submissionRateLimit: { max: 1, timeWindowMs: 60_000 } }
     const a = await replica(limit)
     const b = await replica(limit)
 
     expect(await submit(a)).toBe(404)
+    vi.useFakeTimers({ toFake: ['Date'] })
+    try {
+      vi.setSystemTime(Date.now() + 10 * 60_000)
+      expect(await submit(b)).toBe(429)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  test("is fixed from a key's first request, so one refused late in it does not push its end back", async () => {
+    // A window whose end moved with every request, refused ones included, would never end for a
+    // client that keeps trying — a form that retries on its own, a sign-in tried again — and a
+    // limit of so many a minute would be a lockout for as long as they kept at it.
+    const limit = { submissionRateLimit: { max: 1, timeWindowMs: 2_000 } }
+    const a = await replica(limit)
+    const b = await replica(limit)
+
+    expect(await submit(a)).toBe(404)
+    // Taken after the answer, so the window ends no later than two seconds from here.
+    const first = Date.now()
+    const at = (ms: number) => new Promise((resolve) => setTimeout(resolve, Math.max(0, first + ms - Date.now())))
+    await at(1_200)
     const refused = await b.inject({
       method: 'POST',
       url: '/f/no-such-form/submissions',
@@ -199,7 +285,7 @@ describe('the window', () => {
     // What is left of the window, in whole seconds, as the plugin rounds it.
     expect(refused.headers['retry-after']).toBe('1')
 
-    await new Promise((resolve) => setTimeout(resolve, 1_100))
+    await at(2_200)
     expect(await submit(b)).toBe(404)
   })
 })
@@ -212,18 +298,7 @@ describe('a counter slower than its bound', () => {
     const lines: string[] = []
     const options = { bootstrapAdmin: ADMIN, submissionRateLimit: { max: 1, timeWindowMs: 60_000 } }
     const a = await replica(options, { timeoutMs: 300, report: (line) => lines.push(line) })
-
-    const holder = connection()
-    let release = (): void => {}
-    const released = new Promise<void>((resolve) => (release = resolve))
-    let locked = (): void => {}
-    const isLocked = new Promise<void>((resolve) => (locked = resolve))
-    const holding = holder.begin(async (tx) => {
-      await tx`LOCK TABLE rate_limit_counters IN ACCESS EXCLUSIVE MODE`
-      locked()
-      await released
-    })
-    await isLocked
+    const unlock = await lockTheCounter()
 
     try {
       const started = Date.now()
@@ -236,32 +311,123 @@ describe('a counter slower than its bound', () => {
       expect(lines).toHaveLength(1)
     } finally {
       // Whatever failed above, the lock goes: held, it would stop every case after this one.
-      release()
-      await holding
+      await unlock()
     }
-    // Counting again. The counts the abandoned statements make once the lock goes are not
-    // waited for: whichever lands first, the client is over its budget of one.
+    // Counting again. Whether or not a count abandoned under the lock lands once it goes, the
+    // client is over its budget of one within two more.
     await vi.waitFor(async () => expect(await submit(a)).toBe(429))
     expect(lines).toHaveLength(2)
+  })
+
+  test('holds none of the connections the rest of the server queries on', async () => {
+    // A count abandoned at the bound kept its connection, and the queries sent after it on that
+    // connection waited for the lock too. With more limited requests than storage has
+    // connections, every query after them — a form's read, which no limit counts, included —
+    // waited behind a count nobody was waiting for any more: the whole server stopped
+    // answering, which is the outage admitting uncounted exists to prevent (0170).
+    const storageConnections = connection().options.max
+    const a = await replica({ submissionRateLimit: { max: 1_000, timeWindowMs: 60_000 } }, { timeoutMs: 300 })
+    const unlock = await lockTheCounter()
+
+    try {
+      const clients = Array.from({ length: storageConnections + 2 }, (_, index) => `203.0.113.${index + 1}`)
+      const submissions = await within(5_000, Promise.all(clients.map((client) => submit(a, client))))
+      const read = await within(
+        5_000,
+        a.inject({ method: 'GET', url: '/f/no-such-form' }).then((response) => response.statusCode),
+      )
+
+      // Each admitted uncounted, and the form's read answered: there is no such form.
+      expect({ submissions, read }).toEqual({ submissions: clients.map(() => 404), read: 404 })
+    } finally {
+      await unlock()
+    }
+  })
+
+  test('has the database end a count it abandoned, rather than leave it holding its connection', async () => {
+    // Abandoned only in the process, a count went on waiting for the lock on the database and
+    // held its connection until whoever held the lock let go. Ended there at the bound, it frees
+    // the connection without a cancel request, which would cost a connection more.
+    const a = await replica({}, { timeoutMs: 300 })
+    const unlock = await lockTheCounter()
+
+    try {
+      const admitted = submit(a)
+      // On the database and waiting, or the next line would pass without a count to end.
+      await vi.waitFor(async () => expect(await countsWaitingForTheLock()).toBe(1))
+      expect(await admitted).toBe(404)
+      await vi.waitFor(async () => expect(await countsWaitingForTheLock()).toBe(0), { timeout: 3_000 })
+    } finally {
+      await unlock()
+    }
+  })
+
+  test('never sends a count that waited past the bound to be sent', async () => {
+    // Queued in the driver, every count abandoned while the counter could not answer was still
+    // sent, each once the one before it had timed out: the process kept them all for as long as
+    // the lock lasted, and when it went they all landed, late, against a client admitted long
+    // since. Dropped where they wait instead, no more can land than had been sent.
+    const a = await replica({ submissionRateLimit: { max: 10_000, timeWindowMs: 60_000 } }, { timeoutMs: 300 })
+    const attempts = COUNTS_AT_ONCE * 4
+    const unlock = await lockTheCounter()
+
+    try {
+      // Each within the bound, uncounted: one waiting to be sent gives up there, as one sent does.
+      const answers = await within(5_000, Promise.all(Array.from({ length: attempts }, () => submit(a))))
+      expect(answers).toEqual(Array.from({ length: attempts }, () => 404))
+    } finally {
+      await unlock()
+    }
+    // Anything still to land lands within milliseconds of the lock going.
+    await new Promise((resolve) => setTimeout(resolve, 1_000))
+
+    const [row] = await sql<{ hits: number }[]>`
+      SELECT hits FROM rate_limit_counters WHERE key = 'POST /f/:path/submissions 203.0.113.1'`
+    expect(row?.hits ?? 0).toBeLessThanOrEqual(COUNTS_AT_ONCE)
   })
 })
 
 describe('expired counters', () => {
-  test('are deleted, so the table holds about one window of clients', async () => {
-    // Every client that ever made a request leaves a row. A row whose window has ended is
-    // never read again — the next request from that client starts it over — so keeping it
-    // only grows the table.
-    const limit = { submissionRateLimit: { max: 10, timeWindowMs: 50 } }
-    const a = await replica(limit, { sweepEveryMs: 0 })
+  test('are deleted, and a counter still in its window is not', async () => {
+    // Every client that ever made a request leaves a row. A row whose window has ended is never
+    // read again — the next request from that client starts it over — so keeping it only grows
+    // the table. A sweep that took more than those would hand every client a fresh budget each
+    // time a replica swept.
+    const counting = counter({ sweepEveryMs: 500 })
+    const store = new counting.store({})
 
-    await submit(a, '203.0.113.1')
-    await new Promise((resolve) => setTimeout(resolve, 100))
-    await submit(a, '203.0.113.2')
+    await countOn(store, 'ended', 50)
+    await countOn(store, 'live', 60_000)
+    // Past the first window and past the interval: the next count sweeps, the only one that does,
+    // and the live row was written before it.
+    await new Promise((resolve) => setTimeout(resolve, 600))
+    await countOn(store, 'sweeps', 60_000)
 
-    await vi.waitFor(async () => {
-      const keys = (await sql<{ key: string }[]>`SELECT key FROM rate_limit_counters`).map((row) => row.key)
-      expect(keys).toEqual(['POST /f/:path/submissions 203.0.113.2'])
-    })
+    await vi.waitFor(async () => expect(await keys()).not.toContain('ended'))
+    const [live] = await sql<{ hits: number }[]>`SELECT hits FROM rate_limit_counters WHERE key = 'live'`
+    expect(live?.hits).toBe(1)
+  })
+
+  test('are deleted by a sweep slower than a count may be', async () => {
+    // A sweep held to a count's bound would fail every time on a table grown past what one bound
+    // deletes — a flood from many addresses — and the table would never shrink again. A lock
+    // makes this one slow.
+    await sql`INSERT INTO rate_limit_counters (key, hits, resets_at) VALUES ('ended', 1, now() - interval '1 second')`
+    const lines: string[] = []
+    const counting = counter({ timeoutMs: 200, sweepEveryMs: 0, report: (line) => lines.push(line) })
+    const store = new counting.store({})
+    const unlock = await lockTheCounter()
+
+    try {
+      // Abandoned at the bound; the sweep on its back waits for the lock, three bounds and more.
+      await countOn(store, 'sweeps', 60_000).catch(() => {})
+      await new Promise((resolve) => setTimeout(resolve, 600))
+    } finally {
+      await unlock()
+    }
+
+    await vi.waitFor(async () => expect(await keys()).not.toContain('ended'))
+    expect(lines.filter((line) => /could not be deleted/.test(line))).toEqual([])
   })
 })
 
