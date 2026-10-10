@@ -683,8 +683,8 @@ change of examples and a submission write inside their own transaction included.
 a route or a background worker writes is an event from a fixed list. A line is made from the
 listed fields only, each kept only when its value is of that field's kind, and the words of a
 call are never written; so a body, a query string, a header (`Authorization`, a cookie, the API
-key, the challenge, a draft's key), a file's name, an answer, a password or an email has no
-field to go in. The three background workers' failures go through the same rule, and so do the
+key, the challenge, a draft's key, a response's token), a file's name, an answer, a password or
+an email has no field to go in. The three background workers' failures go through the same rule, and so do the
 database's notices. On by default at `info`; `FORMANCY_LOG_LEVEL` takes pino's level names or
 `off`, and anything else stops the server at startup. `createApp` given no log keeps none, so a
 host embedding it decides, and the libraries still write nothing
@@ -692,8 +692,8 @@ host embedding it decides, and the libraries still write nothing
 
 Held by `packages/server/src/server.integration.test.ts`, *what reaches the log*, on real
 PostgreSQL: every route family is driven — a login that fails and one that works, a user, an
-API key used to publish, a draft written and read, an upload, a challenge, a submission, its
-listing, export and file, a form's examples, a model that answers `401` — with values planted
+API key used to publish, a draft written and read, an upload, a challenge, a submission sent
+with its draft's token, its listing, export and file, a form's examples, a model that answers `401` — with values planted
 in what each request sends, and a body that does not parse, a path no route has, a URL the
 router cannot decode, a parameter too long for it and a database error whose message quotes a
 planted id. What must not be logged is derived from what the requests carried and what the
@@ -1989,7 +1989,10 @@ only sessions.
 reload with no draft behind it loses the answers. **A cache that ignores `no-store` cannot be
 worked around from the page**: reading the form again reads the same cache, and every response
 after the first is refused until the cache is fixed. Nothing records either case beyond the
-refusals themselves: the server keeps no request log (C3).
+refusals themselves, and the request log (C3) has those, at `info`, only as statuses: a line
+for each send names its route, `/f/:path/submissions`, and its `400` or `409`, but not which
+refusal it was — the route answers a stale version `409` too, and a missing schema hash or an
+unsolved challenge `400` — nor which form, since a line has no field for either.
 
 ---
 

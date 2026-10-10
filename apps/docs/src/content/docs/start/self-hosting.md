@@ -595,7 +595,8 @@ error that answered a request. `docker compose logs server` reads them.
   warning from Fastify itself is `unlisted`.
 
 **What is never written:** a request's body, its query string, its headers —
-`Authorization`, cookies, `x-formancy-api-key`, the challenge, a draft's key — a file's name,
+`Authorization`, cookies, `x-formancy-api-key`, the challenge, a draft's key, a response's
+`x-formancy-submission-token` — a file's name,
 an answer, a password, an email, and the words of any error: its message and its stack. A line
 is assembled from the fields above and nothing else, each kept only when its value is the kind
 that field holds, so none of those has anywhere to go

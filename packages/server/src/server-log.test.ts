@@ -5,7 +5,7 @@ import { afterEach, describe, expect, test } from 'vitest'
 import type { FastifyInstance } from 'fastify'
 import { createMemoryStorage } from '@formancy/server-core'
 import type { AuditAction, Storage } from '@formancy/server-core'
-import { createApp, SCHEMA_HASH_HEADER } from './app.js'
+import { createApp, SCHEMA_HASH_HEADER, SUBMISSION_TOKEN_HEADER } from './app.js'
 import type { AppOptions } from './app.js'
 import { createServerLog, databaseNotices, LOG_FIELDS } from './server-log.js'
 import type { LogLevel, LogSink } from './server-log.js'
@@ -217,12 +217,14 @@ describe('a request', () => {
         })
       ).statusCode,
     ).toBe(200)
+    // Sent as a respondent's browser sends it, with the token the form was handed out with (0169).
+    const { submissionToken } = (await app.inject({ method: 'GET', url: '/f/contact' })).json() as { submissionToken: string }
     expect(
       (
         await app.inject({
           method: 'POST',
           url: '/f/contact/submissions',
-          headers: { [SCHEMA_HASH_HEADER]: schemaHash },
+          headers: { [SCHEMA_HASH_HEADER]: schemaHash, [SUBMISSION_TOKEN_HEADER]: submissionToken },
           payload: { email: 'a@example.ch' },
         })
       ).statusCode,

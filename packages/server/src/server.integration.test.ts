@@ -2597,11 +2597,19 @@ describe('what reaches the log', () => {
         (await send({ method: 'PUT', url: `/f/${path}/access`, headers: withKey, payload: { submit: 'public' } })).statusCode,
       ).toBe(204)
       expect((await send({ method: 'GET', url: `/forms?cursor=${planted.query}`, headers: withKey })).statusCode).toBe(200)
-      expect((await send({ method: 'GET', url: `/f/${path}` })).statusCode).toBe(200)
+      const read = await send({ method: 'GET', url: `/f/${path}` })
+      expect(read.statusCode).toBe(200)
+      // What the form is handed out with (0169) is a secret the server hands back, like a draft's key.
+      carry((read.json() as { submissionToken: string }).submissionToken)
 
-      const draft = (await send({ method: 'POST', url: `/f/${path}/drafts` })).json() as { draftId: string; token: string }
+      const draft = (await send({ method: 'POST', url: `/f/${path}/drafts` })).json() as {
+        draftId: string
+        token: string
+        submissionToken: string
+      }
       carry(draft.draftId)
       carry(draft.token)
+      carry(draft.submissionToken)
       const draftKey = { 'x-formancy-draft-token': draft.token }
       expect(
         (
@@ -2639,7 +2647,12 @@ describe('what reaches the log', () => {
       const submitted = await send({
         method: 'POST',
         url: `/f/${path}/submissions`,
-        headers: { [SCHEMA_HASH_HEADER]: schemaHash, 'x-formancy-challenge': solution },
+        // The draft's token, as a page that started a draft sends its response with (0169).
+        headers: {
+          [SCHEMA_HASH_HEADER]: schemaHash,
+          'x-formancy-challenge': solution,
+          [SUBMISSION_TOKEN_HEADER]: draft.submissionToken,
+        },
         payload: { email: planted.email, note: planted.answer, evidence: [file] },
       })
       expect(submitted.statusCode).toBe(201)
