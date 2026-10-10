@@ -24,8 +24,8 @@ import { describe, expect, test } from 'vitest'
 const here = dirname(fileURLToPath(import.meta.url))
 const repo = join(here, '..', '..', '..')
 
-const brotliKilobytes = (packageName: string): number => {
-  const file = join(repo, 'packages', packageName, 'dist', 'index.mjs')
+const brotliKilobytes = (packageName: string, entry = 'index.mjs'): number => {
+  const file = join(repo, 'packages', packageName, 'dist', entry)
   /*
    * Said out loud, because the alternative failure is a riddle.
    *
@@ -38,13 +38,13 @@ const brotliKilobytes = (packageName: string): number => {
    */
   if (!existsSync(file)) {
     throw new Error(
-      `${packageName} has no dist/index.mjs. This measures built output — run \`pnpm build\` first; the figures in §9.3 are not the problem.`,
+      `${packageName} has no dist/${entry}. This measures built output — run \`pnpm build\` first; the figures in §9.3 are not the problem.`,
     )
   }
   const built = readFileSync(file)
   if (built.length < 1024) {
     throw new Error(
-      `${packageName}'s dist/index.mjs is ${String(built.length)} bytes, which is not a built bundle. Something is mid-write — run \`pnpm build\` to completion before this.`,
+      `${packageName}'s dist/${entry} is ${String(built.length)} bytes, which is not a built bundle. Something is mid-write — run \`pnpm build\` to completion before this.`,
     )
   }
   /*
@@ -66,7 +66,7 @@ const brotliKilobytes = (packageName: string): number => {
       visit(match[1]!)
     }
   }
-  visit('index.mjs')
+  visit(entry)
   return [...loaded].reduce(
     (total, name) => total + brotliCompressSync(readFileSync(join(dist, name))).length / 1024,
     0,
@@ -93,16 +93,27 @@ describe('the bundle figures in §9.3', () => {
      * false one about the document. The eighth time a guard here has known one
      * spelling of a thing that has several.
      */
-    for (const packageName of ['core', 'react', 'spec'] as const) {
-      const row = new RegExp(String.raw`^\|\s*\`@formancy/${packageName}\` bundle\s*\|.*$`, 'm')
+    /*
+     * Each row is a published entry: a package's barrel, or a second entry that imports
+     * nothing from it — the renderers' words (0171), which every renderer loads and the
+     * engine never does, so neither the core row nor the React row would see them.
+     */
+    const ENTRIES = [
+      { name: 'core', packageName: 'core', entry: 'index.mjs' },
+      { name: 'react', packageName: 'react', entry: 'index.mjs' },
+      { name: 'spec', packageName: 'spec', entry: 'index.mjs' },
+      { name: 'core/words', packageName: 'core', entry: 'words.mjs' },
+    ] as const
+    for (const { name, packageName, entry } of ENTRIES) {
+      const row = new RegExp(String.raw`^\|\s*\`@formancy/${name}\` bundle\s*\|.*$`, 'm')
         .exec(quality)?.[0]
       const quoted = row === undefined ? undefined : /([\d.]+)\s*kB/.exec(row.split('|').at(-2) ?? '')?.[1]
-      expect(quoted, `no figure for @formancy/${packageName} in §9.3`).toBeDefined()
+      expect(quoted, `no figure for @formancy/${name} in §9.3`).toBeDefined()
 
-      const measured = brotliKilobytes(packageName)
+      const measured = brotliKilobytes(packageName, entry)
       expect(
         Math.abs(Number(quoted) - measured),
-        `§9.3 says @formancy/${packageName} is ${String(quoted)} kB; it measures ${measured.toFixed(1)} kB`,
+        `§9.3 says @formancy/${name} is ${String(quoted)} kB; it measures ${measured.toFixed(1)} kB`,
       ).toBeLessThan(0.15)
     }
   })

@@ -25,6 +25,7 @@ import {
 } from '@formancy/spec'
 import type { LayoutNode } from '@formancy/spec'
 import { injectEngine } from './provide.js'
+import { injectFormText } from './text.js'
 import { FormancyFieldSlot, FormancyGroupSection, FormancyRepeaterSection } from './slots.js'
 
 /**
@@ -152,6 +153,7 @@ export class FormancyTabs {
 
   private readonly tabButtons = viewChildren<ElementRef<HTMLButtonElement>>('tab')
   private readonly engine = injectEngine()
+  private readonly text = injectFormText()
   /** Set only by a key press, so focus is never taken from elsewhere. */
   private moveFocus = false
 
@@ -190,11 +192,10 @@ export class FormancyTabs {
 
   /** A tab's name is its section's heading. The validator insists it has one. */
   protected nameOf(node: LayoutNode, index: number): string {
-    if (node.kind === 'field') return `Tab ${String(index + 1)}`
-    return (
-      resolveText(this.engine.schema(), node.label, this.engine.locale()) ??
-      `Tab ${String(index + 1)}`
-    )
+    // A section without a heading is named by where it is, in the form's language (0171).
+    const unnamed = (): string => this.text('tabs.unnamed', { position: index + 1 })
+    if (node.kind === 'field') return unnamed()
+    return resolveText(this.engine.schema(), node.label, this.engine.locale()) ?? unnamed()
   }
 
   protected onKeyDown(event: KeyboardEvent): void {

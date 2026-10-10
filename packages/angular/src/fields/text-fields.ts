@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input, signal } from '@an
 import type { Type } from '@angular/core'
 import { answerFromText, editMasked, formatMasked, maskIsNumeric, maskPlaceholder } from '@formancy/spec'
 import { injectScanner } from '../scanning.js'
+import { FormancyTextPipe, injectFormText } from '../text.js'
 import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
 
 
@@ -27,7 +28,7 @@ import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
 @Component({
   selector: 'formancy-text-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormancyFieldShell],
+  imports: [FormancyFieldShell, FormancyTextPipe],
   template: `
     <formancy-field-shell [field]="field" [label]="context.label" [path]="context.path">
       <input
@@ -57,7 +58,7 @@ import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
              does not touch focus, and the guard in read() does what disabled was doing.
              Kept on one line because element-internal whitespace leaks into the accessible
              name. -->
-        <button type="button" data-formancy-part="scanner-button" [disabled]="field.snapshot().disabled" [attr.aria-busy]="scanning() ? 'true' : null" (click)="read()">Scan <span data-formancy-part="visually-hidden">{{ context.label }}</span></button>
+        <button type="button" data-formancy-part="scanner-button" [disabled]="field.snapshot().disabled" [attr.aria-busy]="scanning() ? 'true' : null" (click)="read()">{{ 'scanner.scan' | formancyText }} <span data-formancy-part="visually-hidden">{{ context.label }}</span></button>
         <!-- The camera's own progress and its failures, in this field's polite
              region. NOT the error region: that one is the control's describedby
              target, it holds the engine's verdicts, and a refused permission put
@@ -72,7 +73,13 @@ export class FormancyTextField extends FieldComponentBase {
   private readonly scan = injectScanner()
   protected readonly scanning = signal(false)
   /** A device failure, held here rather than in the field's errors. See above. */
-  private readonly trouble = signal<string | undefined>(undefined)
+  /**
+   * A device failure: what went wrong rather than a sentence about it, so the sentence is
+   * the form's language's (0171). No reason is a scanner that answered with something
+   * other than text.
+   */
+  private readonly trouble = signal<{ reason?: string } | undefined>(undefined)
+  private readonly words = injectFormText()
 
   /**
    * The answer, and with a mask the answer in its shape. Where a typed, deleted or
@@ -108,9 +115,14 @@ export class FormancyTextField extends FieldComponentBase {
     () => this.scan !== null && this.field.snapshot().def.widget === 'scanner',
   )
 
-  protected readonly status = computed(() =>
-    this.scanning() ? 'Scanning…' : (this.trouble() ?? ''),
-  )
+  protected readonly status = computed(() => {
+    if (this.scanning()) return this.words('scanner.scanning')
+    const trouble = this.trouble()
+    if (trouble === undefined) return ''
+    return trouble.reason === undefined
+      ? this.words('scanner.noText')
+      : this.words('scanner.failed', { reason: trouble.reason })
+  })
 
   protected onInput(event: Event): void {
     const input = event.target as HTMLInputElement
@@ -164,9 +176,7 @@ export class FormancyTextField extends FieldComponentBase {
         // A host written in plain JavaScript can resolve with anything. Reported as
         // the device failure it is, rather than stored — an object in a text field is
         // exactly what `commit` exists to make impossible.
-        this.trouble.set(
-          'Scanning did not work: the scanner did not return text. Type the value instead.',
-        )
+        this.trouble.set({})
         return
       }
       // Stored as typed, THEN touched — so a value the field's `pattern` refuses
@@ -178,11 +188,7 @@ export class FormancyTextField extends FieldComponentBase {
       this.commit(mask === undefined ? text : answerFromText(mask, text))
       this.field.touch()
     } catch (error) {
-      this.trouble.set(
-        `Scanning did not work: ${
-          error instanceof Error ? error.message : String(error)
-        }. Type the value instead.`,
-      )
+      this.trouble.set({ reason: error instanceof Error ? error.message : String(error) })
     } finally {
       this.scanning.set(false)
     }

@@ -1408,6 +1408,34 @@ forgotten: a snapshot is a file somebody updates when it goes red, which is why 
 baselines were refused for the same reason
 ([0102](../decisions/0102-what-jsdom-cannot-see-is-checked-in-a-browser.md)).
 
+*How it also arose — the renderers' own words:* everything a renderer says that the author
+did not write — Next, Back, Submit, a repeater's Add and Remove and where a row is, a
+ranking's buttons, a file's Cancel uploading and Try again, the required hint, the error
+summary's heading, and every live region's announcement while a file is sent, a list is
+searched or a code is scanned — was an English literal in each of React, Angular and Material.
+A form whose reader chose German asked its questions in German around English controls, and
+announced its progress in English to somebody using a screen reader in German.
+
+*Constraint:* the renderers' words are one catalogue, `@formancy/core/words`, read in the
+engine's locale — the one the reader chose, never the browser's — with German and French
+shipped complete and a host's language or change taking precedence a message at a time over
+English ([0171](../decisions/0171-the-renderers-words-are-the-forms-language.md)).
+`apps/docs/src/renderer-words.test.ts` reads every renderer source and template and fails on a
+literal word on screen; it failed with 154 the first time. Each renderer's `words.test` finds
+every surface and live region of a German form by its German words, and the conformance
+fixture `renderer-words-mounted-locale.json` drives a German form through German Next, Back,
+Submit and row buttons under the React, Angular and Material drivers, failing in each with the
+words reverted.
+
+*Residual:* three things on a German form are not the renderer's to translate. A field's error
+is the engine's code — `required` — shown as a code; the error summary's sentence around it is
+translated and the code is not. A repeater's `addLabel` and `removeLabel` are plain strings in
+every spec version, so a form that sets them says them in the author's one language. And what a
+host's uploader or scanner says went wrong is set into the renderer's sentence in whatever
+language the host wrote it. The resume notice speaks the form's language only under the form's
+provider, and English drawn outside it; a host drawing it apart from a German form shows an
+English notice above German questions.
+
 ### D10. A form is changed by a model and nobody reads what it changed
 
 *How it arises:* a person describes a change in words and a model answers with a whole

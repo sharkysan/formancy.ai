@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef } from 'react'
+import { useFormText } from '../context.js'
 import { useField } from '../use-field.js'
 import { RequiredHint, useResolvedOptions } from './internals.js'
 import type { FieldComponentProps } from './internals.js'
@@ -24,6 +25,7 @@ import type { FieldComponentProps } from './internals.js'
  */
 export function RankingField({ path, label }: FieldComponentProps) {
   const field = useField(path)
+  const text = useFormText()
   const options = useResolvedOptions(field)
   const showError = field.touched && field.errors.length > 0
   const order = Array.isArray(field.value) ? (field.value as unknown[]).map(String) : []
@@ -81,7 +83,7 @@ export function RankingField({ path, label }: FieldComponentProps) {
       <legend data-formancy-part="label">{label}</legend>
       <RequiredHint field={field} />
       {ranked.length === 0 ? null : (
-        <ol data-formancy-part="ranking-order" aria-label={`${label}: your order`}>
+        <ol data-formancy-part="ranking-order" aria-label={text('ranking.order', { label })}>
           {ranked.map((option, index) => (
             <li key={option.value} data-formancy-part="ranking-item">
               <span data-formancy-part="ranking-label">{option.label}</span>
@@ -89,7 +91,7 @@ export function RankingField({ path, label }: FieldComponentProps) {
                 type="button"
                 id={buttonId('up', option.value)}
                 data-formancy-part="ranking-up"
-                aria-label={`Move ${option.label} up`}
+                aria-label={text('ranking.up', { option: option.label })}
                 // Focusable at the end of the list, so focus is never dropped onto the
                 // page when an option reaches the top; it just does nothing there.
                 aria-disabled={index === 0 ? true : undefined}
@@ -102,7 +104,7 @@ export function RankingField({ path, label }: FieldComponentProps) {
                 type="button"
                 id={buttonId('down', option.value)}
                 data-formancy-part="ranking-down"
-                aria-label={`Move ${option.label} down`}
+                aria-label={text('ranking.down', { option: option.label })}
                 aria-disabled={index === ranked.length - 1 ? true : undefined}
                 onClick={() => move(option.value, 1)}
                 onBlur={() => field.touch()}
@@ -113,7 +115,7 @@ export function RankingField({ path, label }: FieldComponentProps) {
                 type="button"
                 id={buttonId('remove', option.value)}
                 data-formancy-part="ranking-remove"
-                aria-label={`Take ${option.label} out of the order`}
+                aria-label={text('ranking.remove', { option: option.label })}
                 onClick={() =>
                   reorder(
                     order.filter((value) => value !== option.value),
@@ -129,14 +131,14 @@ export function RankingField({ path, label }: FieldComponentProps) {
         </ol>
       )}
       {unranked.length === 0 ? null : (
-        <ul data-formancy-part="ranking-pool" aria-label={`${label}: not ranked yet`}>
+        <ul data-formancy-part="ranking-pool" aria-label={text('ranking.pool', { label })}>
           {unranked.map((option) => (
             <li key={option.value} data-formancy-part="ranking-candidate">
               <button
                 type="button"
                 id={buttonId('rank', option.value)}
                 data-formancy-part="ranking-add"
-                aria-label={`Rank ${option.label}`}
+                aria-label={text('ranking.rank', { option: option.label })}
                 onClick={() => rank(option.value)}
                 onBlur={() => field.touch()}
               >

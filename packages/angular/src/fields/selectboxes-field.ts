@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core'
 import { narrowOptionsByLabel } from '@formancy/spec'
+import { FormancyTextPipe } from '../text.js'
 import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
 
 
@@ -39,19 +40,19 @@ import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
 @Component({
   selector: 'formancy-tagpicker-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormancyFieldShell],
+  imports: [FormancyFieldShell, FormancyTextPipe],
   template: `
     <formancy-field-shell [field]="field" [label]="context.label" [path]="context.path">
       <div data-formancy-part="tagpicker">
         @if (chosen().length > 0) {
-          <ul data-formancy-part="tagpicker-chips" [attr.aria-label]="context.label + ': chosen'">
+          <ul data-formancy-part="tagpicker-chips" [attr.aria-label]="'tagpicker.chosen' | formancyText: { label: context.label }">
             @for (value of chosen(); track value) {
               <li data-formancy-part="tagpicker-chip">
                 {{ labelFor(value) }}
                 <button
                   type="button"
                   data-formancy-part="tagpicker-remove"
-                  [attr.aria-label]="'Remove ' + labelFor(value)"
+                  [attr.aria-label]="'tagpicker.remove' | formancyText: { option: labelFor(value) }"
                   (click)="remove(value)"
                 >
                   &times;
@@ -84,7 +85,7 @@ import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
           <ul
             [id]="listboxId()"
             role="listbox"
-            [attr.aria-label]="context.label + ' suggestions'"
+            [attr.aria-label]="'options.suggestions' | formancyText: { label: context.label }"
             data-formancy-part="tagpicker-listbox"
             [hidden]="!expanded()"
           >
@@ -176,7 +177,7 @@ export class FormancyTagPickerField extends FieldComponentBase {
 @Component({
   selector: 'formancy-select-boxes-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormancyTagPickerField],
+  imports: [FormancyTagPickerField, FormancyTextPipe],
   template: `
     @if (tagpicker()) {
       <!-- A widget changes the CONTROL and nothing else: same field, same
@@ -198,7 +199,7 @@ export class FormancyTagPickerField extends FieldComponentBase {
              there and an auditor reports it as invalid ARIA. The engine puts
              this id into the group's aria-describedby, so it is announced
              after the legend. Visible too, because WCAG 1.4.1. -->
-        <span data-formancy-part="required-hint" [id]="field.snapshot().ids.hint">required</span>
+        <span data-formancy-part="required-hint" [id]="field.snapshot().ids.hint">{{ 'form.required' | formancyText }}</span>
       }
       @for (option of options(); track option.value) {
         <span data-formancy-part="checkbox-option">

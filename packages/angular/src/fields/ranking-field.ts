@@ -6,6 +6,7 @@ import {
   computed,
   inject,
 } from '@angular/core'
+import { FormancyTextPipe } from '../text.js'
 import { FieldComponentBase } from './field-shell.js'
 
 /**
@@ -24,6 +25,7 @@ import { FieldComponentBase } from './field-shell.js'
 @Component({
   selector: 'formancy-ranking-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FormancyTextPipe],
   template: `
     <fieldset
       [id]="control().id"
@@ -37,10 +39,10 @@ import { FieldComponentBase } from './field-shell.js'
       @if (field.snapshot().required) {
         <!-- As the checkbox group carries it: role=group does not support
              aria-required, so the engine describes the group by this instead. -->
-        <span data-formancy-part="required-hint" [id]="field.snapshot().ids.hint">required</span>
+        <span data-formancy-part="required-hint" [id]="field.snapshot().ids.hint">{{ 'form.required' | formancyText }}</span>
       }
       @if (ranked().length > 0) {
-        <ol data-formancy-part="ranking-order" [attr.aria-label]="context.label + ': your order'">
+        <ol data-formancy-part="ranking-order" [attr.aria-label]="'ranking.order' | formancyText: { label: context.label }">
           @for (option of ranked(); track option.value; let first = $first; let last = $last) {
             <li data-formancy-part="ranking-item">
               <span data-formancy-part="ranking-label">{{ option.label }}</span>
@@ -48,7 +50,7 @@ import { FieldComponentBase } from './field-shell.js'
                 type="button"
                 [id]="buttonId('up', option.value)"
                 data-formancy-part="ranking-up"
-                [attr.aria-label]="'Move ' + option.label + ' up'"
+                [attr.aria-label]="'ranking.up' | formancyText: { option: option.label }"
                 [attr.aria-disabled]="first ? true : null"
                 (click)="move(option.value, -1)"
                 (blur)="field.touch()"
@@ -59,7 +61,7 @@ import { FieldComponentBase } from './field-shell.js'
                 type="button"
                 [id]="buttonId('down', option.value)"
                 data-formancy-part="ranking-down"
-                [attr.aria-label]="'Move ' + option.label + ' down'"
+                [attr.aria-label]="'ranking.down' | formancyText: { option: option.label }"
                 [attr.aria-disabled]="last ? true : null"
                 (click)="move(option.value, 1)"
                 (blur)="field.touch()"
@@ -70,7 +72,7 @@ import { FieldComponentBase } from './field-shell.js'
                 type="button"
                 [id]="buttonId('remove', option.value)"
                 data-formancy-part="ranking-remove"
-                [attr.aria-label]="'Take ' + option.label + ' out of the order'"
+                [attr.aria-label]="'ranking.remove' | formancyText: { option: option.label }"
                 (click)="takeOut(option.value)"
                 (blur)="field.touch()"
               >
@@ -83,7 +85,7 @@ import { FieldComponentBase } from './field-shell.js'
       @if (unranked().length > 0) {
         <ul
           data-formancy-part="ranking-pool"
-          [attr.aria-label]="context.label + ': not ranked yet'"
+          [attr.aria-label]="'ranking.pool' | formancyText: { label: context.label }"
         >
           @for (option of unranked(); track option.value) {
             <li data-formancy-part="ranking-candidate">
@@ -91,7 +93,7 @@ import { FieldComponentBase } from './field-shell.js'
                 type="button"
                 [id]="buttonId('rank', option.value)"
                 data-formancy-part="ranking-add"
-                [attr.aria-label]="'Rank ' + option.label"
+                [attr.aria-label]="'ranking.rank' | formancyText: { option: option.label }"
                 (click)="rank(option.value)"
                 (blur)="field.touch()"
               >

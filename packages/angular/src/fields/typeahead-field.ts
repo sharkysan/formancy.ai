@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core'
 import { narrowOptionsByLabel } from '@formancy/spec'
 import { injectField } from '../field.js'
+import { injectFormText } from '../text.js'
 import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
 
 
@@ -172,7 +173,11 @@ export class FormancyTypeaheadSelect extends FieldComponentBase {
 
   protected readonly listboxId = computed(() => `${this.control().id}:listbox`)
 
-  protected readonly popupLabel = computed(() => `${this.context.label} suggestions`)
+  private readonly words = injectFormText()
+
+  protected readonly popupLabel = computed(() =>
+    this.words('options.suggestions', { label: this.context.label }),
+  )
 
   private readonly activeIndex = computed(() =>
     this.matches().findIndex((option) => option.value === this.activeValue()),
@@ -195,16 +200,15 @@ export class FormancyTypeaheadSelect extends FieldComponentBase {
     const fromSource = this.remote.status()
     if (fromSource !== '') return fromSource
     return this.open() && this.matches().length === 0 && !this.remote.busy()
-      ? 'No options match'
+      ? this.words('options.noMatch')
       : ''
   })
 
   /** What the region is saying, as a word a theme can select on. */
   protected readonly statusState = computed(() => {
     if (this.remote.busy()) return 'busy'
-    const message = this.remote.status()
-    if (message.startsWith('The options could not')) return 'failed'
-    if (message !== '') return 'hint'
+    if (this.remote.failed()) return 'failed'
+    if (this.remote.status() !== '') return 'hint'
     return this.open() && this.matches().length === 0 ? 'empty' : null
   })
 

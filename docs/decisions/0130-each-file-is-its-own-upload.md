@@ -1,6 +1,6 @@
 # 0130 — Each file is its own upload, and belongs to its row rather than its control
 
-- **Status:** accepted
+- **Status:** accepted; its words, English here, decided by [0171](0171-the-renderers-words-are-the-forms-language.md)
 - **Date:** 2026-10-09
 - **Verified by:** `packages/core/src/uploads.test.ts` — one file at a time in the order
   picked, a file picked during an upload waiting its turn; a failure keeping its reason

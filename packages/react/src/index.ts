@@ -1,4 +1,7 @@
-export { FormancyProvider, useFormEngine } from './context.js'
+export { FormancyProvider, useFormEngine, useFormText } from './context.js'
+// The form's own words (0171): the catalogue is `@formancy/core/words`, and a host passes
+// its languages to `FormancyProvider` in this shape.
+export type { FormText, FormWordId, FormWords, FormWordsByLocale } from '@formancy/core/words'
 export { useField } from './use-field.js'
 export type { FieldBinding } from './use-field.js'
 export { useRepeater } from './use-repeater.js'

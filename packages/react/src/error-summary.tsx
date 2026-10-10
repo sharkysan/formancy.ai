@@ -1,7 +1,7 @@
 import { focusControl } from './focus-control.js'
 import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react'
 import { parsePath } from '@formancy/core'
-import { useFormEngine } from './context.js'
+import { useFormEngine, useFormText } from './context.js'
 
 export interface ErrorSummaryProps {
   labels?: Record<string, string>
@@ -18,6 +18,7 @@ export interface ErrorSummaryProps {
  */
 export function ErrorSummary({ labels }: ErrorSummaryProps) {
   const engine = useFormEngine()
+  const text = useFormText()
   const subscribe = useCallback((onChange: () => void) => engine.subscribe(onChange), [engine])
   const getErrors = useCallback(() => engine.visibleErrors(), [engine])
   const errors = useSyncExternalStore(subscribe, getErrors, getErrors)
@@ -44,7 +45,8 @@ export function ErrorSummary({ labels }: ErrorSummaryProps) {
   return (
     <div data-formancy-part="error-summary" tabIndex={-1} ref={region}>
       <h2 data-formancy-part="error-summary-heading">
-        {errors.length === 1 ? 'There is 1 problem to fix' : `There are ${errors.length} problems to fix`}
+        {/* Counted by the form's language, never by `=== 1` (0171). */}
+        {text('errors.heading', { count: errors.length })}
       </h2>
       <ul>
         {errors.map(({ path, codes }) => {
@@ -59,7 +61,9 @@ export function ErrorSummary({ labels }: ErrorSummaryProps) {
                   focusControl(document.getElementById(controlId))
                 }}
               >
-                {`${labelFor(path)}: ${codes.join(', ')}`}
+                {/* The codes are the engine's vocabulary and stay codes; the sentence they
+                    sit in is the form's. */}
+                {text('errors.entry', { label: labelFor(path), codes: codes.join(', ') })}
               </a>
             </li>
           )

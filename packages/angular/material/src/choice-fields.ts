@@ -4,6 +4,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox'
 import { MatFormFieldModule } from '@angular/material/form-field'
 import { MatInputModule } from '@angular/material/input'
 import { MatRadioModule } from '@angular/material/radio'
+import { FormancyTextPipe } from '@formancy/angular'
 import { MaterialFieldBase } from './base.js'
 
 /**
@@ -135,7 +136,7 @@ export class FormancyMaterialCheckboxField extends MaterialFieldBase {}
 @Component({
   selector: 'formancy-material-radio-group-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatRadioModule, MatFormFieldModule, NgComponentOutlet],
+  imports: [MatRadioModule, MatFormFieldModule, NgComponentOutlet, FormancyTextPipe],
   template: `
     @if (offered(); as offered) {
       <fieldset
@@ -146,7 +147,7 @@ export class FormancyMaterialCheckboxField extends MaterialFieldBase {}
       >
         <legend data-formancy-part="label">{{ context.label }}</legend>
         @if (field.snapshot().required) {
-          <span data-formancy-part="required-hint" [id]="field.snapshot().ids.hint">required</span>
+          <span data-formancy-part="required-hint" [id]="field.snapshot().ids.hint">{{ 'form.required' | formancyText }}</span>
         }
         <mat-radio-group
           [name]="control().name"
@@ -180,7 +181,7 @@ export class FormancyMaterialRadioGroupField extends MaterialFieldBase {
 @Component({
   selector: 'formancy-material-select-boxes-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatCheckboxModule, MatFormFieldModule, NgComponentOutlet],
+  imports: [MatCheckboxModule, MatFormFieldModule, NgComponentOutlet, FormancyTextPipe],
   template: `
     @if (offered(); as offered) {
       <fieldset
@@ -191,7 +192,7 @@ export class FormancyMaterialRadioGroupField extends MaterialFieldBase {
       >
         <legend data-formancy-part="label">{{ context.label }}</legend>
         @if (field.snapshot().required) {
-          <span data-formancy-part="required-hint" [id]="field.snapshot().ids.hint">required</span>
+          <span data-formancy-part="required-hint" [id]="field.snapshot().ids.hint">{{ 'form.required' | formancyText }}</span>
         }
         @for (option of offered; track option.value) {
           <mat-checkbox

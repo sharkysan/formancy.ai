@@ -7,6 +7,7 @@ import {
   viewChild,
 } from '@angular/core'
 import type { ElementRef } from '@angular/core'
+import { FormancyTextPipe, injectFormText } from './text.js'
 
 /**
  * Telling somebody their draft came back changed.
@@ -29,6 +30,9 @@ import type { ElementRef } from '@angular/core'
  * problem: the container takes focus through `tabindex="-1"` and is deliberately
  * NOT `role="alert"`, because focusing it already makes a screen reader announce
  * it and doing both announces it twice.
+ *
+ * It speaks the form's language under the form's `provideFormancy`, and English outside
+ * it, where there is no engine to take a language from (0171).
  */
 export interface ResumeMigration {
   readonly severity: 'lossy' | 'breaking'
@@ -38,24 +42,23 @@ export interface ResumeMigration {
 @Component({
   selector: 'formancy-resume-notice',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FormancyTextPipe],
   template: `
     @if (migration() !== undefined) {
       <div
         role="region"
-        aria-label="This form changed while you were away"
+        [attr.aria-label]="'resume.heading' | formancyText"
         data-formancy-part="resume-notice"
         [attr.data-state]="migration()!.severity"
         tabindex="-1"
         #region
       >
-        <h2 data-formancy-part="resume-notice-heading">This form changed while you were away</h2>
+        <h2 data-formancy-part="resume-notice-heading">{{ 'resume.heading' | formancyText }}</h2>
 
         @if (migration()!.severity === 'breaking') {
-          <p>
-            It changed too much for your answers to be moved across, so this is being shown as you
-            left it and <strong>cannot be submitted</strong>. Starting again will give you the
-            current form.
-          </p>
+          <!-- Three whole sentences rather than one with a hole in it: a translator cannot
+               move an emphasised phrase spliced into the middle of somebody else's. -->
+          <p>{{ 'resume.breaking.kept' | formancyText }} <strong>{{ 'resume.breaking.cannotSubmit' | formancyText }}</strong> {{ 'resume.breaking.restart' | formancyText }}</p>
         } @else {
           <p>{{ summary() }}</p>
           @if (setAside().length > 0) {
@@ -82,12 +85,9 @@ export class FormancyResumeNotice {
       .filter((path): path is string => path !== undefined),
   )
 
-  protected readonly summary = computed(() => {
-    const count = this.setAside().length
-    return count === 1
-      ? 'One question is no longer on this form. Your answer to it is still kept with the rest and will be sent with them — it is just not shown here any more.'
-      : `${String(count)} questions are no longer on this form. Your answers to them are still kept with the rest and will be sent with them — they are just not shown here any more.`
-  })
+  private readonly text = injectFormText()
+
+  protected readonly summary = computed(() => this.text('resume.setAside', { count: this.setAside().length }))
 
   private readonly region = viewChild<ElementRef<HTMLDivElement>>('region')
 

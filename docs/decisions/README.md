@@ -207,7 +207,7 @@ listed under the sections they belong to above.
 | [0104](0104-spec-4-opens-with-a-widget-not-a-type.md) | Spec 4 opens with two widgets and a property, not a type | accepted |
 | [0105](0105-templates-are-documents-with-examples.md) | Keep templates as documents with executable examples and an independent gallery | accepted |
 | [0106](0106-one-shell-for-every-page-of-the-site.md) | One shell for every page of the site, and the two pages are compared in a browser | accepted |
-| [0107](0107-layout-text-is-read-in-the-engines-locale.md) | Layout text is read in the engine's locale, and the suite can mount in one | accepted |
+| [0107](0107-layout-text-is-read-in-the-engines-locale.md) | Layout text is read in the engine's locale, and the suite can mount in one | accepted; the renderers' own words, left English here, decided by 0171 |
 | [0108](0108-the-diff-reports-everything-that-changed.md) | The diff reports everything that changed, and never answers nothing | accepted |
 | [0109](0109-an-ai-edit-is-reviewed-before-it-lands.md) | An AI edit is reviewed before it lands, and a stale one is refused | accepted; the stand-in model superseded by 0160 |
 | [0110](0110-a-form-is-checked-against-examples.md) | A form is checked against examples, and the runner is published | accepted |
@@ -230,7 +230,7 @@ listed under the sections they belong to above.
 | [0127](0127-a-condition-nests-one-level.md) | A condition nests one level, compares by the field's kind, and asks before it reads | accepted |
 | [0128](0128-a-form-says-why-a-field-is-hidden.md) | A form says, rule by rule, why a field is hidden now | accepted; rows without a verdict superseded by 0147 |
 | [0129](0129-a-row-rule-is-written-in-the-row.md) | A rule on a field in a repeater row is written in the row's scope | accepted |
-| [0130](0130-each-file-is-its-own-upload.md) | Each file is its own upload, and belongs to its row rather than its control | accepted |
+| [0130](0130-each-file-is-its-own-upload.md) | Each file is its own upload, and belongs to its row rather than its control | accepted; its words, English here, decided by 0171 |
 | [0131](0131-an-upload-is-scanned-before-it-is-kept.md) | An upload is scanned before it is kept, and refused when it cannot be | accepted |
 | [0132](0132-material-draws-what-it-has-an-equivalent-for.md) | Angular Material draws what it has an equivalent for, and is held to the same fixtures | accepted |
 | [0133](0133-the-angular-starter-is-the-builder-and-the-form.md) | The Angular starter is the builder and the form, side by side | accepted |
@@ -238,7 +238,7 @@ listed under the sections they belong to above.
 | [0135](0135-a-block-is-a-field-with-its-rules.md) | A block is a field with its rules and its words, and the host keeps it | accepted |
 | [0136](0136-the-angular-page-runs-the-starter.md) | The Angular page runs the starter, and dates what it says about others | accepted; comparison reversed by 0141 |
 | [0137](0137-a-paged-forms-layout-is-drawn-a-page-at-a-time.md) | A paged form's layout is drawn a page at a time | accepted |
-| [0138](0138-a-ranking-stores-the-order-chosen.md) | A ranking stores the order chosen, starts empty, and is put in order with buttons | accepted |
+| [0138](0138-a-ranking-stores-the-order-chosen.md) | A ranking stores the order chosen, starts empty, and is put in order with buttons | accepted; its words, English here, decided by 0171 |
 | [0139](0139-a-matrix-answers-one-question-per-row.md) | A matrix answers one question per row, and stores the rows answered | accepted |
 | [0140](0140-spec-4-freezes-with-the-two-types-it-opened-for.md) | Spec 4 freezes with the two types it was opened for, and nothing opens version 5 yet | accepted |
 | [0141](0141-the-angular-page-compares-with-no-other-product.md) | The Angular page compares formancy with no other product | accepted |
@@ -271,3 +271,4 @@ listed under the sections they belong to above.
 | [0168](0168-the-log-is-built-from-a-list-of-fields.md) | The server keeps a log, and a line is built from a list of fields | accepted |
 | [0169](0169-a-response-is-stored-once.md) | A response is stored once, under the id it was handed | accepted |
 | [0170](0170-a-limit-is-counted-once-in-the-database-every-replica-shares.md) | A limit is counted once, in the database every replica shares | accepted |
+| [0171](0171-the-renderers-words-are-the-forms-language.md) | The renderers' own words are in the form's language, from one catalogue both renderers read | accepted |

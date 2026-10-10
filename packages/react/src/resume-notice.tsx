@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import type { ReactElement } from 'react'
+import { useFormText } from './context.js'
 
 /**
  * Telling somebody their draft came back changed.
@@ -23,6 +24,9 @@ import type { ReactElement } from 'react'
  * **A library cannot make a host render it.** Resuming a draft is the host's call, so
  * this component exists and is documented, and showing it is the deployment's
  * responsibility. `SAFETY-ANALYSIS.md` says so rather than claiming a guarantee.
+ *
+ * **It speaks the form's language inside the form's `FormancyProvider`**, and English
+ * outside one, where there is no engine to take a language from (0171).
  */
 
 /** What `resumeDraft` reports. Structural, so a host need not import a type. */
@@ -40,6 +44,7 @@ export interface ResumeNoticeProps {
 
 export function ResumeNotice({ migration, labels }: ResumeNoticeProps): ReactElement | null {
   const region = useRef<HTMLDivElement | null>(null)
+  const text = useFormText()
 
   useEffect(() => {
     if (migration !== undefined) region.current?.focus()
@@ -57,27 +62,24 @@ export function ResumeNotice({ migration, labels }: ResumeNoticeProps): ReactEle
   return (
     <div
       role="region"
-      aria-label="This form changed while you were away"
+      aria-label={text('resume.heading')}
       data-formancy-part="resume-notice"
       data-state={migration.severity}
       tabIndex={-1}
       ref={region}
     >
-      <h2 data-formancy-part="resume-notice-heading">This form changed while you were away</h2>
+      <h2 data-formancy-part="resume-notice-heading">{text('resume.heading')}</h2>
 
       {migration.severity === 'breaking' ? (
+        // Three whole sentences rather than one with a hole in it: a translator cannot
+        // move an emphasised phrase that is spliced into the middle of somebody else's.
         <p>
-          It changed too much for your answers to be moved across, so this is being shown as you
-          left it and <strong>cannot be submitted</strong>. Starting again will give you the current
-          form.
+          {text('resume.breaking.kept')} <strong>{text('resume.breaking.cannotSubmit')}</strong>{' '}
+          {text('resume.breaking.restart')}
         </p>
       ) : (
         <>
-          <p>
-            {setAside.length === 1
-              ? 'One question is no longer on this form. Your answer to it is still kept with the rest and will be sent with them — it is just not shown here any more.'
-              : `${String(setAside.length)} questions are no longer on this form. Your answers to them are still kept with the rest and will be sent with them — they are just not shown here any more.`}
-          </p>
+          <p>{text('resume.setAside', { count: setAside.length })}</p>
           {setAside.length === 0 ? null : (
             <ul data-formancy-part="resume-notice-list">
               {setAside.map((path) => (

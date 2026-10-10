@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { narrowOptionsByLabel } from '@formancy/spec'
+import { useFormText } from '../context.js'
 import { useField } from '../use-field.js'
 import { FieldShell, OptionPicture, RequiredHint, useResolvedOptions } from './internals.js'
 import type { FieldComponentProps } from './internals.js'
@@ -58,6 +59,7 @@ export function SelectBoxesSwitch(props: FieldComponentProps) {
  */
 export function TagPickerField({ path, label }: FieldComponentProps) {
   const field = useField(path)
+  const text = useFormText()
   const options = useResolvedOptions(field)
   const chosen = Array.isArray(field.value) ? (field.value as unknown[]).map(String) : []
 
@@ -104,7 +106,7 @@ export function TagPickerField({ path, label }: FieldComponentProps) {
     <FieldShell path={path} field={field} label={label}>
       <div data-formancy-part="tagpicker">
         {chosen.length === 0 ? null : (
-          <ul data-formancy-part="tagpicker-chips" aria-label={`${label}: chosen`}>
+          <ul data-formancy-part="tagpicker-chips" aria-label={text('tagpicker.chosen', { label })}>
             {chosen.map((value) => (
               <li key={value} data-formancy-part="tagpicker-chip">
                 {labelFor(value)}
@@ -113,7 +115,7 @@ export function TagPickerField({ path, label }: FieldComponentProps) {
                   data-formancy-part="tagpicker-remove"
                   // Named after the answer, not "Remove": a row of identical
                   // buttons is a row a screen reader cannot tell apart.
-                  aria-label={`Remove ${labelFor(value)}`}
+                  aria-label={text('tagpicker.remove', { option: labelFor(value) })}
                   onClick={() => remove(value)}
                 >
                   ×
@@ -163,7 +165,7 @@ export function TagPickerField({ path, label }: FieldComponentProps) {
           <ul
             id={listboxId}
             role="listbox"
-            aria-label={`${label} suggestions`}
+            aria-label={text('options.suggestions', { label })}
             data-formancy-part="tagpicker-listbox"
             hidden={!expanded}
           >

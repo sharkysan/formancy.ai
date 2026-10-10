@@ -2,6 +2,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest'
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
 import { computeAccessibleName } from 'dom-accessibility-api'
+import { FORM_WORDS, FORM_WORDS_DE, FORM_WORDS_FR } from '@formancy/core/words'
 import { App } from './app.js'
 
 /**
@@ -152,5 +153,36 @@ describe('the same document under both renderers', () => {
     const duplicated = ids.filter((id, at) => ids.indexOf(id) !== at)
 
     expect([...new Set(duplicated)]).toEqual([])
+  })
+})
+
+describe('the Language switch', () => {
+  test('changes both renderers’ own words, not only the form’s', async () => {
+    /*
+     * The switch rebuilt both engines in the chosen locale and the questions followed;
+     * the Submit button under them stayed English in both panes, because the renderers'
+     * own words were literals (0171). Read off the shipped catalogues rather than through
+     * the function the renderers ask, which could be wrong for both in the same way.
+     */
+    const user = userEvent.setup()
+    await mounted()
+    const submit = (pane: HTMLElement, name: string) => within(pane).queryByRole('button', { name })
+
+    for (const [locale, words] of [
+      ['de', FORM_WORDS_DE],
+      ['fr', FORM_WORDS_FR],
+    ] as const) {
+      await user.selectOptions(screen.getByRole('combobox', { name: 'Language' }), locale)
+
+      await waitFor(
+        () => {
+          expect(submit(reactPane(), words['form.submit']), `React in ${locale}`).not.toBeNull()
+          expect(submit(angularPane(), words['form.submit']), `Angular in ${locale}`).not.toBeNull()
+        },
+        { timeout: 10_000 },
+      )
+      expect(submit(reactPane(), FORM_WORDS['form.submit'])).toBeNull()
+      expect(submit(angularPane(), FORM_WORDS['form.submit'])).toBeNull()
+    }
   })
 })

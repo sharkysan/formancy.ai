@@ -13,6 +13,7 @@ import type { WizardBinding } from './wizard.js'
 import { injectEngine } from './provide.js'
 import { FormancyLayout } from './layout.js'
 import { FormancyFieldSlot, FormancyRepeaterSection } from './slots.js'
+import { FormancyTextPipe, injectFormText } from './text.js'
 
 export interface SubmitOutcome {
   ok: boolean
@@ -33,10 +34,10 @@ export interface SubmitOutcome {
 @Component({
   selector: 'formancy-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormancyFieldSlot, FormancyRepeaterSection, FormancyLayout],
+  imports: [FormancyFieldSlot, FormancyRepeaterSection, FormancyLayout, FormancyTextPipe],
   template: `
     @if (wizard; as w) {
-      <nav data-formancy-part="stepper" aria-label="Progress">
+      <nav data-formancy-part="stepper" [attr.aria-label]="'form.progress' | formancyText">
         <ol>
           @for (page of w.livePages(); track page.key) {
             <li [attr.aria-current]="page.index === w.page() ? 'step' : null">{{ pageLabel(page) }}</li>
@@ -58,17 +59,17 @@ export interface SubmitOutcome {
       }
       <div data-formancy-part="wizard-nav">
         @if (w.canGoBack()) {
-          <button type="button" (click)="w.back()">Back</button>
+          <button type="button" (click)="w.back()">{{ 'form.back' | formancyText }}</button>
         }
         @if (w.canGoNext()) {
-          <button type="button" (click)="onNext()">Next</button>
+          <button type="button" (click)="onNext()">{{ 'form.next' | formancyText }}</button>
         } @else {
-          <button type="button" data-formancy-part="submit" (click)="onSubmit()">{{ submitLabel() ?? 'Submit' }}</button>
+          <button type="button" data-formancy-part="submit" (click)="onSubmit()">{{ submitText() }}</button>
         }
       </div>
     } @else if (arrangement(); as nodes) {
       <formancy-layout [nodes]="nodes" [labels]="labels()" />
-      <button type="button" data-formancy-part="submit" (click)="onSubmit()">{{ submitLabel() ?? 'Submit' }}</button>
+      <button type="button" data-formancy-part="submit" (click)="onSubmit()">{{ submitText() }}</button>
     } @else {
       @for (wire of staticWires; track wire) {
         <formancy-field [path]="wire" [fallbackLabel]="fallbackFor(wire)" />
@@ -76,7 +77,7 @@ export interface SubmitOutcome {
       @for (wire of repeaterWires; track wire) {
         <formancy-repeater [wire]="wire" [labels]="labels()" />
       }
-      <button type="button" data-formancy-part="submit" (click)="onSubmit()">{{ submitLabel() ?? 'Submit' }}</button>
+      <button type="button" data-formancy-part="submit" (click)="onSubmit()">{{ submitText() }}</button>
     }
   `,
 })
@@ -100,6 +101,10 @@ export class FormancyForm {
   readonly layout = input<string>()
   readonly submitLabel = input<string>()
   readonly submitted = output<SubmitOutcome>()
+
+  private readonly text = injectFormText()
+  /** The host's word when it gave one, and the form's language's otherwise (0171). */
+  protected readonly submitText = computed(() => this.submitLabel() ?? this.text('form.submit'))
 
   protected readonly pages = this.engine.pages()
   protected readonly repeaterWires = this.engine.repeaterPaths()

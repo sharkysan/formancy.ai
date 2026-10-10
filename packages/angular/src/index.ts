@@ -1,4 +1,9 @@
-export { FORMANCY_ENGINE, injectEngine, provideFormancy } from './provide.js'
+export { FORMANCY_ENGINE, FORMANCY_TEXT, injectEngine, provideFormancy } from './provide.js'
+export type { FormancyOptions } from './provide.js'
+// The form's own words (0171): the catalogue is `@formancy/core/words`; a host passes its
+// languages to `provideFormancy`, and a registry's own controls draw them with the pipe.
+export { FormancyTextPipe, injectFormText } from './text.js'
+export type { FormText, FormWordId, FormWords, FormWordsByLocale } from '@formancy/core/words'
 export { injectField } from './field.js'
 export type { FieldBinding } from './field.js'
 export { injectRepeater } from './repeater.js'

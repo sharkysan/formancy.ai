@@ -4,6 +4,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/ang
 import { afterEach, describe, expect, test } from 'vitest'
 import { createFormEngine } from '@formancy/core'
 import type { FormEngine } from '@formancy/core'
+import { FORM_WORDS, FORM_WORDS_DE } from '@formancy/core/words'
 import type { FormSchema } from '@formancy/spec'
 import { FormancyErrorSummary, FormancyForm, provideFormancy } from '../../src/index'
 import { provideFormancyMaterial } from './index'
@@ -243,5 +244,31 @@ describe('where Material and the engine both have an opinion', () => {
     fireEvent.click(link)
 
     expect(document.activeElement).toBe(screen.getByLabelText('Agree'))
+  })
+})
+
+describe('Material in the form’s language', () => {
+  test('a group of radios and a group of ticks say they are required in German', async () => {
+    // Material's groups draw the hint themselves rather than through the default control,
+    // so a German form would have said "required" beside Material's radios and nowhere
+    // else (0171). Read off the shipped catalogue, not through the function the control asks.
+    const engine = createFormEngine({
+      schema: form([
+        { key: 'size', type: 'radio', label: 'Grösse', required: true, options: [{ value: 's', label: 'Klein' }] },
+        { key: 'extras', type: 'selectboxes', label: 'Extras', required: true, options: [{ value: 'm', label: 'Milch' }] },
+      ]),
+      locale: 'de',
+    })
+    const view = await render(FormancyForm, {
+      providers: [provideZonelessChangeDetection(), provideFormancy(engine), ...provideFormancyMaterial()],
+    })
+    await view.fixture.whenStable()
+
+    for (const name of ['Grösse', 'Extras']) {
+      const group = screen.getByRole('group', { name })
+      expect(within(group).getByText(FORM_WORDS_DE['form.required'])).toBeTruthy()
+      expect(within(group).queryByText(FORM_WORDS['form.required'])).toBeNull()
+    }
+    expect(screen.getByRole('button', { name: FORM_WORDS_DE['form.submit'] })).toBeTruthy()
   })
 })

@@ -14,8 +14,12 @@ import type { ConformanceSchema, JsonValue, SubmitStatus } from './types.js'
  *
  * The one thing a driver may use its own knowledge for is the mapping from a fixture's
  * data path to the name to query: it mounted the schema, so it can read
- * `fieldAtPath(schema, path).label`. The names are exactly the fixture's `label`,
- * `addLabel` and `removeLabel`, never ones a driver invents or translates.
+ * `fieldAtPath(schema, path).label`. The names are the fixture's `label`, `addLabel` and
+ * `removeLabel`, resolved in the locale the form was mounted in, and for the controls a
+ * renderer draws of its own accord — Next, Back, Submit, a row's position, a ranking's
+ * buttons — the words that renderer draws for them in that locale. Never a name a driver
+ * invents: the built-in drivers read the renderers' words from `@formancy/core/words`
+ * ([0171](../../../docs/decisions/0171-the-renderers-words-are-the-forms-language.md)).
  *
  * **The rule is enforced by review, not mechanically.** `validateFixture` refuses a
  * fixture whose visible leaf fields lack a `label`, which makes the names available; it
@@ -41,7 +45,8 @@ export interface RendererDriver {
    * Press a control. Either a field path, or a command path such as
    * `contacts#add`, `contacts[1]#remove`, `#next` or `#back`; see
    * `COMMAND_SEPARATOR`. The accessible name to press comes from the schema —
-   * a repeater's `addLabel` and `removeLabel`.
+   * a repeater's `addLabel` and `removeLabel` — and, for Next, Back and a row's
+   * position, from the words the renderer draws in the mounted locale.
    */
   activate(path: string): Promise<void>
 

@@ -1,6 +1,6 @@
 # 0138 — A ranking stores the order chosen, starts empty, and is put in order with buttons
 
-- **Status:** accepted
+- **Status:** accepted; its words, English here, decided by [0171](0171-the-renderers-words-are-the-forms-language.md)
 - **Date:** 2026-10-09
 - **Deciders:** Daniel Bacher
 - **Verified by:** `packages/spec/src/ranking.test.ts` — a ranking is a list-valued type,

@@ -5,6 +5,8 @@ import type { RichCommand } from '@formancy/spec'
 import { FormancyRichText } from '../rich-text.js'
 import { injectRichTextEditorFactory } from '../rich-text-editor.js'
 import type { RichTextEditorHandle } from '../rich-text-editor.js'
+import type { FormWordId } from '@formancy/core/words'
+import { FormancyTextPipe, injectFormText } from '../text.js'
 import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
 
 
@@ -35,7 +37,7 @@ import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
 @Component({
   selector: 'formancy-rich-text-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormancyFieldShell, FormancyRichText],
+  imports: [FormancyFieldShell, FormancyRichText, FormancyTextPipe],
   template: `
     <formancy-field-shell [field]="field" [label]="context.label" [path]="context.path">
       @if (make !== null) {
@@ -61,7 +63,7 @@ import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
               (click)="press(entry.command)"
             >
               <span aria-hidden="true">{{ entry.glyph }}</span>
-              <span data-formancy-part="visually-hidden">{{ entry.name }}</span>
+              <span data-formancy-part="visually-hidden">{{ entry.name | formancyText }}</span>
             </button>
           }
         </div>
@@ -87,7 +89,7 @@ import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
             (click)="press(entry.command)"
           >
             <span aria-hidden="true">{{ entry.glyph }}</span>
-            <span data-formancy-part="visually-hidden">{{ entry.name }}</span>
+            <span data-formancy-part="visually-hidden">{{ entry.name | formancyText }}</span>
           </button>
         }
       </div>
@@ -120,17 +122,20 @@ export class FormancyRichTextField extends FieldComponentBase {
 
   protected readonly active = signal(0)
 
+  /** Each button's name is the form's word for its command (0171); the glyph is decoration. */
   protected readonly commands: ReadonlyArray<{
     command: RichCommand
-    name: string
+    name: FormWordId
     glyph: string
   }> = [
-    { command: 'strong', name: 'Bold', glyph: 'B' },
-    { command: 'emphasis', name: 'Italic', glyph: 'I' },
-    { command: 'link', name: 'Link', glyph: '↗' },
-    { command: 'bulletList', name: 'Bulleted list', glyph: '•' },
-    { command: 'orderedList', name: 'Numbered list', glyph: '1.' },
+    { command: 'strong', name: 'richtext.strong', glyph: 'B' },
+    { command: 'emphasis', name: 'richtext.emphasis', glyph: 'I' },
+    { command: 'link', name: 'richtext.link', glyph: '↗' },
+    { command: 'bulletList', name: 'richtext.bulletList', glyph: '•' },
+    { command: 'orderedList', name: 'richtext.orderedList', glyph: '1.' },
   ]
+
+  private readonly words = injectFormText()
 
   private readonly box = viewChild<ElementRef<HTMLTextAreaElement>>('box')
   private readonly toolbarButtons = viewChildren<ElementRef<HTMLButtonElement>>('toolbarButton')
@@ -225,7 +230,9 @@ export class FormancyRichTextField extends FieldComponentBase {
    *  five times says nothing about which question is being answered. */
   protected toolbarLabel(): string {
     const label = this.context.label
-    return typeof label === 'string' ? `Formatting for ${label}` : 'Formatting'
+    return typeof label === 'string'
+      ? this.words('richtext.toolbar', { label })
+      : this.words('richtext.toolbarUnnamed')
   }
 
   protected press(command: RichCommand): void {
@@ -233,7 +240,7 @@ export class FormancyRichTextField extends FieldComponentBase {
       // A prompt rather than a dialog this package would then own the
       // accessibility of. A host wanting its own replaces the field through
       // the component registry.
-      const href = window.prompt('Address for the link')
+      const href = window.prompt(this.words('richtext.linkAddress'))
       if (href === null || href === '') return
       this.run(command, href)
       return

@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core'
 import { fieldUploads } from '@formancy/core'
 import type { PendingUpload } from '@formancy/core'
+import { FormancyTextPipe, injectFormText } from '../text.js'
 import { injectUploader } from '../uploads.js'
 import type { StoredFile } from '../uploads.js'
 import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
@@ -30,13 +31,11 @@ import { FormancyFileThumbnail } from './file-thumbnail.js'
 @Component({
   selector: 'formancy-file-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormancyFieldShell, FormancyFileThumbnail],
+  imports: [FormancyFieldShell, FormancyFileThumbnail, FormancyTextPipe],
   template: `
     <formancy-field-shell [field]="field" [label]="context.label" [path]="context.path">
       @if (upload === null) {
-        <p data-formancy-part="file-unavailable">
-          This form cannot accept files here, because no upload destination has been configured.
-        </p>
+        <p data-formancy-part="file-unavailable">{{ 'file.unavailable' | formancyText }}</p>
       } @else {
         <!--
           The picker inside a drop target, not instead of one.
@@ -86,7 +85,7 @@ import { FormancyFileThumbnail } from './file-thumbnail.js'
                   [disabled]="field.snapshot().disabled"
                   (click)="move(index, index - 1)"
                 >
-                  Move {{ file.name }}, {{ index + 1 }} of {{ count }}, up
+                  {{ 'file.up' | formancyText: { name: file.name, position: index + 1, count } }}
                 </button>
               }
               @if (index < count - 1) {
@@ -96,7 +95,7 @@ import { FormancyFileThumbnail } from './file-thumbnail.js'
                   [disabled]="field.snapshot().disabled"
                   (click)="move(index, index + 1)"
                 >
-                  Move {{ file.name }}, {{ index + 1 }} of {{ count }}, down
+                  {{ 'file.down' | formancyText: { name: file.name, position: index + 1, count } }}
                 </button>
               }
               <button
@@ -107,7 +106,7 @@ import { FormancyFileThumbnail } from './file-thumbnail.js'
                 <!-- Named with the file, so a screen reader user hears which
                      attachment a button removes rather than "remove" six
                      times over. -->
-                Remove {{ file.name }}
+                {{ 'file.remove' | formancyText: { name: file.name } }}
               </button>
             </li>
           }
@@ -117,26 +116,26 @@ import { FormancyFileThumbnail } from './file-thumbnail.js'
               <span data-formancy-part="file-name">{{ entry.name }}</span>
               @switch (entry.state) {
                 @case ('waiting') {
-                  <span data-formancy-part="file-waiting">Waiting</span>
+                  <span data-formancy-part="file-waiting">{{ 'file.waiting' | formancyText }}</span>
                 }
                 @case ('uploading') {
                   <!-- Without a figure the bar is indeterminate, which is the truth
                        about an uploader that cannot measure. -->
                   <progress
                     data-formancy-part="file-progress"
-                    [attr.aria-label]="'Uploading ' + entry.name"
+                    [attr.aria-label]="'file.uploading' | formancyText: { name: entry.name }"
                     [attr.value]="entry.total === undefined ? null : entry.sent"
                     [attr.max]="entry.total === undefined ? null : entry.total"
                   ></progress>
                 }
                 @case ('failed') {
-                  <span data-formancy-part="file-error">Not attached: {{ entry.reason }}</span>
+                  <span data-formancy-part="file-error">{{ 'file.notAttached' | formancyText: { reason: entry.reason ?? '' } }}</span>
                   <button
                     type="button"
                     [disabled]="field.snapshot().disabled"
                     (click)="queue.retry(entry.key)"
                   >
-                    Try {{ entry.name }} again
+                    {{ 'file.retry' | formancyText: { name: entry.name } }}
                   </button>
                 }
               }
@@ -145,7 +144,7 @@ import { FormancyFileThumbnail } from './file-thumbnail.js'
                 [disabled]="field.snapshot().disabled"
                 (click)="queue.cancel(entry.key)"
               >
-                {{ entry.state === 'failed' ? 'Dismiss ' + entry.name : 'Cancel uploading ' + entry.name }}
+                {{ (entry.state === 'failed' ? 'file.dismiss' : 'file.cancel') | formancyText: { name: entry.name } }}
               </button>
             </li>
           }
@@ -164,7 +163,7 @@ import { FormancyFileThumbnail } from './file-thumbnail.js'
                 [disabled]="field.snapshot().disabled"
                 (click)="undo(entry.file.id)"
               >
-                Undo removing {{ entry.file.name }}
+                {{ 'file.undo' | formancyText: { name: entry.file.name } }}
               </button>
             </li>
           }
@@ -196,15 +195,21 @@ export class FormancyFileField extends FieldComponentBase {
     return Array.isArray(value) ? (value as StoredFile[]) : []
   })
 
-  /** The file being sent, or the files refused, by name. */
+  private readonly words = injectFormText()
+
+  /** The file being sent, or the files refused, by name — in the form's language (0171). */
   protected readonly status = computed(() => {
     const pending = this.pending()
     const sending = pending.find((entry) => entry.state === 'uploading')
-    if (sending !== undefined) return `Uploading ${sending.name}…`
+    if (sending !== undefined) return this.words('file.status.uploading', { name: sending.name })
     const failed = pending.filter((entry) => entry.state === 'failed')
-    if (failed.length === 1) return `${failed[0]!.name} was not attached: ${failed[0]!.reason ?? ''}`
+    if (failed.length === 1) {
+      return this.words('file.status.failed', { name: failed[0]!.name, reason: failed[0]!.reason ?? '' })
+    }
     if (failed.length > 1) {
-      return `${String(failed.length)} files were not attached: ${failed.map((entry) => entry.name).join(', ')}.`
+      // Joined as the language joins a list: "a.pdf, b.pdf and c.pdf", "a.pdf, b.pdf und c.pdf".
+      const names = this.words.list(failed.map((entry) => entry.name))
+      return this.words('file.status.failedSeveral', { count: failed.length, names })
     }
     return ''
   })

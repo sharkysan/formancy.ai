@@ -199,6 +199,18 @@ What stays English is what no table here wrote — ajv's wording for a keyword w
 sentence of its own, and a regular-expression engine's reason
 ([0122](../decisions/0122-a-validator-error-has-a-code.md)).
 
+**The renderers' own words are a fifth, and follow the form, not the builder.** Next, Back,
+Submit, a row's buttons, the error summary's heading and every live region's sentence are
+`@formancy/core/words`, an entry of `core` the engine never imports, in English, German and
+French. Both renderers and Material draw them from one function, made from the engine's
+locale — the language the reader chose for the form, never the browser's — so a host that
+builds a German engine has German buttons without saying so twice. A host adds a language or
+changes a word, keyed by locale, a message at a time over English, through `FormancyProvider`
+or `provideFormancy`; a `submitLabel`, and a repeater's own `addLabel` and `removeLabel`, still
+win. A count follows the rules of the language its message is written in. No literal word is
+left in a renderer's source, which a test reads the compiler's tree and every template for
+([0171](../decisions/0171-the-renderers-words-are-the-forms-language.md)).
+
 ## 8.9 Error handling
 
 **Fail open on metadata, fail closed on validation**
@@ -209,7 +221,9 @@ through the same path, so a renderer has one error model rather than two, and
 they are cleared per field on edit.
 
 Error codes, not sentences, are what the engine produces. Text belongs to the
-message catalogue.
+message catalogue. Which catalogue is not decided: the renderers show a field's codes as
+codes, the conformance drivers read them so, and the renderers' own words (0171) put them in
+a translated sentence in the error summary without translating them. §11 lists it.
 
 ## 8.10 Security
 

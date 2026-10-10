@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { fieldUploads, thumbnailSize } from '@formancy/core'
 import type { PendingUpload, UploadQueue } from '@formancy/core'
-import { useFormEngine } from '../context.js'
+import type { FormText } from '@formancy/core/words'
+import { useFormEngine, useFormText } from '../context.js'
 import { useField } from '../use-field.js'
 import { useUploader } from '../uploads.js'
 import type { StoredFile, Uploader } from '../uploads.js'
@@ -34,6 +35,7 @@ import type { FieldComponentProps } from './internals.js'
  */
 export function FileField({ path, label }: FieldComponentProps) {
   const field = useField(path)
+  const text = useFormText()
   const upload = useUploader()
   const queue = useUploadQueue(path, upload)
   const pending = useSyncExternalStore(queue.subscribe, queue.pending, queue.pending)
@@ -59,9 +61,7 @@ export function FileField({ path, label }: FieldComponentProps) {
   return (
     <FieldShell path={path} field={field} label={label}>
       {upload === undefined ? (
-        <p data-formancy-part="file-unavailable">
-          This form cannot accept files here, because no upload destination has been configured.
-        </p>
+        <p data-formancy-part="file-unavailable">{text('file.unavailable')}</p>
       ) : (
         /*
          * The picker inside a drop target, not instead of one.
@@ -122,7 +122,7 @@ export function FileField({ path, label }: FieldComponentProps) {
                   disabled={field.disabled}
                   onClick={() => field.setValue(moved(files, index, index - 1))}
                 >
-                  {`Move ${file.name}, ${String(index + 1)} of ${String(files.length)}, up`}
+                  {text('file.up', { name: file.name, position: index + 1, count: files.length })}
                 </button>
               ) : null}
               {index < files.length - 1 ? (
@@ -132,7 +132,7 @@ export function FileField({ path, label }: FieldComponentProps) {
                   disabled={field.disabled}
                   onClick={() => field.setValue(moved(files, index, index + 1))}
                 >
-                  {`Move ${file.name}, ${String(index + 1)} of ${String(files.length)}, down`}
+                  {text('file.down', { name: file.name, position: index + 1, count: files.length })}
                 </button>
               ) : null}
               <button
@@ -148,13 +148,13 @@ export function FileField({ path, label }: FieldComponentProps) {
                 {/* Named with the file, so a screen reader user hears which
                     attachment a button removes rather than "remove" six
                     times over. */}
-                Remove {file.name}
+                {text('file.remove', { name: file.name })}
               </button>
             </li>
           ))}
 
           {pending.map((entry) => (
-            <PendingRow key={entry.key} entry={entry} queue={queue} disabled={field.disabled} />
+            <PendingRow key={entry.key} entry={entry} queue={queue} disabled={field.disabled} text={text} />
           ))}
 
           {/*
@@ -180,7 +180,7 @@ export function FileField({ path, label }: FieldComponentProps) {
                   field.setValue(next)
                 }}
               >
-                Undo removing {file.name}
+                {text('file.undo', { name: file.name })}
               </button>
             </li>
           ))}
@@ -191,7 +191,7 @@ export function FileField({ path, label }: FieldComponentProps) {
           error region belongs to validation, and an upload failure is not a
           validation error. */}
       <p role="status" data-formancy-part="file-status">
-        {statusOf(pending)}
+        {statusOf(pending, text)}
       </p>
     </FieldShell>
   )
@@ -209,48 +209,54 @@ function PendingRow({
   entry,
   queue,
   disabled,
+  text,
 }: {
   entry: PendingUpload
   queue: UploadQueue<File>
   disabled: boolean
+  text: FormText
 }) {
   const failed = entry.state === 'failed'
   return (
     <li data-formancy-part="file-item" data-state={entry.state}>
       <span data-formancy-part="file-name">{entry.name}</span>
-      {entry.state === 'waiting' ? <span data-formancy-part="file-waiting">Waiting</span> : null}
+      {entry.state === 'waiting' ? <span data-formancy-part="file-waiting">{text('file.waiting')}</span> : null}
       {entry.state === 'uploading' ? (
         // Without a figure the bar is indeterminate, which is the truth about an
         // uploader that cannot measure — not a bar stuck at zero.
         <progress
           data-formancy-part="file-progress"
-          aria-label={`Uploading ${entry.name}`}
+          aria-label={text('file.uploading', { name: entry.name })}
           {...(entry.total === undefined ? {} : { value: entry.sent, max: entry.total })}
         />
       ) : null}
       {failed ? (
-        <span data-formancy-part="file-error">Not attached: {entry.reason}</span>
+        <span data-formancy-part="file-error">{text('file.notAttached', { reason: entry.reason ?? '' })}</span>
       ) : null}
       {failed ? (
         <button type="button" disabled={disabled} onClick={() => queue.retry(entry.key)}>
-          Try {entry.name} again
+          {text('file.retry', { name: entry.name })}
         </button>
       ) : null}
       <button type="button" disabled={disabled} onClick={() => queue.cancel(entry.key)}>
-        {failed ? `Dismiss ${entry.name}` : `Cancel uploading ${entry.name}`}
+        {failed ? text('file.dismiss', { name: entry.name }) : text('file.cancel', { name: entry.name })}
       </button>
     </li>
   )
 }
 
 /** What the status region says: the file being sent, or the files refused, by name. */
-function statusOf(pending: readonly PendingUpload[]): string {
+function statusOf(pending: readonly PendingUpload[], text: FormText): string {
   const sending = pending.find((entry) => entry.state === 'uploading')
-  if (sending !== undefined) return `Uploading ${sending.name}…`
+  if (sending !== undefined) return text('file.status.uploading', { name: sending.name })
   const failed = pending.filter((entry) => entry.state === 'failed')
-  if (failed.length === 1) return `${failed[0]!.name} was not attached: ${failed[0]!.reason ?? ''}`
+  if (failed.length === 1) {
+    return text('file.status.failed', { name: failed[0]!.name, reason: failed[0]!.reason ?? '' })
+  }
   if (failed.length > 1) {
-    return `${String(failed.length)} files were not attached: ${failed.map((entry) => entry.name).join(', ')}.`
+    // Joined as the language joins a list: "a.pdf, b.pdf and c.pdf", "a.pdf, b.pdf und c.pdf".
+    const names = text.list(failed.map((entry) => entry.name))
+    return text('file.status.failedSeveral', { count: failed.length, names })
   }
   return ''
 }

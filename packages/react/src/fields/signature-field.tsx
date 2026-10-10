@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { useFormText } from '../context.js'
 import { useField } from '../use-field.js'
 import { FieldShell } from './internals.js'
 import type { FieldComponentProps, SignatureAnswerValue } from './internals.js'
@@ -33,6 +34,7 @@ import type { FieldComponentProps, SignatureAnswerValue } from './internals.js'
  */
 export function SignatureField({ path, label }: FieldComponentProps) {
   const field = useField(path)
+  const text = useFormText()
   const answer = (typeof field.value === 'object' && field.value !== null
     ? field.value
     : {}) as SignatureAnswerValue
@@ -206,7 +208,7 @@ export function SignatureField({ path, label }: FieldComponentProps) {
           data-formancy-part="signature-typed"
           type="text"
           value={answer.typed ?? ''}
-          aria-label="Type your name"
+          aria-label={text('signature.typed')}
           onChange={(event) => {
             const typed = event.target.value
             field.setValue(typed === '' ? null : { typed })
@@ -223,7 +225,7 @@ export function SignatureField({ path, label }: FieldComponentProps) {
             field.setValue(null)
           }}
         >
-          Clear
+          {text('signature.clear')}
         </button>
       </div>
     </FieldShell>

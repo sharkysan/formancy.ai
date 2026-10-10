@@ -6,6 +6,8 @@ import { fireEvent, render, screen, within } from '@testing-library/angular'
 import axe from 'axe-core'
 import { createFormEngine, parsePath } from '@formancy/core'
 import type { FormEngine } from '@formancy/core'
+import { createFormText } from '@formancy/core/words'
+import type { FormText } from '@formancy/core/words'
 import { answerFromText, resolveText } from '@formancy/spec'
 import type { FormSchema, Text } from '@formancy/spec'
 import {
@@ -43,6 +45,10 @@ import type { SubmitOutcome } from './index.js'
  * interaction settles through `fixture.whenStable()` plus one macrotask — the
  * macrotask is for the wizard, whose `next()` resolves a promise before the
  * page signal moves.
+ *
+ * The renderer's own controls — Next, Back, Submit, a row's remove button, a ranking's —
+ * are pressed by the words the renderer draws for them, read from the form's catalogue in
+ * the locale the form was MOUNTED in, as the React driver does (0171).
  */
 export function createAngularDriver(
   /**
@@ -55,12 +61,13 @@ export function createAngularDriver(
   let schema: ConformanceSchema | undefined
   let fixture: ComponentFixture<FormancyForm> | undefined
   let lastOutcome: SubmitOutcome | undefined
+  let words: FormText | undefined
 
-  const SUBMIT_LABEL = 'Submit'
-
-  function requireMounted(): { engine: FormEngine; schema: ConformanceSchema } {
-    if (engine === undefined || schema === undefined) throw new Error('driver is not mounted')
-    return { engine, schema }
+  function requireMounted(): { engine: FormEngine; schema: ConformanceSchema; words: FormText } {
+    if (engine === undefined || schema === undefined || words === undefined) {
+      throw new Error('driver is not mounted')
+    }
+    return { engine, schema, words }
   }
 
   /** The row index a path addresses, or undefined for a static path. */
@@ -139,16 +146,17 @@ export function createAngularDriver(
           random: () => Math.random(),
         },
       })
+      // The engine's locale, as the renderer reads it (0171).
+      words = createFormText({ locale: engine.locale() })
       const view = await render(FormancyForm, {
         providers: [
           provideZonelessChangeDetection(),
           provideFormancy(engine),
           ...(extra.providers ?? []),
         ],
-        inputs: {
-          submitLabel: SUBMIT_LABEL,
-          ...(options?.layout === undefined ? {} : { layout: options.layout }),
-        },
+        // No `submitLabel`: the button is found by the form's own word for it, so the
+        // suite holds the default rather than a name the driver chose.
+        inputs: options?.layout === undefined ? {} : { layout: options.layout },
         on: { submitted: (outcome: SubmitOutcome) => (lastOutcome = outcome) },
       })
       fixture = view.fixture
@@ -190,9 +198,10 @@ export function createAngularDriver(
       // As the React driver does it, and as a person does: everything taken out, then
       // each option ranked in turn, by the buttons' names.
       if (def?.type === 'ranking') {
+        const { words } = requireMounted()
         const group = screen.getByRole('group', { name: labelOf(path) })
         for (;;) {
-          const out = within(group).queryAllByRole('button', { name: /^Take .+ out of the order$/ })[0]
+          const out = within(group).queryAllByRole('button', { name: pattern(words('ranking.remove')) })[0]
           if (out === undefined) break
           fireEvent.click(out)
           await settle()
@@ -201,7 +210,7 @@ export function createAngularDriver(
           const option = (def.options ?? []).find((candidate) => candidate.value === wanted)
           fireEvent.click(
             within(group).getByRole('button', {
-              name: `Rank ${textOf(option?.label) ?? String(wanted)}`,
+              name: words('ranking.rank', { option: textOf(option?.label) ?? String(wanted) }),
             }),
           )
           await settle()
@@ -240,14 +249,14 @@ export function createAngularDriver(
     },
 
     async activate(path) {
-      const { schema } = requireMounted()
+      const { schema, words } = requireMounted()
       if (path === NEXT_COMMAND) {
-        fireEvent.click(screen.getByRole('button', { name: 'Next' }))
+        fireEvent.click(screen.getByRole('button', { name: words('form.next') }))
         await settle()
         return
       }
       if (path === BACK_COMMAND) {
-        fireEvent.click(screen.getByRole('button', { name: 'Back' }))
+        fireEvent.click(screen.getByRole('button', { name: words('form.back') }))
         await settle()
         return
       }
@@ -256,15 +265,18 @@ export function createAngularDriver(
       const command = path.slice(separator + 1)
       const repeaterWire = target.replace(/\[\d+\]$/, '')
       const def = fieldAtPath(schema, repeaterWire)
+      // The document's words, or the form's when it has none — the renderer's rule.
+      const label = textOf(def?.label) ?? repeaterWire
       if (command === 'add') {
-        fireEvent.click(screen.getByRole('button', { name: def?.addLabel ?? /^Add / }))
+        fireEvent.click(screen.getByRole('button', { name: def?.addLabel ?? words('repeater.add', { label }) }))
         await settle()
         return
       }
       if (command === 'remove') {
         const index = rowIndexOf(target) ?? 0
-        const prefix = def?.removeLabel ?? 'Remove'
-        const name = new RegExp(`^${escapeRegExp(prefix)} ${index + 1} of `)
+        const remove = def?.removeLabel ?? words('repeater.remove', { label })
+        // The row's position is in its name; how many rows there are is left open.
+        const name = pattern(words('repeater.removeRow', { remove, position: index + 1 }))
         fireEvent.click(screen.getByRole('button', { name }))
         await settle()
         return
@@ -311,10 +323,12 @@ export function createAngularDriver(
       }
       if (def?.type === 'ranking') {
         // The order on screen, read from the move buttons' names, as the React driver reads it.
+        const { words } = requireMounted()
         const group = screen.getByRole('group', { name: labelOf(path) })
+        const up = pattern(words('ranking.up'))
         return within(group)
-          .queryAllByRole('button', { name: /^Move .+ up$/ })
-          .map((button) => /^Move (.+) up$/.exec(button.getAttribute('aria-label') ?? '')?.[1] ?? '')
+          .queryAllByRole('button', { name: up })
+          .map((button) => up.exec(button.getAttribute('aria-label') ?? '')?.[1] ?? '')
           .map(
             (shown) =>
               (def.options ?? []).find((option) => textOf(option.label as Text) === shown)?.value ??
@@ -380,9 +394,12 @@ export function createAngularDriver(
       const active = document.querySelector('[aria-current="step"]')
       if (active === null) return undefined
       const name = (active.textContent ?? '').trim()
-      // Map the step's accessible name back to the page key it stands for.
+      // Map the step's accessible name back to the page key it stands for — resolved in
+      // the mounted locale, as the React driver resolves it. This compared the raw label,
+      // so a page labelled by a message reference was never recognised; no fixture had one
+      // until the renderer's words were mounted in German (0171).
       for (const field of schema.model.fields) {
-        if (field.type === 'page' && (field.label ?? field.key) === name) return field.key
+        if (field.type === 'page' && (textOf(field.label) ?? field.key) === name) return field.key
       }
       return name
     },
@@ -404,7 +421,8 @@ export function createAngularDriver(
     },
 
     async submit(): Promise<SubmitResult> {
-      fireEvent.click(screen.getByRole('button', { name: SUBMIT_LABEL }))
+      const { words } = requireMounted()
+      fireEvent.click(screen.getByRole('button', { name: words('form.submit') }))
       await settle()
       if (lastOutcome === undefined) throw new Error('the submit control reported no outcome')
       const outcome = lastOutcome
@@ -430,6 +448,7 @@ export function createAngularDriver(
       schema = undefined
       fixture = undefined
       lastOutcome = undefined
+      words = undefined
     },
   }
 }
@@ -473,4 +492,12 @@ async function auditRendered(): Promise<readonly AccessibilityViolation[]> {
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/**
+ * A name with a value left open, as a pattern: the form's sentence, with `(.+)` where each
+ * placeholder it was not given stays visible — the React driver's, for the same names.
+ */
+function pattern(sentence: string): RegExp {
+  return new RegExp(`^${escapeRegExp(sentence).replace(/\\\{\w+\\\}/g, '(.+)')}$`)
 }

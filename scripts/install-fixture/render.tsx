@@ -46,4 +46,15 @@ const missing = expected.filter((fragment) => !html.includes(fragment))
 if (missing.length > 0) {
   throw new Error(`the rendered form is missing ${missing.join(', ')}:\n${html.slice(0, 2000)}`)
 }
-console.log(`rendered ${String(html.length)} characters of form`)
+// The renderer's own words come from `@formancy/core/words` through the installed core's
+// exports map, in the engine's locale (0171): a second entry that resolves in the workspace
+// and not in a tarball would leave every installed form without its buttons.
+const german = renderToString(
+  <FormancyProvider engine={createFormEngine({ schema, locale: 'de', capabilities: { now: () => 0, today: () => '2026-10-09', random: () => 0.5 } })}>
+    <FormancyForm />
+  </FormancyProvider>,
+)
+if (!german.includes('>Absenden<') || german.includes('>Submit<')) {
+  throw new Error(`the form built in German did not say Absenden:\n${german.slice(0, 2000)}`)
+}
+console.log(`rendered ${String(html.length)} characters of form, and the German one`)

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { applyRichCommand } from '@formancy/spec'
 import type { RichCommand } from '@formancy/spec'
+import { useFormText } from '../context.js'
 import { useField } from '../use-field.js'
 import { RichText } from '../rich-text.js'
 import { useRichTextEditorFactory } from '../rich-text-editor.js'
@@ -53,13 +54,15 @@ export function RichTextToolbar({
 }) {
   const buttons = useRef<Array<HTMLButtonElement | null>>([])
   const [active, setActive] = useState(0)
+  const text = useFormText()
 
-  const commands: ReadonlyArray<{ command: RichCommand; name: string; glyph: string }> = [
-    { command: 'strong', name: 'Bold', glyph: 'B' },
-    { command: 'emphasis', name: 'Italic', glyph: 'I' },
-    { command: 'link', name: 'Link', glyph: '↗' },
-    { command: 'bulletList', name: 'Bulleted list', glyph: '•' },
-    { command: 'orderedList', name: 'Numbered list', glyph: '1.' },
+  // Each button's name is the form's word for its command (0171); the glyph is decoration.
+  const commands: ReadonlyArray<{ command: RichCommand; glyph: string }> = [
+    { command: 'strong', glyph: 'B' },
+    { command: 'emphasis', glyph: 'I' },
+    { command: 'link', glyph: '↗' },
+    { command: 'bulletList', glyph: '•' },
+    { command: 'orderedList', glyph: '1.' },
   ]
 
   const move = (to: number): void => {
@@ -74,7 +77,9 @@ export function RichTextToolbar({
       // Named with the field, because a form may have several of these and
       // "toolbar" five times tells a screen-reader user nothing about which
       // question they are formatting the answer to.
-      aria-label={typeof label === 'string' ? `Formatting for ${label}` : 'Formatting'}
+      aria-label={
+        typeof label === 'string' ? text('richtext.toolbar', { label }) : text('richtext.toolbarUnnamed')
+      }
       data-formancy-part="richtext-toolbar"
       onKeyDown={(event) => {
         if (event.key === 'ArrowRight') {
@@ -110,7 +115,7 @@ export function RichTextToolbar({
             // then own the accessibility of. A host wanting its own can
             // replace the whole field through the component registry.
             if (entry.command === 'link') {
-              const href = window.prompt('Address for the link')
+              const href = window.prompt(text('richtext.linkAddress'))
               if (href === null || href === '') return
               onCommand('link', href)
               return
@@ -120,7 +125,7 @@ export function RichTextToolbar({
         >
           {/* The glyph is decoration; the button's name is the word. */}
           <span aria-hidden="true">{entry.glyph}</span>
-          <span data-formancy-part="visually-hidden">{entry.name}</span>
+          <span data-formancy-part="visually-hidden">{text(`richtext.${entry.command}`)}</span>
         </button>
       ))}
     </div>

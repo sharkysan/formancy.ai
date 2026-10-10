@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { acceptRemoteOptions, capRemoteOptions } from '@formancy/spec'
 import type { FieldDef, RemoteOption } from '@formancy/spec'
-import { useFormEngine } from './context.js'
+import type { FormText } from '@formancy/core/words'
+import { useFormEngine, useFormText } from './context.js'
 import { useOptionsSources } from './options-source.js'
 
 /**
@@ -40,7 +41,13 @@ export interface RemoteState {
   unavailable: boolean
   /** A request is in flight, and the control says `aria-busy` rather than disabling. */
   busy: boolean
-  /** What to announce, or the empty string when there is nothing to say. */
+  /**
+   * The last request failed. Its own flag, so a theme's `data-state` is read off the
+   * state and not off the sentence — which keyed on English prose, and would have
+   * stopped matching the day the sentence was said in German (0171).
+   */
+  failed: boolean
+  /** What to announce, in the form's language, or the empty string when there is nothing to say. */
   status: string
   /** How many characters are still needed before anything is asked. */
   needs: number
@@ -65,6 +72,7 @@ export function useSourcedOptions(
   enabled = true,
 ): SourcedOptions {
   const engine = useFormEngine()
+  const text = useFormText()
   const sources = useOptionsSources()
   const name = field.def.optionsSource
   const source = name === undefined ? undefined : sources?.[name]
@@ -224,8 +232,9 @@ export function useSourcedOptions(
     remote: {
       unavailable: source === undefined,
       busy,
+      failed,
       needs: minQueryLength,
-      status: statusFor({
+      status: statusFor(text, {
         failed,
         busy,
         needs: minQueryLength,
@@ -243,7 +252,7 @@ export function useSourcedOptions(
  * feedback, and a region that spoke on every successful keystroke would talk over
  * them. A failure is a sentence somebody can act on rather than a code.
  */
-function statusFor({
+function statusFor(text: FormText, {
   failed,
   busy,
   needs,
@@ -256,15 +265,11 @@ function statusFor({
   query: string
   capped: { shown: number; total: number } | null
 }): string {
-  if (failed) return 'The options could not be loaded. Type to try again.'
-  if (query.trim().length < needs) {
-    return `Type at least ${String(needs)} characters to search.`
-  }
+  if (failed) return text('options.failed')
+  if (query.trim().length < needs) return text('options.tooShort', { count: needs })
   // Set only once a request is actually on its way — after the debounce — so nothing
   // announces per keystroke.
-  if (busy) return 'Searching…'
-  if (capped !== null) {
-    return `Showing the first ${String(capped.shown)} of ${String(capped.total)} — keep typing to narrow.`
-  }
+  if (busy) return text('options.searching')
+  if (capped !== null) return text('options.capped', { shown: capped.shown, total: capped.total })
   return ''
 }

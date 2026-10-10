@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, viewChild } from '@angular/core'
 import type { ElementRef, Type } from '@angular/core'
+import { FormancyTextPipe } from '../text.js'
 import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
 
 
@@ -26,7 +27,7 @@ import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
 @Component({
   selector: 'formancy-signature-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormancyFieldShell],
+  imports: [FormancyFieldShell, FormancyTextPipe],
   template: `
     <formancy-field-shell [field]="field" [label]="context.label" [path]="context.path">
       <div data-formancy-part="signature">
@@ -52,13 +53,13 @@ import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
         <input
           data-formancy-part="signature-typed"
           type="text"
-          aria-label="Type your name"
+          [attr.aria-label]="'signature.typed' | formancyText"
           [value]="typed()"
           (input)="onTyped($event)"
           (blur)="field.touch()"
         />
 
-        <button data-formancy-part="signature-clear" type="button" (click)="clear()">Clear</button>
+        <button data-formancy-part="signature-clear" type="button" (click)="clear()">{{ 'signature.clear' | formancyText }}</button>
       </div>
     </formancy-field-shell>
   `,
