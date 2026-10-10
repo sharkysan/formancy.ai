@@ -1281,7 +1281,7 @@ The examples also run **before Apply**. Given the form's examples, each prompt p
 them against the document as it is and as the proposal would leave it, through
 `runScenarios` and `comparedToLastRun`, the scenario panel's own two functions. The
 review's heading names each example that would stop holding, and the status names those
-and any that would hold again ([0160](../decisions/0160-a-proposal-is-checked-against-the-forms-examples.md)).
+and any that would hold again ([0159](../decisions/0159-a-proposal-is-checked-against-the-forms-examples.md)).
 Apply is not disabled by a regression: a rule changed on purpose stops its old example, and
 the person decides. What the tests show is this. `proposal.test.ts` (*what the form's
 examples make of a proposal*) holds that a rule turned round names the examples it breaks,

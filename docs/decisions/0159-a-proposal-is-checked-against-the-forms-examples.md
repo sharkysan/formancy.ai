@@ -1,4 +1,4 @@
-# 0160 — A proposal is checked against the form's examples before it lands
+# 0159 — A proposal is checked against the form's examples before it lands
 
 - **Status:** accepted
 - **Date:** 2026-10-10

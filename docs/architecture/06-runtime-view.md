@@ -321,7 +321,7 @@ Write it
   proposeEdit(current, document, examples)
     one or more examples ──▶ runScenarios on current and on document
                          ──▶ comparedToLastRun ──▶ what would stop holding, and hold again
-                         ──▶ proposalHeading names the first; the status names both (0160)
+                         ──▶ proposalHeading names the first; the status names both (0159)
     none, or an empty list ──▶ examples is undefined: no verdict, rather than an empty one
   ──▶ the review ──▶ applyProposal (0109)
 ```

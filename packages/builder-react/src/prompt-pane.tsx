@@ -61,7 +61,7 @@ import type { Scenario } from '@formancy/core'
  * **Given the form's examples, it runs them before Apply.** The review names the ones
  * the answer would stop holding, and those it would make hold again — the one check that
  * tells a rule written backwards from the rule asked for
- * ([0160](../../../docs/decisions/0160-a-proposal-is-checked-against-the-forms-examples.md)).
+ * ([0159](../../../docs/decisions/0159-a-proposal-is-checked-against-the-forms-examples.md)).
  */
 
 export interface PromptPaneProps {

@@ -152,7 +152,7 @@ export function playgroundBuilder(
     } @else {
       <!-- Describing a change in words, with the same stand-in model as the React pane:
            the person plays it, and everything after the answer is real (0109) — run
-           against the page's examples before it lands, as the React pane's is (0160). -->
+           against the page's examples before it lands, as the React pane's is (0159). -->
       <formancy-prompt-pane
         [session]="host.session"
         [ask]="ask"

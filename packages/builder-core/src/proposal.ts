@@ -58,7 +58,7 @@ export interface EditProposal {
    * What the form's examples make of it: which held against the current document and
    * would not against this one, and which would hold again. Undefined when no examples
    * were given — none passed, or an empty list — which is not the same as none stopping
-   * ([0160](../../../docs/decisions/0160-a-proposal-is-checked-against-the-forms-examples.md)).
+   * ([0159](../../../docs/decisions/0159-a-proposal-is-checked-against-the-forms-examples.md)).
    */
   readonly examples: ScenarioRunChange | undefined
 }

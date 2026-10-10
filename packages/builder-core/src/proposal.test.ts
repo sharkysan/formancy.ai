@@ -194,7 +194,7 @@ describe('what the review shows', () => {
  * `country == "CH"` and `country != "CH"` both pass every check `authorForm` makes. Only an
  * example with its answer written down tells them apart (0110), and until this change that
  * example ran after Apply, in the scenario panel — so the review a person decided on said
- * nothing about it (0160).
+ * nothing about it (0159).
  *
  * `name` is required and no example sets it, so every example needs the sample to start
  * from. Without it each one fails on `required` before and after, and nothing could ever

@@ -19,7 +19,7 @@ export const MODEL_MESSAGES = {
   'prompt.stop': 'Stop',
   'prompt.review': 'Review these changes',
   'prompt.review.costs': 'Review these changes — some affect answers already collected',
-  // The form's examples, run against the proposal before it lands (0160). `{list}` is the
+  // The form's examples, run against the proposal before it lands (0159). `{list}` is the
   // examples' own names, as the scenario pane shows them.
   'prompt.review.stops': {
     one: 'Review these changes — {count} scenario would stop holding: {list}',

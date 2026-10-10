@@ -232,7 +232,7 @@ presses Apply. The review's heading names each example that would stop holding, 
 status names those and any that would hold again. Apply stays enabled, because a rule
 changed on purpose stops its old example holding. A rule no example pins gets no warning,
 and without `scenarios` the review says nothing about examples
-([0160](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0160-a-proposal-is-checked-against-the-forms-examples.md)).
+([0159](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0159-a-proposal-is-checked-against-the-forms-examples.md)).
 
 Next: [self-host the backend](/docs/start/self-hosting/) and post the form's
 submissions to it, or read [how the schema is structured](/docs/concepts/schema/).

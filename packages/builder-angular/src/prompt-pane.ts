@@ -66,7 +66,7 @@ import type {
  *
  * **Given the form's examples, it runs them before Apply**, and the review names the
  * ones the answer would stop holding
- * ([0160](../../../docs/decisions/0160-a-proposal-is-checked-against-the-forms-examples.md)).
+ * ([0159](../../../docs/decisions/0159-a-proposal-is-checked-against-the-forms-examples.md)).
  */
 @Component({
   selector: 'formancy-prompt-pane',

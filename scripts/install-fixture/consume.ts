@@ -90,7 +90,7 @@ if (!(DECLINE_KEY in (JSON.parse(declinedAnswer('why')) as object))) {
   throw new Error('declinedAnswer and the spec disagree about the key')
 }
 
-// A proposal against the form's examples (0160): the installed builder-core runs them
+// A proposal against the form's examples (0159): the installed builder-core runs them
 // through the installed core, and the review's heading names the one that would stop.
 const optional = {
   ...schema,

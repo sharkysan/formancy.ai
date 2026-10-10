@@ -244,7 +244,7 @@ const CANTON: Scenario = {
 describe('with the form’s examples', () => {
   test('the review names the example an answer would stop holding, and Apply is still there', async () => {
     /*
-     * The failure this exists for (0160). The inverted rule passes every check `authorForm`
+     * The failure this exists for (0159). The inverted rule passes every check `authorForm`
      * makes, so the review listed one changed rule — and the example that would have said
      * otherwise ran only after Apply, in the scenario pane. Apply stays: a rule changed on
      * purpose stops its old example holding, and the person decides.

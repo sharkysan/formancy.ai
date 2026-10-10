@@ -25,7 +25,7 @@ on purpose stops its old example holding. A rule no example pins gets no warning
 examples — none passed, or an empty list — `examples` is `undefined` rather than an empty
 verdict, because a check that never ran has not passed. `EditProposal`
 has a new field, so an `EditProposal` built by hand rather than by `proposeEdit` must add it
-([0160](docs/decisions/0160-a-proposal-is-checked-against-the-forms-examples.md)).
+([0159](docs/decisions/0159-a-proposal-is-checked-against-the-forms-examples.md)).
 
 **Added: a model may decline, and a decline ends the run after one turn.** Asked for
 something the format cannot express — "email me every submission" — a model had no answer but

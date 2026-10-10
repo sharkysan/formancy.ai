@@ -245,7 +245,7 @@ The review's heading names each example that would stop holding, and the status
 names those and any that would hold again. Apply stays enabled: a rule you asked to
 change stops its old example holding, and the decision is yours. A rule no example
 pins gets no warning. Without `scenarios`, the review says nothing about examples
-([0160](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0160-a-proposal-is-checked-against-the-forms-examples.md)).
+([0159](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0159-a-proposal-is-checked-against-the-forms-examples.md)).
 
 ### Writing `askModel`
 

@@ -244,7 +244,7 @@ Given the form's examples, `proposeEdit` also runs them against both documents t
 `core`'s `runScenarios` and `scenario-runs.ts`'s `comparedToLastRun`, and the proposal
 carries which would stop holding and which would hold again. `proposalHeading` and
 `proposalStatus` say so, so the two panes draw a verdict rather than reaching one
-([0160](../decisions/0160-a-proposal-is-checked-against-the-forms-examples.md)).
+([0159](../decisions/0159-a-proposal-is-checked-against-the-forms-examples.md)).
 
 Before a proposal there is the asking. `answers.ts` holds what every request to a model
 shares and nothing about forms. `readAnswer` takes the JSON object out of what a model

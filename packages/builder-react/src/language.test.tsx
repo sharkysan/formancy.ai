@@ -687,7 +687,7 @@ describe('the translations, prompt and scenario panes', () => {
   })
 
   test('the prompt pane, with an answer that stops an example holding, likewise', async () => {
-    // The review names the examples (0160): their names are the host's, and every word
+    // The review names the examples (0159): their names are the host's, and every word
     // around them is the catalogue's, in the heading and in the status alike.
     const ruled = (cel: string): FormSchema =>
       ({

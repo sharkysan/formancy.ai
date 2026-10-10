@@ -365,7 +365,7 @@ names each example the answer would stop holding, and the status names those and
 would make hold again. Apply stays enabled, because a rule changed on purpose stops its old
 example holding. A rule no example pins gets no warning, and without `scenarios` the review
 says nothing about examples. In React the same three are props on `PromptPane`
-([0160](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0160-a-proposal-is-checked-against-the-forms-examples.md)).
+([0159](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0159-a-proposal-is-checked-against-the-forms-examples.md)).
 
 ## Proof this is not a second implementation
 
