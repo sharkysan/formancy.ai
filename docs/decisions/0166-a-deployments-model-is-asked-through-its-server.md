@@ -13,19 +13,28 @@
   three unknown kinds; trimming the user part fails *with the user part as it was sent*.
   `packages/server/src/model-settings.test.ts` holds every refusal: a key or a model with no
   provider started with none until two cases failed, a default model fails *a provider
-  without FORMANCY_MODEL*, and a message that repeats the environment fails *and never says
-  the key*. `anthropic-completer.test.ts` and `openai-completer.test.ts` drive the real SDKs
+  without FORMANCY_MODEL*, a message that repeats the environment fails *and never says
+  the key*, and before the check existed, a provider's SDK headers variable set failed all
+  three providers' cases. `anthropic-completer.test.ts` and `openai-completer.test.ts` drive the real SDKs
   over a fake `fetch`: content read before the stop reason (or the status) fails the refusal
   and cut-off cases; a thinking block joined into the answer fails *the text, and only the
   text*; an unwired cancellation fails both abort cases; the base URL left to the SDK fails
   against an ambient `ANTHROPIC_BASE_URL`, and an organisation and project left to it fail
-  against ambient `OPENAI_ORG_ID` and `OPENAI_PROJECT_ID`. `completers.test.ts` fails with
+  against ambient `OPENAI_ORG_ID` and `OPENAI_PROJECT_ID`; the credential left to it fails
+  against an ambient `ANTHROPIC_AUTH_TOKEN`, and the log level left to it fails both
+  providers' *what the environment cannot add* against `ANTHROPIC_LOG` and `OPENAI_LOG` at
+  `debug`. Each adapter test also shows that the SDK still sends `*_CUSTOM_HEADERS` with
+  every option the adapter sets, which is why the server refuses to start with them; undone
+  by a header set to `null` for its one name, those cases fail. `completers.test.ts` fails with
   xAI mapped to OpenAI's base URL. `model-route.test.ts`, through `createApp`: without the
   permission five cases fail; with the system part taken from the body, two; without a body
   cap of its own, a request the size of a large form is refused; with a cap sixteen times
-  the constant, an oversized one is asked; with the limit counted before the session is
-  known, *a limit per person* fails; with the response's close never heard, a client
-  disconnect does not reach the port, and with every close read as one, a finished request
+  the constant, an oversized one is asked; at half the cap, the translation of the largest
+  questionnaire the server publishes is refused (*is taken for every kind*); with the limit
+  counted before the session is known, *a limit per person* fails; with the response's
+  close never heard, a client disconnect does not reach the port; with the close heard only
+  from the handler on, a client gone while its API key was checked is answered in full
+  (*while it is still being let in*); and with every close read as one, a finished request
   is cancelled after its answer; with the text in the audit row, *never the text* fails.
   `compose.test.ts` failed on all three new variables until both compose files passed them,
   and `dockerfile.test.ts` failed on `builder-core` until the image copied it. `apps/admin`'s
@@ -72,7 +81,9 @@ its API is compatible with OpenAI's SDKs and their Responses API at `https://api
 with `store: false`, streamed and read with `finalResponse()`, status first: incomplete at
 the output limit is `truncated`, withheld by the filter or a refusal part is `refused`. Each
 answer may be up to 64,000 tokens. Each base URL is named in the adapter, and the SDKs'
-habit of reading a base URL, an organisation or a project from the environment is overridden.
+habit of reading a base URL, an organisation, a project, a second credential or a log level
+from the environment is overridden. Headers of their own, which both SDKs read from a
+variable and no option undoes, stop the server at startup instead.
 
 **Configured by environment, and off unless set.** `FORMANCY_MODEL_PROVIDER` (`anthropic`,
 `openai` or `xai`), `FORMANCY_MODEL_API_KEY` and `FORMANCY_MODEL`: all three, or none. A key
@@ -91,12 +102,15 @@ The browser finds the kind from the briefing its run handed it — `modelRequest
 is refused in the browser, before anything leaves.
 
 **The route** takes the permission editing a form takes (`form.publish`: an editor or an
-admin, not a viewer; 401 and 403 as everywhere), a body cap of its own of 512 KiB, ten
-requests a minute **per session** — the limit runs after the session is known — and answers
+admin, not a viewer; 401 and 403 as everywhere), a body cap of its own, sized to hold all
+three requests about the largest form the server publishes — of which a translation is the
+largest, since each answer's row repeats its question — ten requests a minute **per
+session** — the limit runs after the session is known — and answers
 `{ text }`, `{ declined }` for a provider's refusal, or a 502 with a sentence: the key
 refused, the provider limiting, the model refused, or unreachable. A response that closes
 before it was written is a browser that went away, and the adapter is told to abandon the
-call at the provider. Every request asked is audited as `model.asked`: who, the kind, the
+call at the provider — at once, before anything is sent, when it went while its session or
+key was still being checked. Every request asked is audited as `model.asked`: who, the kind, the
 provider and model, the length of the user part, how it ended, and the provider's status
 when it failed — never the text. `GET /model` says which provider and model, to the same
 permission, or 404.
@@ -120,9 +134,10 @@ from the server to an isomorphic package with no DOM and no Node types, as the e
 with the key on the server, through the same `AskModel` every pane already takes — the
 loop, the checks, the stop and the review are unchanged ([0056](0056-agents-get-the-checks.md),
 [0109](0109-an-ai-edit-is-reviewed-before-it-lands.md), [0157](0157-a-models-turn-can-be-stopped.md)).
-What the key pays for is formancy's three requests under formancy's briefings; a refusal by
-the provider ends the run as a decline in one turn ([0158](0158-a-model-may-decline.md)), and
-a browser that goes away stops the provider writing.
+Every request the key pays for is asked under one of formancy's three briefings, never one
+from the request — narrowed, not closed, as below; a refusal by the provider ends the run as
+a decline in one turn ([0158](0158-a-model-may-decline.md)), and a browser that goes away
+stops the provider writing, or never starts it.
 
 **What it costs.** **The form leaves.** Each request sends the whole document (authoring),
 its words and where each is used (translation), or its fields, labels, options, starting
@@ -138,6 +153,13 @@ the cap, the output limit and the audit row bound and record what that costs. Th
 prevent it. Ten requests a minute per session is counted per process, so N replicas allow N
 times it, and an API key with an editor's role can spend it around the clock. There is no
 spending cap; the provider's own is the backstop.
+
+**The cap holds the largest form the server publishes as far as a test shows, not every
+form.** A translation grows with the length of each question times the number of its
+answers, so a form at the server's limit whose questions are long and have many answers
+makes a translation past the cap. It is refused with a 413 before it is read, and the run
+ends there; asking for a language a part at a time is not offered. Whether a model's context
+holds a request the cap takes is the provider's to say; nothing here measures it.
 
 **No default model is a configuration step, on purpose.** A default would go stale when the
 provider retires the model, and every turn would then end *could not be reached* after an
@@ -155,17 +177,26 @@ model that has it, Opus 4.6 or Sonnet 4.6 or later; an older one answers 400 to 
 
 **Two SDKs in the image whether or not a model is configured.** `@anthropic-ai/sdk` brings
 `json-schema-to-ts` and `standardwebhooks`, and through them `@babel/runtime`, `ts-algebra`,
-`@stablelib/base64` and `fast-sha256`; `openai` brings nothing. The SOUP declaration lists
-both. They are loaded when the server starts.
+`@stablelib/base64` and `fast-sha256`. `openai` has no dependencies of its own, only optional
+peers, and two of them resolve: `undici`, which the server has already, and `zod`. Both SDKs
+name `zod` as an optional peer, and because the workspace has it for `@formancy/mcp`, the
+lockfile resolves it for them and it is installed into the image — through these two SDKs
+and nothing else. The SOUP declaration lists all of it. The SDKs are loaded when the server
+starts.
 
 **What the provider said is dropped.** The route words a failure by its status for the
 person, and the provider's message would go to a request log the server does not have
 (SAFETY-ANALYSIS C3). The audited status is what an operator has to go on.
 
-**A browser and a server from different versions brief differently.** The model is briefed
-as the server's `builder-core` briefs; the browser recognises the briefing its own version
-writes. A mismatch refuses every request in the browser as one formancy does not make, which
-is loud rather than wrong.
+**A browser and a server from different versions disagree silently.** The browser names the
+kind from the briefing its own `builder-core` wrote, so it always recognises it, and never
+sees the server's: `GET /model` says only the provider and the model. The request is sent,
+the model is briefed as the server's version briefs it, and the answer is checked as the
+browser's version expects. Where the briefings differ, answers fail the browser's checks or
+pass them under rules the browser did not write, and nothing says why. Nothing checks that
+an admin, or a host's own `AskModel`, is the server's version. Making it loud — the server
+naming a digest of each briefing, and the browser refusing when its own differs — is not
+done here (SAFETY-ANALYSIS D17, arc42 §11).
 
 **The admin's line about where a request goes is English**, as the rest of the admin is; the
 builders' own words stay in their catalogue. The prompt pane in the admin holds its own run,
@@ -188,9 +219,9 @@ loop on the server is the same decision in two places ([0091](0091-a-second-buil
 and the instruction would still be free text.
 
 **Compare the system part the browser sends with the briefings**, rather than send a kind.
-The same check, made on the server after ten kilobytes of briefing have crossed the network
-for every turn. Recognising the briefing in the browser refuses a foreign one before it
-leaves, and the server never reads a system part at all.
+The same check, made on the server after the briefing has crossed the network for every
+turn. Recognising the briefing in the browser refuses a foreign one before it leaves, and the
+server never reads a system part at all.
 
 **The briefings in `@formancy/spec`**, so the server needs no `builder-core`. The authoring
 briefing is already there; the scenario briefing runs the engine's own example and path

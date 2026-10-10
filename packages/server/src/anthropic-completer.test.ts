@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import type { Cancellation } from '@formancy/server-core'
 import { ANTHROPIC_MAX_OUTPUT_TOKENS, createAnthropicCompleter } from './anthropic-completer.js'
 
@@ -113,6 +113,52 @@ describe('what is sent to Anthropic', () => {
       messages: [{ role: 'user', content: 'The request.' }],
       stream: true,
     })
+  })
+})
+
+describe('what the environment cannot add', () => {
+  test('a second credential, or a copy of the form in the console', async () => {
+    // The SDK reads ANTHROPIC_AUTH_TOKEN and sends it as `Authorization` beside the key,
+    // and with ANTHROPIC_LOG=debug writes every request, the whole form, to the console —
+    // a request log the server says it does not keep (SAFETY-ANALYSIS C3). A variable set
+    // for something else on the same host would do either without anybody reading this file.
+    const ambient = { token: process.env['ANTHROPIC_AUTH_TOKEN'], log: process.env['ANTHROPIC_LOG'] }
+    process.env['ANTHROPIC_AUTH_TOKEN'] = 'ambient-bearer'
+    process.env['ANTHROPIC_LOG'] = 'debug'
+    const written: unknown[] = []
+    const spies = (['debug', 'info', 'log', 'warn', 'error'] as const).map((level) =>
+      vi.spyOn(console, level).mockImplementation((...args: unknown[]) => void written.push(...args)),
+    )
+    const { completer, sent } = over(() => streamed([{ type: 'text', text: '{}' }], 'end_turn'))
+    try {
+      await completer.complete(PROMPT, never)
+    } finally {
+      for (const spy of spies) spy.mockRestore()
+      if (ambient.token === undefined) delete process.env['ANTHROPIC_AUTH_TOKEN']
+      else process.env['ANTHROPIC_AUTH_TOKEN'] = ambient.token
+      if (ambient.log === undefined) delete process.env['ANTHROPIC_LOG']
+      else process.env['ANTHROPIC_LOG'] = ambient.log
+    }
+
+    expect(sent).toHaveLength(1)
+    expect(sent[0]?.headers.get('authorization')).toBeNull()
+    expect(JSON.stringify(written)).not.toContain(PROMPT.user)
+    expect(written).toEqual([])
+  })
+
+  test('but headers of its own it would add, which is why the server will not start with them', async () => {
+    // The premise of `modelSettings` refusing ANTHROPIC_CUSTOM_HEADERS: with every option
+    // this adapter sets, the SDK still sends them. If it ever stops, the refusal can go.
+    const ambient = process.env['ANTHROPIC_CUSTOM_HEADERS']
+    process.env['ANTHROPIC_CUSTOM_HEADERS'] = 'x-ambient: yes'
+    const { completer, sent } = over(() => streamed([{ type: 'text', text: '{}' }], 'end_turn'))
+    try {
+      await completer.complete(PROMPT, never)
+    } finally {
+      if (ambient === undefined) delete process.env['ANTHROPIC_CUSTOM_HEADERS']
+      else process.env['ANTHROPIC_CUSTOM_HEADERS'] = ambient
+    }
+    expect(sent[0]?.headers.get('x-ambient')).toBe('yes')
   })
 })
 

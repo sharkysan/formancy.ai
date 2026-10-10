@@ -10,12 +10,12 @@ import { isModelRequestKind, modelBriefing } from '@formancy/builder-core'
  *
  * **The server writes the briefing.** The browser names the kind of request — one of the
  * three formancy makes — and sends the user part; the system part is the one
- * `@formancy/builder-core` briefs that kind with, and one in the request is never read. What
- * the operator's key pays for is formancy's requests, not whatever an editor's session
- * thinks to ask. The user part is still the person's text, and nothing here stops it
- * asking the model for something else under formancy's briefing: the permission, the rate
- * limit, the size cap and the output limit bound what that costs, and the audit log says
- * who asked.
+ * `@formancy/builder-core` briefs that kind with, and one in the request is never read, so
+ * every request the operator's key pays for is asked under one of formancy's briefings.
+ * That narrows the endpoint; it does not close it. The user part is still the person's
+ * text, and nothing here stops it asking the model for something else under formancy's
+ * briefing: the permission, the rate limit, the size cap and the output limit bound what
+ * that costs, and the audit log says who asked.
  */
 
 /** Everything a completion is asked: one system part and one user part, no conversation. */

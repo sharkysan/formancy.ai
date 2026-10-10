@@ -193,7 +193,12 @@ operator's model for something other than a form under formancy's briefing. The 
 a limit per session, a body cap, an output limit and an audit row bound and record it; no
 spending cap prevents it. And no test reaches a provider: the adapters are held against fake
 transports in the shapes their SDKs parse, and xAI's compatibility with OpenAI's client is
-xAI's claim.
+xAI's claim. Two more are accepted rather than fixed. The body cap holds the requests about
+the largest form the server publishes when its questions are about a sentence long; a
+translation of one whose questions are long and have many answers is past it, and refused.
+And a browser and a server of different versions disagree without saying so: the model is
+briefed by the server's version and its answer checked by the browser's, and no digest of the
+briefings is exchanged to notice.
 
 **TypeScript is pinned below `latest`.** The cost of supporting Angular as a
 co-first target ([0039](../decisions/0039-pin-typescript.md)). It will look

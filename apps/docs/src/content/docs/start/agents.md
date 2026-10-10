@@ -383,10 +383,13 @@ export const askModel: AskModel = async ({ system, user }, turn) => {
 
 The route answers the three requests the builders make — writing a form, translating it,
 drafting its examples — each under the briefing the server writes for it, and never under a
-system part from the request. So the key pays for formancy's requests rather than for
-whatever somebody's session sends, and a briefing your page wrote itself is refused before it
-leaves. `modelRequestKind` finds the request from the briefing the run handed your function,
-so one function serves the prompt pane, the translations pane and the scenario pane. It needs
+system part from the request, and a briefing your page wrote itself is refused before it
+leaves. That narrows what the key can be spent on; it does not close it. The user part is the
+person's text, so somebody with a session can still ask the model for something else under
+formancy's briefing and read the answer — bounded by the permission, the limit, the body cap
+and the audit row, not prevented. `modelRequestKind` finds the request from the briefing the
+run handed your function, so one function serves the prompt pane, the translations pane and
+the scenario pane. It needs
 a session that may edit forms and allows ten requests a minute per session. A refusal by the
 provider comes back as `declined`, which ends the run on that turn as the model's own decline
 would. When the request goes away — the person pressed Stop — the server abandons the call to

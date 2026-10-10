@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test } from 'vitest'
+import { afterEach, describe, expect, test, vi } from 'vitest'
 import type { Cancellation } from '@formancy/server-core'
 import {
   OPENAI_BASE_URL,
@@ -93,13 +93,50 @@ function over(
   return { completer: createOpenAiCompleter({ apiKey: 'sk-test', model: 'a-model', baseURL, fetch }), sent }
 }
 
-const AMBIENT = ['OPENAI_BASE_URL', 'OPENAI_ORG_ID', 'OPENAI_PROJECT_ID'] as const
+const AMBIENT = ['OPENAI_BASE_URL', 'OPENAI_ORG_ID', 'OPENAI_PROJECT_ID', 'OPENAI_LOG', 'OPENAI_CUSTOM_HEADERS'] as const
 const saved = Object.fromEntries(AMBIENT.map((name) => [name, process.env[name]]))
 afterEach(() => {
   for (const name of AMBIENT) {
     if (saved[name] === undefined) delete process.env[name]
     else process.env[name] = saved[name]
   }
+})
+
+describe('what the environment cannot add', () => {
+  test.each([
+    ['OpenAI', OPENAI_BASE_URL],
+    ['xAI', XAI_BASE_URL],
+  ])('a request log in the console, for %s', async (_, baseURL) => {
+    // With OPENAI_LOG=debug the SDK writes a line for every request and every response —
+    // where it went, its headers, how long the provider took — which is a request log the
+    // server says it does not keep (SAFETY-ANALYSIS C3), switched on by a variable nobody
+    // reading this file would see. This version writes the body's length rather than the
+    // form; the form is checked for too, in case a later one does not.
+    process.env['OPENAI_LOG'] = 'debug'
+    const written: unknown[] = []
+    const spies = (['debug', 'info', 'log', 'warn', 'error'] as const).map((level) =>
+      vi.spyOn(console, level).mockImplementation((...args: unknown[]) => void written.push(...args)),
+    )
+    try {
+      const { completer, sent } = over(() => streamed(response('completed', [{ type: 'output_text', text: '{}' }])), baseURL)
+      await completer.complete(PROMPT, never)
+      expect(sent).toHaveLength(1)
+    } finally {
+      for (const spy of spies) spy.mockRestore()
+    }
+    expect(JSON.stringify(written)).not.toContain(PROMPT.user)
+    expect(written).toEqual([])
+  })
+
+  test('but headers of its own it would add, to xAI as well, which is why the server will not start with them', async () => {
+    // The premise of `modelSettings` refusing OPENAI_CUSTOM_HEADERS: with every option this
+    // adapter sets, the SDK still sends them. If it ever stops, the refusal can go.
+    process.env['OPENAI_CUSTOM_HEADERS'] = 'x-ambient: yes'
+    const { completer, sent } = over(() => streamed(response('completed', [{ type: 'output_text', text: '{}' }])), XAI_BASE_URL)
+    await completer.complete(PROMPT, never)
+    expect(new URL(sent[0]?.url ?? '').origin).toBe('https://api.x.ai')
+    expect(sent[0]?.headers.get('x-ambient')).toBe('yes')
+  })
 })
 
 describe('what is sent', () => {

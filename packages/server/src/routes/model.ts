@@ -21,13 +21,16 @@ export interface DeploymentModel {
 /**
  * The largest request the route reads, in bytes, set on the route rather than inherited.
  *
- * The whole form travels in the user part — canonical JSON, escaped again as a string —
- * with the instruction and the last complaint around it, so a form the publish route
- * accepts at the server's default limit has to fit here, and does at twice it. Every byte
- * is an input token the operator pays for, so the cap is the route's own: raising the
- * server's limit for something else does not raise what an editor can send a model.
+ * Every byte is an input token the operator pays for, so the cap is the route's own:
+ * raising the server's limit for something else does not raise what an editor can send a
+ * model. It has to hold what the builders send about a form the server publishes, and the
+ * largest of that is a translation, not the form: each answer's row repeats the question
+ * it answers as its context, pretty-printed and escaped again as a string.
+ * `model-route.test.ts` sends all three requests about the largest questionnaire the server's
+ * default limit publishes, its questions a sentence long, and they are taken. Longer
+ * questions over many answers make a translation past this, refused before it is read (0166).
  */
-export const MODEL_BODY_LIMIT_BYTES = 512 * 1024
+export const MODEL_BODY_LIMIT_BYTES = 1024 * 1024
 
 /**
  * The builders' requests to the deployment's model (0166).
@@ -116,9 +119,13 @@ export async function modelRoutes(
  *
  * Every response closes, so one that finished is not a browser that left; only a close
  * with nothing written yet tells the adapter to abandon the request at the provider.
+ *
+ * A browser can also have gone before the handler ran, while the session or an API key was
+ * still being checked. That response has closed already and will not close again, so it
+ * is read as gone from the start, and the adapter is told at once — before it sends.
  */
 function cancelledWith(reply: FastifyReply): Cancellation {
-  let gone = false
+  let gone = reply.raw.destroyed && !reply.raw.writableFinished
   const listeners: Array<() => void> = []
   reply.raw.once('close', () => {
     if (reply.raw.writableFinished) return

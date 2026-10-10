@@ -208,11 +208,17 @@ model a deployment may configure for its builders
 ([0166](../decisions/0166-a-deployments-model-is-asked-through-its-server.md)). They are in
 the server's image whether or not a model is configured, and loaded when it starts; neither
 sends anything unless `FORMANCY_MODEL_PROVIDER` names its provider. `openai` (Apache-2.0) has
-no dependencies of its own. `@anthropic-ai/sdk` (MIT) brings `json-schema-to-ts` and
+no dependencies of its own, only optional peers; of those, `undici`, which the server depends
+on already, and `zod` resolve. `@anthropic-ai/sdk` (MIT) brings `json-schema-to-ts` and
 `standardwebhooks`, and through them `@babel/runtime`, `ts-algebra` and `@stablelib/base64`
-(MIT) and `fast-sha256` (Unlicense) — read from the installed manifests on 2026-10-10. Each
-adapter names its provider's base URL rather than taking one from the environment, which
-both SDKs would otherwise do. Their tests drive the real clients over a fake transport; **no
+(MIT) and `fast-sha256` (Unlicense). **`zod` (MIT) is in the image through these two SDKs
+alone**: both name it as an optional peer, and because the workspace has it for
+`@formancy/mcp`, the lockfile resolves it for them and the image installs it — read from the
+installed manifests, `pnpm why zod --prod` on `@formancy/server` and a `pnpm deploy` of its
+production closure on 2026-10-10. Each adapter names its provider's base URL, and sets the
+credential, organisation, project and log level, rather than taking them from the
+environment, which both SDKs would otherwise do; headers the SDKs would read from
+`ANTHROPIC_CUSTOM_HEADERS` or `OPENAI_CUSTOM_HEADERS` stop the server at startup instead. Their tests drive the real clients over a fake transport; **no
 test reaches a provider**, so a provider that changes its API changes what they read, and
 xAI's compatibility with OpenAI's client is xAI's documented claim, not something exercised
 here.

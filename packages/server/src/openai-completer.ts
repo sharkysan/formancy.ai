@@ -45,7 +45,11 @@ export interface OpenAiCompleterOptions {
  * refusal in the output, ends the person's run as a decline.
  *
  * The SDK would take an organisation and a project from the environment and send them as
- * headers — to xAI as well — so both are set to nothing here.
+ * headers — to xAI as well — so both are set to nothing here. It would take a log level
+ * too, and with OPENAI_LOG=debug write a line for every request and response to the
+ * console, a request log the server does not keep (SAFETY-ANALYSIS C3), so the level is
+ * set. OPENAI_CUSTOM_HEADERS cannot be undone here, so `modelSettings` refuses to start
+ * with it.
  */
 export function createOpenAiCompleter(options: OpenAiCompleterOptions): Completer {
   const client = new OpenAI({
@@ -53,6 +57,7 @@ export function createOpenAiCompleter(options: OpenAiCompleterOptions): Complete
     baseURL: options.baseURL,
     organization: null,
     project: null,
+    logLevel: 'off',
     ...(options.fetch === undefined ? {} : { fetch: options.fetch }),
   })
 

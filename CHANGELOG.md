@@ -25,14 +25,20 @@ adapter names, streamed, and read by how the response ended before its text — 
 decline, an answer cut off at the limit is never half a document. `POST /model/complete` takes
 `{ kind, user }` for the three requests the builders make, and **the server writes the
 briefing** from `@formancy/builder-core`'s new `MODEL_REQUEST_KINDS` and `modelBriefing`; a
-system part in the request is never read. It takes `form.publish`, ten requests a minute per
-session, a body of at most 512 KiB, abandons the provider's call when the browser goes away,
-and audits each request as `model.asked` without its text. `GET /model` says which. The admin
-draws the prompt pane, and gives the Translations tab the same ask, when the server has a
-model, saying where a request goes; with none, nothing new is drawn. Both compose files pass
-the variables through, and `.env.example` documents them. `@formancy/server` gains
-`@anthropic-ai/sdk` and `openai`, and the server image the `builder-core` package. The draft
-routes moved to a plugin of their own to make room in `app.ts`, and the check that every
+system part in the request is never read, which narrows what the key pays for to those
+three kinds without closing it: the person's instruction is free text. It takes
+`form.publish`, ten requests a minute per session, and a body cap of its own — sized to the
+translation of the largest form the server publishes, which repeats each question for every
+answer and so is larger than the form — abandons the provider's call when the browser goes
+away, before anything is sent if it went while its session was checked, and audits each
+request as `model.asked` without its text. A server with a model will not start with the
+`*_CUSTOM_HEADERS` variable its provider's SDK reads set, since nothing else stops those
+headers going with every form. `GET /model` says which. The admin draws the prompt pane, and
+gives the Translations tab the same ask, when the server has a model, saying where a request
+goes; with none, nothing new is drawn. Both compose files pass the variables through, and
+`.env.example` documents them. `@formancy/server` gains `@anthropic-ai/sdk` and `openai`, and
+the server image the `builder-core` package and, as an optional peer of both SDKs, `zod`. The
+draft routes moved to a plugin of their own to make room in `app.ts`, and the check that every
 route's rate limit names `timeWindow` now reads the route plugins as well as `app.ts`, since
 it would otherwise have stopped seeing the draft routes when they moved
 ([0166](docs/decisions/0166-a-deployments-model-is-asked-through-its-server.md)).

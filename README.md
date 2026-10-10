@@ -242,8 +242,10 @@ form in words, and reviewing what the answer does before it lands, with the form
 examples run against it so the review names any it would stop holding
 ([0159](./docs/decisions/0159-a-proposal-is-checked-against-the-forms-examples.md)). The
 model is the host's `AskModel`. formancy's server can be that model: name Anthropic, OpenAI
-or xAI, a key and a model, and it asks under the briefings it writes itself, so the key stays
-on the server and pays for formancy's requests only; the admin asks it
+or xAI, a key and a model, and the key stays on the server, which asks under the briefings it
+writes itself and never one from the request. That narrows what the key can be spent on to
+formancy's three kinds of request; it does not close it, since the person's instruction is
+free text. The admin asks it
 ([0166](./docs/decisions/0166-a-deployments-model-is-asked-through-its-server.md)). For a page
 that may not call one, both carry a **relay**
 pane, where a person copies each request to a chat of their own and pastes the answer

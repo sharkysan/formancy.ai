@@ -595,7 +595,7 @@ a run asks askServerModel(prompt, turn)
   kind = modelRequestKind(prompt.system)
     none ──▶ rejects: not one formancy makes; nothing leaves
   POST /model/complete { kind, user } ──▶  401 / 403 before anything else
-  turn.onCancel ──▶ AbortController        body over 512 KiB ──▶ 413
+  turn.onCancel ──▶ AbortController        body over the cap ──▶ 413
                                            ten a minute per session ──▶ 429
                                            completeBuilderRequest
                                              unknown kind ──▶ 400, nothing asked
@@ -616,12 +616,18 @@ the run checks the text, as any model's (6.7, 6.9)
 briefing the run handed the ask, so one `AskModel` serves the prompt pane and the
 Translations tab, and a system part formancy did not write is refused before it leaves. The
 server never reads a system part: it asks under the briefing `builder-core` writes for that
-kind, so its endpoint answers formancy's requests rather than lending the key to whatever a
-session sends ([0166](../decisions/0166-a-deployments-model-is-asked-through-its-server.md)).
+kind. That narrows the endpoint to formancy's three kinds of request without closing it — the
+user part is free text, so a session can still ask for something else under formancy's
+briefing, bounded by the permission, the limit, the cap and the audit row
+([0166](../decisions/0166-a-deployments-model-is-asked-through-its-server.md)). The versions
+are not compared: the browser names the kind from its own briefing and checks the answer as
+its own version expects, while the model is briefed by the server's.
 
 **Everything after the answer is the browser's, as before.** The loop, the checks, the
 complaint in the next turn, the decline, the stop and the review are those of 6.7 and 6.9;
 the server is one more `AskModel` behind them. A stop reaches the provider: the run's
 `turn.onCancel` aborts the browser's request, the response closes before it was written, and
-the route tells the adapter, which aborts its call. A response that closes after it was
-written is how every request ends, and cancels nothing.
+the route tells the adapter, which aborts its call. A browser that left while its session or
+key was still being checked has closed the response before the handler ran; the route reads
+that as gone from the start, and the adapter sends nothing. A response that closes after it
+was written is how every request ends, and cancels nothing.

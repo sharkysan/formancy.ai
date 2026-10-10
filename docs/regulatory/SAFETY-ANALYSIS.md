@@ -802,8 +802,11 @@ configuration (`model-settings.test.ts`; `compose.test.ts` holds both compose fi
 model without the `.env.example` block, and to the model it names with it). The server sends
 to exactly one host per provider, named in the adapter, and not to wherever an ambient
 `ANTHROPIC_BASE_URL` or `OPENAI_BASE_URL` points; nor does it send an organisation or project
-from the environment to xAI (`anthropic-completer.test.ts`, `openai-completer.test.ts`,
-`completers.test.ts`). OpenAI and xAI are asked with `store: false`. The browser sends the
+from the environment to xAI, or `ANTHROPIC_AUTH_TOKEN` beside the key, and an SDK's log level
+set to `debug` in the environment does not write the form to the console
+(`anthropic-completer.test.ts`, `openai-completer.test.ts`, `completers.test.ts`). Headers
+the provider's SDK would add from `ANTHROPIC_CUSTOM_HEADERS` or `OPENAI_CUSTOM_HEADERS`
+stop the server at startup (`model-settings.test.ts`). OpenAI and xAI are asked with `store: false`. The browser sends the
 request only to its own server, never to a provider: the key is not in the page
 (`apps/admin`'s `server-model.test.tsx`, *sends a turn to this server alone*). The admin says
 which provider and model a request goes to, above the prompt pane and the Translations tab,
@@ -833,14 +836,16 @@ or submission is affected.
 *Constraint:* the route takes `form.publish`, so a viewer is refused (403) and nobody without
 a session reaches it (401); **the briefing is the server's**, so the endpoint answers the
 three requests formancy makes and never a system part from the request, and an unknown kind is
-refused before anything is asked; a body cap of its own, 512 KiB, before the body is parsed;
-ten requests a minute per session, counted once the session is known, so one editor cannot
-spend another's budget; an answer of at most 64,000 tokens; and a browser that goes away
-stops the provider writing — the route tells the adapter when the response closes before it
-was written, and the adapter aborts the call. Every request asked is recorded as
+refused before anything is asked; a body cap of its own, before the body is parsed, sized to
+the requests about the largest form the server publishes and no more; ten requests a minute
+per session, counted once the session is known, so one editor cannot spend another's budget;
+an answer of at most 64,000 tokens; and a browser that goes away stops the provider writing —
+the route tells the adapter when the response closes before it was written, and the adapter
+aborts the call; one that went while its session or API key was being checked is told at
+once, and nothing is sent. Every request asked is recorded as
 `model.asked` in the audit log, with who, the kind, the provider and model, the length of what
 was sent, how it ended and the provider's status when it failed — never the text.
-`model-route.test.ts` holds each of these through `createApp`, the disconnect over a real
+`model-route.test.ts` holds each of these through `createApp`, both disconnects over a real
 socket; `model.test.ts` holds the pinning in the use-case.
 
 *Residual:* **within those bounds a session can still spend**, and an API key can spend around
@@ -1795,7 +1800,15 @@ failures twice, so a failing turn takes longer to say so. The provider's own wor
 failure are dropped — the server keeps no request log (C3) — and the audited status is what an
 operator has; a provider whose status means something other than the route assumes gets the
 wrong sentence. With Anthropic, a model without adaptive thinking answers every request with a
-400.
+400. **A translation can be too large to ask**: it repeats each question for every one of its
+answers, so a form at the server's limit with long questions and many answers makes one past
+the route's cap, refused with a 413 before it is read. The cap is shown to hold every request
+about the largest form the server publishes when its questions are about a sentence long
+(`model-route.test.ts`, *is taken for every kind*), and no further. **A browser and a server of different versions disagree silently**: the
+browser names the kind from its own briefing, the model is briefed by the server's, and the
+answer is checked as the browser's version expects. Nothing checks that the two match, so
+answers can fail their checks, or pass them under rules the browser did not write, with
+nothing to say why (0166).
 
 ---
 

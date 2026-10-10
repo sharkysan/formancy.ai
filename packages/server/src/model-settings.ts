@@ -24,16 +24,32 @@ export type ModelSettings =
 type Environment = Readonly<Record<string, string | undefined>>
 
 /**
+ * The variable each provider's SDK reads for headers of its own to add to every request.
+ *
+ * The adapters name the base URL, the organisation, the project, the credential and the log
+ * level rather than leave them to the environment; these headers no option undoes. So a
+ * server with a model refuses to start while the variable its provider's SDK reads is set.
+ * xAI is asked through OpenAI's client, so it is OpenAI's variable.
+ */
+const SDK_HEADERS_VARIABLE: Readonly<Record<ModelProvider, string>> = {
+  anthropic: 'ANTHROPIC_CUSTOM_HEADERS',
+  openai: 'OPENAI_CUSTOM_HEADERS',
+  xai: 'OPENAI_CUSTOM_HEADERS',
+}
+
+/**
  * Absent — all three unset or blank — is a supported state, and the default: this
  * deployment has no model, the server says so to the admin, and no prompt pane is drawn.
  *
  * Throws on anything in between, so the server refuses to start rather than starting
  * without the model the operator thinks they configured: a key or a model with no
  * provider, a provider formancy has no adapter for, or a provider without its key or
- * its model. **No provider has a default model.** A model id goes stale when the provider
- * retires it, and then every turn fails as a model that could not be reached, after an
- * upgrade nobody made; and which model runs is what the operator pays for. Neither is
- * this file's to decide. The message never repeats a value, because the key is one.
+ * its model. Throws too when the environment would add headers to every request the
+ * provider's SDK sends. **No provider has a default model.** A model id goes stale when
+ * the provider retires it, and then every turn fails as a model that could not be
+ * reached, after an upgrade nobody made; and which model runs is what the operator pays
+ * for. Neither is this file's to decide. The message never repeats a value, because the
+ * key is one.
  */
 export function modelSettings(env: Environment): ModelSettings {
   const provider = setting(env, 'FORMANCY_MODEL_PROVIDER')
@@ -58,6 +74,13 @@ export function modelSettings(env: Environment): ModelSettings {
     throw new Error(
       'FORMANCY_MODEL is required when FORMANCY_MODEL_PROVIDER is set: name the model as the ' +
         "provider's documentation does. There is no default.",
+    )
+  }
+  const headers = SDK_HEADERS_VARIABLE[provider]
+  if (setting(env, headers) !== undefined) {
+    throw new Error(
+      `${headers} is set, and the SDK formancy asks ${provider} through would send each line of it ` +
+        'as a header with every form. Unset it to run with a model.',
     )
   }
   return { kind: 'configured', provider, apiKey, model }

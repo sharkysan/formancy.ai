@@ -70,6 +70,28 @@ describe('what is refused', () => {
     )
   })
 
+  test.each([
+    ['anthropic', 'ANTHROPIC_CUSTOM_HEADERS'],
+    ['openai', 'OPENAI_CUSTOM_HEADERS'],
+    ['xai', 'OPENAI_CUSTOM_HEADERS'],
+  ])('%s with %s set, which its SDK would add to every request', (provider, name) => {
+    // The provider's SDK reads that variable and sends each line of it as a header with
+    // every form — to xAI as well, through OpenAI's client — and no option undoes it. Set
+    // for something else on the same host, it would change what goes to the provider
+    // without anybody reading the adapter, so the server does not start with it.
+    const configured = { ...anthropic, FORMANCY_MODEL_PROVIDER: provider }
+    expect(() => modelSettings({ ...configured, [name]: 'x-ambient: yes' })).toThrow(name)
+    // Blank is unset, as for the server's own variables; and the other SDK's variable is
+    // read by a client this server never builds.
+    expect(modelSettings({ ...configured, [name]: '' })).toMatchObject({ kind: 'configured', provider })
+    expect(modelSettings({ ...configured, [name === 'ANTHROPIC_CUSTOM_HEADERS' ? 'OPENAI_CUSTOM_HEADERS' : 'ANTHROPIC_CUSTOM_HEADERS']: 'x: y' })).toMatchObject({ kind: 'configured', provider })
+  })
+
+  test('with no model, the SDKs’ own variables are not the server’s business', () => {
+    // Neither SDK is asked for anything, so neither reads them.
+    expect(modelSettings({ ANTHROPIC_CUSTOM_HEADERS: 'x: y', OPENAI_CUSTOM_HEADERS: 'x: y' })).toEqual({ kind: 'none' })
+  })
+
   test('and never says the key', () => {
     // A refusal at startup lands in a container log, which is read by more people than
     // the secret was meant for.

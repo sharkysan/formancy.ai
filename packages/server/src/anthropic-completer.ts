@@ -49,6 +49,13 @@ export interface AnthropicCompleterOptions {
 export function createAnthropicCompleter(options: AnthropicCompleterOptions): Completer {
   const client = new Anthropic({
     apiKey: options.apiKey,
+    // The SDK would also send ANTHROPIC_AUTH_TOKEN, as a second credential beside the key,
+    // and with ANTHROPIC_LOG=debug write every request — the whole form — to the console:
+    // a request log the server does not keep (SAFETY-ANALYSIS C3). Neither is the
+    // environment's to switch on. ANTHROPIC_CUSTOM_HEADERS cannot be undone here, so
+    // `modelSettings` refuses to start with it.
+    authToken: null,
+    logLevel: 'off',
     baseURL: ANTHROPIC_BASE_URL,
     ...(options.fetch === undefined ? {} : { fetch: options.fetch }),
   })

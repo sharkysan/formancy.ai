@@ -1,8 +1,18 @@
 import { request as httpRequest } from 'node:http'
+import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { afterEach, describe, expect, test } from 'vitest'
 import type { FastifyInstance } from 'fastify'
-import { modelBriefing } from '@formancy/builder-core'
+import {
+  authorForm,
+  declinedAnswer,
+  draftScenarios,
+  modelBriefing,
+  modelRequestKind,
+  translateCatalogue,
+} from '@formancy/builder-core'
+import type { AskModel } from '@formancy/builder-core'
+import type { FormSchema } from '@formancy/spec'
 import { createMemoryStorage } from '@formancy/server-core'
 import type { Cancellation, Completer, Completion, CompletionPrompt, Storage } from '@formancy/server-core'
 import { createApp } from './app.js'
@@ -55,8 +65,8 @@ interface Served {
 async function serve(
   model: DeploymentModel | undefined,
   limit = { max: 1_000, timeWindowMs: 60_000 },
+  storage: Storage = createMemoryStorage(),
 ): Promise<Served> {
-  const storage = createMemoryStorage()
   app = await createApp(storage, {
     authSecret: SECRET,
     bootstrapAdmin: ADMIN,
@@ -210,6 +220,71 @@ describe('what may be asked', () => {
   })
 })
 
+/**
+ * A form of `fields` questions, each with `options` answers, every word a message: the
+ * shape whose translation request is largest for its size, because each answer's row
+ * repeats the question it answers as its context.
+ */
+function questionnaire(fields: number, options = 30): FormSchema {
+  const en: Record<string, string> = {}
+  const questions = Array.from({ length: fields }, (_, f) => {
+    en[`q${String(f)}`] = `How often in the last month did situation ${String(f)} apply to you at work?`
+    return {
+      key: `q${String(f)}`,
+      type: 'select' as const,
+      label: { $t: `q${String(f)}` },
+      options: Array.from({ length: options }, (_, o) => {
+        en[`q${String(f)}.a${String(o)}`] = `Answer number ${String(o)} to question ${String(f)}`
+        return { value: `a${String(o)}`, label: { $t: `q${String(f)}.a${String(o)}` } }
+      }),
+    }
+  })
+  return { specVersion: '4', id: 'survey', title: 'Survey', model: { fields: questions }, i18n: { defaultLocale: 'en', messages: { en } } }
+}
+
+describe('what a builder sends about a form', () => {
+  test('is taken for every kind, for the largest form this server publishes', async () => {
+    // The cap is the route's own, and has to hold what the builders send about any form
+    // the publish route takes. A translation repeats each question as the context of every
+    // one of its answers, pretty-printed and escaped again, so it is the largest of the
+    // three: a cap sized by the authoring request refuses the Translations tab a form the
+    // server has just published, with "Request body is too large".
+    const { completer, asked } = double({ ok: false, failure: 'refused', reason: 'Recorded, not answered.' })
+    const { app, tokens } = await serve(configured(completer))
+    const publish = (path: string, schema: FormSchema) =>
+      app.inject({
+        method: 'POST',
+        url: '/forms',
+        headers: { authorization: `Bearer ${tokens.editor}` },
+        payload: { path, schema },
+      })
+    // As many questions as the server's default limit publishes, and one more is refused:
+    // the route says which, so a default that moves fails here rather than going unnoticed.
+    let fields = 1
+    while (Buffer.byteLength(JSON.stringify({ path: 'survey', schema: questionnaire(fields + 1) })) <= 256 * 1024) fields += 1
+    const form = questionnaire(fields)
+    expect((await publish('survey', form)).statusCode).toBe(201)
+    expect((await publish('survey-larger', questionnaire(fields + 1))).statusCode).toBe(413)
+
+    const statuses: number[] = []
+    const throughTheRoute: AskModel = async (prompt) => {
+      const response = await ask(app, tokens.editor, { kind: modelRequestKind(prompt.system), user: prompt.user })
+      statuses.push(response.statusCode)
+      return declinedAnswer('Recorded, not answered.')
+    }
+    await authorForm(throughTheRoute, 'Add a phone number.', { current: form })
+    await translateCatalogue(throughTheRoute, form, 'de')
+    await draftScenarios(throughTheRoute, form, 'Every question is answered.')
+
+    expect(statuses).toEqual([200, 200, 200])
+    expect(asked.map((prompt) => prompt.system)).toEqual([
+      modelBriefing('authoring'),
+      modelBriefing('translation'),
+      modelBriefing('scenarios'),
+    ])
+  }, 30_000)
+})
+
 describe('how often', () => {
   test('a limit per person: past it 429, while somebody else still gets through', async () => {
     // Every call is the operator's money. Counted per session rather than per address,
@@ -351,6 +426,78 @@ describe('a browser that goes away', () => {
 
     client.destroy()
     await expect.poll(() => cancelled, { timeout: 2_000 }).toBe(true)
+  }, 10_000)
+
+  test('while it is still being let in is never paid for: the call is abandoned before it leaves', async () => {
+    // A browser can go before the handler runs — an API key's hash takes a while to check.
+    // The response has closed by then and never closes again, so a cancellation that only
+    // listens from the handler on is told nothing, and the provider writes the whole answer
+    // for nobody. Here the key's lookup is held until the browser has gone.
+    const storage = createMemoryStorage()
+    let entered = (): void => undefined
+    const looking = new Promise<void>((resolve) => (entered = resolve))
+    let release = (): void => undefined
+    const released = new Promise<void>((resolve) => (release = resolve))
+    let hold = false
+    const held: Storage = {
+      ...storage,
+      findApiKeysByPrefix: async (prefix) => {
+        if (hold) {
+          entered()
+          await released
+        }
+        return storage.findApiKeysByPrefix(prefix)
+      },
+    }
+    let ended: 'answered' | 'cancelled' | undefined
+    const completer: Completer = {
+      complete: (_prompt, cancellation) =>
+        new Promise((resolve) => {
+          // An answer in a second and a half, unless told the asker has gone.
+          const answered = setTimeout(() => {
+            ended = 'answered'
+            resolve({ ok: true, text: '{}' })
+          }, 1_500)
+          cancellation.onCancel(() => {
+            clearTimeout(answered)
+            ended = 'cancelled'
+            resolve({ ok: false, failure: 'cancelled' })
+          })
+        }),
+    }
+    const { app, tokens } = await serve(configured(completer), undefined, held)
+    const minted = await app.inject({
+      method: 'POST',
+      url: '/api-keys',
+      headers: { authorization: `Bearer ${tokens.admin}` },
+      payload: { name: 'a script', role: 'editor' },
+    })
+    const { secret } = minted.json() as { secret: string }
+    let closed: Promise<void> = Promise.resolve()
+    app.server.on('request', (_request: IncomingMessage, response: ServerResponse) => {
+      closed = new Promise((resolve) => response.once('close', () => resolve()))
+    })
+    await app.listen({ port: 0, host: '127.0.0.1' })
+    const { port } = app.server.address() as AddressInfo
+
+    hold = true
+    const body = JSON.stringify({ kind: 'authoring', user: 'A long request.' })
+    const client = httpRequest({
+      host: '127.0.0.1',
+      port,
+      method: 'POST',
+      path: '/model/complete',
+      headers: { 'x-formancy-api-key': secret, 'content-type': 'application/json', 'content-length': Buffer.byteLength(body) },
+    })
+    client.on('error', () => undefined)
+    client.end(body)
+    await looking
+    client.destroy()
+    await closed
+    release()
+
+    await expect.poll(() => ended, { timeout: 3_000 }).not.toBeUndefined()
+    expect(ended).toBe('cancelled')
   }, 10_000)
 
   test('but an answer that arrived is not cancelled after it was sent', async () => {

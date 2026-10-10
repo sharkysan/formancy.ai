@@ -498,12 +498,15 @@ says which provider and model a request goes to before anybody asks.
 **What it answers.** `POST /model/complete` takes `{ "kind": …, "user": … }`, where `kind` is
 `authoring`, `translation` or `scenarios` — the three requests the builders make — and
 answers `{ "text": … }`, or `{ "declined": … }` when the provider refused. The server writes
-the system part for each kind itself and never reads one from the request, so the endpoint
-answers formancy's requests rather than lending the key to whatever a session sends. It takes
+the system part for each kind itself and never reads one from the request, which narrows the
+endpoint to formancy's three kinds of request without closing it (below). It takes
 `form.publish` — editors and admins, not viewers — ten requests a minute per session, and a
-body of at most 512 KiB; each answer may be up to 64,000 tokens. When the browser goes away,
-the server abandons the call to the provider. A failure is a `502` with a sentence for the
-person: the key refused, the server being limited, the model refused, or unreachable.
+body cap of its own, which holds what the builders send about the largest form the server
+publishes when its questions are about a sentence long; the translation of a form whose
+questions are long and have many answers can be larger, and is refused with a `413`. Each
+answer may be up to 64,000 tokens. When the browser goes away, even before its session was
+checked, the server abandons the call to the provider. A failure is a `502` with a sentence
+for the person: the key refused, the server being limited, the model refused, or unreachable.
 `GET /model` says which provider and model, or `404` when there is none.
 
 **What it costs, and who can spend it.** Every editor and admin, and every API key with one
@@ -513,6 +516,13 @@ endpoint is narrowed, not closed. Every request is in the audit log as `model.as
 which kind, the provider and model, how long the request was, how it ended and the
 provider's status when it failed — never the text. There is no spending cap here; set one with
 the provider.
+
+**The providers' SDKs read the environment too.** Each adapter names the address, the
+credential, the organisation and project, and the log level itself, so `ANTHROPIC_BASE_URL`,
+`OPENAI_BASE_URL`, `ANTHROPIC_AUTH_TOKEN`, `OPENAI_ORG_ID`, `OPENAI_PROJECT_ID`,
+`ANTHROPIC_LOG` and `OPENAI_LOG` change nothing. `ANTHROPIC_CUSTOM_HEADERS` and
+`OPENAI_CUSTOM_HEADERS` would add headers to every request, and nothing undoes them, so the
+server does not start with the one its provider's SDK reads set; xAI goes through OpenAI's.
 
 Both compose files pass the three variables through when they are set.
 
