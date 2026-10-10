@@ -34,6 +34,8 @@
  * review read and applied. Its model is a person because the site may call none, so the round trip is the
  * one flow on the page that exists to take something elsewhere — and the person does
  * that, not the page. Whatever the page sends while it happens is counted like the rest.
+ * Then once more, asked in one builder and answered in the other, because the page holds
+ * the run and a turn now outlives the pane that asked (0163).
  */
 
 /**
@@ -50,7 +52,7 @@ const PAGES = [
   { path: '/playground/', settle: openTheSchemaEditor, ownFaces: true, editor: true, policy: true },
   // The same page, with a model's turn carried through it: the clipboard is the page's own
   // origin's to write, as a visitor's browser lets it be.
-  { path: '/playground/', label: '/playground/ carrying a model’s turn in each builder', settle: carryATurn, ownFaces: false, clipboard: true },
+  { path: '/playground/', label: '/playground/ carrying a model’s turn in each builder, and across a switch', settle: carryATurn, ownFaces: false, clipboard: true },
   // A page with code on it, which is where a documentation theme reaches for a highlighter.
   { path: '/docs/start/react/', settle: scrollThrough, ownFaces: false },
 ]
@@ -107,6 +109,11 @@ async function openTheSchemaEditor(page) {
  * Angular pane that posted the request elsewhere on Copy, and opened the chat itself,
  * through as a page that asked no other site for anything.
  *
+ * And a third time across the switch: asked in Angular, the Builder select put back on
+ * React while the turn is with the chat, and the answer pasted into React's relay pane and
+ * applied there. The run is the page's (0163); when it was the prompt pane's, the switch
+ * stopped it and the paste found nothing waiting.
+ *
  * Returns what it found, as checks, so a step that did not happen is a named failure
  * rather than a page that asked nobody anything because nothing was done on it.
  */
@@ -118,7 +125,7 @@ async function carryATurn(page) {
     return [['the playground opened, to carry a model’s turn through it', String(error).split('\n')[0]]]
   }
   const phone = { key: 'phone', type: 'text', label: 'Telephone' }
-  await carryOne(page, found, { builder: 'React', ask: 'add a phone number', word: 'phone', fields: [phone], shows: /Telephone/ })
+  await carryOne(page, found, { where: 'in the React builder', ask: 'add a phone number', word: 'phone', fields: [phone], shows: /Telephone/ })
   try {
     await page.getByRole('combobox', { name: 'Builder' }).selectOption('angular')
   } catch (error) {
@@ -126,13 +133,26 @@ async function carryATurn(page) {
     return found
   }
   const fax = { key: 'fax', type: 'text', label: 'Fax number' }
-  await carryOne(page, found, { builder: 'Angular', ask: 'add a fax number', word: 'fax', fields: [phone, fax], shows: /Fax number/ })
+  await carryOne(page, found, { where: 'in the Angular builder', ask: 'add a fax number', word: 'fax', fields: [phone, fax], shows: /Fax number/ })
+  const email = { key: 'email', type: 'text', label: 'Email address' }
+  await carryOne(page, found, {
+    where: 'asked in the Angular builder and answered in the React one',
+    ask: 'add an email address',
+    word: 'email',
+    fields: [phone, fax, email],
+    shows: /Email address/,
+    between: () => page.getByRole('combobox', { name: 'Builder' }).selectOption('react'),
+  })
   return found
 }
 
-/** One turn through whichever builder is on screen, its checks named after that builder. */
-async function carryOne(page, found, { builder, ask, word, fields, shows }) {
-  const named = (what) => `in the ${builder} builder, ${what}`
+/**
+ * One turn through whichever builder is on screen, its checks named after where it was
+ * carried — and, given `between`, something done while the turn is with the chat, after
+ * which the answer is pasted into whichever relay pane is on screen then.
+ */
+async function carryOne(page, found, { where, ask, word, fields, shows, between }) {
+  const named = (what) => `${where}, ${what}`
   try {
     await page.getByRole('textbox', { name: /Describe the form/ }).fill(ask, { timeout: 30_000 })
     await page.getByRole('button', { name: 'Write it', exact: true }).click()
@@ -155,6 +175,16 @@ async function carryOne(page, found, { builder, ask, word, fields, shows }) {
       named('its link to a chat carries nothing of the request'),
       chat !== null && !chat.includes(word) && !chat.includes('?') ? null : `the link is ${String(chat)}`,
     ])
+
+    if (between !== undefined) {
+      await between()
+      await relay.getByRole('textbox', { name: 'The request' }).waitFor({ timeout: 30_000 })
+      const after = await relay.getByRole('textbox', { name: 'The request' }).inputValue()
+      found.push([
+        named('the turn is still waiting after the switch, the same request'),
+        after === shown ? null : `the request box held ${JSON.stringify(after.slice(-80))}`,
+      ])
+    }
 
     const answer = JSON.stringify({ specVersion: '2', id: 'proposed', title: 'Proposed', model: { fields } })
     await relay

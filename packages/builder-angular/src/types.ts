@@ -28,6 +28,8 @@ export type {
   MoveTarget,
   Operator,
   PaletteEntry,
+  PromptRun,
+  PromptRunState,
   Relay,
   RelayChat,
   RelayTurn,

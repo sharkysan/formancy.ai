@@ -6,28 +6,16 @@ import {
   Injector,
   afterNextRender,
   computed,
+  effect,
   inject,
   input,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core'
-import {
-  applyProposal,
-  authorForm,
-  createStop,
-  proposalHeading,
-  proposalStatus,
-  proposeEdit,
-} from '@formancy/builder-core'
+import { createPromptRun, proposalHeading, proposalStatus } from '@formancy/builder-core'
 import { BuilderTextPipe } from './text.pipe.js'
-import type {
-  AskModel,
-  AuthoringResult,
-  BuilderSession,
-  EditProposal,
-  Scenario,
-  Stop,
-} from './types.js'
+import type { AskModel, BuilderSession, PromptRun, PromptRunState, Scenario } from './types.js'
 
 /**
  * Describing a form in words, seeing what that did, and then deciding.
@@ -48,17 +36,23 @@ import type {
  * implementations of the same *decision* is what this core exists to prevent
  * ([0091](../../../docs/decisions/0091-a-second-builder-is-a-binding.md)).
  *
- * Signals and `OnPush`, zoneless: the state here is four values a template
- * reads, and the work that changes them is one `await` deep inside a click.
+ * Signals and `OnPush`, zoneless: the run's state is one snapshot, set into a signal each
+ * time the run says it changed, and the template reads it.
  *
  * The host's model. `ask` is an input, exactly as it is a prop in React. No
  * vendor, no key, no network call in this package — and with no model given
  * the pane renders nothing at all rather than a button that cannot work.
  *
- * **A run can be stopped**, by the button while it waits and by the pane being
- * destroyed. Either ends it at once, tells the host so it can abandon the
- * request, and discards whatever the model says afterwards
+ * **A run can be stopped**, by the button while it waits. That ends it at once, tells the
+ * host so it can abandon the request, and discards whatever the model says afterwards
  * ([0157](../../../docs/decisions/0157-a-models-turn-can-be-stopped.md)).
+ *
+ * **Whose run it is, is the host's to say.** Bound to `[run]`, from `createPromptRun`, the
+ * pane draws a run the host holds: it goes on when the pane is destroyed, and the pane drawn
+ * next — under another tab, in the other builder — shows it waiting, or what it came to.
+ * Without one the pane holds its own and stops it when it is destroyed, as it always did
+ * ([0163](../../../docs/decisions/0163-a-models-run-belongs-to-the-host.md)). The run, the
+ * proposal, Apply and Discard are builder-core's either way, as they are for the React pane.
  *
  * **A model can decline**, when the format cannot express what was asked. The run
  * ends on that answer, and the pane shows the model's reason, as text, where the
@@ -79,21 +73,21 @@ import type {
         <textarea
           [id]="inputId"
           rows="3"
-          [value]="instruction()"
-          [disabled]="busy()"
+          [value]="state().instruction"
+          [disabled]="state().busy"
           [attr.placeholder]="'prompt.example' | builderText: text()"
-          (input)="instruction.set($any($event.target).value)"
+          (input)="held().instruct($any($event.target).value)"
         ></textarea>
         <button
           #writeButton
           type="button"
-          [disabled]="busy() || instruction().trim() === ''"
-          (click)="run()"
+          [disabled]="state().busy || state().instruction.trim() === ''"
+          (click)="write()"
         >
-          {{ (busy() ? 'prompt.writing' : 'prompt.write') | builderText: text() }}
+          {{ (state().busy ? 'prompt.writing' : 'prompt.write') | builderText: text() }}
         </button>
-        @if (busy()) {
-          <button #stopButton type="button" (click)="stop()">
+        @if (state().busy) {
+          <button #stopButton type="button" (click)="held().stop()">
             {{ 'prompt.stop' | builderText: text() }}
           </button>
         }
@@ -102,7 +96,7 @@ import type {
              appears visually is one a screen-reader user never learns about. -->
         <p role="status" data-formancy-part="prompt-status">{{ status() }}</p>
 
-        @if (proposal(); as waiting) {
+        @if (state().proposal; as waiting) {
           <section data-formancy-part="prompt-review" [attr.aria-labelledby]="reviewId">
             <h3 [id]="reviewId">{{ heading() }}</h3>
             <ul data-formancy-part="prompt-changes">
@@ -114,10 +108,10 @@ import type {
                 </li>
               }
             </ul>
-            <button type="button" (click)="apply()">
+            <button type="button" (click)="held().apply(session())">
               {{ 'prompt.apply' | builderText: text() }}
             </button>
-            <button type="button" (click)="discard()">
+            <button type="button" (click)="held().discard()">
               {{ 'prompt.discard' | builderText: text() }}
             </button>
           </section>
@@ -164,13 +158,23 @@ export class FormancyPromptPane {
   readonly initialValue = input<Readonly<Record<string, unknown>> | undefined>(undefined)
   /** `client` by default; `server` is what the publish gate and the submission endpoint run. */
   readonly mode = input<'client' | 'server' | undefined>(undefined)
+  /**
+   * The run, held by the host, from `createPromptRun`: it outlives this pane, and a pane
+   * drawn over it later shows it as it is. Unbound, the pane holds its own, and stops it
+   * when it is destroyed (0157).
+   */
+  readonly run = input<PromptRun | undefined>(undefined)
 
-  protected readonly instruction = signal('')
-  protected readonly busy = signal(false)
-  protected readonly proposal = signal<EditProposal | undefined>(undefined)
-  protected readonly result = signal<AuthoringResult | undefined>(undefined)
-  /** What applying said, when it refused. Cleared by anything that moves on. */
-  protected readonly refusal = signal<string | undefined>(undefined)
+  /**
+   * The pane's own run, for a host that binds none. It is the pane's, so it stops when the
+   * pane is destroyed: the host's request does not run on for an answer nothing will show
+   * (0157). A run the host binds is the host's, and nothing here ends it.
+   */
+  private readonly own = createPromptRun()
+  /** The run this pane draws: the host's, or its own. */
+  protected readonly held = computed(() => this.run() ?? this.own)
+  /** What the run is doing and came to, as builder-core holds it. */
+  protected readonly state = signal<PromptRunState>(this.own.state())
 
   private static sequence = 0
   private readonly serial = (FormancyPromptPane.sequence += 1)
@@ -179,7 +183,7 @@ export class FormancyPromptPane {
 
   /** The model's reason, when it declined: shown in place of the problems. */
   protected readonly declined = computed(() => {
-    const outcome = this.result()
+    const outcome = this.state().result
     return outcome === undefined || outcome.ok || outcome.ended !== 'declined' ? undefined : outcome.reason
   })
 
@@ -189,7 +193,7 @@ export class FormancyPromptPane {
    * earlier answer is about a document, and the model has said there is none to fix.
    */
   protected readonly failure = computed(() => {
-    const outcome = this.result()
+    const outcome = this.state().result
     return outcome === undefined ||
       outcome.ok ||
       outcome.ended === 'declined' ||
@@ -198,20 +202,23 @@ export class FormancyPromptPane {
       : outcome
   })
 
-  /**
-   * The stop for the run in flight, if one is. A field, not a signal: pressing
-   * it changes nothing on screen by itself — the run ending does, through `busy`.
-   */
-  private running: Stop | undefined
-
   private readonly writeButton = viewChild<ElementRef<HTMLButtonElement>>('writeButton')
   private readonly stopButton = viewChild<ElementRef<HTMLButtonElement>>('stopButton')
   private readonly injector = inject(Injector)
 
   constructor() {
-    // A pane that is destroyed stops its run, so the host's request does not
-    // run on for an answer nothing will show.
-    inject(DestroyRef).onDestroy(() => this.running?.stop())
+    let unsubscribe: (() => void) | undefined
+    effect(() => {
+      const run = this.held()
+      unsubscribe?.()
+      // Untracked: `follow` reads the state it replaces, and the subscription is to the
+      // run alone — not renewed every time the state it reports changes.
+      untracked(() => this.follow(run.state()))
+      unsubscribe = run.subscribe(() => this.follow(run.state()))
+    })
+    const destroyed = inject(DestroyRef)
+    destroyed.onDestroy(() => unsubscribe?.())
+    destroyed.onDestroy(() => this.own.stop())
   }
 
   /** Every word this pane shows, in the language the session was opened in (0114). */
@@ -219,94 +226,35 @@ export class FormancyPromptPane {
 
   /** The review's heading and accessible name — builder-core's, as the React pane's is. */
   protected readonly heading = computed(() => {
-    const waiting = this.proposal()
+    const waiting = this.state().proposal
     return waiting === undefined ? '' : proposalHeading(waiting, this.text())
   })
 
   /** The one sentence the live region carries — builder-core's, as the React pane's is. */
-  protected readonly status = computed(() =>
-    proposalStatus(
-      {
-        busy: this.busy(),
-        result: this.result(),
-        proposal: this.proposal(),
-        refusal: this.refusal(),
-      },
-      this.text(),
-    ),
-  )
+  protected readonly status = computed(() => proposalStatus(this.state(), this.text()))
 
-  protected async run(): Promise<void> {
+  /**
+   * The run's state now. Read as the run says it changed, before the template draws it: if
+   * the run has just ended, Stop is still in the document, and if it has the focus it leaves
+   * with it and the focus falls to <body>. Write, where the run began, takes it back once the
+   * template has enabled it again. The run ends in a promise the pane no longer awaits — it
+   * may be another pane's, or none's — so this is the one moment every ending passes through.
+   */
+  private follow(next: PromptRunState): void {
+    const stop = this.stopButton()?.nativeElement
+    if (!next.busy && stop !== undefined && document.activeElement === stop) {
+      afterNextRender(() => this.writeButton()?.nativeElement.focus(), { injector: this.injector })
+    }
+    this.state.set(next)
+  }
+
+  protected write(): void {
     const ask = this.ask()
-    if (ask === undefined || this.instruction().trim() === '' || this.busy()) return
-
-    this.busy.set(true)
-    this.result.set(undefined)
-    this.proposal.set(undefined)
-    this.refusal.set(undefined)
-    const stop = createStop()
-    this.running = stop
-    try {
-      const session = this.session()
-      const current = session.document()
-      const attempts = this.attempts()
-      // The examples in force with the document the answer is for, taken together.
-      const scenarios = this.scenarios()
-      const examples =
-        scenarios === undefined
-          ? undefined
-          : { scenarios, initialValue: this.initialValue(), mode: this.mode() }
-      // Resolves however the run ends — a host's model that threw included, which
-      // it reports as unreachable with the host's reason rather than as a document
-      // that failed.
-      const outcome = await authorForm(ask, this.instruction(), {
-        // The document being edited, so "add a phone number" is a change
-        // rather than a new form written from nothing.
-        current,
-        stop,
-        ...(attempts === undefined ? {} : { attempts }),
-      })
-      this.result.set(outcome)
-      // Held against the document it was written for. Applying later checks
-      // that the form has not moved in the meantime.
-      if (outcome.ok) this.proposal.set(proposeEdit(current, outcome.document, examples))
-    } finally {
-      // Stop is drawn only while a run waits, so it leaves with the focus if it has
-      // it, and focus falls to <body>. Read while it is still drawn; Write, where the
-      // run began, takes focus back once the template has enabled it again.
-      const stopDrawn = this.stopButton()?.nativeElement
-      const refocus = stopDrawn !== undefined && document.activeElement === stopDrawn
-      this.running = undefined
-      this.busy.set(false)
-      if (refocus) {
-        afterNextRender(() => this.writeButton()?.nativeElement.focus(), { injector: this.injector })
-      }
-    }
-  }
-
-  protected stop(): void {
-    this.running?.stop()
-  }
-
-  protected apply(): void {
-    const waiting = this.proposal()
-    if (waiting === undefined) return
-
-    const outcome = applyProposal(this.session(), waiting)
-    if (outcome.ok) {
-      this.discard()
-      this.instruction.set('')
-      return
-    }
-    // The proposal stays on screen. The commonest refusal is "the form changed
-    // since this was proposed", and throwing it away would lose the one thing
-    // the person needs in order to ask again.
-    this.refusal.set(outcome.message)
-  }
-
-  protected discard(): void {
-    this.proposal.set(undefined)
-    this.refusal.set(undefined)
-    this.result.set(undefined)
+    if (ask === undefined) return
+    // The examples in force with the document the answer is for, taken together.
+    const scenarios = this.scenarios()
+    const examples =
+      scenarios === undefined ? undefined : { scenarios, initialValue: this.initialValue(), mode: this.mode() }
+    void this.held().write(ask, this.session(), { examples, attempts: this.attempts() })
   }
 }

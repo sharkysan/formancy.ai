@@ -51,6 +51,26 @@ more to word, and a host whose own model takes one request at a time can reject 
 ([0162](docs/decisions/0162-an-example-is-drafted-from-what-the-author-said.md), superseding
 part of [0160](docs/decisions/0160-a-person-carries-the-models-turn.md)).
 
+**Fixed: on formancy.ai, a model's turn is no longer lost when the visitor looks
+elsewhere while their chat answers.** A run belonged to the prompt pane that asked, and a
+pane taken off the screen stopped it (0157). Through the relay a turn waits as long as a
+person takes to carry it, and the prompt pane is under *Build → Fields* in one builder, so
+looking at the JSON, another tab or the other builder stopped the run, cleared the relay's
+turn, and left the answer pasted afterwards nowhere to go. `createPromptRun()` in
+`@formancy/builder-core` now holds a prompt pane's run — the instruction, whether it waits,
+what it came to, the proposal held for review — wherever the host chooses, and `PromptPane`
+takes it as `run`, `<formancy-prompt-pane>` as `[run]`. A pane given one leaves it running
+when it goes, and the pane drawn next shows it waiting or with its answer; Stop ends it from
+any pane showing it. The playground holds one at the page beside its relay, hands it to both
+builders, and discards it when another demo is chosen — before, the starter's turn waited
+above the wizard. A pane given none holds its own and stops it when it goes, as before. A
+host that holds a run is the one to end it: nothing stops it because a pane went. The
+translations pane and the scenario pane's drafting still hold their own runs, so their turns
+are still lost that way
+([0163](docs/decisions/0163-a-models-run-belongs-to-the-host.md), superseding part of
+[0157](docs/decisions/0157-a-models-turn-can-be-stopped.md) and
+[0160](docs/decisions/0160-a-person-carries-the-models-turn.md)).
+
 **Fixed: an example's `absent` on a field inside a group or a repeater's row checked
 nothing.** `runScenarios` looked each `absent` path up as a key at the top of the submission,
 where `home.street` or `items[0].note` never is, so the expectation held whatever the form did

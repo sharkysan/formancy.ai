@@ -1236,7 +1236,7 @@ If the first model's answer arrived late, it would sit on screen as the proposal
 second instruction and be reviewed against the wrong one. So each turn is raced against
 the stop. A stopped run ends at once, and whatever its model answers afterwards is
 discarded rather than proposed, whether or not the host abandons its request. The same
-holds when the pane is unmounted or destroyed. `authoring.test.ts` (*stopping a run*)
+holds when a pane holding its own run is unmounted or destroyed. `authoring.test.ts` (*stopping a run*)
 holds it in `@formancy/builder-core`. In each builder, `prompt-pane.test` (*can be
 stopped*) releases a working document after the stop and asserts that no review appears.
 That alone is released while the pane is idle, so it cannot tell the constraint from a pane
@@ -1245,6 +1245,26 @@ waits* is the hazard as described: it stops a run, asks again, releases the firs
 during the second run and asserts that nothing is proposed until the second answers, and
 then that the review lists the second answer's change. It fails, where *can be stopped*
 does not, for a pane that keeps one stop for its whole life.
+
+A host can hold the run instead of the pane
+([0163](../decisions/0163-a-models-run-belongs-to-the-host.md)), and formancy.ai does, so
+that a turn being carried survives the visitor looking at another tab, the other builder or
+the JSON. Then a pane that goes stops nothing: the run waits for its answer, and the
+proposal is shown in whichever pane is drawn next, which may not be the one where the
+instruction was typed. That is not the variant above, because nothing else can be asked
+meanwhile. The holder carries one run at a time, and the instruction it was asked with
+cannot change while it waits, so the proposal a pane shows answers the words shown beside
+it; and each run has a stop of its own, so a late answer to a stopped run is never held as
+the next one's. `prompt-run.test.ts` holds the three: *keeps the instruction it was asked
+with while it waits*, which also presses Write again and sees nothing asked, and *an answer
+to a stopped run, arriving while the next one waits*, now that the holder makes the stops. A run the host forgets is stopped and nothing it
+answers later is held (*is discarded whole*); the playground forgets its run when another
+demo is chosen, and `two-builders.test.tsx` (*choosing another form ends a turn about the
+last one*) failed before that with the starter's turn waiting above the wizard. A proposal
+held while the form was edited elsewhere — under *Schema*, say — is still held against the
+document the run was asked over, and Apply refuses it (*is kept, with the refusal, when the
+form moved while it waited*). What this does not cover is a person who no longer remembers
+what they asked: the instruction is shown beside the review, and reading it is theirs.
 
 A request the format cannot express is this failure's sharpest case. Asked to email every
 submission, a model had no answer but a document, and a document that does part of the

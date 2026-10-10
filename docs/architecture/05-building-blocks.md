@@ -277,6 +277,14 @@ time, a paste with no object in it held back without costing an attempt, and a s
 clearing the turn — so the React and Angular relay panes are markup, the clipboard, the
 focus and a subscription. Moving the focus to a turn as it arrives is done in each pane,
 because it is the DOM's, and both panes' tests hold them to the same. It names no service and holds no sentence; the chat a pane links to is the host's.
+`prompt-run.ts` is the prompt pane's run, held wherever the host holds it
+([0163](../decisions/0163-a-models-run-belongs-to-the-host.md)). `createPromptRun()` gives
+the instruction, whether a run waits, what it came to, the proposal held for review and
+Apply's refusal, as a snapshot with a subscription, and the pane's buttons as calls:
+`write` is `authorForm` with a stop of its own, then `proposeEdit` with the examples in
+force. A pane given one leaves it running when it goes, so a turn outlives the pane that
+asked it; a pane given none makes its own and stops it when it goes (0157). Both builders'
+prompt panes are markup, the focus and a subscription over it.
 `translate.ts` is the third thing asked of a model this way: the messages a language is
 missing ([0161](../decisions/0161-a-model-translates-only-what-is-missing.md)).
 `translate-prompt.ts` builds the request from a `FormSchema` alone: the rows of the
@@ -431,7 +439,10 @@ aborts and names any request to another origin
 ([0154](../decisions/0154-the-website-makes-no-request-to-any-other-site.md)). The playground's
 model is therefore a person: both builders' prompt panes ask one relay, and the visitor
 carries each turn to a chat of their own and back
-([0160](../decisions/0160-a-person-carries-the-models-turn.md)). Both builders' scenario
+([0160](../decisions/0160-a-person-carries-the-models-turn.md)). The page holds the prompt
+pane's run beside the relay, so a turn outlives the tab, the builder and the *Schema* view
+it was asked under, and either builder reviews its answer
+([0163](../decisions/0163-a-models-run-belongs-to-the-host.md)). Both builders' scenario
 panes ask the same relay for drafted examples, and a draft kept joins the open form's
 examples ([0162](../decisions/0162-an-example-is-drafted-from-what-the-author-said.md)).
 

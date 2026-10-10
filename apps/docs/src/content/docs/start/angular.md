@@ -367,6 +367,11 @@ example holding. A rule no example pins gets no warning, and without `scenarios`
 says nothing about examples. In React the same three are props on `PromptPane`
 ([0159](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0159-a-proposal-is-checked-against-the-forms-examples.md)).
 
+A pane that is destroyed stops its run — under an `@if` for a tab, say. To keep a model's
+turn going while the person looks elsewhere, hold the run where the pane's host lives with
+`createPromptRun()` and bind it as `[run]`
+([0163](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0163-a-models-run-belongs-to-the-host.md)).
+
 ### Examples, drafted from what you say the form should do
 
 Bind a model to the scenario pane as well, with `removable` set and its output handled, and

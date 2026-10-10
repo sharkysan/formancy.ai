@@ -291,9 +291,10 @@ use with `system` as the system prompt and `user` as the message, and answers
 with the text. Abort that call when the browser's request closes, and a stop in
 the browser ends the call to the model as well.
 
-**While a run waits, the pane shows Stop.** Pressing it, or taking the pane off
-the screen, ends the run at once, calls what you gave `turn.onCancel`, and
-discards whatever the model answers afterwards. A function written without the
+**While a run waits, the pane shows Stop.** Pressing it — or taking the pane off
+the screen, when the pane holds its own run — ends the run at once, calls what you
+gave `turn.onCancel`, and discards whatever the model answers afterwards. To keep a
+run going while the pane is away, hold it yourself; see below. A function written without the
 second argument is stopped all the same: the pane stops waiting for it, though
 its request runs on. A function that wraps another `AskModel` hands `turn` on
 with the prompt; the types require it, so a wrapper cannot drop the stop.
@@ -421,6 +422,50 @@ else.
 A relay is for a page that cannot call a model. Where yours can, write an `askModel` that
 calls your own server, as above: it takes no copying, and the request goes where you
 decide.
+
+### Keeping a turn when the pane goes
+
+By default the prompt pane's run is the pane's: take the pane off the screen and the run
+stops. Through a relay that loses the turn whenever the person looks at anything else while
+their chat answers — another tab, another view — and the answer they paste back finds
+nothing waiting. If your page draws the prompt pane under a tab, hold the run where the
+relay is, and give it to the pane:
+
+```tsx
+import { useState } from 'react'
+import { createPromptRun, createRelay } from '@formancy/builder-core'
+import type { BuilderSession } from '@formancy/builder-core'
+import { PromptPane, RelayPane } from '@formancy/builder-react'
+
+export function Builder({ session, tab }: { session: BuilderSession; tab: 'fields' | 'other' }) {
+  // Above the tabs, so both live as long as the page rather than the Fields tab.
+  const [relay] = useState(() => createRelay())
+  const [run] = useState(() => createPromptRun())
+  return (
+    <>
+      <RelayPane session={session} relay={relay} />
+      {tab === 'fields' ? <PromptPane session={session} ask={relay.ask} run={run} /> : null}
+    </>
+  )
+}
+```
+
+In Angular, `<formancy-prompt-pane [session]="session" [ask]="relay.ask" [run]="run" />`.
+
+A pane given `run` draws it and leaves it running when it goes. The pane drawn next shows
+the run as it is: still waiting, with Stop, or with its answer held for review beside the
+instruction it was asked with. Two panes given one run, one in each builder say, show one
+instruction, one Stop and one proposal, so a proposal reviewed in one can be applied in the
+other. The run belongs to the form it was asked about. When you open another form, call
+`run.discard()`, which stops a run still waiting and forgets what it came to. A proposal
+held while the form changed is refused at Apply, as always.
+
+Holding the run makes ending it your job. Nothing stops it because a pane went, so with your
+own model behind `ask` the request keeps running until it answers, Stop is pressed, or you
+call `run.stop()` or `run.discard()`. Leave `run` out, and the pane stops its own run when
+it goes, as before
+([0163](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0163-a-models-run-belongs-to-the-host.md)).
+The translations pane and the scenario pane's drafting still hold their own runs.
 
 ### Asking a model for a language's missing messages
 

@@ -293,15 +293,15 @@ one thing the lease does not stop: its settle is refused, but its bytes land und
 ## 6.7 Writing a form from a sentence
 
 ```
-pane                         authorForm, in builder-core                      host's AskModel
-────                         ───────────────────────────                      ───────────────
+pane ─ PromptRun (6.11)      authorForm, in builder-core                      host's AskModel
+───────────────────────      ───────────────────────────                      ───────────────
 Write it
-  stop = createStop()
+  run.write: stop = createStop()
   busy, Stop shown    ───▶   for attempt 1 … limit
                                stopped already? ──▶ ended: stopped
                                ask({ system, user, attempt, limit,
                                      followUp from attempt 2 }, turn)  ───▶  its request
-                                 ├─ Stop pressed, or the pane goes away
+                                 ├─ Stop pressed, or the pane goes with a run of its own
                                  │     ──▶ turn.onCancel ──────────────────▶  abort, if it listens
                                  │     ──▶ ended: stopped; a later answer settles nothing
                                  ├─ rejected with ModelBusyError ──▶ ended: busy, no reason
@@ -328,8 +328,8 @@ Write it
 ```
 
 **The stop is the person's, and it does not wait for the host.** Each turn is raced against
-it, so the run ends the moment Stop is pressed, or the pane is unmounted or destroyed. The
-host is told through `turn.onCancel` and may abort its request. A host that ignores it is
+it, so the run ends the moment Stop is pressed, or a pane holding its own run is unmounted
+or destroyed — a run the host holds goes on without its pane (6.11). The host is told through `turn.onCancel` and may abort its request. A host that ignores it is
 stopped all the same, and its answer, when it comes, resolves a promise nothing is waiting
 on. **A host's error is an ending, not an exception.** `authorForm` resolves with
 `ended: 'unreachable'` and the error's message, so the sentence the pane says is decided once,
@@ -373,7 +373,8 @@ Write it        ───▶     ask(prompt, turn)  ───▶   one waiting a
                                                    clears the turn, resolves ask(text)
                          readAnswer → checks  ◀────┘
                          next turn, or the result ──▶ the review (0109)
-Stop, or the pane goes ─▶ turn.onCancel ──────────▶ the turn is cleared, and the pane draws nothing
+Stop, or a pane goes  ─▶ turn.onCancel ──────────▶ the turn is cleared, and the pane draws nothing
+  with its own run
 ```
 
 **The relay is a host's model, and only that.** `authorForm` asks it as it asks any
@@ -491,3 +492,38 @@ draft holds**, with the panel's own options, every time the part is drawn, so an
 while a draft waits changes its verdict. **A person keeps each one**, and a draft that fails
 can be kept: the failure is the question the person answers
 ([0162](../decisions/0162-an-example-is-drafted-from-what-the-author-said.md)).
+
+## 6.11 A turn that outlives the pane that asked
+
+```
+page (host)                       PromptRun, in builder-core            prompt pane, in either builder
+───────────                       ──────────────────────────            ──────────────────────────────
+run = createPromptRun()           { instruction, busy, result,          subscribe ──▶ draws the snapshot
+  beside the relay                  proposal, refusal } — one object      Write ──▶ run.write(ask, session,
+                                    until something in it changes                   { examples, attempts })
+                                  write: one at a time; the words
+                                    asked with cannot change while it waits
+                                  authorForm (6.7), its own stop ───▶  (6.8: the relay's turn waits)
+  the visitor looks elsewhere:                                          unsubscribes — nothing is stopped
+  Schema, another tab, the
+  other builder
+                                  the answer pasted, checked ──▶
+                                  proposeEdit(document when asked) ──▶  held
+  the pane drawn again                                                  subscribes ──▶ the instruction, the
+                                                                        review; Stop while it still waits
+                                  apply(session) ◀──────────────────── Apply: refused if the form moved (0109)
+  another demo ──▶ run.discard(): stops a run in flight, forgets it and what it came to
+pane given no run ──▶ makes its own, and stops it when it goes (0157)
+```
+
+**The run is the host's when the host holds it.** A run lived in the prompt pane, and a
+pane taken off the screen stopped it, so a turn carried by hand ended whenever the visitor
+looked at anything else. `createPromptRun` holds the run, its stop and what it came to
+outside any pane; a pane given one only subscribes, and its going ends nothing. Stop ends
+it from whichever pane shows it. The proposal is held against the document the run was
+asked over, so Apply refuses it if the form moved while it waited, wherever that happened.
+Each pane reads whether Stop had the focus as the run reports its end, before drawing it,
+because the run ends in a promise no pane may still be awaiting
+([0163](../decisions/0163-a-models-run-belongs-to-the-host.md)). The playground holds one at
+the page, beside the relay, and discards it when another demo is chosen. The translations
+pane's run (6.9) and the drafting part's (6.10) are still their parts', and end with them.

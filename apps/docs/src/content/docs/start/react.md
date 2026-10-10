@@ -234,6 +234,10 @@ changed on purpose stops its old example holding. A rule no example pins gets no
 and without `scenarios` the review says nothing about examples
 ([0159](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0159-a-proposal-is-checked-against-the-forms-examples.md)).
 
+A pane drawn under a tab stops its run when the tab changes. To keep a model's turn going
+while the person looks elsewhere, hold the run above the tabs with `createPromptRun()` and
+pass it as `run` ([agents](/docs/start/agents/)).
+
 ## Examples, drafted from what you say the form should do
 
 A form with no examples gets nothing from either pane. Give `ScenarioPane` a model as well as

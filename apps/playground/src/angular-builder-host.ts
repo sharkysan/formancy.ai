@@ -12,7 +12,7 @@ import {
   FormancyTranslationsPane,
   FormancyScenarioPane,
 } from '@formancy/builder-angular'
-import type { BuilderBlock, BuilderSession, Capabilities, Relay } from '@formancy/builder-core'
+import type { BuilderBlock, BuilderSession, Capabilities, PromptRun, Relay } from '@formancy/builder-core'
 import type { Scenario } from '@formancy/core'
 import { RELAY_CHAT } from './demo-capabilities.js'
 
@@ -57,6 +57,12 @@ export interface PlaygroundBuilder {
    * for its whole life, and the one the React builder asks too.
    */
   readonly relay: Relay
+  /**
+   * The prompt pane's run, the page's for its whole life, as the relay is: a turn asked in
+   * either builder is the one both prompt panes draw, and it outlives this application
+   * (0163).
+   */
+  readonly promptRun: PromptRun
 }
 
 /** What this builder hands back to the page, which keeps both lists for both builders. */
@@ -76,6 +82,7 @@ export interface FromThePage {
   readonly scenarios: readonly Scenario[]
   readonly sample: Readonly<Record<string, unknown>> | undefined
   readonly relay: Relay
+  readonly promptRun: PromptRun
 }
 
 export const PLAYGROUND_BUILDER = new InjectionToken<PlaygroundBuilder>('playground builder')
@@ -95,6 +102,7 @@ export function playgroundBuilder(
     scenarios: signal(from.scenarios),
     sample: signal(from.sample),
     relay: from.relay,
+    promptRun: from.promptRun,
     ...back,
   }
 }
@@ -167,10 +175,13 @@ export function playgroundBuilder(
     } @else {
       <!-- Describing a change in words, asking the page's relay as the React pane does:
            the person carries the turn, and everything after the paste is real (0109) —
-           run against the page's examples before it lands, as the React pane's is (0159). -->
+           run against the page's examples before it lands, as the React pane's is (0159).
+           The run is the page's, so a turn asked in React is drawn here, and one asked here
+           outlives this builder (0163). -->
       <formancy-prompt-pane
         [session]="host.session"
         [ask]="host.relay.ask"
+        [run]="host.promptRun"
         [scenarios]="host.scenarios()"
         [initialValue]="host.sample()"
       />
