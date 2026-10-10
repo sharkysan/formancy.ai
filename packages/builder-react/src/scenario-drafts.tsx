@@ -48,6 +48,18 @@ export interface ScenarioDraftsProps {
   attempts?: number
 }
 
+/** What a run came to, and the session it was over. */
+interface Held {
+  readonly session: BuilderSession
+  readonly result: Drafted
+  readonly drafts: readonly Scenario[]
+  /** What the last Keep or Discard did. */
+  readonly note: DraftNote | undefined
+}
+
+/** No drafts, as one constant, so the verdicts are not recomputed for a new empty list. */
+const NO_DRAFTS: readonly Scenario[] = []
+
 export function ScenarioDrafts({
   session,
   scenarios,
@@ -64,10 +76,18 @@ export function ScenarioDrafts({
   )
   const [intent, setIntent] = useState('')
   const [busy, setBusy] = useState(false)
-  const [result, setResult] = useState<Drafted | undefined>(undefined)
+  /*
+   * What the last run came to, tagged with the session it was over. Another session is
+   * another form: a host that keeps the pane and opens another document must not be
+   * offered the last one's drafts to keep into the new one's list. Read through the tag
+   * rather than reset by an effect copying state into state.
+   */
+  const [held, setHeld] = useState<Held | undefined>(undefined)
+  const mine = held?.session === session ? held : undefined
+  const result = mine?.result
   /** The drafts still waiting: each one leaves on Keep or Discard. */
-  const [drafts, setDrafts] = useState<readonly Scenario[]>([])
-  const [note, setNote] = useState<DraftNote | undefined>(undefined)
+  const drafts = mine?.drafts ?? NO_DRAFTS
+  const note = mine?.note
   const headingId = useId()
   const inputId = useId()
   const withheldId = useId()
@@ -75,9 +95,9 @@ export function ScenarioDrafts({
   const stopButton = useRef<HTMLButtonElement>(null)
   /** The stop for the run in flight. A ref: pressing it changes nothing on screen by itself. */
   const running = useRef<Stop | undefined>(undefined)
-  // A part taken off the screen stops its run, so a relay is not left holding a turn
-  // nothing will read (0157).
-  useEffect(() => () => running.current?.stop(), [])
+  // A part taken off the screen stops its run, and so does another session: a relay is
+  // not left holding a turn about a form nobody is looking at (0157).
+  useEffect(() => () => running.current?.stop(), [session])
 
   /**
    * Set when a run ends, and whether Stop had the focus then. Once the render has settled,
@@ -111,9 +131,7 @@ export function ScenarioDrafts({
   const run = async (): Promise<void> => {
     if (intent.trim() === '' || busy) return
     setBusy(true)
-    setResult(undefined)
-    setDrafts([])
-    setNote(undefined)
+    setHeld(undefined)
     const stop = createStop()
     running.current = stop
     try {
@@ -123,8 +141,7 @@ export function ScenarioDrafts({
         stop,
         attempts,
       })
-      setResult(outcome)
-      setDrafts(outcome.ok ? outcome.drafts : [])
+      setHeld({ session, result: outcome, drafts: outcome.ok ? outcome.drafts : [], note: undefined })
     } finally {
       // Read while Stop is still drawn: once it has gone, the focus is already on <body>.
       ended.current = { onStop: stopButton.current !== null && document.activeElement === stopButton.current }
@@ -135,15 +152,21 @@ export function ScenarioDrafts({
 
   /** A draft leaves the list, the status says why, and the focus goes back to the heading. */
   const done = (draft: Scenario, kind: 'kept' | 'discarded'): void => {
-    setDrafts((current) => current.filter((one) => one !== draft))
-    setNote({ kind, name: draft.name })
+    setHeld(
+      (before) =>
+        before && {
+          ...before,
+          drafts: before.drafts.filter((one) => one !== draft),
+          note: { kind, name: draft.name },
+        },
+    )
     heading.current?.focus()
   }
 
   const keep = (draft: Scenario): void => {
     const kept = keepDraft(session.document(), scenarios, draft, options)
     if (!kept.ok) {
-      setNote({ kind: 'refused', why: kept.refused, name: draft.name })
+      setHeld((before) => before && { ...before, note: { kind: 'refused', why: kept.refused, name: draft.name } })
       return
     }
     onChange(kept.scenarios)

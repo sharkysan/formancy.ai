@@ -256,6 +256,34 @@ describe('drafting', () => {
     expect(cancelled).toHaveBeenCalledTimes(1)
   })
 
+  test('another session is another form: its drafts are not offered, and a run for the last one is stopped', async () => {
+    // A host that keeps the pane on screen and opens another document would otherwise offer
+    // the last form's drafts for keeping into the new form's list, and leave a relay holding
+    // a turn about a form nobody is looking at. An input can be replaced (view.ts).
+    const user = userEvent.setup()
+    const cancelled = vi.fn()
+    let calls = 0
+    const ask: AskModel = (_prompt, turn) => {
+      calls += 1
+      if (calls === 1) return Promise.resolve(drafting(HOLDS))
+      turn.onCancel(cancelled)
+      return new Promise<string>(() => undefined)
+    }
+    const { fixture } = await mount({ session: createBuilderSession(form), scenarios: [], ask })
+    await draft(user)
+
+    fixture.componentRef.setInput('session', createBuilderSession(form))
+    await fixture.whenStable()
+    await waitFor(() => expect(screen.queryByRole('list', { name: 'Drafted examples' })).toBeNull())
+
+    await user.click(screen.getByRole('button', { name: 'Draft examples' }))
+    await screen.findByRole('button', { name: 'Stop drafting' })
+    fixture.componentRef.setInput('session', createBuilderSession(form))
+    await fixture.whenStable()
+
+    await waitFor(() => expect(cancelled).toHaveBeenCalledTimes(1))
+  })
+
   test('Stop ends a run that is waiting, and the model’s late answer is not drafted', async () => {
     // A relay's turn the person walked away from must not turn into drafts later.
     const user = userEvent.setup()

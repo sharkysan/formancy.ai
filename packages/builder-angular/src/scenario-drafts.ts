@@ -6,10 +6,12 @@ import {
   Injector,
   afterNextRender,
   computed,
+  effect,
   inject,
   input,
   output,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core'
 import {
@@ -45,6 +47,18 @@ import { injectBuilderView } from './view.js'
  * Signals and `OnPush`, zoneless. The verdicts are a `computed` over the session's view, so
  * an edit to the form reruns them and none is stored.
  */
+/** What a run came to, and the session it was over. */
+interface Held {
+  readonly session: BuilderSession
+  readonly result: Drafted
+  readonly drafts: readonly Scenario[]
+  /** What the last Keep or Discard did. */
+  readonly note: DraftNote | undefined
+}
+
+/** No drafts, as one constant, so the verdicts are not recomputed for a new empty list. */
+const NO_DRAFTS: readonly Scenario[] = []
+
 @Component({
   selector: 'formancy-scenario-drafts',
   imports: [BuilderTextPipe],
@@ -147,10 +161,21 @@ export class FormancyScenarioDrafts {
 
   protected readonly intent = signal('')
   protected readonly busy = signal(false)
-  protected readonly result = signal<Drafted | undefined>(undefined)
+  /**
+   * What the last run came to, tagged with the session it was over. Another session is
+   * another form: a host that replaces the session input must not be offered the last
+   * form's drafts to keep into the new one's list. Read through the tag, as the React part
+   * reads it, rather than reset by an effect.
+   */
+  private readonly held = signal<Held | undefined>(undefined)
+  private readonly mine = computed(() => {
+    const held = this.held()
+    return held?.session === this.session() ? held : undefined
+  })
+  protected readonly result = computed(() => this.mine()?.result)
   /** The drafts still waiting: each one leaves on Keep or Discard. */
-  protected readonly drafts = signal<readonly Scenario[]>([])
-  protected readonly note = signal<DraftNote | undefined>(undefined)
+  protected readonly drafts = computed(() => this.mine()?.drafts ?? NO_DRAFTS)
+  protected readonly note = computed(() => this.mine()?.note)
 
   private static sequence = 0
   private readonly serial = (FormancyScenarioDrafts.sequence += 1)
@@ -168,8 +193,15 @@ export class FormancyScenarioDrafts {
   private destroyed = false
 
   constructor() {
-    // A part that is destroyed stops its run, so a relay is not left holding a turn nothing
-    // will read (0157).
+    // A part that is destroyed stops its run, and so does another session: a relay is not
+    // left holding a turn about a form nobody is looking at (0157). The effect reads the
+    // session alone; the run it stops is whatever is in flight when that changes.
+    let previous: BuilderSession | undefined
+    effect(() => {
+      const session = this.session()
+      if (previous !== undefined && previous !== session) untracked(() => this.running?.stop())
+      previous = session
+    })
     inject(DestroyRef).onDestroy(() => {
       this.destroyed = true
       this.running?.stop()
@@ -223,21 +255,19 @@ export class FormancyScenarioDrafts {
     const intent = this.intent()
     if (intent.trim() === '' || this.busy()) return
     this.busy.set(true)
-    this.result.set(undefined)
-    this.drafts.set([])
-    this.note.set(undefined)
+    this.held.set(undefined)
+    const session = this.session()
     const stop = createStop()
     this.running = stop
     let onStop = false
     try {
-      const outcome = await draftScenarios(this.ask(), this.session().document(), intent, {
+      const outcome = await draftScenarios(this.ask(), session.document(), intent, {
         initialValue: this.initialValue(),
         existing: this.scenarios(),
         stop,
         attempts: this.attempts(),
       })
-      this.result.set(outcome)
-      this.drafts.set(outcome.ok ? outcome.drafts : [])
+      this.held.set({ session, result: outcome, drafts: outcome.ok ? outcome.drafts : [], note: undefined })
     } finally {
       // Read while Stop is still drawn: once it has gone, the focus is already on <body>.
       const stopDrawn = this.stopButton()?.nativeElement
@@ -266,7 +296,9 @@ export class FormancyScenarioDrafts {
   protected keep(draft: Scenario): void {
     const kept = keepDraft(this.session().document(), this.scenarios(), draft, this.options())
     if (!kept.ok) {
-      this.note.set({ kind: 'refused', why: kept.refused, name: draft.name })
+      this.held.update(
+        (before) => before && { ...before, note: { kind: 'refused', why: kept.refused, name: draft.name } },
+      )
       return
     }
     this.scenariosChange.emit(kept.scenarios)
@@ -275,8 +307,14 @@ export class FormancyScenarioDrafts {
 
   /** A draft leaves the list, the status says why, and the focus goes back to the heading. */
   protected done(draft: Scenario, kind: 'kept' | 'discarded'): void {
-    this.drafts.update((current) => current.filter((one) => one !== draft))
-    this.note.set({ kind, name: draft.name })
+    this.held.update(
+      (before) =>
+        before && {
+          ...before,
+          drafts: before.drafts.filter((one) => one !== draft),
+          note: { kind, name: draft.name },
+        },
+    )
     this.heading()?.nativeElement.focus()
   }
 }

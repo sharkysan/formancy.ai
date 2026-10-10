@@ -210,6 +210,13 @@ describe('what a model drafting examples is told', () => {
           },
           { key: 'many', type: 'selectboxes', label: 'Many', options: [{ value: 'x', label: 'X' }] },
           { key: 'found', type: 'select', label: 'Found', optionsSource: 'places' },
+          {
+            key: 'rate',
+            type: 'matrix',
+            label: 'Rate',
+            rows: [{ value: 'speed', label: 'Speed' }],
+            options: [{ value: 'good', label: 'Good' }],
+          },
         ],
       },
       i18n: { defaultLocale: 'en', messages: { en: { street: 'Street' }, de: { street: 'Straße' } } },
@@ -222,6 +229,7 @@ describe('what a model drafting examples is told', () => {
     expect(user).toContain('- pick: radio, "Pick", one of "a" (Apple), "b"')
     expect(user).toContain('- many: selectboxes, "Many", a list of "x" (X)')
     expect(user).toMatch(/- found: select, "Found", its options come from a list/)
+    expect(user).toContain('- rate: matrix, "Rate", an object from each row ("speed" (Speed)) to one of "good" (Good)')
     // A container is not a path an example can name; the engine does not know one.
     expect(user).not.toMatch(/^- (home|items):/m)
     // And the syntax by example, from core's own formatter.

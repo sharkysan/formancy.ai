@@ -271,6 +271,49 @@ describe('drafting', () => {
     expect(cancelled).toHaveBeenCalledTimes(1)
   })
 
+  test('another session is another form: its drafts are not offered, and a run for the last one is stopped', async () => {
+    // A host that keeps the pane on screen and opens another document — the playground
+    // does it on every switch of form — would otherwise offer the last form's drafts for
+    // keeping into the new form's list, and leave a relay holding a turn about a form
+    // nobody is looking at.
+    const user = userEvent.setup()
+    const view = render(
+      <ScenarioPane
+        session={createBuilderSession(form)}
+        scenarios={[]}
+        onChange={() => undefined}
+        ask={model(drafting(HOLDS)).ask}
+      />,
+    )
+    await draft(user)
+
+    view.rerender(
+      <ScenarioPane
+        session={createBuilderSession(form)}
+        scenarios={[]}
+        onChange={() => undefined}
+        ask={model(drafting(HOLDS)).ask}
+      />,
+    )
+    expect(screen.queryByRole('list', { name: 'Drafted examples' })).toBeNull()
+
+    const cancelled = vi.fn()
+    const waiting: AskModel = (_prompt, turn) => {
+      turn.onCancel(cancelled)
+      return new Promise<string>(() => undefined)
+    }
+    view.rerender(
+      <ScenarioPane session={createBuilderSession(form)} scenarios={[]} onChange={() => undefined} ask={waiting} />,
+    )
+    await user.click(screen.getByRole('button', { name: 'Draft examples' }))
+    await screen.findByRole('button', { name: 'Stop drafting' })
+    view.rerender(
+      <ScenarioPane session={createBuilderSession(form)} scenarios={[]} onChange={() => undefined} ask={waiting} />,
+    )
+
+    expect(cancelled).toHaveBeenCalledTimes(1)
+  })
+
   test('Stop ends a run that is waiting, and the model’s late answer is not drafted', async () => {
     // A relay's turn the person walked away from must not turn into drafts later.
     const user = userEvent.setup()

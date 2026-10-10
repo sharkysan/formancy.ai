@@ -5,8 +5,9 @@
 - **Deciders:** Daniel Bacher
 - **Verified by:** `packages/builder-core/src/scenario-prompt.test.ts`. *Never carries a rule*
   walks a form's rules and every property its `BOUNDS` list names as bounding an answer,
-  and finds none of their text in the prompt, written out or escaped inside a JSON string; with `canonicalize(document)` put
-  into the request, as `authorForm` sends a form, it fails listing all of them. *Reads
+  and finds none of their text in the prompt, written out or escaped inside a JSON string;
+  with `canonicalize(document)` put into the request, as `authorForm` sends a form, it fails
+  listing all of them. *Reads
   nothing about a field but what an example has to name* compares the prompt for that form
   with the prompt for the same form stripped to keys, types, labels and options, and fails
   when the inventory says which fields are required, which the first case cannot see. The
@@ -21,7 +22,12 @@
   `errors`-shape checks each fails its case; `keepDraft` refusing every failing draft fails
   *a draft that fails can be kept*, and keeping one with a missing path or a taken name
   fails those; `draftVerdict` run without the pane's options fails *a draft's verdict is the
-  one the scenario pane gives after Keep*. Both builders' `scenario-drafts.test`, each
+  one the scenario pane gives after Keep*. *Every reason an item is not an example is said
+  apart from the others* first passed with two reasons worded alike, because its items
+  differed by name; they are one item now but for the reason, and it fails with
+  `name-repeated` worded as `name-taken`, to the model or to the person. A stop said as a
+  decline, a problem listed beneath a stopped run, and an answer with no list complained of
+  as an empty one each fail their case. Both builders' `scenario-drafts.test`, each
   mutation in each builder: a part drawn without `onChange` (React) or without `removable`
   (Angular), drafts handed to the host on arrival, a failing draft refused, Keep that skips
   `keepDraft`, a verdict not recomputed on an edit, a verdict run without the sample, the
@@ -30,23 +36,29 @@
   in React with the unmount's stop taken out, and *destroyed while a run waits* in Angular
   with the stop left out of the destroy hook; with the destroyed guard taken out the Angular
   case ends in `NG0911`, which the suite reports as an error. That guard was added for it:
-  the first cut scheduled a render on a destroyed view. Both builders' `language.test`,
+  the first cut scheduled a render on a destroyed view. *Another session is another form*
+  failed against the first cut in both builders, which went on offering the last form's
+  drafts and left its run waiting; with the run's state no longer tagged with its session,
+  or with a new session not stopping the run, it fails in each. Both builders' `language.test`,
   *the drafting part*, walk a run, a refused Keep, a Keep, a Discard, a decline, three
   answers with nothing to keep, a model that cannot be reached and a stop under the
   pseudo-language, and fail with "Holds against the form as it is." written into either
   part, with the React status worded in English and with the Angular problems worded in
   English. `apps/docs/src/builder-layering.test.ts` failed with `ScenarioDrafts` and
   `FormancyScenarioDrafts` unaccounted for until they were paired, `workbench.test.ts` on
-  the six `scenario-drafts` parts until the workbench dressed them, and
+  the `scenario-drafts` parts until the workbench dressed them, and
   `builder-sentences.test.ts` on `scenario-prompt.ts` until it was named as speaking for
   itself. `apps/playground/src/two-builders.test.tsx`, *examples drafted from what the
   visitor says*, in either builder: without the relay handed to the scenario pane both
   cases fail finding no drafting box; a `fetch` on Draft (React), an `XMLHttpRequest` opened
   on Draft (Angular), a `sendBeacon` on Keep (React) and a `window.open` on Keep (Angular)
   each fail on its spy; a request carrying the document fails both on the starter's canton
-  rule. The error codes: `pnpm typecheck` fails in `model-validators.ts` with `mask` taken
-  out of `BuiltInErrorCode`, and in `engine.ts` with `required` misspelt; `BUILT_IN_ERROR_CODES`
-  does not compile with a code missing or one too many. `@formancy/core`'s built
+  rule. `scripts/install-fixture/consume.ts`, under `pnpm test:e2e:install`, drafts an
+  example through a relay with the packed packages, judges it and keeps it; with the draft
+  made to answer the email it fails on the verdict. The error codes: `pnpm typecheck` fails
+  in `model-validators.ts` with `mask` taken out of `BuiltInErrorCode`, and in `engine.ts`
+  with `required` misspelt; `BUILT_IN_ERROR_CODES` does not compile with a code missing or
+  one too many. `@formancy/core`'s built
   `dist/index.mjs` is byte-identical before and after (`bundles.test.ts`, §9.3).
 
 ## Context
@@ -155,9 +167,11 @@ the clipboard: the form's title, its field paths, labels and options, the sample
 start from, the names of the examples already kept, and the author's words. Not the rules,
 but not nothing. A host's sample may hold real-looking data; the playground's is fictional.
 
-**A draft lives as long as the part.** The drafts waiting are the part's state, not the
-host's. Switching tab, builder or form takes the part away, which stops a run (0157) and
-drops what was drafted. Keep is how a draft outlives it.
+**A draft lives as long as the part, and its session.** The drafts waiting are the part's
+state, not the host's. Switching tab, builder or form takes the part away or hands it
+another session, which stops a run (0157) and drops what was drafted: another session is
+another form, and its list is not the place for the last one's drafts. Keep is how a draft
+outlives it.
 
 **One relay, one turn.** The playground's prompt pane and scenario pane ask one relay. A
 draft asked for while a model's edit waits is refused, and that run ends as a model that
