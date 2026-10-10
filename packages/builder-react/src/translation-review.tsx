@@ -38,8 +38,9 @@ import { useBuilder } from './use-builder.js'
  *
  * **Whose run it is, is the host's to say.** Given `run`, the part draws a run the host holds,
  * and its going ends nothing; drawn on another language than the run's, it says where the run
- * is and draws nothing of it. Without one it holds its own, and stops it when it goes
- * ([0164](../../../docs/decisions/0164-a-translation-is-held-for-its-language-and-a-draft-for-its-form.md)).
+ * is and draws nothing of it — but its Stop, or its Discard, once that language has left the
+ * form and no pane can be drawn under it. Without one it holds its own, and stops it when it
+ * goes ([0164](../../../docs/decisions/0164-a-translation-is-held-for-its-language-and-a-draft-for-its-form.md)).
  *
  * Its own file so the translations pane does not become the place things go: the pane is
  * a translator's table, and this is a model's turn and its review.
@@ -85,18 +86,29 @@ export function TranslationReview({
   const run = given ?? own
   const state = useSyncExternalStore(run.subscribe, run.state, run.state)
   /** The run as this language shows it: itself, or where it waits. */
-  const shown = translationOn(state, locale)
+  const shown = translationOn(state, locale, view.document)
   const { busy, result, proposal } = shown
   const reviewId = useId()
 
   const defaultLocale = view.document.i18n?.defaultLocale ?? 'en'
   const status = translationStatus(shown, text)
 
-  // Under another language than the run's, only where it waits: nothing of it to review,
-  // stop or apply here, and no Ask that would forget it (0164).
-  if (shown.elsewhere !== undefined) {
+  // Under another language than the run's, only where it waits: nothing of it to review or
+  // apply here, and no Ask that would forget it. Its Stop or its Discard only once its own
+  // language has left the form, where no part can be drawn to end it (0164).
+  const elsewhere = shown.elsewhere
+  if (elsewhere !== undefined) {
     return (
       <div data-formancy-part="translate">
+        {!elsewhere.gone ? null : elsewhere.busy ? (
+          <button type="button" onClick={() => run.stop()}>
+            {text('prompt.stop')}
+          </button>
+        ) : (
+          <button type="button" onClick={() => run.discard()}>
+            {text('prompt.discard')}
+          </button>
+        )}
         <p role="status" data-formancy-part="translate-status">
           {status}
         </p>

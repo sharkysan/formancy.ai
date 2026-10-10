@@ -216,6 +216,34 @@ describe('a translation held by the host', () => {
     expect(session.document()).toEqual(HALF)
   })
 
+  test('applies nothing while the rest waits, so the rest is held for its language when it comes', async () => {
+    /*
+     * The first answer stays on screen while *Translate the rest* waits. Applied then, it
+     * would land, forget the language with it and draw no part busy — and the rest, answering
+     * afterwards, would be held for no language, so every language would be handed a French
+     * review. The panes disable Apply while a run waits; the holder must not need them to.
+     */
+    const session = createBuilderSession(HALF)
+    const slow = held()
+    const run = createTranslationRun()
+    void run.translate(slow.model, session, 'fr')
+    await vi.waitFor(() => expect(slow.model).toHaveBeenCalledTimes(1))
+    slow.release(answer({ email: 'Courriel' }))
+    await vi.waitFor(() => expect(run.state().proposal).toBeDefined())
+
+    void run.rest(slow.model, session)
+    await vi.waitFor(() => expect(slow.model).toHaveBeenCalledTimes(2))
+
+    expect(run.apply(session)).toBeUndefined()
+    expect(session.revision()).toBe(0)
+    expect(run.state()).toMatchObject({ locale: 'fr', busy: true })
+
+    slow.release(answer({ canton: 'Canton', phone: 'Téléphone' }))
+    await vi.waitFor(() => expect(run.state().busy).toBe(false))
+    expect(run.state().locale).toBe('fr')
+    expect(run.state().proposal?.rows.map((row) => row.id)).toEqual(['email', 'canton', 'phone'])
+  })
+
   test('asks for no rest without a proposal to build on, and nothing at all while a run waits', async () => {
     // A rest with no basis would be a first answer under another name; a second ask while
     // one waits would be two turns for one language, and the relay refuses the second.
@@ -265,25 +293,76 @@ describe('a translation drawn on another language', () => {
     void run.translate(slow.model, session, 'fr')
     await vi.waitFor(() => expect(slow.model).toHaveBeenCalledTimes(1))
 
-    const english = translationOn(run.state(), 'en')
+    const english = translationOn(run.state(), 'en', session.document())
     expect(english).toEqual({
       busy: false,
       result: undefined,
       proposal: undefined,
       refusal: undefined,
-      elsewhere: { locale: 'fr', busy: true },
+      elsewhere: { locale: 'fr', busy: true, gone: false },
     })
     expect(translationStatus(english, text)).toBe(text('translate.status.elsewhereAsking', { locale: 'fr' }))
 
     slow.release(answer(FRENCH))
     await vi.waitFor(() => expect(run.state().proposal).toBeDefined())
-    const german = translationOn(run.state(), 'de')
+    const german = translationOn(run.state(), 'de', session.document())
     expect(german.proposal).toBeUndefined()
-    expect(german.elsewhere).toEqual({ locale: 'fr', busy: false })
+    expect(german.elsewhere).toEqual({ locale: 'fr', busy: false, gone: false })
     expect(translationStatus(german, text)).toBe(text('translate.status.elsewhereHeld', { locale: 'fr' }))
 
     // Under its own language it is the run as it is.
-    expect(translationOn(run.state(), 'fr')).toMatchObject({ proposal: run.state().proposal, elsewhere: undefined })
+    expect(translationOn(run.state(), 'fr', session.document())).toMatchObject({ proposal: run.state().proposal, elsewhere: undefined })
+  })
+
+  test('whose language has left the form is said so on every language, and found again when it is added', async () => {
+    /*
+     * A pane draws only the languages the form has, and falls back to the default when the
+     * one chosen is gone. A run for Italian, asked and then undone with the language, could
+     * be chosen nowhere: every language said "choose it", none offered Stop, and the turn
+     * waited for good. A part given no run never gets here — keyed by the language, it
+     * stopped its own run when the language went. So the view says the language has gone,
+     * and a part offers there what it cannot reach by choosing (both builders' held-runs.test).
+     */
+    const ITALIAN = { canton: 'Cantone', email: 'E-mail', phone: 'Telefono' }
+    const session = createBuilderSession(HALF)
+    const text = createBuilderText()
+    const slow = held()
+    const run = createTranslationRun()
+    session.addLocale('it')
+    void run.translate(slow.model, session, 'it')
+    await vi.waitFor(() => expect(slow.model).toHaveBeenCalledTimes(1))
+
+    session.undo()
+    for (const locale of ['en', 'fr', 'de']) {
+      const there = translationOn(run.state(), locale, session.document())
+      expect(there.elsewhere).toEqual({ locale: 'it', busy: true, gone: true })
+      expect(translationStatus(there, text)).toBe(text('translate.status.goneAsking', { locale: 'it' }))
+    }
+    // Nor does a form with no catalogue left at all, the extraction that made it undone too.
+    const { i18n: _catalogue, ...bare } = HALF
+    expect(translationOn(run.state(), 'en', bare).elsewhere).toEqual({ locale: 'it', busy: true, gone: true })
+
+    // Added again, it can be chosen: followed under its own language, named under the others.
+    session.addLocale('it')
+    expect(translationOn(run.state(), 'it', session.document())).toMatchObject({ busy: true, elsewhere: undefined })
+    expect(translationOn(run.state(), 'en', session.document()).elsewhere).toEqual({
+      locale: 'it',
+      busy: true,
+      gone: false,
+    })
+
+    slow.release(answer(ITALIAN, 'it'))
+    await vi.waitFor(() => expect(run.state().proposal).toBeDefined())
+    session.undo()
+    const english = translationOn(run.state(), 'en', session.document())
+    expect(english).toMatchObject({ proposal: undefined, elsewhere: { locale: 'it', busy: false, gone: true } })
+    expect(translationStatus(english, text)).toBe(text('translate.status.goneHeld', { locale: 'it' }))
+
+    // What the held sentence promises: added again, the review is there, and it applies.
+    session.addLocale('it')
+    expect(translationOn(run.state(), 'it', session.document()).proposal).toBe(run.state().proposal)
+    expect(run.apply(session)?.ok).toBe(true)
+    expect(session.document().i18n?.messages['it']).toEqual(ITALIAN)
   })
 
   test('says nothing elsewhere about a run that came to nothing to review, so the language drawn can ask', async () => {
@@ -296,7 +375,7 @@ describe('a translation drawn on another language', () => {
     run.stop()
     await vi.waitFor(() => expect(run.state().busy).toBe(false))
 
-    expect(translationOn(run.state(), 'de')).toEqual({
+    expect(translationOn(run.state(), 'de', session.document())).toEqual({
       busy: false,
       result: undefined,
       proposal: undefined,

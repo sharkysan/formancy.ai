@@ -11,6 +11,7 @@ export type { PromptRun, PromptRunOptions, PromptRunState } from './prompt-run.j
 // those turns outlive their parts too (0164).
 export { createTranslationRun, translationOn } from './translation-run.js'
 export type {
+  TranslationElsewhere,
   TranslationRun,
   TranslationRunOptions,
   TranslationRunState,

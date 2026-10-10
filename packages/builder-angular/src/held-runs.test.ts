@@ -71,6 +71,15 @@ const FRENCH = JSON.stringify({
   ],
 })
 
+const ITALIAN = JSON.stringify({
+  locale: 'it',
+  defaultLocale: 'en',
+  messages: [
+    { id: 'canton', source: 'Canton', target: 'Cantone' },
+    { id: 'email', source: 'Email', target: 'E-mail' },
+  ],
+})
+
 const translations = (session: ReturnType<typeof createBuilderSession>, ask: AskModel, run?: TranslationRun) =>
   render(FormancyTranslationsPane, {
     inputs: { session, ask, ...(run === undefined ? {} : { run }) } as Record<string, unknown>,
@@ -107,6 +116,8 @@ describe('a translation the host holds', () => {
   })
 
   test('a run still waiting is drawn waiting, and Stop there ends it', async () => {
+    // As in React: the pane drawn next has the Stop now. One that drew the run idle would
+    // offer Ask over a turn still with the person, and could not stop it.
     const user = userEvent.setup()
     const session = createBuilderSession(HALF)
     const slow = held()
@@ -158,6 +169,49 @@ describe('a translation the host holds', () => {
 
     await user.selectOptions(language(), 'fr')
     await screen.findByRole('region', { name: /^Review these translations into fr/ })
+  })
+
+  test('whose language has left the form can be stopped, or discarded, from every language', async () => {
+    // As in React: a run for Italian, asked and then undone with the language, was drawn
+    // nowhere as itself — every language said "choose it", none offered Stop or Discard, and
+    // the model was never told to stop.
+    const user = userEvent.setup()
+    const session = createBuilderSession(HALF)
+    const slow = held()
+    const run = createTranslationRun()
+    await translations(session, slow.model, run)
+    const adding = async (): Promise<void> => {
+      await user.type(screen.getByRole('textbox', { name: 'New language' }), 'it')
+      await user.click(screen.getByRole('button', { name: 'Add language' }))
+    }
+    const status = (): string | undefined => screen.queryByRole('status')?.textContent?.trim()
+    await adding()
+    await user.click(await screen.findByRole('button', { name: /Ask a model/ }))
+    await waitFor(() => expect(slow.model).toHaveBeenCalledTimes(1))
+
+    session.undo()
+    const asking = session.text('translate.status.goneAsking', { locale: 'it' })
+    await waitFor(() => expect(status()).toBe(asking))
+    expect(language().value).toBe('en')
+    await user.selectOptions(language(), 'fr')
+    await waitFor(() => expect(status()).toBe(asking))
+    await user.click(screen.getByRole('button', { name: 'Stop' }))
+    expect(slow.cancelled).toHaveBeenCalledTimes(1)
+    // Over, it is drawn as nothing, and French can ask.
+    await screen.findByRole('button', { name: 'Ask a model for the 2 missing messages' })
+
+    // Added again it is Italian's, asked and answered there; undone once more, its review is
+    // offered Discard rather than "choose it".
+    await adding()
+    await user.click(await screen.findByRole('button', { name: /Ask a model/ }))
+    slow.release(ITALIAN)
+    await screen.findByRole('region', { name: /^Review these translations into it/ })
+    session.undo()
+    const holding = session.text('translate.status.goneHeld', { locale: 'it' })
+    await waitFor(() => expect(status()).toBe(holding))
+    await user.click(screen.getByRole('button', { name: 'Discard' }))
+    expect(run.state()).toMatchObject({ locale: undefined, proposal: undefined })
+    await waitFor(() => expect(screen.queryByText(holding)).toBeNull())
   })
 
   test('a pane given none still stops its own run when it is destroyed', async () => {
@@ -239,6 +293,7 @@ describe('drafts the host holds', () => {
   })
 
   test('are not drawn over another form', async () => {
+    // Another form's list is not the place for these drafts: Keep would add them to it.
     const user = userEvent.setup()
     const drafting = createDraftRun()
     const { fixture } = await scenarios(createBuilderSession(FORM), () => Promise.resolve(ANSWER), drafting)
@@ -253,6 +308,8 @@ describe('drafts the host holds', () => {
   })
 
   test('a run still waiting is drawn waiting, and Stop there ends it', async () => {
+    // As in React: one that drew the run idle would offer Draft over a turn still with the
+    // person, and could not stop it.
     const user = userEvent.setup()
     const session = createBuilderSession(FORM)
     const slow = held()

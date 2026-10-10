@@ -512,8 +512,11 @@ In Angular, `[run]="translation"` on `<formancy-translations-pane>` and
   with its proposal and what *Translate the rest* builds on. A translations pane given it opens
   on that language, waiting or with its review. Under any other language — the default too — the
   pane says where the run is and draws nothing of it: no review, no Stop, no Ask, so a French
-  proposal is never reviewed or applied as German. `translationOn(run.state(), locale)` is that
-  decision, if you draw your own.
+  proposal is never reviewed or applied as German. Once the run's language has left the form —
+  the person undid adding it — no pane can be drawn under it, so every language says so and
+  offers the run's Stop, or its Discard once it has answered.
+  `translationOn(run.state(), locale, session.document())` is that decision, if you draw your
+  own.
 - **Drafts are held for their form, by its id.** A scenario pane over any session of the same
   form — a new one, opened over the same document — shows the drafts, judged against the form
   as it is now. Over a form with another id it shows none of them, and Keep is refused there.

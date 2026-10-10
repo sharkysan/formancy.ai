@@ -1594,6 +1594,22 @@ proposal is still refused at Apply when the form has moved since it was asked, i
 session Apply is pressed (*is kept, with the refusal, when the form moved while it waited*),
 and an answer to a stopped translation is never held as the next one's (D10).
 
+Two more ways a held run could reach the wrong language, or no language. **Its language can
+leave the form** while it waits or holds a proposal — the person undoes adding it — and a pane
+offers only the form's languages, so no part is ever drawn under it. Drawn like any run under
+another language, every language would say *choose it* and none would offer Stop or Discard, and
+the model's turn would wait with nothing able to end it. `translationOn` is given the form and says when the run's language
+has left it; a part on any language then says so beside the run's Stop, or its Discard, and still
+draws nothing of the proposal. `translation-run.test.ts` (*whose language has left the form is
+said so on every language, and found again when it is added*) fails with a view that never says
+so. Both builders' `held-runs.test` (*whose language has left the form can be stopped, or
+discarded, from every language*) fail with the part drawing neither button there, and *on
+another language it says where the run is* fails in each with Stop drawn wherever a run waits.
+**Apply does nothing while *Translate the rest* waits.** Landed then, the first half would take
+the language with it, and the rest, answering afterwards, would be held for no language and
+handed to every one as its review. The panes disable Apply while a run waits; the holder does not
+rely on that. `translation-run.test.ts` (*applies nothing while the rest waits*) fails without it.
+
 *Residual:* **the review is only as good as its reader's command of that language.** A
 mistranslation that reads fluently passes every check here, and nothing in software can tell
 it from a right one. Both marks are hints. *The same as the source* flags words that are

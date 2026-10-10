@@ -1,3 +1,4 @@
+import type { FormSchema } from '@formancy/spec'
 import type { AskModel } from './answers.js'
 import { applyProposal } from './proposal.js'
 import { createRunHolder } from './run-holder.js'
@@ -23,7 +24,8 @@ import type { TranslationProposal, TranslationResult } from './translate.js'
  * waits. So the run keeps the language it was asked for, `locale`, with the proposal and the
  * basis *Translate the rest* builds on; and `translationOn` decides what a pane drawn on a
  * language shows of it — the run, under its own language; under any other, only where it
- * waits. A French proposal is never drawn, nor applied, under German.
+ * waits, and, once its language has left the form, its Stop or its Discard. A French
+ * proposal is never drawn, nor applied, under German.
  *
  * A part given none holds its own and stops it when it goes, as 0161 decided — so asking,
  * the proposal, Apply, Discard and the rest are decided here once for both builders and both
@@ -52,7 +54,8 @@ export interface TranslationRun {
   /**
    * Put the proposal under review into `session`, through `applyProposal`. Landed, everything
    * goes, the language with it; refused, the proposal stays with the refusal beside it.
-   * `undefined` when nothing is under review.
+   * `undefined` when nothing is under review, and while a run waits: *Translate the rest*
+   * keeps the first answer on screen, and its answer is written over it.
    */
   apply(session: BuilderSession): CommandOutcome | undefined
   /** Forget it all. A run still waiting is stopped and forgotten, its ending unsaid. */
@@ -87,11 +90,25 @@ export interface TranslationView {
   readonly proposal: TranslationProposal | undefined
   readonly refusal: string | undefined
   /**
-   * A run waiting, or a proposal held, for another language: which, and whether it still
-   * waits. Nothing else of it is given to a part drawn here, so nothing of it can be reviewed
-   * or applied under the wrong language.
+   * A run waiting, or a proposal held, for another language: which, whether it still waits,
+   * and whether that language has left the form. Nothing else of it is given to a part drawn
+   * here, so nothing of it can be reviewed or applied under the wrong language.
    */
-  readonly elsewhere: { readonly locale: string; readonly busy: boolean } | undefined
+  readonly elsewhere: TranslationElsewhere | undefined
+}
+
+/** Where a run a part cannot draw is: `TranslationView.elsewhere`. */
+export interface TranslationElsewhere {
+  /** The language the run is for. */
+  readonly locale: string
+  /** Whether it still waits; if not, it holds a proposal to review. */
+  readonly busy: boolean
+  /**
+   * Whether its language has left the form since it was asked — undone, or removed — so no
+   * pane offers it to choose. A part on any language then offers the run's Stop while it
+   * waits and its Discard while it holds a proposal, because nowhere else can.
+   */
+  readonly gone: boolean
 }
 
 const IDLE: TranslationRunState = {
@@ -150,7 +167,9 @@ export function createTranslationRun(): TranslationRun {
     },
     stop: run.stop,
     apply(session) {
-      const reviewed = translationToReview(run.state().proposal)
+      // Not while the rest waits. Landed then, the language would go with the first half, and
+      // the rest would be held for none — handed to every language as its review.
+      const reviewed = run.state().busy ? undefined : translationToReview(run.state().proposal)
       if (reviewed === undefined) return undefined
       const outcome = applyProposal(session, reviewed)
       // Kept when refused: the commonest refusal is a form that moved, and the proposal is
@@ -166,16 +185,25 @@ export function createTranslationRun(): TranslationRun {
 }
 
 /**
- * What a translations part drawn on `locale` shows of a run.
+ * What a translations part drawn on `locale`, over `document` as it is now, shows of a run.
  *
  * Under the run's own language, the run as it is. Under any other — the default, which the
  * pane opens on, or one a person chose while it waited — only where it waits, when it waits
  * or holds something to review: a French review drawn under German would be headed French
  * over a German preview, and its Apply would land French. A run that came to nothing to
  * review is over, and a part elsewhere is drawn as though there were none, free to ask.
+ *
+ * **A language can leave the form while its run waits** — the person undoes adding it — and a
+ * pane offers only the form's languages, so no part would ever be drawn under it: every one
+ * would say "choose it", none would offer Stop, and the turn would wait for good. So the view
+ * says the language has gone, `elsewhere.gone`, and a part anywhere offers what it cannot
+ * reach by choosing. Under the default language too, which a pane falls back to when the
+ * language chosen goes.
  */
-export function translationOn(state: TranslationRunState, locale: string): TranslationView {
-  if (state.locale === undefined || state.locale === locale) {
+export function translationOn(state: TranslationRunState, locale: string, document: FormSchema): TranslationView {
+  const asked = state.locale
+  const gone = asked !== undefined && !Object.hasOwn(document.i18n?.messages ?? {}, asked)
+  if (asked === undefined || (asked === locale && !gone)) {
     const { busy, result, proposal, refusal } = state
     return { busy, result, proposal, refusal, elsewhere: undefined }
   }
@@ -185,6 +213,6 @@ export function translationOn(state: TranslationRunState, locale: string): Trans
     result: undefined,
     proposal: undefined,
     refusal: undefined,
-    elsewhere: waiting ? { locale: state.locale, busy: state.busy } : undefined,
+    elsewhere: waiting ? { locale: asked, busy: state.busy, gone } : undefined,
   }
 }

@@ -23,8 +23,12 @@ language asked for, the proposal and what *Translate the rest* builds on; `Trans
 takes it as `run`, `<formancy-translations-pane>` as `[run]`, and a pane given one opens on that
 language, waiting or with its review. Under any other language the pane says where the run is —
 *A model is translating into fr. Choose fr to follow it, or to stop it.* — and draws no review,
-no Stop and no Ask, so a French proposal is never reviewed or applied as German
-(`translationOn`; the sentence in English, German and French). `createDraftRun()` is held for its
+no Stop and no Ask, so a French proposal is never reviewed or applied as German. Once the run's
+language has left the form, when the person undoes adding it, no pane can be drawn under it, so
+every language says so and offers the run's Stop, or its Discard once it has answered, rather
+than a choice that is not there (`translationOn`, given the form; the sentences in English,
+German and French). Apply does nothing while *Translate the rest* waits, because the rest would
+then be held for no language. `createDraftRun()` is held for its
 form, by the form's id, because the id is what stays when a page opens the same text in a new
 session: `ScenarioPane` takes it as `drafting`, `<formancy-scenario-pane>` as `[drafting]`, a
 pane over any session of the form shows its drafts judged against the form as it is, and a pane

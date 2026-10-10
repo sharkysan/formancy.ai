@@ -49,6 +49,7 @@ import type {
   ProposalExamples,
   TranslationProposal,
   TranslationRun,
+  TranslationView,
 } from '@formancy/builder-core'
 import type { BuiltInErrorCode } from '@formancy/core'
 import { mintChallenge, solveChallenge, verifySolution } from '@formancy/challenge'
@@ -219,7 +220,8 @@ const keptDraft = keepDraft(schema, [], draftsOut.drafts[0])
 if (!keptDraft.ok || keptDraft.scenarios.length !== 1) throw new Error('the installed keepDraft refused a failing draft')
 
 // A translation and drafts the host holds (0164): each outlives what listened to it, the
-// translation is drawn only under its language, and the drafts over any session of their form.
+// translation is drawn only under its language — and, once that language has left the form,
+// said to have gone everywhere — and the drafts over any session of their form.
 const heldTranslation: TranslationRun = createTranslationRun()
 const translationRelay = createRelay()
 const hearing = heldTranslation.subscribe(() => undefined)
@@ -229,10 +231,14 @@ const pasted = translationRelay.answer(
   JSON.stringify({ locale: 'de', defaultLocale: 'en', messages: [{ id: 'email', source: 'Email', target: 'E-Mail' }] }),
 )
 await translatingHeld
-const underGerman = translationOn(heldTranslation.state(), 'de')
-const underEnglish = translationOn(heldTranslation.state(), 'en')
+const underGerman = translationOn(heldTranslation.state(), 'de', worded)
+const underEnglish: TranslationView = translationOn(heldTranslation.state(), 'en', worded)
 if (pasted !== 'accepted' || underGerman.proposal === undefined || underEnglish.elsewhere?.locale !== 'de') {
   throw new Error('the installed createTranslationRun did not hold the German for German alone')
+}
+const germanGone = { ...worded, i18n: { defaultLocale: 'en', messages: { en: { email: 'Email' } } } } as FormSchema
+if (translationOn(heldTranslation.state(), 'en', germanGone).elsewhere?.gone !== true) {
+  throw new Error('the installed translationOn did not say the German had left the form')
 }
 const heldDrafts: DraftRun = createDraftRun()
 heldDrafts.describe('An email is optional.')

@@ -52,8 +52,9 @@ const FLAGS: Readonly<Record<'stale' | 'unchanged', BuilderMessageId>> = {
  *
  * **Whose run it is, is the host's to say.** Bound to `[run]`, the part draws a run the host
  * holds, and being destroyed ends nothing; drawn on another language than the run's, it says
- * where the run is and draws nothing of it. Unbound, it holds its own, and `DestroyRef` stops
- * it when the part goes — another language chosen, another tab
+ * where the run is and draws nothing of it — but its Stop, or its Discard, once that language
+ * has left the form and no pane can be drawn under it. Unbound, it holds its own, and
+ * `DestroyRef` stops it when the part goes — another language chosen, another tab
  * ([0164](../../../docs/decisions/0164-a-translation-is-held-for-its-language-and-a-draft-for-its-form.md)).
  */
 @Component({
@@ -61,10 +62,19 @@ const FLAGS: Readonly<Record<'stale' | 'unchanged', BuilderMessageId>> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [BuilderTextPipe, NgComponentOutlet],
   template: `
-    @if (view().elsewhere) {
+    @if (view().elsewhere; as elsewhere) {
       <!-- Under another language than the run's, only where it waits: nothing of it to
-           review, stop or apply here, and no Ask that would forget it (0164). -->
+           review or apply here, and no Ask that would forget it. Its Stop or its Discard only
+           once its own language has left the form, where no part can be drawn to end it
+           (0164). -->
       <div data-formancy-part="translate">
+        @if (elsewhere.gone) {
+          @if (elsewhere.busy) {
+            <button type="button" (click)="held().stop()">{{ 'prompt.stop' | builderText: text() }}</button>
+          } @else {
+            <button type="button" (click)="held().discard()">{{ 'prompt.discard' | builderText: text() }}</button>
+          }
+        }
         <p role="status" data-formancy-part="translate-status">{{ status() }}</p>
       </div>
     } @else if (shown()) {
@@ -216,7 +226,9 @@ export class FormancyTranslationReview {
   /** What the run is doing and came to, as builder-core holds it. */
   private readonly state = signal<TranslationRunState>(this.own.state())
   /** The run as this language shows it: itself, or where it waits. */
-  protected readonly view = computed(() => translationOn(this.state(), this.locale()))
+  protected readonly view = computed(() =>
+    translationOn(this.state(), this.locale(), this.builderView().document),
+  )
   protected readonly busy = computed(() => this.view().busy)
 
   private static sequence = 0

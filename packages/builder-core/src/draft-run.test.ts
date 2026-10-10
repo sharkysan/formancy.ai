@@ -106,6 +106,9 @@ describe('drafts held by the host', () => {
   })
 
   test('through a relay, keep their turn waiting while no part is attached', async () => {
+    // The playground's case: the relay pane above the tabs shows the turn, and the answer
+    // pasted there — after the Schema view, in the other builder — is the drafts' answer. A
+    // holder that ended its run with its last listener would clear the turn before it came.
     const session = createBuilderSession(FORM)
     const relay = createRelay()
     const run = createDraftRun()
@@ -121,6 +124,9 @@ describe('drafts held by the host', () => {
   })
 
   test('are stopped by Stop from any part showing them, and a late answer is never drafted', async () => {
+    // Two parts on one run — one in each builder — press the same stop. A Stop that ended
+    // only the run of the part it was drawn in would leave the other waiting, and the relay's
+    // turn with it; an answer arriving after Stop, drafted, would be offered for keeping.
     const session = createBuilderSession(FORM)
     const slow = held()
     const run = createDraftRun()

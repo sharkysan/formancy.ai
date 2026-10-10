@@ -466,6 +466,10 @@ export const BUILDER_MESSAGES_FR = {
   'translate.status.elsewhereAsking': 'Un modèle traduit en {locale}. Choisissez {locale} pour suivre la demande, ou l’arrêter.',
   'translate.status.elsewhereHeld':
     'La traduction en {locale} d’un modèle attend d’être examinée. Choisissez {locale} pour l’examiner. Rien n’a été appliqué.',
+  'translate.status.goneAsking':
+    'Un modèle traduit en {locale}, qui n’est plus une langue du formulaire. Arrêtez-le ici, ou ajoutez de nouveau {locale} pour suivre la demande.',
+  'translate.status.goneHeld':
+    'La traduction en {locale} d’un modèle attend d’être examinée, mais {locale} n’est plus une langue du formulaire. Abandonnez-la ici, ou ajoutez de nouveau {locale} pour l’examiner. Rien n’a été appliqué.',
   'translate.status.ready': {
     one: 'Prêt à examiner : {count} traduction. Rien n’a été appliqué.',
     other: 'Prêt à examiner : {count} traductions. Rien n’a été appliqué.',

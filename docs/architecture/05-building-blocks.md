@@ -290,7 +290,8 @@ prompt panes are markup, the focus and a subscription over it.
 ([0164](../decisions/0164-a-translation-is-held-for-its-language-and-a-draft-for-its-form.md)). `createTranslationRun()` is held for a language: it keeps the language asked
 for, the proposal and *Translate the rest*'s basis, and `translationOn` decides what a
 translations part drawn on a language shows of it — the run under its own, only where it
-waits under any other. `createDraftRun()` is held for a form, by its id: `draftsOn` shows its
+waits under any other, and its Stop or its Discard under every one once its language has left
+the form. `createDraftRun()` is held for a form, by its id: `draftsOn` shows its
 drafts over any session of that form and none over another, and Keep refuses there. What the
 three holders share — the snapshot, its listeners, a stop for every run, and an ending that
 lands only on the run still in flight — is `run-holder.ts`, written once and not exported.

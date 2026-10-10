@@ -35,7 +35,14 @@
   form's drafts are not drawn, which fails in each with the part drawing the run without
   `draftsOn`. A translations pane that opens on the default language fails *the pane drawn next
   opens on its language* and *a run still waiting is drawn waiting*; a review part drawing the
-  run under any language fails *on another language it says where the run is*. What a pane
+  run under any language fails *on another language it says where the run is*. A view that
+  never says the run's language has left the form fails `translation-run.test.ts`'s *whose
+  language has left the form is said so on every language, and found again when it is added*,
+  as does `translationStatus` without its two sentences for that; both builders' *whose language
+  has left the form can be stopped, or discarded, from every language* fail with the part
+  drawing no Stop there, and with Stop kept but no Discard; Stop drawn wherever the run waits
+  fails *on another language it says where the run is* in each. An `apply()` that lands the
+  first half while *Translate the rest* waits fails *applies nothing while the rest waits*. What a pane
   given no run does is held by cases that predate this: with the part's own translation run
   not stopped when it goes, *a pane given none still stops its own run* (new) and
   `translations-pane.test`'s *stops the run when the language changes* fail in each builder;
@@ -110,12 +117,27 @@ rewritten on it with its tests unchanged. It is not exported: a host makes each 
 `locale`, with what it came to, the proposal, and *Translate the rest*'s basis, which is that
 proposal: `rest()` asks over its document and holds the answer written over it and against its
 basis, so the two land together or neither does. Which language a part shows of a run is
-decided once, `translationOn(state, locale)`: under its own language, the run as it is; under
+decided once, `translationOn(state, locale, document)`: under its own language, the run as it is; under
 any other — the default included — only that it waits, or holds a proposal, and for which
 language. A part there draws that one sentence in its live region, *A model is translating into
 fr. Choose fr to follow it, or to stop it.* or *…is waiting for review*, and no review, no Stop
 and no *Ask*, because asking would forget the French. A run that came to nothing to review is
-over, and a part on another language is drawn as though there were none. **A translations pane
+over, and a part on another language is drawn as though there were none.
+
+**A language can leave the form while its run waits**, when the person undoes adding it. A pane
+offers only the form's languages and falls back to the default when the one chosen goes, so no
+part could be drawn under it: every language would say *choose it*, none would offer Stop, and
+the turn would wait for good. A part given no run never gets there, because it stops its own when
+its language goes. So `translationOn` is given the form, and when the run's language is not among
+the form's languages it says so, `elsewhere.gone`. A part on any language then says *A model is
+translating into it, which is no longer one of the form's languages. Stop it here, or add it again
+to follow it.*, or, once it has answered, that its translation can be discarded here or reviewed
+once the language is added again. Beside the sentence it draws the run's Stop, or its Discard,
+and still nothing of the proposal. Added again, the language is the run's once more. Apply waits
+for *Translate the rest*: pressed while the rest waits, it would land the first half and forget
+the language, and the rest would be held for none and drawn under every language.
+
+**A translations pane
 given a run opens on its language**: one waiting, or holding a proposal, or that came to
 nothing, is where the person was. Once open, the language is theirs.
 
@@ -166,8 +188,11 @@ the drafts, as another form. The playground's demos each carry their own id, and
 are kept by demo.
 
 **One run is one language.** While French waits or is held, German shows where it is and offers
-no *Ask*: a person who wants German goes to French and applies, discards or stops it first. The
-relay would refuse a second turn anyway.
+no *Ask*: a person who wants German goes to French and applies, discards or stops it first. Once
+French has left the form there is no French to go to, so German, like every language, offers its
+Stop or its Discard. That is the one case where a run is ended from another language than its
+own, and its proposal is discarded there unseen unless the person adds French again to read it.
+The relay would refuse a second turn anyway.
 
 **A held proposal outlives more edits, and is refused for them.** A translation's proposal is
 held against the form as the session it was asked in had it when the answer came, and Apply in
@@ -180,11 +205,14 @@ the part another session and then the first one again no longer finds the first 
 The tag would have shown them again; the part's own run has forgotten them.
 
 **New public surface.** `createTranslationRun`, `translationOn`, `TranslationRun`,
-`TranslationRunState`, `TranslationRunOptions` and `TranslationView`; `createDraftRun`,
+`TranslationRunState`, `TranslationRunOptions`, `TranslationView` and `TranslationElsewhere`;
+`createDraftRun`,
 `draftsOn`, `DraftRun`, `DraftRunState` and `DraftRunOptions`. `run` on `TranslationsPane` and
 `TranslationReview`, `drafting` on `ScenarioPane` and `ScenarioDrafts`; `[run]` and `[drafting]`
-in Angular. `translationStatus` takes an optional `elsewhere`. Two sentences, in English, German
-and French. No new part: the sentence is the review part's own status.
+in Angular. `translationStatus` takes an optional `elsewhere`. Four sentences, in English, German
+and French: a run waiting or held under another language, and each once its language has left
+the form. No new part: the sentence is the review part's own status, and Stop and Discard are its
+own buttons.
 
 ## Alternatives considered
 
@@ -199,6 +227,16 @@ the defect again: a person who glances at German while French waits loses the tu
 **Draw a French review under any language, headed French.** Lost because the part's preview
 renders the language the pane is on, and Apply under German would land French: one review, one
 language, as 0161 had it.
+
+**Let a part on any language offer the run's Stop and Discard, whether or not its language can
+be chosen.** Lost because Discard there throws away a French review the person has not seen and
+could see with one choice. Where the language has gone that choice is not there, and the sentence
+says how to bring it back first.
+
+**End a held translation when its language leaves the form.** Lost because the holder does not
+see the session's edits, so a part would have to end the run as it draws. A run held by a page
+with no translations part on screen would then wait until one was drawn. And a person who undid
+too far and redid would find their turn ended.
 
 **Hold one translation run per language.** Lost because the relay carries one turn, and a person
 carries one request at a time; a run per language is a map of holders for one turn.

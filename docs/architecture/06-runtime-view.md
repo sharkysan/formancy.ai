@@ -548,9 +548,11 @@ translation = createTranslationRun()
                                translate(ask, session, locale): forgets      Ask ──▶ translate
                                  the last, asks for locale's missing ones    Translate the rest ──▶ rest
                                rest: over the held proposal, its basis kept
-                               translationOn(state, drawn)
+                               apply: nothing while a run waits
+                               translationOn(state, drawn, document)
                                  drawn == locale ──▶ the run                  the review, Stop, Apply
                                  another, waiting or held ──▶ elsewhere       one sentence, nothing else
+                                 locale left the form ──▶ elsewhere, gone     the sentence, Stop or Discard
                                  another, came to nothing ──▶ idle            Ask for the language drawn
 drafting = createDraftRun()
                                { intent, form: the id asked over, busy,      the box ──▶ describe
@@ -571,7 +573,9 @@ part given no run ──▶ holds its own: stopped when it goes; the drafting's 
 **Each run is held for what it is about.** A translation is about a language and drafts are
 about a form, so each holder keeps that, and one decision in `builder-core` says what a part
 drawn somewhere else shows of it. A translation under another language is named and not drawn,
-because its review and its Apply would read as that language's; drafts over another form are
+because its review and its Apply would read as that language's. Once its own language has left
+the form no part is drawn under it, so every language names it as gone and offers its Stop or
+its Discard, still drawing none of it; drafts over another form are
 not drawn at all, because Keep would add them to the wrong list. The form is its id, which is
 what survives the playground opening a new session over the same text every time *Build* is
 shown, and what changes when it opens another form. The stops, and the rule that an ending

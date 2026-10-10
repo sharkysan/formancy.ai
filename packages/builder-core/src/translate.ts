@@ -337,7 +337,8 @@ export function translationHeading(proposal: TranslationProposal, text: BuilderT
  * first answer on screen, and the sentence says the second did not come.
  *
  * A part drawn on another language than a held run's is given `elsewhere` and nothing else
- * of it (`translationOn`), and says only where the run is
+ * of it (`translationOn`), and says only where the run is — or, once that language has left
+ * the form and cannot be chosen, that it has, beside the run's Stop or Discard
  * ([0164](../../../docs/decisions/0164-a-translation-is-held-for-its-language-and-a-draft-for-its-form.md)).
  */
 export function translationStatus(
@@ -346,15 +347,20 @@ export function translationStatus(
     result: TranslationResult | undefined
     proposal: TranslationProposal | undefined
     refusal: string | undefined
-    elsewhere?: { readonly locale: string; readonly busy: boolean } | undefined
+    elsewhere?: { readonly locale: string; readonly busy: boolean; readonly gone: boolean } | undefined
   },
   text: BuilderText,
 ): string {
   const elsewhere = state.elsewhere
   if (elsewhere !== undefined) {
-    return text(elsewhere.busy ? 'translate.status.elsewhereAsking' : 'translate.status.elsewhereHeld', {
-      locale: elsewhere.locale,
-    })
+    const said = elsewhere.gone
+      ? elsewhere.busy
+        ? 'translate.status.goneAsking'
+        : 'translate.status.goneHeld'
+      : elsewhere.busy
+        ? 'translate.status.elsewhereAsking'
+        : 'translate.status.elsewhereHeld'
+    return text(said, { locale: elsewhere.locale })
   }
   if (state.busy) return text('translate.status.asking')
   if (state.refusal !== undefined) return text('prompt.status.refused', { reason: state.refusal })

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
 import { createBuilderSession, createDraftRun, createTranslationRun } from '@formancy/builder-core'
 import type { AskModel } from '@formancy/builder-core'
@@ -58,6 +58,15 @@ const FRENCH = JSON.stringify({
   messages: [
     { id: 'canton', source: 'Canton', target: 'Canton' },
     { id: 'email', source: 'Email', target: 'Courriel' },
+  ],
+})
+
+const ITALIAN = JSON.stringify({
+  locale: 'it',
+  defaultLocale: 'en',
+  messages: [
+    { id: 'canton', source: 'Canton', target: 'Cantone' },
+    { id: 'email', source: 'Email', target: 'E-mail' },
   ],
 })
 
@@ -146,6 +155,52 @@ describe('a translation the host holds', () => {
 
     await user.selectOptions(language(), 'fr')
     expect(screen.getByRole('region', { name: /^Review these translations into fr/ })).toBeTruthy()
+  })
+
+  test('whose language has left the form can be stopped, or discarded, from every language', async () => {
+    /*
+     * The pane draws only the languages the form has, and falls back to the default when the
+     * one chosen goes. A run for Italian, asked and then undone with the language, was drawn
+     * nowhere as itself: every language said "choose it", none offered Stop or Discard, and
+     * the model was never told to stop. A part given no run cannot get here — keyed by the
+     * language, it stops its own when the language goes.
+     */
+    const user = userEvent.setup()
+    const session = createBuilderSession(HALF)
+    const slow = held()
+    const run = createTranslationRun()
+    render(<TranslationsPane session={session} ask={slow.model} run={run} />)
+    const adding = async (): Promise<void> => {
+      await user.type(screen.getByRole('textbox', { name: 'New language' }), 'it')
+      await user.click(screen.getByRole('button', { name: 'Add language' }))
+    }
+    await adding()
+    await user.click(screen.getByRole('button', { name: /Ask a model/ }))
+    await waitFor(() => expect(slow.model).toHaveBeenCalledTimes(1))
+
+    act(() => void session.undo())
+    expect(language().value).toBe('en')
+    const asking = session.text('translate.status.goneAsking', { locale: 'it' })
+    expect(screen.getByRole('status').textContent).toBe(asking)
+    await user.selectOptions(language(), 'fr')
+    expect(screen.getByRole('status').textContent).toBe(asking)
+    await user.click(screen.getByRole('button', { name: 'Stop' }))
+    expect(slow.cancelled).toHaveBeenCalledTimes(1)
+    // Over, it is drawn as nothing, and French can ask.
+    await screen.findByRole('button', { name: 'Ask a model for the 2 missing messages' })
+
+    // Added again it is Italian's, asked and answered there; undone once more, its review is
+    // offered Discard rather than "choose it".
+    await adding()
+    await user.click(screen.getByRole('button', { name: /Ask a model/ }))
+    slow.release(ITALIAN)
+    await screen.findByRole('region', { name: /^Review these translations into it/ })
+    act(() => void session.undo())
+    const holding = session.text('translate.status.goneHeld', { locale: 'it' })
+    expect(screen.getByRole('status').textContent).toBe(holding)
+    await user.click(screen.getByRole('button', { name: 'Discard' }))
+    expect(run.state()).toMatchObject({ locale: undefined, proposal: undefined })
+    expect(screen.queryByText(holding)).toBeNull()
   })
 
   test('a pane given none still stops its own run when it goes', async () => {
@@ -252,6 +307,8 @@ describe('drafts the host holds', () => {
   })
 
   test('a run still waiting is drawn waiting, and Stop there ends it', async () => {
+    // The pane drawn next has the Stop now: one that drew the run idle would offer Draft over
+    // a turn still with the person, and could not stop it.
     const user = userEvent.setup()
     const session = createBuilderSession(FORM)
     const slow = held()
