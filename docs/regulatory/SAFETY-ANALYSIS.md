@@ -1239,6 +1239,12 @@ discarded rather than proposed, whether or not the host abandons its request. Th
 holds when the pane is unmounted or destroyed. `authoring.test.ts` (*stopping a run*)
 holds it in `@formancy/builder-core`. In each builder, `prompt-pane.test` (*can be
 stopped*) releases a working document after the stop and asserts that no review appears.
+That alone is released while the pane is idle, so it cannot tell the constraint from a pane
+that ignores answers only when idle. *An answer to a stopped run, arriving while the next one
+waits* is the hazard as described: it stops a run, asks again, releases the first answer
+during the second run and asserts that nothing is proposed until the second answers, and
+then that the review lists the second answer's change. It fails, where *can be stopped*
+does not, for a pane that keeps one stop for its whole life.
 
 One thing does reach further than a review: an example with its answer written down.
 `runScenarios` executes a form against saved examples and reports which stopped holding,

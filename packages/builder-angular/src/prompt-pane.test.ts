@@ -48,23 +48,36 @@ const WRITTEN = {
   },
 }
 
+/** The starting form with a phone number added: an answer told apart from `WRITTEN`. */
+const WITH_PHONE = {
+  ...START,
+  model: { fields: [...START.model.fields, { key: 'phone', type: 'text', label: 'Phone' }] },
+}
+
 const say = (...answers: string[]) => {
   let at = 0
   return vi.fn(() => Promise.resolve(answers[Math.min(at++, answers.length - 1)] ?? ''))
 }
 
-/** A model that waits to be told what to say, and records whether it was told to stop. */
+/**
+ * A model that waits to be told what to say, and records whether it was told to stop.
+ * `release` answers the latest turn, or the one named — the first of two runs, say.
+ */
 const held = () => {
-  let release: (answer: string) => void = () => undefined
+  const releases: Array<(answer: string) => void> = []
   const cancelled = vi.fn()
   const model = vi.fn<AskModel>(
     (_prompt, turn) =>
       new Promise<string>((resolve) => {
-        release = resolve
+        releases.push(resolve)
         turn.onCancel(cancelled)
       }),
   )
-  return { model, cancelled, release: (answer: string) => release(answer) }
+  return {
+    model,
+    cancelled,
+    release: (answer: string, turn = releases.length - 1) => releases[turn]?.(answer),
+  }
 }
 
 async function mount(
@@ -264,6 +277,40 @@ describe('while it is working', () => {
     expect(screen.queryByRole('heading', { name: /Review/ })).toBeNull()
     expect(screen.getByRole('status').textContent).toBe('Stopped. Nothing was applied.')
     expect(session.document()).toEqual(START)
+  })
+
+  test('an answer to a stopped run, arriving while the next one waits, is not taken for its answer', async () => {
+    /*
+     * The variant SAFETY-ANALYSIS D10 names: somebody stops, asks for something
+     * else, and the first model answers late. The case above releases that answer
+     * while the pane is idle, which a pane dropping answers only when idle passes
+     * too — as does one holding a single stop for its whole life, whose second run
+     * would end before it asked. Here it arrives during the second run.
+     */
+    const user = userEvent.setup()
+    const session = createBuilderSession(START)
+    const slow = held()
+    await mount(session, slow.model)
+
+    await instruct(user, 'a contact form')
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Stop' })).toBeTruthy())
+    await user.click(screen.getByRole('button', { name: 'Stop' }))
+    await waitFor(() =>
+      expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Write it' }).disabled).toBe(false),
+    )
+    await user.clear(screen.getByRole('textbox', { name: /Describe the form/ }))
+    await instruct(user, 'only a phone number')
+    await waitFor(() => expect(slow.model).toHaveBeenCalledTimes(2))
+
+    slow.release(JSON.stringify(WRITTEN), 0)
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(screen.queryByRole('heading', { name: /Review/ })).toBeNull()
+    expect(screen.getByRole('status').textContent).toBe('Writing the form, and checking it.')
+
+    slow.release(JSON.stringify(WITH_PHONE), 1)
+    const review = await screen.findByRole('region', { name: /Review/ })
+    expect(review.textContent).toContain('phone')
+    expect(review.textContent).not.toContain('email')
   })
 
   test('a pane that is destroyed stops its run', async () => {

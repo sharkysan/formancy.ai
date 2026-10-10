@@ -23,6 +23,9 @@
   taken off the screen stops its run* (React) or *a pane that is destroyed stops its run*
   (Angular). Against `main`, the first failed on the status *"Nothing was applied. 0
   attempts, and …"*, the second found no Stop button, and the third saw the host never told.
+  Both also have *an answer to a stopped run, arriving while the next one waits*, the variant
+  SAFETY-ANALYSIS D10 names, which fails for a pane that keeps one stop for its whole life;
+  *can be stopped* does not.
   Both `language.test` cases fail with the Stop label written into the pane.
   `apps/playground/src/demo-model.test.ts` failed against `main` with a cancelled dialog
   running three attempts. `scripts/install-fixture/consume.ts`, under
