@@ -11,6 +11,19 @@
  * previews what the people filling the form in will see, not the admin.
  */
 
+/*
+ * The faces, from this deployment rather than a font service (0154): every operator who
+ * opened the admin told Google their address while it took them from Google Fonts. The
+ * weights are the ones that request named; Space Grotesk it also asked for is drawn by no
+ * stylesheet the admin loads, so it is not carried.
+ */
+@import '@fontsource-variable/archivo/wdth.css';
+@import '@fontsource/ibm-plex-sans/400.css';
+@import '@fontsource/ibm-plex-sans/500.css';
+@import '@fontsource/ibm-plex-sans/600.css';
+@import '@fontsource/ibm-plex-mono/400.css';
+@import '@fontsource/ibm-plex-mono/500.css';
+
 :root {
   --ground: #080a12;
   --glass: rgb(17 22 36 / 74%);
@@ -24,7 +37,7 @@
   --ok: #4fdc8a;
   --warn: #ffd27a;
 
-  --display: 'Archivo', 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  --display: 'Archivo', 'Archivo Variable', 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
 
   --wb-ink: var(--text);
   --wb-bench: #0b0f18;

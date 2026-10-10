@@ -10,6 +10,16 @@ later.
 
 ## Unreleased
 
+**Fixed: every deployment's admin asked Google for its faces and jsDelivr for its editor.**
+formancy.ai's own pages stopped on 2026-10-09; the admin, which a deployment runs for its
+operators, still linked Google Fonts and left Monaco's loader at its jsDelivr default, so
+each operator who opened it told both their address. It now serves its faces from Fontsource
+and Monaco from its own origin, through the Vite plugin the playground used, now one module
+both apps share. `apps/admin/src/no-other-host.test.tsx` reads the admin's page for any
+address on another host and checks where its Monaco loader looks; it failed on main with the
+three Google addresses and the CDN. The admin also gains Vite's client types, which its
+`import.meta.env` needed.
+
 **Fixed: the relay pane said every request included the form; it now says what each one
 carries.** The pane a person carries a model's turn through said one sentence for every request
 — *"Copy puts the whole request on your clipboard, including the form"*. That is true of a

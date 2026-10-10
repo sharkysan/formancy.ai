@@ -1,8 +1,10 @@
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
+import { monacoFromThisSite } from '../../monaco-from-this-site'
+import { MONACO_VS } from './src/monaco-path'
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), monacoFromThisSite(MONACO_VS)],
   server: {
     port: 4382,
     // Fail rather than wander: the readme writes this port down, and a moved
