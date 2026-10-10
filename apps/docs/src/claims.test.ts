@@ -55,6 +55,13 @@ function liveDocuments(): Array<{ name: string; text: string }> {
   walk(join(repo, 'docs'))
   walk(join(repo, 'apps', 'docs', 'src', 'content'))
   out.push({ name: 'README.md', text: readFileSync(join(repo, 'README.md'), 'utf8') })
+  // Each package's README is its page on npm, which is where an integrator reads it, and it
+  // describes the package as it is now. The server's said "has no submission tokens" after the
+  // token shipped (0169) and nothing here read it.
+  for (const name of readdirSync(join(repo, 'packages'))) {
+    const readme = join(repo, 'packages', name, 'README.md')
+    if (existsSync(readme)) out.push({ name: join('packages', name, 'README.md'), text: readFileSync(readme, 'utf8') })
+  }
   return out
 }
 
