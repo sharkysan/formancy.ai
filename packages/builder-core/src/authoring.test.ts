@@ -1,7 +1,9 @@
 import { describe, expect, test, vi } from 'vitest'
-import { createStop } from './answers.js'
+import { createStop, declinedAnswer } from './answers.js'
 import { authorForm } from './authoring.js'
 import type { AskModel, AuthoringPrompt, AuthoringResult } from './authoring.js'
+import { authoringBriefing, DECLINE_KEY } from '@formancy/spec'
+import { validateSchema } from '@formancy/spec/validate'
 import type { FormSchema } from '@formancy/spec'
 
 /**
@@ -370,6 +372,167 @@ describe('a host that cannot ask its model', () => {
 
     expect(result).toMatchObject({ ok: false, ended: 'gave-up', attempts: 2 })
     expect(result).not.toHaveProperty('reason')
+  })
+})
+
+describe('a model that declines', () => {
+  const WHY = 'A form cannot send email. Notifications are set up on the server, not in the document.'
+
+  test('ends the run after one turn, with its reason', async () => {
+    /*
+     * Asked for something the format cannot express — "email me every submission" —
+     * a model had no answer but a document. It wrote one, failed the checks, and was
+     * asked again until the attempts ran out: as many calls as the limit, and through
+     * a relay somebody pastes by hand, two pastes for each of them, for an answer the
+     * first one already had.
+     */
+    const ask = scripted(JSON.stringify({ [DECLINE_KEY]: WHY }))
+
+    const result = await authorForm(ask, 'email me every submission')
+
+    expect(result).toMatchObject({
+      ok: false,
+      ended: 'declined',
+      reason: WHY,
+      attempts: 1,
+      problems: [],
+    })
+    expect(ask).toHaveBeenCalledTimes(1)
+  })
+
+  test('a model that answers with the briefing’s own example has declined', async () => {
+    // The briefing shows the shape and the reader reads it, in two packages. If they
+    // ever spell it differently, a model doing exactly as it was told is asked again.
+    const ask = vi.fn<AskModel>(({ system }) => {
+      const example = [...system.matchAll(/\{[^{}]*\}/g)]
+        .map(([candidate]) => candidate)
+        .find((candidate) => candidate.includes(JSON.stringify(DECLINE_KEY)))
+      return Promise.resolve(example ?? 'the briefing shows no decline')
+    })
+
+    const result = await authorForm(ask, 'email me every submission')
+
+    expect(result).toMatchObject({ ok: false, ended: 'declined' })
+    expect(ask).toHaveBeenCalledTimes(1)
+  })
+
+  test('in a code fence after a sentence, as models write anything', async () => {
+    // Read as an answer is read: a decline wrapped in prose is still one, and
+    // refusing it would spend a turn on formatting.
+    const fenced = 'I am sorry.\n```json\n' + JSON.stringify({ [DECLINE_KEY]: WHY }) + '\n```'
+
+    const result = await authorForm(scripted(fenced), 'email me every submission')
+
+    expect(result).toMatchObject({ ok: false, ended: 'declined', reason: WHY })
+  })
+
+  test('after an answer that failed, keeps what that answer was told', async () => {
+    // The decline is not a problem with an answer; the earlier one still is.
+    const ask = scripted('nonsense', JSON.stringify({ [DECLINE_KEY]: WHY }))
+
+    const result = await authorForm(ask, 'email me every submission')
+
+    expect(result).toMatchObject({ ok: false, ended: 'declined', reason: WHY, attempts: 2 })
+    if (!result.ok) expect(result.problems.map((problem) => problem.kind)).toEqual(['not-json'])
+    expect(ask).toHaveBeenCalledTimes(2)
+  })
+
+  test('a valid document titled "declined" is still a document', async () => {
+    // A form about declined applications is a form. Recognising a decline by the
+    // word anywhere in the answer would throw it away and say the model refused.
+    const titled = { ...GOOD, id: DECLINE_KEY, title: DECLINE_KEY }
+
+    const result = await authorForm(scripted(JSON.stringify(titled)), 'a form for declined claims')
+
+    expect(result).toMatchObject({ ok: true, attempts: 1 })
+  })
+
+  test('an object with the key and anything else is not a decline', async () => {
+    /*
+     * A document with a `declined` note beside it is a model that wrote the form AND
+     * hedged. Ending the run on it would throw away a document, so it is checked as
+     * one, and the closed schema refuses the extra key like any other.
+     */
+    for (const answer of [
+      { ...GOOD, [DECLINE_KEY]: WHY },
+      { [DECLINE_KEY]: WHY, because: 'email' },
+    ]) {
+      const result = await authorForm(scripted(JSON.stringify(answer)), 'a contact form', {
+        attempts: 1,
+      })
+
+      expect(result).toMatchObject({ ok: false, ended: 'gave-up' })
+      if (!result.ok) expect(result.problems[0]?.kind).toBe('invalid-document')
+    }
+  })
+
+  test('nor is one with no reason to show', async () => {
+    // "The model declined" and then nothing gives the person nothing to act on. Asked
+    // again, the model can say why — or write the form after all.
+    for (const reason of ['', '   ', true]) {
+      const result = await authorForm(
+        scripted(JSON.stringify({ [DECLINE_KEY]: reason })),
+        'a contact form',
+        { attempts: 1 },
+      )
+
+      expect(result).toMatchObject({ ok: false, ended: 'gave-up' })
+    }
+  })
+
+  test('one with no reason is asked for the reason, not told to write a document', async () => {
+    /*
+     * A decline with nothing in it was checked as a form, so the model was told that
+     * `declined` is a misspelt key to remove and that four required properties are
+     * missing: told to stop declining and write a document. For a request the format
+     * cannot express, that is the document doing part of it which the briefing asks
+     * it not to write. Asked for the reason instead, it gives one and the run ends.
+     */
+    const example = [...authoringBriefing().matchAll(/\{[^{}]*\}/g)]
+      .map(([candidate]) => candidate)
+      .find((candidate) => candidate.includes(JSON.stringify(DECLINE_KEY)))
+    expect(example).toBeDefined()
+
+    for (const blank of ['', '   ', true]) {
+      const answer = { [DECLINE_KEY]: blank }
+      const ask = scripted(JSON.stringify(answer), JSON.stringify({ [DECLINE_KEY]: WHY }))
+
+      const result = await authorForm(ask, 'email me every submission')
+
+      expect(result).toMatchObject({ ok: false, ended: 'declined', reason: WHY, attempts: 2 })
+      if (!result.ok) expect(result.problems.map((problem) => problem.kind)).toEqual(['unexplained-decline'])
+      const followUp = promptsOf(ask)[1]?.followUp ?? ''
+      // Nothing the schema says about the answer as a form. Taken from the validator
+      // rather than written out here, so a reworded message cannot pass this by moving.
+      const asAForm = validateSchema(answer)
+      expect(asAForm.valid).toBe(false)
+      if (!asAForm.valid) for (const error of asAForm.errors) expect(followUp).not.toContain(error.message)
+      // The shape again, exactly as the briefing shows it, for the model to fill in.
+      expect(followUp).toContain(example)
+    }
+  })
+
+  test('a host can end the run the same way when its model service refuses', async () => {
+    // A service that refuses a request itself answers with no text at all. Mapped
+    // onto a decline, the run ends at once with the host's sentence, rather than as
+    // three answers that were not JSON.
+    const ask = vi.fn<AskModel>(() => Promise.resolve(declinedAnswer('The model service refused this request.')))
+
+    const result = await authorForm(ask, 'a contact form')
+
+    expect(result).toMatchObject({
+      ok: false,
+      ended: 'declined',
+      reason: 'The model service refused this request.',
+    })
+    expect(ask).toHaveBeenCalledTimes(1)
+  })
+
+  test('and is told at once when it gives no reason', () => {
+    // Written out, an empty reason is not a decline, so the run would read it as a
+    // document that failed and ask again — the waste a decline exists to end.
+    expect(() => declinedAnswer('')).toThrow(/reason/)
+    expect(() => declinedAnswer('  ')).toThrow(/reason/)
   })
 })
 

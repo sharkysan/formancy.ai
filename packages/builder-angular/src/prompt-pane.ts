@@ -51,6 +51,10 @@ import type { AskModel, AuthoringResult, BuilderSession, EditProposal, Stop } fr
  * destroyed. Either ends it at once, tells the host so it can abandon the
  * request, and discards whatever the model says afterwards
  * ([0157](../../../docs/decisions/0157-a-models-turn-can-be-stopped.md)).
+ *
+ * **A model can decline**, when the format cannot express what was asked. The run
+ * ends on that answer, and the pane shows the model's reason, as text, where the
+ * problems would be ([0158](../../../docs/decisions/0158-a-model-may-decline.md)).
  */
 @Component({
   selector: 'formancy-prompt-pane',
@@ -112,6 +116,11 @@ import type { AskModel, AuthoringResult, BuilderSession, EditProposal, Stop } fr
           </section>
         }
 
+        @if (declined(); as reason) {
+          <!-- The model's words, quoted: text, never markup, whatever it wrote. -->
+          <blockquote data-formancy-part="prompt-declined">{{ reason }}</blockquote>
+        }
+
         @if (failure(); as problems) {
           <div data-formancy-part="prompt-problems">
             <!-- What was actually wrong, not "something went wrong". The person
@@ -152,10 +161,25 @@ export class FormancyPromptPane {
   protected readonly inputId = `formancy-prompt-${String(this.serial)}`
   protected readonly reviewId = `formancy-prompt-review-${String(this.serial)}`
 
-  /** A run that ended with answers that did not work — not one stopped, or unreachable, before any came. */
+  /** The model's reason, when it declined: shown in place of the problems. */
+  protected readonly declined = computed(() => {
+    const outcome = this.result()
+    return outcome === undefined || outcome.ok || outcome.ended !== 'declined' ? undefined : outcome.reason
+  })
+
+  /**
+   * A run that ended with answers that did not work — not one stopped, or unreachable,
+   * before any came, and not one the model declined: what the checks said about an
+   * earlier answer is about a document, and the model has said there is none to fix.
+   */
   protected readonly failure = computed(() => {
     const outcome = this.result()
-    return outcome === undefined || outcome.ok || outcome.problems.length === 0 ? undefined : outcome
+    return outcome === undefined ||
+      outcome.ok ||
+      outcome.ended === 'declined' ||
+      outcome.problems.length === 0
+      ? undefined
+      : outcome
   })
 
   /**

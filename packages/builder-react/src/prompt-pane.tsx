@@ -51,6 +51,10 @@ import type {
  * away. Either ends it at once, tells the host so it can abandon the request,
  * and discards whatever the model says afterwards
  * ([0157](../../../docs/decisions/0157-a-models-turn-can-be-stopped.md)).
+ *
+ * **A model can decline**, when the format cannot express what was asked. The run
+ * ends on that answer, and the pane shows the model's reason, as text, where the
+ * problems would be ([0158](../../../docs/decisions/0158-a-model-may-decline.md)).
  */
 
 export interface PromptPaneProps {
@@ -101,6 +105,16 @@ export function PromptPane({ session, ask, attempts }: PromptPaneProps): ReactEl
   }, [busy])
 
   if (ask === undefined) return null
+
+  /*
+   * What a run that produced no document has to show beneath the status. A decline
+   * shows the model's reason INSTEAD of the problems: what the checks said about an
+   * earlier answer is about a document, and the model has said there is none to fix.
+   */
+  const failed = result?.ok === false ? result : undefined
+  const declined = failed?.ended === 'declined' ? failed.reason : undefined
+  const problems =
+    failed !== undefined && failed.ended !== 'declined' && failed.problems.length > 0 ? failed : undefined
 
   const run = async (): Promise<void> => {
     if (instruction.trim() === '' || busy) return
@@ -215,23 +229,28 @@ export function PromptPane({ session, ask, attempts }: PromptPaneProps): ReactEl
         </section>
       )}
 
-      {result !== undefined && !result.ok && result.problems.length > 0 ? (
+      {declined === undefined ? null : (
+        /* The model's words, quoted: text, never markup, whatever it wrote. */
+        <blockquote data-formancy-part="prompt-declined">{declined}</blockquote>
+      )}
+
+      {problems === undefined ? null : (
         <div data-formancy-part="prompt-problems">
           {/* What was actually wrong, not "something went wrong". The person
               reading this can usually fix it by rewording one sentence. */}
           <ul>
-            {result.problems.map((problem, index) => (
+            {problems.problems.map((problem, index) => (
               <li key={index}>{problem.detail}</li>
             ))}
           </ul>
-          {result.lastAnswer === '' ? null : (
+          {problems.lastAnswer === '' ? null : (
             <details>
               <summary>{text('prompt.lastAnswer')}</summary>
-              <pre>{result.lastAnswer}</pre>
+              <pre>{problems.lastAnswer}</pre>
             </details>
           )}
         </div>
-      ) : null}
+      )}
     </section>
   )
 }

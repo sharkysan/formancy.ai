@@ -62,6 +62,18 @@ export function authoringFacts(): AuthoringFacts {
 }
 
 /**
+ * The only key of what a model answers when the format cannot express the request:
+ * `{"declined": "<why>"}` ([0158](../../../docs/decisions/0158-a-model-may-decline.md)).
+ *
+ * Asked for something no document can say — "email me every submission" — a model
+ * had nothing to answer with but a document, and wrote one on every attempt. Here,
+ * beside the briefing that offers it, so the briefing and the reader in
+ * `@formancy/builder-core` spell it once. Not a construct of the format: the schema
+ * is closed, and a document carrying it is refused.
+ */
+export const DECLINE_KEY = 'declined'
+
+/**
  * The same facts as something a model reads.
  *
  * Prose rather than the JSON above, because a system prompt is read as
@@ -85,5 +97,8 @@ export function authoringBriefing(): string {
     ...facts.notes.map((note) => `- ${note}`),
     '',
     'Answer with the JSON document and nothing else. No commentary, no code fence.',
+    // Built with the key rather than typed out, so the example a model copies is
+    // the shape the answer is read by.
+    `If the format cannot express what was asked, do not write a document that does part of it: answer ${JSON.stringify({ [DECLINE_KEY]: '<why, for the person who asked>' })} instead.`,
   ].join('\n')
 }

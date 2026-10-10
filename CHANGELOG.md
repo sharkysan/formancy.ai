@@ -10,6 +10,30 @@ later.
 
 ## Unreleased
 
+**Added: a model may decline, and a decline ends the run after one turn.** Asked for
+something the format cannot express — "email me every submission" — a model had no answer but
+a document. It wrote one, the checks refused it, it was asked again, and the run spent every
+attempt before saying *"3 attempts, and the document still did not work"*: a call paid for
+each time, and a person sent to reword an instruction no wording could fix. The briefing now
+offers `{"declined": "<why>"}`, spelled with `DECLINE_KEY`, new in `@formancy/spec`, and
+`authorForm` ends on that answer with `ended: 'declined'` and the model's reason. Only an
+object whose only key is `declined`, holding a reason, is a decline, so a form titled
+"declined" is still a form. One with no reason does not end the run: the next turn asks the
+model for the reason, showing the briefing's example, rather than letting the schema tell it
+to remove the key and write a document — for a request no document can satisfy, the partial
+one the briefing asks it not to write. `AuthoringProblem.kind` gains `unexplained-decline`
+for that turn. Both prompt panes say *"Nothing was applied. The model declined
+this request."* in English, German and French, and show the reason as text where the problems
+would be. `declinedAnswer(reason)`, new in `@formancy/builder-core`, is what a host's
+`AskModel` returns when its model service refuses a request itself, so that ends the run the
+same way rather than as a model that could not be reached. The playground's stand-in dialog
+shows how to decline. A decline is the model's claim, and nothing checks it. `ended` and
+`AuthoringProblem.kind` have a new member each, so a direct caller that handles each by name
+meets one it has not seen
+([0158](docs/decisions/0158-a-model-may-decline.md)). The spec bundle's figure in §9.3 is
+re-measured at 25.5 kB, up from 25.2, for the constant, the comment that ships beside it, and
+the briefing's new line.
+
 **Fixed: the examples panel compared a new document's run with the last document's.** Both
 builders' scenario panels name what stopped holding, or holds again, since the last run.
 A pane kept on screen while its host opened another document compared the new document's

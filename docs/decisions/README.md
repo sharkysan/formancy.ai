@@ -258,3 +258,4 @@ listed under the sections they belong to above.
 | [0155](0155-the-object-store-is-timed-on-its-silence.md) | The object store is timed on its silence, not on the whole request | accepted |
 | [0156](0156-a-proxy-is-trusted-by-its-address.md) | A proxy is trusted by its address, and by nothing else | accepted |
 | [0157](0157-a-models-turn-can-be-stopped.md) | A model's turn can be stopped, and an unreachable model is not a document that failed | accepted |
+| [0158](0158-a-model-may-decline.md) | A model may decline, and a decline ends the run after one turn | accepted |

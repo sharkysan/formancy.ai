@@ -11,6 +11,7 @@
  * published type is a change to two packages' public surfaces.
  */
 import type { OptionsSources, Scanner } from '@formancy/react'
+import { declinedAnswer } from '@formancy/builder-core'
 import type { AskModel } from '@formancy/builder-core'
 
 /**
@@ -120,12 +121,19 @@ export const DEMO_SCANNER: Scanner = async ({ label }) =>
  * every remaining attempt and then "3 attempts, and the document still did not
  * work". Handing back the document would have meant reading it out of the prompt's
  * English, which is not a contract.
+ *
+ * **It also says how to decline**, as a model is told it may when the format cannot
+ * express the request ([0158](../../../docs/decisions/0158-a-model-may-decline.md)).
+ * Without it a visitor playing the model could only answer with a document, and
+ * could not see what the pane does when a model says a form cannot do that. The
+ * example is `declinedAnswer`'s, so it is the shape the run reads.
  */
 export const DEMO_MODEL: AskModel = ({ user, attempt, limit, followUp }) => {
   const answer = window.prompt(
     `Stand-in for a model, attempt ${String(attempt)} of ${String(limit)}. It was asked:\n\n` +
       `${followUp ?? user.split('\n').at(-1) ?? ''}\n\n` +
-      'Answer with the whole form document, as JSON.',
+      'Answer with the whole form document, as JSON. ' +
+      `Or, if a form cannot do it, decline: ${declinedAnswer('why it cannot')}`,
   )
   return answer === null
     ? Promise.reject(new Error('Nobody answered for the stand-in model.'))

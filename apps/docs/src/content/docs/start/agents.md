@@ -274,6 +274,29 @@ reached, followed by your error's message, rather than that the document did not
 work. Write the message for the person reading it. Something thrown without one —
 `undefined`, an event, an empty string — is said without a reason.
 
+**When the format cannot do what was asked,** the model may say so. "Email me every
+submission" is one such request: a form document says what a form asks and checks,
+not where an answer goes. The briefing tells the model not to write a document that
+does part of the request, and to answer `{"declined": "<why>"}` instead. The run
+ends on that answer rather than asking again. A decline with no reason in it does not
+end the run: the next turn asks the model for one. The pane says the model declined, and
+shows its reason, as text, where the problems would be. Nothing is applied. The
+reason is the model's own claim, and nothing checks it: if it declined something a
+form can do, reword the instruction and ask again.
+
+If your model service refuses a request itself, in its response rather than in its
+text, return a decline for it, with a sentence for the person reading it:
+
+```ts
+import { declinedAnswer } from '@formancy/builder-core'
+
+// Inside your AskModel, where the service's answer is read:
+if (refused) return declinedAnswer('The model service would not answer this request.')
+```
+
+The run then ends the same way, rather than reporting a model that could not be
+reached. A blank reason throws, because it would not read as a decline.
+
 Each turn also says which it is: `attempt` and `limit`, and from the second turn
 `followUp`, which is the complaint alone. `user` always carries the whole
 instruction with the latest complaint, so a function that keeps no conversation
@@ -282,5 +305,6 @@ holds the model's last answer, can send `followUp` instead.
 
 Called directly, `authorForm(askModel, instruction, { current, stop })` resolves
 however the run ends. A working document is `ok: true`. Otherwise `ended` says why
-there is none: `gave-up`, `stopped`, or `unreachable` with your error's message as
-`reason`, absent when it had none. `stop` comes from `createStop()`; calling its `stop()` is the button.
+there is none: `gave-up`, `stopped`, `unreachable` with your error's message as
+`reason`, absent when it had none, or `declined` with the model's reason as `reason`.
+`stop` comes from `createStop()`; calling its `stop()` is the button.

@@ -21,6 +21,7 @@ import {
 import { runScenarios } from '@formancy/core'
 import type { Scenario } from '@formancy/core'
 import type { BuilderText } from '@formancy/builder-core'
+import { DECLINE_KEY } from '@formancy/spec'
 import type { FormSchema } from '@formancy/spec'
 import { FormancyBuilder } from './builder'
 import { FormancyLayoutPane } from './layout-pane'
@@ -699,6 +700,33 @@ describe('the translations, prompt and scenario panes', () => {
         (prefix) => !seen.some((text) => text.includes(prefix)),
       ),
     ).toEqual([])
+  })
+
+  test('the prompt pane, when the model declines, likewise', async () => {
+    // The decline's sentence is the catalogue's (0158), and the model's reason is the
+    // model's, in whatever language it wrote.
+    const start = {
+      specVersion: '2',
+      id: 'start',
+      title: 'Start',
+      model: { fields: [{ key: 'name', type: 'text', label: 'Name' }] },
+    } as unknown as FormSchema
+
+    const view = await mounted(FormancyPromptPane, {
+      session: createBuilderSession(start, { text: createBuilderText(pseudoLanguage()) }),
+      ask: () => Promise.resolve(JSON.stringify({ [DECLINE_KEY]: 'the model said this' })),
+    })
+    await view.user.type(screen.getByRole('textbox'), 'anything')
+    await view.settle()
+    await view.user.click(screen.getByRole('button'))
+    await waitFor(() => {
+      expect(screen.getByText('the model said this')).toBeTruthy()
+    })
+    await view.settle()
+    const seen = shown(view.root)
+
+    expect(untranslated(seen, ['anything', 'the model said this'])).toEqual([])
+    expect(seen.some((text) => text.includes('declined this request'))).toBe(true)
   })
 
   test('the scenario panel, holding and not, and empty, likewise', async () => {

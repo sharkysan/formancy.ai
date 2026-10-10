@@ -158,6 +158,12 @@ is the only behaviour anybody would expect.
 > document that failed, and each turn says which attempt it is, of how many,
 > with the complaint alone as a follow-up — [0157](0157-a-models-turn-can-be-stopped.md).
 > The loop is the one described here; it now lives in `answers.ts`.
+>
+> **Later again:** a model may decline. Asked for something the format cannot express, it
+> answers `{"declined": "<why>"}`, and the run ends on that turn with the reason shown in
+> place of the problems — [0158](0158-a-model-may-decline.md). Nothing lands on a decline
+> either. It is a refusal in the model's words rather than the checks', and it costs one
+> attempt rather than every one the run allows.
 
 ## Alternatives considered (continued)
 

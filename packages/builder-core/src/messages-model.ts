@@ -7,7 +7,8 @@ import type { Message } from './messages.js'
  * a file of its own because what a run with a model can come to changes for its own
  * reasons: a stop and a model that could not be reached arrived together
  * ([0157](../../../docs/decisions/0157-a-models-turn-can-be-stopped.md)), when
- * `messages.ts` was near its size budget.
+ * `messages.ts` was near its size budget, and a model that declines came next
+ * ([0158](../../../docs/decisions/0158-a-model-may-decline.md)).
  */
 export const MODEL_MESSAGES = {
   'prompt.label': 'Describe the form, or the change you want',
@@ -54,4 +55,7 @@ export const MODEL_MESSAGES = {
   'prompt.status.stopped': 'Stopped. Nothing was applied.',
   'prompt.status.unreachable': 'Nothing was applied. The model could not be reached: {reason}',
   'prompt.status.unreachableNoReason': 'Nothing was applied. The model could not be reached.',
+  // The model said the format cannot express the request. Its reason is shown beneath,
+  // as it wrote it, rather than set into this sentence.
+  'prompt.status.declined': 'Nothing was applied. The model declined this request.',
 } as const satisfies Record<string, Message>

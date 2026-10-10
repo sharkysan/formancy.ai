@@ -5,6 +5,7 @@ import { userEvent } from '@testing-library/user-event'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { createBuilderSession } from '@formancy/builder-core'
 import type { AskModel } from '@formancy/builder-core'
+import { DECLINE_KEY } from '@formancy/spec'
 import type { FormSchema } from '@formancy/spec'
 import { FormancyPromptPane } from './prompt-pane.js'
 
@@ -242,6 +243,37 @@ describe('when it cannot', () => {
     // A network failure, a rate limit, a missing key. A button that silently
     // does nothing is the worst version of this.
     await waitFor(() => expect(screen.getByText(/429 rate limited/)).toBeTruthy())
+  })
+})
+
+describe('when the model declines', () => {
+  test('it says so after one turn, and shows the model’s reason, as text, in place of the problems', async () => {
+    /*
+     * Asked for something the format cannot express, a model had no answer but a
+     * document. It wrote one that failed on every attempt, and the pane listed what
+     * the checks said about a document nobody wanted, and nothing of why. The reason
+     * is the model's text: shown as written, never as markup.
+     */
+    const user = userEvent.setup()
+    const session = createBuilderSession(START)
+    const why = 'A form cannot send <b>email</b>. That is set up on the server.'
+    const model = say('not json at all', JSON.stringify({ [DECLINE_KEY]: why }))
+    await mount(session, model)
+
+    await instruct(user, 'email me every submission')
+
+    await waitFor(() =>
+      expect(screen.getByRole('status').textContent).toBe(
+        'Nothing was applied. The model declined this request.',
+      ),
+    )
+    expect(screen.getByText(why)).toBeTruthy()
+    expect(document.querySelector('[data-formancy-part="prompt-pane"] b')).toBeNull()
+    // In place of the problem list: the first answer's complaint was about a
+    // document, and there is no document to fix. The list itself, not its items.
+    expect(screen.queryByRole('list')).toBeNull()
+    expect(model).toHaveBeenCalledTimes(2)
+    expect(session.document()).toEqual(START)
   })
 })
 

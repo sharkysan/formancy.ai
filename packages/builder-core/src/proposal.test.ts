@@ -195,7 +195,7 @@ describe('what the prompt pane says', () => {
   }
   /** A run's ending, as `authorForm` reports it. */
   const ended = (
-    how: 'gave-up' | 'stopped' | 'unreachable',
+    how: Extract<AuthoringResult, { ok: false }>['ended'],
     attempts: number,
     reason?: string,
   ): AuthoringResult => ({
@@ -299,5 +299,23 @@ describe('what the prompt pane says', () => {
     expect(proposalStatus(stopped, french)).toBe(french('prompt.status.stopped'))
     expect(german('prompt.status.stopped')).not.toBe(english('prompt.status.stopped'))
     expect(french('prompt.status.stopped')).not.toBe(english('prompt.status.stopped'))
+  })
+
+  test('a model that declined is said to have declined, in each language', () => {
+    /*
+     * Not "the document still did not work", which sends a person to reword an
+     * instruction the format cannot satisfy however it is worded. The model's reason
+     * is not in the sentence: the pane shows it in place of the problem list, as the
+     * model wrote it, and saying it twice would read it twice to a screen reader.
+     */
+    const declined = { ...idle, result: ended('declined', 1, 'A form cannot send email.') }
+    const german = createBuilderText({ locale: 'de', messages: BUILDER_MESSAGES_DE })
+    const french = createBuilderText({ locale: 'fr', messages: BUILDER_MESSAGES_FR })
+
+    expect(proposalStatus(declined, english)).toBe('Nothing was applied. The model declined this request.')
+    expect(proposalStatus(declined, german)).toBe(german('prompt.status.declined'))
+    expect(proposalStatus(declined, french)).toBe(french('prompt.status.declined'))
+    expect(german('prompt.status.declined')).not.toBe(english('prompt.status.declined'))
+    expect(french('prompt.status.declined')).not.toBe(english('prompt.status.declined'))
   })
 })

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { authorForm } from '@formancy/builder-core'
+import { DECLINE_KEY } from '@formancy/spec'
 import { DEMO_MODEL } from './demo-capabilities.js'
 
 /**
@@ -45,5 +46,23 @@ describe('the stand-in model', () => {
     expect(second).toContain('attempt 2 of 3')
     expect(second).toContain('That was not JSON')
     expect(second).not.toContain('add a phone number')
+  })
+
+  test('shows how to decline, and a person who copies it ends the run in one dialog', async () => {
+    /*
+     * The dialog asked for a whole document and nothing else, so a visitor playing
+     * the model had no way to say "a form cannot do that" — and no way to see what
+     * the pane does when a model says so. The person here copies the decline the
+     * dialog shows, read out of it as JSON rather than matched as wording.
+     */
+    const prompt = vi.spyOn(window, 'prompt').mockImplementation((message) => {
+      const shown = [...String(message).matchAll(/\{[^{}]*\}/g)].map(([candidate]) => candidate)
+      return shown.find((candidate) => candidate.includes(JSON.stringify(DECLINE_KEY))) ?? 'no decline shown'
+    })
+
+    const result = await authorForm(DEMO_MODEL, 'email me every submission')
+
+    expect(result).toMatchObject({ ok: false, ended: 'declined' })
+    expect(prompt).toHaveBeenCalledTimes(1)
   })
 })

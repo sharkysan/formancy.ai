@@ -1,3 +1,5 @@
+import { DECLINE_KEY } from '@formancy/spec'
+
 /**
  * Asking a model for something checkable, and reading what it says.
  *
@@ -8,12 +10,14 @@
  * be the last, so neither half knows what a form is. The caller says what to ask
  * and how to check the answer.
  *
- * **A run ends one of four ways**, and only the first is a success: an answer
- * passed; every attempt was used and none did; the person stopped it; or the host
- * could not ask its model at all. The last two are not a model's failure, and
- * saying "the document did not work" for them sent somebody to reword an
- * instruction when the network was down
- * ([0157](../../../docs/decisions/0157-a-models-turn-can-be-stopped.md)).
+ * **A run ends one of five ways**, and only the first is a success: an answer
+ * passed; every attempt was used and none did; the person stopped it; the host
+ * could not ask its model at all; or the model said it cannot be done. The last
+ * three are not an answer that failed, and saying "the document did not work" for
+ * them sent somebody to reword an instruction when the network was down
+ * ([0157](../../../docs/decisions/0157-a-models-turn-can-be-stopped.md)), or when
+ * no wording would have helped
+ * ([0158](../../../docs/decisions/0158-a-model-may-decline.md)).
  *
  * **No sentences here.** What a model is told — the briefing, the instruction, the
  * complaint — is worded by whoever asks, because that wording is about the thing
@@ -117,8 +121,11 @@ export type Asked<T, P> =
       readonly problems: readonly P[]
       /** The last answer that was checked, so a person can see what went wrong. */
       readonly lastAnswer: string
-      readonly ended: 'gave-up' | 'stopped' | 'unreachable'
-      /** When unreachable: why, in the words of whatever the host's model threw — absent when it had none. */
+      readonly ended: 'gave-up' | 'stopped' | 'unreachable' | 'declined'
+      /**
+       * When unreachable: why, in the words of whatever the host's model threw — absent
+       * when it had none. When declined: why, in the model's.
+       */
       readonly reason?: string
     }
 
@@ -144,20 +151,26 @@ type Turn =
  * three rounds of accumulated complaints starts fixing the first one again, and
  * a loop that passes one cannot be called in a way that repeats them all.
  *
+ * `check` is given what the answer held, and never a decline: that ends the run
+ * here, whatever was asked for, so a caller cannot check one as an answer that
+ * failed and ask again. A decline with no reason in it does reach `check`, because
+ * it is an answer that failed — the run asks again — and only the caller can word
+ * what the model is told about it.
+ *
  * It resolves on every ending, a host's error included, so a caller reads what
  * happened from the result rather than from whether it threw.
  */
 export async function askChecked<T, P>(
   ask: AskModel,
   build: (latest: P | undefined) => Omit<AuthoringPrompt, 'attempt' | 'limit'>,
-  check: (answer: string) => Verdict<T, P>,
+  check: (answer: Checkable) => Verdict<T, P>,
   options: AskOptions = {},
 ): Promise<Asked<T, P>> {
   const limit = Math.max(1, options.attempts ?? DEFAULT_ATTEMPTS)
   const problems: P[] = []
   let lastAnswer = ''
   const ended = (
-    how: 'gave-up' | 'stopped' | 'unreachable',
+    how: 'gave-up' | 'stopped' | 'unreachable' | 'declined',
     attempts: number,
     reason?: string,
   ): Asked<T, P> => ({
@@ -177,7 +190,11 @@ export async function askChecked<T, P>(
     if (turn.kind === 'unreachable') return ended('unreachable', attempt, turn.reason)
 
     lastAnswer = turn.answer
-    const verdict = check(turn.answer)
+    const read = readAnswer(turn.answer)
+    // Not asked again: another turn would be a call paid for — through a relay, two
+    // pastes by hand — to hear the same answer, or to talk the model out of it.
+    if (read?.kind === 'declined') return ended('declined', attempt, read.reason)
+    const verdict = check(read)
     if (verdict.ok) return { ok: true, value: verdict.value, attempts: attempt }
     problems.push(verdict.problem)
   }
@@ -264,6 +281,18 @@ function saysSomething(text: string): string | undefined {
 }
 
 /**
+ * What a model's text held: an object to check, a decline and its reason, or a
+ * decline with no reason in it.
+ */
+export type Reading =
+  | { readonly kind: 'object'; readonly value: object }
+  | { readonly kind: 'declined'; readonly reason: string }
+  | { readonly kind: 'unexplained-decline' }
+
+/** What `check` is given: a reading that is not a decline, or `undefined` when there was no object. */
+export type Checkable = Exclude<Reading, { readonly kind: 'declined' }> | undefined
+
+/**
  * The JSON object in whatever the model said, or `undefined` when there is none.
  *
  * Models put JSON in code fences and add a sentence in front of it however
@@ -271,8 +300,15 @@ function saysSomething(text: string): string | undefined {
  * on formatting rather than on the content. So a fence is stripped and, failing
  * that, the outermost braces are taken. Anything looser would start accepting
  * prose that happens to contain a bracket.
+ *
+ * **An object whose only key is `DECLINE_KEY`, holding a reason, is a decline**:
+ * what a model briefed by `authoringBriefing` answers when the format cannot
+ * express the request. Recognised by its whole shape, never by the word, so a form
+ * about declined claims is a form. Whatever is asked for this way must not itself
+ * be such an object, and a form cannot be: it needs `specVersion`, `id`, `title`
+ * and `model`. That shape with no reason in it is an `unexplained-decline`.
  */
-export function readAnswer(text: string): object | undefined {
+export function readAnswer(text: string): Reading | undefined {
   const fenced = /```(?:json)?\s*([\s\S]*?)```/.exec(text)
   const candidates = [fenced?.[1], text, betweenBraces(text)]
 
@@ -283,12 +319,53 @@ export function readAnswer(text: string): object | undefined {
       // A bare string or number is valid JSON and is not an object; letting
       // one through would report it as the wrong object rather than as an
       // answer that was not one.
-      if (parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed
+      if (parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return declineIn(parsed) ?? { kind: 'object', value: parsed }
+      }
     } catch {
       // Try the next reading.
     }
   }
   return undefined
+}
+
+/**
+ * The decline an object is, if it has a decline's shape.
+ *
+ * **One with no reason — blank, or not a string — does not end the run**: "the
+ * model declined" and then nothing gives a person nothing to act on, and asked
+ * again the model can say why, or write the form after all. Nor is it the thing
+ * asked for. Checked as a form, it draws the schema's complaints — the key is a
+ * misspelling to remove, four properties are missing — which tell a model to write
+ * a document for a request it judged no document could satisfy. So it is a reading
+ * of its own, and the caller's complaint asks for the reason.
+ */
+function declineIn(parsed: object): Reading | undefined {
+  const keys = Object.keys(parsed)
+  if (keys.length !== 1 || keys[0] !== DECLINE_KEY) return undefined
+  const reason: unknown = (parsed as Record<string, unknown>)[DECLINE_KEY]
+  return typeof reason === 'string' && reason.trim() !== ''
+    ? { kind: 'declined', reason: reason.trim() }
+    : { kind: 'unexplained-decline' }
+}
+
+/**
+ * A decline, as a model writes one, for a host to answer with.
+ *
+ * For a model service that refuses a request itself — a refusal in the response
+ * rather than in its text — so the run ends after that turn with the host's
+ * sentence, as it would had the model said so, rather than spending every
+ * remaining attempt on answers that were not JSON.
+ *
+ * Throws on a reason with nothing in it: written out, that is not a decline, and
+ * the run would ask again — the waste a decline exists to end. A host doing that
+ * is wired wrongly, and hears so at once.
+ */
+export function declinedAnswer(reason: string): string {
+  if (reason.trim() === '') {
+    throw new Error('declinedAnswer needs a reason to show the person who asked; a blank one is not a decline.')
+  }
+  return JSON.stringify({ [DECLINE_KEY]: reason })
 }
 
 function betweenBraces(text: string): string | undefined {

@@ -243,12 +243,17 @@ a proposal has gone stale
 
 Before a proposal there is the asking. `answers.ts` holds what every request to a model
 shares and nothing about forms. `readAnswer` takes the JSON object out of what a model
-wrote. `askChecked` asks, checks, and asks again with only the latest complaint. The run
-ends when an answer passes, when the attempts run out, when the person stops it, or when
-the host's model cannot be asked. It resolves on each, with `ended` saying which. Each
-turn is raced against a `Stop` from `createStop`, so a host that ignores `onCancel` cannot
-hold the run open, and an answer arriving after the stop is discarded. The stop is a
-callback rather than an `AbortSignal`, which this package's types do not have.
+wrote, and reads one whose only key is the spec's `DECLINE_KEY` as the model declining.
+One with no reason in it does not end the run; the caller's check is given it, to word the
+complaint that asks for the reason. `askChecked` asks, checks, and asks again with only the
+latest complaint. The run ends when an answer passes, when the attempts run out, when the
+person stops it, when the host's model cannot be asked, or when the model declines, after
+that one turn. It resolves on each, with `ended` saying which. `declinedAnswer` writes a
+decline for a host whose model service refuses a request itself
+([0158](../decisions/0158-a-model-may-decline.md)). Each turn is raced against a `Stop`
+from `createStop`, so a host that ignores `onCancel` cannot hold the run open, and an
+answer arriving after the stop is discarded. The stop is a callback rather than an
+`AbortSignal`, which this package's types do not have.
 `authoring.ts` is the form's half: the briefing, the prompt, and the checks an answer has
 to pass ([0056](../decisions/0056-agents-get-the-checks.md),
 [0157](../decisions/0157-a-models-turn-can-be-stopped.md)).

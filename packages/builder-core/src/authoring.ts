@@ -1,9 +1,9 @@
-import { authoringBriefing, canonicalize } from '@formancy/spec'
+import { authoringBriefing, canonicalize, DECLINE_KEY } from '@formancy/spec'
 import { validateSchema } from '@formancy/spec/validate'
 import type { FormSchema } from '@formancy/spec'
 import { engineRefusal, expressionProblems } from '@formancy/core'
-import { askChecked, readAnswer } from './answers.js'
-import type { AskModel, Stop, Verdict } from './answers.js'
+import { askChecked } from './answers.js'
+import type { AskModel, Checkable, Stop, Verdict } from './answers.js'
 
 /**
  * Writing a form from an instruction, and refusing to hand back one that does not work.
@@ -18,7 +18,7 @@ import type { AskModel, Stop, Verdict } from './answers.js'
  * vendor, no API key, no network call and no opinion about who pays for tokens.
  */
 
-export { createStop } from './answers.js'
+export { createStop, declinedAnswer } from './answers.js'
 export type { AskModel, AskTurn, AuthoringPrompt, Stop } from './answers.js'
 
 /**
@@ -27,9 +27,11 @@ export type { AskModel, AskTurn, AuthoringPrompt, Stop } from './answers.js'
  * `logic` is the engine refusing to open the document at all — a misspelled
  * field, a cycle, a condition that is not certain to be a bool — and
  * `expression` is one it would open whose rule then never does anything.
+ * `unexplained-decline` is not a document at all: a decline with no reason in it,
+ * which is asked for the reason rather than checked as a form (0158).
  */
 export interface AuthoringProblem {
-  readonly kind: 'not-json' | 'invalid-document' | 'logic' | 'expression'
+  readonly kind: 'not-json' | 'invalid-document' | 'logic' | 'expression' | 'unexplained-decline'
   readonly detail: string
 }
 
@@ -47,12 +49,15 @@ export type AuthoringResult =
        * Why there is no document. `gave-up`: every attempt answered and none
        * worked. `stopped`: the person stopped the run, and an answer still on its
        * way is discarded. `unreachable`: the host's model threw — the network, a
-       * refused key — so nothing about the instruction was tried.
+       * refused key — so nothing about the instruction was tried. `declined`: the
+       * model answered that the format cannot express what was asked, and was not
+       * asked again (0158).
        */
-      readonly ended: 'gave-up' | 'stopped' | 'unreachable'
+      readonly ended: 'gave-up' | 'stopped' | 'unreachable' | 'declined'
       /**
-       * When unreachable: the message of what the host's model threw, to be shown as
-       * text. Absent when it had none — `undefined`, an event, an empty string.
+       * When unreachable: the message of what the host's model threw, absent when it
+       * had none — `undefined`, an event, an empty string. When declined: the model's
+       * reason, as it wrote it. Either is shown as text.
        */
       readonly reason?: string
     }
@@ -110,10 +115,18 @@ export async function authorForm(
   return asked.ok ? { ok: true, document: asked.value, attempts: asked.attempts } : asked
 }
 
-/** Whether an answer is a document that works, or the first thing wrong with it. */
-function checkDocument(answer: string): Verdict<FormSchema, AuthoringProblem> {
-  const parsed = readAnswer(answer)
-  if (parsed === undefined) {
+/**
+ * The decline as the briefing shows it, for a model that sent one with no reason.
+ *
+ * Shown again rather than referred to, because a host that keeps a conversation
+ * sends the complaint alone. Built from the key, as the briefing's is, and
+ * `authoring.test.ts` holds the two to the same text.
+ */
+const DECLINE_EXAMPLE = JSON.stringify({ [DECLINE_KEY]: '<why, for the person who asked>' })
+
+/** Whether what an answer held is a document that works, or the first thing wrong with it. */
+function checkDocument(answer: Checkable): Verdict<FormSchema, AuthoringProblem> {
+  if (answer === undefined) {
     return {
       ok: false,
       problem: {
@@ -123,6 +136,21 @@ function checkDocument(answer: string): Verdict<FormSchema, AuthoringProblem> {
     }
   }
 
+  if (answer.kind === 'unexplained-decline') {
+    // Not validated: the schema would call the key a misspelling to remove, which
+    // tells a model that judged the request impossible to write a document anyway.
+    return {
+      ok: false,
+      problem: {
+        kind: 'unexplained-decline',
+        detail:
+          'A decline needs a reason, written for the person who asked. If the format cannot ' +
+          `express what was asked, answer ${DECLINE_EXAMPLE}; if it can, answer with the document.`,
+      },
+    }
+  }
+
+  const parsed = answer.value
   const validated = validateSchema(parsed)
   if (!validated.valid) {
     return {
