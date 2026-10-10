@@ -40,6 +40,7 @@ import { checkUploadThumbnails } from './upload-browser-test.mjs'
 import { checkArrangeGaps } from './arrange-browser-test.mjs'
 import { checkMaterialDateButton } from './material-date-browser-test.mjs'
 import { checkNoForeignRequests } from './request-browser-test.mjs'
+import { checkSuggestionsPlacement } from './suggestions-browser-test.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const site = join(root, 'apps', 'site', 'dist')
@@ -199,6 +200,7 @@ async function run() {
     await checkAngularPage(browser, origin, check)
     await checkUploadThumbnails(browser, url, check)
     await checkArrangeGaps(browser, url, check)
+    await checkSuggestionsPlacement(browser, url, check)
     for (const { label, width, height } of WIDTHS) {
       const page = await browser.newPage({ viewport: { width, height } })
       await page.goto(url, { waitUntil: 'load' })
@@ -1059,7 +1061,7 @@ async function run() {
     throw new Error(`${String(failures.length)} browser check(s) failed:\n  ${failures.join('\n  ')}`)
   }
   console.log(
-    `browser checks passed: ${String(WIDTHS.length)} viewports of the playground, plus the site's pages, the starter embedded in one and the starter on its own, and drops into the space between two nodes and what can be picked up after, for the layout, gesture and cascade facts jsdom cannot represent; and every request of the pages it opens, none of them to another site`,
+    `browser checks passed: ${String(WIDTHS.length)} viewports of the playground, plus the site's pages, the starter embedded in one and the starter on its own, drops into the space between two nodes and what can be picked up after, and where each builder puts the panes beside the starter's suggestions, for the layout, gesture and cascade facts jsdom cannot represent; and every request of the pages it opens, none of them to another site`,
   )
 }
 

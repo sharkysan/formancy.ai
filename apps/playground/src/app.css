@@ -917,13 +917,19 @@ body {
 
 /* The Angular builder's panes are not grid items of `.builder-pane`, so the room the React
    builder's get from its gap is a margin there: below each list, and above all but the first,
-   which already has the gap between the toolbar and the builder above it. */
+   which already has the gap between the toolbar and the builder above it. On the list drawn,
+   not on the element holding it: that element is in the document on every demo, list or not,
+   and with the margin on it every demo but the starter had room above its prompt box where
+   nothing was drawn. `scripts/suggestions-browser-test.mjs` measures both builders. */
 formancy-playground-suggestions {
   display: block;
+}
+
+formancy-playground-suggestions > .suggestions {
   margin-block-end: 0.875rem;
 }
 
-formancy-playground-suggestions:not(:first-of-type) {
+formancy-playground-suggestions:not(:first-of-type) > .suggestions {
   margin-block-start: 0.875rem;
 }
 

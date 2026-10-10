@@ -1,4 +1,4 @@
-import { draftsOn, translationToReview } from '@formancy/builder-core'
+import { draftsOn, missingMessages, translationToReview } from '@formancy/builder-core'
 import type { BuilderSession, Relay } from '@formancy/builder-core'
 import type { ModelRuns } from './angular-builder-host.js'
 
@@ -67,27 +67,60 @@ export function suggestionsFor(
 }
 
 /**
- * Whether `feature`'s suggestions can be pressed now. A button that did nothing would be the
- * worse lie, and one of them would do harm:
+ * Whether `suggestion` can be pressed now. A button that did nothing would be the worse lie,
+ * and one of them would do harm:
  *
  * - **a change**, not while the prompt run waits: its box is the run's words then, and
  *   `instruct` leaves it alone;
  * - **what the form should do**, not while drafting for this form waits, when its box is
  *   disabled;
- * - **a translation**, not while one waits, and not while one is held for review — asked
- *   again, the run would forget the review the visitor carried a turn for. The pane offers
- *   its own Ask under the same two conditions.
+ * - **a translation**, only where the translations pane, drawn on its language, offers its
+ *   own Ask — which is what the suggestion presses — and that Ask would ask for something.
+ *   Not while a translation waits, nor while one is held for review: asked again, the run
+ *   would forget the review the visitor carried a turn for. Not for a language the form does
+ *   not have, which the pane offers no way to choose: the request would ask for every
+ *   message, and its answer could only be discarded. And not with nothing in that language
+ *   missing — finished by Apply or by hand, or the form's own language, whose catalogue a
+ *   session never holds incomplete — when no model is asked, and the pane would say the
+ *   model had left every message untranslated.
+ *
+ * The run and the form both move what this says — Apply, Undo and a message typed change
+ * what is missing without the run changing — so a list follows both, through `followTrying`.
  */
-export function canTry(feature: Feature, runs: ModelRuns, session: BuilderSession): boolean {
-  switch (feature) {
+export function canTry(suggestion: Suggestion, runs: ModelRuns, session: BuilderSession): boolean {
+  switch (suggestion.feature) {
     case 'prompt':
       return !runs.prompt.state().busy
     case 'drafting':
       return !draftsOn(runs.drafting.state(), session).busy
     case 'translation': {
       const { busy, proposal } = runs.translation.state()
-      return !busy && translationToReview(proposal) === undefined
+      const form = session.document()
+      return (
+        !busy &&
+        translationToReview(proposal) === undefined &&
+        Object.hasOwn(form.i18n?.messages ?? {}, suggestion.locale) &&
+        missingMessages(form, suggestion.locale).length > 0
+      )
     }
+  }
+}
+
+/**
+ * Hear every change that can move what `canTry` says of `feature`'s suggestions: its run's,
+ * and the form's. Returns what stops listening to both.
+ */
+export function followTrying(
+  feature: Feature,
+  runs: ModelRuns,
+  session: BuilderSession,
+  listener: () => void,
+): () => void {
+  const fromRun = runs[feature].subscribe(listener)
+  const fromForm = session.subscribe(listener)
+  return () => {
+    fromRun()
+    fromForm()
   }
 }
 
@@ -109,7 +142,7 @@ export interface Suggesting extends TryingWith {
  * when it cannot be pressed now (`canTry`).
  */
 export function trySuggestion(suggestion: Suggestion, { runs, relay, session }: TryingWith): void {
-  if (!canTry(suggestion.feature, runs, session)) return
+  if (!canTry(suggestion, runs, session)) return
   switch (suggestion.feature) {
     case 'prompt':
       runs.prompt.instruct(suggestion.words)

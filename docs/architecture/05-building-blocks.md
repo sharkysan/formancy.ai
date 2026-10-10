@@ -466,7 +466,9 @@ page's runs; each builder draws them with its own markup (`suggestions-list.tsx`
 `angular-suggestions-list.ts`), and `suggestions.test.tsx` compares the two drawings. A
 suggestion with words fills in its box through the run; a translation's is its language, so
 it asks, which puts the request on the relay and opens the translations pane again on that
-language.
+language — and only where that pane's own Ask would ask for something, the language the form's
+and something in it missing. Each list follows its run and the form, since Apply and Undo
+change what is missing.
 
 ### `@formancy/server-core` and `@formancy/server`
 

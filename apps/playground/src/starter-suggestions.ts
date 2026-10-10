@@ -35,16 +35,18 @@ export const OUT_OF_REACH: Phrased = {
 }
 
 /**
- * The starter's French, which is half-finished on purpose: the form pane shows the fallback,
- * and a model can be asked for only what is missing, each message reviewed before it lands
- * ([0161](../../../docs/decisions/0161-a-model-translates-only-what-is-missing.md)).
+ * The starter's French, which ships half-finished on purpose: the form pane shows the
+ * fallback, and a model can be asked for only what is missing, each message reviewed before
+ * it lands ([0161](../../../docs/decisions/0161-a-model-translates-only-what-is-missing.md)).
+ * Once nothing in it is missing it cannot be pressed (`canTry`), so what it shows is said of
+ * the starter as it comes rather than of the form as it is now.
  */
 export const FRENCH: Translated = {
   feature: 'translation',
   words: 'Translate the French this form is missing',
   locale: 'fr',
   shows:
-    'The French is half-finished on purpose. Only what is missing is asked for, and each message is reviewed before it lands.',
+    'The starter comes with its French half-finished, on purpose. Only what is missing is asked for, and each message is reviewed before it lands.',
 }
 
 /**

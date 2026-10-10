@@ -13,6 +13,7 @@ import {
 import type { Scenario } from '@formancy/core'
 import type { FormSchema } from '@formancy/spec'
 import { App } from './app.js'
+import { builderTextFor } from './builder-pane.js'
 import { DEMOS } from './demos.js'
 import { STARTER_SCHEMA } from './starter.js'
 import { STARTER_SCENARIOS } from './starter-scenarios.js'
@@ -182,6 +183,54 @@ describe('a suggestion pressed when it cannot be', () => {
     expect(from.relay.waiting()).toBeUndefined()
   })
 
+  /** The starter's messages, by language, writable: the starter's own, copied. */
+  type Messages = Record<string, Record<string, string>>
+  const reworded = (change: (i18n: { defaultLocale: string; messages: Messages }) => void): FormSchema => {
+    const form = structuredClone(STARTER_SCHEMA) as unknown as FormSchema & {
+      i18n: { defaultLocale: string; messages: Messages }
+    }
+    change(form.i18n)
+    return form
+  }
+
+  test.each([
+    // Removed by hand in the Schema view: the pane offers no French to choose, and the
+    // request would ask for a language the form does not have, to be carried and discarded.
+    [
+      'French has left the form',
+      reworded((i18n) => {
+        delete i18n.messages[FRENCH.locale]
+      }),
+    ],
+    // Nothing is translated into the language a form is written in, so the pane asks nothing
+    // there. (Written in French, the French catalogue is the whole form: a session opens no
+    // form whose own language is missing a message.)
+    [
+      'French is the language the form is written in',
+      reworded((i18n) => {
+        i18n.defaultLocale = FRENCH.locale
+        i18n.messages[FRENCH.locale] = { ...i18n.messages['en'] }
+      }),
+    ],
+    // Finished — by Apply, or by hand: asked again, no model is, and the pane says the
+    // model left every message untranslated when nobody asked one anything.
+    [
+      'nothing in French is missing',
+      reworded((i18n) => {
+        const english = i18n.messages['en'] ?? {}
+        const french = i18n.messages[FRENCH.locale] ?? {}
+        for (const id of missingMessages(STARTER_SCHEMA as unknown as FormSchema, FRENCH.locale)) {
+          french[id] = `${english[id] ?? id} (fr)`
+        }
+      }),
+    ],
+  ])('asks for no translation where the pane would offer no Ask: %s', (_, form) => {
+    const from = { ...page(), session: createBuilderSession(form) }
+    trySuggestion(FRENCH, from)
+    expect(from.relay.waiting(), 'a request was put on the relay that the pane would never have asked').toBeUndefined()
+    expect(from.runs.translation.state().busy).toBe(false)
+  })
+
   test('does not change the words a draft is being asked with', () => {
     // The drafting box is disabled while a draft waits; its words are the ones being asked.
     const from = page()
@@ -331,6 +380,70 @@ describe('something to try, on the starter', () => {
       await user.click(within(relay).getByRole('button', { name: 'Check this answer' }))
       await within(editor()).findByRole('region', { name: /^Review these translations into fr/ }, { timeout: 10_000 })
       expect(disabled(FRENCH.words)).toBe(true)
+    },
+  )
+
+  test.each(BUILDERS)(
+    'in the %s builder, the translation can be pressed exactly when the pane on French offers its own Ask — not after Apply, and again after Undo',
+    async (which) => {
+      /*
+       * The suggestion is what the pane's Ask on French does, so it is pressable when that
+       * Ask is and not otherwise. Left pressable once the French is applied, it asked nobody
+       * and the pane said the model had left every message untranslated: no model had been
+       * asked anything. Undo changes what is missing and not the run, so a list that heard
+       * only the run would stay disabled with the French half-finished again. Each state is
+       * read off the pane's own Ask, found by the catalogue's words for it — and seen there
+       * first, so "no Ask" cannot hold of a pane drawn under words it never had.
+       */
+      const user = userEvent.setup()
+      render(<App />)
+      await builtWith(which)
+      await user.click(screen.getByRole('button', { name: 'Translations' }))
+      await user.selectOptions(
+        await within(editor()).findByRole('combobox', { name: 'Language' }, { timeout: 10_000 }),
+        FRENCH.locale,
+      )
+      const missing = missingMessages(STARTER_SCHEMA as unknown as FormSchema, FRENCH.locale)
+      const ask = builderTextFor('en')('translate.ask', { count: missing.length })
+      const paneAsks = (): boolean => within(editor()).queryByRole('button', { name: ask }) !== null
+
+      await within(editor()).findByRole('button', { name: ask }, { timeout: 10_000 })
+      expect(disabled(FRENCH.words), 'the pane offers Ask on French and the suggestion does not').toBe(false)
+
+      await user.click(await suggestion(FRENCH.words))
+      const english = STARTER_SCHEMA.i18n.messages['en'] ?? {}
+      const relay = await screen.findByRole('region', { name: 'Take this request to a model' })
+      await user.click(within(relay).getByRole('textbox', { name: 'The model’s answer' }))
+      await user.paste(
+        JSON.stringify({
+          locale: FRENCH.locale,
+          defaultLocale: 'en',
+          messages: missing.map((id) => ({ id, source: english[id], target: `${english[id] ?? id} (fr)` })),
+        }),
+      )
+      await user.click(within(relay).getByRole('button', { name: 'Check this answer' }))
+      const review = await within(editor()).findByRole(
+        'region',
+        { name: /^Review these translations into fr/ },
+        { timeout: 10_000 },
+      )
+      await user.click(within(review).getByRole('button', { name: 'Apply these translations' }))
+      await waitFor(() => expect(undoButton().disabled).toBe(false))
+
+      expect(paneAsks(), 'the French is finished, and the pane still offers to ask for it').toBe(false)
+      await waitFor(() =>
+        expect(disabled(FRENCH.words), 'nothing in French is missing, and the suggestion still asks for it').toBe(
+          true,
+        ),
+      )
+
+      await user.click(undoButton())
+      await within(editor()).findByRole('button', { name: ask }, { timeout: 10_000 })
+      await waitFor(() =>
+        expect(disabled(FRENCH.words), 'the French is half-finished again, and the suggestion did not hear it').toBe(
+          false,
+        ),
+      )
     },
   )
 

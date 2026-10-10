@@ -10,7 +10,7 @@ import {
   signal,
   untracked,
 } from '@angular/core'
-import { LEADS, canTry, suggestionsFor, trySuggestion } from './suggestions.js'
+import { LEADS, canTry, followTrying, suggestionsFor, trySuggestion } from './suggestions.js'
 import type { Feature, Suggesting, Suggestion } from './suggestions.js'
 
 /**
@@ -18,7 +18,7 @@ import type { Feature, Suggesting, Suggestion } from './suggestions.js'
  *
  * The same list as the React builder's `SuggestionsList`, from the same `suggestions.ts` —
  * which ones, when they can be pressed, what pressing one does — so this is the markup and a
- * subscription to the run the suggestions fill. `suggestions.test.tsx` compares the two
+ * subscription to what can change whether each can be pressed: the run they fill, and the form. `suggestions.test.tsx` compares the two
  * drawings.
  *
  * Bound to what the host holds, `[from]="host"`, rather than injecting the host's token: the
@@ -37,7 +37,7 @@ import type { Feature, Suggesting, Suggestion } from './suggestions.js'
             <li>
               <button
                 type="button"
-                [disabled]="!open()"
+                [disabled]="!open()[index]"
                 [attr.aria-describedby]="leadId + '-' + index"
                 (click)="press(suggestion)"
               >
@@ -64,24 +64,33 @@ export class PlaygroundSuggestionsList {
 
   protected readonly offered = computed(() => suggestionsFor(this.from().suggestions, this.feature()))
   protected readonly lead = computed(() => LEADS[this.feature()])
-  /** Whether they can be pressed now, as `canTry` says, following the run they fill. */
-  protected readonly open = signal(true)
+  /**
+   * Whether each can be pressed now, as `canTry` says, in the order drawn. Following the run
+   * they fill and the form too: Apply and Undo change what the French is missing, and only
+   * Apply changes the run.
+   */
+  protected readonly open = signal<readonly boolean[]>([], { equal: sameEach })
 
   constructor() {
-    let unsubscribe: (() => void) | undefined
+    let unfollow: (() => void) | undefined
     effect(() => {
-      const feature = this.feature()
+      const offered = this.offered()
       const { runs, session } = this.from()
-      const follow = (): void => this.open.set(canTry(feature, runs, session))
-      unsubscribe?.()
-      untracked(follow)
-      unsubscribe = runs[feature].subscribe(follow)
+      const read = (): void => this.open.set(offered.map((suggestion) => canTry(suggestion, runs, session)))
+      unfollow?.()
+      untracked(read)
+      unfollow = followTrying(this.feature(), runs, session, read)
     })
-    inject(DestroyRef).onDestroy(() => unsubscribe?.())
+    inject(DestroyRef).onDestroy(() => unfollow?.())
   }
 
   protected press(suggestion: Suggestion): void {
     trySuggestion(suggestion, this.from())
     this.tried.emit()
   }
+}
+
+/** Two readings the same, so a change that moves none of the buttons draws nothing. */
+function sameEach(a: readonly boolean[], b: readonly boolean[]): boolean {
+  return a.length === b.length && a.every((open, index) => open === b[index])
 }

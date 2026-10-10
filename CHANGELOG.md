@@ -24,11 +24,13 @@ copy of every order*, which a form cannot do and a model is asked to decline
 under the examples, a sentence about express delivery, a rule the starter has no example of.
 A suggestion with words only fills in the box, and asks and sends nothing; the French one puts
 its request at the top of the builder for the visitor to carry, as the pane's own Ask does, and
-opens the pane on French. None can be pressed while the run it would fill waits, nor the
-French while its answer is under review, which asking again would forget. Other demos show
-none: the suggestions are about the starter's fields. The playground's accessibility audit now
-covers the Angular builder's *Fields* and *Translations* as well, since each builder draws the
-suggestions itself.
+opens the pane on French. None can be pressed while the run it would fill waits; the French
+only where the pane's own Ask would ask for something — not while its answer is under review,
+which asking again would forget, not once nothing in French is missing, and not on a form
+with no French, where the request would ask for a language the form does not have. Other
+demos show none: the suggestions are about the starter's fields. The playground's
+accessibility audit now covers the Angular builder's *Fields* and *Translations* as well,
+since each builder draws the suggestions itself.
 
 **Added: a model for the builders on formancy's own server, of the operator's choosing —
 Claude, OpenAI's models or Grok.** A deployment had no model: the admin drew no prompt pane,

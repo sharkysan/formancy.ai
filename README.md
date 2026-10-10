@@ -504,8 +504,9 @@ under *Fields*
 Not sure what to ask? On the starter each of the three suggests something beside its box: a
 change whose rule the starter's examples catch if the answer turns it round, one no form can
 do, which a model is asked to decline, the French the starter left unfinished, and a sentence
-to draft examples from. One with words fills in the box and asks nothing; the French one puts
-its request at the top of the builder, for you to carry.
+to draft examples from. One with words fills in the box and asks nothing; the French one,
+while the French is missing something, puts its request at the top of the builder, for you to
+carry.
 
 **`?dir=rtl`** opens the playground right to left: both forms and both builders follow
 the reading order — the marks on a selected node move to the side a line starts on, and a
