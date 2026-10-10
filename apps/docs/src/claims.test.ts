@@ -652,10 +652,12 @@ describe('what the landing page promises the playground does', () => {
     ).toMatch(/<AngularBuilderPane\s/)
 
     // One session, passed to both. A `session=` that was not the same expression
-    // would be two documents pretending to be one.
+    // would be two documents pretending to be one. Whitespace-tolerant: the call is
+    // laid out over several lines once it carries more than fits on one, and a guard
+    // that knew only the one-line spelling failed on a formatter's line break.
     const pane = read('apps', 'playground', 'src', 'angular-builder-pane.tsx')
     expect(pane, 'the Angular builder stopped using the session it was given').toMatch(
-      /mountAngularBuilder\(element, session,/,
+      /mountAngularBuilder\(\s*element,\s*session,/,
     )
 
     // And the package can be imported at all, which is the defect that hid this.

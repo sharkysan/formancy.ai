@@ -10,6 +10,16 @@ later.
 
 ## Unreleased
 
+**Fixed: the playground's Angular builder lacked two panes the React one has.** Under
+*Fields* it had no prompt pane, so describing a change in words could only be tried in React,
+and under *Arrangement* nothing showed the selected layout node's properties, so a table's
+columns or a section's label could not be set there. Its host's comment said the two builders
+drew the same panes, and nothing compared them. `two-builders.test.tsx` now does, on every
+tab, by the parts each builder draws. Also fixed: every switch to Angular first drew the
+examples as none and then as the page's, because the page's lists reached the builder only
+after its first render. The status is a live region, so "No scenarios." could be announced
+before the examples' own status.
+
 **Fixed: the playground's examples could not be removed.** The React builder's scenario panel
 was handed the starter's examples as a constant and nothing to tell when one was removed, so
 it drew no Remove button at all — and a page that listened but kept the constant would have

@@ -4,9 +4,9 @@ import { bootstrapApplication } from '@angular/platform-browser'
 import type { BuilderBlock, BuilderSession } from '@formancy/builder-core'
 import type { Scenario } from '@formancy/core'
 import { AngularBuilderHost, PLAYGROUND_BUILDER, playgroundBuilder } from './angular-builder-host.js'
-import type { BuilderTab, PreviewState, ToThePage } from './angular-builder-host.js'
+import type { BuilderTab, FromThePage, PreviewState, ToThePage } from './angular-builder-host.js'
 
-export type { BuilderTab, PreviewState, ToThePage }
+export type { BuilderTab, FromThePage, PreviewState }
 
 /** A mounted Angular builder: how to retune it, and how to take it away. */
 export interface MountedBuilder {
@@ -37,6 +37,7 @@ export async function mountAngularBuilder(
   host: HTMLElement,
   session: BuilderSession,
   tab: BuilderTab,
+  from: FromThePage,
   back: ToThePage,
 ): Promise<MountedBuilder> {
   // Angular bootstraps into an element matching the component's selector and
@@ -44,7 +45,7 @@ export async function mountAngularBuilder(
   const root = document.createElement('formancy-playground-angular-builder')
   host.append(root)
 
-  const state = playgroundBuilder(session, tab, back)
+  const state = playgroundBuilder(session, tab, from, back)
 
   let app: ApplicationRef
   try {

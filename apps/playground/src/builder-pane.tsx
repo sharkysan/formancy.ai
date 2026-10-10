@@ -267,8 +267,8 @@ export function BuilderBody({
   )
 }
 
-/** What the tabs are called. */
-const TAB_NAMES: Readonly<Record<BuilderTab, string>> = {
+/** What the tabs are called; exported so a test can visit every one, not a list of its own. */
+export const TAB_NAMES: Readonly<Record<BuilderTab, string>> = {
   fields: 'Fields',
   arrangement: 'Arrangement',
   rules: 'Rules',

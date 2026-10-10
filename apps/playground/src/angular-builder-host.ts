@@ -3,7 +3,9 @@ import type { WritableSignal } from '@angular/core'
 import {
   FormancyBuilder,
   FormancyLayoutPane,
+  FormancyLayoutPropertyPanel,
   FormancyLogicPanel,
+  FormancyPromptPane,
   FormancyPropertyPanel,
   FormancyRulesOverview,
   FormancyTranslationsPane,
@@ -11,6 +13,7 @@ import {
 } from '@formancy/builder-angular'
 import type { BuilderBlock, BuilderSession, Capabilities } from '@formancy/builder-core'
 import type { Scenario } from '@formancy/core'
+import { DEMO_MODEL } from './demo-capabilities.js'
 import { STARTER_SAMPLE } from './starter-scenarios.js'
 
 /** Which tab the page is on. The React pane owns this. */
@@ -52,20 +55,35 @@ export interface PlaygroundBuilder {
 /** What this builder hands back to the page, which keeps both lists for both builders. */
 export type ToThePage = Pick<PlaygroundBuilder, 'keep' | 'keepScenarios'>
 
+/**
+ * What the page holds when the builder mounts, drawn on the first render.
+ *
+ * Given at construction rather than pushed in after the bootstrap: the application renders
+ * before `bootstrapApplication` returns, so a list that arrived afterwards was drawn empty
+ * first — and the examples' status is a live region, so every switch to Angular could
+ * announce "No scenarios." before the page's own.
+ */
+export interface FromThePage {
+  readonly preview: PreviewState | undefined
+  readonly blocks: readonly BuilderBlock[]
+  readonly scenarios: readonly Scenario[]
+}
+
 export const PLAYGROUND_BUILDER = new InjectionToken<PlaygroundBuilder>('playground builder')
 
 /** Make one, for the bootstrap to provide. */
 export function playgroundBuilder(
   session: BuilderSession,
   tab: BuilderTab,
+  from: FromThePage,
   back: ToThePage,
 ): PlaygroundBuilder {
   return {
     session,
     tab: signal(tab),
-    preview: signal(undefined),
-    blocks: signal([]),
-    scenarios: signal([]),
+    preview: signal(from.preview),
+    blocks: signal(from.blocks),
+    scenarios: signal(from.scenarios),
     ...back,
   }
 }
@@ -87,7 +105,8 @@ export function playgroundBuilder(
  *
  * Which panels appear mirrors the React pane rather than being this host's own
  * idea: the same tabs, the same panels under each, so a difference on screen is a
- * difference of builder.
+ * difference of builder. That was said here while two panels were missing, so it is
+ * checked now — `two-builders.test.tsx` compares what each builder draws on every tab.
  */
 @Component({
   selector: 'formancy-playground-angular-builder',
@@ -96,7 +115,9 @@ export function playgroundBuilder(
   imports: [
     FormancyBuilder,
     FormancyLayoutPane,
+    FormancyLayoutPropertyPanel,
     FormancyLogicPanel,
+    FormancyPromptPane,
     FormancyPropertyPanel,
     FormancyRulesOverview,
     FormancyTranslationsPane,
@@ -104,7 +125,19 @@ export function playgroundBuilder(
   ],
   template: `
     @if (host.tab() === 'arrangement') {
-      <formancy-layout-pane [session]="host.session" layout="web" />
+      <formancy-layout-pane
+        [session]="host.session"
+        layout="web"
+        (selected)="arranging.set($event)"
+      />
+      <!-- The node the layout pane is on, and what can be set on it: a table's columns,
+           a section's label, a span. Any path, the root's [] included, is a node. -->
+      @if (arranging(); as path) {
+        <formancy-layout-property-panel
+          [session]="host.session"
+          [address]="{ layout: 'web', path }"
+        />
+      }
     } @else if (host.tab() === 'rules') {
       <formancy-rules-overview
         [session]="host.session"
@@ -114,6 +147,9 @@ export function playgroundBuilder(
     } @else if (host.tab() === 'translations') {
       <formancy-translations-pane [session]="host.session" />
     } @else {
+      <!-- Describing a change in words, with the same stand-in model as the React pane:
+           the person plays it, and everything after the answer is real (0109). -->
+      <formancy-prompt-pane [session]="host.session" [ask]="ask" />
       <formancy-builder
         [session]="host.session"
         [blocks]="host.blocks()"
@@ -147,6 +183,12 @@ export class AngularBuilderHost {
    * shared; where somebody happens to be looking is not.
    */
   protected readonly selected = signal<readonly string[] | null>(null)
+
+  /** The layout node this builder's arrangement pane is on; its own cursor, like `selected`. */
+  protected readonly arranging = signal<readonly number[] | null>(null)
+
+  /** The model a description of a change is put to: the React pane's stand-in. */
+  protected readonly ask = DEMO_MODEL
 
   /** Where every example starts: the same filled-in starter the React pane is given. */
   protected readonly sample = STARTER_SAMPLE
