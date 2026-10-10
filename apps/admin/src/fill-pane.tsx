@@ -251,8 +251,9 @@ export function FillPane({ path, quietMs = QUIET_MS }: FillPaneProps): ReactElem
       ) : null}
 
       <FormancyProvider engine={engine}>
+        {/* No `submitLabel`: the pane is the admin's and English, and the form is what a
+            respondent sees, in its own language — a German form's button is German (0171). */}
         <FormancyForm
-          submitLabel="Submit"
           onSubmit={async (value) => {
             if (readOnly || sendWith.current === undefined) return
             const outcome = await submitForm(path, schemaHash, sendWith.current, value)

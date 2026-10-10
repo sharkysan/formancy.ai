@@ -13,6 +13,7 @@ import {
 import type { ElementRef, Signal } from '@angular/core'
 import { parsePath } from '@formancy/core'
 import { injectEngine } from './provide.js'
+import { FormancyTextPipe, injectFormText } from './text.js'
 
 /**
  * The error summary a failed submit focuses.
@@ -26,13 +27,14 @@ import { injectEngine } from './provide.js'
 @Component({
   selector: 'formancy-error-summary',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FormancyTextPipe],
   template: `
     @if (errors().length > 0) {
       <div data-formancy-part="error-summary" tabindex="-1" #region>
         <h2 data-formancy-part="error-summary-heading">{{ heading() }}</h2>
         <ul>
           @for (entry of errors(); track entry.path) {
-            <li><a [attr.href]="'#' + controlIdOf(entry.path)" (click)="focusControl($event, entry.path)">{{ labelFor(entry.path) }}: {{ entry.codes.join(', ') }}</a></li>
+            <li><a [attr.href]="'#' + controlIdOf(entry.path)" (click)="focusControl($event, entry.path)">{{ 'errors.entry' | formancyText: { label: labelFor(entry.path), codes: entry.codes.join(', ') } }}</a></li>
           }
         </ul>
       </div>
@@ -43,6 +45,7 @@ export class FormancyErrorSummary {
   readonly labels = input<Record<string, string>>()
 
   private readonly engine = injectEngine()
+  private readonly text = injectFormText()
   private readonly region = viewChild<ElementRef<HTMLElement>>('region')
 
   protected readonly errors: Signal<ReadonlyArray<{ path: string; codes: readonly string[] }>>
@@ -64,10 +67,8 @@ export class FormancyErrorSummary {
     })
   }
 
-  protected readonly heading = computed(() => {
-    const count = this.errors().length
-    return count === 1 ? 'There is 1 problem to fix' : `There are ${count} problems to fix`
-  })
+  /** Counted by the form's language, never by `=== 1` (0171). */
+  protected readonly heading = computed(() => this.text('errors.heading', { count: this.errors().length }))
 
   protected labelFor(path: string): string {
     // The host's words first, then the field's own label in the form's language, and the

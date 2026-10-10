@@ -40,12 +40,37 @@ export function resolveText(
   const messages = schema.i18n?.messages
   if (messages === undefined) return undefined
 
-  const asked = messages[locale]?.[text.$t]
+  const asked = messages[resolvedLocale(schema, locale)]?.[text.$t]
   if (asked !== undefined) return asked
 
   const fallbackLocale = schema.i18n?.defaultLocale
   if (fallbackLocale === undefined) return undefined
   return messages[fallbackLocale]?.[text.$t]
+}
+
+/**
+ * The catalogue a document is read from for a reader asking for `locale`: that locale's
+ * when the document has one, and its default when it has not — exactly the catalogue
+ * {@link resolveText} reads, which is why it reads through this. A message the chosen
+ * catalogue lacks still falls back to the default one message at a time; that is the
+ * author's translation in progress, not a different language chosen.
+ *
+ * No region falls back to its language: a `de-CH` reader of a document with only `de`
+ * reads its default. A document with no catalogue at all has nothing to choose between,
+ * so the locale asked for is the only statement of what language its plain strings are in.
+ *
+ * Exported because something else must be in the same language as the questions — the
+ * renderers' own words ([0171](../../../docs/decisions/0171-the-renderers-words-are-the-forms-language.md)).
+ * Chosen by the engine's locale instead, a French reader of an English and German form
+ * read English questions over French buttons.
+ */
+export function resolvedLocale(
+  schema: { readonly i18n?: Readonly<FormI18n> | undefined },
+  locale: string,
+): string {
+  const i18n = schema.i18n
+  if (i18n === undefined || i18n.messages[locale] !== undefined) return locale
+  return i18n.defaultLocale
 }
 
 /**

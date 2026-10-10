@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, input } from '@angular/core'
+import { FormancyTextPipe } from '../text.js'
 import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
 import { FormancyTypeaheadSelect } from './typeahead-field.js'
 
@@ -61,7 +62,7 @@ export class FormancyCheckboxField extends FieldComponentBase {
 @Component({
   selector: 'formancy-select-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormancyFieldShell, FormancyTypeaheadSelect],
+  imports: [FormancyFieldShell, FormancyTypeaheadSelect, FormancyTextPipe],
   template: `
     @if (remote.unavailable()) {
       <!-- The document names a source this deployment does not have. Unlike a missing
@@ -75,7 +76,7 @@ export class FormancyCheckboxField extends FieldComponentBase {
            announced "No options match" -- which says the list has no such row, when
            the truth is that there is no list. The React binding orders it the same. -->
       <formancy-field-shell [field]="field" [label]="context.label" [path]="context.path">
-        <p data-formancy-part="options-unavailable">This field's answers come from "{{ sourceName() }}", which this application has not provided.</p>
+        <p data-formancy-part="options-unavailable">{{ 'options.unavailable' | formancyText: { source: sourceName() } }}</p>
       </formancy-field-shell>
     } @else if (typeahead()) {
       <!-- A widget changes the CONTROL and nothing else: same field, same
@@ -138,6 +139,7 @@ export class FormancySelectField extends FieldComponentBase {
 @Component({
   selector: 'formancy-radio-group-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FormancyTextPipe],
   template: `
     <fieldset
       data-formancy-part="field"
@@ -152,7 +154,7 @@ export class FormancySelectField extends FieldComponentBase {
              there and an auditor reports it as invalid ARIA. The engine puts
              this id into the group's aria-describedby, so it is announced
              after the legend. Visible too, because WCAG 1.4.1. -->
-        <span data-formancy-part="required-hint" [id]="field.snapshot().ids.hint">required</span>
+        <span data-formancy-part="required-hint" [id]="field.snapshot().ids.hint">{{ 'form.required' | formancyText }}</span>
       }
       @for (option of options(); track option.value) {
         <span data-formancy-part="radio-option">

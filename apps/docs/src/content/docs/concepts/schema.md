@@ -303,6 +303,22 @@ identity-stable, and a locale that moved underneath them would leave every
 cached snapshot quietly wrong — so switching language means building a new
 engine.
 
+The words a form says that its author did not write — Next, Back, Submit, a repeater's Add
+and Remove and which row a button acts on, the required hint, the error summary's heading,
+what a field announces while a file is sent — follow the questions. They are not in the
+document: they are the renderers', in `@formancy/core/words`, shipped in English, German and
+French, and every renderer alike reads them in the catalogue the questions are read in — the
+engine's locale where the document has a catalogue for it, its default where it has not, as
+`resolvedLocale` in `@formancy/spec` says. So a form whose reader chose German says *Weiter*
+and *Absenden* around its German questions, a reader who chose French on a form with no French
+reads its default language in both, and the playground's Language switch changes both. The browser's language never decides them; a host adds a
+language or changes a word through its renderer — see the
+[React](/docs/start/react/#the-forms-own-words-in-its-language) and
+[Angular](/docs/start/angular/#the-forms-own-words-in-its-language) quickstarts. What stays
+in one language: a field's error is the engine's code, `required`, and a repeater's
+`addLabel` and `removeLabel` are plain strings, so a form that sets them says them as written
+([0171](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0171-the-renderers-words-are-the-forms-language.md)).
+
 ## Arrangement: `layouts`
 
 A layout places fields somewhere other than model order, and a form may have

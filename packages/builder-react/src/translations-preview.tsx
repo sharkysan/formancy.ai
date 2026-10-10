@@ -16,7 +16,11 @@ import type { FormSchema } from '@formancy/spec'
  * So the preview builds its own engine at the locale asked and the document is not
  * touched. Untranslated messages fall back to the default exactly as they will for a
  * visitor, which is the point: a preview showing message ids would teach a translator
- * that the fallback is broken when the fallback is the feature.
+ * that the fallback is broken when the fallback is the feature. The buttons are the
+ * renderer's own words for that language, as a visitor's are — not a word of the
+ * builder's: named from the builder's catalogue, an English builder previewing French
+ * showed "Submit" under French questions
+ * ([0171](../../../docs/decisions/0171-the-renderers-words-are-the-forms-language.md)).
  *
  * Its own file because two parts draw it: the pane, for the form as it is, and a model's
  * translation under review, for the form as it would be
@@ -26,14 +30,12 @@ export function TranslationsPreview({
   document,
   locale,
   label,
-  submitLabel,
   formId,
 }: {
   document: FormSchema
   locale: string
   /** Its accessible name, which says which form this is. */
   label: string
-  submitLabel: string
   /**
    * Its element ids' namespace. Two previews of one form on a page — the form as it is and
    * as a review would leave it — would otherwise mint every id twice, and a label would
@@ -71,7 +73,7 @@ export function TranslationsPreview({
     >
       {engine === undefined ? null : (
         <FormancyProvider engine={engine}>
-          <FormancyForm submitLabel={submitLabel} onSubmit={() => undefined} />
+          <FormancyForm onSubmit={() => undefined} />
         </FormancyProvider>
       )}
     </section>

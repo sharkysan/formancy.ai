@@ -517,14 +517,12 @@ describe('the translations, prompt and scenario panes', () => {
     const user = userEvent.setup()
     await user.selectOptions(screen.getByRole('combobox'), 'de')
 
-    // The preview is the FORM, in the renderer's words rather than the builder's —
-    // all but its name and its button, which the pane gives it.
+    // The preview is the FORM, in the renderer's words rather than the builder's — all but
+    // its name, which the pane gives it. Its buttons are the visitor's words, not the pane's
+    // (0171).
     const outside = container.cloneNode(true) as HTMLElement
     const preview = outside.querySelector('[data-formancy-part="translations-preview"]')!
-    const seen = [
-      preview.getAttribute('aria-label') ?? '',
-      preview.querySelector('[data-formancy-part="submit"]')?.textContent ?? '',
-    ]
+    const seen = [preview.getAttribute('aria-label') ?? '']
     for (const child of [...preview.children]) child.remove()
     seen.push(...shown(outside))
 
@@ -542,7 +540,6 @@ describe('the translations, prompt and scenario panes', () => {
         'Written, but',
         'Not translated',
         'Preview in de',
-        'Submit',
         'no longer used',
       ].filter((prefix) => !seen.some((text) => text.includes(prefix))),
     ).toEqual([])
@@ -591,10 +588,7 @@ describe('the translations, prompt and scenario panes', () => {
       const copy = container.cloneNode(true) as HTMLElement
       const kept: string[] = []
       for (const preview of copy.querySelectorAll('[data-formancy-part="translations-preview"]')) {
-        kept.push(
-          preview.getAttribute('aria-label') ?? '',
-          preview.querySelector('[data-formancy-part="submit"]')?.textContent ?? '',
-        )
+        kept.push(preview.getAttribute('aria-label') ?? '')
         for (const child of [...preview.children]) child.remove()
       }
       return [...kept, ...shown(copy)]

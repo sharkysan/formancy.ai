@@ -199,7 +199,6 @@ export function TranslationReview({
             document={reviewed.document}
             locale={locale}
             label={text('translate.preview', { locale })}
-            submitLabel={text('translations.previewSubmit')}
             formId={`${reviewed.document.id}.proposed`}
           />
           <button type="button" disabled={busy} onClick={() => run.apply(session)}>

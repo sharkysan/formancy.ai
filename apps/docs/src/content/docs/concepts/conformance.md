@@ -72,6 +72,13 @@ and a driver may ignore neither. The validator refuses one the document does not
 renderer falls back to the default locale, or to model order, and the case would then pass
 while asserting nothing about either.
 
+The renderer's own controls — Next, Back, Submit, a row's remove button, a ranking's
+buttons — carry no name in the fixture. The built-in drivers press them by the words the
+renderer draws, read from `@formancy/core/words` in the locale the form was mounted in, so a
+German form is driven through "Weiter" and "Absenden" and a renderer drawing "Next" there
+fails. A driver for your own renderer reads whatever words your renderer draws
+([0171](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0171-the-renderers-words-are-the-forms-language.md)).
+
 ## What the shipped fixtures cover
 
 Each encodes semantics the engine and the renderers must implement, and
@@ -93,6 +100,7 @@ Each encodes semantics the engine and the renderers must implement, and
 | matrix | a group per row of radios named by column, the answer per row, and a required one needs every row |
 | translated labels | a form written in message references renders in its default locale |
 | translated mounted locale | a form mounted in another locale renders in that one |
+| renderer words mounted locale | a form mounted in another locale says Next, Back, Submit and a row's and a ranking's buttons in it too |
 
 ## Failures are meant to be read by strangers
 

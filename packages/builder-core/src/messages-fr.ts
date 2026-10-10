@@ -363,7 +363,6 @@ export const BUILDER_MESSAGES_FR = {
     'Écrites, mais traduites d’un texte qui a changé depuis — à vérifier : {list}',
   'translations.missing': 'Non traduit',
   'translations.preview': 'Aperçu en {locale}',
-  'translations.previewSubmit': 'Envoyer',
 
   'prompt.label': 'Décrivez le formulaire, ou la modification souhaitée',
   'prompt.example':

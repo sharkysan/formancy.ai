@@ -499,7 +499,10 @@ change.
 references into three catalogues, and French is deliberately incomplete —
 switch to it and the labels nobody has translated stay English, because a
 missing translation falls back to the default locale rather than printing a
-message id at somebody. The builder's *Translations* tab is the other side of
+message id at somebody. The renderers' own words switch with it — Submit, a row's
+buttons, what a field announces while a file is sent — in both panes, because they
+are read in the form's language from one catalogue both renderers share
+([0171](./docs/decisions/0171-the-renderers-words-are-the-forms-language.md)). The builder's *Translations* tab is the other side of
 it: choose French there, in either builder, and every message still to translate
 is marked beside its English — and a model of your own can be asked for them, through the
 same relay as describing a change, with each message reviewed before any of it lands.

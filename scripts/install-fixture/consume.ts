@@ -12,7 +12,7 @@
  * ran once. A fixture that can be opened, type-checked and linted in place is
  * also one somebody can extend without reading the runner.
  */
-import { CURRENT_SPEC_VERSION, DECLINE_KEY, modelDataPaths } from '@formancy/spec'
+import { CURRENT_SPEC_VERSION, DECLINE_KEY, modelDataPaths, resolvedLocale } from '@formancy/spec'
 import { validateSchema } from '@formancy/spec/validate'
 import schemaJson from '@formancy/spec/schema.json'
 import { parse, referencedPaths, rewritePath } from '@formancy/expressions'
@@ -52,6 +52,8 @@ import type {
   TranslationView,
 } from '@formancy/builder-core'
 import type { BuiltInErrorCode } from '@formancy/core'
+import { FORM_WORDS, FORM_WORDS_DE, createFormText } from '@formancy/core/words'
+import type { FormWordsByLocale } from '@formancy/core/words'
 import { mintChallenge, solveChallenge, verifySolution } from '@formancy/challenge'
 import { auditedBy, createMemoryStorage, publishForm } from '@formancy/server-core'
 import type { FormSchema } from '@formancy/spec'
@@ -215,6 +217,20 @@ if (!draftsOut.ok || draftsOut.drafts[0]?.name !== 'no email is fine') {
 const failing = draftVerdict(schema, draftsOut.drafts[0])
 if (failing.passed || !failing.failures.some((failure) => failure.detail.includes(required))) {
   throw new Error('the installed draftVerdict did not judge the draft against the required email')
+}
+
+// The renderers' words, from core's second entry: the engine's locale chooses the shipped
+// language, and a host's word for that locale wins a message at a time (0171).
+const hostWords: FormWordsByLocale = { de: { 'form.submit': 'Senden' } }
+const words = createFormText({ locale: 'de', words: hostWords })
+if (words('form.next') !== FORM_WORDS_DE['form.next'] || words('form.submit') !== 'Senden') {
+  throw new Error('the installed form words are not read in the engine’s locale')
+}
+// And in the catalogue the document is read in, which the installed spec decides: a French
+// reader of a form with no French reads its default, the buttons with the questions.
+const bilingual = { i18n: { defaultLocale: 'en', messages: { en: {}, de: {} } } }
+if (createFormText({ locale: resolvedLocale(bilingual, 'fr') })('form.submit') !== FORM_WORDS['form.submit']) {
+  throw new Error('the installed resolvedLocale did not send a French reader to the default')
 }
 const keptDraft = keepDraft(schema, [], draftsOut.drafts[0])
 if (!keptDraft.ok || keptDraft.scenarios.length !== 1) throw new Error('the installed keepDraft refused a failing draft')

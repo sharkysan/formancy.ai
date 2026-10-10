@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
+import { FORM_WORDS, FORM_WORDS_DE } from '@formancy/core/words'
 import type { FormSchema } from '@formancy/spec'
 import { FillPane } from './fill-pane.js'
 
@@ -90,6 +91,24 @@ describe('filling in a published form', () => {
     // sees, and an unpublished draft of the schema is not that.
     expect(await screen.findByLabelText('Email')).toBeTruthy()
     expect(calls[0]?.url).toBe('/api/f/contact')
+  })
+
+  test('draws the form in its own language, its button included', async () => {
+    // The pane named the button "Submit" whatever the form was written in, so a German form
+    // was German but for the one word a respondent presses. The pane is the admin's, in
+    // English; the form in it is what a respondent sees (0171).
+    const german: FormSchema = {
+      ...schema,
+      model: { fields: [{ key: 'email', type: 'text', label: { $t: 'email' } }] },
+      i18n: { defaultLocale: 'de', messages: { de: { email: 'E-Mail' } } },
+    }
+    replies['GET /api/f/contact'] = { body: { version: 3, schemaHash: 'abc', schema: german } }
+
+    render(<FillPane path="contact" quietMs={60} />)
+
+    expect(await screen.findByLabelText('E-Mail')).toBeTruthy()
+    expect(screen.getByRole('button', { name: FORM_WORDS_DE['form.submit'] })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: FORM_WORDS['form.submit'] })).toBeNull()
   })
 
   test('coalesces a burst of typing into a save, rather than one per keystroke', () => {

@@ -1,6 +1,6 @@
 # 0107 — Layout text is read in the engine's locale, and the suite can mount in one
 
-- **Status:** accepted
+- **Status:** accepted; the renderers' own words, left English here, decided by [0171](0171-the-renderers-words-are-the-forms-language.md)
 - **Date:** 2026-10-07
 - **Deciders:** Daniel Bacher
 - **Verified by:** `packages/react/src/layout.test.tsx` and

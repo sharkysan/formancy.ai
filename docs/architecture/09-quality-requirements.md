@@ -52,8 +52,9 @@ formancy
 | Keystroke, large conditional form | 1 ms | ≈0.38 ms |
 | Cold graph compile | 30 ms | ≈1.7 ms |
 | `@formancy/core` bundle | 18 kB brotli | **20.8 kB** — over, re-measured 2026-10-10 |
-| `@formancy/spec` bundle | — | 25.5 kB for the whole barrel — the index and the chunk it shares with `/validate`, measured 2026-10-09 |
-| `@formancy/react` bundle | 4 kB brotli | **24.6 kB** for the whole barrel, measured 2026-10-09 |
+| `@formancy/spec` bundle | — | 25.8 kB for the whole barrel — the index and the chunk it shares with `/validate`, re-measured 2026-10-10 with `resolvedLocale`, most of whose 0.3 kB is the comment the bundler keeps |
+| `@formancy/react` bundle | 4 kB brotli | **24.7 kB** for the whole barrel, measured 2026-10-10 |
+| `@formancy/core/words` bundle | — | 5.1 kB, the renderers' words in English, German and French, an entry of its own, re-measured 2026-10-10 |
 | `uqr`, the QR encoder | — | 6.6 kB brotli, **external** rather than bundled, measured 2026-09-27 |
 
 The performance gate is written to fail on a regression greater than 15%,
@@ -107,6 +108,22 @@ byte-identical to the one before the change. The fix that followed in the same c
 reach the bundle — `runScenarios` reads an `absent` path through the path rather than as a
 top-level key, a few lines and an import — and re-measured after it, also on 2026-10-10, the
 figure still rounds to 20.8 kB.
+
+**The renderers' words arrived as a second entry, and cost the engine's figure nothing.**
+Next, Back, Submit, a row's buttons and every live region's sentences, in three languages,
+moved out of the two bindings into `@formancy/core/words`
+([0171](../decisions/0171-the-renderers-words-are-the-forms-language.md)). It imports nothing
+from the engine, so `dist/index.mjs` was byte-identical after the second entry was added —
+checked, because a two-entry build is how this row once nearly reported an improvement that
+was accounting — and the core row did not move. The 5.1 kB is a row of its own because a
+renderer loads it and neither the core row nor the React row would see it: the React barrel
+imports it from another package. That row went from 24.6 to 24.7 kB, the binding's half — a
+provider, a hook and a function call where each literal was. Every renderer carries all three
+languages, because which one a form is read in is known only when it is: the price of the
+reader's language never depending on the host remembering to import it. Choosing that language
+by the catalogue the document is read in rather than by the engine's locale as asked put
+`resolvedLocale` into the spec barrel, which moved from 25.5 to 25.8 kB; the React row did not
+move.
 
 **The spec figure moved 4.3 kB in one change, and the reason is worth the line.**
 `diffSchemas` stopped comparing only a field's identity, its type and its `required`

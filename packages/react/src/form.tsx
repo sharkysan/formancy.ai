@@ -5,7 +5,7 @@ import type { PlacedGroup } from '@formancy/core'
 import { applyRichCommand, datagridColumns, narrowOptionsByLabel, resolveText } from '@formancy/spec'
 import type { DataGridColumn, FieldDef, FieldType, RichCommand } from '@formancy/spec'
 import { LayoutTree, placedPaths } from './layout.js'
-import { useFormEngine } from './context.js'
+import { useFormEngine, useFormText } from './context.js'
 import { useField } from './use-field.js'
 import type { FieldBinding } from './use-field.js'
 import { useRepeater } from './use-repeater.js'
@@ -62,6 +62,7 @@ export function FormancyForm(props: FormancyFormProps) {
 
 function SubmitButton({ submitLabel, onSubmit, onFailedNavigate }: FormancyFormProps & { onFailedNavigate?: (page: number) => void }) {
   const engine = useFormEngine()
+  const text = useFormText()
   const submit = useSubmit()
   return (
     <button
@@ -80,7 +81,8 @@ function SubmitButton({ submitLabel, onSubmit, onFailedNavigate }: FormancyFormP
         )
       }}
     >
-      {submitLabel ?? 'Submit'}
+      {/* The host's word when it gave one, and the form's language's otherwise (0171). */}
+      {submitLabel ?? text('form.submit')}
     </button>
   )
 }
@@ -96,6 +98,7 @@ function FlatForm(props: FormancyFormProps) {
 
 function PagedForm(props: FormancyFormProps) {
   const engine = useFormEngine()
+  const text = useFormText()
   const wizard = useWizard()
   // The live pages, with the index they have in the form kept beside them: a
   // form that named a step Next never reaches reads as a broken button rather
@@ -108,7 +111,7 @@ function PagedForm(props: FormancyFormProps) {
 
   return (
     <>
-      <nav data-formancy-part="stepper" aria-label="Progress">
+      <nav data-formancy-part="stepper" aria-label={text('form.progress')}>
         <ol>
           {pages.map((page) => (
             <li key={page.key} aria-current={page.index === wizard.page ? 'step' : undefined}>
@@ -121,12 +124,12 @@ function PagedForm(props: FormancyFormProps) {
       <div data-formancy-part="wizard-nav">
         {wizard.canGoBack ? (
           <button type="button" onClick={() => wizard.back()}>
-            Back
+            {text('form.back')}
           </button>
         ) : null}
         {wizard.canGoNext ? (
           <button type="button" onClick={() => void wizard.next()}>
-            Next
+            {text('form.next')}
           </button>
         ) : (
           <SubmitButton {...props} onFailedNavigate={(page) => wizard.goTo(page)} />
@@ -286,11 +289,14 @@ function RepeaterSection({
   registry?: Registry | undefined
 }) {
   const engine = useFormEngine()
+  const text = useFormText()
   const repeater = useRepeater(wire)
   const def = engine.repeaters().find((candidate) => candidate.wire === wire)?.def
   const label = engine.text(def?.label) ?? labels?.[wire] ?? wire
-  const addLabel = def?.addLabel ?? `Add ${label}`
-  const removeLabel = def?.removeLabel ?? `Remove ${label}`
+  // The document's words when it has them — a plain string in every spec version, so in
+  // the one language the author wrote — and the reader's language's otherwise (0171).
+  const addLabel = def?.addLabel ?? text('repeater.add', { label })
+  const removeLabel = def?.removeLabel ?? text('repeater.remove', { label })
 
   const fallbackFor = (instanceWire: string): string | undefined => {
     const template = instanceWire.replace(/\[\d+\]/, '[]')
@@ -370,7 +376,7 @@ function RepeaterSection({
           row this button kills without walking the tree. */}
       <button type="button" data-formancy-part="row-remove" onClick={() => repeater.removeRow(index)}>
         <span data-formancy-part="row-action-text">
-          {`${removeLabel} ${index + 1} of ${repeater.rowCount}`}
+          {text('repeater.removeRow', { remove: removeLabel, position: index + 1, count: repeater.rowCount })}
         </span>
       </button>
       {/* Reordering by button, which is the KEYBOARD route and therefore the
@@ -386,14 +392,14 @@ function RepeaterSection({
       {index > 0 ? (
         <button type="button" data-formancy-part="row-up" onClick={() => repeater.moveRow(index, index - 1)}>
           <span data-formancy-part="row-action-text">
-            {`Move ${label} ${index + 1} of ${repeater.rowCount} up`}
+            {text('repeater.moveUp', { label, position: index + 1, count: repeater.rowCount })}
           </span>
         </button>
       ) : null}
       {index < repeater.rowCount - 1 ? (
         <button type="button" data-formancy-part="row-down" onClick={() => repeater.moveRow(index, index + 1)}>
           <span data-formancy-part="row-action-text">
-            {`Move ${label} ${index + 1} of ${repeater.rowCount} down`}
+            {text('repeater.moveDown', { label, position: index + 1, count: repeater.rowCount })}
           </span>
         </button>
       ) : null}

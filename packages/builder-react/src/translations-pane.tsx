@@ -277,7 +277,6 @@ export function TranslationsPane({ session, ask, attempts, run }: TranslationsPa
         document={document}
         locale={chosen}
         label={text('translations.preview', { locale: chosen })}
-        submitLabel={text('translations.previewSubmit')}
       />
 
       {unused}

@@ -10,6 +10,49 @@ later.
 
 ## Unreleased
 
+**Added: the renderers' own words are in the form's language.** A form's questions are the
+author's, translated in the document; everything a renderer says around them — Next, Back,
+Submit, a repeater's buttons and where a row is, a ranking's, a file's Cancel uploading and Try
+again, the required hint, the error summary's heading, and every live region's announcement
+while a file is sent, a list is searched or a code is scanned — was an English literal in React,
+Angular and Material separately. So a form whose reader chose German asked its questions in
+German around English buttons, and told a screen-reader user its progress in English. Now
+those words are one catalogue, `@formancy/core/words` — a second entry the engine never
+imports — in English, German and French, read in the language the questions are read in: the
+engine's locale where the document has a catalogue for it, and the document's default where it
+has not, never the browser's. `resolvedLocale(schema, locale)`, new in `@formancy/spec` beside
+`resolveText`, which reads through it, says which; read in the engine's locale alone, a French
+reader of a form written in English and German got English questions over French buttons. A
+host that builds a German engine gets German buttons without saying so twice. A host adds a
+language or changes a word a message at a time, keyed by locale, through `FormancyProvider`'s
+new `words` or `provideFormancy(engine, { words })`; English fills what it leaves out, and is
+itself a language a host can change — `{ en: { 'form.submit': 'Send' } }` applies to a form
+with no catalogue too. `submitLabel`, and a repeater's own `addLabel` and `removeLabel`, still
+win. A count follows the rules of the language its message is in, and a list of files is joined
+as that language joins one — the sentence's, so a host's Italian does not put an "e" into an
+English sentence. Both builders' translation previews, the admin's fill pane and the site's
+template gallery stopped naming the form's button in their own English, which had put *Submit*
+under a French or German form. React reads the words with `useFormText()`;
+Angular with `injectFormText()` and the `formancyText` pipe, which a registry's own controls can
+use too. A test reads every renderer source and template and fails on a literal word on screen;
+it found 154. The conformance drivers press the renderers' own controls by these words in the
+mounted locale, and a new fixture drives a German form through them in React, Angular and
+Material — which found the Angular driver comparing a page's raw label to the step on screen,
+so a page labelled by a message reference was never recognised; fixed
+([0171](docs/decisions/0171-the-renderers-words-are-the-forms-language.md)).
+
+**Breaking, for a host whose engine is built in German or French:** its renderers' buttons,
+accessible names and announcements are now in that language where they were English, so a
+host test that finds a German form's controls by their English names stops finding them. The
+resume notice's paragraph for a draft that cannot be submitted is three sentences rather than
+one with an emphasised phrase spliced into it, because a translator cannot move such a phrase;
+the English still says it *cannot be submitted*, emphasised. The conformance drivers no longer
+pass `submitLabel`, so a renderer certified with them is held to its default submit word. The
+builders' catalogue loses `translations.previewSubmit`, so a host's builder translation that
+names it no longer compiles against the message type. What
+stays one language, and is listed as debt: a field's error is the engine's code (`required`)
+shown as a code, and `addLabel` and `removeLabel` are plain strings in every spec version.
+
 **Fixed: behind more than one replica, every rate limit allowed that many times itself.** Each
 limit counted in the process that answered — `@fastify/rate-limit`'s default store — so behind N
 replicas, which the deployment view draws behind a reverse proxy, thirty submissions a minute per

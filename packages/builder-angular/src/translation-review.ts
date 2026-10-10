@@ -150,7 +150,6 @@ const FLAGS: Readonly<Record<'stale' | 'unchanged', BuilderMessageId>> = {
                 <ng-container
                   [ngComponentOutlet]="form"
                   [ngComponentOutletInjector]="injector"
-                  [ngComponentOutletInputs]="previewInputs()"
                 />
               }
             </section>
@@ -303,9 +302,6 @@ export class FormancyTranslationReview {
     const document = waiting.document as FormSchema
     return previewInjector(document, this.locale(), this.parent, `${document.id}.proposed`)
   })
-  protected readonly previewInputs = computed(() => ({
-    submitLabel: this.text()('translations.previewSubmit'),
-  }))
 
   private options(): { attempts?: number } {
     const attempts = this.attempts()

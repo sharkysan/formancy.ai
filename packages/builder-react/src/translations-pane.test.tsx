@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { userEvent } from '@testing-library/user-event'
 import { authorForm, createBuilderSession, createBuilderText, createRelay } from '@formancy/builder-core'
 import type { AskModel, BuilderSession } from '@formancy/builder-core'
+import { FORM_WORDS, FORM_WORDS_FR } from '@formancy/core/words'
 import type { FormSchema } from '@formancy/spec'
 import { TranslationsPane } from './translations-pane.js'
 
@@ -168,6 +169,20 @@ describe('seeing the language being translated', () => {
     // failure, found again while writing these three.
     const preview = await screen.findByRole('region', { name: /preview/i })
     expect(within(preview).getByRole('textbox', { name: 'Adresse professionnelle' })).toBeTruthy()
+  })
+
+  test('and its button is the visitor’s word in that language, not the builder’s', async () => {
+    // The pane named the preview's button from the builder's catalogue, so an English
+    // builder previewing French showed "Submit" under French questions — a word no visitor
+    // sees, decided a second time beside the renderer's own.
+    const user = userEvent.setup()
+    translated()
+
+    await user.selectOptions(screen.getByRole('combobox', { name: /language/i }), 'fr')
+
+    const preview = await screen.findByRole('region', { name: /preview/i })
+    expect(within(preview).getByRole('button', { name: FORM_WORDS_FR['form.submit'] })).toBeTruthy()
+    expect(within(preview).queryByRole('button', { name: FORM_WORDS['form.submit'] })).toBeNull()
   })
 
   test('and an untranslated question falls back rather than showing its id', async () => {
@@ -568,6 +583,8 @@ describe('asking a model for what is missing', () => {
     // The form as the proposal would leave it, in French.
     const proposed = within(region).getByRole('region', { name: 'Preview in fr, as proposed' })
     expect(within(proposed).getByRole('textbox', { name: 'Courriel' })).toBeTruthy()
+    // And around it the visitor's French, not the builder's English "Submit".
+    expect(within(proposed).getByRole('button', { name: FORM_WORDS_FR['form.submit'] })).toBeTruthy()
     // Proposed, not applied.
     expect(session.revision()).toBe(0)
     expect(screen.getByRole('status').textContent).toBe(

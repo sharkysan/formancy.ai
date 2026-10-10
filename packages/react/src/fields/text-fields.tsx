@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { answerFromText, editMasked, formatMasked, maskIsNumeric, maskPlaceholder } from '@formancy/spec'
+import { useFormText } from '../context.js'
 import { useField } from '../use-field.js'
 import { useScanner } from '../scanning.js'
 import { FieldShell } from './internals.js'
@@ -25,9 +26,13 @@ import type { FieldComponentProps } from './internals.js'
 export function TextField({ path, label }: FieldComponentProps) {
   const field = useField(path)
   const scan = useScanner()
+  const words = useFormText()
   const [scanning, setScanning] = useState(false)
-  /** A device failure, held here rather than in the field's errors. See below. */
-  const [trouble, setTrouble] = useState<string | undefined>(undefined)
+  /**
+   * A device failure, held here rather than in the field's errors. See below. What went
+   * wrong rather than a sentence about it, so the sentence is the form's language's.
+   */
+  const [trouble, setTrouble] = useState<{ reason?: string } | undefined>(undefined)
 
   /**
    * The ONE place a text field's answer is written, typed or scanned.
@@ -76,9 +81,7 @@ export function TextField({ path, label }: FieldComponentProps) {
         // A host written in plain JavaScript can resolve with anything. Reported as
         // the device failure it is, rather than stored — an object in a text field
         // is exactly what `commit` exists to make impossible.
-        setTrouble(
-          'Scanning did not work: the scanner did not return text. Type the value instead.',
-        )
+        setTrouble({})
         return
       }
       // Stored as typed, THEN touched — so a value the field's `pattern` refuses
@@ -89,11 +92,7 @@ export function TextField({ path, label }: FieldComponentProps) {
       commit(mask === undefined ? text : answerFromText(mask, text))
       field.touch()
     } catch (error) {
-      setTrouble(
-        `Scanning did not work: ${
-          error instanceof Error ? error.message : String(error)
-        }. Type the value instead.`,
-      )
+      setTrouble({ reason: error instanceof Error ? error.message : String(error) })
     } finally {
       setScanning(false)
     }
@@ -153,7 +152,7 @@ export function TextField({ path, label }: FieldComponentProps) {
                 accessible one, so three scannable fields on a page do not offer
                 three buttons called "Scan" — and the visible text is still
                 contained in the accessible name (WCAG 2.5.3). */}
-            Scan <span data-formancy-part="visually-hidden">{label}</span>
+            {words('scanner.scan')} <span data-formancy-part="visually-hidden">{label}</span>
           </button>
           {/* The camera's own progress and its failures, in this field's polite
               region. NOT the error region: that one is the control's describedby
@@ -161,7 +160,13 @@ export function TextField({ path, label }: FieldComponentProps) {
               there would describe a hardware problem as a wrong answer. Same shape
               as the file field's status line, for the same reason. */}
           <p role="status" data-formancy-part="scanner-status">
-            {scanning ? 'Scanning…' : (trouble ?? '')}
+            {scanning
+              ? words('scanner.scanning')
+              : trouble === undefined
+                ? ''
+                : trouble.reason === undefined
+                  ? words('scanner.noText')
+                  : words('scanner.failed', { reason: trouble.reason })}
           </p>
         </>
       ) : null}

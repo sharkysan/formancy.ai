@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { KeyboardEvent } from 'react'
 import { narrowOptionsByLabel } from '@formancy/spec'
+import { useFormText } from '../context.js'
 import type { FieldBinding } from '../use-field.js'
 import { useSourcedOptions } from '../use-sourced-options.js'
 import { FieldShell, optionDomId, statusState } from './internals.js'
@@ -20,6 +21,7 @@ export function TypeaheadSelectField({
 }: FieldComponentProps & {
   field: FieldBinding
 }) {
+  const text = useFormText()
   /**
    * What is in the box while somebody types, or null when the box is simply
    * showing the answer.
@@ -189,7 +191,7 @@ export function TypeaheadSelectField({
         <ul
           id={listboxId}
           role="listbox"
-          aria-label={`${label} suggestions`}
+          aria-label={text('options.suggestions', { label })}
           data-formancy-part="typeahead-listbox"
           hidden={!expanded}
         >
@@ -232,7 +234,7 @@ export function TypeaheadSelectField({
         {sourced.remote !== null && sourced.remote.status !== ''
           ? sourced.remote.status
           : open && matches.length === 0 && sourced.remote?.busy !== true
-            ? 'No options match'
+            ? text('options.noMatch')
             : ''}
       </p>
     </FieldShell>

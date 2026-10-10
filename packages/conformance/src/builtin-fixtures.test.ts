@@ -55,6 +55,7 @@ describe('builtinFixtures', () => {
     expect(builtinFixtures.map((fixture) => fixture.name).sort()).toEqual([
       'a calculated field recomputes from its inputs and is never typed into',
       'a form mounted in a locale other than the default renders in that locale',
+      "a form mounted in another locale says the renderer's own words in it too",
       'a form written in message references renders in the default locale',
       'a group a layout places whole is drawn as its fields, on the page it belongs to',
       'a hidden value is dropped only when the field asks for it',

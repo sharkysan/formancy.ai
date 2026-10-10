@@ -5,6 +5,7 @@ import type { CSSProperties, ReactElement } from 'react'
 import type { FormSchema, LayoutNode } from '@formancy/spec'
 import { resolveText, LAYOUT_LEAF_KINDS, layoutChildren, layoutNodeShows } from '@formancy/spec'
 import { encode } from 'uqr'
+import { useFormText } from './context.js'
 import { useField } from './use-field.js'
 
 /**
@@ -265,6 +266,7 @@ function Tabs({
   shows: ((path: string) => boolean) | undefined
 }): ReactElement {
   const base = useId()
+  const text = useFormText()
   // The tabs with anything to show, each with its position in the authored layout: a tab
   // over an empty panel is a heading over nothing. Tab state counts the shown ones.
   const shown = node.children.flatMap((child, index) =>
@@ -348,7 +350,7 @@ function Tabs({
             data-formancy-part="tab"
             onClick={() => setOpen(index)}
           >
-            {names[index] ?? `Tab ${String(index + 1)}`}
+            {names[index] ?? text('tabs.unnamed', { position: index + 1 })}
           </button>
         ))}
       </div>

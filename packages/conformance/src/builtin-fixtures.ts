@@ -737,6 +737,198 @@ export const builtinFixtures: readonly Fixture[] = [
     ],
   },
   {
+    name: 'a form mounted in another locale says the renderer\'s own words in it too',
+    description: 'The form\'s questions are the author\'s, translated in the document; the controls around them — Next, Back, Submit, a row\'s remove button and where the row is, a ranking\'s buttons — are the renderer\'s, and were English literals in every binding, so a German form asked its questions in German around English buttons. A driver presses those controls by the words the renderer draws for them in the locale the form was mounted in, so a renderer drawing English fails at the first control it names itself — the row\'s remove button, after the steps that need only the document\'s words — and goes no further. The repeater\'s add and remove words are the document\'s own, because a fixture names what a driver presses; the row\'s position around them is the renderer\'s.',
+    tags: [
+      'i18n',
+      'wizard',
+      'repeater',
+    ],
+    locale: 'de',
+    schema: {
+      specVersion: '4',
+      id: 'renderer-words',
+      title: 'The renderer\'s words, mounted in German',
+      model: {
+        fields: [
+          {
+            key: 'people',
+            type: 'page',
+            label: {
+              $t: 'people.title',
+            },
+            fields: [
+              {
+                key: 'contacts',
+                type: 'repeater',
+                label: {
+                  $t: 'contacts.label',
+                },
+                minItems: 1,
+                addLabel: 'Kontakt hinzufügen',
+                removeLabel: 'Kontakt entfernen',
+                fields: [
+                  {
+                    key: 'name',
+                    type: 'text',
+                    label: {
+                      $t: 'contacts.name',
+                    },
+                    required: true,
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            key: 'taste',
+            type: 'page',
+            label: {
+              $t: 'taste.title',
+            },
+            fields: [
+              {
+                key: 'drinks',
+                type: 'ranking',
+                label: {
+                  $t: 'drinks.label',
+                },
+                required: true,
+                options: [
+                  {
+                    value: 'tea',
+                    label: {
+                      $t: 'drinks.tea',
+                    },
+                  },
+                  {
+                    value: 'water',
+                    label: {
+                      $t: 'drinks.water',
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      i18n: {
+        defaultLocale: 'en',
+        messages: {
+          en: {
+            'people.title': 'People',
+            'contacts.label': 'Contact',
+            'contacts.name': 'Name',
+            'taste.title': 'Taste',
+            'drinks.label': 'Put these in order',
+            'drinks.tea': 'Tea',
+            'drinks.water': 'Water',
+          },
+          de: {
+            'people.title': 'Personen',
+            'contacts.label': 'Kontakt',
+            'contacts.name': 'Name',
+            'taste.title': 'Geschmack',
+            'drinks.label': 'Bringen Sie diese in eine Reihenfolge',
+            'drinks.tea': 'Tee',
+            'drinks.water': 'Wasser',
+          },
+        },
+      },
+    },
+    steps: [
+      {
+        expectPage: 'people',
+      },
+      {
+        addItem: 'contacts',
+      },
+      {
+        set: {
+          'contacts[0].name': 'Ada',
+          'contacts[1].name': 'Grace',
+        },
+      },
+      {
+        removeItem: {
+          path: 'contacts',
+          index: 0,
+        },
+      },
+      {
+        expectValue: {
+          'contacts[0].name': 'Grace',
+        },
+      },
+      {
+        next: true,
+      },
+      {
+        expectPage: 'taste',
+      },
+      {
+        back: true,
+      },
+      {
+        expectPage: 'people',
+      },
+      {
+        next: true,
+      },
+      {
+        submit: true,
+      },
+      {
+        expectSubmit: {
+          status: 'rejected',
+        },
+      },
+      {
+        expectErrors: {
+          drinks: [
+            'required',
+          ],
+        },
+      },
+      {
+        set: {
+          drinks: [
+            'water',
+            'tea',
+          ],
+        },
+      },
+      {
+        expectValue: {
+          drinks: [
+            'water',
+            'tea',
+          ],
+        },
+      },
+      {
+        submit: true,
+      },
+      {
+        expectSubmit: {
+          status: 'accepted',
+          data: {
+            contacts: [
+              {
+                name: 'Grace',
+              },
+            ],
+            drinks: [
+              'water',
+              'tea',
+            ],
+          },
+        },
+      },
+    ],
+  },
+  {
     name: 'a repeating group validates each item and re-indexes when one is removed',
     description: 'Removing an item is not the same as clearing it: everything after it moves down by one, and so do its values and its messages. A message left behind on contacts[1] after contacts[0] was removed points at a field that is no longer on screen, which is the classic repeater bug and the reason this case pins the indices so hard. The email format rule is row-scoped — it runs once per item with `item` bound to that row — so a bad address in one row must flag that row and no other.',
     tags: [

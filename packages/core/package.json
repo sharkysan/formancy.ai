@@ -9,6 +9,10 @@
     ".": {
       "types": "./dist/index.d.mts",
       "default": "./dist/index.mjs"
+    },
+    "./words": {
+      "types": "./dist/words.d.mts",
+      "default": "./dist/words.mjs"
     }
   },
   "files": [

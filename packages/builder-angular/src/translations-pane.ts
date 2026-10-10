@@ -193,7 +193,6 @@ import { injectBuilderView } from './view.js'
             <ng-container
               [ngComponentOutlet]="form"
               [ngComponentOutletInjector]="injector"
-              [ngComponentOutletInputs]="previewInputs()"
             />
           }
         </section>
@@ -239,10 +238,6 @@ export class FormancyTranslationsPane {
   protected readonly view = injectBuilderView(this.session)
   /** Every word this pane shows, in the language the session was opened in (0114). */
   protected readonly text = computed(() => this.session().text)
-  /** The preview’s submit button, in the builder’s language as the React preview’s is. */
-  protected readonly previewInputs = computed(() => ({
-    submitLabel: this.text()('translations.previewSubmit'),
-  }))
   private readonly parent = inject(EnvironmentInjector)
 
   protected readonly showing = signal<string | null>(null)

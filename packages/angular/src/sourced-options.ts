@@ -3,6 +3,7 @@ import type { Signal, WritableSignal } from '@angular/core'
 import { acceptRemoteOptions, capRemoteOptions } from '@formancy/spec'
 import type { RemoteOption } from '@formancy/spec'
 import { injectOptionsSources } from './options-source.js'
+import { injectFormText } from './text.js'
 
 /**
  * A field's options, from the document or from the deployment.
@@ -26,7 +27,13 @@ export interface SourcedOptionsState {
   unavailable: Signal<boolean>
   /** A request is in flight. The control says `aria-busy`; it never disables itself. */
   busy: Signal<boolean>
-  /** The one thing the field says out loud, or the empty string. */
+  /**
+   * The last request failed. Its own signal, so a theme's `data-state` is read off the
+   * state and not off the sentence — which keyed on English prose, and would have
+   * stopped matching the day the sentence was said in German (0171).
+   */
+  failed: Signal<boolean>
+  /** The one thing the field says out loud, in the form's language, or the empty string. */
   status: Signal<string>
   /** Whether this field is sourced at all. False is the ordinary case. */
   sourced: Signal<boolean>
@@ -73,6 +80,7 @@ export function injectSourcedOptions(
   const named: WritableSignal<ReadonlyMap<string, string>> = signal(new Map())
   const busy = signal(false)
   const failed = signal(false)
+  const text = injectFormText()
   const capped = signal<{ shown: number; total: number } | null>(null)
 
   const source = () => {
@@ -217,6 +225,7 @@ export function injectSourcedOptions(
     rows: rows.asReadonly(),
     named: named.asReadonly(),
     busy: busy.asReadonly(),
+    failed: failed.asReadonly(),
     // `computed`, not a bare arrow: the template reads these, and a plain function
     // would re-run on every change detection instead of when its inputs move.
     sourced: computed(() => definition().optionsSource !== undefined),
@@ -226,16 +235,14 @@ export function injectSourcedOptions(
     status: computed(() => {
       const resolver = source()
       if (resolver === undefined) return ''
-      if (failed()) return 'The options could not be loaded. Type to try again.'
+      if (failed()) return text('options.failed')
       const needs = resolver.minQueryLength ?? MIN_QUERY
-      if (query().trim().length < needs) return `Type at least ${String(needs)} characters to search.`
+      if (query().trim().length < needs) return text('options.tooShort', { count: needs })
       // Set only once a request is actually on its way — after the debounce — so
       // nothing announces per keystroke.
-      if (busy()) return 'Searching…'
+      if (busy()) return text('options.searching')
       const limit = capped()
-      if (limit !== null) {
-        return `Showing the first ${String(limit.shown)} of ${String(limit.total)} — keep typing to narrow.`
-      }
+      if (limit !== null) return text('options.capped', { shown: limit.shown, total: limit.total })
       return ''
     }),
   }

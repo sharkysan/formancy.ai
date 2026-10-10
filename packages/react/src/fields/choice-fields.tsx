@@ -1,3 +1,4 @@
+import { useFormText } from '../context.js'
 import { useField } from '../use-field.js'
 import { useSourcedOptions } from '../use-sourced-options.js'
 import { FieldShell, OptionPicture, RequiredHint, useResolvedOptions } from './internals.js'
@@ -37,6 +38,7 @@ export function CheckboxField({ path, label }: FieldComponentProps) {
 
 export function SelectField({ path, label }: FieldComponentProps) {
   const field = useField(path)
+  const text = useFormText()
   // The query the plain control searches with is the empty one: a native select has
   // nothing to type into, so it offers whatever the source returns for "everything",
   // capped. A source with more rows than that is a source whose field wants the
@@ -63,7 +65,7 @@ export function SelectField({ path, label }: FieldComponentProps) {
     return (
       <FieldShell path={path} field={field} label={label}>
         <p data-formancy-part="options-unavailable">
-          {`This field's answers come from "${field.def.optionsSource ?? ''}", which this application has not provided.`}
+          {text('options.unavailable', { source: field.def.optionsSource ?? '' })}
         </p>
       </FieldShell>
     )

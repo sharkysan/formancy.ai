@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed } from '@angular/core'
+import { FormancyTextPipe } from '../text.js'
 import { FieldComponentBase } from './field-shell.js'
 
 /**
@@ -12,6 +13,7 @@ import { FieldComponentBase } from './field-shell.js'
 @Component({
   selector: 'formancy-matrix-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FormancyTextPipe],
   template: `
     <fieldset
       [id]="control().id"
@@ -25,7 +27,7 @@ import { FieldComponentBase } from './field-shell.js'
       @if (field.snapshot().required) {
         <!-- As the checkbox group carries it: role=group does not support
              aria-required, so the engine describes the group by this instead. -->
-        <span data-formancy-part="required-hint" [id]="field.snapshot().ids.hint">required</span>
+        <span data-formancy-part="required-hint" [id]="field.snapshot().ids.hint">{{ 'form.required' | formancyText }}</span>
       }
       <div data-formancy-part="matrix" [attr.data-columns]="options().length">
         @for (row of rows(); track row.value) {

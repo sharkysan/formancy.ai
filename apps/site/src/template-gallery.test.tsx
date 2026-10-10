@@ -57,7 +57,10 @@ test('a preview is a real translated form, with conditional fields and no submis
   expect(dialog.queryByRole('textbox', { name: 'Telefonnummer' })).toBeNull()
   await user.click(dialog.getByRole('radio', { name: 'Telefon' }))
   expect(dialog.getByRole('textbox', { name: 'Telefonnummer' })).toBeTruthy()
-  await user.click(dialog.getByRole('button', { name: 'Check answers' }))
+  // Named for what it does here, where nothing is sent, and in the template's language:
+  // "Check answers" under German questions was the one English word in the form.
+  expect(dialog.queryByRole('button', { name: 'Check answers' })).toBeNull()
+  await user.click(dialog.getByRole('button', { name: 'Antworten prüfen' }))
   expect(dialog.getByRole('status').textContent).toContain('required')
   await user.click(dialog.getByRole('button', { name: 'Close preview' }))
   expect(screen.queryByRole('dialog')).toBeNull()

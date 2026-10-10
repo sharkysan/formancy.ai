@@ -113,6 +113,49 @@ otherwise resolved as a scroll by the browser before any handler runs — so a
 signature drawn with a finger would pan the page instead. Its height, border,
 background and cursor are still yours.
 
+## The form's own words, in its language
+
+The questions are yours. The words around them — Next, Back, Submit, a repeater's Add and
+Remove and which row a button acts on, the error summary's heading, and what a field
+announces while a file is sent or a list is searched — are the renderer's, and they are in
+the language the questions are read in: the engine's locale when the document has a catalogue
+for it, and the document's default when it has not — never the browser's. Build the engine in
+German and the buttons are German; English, German and French ship.
+
+```tsx
+const engine = createFormEngine({ schema, locale: 'de', capabilities })
+
+<FormancyProvider engine={engine}>
+  <FormancyForm />   {/* "Weiter", "Zurück", "Absenden" */}
+</FormancyProvider>
+```
+
+A language that does not ship, or a word you want said differently, is yours to give, by
+locale, a message at a time — anything you leave out is English. English is a language like
+the others: `en` changes it, on a form with no catalogue too.
+
+```tsx
+import type { FormWordsByLocale } from '@formancy/react'
+
+// A constant: a new object on every render is a new language for every control below.
+const WORDS: FormWordsByLocale = {
+  it: { 'form.next': 'Avanti', 'form.back': 'Indietro', 'form.submit': 'Invia' },
+  de: { 'form.submit': 'Senden' },
+  en: { 'form.submit': 'Send' },
+}
+
+<FormancyProvider engine={engine} words={WORDS}>
+```
+
+Every id, with its English, is `FORM_WORDS` in `@formancy/core/words`; `FORM_WORDS_DE` and
+`FORM_WORDS_FR` are the shipped translations. Your own words still win where you gave them:
+`submitLabel` names the submit button, and a repeater's `addLabel` and `removeLabel` in the
+document name its buttons. A component of your own reads the same words with `useFormText()`.
+`ResumeNotice` speaks the form's language inside the form's `FormancyProvider`, and English
+outside it. Two things are not the renderer's to translate: a field's error is the engine's
+code, such as `required`, and `addLabel` is a plain string in one language
+([0171](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0171-the-renderers-words-are-the-forms-language.md)).
+
 ## Two of the same form on one page
 
 Element ids come from the engine, minted from the form's `id` — which is what

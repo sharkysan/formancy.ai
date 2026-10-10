@@ -1,7 +1,7 @@
 import type { ComponentType, ReactNode } from 'react'
 import { isImageSource } from '@formancy/spec'
 import type { FieldDef, FieldType } from '@formancy/spec'
-import { useFormEngine } from '../context.js'
+import { useFormEngine, useFormText } from '../context.js'
 import { useField } from '../use-field.js'
 import type { FieldBinding } from '../use-field.js'
 
@@ -138,13 +138,13 @@ export function statusState({
   open,
   matches,
 }: {
-  sourced: { remote: { busy: boolean; status: string } | null }
+  sourced: { remote: { busy: boolean; failed: boolean; status: string } | null }
   open: boolean
   matches: number
 }): string | undefined {
   if (sourced.remote === null) return open && matches === 0 ? 'empty' : undefined
   if (sourced.remote.busy) return 'busy'
-  if (sourced.remote.status.startsWith('The options could not')) return 'failed'
+  if (sourced.remote.failed) return 'failed'
   if (sourced.remote.status !== '') return 'hint'
   return open && matches === 0 ? 'empty' : undefined
 }
@@ -161,10 +161,11 @@ export function statusState({
  * a red asterisk is a requirement some people cannot perceive.
  */
 export function RequiredHint({ field }: { field: ReturnType<typeof useField> }) {
+  const text = useFormText()
   if (!field.required) return null
   return (
     <span data-formancy-part="required-hint" id={field.props.hint.id}>
-      required
+      {text('form.required')}
     </span>
   )
 }

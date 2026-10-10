@@ -2,7 +2,9 @@ import { act, cleanup, fireEvent, render, screen, within } from '@testing-librar
 import axe from 'axe-core'
 import { createFormEngine, parsePath } from '@formancy/core'
 import type { FormEngine } from '@formancy/core'
-import { answerFromText, resolveText } from '@formancy/spec'
+import { createFormText } from '@formancy/core/words'
+import type { FormText } from '@formancy/core/words'
+import { answerFromText, resolveText, resolvedLocale } from '@formancy/spec'
 import type { FormSchema, Text } from '@formancy/spec'
 import {
   ACCESSIBILITY_EXCLUSIONS,
@@ -34,17 +36,23 @@ import type { SubmitOutcome } from './index.js'
  * named group. No test ids, no CSS selectors for controls. Repeater rows share
  * their template's labels, so an instance path picks the nth match in
  * accessible order — the same disambiguation a screen reader user performs.
+ *
+ * The renderer's own controls — Next, Back, Submit, a row's remove button, a ranking's —
+ * are pressed by the words the renderer draws for them, read from the form's catalogue in
+ * the locale the form was MOUNTED in (0171). A German form has a "Weiter" button and no
+ * "Next" one, and a driver looking for "Next" would report the renderer right as broken.
  */
 export function createReactDriver(): RendererDriver {
   let engine: FormEngine | undefined
   let schema: ConformanceSchema | undefined
+  let words: FormText | undefined
   let lastOutcome: SubmitOutcome | undefined
 
-  const SUBMIT_LABEL = 'Submit'
-
-  function requireMounted(): { engine: FormEngine; schema: ConformanceSchema } {
-    if (engine === undefined || schema === undefined) throw new Error('driver is not mounted')
-    return { engine, schema }
+  function requireMounted(): { engine: FormEngine; schema: ConformanceSchema; words: FormText } {
+    if (engine === undefined || schema === undefined || words === undefined) {
+      throw new Error('driver is not mounted')
+    }
+    return { engine, schema, words }
   }
 
   /** The row index a path addresses, or undefined for a static path. */
@@ -120,12 +128,17 @@ export function createReactDriver(): RendererDriver {
           random: () => Math.random(),
         },
       })
+      // The locale the document is read in, as the renderer reads it: a driver resolving
+      // the words in the default would find "Next" on a page that says "Weiter", or —
+      // worse — agree with a renderer that ignored the locale too.
+      words = createFormText({ locale: resolvedLocale(engine.schema(), engine.locale()) })
       await act(async () => {
         render(
           <FormancyProvider engine={engine!}>
+            {/* No `submitLabel`: the button is found by the form's own word for it, so
+                the suite holds the default rather than a name the driver chose. */}
             <FormancyForm
               onSubmit={(outcome) => (lastOutcome = outcome)}
-              submitLabel={SUBMIT_LABEL}
               {...(options?.layout === undefined ? {} : { layout: options.layout })}
             />
           </FormancyProvider>,
@@ -176,9 +189,10 @@ export function createReactDriver(): RendererDriver {
       // A ranking is put in order the way a person does it: everything taken out, then
       // each option ranked in turn — by the buttons' names, which say which option.
       if (def?.type === 'ranking') {
+        const { words } = requireMounted()
         const group = screen.getByRole('group', { name: labelOf(path) })
         for (;;) {
-          const out = within(group).queryAllByRole('button', { name: /^Take .+ out of the order$/ })[0]
+          const out = within(group).queryAllByRole('button', { name: pattern(words('ranking.remove')) })[0]
           if (out === undefined) break
           await settle(() => {
             fireEvent.click(out)
@@ -186,7 +200,7 @@ export function createReactDriver(): RendererDriver {
         }
         for (const wanted of Array.isArray(value) ? value : []) {
           const option = (def.options ?? []).find((candidate) => candidate.value === wanted)
-          const name = `Rank ${textOf(option?.label) ?? String(wanted)}`
+          const name = words('ranking.rank', { option: textOf(option?.label) ?? String(wanted) })
           await settle(() => {
             fireEvent.click(within(group).getByRole('button', { name }))
           })
@@ -225,29 +239,35 @@ export function createReactDriver(): RendererDriver {
     },
 
     async activate(path) {
-      const { schema } = requireMounted()
+      const { schema, words } = requireMounted()
       await settle(() => {
         if (path === NEXT_COMMAND) {
-          fireEvent.click(screen.getByRole('button', { name: 'Next' }))
+          fireEvent.click(screen.getByRole('button', { name: words('form.next') }))
           return
         }
         if (path === BACK_COMMAND) {
-          fireEvent.click(screen.getByRole('button', { name: 'Back' }))
+          fireEvent.click(screen.getByRole('button', { name: words('form.back') }))
           return
         }
         const separator = path.lastIndexOf(COMMAND_SEPARATOR)
         const target = path.slice(0, separator)
         const command = path.slice(separator + 1)
         const repeaterWire = target.replace(/\[\d+\]$/, '')
-        const def = fieldAtPath(schema, repeaterWire) as { addLabel?: string; removeLabel?: string } | undefined
+        const def = fieldAtPath(schema, repeaterWire) as
+          | { addLabel?: string; removeLabel?: string; label?: Text }
+          | undefined
+        // The document's words, or the form's when it has none — the renderer's rule.
+        const label = textOf(def?.label) ?? repeaterWire
         if (command === 'add') {
-          fireEvent.click(screen.getByRole('button', { name: def?.addLabel ?? /^Add / }))
+          const name = def?.addLabel ?? words('repeater.add', { label })
+          fireEvent.click(screen.getByRole('button', { name }))
           return
         }
         if (command === 'remove') {
           const index = rowIndexOf(target) ?? 0
-          const prefix = def?.removeLabel ?? 'Remove'
-          const name = new RegExp(`^${escapeRegExp(prefix)} ${index + 1} of `)
+          const remove = def?.removeLabel ?? words('repeater.remove', { label })
+          // The row's position is in its name; how many rows there are is left open.
+          const name = pattern(words('repeater.removeRow', { remove, position: index + 1 }))
           fireEvent.click(screen.getByRole('button', { name }))
           return
         }
@@ -297,10 +317,12 @@ export function createReactDriver(): RendererDriver {
       if (def?.type === 'ranking') {
         // The order on screen, read from the move buttons' names: the stored order is
         // the engine's, and this is what the person sees they have chosen.
+        const { words } = requireMounted()
         const group = screen.getByRole('group', { name: labelOf(path) })
+        const up = pattern(words('ranking.up'))
         return within(group)
-          .queryAllByRole('button', { name: /^Move .+ up$/ })
-          .map((button) => /^Move (.+) up$/.exec(button.getAttribute('aria-label') ?? '')?.[1] ?? '')
+          .queryAllByRole('button', { name: up })
+          .map((button) => up.exec(button.getAttribute('aria-label') ?? '')?.[1] ?? '')
           .map((shown) => (def.options ?? []).find((option) => textOf(option.label as Text) === shown)?.value ?? shown)
       }
       if (def?.type === 'selectboxes') {
@@ -388,8 +410,9 @@ export function createReactDriver(): RendererDriver {
     },
 
     async submit(): Promise<SubmitResult> {
+      const { words } = requireMounted()
       await settle(() => {
-        fireEvent.click(screen.getByRole('button', { name: SUBMIT_LABEL }))
+        fireEvent.click(screen.getByRole('button', { name: words('form.submit') }))
       })
       if (lastOutcome === undefined) throw new Error('the submit control reported no outcome')
       const outcome = lastOutcome
@@ -412,6 +435,7 @@ export function createReactDriver(): RendererDriver {
       cleanup()
       engine = undefined
       schema = undefined
+      words = undefined
     },
   }
 }
@@ -459,4 +483,13 @@ async function auditRendered(): Promise<readonly AccessibilityViolation[]> {
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/**
+ * A name with a value left open, as a pattern: the form's sentence, with `(.+)` where each
+ * placeholder it was not given stays visible. "Move {option} up" matches "Move Tea up" and
+ * hands back "Tea"; "Remove contact 1 of {count}" matches however many rows there are.
+ */
+function pattern(sentence: string): RegExp {
+  return new RegExp(`^${escapeRegExp(sentence).replace(/\\\{\w+\\\}/g, '(.+)')}$`)
 }

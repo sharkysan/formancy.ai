@@ -24,6 +24,7 @@ import { injectRepeater } from './repeater.js'
 import type { RepeaterBinding } from './repeater.js'
 import { injectEngine } from './provide.js'
 import { FORMANCY_FIELD_CONTEXT, FORMANCY_REGISTRY } from './registry.js'
+import { FormancyTextPipe, injectFormText } from './text.js'
 
 /*
  * A field's place in a form, and a repeater's: the slot that resolves a field to a
@@ -136,7 +137,7 @@ interface RepeaterRow {
 @Component({
   selector: 'formancy-repeater',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgTemplateOutlet, FormancyFieldSlot],
+  imports: [NgTemplateOutlet, FormancyFieldSlot, FormancyTextPipe],
   template: `
     @if (state; as s) {
       <!-- The repeater's own path, inert, beside its rows': the rows name their fields,
@@ -156,7 +157,7 @@ interface RepeaterRow {
         <ng-template #rowButtons let-row let-count="count">
           <!-- Position context in the NAME, so a screen-reader user knows
                which row this button kills without walking the tree. -->
-          <button type="button" data-formancy-part="row-remove" (click)="state!.repeater.removeRow(row.index)"><span data-formancy-part="row-action-text">{{ state!.removeLabel }} {{ row.index + 1 }} of {{ count }}</span></button>
+          <button type="button" data-formancy-part="row-remove" (click)="state!.repeater.removeRow(row.index)"><span data-formancy-part="row-action-text">{{ 'repeater.removeRow' | formancyText: { remove: state!.removeLabel, position: row.index + 1, count } }}</span></button>
           <!-- Reordering by button, which is the KEYBOARD route and therefore the
                primary one: WCAG 2.5.7 requires a non-drag equivalent for any drag,
                so a drag affordance can only ever be a second route to these.
@@ -164,10 +165,10 @@ interface RepeaterRow {
                the tab order in some browsers and announces a control that does
                nothing. -->
           @if (row.index > 0) {
-            <button type="button" data-formancy-part="row-up" (click)="state!.repeater.moveRow(row.index, row.index - 1)"><span data-formancy-part="row-action-text">Move {{ state!.label }} {{ row.index + 1 }} of {{ count }} up</span></button>
+            <button type="button" data-formancy-part="row-up" (click)="state!.repeater.moveRow(row.index, row.index - 1)"><span data-formancy-part="row-action-text">{{ 'repeater.moveUp' | formancyText: { label: state!.label, position: row.index + 1, count } }}</span></button>
           }
           @if (row.index < count - 1) {
-            <button type="button" data-formancy-part="row-down" (click)="state!.repeater.moveRow(row.index, row.index + 1)"><span data-formancy-part="row-action-text">Move {{ state!.label }} {{ row.index + 1 }} of {{ count }} down</span></button>
+            <button type="button" data-formancy-part="row-down" (click)="state!.repeater.moveRow(row.index, row.index + 1)"><span data-formancy-part="row-action-text">{{ 'repeater.moveDown' | formancyText: { label: state!.label, position: row.index + 1, count } }}</span></button>
           }
         </ng-template>
 
@@ -241,6 +242,7 @@ interface RepeaterRow {
 })
 export class FormancyRepeaterSection implements OnInit {
   private readonly engine = injectEngine()
+  private readonly text = injectFormText()
   private readonly injector = inject(Injector)
 
   readonly wire = input.required<string>()
@@ -349,8 +351,10 @@ export class FormancyRepeaterSection implements OnInit {
     this.state = {
       repeater,
       label,
-      addLabel: def?.addLabel ?? `Add ${label}`,
-      removeLabel: def?.removeLabel ?? `Remove ${label}`,
+      // The document's words when it has them — a plain string in every spec version, so
+      // in the one language the author wrote — and the reader's language's otherwise (0171).
+      addLabel: def?.addLabel ?? this.text('repeater.add', { label }),
+      removeLabel: def?.removeLabel ?? this.text('repeater.remove', { label }),
       rows: computed(() =>
         Array.from({ length: repeater.rowCount() }, (_, index) => ({
           index,
