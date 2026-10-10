@@ -2,7 +2,11 @@ import { describe, expect, test, vi } from 'vitest'
 import type { FormSchema } from '@formancy/spec'
 import { authorForm, createStop, declinedAnswer } from './authoring.js'
 import type { AskModel, AuthoringPrompt } from './answers.js'
+import { createBuilderText } from './messages.js'
+import { proposalStatus } from './proposal.js'
 import { createRelay, relayMessage } from './relay.js'
+import { draftScenarios } from './scenario-drafts.js'
+import { translateCatalogue, translationStatus } from './translate.js'
 import type { Relay, RelayTurn } from './relay.js'
 
 /**
@@ -209,20 +213,85 @@ describe('a stopped run', () => {
 })
 
 describe('one turn at a time', () => {
-  test('a second run asking while one waits is refused, and the first keeps its turn', async () => {
-    // Queued silently, the second request would wait behind a turn the person may never
-    // answer, and an answer pasted for one could be taken as the other's. Refused, the
-    // second run ends at once and says why.
+  test('a second run asking while one waits is refused as busy, whichever asks, and the first keeps its turn', async () => {
+    /*
+     * Queued silently, the second request would wait behind a turn the person may never
+     * answer, and an answer pasted for one could be taken as the other's. Refused, the
+     * second run ends at once — as busy. It ended as a model that could not be reached,
+     * which is untrue: nothing was asked. And its reason was the relay's English, shown
+     * under a German or French builder, because a host's reason is shown as written.
+     *
+     * Both directions, because the playground asks one relay from two panes: a draft
+     * asked for while a model's edit waits, and an edit asked for while a draft waits
+     * ([0162](../../../docs/decisions/0162-an-example-is-drafted-from-what-the-author-said.md)).
+     */
     const relay = createRelay()
-    const first = authorForm(relay.ask, 'add a phone number', { current: CURRENT })
-    const turn = await nextTurn(relay, undefined)
+    const editing = authorForm(relay.ask, 'add a phone number', { current: CURRENT })
+    const editTurn = await nextTurn(relay, undefined)
+
+    const drafting = await draftScenarios(relay.ask, CURRENT, 'An email is asked for.')
+
+    expect(drafting).toMatchObject({ ok: false, ended: 'busy', attempts: 1 })
+    expect(drafting).not.toHaveProperty('reason')
+    expect(relay.waiting()).toBe(editTurn)
+    relay.answer(WITH_PHONE)
+    expect(await editing).toMatchObject({ ok: true })
+
+    const drafts = draftScenarios(relay.ask, CURRENT, 'An email is asked for.')
+    const draftTurn = await nextTurn(relay, editTurn)
 
     const second = await authorForm(relay.ask, 'add a fax number', { current: CURRENT })
 
-    expect(second).toMatchObject({ ok: false, ended: 'unreachable', attempts: 1 })
-    expect(second.ok ? undefined : second.reason).toEqual(expect.any(String))
-    expect(relay.waiting()).toBe(turn)
+    expect(second).toMatchObject({ ok: false, ended: 'busy', attempts: 1 })
+    expect(second).not.toHaveProperty('reason')
+    expect(relay.waiting()).toBe(draftTurn)
+    relay.answer(JSON.stringify({ scenarios: [{ name: 'Email', changes: { email: 'a@b.ch' }, valid: true }] }))
+    expect(await drafts).toMatchObject({ ok: true })
+  })
+
+  test('a translation asked while a model’s edit waits is refused as busy, and so is an edit asked while a translation waits', async () => {
+    /*
+     * The translations pane asks on the same loop, and a host may hand it the relay its
+     * prompt pane asks (0161). A translation refused that way ended busy, and its status
+     * had no sentence for busy: the part said nothing, and offered Ask again as though the
+     * press had been lost. Both directions, and each sentence is the one the prompt pane
+     * says, because the two runs met the same relay.
+     */
+    const worded = {
+      ...CURRENT,
+      model: { fields: [{ key: 'email', type: 'text', label: { $t: 'email' } }] },
+      i18n: { defaultLocale: 'en', messages: { en: { email: 'Email' }, de: {} } },
+    } as unknown as FormSchema
+    const text = createBuilderText()
+    const relay = createRelay()
+    const editing = authorForm(relay.ask, 'add a phone number', { current: CURRENT })
+    const editTurn = await nextTurn(relay, undefined)
+
+    const translating = await translateCatalogue(relay.ask, worded, 'de')
+
+    expect(translating).toMatchObject({ ok: false, ended: 'busy', attempts: 1 })
+    expect(translating).not.toHaveProperty('reason')
+    expect(translationStatus({ busy: false, result: translating, proposal: undefined, refusal: undefined }, text)).toBe(
+      text('prompt.status.busy'),
+    )
+    expect(relay.waiting()).toBe(editTurn)
     relay.answer(WITH_PHONE)
-    expect(await first).toMatchObject({ ok: true })
+    expect(await editing).toMatchObject({ ok: true })
+
+    const translation = translateCatalogue(relay.ask, worded, 'de')
+    const translationTurn = await nextTurn(relay, editTurn)
+
+    const second = await authorForm(relay.ask, 'add a fax number', { current: CURRENT })
+
+    expect(second).toMatchObject({ ok: false, ended: 'busy', attempts: 1 })
+    expect(second).not.toHaveProperty('reason')
+    expect(proposalStatus({ busy: false, result: second, proposal: undefined, refusal: undefined }, text)).toBe(
+      text('prompt.status.busy'),
+    )
+    expect(relay.waiting()).toBe(translationTurn)
+    relay.answer(
+      JSON.stringify({ locale: 'de', defaultLocale: 'en', messages: [{ id: 'email', source: 'Email', target: 'E-Mail' }] }),
+    )
+    expect(await translation).toMatchObject({ ok: true })
   })
 })

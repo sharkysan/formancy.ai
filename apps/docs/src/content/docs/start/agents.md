@@ -247,6 +247,18 @@ change stops its old example holding, and the decision is yours. A rule no examp
 pins gets no warning. Without `scenarios`, the review says nothing about examples
 ([0159](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0159-a-proposal-is-checked-against-the-forms-examples.md)).
 
+**Give the scenario pane the same model, and it drafts examples where a form has none.**
+The person says what the form should do; the model is asked for examples of it and shown the
+form's fields, the engine's error codes and those words, and never a rule, a pattern, a bound
+or which fields are required. A model shown the rule writes the example the rule passes,
+which agrees with the rule whether it is right or wrong. `draftScenarios(ask, document,
+intent, { initialValue, existing, stop })` is the run on its own: it reads each item of the
+answer by itself, lists the ones that are not examples with why, and asks again only when
+none is. `draftVerdict` runs a draft as the scenario pane runs its list, and `keepDraft`
+refuses a name already taken and a field the form does not have, and keeps a draft that
+fails — whether the example or the rule is wrong is the person's call
+([0162](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0162-an-example-is-drafted-from-what-the-author-said.md)).
+
 ### Writing `askModel`
 
 An `AskModel` is one turn: a prompt in, the model's text out. Point it at an
@@ -323,8 +335,14 @@ holds the model's last answer, can send `followUp` instead.
 Called directly, `authorForm(askModel, instruction, { current, stop })` resolves
 however the run ends. A working document is `ok: true`. Otherwise `ended` says why
 there is none: `gave-up`, `stopped`, `unreachable` with your error's message as
-`reason`, absent when it had none, or `declined` with the model's reason as `reason`.
-`stop` comes from `createStop()`; calling its `stop()` is the button.
+`reason`, absent when it had none, `busy`, or `declined` with the model's reason as
+`reason`. `stop` comes from `createStop()`; calling its `stop()` is the button.
+
+`busy` is for a model that takes one request at a time. Reject with `ModelBusyError`
+from `@formancy/builder-core` while yours is answering another, and the run ends at once,
+with no reason, and the pane says another request is waiting for the model — in the
+person's language, rather than your error's message under "could not be reached". The
+relay below does exactly that.
 
 ### No model on the page: a relay
 
@@ -375,17 +393,26 @@ a service. The request is never put in a URL.
 
 What the relay decides, it decides once, for both builders:
 
-- **One turn at a time.** A second request while one waits is refused, and that run ends
-  as a model that could not be reached, with the relay's reason. Give each prompt pane its
-  own relay if two can run at once.
+- **One turn at a time.** A second request while one waits is refused with
+  `ModelBusyError`, and that run ends `busy`: its pane says another request is waiting for
+  the model's answer. Give each pane its own relay if two must be able to run at once.
 - **A paste with no JSON object in it is held back** and costs no attempt. The pane says
   so and offers *Use it anyway*, which sends it as it is. A decline is an answer.
 - **A stop clears the turn.** An answer pasted after it is refused, never kept for the
   next request.
 
+The same relay can be the scenario pane's `ask`, for drafting examples, and the
+translations pane's, for a language's missing messages, as the playground's is. One turn at
+a time holds across all of them, whichever asks first: a draft asked for while a model's edit
+waits is refused, and so is an edit asked for while a draft or a translation waits. Each
+ends `busy`, and its pane says so. No pane knows its `ask` is a relay, so the button that
+will be refused stays enabled while the other turn waits.
+
 **What leaves, and who carries it.** The relay and its pane send the request nowhere: Copy
 puts the whole request on the clipboard — the briefing, the instruction and the whole form
-— and pasting it into a chat gives it to that service under the person's own account. The
+— and pasting it into a chat gives it to that service under the person's own account. A
+request for examples carries the form's fields, labels and options, the sample examples start
+from and the names of those already kept, but not its rules. The
 pane says so, in its own words, and says it of itself: what the rest of your page sends is
 yours, and the pane cannot know it. A pasted answer is not tied to the request it answers: the review's list
 of changes, against the form the run was asked about, is what shows an answer to something
@@ -419,9 +446,10 @@ downloads and uploads: `locale`, `defaultLocale`, and `messages` with `id`, `sou
 
 **What is checked.** An answer that is not JSON, not a catalogue file, or a catalogue for
 another language is asked for again, with that problem alone. A decline ends the run, as for
-a form. Anything else is kept: an id it was not asked for is dropped and listed, and a
-message it left empty — or wrote as nothing but spaces — is listed as still missing, with
-*Translate the rest* to ask for those.
+a form, and so does a model answering another request, which ends it `busy`. Anything else
+is kept: an id it was not asked for is dropped and listed, and a message it left empty — or
+wrote as nothing but spaces — is listed as still missing, with *Translate the rest* to ask
+for those.
 
 **What lands.** The answer goes through the catalogue import into a copy of the form, so the
 import's rules apply: an empty target erases nothing, and a translation made from a source

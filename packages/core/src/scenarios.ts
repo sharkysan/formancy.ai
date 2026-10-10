@@ -2,6 +2,7 @@ import type { FormSchema } from '@formancy/spec'
 import type { CapabilitySource } from '@formancy/expressions'
 import { createFormEngine } from './engine.js'
 import { parsePath } from './path.js'
+import { getAt } from './value.js'
 
 /**
  * What a form is supposed to do, written down, and run against it.
@@ -35,6 +36,15 @@ export interface Scenario {
   /** Unique in a set: it is how a failure is named and how a result is found. */
   readonly name: string
   /**
+   * Why the example is worth having: the part of what the author said that it checks.
+   *
+   * For whoever reads the list later, and never run. A drafted example carries the
+   * sentence it was drafted from, so a person deciding whether the example or the rule is
+   * wrong can see what the example understood
+   * ([0162](../../../docs/decisions/0162-an-example-is-drafted-from-what-the-author-said.md)).
+   */
+  readonly because?: string
+  /**
    * Values to set, in the order written, through the live engine.
    *
    * Set rather than supplied as an initial value, because turning a branch off
@@ -53,7 +63,10 @@ export interface Scenario {
   readonly errors?: Readonly<Record<string, readonly string[]>>
   readonly visible?: Readonly<Record<string, boolean>>
   readonly values?: Readonly<Record<string, unknown>>
-  /** Paths the submission must not carry at all. `clearOnHide`'s own question. */
+  /**
+   * Paths the submission must not carry at all. `clearOnHide`'s own question. Each is
+   * looked for where its field is, so `home.street` and `items[0].note` are checked too.
+   */
   readonly absent?: readonly string[]
 }
 
@@ -221,12 +234,23 @@ export function runScenarios(
       })
     }
 
-    const submitted = engine.value() as Record<string, unknown>
+    /*
+     * Looked for where the field is, through its path, as everything else here is. A key
+     * looked up at the top of the submission found `home.street` in none, so an `absent`
+     * on a field inside a group or a row held whatever the form did
+     * ([0162](../../../docs/decisions/0162-an-example-is-drafted-from-what-the-author-said.md)).
+     */
+    const submitted = engine.value()
     for (const path of scenario.absent ?? []) {
-      if (!Object.hasOwn(submitted, path)) continue
+      const segments = parsePath(path)
+      const holder = getAt(submitted, segments.slice(0, -1))
+      const key = segments.at(-1)!
+      if (holder === null || typeof holder !== 'object' || !Object.hasOwn(holder, key)) continue
       failures.push({
         about: 'absent',
-        detail: `"${path}" is still in the submission as ${JSON.stringify(submitted[path])}; it was expected to be gone.`,
+        detail: `"${path}" is still in the submission as ${JSON.stringify(
+          (holder as Record<string | number, unknown>)[key],
+        )}; it was expected to be gone.`,
       })
     }
 

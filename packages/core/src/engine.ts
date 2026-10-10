@@ -13,6 +13,7 @@ import { buildGraph } from './graph.js'
 import type { GraphNode } from './graph.js'
 import { fieldIds } from './ids.js'
 import type { Check } from './checks.js'
+import type { BuiltInErrorCode, ValidationReport } from './error-codes.js'
 import type { FieldIds } from './ids.js'
 import { createInteractionState } from './interaction.js'
 import { modelViolations } from './model-validators.js'
@@ -86,11 +87,6 @@ export interface FieldSnapshot {
   ids: FieldIds
   /** Ready-to-spread ARIA wiring; see props.ts for the rules it encodes. */
   props: FieldProps
-}
-
-export interface ValidationReport {
-  valid: boolean
-  errors: Record<string, string[]>
 }
 
 export interface FormEngineOptions {
@@ -1006,7 +1002,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
       if (checker === undefined) {
         // Named and absent: the document asks for a check this deployment has not
         // supplied. Failing closed is the same answer `optionsSource` gives.
-        settled(['check_unavailable'])
+        settled(['check_unavailable' satisfies BuiltInErrorCode])
         continue
       }
 
@@ -1018,7 +1014,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
       try {
         answer = checker({ check: rule.check ?? '', path: wire, value, data: store.root() })
       } catch {
-        settled(['check_unavailable'])
+        settled(['check_unavailable' satisfies BuiltInErrorCode])
         continue
       }
       void Promise.resolve(answer)
@@ -1026,7 +1022,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
           settled(verdict === undefined ? undefined : [verdict])
         })
         .catch(() => {
-          settled(['check_unavailable'])
+          settled(['check_unavailable' satisfies BuiltInErrorCode])
         })
     }
   }
@@ -1085,7 +1081,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
 
       const value = store.get(node.path)
       const codes: string[] = []
-      if (requiredViolated(node, value)) codes.push('required')
+      if (requiredViolated(node, value)) codes.push('required' satisfies BuiltInErrorCode)
       codes.push(...modelViolations(node.def, value))
 
       const checks = validateByTemplateWire.get(templateWireOf(node.wire))
@@ -1104,8 +1100,8 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
           const outcome = evaluate(entry.program, evaluationBag, { capabilities })
           // Fail CLOSED: a validate rule that cannot evaluate cannot vouch for
           // the value; the author sees the broken rule instead of bad data.
-          if (!outcome.ok) codes.push(entry.rule.code ?? 'invalid')
-          else if (outcome.value === false) codes.push(entry.rule.code ?? 'invalid')
+          if (!outcome.ok) codes.push(entry.rule.code ?? ('invalid' satisfies BuiltInErrorCode))
+          else if (outcome.value === false) codes.push(entry.rule.code ?? ('invalid' satisfies BuiltInErrorCode))
           else if (typeof outcome.value === 'string' && outcome.value !== '') codes.push(outcome.value)
         }
       }

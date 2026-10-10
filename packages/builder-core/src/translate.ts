@@ -15,7 +15,10 @@ import { catalogueFile, isCatalogueFile } from './translation.js'
  * The third thing asked of a model this way, after a form and a change to one, and on the
  * same loop: `askChecked` asks, checks, and asks again with only the latest complaint; a
  * decline ends the run on its turn ([0158](../../../docs/decisions/0158-a-model-may-decline.md));
- * a stop ends it at once ([0157](../../../docs/decisions/0157-a-models-turn-can-be-stopped.md)).
+ * a stop ends it at once ([0157](../../../docs/decisions/0157-a-models-turn-can-be-stopped.md));
+ * a model answering another request — a relay carrying another pane's turn — ends it `busy`
+ * before anything is asked, and is said as the prompt pane says it
+ * ([0162](../../../docs/decisions/0162-an-example-is-drafted-from-what-the-author-said.md)).
  *
  * **Missing-only.** The request holds the messages nobody has written in that language, and
  * what comes back is written only where a message is still missing when it lands. A model
@@ -68,7 +71,7 @@ export type TranslationResult =
       readonly problems: readonly TranslationProblem[]
       readonly lastAnswer: string
       /** As `AuthoringResult.ended`: how the run ended without an answer. */
-      readonly ended: 'gave-up' | 'stopped' | 'unreachable' | 'declined'
+      readonly ended: 'gave-up' | 'stopped' | 'unreachable' | 'busy' | 'declined'
       readonly reason?: string
     }
 
@@ -345,20 +348,7 @@ export function translationStatus(
   if (state.busy) return text('translate.status.asking')
   if (state.refusal !== undefined) return text('prompt.status.refused', { reason: state.refusal })
   const result = state.result
-  if (result !== undefined && !result.ok) {
-    switch (result.ended) {
-      case 'gave-up':
-        return text('translate.status.failed', { count: result.attempts })
-      case 'stopped':
-        return text('prompt.status.stopped')
-      case 'unreachable':
-        return result.reason === undefined
-          ? text('prompt.status.unreachableNoReason')
-          : text('prompt.status.unreachable', { reason: result.reason })
-      case 'declined':
-        return text('prompt.status.declined')
-    }
-  }
+  if (result !== undefined && !result.ok) return endedStatus(result, text)
   const proposal = state.proposal
   if (proposal === undefined) return ''
   const count = proposal.rows.length
@@ -377,6 +367,31 @@ export function translationStatus(
         : text('translate.status.ready', { count })
   const left = proposal.stillMissing.length
   return left === 0 ? said : `${said} ${text('translate.status.stillMissing', { count: left })}`
+}
+
+/**
+ * What a run that ended without an answer says. A function of its own so the switch is the
+ * whole of it: an ending added to `askChecked` and not given a sentence here is a compile
+ * error, where inside `translationStatus` it fell through to the proposal below — `busy`
+ * did, and the status said nothing, or the earlier answer's "ready to review".
+ */
+function endedStatus(result: Extract<TranslationResult, { ok: false }>, text: BuilderText): string {
+  switch (result.ended) {
+    case 'gave-up':
+      return text('translate.status.failed', { count: result.attempts })
+    case 'stopped':
+      return text('prompt.status.stopped')
+    case 'unreachable':
+      return result.reason === undefined
+        ? text('prompt.status.unreachableNoReason')
+        : text('prompt.status.unreachable', { reason: result.reason })
+    case 'busy':
+      // Not unreachable: nothing was asked. The prompt pane's sentence, because the two
+      // runs meet the same relay and nothing was applied in either (0162).
+      return text('prompt.status.busy')
+    case 'declined':
+      return text('prompt.status.declined')
+  }
 }
 
 function unique(ids: readonly string[]): string[] {

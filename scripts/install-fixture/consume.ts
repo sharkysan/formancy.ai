@@ -25,14 +25,20 @@ import {
   createRelay,
   createStop,
   declinedAnswer,
+  draftScenarios,
+  draftVerdict,
+  keepDraft,
+  ModelBusyError,
   proposalHeading,
   proposeEdit,
   proposeTranslation,
   relayMessage,
   translateCatalogue,
   translationPrompt,
+  translationStatus,
 } from '@formancy/builder-core'
 import type { AskModel, ProposalExamples, TranslationProposal } from '@formancy/builder-core'
+import type { BuiltInErrorCode } from '@formancy/core'
 import { mintChallenge, solveChallenge, verifySolution } from '@formancy/challenge'
 import { auditedBy, createMemoryStorage, publishForm } from '@formancy/server-core'
 import type { FormSchema } from '@formancy/spec'
@@ -157,6 +163,50 @@ const translation: TranslationProposal = proposeTranslation(translating, german.
 if (!applyProposal(translating, translation).ok || translating.document().i18n?.messages['de']?.['email'] !== 'E-Mail') {
   throw new Error('the installed proposeTranslation did not apply')
 }
+
+// Examples drafted from what the author said (0162): the request withholds the rule, a
+// draft that fails is judged by the installed core and can still be kept, and the codes
+// a model is told are a type the installed core exports.
+const drafting = createRelay()
+const drafted = draftScenarios(drafting.ask, schema, 'An email is optional.')
+const asked = drafting.waiting()
+if (asked === undefined || !asked.prompt.user.includes('An email is optional.')) {
+  throw new Error('the installed draftScenarios did not ask for the author’s words')
+}
+const required: BuiltInErrorCode = 'required'
+drafting.answer(JSON.stringify({ scenarios: [{ name: 'no email is fine', changes: {}, valid: true }] }))
+const draftsOut = await drafted
+if (!draftsOut.ok || draftsOut.drafts[0]?.name !== 'no email is fine') {
+  throw new Error('the installed draftScenarios did not read the draft')
+}
+const failing = draftVerdict(schema, draftsOut.drafts[0])
+if (failing.passed || !failing.failures.some((failure) => failure.detail.includes(required))) {
+  throw new Error('the installed draftVerdict did not judge the draft against the required email')
+}
+const keptDraft = keepDraft(schema, [], draftsOut.drafts[0])
+if (!keptDraft.ok || keptDraft.scenarios.length !== 1) throw new Error('the installed keepDraft refused a failing draft')
+
+// One relay asked from several panes (0162): a second request while a turn waits ends busy,
+// through the installed relay and askChecked — a draft's, and a translation's, whose status
+// says it as the prompt pane does — and so does a host's own ModelBusyError.
+const shared = createRelay()
+const waitingEdit = authorForm(shared.ask, 'add a phone number', { current: schema })
+const refusedDraft = await draftScenarios(shared.ask, schema, 'An email is optional.')
+if (refusedDraft.ok || refusedDraft.ended !== 'busy') throw new Error('the installed relay did not refuse as busy')
+const refusedTranslation = await translateCatalogue(shared.ask, worded, 'de')
+if (refusedTranslation.ok || refusedTranslation.ended !== 'busy') {
+  throw new Error('the installed relay did not refuse a translation as busy')
+}
+const english = translating.text
+const saidBusy = translationStatus(
+  { busy: false, result: refusedTranslation, proposal: undefined, refusal: undefined },
+  english,
+)
+if (saidBusy !== english('prompt.status.busy')) throw new Error('the installed translationStatus did not say busy')
+shared.answer(JSON.stringify(schema))
+await waitingEdit
+const ownBusy = await authorForm(() => Promise.reject(new ModelBusyError()), 'anything')
+if (ownBusy.ok || ownBusy.ended !== 'busy') throw new Error('the installed ModelBusyError did not end the run busy')
 
 /*
  * The challenge: mint, solve, verify — both halves of the protocol.

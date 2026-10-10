@@ -10,6 +10,55 @@ later.
 
 ## Unreleased
 
+**Added: examples drafted by a model from what the author says the form should do.** An
+example with its answer written down is the only check that tells a rule that compiles from
+the rule that was asked for, and the scenario panes and the review of a model's edit run them
+— but nothing wrote one, so a form without examples got nothing from either. Asked the way
+`authorForm` asks, with the whole document, a model writes the example the rule passes, which
+agrees with the rule whether it is right or wrong. `draftScenarios` in `@formancy/builder-core`
+asks with `scenarioPrompt` instead: the fields an example can name, by data path, with their
+types, labels and options; the error codes the engine reports; where examples start; the
+names already taken; and the author's words — never a rule's condition, a pattern, a bound,
+or which fields are required. The answer is read item by item, so one broken item is listed
+with why rather than costing the others, and the model is asked again only when nothing in it
+is an example. `draftVerdict` runs a draft with the scenario pane's own options whenever it is
+drawn, so it shows the verdict the panel will give it. `keepDraft` refuses a name already
+taken and a draft naming a field the form does not have, and keeps a draft that fails:
+that is where the person decides whether the example or the rule is wrong. `ScenarioPane` in
+`@formancy/builder-react` draws the drafting part when given `ask` as well as `onChange`, and
+`<formancy-scenario-pane>` in `@formancy/builder-angular` when `[ask]` is bound and `removable`
+is set; nothing reaches the host until Keep. A model's reason for declining is quoted beneath
+the status, as `draftQuotes` decides for both. The part says the request never carries the
+rules, and to start a new chat for it, since a model that saw the form earlier in the same chat
+has seen them. Its words are in English, German and French. The playground hands its relay
+to both builders' scenario panes, and a draft kept joins the open form's examples. `@formancy/core` gains a type, `BuiltInErrorCode`, against which the codes the
+engine pushes are typed, so the vocabulary a model is told cannot drift. `Scenario` gains an
+optional `because`, which nothing runs
+([0162](docs/decisions/0162-an-example-is-drafted-from-what-the-author-said.md)).
+
+**Changed: a model answering another request ends a run `busy`, not `unreachable`.** The
+playground's prompt pane and scenario pane ask one relay, which carries one turn, so either
+can be refused while the other's turn waits. The refused run said the model could not be
+reached — untrue, since nothing was asked — with the relay's English beneath it under any
+language, and while a draft waited that was the prompt pane's own run. The relay now rejects
+with `ModelBusyError`, exported from `@formancy/builder-core`; `authorForm` and
+`draftScenarios` end `busy` with no reason, and both panes say another request is waiting, in
+the person's language. So does `translateCatalogue`, whose translations pane asks the same
+relay from its own tab and says it as the prompt pane does. `AuthoringResult.ended` and
+`TranslationResult.ended` have one more value: a host that switches over every ending has one
+more to word, and a host whose own model takes one request at a time can reject with
+`ModelBusyError` to get the same sentence
+([0162](docs/decisions/0162-an-example-is-drafted-from-what-the-author-said.md), superseding
+part of [0160](docs/decisions/0160-a-person-carries-the-models-turn.md)).
+
+**Fixed: an example's `absent` on a field inside a group or a repeater's row checked
+nothing.** `runScenarios` looked each `absent` path up as a key at the top of the submission,
+where `home.street` or `items[0].note` never is, so the expectation held whatever the form did
+— green in the scenario panel, in the review of a model's edit and in `check_scenarios`. It
+is now read through the path, like every other key of an example. An example that names
+such a path and passed may now fail: that is it checking for the first time
+([0162](docs/decisions/0162-an-example-is-drafted-from-what-the-author-said.md)).
+
 **Added: a model can be asked for the messages a language is missing, and its answer is
 reviewed message by message.** The playground's starter has a French catalogue left
 half-finished on purpose, and the Translations tab marked every missing message — and

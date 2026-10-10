@@ -73,6 +73,11 @@ export const MODEL_MESSAGES = {
   'prompt.status.stopped': 'Stopped. Nothing was applied.',
   'prompt.status.unreachable': 'Nothing was applied. The model could not be reached: {reason}',
   'prompt.status.unreachableNoReason': 'Nothing was applied. The model could not be reached.',
+  // Nothing was asked: the host's model is answering another request — through the
+  // playground's one relay, a draft of examples waiting (0162). The translations pane's
+  // sentence too, since nothing was applied there either.
+  'prompt.status.busy':
+    'Nothing was applied. Another request is still waiting for the model’s answer: finish or stop that one first.',
   // The model said the format cannot express the request. Its reason is shown beneath,
   // as it wrote it, rather than set into this sentence.
   'prompt.status.declined': 'Nothing was applied. The model declined this request.',

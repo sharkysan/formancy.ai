@@ -15,12 +15,9 @@ export type { InteractionState } from './interaction.js'
 export { createWizard } from './wizard.js'
 export type { Wizard, WizardOptions } from './wizard.js'
 export { createFormEngine } from './engine.js'
-export type {
-  FieldSnapshot,
-  FormEngine,
-  FormEngineOptions,
-  ValidationReport,
-} from './engine.js'
+export type { FieldSnapshot, FormEngine, FormEngineOptions } from './engine.js'
+// What `validate()` answers, and the codes the engine puts in it of its own accord (0162).
+export type { BuiltInErrorCode, ValidationReport } from './error-codes.js'
 export { engineRefusal } from './engine-refusal.js'
 export { expressionProblems, MIXED_NUMERIC_LITERAL_EXAMPLE } from './expression-problems.js'
 export { runScenarios } from './scenarios.js'

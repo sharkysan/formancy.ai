@@ -6,6 +6,7 @@ import { createStop, declinedAnswer } from './answers.js'
 import { referencedMessages } from './logic.js'
 import { createBuilderText } from './messages.js'
 import { BUILDER_MESSAGES_DE } from './messages-de.js'
+import { BUILDER_MESSAGES_FR } from './messages-fr.js'
 import { applyProposal } from './proposal.js'
 import { createBuilderSession } from './session.js'
 import {
@@ -693,6 +694,31 @@ describe('what a pane says', () => {
     )
     expect(translationStatus(ended('unreachable'), text)).toBe(text('prompt.status.unreachableNoReason'))
     expect(translationStatus(ended('declined', 'no Romansh'), text)).toBe(text('prompt.status.declined'))
+  })
+
+  test('a model answering another request is said to be busy, in each language, over an earlier proposal too', async () => {
+    // A host's relay carries one turn at a time, and the prompt pane, the scenario pane and
+    // this pane may all ask it (0160, 0162). A translation refused as busy said nothing:
+    // no case for it, so the status was empty — or, after *Translate the rest*, it was the
+    // first answer's "ready to review", as though the second had been asked at all. The
+    // sentence is the prompt pane's, because nothing was applied in either.
+    const result = await translateCatalogue(scripted(answerWith({ email: 'Courriel' })).ask, order, 'fr')
+    if (!result.ok) throw new Error('refused')
+    const earlier = proposeTranslation(createBuilderSession(order), result.answer)
+    const busy = {
+      busy: false,
+      result: { ok: false as const, attempts: 1, problems: [], lastAnswer: '', ended: 'busy' as const },
+      proposal: undefined,
+      refusal: undefined,
+    }
+    const german = createBuilderText({ locale: 'de', messages: BUILDER_MESSAGES_DE })
+    const french = createBuilderText({ locale: 'fr', messages: BUILDER_MESSAGES_FR })
+
+    expect(translationStatus(busy, text)).toBe(text('prompt.status.busy'))
+    expect(translationStatus(busy, text)).not.toMatch(/reached/)
+    expect(translationStatus(busy, german)).toBe(german('prompt.status.busy'))
+    expect(translationStatus(busy, french)).toBe(french('prompt.status.busy'))
+    expect(translationStatus({ ...busy, proposal: earlier }, text)).toBe(text('prompt.status.busy'))
   })
 
   test('says when the model translated nothing, and when it took more than one go', async () => {

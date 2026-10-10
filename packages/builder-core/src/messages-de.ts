@@ -1,4 +1,5 @@
 import type { BuilderMessageId, Message } from './messages.js'
+import { DRAFT_MESSAGES_DE } from './messages-drafts-de.js'
 
 /**
  * German, shipped and complete.
@@ -17,6 +18,8 @@ import type { BuilderMessageId, Message } from './messages.js'
  * plural machinery to find where the German starts.
  */
 export const BUILDER_MESSAGES_DE = {
+  // Drafting examples, in a file of its own (0162).
+  ...DRAFT_MESSAGES_DE,
   'tree.empty': 'Dieses Formular hat noch keine Felder.',
   'tree.fieldCount': { one: '{count} Feld', other: '{count} Felder' },
   'palette.title': 'Feld hinzufügen',
@@ -408,6 +411,8 @@ export const BUILDER_MESSAGES_DE = {
   'prompt.status.stopped': 'Angehalten. Nichts wurde übernommen.',
   'prompt.status.unreachable': 'Nichts wurde übernommen. Das Modell war nicht erreichbar: {reason}',
   'prompt.status.unreachableNoReason': 'Nichts wurde übernommen. Das Modell war nicht erreichbar.',
+  'prompt.status.busy':
+    'Nichts wurde übernommen. Eine andere Anfrage wartet noch auf die Antwort des Modells: Schließe sie zuerst ab oder halte sie an.',
   'prompt.status.declined': 'Nichts wurde übernommen. Das Modell hat diese Anfrage abgelehnt.',
 
   'relay.title': 'Diese Anfrage zu einem Modell bringen',

@@ -1,4 +1,4 @@
-import { readAnswer } from './answers.js'
+import { ModelBusyError, readAnswer } from './answers.js'
 import type { AskModel, AuthoringPrompt } from './answers.js'
 
 /**
@@ -94,11 +94,11 @@ export function createRelay(): Relay {
   const ask: AskModel = (prompt, turn) => {
     // **One turn at a time.** Queued, a second request would wait behind a turn the
     // person may never answer, and a paste meant for one could be taken as the other's.
-    // Refused, its run ends at once as a model that could not be asked, and says why.
-    // The reason is a developer's: two runs on one relay at once is a host wiring two
-    // panes to one person.
+    // Refused as busy, its run ends at once, and its pane says so in the author's
+    // language: a host that asks one relay from several panes — the playground's prompt,
+    // scenario and translations panes — reaches this from any of them (0162).
     if (current !== undefined) {
-      return Promise.reject(new Error('This relay is already waiting for an answer to another request.'))
+      return Promise.reject(new ModelBusyError())
     }
     return new Promise<string>((resolve) => {
       const waiting = {

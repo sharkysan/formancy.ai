@@ -304,6 +304,7 @@ Write it
                                  ├─ Stop pressed, or the pane goes away
                                  │     ──▶ turn.onCancel ──────────────────▶  abort, if it listens
                                  │     ──▶ ended: stopped; a later answer settles nothing
+                                 ├─ rejected with ModelBusyError ──▶ ended: busy, no reason
                                  ├─ rejected or threw ──▶ ended: unreachable, with its reason if any
                                  ▼
                                readAnswer
@@ -333,7 +334,10 @@ stopped all the same, and its answer, when it comes, resolves a promise nothing 
 on. **A host's error is an ending, not an exception.** `authorForm` resolves with
 `ended: 'unreachable'` and the error's message, so the sentence the pane says is decided once,
 in `proposalStatus`, and not by two panes each catching the rejection
-([0157](../decisions/0157-a-models-turn-can-be-stopped.md)). Only the latest complaint goes
+([0157](../decisions/0157-a-models-turn-can-be-stopped.md)). A model that rejects with
+`ModelBusyError` was not asked, and nothing is wrong with it: the run ends `busy`, with no
+reason, and the pane says from its catalogue that another request is waiting
+([0162](../decisions/0162-an-example-is-drafted-from-what-the-author-said.md)). Only the latest complaint goes
 back to the model, in `user` for a host that keeps no conversation and alone as `followUp`
 for one that does ([0056](../decisions/0056-agents-get-the-checks.md)).
 
@@ -352,7 +356,8 @@ next turn's complaint asks for the reason, and shows the decline as the briefing
 prompt pane              authorForm (6.7)          relay, in builder-core          relay pane            person
 ───────────              ────────────────          ──────────────────────          ──────────            ──────
 Write it        ───▶     ask(prompt, turn)  ───▶   one waiting already?
-                                                     └─ yes ──▶ rejects: the run ends unreachable
+                                                     └─ yes ──▶ rejects with ModelBusyError:
+                                                                the run ends busy (0162)
                                                    waiting = { prompt, message, followUp }
                                                    onCancel ──▶ clears it
                                                    tells subscribers   ───▶   draws the turn,
@@ -375,7 +380,11 @@ Stop, or the pane goes ─▶ turn.onCancel ──────────▶ th
 `AskModel`, races it against the stop, and checks what comes back; the relay decides only
 what a pane cannot be trusted to decide twice — one turn at a time, a paste with no object
 in it held back, and a stop clearing the turn
-([0160](../decisions/0160-a-person-carries-the-models-turn.md)). The request leaves the page
+([0160](../decisions/0160-a-person-carries-the-models-turn.md)). The playground asks it from
+the prompt pane and the scenario pane's drafting part, and from the translations pane under
+its own tab (6.9), so the turn one of them holds refuses another's: that run ends `busy`, and
+its pane says another request is waiting
+([0162](../decisions/0162-an-example-is-drafted-from-what-the-author-said.md)). The request leaves the page
 on the clipboard, by the person's press, and the answer comes back the same way. The relay
 and its pane call nothing. Each turn the pane draws takes the focus to Copy, described by the
 turn and what to do with it: from then on the run waits on the person, and a failed answer
@@ -400,6 +409,8 @@ review part (in the translations pane)   builder-core                           
                                              another locale, a decline with
                                              no reason ──▶ asked again, that problem alone
                                              a decline ──▶ ended after its turn
+                                             another pane's turn waiting ──▶ ended busy,
+                                               in the prompt pane's sentence (0162)
                                              ok ──▶ ids not asked: dropped
                                                     ids asked, empty or blank: still missing
                                                     asked: each id with the source sent
@@ -439,3 +450,44 @@ turn is drawn where the prompt pane's is (6.8), at the top of either builder.
 *Translate the rest* asks over the proposal under review, and the answer is written over it
 and held against its basis, so the two land together, or neither does if the form moved in
 between.
+
+## 6.10 Drafting examples from what the author said
+
+```
+drafting part                  draftScenarios, in builder-core                 host's AskModel (or a relay, 6.8)
+─────────────                  ───────────────────────────────                 ─────────────────────────────────
+Draft examples
+  stop = createStop()  ───▶    scenarioPrompt(document, intent,
+                                 { initialValue, existing })
+                                 fields by data path, types, labels, options,
+                                 the engine's codes, the form's own codes by name,
+                                 where examples start, names taken, the words —
+                                 no rule, no pattern, no bound, not required
+                               askChecked (6.7's loop)                  ───▶   its request
+                                 ├─ stopped / unreachable / busy / declined ──▶ ended, as 6.7
+                                 ▼
+                               each item read on its own
+                                 ├─ none is an example ──▶ the reasons go into the next turn
+                                 ▼
+                               ok: drafts, and the items that were not, with why
+                       ◀───    resolves, however it ended
+  draftStatus, draftProblems ──▶ the live region, and the list beneath it
+  draftQuotes                ──▶ the model's words, quoted: why it declined, or its last answer
+
+  on every render, for each draft waiting:
+    draftVerdict(document now, draft, { initialValue, mode })  ──▶ runScenarios: holds, or why not
+  Keep    ──▶ keepDraft(document, scenarios, draft, options)
+                ├─ a name already in the list    ──▶ refused, and said
+                ├─ a path this form does not have ──▶ refused, and said
+                ▼
+              onChange / scenariosChange([...scenarios, draft]) ──▶ the host's list ──▶ the panel (0111)
+  Discard ──▶ the draft leaves; nothing reaches the host
+```
+
+**What the model is never shown is the point.** A drafted example is worth having only if it
+can disagree with the form, so the request carries what an example has to name and what the
+author said, and none of what the rules do. **The engine, not the model, says whether a
+draft holds**, with the panel's own options, every time the part is drawn, so an edit made
+while a draft waits changes its verdict. **A person keeps each one**, and a draft that fails
+can be kept: the failure is the question the person answers
+([0162](../decisions/0162-an-example-is-drafted-from-what-the-author-said.md)).

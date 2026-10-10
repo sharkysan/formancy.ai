@@ -101,6 +101,12 @@ from the form in front of you is the next piece, and it is a different kind of w
 small editor over an example rather than a report. Said plainly, because a panel that can
 only delete is a panel somebody has to fill from a text editor first.
 
+> **Later, and not a change to this decision:** a model drafts examples from what the
+> author says the form should do, shown the form's fields and never its rules; the engine
+> judges each draft, and a person keeps them one at a time, into the host's list through
+> the same `onChange` — [0162](0162-an-example-is-drafted-from-what-the-author-said.md).
+> Composing one by hand, the editor this paragraph names, is still not here.
+
 ## Alternatives considered
 
 **Keep the previous run in state rather than a ref (React).** Simpler to read, and it

@@ -181,12 +181,14 @@ export function playgroundBuilder(
         (selected)="selected.set($event)"
       />
       <!-- The page's examples, drawn from its list and handed back to it on Remove,
-           so one taken away here is gone from the React builder too. -->
+           so one taken away here is gone from the React builder too — and drafted with
+           the page's relay, a kept draft going back the same way (0162). -->
       <formancy-scenario-pane
         [session]="host.session"
         [scenarios]="host.scenarios()"
         [initialValue]="host.sample()"
         [removable]="true"
+        [ask]="host.relay.ask"
         (scenariosChange)="host.keepScenarios($event)"
       />
       @if (selected(); as keyPath) {

@@ -2,7 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, input, output, signal } f
 import { createRunHistory, scenarioStatus } from '@formancy/builder-core'
 import { BuilderTextPipe } from './text.pipe.js'
 import { runScenarios } from '@formancy/core'
-import type { BuilderSession, Scenario, ScenarioResult } from './types.js'
+import { FormancyScenarioDrafts } from './scenario-drafts.js'
+import type { AskModel, BuilderSession, Scenario, ScenarioResult } from './types.js'
 import { injectBuilderView } from './view.js'
 
 /**
@@ -24,6 +25,11 @@ import { injectBuilderView } from './view.js'
  * an output, exactly as the prompt pane's model does. With none given the pane
  * renders nothing rather than an empty table.
  *
+ * **Given a model as well, it drafts them.** With `[ask]` bound and `removable` set, the
+ * pane draws `formancy-scenario-drafts` beneath the list, whose kept drafts leave through
+ * the same output
+ * ([0162](../../../docs/decisions/0162-an-example-is-drafted-from-what-the-author-said.md)).
+ *
  * Signals and `OnPush`, zoneless. The rerun is a `computed` over the session's
  * revision — the same subscription every other pane here uses — and the
  * previous run is held in a plain field, the history, because it is read to
@@ -31,7 +37,7 @@ import { injectBuilderView } from './view.js'
  */
 @Component({
   selector: 'formancy-scenario-pane',
-  imports: [BuilderTextPipe],
+  imports: [BuilderTextPipe, FormancyScenarioDrafts],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (scenarios() !== undefined) {
@@ -71,6 +77,22 @@ import { injectBuilderView } from './view.js'
             }
           </ul>
         }
+
+        <!-- A draft kept goes where a Remove does: out through the one output, so it is
+             drawn only where somebody is listening to it. -->
+        @if (ask(); as model) {
+          @if (removable()) {
+            <formancy-scenario-drafts
+              [session]="session()"
+              [scenarios]="scenarios()!"
+              [ask]="model"
+              [initialValue]="initialValue()"
+              [mode]="mode()"
+              [attempts]="attempts()"
+              (scenariosChange)="scenariosChange.emit($event)"
+            />
+          }
+        }
       </section>
     }
   `,
@@ -104,6 +126,14 @@ export class FormancyScenarioPane {
    * button, and guessing at a subscription would be guessing.
    */
   readonly removable = input(false)
+  /**
+   * A model to draft examples with, as the prompt pane takes it. Drafting is drawn only when
+   * `removable` is set too: a draft somebody keeps leaves through `scenariosChange`, and the
+   * pane draws buttons for that output only when the host says it listens.
+   */
+  readonly ask = input<AskModel | undefined>(undefined)
+  /** How many times drafting asks the model. Three by default. */
+  readonly attempts = input<number | undefined>(undefined)
 
   private readonly view = injectBuilderView(this.session)
   /** The previous run and its session; a run over another session is compared with nothing. */

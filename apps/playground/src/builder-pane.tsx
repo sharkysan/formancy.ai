@@ -205,7 +205,8 @@ export function BuilderBody({
         <>
           {/* The turn a person is carrying to a model, above the tabs rather than inside
               one: it belongs to the run, not to a tab's layout. Nothing while nothing
-              waits — and the run is the prompt pane's, under Fields, so it ends if that
+              waits — and the run is the pane's that asked, the prompt or scenario pane
+              under Fields or the translations pane under Translations, so it ends if that
               pane goes (0157). The chat is this deployment's choice, named in
               `demo-capabilities.ts` and nowhere else (0160). */}
           <RelayPane session={session} relay={relay} chat={RELAY_CHAT} />
@@ -276,12 +277,15 @@ export function BuilderBody({
                   ([0110](../../../docs/decisions/0110-a-form-is-checked-against-examples.md)).
                   The scenarios are the host's — here, the page's list, started from a
                   file beside the starter. Without `onChange` the pane draws no Remove
-                  button, and it had none. */}
+                  button, and it had none. With the relay as well, it drafts examples from
+                  what the visitor says the form should do, and one kept goes into the
+                  page's list for this form (0162). */}
               <ScenarioPane
                 session={session}
                 scenarios={scenarios}
                 onChange={onScenarios}
                 initialValue={sample}
+                ask={relay.ask}
               />
 
               {editing === null ? null : (

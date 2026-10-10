@@ -1,4 +1,4 @@
-export { authorForm, createStop, declinedAnswer } from './authoring.js'
+export { authorForm, createStop, declinedAnswer, ModelBusyError } from './authoring.js'
 export { applyProposal, proposalHeading, proposalStatus, proposeEdit } from './proposal.js'
 // A model whose turn a person carries: the request copied out, the answer pasted back (0160).
 export { createRelay, relayMessage } from './relay.js'
@@ -27,6 +27,29 @@ export { translationPrompt } from './translate-prompt.js'
 export type { TranslationRequest, TranslationRow } from './translate-prompt.js'
 export { comparedToLastRun, createRunHistory, scenarioStatus } from './scenario-runs.js'
 export type { RunHistory, ScenarioRunChange } from './scenario-runs.js'
+// Examples drafted from what the author said, judged by the engine, kept one at a time (0162).
+export {
+  draftExpectations,
+  draftProblems,
+  draftQuotes,
+  draftScenarios,
+  draftStatus,
+  draftVerdict,
+  keepDraft,
+} from './scenario-drafts.js'
+export type {
+  DraftNote,
+  DraftProblem,
+  DraftQuotes,
+  DraftState,
+  Drafted,
+  DraftingOptions,
+  KeptDraft,
+  UnusableDraft,
+  UnusableReason,
+} from './scenario-drafts.js'
+export { scenarioPrompt } from './scenario-prompt.js'
+export type { ScenarioPrompt, ScenarioPromptOptions } from './scenario-prompt.js'
 export type {
   AskModel,
   AskTurn,

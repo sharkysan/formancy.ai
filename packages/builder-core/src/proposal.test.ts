@@ -425,6 +425,20 @@ describe('what the prompt pane says', () => {
     expect(said).not.toMatch(/attempt|did not work/)
   })
 
+  test('a model answering another request is said to be busy, in each language, and not unreachable', () => {
+    // The playground's prompt pane and scenario pane ask one relay, and while a draft waits
+    // an edit is refused. "Could not be reached" sent a person to check a model nothing was
+    // wrong with, and the reason under it was the relay's English (0162).
+    const busy = { ...idle, result: ended('busy', 1) }
+    const german = createBuilderText({ locale: 'de', messages: BUILDER_MESSAGES_DE })
+    const french = createBuilderText({ locale: 'fr', messages: BUILDER_MESSAGES_FR })
+
+    expect(proposalStatus(busy, english)).toBe(english('prompt.status.busy'))
+    expect(proposalStatus(busy, english)).not.toMatch(/reached/)
+    expect(proposalStatus(busy, german)).toBe(german('prompt.status.busy'))
+    expect(proposalStatus(busy, french)).toBe(french('prompt.status.busy'))
+  })
+
   test('a run the person stopped is said to be stopped, not failed', () => {
     // A stop after two corrections is not a document that failed twice.
     const said = proposalStatus({ ...idle, result: ended('stopped', 2) }, english)

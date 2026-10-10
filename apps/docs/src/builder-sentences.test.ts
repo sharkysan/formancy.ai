@@ -47,6 +47,10 @@ const SPEAKS_FOR_ITSELF: ReadonlyArray<{ file: string; why: string }> = [
     file: 'translate-prompt.ts',
     why: 'Instructions to a model asked for a language’s missing messages, and where each is used in the form, for the same reason as `authoring.ts`: the request is English whatever the author speaks and whatever language is asked for, because its answer is checked against that wording — and what was wrong is shown to the person as the model was told it (0161).',
   },
+  {
+    file: 'scenario-prompt.ts',
+    why: 'Instructions to a model asked for a form’s examples, in English for the reason authoring.ts is, with the example form the briefing shows and the complaint a model is told. Nothing here is shown to the author as the pane’s own words: what a pane says about a drafting run is the catalogue’s, by the codes scenario-drafts.ts hands it (0162).',
+  },
 ]
 
 /**

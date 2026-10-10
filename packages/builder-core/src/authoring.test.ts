@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from 'vitest'
-import { createStop, declinedAnswer } from './answers.js'
+import { createStop, declinedAnswer, ModelBusyError } from './answers.js'
 import { authorForm } from './authoring.js'
 import type { AskModel, AuthoringPrompt, AuthoringResult } from './authoring.js'
 import { authoringBriefing, DECLINE_KEY } from '@formancy/spec'
@@ -286,6 +286,22 @@ describe('a host that cannot ask its model', () => {
       problems: [],
       lastAnswer: '',
     })
+  })
+
+  test('a model answering another request ends the run busy, after one turn, with no reason of its own', async () => {
+    /*
+     * Not a model that could not be reached: nothing was asked, and nothing is wrong with
+     * it. Ended as unreachable, the pane said so — with whatever sentence the host's error
+     * carried, in whatever language it was written. Busy is worded by the pane, from the
+     * catalogue. Read by name as well as by class, as an error from another realm fails
+     * `instanceof`.
+     */
+    for (const thrown of [new ModelBusyError(), { name: 'ModelBusyError', message: 'occupé' }]) {
+      const result = await authorForm(() => Promise.reject(thrown as Error), 'a contact form')
+
+      expect(result).toMatchObject({ ok: false, ended: 'busy', attempts: 1, problems: [], lastAnswer: '' })
+      expect(result).not.toHaveProperty('reason')
+    }
   })
 
   test('after an answer that failed its check, keeps what that answer was told', async () => {

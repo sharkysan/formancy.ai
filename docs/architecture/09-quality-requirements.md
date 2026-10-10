@@ -51,7 +51,7 @@ formancy
 |---|---|---|
 | Keystroke, large conditional form | 1 ms | ≈0.38 ms |
 | Cold graph compile | 30 ms | ≈1.7 ms |
-| `@formancy/core` bundle | 18 kB brotli | **20.8 kB** — over, measured 2026-10-09 |
+| `@formancy/core` bundle | 18 kB brotli | **20.8 kB** — over, re-measured 2026-10-10 |
 | `@formancy/spec` bundle | — | 25.5 kB for the whole barrel — the index and the chunk it shares with `/validate`, measured 2026-10-09 |
 | `@formancy/react` bundle | 4 kB brotli | **24.6 kB** for the whole barrel, measured 2026-10-09 |
 | `uqr`, the QR encoder | — | 6.6 kB brotli, **external** rather than bundled, measured 2026-09-27 |
@@ -98,6 +98,15 @@ the React barrel went from 21.6 to 22.8 with the control that draws it. Unlike `
 the file field is in each renderer's default controls, so a form with no file field ships the
 queue too. That is the cost of the decision living in one place; the alternative was the
 measured row defect, made identically in both renderers.
+
+**The engine's error codes arrived as a type, and cost it nothing.** `BuiltInErrorCode`, the
+vocabulary a model drafting examples is told, is a union the validators are typed against
+and nothing more ([0162](../decisions/0162-an-example-is-drafted-from-what-the-author-said.md)).
+Re-measured on 2026-10-10 the figure did not move, and the built `dist/index.mjs` was
+byte-identical to the one before the change. The fix that followed in the same change does
+reach the bundle — `runScenarios` reads an `absent` path through the path rather than as a
+top-level key, a few lines and an import — and re-measured after it, also on 2026-10-10, the
+figure still rounds to 20.8 kB.
 
 **The spec figure moved 4.3 kB in one change, and the reason is worth the line.**
 `diffSchemas` stopped comparing only a field's identity, its type and its `required`

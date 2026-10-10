@@ -233,6 +233,10 @@ export function proposalStatus(
       return result.reason === undefined
         ? text('prompt.status.unreachableNoReason')
         : text('prompt.status.unreachable', { reason: result.reason })
+    case 'busy':
+      // Not unreachable: nothing was asked. Worded here rather than from the host's
+      // error, so it is in the author's language (0162).
+      return text('prompt.status.busy')
     case 'declined':
       // Without the reason, which the pane shows in place of the problems, as the
       // model wrote it: in this sentence too it would be read out twice (0158).
