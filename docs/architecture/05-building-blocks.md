@@ -278,7 +278,7 @@ time, a paste with no object in it held back without costing an attempt, and a s
 clearing the turn — so the React and Angular relay panes are markup, the clipboard, the
 focus and a subscription. Moving the focus to a turn as it arrives is done in each pane,
 because it is the DOM's, and both panes' tests hold them to the same — a turn found waiting
-when a pane is drawn moves none (0163). It names no service and holds no sentence; the chat a pane links to is the host's.
+when a pane is drawn moves none (0163). It names no service and holds no sentence; the chat a pane links to is the host's. Which of the catalogue's sentences says what leaves with a turn is `relayLeaves`, by the kind the run set on its prompt, because a form's edit, a translation and a request for examples carry different things ([0167](../decisions/0167-the-relay-says-what-each-request-carries.md)).
 `prompt-run.ts` is the prompt pane's run, held wherever the host holds it
 ([0163](../decisions/0163-a-models-run-belongs-to-the-host.md)). `createPromptRun()` gives
 the instruction, whether a run waits, the words the last run was asked with, what it came
@@ -318,14 +318,15 @@ different things about one edit
 
 `scenario-drafts.ts` and `scenario-prompt.ts` write examples where a form has none. A model
 is asked, through `askChecked`, for examples of what the author says the form should do, and
-`scenario-prompt.ts` is everything it is told: the fields an example can name, by the data
-path `core`'s `formatPath` writes, their types, labels and options, the engine's error codes
-— `BUILT_IN_ERROR_CODES`, which satisfies `core`'s `BuiltInErrorCode` — and the author's
-words, and never a rule's condition, a pattern, a bound or which fields are required. Shown
-the rule, a model writes the example the rule passes. It is model-facing English, as
-`authoring.ts` is. `scenario-drafts.ts` reads the answer item by item — each through
-`scenario-shape.ts`'s `readScenario`, the reader a server keeping a form's examples uses too
-(0166) — judges a draft with
+`scenario-prompt.ts` is everything it is told: the form's title; the fields an example can
+name, by the data path `core`'s `formatPath` writes, their types, labels and options; the
+engine's error codes — `BUILT_IN_ERROR_CODES`, which satisfies `core`'s `BuiltInErrorCode` —
+and those the form's rules name, by name alone; where examples start, the names already
+taken and the author's words, and never a rule's condition, a pattern, a bound or which
+fields are required. Shown the rule, a model writes the example the rule passes. It is
+model-facing English, as `authoring.ts` is. `scenario-drafts.ts` reads the answer item by item
+— each through `scenario-shape.ts`'s `readScenario`, the reader a server keeping a form's
+examples uses too (0166) — judges a draft with
 `runScenarios` and the scenario pane's own options (`draftVerdict`), decides what may be kept
 (`keepDraft`), says what came of a run in the catalogue's words (`draftStatus`,
 `draftProblems`), and which of the model's own words are quoted beneath it (`draftQuotes`). Both builders' drafting parts, drawn inside their scenario panes, are

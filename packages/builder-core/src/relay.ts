@@ -1,5 +1,7 @@
 import { ModelBusyError, readAnswer } from './answers.js'
 import type { AskModel, AuthoringPrompt } from './answers.js'
+import type { BuilderMessageId, BuilderText } from './messages.js'
+import type { ModelRequestKind } from './model-requests.js'
 
 /**
  * A model whose turn a person carries: the page shows the request, somebody copies it
@@ -18,7 +20,8 @@ import type { AskModel, AuthoringPrompt } from './answers.js'
  * ([0091](../../../docs/decisions/0091-a-second-builder-is-a-binding.md),
  * [0160](../../../docs/decisions/0160-a-person-carries-the-models-turn.md)). A pane
  * subscribes, shows `waiting()`, and hands `answer` what was pasted. No sentence is
- * written here: what a pane says about a turn is the catalogue's.
+ * written here: what a pane says about a turn is the catalogue's, and which of its
+ * sentences says what leaves with the turn is `relayLeaves`.
  *
  * Framework-neutral, the shape `BuilderSession` has: `subscribe` and a snapshot whose
  * identity changes only when the turn does, which is what React's
@@ -80,6 +83,37 @@ export interface RelayChat {
  */
 export function relayMessage(prompt: AuthoringPrompt): string {
   return `${prompt.system}\n\n${prompt.user}`
+}
+
+/** Each kind's sentence about what leaves with it — `relayLeaves`. */
+const LEAVES: Readonly<Record<ModelRequestKind, BuilderMessageId>> = {
+  authoring: 'relay.leaves.authoring',
+  translation: 'relay.leaves.translation',
+  scenarios: 'relay.leaves.scenarios',
+}
+
+/**
+ * What leaves with a request, said for its kind: one of the catalogue's sentences.
+ *
+ * **One per kind, because the requests carry different things.** A form's edit carries the
+ * person's words and the whole document, rules included; a translation
+ * ([0161](../../../docs/decisions/0161-a-model-translates-only-what-is-missing.md)) and a
+ * request for examples
+ * ([0162](../../../docs/decisions/0162-an-example-is-drafted-from-what-the-author-said.md))
+ * each carry part of the form and none of its rules, and each kind's sentence says which
+ * part. One sentence said "including the form" of all three, which was true of the first
+ * and overstated the other two
+ * ([0167](../../../docs/decisions/0167-the-relay-says-what-each-request-carries.md)).
+ * `relay.test.ts` checks each run's request against a list of what its sentence claims, and
+ * pins the sentence beside the list in every language: reworded, a sentence fails there,
+ * and the list has to be read again. The words themselves are not parsed.
+ *
+ * By the kind the run set on the prompt, never by a pane, and decided here so the two
+ * builders' panes cannot say different things about one request (0091). A `Record`, so a
+ * kind added to `MODEL_REQUEST_KINDS` does not compile until it has a sentence.
+ */
+export function relayLeaves(kind: ModelRequestKind, text: BuilderText): string {
+  return text(LEAVES[kind])
 }
 
 export function createRelay(): Relay {

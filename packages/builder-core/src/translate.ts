@@ -148,8 +148,9 @@ export async function translateCatalogue(
     ask,
     (latest: TranslationProblem | undefined) =>
       latest === undefined
-        ? { system: request.system, user: request.user }
+        ? { kind: 'translation', system: request.system, user: request.user }
         : {
+            kind: 'translation',
             system: request.system,
             user: `${request.user}\n\n${translationComplaint(latest.detail)}`,
             followUp: translationComplaint(latest.detail),

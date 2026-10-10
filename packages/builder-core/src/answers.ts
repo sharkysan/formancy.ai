@@ -1,4 +1,5 @@
 import { DECLINE_KEY } from '@formancy/spec'
+import type { ModelRequestKind } from './model-requests.js'
 
 /**
  * Asking a model for something checkable, and reading what it says.
@@ -35,6 +36,19 @@ import { DECLINE_KEY } from '@formancy/spec'
 export type AskModel = (prompt: AuthoringPrompt, turn: AskTurn) => Promise<string>
 
 export interface AuthoringPrompt {
+  /**
+   * Which of formancy's requests this is, set by the run that builds it — `authorForm`,
+   * `translateCatalogue` or `draftScenarios` — on every turn.
+   *
+   * What a request carries depends on it: a form's edit carries the whole document, a
+   * translation the form's words and never its rules, a request for examples the fields and
+   * never the rules. The relay pane says which by it (`relayLeaves`), so a person is told
+   * what leaves with THIS request
+   * ([0167](../../../docs/decisions/0167-the-relay-says-what-each-request-carries.md)).
+   * Required, as `attempt` and `limit` are (0157): a function that receives a prompt is
+   * unaffected, and a prompt built by hand has to say what it is.
+   */
+  readonly kind: ModelRequestKind
   /** What the model is, and the rules of the format. Stable across turns. */
   readonly system: string
   /**

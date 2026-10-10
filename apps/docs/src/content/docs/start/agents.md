@@ -344,6 +344,13 @@ instruction with the latest complaint, so a function that keeps no conversation
 sends `user` every time. One that keeps a conversation, whose history already
 holds the model's last answer, can send `followUp` instead.
 
+And each says which request it is: `kind` is `authoring` for a form written or changed,
+`translation` for a language's missing messages, and `scenarios` for drafted examples — the
+three in `MODEL_REQUEST_KINDS`. The run that builds the prompt sets it, and the relay pane
+below says what leaves by it. It is required, as `attempt` and `limit` are, so a prompt you
+build by hand — calling your own function in a test, say — has to name one; a function that
+only receives prompts is unaffected.
+
 Called directly, `authorForm(askModel, instruction, { current, stop })` resolves
 however the run ends. A working document is `ok: true`. Otherwise `ended` says why
 there is none: `gave-up`, `stopped`, `unreachable` with your error's message as
@@ -405,9 +412,13 @@ provider comes back as `declined`, which ends the run on that turn as the model'
 would. When the request goes away — the person pressed Stop — the server abandons the call to
 the provider.
 
-**The form leaves, from the server.** Each request carries the form it is about to the
-provider the operator chose; the admin says which provider and
-model before anybody asks. A page that may not call a model at all, formancy.ai's among them,
+**The form leaves, from the server.** Each request carries what its kind carries to the
+provider the operator chose: writing or changing a form, the whole document; translating,
+the messages a language is missing, where each is used and the translations it has;
+drafting examples, the form's title, fields, labels and options, the codes it can report, the
+starting answers, the names of its examples and what the author said — neither of the last
+two carries the rules. The admin says which provider and model before
+anybody asks. A page that may not call a model at all, formancy.ai's among them,
 uses the relay below instead: no server, and a person carries each turn.
 
 ### No model on the page: a relay
@@ -477,13 +488,17 @@ waits is refused, and so is an edit asked for while a draft or a translation wai
 ends `busy`, and its pane says so. No pane knows its `ask` is a relay, so the button that
 will be refused stays enabled while the other turn waits.
 
-**What leaves, and who carries it.** The relay and its pane send the request nowhere: Copy
-puts the whole request on the clipboard — the briefing, the instruction and the whole form
-— and pasting it into a chat gives it to that service under the person's own account. A
-request for examples carries the form's fields, labels and options, the sample examples start
-from and the names of those already kept, but not its rules. The
-pane says so, in its own words, and says it of itself: what the rest of your page sends is
-yours, and the pane cannot know it. A pasted answer is not tied to the request it answers: the review's list
+**What leaves, and who carries it.** The relay and its pane send the request nowhere: what
+the person copies goes on the clipboard, and pasting it into a chat gives it to that service
+under their own account. What the request carries depends on its kind. A form's edit carries
+the briefing, the instruction and the whole form, its rules included. A translation carries
+the messages the language is missing, where the form uses each and the translations it
+already has, but not its rules. A request for examples carries the form's title, its fields,
+labels and options, the codes it can report, the sample examples start from, the names of
+those already kept and what the author said, but not its rules. The pane says which, for the
+turn it shows — `relayLeaves(turn.prompt.kind, text)` is the sentence, in the person's
+language — and says it of itself: what the rest of your page sends is yours, and the pane
+cannot know it. A pasted answer is not tied to the request it answers: the review's list
 of changes, against the form the run was asked about, is what shows an answer to something
 else.
 

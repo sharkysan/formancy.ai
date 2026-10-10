@@ -3,7 +3,9 @@
 - **Status:** accepted; a refused second turn ending `unreachable` superseded by
   [0162](0162-an-example-is-drafted-from-what-the-author-said.md); a turn living as long as
   the prompt pane, and a turn found waiting taking the focus to Copy, superseded by
-  [0163](0163-a-models-run-belongs-to-the-host.md)
+  [0163](0163-a-models-run-belongs-to-the-host.md); the pane's one sentence about what leaves,
+  for every request, superseded by
+  [0167](0167-the-relay-says-what-each-request-carries.md)
 - **Date:** 2026-10-10
 - **Supersedes:** the playground's stand-in model in
   [0109](0109-an-ai-edit-is-reviewed-before-it-lands.md), and what
@@ -130,6 +132,13 @@ leaves names none either, and speaks for the pane alone, since a package cannot 
 the rest of its host's page sends: *"This pane sends the request nowhere. Copy puts the
 whole request on your clipboard, including the form; pasting it into a chat gives it to that
 service under your own account."*
+
+> **Superseded by [0167](0167-the-relay-says-what-each-request-carries.md):** one sentence
+> for every request was true of a model's edit and overstated a translation (0161) and a
+> request for examples (0162), which carry neither the whole form nor its rules. A request
+> now names its kind, and the pane says that kind's sentence, from `relayLeaves`, each pinned
+> beside a list of its claims that is checked against the request its run builds. Still of
+> the pane alone, and naming no service.
 
 **Every turn drawn takes the focus to Copy**, whose `aria-describedby` is the turn and what
 to do with it — *"Turn 2 of at most 3. That answer did not work. Copy what was wrong…"*. From

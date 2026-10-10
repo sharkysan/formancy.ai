@@ -306,7 +306,7 @@ Write it
   run.write: stop = createStop()
   busy, Stop shown    ───▶   for attempt 1 … limit
                                stopped already? ──▶ ended: stopped
-                               ask({ system, user, attempt, limit,
+                               ask({ kind, system, user, attempt, limit,
                                      followUp from attempt 2 }, turn)  ───▶  its request
                                  ├─ Stop pressed, or the pane goes with a run of its own
                                  │     ──▶ turn.onCancel ──────────────────▶  abort, if it listens
@@ -367,7 +367,9 @@ Write it        ───▶     ask(prompt, turn)  ───▶   one waiting a
                                                                 the run ends busy (0162)
                                                    waiting = { prompt, message, followUp }
                                                    onCancel ──▶ clears it
-                                                   tells subscribers   ───▶   draws the turn,
+                                                   tells subscribers   ───▶   draws the turn, and
+                                                                              relayLeaves(kind):
+                                                                              what it carries;
                                                                               focus to Copy
                                                                               Copy ──▶ clipboard ──▶  a chat of
                                                                               (follow-up on a retry)   their own
@@ -400,7 +402,10 @@ and a failed answer took the pane, and the focus in it, away before the retry dr
 A turn found waiting when the pane is drawn again (6.11) takes none: the person was using
 another control. What was pasted is bound to nothing but the run that is waiting: the review's
 diff against the document the run was asked against is what shows a paste that answered
-something else (SAFETY-ANALYSIS D10).
+something else (SAFETY-ANALYSIS D10). What the pane says leaves is said for the turn's kind,
+which the run set on its prompt: the whole form for an edit, and part of it without the rules
+for a translation or examples
+([0167](../decisions/0167-the-relay-says-what-each-request-carries.md)).
 
 ## 6.9 Asking a model for what a language is missing
 

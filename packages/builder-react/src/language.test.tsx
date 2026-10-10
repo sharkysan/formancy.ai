@@ -8,6 +8,8 @@ import {
   createBuilderText,
   createRelay,
   createTranslationRun,
+  declinedAnswer,
+  draftScenarios,
   editableLayoutPropertiesFor,
   editablePropertiesFor,
   flatten,
@@ -16,6 +18,7 @@ import {
   paletteEntries,
   proposeEdit,
   pseudoLanguage,
+  relayLeaves,
   translateCatalogue,
   untranslated,
 } from '@formancy/builder-core'
@@ -951,6 +954,53 @@ describe('the translations, prompt and scenario panes', () => {
         'New chat?',
       ].filter((prefix) => !seen.some((text) => text.includes(prefix))),
     ).toEqual([])
+  })
+
+  test('the relay pane, for a request of each kind, likewise — each saying what it carries', async () => {
+    // Each kind of request has its own sentence about what leaves (0167). A pane that wrote
+    // one into its markup, rather than drawing what builder-core chooses from the catalogue,
+    // would tell a German author in English what their translation carries — and the walk
+    // above, through a form's edit alone, would never show it.
+    const worded = {
+      specVersion: '2',
+      id: 'worded',
+      title: 'Worded',
+      model: { fields: [{ key: 'name', type: 'text', label: { $t: 'name' } }] },
+      i18n: { defaultLocale: 'en', messages: { en: { name: 'Name' }, de: {} } },
+    } as unknown as FormSchema
+    const session = createBuilderSession(worded, { text: createBuilderText(pseudoLanguage()) })
+    const relay = createRelay()
+    const view = render(<RelayPane session={session} relay={relay} />)
+    const runs = [
+      () => authorForm(relay.ask, 'anything', { current: worded }),
+      () => translateCatalogue(relay.ask, worded, 'de'),
+      () => draftScenarios(relay.ask, worded, 'A name is asked for.'),
+    ]
+
+    const seen: string[] = []
+    const carried: string[] = []
+    const said: string[] = []
+    for (const run of runs) {
+      await act(async () => {
+        void run()
+        await Promise.resolve()
+      })
+      const turn = await waitFor(() => {
+        const waiting = relay.waiting()
+        expect(waiting).toBeDefined()
+        return waiting!
+      })
+      seen.push(...shown(view.container))
+      carried.push(turn.prompt.user, turn.message)
+      said.push(relayLeaves(turn.prompt.kind, session.text))
+      act(() => {
+        relay.answer(declinedAnswer('Only looked at.'))
+      })
+    }
+
+    expect(untranslated(seen, [...carried, ...ownWords(worded)])).toEqual([])
+    expect(new Set(said).size).toBe(runs.length)
+    expect(said.filter((sentence) => !seen.includes(sentence))).toEqual([])
   })
 
   test('the scenario panel, holding and not, and empty, likewise', () => {

@@ -428,8 +428,12 @@ export const BUILDER_MESSAGES_FR = {
     'Copiez la demande dans une conversation avec un modèle, puis collez sa réponse complète ci-dessous.',
   'relay.retry':
     'Cette réponse ne fonctionnait pas. Copiez ce qui n’allait pas dans la même conversation, puis collez la nouvelle réponse ci-dessous.',
-  'relay.leaves':
-    'Ce panneau n’envoie la demande nulle part. Copier met toute la demande dans votre presse-papiers, formulaire compris ; la coller dans une conversation la confie à ce service, sous votre propre compte.',
+  'relay.leaves.authoring':
+    'Ce panneau n’envoie la demande nulle part. Outre ce que le modèle apprend du format, la demande contient votre description et, si elle modifie un formulaire, tout ce formulaire, règles comprises. Ce que vous copiez va dans votre presse-papiers ; le coller dans une conversation le confie à ce service, sous votre propre compte.',
+  'relay.leaves.translation':
+    'Ce panneau n’envoie la demande nulle part. Outre ce que le modèle apprend du format, la demande contient les messages qui manquent à cette langue, l’endroit où le formulaire utilise chacun et ses traductions existantes dans cette langue, mais aucune de ses règles. Ce que vous copiez va dans votre presse-papiers ; le coller dans une conversation le confie à ce service, sous votre propre compte.',
+  'relay.leaves.scenarios':
+    'Ce panneau n’envoie la demande nulle part. Outre ce que le modèle apprend du format, la demande contient le titre du formulaire, ses champs avec leurs libellés et leurs options, les codes d’erreur qu’il peut signaler, les réponses dont partent les exemples, les noms de ses exemples et ce que vous avez dit qu’il doit faire, mais aucune de ses règles. Ce que vous copiez va dans votre presse-papiers ; le coller dans une conversation le confie à ce service, sous votre propre compte.',
   'relay.system': 'Ce que le modèle apprend du format',
   'relay.request': 'La demande',
   'relay.copy': 'Copier la demande',

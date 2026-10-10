@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
-import { declinedAnswer, modelBriefing } from '@formancy/builder-core'
+import { declinedAnswer, modelBriefing, modelRequestKind } from '@formancy/builder-core'
 import type { AuthoringPrompt } from '@formancy/builder-core'
 import { App } from './app.js'
 import { askServerModel, fetchModel, setToken } from './api.js'
@@ -142,11 +142,21 @@ describe('the Translations tab', () => {
 })
 
 describe('askServerModel', () => {
-  const prompt = (system: string): AuthoringPrompt => ({ system, user: 'The request.', attempt: 1, limit: 3 })
+  /** A prompt as a run hands it over: the kind its briefing is, or one it merely claims. */
+  const prompt = (system: string): AuthoringPrompt => ({
+    kind: modelRequestKind(system) ?? 'authoring',
+    system,
+    user: 'The request.',
+    attempt: 1,
+    limit: 3,
+  })
   const turn = { onCancel: () => undefined }
 
-  test('refuses a system part formancy did not write, and sends nothing', async () => {
-    // The server would answer it under formancy's briefing, which is not what was asked.
+  test('refuses a system part formancy did not write, and sends nothing — whatever kind the prompt names', async () => {
+    // The server would answer it under formancy's briefing, which is not what was asked. The
+    // prompt here names `authoring`, as every prompt now names its kind (0167): the request
+    // is named by the briefing it was asked with, so a kind claimed beside a briefing
+    // formancy did not write lets nothing through.
     const calls = serve({ provider: 'anthropic', model: 'm' })
     await expect(askServerModel(prompt('You are a poet.'), turn)).rejects.toThrow(/not one formancy makes/)
     expect(calls).toEqual([])

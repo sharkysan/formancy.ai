@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react'
 import type { ReactElement } from 'react'
+import { relayLeaves } from '@formancy/builder-core'
 import type { BuilderMessageId, BuilderSession, Relay, RelayChat, RelayTurn } from '@formancy/builder-core'
 
 /**
@@ -21,7 +22,10 @@ import type { BuilderMessageId, BuilderSession, Relay, RelayChat, RelayTurn } fr
  *
  * **It names no service.** The link to a chat is the host's `chat`, and without one there
  * is no link; the request is copied all the same. What the pane says about what leaves the
- * page is the catalogue's, and names no service either.
+ * page is the catalogue's, and names no service either: the sentence for the kind of request
+ * waiting, which `relayLeaves` chooses, because a translation and a request for examples
+ * carry less than a form's edit does
+ * ([0167](../../../docs/decisions/0167-the-relay-says-what-each-request-carries.md)).
  */
 export interface RelayPaneProps {
   /** For its language: every word here is the session's catalogue's (0114). */
@@ -128,7 +132,7 @@ export function RelayPane({ session, relay, chat }: RelayPaneProps): ReactElemen
       <h3 id={headingId}>{text('relay.title')}</h3>
       <p id={turnId}>{text('relay.turn', { attempt: turn.prompt.attempt, limit: turn.prompt.limit })}</p>
       <p id={guideId}>{text(retry ? 'relay.retry' : 'relay.first')}</p>
-      <p>{text('relay.leaves')}</p>
+      <p>{relayLeaves(turn.prompt.kind, text)}</p>
 
       <div data-formancy-part="relay-request">
         <details>

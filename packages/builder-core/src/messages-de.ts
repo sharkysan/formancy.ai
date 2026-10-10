@@ -421,8 +421,12 @@ export const BUILDER_MESSAGES_DE = {
   'relay.first': 'Kopiere die Anfrage in einen Chat mit einem Modell und füge seine ganze Antwort unten ein.',
   'relay.retry':
     'Diese Antwort hat nicht funktioniert. Kopiere, was falsch war, in denselben Chat und füge die neue Antwort unten ein.',
-  'relay.leaves':
-    'Dieser Bereich sendet die Anfrage nirgendwohin. Beim Kopieren landet die ganze Anfrage samt Formular in deiner Zwischenablage; fügst du sie in einen Chat ein, gibst du sie diesem Dienst unter deinem eigenen Konto.',
+  'relay.leaves.authoring':
+    'Dieser Bereich sendet die Anfrage nirgendwohin. Außer dem, was dem Modell über das Format gesagt wird, enthält die Anfrage deine Beschreibung und, wenn sie ein Formular ändert, das ganze Formular samt seinen Regeln. Was du kopierst, landet in deiner Zwischenablage; fügst du es in einen Chat ein, gibst du es diesem Dienst unter deinem eigenen Konto.',
+  'relay.leaves.translation':
+    'Dieser Bereich sendet die Anfrage nirgendwohin. Außer dem, was dem Modell über das Format gesagt wird, enthält die Anfrage die Meldungen, die dieser Sprache fehlen, wo das Formular jede davon verwendet, und seine bisherigen Übersetzungen in diese Sprache, aber keine seiner Regeln. Was du kopierst, landet in deiner Zwischenablage; fügst du es in einen Chat ein, gibst du es diesem Dienst unter deinem eigenen Konto.',
+  'relay.leaves.scenarios':
+    'Dieser Bereich sendet die Anfrage nirgendwohin. Außer dem, was dem Modell über das Format gesagt wird, enthält die Anfrage den Titel des Formulars, seine Felder mit ihren Beschriftungen und Optionen, die Fehlercodes, die es melden kann, die Antworten, von denen die Beispiele ausgehen, die Namen seiner Beispiele und was es laut dir tun soll, aber keine seiner Regeln. Was du kopierst, landet in deiner Zwischenablage; fügst du es in einen Chat ein, gibst du es diesem Dienst unter deinem eigenen Konto.',
   'relay.system': 'Was dem Modell über das Format gesagt wird',
   'relay.request': 'Die Anfrage',
   'relay.copy': 'Anfrage kopieren',

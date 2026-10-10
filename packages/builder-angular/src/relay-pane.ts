@@ -13,6 +13,7 @@ import {
   untracked,
   viewChild,
 } from '@angular/core'
+import { relayLeaves } from '@formancy/builder-core'
 import type { BuilderMessageId } from '@formancy/builder-core'
 import { BuilderTextPipe } from './text.pipe.js'
 import type { BuilderSession, Relay, RelayChat, RelayTurn } from './types.js'
@@ -44,7 +45,7 @@ const SAID: Readonly<Record<Said, BuilderMessageId>> = {
  * followed as `injectBuilderView` follows a session, and replaced with the input.
  *
  * **It names no service.** The link to a chat is the host's `chat`, and without one there
- * is no link.
+ * is no link, and what it says leaves with a request names none either.
  */
 @Component({
   selector: 'formancy-relay-pane',
@@ -61,7 +62,7 @@ const SAID: Readonly<Record<Said, BuilderMessageId>> = {
           }}
         </p>
         <p [id]="guideId">{{ (retry() ? 'relay.retry' : 'relay.first') | builderText: text() }}</p>
-        <p>{{ 'relay.leaves' | builderText: text() }}</p>
+        <p>{{ leaves() }}</p>
 
         <div data-formancy-part="relay-request">
           <details>
@@ -139,6 +140,16 @@ export class FormancyRelayPane {
   protected readonly retry = computed(() => this.turn()?.followUp !== undefined)
   /** Every word this pane shows, in the language the session was opened in (0114). */
   protected readonly text = computed(() => this.session().text)
+  /**
+   * What leaves with the turn waiting: the sentence for its kind of request, which
+   * `relayLeaves` chooses, because a translation and a request for examples carry less than
+   * a form's edit does
+   * ([0167](../../../docs/decisions/0167-the-relay-says-what-each-request-carries.md)).
+   */
+  protected readonly leaves = computed(() => {
+    const turn = this.turn()
+    return turn === undefined ? '' : relayLeaves(turn.prompt.kind, this.text())
+  })
   protected readonly status = computed(() => {
     const said = this.said()
     return said === undefined ? '' : this.text()(SAID[said])

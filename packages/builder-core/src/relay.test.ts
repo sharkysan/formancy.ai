@@ -1,15 +1,21 @@
 import { describe, expect, test, vi } from 'vitest'
+import { canonicalize } from '@formancy/spec'
 import type { FormSchema } from '@formancy/spec'
 import { authorForm, createStop, declinedAnswer } from './authoring.js'
 import type { AskModel, AuthoringPrompt } from './answers.js'
 import { createDraftRun } from './draft-run.js'
+import { BUILDER_MESSAGES_DE } from './messages-de.js'
+import { BUILDER_MESSAGES_FR } from './messages-fr.js'
 import { createBuilderText } from './messages.js'
+import { MODEL_REQUEST_KINDS } from './model-requests.js'
+import type { ModelRequestKind } from './model-requests.js'
 import { createPromptRun } from './prompt-run.js'
 import { proposalStatus } from './proposal.js'
-import { createRelay, relayMessage } from './relay.js'
+import { createRelay, relayLeaves, relayMessage } from './relay.js'
 import { draftScenarios } from './scenario-drafts.js'
 import { createBuilderSession } from './session.js'
 import { translateCatalogue, translationStatus } from './translate.js'
+import { translationPrompt } from './translate-prompt.js'
 import { createTranslationRun } from './translation-run.js'
 import type { Relay, RelayTurn } from './relay.js'
 
@@ -84,7 +90,13 @@ describe('the turn a person carries', () => {
   test('is written out as the system briefing, a blank line, and the user message, verbatim', () => {
     // One text to copy, so a person pastes the briefing and the request in one go; a
     // trimmed or re-wrapped copy would be a request the checks were not written against.
-    const prompt: AuthoringPrompt = { system: ' rules \n', user: '\nthe form\n', attempt: 1, limit: 3 }
+    const prompt: AuthoringPrompt = {
+      kind: 'authoring',
+      system: ' rules \n',
+      user: '\nthe form\n',
+      attempt: 1,
+      limit: 3,
+    }
 
     expect(relayMessage(prompt)).toBe(' rules \n\n\n\nthe form\n')
   })
@@ -342,5 +354,203 @@ describe('one turn at a time', () => {
     await translation.translate(relay.ask, session, 'fr')
     expect(translation.state().result).toMatchObject({ ok: false, ended: 'busy' })
     expect(relay.waiting()).toBe(drafting)
+  })
+})
+
+/**
+ * What the pane says leaves with a request, and whether it is true
+ * ([0167](../../../docs/decisions/0167-the-relay-says-what-each-request-carries.md)).
+ *
+ * The pane said one sentence for every request: *"Copy puts the whole request on your
+ * clipboard, including the form"*. True of a form's edit, and an overstatement for a
+ * translation (0161) and a request for examples (0162), which each carry part of the form
+ * and never its rules. Now each kind of request has its own sentence. A sentence about what
+ * leaves the page that is wrong in either direction is one this repository will not make.
+ *
+ * **What is checked, and what is read.** Each kind's case lists the claims its sentence
+ * makes and checks every one against the request its run actually builds — never against
+ * the words. The words are pinned beside that list, in English, German and French, which
+ * is the only tie between the two: nothing here parses a sentence. Reworded in any
+ * language, a sentence fails the case that lists its claims, and whoever reworded it has
+ * to read that list again against the new words, and change the list, the words or the
+ * request until all three agree.
+ */
+describe('what the pane says leaves with a request', () => {
+  /**
+   * A form whose rules can each be found if they leak: a condition with a quote in it,
+   * which JSON escapes, a check's name and a validation's code, all used nowhere else.
+   */
+  const STAY = {
+    specVersion: '4',
+    id: 'stay',
+    title: 'Your stay',
+    model: {
+      fields: [
+        {
+          key: 'country',
+          type: 'select',
+          label: { $t: 'country' },
+          options: [
+            { value: 'CH', label: { $t: 'country.CH' } },
+            { value: 'DE', label: { $t: 'country.DE' } },
+          ],
+        },
+        { key: 'canton', type: 'text', label: { $t: 'canton' } },
+      ],
+    },
+    logic: {
+      rules: [
+        { target: 'canton', kind: 'visible', cel: 'country == "CH"' },
+        { target: 'canton', kind: 'validate', cel: 'size(canton) > 1', code: 'cantonTooShort' },
+        { target: 'canton', kind: 'check', check: 'cantonIsRegistered' },
+      ],
+    },
+    i18n: {
+      defaultLocale: 'en',
+      messages: {
+        en: {
+          country: 'Country of residence',
+          'country.CH': 'Switzerland',
+          'country.DE': 'Germany',
+          canton: 'Canton of residence',
+        },
+        de: { country: 'Wohnsitzland' },
+      },
+    },
+  } as unknown as FormSchema
+  const RULES = STAY.logic?.rules ?? []
+  /** What a rule says, as written and as JSON writes it inside a string. */
+  const spellings = (words: string): string[] => [words, JSON.stringify(words).slice(1, -1)]
+  /** Every condition and check name, in either spelling: what "none of its rules" excludes. */
+  const RULE_WORDS = RULES.flatMap((rule) => [rule.cel, rule.check])
+    .filter((words): words is string => words !== undefined)
+    .flatMap(spellings)
+  /** The words the form says in its own language, read from its catalogue. */
+  const WORDS = Object.values(STAY.i18n?.messages['en'] ?? {})
+
+  /** The turn a run hands the relay, as a pane shows it; the run is then declined to an end. */
+  async function turnOf(run: (ask: AskModel) => Promise<unknown>): Promise<RelayTurn> {
+    const relay = createRelay()
+    const ran = run(relay.ask)
+    const turn = await nextTurn(relay, undefined)
+    relay.answer(declinedAnswer('Only looked at.'))
+    await ran
+    return turn
+  }
+
+  const LANGUAGES = [
+    createBuilderText(),
+    createBuilderText({ locale: 'de', messages: BUILDER_MESSAGES_DE }),
+    createBuilderText({ locale: 'fr', messages: BUILDER_MESSAGES_FR }),
+  ]
+  /** A kind's sentence in English, German and French, as the pane draws it. */
+  const sentences = (kind: ModelRequestKind): string[] => LANGUAGES.map((text) => relayLeaves(kind, text))
+
+  test.each(LANGUAGES.map((text) => [text('relay.title'), text] as const))(
+    'is a sentence of its own for each kind of request, in “%s”',
+    (_, text) => {
+      // One sentence for two kinds is the defect this replaces: whichever kind it was written
+      // for, it is wrong about the other. And a German or French sentence that is the English
+      // one is a person told what leaves in a language they did not choose.
+      const english = createBuilderText()
+      const said = MODEL_REQUEST_KINDS.map((kind) => relayLeaves(kind, text))
+      expect(new Set(said).size).toBe(MODEL_REQUEST_KINDS.length)
+      for (const sentence of said) {
+        expect(sentence.trim()).not.toBe('')
+        expect(sentence).not.toMatch(/[{}]/)
+      }
+      if (text('relay.title') !== english('relay.title')) {
+        const inEnglish = MODEL_REQUEST_KINDS.map((kind) => relayLeaves(kind, english))
+        expect(said.filter((sentence, index) => sentence === inEnglish[index])).toEqual([])
+      }
+    },
+  )
+
+  /** What the pane says leaves with an edit — the claims the next two cases check. */
+  const AUTHORING = [
+    'This pane sends the request nowhere. Besides what the model is told about the format, the request carries your description and, when it changes a form, that whole form, its rules included. What you copy goes on your clipboard, and pasting it into a chat gives it to that service under your own account.',
+    'Dieser Bereich sendet die Anfrage nirgendwohin. Außer dem, was dem Modell über das Format gesagt wird, enthält die Anfrage deine Beschreibung und, wenn sie ein Formular ändert, das ganze Formular samt seinen Regeln. Was du kopierst, landet in deiner Zwischenablage; fügst du es in einen Chat ein, gibst du es diesem Dienst unter deinem eigenen Konto.',
+    'Ce panneau n’envoie la demande nulle part. Outre ce que le modèle apprend du format, la demande contient votre description et, si elle modifie un formulaire, tout ce formulaire, règles comprises. Ce que vous copiez va dans votre presse-papiers ; le coller dans une conversation le confie à ce service, sous votre propre compte.',
+  ]
+
+  test('for a form’s edit, the person’s words and the whole form, its rules included — and that is what it carries', async () => {
+    // The request is the whole document. A sentence that said less would have the person
+    // hand a chat the form's rules, its translations and every option believing otherwise.
+    // The sentence is pinned: reworded, it fails here, beside the list it is read against.
+    expect(sentences('authoring')).toEqual(AUTHORING)
+    const turn = await turnOf((ask) => authorForm(ask, 'Ask for a postcode too.', { current: STAY }))
+
+    expect(turn.prompt.kind).toBe('authoring')
+    expect(turn.message).toContain('Ask for a postcode too.')
+    expect(turn.message).toContain(canonicalize(STAY))
+    // Which holds every rule, as the document's JSON writes it.
+    const ruled = RULES.flatMap((rule) => [rule.cel, rule.check, rule.code])
+      .filter((words): words is string => words !== undefined)
+      .map((words) => JSON.stringify(words).slice(1, -1))
+    expect(ruled.filter((words) => !turn.message.includes(words))).toEqual([])
+  })
+
+  test('for a form written from nothing, the person’s words alone — the form only “when it changes one”', async () => {
+    // With no form to change there is none to send, and a sentence that named one would
+    // overstate. The request's own part is then exactly what was typed.
+    expect(sentences('authoring')).toEqual(AUTHORING)
+    const turn = await turnOf((ask) => authorForm(ask, 'A contact form.'))
+
+    expect(turn.prompt.kind).toBe('authoring')
+    expect(turn.prompt.user).toBe('A contact form.')
+  })
+
+  /** What the pane says leaves with a translation — the claims the next case checks. */
+  const TRANSLATION = [
+    'This pane sends the request nowhere. Besides what the model is told about the format, the request carries the messages this language is missing, where the form uses each, and the form’s translations into this language so far, but none of its rules. What you copy goes on your clipboard, and pasting it into a chat gives it to that service under your own account.',
+    'Dieser Bereich sendet die Anfrage nirgendwohin. Außer dem, was dem Modell über das Format gesagt wird, enthält die Anfrage die Meldungen, die dieser Sprache fehlen, wo das Formular jede davon verwendet, und seine bisherigen Übersetzungen in diese Sprache, aber keine seiner Regeln. Was du kopierst, landet in deiner Zwischenablage; fügst du es in einen Chat ein, gibst du es diesem Dienst unter deinem eigenen Konto.',
+    'Ce panneau n’envoie la demande nulle part. Outre ce que le modèle apprend du format, la demande contient les messages qui manquent à cette langue, l’endroit où le formulaire utilise chacun et ses traductions existantes dans cette langue, mais aucune de ses règles. Ce que vous copiez va dans votre presse-papiers ; le coller dans une conversation le confie à ce service, sous votre propre compte.',
+  ]
+
+  test('for a translation, the missing messages, where each is used and the translations so far, and none of the rules — and that is what it carries', async () => {
+    // Said of the whole form, as it was, it overstated (0161); said of less than this, it
+    // would understate. Each claim is read off the request the run sent; the sentence that
+    // makes them is pinned, so a sentence reworded fails here, beside this list.
+    expect(sentences('translation')).toEqual(TRANSLATION)
+    const turn = await turnOf((ask) => translateCatalogue(ask, STAY, 'de'))
+    const asked = translationPrompt(STAY, 'de')
+
+    expect(turn.prompt.kind).toBe('translation')
+    expect(asked.rows.length).toBeGreaterThan(0)
+    for (const row of asked.rows) {
+      expect(turn.message).toContain(JSON.stringify(row.source))
+      expect(turn.message).toContain(JSON.stringify(row.context))
+    }
+    for (const done of Object.values(STAY.i18n?.messages['de'] ?? {})) expect(turn.message).toContain(done)
+    expect(RULE_WORDS.filter((words) => turn.message.includes(words))).toEqual([])
+    expect(turn.message).not.toContain('cantonTooShort')
+    expect(turn.message).not.toContain(canonicalize(STAY))
+  })
+
+  /** What the pane says leaves with a request for examples — the claims the next case checks. */
+  const SCENARIOS = [
+    'This pane sends the request nowhere. Besides what the model is told about the format, the request carries the form’s title, its fields with their labels and options, the error codes it can report, the answers examples start from, the names of its examples and what you said it should do, but none of its rules. What you copy goes on your clipboard, and pasting it into a chat gives it to that service under your own account.',
+    'Dieser Bereich sendet die Anfrage nirgendwohin. Außer dem, was dem Modell über das Format gesagt wird, enthält die Anfrage den Titel des Formulars, seine Felder mit ihren Beschriftungen und Optionen, die Fehlercodes, die es melden kann, die Antworten, von denen die Beispiele ausgehen, die Namen seiner Beispiele und was es laut dir tun soll, aber keine seiner Regeln. Was du kopierst, landet in deiner Zwischenablage; fügst du es in einen Chat ein, gibst du es diesem Dienst unter deinem eigenen Konto.',
+    'Ce panneau n’envoie la demande nulle part. Outre ce que le modèle apprend du format, la demande contient le titre du formulaire, ses champs avec leurs libellés et leurs options, les codes d’erreur qu’il peut signaler, les réponses dont partent les exemples, les noms de ses exemples et ce que vous avez dit qu’il doit faire, mais aucune de ses règles. Ce que vous copiez va dans votre presse-papiers ; le coller dans une conversation le confie à ce service, sous votre propre compte.',
+  ]
+
+  test('for examples, the title, the fields with labels and options, the codes, the start, the names and the words, and none of the rules — and that is what it carries', async () => {
+    // The drafting part says the request never carries a rule (0162); the relay pane, said
+    // of the whole form, contradicted it beside it. Each claim is read off the request; the
+    // sentence that makes them is pinned, so a sentence reworded fails here, beside this list.
+    expect(sentences('scenarios')).toEqual(SCENARIOS)
+    const existing = [{ name: 'Germany asks for no canton', changes: { country: 'DE' }, valid: true }]
+    const start = { country: 'DE' }
+    const turn = await turnOf((ask) =>
+      draftScenarios(ask, STAY, 'Only Switzerland asks for a canton.', { initialValue: start, existing }),
+    )
+
+    expect(turn.prompt.kind).toBe('scenarios')
+    for (const words of [STAY.title, ...WORDS, 'cantonTooShort', existing[0]!.name, JSON.stringify(start)]) {
+      expect(turn.message).toContain(words)
+    }
+    expect(turn.message).toContain('Only Switzerland asks for a canton.')
+    expect(RULE_WORDS.filter((words) => turn.message.includes(words))).toEqual([])
+    expect(turn.message).not.toContain(canonicalize(STAY))
   })
 })

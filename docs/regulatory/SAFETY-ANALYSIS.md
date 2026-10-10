@@ -787,11 +787,14 @@ against a real clamd once, by hand, on 2026-10-09; no gate does.
 *How it arises:* a deployment configures a model for its builders
 ([0165](../decisions/0165-a-deployments-model-is-asked-through-its-server.md)), and every
 request a builder makes of it is sent on by the server to the provider the operator named:
-Anthropic, OpenAI or xAI. Writing or changing a form sends the whole document; translating
-sends its words and where each is used; drafting examples sends its fields, labels and
-options, the answers examples start from, the names of the examples already kept and what the
-author said. A form's own content can say a good deal — the conditions a clinical intake
-form asks about, its options, a sample answer somebody typed — and it leaves the deployment.
+Anthropic, OpenAI or xAI. Writing or changing a form sends the whole document, its rules
+included. Translating sends the messages a language is missing, where the form uses each and
+the translations into that language it already has. Drafting examples sends the form's title,
+its fields with their labels and options, the error codes the engine reports and those the
+form's rules name, the answers examples start from, the names of the examples already kept
+and what the author said. Neither of the last two sends a rule. A form's own content can say
+a good deal — the conditions a clinical intake form asks about, its options, a sample answer
+somebody typed — and it leaves the deployment.
 
 *Severity:* a disclosure of the form, to a company the operator chose, under that company's
 terms. Not of a submission: no request is built from one.
@@ -816,7 +819,9 @@ kind*, which also holds that every request the page makes goes to its own server
 deployment keeps for a form's examples (0166) goes with every drafting request; it is meant to
 be fictional, and nothing checks that it is. The
 requests are built from the document alone — what each carries is held by `translate.test.ts`
-and `scenario-prompt.test.ts` (D15, D16). Every request is audited, without its text (C9).
+and `scenario-prompt.test.ts` (D15, D16), and by `relay.test.ts`, which runs all three
+([0167](../decisions/0167-the-relay-says-what-each-request-carries.md)). Every request is
+audited, without its text (C9).
 
 *Residual:* **what the provider does with the form is the provider's.** `store: false` is a
 request to OpenAI and xAI; Anthropic's retention, and anything any provider keeps for abuse
@@ -1747,9 +1752,10 @@ claims to have checked; a form whose examples were copied from its rules is repo
 checked and is not.
 
 *Constraint:* **the rules are withheld.** `scenarioPrompt` in `@formancy/builder-core` is the
-whole request a drafting model is sent: the fields an example can name, by data path, with
-their types, labels and options; the error codes the engine reports; where examples start;
-the names already taken; and what the author said the form should do. No rule's CEL, no
+whole request a drafting model is sent: the form's title; the fields an example can name, by
+data path, with their types, labels and options; the error codes the engine reports, and those
+the form's rules name, by name alone; where examples start; the names already taken; and what
+the author said the form should do. No rule's CEL, no
 check's name, no pattern, mask or bound, and not which fields are required; of the existing
 examples, only their names ([0162](../decisions/0162-an-example-is-drafted-from-what-the-author-said.md)).
 `scenario-prompt.test.ts` (*never carries a rule*) walks a form's rules and the properties
@@ -1797,7 +1803,13 @@ builds: a person who pastes the form itself into the same chat has shown the mod
 and nothing here can see that. The drafting part says it as that — what the request carries —
 and tells the person to start a new chat for it; the playground's prompt pane carries the
 whole document through the same relay, so the case is one tab away. Both builders'
-`language.test` require that advice to be drawn. Whether a person follows it is theirs. Held
+`language.test` require that advice to be drawn. The relay pane drawn above it said, until
+[0167](../decisions/0167-the-relay-says-what-each-request-carries.md), that the request
+included the form; it now says what a request for examples carries and that the rules are not
+in it. `relay.test.ts` checks those claims against the request `draftScenarios` sends, and
+pins the sentence beside them in each language, so it cannot be reworded without that case
+failing; whether the new words still say what the claims say is read, not tested. Whether a
+person follows the advice is theirs. Held
 drafts take the form's id for the form: two documents with one id — a form replaced wholesale
 under *Schema* with its id kept — are one form to them, and a draft naming fields both have can
 be kept into a form it was not drafted for. The engine's verdict is computed against the form

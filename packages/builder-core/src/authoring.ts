@@ -101,6 +101,7 @@ export async function authorForm(
   const asked = await askChecked(
     ask,
     (latest: AuthoringProblem | undefined) => ({
+      kind: 'authoring',
       system,
       user: userPrompt(instruction, options.current, latest),
       // For a host that keeps a conversation: the model has its last answer
