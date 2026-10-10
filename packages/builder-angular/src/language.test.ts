@@ -1051,6 +1051,9 @@ const DRAFTING_REACHED = [
   'Draft examples with a model',
   'What should this form do',
   'never its rules',
+  // A model that saw the form earlier in the same chat has seen its rules, and only the
+  // person can prevent that: the part says so where they type.
+  'start a new one',
   'Switzerland asks for a canton',
   'examples drafted',
   'could not be used',

@@ -12,7 +12,7 @@ export const DRAFT_MESSAGES_FR = {
   'drafts.label': 'Que doit faire ce formulaire ? Avec vos propres mots',
   'drafts.example': 'La Suisse demande un canton, et nulle part ailleurs',
   'drafts.withheld':
-    'Le modèle voit les champs de ce formulaire et vos mots, jamais ses règles : un exemple écrit à partir d’une règle lui donne raison, qu’elle soit juste ou non.',
+    'La demande contient les champs de ce formulaire et vos mots, jamais ses règles : un exemple écrit à partir d’une règle lui donne raison, qu’elle soit juste ou non. Si vous la portez dans une conversation, ouvrez-en une nouvelle : un modèle qui y a déjà vu le formulaire en a vu les règles.',
   'drafts.write': 'Rédiger des exemples',
   'drafts.writing': 'Rédaction…',
   'drafts.stop': 'Arrêter la rédaction',

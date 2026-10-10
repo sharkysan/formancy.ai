@@ -11,7 +11,7 @@ export const DRAFT_MESSAGES_DE = {
   'drafts.label': 'Was soll dieses Formular tun? In deinen eigenen Worten',
   'drafts.example': 'Bei der Schweiz wird nach dem Kanton gefragt, sonst nirgends',
   'drafts.withheld':
-    'Das Modell sieht die Felder dieses Formulars und deine Worte, nie seine Regeln: Ein Beispiel, das aus einer Regel geschrieben ist, gibt ihr recht, ob sie stimmt oder nicht.',
+    'Die Anfrage enthält die Felder dieses Formulars und deine Worte, nie seine Regeln: Ein Beispiel, das aus einer Regel geschrieben ist, gibt ihr recht, ob sie stimmt oder nicht. Wenn du sie in einen Chat trägst, beginne einen neuen: Ein Modell, das das Formular dort schon gesehen hat, kennt seine Regeln.',
   'drafts.write': 'Beispiele entwerfen',
   'drafts.writing': 'Entwirft…',
   'drafts.stop': 'Entwurf anhalten',
