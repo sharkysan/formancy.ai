@@ -709,6 +709,26 @@ describe('setLayoutNodeProperty', () => {
     expect(cleared?.kind === 'table' ? 'span' in (cleared.children[2] ?? {}) : true).toBe(false)
   })
 
+  test('refuses an address that is not a position, so nothing reaches a prototype', () => {
+    // A path segment is a position. One that is not — '__proto__' from a caller nothing
+    // type-checks, an agent's JSON — passed the bounds check, since NaN compares false
+    // both ways, and the node it found was Array.prototype: the setter then defined the
+    // property on every array in the process (CodeQL js/prototype-polluting-assignment).
+    const session = createBuilderSession(tabled())
+    const notAPosition = { layout: 'web', path: ['__proto__'] as unknown as number[] }
+    try {
+      expect(session.setLayoutNodeProperty(notAPosition, 'polluted', 1).ok).toBe(false)
+      expect(Object.prototype.hasOwnProperty.call(Array.prototype, 'polluted')).toBe(false)
+      expect(session.setLayoutNodeLabel(notAPosition, 'Polluted').ok).toBe(false)
+      // And a position between two, which is no node either.
+      expect(session.setLayoutNodeProperty({ layout: 'web', path: [0.5] }, 'columns', 3).ok).toBe(
+        false,
+      )
+    } finally {
+      delete (Array.prototype as unknown as Record<string, unknown>)['polluted']
+    }
+  })
+
   test('sets a container property too, not only a leaf one', () => {
     const session = createBuilderSession(tabled())
 
