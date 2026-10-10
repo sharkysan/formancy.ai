@@ -1,6 +1,26 @@
 import { cpSync, createReadStream, existsSync, statSync } from 'node:fs'
+import type { IncomingMessage, ServerResponse } from 'node:http'
 import { extname, join, normalize, sep } from 'node:path'
-import type { Plugin } from 'vite'
+
+/**
+ * The parts of a Vite plugin this one uses, written out rather than imported: this module
+ * sits at the repository's root, where `vite` is not installed, and a type import from it
+ * failed the playground's typecheck, which reaches this file through `build-base.test.ts`.
+ * Structural, so each app's config takes it as the `Plugin` its own Vite expects.
+ */
+interface MonacoPlugin {
+  readonly name: string
+  configResolved(config: { readonly root: string; readonly build: { readonly outDir: string } }): void
+  configureServer(server: {
+    readonly middlewares: {
+      use(
+        path: string,
+        handle: (request: IncomingMessage, response: ServerResponse, next: () => void) => void,
+      ): unknown
+    }
+  }): void
+  writeBundle(): void
+}
 
 /**
  * Monaco's AMD build, served by the app that shows it (0154).
@@ -23,7 +43,7 @@ import type { Plugin } from 'vite'
  * the loader looks cannot drift between them; each app keeps the path in a module its
  * `main.tsx` and its config both read.
  */
-export function monacoFromThisSite(vs: string): Plugin {
+export function monacoFromThisSite(vs: string): MonacoPlugin {
   let source = ''
   let outDir = ''
   const TYPES: Record<string, string> = {
