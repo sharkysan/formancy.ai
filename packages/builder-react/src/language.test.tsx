@@ -959,3 +959,119 @@ describe('the translations, prompt and scenario panes', () => {
     ).toEqual([])
   })
 })
+
+/**
+ * The drafting part's walk, shared in shape with the Angular language test: a form, the
+ * drafts a model answers with — one holding, one failing with a reason, one naming a field
+ * the form lacks, and three that are not examples — and every word that is not the
+ * builder's: the drafts' names and reasons, the engine's failures, the model's own words.
+ */
+const DRAFTING_FORM = {
+  specVersion: '2',
+  id: 'leave',
+  title: 'Leave',
+  model: {
+    fields: [
+      { key: 'kind', type: 'radio', label: 'Kind', options: [{ value: 'other', label: 'Other' }] },
+      { key: 'reason', type: 'text', label: 'Reason' },
+    ],
+  },
+  logic: { rules: [{ target: 'reason', kind: 'visible', cel: "kind == 'other'" }] },
+} as unknown as FormSchema
+const DRAFTED: Scenario[] = [
+  { name: 'other asks why', changes: { kind: 'other' }, valid: true, visible: { reason: true } },
+  { name: 'nothing asks why', because: 'the model’s own reason', changes: {}, valid: true, visible: { reason: true } },
+  { name: 'names a ghost', changes: { region: 'north' }, valid: true },
+]
+const DRAFTING_ANSWER = JSON.stringify({
+  scenarios: [
+    ...DRAFTED,
+    { changes: {}, valid: true },
+    { name: 'with a stranger', changes: {}, valid: true, expected: 1 },
+    { name: 'badly shaped', changes: {}, valid: true, errors: 'required' },
+  ],
+})
+const DRAFTING_WORDS = [
+  'anything',
+  'the model said this',
+  'offline',
+  ...DRAFTED.flatMap((draft) => [draft.name, draft.because ?? '']),
+  'with a stranger',
+  'badly shaped',
+  ...runScenarios(DRAFTING_FORM, DRAFTED).flatMap((result) => result.failures.map((failure) => failure.detail)),
+]
+/** What the walk must have reached, so a run that stopped early cannot pass by showing little. */
+const DRAFTING_REACHED = [
+  'Draft examples with a model',
+  'What should this form do',
+  'never its rules',
+  'Switzerland asks for a canton',
+  'examples drafted',
+  'could not be used',
+  'Holds against the form',
+  'Does not hold against the form',
+  'has no name',
+  'which an example does not have',
+  'is not what an example holds there',
+  'Not kept: names a ghost',
+  'Kept nothing asks why',
+  'Discarded other asks why',
+  'declined this request',
+  '3 attempts',
+  'held no JSON object',
+  'What the model last answered',
+  'could not be reached: ',
+  'Drafting…',
+  'Stop drafting',
+  'Stopped. Nothing was drafted.',
+]
+
+describe('the drafting part', () => {
+  test('through a run, a keep, a refusal, a discard and every way a run ends, shows nothing in English the catalogue did not give it', async () => {
+    // Drafting's words are the catalogue's (0162). The model's request is in English
+    // whatever the author speaks, as the prompt pane's is, and is the relay's to show; what
+    // the part says about a run is translated, and the drafts are the model's own words.
+    const session = createBuilderSession(DRAFTING_FORM, { text: createBuilderText(pseudoLanguage()) })
+    const answers: Array<() => Promise<string>> = [
+      () => Promise.resolve(DRAFTING_ANSWER),
+      () => Promise.resolve(JSON.stringify({ [DECLINE_KEY]: 'the model said this' })),
+      () => Promise.resolve('nope'),
+      () => Promise.resolve('nope'),
+      () => Promise.resolve('nope'),
+      () => Promise.reject(new Error('offline')),
+      () => new Promise<string>(() => undefined),
+    ]
+    const ask = () => answers.shift()!()
+    const user = userEvent.setup()
+    const view = render(<ScenarioPane session={session} scenarios={[]} onChange={() => undefined} ask={ask} />)
+    const button = (name: RegExp) => within(view.container).getByRole('button', { name })
+    const status = () => view.container.querySelector('[data-formancy-part="scenario-drafts-status"]')?.textContent ?? ''
+    const seen: string[] = []
+    const run = async (): Promise<void> => {
+      await user.click(button(/Draft examples⟧$/))
+      await waitFor(() => expect(status()).not.toMatch(/Drafting examples/))
+      seen.push(...shown(view.container))
+    }
+
+    await user.type(within(view.container).getByRole('textbox'), 'anything')
+    await run()
+    await user.click(button(/Keep names a ghost/))
+    seen.push(...shown(view.container))
+    await user.click(button(/Keep nothing asks why/))
+    seen.push(...shown(view.container))
+    await user.click(button(/Discard other asks why/))
+    seen.push(...shown(view.container))
+    await run()
+    await run()
+    await run()
+    await user.click(button(/Draft examples⟧$/))
+    await waitFor(() => expect(button(/Stop drafting/)).toBeTruthy())
+    seen.push(...shown(view.container))
+    await user.click(button(/Stop drafting/))
+    await waitFor(() => expect(status()).toMatch(/Stopped/))
+    seen.push(...shown(view.container))
+
+    expect(untranslated(seen, DRAFTING_WORDS)).toEqual([])
+    expect(DRAFTING_REACHED.filter((prefix) => !seen.some((text) => text.includes(prefix)))).toEqual([])
+  })
+})

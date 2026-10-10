@@ -247,6 +247,18 @@ change stops its old example holding, and the decision is yours. A rule no examp
 pins gets no warning. Without `scenarios`, the review says nothing about examples
 ([0159](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0159-a-proposal-is-checked-against-the-forms-examples.md)).
 
+**Give the scenario pane the same model, and it drafts examples where a form has none.**
+The person says what the form should do; the model is asked for examples of it and shown the
+form's fields, the engine's error codes and those words, and never a rule, a pattern, a bound
+or which fields are required. A model shown the rule writes the example the rule passes,
+which agrees with the rule whether it is right or wrong. `draftScenarios(ask, document,
+intent, { initialValue, existing, stop })` is the run on its own: it reads each item of the
+answer by itself, lists the ones that are not examples with why, and asks again only when
+none is. `draftVerdict` runs a draft as the scenario pane runs its list, and `keepDraft`
+refuses a name already taken and a field the form does not have, and keeps a draft that
+fails — whether the example or the rule is wrong is the person's call
+([0162](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0162-an-example-is-drafted-from-what-the-author-said.md)).
+
 ### Writing `askModel`
 
 An `AskModel` is one turn: a prompt in, the model's text out. Point it at an
@@ -383,9 +395,15 @@ What the relay decides, it decides once, for both builders:
 - **A stop clears the turn.** An answer pasted after it is refused, never kept for the
   next request.
 
+The same relay can be the scenario pane's `ask`, for drafting examples. One turn at a time
+holds across both: a draft asked for while a model's edit waits ends as a model that could not
+be reached.
+
 **What leaves, and who carries it.** The relay and its pane send the request nowhere: Copy
 puts the whole request on the clipboard — the briefing, the instruction and the whole form
-— and pasting it into a chat gives it to that service under the person's own account. The
+— and pasting it into a chat gives it to that service under the person's own account. A
+request for examples carries the form's fields, labels and options, the sample examples start
+from and the names of those already kept, but not its rules. The
 pane says so, in its own words, and says it of itself: what the rest of your page sends is
 yours, and the pane cannot know it. A pasted answer is not tied to the request it answers: the review's list
 of changes, against the form the run was asked about, is what shows an answer to something

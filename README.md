@@ -246,7 +246,11 @@ back, and every check after the paste runs in the page
 translations pane asks it for the messages a language is missing, and holds the answer for
 review message by message — the source beside what is proposed, and the form as it would
 read — before it lands; a translation somebody made is never replaced
-([0161](./docs/decisions/0161-a-model-translates-only-what-is-missing.md)). Both save a
+([0161](./docs/decisions/0161-a-model-translates-only-what-is-missing.md)). Given the same
+model, both scenario panes draft examples from what the author says the form should do,
+showing the model the form's fields and never its rules, and the author keeps each one
+with the engine's verdict beside it
+([0162](./docs/decisions/0162-an-example-is-drafted-from-what-the-author-said.md)). Both save a
 field as a **block** to use again — with the rules that live inside it and the words
 it names — and insert one with its keys made unique and its rules following them; the
 host keeps the blocks ([0135](./docs/decisions/0135-a-block-is-a-field-with-its-rules.md)).

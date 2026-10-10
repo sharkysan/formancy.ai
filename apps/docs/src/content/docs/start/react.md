@@ -234,5 +234,37 @@ changed on purpose stops its old example holding. A rule no example pins gets no
 and without `scenarios` the review says nothing about examples
 ([0159](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0159-a-proposal-is-checked-against-the-forms-examples.md)).
 
+## Examples, drafted from what you say the form should do
+
+A form with no examples gets nothing from either pane. Give `ScenarioPane` a model as well as
+`onChange`, and it drafts some:
+
+```tsx
+<ScenarioPane
+  session={session}
+  scenarios={scenarios}
+  onChange={setScenarios}
+  initialValue={sample}
+  ask={askModel}
+/>
+```
+
+The person says what the form should do, in their own words, and presses *Draft examples*.
+The model is shown the form's fields — the path an example names each one by, its type, its
+label and its options — the error codes the engine reports, where examples start and those
+words. It is never shown a rule, a pattern, a bound or which fields are required: a model
+shown the rule writes the example the rule passes, and that example agrees with the rule
+whether it is right or wrong.
+
+Each draft is listed with what it sets and expects, and with the engine's verdict on the form
+as it is now — the verdict the list gives it once kept, recomputed when the form changes.
+Nothing reaches `onChange` until *Keep*. A draft that does not hold can be kept: that is the
+person saying the example is right and the form is not. A name already in the list, or a
+field the form does not have, cannot be kept. Items of the answer that are not examples are
+listed with why, and do not cost the rest. With a relay as `ask`, the request is carried by
+hand like the prompt pane's ([agents](/docs/start/agents/)). `ScenarioDrafts` is the part on
+its own, for a host that places it elsewhere
+([0162](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0162-an-example-is-drafted-from-what-the-author-said.md)).
+
 Next: [self-host the backend](/docs/start/self-hosting/) and post the form's
 submissions to it, or read [how the schema is structured](/docs/concepts/schema/).

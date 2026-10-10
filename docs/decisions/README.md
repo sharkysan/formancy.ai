@@ -262,3 +262,4 @@ listed under the sections they belong to above.
 | [0159](0159-a-proposal-is-checked-against-the-forms-examples.md) | A proposal is checked against the form's examples before it lands | accepted |
 | [0160](0160-a-person-carries-the-models-turn.md) | On the website a person carries the model's turn, and the relay is decided once in builder-core | accepted |
 | [0161](0161-a-model-translates-only-what-is-missing.md) | A model translates only what is missing, answers with the catalogue file, and is reviewed message by message | accepted |
+| [0162](0162-an-example-is-drafted-from-what-the-author-said.md) | An example is drafted from what the author said, judged by the engine, and kept one at a time | accepted |

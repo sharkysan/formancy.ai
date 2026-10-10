@@ -276,12 +276,15 @@ export function BuilderBody({
                   ([0110](../../../docs/decisions/0110-a-form-is-checked-against-examples.md)).
                   The scenarios are the host's — here, the page's list, started from a
                   file beside the starter. Without `onChange` the pane draws no Remove
-                  button, and it had none. */}
+                  button, and it had none. With the relay as well, it drafts examples from
+                  what the visitor says the form should do, and one kept goes into the
+                  page's list for this form (0162). */}
               <ScenarioPane
                 session={session}
                 scenarios={scenarios}
                 onChange={onScenarios}
                 initialValue={sample}
+                ask={relay.ask}
               />
 
               {editing === null ? null : (

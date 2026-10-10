@@ -1,4 +1,5 @@
 import type { BuilderMessageId, Message } from './messages.js'
+import { DRAFT_MESSAGES_FR } from './messages-drafts-fr.js'
 
 /**
  * French, shipped and complete — for the same reason German is: a shipped
@@ -15,6 +16,8 @@ import type { BuilderMessageId, Message } from './messages.js'
  * rather than a test for 1 ([0114](../../../docs/decisions/0114-the-builder-speaks-the-authors-language.md)).
  */
 export const BUILDER_MESSAGES_FR = {
+  // Drafting examples, in a file of its own (0162).
+  ...DRAFT_MESSAGES_FR,
   'tree.empty': 'Ce formulaire n’a pas encore de champs.',
   'tree.fieldCount': { one: '{count} champ', other: '{count} champs' },
   'palette.title': 'Ajouter un champ',

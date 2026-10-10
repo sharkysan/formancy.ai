@@ -439,3 +439,43 @@ turn is drawn where the prompt pane's is (6.8), at the top of either builder.
 *Translate the rest* asks over the proposal under review, and the answer is written over it
 and held against its basis, so the two land together, or neither does if the form moved in
 between.
+
+## 6.10 Drafting examples from what the author said
+
+```
+drafting part                  draftScenarios, in builder-core                 host's AskModel (or a relay, 6.8)
+─────────────                  ───────────────────────────────                 ─────────────────────────────────
+Draft examples
+  stop = createStop()  ───▶    scenarioPrompt(document, intent,
+                                 { initialValue, existing })
+                                 fields by data path, types, labels, options,
+                                 the engine's codes, the form's own codes by name,
+                                 where examples start, names taken, the words —
+                                 no rule, no pattern, no bound, not required
+                               askChecked (6.7's loop)                  ───▶   its request
+                                 ├─ stopped / unreachable / declined ──▶ ended, as 6.7
+                                 ▼
+                               each item read on its own
+                                 ├─ none is an example ──▶ the reasons go into the next turn
+                                 ▼
+                               ok: drafts, and the items that were not, with why
+                       ◀───    resolves, however it ended
+  draftStatus, draftProblems ──▶ the live region, and the list beneath it
+
+  on every render, for each draft waiting:
+    draftVerdict(document now, draft, { initialValue, mode })  ──▶ runScenarios: holds, or why not
+  Keep    ──▶ keepDraft(document, scenarios, draft, options)
+                ├─ a name already in the list    ──▶ refused, and said
+                ├─ a path this form does not have ──▶ refused, and said
+                ▼
+              onChange / scenariosChange([...scenarios, draft]) ──▶ the host's list ──▶ the panel (0111)
+  Discard ──▶ the draft leaves; nothing reaches the host
+```
+
+**What the model is never shown is the point.** A drafted example is worth having only if it
+can disagree with the form, so the request carries what an example has to name and what the
+author said, and none of what the rules do. **The engine, not the model, says whether a
+draft holds**, with the panel's own options, every time the part is drawn, so an edit made
+while a draft waits changes its verdict. **A person keeps each one**, and a draft that fails
+can be kept: the failure is the question the person answers
+([0162](../decisions/0162-an-example-is-drafted-from-what-the-author-said.md)).

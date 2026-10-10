@@ -1,4 +1,5 @@
 import { BLOCK_MESSAGES } from './messages-blocks.js'
+import { DRAFT_MESSAGES } from './messages-drafts.js'
 import { LOGIC_MESSAGES } from './messages-logic.js'
 import { MODEL_MESSAGES } from './messages-model.js'
 
@@ -379,12 +380,16 @@ const BUILDER_OWN_MESSAGES = {
 
 } as const satisfies Record<string, Message>
 
-/** The whole catalogue: the builder's own words, the logic editor's, the blocks', and the prompt pane's. */
+/**
+ * The whole catalogue: the builder's own words, the logic editor's, the blocks', the prompt
+ * pane's, and drafting examples'.
+ */
 export const BUILDER_MESSAGES = {
   ...BUILDER_OWN_MESSAGES,
   ...LOGIC_MESSAGES,
   ...BLOCK_MESSAGES,
   ...MODEL_MESSAGES,
+  ...DRAFT_MESSAGES,
 } as const satisfies Record<string, Message>
 
 export type BuilderMessageId = keyof typeof BUILDER_MESSAGES

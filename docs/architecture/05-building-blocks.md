@@ -108,6 +108,7 @@ comprehension would capture.
 | `props.ts` | Every ARIA attribute, composed centrally ([0021](../decisions/0021-engine-owns-aria.md)) |
 | `ids.ts` | Deterministic, SSR-stable element ids |
 | `model-validators.ts` | min, max, lengths, anchored patterns, and formats as explicit regular expressions because `URL` is unavailable |
+| `error-codes.ts` | Types only: `BuiltInErrorCode`, every code the engine reports of its own accord, which the validators and the engine are typed against, and `ValidationReport` beside it. Nothing in the bundle ([0162](../decisions/0162-an-example-is-drafted-from-what-the-author-said.md)) |
 | `interaction.ts` | Touched state, which decides when a message is shown |
 | `wizard.ts` | Page navigation and per-page validation semantics |
 | `strip.ts` | `clearOnHide` pruning, applied identically on client and server |
@@ -291,6 +292,19 @@ that gets acted on, and two builders deciding that separately would tell two peo
 different things about one edit
 ([0111](../decisions/0111-a-scenario-panel-names-what-stopped-holding.md)).
 
+`scenario-drafts.ts` and `scenario-prompt.ts` write examples where a form has none. A model
+is asked, through `askChecked`, for examples of what the author says the form should do, and
+`scenario-prompt.ts` is everything it is told: the fields an example can name, by the data
+path `core`'s `formatPath` writes, their types, labels and options, the engine's error codes
+— `BUILT_IN_ERROR_CODES`, which satisfies `core`'s `BuiltInErrorCode` — and the author's
+words, and never a rule's condition, a pattern, a bound or which fields are required. Shown
+the rule, a model writes the example the rule passes. It is model-facing English, as
+`authoring.ts` is. `scenario-drafts.ts` reads the answer item by item, judges a draft with
+`runScenarios` and the scenario pane's own options (`draftVerdict`), decides what may be kept
+(`keepDraft`), and says what came of a run in the catalogue's words (`draftStatus`,
+`draftProblems`). Both builders' drafting parts, drawn inside their scenario panes, are
+markup over these ([0162](../decisions/0162-an-example-is-drafted-from-what-the-author-said.md)).
+
 `messages.ts` holds the builder's **words**: one catalogue, English with a complete
 German and French, which a session carries and both builders read — so a refusal, a move target
 and a layout node's name are worded once, in the language of the person building,
@@ -352,9 +366,9 @@ the renderers have: what decides anything is in `builder-core`, and a builder
 package is markup and a subscription. `@formancy/builder-angular` carries every pane
 `builder-react` does — the structure and arrangement trees, the drag surface on the
 rendered form, the property and logic panels, the translations pane with a model's
-translation under review inside it, the prompt and scenario panes, and the relay pane
-beside the prompt — zoneless, `OnPush`, one signal per
-session, `revision()` as the whole subscription
+translation under review inside it, the prompt and scenario panes, drafting examples
+inside the scenario pane, and the relay pane beside the prompt — zoneless, `OnPush`, one
+signal per session, `revision()` as the whole subscription
 ([0091](../decisions/0091-a-second-builder-is-a-binding.md)). This paragraph
 said "the rest of the panes remain React-only" for more than a week after they had all shipped.
 
@@ -412,7 +426,9 @@ aborts and names any request to another origin
 ([0154](../decisions/0154-the-website-makes-no-request-to-any-other-site.md)). The playground's
 model is therefore a person: both builders' prompt panes ask one relay, and the visitor
 carries each turn to a chat of their own and back
-([0160](../decisions/0160-a-person-carries-the-models-turn.md)).
+([0160](../decisions/0160-a-person-carries-the-models-turn.md)). Both builders' scenario
+panes ask the same relay for drafted examples, and a draft kept joins the open form's
+examples ([0162](../decisions/0162-an-example-is-drafted-from-what-the-author-said.md)).
 
 ### `@formancy/server-core` and `@formancy/server`
 

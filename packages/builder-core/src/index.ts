@@ -27,6 +27,27 @@ export { translationPrompt } from './translate-prompt.js'
 export type { TranslationRequest, TranslationRow } from './translate-prompt.js'
 export { comparedToLastRun, createRunHistory, scenarioStatus } from './scenario-runs.js'
 export type { RunHistory, ScenarioRunChange } from './scenario-runs.js'
+// Examples drafted from what the author said, judged by the engine, kept one at a time (0162).
+export {
+  draftExpectations,
+  draftProblems,
+  draftScenarios,
+  draftStatus,
+  draftVerdict,
+  keepDraft,
+} from './scenario-drafts.js'
+export type {
+  DraftNote,
+  DraftProblem,
+  DraftState,
+  Drafted,
+  DraftingOptions,
+  KeptDraft,
+  UnusableDraft,
+  UnusableReason,
+} from './scenario-drafts.js'
+export { scenarioPrompt } from './scenario-prompt.js'
+export type { ScenarioPrompt, ScenarioPromptOptions } from './scenario-prompt.js'
 export type {
   AskModel,
   AskTurn,

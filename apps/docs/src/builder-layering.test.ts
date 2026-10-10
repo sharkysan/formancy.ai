@@ -187,6 +187,15 @@ describe('what the two builders each offer', () => {
       angular: 'FormancyScenarioPane',
     },
     {
+      // Drawn inside the scenario pane, and exported so a host can place it elsewhere. Both
+      // from the start: what the model is shown and what may be kept are builder-core's,
+      // and a draft kept in either builder lands in the one list
+      // ([0162](../../../docs/decisions/0162-an-example-is-drafted-from-what-the-author-said.md)).
+      pane: 'drafting examples with a model',
+      react: 'ScenarioDrafts',
+      angular: 'FormancyScenarioDrafts',
+    },
+    {
       // Every rule, and why a field is hidden now. What it says is builder-core's,
       // so the two cannot explain the same rule differently
       // ([0128](../../../docs/decisions/0128-a-form-says-why-a-field-is-hidden.md)).

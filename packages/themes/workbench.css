@@ -1612,6 +1612,134 @@ kbd {
   font-size: 0.6875rem;
 }
 
+/* ------------------------------------------------- drafting examples with a model
+ *
+ * Inside the scenario pane, beneath the list, so its buttons are the pane's. What the model
+ * is not shown is said in the muted voice beside the box; a draft is a line marked on the
+ * side a line starts by whether it holds, like a scenario, and what it sets and expects is
+ * set in the bench's code type, since it is the model's JSON as written (0162). */
+
+[data-formancy-part='scenario-drafts'] {
+  display: grid;
+  gap: 0.5rem;
+  margin-block-start: 0.75rem;
+  padding-block-start: 0.75rem;
+  border-block-start: 1px solid var(--wb-rule);
+}
+
+[data-formancy-part='scenario-drafts'] h3 {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+[data-formancy-part='scenario-drafts'] > label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+[data-formancy-part='scenario-drafts'] textarea {
+  font: inherit;
+  font-size: 0.8125rem;
+  color: var(--wb-ink);
+  background: var(--wb-surface);
+  border: 1px solid var(--wb-rule);
+  border-radius: 3px;
+  inline-size: 100%;
+  min-block-size: 4.5rem;
+  padding: 0.375rem 0.5rem;
+  line-height: 1.45;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+[data-formancy-part='scenario-drafts'] textarea:focus-visible,
+[data-formancy-part='scenario-drafts'] h3:focus-visible {
+  outline: 2px solid var(--wb-signal);
+  outline-offset: 1px;
+}
+
+[data-formancy-part='scenario-drafts'] > button {
+  justify-self: start;
+}
+
+[data-formancy-part='scenario-drafts-withheld'],
+[data-formancy-part='scenario-drafts-status'] {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--wb-muted);
+}
+
+[data-formancy-part='scenario-drafts-declined'] {
+  margin: 0;
+  padding-inline-start: 0.5rem;
+  border-inline-start: 2px solid var(--wb-rule);
+  font-size: 0.75rem;
+}
+
+[data-formancy-part='scenario-drafts-problems'] {
+  font-size: 0.75rem;
+  color: var(--wb-invalid);
+}
+
+[data-formancy-part='scenario-drafts-problems'] ul {
+  margin: 0;
+  padding-inline-start: 1rem;
+}
+
+[data-formancy-part='scenario-drafts-problems'] summary {
+  color: var(--wb-muted);
+  cursor: pointer;
+}
+
+[data-formancy-part='scenario-drafts-list'] {
+  display: grid;
+  gap: 0.375rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8125rem;
+}
+
+[data-formancy-part='scenario-drafts-list'] > li {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-inline-start: 2px solid var(--wb-ok);
+}
+
+[data-formancy-part='scenario-drafts-list'] > li[data-passed='false'] {
+  border-inline-start-color: var(--wb-invalid);
+}
+
+[data-formancy-part='scenario-drafts-list'] p {
+  margin: 0;
+  font-size: 0.75rem;
+}
+
+[data-formancy-part='scenario-drafts-list'] pre {
+  margin: 0;
+  padding: 0.25rem 0.375rem;
+  overflow-x: auto;
+  font-family: var(--wb-mono);
+  font-size: 0.6875rem;
+  background: var(--wb-surface);
+  border: 1px solid var(--wb-rule);
+  border-radius: 3px;
+}
+
+[data-formancy-part='scenario-drafts-list'] ul {
+  margin: 0;
+  padding-inline-start: 1rem;
+  font-size: 0.75rem;
+  color: var(--wb-invalid);
+}
+
+[data-formancy-part='scenario-drafts-list'] button {
+  justify-self: start;
+  font-size: 0.6875rem;
+}
+
 /* ------------------------------------------------------------------ blocks */
 
 [data-formancy-part='palette-blocks'] {

@@ -10,6 +10,8 @@ export type {
   ArrangeDrop,
   AskModel,
   AuthoringResult,
+  DraftNote,
+  Drafted,
   Stop,
   EditProposal,
   BuilderSession,

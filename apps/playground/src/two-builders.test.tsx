@@ -444,6 +444,12 @@ describe('what the starter form is supposed to do', () => {
 })
 
 /**
+ * What the scenario panel says in its own live region: the first in reading order. Drafting,
+ * which the page draws inside the panel too (0162), has one of its own beneath the list.
+ */
+const panelSays = (panel: HTMLElement): string => within(panel).getAllByRole('status')[0]?.textContent ?? ''
+
+/**
  * The examples, in both builders, from one list the page keeps.
  *
  * The scenarios are the host's (0111): the pane lists, reruns and removes, and the page
@@ -475,7 +481,7 @@ describe('the examples, in either builder', () => {
 
     const panel = await scenarioPanel()
     await waitFor(() => {
-      expect(within(panel).getByRole('status').textContent).toContain('scenarios hold')
+      expect(panelSays(panel)).toContain('scenarios hold')
     })
     // And it can remove one: a panel drawn read-only would be the React defect again.
     expect(removable(panel)).toEqual(offered())
@@ -575,7 +581,7 @@ describe('the examples, in either builder', () => {
         { timeout: 10_000 },
       )
       // And they hold — which they only do from the template's sample, not from nothing.
-      expect(within(panel).getByRole('status').textContent).toBe(
+      expect(panelSays(panel)).toBe(
         builderTextFor('en')('scenarios.allHold', { count: REGISTRATION_SCENARIOS.length }),
       )
     },
@@ -588,7 +594,7 @@ describe('the examples, in either builder', () => {
     await builtWith('React')
 
     const panel = await scenarioPanel()
-    expect(within(panel).getByRole('status').textContent).toBe(builderTextFor('en')('scenarios.none'))
+    expect(panelSays(panel)).toBe(builderTextFor('en')('scenarios.none'))
   })
 
   test('an example removed from one form is still gone after a visit to another', async () => {
@@ -618,7 +624,7 @@ describe('the examples, in either builder', () => {
     const said: string[] = []
     const listening = new MutationObserver(() => {
       const panel = screen.queryByRole('region', { name: 'Scenarios' })
-      const status = panel === null ? null : within(panel).queryByRole('status')
+      const status = panel === null ? undefined : within(panel).queryAllByRole('status')[0]
       if (status?.textContent) said.push(status.textContent)
     })
     listening.observe(document.body, { subtree: true, childList: true, characterData: true })
@@ -626,11 +632,103 @@ describe('the examples, in either builder', () => {
     render(<App />)
     await builtWith('Angular')
     const panel = await scenarioPanel()
-    await waitFor(() => expect(within(panel).getByRole('status').textContent).toContain('hold'))
+    await waitFor(() => expect(panelSays(panel)).toContain('hold'))
     listening.disconnect()
 
     expect(said).not.toContain(none)
   })
+})
+
+/**
+ * Examples drafted from what the visitor says, through the page's relay (0162).
+ *
+ * The page hands its relay to both builders' scenario panes, and a draft kept goes into the
+ * page's examples for the open form, as one removed leaves them. What is pinned through the
+ * whole application, in either builder: the request carried to a chat holds what the visitor
+ * said and none of the starter's rules; nothing reaches the list until Keep; a draft that
+ * does not hold can be kept, and the panel then lists it as not holding — the person has
+ * said the example is right and the form is not; and the page sends nothing anywhere while
+ * it happens, every Copy pressed included.
+ */
+describe('examples drafted from what the visitor says', () => {
+  /** Holds against the starter. */
+  const HOLDS = {
+    name: 'Germany is not asked for a canton',
+    changes: { country: 'DE' },
+    valid: true,
+    visible: { canton: false },
+  }
+  /** Does not: the visitor's words, read by a model as asking every country for a region. */
+  const FAILS = {
+    name: 'Germany is asked for its canton too',
+    because: 'every country has regions',
+    changes: { country: 'DE' },
+    valid: false,
+    visible: { canton: true },
+    errors: { canton: ['required'] },
+  }
+
+  test.each(['React', 'Angular'] as const)(
+    'in the %s builder: the request withholds the rules, a draft that fails is kept, the panel lists it, and the page sends nothing',
+    async (which) => {
+      const sent = outbound()
+      try {
+        const user = userEvent.setup()
+        render(<App />)
+        await builtWith(which)
+        if (which === 'Angular') await angularTree()
+        // After every `userEvent.setup()`, which puts its own clipboard on the navigator.
+        const write = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined)
+
+        const panel = await waitFor(() => screen.getByRole('region', { name: 'Scenarios' }), { timeout: 10_000 })
+        await waitFor(() => expect(panelSays(panel)).toContain('scenarios hold'), { timeout: 10_000 })
+        await user.type(
+          within(panel).getByRole('textbox', { name: /What should this form do/ }),
+          'Only Switzerland asks for a canton.',
+        )
+        await user.click(within(panel).getByRole('button', { name: 'Draft examples' }))
+
+        // The request a visitor carries: their words, and no rule of the form — a model shown
+        // `country == "CH"` writes the example that rule passes (0162).
+        const relay = await screen.findByRole('region', { name: 'Take this request to a model' })
+        const request = (within(relay).getByRole('textbox', { name: 'The request' }) as HTMLTextAreaElement).value
+        expect(request).toContain('Only Switzerland asks for a canton.')
+        const rules = (STARTER_SCHEMA.logic?.rules ?? []).flatMap((rule) => (rule.cel === undefined ? [] : [rule.cel]))
+        expect(rules.length, 'the starter has no rules for this case to withhold').toBeGreaterThan(0)
+        expect(rules.filter((cel) => request.includes(cel) || request.includes(JSON.stringify(cel).slice(1, -1)))).toEqual([])
+        await user.click(within(relay).getByRole('button', { name: 'Copy the request' }))
+        await waitFor(() => expect(write).toHaveBeenCalledTimes(1))
+
+        await user.click(within(relay).getByRole('textbox', { name: 'The model’s answer' }))
+        await user.paste(JSON.stringify({ scenarios: [HOLDS, FAILS] }))
+        await user.click(within(relay).getByRole('button', { name: 'Check this answer' }))
+
+        const drafts = await within(panel).findByRole('list', { name: 'Drafted examples' }, { timeout: 10_000 })
+        expect(within(drafts).getByText(/Does not hold against the form as it is/)).toBeTruthy()
+        // Drafted, not kept: the panel's own list has neither.
+        expect(within(panel).queryByRole('button', { name: `Remove ${FAILS.name}` })).toBeNull()
+        expect(within(panel).queryByRole('button', { name: `Remove ${HOLDS.name}` })).toBeNull()
+
+        await user.click(within(panel).getByRole('button', { name: `Keep ${FAILS.name}` }))
+
+        await waitFor(
+          () => expect(within(panel).getByRole('button', { name: `Remove ${FAILS.name}` })).toBeTruthy(),
+          { timeout: 10_000 },
+        )
+        expect(panelSays(panel)).toBe(
+          builderTextFor('en')('scenarios.someFail', { count: 1, total: STARTER_SCENARIOS.length + 1 }),
+        )
+        expect(within(panel).queryByRole('button', { name: `Remove ${HOLDS.name}` })).toBeNull()
+
+        expect(sent.fetch).not.toHaveBeenCalled()
+        expect(sent.open).not.toHaveBeenCalled()
+        expect(sent.beacon).not.toHaveBeenCalled()
+        expect(sent.window).not.toHaveBeenCalled()
+      } finally {
+        sent.restore()
+      }
+    },
+  )
 })
 
 /**

@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import type { ReactElement } from 'react'
 import { comparedToLastRun, createRunHistory, scenarioStatus } from '@formancy/builder-core'
 import { runScenarios } from '@formancy/core'
-import type { BuilderSession } from '@formancy/builder-core'
+import type { AskModel, BuilderSession } from '@formancy/builder-core'
 import type { Scenario } from '@formancy/core'
+import { ScenarioDrafts } from './scenario-drafts.js'
 
 /**
  * What this form is supposed to do, run against what it does now.
@@ -26,6 +27,12 @@ import type { Scenario } from '@formancy/core'
  * decides nothing about where they are kept, and a host putting them in a
  * `.scenarios.json` beside the form gets a CI gate out of the same file. With
  * none given the pane renders nothing rather than an empty table.
+ *
+ * **Given a model as well, it drafts them.** With `ask` and `onChange` both given, the
+ * pane draws `ScenarioDrafts` beneath the list: the author says what the form should do,
+ * a model drafts examples from that and the form's fields — never its rules — and each one
+ * is kept or discarded by the person, with the verdict the list will give it
+ * ([0162](../../../docs/decisions/0162-an-example-is-drafted-from-what-the-author-said.md)).
  *
  * `useSyncExternalStore` against the session's revision, which is this
  * repository's ordinary way of reading a store — not a `useEffect` copying
@@ -54,6 +61,13 @@ export interface ScenarioPaneProps {
    * this product exists to prevent — so it is worth being able to ask.
    */
   mode?: 'client' | 'server'
+  /**
+   * A model to draft examples with, as `PromptPane` takes it. Drafting is drawn only when
+   * `onChange` is given too: a draft somebody keeps has to go somewhere.
+   */
+  ask?: AskModel | undefined
+  /** How many times drafting asks the model. Three by default. */
+  attempts?: number
 }
 
 export function ScenarioPane({
@@ -62,6 +76,8 @@ export function ScenarioPane({
   onChange,
   initialValue,
   mode,
+  ask,
+  attempts,
 }: ScenarioPaneProps): ReactElement | null {
   const revision = useSyncExternalStore(
     (listener) => session.subscribe(listener),
@@ -143,6 +159,18 @@ export function ScenarioPane({
             </li>
           ))}
         </ul>
+      )}
+
+      {ask === undefined || onChange === undefined ? null : (
+        <ScenarioDrafts
+          session={session}
+          scenarios={scenarios}
+          onChange={onChange}
+          ask={ask}
+          initialValue={initialValue}
+          {...(mode === undefined ? {} : { mode })}
+          {...(attempts === undefined ? {} : { attempts })}
+        />
       )}
     </section>
   )

@@ -35,6 +35,15 @@ export interface Scenario {
   /** Unique in a set: it is how a failure is named and how a result is found. */
   readonly name: string
   /**
+   * Why the example is worth having: the part of what the author said that it checks.
+   *
+   * For whoever reads the list later, and never run. A drafted example carries the
+   * sentence it was drafted from, so a person deciding whether the example or the rule is
+   * wrong can see what the example understood
+   * ([0162](../../../docs/decisions/0162-an-example-is-drafted-from-what-the-author-said.md)).
+   */
+  readonly because?: string
+  /**
    * Values to set, in the order written, through the live engine.
    *
    * Set rather than supplied as an initial value, because turning a branch off

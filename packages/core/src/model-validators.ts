@@ -1,5 +1,6 @@
 import { TEMPORAL_SHAPES, fitsMask } from '@formancy/spec'
 import type { FieldDef, FieldFormat } from '@formancy/spec'
+import type { BuiltInErrorCode } from './error-codes.js'
 
 /**
  * The spec's built-in model validators: bounds, pattern, format.
@@ -10,10 +11,10 @@ import type { FieldDef, FieldFormat } from '@formancy/spec'
  * formats, which carry their own name (`email`), because "format" tells a
  * message catalog nothing about what to say.
  */
-export function modelViolations(def: FieldDef, value: unknown): string[] {
+export function modelViolations(def: FieldDef, value: unknown): BuiltInErrorCode[] {
   if (value === undefined || value === null || value === '') return []
 
-  const codes: string[] = []
+  const codes: BuiltInErrorCode[] = []
 
   // A list answer — the ticks on a selectboxes field, the files on a file
   // field — bounds its length rather than its magnitude. `minItems` and
@@ -188,12 +189,12 @@ const LIST_VALUED = new Set(['selectboxes', 'ranking', 'file'])
  * key that is not one of its rows, `option` for a column it does not offer. Whether every
  * row is answered is `required`'s question, not this one.
  */
-function matrixViolations(def: FieldDef, value: unknown): string[] {
+function matrixViolations(def: FieldDef, value: unknown): BuiltInErrorCode[] {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) return ['type']
   const entries = Object.entries(value)
   if (entries.some(([, column]) => typeof column !== 'string')) return ['type']
   const rows = new Set((def.rows ?? []).map((row) => row.value))
-  const codes: string[] = []
+  const codes: BuiltInErrorCode[] = []
   if (entries.some(([row]) => !rows.has(row))) codes.push('row')
   if (!entries.every(([, column]) => offers(def, column))) codes.push('option')
   return codes
@@ -255,9 +256,9 @@ function isStoredFile(value: unknown): value is StoredFile {
  * picker, because a picker's filter is a convenience for the person using the
  * form and nothing at all to somebody posting to the endpoint directly.
  */
-function fileViolations(def: FieldDef, files: readonly unknown[]): string[] {
+function fileViolations(def: FieldDef, files: readonly unknown[]): BuiltInErrorCode[] {
   if (!files.every(isStoredFile)) return ['type']
-  const codes: string[] = []
+  const codes: BuiltInErrorCode[] = []
 
   for (const entry of files) {
     const file = entry as StoredFile
@@ -339,7 +340,7 @@ const FORMAT_CHECKS: Record<FieldFormat, (value: string) => boolean> = {
  * list is a payload amplifier
  * ([0083](../../../docs/decisions/0083-a-signature-is-points-or-a-name.md)).
  */
-function signatureViolations(def: FieldDef, value: unknown): string[] {
+function signatureViolations(def: FieldDef, value: unknown): BuiltInErrorCode[] {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) return ['type']
 
   const answer = value as { drawn?: unknown; typed?: unknown }
@@ -352,7 +353,7 @@ function signatureViolations(def: FieldDef, value: unknown): string[] {
   if (hasTyped) return typeof answer.typed === 'string' ? [] : ['type']
 
   if (!Array.isArray(answer.drawn)) return ['type']
-  const codes: string[] = []
+  const codes: BuiltInErrorCode[] = []
   let points = 0
   for (const stroke of answer.drawn) {
     if (!Array.isArray(stroke)) return ['type']

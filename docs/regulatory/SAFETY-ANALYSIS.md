@@ -1331,6 +1331,51 @@ another form reads as an edit removing this form's fields, and is listed and mar
 costing answers; a paste that differs only subtly from what was asked reads as a subtle
 edit, which is the residual above, unchanged by who carried it.
 
+### D10a. An example a model wrote agrees with the rule it was meant to check
+
+*How it arises:* a model is asked for a form's examples (D10's last constraint is that they
+exist). Shown the document, it reads the rule — `country != "CH"` where `country == "CH"` was
+meant — and writes the example that rule passes. The example holds, the panel says it holds,
+and every later check against it, the review of a model's edit included, agrees with the
+inverted rule. The one check that tells a rule that compiles from the rule that was asked for
+has been written from the rule.
+
+*Severity:* the same as D10's, and harder to see. A form with no examples is a form nobody
+claims to have checked; a form whose examples were copied from its rules is reported as
+checked and is not.
+
+*Constraint:* **the rules are withheld.** `scenarioPrompt` in `@formancy/builder-core` is the
+whole request a drafting model is sent: the fields an example can name, by data path, with
+their types, labels and options; the error codes the engine reports; where examples start;
+the names already taken; and what the author said the form should do. No rule's CEL, no
+check's name, no pattern, mask or bound, and not which fields are required; of the existing
+examples, only their names ([0162](../decisions/0162-an-example-is-drafted-from-what-the-author-said.md)).
+`scenario-prompt.test.ts` (*never carries a rule*) walks a form's rules and the properties
+its `BOUNDS` list names, and finds none of their text in the prompt, written out or escaped
+inside JSON. It fails with the document put into the request as `authorForm` sends one.
+*Reads nothing about a field but what an example has to name* compares the prompt with the
+one for the same form stripped to its fields' shape, and fails when the request says which
+fields are required. `two-builders.test.tsx` (*examples drafted from what the visitor says*)
+reads the request the playground's relay shows in either builder, and finds none of the
+starter's rules in it.
+
+Every draft is then judged by the engine: `draftVerdict` is `runScenarios` with the scenario
+pane's own sample and mode, recomputed whenever it is drawn, so a draft shows the verdict the
+panel will give it (`scenario-drafts.test.ts`, *a draft's verdict is the one the scenario
+pane gives after Keep*). Nothing reaches the host's list until a person presses Keep, and a
+draft that fails can be kept, because that failure is where the person decides whether the
+example or the rule is wrong (both builders' `scenario-drafts.test`). A draft naming a field
+the form does not have cannot be kept, since it would check nothing.
+
+*Residual:* **the examples are only as good as the intent described.** A model writes from
+the author's words, and wrong words make wrong examples; right words can be misread. Told to
+leave out what the words do not say, a model may guess anyway, and nothing checks that it did
+not. No test here runs a real model. A person decides what is kept, and nothing distinguishes
+one who read what a draft sets and expects from one who pressed Keep on every draft — D10's
+limit on attention, again. Withholding the rules is a property of the request this package
+builds: a person who pastes the form itself into the same chat has shown the model the rules,
+and nothing here can see that.
+
 ### D11. The builder tells its author it did something other than what it did
 
 *How it arises:* every command on the structure tree is announced through one live region,
