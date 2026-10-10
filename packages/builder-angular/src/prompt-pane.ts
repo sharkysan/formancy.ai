@@ -99,6 +99,14 @@ import type { AskModel, BuilderSession, PromptRun, PromptRunState, Scenario } fr
         @if (state().proposal; as waiting) {
           <section data-formancy-part="prompt-review" [attr.aria-labelledby]="reviewId">
             <h3 [id]="reviewId">{{ heading() }}</h3>
+            <!-- The words this answers. Once the run has answered the box above is the
+                 person's again, and may say something else — typed here, or in a pane over
+                 the same run in the other builder (0163). -->
+            @if (state().asked; as words) {
+              <p data-formancy-part="prompt-asked">
+                {{ 'prompt.asked' | builderText: text() : { instruction: words } }}
+              </p>
+            }
             <ul data-formancy-part="prompt-changes">
               @for (change of waiting.changes; track change.kind + change.path) {
                 <!-- The path and the sentence. The kind is for machines; a person

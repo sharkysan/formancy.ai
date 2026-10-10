@@ -334,22 +334,22 @@ describe('a turn being carried while the visitor looks elsewhere', () => {
   })
 
   /**
-   * The relay pane drawn again with the turn still waiting takes the focus to Copy, as it
-   * does for every turn it draws (0160): on the way back from Schema, and in the other
-   * builder. Under another tab it was never taken away, so the focus stays where the
-   * visitor put it.
+   * Where the focus is once a relay pane drawn over the waiting turn has had every chance to
+   * take it. It is drawn again — the Build view after Schema, the other builder, a builder
+   * drawn anew for another language — because the visitor used a control, and a turn found
+   * waiting leaves the focus on it (0163): taking it to Copy would be a change of context on
+   * input (WCAG 3.2.2), about a turn that was already there. Under another tab the relay
+   * pane was never taken away.
    */
-  const onCopy = (): Promise<void> =>
-    waitFor(
-      () =>
-        expect(document.activeElement).toBe(
-          within(screen.getByRole('region', { name: 'Take this request to a model' })).getByRole(
-            'button',
-            { name: 'Copy the request' },
-          ),
-        ),
+  const stillOn = async (control: HTMLElement): Promise<void> => {
+    await waitFor(
+      () => expect(document.querySelector('[data-formancy-part="relay-pane"] button')).not.toBeNull(),
       { timeout: 10_000 },
     )
+    // Past the render that would have moved it: an effect in React, `afterNextRender` in Angular.
+    await new Promise((resolve) => setTimeout(resolve, 200))
+    expect(document.activeElement).toBe(control)
+  }
 
   /** Each way of looking elsewhere, and where the focus is after it. */
   const away = {
@@ -357,8 +357,9 @@ describe('a turn being carried while the visitor looks elsewhere', () => {
       await user.click(screen.getByRole('button', { name: 'Schema' }))
       // Off screen, or the way back below would be no way back at all.
       expect(screen.queryByRole('textbox', { name: /Describe the form/ })).toBeNull()
-      await user.click(screen.getByRole('button', { name: 'Build' }))
-      await onCopy()
+      const build = screen.getByRole('button', { name: 'Build' })
+      await user.click(build)
+      await stillOn(build)
     },
     'another tab and back': async (user: ReturnType<typeof userEvent.setup>) => {
       await user.click(screen.getByRole('button', { name: TAB_NAMES.translations }))
@@ -369,7 +370,7 @@ describe('a turn being carried while the visitor looks elsewhere', () => {
     'the Angular builder': async () => {
       await builtWith('Angular')
       await angularTree()
-      await onCopy()
+      await stillOn(screen.getByRole('combobox', { name: 'Builder' }))
     },
   } as const
 
@@ -445,15 +446,50 @@ describe('a turn being carried while the visitor looks elsewhere', () => {
     await user.paste(ANSWER)
     await user.click(within(relay).getByRole('button', { name: 'Check this answer' }))
     await screen.findByRole('region', { name: /Review these changes/ })
+    // The box is the visitor's again once the run has answered, and what they type next is
+    // not what the review answers: the review read in the other builder, beside those
+    // words, still says which words it answers (SAFETY-ANALYSIS D10).
+    const box = screen.getByRole('textbox', { name: /Describe the form/ })
+    await user.clear(box)
+    await user.type(box, 'add a fax number')
 
     await builtWith('Angular')
     const review = await screen.findByRole('region', { name: /Review these changes/ }, { timeout: 10_000 })
+    expect(
+      (screen.getByRole('textbox', { name: /Describe the form/ }) as HTMLTextAreaElement).value,
+    ).toBe('add a fax number')
+    expect(within(review).getByText('In answer to “add a phone number”')).toBeTruthy()
     await user.click(within(review).getByRole('button', { name: 'Apply these changes' }))
 
     await waitFor(() => expect(undoButton().disabled).toBe(false))
     await builtWith('React')
     expect(screen.queryByRole('region', { name: /Review these changes/ })).toBeNull()
   })
+
+  test.each(['React', 'Angular'] as const)(
+    'in the %s builder, choosing another language while a turn waits leaves the focus on the Language select',
+    async (which) => {
+      // Another language is another session, and the Angular builder is drawn again over it,
+      // relay pane and all. A relay pane that took the focus to Copy for the turn it found
+      // would move the visitor off the select they are still using — in one builder and not
+      // the other.
+      const user = userEvent.setup()
+      render(<App />)
+      await builtWith(which)
+      await user.type(
+        await screen.findByRole('textbox', { name: /Describe the form/ }, { timeout: 10_000 }),
+        'add a phone number',
+      )
+      await user.click(screen.getByRole('button', { name: 'Write it' }))
+      await screen.findByRole('region', { name: 'Take this request to a model' }, { timeout: 10_000 })
+
+      const language = screen.getByRole('combobox', { name: 'Language' })
+      await user.selectOptions(language, 'de')
+      // The turn is still waiting, now in German.
+      await screen.findByRole('button', { name: 'Anfrage kopieren' }, { timeout: 10_000 })
+      await stillOn(language)
+    },
+  )
 
   test('choosing another form ends a turn about the last one', async () => {
     // The run is about the form it was asked over. Held by the page across another form, its

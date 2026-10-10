@@ -94,6 +94,7 @@ describe('a run held by the host', () => {
     // The instruction it answers, beside it: a proposal shown in a pane that did not ask
     // has to say what it is the answer to.
     expect(state.instruction).toBe('add a phone number')
+    expect(state.asked).toBe('add a phone number')
     expect(session.document()).toEqual(START)
 
     run.apply(session)
@@ -204,7 +205,32 @@ describe('a run held by the host', () => {
     expect(run.state().instruction).toBe('add a fax number')
   })
 
+  test('keeps the words it was asked with beside its proposal, whatever is typed after', async () => {
+    /*
+     * Once the run has answered, the box is the person's again, and the proposal is still
+     * held. Typed into after that — the next instruction, or in the other builder minutes
+     * later — the box is no longer what the proposal answers, and a review read beside it
+     * alone would be read as the answer to words it never saw (SAFETY-ANALYSIS D10). So the
+     * run keeps the words it was asked with for as long as what it came to is held.
+     */
+    const session = createBuilderSession(START)
+    const run = createPromptRun()
+    run.instruct('add a phone number')
+    await run.write(() => Promise.resolve(JSON.stringify(withField('phone'))), session)
+
+    run.instruct('add a fax number')
+
+    expect(run.state()).toMatchObject({ instruction: 'add a fax number', asked: 'add a phone number' })
+    expect(run.state().proposal?.document.model.fields.map((field) => field.key)).toEqual(['name', 'phone'])
+
+    // Gone with what the run came to, so they are never beside another run's answer.
+    run.discard()
+    expect(run.state().asked).toBeUndefined()
+  })
+
   test('asks nothing for an instruction with nothing in it', async () => {
+    // A blank instruction asked of a relay is a round trip by hand for a request with
+    // nothing in it; asked of a host's model, a request paid for to say nothing.
     const model = vi.fn<AskModel>(() => Promise.resolve('{}'))
     const run = createPromptRun()
     run.instruct('   ')
@@ -261,6 +287,8 @@ describe('what a run came to', () => {
   })
 
   test('is applied as one step, and leaves nothing behind it', async () => {
+    // An Apply that left the result, the proposal or the words behind would go on saying
+    // "ready to review" and offering a review of a change the form already has.
     const session = createBuilderSession(START)
     const run = createPromptRun()
     run.instruct('add a phone number')
@@ -272,6 +300,7 @@ describe('what a run came to', () => {
     expect(session.revision()).toBe(1)
     expect(run.state()).toMatchObject({
       instruction: '',
+      asked: undefined,
       busy: false,
       result: undefined,
       proposal: undefined,
@@ -298,6 +327,8 @@ describe('what a run came to', () => {
     expect(outcome?.ok).toBe(false)
     expect(run.state().proposal).toBeDefined()
     expect(run.state().refusal).toBe(session.text('proposal.stale'))
+    // Still beside the words it answers, which are what the person needs to ask again.
+    expect(run.state().asked).toBe('add a phone number')
     expect(session.document()).toEqual(withField('email'))
   })
 
@@ -324,6 +355,8 @@ describe('what a run came to', () => {
   })
 
   test('apply with nothing held does nothing', () => {
+    // A second press, or a pane drawn over a run whose proposal was applied elsewhere, must
+    // neither throw nor count as a revision the undo stack would then step back through.
     const session = createBuilderSession(START)
     expect(createPromptRun().apply(session)).toBeUndefined()
     expect(session.revision()).toBe(0)

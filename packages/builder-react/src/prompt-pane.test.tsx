@@ -641,6 +641,25 @@ describe('when the host holds the run', () => {
     expect(session.revision()).toBe(0)
   })
 
+  test('a review names the words it answers, whatever the box says since', async () => {
+    // Once the run has answered, the box is the person's again. A review read beside the box
+    // alone — after typing the next instruction, or in the other builder over the same run —
+    // would be read as the answer to words it never saw (SAFETY-ANALYSIS D10).
+    const user = userEvent.setup()
+    const session = createBuilderSession(START)
+    render(<PromptPane session={session} ask={say(JSON.stringify(WITH_PHONE))} run={createPromptRun()} />)
+    await ask(user, 'add a phone number')
+    const review = await screen.findByRole('region', { name: /Review/ })
+
+    const box = screen.getByRole('textbox', { name: /Describe the form/ })
+    await user.clear(box)
+    await user.type(box, 'add a fax number')
+    expect((box as HTMLTextAreaElement).value).toBe('add a fax number')
+
+    expect(within(review).getByText('In answer to “add a phone number”')).toBeTruthy()
+    expect(review.textContent).not.toContain('fax')
+  })
+
   test('a run still waiting is drawn waiting, and Stop there ends it', async () => {
     // The pane drawn next is the one with the Stop button now: one that showed the run idle
     // would offer Write over a turn still with the person, and could not stop it.

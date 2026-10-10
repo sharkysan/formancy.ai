@@ -3,9 +3,10 @@
 - **Status:** accepted
 - **Date:** 2026-10-10
 - **Supersedes:** in part, what [0157](0157-a-models-turn-can-be-stopped.md) decided about a
-  pane going away, for a run the host holds; and the consequence of
-  [0160](0160-a-person-carries-the-models-turn.md) that a turn lives as long as the prompt
-  pane — nothing else of either
+  pane going away, for a run the host holds; and, of
+  [0160](0160-a-person-carries-the-models-turn.md), the consequence that a turn lives as
+  long as the prompt pane, and that every turn a relay pane draws takes the focus to Copy,
+  for a turn found waiting when the pane is drawn — nothing else of either
 - **Deciders:** Daniel Bacher
 - **Verified by:** `packages/builder-core/src/prompt-run.test.ts`, which failed against
   `main` with no holder to import. Then, with the holder changed one thing at a time: one
@@ -44,7 +45,22 @@
   turn in the Angular builder, switches the Builder select to React while it waits, checks
   that React's relay pane shows the same request, and pastes the answer there, reviews it
   and applies it, counting every request the page makes on the way; against the playground
-  without this change it fails on that step.
+  without this change it fails on that step. The words a review answers:
+  `prompt-run.test.ts` *keeps the words it was asked with beside its proposal, whatever is
+  typed after* failed with no `asked` in the state, as did the assertions on it added to *is
+  kept, with the refusal* and *is applied as one step*; each builder's `prompt-pane.test`, *a
+  review names the words it answers, whatever the box says since*, failed with the review
+  drawn without them; and *a proposal held for review in one builder is the same proposal in
+  the other*, which now types new words into the React box and reads the review in Angular,
+  failed the same way against the builders without it. A turn found waiting: each builder's
+  `relay-pane.test`, *but a turn found waiting when the pane is drawn leaves the focus where
+  the person put it*, failed with Copy focused against the panes that focused every turn they
+  drew. In `two-builders.test.tsx` the journeys back from *Schema* and into the Angular
+  builder now assert that the focus is still on *Build* and on the Builder select, and *in
+  the Angular builder, choosing another language while a turn waits leaves the focus on the
+  Language select*; against those panes all three failed with Copy focused. The same case
+  in the React builder passed before and after, since React does not draw its relay pane
+  again for another language.
 
 ## Context
 
@@ -72,8 +88,8 @@ view is unmounted on the way to *Schema*, and the builder on screen can change.
 
 **A prompt pane's run is held by whoever the host chooses.** `createPromptRun()` in
 `@formancy/builder-core` returns a `PromptRun`: the instruction as typed, whether a run
-waits, what the last one came to, the proposal held for review and what Apply said when it
-refused, as one snapshot that is the same object until something in it changes, with
+waits, the words the last run was asked with, what it came to, the proposal held for review
+and what Apply said when it refused, as one snapshot that is the same object until something in it changes, with
 `subscribe` — the shape a session and a relay have. `instruct(text)`, `write(ask,
 session, { examples, attempts })`, `stop()`, `apply(session)` and `discard()` are the
 pane's buttons. `write` is what the pane did: `authorForm` with a new stop for each run,
@@ -96,11 +112,15 @@ drawing it — the playground's two builders over one session
 ([0096](0096-two-builders-one-session.md)) — show one instruction, one Stop and one
 proposal. A proposal reviewed in React is applied in Angular.
 
-**One run at a time, and its words stay beside it.** `write` while a run waits asks
-nothing, and `instruct` while a run waits changes nothing: the proposal may be read in a
-pane that did not ask, beside the instruction that pane shows, and that has to be the one it
-answers (SAFETY-ANALYSIS D10). Each run has its own stop, so an answer to a stopped run is
-never held as the next one's.
+**One run at a time, and the words it answers kept with it.** `write` while a run waits
+asks nothing, and `instruct` while a run waits changes nothing. Once the run has answered,
+the box is the person's again: they may be typing the next instruction, here or in the other
+builder, while the proposal is still held, and the box no longer says what it answers. So
+the run keeps the words it was asked with, as `asked`, for as long as what it came to is
+held, and both panes draw them in the review under its heading — *In answer to “add a phone
+number”*. A proposal read in a pane that did not ask, beside a box that says something else
+by then, still says which words it answers (SAFETY-ANALYSIS D10). Each run has its own stop,
+so an answer to a stopped run is never held as the next one's.
 
 **`discard()` forgets a run still waiting, too.** It stops it — the host told, the relay's
 turn cleared — and nothing it answers later is held, nor is its ending said. A pane offers
@@ -121,6 +141,17 @@ ended with Stop focused, reading the focus after awaiting the run. A run the hos
 ends in a promise no pane awaits — the pane that pressed Write may be gone — so each pane
 reads it in its subscription, as the run reports the change and before the framework draws
 it, while Stop is still in the document.
+
+**A turn found waiting moves no focus.** 0160 had every turn a relay pane draws take the
+focus to Copy, and until now a turn was drawn only as it arrived: a pane that went took its
+run, and the turn, with it. Held by the host, a turn outlives the panes, and a relay pane is
+drawn over one that waited all along because the person used another control — *Build* after
+*Schema*, the Builder select, and in the Angular builder the Language select too, since the
+playground draws that builder anew over every session. Taking the focus from that control is
+a change of context on input (WCAG 3.2.2) that tells them of nothing new, and it happened in
+one builder and not the other. So each relay pane remembers the turn it found when it was
+drawn, and takes the focus only for a turn that arrives after: a first turn, or a retry after
+an answer that failed. Under another tab the relay pane was never taken away.
 
 **The translations pane's run and the scenario pane's drafting are not carried,** and keep
 0157's rule: each still ends when its part goes. A holder of the same shape — a run, its stop
@@ -157,11 +188,10 @@ asked over. Apply refuses it then, as it refuses any proposal whose form moved
 ([0109](0109-an-ai-edit-is-reviewed-before-it-lands.md)), and keeps it on screen with the
 refusal. Nothing merges.
 
-**Coming back to a waiting turn moves the focus.** The relay pane takes the focus to Copy
-for every turn it draws (0160), and a relay pane drawn again — the *Build* view after
-*Schema*, the other builder — draws the turn still waiting, so the focus lands on Copy. Under
-another tab the relay pane was never taken away, and the focus stays where the visitor put
-it. `two-builders.test.tsx` holds all three.
+**Coming back to a waiting turn leaves the focus where the visitor put it.** A keyboard user
+back from *Schema*, or in the other builder, reaches Copy from there, as they reach any other
+part of the builder; nothing moves them to it. `two-builders.test.tsx` holds the three
+journeys and the Language select to that.
 
 **The prompt pane's held turn now meets the translations pane.** Leaving *Fields* used to
 stop the prompt pane's run, so the translations pane never met its turn. Now it can: while a
@@ -174,7 +204,9 @@ prompts gives each pane its own run, or none.
 
 **`PromptRunState` is a new public type, and `proposalStatus` reads it.** It is a superset of
 what `proposalStatus` takes, so nothing about that function changes. No existing prop or
-input changed meaning: `run` is new and optional.
+input changed meaning: `run` is new and optional. The review gains a line in both builders,
+the `prompt-asked` part, dressed in the workbench theme, with its sentence in English, German
+and French; a host's own theme sees an unstyled paragraph until it dresses it.
 
 ## Alternatives considered
 
@@ -208,6 +240,17 @@ three is carried here, and a generic shape with one use is an abstraction for a 
 nobody has designed: each of the other two needs a decision about its subject — the language,
 the session — that would shape what is generic. When they are held, what they share is
 extracted from three working holders rather than guessed from one.
+
+**Discard the proposal when the box is typed into, or lock the box while one is held.** Either
+would keep the box saying what the review answers. Lost because the first loses a review that
+took a round trip by hand to a stray keystroke, and the second makes a person discard a
+proposal before they may word the next instruction; the words drawn in the review cost
+neither.
+
+**Keep moving the focus to a turn found waiting, and say so.** Lost because it takes the focus
+off a select the person is still using, which WCAG 3.2.2 names, and because whether it
+happened depended on whether a builder is drawn again, so the two builders did different
+things for the same act.
 
 **Make `ask` itself the switch** — a pane given a relay keeps its run. Lost because no pane
 knows its `ask` is a relay, and 0160 declined to teach it; and whether a run outlives its

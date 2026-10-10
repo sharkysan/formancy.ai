@@ -2,7 +2,8 @@
 
 - **Status:** accepted; a refused second turn ending `unreachable` superseded by
   [0162](0162-an-example-is-drafted-from-what-the-author-said.md); a turn living as long as
-  the prompt pane superseded by [0163](0163-a-models-run-belongs-to-the-host.md)
+  the prompt pane, and a turn found waiting taking the focus to Copy, superseded by
+  [0163](0163-a-models-run-belongs-to-the-host.md)
 - **Date:** 2026-10-10
 - **Supersedes:** the playground's stand-in model in
   [0109](0109-an-ai-edit-is-reviewed-before-it-lands.md), and what
@@ -138,6 +139,13 @@ about whose move it is; and an answer that is checked ends its turn, so the pane
 focus in it, goes before a retry draws it again. Focus is the DOM's, and `builder-core` has
 none, so each pane moves it — as each prompt pane gives Write the focus back after Stop —
 and one case in each builder's `relay-pane.test` holds them to the same.
+
+> **Superseded in part by [0163](0163-a-models-run-belongs-to-the-host.md):** a turn found
+> waiting when a relay pane is drawn takes no focus. Once a run outlives its panes, a relay
+> pane can be drawn over a turn that waited all along because the person used another
+> control — on formancy.ai, *Build* after *Schema*, the Builder select, or the Language
+> select in the Angular builder — and the focus stays on that control. A turn that arrives
+> while the pane is drawn still takes it to Copy, as decided here.
 
 **The playground has one relay** (`useState(() => createRelay())` in its page), asked by
 both builders' prompt panes and drawn at the top of both builders' bodies. It names the

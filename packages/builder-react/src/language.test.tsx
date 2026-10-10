@@ -736,6 +736,7 @@ describe('the translations, prompt and scenario panes', () => {
         'Write it',
         'Ready to review',
         'Review these changes',
+        'In answer to',
         'Apply these changes',
         'Discard',
         'Nothing was applied',

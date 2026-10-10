@@ -129,7 +129,7 @@ export function PromptPane({
     [run],
   )
   const state = useSyncExternalStore(subscribe, run.state, run.state)
-  const { instruction, busy, result, proposal } = state
+  const { instruction, asked, busy, result, proposal } = state
   useEffect(() => {
     if (busy || !refocus.current) return
     refocus.current = false
@@ -195,6 +195,12 @@ export function PromptPane({
              after a status message. */
         >
           <h3 id={reviewId}>{proposalHeading(proposal, text)}</h3>
+          {/* The words this answers. Once the run has answered the box above is the
+              person's again, and may say something else — typed here, or in a pane over
+              the same run in the other builder (0163). */}
+          {asked === undefined ? null : (
+            <p data-formancy-part="prompt-asked">{text('prompt.asked', { instruction: asked })}</p>
+          )}
           <ul data-formancy-part="prompt-changes">
             {proposal.changes.map((change) => (
               <li key={`${change.kind}:${change.path}`} data-severity={change.severity}>

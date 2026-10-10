@@ -26,10 +26,13 @@ import type { BuilderSession, CommandOutcome } from './session.js'
  * decided here once, for both builders and both owners, and a pane is the markup, the
  * focus and a subscription ([0091](../../../docs/decisions/0091-a-second-builder-is-a-binding.md)).
  *
- * **One run at a time, and its instruction beside it.** The instruction a run was asked
- * with cannot change while it waits, so a proposal read in a pane that did not ask is read
- * beside the words it answers; and each run has a stop of its own, so an answer to a
- * stopped one is never held as the next one's (SAFETY-ANALYSIS D10).
+ * **One run at a time, and the words it answers kept with it.** The instruction cannot
+ * change while a run waits. Once it has answered the box is the person's again, and what
+ * they type next — in this pane or, minutes later, in the other builder — is not what the
+ * proposal answers; so the run keeps the words it was asked with, as `asked`, for as long
+ * as what it came to is held, and a pane draws them in the review. Each run has a stop of
+ * its own, so an answer to a stopped one is never held as the next one's
+ * (SAFETY-ANALYSIS D10).
  *
  * Framework-neutral, the shape `Relay` and `BuilderSession` have: `subscribe`, and a
  * snapshot whose identity changes only when something in it does.
@@ -41,7 +44,8 @@ export interface PromptRun {
   subscribe(listener: () => void): () => void
   /**
    * The instruction, as the person types it. Ignored while a run waits: the run is asked
-   * with the words in the box, and keeps them beside its answer.
+   * with the words in the box. Once it has answered, the box is the person's again, and
+   * the words it was asked with stay in `asked`.
    */
   instruct(instruction: string): void
   /**
@@ -68,6 +72,11 @@ export interface PromptRun {
 export interface PromptRunState {
   /** What the person has typed, or the words the run in flight was asked with. */
   readonly instruction: string
+  /**
+   * The words the last run was asked with, kept with what it came to and gone with it. What
+   * a review is the answer to: the box may say something else by then.
+   */
+  readonly asked: string | undefined
   /** Whether a run waits. */
   readonly busy: boolean
   /** What the last run came to, until something moves on from it. */
@@ -90,6 +99,7 @@ export interface PromptRunOptions {
 
 const IDLE: PromptRunState = {
   instruction: '',
+  asked: undefined,
   busy: false,
   result: undefined,
   proposal: undefined,
@@ -109,7 +119,12 @@ export function createPromptRun(): PromptRun {
     for (const listener of [...listeners]) listener()
   }
 
-  const forget = (): Partial<PromptRunState> => ({ result: undefined, proposal: undefined, refusal: undefined })
+  const forget = (): Partial<PromptRunState> => ({
+    asked: undefined,
+    result: undefined,
+    proposal: undefined,
+    refusal: undefined,
+  })
 
   return {
     state: () => state,
@@ -129,7 +144,7 @@ export function createPromptRun(): PromptRun {
       running = stop
       // The document the answer is for, and the examples in force with it, taken together.
       const current = session.document()
-      change({ busy: true, ...forget() })
+      change({ busy: true, ...forget(), asked: instruction })
       let held: Partial<PromptRunState> = {}
       try {
         // Resolves however the run ends — a host's model that threw included (0157).

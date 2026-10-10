@@ -1358,6 +1358,17 @@ kbd {
   font-weight: 600;
 }
 
+/* The words the answer is for, under the heading: muted, as the status line is, because it
+   is what the changes answer rather than one of them; on a line of its own, because the
+   box above may say something else by now (0163). */
+[data-formancy-part='prompt-asked'] {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--wb-muted);
+  overflow-wrap: anywhere;
+}
+
 /* Each change marked by what it costs the answers already collected — nothing, some,
    or the submissions' meaning — on the side a line starts. */
 [data-formancy-part='prompt-changes'] {

@@ -382,11 +382,14 @@ what was wrong, for the chat that already holds the last answer, and a second bu
 the whole request for a new one. If the browser will not let the page write the clipboard,
 the text is selected in the box instead, and the pane says so.
 
-Each turn it draws takes the focus to Copy, whose description is the turn and what to do
-with it. The page is waiting on the person from that moment, and the prompt pane says only
-that the form is being written; an answer that failed takes the pane, and the focus in it,
-away before the retry draws it again. Each turn also starts with an empty answer box, so
-nothing pasted for one is offered to the next.
+Each turn that arrives while it is drawn takes the focus to Copy, whose description is the
+turn and what to do with it. The page is waiting on the person from that moment, and the
+prompt pane says only that the form is being written; an answer that failed takes the pane,
+and the focus in it, away before the retry draws it again. A turn already waiting when the
+pane is drawn — with a run you hold, as below, the pane drawn again after the person changed
+a view or a builder — leaves the focus where it is: they were using another control, and
+nothing new is waiting on them. Each turn also starts with an empty answer box, so nothing
+pasted for one is offered to the next.
 
 `chat` is yours to name, and optional. With it, the pane links to that chat in a new tab;
 without it, there is no link and the request is copied all the same. Neither builder names
@@ -453,10 +456,11 @@ export function Builder({ session, tab }: { session: BuilderSession; tab: 'field
 In Angular, `<formancy-prompt-pane [session]="session" [ask]="relay.ask" [run]="run" />`.
 
 A pane given `run` draws it and leaves it running when it goes. The pane drawn next shows
-the run as it is: still waiting, with Stop, or with its answer held for review beside the
-instruction it was asked with. Two panes given one run, one in each builder say, show one
-instruction, one Stop and one proposal, so a proposal reviewed in one can be applied in the
-other. The run belongs to the form it was asked about. When you open another form, call
+the run as it is: still waiting, with Stop, or with its answer held for review. Once a run
+has answered, the instruction box is the person's again, so the review names the words the
+run was asked with — *In answer to “…”* — whatever the box says by then. Two panes given
+one run, one in each builder say, show one instruction, one Stop and one proposal, so a
+proposal reviewed in one can be applied in the other. The run belongs to the form it was asked about. When you open another form, call
 `run.discard()`, which stops a run still waiting and forgets what it came to. A proposal
 held while the form changed is refused at Apply, as always.
 

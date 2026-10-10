@@ -64,9 +64,14 @@ when it goes, and the pane drawn next shows it waiting or with its answer; Stop 
 any pane showing it. The playground holds one at the page beside its relay, hands it to both
 builders, and discards it when another demo is chosen — before, the starter's turn waited
 above the wizard. A pane given none holds its own and stops it when it goes, as before. A
-host that holds a run is the one to end it: nothing stops it because a pane went. The
-translations pane and the scenario pane's drafting still hold their own runs, so their turns
-are still lost that way
+host that holds a run is the one to end it: nothing stops it because a pane went. Once a run
+has answered, its box is the person's again and may say something else by the time the
+review is read — typed in the other builder, say — so the review names the words the run
+was asked with, *In answer to “…”*, in English, German and French. And a relay pane drawn
+over a turn already waiting — back from *Schema*, in the other builder, or the Angular
+builder drawn again for another language — leaves the focus on the control the visitor used,
+rather than taking it to Copy; a turn that arrives still does. The translations pane and the
+scenario pane's drafting still hold their own runs, so their turns are still lost that way
 ([0163](docs/decisions/0163-a-models-run-belongs-to-the-host.md), superseding part of
 [0157](docs/decisions/0157-a-models-turn-can-be-stopped.md) and
 [0160](docs/decisions/0160-a-person-carries-the-models-turn.md)).

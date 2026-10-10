@@ -276,11 +276,12 @@ what was pasted. The three rules a pane would otherwise decide are here — one 
 time, a paste with no object in it held back without costing an attempt, and a stop
 clearing the turn — so the React and Angular relay panes are markup, the clipboard, the
 focus and a subscription. Moving the focus to a turn as it arrives is done in each pane,
-because it is the DOM's, and both panes' tests hold them to the same. It names no service and holds no sentence; the chat a pane links to is the host's.
+because it is the DOM's, and both panes' tests hold them to the same — a turn found waiting
+when a pane is drawn moves none (0163). It names no service and holds no sentence; the chat a pane links to is the host's.
 `prompt-run.ts` is the prompt pane's run, held wherever the host holds it
 ([0163](../decisions/0163-a-models-run-belongs-to-the-host.md)). `createPromptRun()` gives
-the instruction, whether a run waits, what it came to, the proposal held for review and
-Apply's refusal, as a snapshot with a subscription, and the pane's buttons as calls:
+the instruction, whether a run waits, the words the last run was asked with, what it came
+to, the proposal held for review and Apply's refusal, as a snapshot with a subscription, and the pane's buttons as calls:
 `write` is `authorForm` with a stop of its own, then `proposeEdit` with the examples in
 force. A pane given one leaves it running when it goes, so a turn outlives the pane that
 asked it; a pane given none makes its own and stops it when it goes (0157). Both builders'

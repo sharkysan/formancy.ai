@@ -1252,19 +1252,30 @@ that a turn being carried survives the visitor looking at another tab, the other
 the JSON. Then a pane that goes stops nothing: the run waits for its answer, and the
 proposal is shown in whichever pane is drawn next, which may not be the one where the
 instruction was typed. That is not the variant above, because nothing else can be asked
-meanwhile. The holder carries one run at a time, and the instruction it was asked with
-cannot change while it waits, so the proposal a pane shows answers the words shown beside
-it; and each run has a stop of its own, so a late answer to a stopped run is never held as
-the next one's. `prompt-run.test.ts` holds the three: *keeps the instruction it was asked
-with while it waits*, which also presses Write again and sees nothing asked, and *an answer
-to a stopped run, arriving while the next one waits*, now that the holder makes the stops. A run the host forgets is stopped and nothing it
+meanwhile: the holder carries one run at a time, and the instruction cannot change while it
+waits (`prompt-run.test.ts`, *keeps the instruction it was asked with while it waits*, which
+also presses Write again and sees nothing asked). Each run has a stop of its own, so a late
+answer to a stopped run is never held as the next one's (*an answer to a stopped run,
+arriving while the next one waits*, now that the holder makes the stops).
+
+Once a run has answered, though, the box is the person's again while the proposal is still
+held. What they type next — the following instruction, or the same box in the other builder
+minutes later — stands beside a review that does not answer it. So the run keeps the words
+it was asked with, and the review names them under its heading, *In answer to “…”*, whatever
+the box says by then. `prompt-run.test.ts` (*keeps the words it was asked with beside its
+proposal, whatever is typed after*) failed without them; each builder's `prompt-pane.test`
+(*a review names the words it answers, whatever the box says since*) failed with the review
+drawn without them; and `two-builders.test.tsx` (*a proposal held for review in one builder
+is the same proposal in the other*) types new words into the React box and reads the review
+in Angular, and failed the same way. A run the host forgets is stopped and nothing it
 answers later is held (*is discarded whole*); the playground forgets its run when another
 demo is chosen, and `two-builders.test.tsx` (*choosing another form ends a turn about the
 last one*) failed before that with the starter's turn waiting above the wizard. A proposal
 held while the form was edited elsewhere — under *Schema*, say — is still held against the
 document the run was asked over, and Apply refuses it (*is kept, with the refusal, when the
-form moved while it waited*). What this does not cover is a person who no longer remembers
-what they asked: the instruction is shown beside the review, and reading it is theirs.
+form moved while it waited*). What this does not cover is a person who reads the box rather
+than the review: the words a proposal answers are drawn in the review, above its changes,
+and reading them, and the changes, is theirs.
 
 A request the format cannot express is this failure's sharpest case. Asked to email every
 submission, a model had no answer but a document, and a document that does part of the

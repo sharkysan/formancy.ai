@@ -387,9 +387,11 @@ its own tab (6.9), so the turn one of them holds refuses another's: that run end
 its pane says another request is waiting
 ([0162](../decisions/0162-an-example-is-drafted-from-what-the-author-said.md)). The request leaves the page
 on the clipboard, by the person's press, and the answer comes back the same way. The relay
-and its pane call nothing. Each turn the pane draws takes the focus to Copy, described by the
-turn and what to do with it: from then on the run waits on the person, and a failed answer
-took the pane, and the focus in it, away before the retry drew it again. What was pasted is bound to nothing but the run that is waiting: the review's
+and its pane call nothing. Each turn that arrives while the pane is drawn takes the focus to
+Copy, described by the turn and what to do with it: from then on the run waits on the person,
+and a failed answer took the pane, and the focus in it, away before the retry drew it again.
+A turn found waiting when the pane is drawn again (6.11) takes none: the person was using
+another control. What was pasted is bound to nothing but the run that is waiting: the review's
 diff against the document the run was asked against is what shows a paste that answered
 something else (SAFETY-ANALYSIS D10).
 
@@ -498,19 +500,22 @@ can be kept: the failure is the question the person answers
 ```
 page (host)                       PromptRun, in builder-core            prompt pane, in either builder
 ───────────                       ──────────────────────────            ──────────────────────────────
-run = createPromptRun()           { instruction, busy, result,          subscribe ──▶ draws the snapshot
+run = createPromptRun()           { instruction, asked, busy, result,   subscribe ──▶ draws the snapshot
   beside the relay                  proposal, refusal } — one object      Write ──▶ run.write(ask, session,
                                     until something in it changes                   { examples, attempts })
-                                  write: one at a time; the words
-                                    asked with cannot change while it waits
+                                  write: one at a time; the box
+                                    cannot change while it waits;
+                                    asked: the words, kept with
+                                    what the run comes to
                                   authorForm (6.7), its own stop ───▶  (6.8: the relay's turn waits)
   the visitor looks elsewhere:                                          unsubscribes — nothing is stopped
   Schema, another tab, the
   other builder
+  back: the relay pane drawn again over the turn still waiting — no focus moved (0163)
                                   the answer pasted, checked ──▶
                                   proposeEdit(document when asked) ──▶  held
-  the pane drawn again                                                  subscribes ──▶ the instruction, the
-                                                                        review; Stop while it still waits
+  the pane drawn again                                                  subscribes ──▶ the box, the review
+                                                                        naming `asked`; Stop while it waits
                                   apply(session) ◀──────────────────── Apply: refused if the form moved (0109)
   another demo ──▶ run.discard(): stops a run in flight, forgets it and what it came to
 pane given no run ──▶ makes its own, and stops it when it goes (0157)
@@ -522,6 +527,10 @@ looked at anything else. `createPromptRun` holds the run, its stop and what it c
 outside any pane; a pane given one only subscribes, and its going ends nothing. Stop ends
 it from whichever pane shows it. The proposal is held against the document the run was
 asked over, so Apply refuses it if the form moved while it waited, wherever that happened.
+Once the run has answered, the box is the person's again, so the words it was asked with are
+kept beside what it came to and drawn in the review: a review read beside a box that says
+something else by then still says what it answers. A relay pane drawn again over the turn
+still waiting moves no focus; only a turn that arrives while it is drawn does.
 Each pane reads whether Stop had the focus as the run reports its end, before drawing it,
 because the run ends in a promise no pane may still be awaiting
 ([0163](../decisions/0163-a-models-run-belongs-to-the-host.md)). The playground holds one at
