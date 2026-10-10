@@ -10,6 +10,22 @@ later.
 
 ## Unreleased
 
+**Fixed: the examples panel compared a new document's run with the last document's.** Both
+builders' scenario panels name what stopped holding, or holds again, since the last run.
+A pane kept on screen while its host opened another document compared the new document's
+run with the old one's by name, and said examples had broken, or been repaired, that had
+never been run against it. It is now compared only with the last run over the same session.
+The rule is `createRunHistory` in `@formancy/builder-core`, new and exported, so both panes
+apply it from one place (0091).
+
+**Added: every form in the playground has its own examples.** The starter's examples were
+the page's only list, so on the wizard or any template the panel ran them against a form
+without their fields, and failed. Each template already carries examples and a fictional
+sample to start them from, and the playground showed neither. Now the panel runs the
+template's own examples from its sample. The sample is never loaded as answers. The wizard
+has no examples and says so. An example removed from one form stays removed when the
+visitor comes back to it.
+
 **Fixed: a model that could not be reached was reported as "0 attempts, and the document
 still did not work."** When the host's `AskModel` rejected — the network down, a key refused —
 both prompt panes caught the error and built a failure by hand with `attempts: 0`, filing the

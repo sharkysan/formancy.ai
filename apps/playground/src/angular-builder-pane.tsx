@@ -26,6 +26,7 @@ export function AngularBuilderPane({
   blocks,
   onSaveBlock,
   scenarios,
+  sample,
   onScenarios,
 }: {
   session: BuilderSession
@@ -37,6 +38,8 @@ export function AngularBuilderPane({
   onSaveBlock: (block: BuilderBlock) => void
   /** The page's examples, pushed in like the blocks; a shorter list after a Remove goes back. */
   scenarios: readonly Scenario[]
+  /** Where they start: the form's sample, which changes with the form. */
+  sample: Readonly<Record<string, unknown>> | undefined
   onScenarios: (next: readonly Scenario[]) => void
 }): ReactElement {
   const host = useRef<HTMLDivElement | null>(null)
@@ -61,7 +64,7 @@ export function AngularBuilderPane({
       session,
       tab,
       // Drawn on the first render, so the builder never shows the page's lists empty.
-      { preview: latest.current, blocks: offered.current, scenarios: examples.current },
+      { preview: latest.current, blocks: offered.current, ...examples.current },
       {
         keep: (block) => saving.current(block),
         keepScenarios: (next) => revising.current(next),
@@ -124,12 +127,13 @@ export function AngularBuilderPane({
     saving.current = onSaveBlock
   }, [onSaveBlock])
 
-  // And the examples, both ways, for the same reasons.
-  const examples = useRef(scenarios)
+  // And the examples with the sample they start from, both ways, for the same reasons —
+  // as a pair, since a list run from another form's sample is the defect this fixed.
+  const examples = useRef({ scenarios, sample })
   useEffect(() => {
-    examples.current = scenarios
-    mounted.current?.check(scenarios)
-  }, [scenarios])
+    examples.current = { scenarios, sample }
+    mounted.current?.check(examples.current)
+  }, [scenarios, sample])
   const revising = useRef(onScenarios)
   useEffect(() => {
     revising.current = onScenarios

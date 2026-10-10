@@ -46,7 +46,6 @@ import type { BuilderTab } from './angular-builder-host.js'
 import type { PaneId } from './panes.js'
 import { BuilderBody, PLACEHOLDER_SESSION, builderTextFor } from './builder-pane.js'
 import { DEMO_BLOCKS } from './demo-blocks.js'
-import { STARTER_SCENARIOS } from './starter-scenarios.js'
 import { PLAYGROUND_CHECKS } from './demo-checks.js'
 import { Problem, SchemaProblems } from './problems.js'
 
@@ -81,6 +80,9 @@ const LOCALES = [
 ] as const
 
 type LocaleId = (typeof LOCALES)[number]['id']
+
+/** A form with no examples runs none; one constant, so its identity never changes. */
+const NO_SCENARIOS: readonly Scenario[] = []
 
 const REPO = 'https://github.com/sharkysan/formancy.ai'
 
@@ -155,8 +157,17 @@ export function App() {
    * blocks' reasons: one list, so one removed in either builder is gone from the other,
    * and held in memory for this visit. The second is why it is here and not in the Build
    * pane, which is unmounted on the way to Schema and would start the list again.
+   *
+   * Per form, unlike the blocks: an example names its form's fields. What a visitor has
+   * removed is kept by form id; a form not yet touched shows its own examples.
    */
-  const [scenarios, setScenarios] = useState<readonly Scenario[]>(STARTER_SCENARIOS)
+  const [keptExamples, setKeptExamples] = useState<Readonly<Record<string, readonly Scenario[]>>>({})
+  const examples = DEMOS.find((option) => option.id === demo)?.examples
+  const scenarios = keptExamples[demo] ?? examples?.scenarios ?? NO_SCENARIOS
+  const keepScenarios = useCallback(
+    (next: readonly Scenario[]) => setKeptExamples((current) => ({ ...current, [demo]: next })),
+    [demo],
+  )
   const [shown, setShown] = useState<PaneId>('form')
 
   const panes = usePaneLayout()
@@ -384,7 +395,8 @@ export function App() {
           blocks={blocks}
           onSaveBlock={keepBlock}
           scenarios={scenarios}
-          onScenarios={setScenarios}
+          sample={examples?.sample}
+          onScenarios={keepScenarios}
           preview={built?.engine}
           theme={theme}
           themeHost={themeHost}

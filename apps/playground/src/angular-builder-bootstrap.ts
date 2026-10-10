@@ -2,7 +2,6 @@ import { provideZonelessChangeDetection } from '@angular/core'
 import type { ApplicationRef } from '@angular/core'
 import { bootstrapApplication } from '@angular/platform-browser'
 import type { BuilderBlock, BuilderSession } from '@formancy/builder-core'
-import type { Scenario } from '@formancy/core'
 import { AngularBuilderHost, PLAYGROUND_BUILDER, playgroundBuilder } from './angular-builder-host.js'
 import type { BuilderTab, FromThePage, PreviewState, ToThePage } from './angular-builder-host.js'
 
@@ -16,8 +15,8 @@ export interface MountedBuilder {
   explain(preview: PreviewState | undefined): void
   /** The page's blocks now, for the palette to offer. */
   offer(blocks: readonly BuilderBlock[]): void
-  /** The page's examples now, for the scenario pane to run. */
-  check(scenarios: readonly Scenario[]): void
+  /** The page's examples now, and the sample they start from, for the scenario pane to run. */
+  check(examples: Pick<FromThePage, 'scenarios' | 'sample'>): void
   unmount(): void
 }
 
@@ -66,7 +65,10 @@ export async function mountAngularBuilder(
     show: (next) => state.tab.set(next),
     explain: (preview) => state.preview.set(preview),
     offer: (blocks) => state.blocks.set(blocks),
-    check: (scenarios) => state.scenarios.set(scenarios),
+    check: ({ scenarios, sample }) => {
+      state.scenarios.set(scenarios)
+      state.sample.set(sample)
+    },
     unmount: () => {
       app.destroy()
       root.remove()

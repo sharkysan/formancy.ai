@@ -1253,7 +1253,12 @@ condition that was asked for — both spellings of an inverted rule are valid CE
 ([0110](../decisions/0110-a-form-is-checked-against-examples.md)). Both builders carry a
 panel that reruns them after every edit and **names** what broke, and `check_scenarios`
 is the same check for an agent
-([0111](../decisions/0111-a-scenario-panel-names-what-stopped-holding.md)).
+([0111](../decisions/0111-a-scenario-panel-names-what-stopped-holding.md)). What broke is
+measured against the last run over the same document only. Until a fix after `0.4.0`, a
+panel kept on screen while its host opened another document compared runs across the two
+by name. It could name examples as broken, or repaired, that had never run against the
+document open. `scenario-runs.test.ts` and each builder's `scenario-pane.test` hold the
+fix.
 
 *Residual:* the review shows what changed, not whether it is what was asked for — that
 judgement is the person's and cannot be delegated to the thing being judged. Scenarios

@@ -62,6 +62,32 @@ export function comparedToLastRun(
 }
 
 /**
+ * The last run a pane compares with, and the session it was run over.
+ *
+ * Forgotten when the session changes, because another session is another document. A
+ * pane kept on screen while its host opened another form compared the new form's run
+ * with the old one's by name, and said examples had stopped holding, or held again,
+ * that had never been run against the document now open — the playground did it on
+ * every switch of form. Here rather than in each pane, for the reason
+ * `comparedToLastRun` is: what a pane compares with is part of what a regression is.
+ */
+export interface RunHistory {
+  /** What changed since the last run over `session`: nothing, if the last was over another. */
+  compare(session: object, results: readonly ScenarioResult[]): ScenarioRunChange
+}
+
+export function createRunHistory(): RunHistory {
+  let last: { readonly session: object; readonly results: readonly ScenarioResult[] } | undefined
+  return {
+    compare(session, results) {
+      const change = comparedToLastRun(last?.session === session ? last.results : undefined, results)
+      last = { session, results }
+      return change
+    },
+  }
+}
+
+/**
  * The one sentence a scenario panel's live region carries.
  *
  * A regression outranks a total, because it is the only part that is about the

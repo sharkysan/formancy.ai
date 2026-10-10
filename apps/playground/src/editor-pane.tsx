@@ -37,6 +37,7 @@ export function EditorPane({
   blocks,
   onSaveBlock,
   scenarios,
+  sample,
   onScenarios,
   preview,
   theme,
@@ -58,6 +59,8 @@ export function EditorPane({
   onSaveBlock: (block: BuilderBlock) => void
   /** The page's examples, which both builders run, and where a shorter list goes. */
   scenarios: readonly Scenario[]
+  /** Where every example starts: the form's fictional sample, if it has examples. */
+  sample: Readonly<Record<string, unknown>> | undefined
   onScenarios: (next: readonly Scenario[]) => void
   /** The form pane's engine, whose answers the rules tab explains. */
   preview: FormEngine | undefined
@@ -121,6 +124,7 @@ export function EditorPane({
             blocks={blocks}
             onSaveBlock={onSaveBlock}
             scenarios={scenarios}
+            sample={sample}
             onScenarios={onScenarios}
             preview={preview}
           />
