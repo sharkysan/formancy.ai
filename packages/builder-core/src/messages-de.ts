@@ -416,7 +416,7 @@ export const BUILDER_MESSAGES_DE = {
   'relay.retry':
     'Diese Antwort hat nicht funktioniert. Kopiere, was falsch war, in denselben Chat und füge die neue Antwort unten ein.',
   'relay.leaves':
-    'Von dieser Seite wird nichts gesendet. Beim Kopieren landet die ganze Anfrage samt Formular in deiner Zwischenablage; fügst du sie in einen Chat ein, gibst du sie diesem Dienst unter deinem eigenen Konto.',
+    'Dieser Bereich sendet die Anfrage nirgendwohin. Beim Kopieren landet die ganze Anfrage samt Formular in deiner Zwischenablage; fügst du sie in einen Chat ein, gibst du sie diesem Dienst unter deinem eigenen Konto.',
   'relay.system': 'Was dem Modell über das Format gesagt wird',
   'relay.request': 'Die Anfrage',
   'relay.copy': 'Anfrage kopieren',

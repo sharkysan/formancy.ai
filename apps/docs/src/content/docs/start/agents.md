@@ -363,6 +363,12 @@ what was wrong, for the chat that already holds the last answer, and a second bu
 the whole request for a new one. If the browser will not let the page write the clipboard,
 the text is selected in the box instead, and the pane says so.
 
+Each turn it draws takes the focus to Copy, whose description is the turn and what to do
+with it. The page is waiting on the person from that moment, and the prompt pane says only
+that the form is being written; an answer that failed takes the pane, and the focus in it,
+away before the retry draws it again. Each turn also starts with an empty answer box, so
+nothing pasted for one is offered to the next.
+
 `chat` is yours to name, and optional. With it, the pane links to that chat in a new tab;
 without it, there is no link and the request is copied all the same. Neither builder names
 a service. The request is never put in a URL.
@@ -377,10 +383,11 @@ What the relay decides, it decides once, for both builders:
 - **A stop clears the turn.** An answer pasted after it is refused, never kept for the
   next request.
 
-**What leaves, and who carries it.** Nothing is sent from the page. Copying puts the whole
-request on the clipboard — the briefing, the instruction and the whole form — and pasting
-it into a chat gives it to that service under the person's own account. The pane says so,
-in its own words. A pasted answer is not tied to the request it answers: the review's list
+**What leaves, and who carries it.** The relay and its pane send the request nowhere: Copy
+puts the whole request on the clipboard — the briefing, the instruction and the whole form
+— and pasting it into a chat gives it to that service under the person's own account. The
+pane says so, in its own words, and says it of itself: what the rest of your page sends is
+yours, and the pane cannot know it. A pasted answer is not tied to the request it answers: the review's list
 of changes, against the form the run was asked about, is what shows an answer to something
 else.
 

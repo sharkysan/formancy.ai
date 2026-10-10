@@ -198,9 +198,10 @@ Each gate exists for a reason that was paid for at least once:
   another host. Committed before the fix and watched failing on `main` against Google Fonts
   and jsDelivr ([0154](../decisions/0154-the-website-makes-no-request-to-any-other-site.md)).
   Since 2026-10-10 it also opens the playground a second time and carries a model's turn
-  through its relay — describe a change, copy the request with the clipboard granted to the
-  page's own origin, paste an answer, review and apply — with every request the page makes
-  on the way counted the same, and each step that did not happen named
+  through its relay in each builder, React and then Angular — describe a change, copy the
+  request with the clipboard granted to the page's own origin, paste an answer, review and
+  apply — with every request the page makes on the way counted the same, and each step that
+  did not happen named
   ([0159](../decisions/0159-a-person-carries-the-models-turn.md)).
   **A different kind of test from the rest of this list**, and the reason is
   structural rather than a coverage gap: jsdom applies no CSS, resolves no media

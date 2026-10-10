@@ -161,7 +161,8 @@ describe('switching which builder is on screen', () => {
  * here. What is pinned is that the whole round trip works in either builder, that the
  * review is the one step it never skips
  * ([0109](../../../docs/decisions/0109-an-ai-edit-is-reviewed-before-it-lands.md)), and
- * that the page itself sends nothing anywhere while it happens.
+ * that the page itself sends nothing anywhere while it happens — every Copy pressed
+ * included, since Copy is the one control that handles the request's text.
  */
 describe('describing a change in words', () => {
   /** What a chat answered, pasted back: a whole document with a phone number in it. */
@@ -174,15 +175,19 @@ describe('describing a change in words', () => {
 
   /**
    * Every way a page sends something, spied. `sendBeacon` is defined first where jsdom has
-   * none, so a call to it is recorded rather than thrown and lost in a handler.
+   * none, so a call to it is recorded rather than thrown and lost in a handler. `fetch`
+   * answers nothing, so a page that called it would not reach the network from a test.
+   * And `window.open`: a pane that opened the chat itself after a copy would be the page
+   * asking another site, which a link the person follows is not.
    */
   const outbound = () => {
     const beacon = vi.fn(() => true)
     const had = Object.getOwnPropertyDescriptor(navigator, 'sendBeacon')
     Object.defineProperty(navigator, 'sendBeacon', { configurable: true, value: beacon })
     return {
-      fetch: vi.spyOn(globalThis, 'fetch'),
+      fetch: vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('a test reaches no network')),
       open: vi.spyOn(XMLHttpRequest.prototype, 'open'),
+      window: vi.spyOn(window, 'open').mockReturnValue(null).mockName('window.open'),
       beacon,
       restore: () => {
         vi.restoreAllMocks()
@@ -204,13 +209,17 @@ describe('describing a change in words', () => {
   })
 
   test.each(['React', 'Angular'] as const)(
-    'in the %s builder: the request appears, the answer pasted back is reviewed, and nothing leaves the page',
+    'in the %s builder: the request is copied, an answer that fails is retried, the one that works is reviewed, and the page sends nothing itself',
     async (which) => {
       /*
-       * The whole of it, end to end through the application: describe a change, carry the
-       * request, paste the answer, read the review, apply. The tree must not change until
-       * Apply. And through all of it the page makes no request of its own — a relay that
-       * posted the prompt anywhere would be the call to another site this replaces.
+       * The whole of it, end to end through the application: describe a change, copy the
+       * request, paste an answer that is not a form, copy what was wrong and then the whole
+       * request again, paste the answer that works, read the review, apply. The tree must
+       * not change until Apply. And through all of it the page makes no request of its own
+       * — a relay that posted the prompt anywhere, or opened the chat itself on a copy,
+       * would be the call to another site this replaces. Every Copy is pressed, in either
+       * builder: the jsdom round trip once pressed none, and a pane that sent the request
+       * on Copy passed it.
        */
       const sent = outbound()
       try {
@@ -218,6 +227,8 @@ describe('describing a change in words', () => {
         render(<App />)
         await builtWith(which)
         if (which === 'Angular') await angularTree()
+        // After every `userEvent.setup()`, which puts its own clipboard on the navigator.
+        const write = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined)
 
         /*
          * Asserted on the structure tree rather than on the JSON: the Build pane shows one
@@ -243,9 +254,28 @@ describe('describing a change in words', () => {
         const chat = within(relay).getByRole('link', { name: 'Open Claude in a new tab' }) as HTMLAnchorElement
         expect(chat.href).toBe('https://claude.ai/new')
 
+        // Copy: the briefing first, then the request the box shows.
+        await user.click(within(relay).getByRole('button', { name: 'Copy the request' }))
+        await waitFor(() => expect(write).toHaveBeenCalledTimes(1))
+        const copied = write.mock.calls[0]![0]
+        expect(copied.endsWith(`\n\n${request.value}`)).toBe(true)
+        expect(copied.length).toBeGreaterThan(request.value.length + 2)
+
+        // An object that is not a form: an answer, so it costs a turn, and the chat is asked
+        // again — what was wrong alone for the chat that holds it, the whole request for a new one.
         await user.click(within(relay).getByRole('textbox', { name: 'The model’s answer' }))
-        await user.paste(ANSWER)
+        await user.paste('{}')
         await user.click(within(relay).getByRole('button', { name: 'Check this answer' }))
+        const retry = await screen.findByRole('region', { name: 'Take this request to a model' })
+        await user.click(await within(retry).findByRole('button', { name: 'Copy what was wrong' }))
+        await user.click(within(retry).getByRole('button', { name: 'New chat? Copy the whole request' }))
+        await waitFor(() => expect(write).toHaveBeenCalledTimes(3))
+        const [, wrong, whole] = write.mock.calls.map(([text]) => text)
+        expect(whole!.length).toBeGreaterThan(wrong!.length)
+
+        await user.click(within(retry).getByRole('textbox', { name: 'The model’s answer' }))
+        await user.paste(ANSWER)
+        await user.click(within(retry).getByRole('button', { name: 'Check this answer' }))
 
         await waitFor(() =>
           expect(screen.getByRole('heading', { name: /Review these changes/ })).toBeTruthy(),
@@ -263,6 +293,7 @@ describe('describing a change in words', () => {
         expect(sent.fetch).not.toHaveBeenCalled()
         expect(sent.open).not.toHaveBeenCalled()
         expect(sent.beacon).not.toHaveBeenCalled()
+        expect(sent.window).not.toHaveBeenCalled()
       } finally {
         sent.restore()
       }

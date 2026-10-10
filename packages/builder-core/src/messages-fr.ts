@@ -423,7 +423,7 @@ export const BUILDER_MESSAGES_FR = {
   'relay.retry':
     'Cette réponse ne fonctionnait pas. Copiez ce qui n’allait pas dans la même conversation, puis collez la nouvelle réponse ci-dessous.',
   'relay.leaves':
-    'Rien n’est envoyé depuis cette page. Copier met toute la demande dans votre presse-papiers, formulaire compris ; la coller dans une conversation la confie à ce service, sous votre propre compte.',
+    'Ce panneau n’envoie la demande nulle part. Copier met toute la demande dans votre presse-papiers, formulaire compris ; la coller dans une conversation la confie à ce service, sous votre propre compte.',
   'relay.system': 'Ce que le modèle apprend du format',
   'relay.request': 'La demande',
   'relay.copy': 'Copier la demande',

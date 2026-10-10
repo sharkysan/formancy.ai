@@ -15,7 +15,9 @@ import type { BuilderMessageId, BuilderSession, Relay, RelayChat, RelayTurn } fr
  *
  * When a paste counts, and what a stop does to the turn, are `@formancy/builder-core`'s
  * (`createRelay`), so the Angular pane cannot decide either differently. This is the
- * markup, the clipboard and a subscription.
+ * markup, the clipboard, the focus and a subscription. The focus is the DOM's, which
+ * builder-core has none of, so each pane moves it; both `relay-pane.test` files hold them
+ * to the same.
  *
  * **It names no service.** The link to a chat is the host's `chat`, and without one there
  * is no link; the request is copied all the same. What the pane says about what leaves the
@@ -58,9 +60,22 @@ export function RelayPane({ session, relay, chat }: RelayPaneProps): ReactElemen
    */
   const [held, setHeld] = useState<Held | undefined>(undefined)
   const headingId = useId()
+  const turnId = useId()
+  const guideId = useId()
   const requestId = useId()
   const answerId = useId()
   const requestBox = useRef<HTMLTextAreaElement>(null)
+  const copyButton = useRef<HTMLButtonElement>(null)
+  /*
+   * Every turn drawn takes the focus to Copy. The page is waiting on the person now, and
+   * nothing else says so: the prompt pane, where they pressed Write, still says the form is
+   * being written, and an answer that failed took this pane — and the focus in it — away
+   * before the retry drew it again. Copy's description is the turn and what to do with it,
+   * so landing there is also being told.
+   */
+  useEffect(() => {
+    if (turn !== undefined) copyButton.current?.focus()
+  }, [turn])
   /**
    * Set when the browser refused a copy. The text goes into the request box on the next
    * render, and is selected once it is there — so the person can copy it with the keyboard.
@@ -105,8 +120,8 @@ export function RelayPane({ session, relay, chat }: RelayPaneProps): ReactElemen
   return (
     <section data-formancy-part="relay-pane" aria-labelledby={headingId}>
       <h3 id={headingId}>{text('relay.title')}</h3>
-      <p>{text('relay.turn', { attempt: turn.prompt.attempt, limit: turn.prompt.limit })}</p>
-      <p>{text(retry ? 'relay.retry' : 'relay.first')}</p>
+      <p id={turnId}>{text('relay.turn', { attempt: turn.prompt.attempt, limit: turn.prompt.limit })}</p>
+      <p id={guideId}>{text(retry ? 'relay.retry' : 'relay.first')}</p>
       <p>{text('relay.leaves')}</p>
 
       <div data-formancy-part="relay-request">
@@ -118,7 +133,12 @@ export function RelayPane({ session, relay, chat }: RelayPaneProps): ReactElemen
         <textarea ref={requestBox} id={requestId} readOnly rows={6} value={mine.toCopy ?? turn.prompt.user} />
         {/* On a retry the chat already holds the briefing and the last answer, so what is
             copied first is what was wrong, alone; a new chat needs the whole request. */}
-        <button type="button" onClick={() => void copy(retry ? (turn.followUp ?? turn.message) : turn.message)}>
+        <button
+          ref={copyButton}
+          type="button"
+          aria-describedby={`${turnId} ${guideId}`}
+          onClick={() => void copy(retry ? (turn.followUp ?? turn.message) : turn.message)}
+        >
           {text(retry ? 'relay.copyFollowUp' : 'relay.copy')}
         </button>
         {retry ? (

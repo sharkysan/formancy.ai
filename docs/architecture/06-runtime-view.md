@@ -355,7 +355,8 @@ Write it        ───▶     ask(prompt, turn)  ───▶   one waiting a
                                                      └─ yes ──▶ rejects: the run ends unreachable
                                                    waiting = { prompt, message, followUp }
                                                    onCancel ──▶ clears it
-                                                   tells subscribers   ───▶   draws the turn
+                                                   tells subscribers   ───▶   draws the turn,
+                                                                              focus to Copy
                                                                               Copy ──▶ clipboard ──▶  a chat of
                                                                               (follow-up on a retry)   their own
                                                                                                          │
@@ -375,7 +376,9 @@ Stop, or the pane goes ─▶ turn.onCancel ──────────▶ th
 what a pane cannot be trusted to decide twice — one turn at a time, a paste with no object
 in it held back, and a stop clearing the turn
 ([0159](../decisions/0159-a-person-carries-the-models-turn.md)). The request leaves the page
-on the clipboard, by the person's press, and the answer comes back the same way. The page
-calls nothing. What was pasted is bound to nothing but the run that is waiting: the review's
+on the clipboard, by the person's press, and the answer comes back the same way. The relay
+and its pane call nothing. Each turn the pane draws takes the focus to Copy, described by the
+turn and what to do with it: from then on the run waits on the person, and a failed answer
+took the pane, and the focus in it, away before the retry drew it again. What was pasted is bound to nothing but the run that is waiting: the review's
 diff against the document the run was asked against is what shows a paste that answered
 something else (SAFETY-ANALYSIS D10).

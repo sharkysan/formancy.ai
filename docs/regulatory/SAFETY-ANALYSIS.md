@@ -1272,8 +1272,13 @@ the turn shown is exactly the prompt a host's model would have been sent; that a
 the turn, so an answer pasted after it is refused rather than proposed for whatever is asked
 next — the variant above, through a person; that a second request while one waits is refused
 rather than queued, so a paste meant for one cannot be taken as the other's; and that a paste
-with no JSON object in it is held back without spending an attempt. Whatever is accepted is
-checked like any model's answer and reaches the review like any other.
+with no JSON object in it is held back without spending an attempt. The pane outlives the
+turn, so the same variant is held one layer up, in both builders' `relay-pane.test`: an
+answer pasted and held back, then a stop, leaves nothing in the next request's answer box
+(*leaves nothing of its answer box to the next request*), and an answer edited after it was
+held back is no longer offered "Use it anyway", which would send the new text unchecked
+(*edited after it was held back*). Whatever is accepted is checked like any model's answer
+and reaches the review like any other.
 
 One thing does reach further than a review: an example with its answer written down.
 `runScenarios` executes a form against saved examples and reports which stopped holding,

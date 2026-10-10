@@ -24,10 +24,14 @@ paste is never proposed for the next request. `RelayPane` in `@formancy/builder-
 `<formancy-relay-pane>` in `@formancy/builder-angular` draw it: the briefing folded away, the
 request read-only, Copy — the follow-up alone on a retry, the whole request for a new chat —
 the text selected when the browser refuses the clipboard, and a link to a chat only when the
-host names one. Their words are in English, German and French, including what leaves:
-*"Nothing is sent from this page. Copying puts the whole request on your clipboard, including
-the form; pasting it into a chat gives it to that service under your own account."* The
-playground names Claude as that chat, in one place, and puts no prompt in a URL. A pasted
+host names one. Each turn takes the focus to Copy, described by the turn and what to do with
+it, because from then on the page is waiting on the person and nothing else said so; each
+starts with an empty answer box. Their words are in English, German and French, including
+what leaves, said of the pane alone because a package cannot know what the rest of a host's
+page sends: *"This pane sends the request nowhere. Copy puts the whole request on your
+clipboard, including the form; pasting it into a chat gives it to that service under your own
+account."* The playground names Claude as that chat, in one place, and puts no prompt in a
+URL. A pasted
 answer is not bound to the request it answers; the review's diff against the form the run
 was asked about is what shows one that answered something else
 ([0159](docs/decisions/0159-a-person-carries-the-models-turn.md)).

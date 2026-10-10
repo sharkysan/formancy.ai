@@ -781,10 +781,10 @@ describe('the translations, prompt and scenario panes', () => {
       ['scenario would stop holding', 'Would stop holding if applied'].filter(
         (prefix) => !seen.some((text) => text.includes(prefix)),
       ),
-      ).toEqual([])
-    })
+    ).toEqual([])
+  })
 
-  test('the relay pane, on a first turn and a retry, refused a copy and given prose, likewise', async () => {
+  test('the relay pane, on a first turn and a retry, a copy made and one refused, and given prose, likewise', async () => {
     // The relay's words (0159), from the catalogue like the rest. The request is the
     // model's to read and is carried as written, in English whatever the author speaks —
     // as the prompt pane's problems are — and the chat's name is the host's.
@@ -801,16 +801,26 @@ describe('the translations, prompt and scenario panes', () => {
       relay,
       chat: { name: 'Chat', href: 'https://chat.example/' },
     })
-    vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(new Error('refused'))
+    // The first copy is let through and the second refused, so both of what Copy can say
+    // are on screen once: a walk that only ever refused never showed "Copied".
+    vi.spyOn(navigator.clipboard, 'writeText')
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValue(new Error('refused'))
 
     void authorForm(relay.ask, 'anything', { current: start })
     const first = relay.waiting()!
     const buttons = () => within(view.root as HTMLElement).getAllByRole('button')
     await waitFor(() => expect(buttons()).toHaveLength(2))
+    const status = () => view.root.querySelector('[role="status"]')?.textContent ?? ''
     await view.user.click(buttons()[0]!)
-    await waitFor(() => expect(view.root.querySelector('[role="status"]')?.textContent).not.toBe(''))
+    await waitFor(() => expect(status().trim()).not.toBe(''))
     await view.settle()
     const seen = shown(view.root)
+    const copied = status()
+    await view.user.click(buttons()[0]!)
+    await waitFor(() => expect(status()).not.toBe(copied))
+    await view.settle()
+    seen.push(...shown(view.root))
 
     await view.user.click(within(view.root as HTMLElement).getAllByRole('textbox')[1]!)
     await view.user.paste(prose)
@@ -833,12 +843,13 @@ describe('the translations, prompt and scenario panes', () => {
         'Take this request to a model',
         'Turn 1 of at most',
         'Copy the request into a chat',
-        'Nothing is sent from this page',
+        'This pane sends the request nowhere',
         'What the model is told',
         'Copy the request',
         'Open Chat in a new tab',
         'The model’s answer',
         'Check this answer',
+        'Copied. Paste',
         'did not let the page copy',
         'There is no JSON object',
         'Use it anyway',

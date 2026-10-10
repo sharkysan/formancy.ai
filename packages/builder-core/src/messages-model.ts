@@ -76,14 +76,16 @@ export const MODEL_MESSAGES = {
   'prompt.status.declined': 'Nothing was applied. The model declined this request.',
 
   // The relay pane: a turn a person carries to a model of their own and back (0159). What
-  // it says about what leaves names no service, because the host names the chat.
+  // it says about what leaves is about the pane alone — the one thing this package can
+  // stand behind on a page it never sees — and names no service, because the host names
+  // the chat. Both builders' relay-pane tests hold that its Copy only writes the clipboard.
   'relay.title': 'Take this request to a model',
   'relay.turn': 'Turn {attempt} of at most {limit}',
   'relay.first': 'Copy the request into a chat with a model, then paste its whole answer below.',
   'relay.retry':
     'That answer did not work. Copy what was wrong into the same chat, then paste the new answer below.',
   'relay.leaves':
-    'Nothing is sent from this page. Copying puts the whole request on your clipboard, including the form; pasting it into a chat gives it to that service under your own account.',
+    'This pane sends the request nowhere. Copy puts the whole request on your clipboard, including the form; pasting it into a chat gives it to that service under your own account.',
   'relay.system': 'What the model is told about the format',
   'relay.request': 'The request',
   'relay.copy': 'Copy the request',

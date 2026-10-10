@@ -27,23 +27,42 @@
   that never subscribes fails ten cases. Under *the relay it follows*, a pane that keeps the
   first relay it was given fails *a relay replaced is let go* in either builder, and an
   Angular effect that reads the turn it follows fails *listened to once, however many turns
-  pass*. Both `language.test` cases, *the relay pane…*, fail
-  with "Check this answer" written into the pane. `apps/docs/src/builder-layering.test.ts`
+  pass*. Added after review, each watched failing in both builders: a Copy that opens the
+  chat itself, or posts the request elsewhere, fails *Copy sends the request nowhere*, which
+  presses every Copy with `fetch`, `XMLHttpRequest`, `sendBeacon` and `window.open` spied;
+  a new turn that keeps what was held about the last — the React pane spreading `held` over
+  the new turn, the Angular `follow()` leaving the answer — fails *leaves nothing of its
+  answer box to the next request*; an edit that keeps "Use it anyway" fails *edited after it
+  was held back*; and against panes that did not move the focus, both cases under *a turn
+  arriving* failed. Both `language.test` cases, *the relay pane…*, fail
+  with "Check this answer" written into the pane, and — now that they walk a copy that
+  succeeds as well as one refused — with "Copied" written into either pane, which passed
+  every suite before. `apps/docs/src/builder-layering.test.ts`
   failed with `RelayPane` and `FormancyRelayPane` unaccounted for until they were paired,
   and `workbench.test.ts` on `relay-pane`, `relay-request` and `relay-answer` until the
   workbench dressed them. `apps/playground/src/two-builders.test.tsx`, *describing a change
   in words*, in either builder: before the playground was wired, both cases failed finding
   no relay pane; with a `fetch` added to the relay's `ask`, both failed on the fetch spy,
-  and an `XMLHttpRequest` opened there and a `sendBeacon` each failed on theirs.
+  and an `XMLHttpRequest` opened there and a `sendBeacon` each failed on theirs. The round
+  trip once pressed no Copy, so an Angular pane whose Copy opened the chat and posted the
+  request elsewhere passed it, and every other suite. It now presses every Copy — the
+  request, then on a retry what was wrong and the whole request — with `window.open` spied
+  too. Against that pane the Angular case failed on `fetch`, and on `window.open` with the
+  post taken out; the React pane made to open the chat failed the React case.
   `apps/playground/src/accessible.test.tsx`, *Fields, with a turn to carry*, fails the name
   check and axe with the answer box's label unbound. `scripts/request-browser-test.mjs`,
   run by `pnpm test:browser`, opens the playground a second time and carries a turn through
-  it — the request copied and read back from the clipboard, an answer pasted, the review
-  applied — counting every request the page makes on the way. Its first run found the
+  each builder, React and then Angular — the request copied and read back from the
+  clipboard, an answer pasted, the review applied — counting every request the page makes
+  on the way. Its first run found the
   React pane's `flushSync` had bundled `react-dom` into `@formancy/builder-react`, which
   left the playground blank with every jsdom suite green. With the React pane made to open
   the chat itself after a copy, the round trip failed with *"it asked https://claude.ai"*
-  while the playground at rest still passed. `scripts/install-fixture/consume.ts`,
+  while the playground at rest still passed. It carried a turn through React alone at
+  first, and passed with the Angular pane's Copy opening the chat and posting the request;
+  carrying a second turn through Angular, it fails on that pane with *"it asked
+  https://claude.ai"*. The post never reached the route: the playground's content security
+  policy refused it first. `scripts/install-fixture/consume.ts`,
   under `pnpm test:e2e:install`, carries a turn through the packed packages.
 
 ## Context
@@ -100,12 +119,23 @@ on a retry it writes what was wrong, alone, with *"New chat? Copy the whole requ
 second choice. When the browser refuses the clipboard, the text to copy goes into the
 request box, selected, and the pane's polite live region says so. The answer goes in a text
 box with *"Check this answer"*; when it holds no object the pane says so and only then
-offers *"Use it anyway"*. A link to a chat appears only when the host gives
+offers *"Use it anyway"*, until the answer is edited. A new turn starts with an empty
+answer box. A link to a chat appears only when the host gives
 `chat = { name, href }`, opening in a new tab with `noopener noreferrer`: the service is
 the host's to name, and a pane given none links nowhere. The pane's own sentence about what
-leaves names none either: *"Nothing is sent
-from this page. Copying puts the whole request on your clipboard, including the form;
-pasting it into a chat gives it to that service under your own account."*
+leaves names none either, and speaks for the pane alone, since a package cannot know what
+the rest of its host's page sends: *"This pane sends the request nowhere. Copy puts the
+whole request on your clipboard, including the form; pasting it into a chat gives it to that
+service under your own account."*
+
+**Every turn drawn takes the focus to Copy**, whose `aria-describedby` is the turn and what
+to do with it — *"Turn 2 of at most 3. That answer did not work. Copy what was wrong…"*. From
+that moment the page waits on the person, and nothing else says so: the prompt pane, where
+they pressed Write, says the form is being written, which is true of any model and silent
+about whose move it is; and an answer that is checked ends its turn, so the pane, with the
+focus in it, goes before a retry draws it again. Focus is the DOM's, and `builder-core` has
+none, so each pane moves it — as each prompt pane gives Write the focus back after Stop —
+and one case in each builder's `relay-pane.test` holds them to the same.
 
 **The playground has one relay** (`useState(() => createRelay())` in its page), asked by
 both builders' prompt panes and drawn at the top of both builders' bodies. It names the
@@ -132,7 +162,14 @@ costing answers. SAFETY-ANALYSIS D10 carries this as a residual.
 the whole current document on the clipboard, and pasting it into a chat gives it to that
 service under the visitor's own account and terms. Nothing in formancy can see or limit
 what happens to it after that. The pane says so in its own sentence. It is not described
-anywhere as private.
+anywhere as private. That the pane sends it nowhere is held of the pane in both builders;
+that formancy.ai sends nothing is held of the site by the request gate. Neither says
+anything about another host's page, which may send whatever it likes beside the pane.
+
+**An answer that works takes the focus with the pane.** The turn ends on the paste, the pane
+goes, and the focus that was on *Check this answer* falls to the page's body. The prompt
+pane's live region announces the review, but nothing moves the focus to it; a keyboard user
+starts again from the top of the page.
 
 **Each turn is a round trip by hand,** two pastes, and a run may take up to three. The
 pre-check spares an attempt only for a paste with no object in it. A paste that holds some
@@ -183,6 +220,17 @@ same constraint could not use it.
 it is an instruction to a model, not a control: a model may drop it, a person may paste any
 answer that carries it, and every request would grow a line that is about the relay rather
 than the form. The review's diff is the defence that holds whatever was pasted.
+
+**Announce a new turn in a live region instead of moving the focus.** A live region has to
+be in the page before its text changes to be read reliably, and the pane draws nothing
+between turns; one kept mounted for it would also leave a keyboard user wherever the focus
+fell, on the body after a failed answer. Moving the focus does both, and the description
+says what a live region would have.
+
+**Have the prompt pane's status say the request is waiting to be carried.** The prompt pane
+does not know its `ask` is a relay, and should not: it is the same pane for a host's own
+model. Teaching it would make the relay a case in the run rather than a model like any
+other.
 
 **Queue a second request.** Lost because a paste meant for one turn could be taken as the
 other's, and the queued run would wait behind a turn nobody may answer.

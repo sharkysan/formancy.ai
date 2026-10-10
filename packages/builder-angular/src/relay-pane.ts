@@ -40,8 +40,8 @@ const SAID: Readonly<Record<Said, BuilderMessageId>> = {
  * When a paste counts and what a stop does to the turn are `createRelay`'s, in
  * `@formancy/builder-core`, so the two panes cannot decide either differently
  * ([0091](../../../docs/decisions/0091-a-second-builder-is-a-binding.md)). This is the
- * markup, the clipboard and a subscription: the relay's turn as a signal, followed as
- * `injectBuilderView` follows a session, and replaced with the input.
+ * markup, the clipboard, the focus and a subscription: the relay's turn as a signal,
+ * followed as `injectBuilderView` follows a session, and replaced with the input.
  *
  * **It names no service.** The link to a chat is the host's `chat`, and without one there
  * is no link.
@@ -54,13 +54,13 @@ const SAID: Readonly<Record<Said, BuilderMessageId>> = {
     @if (turn(); as waiting) {
       <section data-formancy-part="relay-pane" [attr.aria-labelledby]="headingId">
         <h3 [id]="headingId">{{ 'relay.title' | builderText: text() }}</h3>
-        <p>
+        <p [id]="turnId">
           {{
             'relay.turn'
               | builderText: text() : { attempt: waiting.prompt.attempt, limit: waiting.prompt.limit }
           }}
         </p>
-        <p>{{ (retry() ? 'relay.retry' : 'relay.first') | builderText: text() }}</p>
+        <p [id]="guideId">{{ (retry() ? 'relay.retry' : 'relay.first') | builderText: text() }}</p>
         <p>{{ 'relay.leaves' | builderText: text() }}</p>
 
         <div data-formancy-part="relay-request">
@@ -78,7 +78,12 @@ const SAID: Readonly<Record<Said, BuilderMessageId>> = {
           ></textarea>
           <!-- On a retry the chat already holds the briefing and the last answer, so what
                is copied first is what was wrong, alone; a new chat needs the whole request. -->
-          <button type="button" (click)="copy(retry() ? (waiting.followUp ?? waiting.message) : waiting.message)">
+          <button
+            #copyButton
+            type="button"
+            [attr.aria-describedby]="turnId + ' ' + guideId"
+            (click)="copy(retry() ? (waiting.followUp ?? waiting.message) : waiting.message)"
+          >
             {{ (retry() ? 'relay.copyFollowUp' : 'relay.copy') | builderText: text() }}
           </button>
           @if (retry()) {
@@ -142,10 +147,13 @@ export class FormancyRelayPane {
   private static sequence = 0
   private readonly serial = (FormancyRelayPane.sequence += 1)
   protected readonly headingId = `formancy-relay-${String(this.serial)}`
+  protected readonly turnId = `formancy-relay-turn-${String(this.serial)}`
+  protected readonly guideId = `formancy-relay-guide-${String(this.serial)}`
   protected readonly requestId = `formancy-relay-request-${String(this.serial)}`
   protected readonly answerId = `formancy-relay-answer-${String(this.serial)}`
 
   private readonly requestBox = viewChild<ElementRef<HTMLTextAreaElement>>('requestBox')
+  private readonly copyButton = viewChild<ElementRef<HTMLButtonElement>>('copyButton')
   private readonly injector = inject(Injector)
 
   constructor() {
@@ -164,6 +172,12 @@ export class FormancyRelayPane {
   /**
    * The relay's turn now. A different one starts clean: an answer pasted for one turn is
    * never offered to the next.
+   *
+   * And it takes the focus to Copy, once drawn. The page is waiting on the person now, and
+   * nothing else says so: the prompt pane, where they pressed Write, still says the form is
+   * being written, and an answer that failed took this pane — and the focus in it — away
+   * before the retry drew it again. Copy's description is the turn and what to do with it,
+   * so landing there is also being told.
    */
   private follow(turn: RelayTurn | undefined): void {
     if (turn === this.turn()) return
@@ -171,6 +185,8 @@ export class FormancyRelayPane {
     this.answer.set('')
     this.said.set(undefined)
     this.toCopy.set(undefined)
+    if (turn === undefined) return
+    afterNextRender(() => this.copyButton()?.nativeElement.focus(), { injector: this.injector })
   }
 
   protected async copy(what: string): Promise<void> {

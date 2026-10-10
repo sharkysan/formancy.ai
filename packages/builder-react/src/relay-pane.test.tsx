@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, describe, expect, onTestFinished, test, vi } from 'vitest'
 import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
 import { authorForm, createBuilderSession, createRelay, createStop } from '@formancy/builder-core'
@@ -12,9 +12,10 @@ import { RelayPane } from './relay-pane.js'
  *
  * When a paste counts, and what a stop does to a turn, are `@formancy/builder-core`'s and
  * tested there once. What is pinned here is the part a person touches: what Copy puts on
- * the clipboard, what happens when the browser will not let it, and that the pane links
- * to a chat only when its host names one. `packages/builder-angular/src/relay-pane.test.ts`
- * holds the Angular pane to the same.
+ * the clipboard and that it sends nothing anywhere, what happens when the browser will not
+ * let it, that the pane links to a chat only when its host names one, that each turn starts
+ * clean, and that a turn arriving takes the person to it.
+ * `packages/builder-angular/src/relay-pane.test.ts` holds the Angular pane to the same.
  */
 afterEach(() => {
   cleanup()
@@ -49,11 +50,33 @@ async function start(relay: Relay, stop?: Stop): Promise<{ run: Promise<Authorin
   return { run: run! }
 }
 
+const session = createBuilderSession(START)
+
 const mount = (relay: Relay, chat?: { name: string; href: string }) =>
-  render(<RelayPane session={createBuilderSession(START)} relay={relay} chat={chat} />)
+  render(<RelayPane session={session} relay={relay} chat={chat} />)
 
 const requestBox = (): HTMLTextAreaElement =>
   screen.getByRole('textbox', { name: 'The request' }) as HTMLTextAreaElement
+
+/**
+ * Every way a page sends something, spied: what the pane's sentence says Copy does not do.
+ * `sendBeacon` is defined where jsdom has none, so a call is recorded rather than thrown.
+ */
+function outbound() {
+  const beacon = vi.fn(() => true)
+  const had = Object.getOwnPropertyDescriptor(navigator, 'sendBeacon')
+  Object.defineProperty(navigator, 'sendBeacon', { configurable: true, value: beacon })
+  onTestFinished(() => {
+    if (had === undefined) Reflect.deleteProperty(navigator, 'sendBeacon')
+    else Object.defineProperty(navigator, 'sendBeacon', had)
+  })
+  return {
+    fetch: vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('a test reaches no network')),
+    xhr: vi.spyOn(XMLHttpRequest.prototype, 'open'),
+    window: vi.spyOn(window, 'open').mockReturnValue(null).mockName('window.open'),
+    beacon,
+  }
+}
 
 async function paste(user: ReturnType<typeof userEvent.setup>, answer: string): Promise<void> {
   await user.click(screen.getByRole('textbox', { name: 'The model’s answer' }))
@@ -87,16 +110,39 @@ describe('a turn waiting', () => {
     expect(briefing?.open).toBe(false)
   })
 
-  test('says what leaves the page, and names no service of its own', async () => {
+  test('says what Copy does with the request, and names no service of its own', async () => {
     // A person copying a form into a chat is giving it to that chat's operator. The pane
-    // says so in its own words, from the catalogue — a claim that nothing leaves would be
-    // false the moment they paste.
+    // says so in the catalogue's sentence, whatever its wording; what the sentence claims
+    // about Copy is held by the case after this one, not by matching its words.
     const relay = createRelay()
     mount(relay)
     await start(relay)
 
-    expect(screen.getByText(/Nothing is sent from this page\. Copying puts the whole request/)).toBeTruthy()
+    expect(screen.getByText(session.text('relay.leaves'))).toBeTruthy()
     expect(screen.queryByRole('link')).toBeNull()
+  })
+
+  test('Copy sends the request nowhere: every copy, on a first turn and a retry, only writes the clipboard', async () => {
+    // The sentence above says so, and it ships in a package drawn on pages this repository
+    // never sees. So it is held of the pane alone: a Copy that also posted the request, or
+    // opened the chat itself, would be the pane carrying it out rather than the person.
+    const user = userEvent.setup()
+    const sent = outbound()
+    const write = vi.spyOn(navigator.clipboard, 'writeText')
+    const relay = createRelay()
+    mount(relay, { name: 'Example Chat', href: 'https://chat.example/new' })
+    await start(relay)
+
+    await user.click(screen.getByRole('button', { name: 'Copy the request' }))
+    await paste(user, '{}')
+    await user.click(await screen.findByRole('button', { name: 'Copy what was wrong' }))
+    await user.click(screen.getByRole('button', { name: 'New chat? Copy the whole request' }))
+
+    await waitFor(() => expect(write).toHaveBeenCalledTimes(3))
+    expect(sent.fetch).not.toHaveBeenCalled()
+    expect(sent.xhr).not.toHaveBeenCalled()
+    expect(sent.beacon).not.toHaveBeenCalled()
+    expect(sent.window).not.toHaveBeenCalled()
   })
 
   test('Copy puts the whole request on the clipboard, briefing and all', async () => {
@@ -188,6 +234,22 @@ describe('an answer pasted back', () => {
     await waitFor(() => expect(screen.queryByRole('region')).toBeNull())
   })
 
+  test('edited after it was held back, is no longer offered anyway', async () => {
+    // "Use it anyway" is about the text that was checked. Left on screen after an edit, it
+    // would send the new text unchecked — a paste that may well hold the object now.
+    const user = userEvent.setup()
+    const relay = createRelay()
+    mount(relay)
+    await start(relay)
+    await paste(user, 'Sure! I added a phone number field to your form.')
+    expect(screen.getByRole('button', { name: 'Use it anyway' })).toBeTruthy()
+
+    await user.type(screen.getByRole('textbox', { name: 'The model’s answer' }), ' Here it is.')
+
+    expect(screen.queryByRole('button', { name: 'Use it anyway' })).toBeNull()
+    expect(screen.getByRole('status').textContent).toBe('')
+  })
+
   test('with no JSON object in it is held back, and only then offered anyway', async () => {
     // A copy that caught the chat's sentence and not its code block should cost a paste,
     // not an attempt. "Use it anyway" before that would be a second button doing the
@@ -223,6 +285,62 @@ describe('a stopped run', () => {
 
     expect(screen.queryByRole('region')).toBeNull()
     expect(await run).toMatchObject({ ok: false, ended: 'stopped' })
+  })
+
+  test('leaves nothing of its answer box to the next request', async () => {
+    // The relay clears a stopped turn so that a late paste is never proposed for the next
+    // request (D10). The pane outlives the turn, though, and an answer still in its box —
+    // pasted, held back, never sent — would sit in the next run's box one press from
+    // being checked against a request it was not written for.
+    const user = userEvent.setup()
+    const relay = createRelay()
+    const stop = createStop()
+    mount(relay)
+    await start(relay, stop)
+    await paste(user, 'Sure! I added a phone number field to your form.')
+    expect(screen.getByRole('button', { name: 'Use it anyway' })).toBeTruthy()
+
+    act(() => stop.stop())
+    await start(relay)
+
+    expect((screen.getByRole('textbox', { name: 'The model’s answer' }) as HTMLTextAreaElement).value).toBe('')
+    expect(screen.queryByRole('button', { name: 'Use it anyway' })).toBeNull()
+    expect(screen.getByRole('status').textContent).toBe('')
+  })
+})
+
+describe('a turn arriving', () => {
+  test('takes the person to Copy, which says what the page is waiting for', async () => {
+    // The page now waits on the person, and the prompt pane, where they pressed Write,
+    // says only that the form is being written. Focus on Copy puts them where the next
+    // step is, and its description is the turn and what to do with it — read out on focus.
+    const relay = createRelay()
+    mount(relay)
+    await start(relay)
+
+    const copy = screen.getByRole('button', {
+      name: 'Copy the request',
+      description: 'Turn 1 of at most 3 ' + session.text('relay.first'),
+    })
+    expect(document.activeElement).toBe(copy)
+  })
+
+  test('and so does a retry, after the pasted answer failed and its pane went', async () => {
+    // An answer that is checked ends the turn, and the pane goes with the focus that was
+    // in it. The next turn is the only place that says the answer did not work, so it
+    // takes the focus back, and says so.
+    const user = userEvent.setup()
+    const relay = createRelay()
+    mount(relay)
+    await start(relay)
+
+    await paste(user, '{}')
+
+    const copy = await screen.findByRole('button', {
+      name: 'Copy what was wrong',
+      description: 'Turn 2 of at most 3 ' + session.text('relay.retry'),
+    })
+    await waitFor(() => expect(document.activeElement).toBe(copy))
   })
 })
 
