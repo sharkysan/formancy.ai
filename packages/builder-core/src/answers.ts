@@ -64,10 +64,11 @@ export interface AuthoringPrompt {
  * ([0162](../../../docs/decisions/0162-an-example-is-drafted-from-what-the-author-said.md)).
  *
  * Recognised by its `name`, as `reasonOf` reads an error by shape: one made in another
- * realm fails `instanceof`.
+ * realm fails `instanceof`. Its message, if a host gives one, is for the host's own logs:
+ * a busy run has no reason, so no pane shows it.
  */
 export class ModelBusyError extends Error {
-  constructor(message = 'The model is answering another request.') {
+  constructor(message?: string) {
     super(message)
     this.name = 'ModelBusyError'
   }

@@ -98,7 +98,7 @@ export function createRelay(): Relay {
     // language: a host that asks one relay from two panes — the playground's prompt
     // and scenario panes — reaches this from either (0162).
     if (current !== undefined) {
-      return Promise.reject(new ModelBusyError('This relay is already waiting for an answer to another request.'))
+      return Promise.reject(new ModelBusyError())
     }
     return new Promise<string>((resolve) => {
       const waiting = {

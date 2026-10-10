@@ -28,6 +28,7 @@ import {
   draftScenarios,
   draftVerdict,
   keepDraft,
+  ModelBusyError,
   proposalHeading,
   proposeEdit,
   proposeTranslation,
@@ -183,6 +184,17 @@ if (failing.passed || !failing.failures.some((failure) => failure.detail.include
 }
 const keptDraft = keepDraft(schema, [], draftsOut.drafts[0])
 if (!keptDraft.ok || keptDraft.scenarios.length !== 1) throw new Error('the installed keepDraft refused a failing draft')
+
+// One relay asked from two panes (0162): a second request while a turn waits ends busy,
+// through the installed relay and askChecked, and so does a host's own ModelBusyError.
+const shared = createRelay()
+const waitingEdit = authorForm(shared.ask, 'add a phone number', { current: schema })
+const refusedDraft = await draftScenarios(shared.ask, schema, 'An email is optional.')
+if (refusedDraft.ok || refusedDraft.ended !== 'busy') throw new Error('the installed relay did not refuse as busy')
+shared.answer(JSON.stringify(schema))
+await waitingEdit
+const ownBusy = await authorForm(() => Promise.reject(new ModelBusyError()), 'anything')
+if (ownBusy.ok || ownBusy.ended !== 'busy') throw new Error('the installed ModelBusyError did not end the run busy')
 
 /*
  * The challenge: mint, solve, verify — both halves of the protocol.

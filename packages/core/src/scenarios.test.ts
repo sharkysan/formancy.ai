@@ -199,6 +199,12 @@ describe('what a hidden field leaves behind', () => {
     // And hidden, so cleared where it was: the check is not simply always failing.
     expect(absent({ where: 'away' }, 'home.street')?.failures).toEqual([])
     expect(absent({ currency: 'EUR' }, 'items[0].discount')?.failures).toEqual([])
+    // A group nobody answered is not in the submission at all, and neither is its field:
+    // reading through a missing group is an answer, not an error.
+    const [unanswered] = runScenarios(nested, [
+      { name: 'never asked', changes: {}, valid: true, absent: ['home.street'] },
+    ])
+    expect(unanswered?.failures).toEqual([])
   })
 })
 
