@@ -1,3 +1,5 @@
+import { declinedAnswer, modelRequestKind } from '@formancy/builder-core'
+import type { AskModel } from '@formancy/builder-core'
 import type { FormSchema } from '@formancy/spec'
 import type { SchemaError } from '@formancy/spec/validate'
 import type { StoredFile, UploadOptions } from '@formancy/react'
@@ -259,6 +261,64 @@ export async function replayDelivery(id: string): Promise<{ ok: boolean; message
       body.error ??
       `The server refused the replay (${String(response.status)}).`,
   }
+}
+
+/** The model this deployment asks for the builders, as the server names it. */
+export interface ServerModel {
+  /** `anthropic`, `openai` or `xai`. */
+  provider: string
+  model: string
+}
+
+/**
+ * Whether the server has a model, and which (0166).
+ *
+ * `undefined` for none — a 404, or an answer that does not name one: a server older than
+ * the route answers `/model` some other way, and reading any 200 as a model would draw a
+ * prompt pane whose every turn fails.
+ */
+export async function fetchModel(): Promise<ServerModel | undefined> {
+  const response = await authed(`${BASE}/model`)
+  if (!response.ok) return undefined
+  const body = (await response.json().catch(() => ({}))) as Partial<ServerModel>
+  return typeof body.provider === 'string' && typeof body.model === 'string'
+    ? { provider: body.provider, model: body.model }
+    : undefined
+}
+
+/**
+ * The builders' model, asked through this server, which holds the key (0166).
+ *
+ * One `AskModel` for every pane. The kind of request is read from the briefing the run
+ * handed it, and only the kind and the user part are sent: the server writes the briefing
+ * itself, so a system part formancy did not write is refused here, before anything leaves.
+ * A refusal by the provider comes back as a decline, so the run ends on that turn (0158);
+ * any other failure rejects with the server's sentence, which the pane shows as the reason
+ * the model could not be reached. A stop aborts the request, and the server, seeing it go,
+ * abandons the call to the provider.
+ */
+export const askServerModel: AskModel = async (prompt, turn) => {
+  const kind = modelRequestKind(prompt.system)
+  if (kind === undefined) {
+    throw new Error('This request is not one formancy makes, so this server will not ask its model.')
+  }
+  const controller = new AbortController()
+  turn.onCancel(() => controller.abort())
+
+  const response = await authed(`${BASE}/model/complete`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ kind, user: prompt.user }),
+    signal: controller.signal,
+  })
+  const body = (await response.json().catch(() => ({}))) as { text?: unknown; declined?: unknown; message?: unknown }
+  if (response.ok && typeof body.declined === 'string') return declinedAnswer(body.declined)
+  if (response.ok && typeof body.text === 'string') return body.text
+  throw new Error(
+    typeof body.message === 'string'
+      ? body.message
+      : `The server could not ask its model (${String(response.status)}).`,
+  )
 }
 
 export function exportUrl(path: string): string {

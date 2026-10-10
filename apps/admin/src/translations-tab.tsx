@@ -4,6 +4,9 @@ import { createBuilderSession } from '@formancy/builder-core'
 import type { BuilderSession } from '@formancy/builder-core'
 import { TranslationsPane, useBuilder } from '@formancy/builder-react'
 import type { FormSchema } from '@formancy/spec'
+import { askServerModel } from './api.js'
+import type { ServerModel } from './api.js'
+import { ModelNote } from './model-note.js'
 
 /**
  * The translations pane, with a session under it.
@@ -20,9 +23,12 @@ import type { FormSchema } from '@formancy/spec'
 export function TranslationsTab({
   source,
   onChange,
+  model,
 }: {
   source: string
   onChange: (next: string) => void
+  /** The server's model, when it has one: the same ask the build tab's prompt pane uses (0166). */
+  model?: ServerModel | undefined
 }): ReactElement {
   const [session, setSession] = useState<BuilderSession | null>(null)
   const [openError, setOpenError] = useState<string | null>(null)
@@ -50,16 +56,18 @@ export function TranslationsTab({
     )
   }
 
-  return <Translating session={session} onChange={onChange} />
+  return <Translating session={session} onChange={onChange} model={model} />
 }
 
 /** Split out because the hook cannot run above the null check. */
 function Translating({
   session,
   onChange,
+  model,
 }: {
   session: BuilderSession
   onChange: (next: string) => void
+  model: ServerModel | undefined
 }): ReactElement {
   const view = useBuilder(session)
 
@@ -71,7 +79,8 @@ function Translating({
     <div className="wb-pane">
       <header>Translations</header>
       <div className="wb-body">
-        <TranslationsPane session={session} />
+        {model === undefined ? null : <ModelNote model={model} sends="this form’s words" />}
+        <TranslationsPane session={session} ask={model === undefined ? undefined : askServerModel} />
       </div>
     </div>
   )

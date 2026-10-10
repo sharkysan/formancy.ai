@@ -265,3 +265,4 @@ listed under the sections they belong to above.
 | [0162](0162-an-example-is-drafted-from-what-the-author-said.md) | An example is drafted from what the author said, judged by the engine, and kept one at a time | accepted; leaving Fields stopping the prompt pane's run in the playground superseded by 0163; a draft living as long as its part and its session, for a run the host holds, superseded in part by 0164 |
 | [0163](0163-a-models-run-belongs-to-the-host.md) | A model's run belongs to the host, and outlives the pane that asked | accepted; the translations pane's run and the drafting part's not being carried superseded in part by 0164 |
 | [0164](0164-a-translation-is-held-for-its-language-and-a-draft-for-its-form.md) | A translation is held for its language, and a draft for its form | accepted |
+| [0166](0166-a-deployments-model-is-asked-through-its-server.md) | A deployment's model is asked through its server, and the server writes the briefing | accepted |

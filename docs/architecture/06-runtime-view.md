@@ -581,3 +581,47 @@ what survives the playground opening a new session over the same text every time
 shown, and what changes when it opens another form. The stops, and the rule that an ending
 lands only on the run still in flight, are the three holders' one shared part
 ([0164](../decisions/0164-a-translation-is-held-for-its-language-and-a-draft-for-its-form.md)).
+
+## 6.13 Asking the deployment's model through its server
+
+```
+admin, in the browser                      server                                  provider
+─────────────────────                      ──────                                  ────────
+signed in ──▶ GET /model ───────────────▶  requires form.publish
+              404 ◀────────────────────── none configured: no prompt pane drawn
+              { provider, model } ◀──────  one is: prompt pane, Translations ask,
+                                           and a line saying where a request goes
+a run asks askServerModel(prompt, turn)
+  kind = modelRequestKind(prompt.system)
+    none ──▶ rejects: not one formancy makes; nothing leaves
+  POST /model/complete { kind, user } ──▶  401 / 403 before anything else
+  turn.onCancel ──▶ AbortController        body over 512 KiB ──▶ 413
+                                           ten a minute per session ──▶ 429
+                                           completeBuilderRequest
+                                             unknown kind ──▶ 400, nothing asked
+                                             system = modelBriefing(kind)
+                                             Completer.complete ─────────────────▶ stream
+                                               response closed unwritten
+                                                 ──▶ cancellation ──▶ abort ─────▶ stops
+                                               stop reason / status read first
+                                           audit model.asked: kind, size, outcome
+  { text } ◀───────────────────────────── answered
+  declinedAnswer(reason) ◀─────────────── { declined }: the provider refused
+  rejects with the sentence ◀──────────── 502: truncated, key refused, limited,
+                                           model refused, unreachable
+the run checks the text, as any model's (6.7, 6.9)
+```
+
+**The browser names the request and the server briefs it.** The kind is read from the
+briefing the run handed the ask, so one `AskModel` serves the prompt pane and the
+Translations tab, and a system part formancy did not write is refused before it leaves. The
+server never reads a system part: it asks under the briefing `builder-core` writes for that
+kind, so its endpoint answers formancy's requests rather than lending the key to whatever a
+session sends ([0166](../decisions/0166-a-deployments-model-is-asked-through-its-server.md)).
+
+**Everything after the answer is the browser's, as before.** The loop, the checks, the
+complaint in the next turn, the decline, the stop and the review are those of 6.7 and 6.9;
+the server is one more `AskModel` behind them. A stop reaches the provider: the run's
+`turn.onCancel` aborts the browser's request, the response closes before it was written, and
+the route tells the adapter, which aborts its call. A response that closes after it was
+written is how every request ends, and cancels nothing.

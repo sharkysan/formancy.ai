@@ -13,6 +13,8 @@ import { fileStoreSettings } from './file-store-settings.js'
 import { CLAMD_DEFAULT_MAX_BYTES, createClamdScanner } from './clamd-scanner.js'
 import { maxFileBytesFrom } from './upload-settings.js'
 import { trustProxyFrom } from './trust-proxy.js'
+import { modelSettings } from './model-settings.js'
+import { createCompleter } from './completers.js'
 
 // recheck ships a 23 MB JVM jar and a native binary per platform as OPTIONAL
 // dependencies and falls back to a pure-JavaScript engine without them. For
@@ -116,6 +118,19 @@ if (challengeSecret !== undefined && challengeSecret.length < 32) {
  */
 const trustProxy = trustProxyFrom(process.env['FORMANCY_TRUST_PROXY'])
 
+/**
+ * The model the builders ask through this server, with its key kept here rather than in a
+ * browser (0166). Unset is a supported state and the default: no model, no prompt pane in
+ * the admin, and no form sent anywhere. Half a configuration — a key with no provider, a
+ * provider with no model — is refused here, because a server that started anyway would
+ * have no model while the operator believed it had one. The key is never logged.
+ */
+const modelChoice = modelSettings(process.env)
+const model =
+  modelChoice.kind === 'none'
+    ? undefined
+    : { provider: modelChoice.provider, model: modelChoice.model, completer: createCompleter(modelChoice) }
+
 await bootstrapSchema(sql)
 const storage = createPostgresStorage(sql)
 const app = await createApp(storage, {
@@ -127,6 +142,7 @@ const app = await createApp(storage, {
   ...(challengeSecret === undefined ? {} : { challengeSecret }),
   ...(scanner === undefined ? {} : { scanner }),
   ...(trustProxy === undefined ? {} : { trustProxy }),
+  ...(model === undefined ? {} : { model }),
   maxFileBytes,
 })
 
@@ -160,6 +176,8 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) {
 
 await app.listen({ port, host: process.env['HOST'] ?? '0.0.0.0' })
 console.log(`formancy server listening on :${port}`)
+// Said once, at startup, so an operator reading the log knows where forms are sent.
+console.log(model === undefined ? 'No model configured.' : `Builders ask ${model.provider}'s ${model.model}.`)
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.on(signal, () => {

@@ -21,12 +21,13 @@ import {
   exportUrl,
   fetchForm,
   fetchForms,
+  fetchModel,
   fetchSubmissions,
   fetchVersions,
   publish,
   setToken,
 } from './api.js'
-import type { FormListEntry, PublishResult, SubmissionEntry, VersionEntry } from './api.js'
+import type { FormListEntry, PublishResult, ServerModel, SubmissionEntry, VersionEntry } from './api.js'
 
 /**
  * The self-hosted admin, v0.1 cut: no drag-and-drop builder — a schema editor
@@ -39,6 +40,8 @@ export function App() {
   const [selected, setSelected] = useState<string | undefined>(undefined)
   const [creating, setCreating] = useState('')
   const [signedIn, setSignedIn] = useState(() => currentToken() !== null)
+  // Whether the server has a model for the builders, asked once per sign-in (0166).
+  const [model, setModel] = useState<ServerModel | undefined>(undefined)
 
   const reloadForms = useCallback(async () => {
     setForms(await fetchForms())
@@ -53,6 +56,15 @@ export function App() {
       if (error instanceof Unauthorized) setSignedIn(false)
     })
   }, [reloadForms, signedIn])
+
+  useEffect(() => {
+    if (!signedIn) return
+    // None, rather than an error: a viewer is refused the answer, and a server without
+    // the route has no model to offer either.
+    void fetchModel()
+      .then(setModel)
+      .catch(() => setModel(undefined))
+  }, [signedIn])
 
   if (!signedIn) return <SignIn onSignedIn={() => setSignedIn(true)} />
 
@@ -112,7 +124,7 @@ export function App() {
             <p>Pick a form, or type a new path on the left.</p>
           </div>
         ) : (
-          <FormWorkspace key={selected} path={selected} onPublished={reloadForms} />
+          <FormWorkspace key={selected} path={selected} onPublished={reloadForms} model={model} />
         )}
       </main>
     </div>
@@ -140,7 +152,15 @@ const NEW_FORM_TEMPLATE = (path: string) =>
     2,
   )
 
-function FormWorkspace({ path, onPublished }: { path: string; onPublished: () => Promise<void> }) {
+function FormWorkspace({
+  path,
+  onPublished,
+  model,
+}: {
+  path: string
+  onPublished: () => Promise<void>
+  model: ServerModel | undefined
+}) {
   const [tab, setTab] = useState<
     'build' | 'editor' | 'translations' | 'fill in' | 'versions' | 'submissions' | 'webhooks'
   >('build')
@@ -201,6 +221,7 @@ function FormWorkspace({ path, onPublished }: { path: string; onPublished: () =>
           publishState={publishState}
           onPublish={() => { void publishSource() }}
           formPath={path}
+          model={model}
         />
       ) : tab === 'editor' ? (
         <EditorPane
@@ -210,7 +231,7 @@ function FormWorkspace({ path, onPublished }: { path: string; onPublished: () =>
           onPublish={() => { void publishSource() }}
         />
       ) : tab === 'translations' ? (
-        <TranslationsTab source={source ?? ''} onChange={setSource} />
+        <TranslationsTab source={source ?? ''} onChange={setSource} model={model} />
       ) : tab === 'fill in' ? (
         // The published form, filled in against the server, with a draft behind
         // it. Here because this is where the server already is: the playground

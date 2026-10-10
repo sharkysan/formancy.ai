@@ -65,6 +65,10 @@ export type {
 } from './scenario-drafts.js'
 export { scenarioPrompt } from './scenario-prompt.js'
 export type { ScenarioPrompt, ScenarioPromptOptions } from './scenario-prompt.js'
+// The requests formancy makes of a model, by name, so a server holding the key can write
+// the briefing itself rather than take one from the browser (0166).
+export { MODEL_REQUEST_KINDS, isModelRequestKind, modelBriefing, modelRequestKind } from './model-requests.js'
+export type { ModelRequestKind } from './model-requests.js'
 export type {
   AskModel,
   AskTurn,

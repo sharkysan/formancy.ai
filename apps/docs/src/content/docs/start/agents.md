@@ -289,7 +289,8 @@ export const askModel: AskModel = async ({ system, user }, turn) => {
 `/api/form-model` is yours to write: it adds the key, calls whichever model you
 use with `system` as the system prompt and `user` as the message, and answers
 with the text. Abort that call when the browser's request closes, and a stop in
-the browser ends the call to the model as well.
+the browser ends the call to the model as well. If you run formancy's own server, it is
+already written — see [through formancy's server](#through-formancys-server-the-deployment-path).
 
 **While a run waits, the pane shows Stop.** Pressing it — or taking the pane off
 the screen, when the pane holds its own run — ends the run at once, calls what you
@@ -344,6 +345,57 @@ from `@formancy/builder-core` while yours is answering another, and the run ends
 with no reason, and the pane says another request is waiting for the model — in the
 person's language, rather than your error's message under "could not be reached". The
 relay below does exactly that.
+
+### Through formancy's server: the deployment path
+
+If you run formancy's server, it can hold the model and its key for you. Name the provider —
+`anthropic` for Claude, `openai`, or `xai` for Grok — its key and the model, and the server
+asks it ([self-hosting](/docs/start/self-hosting/#a-model-for-the-builders)). The admin then
+draws the prompt pane and gives its Translations tab the same ask. A builder page of your own
+asks the same route:
+
+```ts
+import { declinedAnswer, modelRequestKind } from '@formancy/builder-core'
+import type { AskModel } from '@formancy/builder-core'
+
+/** A session from POST /auth/login, for somebody who may edit forms. */
+declare const session: string
+
+export const askModel: AskModel = async ({ system, user }, turn) => {
+  // The server writes the briefing itself, so say only which request this is.
+  const kind = modelRequestKind(system)
+  if (kind === undefined) throw new Error('This is not a request formancy makes.')
+
+  const controller = new AbortController()
+  turn.onCancel(() => controller.abort())
+  const response = await fetch('/api/model/complete', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${session}` },
+    body: JSON.stringify({ kind, user }),
+    signal: controller.signal,
+  })
+  const body = (await response.json()) as { text?: string; declined?: string; message?: string }
+  if (response.ok && body.declined !== undefined) return declinedAnswer(body.declined)
+  if (response.ok && body.text !== undefined) return body.text
+  throw new Error(body.message ?? `The server answered ${response.status}.`)
+}
+```
+
+The route answers the three requests the builders make — writing a form, translating it,
+drafting its examples — each under the briefing the server writes for it, and never under a
+system part from the request. So the key pays for formancy's requests rather than for
+whatever somebody's session sends, and a briefing your page wrote itself is refused before it
+leaves. `modelRequestKind` finds the request from the briefing the run handed your function,
+so one function serves the prompt pane, the translations pane and the scenario pane. It needs
+a session that may edit forms and allows ten requests a minute per session. A refusal by the
+provider comes back as `declined`, which ends the run on that turn as the model's own decline
+would. When the request goes away — the person pressed Stop — the server abandons the call to
+the provider.
+
+**The form leaves, from the server.** Each request carries the form it is about to the
+provider the operator chose; the admin says which provider and
+model before anybody asks. A page that may not call a model at all, formancy.ai's among them,
+uses the relay below instead: no server, and a person carries each turn.
 
 ### No model on the page: a relay
 

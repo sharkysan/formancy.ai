@@ -201,7 +201,9 @@ submitted. Switch language or theme without reloading.
   character lands is decided once for both renderers, and the server refuses an answer
   that does not fill the mask, because the engine does.
 - **AI-assisted authoring.** Describe a form in the builder, or give your coding
-  agent the MCP tools to author and validate a form definition.
+  agent the MCP tools to author and validate a form definition. A self-hosted server can
+  hold the model — Claude, OpenAI's models or Grok, the operator's choice — with the key on
+  the server rather than in a browser.
 - **No third party in the loop.** Spam protection is proof of work computed in
   the visitor's browser and verified with your own key, not a captcha service.
 - **Apache-2.0, all of it.** The spec, engine, renderers, builder and backend.
@@ -239,7 +241,11 @@ the drop surface over the rendered form, and the prompt pane — describing a
 form in words, and reviewing what the answer does before it lands, with the form's
 examples run against it so the review names any it would stop holding
 ([0159](./docs/decisions/0159-a-proposal-is-checked-against-the-forms-examples.md)). The
-model is the host's `AskModel`; for a page that may not call one, both carry a **relay**
+model is the host's `AskModel`. formancy's server can be that model: name Anthropic, OpenAI
+or xAI, a key and a model, and it asks under the briefings it writes itself, so the key stays
+on the server and pays for formancy's requests only; the admin asks it
+([0166](./docs/decisions/0166-a-deployments-model-is-asked-through-its-server.md)). For a page
+that may not call one, both carry a **relay**
 pane, where a person copies each request to a chat of their own and pastes the answer
 back, and every check after the paste runs in the page
 ([0160](./docs/decisions/0160-a-person-carries-the-models-turn.md)). Given that model, the

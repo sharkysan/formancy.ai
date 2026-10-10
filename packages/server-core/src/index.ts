@@ -95,4 +95,14 @@ export type {
   ScreenOutcome,
 } from './uploads.js'
 export { publishForm } from './publishing.js'
+// The deployment's model, asked under the briefing formancy writes for each kind of request (0166).
+export { completeBuilderRequest } from './model.js'
+export type {
+  BuilderRequest,
+  BuilderRequestOutcome,
+  Cancellation,
+  Completer,
+  Completion,
+  CompletionPrompt,
+} from './model.js'
 export type { PublishOutcome } from './publishing.js'

@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, test } from 'vitest'
@@ -18,13 +18,23 @@ import { describe, expect, test } from 'vitest'
  * reads as configured.
  */
 const here = dirname(fileURLToPath(import.meta.url))
-const app = readFileSync(join(here, 'app.ts'), 'utf8')
+/**
+ * `app.ts` and every route family that left it for a plugin under `routes/`. Reading
+ * `app.ts` alone went on passing after the draft routes moved out, checking nothing of
+ * theirs.
+ */
+const app = [
+  readFileSync(join(here, 'app.ts'), 'utf8'),
+  ...readdirSync(join(here, 'routes'))
+    .filter((name) => name.endsWith('.ts') && !name.endsWith('.test.ts'))
+    .map((name) => readFileSync(join(here, 'routes', name), 'utf8')),
+].join('\n')
 
 describe('per-route rate limits', () => {
   test('are actually present in the source being checked', () => {
     // A guard on the guard: a rename that broke the search would make the
     // assertion below pass forever.
-    expect(app.split('config: { rateLimit:').length - 1).toBeGreaterThan(2)
+    expect([...app.matchAll(/rateLimit:\s*\{/g)].length).toBeGreaterThan(5)
   })
 
   test('use timeWindow, which is the option the plugin reads', () => {
@@ -32,7 +42,8 @@ describe('per-route rate limits', () => {
     // flag `timeWindow: submissionLimit.timeWindowMs`, where it is the property
     // being read and entirely correct. The first version of this test did
     // exactly that and reported the fixed code as broken.
-    const wrong = [...app.matchAll(/config: \{ rateLimit: \{[^}]*\}/g)]
+    // Across lines too: a route whose limit is written over several lines is a limit.
+    const wrong = [...app.matchAll(/rateLimit:\s*\{[^}]*\}/g)]
       .map((match) => match[0])
       .filter((block) => /timeWindowMs\s*:/.test(block))
 
