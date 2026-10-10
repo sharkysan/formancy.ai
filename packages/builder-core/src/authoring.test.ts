@@ -344,7 +344,16 @@ describe('a host that cannot ask its model', () => {
      * prototype could not be made text at all: `String()` threw inside the handler
      * meant to end the run, and the run never ended.
      */
-    const nothingToSay: unknown[] = [undefined, null, '', '  ', { type: 'error' }, Object.create(null)]
+    const nothingToSay: unknown[] = [
+      undefined,
+      null,
+      '',
+      '  ',
+      { type: 'error' },
+      // Shaped like an error, with nothing in it and no name to fall back on.
+      { message: '' },
+      Object.create(null),
+    ]
 
     for (const thrown of nothingToSay) {
       const result = await settledSoon(authorForm(() => Promise.reject(thrown as Error), 'a form'))
