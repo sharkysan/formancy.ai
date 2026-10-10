@@ -3,7 +3,7 @@ import { AUDIT_ACTIONS, auditedBy } from './audit.js'
 import type { AuditAction } from './audit.js'
 import { createMemoryStorage } from './testing/memory-storage.js'
 import { setFormAccess } from './use-cases.js'
-import { createSubmission } from './submitting.js'
+import { createSubmission, formToFill } from './submitting.js'
 import { keepExamples } from './examples.js'
 import { publishForm } from './publishing.js'
 import type { ServerDeps } from './index.js'
@@ -102,6 +102,8 @@ describe('a submission', () => {
       declaredSchemaHash: hash,
       data: { email: 'ada@example.ch', salary: 120000 },
       actor: 'anonymous',
+      // An anonymous response carries the token its form was handed out with (0169).
+      token: (await formToFill(d, 'survey'))!.submissionToken,
     })
 
     const [entry] = await d.storage.listAudit(10)
@@ -118,6 +120,8 @@ describe('a submission', () => {
       declaredSchemaHash: hash,
       data: { salary: 120000 },
       actor: 'anonymous',
+      // An anonymous response carries the token its form was handed out with (0169).
+      token: (await formToFill(d, 'survey'))!.submissionToken,
     })
 
     expect(outcome.ok).toBe(false)
@@ -137,6 +141,8 @@ describe('a submission', () => {
       declaredSchemaHash: hash,
       data: { email: 'ada@example.ch' },
       actor: 'anonymous',
+      // An anonymous response carries the token its form was handed out with (0169).
+      token: (await formToFill(d, 'survey'))!.submissionToken,
     })
 
     const [entry] = await d.storage.listAudit(10)
@@ -152,6 +158,8 @@ describe('a submission', () => {
       declaredSchemaHash: hash,
       data: { email: 'ada@example.ch', salary: 120000 },
       actor: 'anonymous',
+      // An anonymous response carries the token its form was handed out with (0169).
+      token: (await formToFill(d, 'survey'))!.submissionToken,
     })
 
     const [entry] = await d.storage.listAudit(10)

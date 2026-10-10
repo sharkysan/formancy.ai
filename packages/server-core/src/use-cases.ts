@@ -1,6 +1,6 @@
 import { diffSchemas } from '@formancy/spec'
 import type { Change, FormSchema } from '@formancy/spec'
-import { sameToken, signed } from './signing.js'
+import { draftKey, sameToken, submissionToken } from './signing.js'
 import type { ServerDeps } from './deps.js'
 
 /**
@@ -165,35 +165,30 @@ function csvCell(value: string): string {
 }
 
 /**
- * The token that proves the bearer started this draft.
- *
- * HMAC over the form and the draft id, the same stateless shape the
- * proof-of-work challenge uses
- * ([0059](../../../docs/decisions/0059-proof-of-work-not-a-captcha.md)): no
- * second table, and no lookup before the check. Bound to the FORM as well as the
- * id so a token cannot be carried to a draft of another form that happens to
- * share an id.
- */
-function draftToken(secret: string, formId: string, draftId: string): string {
-  return signed(secret, `${formId}:${draftId}`)
-}
-
-/**
  * Start a draft: the server picks the id, and signs it.
  *
  * The id is the server's because an id a caller supplies is an id a caller can
  * enumerate — and enumerating them was enough to read other people's
  * part-filled answers.
+ *
+ * A draft is one response, so it comes with the token that response is sent with, naming the
+ * draft's own id ([0169](../../../docs/decisions/0169-a-response-is-stored-once.md)). Resuming
+ * hands back the same one, so a response whose answer was lost and is sent again after a reload
+ * is refused as already sent rather than stored twice.
  */
 export async function startDraft(
   deps: ServerDeps,
   input: { path: string },
-): Promise<{ draftId: string; token: string } | undefined> {
+): Promise<{ draftId: string; token: string; submissionToken: string } | undefined> {
   const current = await resolveForm(deps, input.path)
   if (current === undefined) return undefined
 
   const draftId = deps.newId()
-  return { draftId, token: draftToken(deps.draftSecret, current.formId, draftId) }
+  return {
+    draftId,
+    token: draftKey(deps.draftSecret, current.formId, draftId),
+    submissionToken: submissionToken(deps.draftSecret, current.formId, draftId),
+  }
 }
 
 /** Save (or re-save) a partial form, bound to the CURRENT version. Undefined
@@ -208,7 +203,7 @@ export async function saveDraft(
   // Refused before the write, not after it. Overwriting is the worse half of
   // this: the person whose draft it is then submits the substituted content
   // under their own name, and nothing anywhere says otherwise.
-  if (!sameToken(input.token, draftToken(deps.draftSecret, current.formId, input.draftId))) {
+  if (!sameToken(input.token, draftKey(deps.draftSecret, current.formId, input.draftId))) {
     return { version: current.version, saved: false }
   }
 
@@ -236,6 +231,8 @@ export type ResumeOutcome =
       data: unknown
       /** Present when the rebind lost something; absent for a silent rebind. */
       migration?: DraftMigration
+      /** What the response is sent with: the same on every resume, naming the draft's id. */
+      submissionToken: string
     }
   | {
       /** The schema changed in a way no automatic rebind survives: the draft
@@ -267,13 +264,14 @@ export async function resumeDraft(
 
   // Checked before the lookup, and answered identically to a draft that is not
   // there: replying differently would confirm which ids exist.
-  if (!sameToken(input.token, draftToken(deps.draftSecret, current.formId, input.draftId))) {
+  if (!sameToken(input.token, draftKey(deps.draftSecret, current.formId, input.draftId))) {
     return undefined
   }
 
   const draft = await deps.storage.getDraft(current.formId, input.draftId)
   if (draft === undefined) return undefined
 
+  const sendWith = submissionToken(deps.draftSecret, current.formId, draft.id)
   if (draft.formVersionId === current.versionId) {
     return {
       outcome: 'resumed',
@@ -281,6 +279,7 @@ export async function resumeDraft(
       schema: current.schema,
       schemaHash: current.schemaHash,
       data: draft.data,
+      submissionToken: sendWith,
     }
   }
 
@@ -320,6 +319,7 @@ export async function resumeDraft(
     schemaHash: current.schemaHash,
     data: migrated,
     ...(severity === 'lossy' ? { migration: { severity, changes } } : {}),
+    submissionToken: sendWith,
   }
 }
 

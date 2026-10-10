@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify'
-import { createSubmission, decodeSolution, mintChallenge, resolveForm, verifySolution } from '@formancy/server-core'
+import { createSubmission, decodeSolution, formToFill, mintChallenge, verifySolution } from '@formancy/server-core'
 import type { Actor, ServerDeps } from '@formancy/server-core'
-import { CHALLENGE_HEADER, SCHEMA_HASH_HEADER } from '../headers.js'
+import { CHALLENGE_HEADER, SCHEMA_HASH_HEADER, SUBMISSION_TOKEN_HEADER } from '../headers.js'
 
 /**
  * What a respondent's browser does with a form: read it, ask for a challenge, and submit it.
@@ -37,19 +37,25 @@ export async function submissionRoutes(
    * Limiting it by IP would refuse the form to real people sharing an address —
    * an office, a school, a phone network behind CGNAT — and the failure would
    * look like the form being broken rather than like a limit. That is a worse
-   * outcome than the cheap read it would prevent, and the read is cached by
-   * `schemaHash` anyway.
+   * outcome than the cheap read it would prevent.
    *
    * Written down because the asymmetry is deliberate and looks like an omission.
+   *
+   * It also hands out the token the response is sent with, and that changes neither half of
+   * the argument: minting one is an HMAC and writes nothing, and it is not a defence against
+   * anybody who can read the form, so limiting it would buy nothing (0169). What it does change
+   * is that the reply is per reading: `no-store`, because a cache that kept it would hand one
+   * token to everybody behind it, and only the first of them could send a response.
    */
   app.get('/f/:path', async (request, reply) => {
     const { path } = request.params as { path: string }
-    const resolved = await resolveForm(deps, path)
-    if (resolved === undefined) return reply.code(404).send({ error: 'unknown_form' })
-    return reply.send({
-      version: resolved.version,
-      schemaHash: resolved.schemaHash,
-      schema: resolved.schema,
+    const form = await formToFill(deps, path)
+    if (form === undefined) return reply.code(404).send({ error: 'unknown_form' })
+    return reply.header('cache-control', 'no-store').send({
+      version: form.version,
+      schemaHash: form.schemaHash,
+      schema: form.schema,
+      submissionToken: form.submissionToken,
     })
   })
 
@@ -114,6 +120,7 @@ export async function submissionRoutes(
       // this route's job is to accept submissions, not to adjudicate logins.
       const actor = await actorOf(request)
       const origin = request.headers.origin
+      const token = request.headers[SUBMISSION_TOKEN_HEADER]
 
       // Before the engine runs, and only for a visitor who is not signed in.
       // Somebody with a session has already paid a cost the challenge is a
@@ -132,6 +139,8 @@ export async function submissionRoutes(
         data: request.body ?? {},
         actor: actor === undefined ? 'anonymous' : 'authenticated',
         ...(typeof origin === 'string' ? { origin } : {}),
+        // An empty header is a token, and not one this server signed: refused, never ignored.
+        ...(typeof token === 'string' ? { token } : {}),
       })
 
       if (outcome.ok) return reply.code(201).send({ id: outcome.id, data: outcome.canonicalData })
@@ -167,6 +176,26 @@ export async function submissionRoutes(
           // holds the answers — where accepting the value unchecked would store
           // something nobody can detect afterwards.
           return reply.code(503).send({ error: 'source_unavailable', source: outcome.source })
+        // The three answers about the token (0169). Each says what to do next, in words a host
+        // can show: none of them is the respondent's doing, and none of them loses an answer —
+        // the page still holds them, and a refused attempt spends nothing.
+        case 'token_required':
+          return reply.code(400).send({
+            error: 'submission_token_required',
+            message: `This form was sent without the token it was handed out with. Read the form again and send its submissionToken in ${SUBMISSION_TOKEN_HEADER}.`,
+          })
+        case 'token_invalid':
+          return reply.code(400).send({
+            error: 'submission_token_invalid',
+            message: 'This form was sent with a token the server does not recognise. Read the form again for a new one, and send the answers with it.',
+          })
+        case 'token_spent':
+          // 409, as the resource the token names exists: the response is stored, as `id`.
+          return reply.code(409).send({
+            error: 'submission_token_spent',
+            id: outcome.id,
+            message: 'These answers were already sent, and are stored once. Nothing was stored again.',
+          })
       }
     },
   )

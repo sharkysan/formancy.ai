@@ -1,4 +1,4 @@
-export { createApp, SCHEMA_HASH_HEADER } from './app.js'
+export { createApp, SCHEMA_HASH_HEADER, SUBMISSION_TOKEN_HEADER } from './app.js'
 export { createPostgresStorage } from './postgres-storage.js'
 export { bootstrapSchema } from './db.js'
 export { createLocalFileStore, sha256 } from './file-store.js'

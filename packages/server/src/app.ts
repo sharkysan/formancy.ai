@@ -39,7 +39,7 @@ import { serverLogOptions } from './server-log.js'
 import type { ServerLogSettings } from './server-log.js'
 import { auditTrail } from './audit-trail.js'
 
-export { CHALLENGE_HEADER, SCHEMA_HASH_HEADER } from './headers.js'
+export { CHALLENGE_HEADER, SCHEMA_HASH_HEADER, SUBMISSION_TOKEN_HEADER } from './headers.js'
 
 export const API_KEY_HEADER = 'x-formancy-api-key'
 

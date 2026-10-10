@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, test } from 'vitest'
 import type { FormSchema } from '@formancy/spec'
 import { MIXED_NUMERIC_LITERAL_EXAMPLE } from '@formancy/core'
 import { exportCsv, setFormAccess, listForms, listSubmissions, listVersions, resolveForm, resumeDraft, saveDraft, startDraft } from './use-cases.js'
-import { createSubmission } from './submitting.js'
+import { createSubmission, formToFill } from './submitting.js'
 import { publishForm } from './publishing.js'
 import type { ServerDeps } from './deps.js'
 import { createMemoryStorage } from './testing/memory-storage.js'
@@ -719,6 +719,8 @@ describe('public submission access', () => {
     return published.schemaHash
   }
 
+  // Each with the token its form was handed out with, as a respondent's browser sends it
+  // (0169): what is under test here is who may submit, not whether the response was sent.
   const submit = async (
     hash: string,
     context?: { actor?: 'anonymous' | 'authenticated'; origin?: string },
@@ -728,6 +730,7 @@ describe('public submission access', () => {
       declaredSchemaHash: hash,
       data: { email: 'a@b.ch' },
       actor: context?.actor ?? 'anonymous',
+      token: (await formToFill(deps, 'contact-us'))!.submissionToken,
       ...(context?.origin === undefined ? {} : { origin: context.origin }),
     })
 

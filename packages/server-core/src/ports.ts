@@ -235,13 +235,29 @@ export interface Storage {
    * prevents — a webhook fired for a rolled-back submission, a stored
    * submission nothing was sent about, an accepted submission whose files the
    * collector deletes — are the ones a self-hoster cannot debug.
+   *
+   * Returns false, and writes NOTHING — no delivery, no claim, no audit row — when a
+   * submission with `record.id` is already stored. The id is the one a response's token
+   * names, so that is the same response sent twice
+   * ([0169](../../../docs/decisions/0169-a-response-is-stored-once.md)). ATOMIC, as
+   * `spendChallenge` is and for its reason: two sends of one response both pass every check
+   * made before this, and only the storage can decide which is stored.
    */
   insertSubmission(
     record: SubmissionRecord,
     deliveries?: readonly DeliveryRecord[],
     claimFileIds?: readonly string[],
     audit?: AuditEntry,
-  ): Promise<void>
+  ): Promise<boolean>
+
+  /**
+   * Whether a submission with this id is stored.
+   *
+   * Asked before the replay, so a response sent again is told it was sent — rather than that
+   * the files it names are unknown, which is what the claim would say of files the first send
+   * already took. `insertSubmission` still decides: two sends at once both find nothing here.
+   */
+  hasSubmission(id: string): Promise<boolean>
 
   /**
    * Append one audit row.

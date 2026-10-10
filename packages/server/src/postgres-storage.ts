@@ -153,14 +153,24 @@ export function createPostgresStorage(sql: postgres.Sql): Storage {
       // ONE transaction. The submission and the deliveries it triggers commit
       // together or not at all — the requirement that chose this database
       // (docs/decisions/0024-postgres-over-mongodb.md).
-      await db.transaction(async (tx) => {
-        await tx.insert(submissions).values({
-          id: record.id,
-          formId: record.formId,
-          formVersionId: record.formVersionId,
-          data: record.data,
-          submittedAt: new Date(record.submittedAt),
-        })
+      return db.transaction(async (tx) => {
+        // First, and the answer to whether anything else is written. The id is the one the
+        // response's token names, so a conflict on the primary key is that response sent
+        // again (0169). `ON CONFLICT DO NOTHING` and look at what came back, as
+        // `spendChallenge` does: a second send that arrives while the first is uncommitted
+        // waits on the key, then finds it taken.
+        const stored = await tx
+          .insert(submissions)
+          .values({
+            id: record.id,
+            formId: record.formId,
+            formVersionId: record.formVersionId,
+            data: record.data,
+            submittedAt: new Date(record.submittedAt),
+          })
+          .onConflictDoNothing({ target: submissions.id })
+          .returning({ id: submissions.id })
+        if (stored.length === 0) return false
 
         if (queued !== undefined && queued.length > 0) {
           await tx.insert(deliveries).values(
@@ -200,7 +210,13 @@ export function createPostgresStorage(sql: postgres.Sql): Storage {
         // Last, and inside: a submission that rolled back must leave nothing
         // behind saying it happened.
         if (audit !== undefined) await tx.insert(auditLog).values(auditRow(audit))
+        return true
       })
+    },
+
+    async hasSubmission(id) {
+      const found = await db.select({ id: submissions.id }).from(submissions).where(eq(submissions.id, id)).limit(1)
+      return found.length === 1
     },
 
     async spendChallenge(challenge, expiresAtIso) {

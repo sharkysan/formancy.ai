@@ -101,6 +101,12 @@ export function FillPane({ path, quietMs = QUIET_MS }: FillPaneProps): ReactElem
   const [generation, setGeneration] = useState(0)
 
   const draft = useRef<DraftKey | undefined>(undefined)
+  /**
+   * What the response is sent with (0169): the form's token, until a draft is started or
+   * resumed, and the draft's after that — the one a resume hands back, so a response whose
+   * answer was lost and is sent again after a reload is the same response.
+   */
+  const sendWith = useRef<string | undefined>(undefined)
   const pending = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   useEffect(() => {
@@ -122,6 +128,7 @@ export function FillPane({ path, quietMs = QUIET_MS }: FillPaneProps): ReactElem
           remember(path, undefined)
         } else {
           draft.current = held
+          sendWith.current = resumed.submissionToken
           setSchema(resumed.schema)
           setSchemaHash(resumed.schemaHash)
           setInitialValue(resumed.data)
@@ -139,6 +146,7 @@ export function FillPane({ path, quietMs = QUIET_MS }: FillPaneProps): ReactElem
         const published = await fetchPublicForm(path)
         if (!live) return
         draft.current = undefined
+        sendWith.current = published.submissionToken
         setSchema(published.schema)
         setSchemaHash(published.schemaHash)
         setInitialValue(undefined)
@@ -177,8 +185,9 @@ export function FillPane({ path, quietMs = QUIET_MS }: FillPaneProps): ReactElem
           setSaved('Could not start a draft.')
           return
         }
-        draft.current = started
-        remember(path, started)
+        draft.current = { id: started.id, token: started.token }
+        sendWith.current = started.submissionToken
+        remember(path, draft.current)
       }
       const ok = await saveDraft(path, draft.current.id, draft.current.token, value)
       setSaved(ok ? 'Saved.' : 'Could not save.')
@@ -224,8 +233,8 @@ export function FillPane({ path, quietMs = QUIET_MS }: FillPaneProps): ReactElem
         <FormancyForm
           submitLabel="Submit"
           onSubmit={async (value) => {
-            if (readOnly) return
-            const outcome = await submitForm(path, schemaHash, value)
+            if (readOnly || sendWith.current === undefined) return
+            const outcome = await submitForm(path, schemaHash, sendWith.current, value)
             if (outcome.ok) {
               // A submitted draft is finished, and leaving the key behind would
               // resume it on the next visit as though nothing had been sent.

@@ -50,9 +50,10 @@ let replies: Record<string, { status?: number; body: unknown }> = {}
 beforeEach(() => {
   calls = []
   replies = {
-    'GET /api/f/contact': { body: { version: 3, schemaHash: 'abc', schema } },
-    'POST /api/f/contact/drafts': { body: { draftId: 'd1', token: 't1' } },
+    'GET /api/f/contact': { body: { version: 3, schemaHash: 'abc', schema, submissionToken: 'st-form' } },
+    'POST /api/f/contact/drafts': { body: { draftId: 'd1', token: 't1', submissionToken: 'st-d1' } },
     'PUT /api/f/contact/drafts/d1': { body: { ok: true } },
+    'POST /api/f/contact/submissions': { status: 201, body: { id: 'st', data: {} } },
   }
   vi.stubGlobal('fetch', async (input: string, init?: RequestInit) => {
     const method = init?.method ?? 'GET'
@@ -226,5 +227,85 @@ describe('filling in a published form', () => {
     await waitFor(() => {
       expect((screen.getByLabelText('Email') as HTMLInputElement).value).toBe('')
     })
+  })
+})
+
+/**
+ * Sending the response, with the token it was handed
+ * ([0169](../../../docs/decisions/0169-a-response-is-stored-once.md)).
+ *
+ * The renderers send nothing — the host holds the transport — so this pane is the one place in
+ * the repository where a browser submits to the server, and these hold it to what the
+ * documentation tells every host to do.
+ */
+describe('sending the response', () => {
+  const sent = (): Call[] => calls.filter((c) => c.method === 'POST' && c.url.endsWith('/submissions'))
+
+  async function fillAndSend(): Promise<void> {
+    const user = userEvent.setup()
+    await user.type(await screen.findByLabelText('Email'), 'a@b.ch')
+    await user.click(screen.getByRole('button', { name: 'Submit' }))
+    await waitFor(() => {
+      expect(sent().length).toBeGreaterThan(0)
+    })
+  }
+
+  test('sends the token the form was handed out with, in a header', async () => {
+    // Without it an anonymous response is refused, and a retry of one that was sent is stored
+    // twice. In the header for the reason the draft key is: a URL lands in logs.
+    render(<FillPane path="contact" quietMs={60_000} />)
+
+    await fillAndSend()
+
+    expect(sent()[0]?.headers['x-formancy-submission-token']).toBe('st-form')
+    expect(sent()[0]?.url).not.toContain('st-form')
+  })
+
+  test("once a draft has started, sends the draft's token, which is the one a resume hands back", async () => {
+    // Sent with the form's token, a response whose answer was lost would be sent again after a
+    // reload with the draft's — a different token, so stored twice.
+    render(<FillPane path="contact" quietMs={60} />)
+    const user = userEvent.setup()
+    await user.type(await screen.findByLabelText('Email'), 'a@b.ch')
+    await waitFor(() => {
+      expect(starts()).toHaveLength(1)
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Submit' }))
+
+    await waitFor(() => {
+      expect(sent()[0]?.headers['x-formancy-submission-token']).toBe('st-d1')
+    })
+  })
+
+  test('a resumed draft sends the token the resume handed back', async () => {
+    window.localStorage.setItem('formancy.draft.contact', JSON.stringify({ id: 'd1', token: 't1' }))
+    replies['GET /api/f/contact/drafts/d1'] = {
+      body: { outcome: 'resumed', version: 3, schema, schemaHash: 'abc', data: {}, submissionToken: 'st-d1' },
+    }
+    render(<FillPane path="contact" quietMs={60_000} />)
+
+    await fillAndSend()
+
+    expect(sent()[0]?.headers['x-formancy-submission-token']).toBe('st-d1')
+  })
+
+  test('a response already sent says so in a sentence, and the answers stay on the page', async () => {
+    // Refused as already sent is not a lost answer — the first send is stored — and the page
+    // must not make it look like one by clearing the form or saying nothing.
+    replies['POST /api/f/contact/submissions'] = {
+      status: 409,
+      body: {
+        error: 'submission_token_spent',
+        id: 'st',
+        message: 'These answers were already sent, and are stored once. Nothing was stored again.',
+      },
+    }
+    render(<FillPane path="contact" quietMs={60_000} />)
+
+    await fillAndSend()
+
+    expect(await screen.findByText(/already sent, and are stored once/)).toBeTruthy()
+    expect((screen.getByLabelText('Email') as HTMLInputElement).value).toBe('a@b.ch')
   })
 })

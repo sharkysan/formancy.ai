@@ -4,10 +4,11 @@ import { maySubmit } from './access.js'
 import { filesToClaim } from './uploads.js'
 import { resolveForm } from './use-cases.js'
 import type { ResolvedForm } from './use-cases.js'
+import { submissionToken, submissionTokenId } from './signing.js'
 import type { ServerDeps } from './deps.js'
 
 /**
- * Submitting a form: the replay, and what is stored.
+ * Submitting a form: what a respondent is handed, the replay, and what is stored.
  *
  * Its own file because `use-cases.ts` named it as the next family to leave when its size
  * budget refused growth, and the submission is what grew.
@@ -28,6 +29,36 @@ export type SubmissionOutcome =
    * the answers.
    */
   | { ok: false; kind: 'source_unavailable'; source: string }
+  /** An anonymous response arrived without the token its form was handed out with. */
+  | { ok: false; kind: 'token_required' }
+  /**
+   * A token this server did not sign for this form: forged, another form's, or signed under
+   * a key the deployment no longer has. Loading the form again hands out a good one.
+   */
+  | { ok: false; kind: 'token_invalid' }
+  /** The response this token names is already stored, as `id`; nothing was stored again. */
+  | { ok: false; kind: 'token_spent'; id: string }
+
+/** A published form as a respondent is handed it: its current version, and what to send it with. */
+export interface FormToFill extends ResolvedForm {
+  /** Names the id the response will be stored under, signed for this form (0169). */
+  submissionToken: string
+}
+
+/**
+ * The form a respondent fills in, with the token their response is sent with.
+ *
+ * A fresh id on every call, because every reading is a response that might be sent: two
+ * people handed one token would find the second refused as already sent. Minting writes
+ * nothing — an HMAC over the form and the id — so handing one to everybody who reads the form
+ * costs this server a hash and fills no table
+ * ([0169](../../../docs/decisions/0169-a-response-is-stored-once.md)).
+ */
+export async function formToFill(deps: ServerDeps, path: string): Promise<FormToFill | undefined> {
+  const resolved = await resolveForm(deps, path)
+  if (resolved === undefined) return undefined
+  return { ...resolved, submissionToken: submissionToken(deps.draftSecret, resolved.formId, deps.newId()) }
+}
 
 /**
  * Accept one submission: resolve the version the client says it rendered,
@@ -37,6 +68,11 @@ export type SubmissionOutcome =
  * whatever arrived; visibility is evaluated server-side and hidden branches
  * are stripped, so a client cannot smuggle data by lying about what was shown.
  * Client validation is UX; this is truth.
+ *
+ * And it is stored once. A response is stored under the id its token names, and the storage
+ * refuses that id twice, so the same response sent again — a retry after an answer that never
+ * arrived, a replay — is told it was sent rather than stored as somebody else
+ * ([0169](../../../docs/decisions/0169-a-response-is-stored-once.md)).
  */
 export async function createSubmission(
   deps: ServerDeps,
@@ -48,13 +84,33 @@ export async function createSubmission(
     actor?: 'anonymous' | 'authenticated'
     origin?: string
     requestId?: string
+    /**
+     * The token the form was handed out with. Required of an anonymous response. A signed-in
+     * one may leave it out and is stored under a fresh id, as before; one it sends is checked
+     * and spent like any other, because a token that is ignored when it is wrong is decoration.
+     */
+    token?: string
   },
 ): Promise<SubmissionOutcome> {
   const form = await deps.storage.getFormByPath(input.path)
   if (form === undefined) return { ok: false, kind: 'unknown_form' }
 
-  if (!maySubmit(form, input.actor ?? 'anonymous', input.origin)) {
+  const actor = input.actor ?? 'anonymous'
+  if (!maySubmit(form, actor, input.origin)) {
     return { ok: false, kind: 'forbidden' }
+  }
+
+  // Before the version and the replay: once a response is stored, nothing else about a second
+  // send of it matters, and a refusal for something else would invite a third.
+  let id: string
+  if (input.token === undefined) {
+    if (actor === 'anonymous') return { ok: false, kind: 'token_required' }
+    id = deps.newId()
+  } else {
+    const named = submissionTokenId(deps.draftSecret, form.id, input.token)
+    if (named === undefined) return { ok: false, kind: 'token_invalid' }
+    if (await deps.storage.hasSubmission(named)) return { ok: false, kind: 'token_spent', id: named }
+    id = named
   }
 
   const current = await resolveForm(deps, input.path)
@@ -96,8 +152,6 @@ export async function createSubmission(
       : { ok: false, kind: 'source_unavailable', source: membership.source }
   }
 
-  const id = deps.newId()
-
   // Queued in the SAME call that stores the submission, so one COMMIT decides
   // both. Posting after the insert returns gives the two failures a
   // self-hoster cannot debug: the webhook fired and the submission rolled
@@ -138,7 +192,7 @@ export async function createSubmission(
   }
 
   const at = deps.nowIso()
-  await deps.storage.insertSubmission(
+  const stored = await deps.storage.insertSubmission(
     {
       id,
       formId: current.formId,
@@ -170,5 +224,8 @@ export async function createSubmission(
       },
     },
   )
+  // Two sends of one response at once both found nothing stored above; the storage decided
+  // which of them it is, and wrote nothing at all for the other.
+  if (!stored) return { ok: false, kind: 'token_spent', id }
   return { ok: true, id, canonicalData: engine.value() }
 }
