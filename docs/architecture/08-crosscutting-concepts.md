@@ -238,7 +238,9 @@ row a request writes carries the same id: the route passes `request.id` to the t
 that write their row inside their own transaction — a publish, a change of examples, a
 submission — as `audit-trail.ts` does for the rest. A route or a background worker adds a line
 by naming an event from `LOG_EVENTS` in `server/server-log.ts`; the outbox, the collector and
-the sweeper are handed the app's log, and so are the database's notices.
+the sweeper are handed the app's log, and so are the database's notices. The rate limits' counter
+is made before the app, so `main.ts` hands it a log of its own by the same rule, to the same place
+(0170).
 
 "Every request" includes three kinds Fastify's own request line misses, because it is written
 when an answer has been sent: a request refused before routing for a URL it cannot decode or a
@@ -260,6 +262,7 @@ server hands Fastify a `LogController` that writes them.
 | A route, about something beside its answer | `request.log`, with a listed event |
 | The three background workers | the app's log, from `main.ts`; to standard error by the rule when started without one |
 | The database's notices | `databaseNotices`, by SQLSTATE |
+| The rate limits' counter, when it stops answering, answers again or fails a sweep | the log `main.ts` makes before the app, by the same rule; nowhere when given none, as `createApp` |
 | The libraries | nothing at all ([0115](../decisions/0115-a-library-writes-nothing-to-its-hosts-console.md)) |
 
 `FORMANCY_LOG_LEVEL` is read once, by `server/log-settings.ts`, and refused at startup when it is

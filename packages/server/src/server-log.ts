@@ -58,6 +58,12 @@ export const LOG_EVENTS = [
   'outbox.failed',
   'collector.failed',
   'sweeper.failed',
+  // The rate limits' counter (0170): it stopped answering, so each limit admits uncounted or
+  // refuses with a 503 as it declares, and it answers again — each said when it changes, not
+  // once a request — and its sweep of ended windows threw.
+  'ratelimit.unanswered',
+  'ratelimit.answering',
+  'ratelimit.sweep.failed',
   // What the database said beside an answer, by its code.
   'database.notice',
   // At warn and above, something that named no event on this list — Fastify's own

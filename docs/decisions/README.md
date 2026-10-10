@@ -265,8 +265,9 @@ listed under the sections they belong to above.
 | [0162](0162-an-example-is-drafted-from-what-the-author-said.md) | An example is drafted from what the author said, judged by the engine, and kept one at a time | accepted; leaving Fields stopping the prompt pane's run in the playground superseded by 0163; a draft living as long as its part and its session, for a run the host holds, superseded in part by 0164 |
 | [0163](0163-a-models-run-belongs-to-the-host.md) | A model's run belongs to the host, and outlives the pane that asked | accepted; the translations pane's run and the drafting part's not being carried superseded in part by 0164 |
 | [0164](0164-a-translation-is-held-for-its-language-and-a-draft-for-its-form.md) | A translation is held for its language, and a draft for its form | accepted |
-| [0165](0165-a-deployments-model-is-asked-through-its-server.md) | A deployment's model is asked through its server, and the server writes the briefing | accepted |
+| [0165](0165-a-deployments-model-is-asked-through-its-server.md) | A deployment's model is asked through its server, and the server writes the briefing | accepted; its limit counted per process superseded by 0170 |
 | [0166](0166-a-deployment-keeps-a-forms-examples-and-runs-them-at-publish.md) | A deployment keeps a form's examples, and runs them at publish | accepted |
 | [0167](0167-the-relay-says-what-each-request-carries.md) | A request to a model names its kind, and the relay pane says what that kind carries | accepted |
 | [0168](0168-the-log-is-built-from-a-list-of-fields.md) | The server keeps a log, and a line is built from a list of fields | accepted |
 | [0169](0169-a-response-is-stored-once.md) | A response is stored once, under the id it was handed | accepted |
+| [0170](0170-a-limit-is-counted-once-in-the-database-every-replica-shares.md) | A limit is counted once, in the database every replica shares | accepted |

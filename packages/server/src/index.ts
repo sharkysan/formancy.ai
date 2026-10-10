@@ -1,5 +1,8 @@
 export { createApp, SCHEMA_HASH_HEADER, SUBMISSION_TOKEN_HEADER } from './app.js'
 export { createPostgresStorage } from './postgres-storage.js'
+// Every rate limit counted in the database the replicas share (0170).
+export { createPostgresRateLimitStore } from './postgres-rate-limits.js'
+export type { PostgresRateLimitOptions, PostgresRateLimits } from './postgres-rate-limits.js'
 export { bootstrapSchema } from './db.js'
 export { createLocalFileStore, sha256 } from './file-store.js'
 export type { FileStore } from './file-store.js'

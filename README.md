@@ -76,11 +76,11 @@ separately in your UI and the formancy backend.
 >
 > The server is not ready for a public deployment. It has authentication,
 > role-based authorization, forms that are private until opened, per-IP rate
-> limits, a request body cap, a publish-time check that refuses regular
-> expressions which can be made to backtrack, an audit log, a request log with
-> no field for an answer or a credential, drafts that carry their own key, a
-> proof-of-work challenge for anonymous submissions, and a token every form is
-> handed out with so that a response sent twice is stored once
+> limits counted once across replicas, a request body cap, a publish-time check
+> that refuses regular expressions which can be made to backtrack, an audit log, a
+> request log with no field for an answer or a credential, drafts that carry their
+> own key, a proof-of-work challenge for anonymous submissions, and a token every
+> form is handed out with so that a response sent twice is stored once
 > ([0169](./docs/decisions/0169-a-response-is-stored-once.md)).
 
 ## What you can build

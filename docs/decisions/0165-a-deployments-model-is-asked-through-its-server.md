@@ -1,6 +1,7 @@
 # 0165 — A deployment's model is asked through its server, and the server writes the briefing
 
-- **Status:** accepted
+- **Status:** accepted; its limit counted per process superseded by
+  [0170](0170-a-limit-is-counted-once-in-the-database-every-replica-shares.md)
 - **Date:** 2026-10-10
 - **Deciders:** Daniel Bacher
 - **Verified by:** `packages/builder-core/src/model-requests.test.ts` runs `authorForm`,

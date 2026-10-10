@@ -2,6 +2,8 @@ import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { createSubmission, decodeSolution, formToFill, mintChallenge, verifySolution } from '@formancy/server-core'
 import type { Actor, ServerDeps } from '@formancy/server-core'
 import { CHALLENGE_HEADER, SCHEMA_HASH_HEADER, SUBMISSION_TOKEN_HEADER } from '../headers.js'
+import { limited } from '../rate-limits.js'
+import type { Budget } from '../rate-limits.js'
 
 /**
  * What a respondent's browser does with a form: read it, ask for a challenge, and submit it.
@@ -20,7 +22,7 @@ export async function submissionRoutes(
     deps: ServerDeps
     /** Absent, the challenge is off: its route answers 404 and no submission is asked for one. */
     challengeSecret: string | undefined
-    limit: { max: number; timeWindowMs: number }
+    limit: Budget
     actorOf: (request: FastifyRequest) => Promise<Actor | undefined>
   },
 ): Promise<void> {
@@ -73,7 +75,7 @@ export async function submissionRoutes(
       // limit is the right one. The point of a proof of work is that the
       // ATTACKER pays; handing out unlimited puzzles for free is the one part
       // of it that costs us instead.
-      config: { rateLimit: { max: submissionLimit.max, timeWindow: submissionLimit.timeWindowMs } },
+      config: { rateLimit: limited(submissionLimit, 'admit') },
     },
     async (request, reply) => {
       if (challengeSecret === undefined) {
@@ -102,7 +104,7 @@ export async function submissionRoutes(
       // one: drafts write too, and are limited the same way. Keyed by IP, which
       // is the only identity an anonymous submitter has — behind a proxy, only
       // once `trustProxy` names it; until then it is the proxy's.
-      config: { rateLimit: { max: submissionLimit.max, timeWindow: submissionLimit.timeWindowMs } },
+      config: { rateLimit: limited(submissionLimit, 'admit') },
     },
     async (request, reply) => {
       const { path } = request.params as { path: string }

@@ -717,3 +717,48 @@ route carries the sentence on the `201`
 A form never published has no row to keep them beside, so the admin offers no list until it
 has one.
 
+
+## 6.15 A limited request, on whichever replica answers it
+
+```
+request ──▶ replica A or replica B, the same either way
+              │
+   the route's limit — at onRequest; the model's at preHandler, once the session is known
+              │
+              ▼  on the counter's own four connections, at most 32 sent at once; past that
+              │  a count waits in the process, and is dropped unsent at the bound
+   INSERT INTO rate_limit_counters … ON CONFLICT (key) DO UPDATE      one statement,
+     key    'POST /f/:path/submissions 203.0.113.1'                    the row's lock
+     window starts at the key's first request, ends now() + timeWindow on the database's clock
+              │
+     ┌────────┴──────────┬──────────────────────────────────────────────┐
+     ▼                   ▼                                              ▼
+   within max          over max                     no answer within a second, or an error
+   ──▶ the route       ──▶ 429, Retry-After         ├─ declared admit: the public plane ──▶ the route, uncounted
+                                                     └─ declared refuse: login, model ──▶ 503 RATE_LIMIT_UNAVAILABLE
+                                                     the log says so once, ratelimit.unanswered, and
+                                                     ratelimit.answering when it answers again
+
+   at most once in ten minutes, one at a time, on the back of a count and not waited for:
+   DELETE FROM rate_limit_counters WHERE resets_at <= now()        with no statement_timeout
+```
+
+**The count is the database's, so the replica does not matter.** Every limit counts in one
+table, one row per route and client, and the upsert serialises two replicas counting the same
+client on that row's lock, so the third request a minute is the third whichever process answered
+the first two. The window is the plugin's — fixed, from a key's first request — kept on the
+database's clock rather than on each process's
+([0170](../decisions/0170-a-limit-is-counted-once-in-the-database-every-replica-shares.md)).
+
+**A count that does not come back is decided without.** Each route's limit says, through
+`limited`, whether it admits or refuses then; the error a refusing route sends says nothing about
+the database. A count abandoned at the bound is not cancelled. One already sent is ended by the
+database once it runs, by the `statement_timeout` of the counter's connections, unless it finishes
+first — and then it lands late, which no more than the thirty-two sent at once can do.
+
+**Only the limited requests wait.** The counter counts on connections of its own, not on the
+pool storage queries on: a count waiting for a lock holds its connection, and a query sent after
+it on that connection waits for the lock too, so on storage's pool a lock on the counter's table
+stopped every route. `shared-rate-limits.integration.test.ts` locks the table, sends more
+submissions than storage has connections, and asserts each is admitted within the bound and a
+form's read answers.

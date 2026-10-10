@@ -13,7 +13,7 @@ import { Mark } from './mark.js'
 export function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [failed, setFailed] = useState(false)
+  const [failed, setFailed] = useState<'refused' | 'unavailable' | undefined>(undefined)
   const [busy, setBusy] = useState(false)
 
   return (
@@ -24,9 +24,9 @@ export function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
           event.preventDefault()
           setBusy(true)
           void login(email, password)
-            .then((ok) => {
-              setFailed(!ok)
-              if (ok) onSignedIn()
+            .then((outcome) => {
+              setFailed(outcome === 'signed-in' ? undefined : outcome)
+              if (outcome === 'signed-in') onSignedIn()
             })
             .finally(() => setBusy(false))
         }}
@@ -67,11 +67,13 @@ export function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
         {/* The server does not say whether the address exists, and neither does
             this: repeating a specific reason would undo the enumeration
             resistance the login endpoint was built for. */}
-        {failed ? (
+        {failed === undefined ? null : (
           <p role="alert" className="wb-signin-alert">
-            That email and password did not match.
+            {failed === 'refused'
+              ? 'That email and password did not match.'
+              : 'The server did not take this sign-in just now. Try again in a minute.'}
           </p>
-        ) : null}
+        )}
       </form>
     </div>
   )

@@ -514,6 +514,14 @@ a form, mints its challenge and takes its submissions, and `server-core/submitti
 hands out, a draft's and a response's, are signed side by side in `server-core/signing.ts`, so
 that what each is signed over can be read together and one cannot stand in for the other. Both
 `app.ts` and `use-cases.ts` came under the budget with it, and left the size test's list.
+What every limit counts
+in is a port of the rate-limit plugin's own: `server/postgres-rate-limits.ts` is the store over
+the database every replica shares, on connections it opens itself so that it cannot hold up
+storage's, and the plugin's in-memory store the second implementation, which `createApp` counts
+in when given none
+([0170](../decisions/0170-a-limit-is-counted-once-in-the-database-every-replica-shares.md)).
+`server/rate-limits.ts` holds `limited`, which every route's limit is written with, so none can
+be written without saying whether it admits or refuses when it cannot be counted.
 
 The deployment's model is the newest family, and the port is the point of it
 ([0165](../decisions/0165-a-deployments-model-is-asked-through-its-server.md)).

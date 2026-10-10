@@ -63,6 +63,26 @@ describe('signing in', () => {
     expect(onSignedIn).not.toHaveBeenCalled()
   })
 
+  test.each([429, 503])(
+    'a sign-in the server would not take (%i) is not called a wrong password',
+    async (status) => {
+      // The login limit answers before the password is looked at: 429 when the address has
+      // spent its attempts, 503 when the attempt could not be counted and so was not taken
+      // (0170). Calling either a mismatch sends somebody to retype a password that may be
+      // right, and to spend another attempt doing it.
+      const user = userEvent.setup()
+      const onSignedIn = vi.fn()
+      answering(status)
+      render(<SignIn onSignedIn={onSignedIn} />)
+
+      await signIn(user)
+
+      const alert = await screen.findByRole('alert')
+      expect(alert.textContent).toBe('The server did not take this sign-in just now. Try again in a minute.')
+      expect(onSignedIn).not.toHaveBeenCalled()
+    },
+  )
+
   test('the button says what it is doing and cannot be pressed twice', async () => {
     const user = userEvent.setup()
     let release: (value: Response) => void = () => undefined

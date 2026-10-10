@@ -212,8 +212,11 @@ written green — the one shape this repository refuses. It is listed as debt in
 
 Stated because an unstated non-goal reads as an oversight:
 
-- **Horizontal scalability.** The rate limiter's default store is per-process,
-  so more than one replica needs a shared store that is not yet provided.
+- **Horizontal scalability.** The rate limits are no longer what stops it: every
+  limit counts in the database the replicas share
+  ([0170](../decisions/0170-a-limit-is-counted-once-in-the-database-every-replica-shares.md)).
+  The outbox worker still is — it takes no row lock, so more than one replica
+  delivers a webhook once per replica ([0049](../decisions/0049-one-polling-worker.md)).
 - **Multi-tenancy.** Absent entirely; it is on the commercial side of the open-core
   line ([0003](../decisions/0003-open-core-line.md)).
 - **Localised validation messages.** The engine emits error *codes*; turning a

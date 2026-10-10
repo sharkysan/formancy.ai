@@ -373,7 +373,11 @@ Still from 0.2.0 and unchanged:
   breaker, and SSRF defence that validates the resolved address and connects to it.
 - **Rate limiting** at four scopes, and a **proof-of-work challenge** on the public
   submission plane. The rate limiter's default store is per process, so it is wrong behind
-  more than one replica — stated here because it is silent.
+  more than one replica — stated here because it is silent. Fixed after `0.4.0`: every limit
+  counts in the PostgreSQL the replicas share, a public limit admits uncounted and a login or
+  a model request is refused while that count cannot be had
+  ([0170](../decisions/0170-a-limit-is-counted-once-in-the-database-every-replica-shares.md));
+  see the changelog.
 - **Drafts carry their own key** ([0062](../decisions/0062-a-draft-carries-its-own-key.md)).
   A draft written under 0.1.0 cannot be resumed, because no token was ever minted for it.
 - **`optionsSource`**: a select whose answers come from the deployment rather than the

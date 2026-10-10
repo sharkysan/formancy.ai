@@ -10,6 +10,8 @@ import type {
   Completer,
 } from '@formancy/server-core'
 import type { ModelProvider } from '../model-settings.js'
+import { limited } from '../rate-limits.js'
+import type { Budget } from '../rate-limits.js'
 
 /** The deployment's model: which provider, which model, and the adapter that asks it. */
 export interface DeploymentModel {
@@ -54,7 +56,7 @@ export async function modelRoutes(
     model: DeploymentModel | undefined
     requires: (action: 'form.publish') => preHandlerHookHandler
     audit: (request: FastifyRequest, draft: AuditDraft) => Promise<void>
-    limit: { max: number; timeWindowMs: number }
+    limit: Budget
   },
 ): Promise<void> {
   // Asking a model is part of editing a form, so it takes the permission editing does:
@@ -71,8 +73,9 @@ export async function modelRoutes(
       bodyLimit: MODEL_BODY_LIMIT_BYTES,
       config: {
         rateLimit: {
-          max: limit.max,
-          timeWindow: limit.timeWindowMs,
+          // Refused when it cannot be counted: this route needs no database, so admitting it
+          // would make an outage of one an unlimited spend on the operator's key (0170).
+          ...limited(limit, 'refuse'),
           // After `requires`, so the count is per session: an office behind one address is
           // not one budget, and one editor cannot spend another's. A request refused for
           // its session spends nothing.

@@ -312,6 +312,17 @@ export async function bootstrapSchema(sql: postgres.Sql): Promise<void> {
       expires_at timestamptz NOT NULL
     )`
   await sql`CREATE INDEX IF NOT EXISTS spent_challenges_expiry ON spent_challenges (expires_at)`
+  // Every rate limit's count, shared by every replica (0170): one row per route and client,
+  // written by every limited request. UNLOGGED, because a count is worth less than the
+  // write-ahead log entry: a crash empties the table, which costs one window of budget, and
+  // nothing waits for the log to reach the disk or a standby. No index on `resets_at`: the
+  // sweep reads the table once in ten minutes, and every write would keep the index.
+  await sql`
+    CREATE UNLOGGED TABLE IF NOT EXISTS rate_limit_counters (
+      key text PRIMARY KEY,
+      hits integer NOT NULL,
+      resets_at timestamptz NOT NULL
+    )`
 
   await sql`
     CREATE TABLE IF NOT EXISTS audit_log (

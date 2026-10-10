@@ -1,6 +1,8 @@
 import type { FastifyInstance } from 'fastify'
 import { resumeDraft, saveDraft, startDraft } from '@formancy/server-core'
 import type { ServerDeps } from '@formancy/server-core'
+import { limited } from '../rate-limits.js'
+import type { Budget } from '../rate-limits.js'
 
 /** Proves the bearer started this draft. Lower-case: Fastify normalises. */
 const DRAFT_TOKEN_HEADER = 'x-formancy-draft-token'
@@ -14,7 +16,7 @@ const DRAFT_TOKEN_HEADER = 'x-formancy-draft-token'
  */
 export async function draftRoutes(
   app: FastifyInstance,
-  { deps, limit }: { deps: ServerDeps; limit: { max: number; timeWindowMs: number } },
+  { deps, limit }: { deps: ServerDeps; limit: Budget },
 ): Promise<void> {
   /**
    * Start a draft, and get the only key to it.
@@ -35,7 +37,7 @@ export async function draftRoutes(
     {
       // Unauthenticated, like the submission route, and every call hands out a
       // key. Cheap per call, but nothing should be free on the public plane.
-      config: { rateLimit: { max: limit.max, timeWindow: limit.timeWindowMs } },
+      config: { rateLimit: limited(limit, 'admit') },
     },
     async (request, reply) => {
       const { path } = request.params as { path: string }
@@ -52,7 +54,7 @@ export async function draftRoutes(
       // route used to be described as "the one unauthenticated write in the
       // product"; that stopped being true when drafts were exposed here, and
       // nobody moved the limit across.
-      config: { rateLimit: { max: limit.max, timeWindow: limit.timeWindowMs } },
+      config: { rateLimit: limited(limit, 'admit') },
     },
     async (request, reply) => {
       const { path, draftId } = request.params as { path: string; draftId: string }
@@ -74,7 +76,7 @@ export async function draftRoutes(
       // Limited because this is where a token would be tried one after another.
       // An HMAC is not realistically guessable, but limiting the write and
       // leaving the guess surface open is not a position worth defending.
-      config: { rateLimit: { max: limit.max, timeWindow: limit.timeWindowMs } },
+      config: { rateLimit: limited(limit, 'admit') },
     },
     async (request, reply) => {
       const { path, draftId } = request.params as { path: string; draftId: string }

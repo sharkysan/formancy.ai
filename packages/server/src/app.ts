@@ -10,7 +10,8 @@ import type { DeploymentModel } from './routes/model.js'
 import { submissionRoutes } from './routes/submissions.js'
 import Fastify from 'fastify'
 import type { FileStore } from './file-store.js'
-import rateLimit from '@fastify/rate-limit'
+import rateLimit, { type FastifyRateLimitStoreCtor } from '@fastify/rate-limit'
+import { limited } from './rate-limits.js'
 import type { FastifyInstance, FastifyRequest, preHandlerHookHandler } from 'fastify'
 import {
   authenticateApiKey,
@@ -79,13 +80,11 @@ export interface AppOptions {
   /**
    * Anonymous submissions allowed per IP per minute. Off in tests by setting
    * it high; a real deployment should leave the default.
-   *
-   * NOTE: @fastify/rate-limit's default store is in-memory and therefore
-   * PER PROCESS. Behind more than one replica this counts a fraction of the
-   * traffic and silently permits N times the limit. A multi-replica
-   * deployment must supply a shared store.
    */
   submissionRateLimit?: { max: number; timeWindowMs: number }
+  /** Where every limit counts; absent, each process counts its own. `main.ts` passes the
+   *  database every replica shares, through `createPostgresRateLimitStore` (0170). */
+  rateLimitStore?: FastifyRateLimitStoreCtor
   /** Login attempts per IP per minute. Defaults to 10. */
   loginRateLimit?: { max: number; timeWindowMs: number }
   /**
@@ -168,6 +167,7 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
     global: false, // opted into per route: the management plane is authenticated
     max: submissionLimit.max,
     timeWindow: submissionLimit.timeWindowMs,
+    ...(options.rateLimitStore === undefined ? {} : { store: options.rateLimitStore }),
   })
 
   const deps: ServerDeps = {
@@ -241,11 +241,11 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
   app.post(
     '/auth/login',
     {
-      // Enumeration resistance makes a wrong guess cost a full argon2
-      // verification, which is deliberate — but it also means an unlimited
-      // login endpoint is an unlimited invitation to spend the server's CPU.
-      // Tighter than submission: nobody logs in ten times a minute honestly.
-      config: { rateLimit: { max: loginLimit.max, timeWindow: loginLimit.timeWindowMs } },
+      // Enumeration resistance makes a wrong guess cost a full argon2 verification, which is
+      // deliberate — but it also means an unlimited login endpoint is an unlimited invitation
+      // to spend the server's CPU. Tighter than submission: nobody logs in ten times a minute
+      // honestly. Refused when it cannot be counted, since guessing is what it is for (0170).
+      config: { rateLimit: limited(loginLimit, 'refuse') },
     },
     async (request, reply) => {
       const body = request.body as { email?: unknown; password?: unknown } | null
