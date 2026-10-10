@@ -257,13 +257,17 @@ shown the rule writes the example the rule passes, and that example agrees with 
 whether it is right or wrong.
 
 Each draft is listed with what it sets and expects, and with the engine's verdict on the form
-as it is now — the verdict the list gives it once kept, recomputed when the form changes.
+as it is now — run with the pane's own `initialValue` and `mode`, so it is the verdict the
+list gives it once kept, recomputed when the form changes.
 Nothing reaches `onChange` until *Keep*. A draft that does not hold can be kept: that is the
 person saying the example is right and the form is not. A name already in the list, or a
 field the form does not have, cannot be kept. Items of the answer that are not examples are
-listed with why, and do not cost the rest. With a relay as `ask`, the request is carried by
-hand like the prompt pane's ([agents](/docs/start/agents/)). `ScenarioDrafts` is the part on
-its own, for a host that places it elsewhere
+listed with why, and do not cost the rest; a model that declines has its reason quoted. With
+a relay as `ask`, the request is carried by hand like the prompt pane's
+([agents](/docs/start/agents/)), and the part tells the person to start a new chat for it: a
+model that has already seen the form there has seen its rules. One relay for both panes
+carries one turn, so whichever asks second is told another request is waiting.
+`ScenarioDrafts` is the part on its own, for a host that places it elsewhere
 ([0162](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0162-an-example-is-drafted-from-what-the-author-said.md)).
 
 Next: [self-host the backend](/docs/start/self-hosting/) and post the form's

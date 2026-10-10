@@ -304,6 +304,7 @@ Write it
                                  ├─ Stop pressed, or the pane goes away
                                  │     ──▶ turn.onCancel ──────────────────▶  abort, if it listens
                                  │     ──▶ ended: stopped; a later answer settles nothing
+                                 ├─ rejected with ModelBusyError ──▶ ended: busy, no reason
                                  ├─ rejected or threw ──▶ ended: unreachable, with its reason if any
                                  ▼
                                readAnswer
@@ -333,7 +334,10 @@ stopped all the same, and its answer, when it comes, resolves a promise nothing 
 on. **A host's error is an ending, not an exception.** `authorForm` resolves with
 `ended: 'unreachable'` and the error's message, so the sentence the pane says is decided once,
 in `proposalStatus`, and not by two panes each catching the rejection
-([0157](../decisions/0157-a-models-turn-can-be-stopped.md)). Only the latest complaint goes
+([0157](../decisions/0157-a-models-turn-can-be-stopped.md)). A model that rejects with
+`ModelBusyError` was not asked, and nothing is wrong with it: the run ends `busy`, with no
+reason, and the pane says from its catalogue that another request is waiting
+([0162](../decisions/0162-an-example-is-drafted-from-what-the-author-said.md)). Only the latest complaint goes
 back to the model, in `user` for a host that keeps no conversation and alone as `followUp`
 for one that does ([0056](../decisions/0056-agents-get-the-checks.md)).
 
@@ -352,7 +356,8 @@ next turn's complaint asks for the reason, and shows the decline as the briefing
 prompt pane              authorForm (6.7)          relay, in builder-core          relay pane            person
 ───────────              ────────────────          ──────────────────────          ──────────            ──────
 Write it        ───▶     ask(prompt, turn)  ───▶   one waiting already?
-                                                     └─ yes ──▶ rejects: the run ends unreachable
+                                                     └─ yes ──▶ rejects with ModelBusyError:
+                                                                the run ends busy (0162)
                                                    waiting = { prompt, message, followUp }
                                                    onCancel ──▶ clears it
                                                    tells subscribers   ───▶   draws the turn,
@@ -375,7 +380,10 @@ Stop, or the pane goes ─▶ turn.onCancel ──────────▶ th
 `AskModel`, races it against the stop, and checks what comes back; the relay decides only
 what a pane cannot be trusted to decide twice — one turn at a time, a paste with no object
 in it held back, and a stop clearing the turn
-([0160](../decisions/0160-a-person-carries-the-models-turn.md)). The request leaves the page
+([0160](../decisions/0160-a-person-carries-the-models-turn.md)). The playground asks it from
+two panes, the prompt pane and the scenario pane's drafting part, so the turn one of them
+holds refuses the other's: that run ends `busy`, and its pane says another request is waiting
+([0162](../decisions/0162-an-example-is-drafted-from-what-the-author-said.md)). The request leaves the page
 on the clipboard, by the person's press, and the answer comes back the same way. The relay
 and its pane call nothing. Each turn the pane draws takes the focus to Copy, described by the
 turn and what to do with it: from then on the run waits on the person, and a failed answer
@@ -453,7 +461,7 @@ Draft examples
                                  where examples start, names taken, the words —
                                  no rule, no pattern, no bound, not required
                                askChecked (6.7's loop)                  ───▶   its request
-                                 ├─ stopped / unreachable / declined ──▶ ended, as 6.7
+                                 ├─ stopped / unreachable / busy / declined ──▶ ended, as 6.7
                                  ▼
                                each item read on its own
                                  ├─ none is an example ──▶ the reasons go into the next turn
@@ -461,6 +469,7 @@ Draft examples
                                ok: drafts, and the items that were not, with why
                        ◀───    resolves, however it ended
   draftStatus, draftProblems ──▶ the live region, and the list beneath it
+  draftQuotes                ──▶ the model's words, quoted: why it declined, or its last answer
 
   on every render, for each draft waiting:
     draftVerdict(document now, draft, { initialValue, mode })  ──▶ runScenarios: holds, or why not

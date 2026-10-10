@@ -14,7 +14,10 @@
   example the briefing shows fails *holds against its own form* with its error code
   changed; the answers by type fail theirs with a time written `9:30` and with the wrong
   day; dropping the list of error codes, naming a repeater's row without its position and
-  showing an existing example's expectations each fail their own case.
+  showing an existing example's expectations each fail their own case. *Never says the rules
+  name no codes when a rule can work its own out* asks the engine for the code a `validate`
+  rule's condition evaluates to, and failed against the first cut, which said the rules named
+  none whenever no rule had a `code`.
   `packages/builder-core/src/scenario-drafts.test.ts`: reading the answer all or nothing
   fails *one broken item does not cost the others*; a complaint that drops the reasons fails
   *asks again only when nothing in the answer is an example*; taking the decline out of
@@ -22,7 +25,13 @@
   `errors`-shape checks each fails its case; `keepDraft` refusing every failing draft fails
   *a draft that fails can be kept*, and keeping one with a missing path or a taken name
   fails those; `draftVerdict` run without the pane's options fails *a draft's verdict is the
-  one the scenario pane gives after Keep*. *Every reason an item is not an example is said
+  one the scenario pane gives after Keep*. *A drafted `absent` on a field inside a group or a
+  row is checked where the field is* failed against the first cut, whose runner looked
+  `absent` up as a top-level key, so `home.street` held whatever the form did — as did
+  `packages/core/src/scenarios.test.ts`'s *is looked for where the field is*, which also
+  holds that a field hidden and cleared there passes. *Quotes the model's reason when it
+  declined* fails with `draftQuotes` showing the last answer of a run that did not give up.
+  *Every reason an item is not an example is said
   apart from the others* first passed with two reasons worded alike, because its items
   differed by name; they are one item now but for the reason, and it fails with
   `name-repeated` worded as `name-taken`, to the model or to the person. A stop said as a
@@ -32,7 +41,12 @@
   (Angular), drafts handed to the host on arrival, a failing draft refused, Keep that skips
   `keepDraft`, a verdict not recomputed on an edit, a verdict run without the sample, the
   unusable items not listed, the focus left to fall to the page after Keep, and the stop not
-  passed to the run — each fails its case. *Taken off the screen while a run waits* fails
+  passed to the run — each fails its case. *Is the verdict the list gives it once kept, with
+  the pane's mode* runs a draft that fails only on the server: nothing failed with the mode
+  dropped until it existed, and now dropping it from the part, or from the Angular pane's
+  binding or the React pane's, fails it. *Quotes the model* fails in each builder with the
+  decline's quote or the last answer taken out of the part, which every case passed before
+  it. *Taken off the screen while a run waits* fails
   in React with the unmount's stop taken out, and *destroyed while a run waits* in Angular
   with the stop left out of the destroy hook; with the destroyed guard taken out the Angular
   case ends in `NG0911`, which the suite reports as an error. That guard was added for it:
@@ -41,10 +55,12 @@
   drafts and left its run waiting; with the run's state no longer tagged with its session,
   or with a new session not stopping the run, it fails in each. Both builders' `language.test`,
   *the drafting part*, walk a run, a refused Keep, a Keep, a Discard, a decline, three
-  answers with nothing to keep, a model that cannot be reached and a stop under the
-  pseudo-language, and fail with "Holds against the form as it is." written into either
-  part, with the React status worded in English and with the Angular problems worded in
-  English. `apps/docs/src/builder-layering.test.ts` failed with `ScenarioDrafts` and
+  answers with nothing to keep, a model that cannot be reached, a model that is busy and a
+  stop under the pseudo-language, and fail with "Holds against the form as it is." written
+  into either part, with the React status worded in English, with the Angular problems
+  worded in English, and with a busy model's refusal ended as unreachable. They also require
+  the decline's reason and the advice to start a new chat to be drawn; the second failed until
+  the catalogue said it. `apps/docs/src/builder-layering.test.ts` failed with `ScenarioDrafts` and
   `FormancyScenarioDrafts` unaccounted for until they were paired, `workbench.test.ts` on
   the `scenario-drafts` parts until the workbench dressed them, and
   `builder-sentences.test.ts` on `scenario-prompt.ts` until it was named as speaking for
@@ -53,13 +69,21 @@
   cases fail finding no drafting box; a `fetch` on Draft (React), an `XMLHttpRequest` opened
   on Draft (Angular), a `sendBeacon` on Keep (React) and a `window.open` on Keep (Angular)
   each fail on its spy; a request carrying the document fails both on the starter's canton
-  rule. `scripts/install-fixture/consume.ts`, under `pnpm test:e2e:install`, drafts an
+  rule. It reads what Copy put on the clipboard: it read the request box at first, which
+  shows the user half alone, and stayed green with the document put into the briefing, which
+  now fails both. *One relay, two panes* fails in both builders with the relay's refusal
+  ended as unreachable, and its second half with the prompt pane's busy sentence worded as
+  unreachable. `packages/builder-core/src/relay.test.ts` (*one turn at a time*) holds the
+  refusal in both directions and `authoring.test.ts` (*a model answering another request*)
+  holds `ModelBusyError`, by class and by name; both fail with it not told from any other
+  error. `scripts/install-fixture/consume.ts`, under `pnpm test:e2e:install`, drafts an
   example through a relay with the packed packages, judges it and keeps it; with the draft
   made to answer the email it fails on the verdict. The error codes: `pnpm typecheck` fails
   in `model-validators.ts` with `mask` taken out of `BuiltInErrorCode`, and in `engine.ts`
   with `required` misspelt; `BUILT_IN_ERROR_CODES` does not compile with a code missing or
-  one too many. `@formancy/core`'s built
-  `dist/index.mjs` is byte-identical before and after (`bundles.test.ts`, §9.3).
+  one too many. The error-code type left `@formancy/core`'s built `dist/index.mjs`
+  byte-identical; the `absent` fix does not, and §9.3's figure, which `bundles.test.ts`
+  recomputes, still rounds to 20.8 kB.
 
 ## Context
 
@@ -114,6 +138,9 @@ as it does `authorForm`'s ([0158](0158-a-model-may-decline.md)).
 **The engine judges every draft, every time it is drawn.** `draftVerdict` is `runScenarios`
 with the scenario pane's own sample and mode, so a draft's verdict is the one the panel
 gives it once kept, in the same words. It is computed whenever it is read and never stored.
+`runScenarios` reads an `absent` path through the path, as it reads every other: it looked one
+up as a top-level key, so an `absent` on a field inside a group or a row held whatever the
+form did — and the briefing offers `absent` for any path.
 
 **A person keeps each one.** `keepDraft` refuses a name already in the list, which also
 stops one draft being kept twice, and a draft whose run fails because it names a path the
@@ -127,7 +154,9 @@ given; `formancy-scenario-drafts` in `@formancy/builder-angular` by `formancy-sc
 when `[ask]` is bound and `removable` is set. Keep calls `onChange`, or emits
 `scenariosChange`, with the list and the draft. Both are exported and paired in the
 layering test; their parts are dressed in the workbench; every word is in the catalogue in
-English, German and French, in files of their own (`messages-drafts*.ts`). Keep and Discard
+English, German and French, in files of their own (`messages-drafts*.ts`). Which of the
+model's own words are quoted beneath the status — its reason for declining, or its last
+answer when no answer held an example — is `draftQuotes`, decided once. Keep and Discard
 take the focus to the part's heading, and so does the end of a run that leaves it on Stop or
 on the page's body, where the relay's pane drops it when its answer is taken.
 
@@ -140,6 +169,14 @@ gained an optional `because`, which nothing runs.
 
 **The playground hands the page's relay to both builders' scenario panes**, and a draft
 kept goes into the page's examples for the open form, as one removed leaves them.
+
+**A model answering another request is busy, not unreachable.** With one relay asked from two
+panes, a run can find the other pane's turn waiting, in either direction. The relay rejects it
+with `ModelBusyError`, exported from `@formancy/builder-core`; `askChecked` ends the run
+`busy`, with no reason, and `proposalStatus` and `draftStatus` say from the catalogue that
+another request is waiting. It ended `unreachable`, with the relay's English as the reason:
+untrue, since nothing was asked, and shown as written under German and French. This changes
+how 0160's refused run ends, and nothing else about one turn at a time: the refusal stands.
 
 ## Consequences
 
@@ -166,6 +203,10 @@ example exists to check.
 the clipboard: the form's title, its field paths, labels and options, the sample examples
 start from, the names of the examples already kept, and the author's words. Not the rules,
 but not nothing. A host's sample may hold real-looking data; the playground's is fictional.
+That the rules are withheld is a property of the request, not of the chat: a model that saw
+the form earlier in the same chat — the prompt pane's request carries the whole document,
+through the same relay — has seen its rules. The part says it that way, of the request, and
+tells the person to start a new chat for it; whether they do is theirs.
 
 **A draft lives as long as the part, and its session.** The drafts waiting are the part's
 state, not the host's. Switching tab, builder or form takes the part away or hands it
@@ -173,17 +214,25 @@ another session, which stops a run (0157) and drops what was drafted: another se
 another form, and its list is not the place for the last one's drafts. Keep is how a draft
 outlives it.
 
-**One relay, one turn.** The playground's prompt pane and scenario pane ask one relay. A
-draft asked for while a model's edit waits is refused, and that run ends as a model that
-could not be reached, with the relay's reason in English (0160).
+**One relay, one turn, both ways.** The playground's prompt pane and scenario pane ask one
+relay. A draft asked for while a model's edit waits is refused, and so is an edit asked for
+while a draft waits — 0160's own flow, which nothing could refuse before. Each ends `busy`
+and says another request is waiting. The button that will be refused stays enabled while
+the other turn waits: neither pane knows its `ask` is a relay, and 0160 declined to teach it.
+`AuthoringResult.ended` and `Drafted.ended` gained `busy`, so a host that switches over every
+ending has one more to word.
 
 **Each draft is run on every edit**, beside the list the panel already runs. How long that
 takes for many drafts on a large form is not measured.
 
 **What the model can name is what the engine can.** A group or a repeater is not a path an
-example sets; a field in a repeater's row is named by its position, as `items[0].note`. The
-codes a deployment's checks answer with are not in the vocabulary, because the document
-does not say them.
+example sets; a field in a repeater's row is named by its position, as `items[0].note`, and
+every key an example has — `absent` too — is read through that path. The codes a
+deployment's checks answer with are not in the vocabulary, because the document does not say
+them. Nor is a code a `validate` rule's condition works out: a condition that evaluates to a
+string reports that string, `code` or not, and the string is in the condition, which is
+withheld. Wherever the form has a `validate` rule, the request says such a code may exist and
+that it cannot list it, and an example expecting that error can only guess its code.
 
 **`Scenario` has a field it did not have.** `because` is optional and type-only. A host
 that stores what `onChange` hands it stores the reason with the example.
@@ -217,6 +266,21 @@ about a rule somebody has since turned round.
 **List the error codes as a constant in `@formancy/core`.** It would cost bytes in a bundle
 already over budget (§9.3) for a list only the builder reads. A type costs nothing, and the
 builder's constant is checked against it.
+
+**Refuse a drafted `absent` that is not a top-level key.** It would have closed the hole for
+drafts and left it open for every example written by hand, which `runScenarios` checked the
+same way. The runner was wrong, so the runner was fixed.
+
+**Give each pane its own relay.** Then two turns could wait at once, and the visitor would
+carry two requests to one chat, with two relay panes above the tabs. One turn at a time is
+the shape of one person with one chat.
+
+**Leave the refusal `unreachable`, and say so.** Cheaper, and it left a German or French
+visitor reading English that blamed a model nobody had asked.
+
+**Disable Draft and Write it while the other pane's turn waits.** Each pane would have to know
+its `ask` is a relay and whose turn is waiting — the relay as a case in the run, which 0160
+declined. The refusal is immediate and says why, which is the next best thing.
 
 **An editor for examples.** Not this. 0111 named composing an example by hand as the next
 piece, and it still is; this is the half a model can do.

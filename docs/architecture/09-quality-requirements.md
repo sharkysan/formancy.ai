@@ -103,7 +103,10 @@ measured row defect, made identically in both renderers.
 vocabulary a model drafting examples is told, is a union the validators are typed against
 and nothing more ([0162](../decisions/0162-an-example-is-drafted-from-what-the-author-said.md)).
 Re-measured on 2026-10-10 the figure did not move, and the built `dist/index.mjs` was
-byte-identical to the one before the change.
+byte-identical to the one before the change. The fix that followed in the same change does
+reach the bundle — `runScenarios` reads an `absent` path through the path rather than as a
+top-level key, a few lines and an import — and re-measured after it, also on 2026-10-10, the
+figure still rounds to 20.8 kB.
 
 **The spec figure moved 4.3 kB in one change, and the reason is worth the line.**
 `diffSchemas` stopped comparing only a field's identity, its type and its `required`

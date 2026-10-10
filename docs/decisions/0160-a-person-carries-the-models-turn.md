@@ -1,6 +1,7 @@
 # 0160 — On the website a person carries the model's turn, and the relay is decided once in builder-core
 
-- **Status:** accepted
+- **Status:** accepted; a refused second turn ending `unreachable` superseded by
+  [0162](0162-an-example-is-drafted-from-what-the-author-said.md)
 - **Date:** 2026-10-10
 - **Supersedes:** the playground's stand-in model in
   [0109](0109-an-ai-edit-is-reviewed-before-it-lands.md), and what
@@ -189,6 +190,12 @@ looks at another tab loses it and asks again.
 sees the second run end as a model that could not be reached, with the relay's reason as the
 host's own error message — shown as written, untranslated, as every host's is (0157). One
 relay per prompt pane, or one pane at a time, avoids it.
+
+> **Superseded in part by [0162](0162-an-example-is-drafted-from-what-the-author-said.md):**
+> the playground now asks one relay from its prompt pane and its scenario pane, so this is
+> reachable from either. The relay refuses with `ModelBusyError`, the run ends `busy` with
+> no reason rather than `unreachable` with the relay's English, and each pane says another
+> request is waiting, from its catalogue. The refusal itself, one turn at a time, stands.
 
 **The clipboard needs the browser's leave.** A secure context and a user's press; refused,
 the person copies the selected text with the keyboard. Measured only in jsdom with a stubbed

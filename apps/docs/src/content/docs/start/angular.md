@@ -386,10 +386,14 @@ it drafts examples for a form that has none:
 The model is shown the form's fields — paths, types, labels and options — the engine's error
 codes and the person's words, and never a rule, a pattern, a bound or which fields are
 required, because a model shown the rule writes the example the rule passes. Each draft is
-shown with the engine's verdict on the form as it is now, which is the one the list gives it
-once kept. Nothing is emitted until *Keep*. A draft that does not hold can be kept, and a name
-already taken or a field the form does not have cannot. `formancy-scenario-drafts` is the part
-on its own. In React the same is `ask` on `ScenarioPane`
+shown with the engine's verdict on the form as it is now, run with the pane's `[initialValue]`
+and `[mode]`, which is the one the list gives it once kept. Nothing is emitted until *Keep*. A
+draft that does not hold can be kept, and a name already taken or a field the form does not
+have cannot. A model that declines has its reason quoted. Through a relay the part tells the
+person to start a new chat for the request, since a model that has already seen the form
+there has seen its rules; and one relay asked from two panes carries one turn, so whichever
+asks second is told another request is waiting. `formancy-scenario-drafts` is the part on its
+own. In React the same is `ask` on `ScenarioPane`
 ([0162](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0162-an-example-is-drafted-from-what-the-author-said.md)).
 
 ## Proof this is not a second implementation

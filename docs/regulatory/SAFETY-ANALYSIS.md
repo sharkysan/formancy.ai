@@ -1272,7 +1272,14 @@ the turn shown is exactly the prompt a host's model would have been sent; that a
 the turn, so an answer pasted after it is refused rather than proposed for whatever is asked
 next — the variant above, through a person; that a second request while one waits is refused
 rather than queued, so a paste meant for one cannot be taken as the other's; and that a paste
-with no JSON object in it is held back without spending an attempt. The pane outlives the
+with no JSON object in it is held back without spending an attempt. The refusal ends the
+second run as `busy` — another request is waiting — rather than as a model that could not
+be reached, which sent a person to check a model nothing was wrong with
+([0162](../decisions/0162-an-example-is-drafted-from-what-the-author-said.md)). The playground
+asks one relay from its prompt pane and its scenario pane, so either can be refused while the
+other's turn waits: `relay.test.ts` (*one turn at a time*) holds both directions, and
+`two-builders.test.tsx` (*one relay, two panes*) holds that each pane says so from its
+catalogue in either builder. Both fail with the refusal ended as unreachable. The pane outlives the
 turn, so the same variant is held one layer up, in both builders' `relay-pane.test`: an
 answer pasted and held back, then a stop, leaves nothing in the next request's answer box
 (*leaves nothing of its answer box to the next request*), and an answer edited after it was
@@ -1292,7 +1299,11 @@ measured against the last run over the same document only. Until a fix after `0.
 panel kept on screen while its host opened another document compared runs across the two
 by name. It could name examples as broken, or repaired, that had never run against the
 document open. `scenario-runs.test.ts` and each builder's `scenario-pane.test` hold the
-fix.
+fix. An example's `absent` on a field inside a group or a repeater's row was looked up as a
+key at the top of the submission, where no such key is, so it held whatever the form did: an
+example that read as a check and checked nothing. Since 0162 the runner looks it up through
+the path; `scenarios.test.ts` (*is looked for where the field is*) fails with the key lookup
+put back, and also holds that a field hidden and cleared there passes.
 
 The examples also run **before Apply**. Given the form's examples, each prompt pane runs
 them against the document as it is and as the proposal would leave it, through
@@ -1356,16 +1367,27 @@ inside JSON. It fails with the document put into the request as `authorForm` sen
 *Reads nothing about a field but what an example has to name* compares the prompt with the
 one for the same form stripped to its fields' shape, and fails when the request says which
 fields are required. `two-builders.test.tsx` (*examples drafted from what the visitor says*)
-reads the request the playground's relay shows in either builder, and finds none of the
-starter's rules in it.
+reads what the playground's Copy puts on the clipboard in either builder — the briefing and
+the request together — and finds none of the starter's rules in it; with the document put
+into the briefing it fails in both. It read the request box at first, which shows the second
+half alone, and stayed green with that leak. The request does not claim more about codes than
+the document says: a `validate` rule whose condition evaluates to a string reports that string
+as its code, which is in the withheld condition, so the request says such a code may exist
+rather than that the rules name none (*never says the rules name no codes*, which asks the
+engine for the code).
 
 Every draft is then judged by the engine: `draftVerdict` is `runScenarios` with the scenario
 pane's own sample and mode, recomputed whenever it is drawn, so a draft shows the verdict the
 panel will give it (`scenario-drafts.test.ts`, *a draft's verdict is the one the scenario
 pane gives after Keep*). Nothing reaches the host's list until a person presses Keep, and a
 draft that fails can be kept, because that failure is where the person decides whether the
-example or the rule is wrong (both builders' `scenario-drafts.test`). A draft naming a field
-the form does not have cannot be kept, since it would check nothing.
+example or the rule is wrong (both builders' `scenario-drafts.test`). Each builder's *is the
+verdict the list gives it once kept* runs one draft that fails only from the sample and one
+that fails only on the server, and fails with either dropped from the part or, in Angular,
+from the pane's binding. A draft naming a field the form does not have cannot be kept, since
+it would check nothing; one whose `absent` names a field inside a group or a row is checked
+there, as D10 describes (`scenario-drafts.test.ts`, *a drafted `absent` … is checked where
+the field is*).
 
 *Residual:* **the examples are only as good as the intent described.** A model writes from
 the author's words, and wrong words make wrong examples; right words can be misread. Told to
@@ -1374,7 +1396,10 @@ not. No test here runs a real model. A person decides what is kept, and nothing 
 one who read what a draft sets and expects from one who pressed Keep on every draft — D10's
 limit on attention, again. Withholding the rules is a property of the request this package
 builds: a person who pastes the form itself into the same chat has shown the model the rules,
-and nothing here can see that.
+and nothing here can see that. The drafting part says it as that — what the request carries —
+and tells the person to start a new chat for it; the playground's prompt pane carries the
+whole document through the same relay, so the case is one tab away. Both builders'
+`language.test` require that advice to be drawn. Whether a person follows it is theirs.
 
 ### D11. The builder tells its author it did something other than what it did
 

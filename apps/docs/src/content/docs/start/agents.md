@@ -335,8 +335,14 @@ holds the model's last answer, can send `followUp` instead.
 Called directly, `authorForm(askModel, instruction, { current, stop })` resolves
 however the run ends. A working document is `ok: true`. Otherwise `ended` says why
 there is none: `gave-up`, `stopped`, `unreachable` with your error's message as
-`reason`, absent when it had none, or `declined` with the model's reason as `reason`.
-`stop` comes from `createStop()`; calling its `stop()` is the button.
+`reason`, absent when it had none, `busy`, or `declined` with the model's reason as
+`reason`. `stop` comes from `createStop()`; calling its `stop()` is the button.
+
+`busy` is for a model that takes one request at a time. Reject with `ModelBusyError`
+from `@formancy/builder-core` while yours is answering another, and the run ends at once,
+with no reason, and the pane says another request is waiting for the model — in the
+person's language, rather than your error's message under "could not be reached". The
+relay below does exactly that.
 
 ### No model on the page: a relay
 
@@ -387,17 +393,19 @@ a service. The request is never put in a URL.
 
 What the relay decides, it decides once, for both builders:
 
-- **One turn at a time.** A second request while one waits is refused, and that run ends
-  as a model that could not be reached, with the relay's reason. Give each prompt pane its
-  own relay if two can run at once.
+- **One turn at a time.** A second request while one waits is refused with
+  `ModelBusyError`, and that run ends `busy`: its pane says another request is waiting for
+  the model's answer. Give each pane its own relay if two must be able to run at once.
 - **A paste with no JSON object in it is held back** and costs no attempt. The pane says
   so and offers *Use it anyway*, which sends it as it is. A decline is an answer.
 - **A stop clears the turn.** An answer pasted after it is refused, never kept for the
   next request.
 
-The same relay can be the scenario pane's `ask`, for drafting examples. One turn at a time
-holds across both: a draft asked for while a model's edit waits ends as a model that could not
-be reached.
+The same relay can be the scenario pane's `ask`, for drafting examples, as the playground's
+is. One turn at a time holds across both, in both directions: a draft asked for while a
+model's edit waits is refused, and so is an edit asked for while a draft waits. Each ends
+`busy`, and its pane says so. Neither pane knows its `ask` is a relay, so the button that
+will be refused stays enabled while the other turn waits.
 
 **What leaves, and who carries it.** The relay and its pane send the request nowhere: Copy
 puts the whole request on the clipboard — the briefing, the instruction and the whole form

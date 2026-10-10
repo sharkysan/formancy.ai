@@ -157,7 +157,10 @@ caught.
 `core` also publishes `runScenarios`, which is the only answer this product has to a
 condition that type-checks and is still the wrong business rule: an example with its
 answer written down, run against the real engine in the mode asked for. It reports
-rather than asserts, because the caller is sometimes a test and sometimes a panel. It
+rather than asserts, because the caller is sometimes a test and sometimes a panel. Every path
+an example names is read through the path, `absent` included, so a field inside a group or a
+repeater's row is checked where it is
+([0162](../decisions/0162-an-example-is-drafted-from-what-the-author-said.md)). It
 lives here rather than in a builder because a package is where the reason to change
 lives — this changes when the engine's verdict surface changes, not when a palette does
 — and the cost of that is in [§9.3](09-quality-requirements.md), where the bundle is
@@ -253,8 +256,10 @@ wrote, and reads one whose only key is the spec's `DECLINE_KEY` as the model dec
 One with no reason in it does not end the run; the caller's check is given it, to word the
 complaint that asks for the reason. `askChecked` asks, checks, and asks again with only the
 latest complaint. The run ends when an answer passes, when the attempts run out, when the
-person stops it, when the host's model cannot be asked, or when the model declines, after
-that one turn. It resolves on each, with `ended` saying which. `declinedAnswer` writes a
+person stops it, when the host's model cannot be asked, when it is answering another request
+— it rejected with `ModelBusyError`, as a relay does while another pane's turn waits
+([0162](../decisions/0162-an-example-is-drafted-from-what-the-author-said.md)) — or when the
+model declines, after that one turn. It resolves on each, with `ended` saying which. `declinedAnswer` writes a
 decline for a host whose model service refuses a request itself
 ([0158](../decisions/0158-a-model-may-decline.md)). Each turn is raced against a `Stop`
 from `createStop`, so a host that ignores `onCancel` cannot hold the run open, and an
@@ -301,8 +306,8 @@ words, and never a rule's condition, a pattern, a bound or which fields are requ
 the rule, a model writes the example the rule passes. It is model-facing English, as
 `authoring.ts` is. `scenario-drafts.ts` reads the answer item by item, judges a draft with
 `runScenarios` and the scenario pane's own options (`draftVerdict`), decides what may be kept
-(`keepDraft`), and says what came of a run in the catalogue's words (`draftStatus`,
-`draftProblems`). Both builders' drafting parts, drawn inside their scenario panes, are
+(`keepDraft`), says what came of a run in the catalogue's words (`draftStatus`,
+`draftProblems`), and which of the model's own words are quoted beneath it (`draftQuotes`). Both builders' drafting parts, drawn inside their scenario panes, are
 markup over these ([0162](../decisions/0162-an-example-is-drafted-from-what-the-author-said.md)).
 
 `messages.ts` holds the builder's **words**: one catalogue, English with a complete
