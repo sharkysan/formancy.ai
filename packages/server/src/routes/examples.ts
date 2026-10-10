@@ -5,8 +5,8 @@ import type { Actor, KeepExamplesOutcome, ServerDeps } from '@formancy/server-co
 /**
  * A form's examples, and the sample they start from, kept beside the form (0166).
  *
- * `GET /f/:path/examples` answers `{ scenarios, sample? }`, and `PUT` replaces both with the
- * same shape. The routes authenticate and carry: who may read and change them, what an
+ * `GET /f/:path/examples` answers `{ scenarios, sample? }`, with `unreadable` beside them when
+ * something kept is not an example, and `PUT` replaces both with `{ scenarios, sample? }`. The routes authenticate and carry: who may read and change them, what an
  * example is, and what a publish says about them are `server-core`'s, so the 403 here is the
  * use-case's answer and not a `requires` of the route's own. Publishing needs nothing from
  * here — `publishForm` reads the examples itself, and its warnings ride on the `201`.

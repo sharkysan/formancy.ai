@@ -644,7 +644,8 @@ was written is how every request ends, and cancels nothing.
 ```
 admin opens a published form ──▶ GET /f/:path/examples ──▶ 401 without a session
                                    readExamples(actor)       403 for a viewer: no pane
-                                                             { scenarios, sample? }
+                                     each kept row through   { scenarios, sample?, unreadable? }
+                                     readScenario, as a PUT's
 ScenarioPane over them, server mode, from the sample
   Remove, or Keep on a draft ──▶ drawn at once
                              ──▶ PUT /f/:path/examples, after the save before it
@@ -652,7 +653,9 @@ ScenarioPane over them, server mode, from the sample
                                      each item through readScenario ── any not an example
                                      names unique, sample a map        ──▶ 422, nothing kept
                                      one commit: form_examples row + form.examples.changed
-                             ◀── refused: said, and the list read from the server again
+                             ◀── failed: said; GET again in the same chain, its list drawn,
+                                 changes made on the list it replaces never sent;
+                                 GET unreachable too: the list the server last kept
   drafting (server has a model) ──▶ POST /model/complete { kind: "scenarios" } (6.13)
 PromptPane's review runs the same examples, server mode (0159)
 
@@ -666,7 +669,11 @@ PublishNote draws the warnings under the version it published
 they are kept ([0111](../decisions/0111-a-scenario-panel-names-what-stopped-holding.md)); the
 admin holds the list for the form's workspace, so it survives the build tab coming and going,
 and saves each change whole, one save after another, so two cannot reach the server in the
-wrong order. The publish reads them through the storage port and decides what to say; the
+wrong order. A save that fails puts the server's list back: it is read again inside the same
+chain, and a change made on the list it replaces — queued behind the failure, or made while the
+read was out — is dropped rather than sent, since the server never took the list it was made on.
+What is kept is read back as a `PUT` is read, so a row edited around the server reaches the
+admin as a sentence in `unreadable`, never as an example for the pane to run. The publish reads them through the storage port and decides what to say; the
 route carries the sentence on the `201`
 ([0166](../decisions/0166-a-deployment-keeps-a-forms-examples-and-runs-them-at-publish.md)).
 A form never published has no row to keep them beside, so the admin offers no list until it

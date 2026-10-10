@@ -215,7 +215,7 @@ export interface Storage {
    *
    * The form must exist; the PostgreSQL storage has the database refuse one that does not.
    * Nothing here reads the examples: whether they are examples is the use-case's question,
-   * asked before this is called.
+   * asked before this is called, and again of what `getExamples` hands back.
    */
   keepExamples(record: ExamplesRecord, audit?: AuditEntry): Promise<void>
   findVersionByHash(formId: string, schemaHash: string): Promise<FormVersionRecord | undefined>

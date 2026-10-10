@@ -325,7 +325,8 @@ says what each rule prevents.
 
 **A client may see more warnings.** A publish's `201` may now carry, in `warnings`, a sentence
 for each of the form's examples that held against the version it had and does not hold against
-the new one. It is the same list 0097 put there, so a client that shows it needs nothing new; a
+the new one, and one naming anything kept with them that is not an example and so was not run.
+It is the same list 0097 put there, so a client that shows it needs nothing new; a
 pipeline that fails on any warning will now fail on these too. And the audit log has one more
 action, `form.examples.changed`.
 

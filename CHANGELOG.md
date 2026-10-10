@@ -21,12 +21,16 @@ them, for whoever may edit the form (`form.publish`), a change audited as
 `form.examples.changed` with counts and never the examples. A list with anything that is not an
 example keeps nothing and says which item and why: `readScenario`, new in
 `@formancy/builder-core`, decides what an example is for the server and for the drafting part's
-reading of a model's answer alike. **A publish runs them** against the version the form has and
+reading of a model's answer alike, and what is already kept is read through it on the way out,
+so a row edited in the database is named and left out rather than handed to the admin, whose
+runner threw on it and took the whole admin down. **A publish runs them** against the version the form has and
 the one being published, as the server replays a submission and from the kept sample, and the
 `201`'s `warnings` names each that held and no longer does, with what was expected and what
 happened. It never refuses: a rule changed on purpose stops its old example holding, and the
 person decides. The admin draws the scenario pane over them in the build tab, saves a removal or
-a kept draft back one save after another, drafts through the server's model when it has one,
+a kept draft back one save after another — a save that fails is said and puts the server's list
+back, and nothing made on the list it replaced is sent, so the screen cannot show one list while
+the publish runs another — drafts through the server's model when it has one,
 and hands the same examples to the prompt pane's review
 ([0166](docs/decisions/0166-a-deployment-keeps-a-forms-examples-and-runs-them-at-publish.md)).
 

@@ -527,7 +527,8 @@ A form's examples are the family after it, kept beside the form and run at publi
 `server-core/examples.ts` holds `readExamples` and `keepExamples`, which take the actor and
 decide the permission themselves, read a list through `builder-core`'s `readScenario` — the
 reader the drafting part reads a model's answer through, in `builder-core/scenario-shape.ts` —
-and `examplesThatStopHolding`, which `publishing.ts` calls with the version the form has and the
+on the way in and again on the way out, so a row edited around them is named rather than handed
+on, and `examplesThatStopHolding`, which `publishing.ts` calls with the version the form has and the
 one being published: `core`'s `runScenarios` in server mode from the kept sample, compared by
 `builder-core`'s `comparedToLastRun`, each regression a sentence among the publish's warnings.
 The port gained `getExamples` and `keepExamples`; `server/postgres-examples.ts` implements them
@@ -535,7 +536,8 @@ over the `form_examples` table `db.ts` creates on start, beside the audit row's 
 moved to `db.ts` so both storage files write it one way, and `server/routes/examples.ts` only
 authenticates and carries. The form's access route left `app.ts` for `server/routes/access.ts`
 to make room for registering it. In `apps/admin`, `examples-pane.tsx` holds the form's
-examples for its workspace — read once a form is published, saved back one save after another —
+examples for its workspace — read once a form is published, saved back one save after another,
+the server's list put back after a save that fails —
 and draws `ScenarioPane` over them in server mode, with drafting through the server's model when
 it has one; `build-pane.tsx` hands the same examples to the prompt pane.
 

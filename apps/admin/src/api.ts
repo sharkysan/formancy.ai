@@ -213,6 +213,11 @@ export async function fetchSubmissions(path: string): Promise<SubmissionEntry[]>
 export interface FormExamples {
   readonly scenarios: readonly Scenario[]
   readonly sample?: Readonly<Record<string, unknown>>
+  /**
+   * What the server keeps and could not read as examples, one sentence each — left out of the
+   * above by the server, and never sent back, so the next save drops it there too.
+   */
+  readonly unreadable?: readonly string[]
 }
 
 /**
@@ -225,9 +230,12 @@ export async function fetchExamples(path: string): Promise<FormExamples | undefi
   const response = await authed(`${BASE}/f/${encodeURIComponent(path)}/examples`)
   if (!response.ok) return undefined
   const body = (await response.json().catch(() => ({}))) as Partial<FormExamples>
-  return Array.isArray(body.scenarios)
-    ? { scenarios: body.scenarios, ...(body.sample === undefined ? {} : { sample: body.sample }) }
-    : undefined
+  if (!Array.isArray(body.scenarios)) return undefined
+  return {
+    scenarios: body.scenarios,
+    ...(body.sample === undefined ? {} : { sample: body.sample }),
+    ...(Array.isArray(body.unreadable) && body.unreadable.length > 0 ? { unreadable: body.unreadable } : {}),
+  }
 }
 
 /**

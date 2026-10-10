@@ -338,6 +338,11 @@ because an example may be written for a field the next version adds. Every
 change is in the audit log as `form.examples.changed`, with how many examples
 and whether there is a sample — never what they say.
 
+What is kept is read back the way a `PUT` is read. A row changed in the
+database by hand into something that is not an example is left out of
+`scenarios`, and the `GET` names it in `unreadable`, one sentence each; the
+next `PUT` keeps only what it is sent, so it drops it.
+
 **Publishing runs them.** Each publish runs the form's examples against the
 version it has and the one being published, as the server replays a submission
 and from the kept sample, and names on the `201` each that stops holding:
@@ -350,7 +355,8 @@ and from the kept sample, and names on the `201` each that stops holding:
 It never refuses: a rule changed on purpose stops its old example holding, and
 the decision is yours. An example that did not hold against the old version
 either is not named, and neither is one that holds again. A first publish has
-none to run, and republishing the current document says nothing about them
+none to run, and republishing the current document says nothing about them.
+What is kept and is not an example is not run, and one warning names it
 ([0166](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0166-a-deployment-keeps-a-forms-examples-and-runs-them-at-publish.md)).
 The `jq` gate above fails on these too.
 
@@ -591,7 +597,8 @@ publish, version history and a submissions table on `:4382`, proxying `/api` to
 the server. When the server has [a model](#a-model-for-the-builders), the build tab draws the
 prompt pane and the Translations tab can ask for a language's missing messages, both through
 the server. Once a form is published, the build tab lists [its examples](#a-forms-examples),
-runs them after every edit as the publish will, saves a removal back to the server, and —
+runs them after every edit as the publish will, saves a removal back to the server — after a
+save that fails it says so and shows the server's list again — and —
 with a model — drafts more from what you say the form should do; the prompt pane's review
 names any example a model's edit would stop. The backend sets no CORS headers on purpose — cross-origin policy is
 its own piece of work, and a permissive development default would outlive

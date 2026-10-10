@@ -32,6 +32,7 @@ const contact = (cel: string) => ({
 
 const ASKS_FOR_A_CANTON = { name: 'Switzerland asks for a canton', changes: { country: 'CH' }, valid: true, visible: { canton: true } }
 const GERMANY_DOES_NOT = { name: 'Germany does not', changes: { country: 'DE' }, valid: true, visible: { canton: false } }
+const FRANCE_DOES_NOT = { name: 'France does not', changes: { country: 'FR' }, valid: true, visible: { canton: false } }
 /** Fictional: the one required answer every example starts from. */
 const SAMPLE = { email: 'jane@example.ch' }
 
@@ -58,15 +59,45 @@ interface Call {
   readonly body: unknown
 }
 
+/** A request held open: answered when released, or failed as a server that cannot be reached fails it. */
+interface Hold {
+  release(): void
+  fail(): void
+}
+
+/** What the server answers with; a test changes it to have the server change its mind. */
+interface Answers {
+  /** Refuse a save with a 422, or fail it as an unreachable server does. */
+  refuseSave: boolean | 'unreachable'
+  /** Answer the examples' GET as a viewer is answered, or not at all. */
+  refuseRead: boolean | 'unreachable'
+}
+
 interface Served {
   readonly calls: Call[]
-  /** Hold the next PUT of the examples until `release` is called. */
-  holdNextSave(): { release: () => void }
+  readonly answers: Answers
+  /** The examples the server keeps now: what it started with, or the last save it took. */
+  stored(): unknown
+  /** Hold the next PUT of the examples that has no hold yet. */
+  holdNextSave(): Hold
+  /** Hold the next GET of the examples. */
+  holdNextRead(): Hold
+}
+
+function hold(): Hold & { readonly reached: Promise<void> } {
+  let release: () => void = () => undefined
+  let fail: () => void = () => undefined
+  const reached = new Promise<void>((resolve, reject) => {
+    release = resolve
+    fail = () => reject(new TypeError('Failed to fetch'))
+  })
+  return { reached, release, fail }
 }
 
 /**
  * The server: the contact form published, its examples kept, and a model or none. Every
- * request is recorded; a PUT of the examples answers with what it was sent, unless `refuseSave`.
+ * request is recorded. A PUT of the examples that is not refused is kept, and a GET answers
+ * with what is kept, so a test can compare the screen with the server.
  */
 function serve({
   form = contact('country == "CH"'),
@@ -82,14 +113,16 @@ function serve({
   model?: { provider: string; model: string }
   answer?: unknown
   examples?: unknown
-  refuseSave?: boolean
-  /** Answer the examples' GET as a viewer is answered, or not at all. */
-  refuseRead?: boolean | 'unreachable'
+  refuseSave?: Answers['refuseSave']
+  refuseRead?: Answers['refuseRead']
   published?: boolean
   publishWarnings?: string[]
 } = {}): Served {
   const calls: Call[] = []
-  let held: Promise<void> | undefined
+  const answers: Answers = { refuseSave, refuseRead }
+  let stored = examples
+  const saveHolds: Array<ReturnType<typeof hold>> = []
+  let readHold: ReturnType<typeof hold> | undefined
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: string, init?: RequestInit) => {
@@ -108,14 +141,19 @@ function serve({
         return json({ version: 2, schemaHash: 'hash-2', ...(publishWarnings.length === 0 ? {} : { warnings: publishWarnings }) }, 201)
       }
       if (input === '/api/f/contact/examples' && method === 'GET') {
-        if (refuseRead === 'unreachable') throw new TypeError('Failed to fetch')
-        return refuseRead ? json({ error: 'forbidden', action: 'form.publish' }, 403) : json(examples)
+        const waiting = readHold
+        readHold = undefined
+        if (waiting !== undefined) await waiting.reached
+        if (answers.refuseRead === 'unreachable') throw new TypeError('Failed to fetch')
+        return answers.refuseRead ? json({ error: 'forbidden', action: 'form.publish' }, 403) : json(stored)
       }
       if (input === '/api/f/contact/examples' && method === 'PUT') {
-        const waiting = held
-        held = undefined
-        if (waiting !== undefined) await waiting
-        return refuseSave ? json({ error: 'invalid_examples', problems: ['Example 1 has no name.'] }, 422) : json(body)
+        const waiting = saveHolds.shift()
+        if (waiting !== undefined) await waiting.reached
+        if (answers.refuseSave === 'unreachable') throw new TypeError('Failed to fetch')
+        if (answers.refuseSave) return json({ error: 'invalid_examples', problems: ['Example 1 has no name.'] }, 422)
+        stored = body
+        return json(body)
       }
       if (input === '/api/f/contact') {
         return published ? json({ version: 1, schemaHash: 'hash-1', schema: form }) : json({ error: 'unknown_form' }, 404)
@@ -125,10 +163,17 @@ function serve({
   )
   return {
     calls,
+    answers,
+    stored: () => stored,
     holdNextSave() {
-      let release: () => void = () => undefined
-      held = new Promise<void>((resolve) => (release = resolve))
-      return { release }
+      const held = hold()
+      saveHolds.push(held)
+      return held
+    },
+    holdNextRead() {
+      const held = hold()
+      readHold = held
+      return held
     },
   }
 }
@@ -149,6 +194,15 @@ async function open(path = 'Contact us'): Promise<ReturnType<typeof userEvent.se
 }
 
 const scenarioPane = (): Promise<HTMLElement> => screen.findByRole('region', { name: 'Scenarios' }, { timeout: 5000 })
+
+/** The examples the scenario pane lists, by name. */
+const shown = (): string[] =>
+  within(screen.getByRole('region', { name: 'Scenarios' }))
+    .queryAllByRole('button', { name: /^Remove / })
+    .map((button) => (button.textContent ?? '').replace(/^Remove /, ''))
+
+/** The examples the server keeps, by name. */
+const names = (examples: unknown): string[] => (examples as { scenarios: Array<{ name: string }> }).scenarios.map((one) => one.name)
 
 beforeEach(() => {
   sessionStorage.clear()
@@ -219,6 +273,100 @@ describe('the examples the server keeps', () => {
     expect(await screen.findByText(/The examples could not be saved: Example 1 has no name\./)).toBeTruthy()
     await waitFor(() => expect(within(screen.getByRole('region', { name: 'Scenarios' })).getByText('Germany does not')).toBeTruthy())
     expect(calls.filter((call) => call.url === '/api/f/contact/examples' && call.method === 'GET').length).toBeGreaterThan(1)
+  })
+
+  test('a save that fails sends none of the changes queued behind it, and the screen is the server’s list', async () => {
+    // Each change queued behind a failed save was made on a list the server never took. Sent
+    // anyway, it lands after the list has been read again: the screen shows the server's old
+    // list, the server keeps one nobody saw, and that one is what the publish runs.
+    const served = serve({ examples: { scenarios: [ASKS_FOR_A_CANTON, GERMANY_DOES_NOT, FRANCE_DOES_NOT], sample: SAMPLE } })
+    const user = await open()
+    const first = served.holdNextSave()
+    const second = served.holdNextSave()
+    await user.click(within(await scenarioPane()).getByRole('button', { name: 'Remove Germany does not' }))
+    await user.click(within(await scenarioPane()).getByRole('button', { name: 'Remove Switzerland asks for a canton' }))
+    await waitFor(() => expect(saves(served.calls)).toHaveLength(1))
+
+    first.fail()
+    expect(await screen.findByText(/The examples could not be saved: Failed to fetch\./)).toBeTruthy()
+    await waitFor(() => expect(shown()).toEqual(names(served.stored())))
+    second.release()
+
+    await waitFor(() => expect(shown()).toEqual([ASKS_FOR_A_CANTON.name, GERMANY_DOES_NOT.name, FRANCE_DOES_NOT.name]))
+    expect(saves(served.calls)).toHaveLength(1)
+    expect(names(served.stored())).toEqual(shown())
+
+    // And a change made on the list the server gave back is saved: a failed save does not stop
+    // saving for good.
+    await user.click(within(await scenarioPane()).getByRole('button', { name: 'Remove France does not' }))
+    await waitFor(() => expect(names(served.stored())).toEqual([ASKS_FOR_A_CANTON.name, GERMANY_DOES_NOT.name]))
+    expect(shown()).toEqual(names(served.stored()))
+  })
+
+  test('nor one made while the server’s list is being read again', async () => {
+    // Made on the list the failed save left on the screen, and sent once the read was in, it
+    // would replace on the server the list the screen had just been given.
+    const served = serve({ examples: { scenarios: [ASKS_FOR_A_CANTON, GERMANY_DOES_NOT, FRANCE_DOES_NOT], sample: SAMPLE } })
+    const user = await open()
+    const save = served.holdNextSave()
+    await user.click(within(await scenarioPane()).getByRole('button', { name: 'Remove Germany does not' }))
+    await waitFor(() => expect(saves(served.calls)).toHaveLength(1))
+    const read = served.holdNextRead()
+    save.fail()
+    await waitFor(() => expect(served.calls.filter((call) => call.url === '/api/f/contact/examples' && call.method === 'GET')).toHaveLength(2))
+
+    await user.click(within(await scenarioPane()).getByRole('button', { name: 'Remove Switzerland asks for a canton' }))
+    read.release()
+
+    expect(await screen.findByText(/The examples could not be saved/)).toBeTruthy()
+    await waitFor(() => expect(shown()).toEqual([ASKS_FOR_A_CANTON.name, GERMANY_DOES_NOT.name, FRANCE_DOES_NOT.name]))
+    expect(saves(served.calls)).toHaveLength(1)
+    expect(names(served.stored())).toEqual(shown())
+  })
+
+  test('a save and a read again that both cannot reach the server leave the list it last kept, and say so', async () => {
+    // The server gone after the form was opened, the commonest reason a save fails. Cleared
+    // by the failed read, the whole pane went without a word and stayed gone.
+    const served = serve()
+    const user = await open()
+    await scenarioPane()
+    served.answers.refuseSave = 'unreachable'
+    served.answers.refuseRead = 'unreachable'
+    await user.click(within(await scenarioPane()).getByRole('button', { name: 'Remove Germany does not' }))
+
+    expect(await screen.findByText(/The examples could not be saved: Failed to fetch\. Nor could the server’s list be read again/)).toBeTruthy()
+    expect(shown()).toEqual([ASKS_FOR_A_CANTON.name, GERMANY_DOES_NOT.name])
+  })
+
+  test('a save whose read again the server refuses says why the list went', async () => {
+    // The person's role changed, or the form went, between opening it and saving. The list is
+    // not drawn over examples that could not be saved; the sentence is what is left to read.
+    const served = serve({ refuseSave: true })
+    const user = await open()
+    await scenarioPane()
+    served.answers.refuseRead = true
+    await user.click(within(await scenarioPane()).getByRole('button', { name: 'Remove Germany does not' }))
+
+    expect(await screen.findByText(/The examples could not be saved: Example 1 has no name\./)).toBeTruthy()
+    expect(screen.queryByRole('region', { name: 'Scenarios' })).toBeNull()
+  })
+
+  test('what the server keeps and could not read as an example is named, and the build tab stays usable', async () => {
+    // A row edited around the server. Handed on as an example, the pane ran it as it drew, the
+    // runner threw, and the whole admin went: the form could not be opened even to remove it.
+    // The server leaves it out and says why; drawn nowhere, it would go at the next save unsaid.
+    const unreadable = 'Example 3 ("Hand-edited") has no "changes": the answers it sets, by field.'
+    const { calls } = serve({
+      examples: { scenarios: [ASKS_FOR_A_CANTON, GERMANY_DOES_NOT], sample: SAMPLE, unreadable: [unreadable] },
+    })
+    const user = await open()
+    await scenarioPane()
+    expect(screen.getByText(/Example 3 \("Hand-edited"\) has no "changes"/).textContent).toMatch(/next change saved here/)
+    expect(shown()).toEqual([ASKS_FOR_A_CANTON.name, GERMANY_DOES_NOT.name])
+
+    await user.click(within(await scenarioPane()).getByRole('button', { name: 'Remove Germany does not' }))
+    await waitFor(() => expect(saves(calls)).toEqual([{ scenarios: [ASKS_FOR_A_CANTON], sample: SAMPLE }]))
+    expect(screen.queryByText(/Hand-edited/)).toBeNull()
   })
 
   test('a form never published has nowhere to keep them, and says so', async () => {

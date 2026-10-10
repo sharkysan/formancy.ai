@@ -15,8 +15,14 @@ import { ModelNote } from './model-note.js'
  * and the admin's host is the server — where the publish reads them. So a removal or a kept
  * draft is drawn at once and sent at once, **one save after another**: two sent side by side
  * could land in the other order and put back on the server, where the publish runs them, an
- * example the screen no longer shows. A save the server refuses is said, and the list is read
- * from the server again.
+ * example the screen no longer shows.
+ *
+ * **A save that fails puts the server's list back on the screen, and nothing made before that
+ * is sent.** The list is read again inside the same chain, so no save is in flight when it
+ * arrives, and every change made on the list it replaces — queued behind the failed save, or
+ * made while the read was out — was made on a list the server never took, and is dropped. When
+ * the server cannot be reached for the read either, the screen shows the list it last kept, and
+ * says so. Either way the failure is said.
  */
 export interface KeptExamples {
   /** Undefined for a form never published, until they arrive, or when the server will not show them. */
@@ -31,16 +37,21 @@ export interface KeptExamples {
 export function useKeptExamples(path: string, published: boolean): KeptExamples {
   const [examples, setExamples] = useState<FormExamples | undefined>(undefined)
   const [problem, setProblem] = useState<string | undefined>(undefined)
-  // Bumped to read the server's list again after a save it refused.
-  const [reads, setReads] = useState(0)
   const saving = useRef<Promise<void>>(Promise.resolve())
+  // The list the server is known to keep: what it last answered with, or last took.
+  const known = useRef<FormExamples | undefined>(undefined)
+  // Counts the times a failed save put the server's list back. A change remembers the count it
+  // was made at, and is not sent once the list it was made on has been replaced.
+  const replaced = useRef(0)
 
   useEffect(() => {
     if (!published) return
     let current = true
     fetchExamples(path)
       .then((found) => {
-        if (current) setExamples(found)
+        if (!current) return
+        known.current = found
+        setExamples(found)
       })
       .catch(() => {
         if (current) setExamples(undefined)
@@ -48,25 +59,44 @@ export function useKeptExamples(path: string, published: boolean): KeptExamples 
     return () => {
       current = false
     }
-  }, [path, published, reads])
+  }, [path, published])
 
   const change = useCallback(
     (next: readonly Scenario[]) => {
       if (examples === undefined) return
       const kept: FormExamples = { scenarios: next, ...(examples.sample === undefined ? {} : { sample: examples.sample }) }
+      const madeAt = replaced.current
       setExamples(kept)
       setProblem(undefined)
-      saving.current = saving.current
-        .then(() => saveExamples(path, kept))
-        .catch((error: unknown) => {
-          setProblem(`The examples could not be saved: ${error instanceof Error ? error.message : String(error)}`)
-          setReads((count) => count + 1)
-        })
+      saving.current = saving.current.then(async () => {
+        if (madeAt !== replaced.current) return
+        try {
+          await saveExamples(path, kept)
+          known.current = kept
+        } catch (error) {
+          const why = `The examples could not be saved: ${asSentence(error)}`
+          let reached = true
+          try {
+            known.current = await fetchExamples(path)
+          } catch {
+            reached = false
+          }
+          replaced.current += 1
+          setExamples(known.current)
+          setProblem(reached ? why : `${why} Nor could the server’s list be read again, so this is the list it last kept.`)
+        }
+      })
     },
     [examples, path],
   )
 
   return { examples: published ? examples : undefined, change, problem }
+}
+
+/** An error's message as a sentence: the server's end in a full stop, a browser's do not. */
+function asSentence(error: unknown): string {
+  const text = error instanceof Error ? error.message : String(error)
+  return /[.!?]$/.test(text) ? text : `${text}.`
 }
 
 /**
@@ -88,7 +118,10 @@ export function ExamplesPart({
   if (!published) {
     return <p className="wb-hint">Examples are kept on the server once this form is published.</p>
   }
-  if (kept.examples === undefined) return null
+  // Said before anything else is decided: a failed save whose read again the server refused
+  // leaves no list to draw, and the sentence is then all there is to read.
+  const problem = kept.problem === undefined ? null : <p className="wb-problem">{kept.problem}</p>
+  if (kept.examples === undefined) return problem
   return (
     <>
       {model === undefined ? null : (
@@ -97,7 +130,12 @@ export function ExamplesPart({
           sends="what you say the form should do, its fields, labels and options, the sample and the names of its examples"
         />
       )}
-      {kept.problem === undefined ? null : <p className="wb-problem">{kept.problem}</p>}
+      {problem}
+      {kept.examples.unreadable === undefined ? null : (
+        <p className="wb-problem">
+          {`The server keeps more than it could read as examples, and left it out here: ${kept.examples.unreadable.join(' ')} The next change saved here keeps only what is listed.`}
+        </p>
+      )}
       <ScenarioPane
         session={session}
         scenarios={kept.examples.scenarios}

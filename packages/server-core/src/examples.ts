@@ -6,7 +6,7 @@ import type { FormSchema } from '@formancy/spec'
 import { can } from './auth.js'
 import type { Actor } from './auth.js'
 import type { ServerDeps } from './deps.js'
-import type { Storage } from './ports.js'
+import type { ExamplesRecord, Storage } from './ports.js'
 
 /**
  * A form's examples, kept by the deployment beside the form, and run when it is published
@@ -23,6 +23,12 @@ import type { Storage } from './ports.js'
  * **The permission is decided here, not in the route.** Reading and changing a form's
  * examples take what editing the form takes, `form.publish`, and a host composing its own
  * HTTP over this package gets that rule with the use-case rather than having to remember it.
+ *
+ * **What is kept is read as what is sent is read**, by `readList`, on the way in and on the
+ * way out. A list sent to be kept with anything in it that is not an example keeps nothing; a
+ * row already kept that is not one — edited around `keepExamples` — is left out and named
+ * wherever the examples are read back, so the admin that draws them and the publish that runs
+ * them are only ever handed examples.
  */
 
 /** A form's examples as a builder holds them: the list, and where every one starts. */
@@ -30,6 +36,12 @@ export interface FormExamples {
   readonly scenarios: readonly Scenario[]
   /** Absent when none was kept: every example then starts from an empty form. */
   readonly sample?: Readonly<Record<string, unknown>>
+  /**
+   * When they are read back: what is kept and is not an example, or not a sample, one sentence
+   * each. Left out of the above, so nothing draws or runs it, and gone at the next save, which
+   * keeps only what it is sent. Absent when everything kept could be read.
+   */
+  readonly unreadable?: readonly string[]
 }
 
 export type ExamplesOutcome =
@@ -53,8 +65,14 @@ export async function readExamples(
   const form = await deps.storage.getFormByPath(input.path)
   if (form === undefined) return { ok: false, kind: 'unknown_form' }
 
-  const kept = await deps.storage.getExamples(form.id)
-  return { ok: true, examples: asExamples(kept?.scenarios ?? [], kept?.sample ?? null) }
+  const kept = readKept(await deps.storage.getExamples(form.id))
+  return {
+    ok: true,
+    examples: {
+      ...asExamples(kept.scenarios, kept.sample),
+      ...(kept.problems.length === 0 ? {} : { unreadable: kept.problems }),
+    },
+  }
 }
 
 /**
@@ -103,10 +121,11 @@ export async function keepExamples(
  * not hold before either is not this publish's doing, and one that holds again is good news;
  * neither is a warning.
  *
- * **It never throws.** A publish may warn and never refuses over its examples
+ * **It never refuses.** A publish may warn and never refuses over its examples
  * ([0097](../../../docs/decisions/0097-a-publish-may-warn.md)): a rule changed on purpose stops
- * its old example holding, and the person decides. A stored row the runner cannot read — one
- * edited around `keepExamples` — would otherwise turn every publish of the form into a 500.
+ * its old example holding, and the person decides. A stored row that is not an example — one
+ * edited around `keepExamples` — is read out before the run, as the admin reads it out, and
+ * named; run as it was, the runner throws on it and every publish of the form is a 500.
  */
 export async function examplesThatStopHolding(
   storage: Storage,
@@ -114,26 +133,25 @@ export async function examplesThatStopHolding(
   before: { readonly schema: FormSchema; readonly version: number } | undefined,
   after: { readonly schema: FormSchema; readonly version: number },
 ): Promise<string[]> {
-  const kept = await storage.getExamples(formId)
-  if (kept === undefined || kept.scenarios.length === 0 || before === undefined) return []
+  if (before === undefined) return []
+  const kept = readKept(await storage.getExamples(formId))
+  const leftOut =
+    kept.problems.length === 0
+      ? []
+      : [`Not everything kept with this form's examples could be read, and what could not was not run: ${kept.problems.join(' ')}`]
+  if (kept.scenarios.length === 0) return leftOut
 
-  try {
-    const options = { mode: 'server' as const, ...(kept.sample === null ? {} : { initialValue: kept.sample }) }
-    const now = runScenarios(after.schema, kept.scenarios, options)
-    const { regressions } = comparedToLastRun(runScenarios(before.schema, kept.scenarios, options), now)
-    return regressions.map((name) => {
-      const failures = now.find((result) => result.name === name)?.failures ?? []
-      return (
-        `The example "${name}" held against version ${String(before.version)} and does not hold against ` +
-        `version ${String(after.version)}: ${failures.map((failure) => failure.detail).join(' ')}`
-      )
-    })
-  } catch (error) {
-    return [
-      `The form's examples could not be run against version ${String(after.version)}, so nothing was said ` +
-        `about them: ${error instanceof Error ? error.message : String(error)}`,
-    ]
-  }
+  const options = { mode: 'server' as const, ...(kept.sample === null ? {} : { initialValue: kept.sample }) }
+  const now = runScenarios(after.schema, kept.scenarios, options)
+  const { regressions } = comparedToLastRun(runScenarios(before.schema, kept.scenarios, options), now)
+  const stopped = regressions.map((name) => {
+    const failures = now.find((result) => result.name === name)?.failures ?? []
+    return (
+      `The example "${name}" held against version ${String(before.version)} and does not hold against ` +
+      `version ${String(after.version)}: ${failures.map((failure) => failure.detail).join(' ')}`
+    )
+  })
+  return [...stopped, ...leftOut]
 }
 
 function asExamples(scenarios: readonly Scenario[], sample: Readonly<Record<string, unknown>> | null): FormExamples {
@@ -149,7 +167,33 @@ function readExamplesBody(body: unknown): ReadBody {
   if (!isRecord(body) || !Array.isArray(body['scenarios'])) {
     return { problems: ['Send { scenarios, sample? }, where scenarios is a list of examples.'] }
   }
-  const { sample } = body
+  const read = readList(body['scenarios'], body['sample'])
+  return read.problems.length > 0 ? { problems: read.problems } : { scenarios: read.scenarios, sample: read.sample }
+}
+
+/**
+ * What a storage keeps, read as a list sent to be kept is read. The storage checks nothing
+ * (`Storage.keepExamples`), so a row written around the use-case comes back here as it was
+ * written, and only what reads as an example is handed on.
+ */
+function readKept(kept: ExamplesRecord | undefined): ReadList {
+  if (kept === undefined) return { scenarios: [], sample: null, problems: [] }
+  const items: unknown = kept.scenarios
+  if (Array.isArray(items)) return readList(items, kept.sample)
+  const read = readList([], kept.sample)
+  return { ...read, problems: ['What is kept as the examples is not a list of them.', ...read.problems] }
+}
+
+interface ReadList {
+  /** The items that are examples, in their order. */
+  readonly scenarios: readonly Scenario[]
+  readonly sample: Readonly<Record<string, unknown>> | null
+  /** One sentence for each item that is not an example, and for a sample that is not answers. */
+  readonly problems: readonly string[]
+}
+
+/** Each item through `readScenario`, names once each, and the sample as answers by field. */
+function readList(items: readonly unknown[], sample: unknown): ReadList {
   const problems: string[] = []
   if (sample !== undefined && sample !== null && !isRecord(sample)) {
     problems.push('The sample is the answers every example starts from, by field, and this is not that.')
@@ -157,7 +201,7 @@ function readExamplesBody(body: unknown): ReadBody {
 
   const scenarios: Scenario[] = []
   const first = new Map<string, number>()
-  body['scenarios'].forEach((item: unknown, index) => {
+  items.forEach((item: unknown, index) => {
     const position = index + 1
     const read = readScenario(item)
     if (!read.ok) {
@@ -175,7 +219,7 @@ function readExamplesBody(body: unknown): ReadBody {
     scenarios.push(read.scenario)
   })
 
-  return problems.length > 0 ? { problems } : { scenarios, sample: isRecord(sample) ? sample : null }
+  return { scenarios, sample: isRecord(sample) ? sample : null, problems }
 }
 
 function which(position: number, name: string | undefined): string {

@@ -2523,7 +2523,10 @@ describe('a form’s examples, kept in PostgreSQL', () => {
     expect((await app.inject({ method: 'GET', url: '/f/kept-examples/examples', headers: asAdmin() })).json()).toEqual(fewer)
   })
 
-  test('a change and its audit row commit together, with counts and not the examples', async () => {
+  test('a change is audited, with counts and not the examples', async () => {
+    // Who changed what a form is checked against: the question after a publish that should have
+    // warned and did not. This shows the row is written, and not that it commits with the change
+    // — a row written after the commit gives the same count; the next case is that one.
     await app.inject({ method: 'POST', url: '/forms', headers: asAdmin(), payload: { path: 'audited-examples', schema } })
     await app.inject({ method: 'PUT', url: '/f/audited-examples/examples', headers: asAdmin(), payload: examples })
 
@@ -2531,6 +2534,27 @@ describe('a form’s examples, kept in PostgreSQL', () => {
       SELECT detail FROM audit_log WHERE action = 'form.examples.changed' AND subject = 'audited-examples'`
     expect(rows).toHaveLength(1)
     expect(rows[0]?.detail).toEqual({ examples: 2, sample: true })
+  })
+
+  test('a change whose audit row cannot be written is not kept either', async () => {
+    // One commit, the change and the row saying who made it. Written one after the other, an
+    // audit row that fails leaves the change standing with nothing recording it: examples gone
+    // that the next publish would have run, and no row to ask who removed them. The row is made
+    // to fail with an id the log already has, which the primary key refuses.
+    await app.inject({ method: 'POST', url: '/forms', headers: asAdmin(), payload: { path: 'unaudited-examples', schema } })
+    await app.inject({ method: 'PUT', url: '/f/unaudited-examples/examples', headers: asAdmin(), payload: examples })
+    const [form] = await sql<Array<{ id: string }>>`SELECT id FROM forms WHERE path = 'unaudited-examples'`
+    const [taken] = await sql<Array<{ id: string }>>`SELECT id FROM audit_log LIMIT 1`
+    const storage = createPostgresStorage(sql)
+    const at = new Date().toISOString()
+
+    await expect(
+      storage.keepExamples(
+        { formId: form!.id, scenarios: [], sample: null, updatedAt: at },
+        { id: taken!.id, at, action: 'form.examples.changed', subject: 'unaudited-examples', detail: { examples: 0, sample: false } },
+      ),
+    ).rejects.toThrow()
+    expect((await storage.getExamples(form!.id))?.scenarios).toEqual(examples.scenarios)
   })
 
   test('the database refuses examples for a form that is not there', async () => {

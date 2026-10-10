@@ -204,6 +204,53 @@ describe('keeping a form’s examples', () => {
     }
   })
 
+  test('leave out, and name, what is kept and is not an example when they are read', async () => {
+    // A row edited around the use-case, handed on as it is: the admin runs it as it draws the
+    // build tab, the runner throws on `changes` it cannot read, and the admin is gone — the form
+    // cannot be edited there at all, not even to remove the row. Read as a list sent to be kept
+    // is read, one decision for both, so what is handed on is examples.
+    const form = await deps.storage.getFormByPath('contact')
+    await deps.storage.keepExamples({
+      formId: form!.id,
+      scenarios: [
+        ASKS_FOR_A_CANTON,
+        { name: 'Hand-edited', changes: null, valid: true },
+        GERMANY_DOES_NOT,
+        { ...GERMANY_DOES_NOT, name: ASKS_FOR_A_CANTON.name },
+      ] as unknown as Scenario[],
+      sample: ['jane'] as unknown as Record<string, unknown>,
+      updatedAt: '2026-10-10T12:00:00Z',
+    })
+
+    expect(await readExamples(deps, { path: 'contact', actor: EDITOR })).toEqual({
+      ok: true,
+      examples: {
+        scenarios: [ASKS_FOR_A_CANTON, GERMANY_DOES_NOT],
+        unreadable: [
+          'The sample is the answers every example starts from, by field, and this is not that.',
+          'Example 2 ("Hand-edited") has no "changes": the answers it sets, by field.',
+          'Example 4 ("Switzerland asks for a canton") has the name of example 1; a name is how an example\'s result is found.',
+        ],
+      },
+    })
+  })
+
+  test('read none from a kept list that is not a list, and say so', async () => {
+    // The same row edited further. Read item by item it would throw before any item was read,
+    // and the admin would not open the form.
+    const form = await deps.storage.getFormByPath('contact')
+    await deps.storage.keepExamples({
+      formId: form!.id,
+      scenarios: { name: 'Hand-edited' } as unknown as Scenario[],
+      sample: SAMPLE,
+      updatedAt: '2026-10-10T12:00:00Z',
+    })
+
+    const outcome = await readExamples(deps, { path: 'contact', actor: EDITOR })
+    expect(outcome).toMatchObject({ ok: true, examples: { scenarios: [], sample: SAMPLE } })
+    expect(outcome.ok && outcome.examples.unreadable).toHaveLength(1)
+  })
+
   test('is recorded in the audit log, with counts and never the examples', async () => {
     // Who changed what a form is checked against, and when: the question after a publish
     // that should have warned and did not. The sample is fictional, and still not a log's.
@@ -317,22 +364,26 @@ describe('publishing a form whose examples are kept', () => {
     })
   })
 
-  test('still publishes when a stored example cannot be run, and says so', async () => {
-    // A row edited by hand around the use-case, with `changes` the runner cannot read. It
-    // throws in the runner; uncaught, every publish of this form would be a 500 — a refusal
-    // by accident, for a check that is never one.
+  test('runs the kept examples that are examples, and names what it left out', async () => {
+    // A row edited around the use-case, with `changes` the runner cannot read. Run as it is, it
+    // throws, and every publish of the form is a 500 — a refusal by accident, for a check that
+    // is never one. Read first, as the admin reads it, it is named and left out, and the
+    // examples beside it still say what this publish changes.
     const form = await deps.storage.getFormByPath('contact')
     await deps.storage.keepExamples({
       formId: form!.id,
-      scenarios: [{ name: 'Hand-edited', changes: null, valid: true } as unknown as Scenario],
-      sample: null,
+      scenarios: [{ name: 'Hand-edited', changes: null, valid: true } as unknown as Scenario, ASKS_FOR_A_CANTON],
+      sample: SAMPLE,
       updatedAt: '2026-10-10T12:00:00Z',
     })
 
     const outcome = await publishForm(deps, { path: 'contact', schema: contact('country != "CH"') })
 
     expect(outcome).toMatchObject({ ok: true, version: 2 })
-    expect(outcome.ok && outcome.warnings).toHaveLength(1)
-    expect(outcome.ok && outcome.warnings[0]).toMatch(/^The form's examples could not be run against version 2/)
+    if (!outcome.ok) return
+    expect(outcome.warnings).toEqual([
+      'The example "Switzerland asks for a canton" held against version 1 and does not hold against version 2: "canton": expected to be visible, and it is hidden.',
+      'Not everything kept with this form\'s examples could be read, and what could not was not run: Example 1 ("Hand-edited") has no "changes": the answers it sets, by field.',
+    ])
   })
 })

@@ -11,7 +11,11 @@
   kept sample, the first three; every failing example warned about, rather than those that stop
   holding, fails *says nothing of an example that did not hold before either, nor of one that
   holds again*; the run compared with nothing rather than with the published version fails four;
-  the run left uncaught fails *still publishes when a stored example cannot be run*; the
+  the stored rows run as they are rather than as read fails *runs the kept examples that are
+  examples, and names what it left out*, and so does the publish keeping quiet about what it left
+  out; `readExamples` handing the rows on as stored fails *leave out, and name, what is kept and is
+  not an example* and *read none from a kept list that is not a list*, and a kept list that is not
+  one read item by item fails the second; the
   permission taken out of `keepExamples` or of `readExamples` fails *are read and changed only
   with the permission editing the form takes*; two examples with one name kept fails *refuses two
   examples with one name*; one reason worded as another fails *says each reason an item is not an
@@ -25,17 +29,29 @@
   name untrimmed fails *trims the name*; a draft reader that takes an item `readScenario` refuses
   fails *is how a model's answer is read, item by item*. `packages/server/src/examples-route.test.ts`,
   through `createApp` with the memory storage: all five cases failed with no route, among them
-  the publish's `201` carrying no warning. `packages/server/src/server.integration.test.ts`, *a
+  the publish's `201` carrying no warning, and *carry what is kept and is not an example as
+  sentences* failed with `readExamples` handing the rows on as stored. `packages/server/src/server.integration.test.ts`, *a
   form's examples, kept in PostgreSQL*, against real PostgreSQL: bootstrap creating no
-  `form_examples` fails four of its five cases; the audit row left out of the transaction fails
-  *a change and its audit row commit together*; the table without its foreign key fails *the
+  `form_examples` fails five of its six cases; the audit row written after the transaction
+  commits fails *a change whose audit row cannot be written is not kept either*, which has the
+  audit insert refused by an id the log already has. *A change is audited*, which only counts
+  the rows, passes under that change — this line said otherwise until a review ran it; the table without its foreign key fails *the
   database refuses examples for a form that is not there*; a second write that inserts rather
   than replaces fails *a second write replaces the first*; the sample not stored fails that and
   the publish case. `apps/admin/src/examples.test.tsx`: before this change nine of its ten
   first cases failed, finding no scenario pane. With the admin changed one thing at a time: the
   part not drawn fails eight; a change drawn and never saved fails four; saves sent side by side
   fail *two removals reach the server in the order they were made*; a refused save not read
-  back fails *a save the server refuses says so*; drafting offered without a model fails *is
+  back fails *a save the server refuses says so*; a save queued behind a failed one sent anyway —
+  the chain as it was first written — fails *a save that fails sends none of the changes queued
+  behind it* and *nor one made while the server's list is being read again*; those dropped from
+  the moment of the failure rather than from the read's answer fails the second, and every later
+  change dropped with them fails the first; a read again that cannot reach the server clearing
+  the list fails *a save and a read again that both cannot reach the server leave the list it
+  last kept*; the sentence drawn only beside a list fails *a save whose read again the server
+  refuses says why the list went*; the sentences of what the server could not read not drawn, or
+  sent back with the next save, fail *what the server keeps and could not read as an example is
+  named*; drafting offered without a model fails *is
   not offered when the server has no model*, and never offered fails *asks the server's model
   for the scenarios kind*; the pane or the prompt pane run as a browser would fails *are run as
   the publish runs them* or *the review runs them as the publish will*; the pane run without the
@@ -91,7 +107,13 @@ and reason trimmed. The drafting part's reader of a model's answer now reads eac
 it, and the server reads a list it is asked to keep through it, so a draft kept in a builder is
 an example the server keeps. A list with any item that is not an example keeps nothing, and is
 refused with one sentence per item saying which and why; so are two examples with one name — a
-name is how an example's result is found — and a sample that is not answers by field. **Paths
+name is how an example's result is found — and a sample that is not answers by field. **What is
+kept is read the same way on the way out.** The storage checks nothing, so a row edited around
+the use-case comes back as it was written; wherever the examples are read back, what is not an
+example is left out and named. The `GET` carries those sentences beside the examples as
+`unreadable`, and the next save, which keeps only what it is sent, drops it. Handed on as an
+example, the admin ran it while drawing the build tab, and the runner's throw took the whole
+admin down — the form could not be opened there even to remove it. **Paths
 are not checked** against the published form: an example is written for the form being edited,
 which may name a field no version has yet, and the runner says so when it runs.
 
@@ -123,15 +145,21 @@ example was written for the rule as it was; the person decides, as 0159 left App
 example that did not hold before either is not this publish's doing, and one that holds again
 is good news; neither is a warning. A first publish runs nothing, since examples are kept beside
 a form the deployment already has, and republishing the document already current says nothing
-about them, since nothing about them changed. A stored example the runner cannot read — a row
-edited around the use-case — is one sentence saying the examples could not be run, never a
+about them, since nothing about them changed. A stored row that is not an example is read out
+before the run, as it is for the admin, and one warning names what was left out; the others
+still run. Run as it was, it throws in the runner, and every publish of the form would be a
 `500`. The use-case decides all of it; the route only carries it.
 
 **The admin draws the scenario pane over them.** Opening a published form reads its examples;
 the build tab draws `ScenarioPane` over them with the sample, in `server` mode so the panel and
 the publish give one verdict. Remove saves the list back, and so does Keep on a draft, one save
 after another, so two cannot land in the wrong order on the server where the publish reads them.
-A save the server refuses is said, and the list is read from the server again. When the server
+**A save that fails is said, and puts the server's list back.** The list is read again inside
+the same chain, so no save is in flight when it arrives, and every change made on the list it
+replaces — queued behind the failed save, or made while the read was out — was made on a list
+the server never took, and is not sent. When the read cannot reach the server either, the
+screen keeps the list the server last kept, and says that too. What the server could not read
+as examples is drawn as its sentences. When the server
 has a model, drafting asks it for the `scenarios` kind, with a line saying what of the form the
 request carries and to whom. The prompt pane's review runs the same examples, in the same mode
 (0159). The publish note draws the examples' warnings as it draws every warning. A form never
@@ -156,6 +184,15 @@ type-checks again — a breaking change to a published interface, for anybody no
 list, and the later replaces the earlier: one's removal can come back, or one's kept draft go,
 and nothing says so. Publishing has a version check for exactly this
 ([E4](../regulatory/SAFETY-ANALYSIS.md)); the examples do not. Recorded in §11 as debt.
+
+**A change made while a save was failing is lost.** The person is told the save failed and is
+shown the server's list; a removal made on the list before it is not kept, and has to be made
+again. Replaying it onto the server's list would mean working out from two lists what the change
+was — the second decision of what changed that the alternatives below decline.
+
+**Nothing catches a throw from the runner at publish.** The catch that stood there first guarded
+rows nobody had read. Every row is read before it is run now, no example the reader takes is
+known to make the runner throw, and one that did would fail the publish rather than be said.
 
 **It names only what an example pins**, as 0159 does. A rule no example covers can be turned
 round, and the publish says nothing about examples.

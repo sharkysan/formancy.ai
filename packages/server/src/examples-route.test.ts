@@ -2,6 +2,7 @@ import { afterEach, describe, expect, test } from 'vitest'
 import type { FastifyInstance } from 'fastify'
 import type { FormSchema } from '@formancy/spec'
 import { createMemoryStorage } from '@formancy/server-core'
+import type { ExamplesRecord, Storage } from '@formancy/server-core'
 import { createApp } from './app.js'
 
 /**
@@ -42,9 +43,10 @@ const EXAMPLES = {
   sample: { email: 'jane@example.ch' },
 }
 
-/** A server with the contact form published, and a session for an admin and for a viewer. */
-async function serve(): Promise<{ server: FastifyInstance; admin: string; viewer: string }> {
-  const server = await createApp(createMemoryStorage(), {
+/** A server with the contact form published, its storage, and a session for an admin and for a viewer. */
+async function serve(): Promise<{ server: FastifyInstance; storage: Storage; admin: string; viewer: string }> {
+  const storage = createMemoryStorage()
+  const server = await createApp(storage, {
     authSecret: SECRET,
     bootstrapAdmin: ADMIN,
     loginRateLimit: { max: 1_000, timeWindowMs: 60_000 },
@@ -65,7 +67,7 @@ async function serve(): Promise<{ server: FastifyInstance; admin: string; viewer
     headers: { authorization: `Bearer ${admin}` },
     payload: { path: 'contact', schema: contact('country == "CH"') },
   })
-  return { server, admin, viewer: await login('viewer@test.ch', 'viewer-password-1') }
+  return { server, storage, admin, viewer: await login('viewer@test.ch', 'viewer-password-1') }
 }
 
 const as = (token: string | undefined): Record<string, string> =>
@@ -126,6 +128,26 @@ describe('a form’s examples over HTTP', () => {
     expect(body.error).toBe('invalid_examples')
     expect(body.problems).toHaveLength(1)
     expect(body.problems[0]).toMatch(/^Example 1 \("Broken"\)/)
+  })
+
+  test('carry what is kept and is not an example as sentences beside the examples, with a 200', async () => {
+    // The admin draws the build tab from this answer. A row edited around the use-case, handed
+    // on as an example, was run as the admin drew it, threw, and took the whole admin down.
+    const { server, storage, admin } = await serve()
+    const form = await storage.getFormByPath('contact')
+    await storage.keepExamples({
+      formId: form!.id,
+      scenarios: [{ name: 'Hand-edited', changes: null, valid: true } as unknown as ExamplesRecord['scenarios'][number], ...EXAMPLES.scenarios],
+      sample: EXAMPLES.sample,
+      updatedAt: '2026-10-10T12:00:00Z',
+    })
+
+    const get = await server.inject({ method: 'GET', url: '/f/contact/examples', headers: as(admin) })
+    expect(get.statusCode).toBe(200)
+    expect(get.json()).toEqual({
+      ...EXAMPLES,
+      unreadable: ['Example 1 ("Hand-edited") has no "changes": the answers it sets, by field.'],
+    })
   })
 
   test('are run when the form is published, and the 201 names each that stops holding', async () => {

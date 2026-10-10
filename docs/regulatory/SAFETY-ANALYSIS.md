@@ -1453,12 +1453,15 @@ show is this. `examples.test.ts` in `@formancy/server-core` holds that a rule tu
 each example it breaks and the version is there afterwards; that an example failing against
 both versions, and one that holds again, are not named; that the examples run from the kept
 sample and in server mode — a rule moved to the browser is named, and is not when they run as a
-browser would; that a stored example the runner cannot read is a warning, not a failed publish;
-and that a viewer may neither read nor change them. `examples-route.test.ts` holds the warning on
-the `201` through `createApp`, and `server.integration.test.ts` across real HTTP and real
-PostgreSQL. In the admin, the scenario pane runs the kept examples in server mode and saves a
-removal back, the prompt pane's review runs them as the publish will, and the publish note
-draws the warning (`examples.test.tsx`). Each of these failed with the code it guards changed;
+browser would; that a stored row that is not an example is left out and named, when they are
+read back and at publish, and the others still run, rather than the publish failing; and that a
+viewer may neither read nor change them. `examples-route.test.ts` holds the warning on the `201`
+through `createApp`, and `server.integration.test.ts` across real HTTP and real PostgreSQL,
+including that a change whose audit row cannot be written is not kept either. In the admin, the
+scenario pane runs the kept examples in server mode and saves a removal back; a save that fails
+is said and puts the server's list back, and no change made on the list it replaced is sent, so
+the screen and the publish do not come apart over it. The prompt pane's review runs them as the
+publish will, and the publish note draws the warning (`examples.test.tsx`). Each of these failed with the code it guards changed;
 the publish note's case alone passed before, since the note already drew every warning, and
 fails with the note dropping them.
 
@@ -1478,7 +1481,8 @@ purpose. It compares with the version the form has, so an example failing agains
 named, and a form published before it had examples, or after the one that would have warned was
 removed, is published with nothing said. The examples are kept with the last save winning: two
 people changing one form's examples at once replace each other's list whole, and a removal can
-come back or a kept example go, with nothing saying so. And the examples run with no answer from
+come back or a kept example go, with nothing saying so. A change made while a save was failing
+is lost, said only as the failure. And the examples run with no answer from
 the deployment's `check` validators, in the panes as at publish, so an example cannot pin what a
 check answers.
 
