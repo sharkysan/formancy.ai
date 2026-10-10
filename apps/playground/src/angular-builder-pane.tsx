@@ -5,6 +5,7 @@ import type { Scenario } from '@formancy/core'
 import { mountAngularBuilder } from './angular-builder-bootstrap.js'
 import type { BuilderTab, MountedBuilder, PreviewState } from './angular-builder-bootstrap.js'
 import type { ModelRuns } from './angular-builder-host.js'
+import type { Suggestion } from './suggestions.js'
 
 /**
  * The Angular builder, as a React component.
@@ -31,6 +32,7 @@ export function AngularBuilderPane({
   onScenarios,
   relay,
   runs,
+  suggestions,
 }: {
   session: BuilderSession
   tab: BuilderTab
@@ -48,6 +50,8 @@ export function AngularBuilderPane({
   relay: Relay
   /** The page's model runs, which the React builder's panes draw too (0163, 0164). */
   runs: ModelRuns
+  /** What to try with the model on the open demo, or none: the list the React builder draws. */
+  suggestions: readonly Suggestion[] | undefined
 }): ReactElement {
   const host = useRef<HTMLDivElement | null>(null)
   const mounted = useRef<MountedBuilder | undefined>(undefined)
@@ -71,7 +75,7 @@ export function AngularBuilderPane({
       session,
       tab,
       // Drawn on the first render, so the builder never shows the page's lists empty.
-      { preview: latest.current, blocks: offered.current, ...examples.current, relay, runs },
+      { preview: latest.current, blocks: offered.current, ...examples.current, relay, runs, suggestions },
       {
         keep: (block) => saving.current(block),
         keepScenarios: (next) => revising.current(next),
@@ -104,7 +108,9 @@ export function AngularBuilderPane({
     // The tab is deliberately not a dependency — it is pushed in below rather
     // than remounting the application. Listing it here would rebuild the tree on
     // every tab click. The relay and the model runs are the page's for its whole life, so
-    // listing them costs nothing and says what the application was built over.
+    // listing them costs nothing and says what the application was built over. The
+    // suggestions are the demo's, and another demo is another session — which this
+    // application is never kept for — so they are not pushed in either.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, relay, runs])
 

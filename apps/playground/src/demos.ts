@@ -3,6 +3,8 @@ import type { FormSchema } from '@formancy/spec'
 import catalog from '../../../templates/catalog.json'
 import { STARTER_SCHEMA } from './starter.js'
 import { STARTER_SAMPLE, STARTER_SCENARIOS } from './starter-scenarios.js'
+import { STARTER_SUGGESTIONS } from './starter-suggestions.js'
+import type { Suggestion } from './suggestions.js'
 import { WIZARD_SCHEMA } from './wizard.js'
 
 /**
@@ -21,7 +23,17 @@ import { WIZARD_SCHEMA } from './wizard.js'
  * every rule kind the format defines is on screen somewhere, derived from the
  * spec's own lists rather than from a list here that would go stale.
  */
-interface Demo { id: string; label: string; schema: FormSchema; examples: Examples | undefined }
+interface Demo {
+  id: string
+  label: string
+  schema: FormSchema
+  examples: Examples | undefined
+  /**
+   * What to try with a model on this form, drawn beside the panes that ask one. Only the
+   * starter's: each is about its fields, and chosen for what it shows there.
+   */
+  suggestions: readonly Suggestion[] | undefined
+}
 
 /**
  * What a form is supposed to do, written down (0110), and where every example starts.
@@ -66,12 +78,14 @@ export const DEMOS: readonly Demo[] = [
     label: 'Everything — one form, every field type',
     schema: STARTER_SCHEMA,
     examples: { scenarios: STARTER_SCENARIOS, sample: STARTER_SAMPLE },
+    suggestions: STARTER_SUGGESTIONS,
   },
   {
     id: 'wizard',
     label: 'A wizard — steps, a group, a skipped page',
     schema: WIZARD_SCHEMA,
     examples: undefined,
+    suggestions: undefined,
   },
   ...catalog.templates.map(
     (entry): Demo => ({
@@ -82,6 +96,7 @@ export const DEMOS: readonly Demo[] = [
         scenarios: shipped(scenarios, entry.scenarios),
         sample: shipped(samples, entry.sample),
       },
+      suggestions: undefined,
     }),
   ),
 ]

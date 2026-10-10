@@ -168,7 +168,8 @@ export function App() {
    * removed is kept by form id; a form not yet touched shows its own examples.
    */
   const [keptExamples, setKeptExamples] = useState<Readonly<Record<string, readonly Scenario[]>>>({})
-  const examples = DEMOS.find((option) => option.id === demo)?.examples
+  const opened = DEMOS.find((option) => option.id === demo)
+  const examples = opened?.examples
   const scenarios = keptExamples[demo] ?? examples?.scenarios ?? NO_SCENARIOS
   const keepScenarios = useCallback(
     (next: readonly Scenario[]) => setKeptExamples((current) => ({ ...current, [demo]: next })),
@@ -433,6 +434,7 @@ export function App() {
           preview={built?.engine}
           relay={relay}
           runs={runs}
+          suggestions={opened?.suggestions}
           theme={theme}
           themeHost={themeHost}
           overrides={overrides}

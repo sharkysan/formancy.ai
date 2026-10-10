@@ -459,6 +459,14 @@ panes ask the same relay for drafted examples, and a draft kept joins the open f
 examples ([0162](../decisions/0162-an-example-is-drafted-from-what-the-author-said.md)). The
 page holds the translations pane's run and the drafting the same way, and discards all three
 when another demo is chosen ([0164](../decisions/0164-a-translation-is-held-for-its-language-and-a-draft-for-its-form.md)).
+On the starter each of the three panes has something to try beside it, a demo's own list
+(`starter-suggestions.ts`) that no other demo carries. Which are drawn beside which pane, when
+one can be pressed and what pressing it does are decided once in `suggestions.ts`, over the
+page's runs; each builder draws them with its own markup (`suggestions-list.tsx`,
+`angular-suggestions-list.ts`), and `suggestions.test.tsx` compares the two drawings. A
+suggestion with words fills in its box through the run; a translation's is its language, so
+it asks, which puts the request on the relay and opens the translations pane again on that
+language.
 
 ### `@formancy/server-core` and `@formancy/server`
 

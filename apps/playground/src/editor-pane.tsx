@@ -8,6 +8,7 @@ import type { ModelRuns } from './angular-builder-host.js'
 import { FoldPane } from './panes.js'
 import { BuilderBody } from './builder-pane.js'
 import { ThemePane } from './theme-pane.js'
+import type { Suggestion } from './suggestions.js'
 
 /**
  * The editor pane: three ways to change the document in front of you.
@@ -43,6 +44,7 @@ export function EditorPane({
   preview,
   relay,
   runs,
+  suggestions,
   theme,
   themeHost,
   overrides,
@@ -71,6 +73,8 @@ export function EditorPane({
   relay: Relay
   /** The model runs, held by the page so they outlive the Build view (0163, 0164). */
   runs: ModelRuns
+  /** What to try with the model on the open demo, or none. */
+  suggestions: readonly Suggestion[] | undefined
   theme: string
   themeHost: HTMLElement | null
   overrides: Readonly<Record<string, string>>
@@ -136,6 +140,7 @@ export function EditorPane({
             preview={preview}
             relay={relay}
             runs={runs}
+            suggestions={suggestions}
           />
         )}
       </div>

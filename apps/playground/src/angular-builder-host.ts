@@ -23,6 +23,8 @@ import type {
 } from '@formancy/builder-core'
 import type { Scenario } from '@formancy/core'
 import { RELAY_CHAT } from './demo-capabilities.js'
+import { PlaygroundSuggestionsList } from './angular-suggestions-list.js'
+import type { Suggestion } from './suggestions.js'
 
 /** Which tab the page is on. The React pane owns this. */
 export type BuilderTab = 'fields' | 'arrangement' | 'rules' | 'translations'
@@ -85,6 +87,12 @@ export interface PlaygroundBuilder {
    * 0164).
    */
   readonly runs: ModelRuns
+  /**
+   * What to try with the model on the open demo, or none: the list the React builder draws.
+   * Not a signal: it is the demo's, and another demo is another session, which this
+   * application is never kept for.
+   */
+  readonly suggestions: readonly Suggestion[] | undefined
 }
 
 /** What this builder hands back to the page, which keeps both lists for both builders. */
@@ -105,6 +113,7 @@ export interface FromThePage {
   readonly sample: Readonly<Record<string, unknown>> | undefined
   readonly relay: Relay
   readonly runs: ModelRuns
+  readonly suggestions: readonly Suggestion[] | undefined
 }
 
 export const PLAYGROUND_BUILDER = new InjectionToken<PlaygroundBuilder>('playground builder')
@@ -125,6 +134,7 @@ export function playgroundBuilder(
     sample: signal(from.sample),
     relay: from.relay,
     runs: from.runs,
+    suggestions: from.suggestions,
     ...back,
   }
 }
@@ -164,6 +174,7 @@ export function playgroundBuilder(
     FormancyRulesOverview,
     FormancyTranslationsPane,
     FormancyScenarioPane,
+    PlaygroundSuggestionsList,
   ],
   template: `
     <!-- The turn a person is carrying to a model, above the tabs as in the React pane:
@@ -194,18 +205,28 @@ export function playgroundBuilder(
       <!-- Asking the page's relay for what a language is missing, as the React pane does:
            the turn is drawn above, and the answer reviewed before it lands (0161). The run
            is the page's, so a translation asked in React is drawn here, on its language, and
-           one asked here outlives this builder (0164). -->
-      <formancy-translations-pane
-        [session]="host.session"
-        [ask]="host.relay.ask"
-        [run]="host.runs.translation"
+           one asked here outlives this builder (0164). Opened again when a suggestion asks
+           for a language, so it is drawn on that one, as the React pane is keyed; a one-item
+           loop is how a template says it. -->
+      <formancy-playground-suggestions
+        feature="translation"
+        [from]="host"
+        (tried)="openTranslations()"
       />
+      @for (opened of [translationsOpened()]; track opened) {
+        <formancy-translations-pane
+          [session]="host.session"
+          [ask]="host.relay.ask"
+          [run]="host.runs.translation"
+        />
+      }
     } @else {
       <!-- Describing a change in words, asking the page's relay as the React pane does:
            the person carries the turn, and everything after the paste is real (0109) —
            run against the page's examples before it lands, as the React pane's is (0159).
            The run is the page's, so a turn asked in React is drawn here, and one asked here
-           outlives this builder (0163). -->
+           outlives this builder (0163). What to ask is suggested above it, on the starter. -->
+      <formancy-playground-suggestions feature="prompt" [from]="host" />
       <formancy-prompt-pane
         [session]="host.session"
         [ask]="host.relay.ask"
@@ -233,6 +254,8 @@ export function playgroundBuilder(
         [drafting]="host.runs.drafting"
         (scenariosChange)="host.keepScenarios($event)"
       />
+      <!-- A sentence of intent to draft from, on the starter, below the box it fills. -->
+      <formancy-playground-suggestions feature="drafting" [from]="host" />
       @if (selected(); as keyPath) {
         <formancy-property-panel [session]="host.session" [keyPath]="keyPath" />
         <formancy-logic-panel [session]="host.session" [keyPath]="keyPath" />
@@ -257,4 +280,15 @@ export class AngularBuilderHost {
 
   /** Where the relay pane sends a person with the request: the page's one named chat. */
   protected readonly chat = RELAY_CHAT
+
+  /**
+   * How many times the translations pane has been opened by a suggestion, as the React
+   * builder counts it: a pane opens on the language of the translation the page holds, and
+   * from then on the language is the visitor's (0164).
+   */
+  protected readonly translationsOpened = signal(0)
+
+  protected openTranslations(): void {
+    this.translationsOpened.update((opened) => opened + 1)
+  }
 }

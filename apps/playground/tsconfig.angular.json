@@ -30,6 +30,7 @@
     "src/angular-preview.ts",
     "src/angular-bootstrap.ts",
     "src/angular-builder-host.ts",
+    "src/angular-suggestions-list.ts",
     "src/angular-builder-bootstrap.ts"
   ]
 }
