@@ -396,6 +396,7 @@ export const BUILDER_MESSAGES_DE = {
   },
   'prompt.status.stopped': 'Angehalten. Nichts wurde übernommen.',
   'prompt.status.unreachable': 'Nichts wurde übernommen. Das Modell war nicht erreichbar: {reason}',
+  'prompt.status.unreachableNoReason': 'Nichts wurde übernommen. Das Modell war nicht erreichbar.',
 
   'scenarios.label': 'Szenarien',
   'scenarios.none': 'Keine Szenarien.',

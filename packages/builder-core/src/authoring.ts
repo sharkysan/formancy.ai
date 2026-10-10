@@ -50,7 +50,10 @@ export type AuthoringResult =
        * refused key — so nothing about the instruction was tried.
        */
       readonly ended: 'gave-up' | 'stopped' | 'unreachable'
-      /** When unreachable: the message of what the host's model threw, to be shown as text. */
+      /**
+       * When unreachable: the message of what the host's model threw, to be shown as
+       * text. Absent when it had none — `undefined`, an event, an empty string.
+       */
       readonly reason?: string
     }
 

@@ -118,7 +118,7 @@ export type Asked<T, P> =
       /** The last answer that was checked, so a person can see what went wrong. */
       readonly lastAnswer: string
       readonly ended: 'gave-up' | 'stopped' | 'unreachable'
-      /** When unreachable: why, in the words of whatever the host's model threw. */
+      /** When unreachable: why, in the words of whatever the host's model threw — absent when it had none. */
       readonly reason?: string
     }
 
@@ -135,7 +135,7 @@ const DEFAULT_ATTEMPTS = 3
 type Turn =
   | { readonly kind: 'answered'; readonly answer: string }
   | { readonly kind: 'stopped' }
-  | { readonly kind: 'unreachable'; readonly reason: string }
+  | { readonly kind: 'unreachable'; readonly reason: string | undefined }
 
 /**
  * Ask, check, and ask again with the complaint, until an answer passes or the run ends.
@@ -242,10 +242,25 @@ function take(ask: AskModel, prompt: AuthoringPrompt, stop: Stop | undefined): P
   })
 }
 
-/** What the host's error says, as text: its message, or its name when that is empty. */
-function reasonOf(error: unknown): string {
-  if (error instanceof Error) return error.message === '' ? error.name : error.message
-  return String(error)
+/**
+ * What the host's error says, if it says anything: its message, its name when the
+ * message is empty, or the string it was rejected with.
+ *
+ * Read by shape rather than by `instanceof Error`, which an error from another realm
+ * fails. Anything else has no words of its own, so it has no reason: `String()` of it
+ * reads "undefined" or "[object ProgressEvent]" to a person, and of an object with no
+ * prototype it throws — here, inside the handler that ends the run.
+ */
+function reasonOf(error: unknown): string | undefined {
+  if (typeof error === 'string') return saysSomething(error)
+  if (typeof error !== 'object' || error === null) return undefined
+  const { message, name } = error as { message?: unknown; name?: unknown }
+  if (typeof message !== 'string') return undefined
+  return saysSomething(message) ?? (typeof name === 'string' ? saysSomething(name) : undefined)
+}
+
+function saysSomething(text: string): string | undefined {
+  return text.trim() === '' ? undefined : text
 }
 
 /**

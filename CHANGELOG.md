@@ -15,7 +15,9 @@ still did not work."** When the host's `AskModel` rejected — the network down,
 both prompt panes caught the error and built a failure by hand with `attempts: 0`, filing the
 error's message as an answer that was not JSON. So a person reworded an instruction that had
 never reached a model. The status now says *"Nothing was applied. The model could not be
-reached: …"* with the host's message, in English, German and French. The playground's stand-in
+reached: …"* with the host's message, in English, German and French — or the sentence without
+one when what the host threw has no words of its own: `undefined`, an event, an empty string,
+which had read "…reached: undefined" or ended on the colon. The playground's stand-in
 model had the same shape: cancelling its dialog answered with an empty string, while its
 comment said it handed back the current document. The empty string failed as not JSON and
 opened a dialog for every remaining attempt. Cancelling now ends the run as unreachable. Each

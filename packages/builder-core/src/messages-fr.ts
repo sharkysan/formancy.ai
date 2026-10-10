@@ -402,6 +402,7 @@ export const BUILDER_MESSAGES_FR = {
   },
   'prompt.status.stopped': 'Arrêté. Rien n’a été appliqué.',
   'prompt.status.unreachable': 'Rien n’a été appliqué. Le modèle n’a pas pu être joint : {reason}',
+  'prompt.status.unreachableNoReason': 'Rien n’a été appliqué. Le modèle n’a pas pu être joint.',
 
   'scenarios.label': 'Scénarios',
   'scenarios.none': 'Aucun scénario.',

@@ -49,7 +49,9 @@ export const MODEL_MESSAGES = {
     other: 'Nothing was applied. {count} attempts, and the document still did not work.',
   },
   // Not a document that failed: the person ended the run, or the host's model could
-  // not be asked at all. `{reason}` is what the host's model threw, as it said it.
+  // not be asked at all. `{reason}` is what the host's model threw, as it said it;
+  // when what it threw said nothing, the sentence without one.
   'prompt.status.stopped': 'Stopped. Nothing was applied.',
   'prompt.status.unreachable': 'Nothing was applied. The model could not be reached: {reason}',
+  'prompt.status.unreachableNoReason': 'Nothing was applied. The model could not be reached.',
 } as const satisfies Record<string, Message>

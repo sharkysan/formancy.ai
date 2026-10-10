@@ -336,6 +336,24 @@ describe('a host that cannot ask its model', () => {
     expect(result).toMatchObject({ ok: false, ended: 'unreachable', reason: 'offline' })
   })
 
+  test('one with nothing to say ends the run with no reason, not "undefined" or an empty one', async () => {
+    /*
+     * `String()` of whatever was thrown put "undefined" or "[object Object]" after
+     * the colon — an XHR wrapper's `onerror = reject` hands over an event, not an
+     * error — and an empty string ended the sentence on nothing. A value with no
+     * prototype could not be made text at all: `String()` threw inside the handler
+     * meant to end the run, and the run never ended.
+     */
+    const nothingToSay: unknown[] = [undefined, null, '', '  ', { type: 'error' }, Object.create(null)]
+
+    for (const thrown of nothingToSay) {
+      const result = await settledSoon(authorForm(() => Promise.reject(thrown as Error), 'a form'))
+
+      expect(result).toMatchObject({ ok: false, ended: 'unreachable' })
+      expect(result).not.toHaveProperty('reason')
+    }
+  })
+
   test('a run that used every attempt says it gave up, and names no reason', async () => {
     // So the three endings are told apart by what they are, not by a count of
     // attempts that happened to be zero.

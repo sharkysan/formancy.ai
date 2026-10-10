@@ -151,7 +151,10 @@ export function proposalStatus(
     case 'stopped':
       return text('prompt.status.stopped')
     case 'unreachable':
-      // A reason missing is left visible as `{reason}`, as every placeholder is.
-      return text('prompt.status.unreachable', result.reason === undefined ? {} : { reason: result.reason })
+      // Without a reason, a sentence that has no place for one: the other would end
+      // on its colon, or show its placeholder.
+      return result.reason === undefined
+        ? text('prompt.status.unreachableNoReason')
+        : text('prompt.status.unreachable', { reason: result.reason })
   }
 }

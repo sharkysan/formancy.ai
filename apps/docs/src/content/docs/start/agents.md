@@ -270,7 +270,8 @@ its request runs on.
 
 **When your function throws or rejects,** the pane says the model could not be
 reached, followed by your error's message, rather than that the document did not
-work. Write the message for the person reading it.
+work. Write the message for the person reading it. Something thrown without one —
+`undefined`, an event, an empty string — is said without a reason.
 
 Each turn also says which it is: `attempt` and `limit`, and from the second turn
 `followUp`, which is the complaint alone. `user` always carries the whole
@@ -281,4 +282,4 @@ holds the model's last answer, can send `followUp` instead.
 Called directly, `authorForm(askModel, instruction, { current, stop })` resolves
 however the run ends. A working document is `ok: true`. Otherwise `ended` says why
 there is none: `gave-up`, `stopped`, or `unreachable` with your error's message as
-`reason`. `stop` comes from `createStop()`; calling its `stop()` is the button.
+`reason`, absent when it had none. `stop` comes from `createStop()`; calling its `stop()` is the button.

@@ -264,6 +264,24 @@ describe('what the prompt pane says', () => {
     expect(said).toBe('Stopped. Nothing was applied.')
   })
 
+  test('a model that could not be reached and gave no reason is said without one, in each language', () => {
+    // The sentence with a reason, given none, showed its placeholder: "…could not
+    // be reached: {reason}", which a person reads as the builder broken.
+    const unsaid = { ...idle, result: ended('unreachable', 1) }
+    const german = createBuilderText({ locale: 'de', messages: BUILDER_MESSAGES_DE })
+    const french = createBuilderText({ locale: 'fr', messages: BUILDER_MESSAGES_FR })
+
+    expect(proposalStatus(unsaid, english)).toBe(
+      'Nothing was applied. The model could not be reached.',
+    )
+    expect(proposalStatus(unsaid, german)).toBe(
+      'Nichts wurde übernommen. Das Modell war nicht erreichbar.',
+    )
+    expect(proposalStatus(unsaid, french)).toBe(
+      'Rien n’a été appliqué. Le modèle n’a pas pu être joint.',
+    )
+  })
+
   test('and both are said in the author’s language', () => {
     // The catalogues are complete by type; this is that the status reads them.
     const german = createBuilderText({ locale: 'de', messages: BUILDER_MESSAGES_DE })

@@ -13,8 +13,10 @@
   before the run asks nothing* fails; without the stop forgetting a turn that answered, *a
   stop after the run has ended* fails; without the catch around a host that throws instead
   of rejecting, *one that throws* fails; and with the error's message taken as it is, *an
-  error with no message* fails. `answers.test.ts` holds the stop handle. `proposal.test.ts`
-  holds the two new sentences in English, German and French. Both builders'
+  error with no message* fails. *One with nothing to say* failed on this record's first
+  version with `reason: 'undefined'`. `answers.test.ts` holds the stop handle.
+  `proposal.test.ts` holds the new sentences in English, German and French, the one without
+  a reason included. Both builders'
   `prompt-pane.test` have *a model that cannot be reached*, *can be stopped*, and *a pane
   taken off the screen stops its run* (React) or *a pane that is destroyed stops its run*
   (Angular). Against `main`, the first failed on the status *"Nothing was applied. 0
@@ -68,7 +70,7 @@ whatever that turn answers later is discarded.
 
 **A host's error resolves the run instead of rejecting it.** The failure carries `ended`:
 `gave-up` when every attempt answered and none worked, `stopped`, or `unreachable` with the
-error's message as `reason`. `proposalStatus` reads the result whole rather than a count and
+error's message as `reason` when it has one. `proposalStatus` reads the result whole rather than a count and
 a flag each pane derived, and says each ending in the author's language. Both panes drop
 their hand-built failure, show a Stop button while a run waits, and stop the run when they
 go away.
@@ -103,7 +105,13 @@ host's to wire, and the documentation shows how.
 
 **The reason is the host's text, shown as written.** It is not translated and may say more
 than a person needs: a URL or a status code. It is shown as text, never as markup. An error
-with no message is named by its `name` instead, so the sentence never ends on nothing.
+with no message is named by its `name` instead. Something thrown with no words of its own —
+`undefined`, the event an `onerror = reject` hands over, an empty string — gives no reason,
+and the pane says the sentence that has no place for one. The first version took
+`String()` of whatever was thrown, which read *"…reached: undefined"*, ended an empty string
+on the colon, and threw on an object with no prototype, inside the handler that ends the run,
+so the run never ended. The error is read by its shape rather than by `instanceof Error`,
+which an error from another realm fails.
 
 **A stopped or unreachable run counts the turn it abandoned.** `attempts` is the number of
 turns asked, so a stop during the second turn reports two. The panes do not say the count

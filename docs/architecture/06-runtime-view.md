@@ -304,7 +304,7 @@ Write it
                                  ├─ Stop pressed, or the pane goes away
                                  │     ──▶ turn.onCancel ──────────────────▶  abort, if it listens
                                  │     ──▶ ended: stopped; a later answer settles nothing
-                                 ├─ rejected or threw ──▶ ended: unreachable, with the reason
+                                 ├─ rejected or threw ──▶ ended: unreachable, with its reason if any
                                  ▼
                                readAnswer → validateSchema → the engine's compile
                                           → expressionProblems
