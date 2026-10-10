@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { dirname, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, test } from 'vitest'
@@ -73,13 +73,18 @@ function sources(): Array<{ path: string; lines: number }> {
   const found: Array<{ path: string; lines: number }> = []
 
   const walk = (directory: string): void => {
-    for (const entry of readdirSync(directory)) {
+    // The directory entry says what it is, so nothing is stat'ed before it is read:
+    // a check and a use apart is a race (CodeQL js/file-system-race), harmless in a
+    // test and still the shape to avoid.
+    for (const dirent of readdirSync(directory, { withFileTypes: true })) {
+      const entry = dirent.name
       if (SKIP.has(entry)) continue
       const full = join(directory, entry)
-      if (statSync(full).isDirectory()) {
+      if (dirent.isDirectory()) {
         walk(full)
         continue
       }
+      if (!dirent.isFile()) continue
       if (!/\.tsx?$/.test(entry) || /\.(test|spec)\.tsx?$/.test(entry)) continue
       if (/\.d\.ts$/.test(entry)) continue
       found.push({

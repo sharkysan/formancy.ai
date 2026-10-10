@@ -1,5 +1,5 @@
 import type { FieldDef, FormSchema, LayoutNode } from '@formancy/spec'
-import { childrenAt as layoutChildrenAt } from './layout.js'
+import { isPosition, childrenAt as layoutChildrenAt } from './layout.js'
 import type { LayoutAddress } from './layout.js'
 
 /**
@@ -148,7 +148,7 @@ export function locateLayout(
   const siblings = layoutChildrenAt(document, address.layout, address.path.slice(0, -1))
   if (siblings === undefined) return undefined
   const index = address.path[address.path.length - 1]!
-  if (index < 0 || index >= siblings.length) return undefined
+  if (!isPosition(index) || index < 0 || index >= siblings.length) return undefined
   return { siblings, index }
 }
 

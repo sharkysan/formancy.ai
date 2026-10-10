@@ -66,11 +66,22 @@ export function childrenAt(
   let nodes: LayoutNode[] | undefined = nodesOfLayout(document, layout)
   if (nodes === undefined) return undefined
   for (const step of parent) {
+    if (!isPosition(step)) return undefined
     const node: LayoutNode | undefined = nodes[step]
     if (node === undefined || !isLayoutContainer(node)) return undefined
     nodes = node.children
   }
   return nodes
+}
+
+/**
+ * Whether a path step is a position: a whole number. Typed as one, but a caller nothing
+ * type-checks — an agent's JSON — can hand over '__proto__', which passes a bounds
+ * check (NaN compares false both ways) and indexes an array's prototype. Every lookup
+ * by position goes through this.
+ */
+export function isPosition(step: unknown): step is number {
+  return Number.isInteger(step)
 }
 
 /** The node at `path`, or undefined. An empty path addresses no node. */
@@ -80,8 +91,10 @@ export function nodeAt(
   path: readonly number[],
 ): LayoutNode | undefined {
   if (path.length === 0) return undefined
+  const last = path[path.length - 1]
+  if (!isPosition(last)) return undefined
   const siblings = childrenAt(document, layout, path.slice(0, -1))
-  return siblings?.[path[path.length - 1]!]
+  return siblings?.[last]
 }
 
 /** Every container's index path in one layout, the layout itself first. */

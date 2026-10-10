@@ -10,6 +10,14 @@ later.
 
 ## Unreleased
 
+**Fixed: a layout address that was not a position could write to every array's
+prototype.** The builder session's layout commands take a path of positions, typed as
+numbers. A caller nothing type-checks, such as an agent's JSON, could pass `'__proto__'`
+instead. That passed the bounds check, because NaN compares false both ways, so the node it
+found was `Array.prototype`, and `setLayoutNodeProperty` defined the property there for the
+whole process. A path step must now be a whole number wherever builder-core looks a layout
+node up by position. CodeQL reported it (js/prototype-polluting-assignment).
+
 **Added: examples drafted by a model from what the author says the form should do.** An
 example with its answer written down is the only check that tells a rule that compiles from
 the rule that was asked for, and the scenario panes and the review of a model's edit run them
