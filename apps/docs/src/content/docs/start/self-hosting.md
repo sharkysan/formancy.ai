@@ -90,6 +90,8 @@ wrong database — a confusing ten minutes. The compose file maps 5439 instead.
 | `FORMANCY_CLAMD_PORT` / `..._MAX_BYTES` | no | clamd's port, 3310 by default, and its `StreamMaxLength`, 100 MiB by default. A larger file is refused before it is sent. |
 | `FORMANCY_CHALLENGE_SECRET` | no | Turns the proof-of-work challenge on for anonymous submissions; ≥ 32 characters. Unset means public forms are defended by the rate limits, the origin allowlist and the body cap alone. Separate from `FORMANCY_AUTH_SECRET` so that rotating one does not cost everybody their session. |
 | `FORMANCY_TRUST_PROXY` | behind a proxy | The reverse proxies whose `X-Forwarded-For` names the client: an address, or a comma-separated list of addresses and CIDR ranges. Unset trusts none, so behind a proxy every respondent shares one rate-limit budget. Name the proxy's own address, not the compose network's range: the range holds the gateway Docker forwards published ports from — see [behind a reverse proxy](#behind-a-reverse-proxy). |
+| `FORMANCY_MODEL_PROVIDER` | no | `anthropic`, `openai` or `xai`: a model for the builders, asked through this server so its key never reaches a browser. With it, the two below are required; without it, neither may be set, and a half configuration stops the server at startup. See [a model for the builders](#a-model-for-the-builders). |
+| `FORMANCY_MODEL_API_KEY` / `FORMANCY_MODEL` | with the provider | The provider's key, and the model as the provider's documentation names it. There is no default model. |
 | `FORMANCY_WEBHOOK_ALLOW_HTTP` / `..._ALLOW_PRIVATE` | no | Opt out of the webhook SSRF guard, per deployment and never per form. `ALLOW_PRIVATE` gives it up entirely. |
 | `PORT` / `HOST` | no | Defaults `4380` / `0.0.0.0` |
 
@@ -392,6 +394,8 @@ for lookup and a hash for verification. Present it as `x-formancy-api-key`.
 | `POST` | `/f/:path/files` | public | — (same gate as submitting) |
 | `PUT` | `/f/:path/files/:fileId` | public | — (the address the offer returned) |
 | `GET` | `/f/:path/files/:fileId` | management | `submission.read` |
+| `GET` | `/model` | management | `form.publish` |
+| `POST` | `/model/complete` | management | `form.publish` (ten a minute per session) |
 
 ## Files
 
@@ -458,10 +462,80 @@ you can do.
 REVOKE UPDATE, DELETE, TRUNCATE ON audit_log FROM formancy;
 ```
 
+## A model for the builders
+
+The builders can describe a form in words, ask for a language's missing messages and draft
+examples, all through a model. A deployment can have its server hold that model, so the key
+stays on the server and never reaches a browser
+([0165](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0165-a-deployments-model-is-asked-through-its-server.md)).
+It is off until you set all three:
+
+```bash
+FORMANCY_MODEL_PROVIDER=anthropic     # or openai, or xai
+FORMANCY_MODEL_API_KEY=…              # that provider's key
+FORMANCY_MODEL=claude-opus-5          # the model, as the provider names it
+```
+
+Claude is Anthropic's, through its own SDK; OpenAI's models and xAI's Grok go through
+OpenAI's SDK, at each one's own address — xAI documents its API as compatible with OpenAI's
+client. `claude-opus-5` is Anthropic's Opus as its model list named it on 2026-06-24; check
+the provider's list before copying an id. With Anthropic the server asks for adaptive
+thinking, so the model must have it: Claude Opus 4.6, Sonnet 4.6 or later.
+
+**There is no default model**, on purpose. A default goes stale when the provider retires
+it — every request then fails, after an upgrade you did not make — and which model runs is
+what you pay for. A wrong or retired id is found at the first request, not at startup.
+
+**What leaves, and where to.** With a model set, the server makes HTTPS requests to that
+provider's API — `api.anthropic.com`, `api.openai.com` or `api.x.ai` — and nowhere else for
+it. Each request carries the form it is about: the whole document when a form is written or
+changed, its words and where each is used when a language is translated, and its fields,
+labels, options, starting answers and what the author said when examples are drafted. Never a
+submission, unless somebody types one into an instruction. OpenAI and xAI are asked not to
+store the request; what any provider keeps under its own terms is the provider's. The admin
+says which provider and model a request goes to before anybody asks.
+
+**What it answers.** `POST /model/complete` takes `{ "kind": …, "user": … }`, where `kind` is
+`authoring`, `translation` or `scenarios` — the three requests the builders make — and
+answers `{ "text": … }`, or `{ "declined": … }` when the provider refused. The server writes
+the system part for each kind itself and never reads one from the request, which narrows the
+endpoint to formancy's three kinds of request without closing it (below). It takes
+`form.publish` — editors and admins, not viewers — ten requests a minute per session, and a
+body cap of its own, which holds what the builders send about the largest form the server
+publishes when its questions are about a sentence long; the translation of a form whose
+questions are long and have many answers can be larger, and is refused with a `413`. Each
+answer may be up to 64,000 tokens. When the browser goes away, even before its session was
+checked, the server abandons the call to the provider. A failure is a `502` with a sentence
+for the person: the key refused, the server being limited, the model refused, or unreachable.
+`GET /model` says which provider and model, or `404` when there is none.
+
+**What it costs, and who can spend it.** Every editor and admin, and every API key with one
+of those roles, can spend the key, within the limits above, and the limit is counted per
+replica. Under formancy's briefing somebody can still ask the model for something else; the
+endpoint is narrowed, not closed. Every request is in the audit log as `model.asked` — who,
+which kind, the provider and model, how long the request was, how it ended and the
+provider's status when it failed — never the text. There is no spending cap here; set one with
+the provider.
+
+**The providers' SDKs read the environment too.** Each adapter names the address, the
+credential, the organisation and project, and the log level itself, so `ANTHROPIC_BASE_URL`,
+`OPENAI_BASE_URL`, `ANTHROPIC_AUTH_TOKEN`, `OPENAI_ORG_ID`, `OPENAI_PROJECT_ID`,
+`ANTHROPIC_LOG` and `OPENAI_LOG` change nothing. `ANTHROPIC_CUSTOM_HEADERS` and
+`OPENAI_CUSTOM_HEADERS` would add headers to every request, and nothing undoes them, so the
+server does not start with the one its provider's SDK reads set; xAI goes through OpenAI's.
+
+Both compose files pass the three variables through when they are set.
+
+:::caution[Needs a server newer than v0.4.0]
+`v0.4.0` and every image before it has no model and ignores all three variables.
+:::
+
 ## The admin app
 
 `pnpm --filter @formancy/admin dev` serves a schema editor with live preview,
 publish, version history and a submissions table on `:4382`, proxying `/api` to
+the server. When the server has [a model](#a-model-for-the-builders), the build tab draws the
+prompt pane and the Translations tab can ask for a language's missing messages, both through
 the server. The backend sets no CORS headers on purpose — cross-origin policy is
 its own piece of work, and a permissive development default would outlive
 development.

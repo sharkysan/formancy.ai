@@ -92,6 +92,15 @@ services:
       # the gateway. A bare key for the same reason: unset is how the server
       # knows to trust no proxy.
       FORMANCY_TRUST_PROXY:
+      # A model for the builders, asked through this server so its key never reaches a
+      # browser. Bare keys, so each is passed through only when it is set: all three unset
+      # is how the server knows there is no model, and a half configuration is refused at
+      # startup. See .env.example for what each request sends, and to whom.
+      # The image has to be newer than v0.4.0: v0.4.0 and every image before it has no
+      # model, and ignores all three.
+      FORMANCY_MODEL_PROVIDER:
+      FORMANCY_MODEL_API_KEY:
+      FORMANCY_MODEL:
 
       # Webhook delivery refuses plain http and private addresses by default,
       # which is what stops a form author pointing the server at the cloud

@@ -5,3 +5,8 @@ export { createLocalFileStore, sha256 } from './file-store.js'
 export type { FileStore } from './file-store.js'
 export { startFileCollector } from './file-collector.js'
 export type { CollectorHandle } from './file-collector.js'
+// The deployment's model, chosen by environment and asked through the server (0165).
+export { modelSettings, MODEL_PROVIDERS } from './model-settings.js'
+export type { ModelProvider, ModelSettings } from './model-settings.js'
+export { createCompleter } from './completers.js'
+export type { DeploymentModel } from './routes/model.js'

@@ -26,7 +26,8 @@ L0  spec                         types · JSON Schema · diff · canonical hash
                                  one thing a document engine cannot do by hand
     conformance                  sits beside L2: depends on spec only
     challenge                    sits beside L0: isomorphic, mint/solve/verify
-    server-core                  depends on core and spec; no HTTP types
+    server-core                  depends on core, spec, and builder-core for the
+                                 model's briefings (0165); no HTTP types
     server                       Fastify routes, PostgreSQL, auth runtime
     mcp                          an agent's view of a running server
 ```
@@ -493,6 +494,21 @@ same way. Webhook health and delivery replay went to `server/routes/deliveries.t
 `app.ts` needed room to say which proxy it believes. That setting, `FORMANCY_TRUST_PROXY`, is
 read by `server/trust-proxy.ts` rather than inline in `main.ts`, because its refusals are the
 part worth testing and `main.ts` is a composition root no test imports.
+
+The deployment's model is the newest family, and the port is the point of it
+([0165](../decisions/0165-a-deployments-model-is-asked-through-its-server.md)).
+`server-core/model.ts` holds `Completer` — one system part, one user part, a
+`Cancellation`, and the text or a typed failure back — and `completeBuilderRequest`, which
+refuses a kind formancy does not make and asks under `modelBriefing(kind)` from
+`builder-core`, never under a system part from the request. `server/anthropic-completer.ts`
+and `server/openai-completer.ts` are the adapters, over each provider's own SDK — the second
+serves OpenAI and xAI at their base URLs — and `server/completers.ts` picks one by provider.
+`server/model-settings.ts` reads the three variables and refuses half of them, for the same
+reason `trust-proxy.ts` exists, and `server/routes/model.ts` is the plugin: the permission,
+the body cap, the per-session limit, the browser going away as a cancellation, and the audit
+row. Drafts left `app.ts` for `server/routes/drafts.ts` to make room for it. The edge from
+the server to `builder-core` is downward, to an isomorphic package, and costs the image one
+more workspace package.
 
 The webhook outbox shows the split at its sharpest. `server-core/outbox.ts` has
 `afterAttempt` — pure, four arguments, the entire retry policy — and

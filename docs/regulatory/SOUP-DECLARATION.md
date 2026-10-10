@@ -76,6 +76,7 @@ What it does **not** do, and must not be assumed to do:
 | Pictures on options | A host with a strict Content Security Policy needs `img-src` to allow `data:` for pictures a document carries, and the hosts it names for the others; without it the option still works and its picture does not load ([0126](../decisions/0126-an-option-may-carry-a-picture.md)) |
 | File uploads | A thumbnail needs `createImageBitmap` and a 2D canvas, which every browser in the stylesheet row has; without them no thumbnail is drawn and the file's name is shown alone. It needs no `img-src` permission, because it is drawn from the file's bytes and no URL is involved. A figure on the progress bar needs the host's uploader to report one, which `fetch` cannot do for an upload; a cancel stops the transfer only if the uploader passes the signal on ([0130](../decisions/0130-each-file-is-its-own-upload.md)) |
 | Virus scanning (server only, optional) | A ClamAV daemon reachable over TCP when `FORMANCY_CLAMD_HOST` is set, spoken to with its INSTREAM command and no client library. Run once against ClamAV 1.5.4 (`clamav/clamav:stable`, 2026-10-09); the adapter's tests use a protocol stand-in. **Set `AlertExceedsMax yes`**: ClamAV's shipped `clamd.conf` says content past `MaxFileSize` or `MaxScanSize` is not flagged otherwise, and is answered clean. Unreachable, every upload is refused ([0131](../decisions/0131-an-upload-is-scanned-before-it-is-kept.md)) |
+| A model for the builders (server only, optional, after `0.4.0`) | An account with Anthropic, OpenAI or xAI, named by `FORMANCY_MODEL_PROVIDER` with its key and model, and outbound HTTPS from the server to that provider's API — `api.anthropic.com`, `api.openai.com` or `api.x.ai`. All three or none; half is refused at startup, and none is the default. With Anthropic, a model with adaptive thinking (Opus 4.6, Sonnet 4.6 or later). Each request sends the form, or its words, to that provider ([0165](../decisions/0165-a-deployments-model-is-asked-through-its-server.md); hazards C8, C9 and D17) |
 | Stylesheets (`@formancy/themes`) | Chrome 120, Edge 120, Firefox 113, Safari 16.4 — the first releases with both `:dir()` and `color-mix()`. **A host that bundles them must target these or later**: a bundler targeting older browsers rewrites `:dir(rtl)` as a list of right-to-left languages, after which a page's `dir` no longer mirrors the layout; Vite's default target did ([0123](../decisions/0123-the-builder-reads-right-to-left.md)). Loaded with a plain `<link>`, they are not rewritten |
 | Module format | ESM only; no CommonJS build is published ([0038](../decisions/0038-esm-only.md)) |
 
@@ -100,7 +101,7 @@ not separately assessing `@formancy/spec`.
 | `@formancy/react` | `uqr ^0.1.3` (React is a peer) |
 | `@formancy/angular` | `tslib ^2.8.0`, `uqr ^0.1.3` (Angular Material and its CDK are optional peers, for `/material` only; Angular is a peer) |
 | `@formancy/server-core` | `@noble/hashes ^2.4.0`, `recheck ^4.5.0` |
-| `@formancy/server` | `@fastify/rate-limit ^11.2.0`, `@node-rs/argon2 ^2.2.1`, `drizzle-orm ^0.45.2`, `fastify ^5.12.5`, `jose ^6.2.12`, `postgres ^3.4.9`, `undici ^8.10.2` |
+| `@formancy/server` | `@anthropic-ai/sdk ^0.132.1`, `@fastify/rate-limit ^11.2.0`, `@node-rs/argon2 ^2.2.1`, `drizzle-orm ^0.45.2`, `fastify ^5.12.5`, `jose ^6.2.12`, `openai ^7.31.0`, `postgres ^3.4.9`, `undici ^8.10.2` |
 | `@formancy/mcp` | `@modelcontextprotocol/sdk ^1.30.1`, `zod ^4.6.5` |
 | `@formancy/themes` | none (CSS only) |
 | `@formancy/tiptap` | `@tiptap/core ^3.31.3`, `@tiptap/extension-bold ^3.31.3`, `@tiptap/extension-bullet-list ^3.31.3`, `@tiptap/extension-document ^3.31.3`, `@tiptap/extension-italic ^3.31.3`, `@tiptap/extension-link ^3.31.3`, `@tiptap/extension-list-item ^3.31.3`, `@tiptap/extension-ordered-list ^3.31.3`, `@tiptap/extension-paragraph ^3.31.3`, `@tiptap/extension-text ^3.31.3`, `@tiptap/pm ^3.31.3` |
@@ -201,6 +202,26 @@ the stored-XSS class entirely
 `@tiptap/core`, `@tiptap/pm` and the nine extensions are MIT. TipTap also sells
 commercial extensions; none is used, and depending on one would contradict the
 project's open-core line.
+
+**`@anthropic-ai/sdk` and `openai`**, after `0.4.0`, are the providers' own clients for the
+model a deployment may configure for its builders
+([0165](../decisions/0165-a-deployments-model-is-asked-through-its-server.md)). They are in
+the server's image whether or not a model is configured, and loaded when it starts; neither
+sends anything unless `FORMANCY_MODEL_PROVIDER` names its provider. `openai` (Apache-2.0) has
+no dependencies of its own, only optional peers; of those, `undici`, which the server depends
+on already, and `zod` resolve. `@anthropic-ai/sdk` (MIT) brings `json-schema-to-ts` and
+`standardwebhooks`, and through them `@babel/runtime`, `ts-algebra` and `@stablelib/base64`
+(MIT) and `fast-sha256` (Unlicense). **`zod` (MIT) is in the image through these two SDKs
+alone**: both name it as an optional peer, and because the workspace has it for
+`@formancy/mcp`, the lockfile resolves it for them and the image installs it — read from the
+installed manifests, `pnpm why zod --prod` on `@formancy/server` and a `pnpm deploy` of its
+production closure on 2026-10-10. Each adapter names its provider's base URL, and sets the
+credential, organisation, project and log level, rather than taking them from the
+environment, which both SDKs would otherwise do; headers the SDKs would read from
+`ANTHROPIC_CUSTOM_HEADERS` or `OPENAI_CUSTOM_HEADERS` stop the server at startup instead. Their tests drive the real clients over a fake transport; **no
+test reaches a provider**, so a provider that changes its API changes what they read, and
+xAI's compatibility with OpenAI's client is xAI's documented claim, not something exercised
+here.
 
 ## Known anomalies and limitations
 

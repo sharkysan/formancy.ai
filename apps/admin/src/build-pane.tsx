@@ -6,6 +6,7 @@ import {
   FormancyBuilder,
   FormancyLayoutPane,
   LogicPanel,
+  PromptPane,
   PropertyPanel,
   useBuilder,
 } from '@formancy/builder-react'
@@ -13,9 +14,10 @@ import { createFormEngine } from '@formancy/core'
 import { FormancyForm, FormancyProvider, UploaderProvider } from '@formancy/react'
 import type { Uploader } from '@formancy/react'
 import type { FormSchema } from '@formancy/spec'
-import { uploadFile } from './api.js'
+import { askServerModel, uploadFile } from './api.js'
+import { ModelNote } from './model-note.js'
 import { PublishNote } from './publish-note.js'
-import type { PublishResult } from './api.js'
+import type { PublishResult, ServerModel } from './api.js'
 
 /**
  * The builder, in the three-pane inspector layout every builder uses:
@@ -34,11 +36,14 @@ export function BuildPane({
   publishState,
   onPublish,
   formPath,
+  model,
 }: {
   source: string
   onChange: (next: string) => void
   publishState: PublishResult | undefined
   onPublish: () => void
+  /** The server's model, when it has one: then the prompt pane is drawn, asking through it (0165). */
+  model?: ServerModel | undefined
   /**
    * The form being edited, so the preview can accept files.
    *
@@ -89,6 +94,7 @@ export function BuildPane({
       selected={selected}
       onSelect={setSelected}
       {...(formPath === undefined ? {} : { formPath })}
+      model={model}
     />
   )
 }
@@ -101,6 +107,7 @@ function BuilderWorkspace({
   selected,
   onSelect,
   formPath,
+  model,
 }: {
   session: BuilderSession
   onChange: (next: string) => void
@@ -109,6 +116,7 @@ function BuilderWorkspace({
   selected: readonly string[] | null
   onSelect: (keyPath: readonly string[]) => void
   formPath?: string
+  model: ServerModel | undefined
 }) {
   const view = useBuilder(session)
   /**
@@ -210,6 +218,15 @@ function BuilderWorkspace({
             if (node !== undefined) onSelect(node.keyPath)
           }}
         >
+          {/* Only when the server has a model: the pane renders nothing without an `ask`,
+              and an ask that can only fail would draw a button that cannot work. The
+              pane's run is its own, so leaving the build tab stops it (0157). */}
+          {model === undefined ? null : (
+            <>
+              <ModelNote model={model} sends="your instruction and this whole form" />
+              <PromptPane session={session} ask={askServerModel} />
+            </>
+          )}
           {editor === 'structure' ? (
             <FormancyBuilder session={session} />
           ) : (

@@ -782,6 +782,79 @@ configuration says content past its `MaxFileSize` or `MaxScanSize` is answered c
 `AlertExceedsMax` is set, which this product documents and cannot enforce. The adapter was run
 against a real clamd once, by hand, on 2026-10-09; no gate does.
 
+### C8. A form leaves for a model provider
+
+*How it arises:* a deployment configures a model for its builders
+([0165](../decisions/0165-a-deployments-model-is-asked-through-its-server.md)), and every
+request a builder makes of it is sent on by the server to the provider the operator named:
+Anthropic, OpenAI or xAI. Writing or changing a form sends the whole document; translating
+sends its words and where each is used; drafting examples sends its fields, labels and
+options, the answers examples start from, the names of the examples already kept and what the
+author said. A form's own content can say a good deal — the conditions a clinical intake
+form asks about, its options, a sample answer somebody typed — and it leaves the deployment.
+
+*Severity:* a disclosure of the form, to a company the operator chose, under that company's
+terms. Not of a submission: no request is built from one.
+
+*Constraint:* **off unless the operator sets all three variables**, and refused at startup
+when only part of it is set, so no deployment sends a form anywhere by default or by half a
+configuration (`model-settings.test.ts`; `compose.test.ts` holds both compose files to no
+model without the `.env.example` block, and to the model it names with it). The server sends
+to exactly one host per provider, named in the adapter, and not to wherever an ambient
+`ANTHROPIC_BASE_URL` or `OPENAI_BASE_URL` points; nor does it send an organisation or project
+from the environment to xAI, or `ANTHROPIC_AUTH_TOKEN` beside the key, and an SDK's log level
+set to `debug` in the environment does not write the form to the console
+(`anthropic-completer.test.ts`, `openai-completer.test.ts`, `completers.test.ts`). Headers
+the provider's SDK would add from `ANTHROPIC_CUSTOM_HEADERS` or `OPENAI_CUSTOM_HEADERS`
+stop the server at startup (`model-settings.test.ts`). OpenAI and xAI are asked with `store: false`. The browser sends the
+request only to its own server, never to a provider: the key is not in the page
+(`apps/admin`'s `server-model.test.tsx`, *sends a turn to this server alone*). The admin says
+which provider and model a request goes to, above the prompt pane and the Translations tab,
+before anybody asks (*is drawn when the server has one, and says where a request goes*). The
+requests are built from the document alone — what each carries is held by `translate.test.ts`
+and `scenario-prompt.test.ts` (D15, D16). Every request is audited, without its text (C9).
+
+*Residual:* **what the provider does with the form is the provider's.** `store: false` is a
+request to OpenAI and xAI; Anthropic's retention, and anything any provider keeps for abuse
+monitoring, is under its own terms and invisible from here. The instruction is free text,
+and a person can paste anything into it, a submission included; nothing reads it for that.
+The admin's line naming the provider is English, as the admin is. A deployment that must not
+let forms leave should not configure a model — or should wait for a base URL of its own
+choosing, which 0165 defers. A host that writes its own `AskModel` sends what it decides; this
+entry covers the admin and the server's route.
+
+### C9. A cost is run up on the operator's key by somebody allowed to ask
+
+*How it arises:* every request to the configured model is paid for by the operator, and
+every editor's and admin's session — and every API key with one of those roles — may make one.
+A person holding one can ask again and again, send the largest body the route takes, or use
+the route for something other than a form: the briefing is pinned, the user part is theirs.
+
+*Severity:* money, and the provider's rate limit for everybody else on the same key. No form
+or submission is affected.
+
+*Constraint:* the route takes `form.publish`, so a viewer is refused (403) and nobody without
+a session reaches it (401); **the briefing is the server's**, so the endpoint answers the
+three requests formancy makes and never a system part from the request, and an unknown kind is
+refused before anything is asked; a body cap of its own, before the body is parsed, sized to
+the requests about the largest form the server publishes and no more; ten requests a minute
+per session, counted once the session is known, so one editor cannot spend another's budget;
+an answer of at most 64,000 tokens; and a browser that goes away stops the provider writing —
+the route tells the adapter when the response closes before it was written, and the adapter
+aborts the call; one that went while its session or API key was being checked is told at
+once, and nothing is sent. Every request asked is recorded as
+`model.asked` in the audit log, with who, the kind, the provider and model, the length of what
+was sent, how it ended and the provider's status when it failed — never the text.
+`model-route.test.ts` holds each of these through `createApp`, both disconnects over a real
+socket; `model.test.ts` holds the pinning in the use-case.
+
+*Residual:* **within those bounds a session can still spend**, and an API key can spend around
+the clock. Under formancy's briefing, a person can still ask the model for something else and
+read the answer; the endpoint is narrowed, not closed. The limit is counted per process, so N
+replicas allow N times it (C1's residual). There is no spending cap: the provider's own is the
+backstop, and the audit log is how an operator finds out who used it. A host whose own
+`AskModel` calls its own endpoint carries none of this.
+
 ---
 
 ## D — The form cannot be completed
@@ -1691,6 +1764,51 @@ drafts take the form's id for the form: two documents with one id — a form rep
 under *Schema* with its id kept — are one form to them, and a draft naming fields both have can
 be kept into a form it was not drafted for. The engine's verdict is computed against the form
 on screen, and reading the draft is what shows the rest.
+
+### D17. The deployment's model cannot be asked, or does not answer
+
+*How it arises:* the provider is down or unreachable, refuses the key, limits the server, no
+longer serves the model the operator named, declines the request, or writes until the output
+limit cuts it off. Or the server was started with part of a configuration and has no model
+while the operator believes it has one.
+
+*Severity:* the author cannot use the model, which is an inconvenience — the form can still be
+edited by hand. Two variants are worse than that: an answer cut off at the limit handed over as
+if it were the answer, and a failure that reads as the author's own mistake, which sends them
+to reword an instruction that never reached a model ([0157](../decisions/0157-a-models-turn-can-be-stopped.md)).
+
+*Constraint:* **half a configuration is refused at startup** — a key or a model without a
+provider, an unknown provider, a provider without its key or its model — and there is no
+default model to go stale (`model-settings.test.ts`). Each adapter reads how a response ended
+before reading its text: a refusal becomes the route's `{ declined }`, which the admin hands
+back as a decline, so the run ends on that turn with the provider's reason
+([0158](../decisions/0158-a-model-may-decline.md)); an answer stopped at the output limit or
+the context window is `truncated` and never handed over (`anthropic-completer.test.ts`,
+`openai-completer.test.ts`). Every other failure is a 502 with a sentence chosen by the
+provider's status — the key refused, the server limited, the model refused, or unreachable —
+which the run ends on as *could not be reached*, with that sentence as the reason
+(`model-route.test.ts`; the admin's `server-model.test.tsx`, *rejects with the server's
+sentence*). With no model configured, the admin draws no prompt pane at all (*is not drawn
+when the server has no model*). A stop aborts the browser's request and the server's call to
+the provider (C9).
+
+*Residual:* **no test reaches a provider.** The adapters are held against fake transports in
+the shapes the SDKs parse; a provider that changes its responses changes what they read. xAI's
+compatibility with OpenAI's client is xAI's documented claim. A retired or misspelt model is
+found at the first request rather than at startup. The SDKs retry what they call temporary
+failures twice, so a failing turn takes longer to say so. The provider's own words for a
+failure are dropped — the server keeps no request log (C3) — and the audited status is what an
+operator has; a provider whose status means something other than the route assumes gets the
+wrong sentence. With Anthropic, a model without adaptive thinking answers every request with a
+400. **A translation can be too large to ask**: it repeats each question for every one of its
+answers, so a form at the server's limit with long questions and many answers makes one past
+the route's cap, refused with a 413 before it is read. The cap is shown to hold every request
+about the largest form the server publishes when its questions are about a sentence long
+(`model-route.test.ts`, *is taken for every kind*), and no further. **A browser and a server of different versions disagree silently**: the
+browser names the kind from its own briefing, the model is briefed by the server's, and the
+answer is checked as the browser's version expects. Nothing checks that the two match, so
+answers can fail their checks, or pass them under rules the browser did not write, with
+nothing to say why (0165).
 
 ---
 

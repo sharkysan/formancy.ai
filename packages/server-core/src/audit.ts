@@ -38,6 +38,9 @@ export const AUDIT_ACTIONS = [
   // Somebody decided a dead delivery should go after all. Recorded because it
   // sends data to a third party on a person's say-so.
   'delivery.replayed',
+  // A form's words or its document sent to the operator's model, on a person's say-so and
+  // at the operator's cost. Recorded with the kind and the size, never the text (0165).
+  'model.asked',
 ] as const
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number]

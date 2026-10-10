@@ -799,7 +799,12 @@ describe('what the roadmap says is still to do', () => {
     // The sentence that was wrong: "what is missing is an endpoint and a token".
     // Derived from the routes the server actually registers, not from the
     // roadmap's own wording about them.
-    const app = readFileSync(join(repo, 'packages', 'server', 'src', 'app.ts'), 'utf8')
+    // `app.ts` and the route families that left it for plugins, the drafts among them.
+    const server = join(repo, 'packages', 'server', 'src')
+    const app = [
+      readFileSync(join(server, 'app.ts'), 'utf8'),
+      ...readdirSync(join(server, 'routes')).map((name) => readFileSync(join(server, 'routes', name), 'utf8')),
+    ].join('\n')
     const draftRoutes = [...app.matchAll(/app\.(post|put|get)\(\s*'(\/f\/:path\/drafts[^']*)'/g)].map(
       (match) => `${match[1]!.toUpperCase()} ${match[2]!}`,
     )

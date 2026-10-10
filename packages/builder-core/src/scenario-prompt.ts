@@ -150,10 +150,14 @@ export function scenarioPrompt(
   intent: string,
   options: ScenarioPromptOptions = {},
 ): ScenarioPrompt {
-  return { system: briefing(), user: request(document, intent, options) }
+  return { system: scenarioBriefing(), user: request(document, intent, options) }
 }
 
-function briefing(): string {
+/**
+ * The briefing, which is the same for every form — and so can be pinned by a server that
+ * asks the model on the browser's behalf (`model-requests.ts`, 0165).
+ */
+export function scenarioBriefing(): string {
   const decline = JSON.stringify({ [DECLINE_KEY]: '<why, for the person who asked>' })
   return [
     'You write examples for a form: answers somebody might give, each with what the form should make of them. The form’s engine runs every example, and a person reads which ones hold. An example that does not hold means the example or the form is wrong, and the person decides which.',

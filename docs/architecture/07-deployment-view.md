@@ -76,6 +76,12 @@ refuses to start.
                                      for uploaded files
 ```
 
+A deployment may also name a model for its builders, and then the server is the one
+place that talks to it: outbound HTTPS to `api.anthropic.com`, `api.openai.com` or
+`api.x.ai`, whichever `FORMANCY_MODEL_PROVIDER` names, carrying the form a builder asked
+about. The browser never calls a provider; the key never leaves the server
+([0165](../decisions/0165-a-deployments-model-is-asked-through-its-server.md)).
+
 One database serves relational data, documents, the job queue and full-text
 search. No Redis and no second store, which is a deliberate property of the
 PostgreSQL choice ([0024](../decisions/0024-postgres-over-mongodb.md)) and
@@ -149,6 +155,14 @@ form is not publicly submittable unless it says so.
   statement today — there is no replay button yet.
 - **The application database role needs `INSERT` and `SELECT` on `audit_log`
   and nothing else.** Append-only is a grant, not a convention.
+- **A model is off until all three of its variables are set**, and half of them stops the
+  server at startup. Set, the server needs outbound HTTPS to that one provider, each request
+  sends the form it is about, every editor and admin can spend the key — ten requests a
+  minute per session, per replica — and every request is in the audit log as `model.asked`,
+  without its text. There is no default model: name one as the provider's documentation
+  does, and change it when the provider retires it
+  ([0165](../decisions/0165-a-deployments-model-is-asked-through-its-server.md); hazards C8,
+  C9 and D17).
 
 ## Configuration
 
@@ -162,3 +176,7 @@ That had already come apart once: `FORMANCY_CHALLENGE_SECRET` was documented at
 length and passed through by neither file, so the proof-of-work challenge stayed
 off on a deployment whose operator had set it and believed otherwise.
 `packages/server/src/compose.test.ts` compares the two directions now.
+
+The model's three variables are held the same way, and so is the model block of
+`.env.example`: followed, it gives the server the model it names in both files; left out,
+none.

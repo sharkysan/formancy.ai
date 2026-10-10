@@ -22,6 +22,7 @@ COPY packages/spec/package.json          packages/spec/
 COPY packages/challenge/package.json     packages/challenge/
 COPY packages/expressions/package.json   packages/expressions/
 COPY packages/core/package.json          packages/core/
+COPY packages/builder-core/package.json  packages/builder-core/
 COPY packages/server-core/package.json   packages/server-core/
 COPY packages/server/package.json        packages/server/
 
@@ -37,6 +38,8 @@ COPY packages/spec/        packages/spec/
 COPY packages/challenge/   packages/challenge/
 COPY packages/expressions/ packages/expressions/
 COPY packages/core/        packages/core/
+# The briefings the server writes for each kind of model request (0165).
+COPY packages/builder-core/ packages/builder-core/
 COPY packages/server-core/ packages/server-core/
 COPY packages/server/      packages/server/
 

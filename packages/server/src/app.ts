@@ -2,6 +2,9 @@ import { randomUUID } from 'node:crypto'
 import { fileRoutes } from './routes/files.js'
 import { publishRoutes } from './routes/publish.js'
 import { deliveryRoutes } from './routes/deliveries.js'
+import { draftRoutes } from './routes/drafts.js'
+import { modelRoutes } from './routes/model.js'
+import type { DeploymentModel } from './routes/model.js'
 import { SCHEMA_HASH_HEADER } from './headers.js'
 import Fastify from 'fastify'
 import type { FileStore } from './file-store.js'
@@ -24,9 +27,6 @@ import {
   listVersions,
   publishForm,
   resolveForm,
-  resumeDraft,
-  saveDraft,
-  startDraft,
   setFormAccess,
 } from '@formancy/server-core'
 import type {
@@ -47,8 +47,6 @@ export { SCHEMA_HASH_HEADER } from './headers.js'
 /** Base64 JSON, the shape an ALTCHA client already produces. */
 export const CHALLENGE_HEADER = 'x-formancy-challenge'
 
-/** Proves the bearer started this draft. Lower-case: Fastify normalises. */
-const DRAFT_TOKEN_HEADER = 'x-formancy-draft-token'
 export const API_KEY_HEADER = 'x-formancy-api-key'
 
 export interface AppOptions {
@@ -125,6 +123,14 @@ export interface AppOptions {
   maxFileBytes?: number
   /** Asked about every upload's bytes before they are kept; absent, none is asked (0131). */
   scanner?: Scanner
+  /**
+   * The deployment's model, which the builders ask through `/model/complete` under the
+   * briefing this server writes. Absent, there is none: `/model` answers 404 and the admin
+   * draws no prompt pane (0165).
+   */
+  model?: DeploymentModel
+  /** Model requests per session per minute. Defaults to 10: a run of three turns, three times. */
+  modelRateLimit?: { max: number; timeWindowMs: number }
 }
 
 /**
@@ -388,6 +394,10 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
   // Webhook health, dead deliveries and replay: a route family of their own.
   await app.register(deliveryRoutes, { deps, requires, audit })
 
+  // The deployment's model, asked on a builder's behalf with the key kept here.
+  const modelLimit = options.modelRateLimit ?? { max: 10, timeWindowMs: 60_000 }
+  await app.register(modelRoutes, { model: options.model, requires, audit, limit: modelLimit })
+
   /**
    * A puzzle for an anonymous visitor to solve before submitting.
    *
@@ -553,80 +563,8 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
     })
   })
 
-  /**
-   * Start a draft, and get the only key to it.
-   *
-   * The public plane is anonymous, so a draft has no account behind it. It was
-   * previously addressed by an id the CALLER chose, with no check on either
-   * route: anybody who knew or guessed an id could read a stranger's part-filled
-   * form, and overwrite it — after which that person submits the substituted
-   * content under their own name and nothing says otherwise
-   * ([0062](../../../docs/decisions/0062-a-draft-carries-its-own-key.md)).
-   *
-   * So the server picks the id and signs it, and the token comes back exactly
-   * once. Losing it means losing the draft, which is the correct trade for the
-   * alternative.
-   */
-  app.post(
-    '/f/:path/drafts',
-    {
-      // Unauthenticated, like the submission route, and every call hands out a
-      // key. Cheap per call, but nothing should be free on the public plane.
-      config: { rateLimit: { max: submissionLimit.max, timeWindow: submissionLimit.timeWindowMs } },
-    },
-    async (request, reply) => {
-      const { path } = request.params as { path: string }
-      const started = await startDraft(deps, { path })
-      if (started === undefined) return reply.code(404).send({ error: 'unknown_form' })
-      return reply.code(201).send(started)
-    },
-  )
-
-  app.put(
-    '/f/:path/drafts/:draftId',
-    {
-      // A database row per request, reachable without an account. The submission
-      // route used to be described as "the one unauthenticated write in the
-      // product"; that stopped being true when drafts were exposed here, and
-      // nobody moved the limit across.
-      config: { rateLimit: { max: submissionLimit.max, timeWindow: submissionLimit.timeWindowMs } },
-    },
-    async (request, reply) => {
-      const { path, draftId } = request.params as { path: string; draftId: string }
-      const token = request.headers[DRAFT_TOKEN_HEADER]
-      if (typeof token !== 'string') {
-        return reply.code(401).send({ error: 'draft_token_required' })
-      }
-
-      const saved = await saveDraft(deps, { path, draftId, token, data: request.body ?? {} })
-      if (saved === undefined) return reply.code(404).send({ error: 'unknown_form' })
-      if (!saved.saved) return reply.code(403).send({ error: 'draft_token_invalid' })
-      return reply.send({ version: saved.version })
-    },
-  )
-
-  app.get(
-    '/f/:path/drafts/:draftId',
-    {
-      // Limited because this is where a token would be tried one after another.
-      // An HMAC is not realistically guessable, but limiting the write and
-      // leaving the guess surface open is not a position worth defending.
-      config: { rateLimit: { max: submissionLimit.max, timeWindow: submissionLimit.timeWindowMs } },
-    },
-    async (request, reply) => {
-      const { path, draftId } = request.params as { path: string; draftId: string }
-      const token = request.headers[DRAFT_TOKEN_HEADER]
-      if (typeof token !== 'string') {
-        return reply.code(401).send({ error: 'draft_token_required' })
-      }
-
-      const resumed = await resumeDraft(deps, { path, draftId, token })
-      // 404 for a wrong token as well as a missing draft. Answering differently
-      // would confirm which ids exist, which is the enumeration this closed.
-      if (resumed === undefined) return reply.code(404).send({ error: 'unknown_draft' })
-      return reply.send(resumed)
-    },
-  )
+  // A respondent's drafts, each behind the key only its starter holds: a family of their own.
+  await app.register(draftRoutes, { deps, limit: submissionLimit })
 
   // Offering a file, receiving its bytes and serving it back: a route family of
   // their own, which is the seam this file's size budget names.

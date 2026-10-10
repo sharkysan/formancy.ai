@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, test } from 'vitest'
 import { parse } from 'yaml'
 import { fileStoreSettings } from './file-store-settings.js'
+import { modelSettings } from './model-settings.js'
 
 /**
  * The deployment files agree with each other.
@@ -271,6 +272,28 @@ describe('following .env.example through compose', () => {
       expect(settings, file).toMatchObject({
         kind: 's3',
         config: { endpoint: following(block)['FORMANCY_S3_ENDPOINT'] },
+      })
+    }
+  })
+
+  test('without the model block sends no form anywhere', () => {
+    // Off unless set (0165). A compose file that defaulted a provider would start every
+    // deployment refusing to boot for want of a key, or worse, with one.
+    for (const file of composeFiles) {
+      expect(modelSettings(containerEnvironment(file, following())), file).toEqual({ kind: 'none' })
+    }
+  })
+
+  test('with the model block gives the server the model it names', () => {
+    // The challenge secret's failure again, for a model: documented, set in `.env` as
+    // instructed, and never reaching the container — a server with no model, an admin
+    // with no prompt pane, and nothing saying why.
+    const block = blockAssigning('FORMANCY_MODEL_PROVIDER')
+    for (const file of composeFiles) {
+      expect(modelSettings(containerEnvironment(file, following(block))), file).toMatchObject({
+        kind: 'configured',
+        provider: following(block)['FORMANCY_MODEL_PROVIDER'],
+        model: following(block)['FORMANCY_MODEL'],
       })
     }
   })

@@ -78,11 +78,14 @@ export function translationPrompt(document: FormSchema, locale: string): Transla
     JSON.stringify({ locale, defaultLocale: file.defaultLocale, messages: rows }, null, 2),
   ].join('\n')
 
-  return { locale, defaultLocale: file.defaultLocale, rows, system: briefing(), user }
+  return { locale, defaultLocale: file.defaultLocale, rows, system: translationBriefing(), user }
 }
 
-/** The briefing, which is the same for every language and every form. */
-function briefing(): string {
+/**
+ * The briefing, which is the same for every language and every form — and so can be pinned
+ * by a server that asks the model on the browser's behalf (`model-requests.ts`, 0165).
+ */
+export function translationBriefing(): string {
   return [
     'You translate the words of a form for a form builder, which checks your answer and shows it to a person before anything is used.',
     '',

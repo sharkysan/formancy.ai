@@ -10,6 +10,39 @@ later.
 
 ## Unreleased
 
+**Added: a model for the builders on formancy's own server, of the operator's choosing —
+Claude, OpenAI's models or Grok.** A deployment had no model: the admin drew no prompt pane,
+and an operator who wanted one had to write an `AskModel`, whose shortest form puts the
+provider's key in the page for anybody to read, or an endpoint of their own, whose obvious
+form lends every editor's session the operator's paid model under any instructions. Now
+`FORMANCY_MODEL_PROVIDER` (`anthropic`, `openai` or `xai`), `FORMANCY_MODEL_API_KEY` and
+`FORMANCY_MODEL` give the server one, off unless all three are set; half of them, or a provider
+formancy has no adapter for, stops the server at startup, and no provider has a default model,
+because a default goes stale when the provider retires it. A port in `@formancy/server-core`,
+`Completer`, has two adapters in `@formancy/server`: Anthropic's own SDK, with adaptive
+thinking, and OpenAI's SDK on the Responses API for OpenAI and xAI, each at an address the
+adapter names, streamed, and read by how the response ended before its text — a refusal is a
+decline, an answer cut off at the limit is never half a document. `POST /model/complete` takes
+`{ kind, user }` for the three requests the builders make, and **the server writes the
+briefing** from `@formancy/builder-core`'s new `MODEL_REQUEST_KINDS` and `modelBriefing`; a
+system part in the request is never read, which narrows what the key pays for to those
+three kinds without closing it: the person's instruction is free text. It takes
+`form.publish`, ten requests a minute per session, and a body cap of its own — sized to the
+translation of the largest form the server publishes, which repeats each question for every
+answer and so is larger than the form — abandons the provider's call when the browser goes
+away, before anything is sent if it went while its session was checked, and audits each
+request as `model.asked` without its text. A server with a model will not start with the
+`*_CUSTOM_HEADERS` variable its provider's SDK reads set, since nothing else stops those
+headers going with every form. `GET /model` says which. The admin draws the prompt pane, and
+gives the Translations tab the same ask, when the server has a model, saying where a request
+goes; with none, nothing new is drawn. Both compose files pass the variables through, and
+`.env.example` documents them. `@formancy/server` gains `@anthropic-ai/sdk` and `openai`, and
+the server image the `builder-core` package and, as an optional peer of both SDKs, `zod`. The
+draft routes moved to a plugin of their own to make room in `app.ts`, and the check that every
+route's rate limit names `timeWindow` now reads the route plugins as well as `app.ts`, since
+it would otherwise have stopped seeing the draft routes when they moved
+([0165](docs/decisions/0165-a-deployments-model-is-asked-through-its-server.md)).
+
 **Fixed: on formancy.ai, a translation or examples asked of a model are no longer lost when
 the visitor looks elsewhere while their chat answers.** An entry below fixed this for the
 prompt pane and left two runs to their parts: the Translations tab's review, which ended with
