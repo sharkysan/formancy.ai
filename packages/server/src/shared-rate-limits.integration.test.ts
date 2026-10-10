@@ -11,6 +11,8 @@ import { bootstrapSchema } from './db.js'
 import { createPostgresStorage } from './postgres-storage.js'
 import { COUNTS_AT_ONCE, createPostgresRateLimitStore } from './postgres-rate-limits.js'
 import type { PostgresRateLimitOptions, PostgresRateLimits } from './postgres-rate-limits.js'
+import { createServerLog } from './server-log.js'
+import type { FastifyBaseLogger } from 'fastify'
 
 /**
  * Two replicas over one real PostgreSQL, each with its own connections, counting in the one
@@ -61,9 +63,20 @@ function connection(): postgres.Sql {
 
 /** The shared counter, on connections of its own, as `main.ts` opens it. */
 function counter(store: PostgresRateLimitOptions = {}): PostgresRateLimits {
-  const counting = createPostgresRateLimitStore(container.getConnectionUri(), { report: () => {}, ...store })
+  const counting = createPostgresRateLimitStore(container.getConnectionUri(), store)
   opened.push({ close: counting.end })
   return counting
+}
+
+/** The server's log into an array: the lines it has written so far, and their events. */
+function events(): { log: FastifyBaseLogger; lines: () => Array<Record<string, unknown>>; written: () => unknown[] } {
+  const written: string[] = []
+  const lines = (): Array<Record<string, unknown>> => written.map((line) => JSON.parse(line) as Record<string, unknown>)
+  return {
+    log: createServerLog({ write: (line: string) => written.push(line) }, 'info'),
+    lines,
+    written: () => lines().map((line) => line['event']),
+  }
 }
 
 /** A replica, wired as `main.ts` wires one: its own connections, the shared storage and the shared counter. */
@@ -295,9 +308,9 @@ describe('a counter slower than its bound', () => {
     // The table held by somebody else's lock is a database that answers everything except the
     // counter, slowly. The bound is what a request waits before its limit decides without a
     // count: the public plane goes on, login does not (0170).
-    const lines: string[] = []
+    const said = events()
     const options = { bootstrapAdmin: ADMIN, submissionRateLimit: { max: 1, timeWindowMs: 60_000 } }
-    const a = await replica(options, { timeoutMs: 300, report: (line) => lines.push(line) })
+    const a = await replica(options, { timeoutMs: 300, log: said.log })
     const unlock = await lockTheCounter()
 
     try {
@@ -308,7 +321,7 @@ describe('a counter slower than its bound', () => {
       const login = await a.inject({ method: 'POST', url: '/auth/login', payload: ADMIN })
       expect(login.statusCode).toBe(503)
       expect(Date.now() - started).toBeLessThan(5_000)
-      expect(lines).toHaveLength(1)
+      expect(said.written()).toEqual(['ratelimit.unanswered'])
     } finally {
       // Whatever failed above, the lock goes: held, it would stop every case after this one.
       await unlock()
@@ -316,7 +329,7 @@ describe('a counter slower than its bound', () => {
     // Counting again. Whether or not a count abandoned under the lock lands once it goes, the
     // client is over its budget of one within two more.
     await vi.waitFor(async () => expect(await submit(a)).toBe(429))
-    expect(lines).toHaveLength(2)
+    expect(said.written()).toEqual(['ratelimit.unanswered', 'ratelimit.answering'])
   })
 
   test('holds none of the connections the rest of the server queries on', async () => {
@@ -413,8 +426,8 @@ describe('expired counters', () => {
     // deletes — a flood from many addresses — and the table would never shrink again. A lock
     // makes this one slow.
     await sql`INSERT INTO rate_limit_counters (key, hits, resets_at) VALUES ('ended', 1, now() - interval '1 second')`
-    const lines: string[] = []
-    const counting = counter({ timeoutMs: 200, sweepEveryMs: 0, report: (line) => lines.push(line) })
+    const said = events()
+    const counting = counter({ timeoutMs: 200, sweepEveryMs: 0, log: said.log })
     const store = new counting.store({})
     const unlock = await lockTheCounter()
 
@@ -427,7 +440,7 @@ describe('expired counters', () => {
     }
 
     await vi.waitFor(async () => expect(await keys()).not.toContain('ended'))
-    expect(lines.filter((line) => /could not be deleted/.test(line))).toEqual([])
+    expect(said.written()).not.toContain('ratelimit.sweep.failed')
   })
 })
 
@@ -440,6 +453,24 @@ describe('the table', () => {
       SELECT relpersistence FROM pg_class WHERE relname = 'rate_limit_counters'`
 
     expect(table?.relpersistence).toBe('u')
+  })
+
+  test('counts nothing for a role without its grants, and the log says why by its code', async () => {
+    // MIGRATIONS.md asks a role granted table by table for four privileges on this table. Without
+    // them every count fails — every sign-in refused, the public plane uncounted — and the line
+    // that says so is the operator's one clue: PostgreSQL's code for it, never its words.
+    await sql`DROP ROLE IF EXISTS counter_without_grants`
+    await sql`CREATE ROLE counter_without_grants LOGIN PASSWORD 'without-grants'`
+    const url = new URL(container.getConnectionUri())
+    url.username = 'counter_without_grants'
+    url.password = 'without-grants'
+    const said = events()
+    const counting = createPostgresRateLimitStore(url.toString(), { log: said.log })
+    opened.push({ close: counting.end })
+
+    await expect(countOn(new counting.store({}), 'refused', 60_000)).rejects.toMatchObject({ statusCode: 503 })
+
+    expect(said.lines()).toEqual([expect.objectContaining({ level: 'error', event: 'ratelimit.unanswered', code: '42501' })])
   })
 
   test('is added on start, to a database that predates it', async () => {

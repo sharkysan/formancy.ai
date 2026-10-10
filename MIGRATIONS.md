@@ -317,9 +317,11 @@ more**, the counter's own, beside the up to ten its storage opens: a database wh
 `const rateLimits = createPostgresRateLimitStore(databaseUrl)`, pass
 `rateLimitStore: rateLimits.store`, and call `rateLimits.end()` once the app is closed. It takes
 the database's address rather than your pool because it opens connections of its own, so that a
-counter which cannot answer holds none of yours. Without it, `createApp` counts in the process, as
-every release before this did, and behind N replicas each limit allows N times what it says. The
-table comes from `bootstrapSchema`, as the others do.
+counter which cannot answer holds none of yours. Give it a logger as `log` to be told when it
+stops answering and when it answers again (`ratelimit.unanswered`, `ratelimit.answering`); without
+one it says nothing, as `createApp` without one keeps no log. Without the store, `createApp`
+counts in the process, as every release before this did, and behind N replicas each limit allows
+N times what it says. The table comes from `bootstrapSchema`, as the others do.
 
 **A client may see a new answer.** `POST /auth/login` and `POST /model/complete` answer `503`
 with `{ "code": "RATE_LIMIT_UNAVAILABLE", "message": … }` when the request could not be counted

@@ -690,12 +690,13 @@ arriving while the server closes, refused with a `503` and written with only its
 and a request whose client left before its answer was sent, written as `request.abandoned` with
 no status. Every audit row a request writes carries its request id, the rows a publish, a
 change of examples and a submission write inside their own transaction included. Anything else
-a route or a background worker writes is an event from a fixed list. A line is made from the
+a route, a background worker or the rate limits' counter writes is an event from a fixed list. A line is made from the
 listed fields only, each kept only when its value is of that field's kind, and the words of a
 call are never written; so a body, a query string, a header (`Authorization`, a cookie, the API
 key, the challenge, a draft's key, a response's token), a file's name, an answer, a password or
 an email has no field to go in. The three background workers' failures go through the same rule, and so do the
-database's notices. On by default at `info`; `FORMANCY_LOG_LEVEL` takes pino's level names or
+database's notices and what the rate limits' counter says when it stops answering, answers again
+or fails a sweep (D19). On by default at `info`; `FORMANCY_LOG_LEVEL` takes pino's level names or
 `off`, and anything else stops the server at startup. `createApp` given no log keeps none, so a
 host embedding it decides, and the libraries still write nothing
 ([0115](../decisions/0115-a-library-writes-nothing-to-its-hosts-console.md)).
@@ -716,7 +717,8 @@ passing the request's id to the use-cases. `server-log.test.ts` holds the line a
 the rule, a route's own 5xx at `error`, the `503` while closing and a client that left, the
 last two over a real socket; `server-core`'s `audit.test.ts` holds the three use-cases to the
 request id they are given; the three workers' tests plant a parameter in a failed pass and find
-a line without it; the scanned-upload cases find no scanner address in the log;
+a line without it; the scanned-upload cases find no scanner address in the log, and
+`rate-limit-store.test.ts` no database address in the counter's;
 `log-settings.test.ts` holds the setting's refusals.
 
 *Corrected 2026-10-10.* This entry said **there is no request log**, which held until this
@@ -2030,7 +2032,7 @@ no answer within five seconds.
 
 *Severity:* nobody can open or submit any form, and nothing else that queries the database
 answers, until the lock goes — an outage of everything, caused by a fault in a defence. Loud to
-everybody; to the operator, one line on standard error.
+everybody; to the operator, one line in the request log.
 
 *Constraint:* **the counter has connections of its own**, four a replica, which
 `createPostgresRateLimitStore` opens from the database's address so that it cannot be handed
@@ -2043,7 +2045,14 @@ on being opened and submitted; a sign-in and a request to the model are refused 
 storage has connections are each admitted within the bound and that a form's read still answers —
 red against the first version — that a count abandoned under the lock is ended by the database,
 and that no more counts land once the lock goes than had been sent; `rate-limit-store.test.ts`
-holds every registered limit to what it declares.
+holds every registered limit to what it declares. **The operator is told in the request log**
+(C3): `ratelimit.unanswered` at `error`, once when counting stops, naming what failed by its code —
+`RATE_LIMIT_TIMEOUT` when no answer came within the bound, `ECONNREFUSED`, PostgreSQL's SQLSTATE —
+and never by the driver's message, which names the database's address; `ratelimit.answering` once
+when it resumes; and each refused sign-in or model request on its route with its `503` and
+`RATE_LIMIT_UNAVAILABLE`. `rate-limit-store.test.ts` holds the line, its code and the refusal's;
+`shared-rate-limits.integration.test.ts` the two events around a lock, and `42501` for a role
+without the table's grants.
 
 *Residual:* **while the counter cannot answer, nobody can sign in.** A login is refused with a
 `503` whatever the password, so a form that needs a session cannot be completed by anybody not
@@ -2055,7 +2064,9 @@ about the database*). Meanwhile the public plane has no limit (C1, C5), and each
 waits up to a second first. The counter's four connections count against the database's own limit
 on connections; where `max_connections` leaves no room for them, the counter cannot connect and
 every limit behaves as though it could not answer — a refused connection is what
-`rate-limit-store.test.ts` counts over.
+`rate-limit-store.test.ts` counts over. **The log does not count what went uncounted**: a request
+admitted without a count has an ordinary request line, and the one event says when that began, not
+how many followed. With `FORMANCY_LOG_LEVEL` at `off` or `fatal`, nothing says it at all.
 
 ---
 

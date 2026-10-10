@@ -48,12 +48,12 @@ const port = Number(process.env['PORT'] ?? 4380)
  * from a list of fields, so no body, header, query string, answer or credential has anywhere
  * to go (0168). `info` unless `FORMANCY_LOG_LEVEL` says otherwise; `off` keeps none, and a
  * level the server does not have stops it here. Read first, so the database's notices on the
- * first connection go through it too rather than being printed whole by the driver.
+ * first connection go through it too rather than being printed whole by the driver, and so
+ * does the rate limits' counter, which is made before the app whose log it would otherwise use.
  */
 const logLevel = logLevelFrom(process.env)
-const sql = postgres(databaseUrl, {
-  onnotice: databaseNotices(logLevel === 'off' ? undefined : createServerLog(process.stdout, logLevel)),
-})
+const log = logLevel === 'off' ? undefined : createServerLog(process.stdout, logLevel)
+const sql = postgres(databaseUrl, { onnotice: databaseNotices(log) })
 
 let authSecret = process.env['FORMANCY_AUTH_SECRET']
 if (authSecret === undefined || authSecret === '') {
@@ -152,8 +152,9 @@ await bootstrapSchema(sql)
 const storage = createPostgresStorage(sql)
 // Every limit counts in the database, so behind any number of replicas it is the limit it says
 // rather than that many times it; on connections of its own, so a counter that cannot answer
-// holds none of the ones storage queries on. No setting turns it off (0170).
-const rateLimits = createPostgresRateLimitStore(databaseUrl)
+// holds none of the ones storage queries on. No setting turns it off (0170). It says in the log
+// when it stops answering and when it answers again, and nothing when the log is off.
+const rateLimits = createPostgresRateLimitStore(databaseUrl, log === undefined ? {} : { log })
 const app = await createApp(storage, {
   authSecret,
   rateLimitStore: rateLimits.store,

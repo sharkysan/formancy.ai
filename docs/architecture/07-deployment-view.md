@@ -116,9 +116,9 @@ form is not publicly submittable unless it says so.
   database on the same machine (measured 2026-10-10) and a round trip more where
   it is elsewhere. A count that does not come back within a second is decided
   without one: submissions, drafts, challenges and file offers go through
-  uncounted, and a login or a model request is refused with `503`. The process
-  says so on standard error when the counter stops answering and when it starts
-  again. The counter has four connections of its own, beside storage's up to ten,
+  uncounted, and a login or a model request is refused with `503`. The request
+  log says so when the counter stops answering and when it starts again,
+  `ratelimit.unanswered` and `ratelimit.answering`. The counter has four connections of its own, beside storage's up to ten,
   so `max_connections` wants fourteen a replica; they are its own so that a lock
   on its table holds up only the limited requests. A role granted table by table
   needs `SELECT`, `INSERT`, `UPDATE` and `DELETE` on it

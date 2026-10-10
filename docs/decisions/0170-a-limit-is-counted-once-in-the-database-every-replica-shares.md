@@ -12,7 +12,8 @@
   still refuses inside the window; a request refused 1.2 seconds into a two-second window
   answers `Retry-After: 1` and does not push its end back, so the other replica admits at 2.2.
   With the table locked, a submission is admitted and a login refused within the bound, and the
-  process says so once and again when counting resumes; more submissions than storage has
+  log says `ratelimit.unanswered` once and `ratelimit.answering` when counting resumes; more
+  submissions than storage has
   connections are each admitted within the bound and a form's read still answers; a count
   abandoned under the lock is ended by the database; and no more counts land once the lock goes
   than the counter had sent. A sweep deletes an expired counter and leaves a live one, and
@@ -28,15 +29,19 @@
   registers them — through its `fastify.initialization` diagnostics channel, so no list in the
   test can go stale — and holds that each names `timeWindow` and declares what it does
   uncounted, that each counts in the store `createApp` was given, and that each does what it
-  declares over a database nobody is listening for; and, by name, that a respondent is admitted,
-  a login refused with nothing about the database in the answer, the model refused and not
-  asked, the operator told once, and a sweep that fails said rather than left to end the
-  process. Dropping the store from `createApp` fails it for every limited route; a login or the
-  model admitting, a limit written by hand without saying, a window named `timeWindowMs`, and
-  the store's own error handed to the plugin each fail a named case, and a sweep's rejection
-  left unhandled fails the run. **That `main.ts` passes the store, on connections of its own, is
-  a measurement, not a gate** — no test imports a composition root — taken on 2026-10-10 and
-  set out below.
+  declares over a database nobody is listening for; that every route a request without a session
+  reaches has a limit, but a form's read and a file's bytes; and, by name, that a respondent is
+  admitted, a login refused with nothing about the database in the answer and written in the log
+  on its route with its `503` and `RATE_LIMIT_UNAVAILABLE`, the model refused and not asked, the
+  operator told once, in the log, by the error's code and never the database's address, a
+  counter too slow told by `RATE_LIMIT_TIMEOUT`, and a sweep that fails said rather than left to
+  end the process. Dropping the store from `createApp` fails it for every limited route; a login
+  or the model admitting, a limit written by hand without saying, a window named
+  `timeWindowMs`, a public route's limit left behind when the route moves, a sentence printed
+  beside the log instead of an event in it, and the store's own error handed to the plugin each
+  fail a named case, and a sweep's rejection left unhandled fails the run. **That `main.ts`
+  passes the store, on connections of its own, and hands the counter its log is a measurement,
+  not a gate** — no test imports a composition root — taken on 2026-10-10 and set out below.
 
 ## Context
 
@@ -110,8 +115,11 @@ bound is not cancelled. One still waiting in the process to be sent is dropped t
 sent is ended by the database once it runs, by the `statement_timeout` of the counter's
 connections, which is the same bound — no cancel request, which costs a connection to a database
 that may not be answering. Behind a lock the counts already sent end four a bound, one on each
-connection, and nothing of storage's waits for them. The process says when the counter stops
-answering and when it starts again, on standard error, once each, not once a request.
+connection, and nothing of storage's waits for them. The server's log says when the counter stops
+answering and when it starts again, as `ratelimit.unanswered` and `ratelimit.answering`, once
+each, not once a request — by what was thrown and its code, `RATE_LIMIT_TIMEOUT` for a count not
+answered within the bound, and never by its words, which name the database's address
+([0168](0168-the-log-is-built-from-a-list-of-fields.md)).
 
 **Expired counters are deleted on the back of a count**, at most once in ten minutes and one sweep
 at a time, without waiting for it: no timer of its own, nothing for `main.ts` to start or stop,
@@ -178,6 +186,12 @@ in 3 milliseconds and a login `503` in 1.001; and once the lock went, none of th
 counts had landed — the next submission was the row's thirty-third, after the one from the
 pause.
 
+And once more after the counter's lines moved into the request log: one `node dist/main.mjs` on
+one database, its container paused for two sign-ins. Each was refused `503` in 1.00 seconds. The
+log had `ratelimit.unanswered` once, by `RATE_LIMIT_TIMEOUT`, each sign-in on `/auth/login` with its
+`503` and `RATE_LIMIT_UNAVAILABLE`, and `ratelimit.answering` at the first count after the
+container resumed; nothing about the counter was written outside the log.
+
 ## Consequences
 
 **Every limited request is a write to the database.** About half a millisecond at the median,
@@ -188,8 +202,9 @@ is exactly what a flood would choose. The challenge, the origin allowlist, the b
 draft's key do not depend on it; a flood that slows the database past the bound gets through
 uncounted and makes it slower. Each request waits up to the bound first — a second, where the
 driver would wait thirty to connect — and only the limited ones wait: the counter's connections
-are its own, so a form's read and everything unlimited answers as before. The operator is told,
-on standard error, which nothing reads unless the deployment does.
+are its own, so a form's read and everything unlimited answers as before. The operator is told
+once, in the log, which nothing reads unless the deployment does, and which says nothing at
+`FORMANCY_LOG_LEVEL=off` or `fatal`.
 
 **While the counter cannot answer, nobody can log in and the builders cannot ask the model**, and
 anonymous load can bring that about: a flood on the public plane that slows the database past the
@@ -270,6 +285,13 @@ locked, each abandoned count kept its connection, the queries sent after it ther
 lock, and after about as many limited requests as storage has connections every route — a form's
 read included — stopped answering, which is the outage admitting uncounted exists to prevent.
 Four connections a replica is the price of the counter not being able to do that.
+
+**A sentence of its own on standard error** — reversed. This record first had the counter print
+one when it stopped answering and when it started again, with the driver's message in it. That
+was beside the request log (0168) rather than through it — the one thing a running server still
+wrote outside the log's rule — and the driver's message names the database's address. An event
+in the log says what was thrown by its code, and goes where the rest of what the server says
+goes.
 
 **A bound set per count inside a transaction** (`SET LOCAL statement_timeout`), on storage's
 connections. It frees the connection, at a transaction around every count, and a count waiting for

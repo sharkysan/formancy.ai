@@ -30,11 +30,15 @@ offers go through uncounted — each needs the database for its own work anyway,
 for a fault in the counter would take every form down — while a sign-in or a request to the model
 is refused with `503` and `RATE_LIMIT_UNAVAILABLE`, because guessing a password and spending the
 operator's key are what those two limits are for; a flood that slows the database is enough to
-refuse every sign-in while it lasts. The process says so once on standard error, and again when
-counting resumes; the answer to the client says nothing about the database. Every route's limit is
-written with `limited(budget, 'admit' | 'refuse')`, so none can leave that unsaid, and the check
-that each names the window the plugin reads now reads the limits as Fastify registers them rather
-than the source text, beside a new one that each counts in the store `createApp` was given. The
+refuse every sign-in while it lasts. The request log says so once, as `ratelimit.unanswered`, and
+again as `ratelimit.answering` when counting resumes — by what failed, `RATE_LIMIT_TIMEOUT` for a
+database too slow, and never by the driver's words, which name the database's address — and a
+refused sign-in is written on its route with its `503` and `RATE_LIMIT_UNAVAILABLE`; the answer to
+the client says nothing about the database. Every route's limit is written with
+`limited(budget, 'admit' | 'refuse')`, so none can leave that unsaid, and the check that each
+names the window the plugin reads now reads the limits as Fastify registers them rather than the
+source text, beside new ones that each counts in the store `createApp` was given and that every
+route a request without a session reaches has one, but a form's read and a file's bytes. The
 admin's sign-in no longer calls a `429` or a `503` a wrong password. `createApp` takes the store as
 `rateLimitStore`, and an embedding that does not pass `createPostgresRateLimitStore(databaseUrl)`'s
 store still counts per process; [`MIGRATIONS.md`](MIGRATIONS.md) has the table's grants, the

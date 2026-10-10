@@ -736,7 +736,8 @@ request ──▶ replica A or replica B, the same either way
    within max          over max                     no answer within a second, or an error
    ──▶ the route       ──▶ 429, Retry-After         ├─ declared admit: the public plane ──▶ the route, uncounted
                                                      └─ declared refuse: login, model ──▶ 503 RATE_LIMIT_UNAVAILABLE
-                                                     the process says so once, and again when it answers
+                                                     the log says so once, ratelimit.unanswered, and
+                                                     ratelimit.answering when it answers again
 
    at most once in ten minutes, one at a time, on the back of a count and not waited for:
    DELETE FROM rate_limit_counters WHERE resets_at <= now()        with no statement_timeout

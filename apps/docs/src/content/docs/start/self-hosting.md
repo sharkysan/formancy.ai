@@ -241,8 +241,15 @@ limited requests, each by a second at most, and the rest of the server answers a
   slows the database past the second is enough to bring this about: while it lasts, nobody can
   sign in.
 
-The server writes one line to standard error when counting stops and one when it starts again,
-and says it nowhere else.
+The [request log](#the-request-log) says so once when counting stops, `ratelimit.unanswered`, and
+once when it starts again, `ratelimit.answering`, both at `error`. The first names what failed by
+its `code` — `RATE_LIMIT_TIMEOUT` when the database did not answer within the second,
+`ECONNREFUSED` when nothing was listening, PostgreSQL's SQLSTATE when it refused, `42501` for a
+missing grant — and never by its message, which names the database's address. A sign-in or a
+request to the model refused for want of a count is written on its route with its `503` and the
+code `RATE_LIMIT_UNAVAILABLE`; a request admitted uncounted is written as it always is, and
+nothing on its line says it was not counted. With `FORMANCY_LOG_LEVEL=off`, nothing says any of
+it.
 
 **If you grant the application's role privileges table by table**, it needs `SELECT`, `INSERT`,
 `UPDATE` and `DELETE` on `rate_limit_counters`. Without them every count fails: nobody can sign
@@ -628,8 +635,9 @@ error that answered a request. `docker compose logs server` reads them.
 - **Other events** say something went wrong beside an answer: `audit.unwritten` (with the
   audit row's `action`), `upload.refused`, `scanner.unreachable`, `upload.unreleased`,
   `model.unreachable` (with the provider's status as `upstream`), `outbox.failed`,
-  `collector.failed`, `sweeper.failed`, and `database.notice` (by `code`, at `debug`). A
-  warning from Fastify itself is `unlisted`.
+  `collector.failed`, `sweeper.failed`, `ratelimit.unanswered`, `ratelimit.answering` and
+  `ratelimit.sweep.failed` (the [rate limits' counter](#more-than-one-replica)), and
+  `database.notice` (by `code`, at `debug`). A warning from Fastify itself is `unlisted`.
 
 **What is never written:** a request's body, its query string, its headers —
 `Authorization`, cookies, `x-formancy-api-key`, the challenge, a draft's key, a response's

@@ -1,5 +1,7 @@
 import postgres from 'postgres'
+import type { FastifyBaseLogger } from 'fastify'
 import type { FastifyRateLimitStore, FastifyRateLimitStoreCtor } from '@fastify/rate-limit'
+import { databaseNotices } from './server-log.js'
 
 /**
  * How long a request waits for its count before its limit decides without one (0170).
@@ -38,8 +40,14 @@ export interface PostgresRateLimitOptions {
   readonly timeoutMs?: number
   /** {@link SWEEP_EVERY_MS} unless a test needs to see a sweep. */
   readonly sweepEveryMs?: number
-  /** Where the process says the counter stopped or started answering; `console.error` by default. */
-  readonly report?: (line: string) => void
+  /**
+   * The server's log (0168), where the counter says that it stopped answering, that it answers
+   * again and that a sweep failed — each an event from `LOG_EVENTS`, by what was thrown and never
+   * its words, which name the database's address — and where its connections' notices go.
+   * Without one it says nothing, as `createApp` without one keeps no log: a host embedding both
+   * decides.
+   */
+  readonly log?: FastifyBaseLogger
 }
 
 /** The counter: a store for `createApp`, and its connections, for whoever made it to end. */
@@ -82,8 +90,13 @@ export function createPostgresRateLimitStore(
 ): PostgresRateLimits {
   const timeoutMs = options.timeoutMs ?? COUNT_TIMEOUT_MS
   const sweepEveryMs = options.sweepEveryMs ?? SWEEP_EVERY_MS
-  const report = options.report ?? ((line: string) => console.error(line))
-  const sql = postgres(databaseUrl, { max: COUNTER_CONNECTIONS, connection: { statement_timeout: timeoutMs } })
+  const log = options.log
+  const sql = postgres(databaseUrl, {
+    max: COUNTER_CONNECTIONS,
+    connection: { statement_timeout: timeoutMs },
+    // By their code, as storage's are, rather than printed whole by the driver.
+    onnotice: databaseNotices(log),
+  })
 
   // Whether the last count was answered: said when it changes, not once a request.
   let answering = true
@@ -128,7 +141,7 @@ export function createPostgresRateLimitStore(
       const timer = setTimeout(() => {
         const queued = waiting.indexOf(send)
         if (queued !== -1) waiting.splice(queued, 1)
-        reject(new Error(`no answer within ${timeoutMs} ms`))
+        reject(late())
       }, timeoutMs)
       if (running < COUNTS_AT_ONCE) send()
       else waiting.push(send)
@@ -151,7 +164,7 @@ export function createPostgresRateLimitStore(
       })
       .then(
         () => {},
-        (error: unknown) => report(`rate limits: expired counters could not be deleted (${reason(error)})`),
+        (error: unknown) => log?.error({ event: 'ratelimit.sweep.failed', err: error }),
       )
       .finally(() => {
         sweeping = false
@@ -175,17 +188,17 @@ export function createPostgresRateLimitStore(
         (result) => {
           if (!answering) {
             answering = true
-            report('rate limits: the counter in PostgreSQL is answering again')
+            // At the level of the line it ends: below it, a log kept for errors would show a
+            // counter that stopped and never one that came back.
+            log?.error({ event: 'ratelimit.answering' })
           }
           callback(null, result)
         },
         (error: unknown) => {
           if (answering) {
             answering = false
-            report(
-              `rate limits: the counter in PostgreSQL is not answering (${reason(error)}); until it does, ` +
-                'each limit admits requests uncounted or refuses them with 503, as it declares (decision 0170)',
-            )
+            // Until it answers, each limit admits uncounted or refuses with a 503, as it declares.
+            log?.error({ event: 'ratelimit.unanswered', err: error })
           }
           callback(uncounted())
         },
@@ -216,6 +229,11 @@ function uncounted(): Error {
   )
 }
 
-function reason(error: unknown): string {
-  return error instanceof Error ? error.message : String(error)
+/**
+ * A count not answered within the bound. Its own code, because the log writes an error's kind
+ * and code and nothing else: without one, a database too slow to count — a lock on the table, a
+ * flood — reads the same as any other failure, and the operator cannot tell which to look for.
+ */
+function late(): Error {
+  return Object.assign(new Error('The count was not answered within its bound.'), { code: 'RATE_LIMIT_TIMEOUT' })
 }
