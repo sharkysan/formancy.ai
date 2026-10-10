@@ -689,15 +689,18 @@ describe('examples drafted from what the visitor says', () => {
         await user.click(within(panel).getByRole('button', { name: 'Draft examples' }))
 
         // The request a visitor carries: their words, and no rule of the form — a model shown
-        // `country == "CH"` writes the example that rule passes (0162).
+        // `country == "CH"` writes the example that rule passes (0162). Read from what Copy
+        // put on the clipboard, which is the briefing and the request together: the request
+        // box shows the second half alone, and a rule in the first would leave with the
+        // visitor while that box looked clean.
         const relay = await screen.findByRole('region', { name: 'Take this request to a model' })
-        const request = (within(relay).getByRole('textbox', { name: 'The request' }) as HTMLTextAreaElement).value
-        expect(request).toContain('Only Switzerland asks for a canton.')
-        const rules = (STARTER_SCHEMA.logic?.rules ?? []).flatMap((rule) => (rule.cel === undefined ? [] : [rule.cel]))
-        expect(rules.length, 'the starter has no rules for this case to withhold').toBeGreaterThan(0)
-        expect(rules.filter((cel) => request.includes(cel) || request.includes(JSON.stringify(cel).slice(1, -1)))).toEqual([])
         await user.click(within(relay).getByRole('button', { name: 'Copy the request' }))
         await waitFor(() => expect(write).toHaveBeenCalledTimes(1))
+        const carried = String(write.mock.calls[0]?.[0])
+        expect(carried).toContain('Only Switzerland asks for a canton.')
+        const rules = (STARTER_SCHEMA.logic?.rules ?? []).flatMap((rule) => (rule.cel === undefined ? [] : [rule.cel]))
+        expect(rules.length, 'the starter has no rules for this case to withhold').toBeGreaterThan(0)
+        expect(rules.filter((cel) => carried.includes(cel) || carried.includes(JSON.stringify(cel).slice(1, -1)))).toEqual([])
 
         await user.click(within(relay).getByRole('textbox', { name: 'The model’s answer' }))
         await user.paste(JSON.stringify({ scenarios: [HOLDS, FAILS] }))
