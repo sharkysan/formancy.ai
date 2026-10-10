@@ -3,6 +3,8 @@ import type { FastifyBaseLogger, FastifyInstance, FastifyRequest } from 'fastify
 import { offerUpload, resolveForm, screenUpload } from '@formancy/server-core'
 import type { Actor, FileRecord, ServerDeps } from '@formancy/server-core'
 import type { FileStore } from '../file-store.js'
+import { limited } from '../rate-limits.js'
+import type { Budget } from '../rate-limits.js'
 
 /**
  * How long one request holds a file while its bytes are scanned and written (0153).
@@ -50,7 +52,7 @@ export async function fileRoutes(
     deps: ServerDeps
     fileStore: FileStore | undefined
     maxFileBytes: number
-    limit: { max: number; timeWindowMs: number }
+    limit: Budget
     actorOf: (request: FastifyRequest) => Promise<Actor | undefined>
   },
 ): Promise<void> {
@@ -67,7 +69,7 @@ export async function fileRoutes(
   app.post(
     '/f/:path/files',
     {
-      config: { rateLimit: { max: submissionLimit.max, timeWindow: submissionLimit.timeWindowMs } },
+      config: { rateLimit: limited(submissionLimit, 'admit') },
     },
     async (request, reply) => {
       if (fileStore === undefined) {

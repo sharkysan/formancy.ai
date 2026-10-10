@@ -86,15 +86,22 @@ async function authed(input: string, init?: RequestInit): Promise<Response> {
   return response
 }
 
-export async function login(email: string, password: string): Promise<boolean> {
+/**
+ * Signs in, and says which of three things happened. `refused` is the server's 401: the email
+ * and password did not match. `unavailable` is everything else — the login limit spent (429),
+ * or the attempt not counted and so not taken (503, 0170) — where the password was never looked
+ * at, and calling it wrong would send somebody to retype one that may be right.
+ */
+export async function login(email: string, password: string): Promise<'signed-in' | 'refused' | 'unavailable'> {
   const response = await fetch(`${BASE}/auth/login`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ email, password }),
   })
-  if (!response.ok) return false
+  if (response.status === 401) return 'refused'
+  if (!response.ok) return 'unavailable'
   setToken((await response.json() as { token: string }).token)
-  return true
+  return 'signed-in'
 }
 
 export async function fetchForms(): Promise<FormListEntry[]> {

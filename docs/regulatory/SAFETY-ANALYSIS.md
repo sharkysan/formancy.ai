@@ -638,11 +638,19 @@ it is deliberate.
 exists, so both paths do the same work and return the same error
 ([0031](../decisions/0031-enumeration-resistant-login.md)).
 
-*Residual:* `@fastify/rate-limit`'s default store is per-process, so behind
-more than one replica every limit counts a fraction of the traffic and permits
-a multiple of what it says. Login is limited to 10 attempts per IP per minute
-and submission to 30, both counting attempts rather than successes — but a
-distributed attacker with many addresses is not meaningfully slowed by either.
+Login is limited to 10 attempts per IP per minute and submission to 30, both
+counting attempts rather than successes, and every limit is counted in the
+database the replicas share, so it is the limit it says however many replicas
+answer. While that count cannot be had within a second, a login is **refused**
+with a `503` rather than admitted uncounted: guessing is what this limit is for
+([0170](../decisions/0170-a-limit-is-counted-once-in-the-database-every-replica-shares.md)).
+`shared-rate-limits.integration.test.ts` holds the login limit shared by two
+replicas on real PostgreSQL, and `rate-limit-store.test.ts` the refusal.
+
+*Residual:* a distributed attacker with many addresses is not meaningfully
+slowed by either limit. An embedding that calls `createApp` without the shared
+store counts per process, as every deployment did before 0170, so behind N
+replicas it permits N times what it says.
 The address counted is the socket's unless `FORMANCY_TRUST_PROXY` names a proxy
 (D14), and anything at a trusted address can write whichever client address it
 likes — so trusting an address the operator does not control hands that
@@ -823,7 +831,12 @@ Both draft routes are rate-limited on the same terms as the submission route,
 keyed by IP. That was a second residual when this hazard was first written up and
 is no longer one: a draft write is a database row per request and reachable
 without an account, and the limiter was only ever pointed at submissions because
-they used to be the only unauthenticated write.
+they used to be the only unauthenticated write. Like every limit on the public
+plane they are counted in the database the replicas share, and **admitted
+uncounted** while that count cannot be had within a second — so while the counter
+fails, guessing at a draft's token is not limited at all, and the HMAC is what
+holds ([0170](../decisions/0170-a-limit-is-counted-once-in-the-database-every-replica-shares.md);
+`rate-limit-store.test.ts` holds every public limit to it).
 
 ### C6. Opening a form tells a third party who opened it
 
@@ -951,7 +964,10 @@ a session reaches it (401); **the briefing is the server's**, so the endpoint an
 three requests formancy makes and never a system part from the request, and an unknown kind is
 refused before anything is asked; a body cap of its own, before the body is parsed, sized to
 the requests about the largest form the server publishes and no more; ten requests a minute
-per session, counted once the session is known, so one editor cannot spend another's budget;
+per session, counted once the session is known, so one editor cannot spend another's budget,
+and counted in the database the replicas share — refused with a `503`, and nothing asked, while
+that count cannot be had, because the route needs no database and admitting it then would make an
+outage an unlimited spend ([0170](../decisions/0170-a-limit-is-counted-once-in-the-database-every-replica-shares.md));
 an answer of at most 64,000 tokens; and a browser that goes away stops the provider writing —
 the route tells the adapter when the response closes before it was written, and the adapter
 aborts the call; one that went while its session or API key was being checked is told at
@@ -959,12 +975,13 @@ once, and nothing is sent. Every request asked is recorded as
 `model.asked` in the audit log, with who, the kind, the provider and model, the length of what
 was sent, how it ended and the provider's status when it failed — never the text.
 `model-route.test.ts` holds each of these through `createApp`, both disconnects over a real
-socket; `model.test.ts` holds the pinning in the use-case.
+socket; `model.test.ts` holds the pinning in the use-case; `shared-rate-limits.integration.test.ts`
+holds the limit shared by two replicas on real PostgreSQL, and `rate-limit-store.test.ts` the
+refusal while it cannot be counted.
 
 *Residual:* **within those bounds a session can still spend**, and an API key can spend around
 the clock. Under formancy's briefing, a person can still ask the model for something else and
-read the answer; the endpoint is narrowed, not closed. The limit is counted per process, so N
-replicas allow N times it (C1's residual). There is no spending cap: the provider's own is the
+read the answer; the endpoint is narrowed, not closed. There is no spending cap: the provider's own is the
 backstop, and the audit log is how an operator finds out who used it. A host whose own
 `AskModel` calls its own endpoint carries none of this.
 
@@ -1747,7 +1764,7 @@ so a deployment behind a proxy that does not set it has this failure and nothing
 Set too wide — the network's range is the easy way to do it — it turns into C1's residual for
 anything that arrives from the gateway. A proxy on the host itself arrives from the gateway,
 so naming it leaves every process on that machine able to choose its address; the guide says
-so. The limits are still counted per process. Respondents who really share one address — an
+so. Respondents who really share one address — an
 office, a school, a phone network behind carrier-grade NAT — still share one budget, which a
 key made of an address cannot separate. And a trusted proxy is believed about
 `X-Forwarded-Host` and `X-Forwarded-Proto` too; no route reads either (checked 2026-10-09),
@@ -1925,7 +1942,8 @@ on screen, and reading the draft is what shows the rest.
 *How it arises:* the provider is down or unreachable, refuses the key, limits the server, no
 longer serves the model the operator named, declines the request, or writes until the output
 limit cuts it off. Or the server was started with part of a configuration and has no model
-while the operator believes it has one.
+while the operator believes it has one. Or the database cannot count the request against the
+model's limit within a second, and the server refuses it rather than ask uncounted (0170).
 
 *Severity:* the author cannot use the model, which is an inconvenience — the form can still be
 edited by hand. Two variants are worse than that: an answer cut off at the limit handed over as
@@ -1943,7 +1961,9 @@ the context window is `truncated` and never handed over (`anthropic-completer.te
 provider's status — the key refused, the server limited, the model refused, or unreachable —
 which the run ends on as *could not be reached*, with that sentence as the reason
 (`model-route.test.ts`; the admin's `server-model.test.tsx`, *rejects with the server's
-sentence*). With no model configured, the admin draws no prompt pane at all (*is not drawn
+sentence*). A request the server could not count is a `503` whose sentence says so and asks for
+another try, read the same way (`rate-limit-store.test.ts`, *the model is refused, and not
+asked*); nothing is sent to the provider. With no model configured, the admin draws no prompt pane at all (*is not drawn
 when the server has no model*). A stop aborts the browser's request and the server's call to
 the provider (C9).
 

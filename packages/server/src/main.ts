@@ -3,6 +3,7 @@ import postgres from 'postgres'
 import { createApp } from './app.js'
 import { bootstrapSchema } from './db.js'
 import { createPostgresStorage } from './postgres-storage.js'
+import { createPostgresRateLimitStore } from './postgres-rate-limits.js'
 import { startOutboxWorker } from './outbox-worker.js'
 import { startFileCollector } from './file-collector.js'
 import { startChallengeSweeper } from './challenge-sweeper.js'
@@ -151,6 +152,9 @@ await bootstrapSchema(sql)
 const storage = createPostgresStorage(sql)
 const app = await createApp(storage, {
   authSecret,
+  // Every limit counts in the database, so behind any number of replicas it is the limit it
+  // says rather than that many times it. No setting turns it off (0170).
+  rateLimitStore: createPostgresRateLimitStore(sql),
   ...(adminEmail !== undefined && adminPassword !== undefined
     ? { bootstrapAdmin: { email: adminEmail, password: adminPassword } }
     : {}),

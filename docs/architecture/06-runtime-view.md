@@ -717,3 +717,37 @@ route carries the sentence on the `201`
 A form never published has no row to keep them beside, so the admin offers no list until it
 has one.
 
+
+## 6.15 A limited request, on whichever replica answers it
+
+```
+request ──▶ replica A or replica B, the same either way
+              │
+   the route's limit — at onRequest; the model's at preHandler, once the session is known
+              │
+              ▼
+   INSERT INTO rate_limit_counters … ON CONFLICT (key) DO UPDATE      one statement,
+     key    'POST /f/:path/submissions 203.0.113.1'                    the row's lock
+     window starts at the key's first request, ends now() + timeWindow on the database's clock
+              │
+     ┌────────┴──────────┬──────────────────────────────────────────────┐
+     ▼                   ▼                                              ▼
+   within max          over max                     no answer within a second, or an error
+   ──▶ the route       ──▶ 429, Retry-After         ├─ declared admit: the public plane ──▶ the route, uncounted
+                                                     └─ declared refuse: login, model ──▶ 503 RATE_LIMIT_UNAVAILABLE
+                                                     the process says so once, and again when it answers
+
+   at most once in ten minutes, on the back of a count and not waited for:
+   DELETE FROM rate_limit_counters WHERE resets_at <= now()
+```
+
+**The count is the database's, so the replica does not matter.** Every limit counts in one
+table, one row per route and client, and the upsert serialises two replicas counting the same
+client on that row's lock, so the third request a minute is the third whichever process answered
+the first two. The window is the plugin's — fixed, from a key's first request — kept on the
+database's clock rather than on each process's
+([0170](../decisions/0170-a-limit-is-counted-once-in-the-database-every-replica-shares.md)).
+
+**A count that does not come back is decided without.** Each route's limit says, through
+`limited`, whether it admits or refuses then; the error a refusing route sends says nothing about
+the database. A count abandoned at the bound is not cancelled, and may land later.

@@ -203,8 +203,6 @@ has the reasoning.
 
 ### What this does not change
 
-- The limits are still counted **per process**, so behind more than one replica each counts
-  only its share of the traffic.
 - People who really do share one address — an office, a school, a phone network behind
   carrier-grade NAT — share one budget, which no setting here can separate.
 - **A trusted proxy is believed about more than the client.** Fastify also takes
@@ -214,6 +212,38 @@ has the reasoning.
   2026-10-09): only the rate limits read the client's address. But the first route that
   builds a link or decides whether a request came over HTTPS from them would take a
   client's word for it, unless the proxy sets both headers itself.
+
+## More than one replica
+
+Every rate limit counts in the database, so it is the limit it says whichever replica answers:
+thirty submissions a minute per address is thirty across all of them, and ten requests a minute
+to the model per session is ten
+([0170](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0170-a-limit-is-counted-once-in-the-database-every-replica-shares.md)).
+There is nothing to configure and nothing to turn off: the server adds the table,
+`rate_limit_counters`, when it starts. Measured on 2026-10-10 with the database on the same
+machine, counting costs a limited request about half a millisecond; a database elsewhere adds its
+round trip to every one.
+
+**When the database does not answer within a second**, a limit decides without a count:
+
+- **Submissions, drafts, challenges and file offers go through, uncounted.** Each needs the
+  database for its own work, so with the database down they fail anyway; with only the counter
+  failing, refusing them would take every form down.
+- **A sign-in and a request to the model are refused**, with `503` and the code
+  `RATE_LIMIT_UNAVAILABLE`, because guessing passwords and spending your key are what those two
+  limits are for. Sessions already signed in keep working; the admin says the server did not
+  take the sign-in rather than that the password was wrong.
+
+The server writes one line to standard error when counting stops and one when it starts again,
+and says it nowhere else.
+
+**If you grant the application's role privileges table by table**, it needs `SELECT`, `INSERT`,
+`UPDATE` and `DELETE` on `rate_limit_counters`. Without them every count fails: nobody can sign
+in, and the public plane has no limit at all.
+
+Two things still want one replica: webhooks, because the outbox takes no row lock and every
+replica delivers each one, and the local file store, which the
+[object store](/docs/concepts/files/) replaces.
 
 ## Two planes
 
@@ -683,8 +713,8 @@ for the person: the key refused, the server being limited, the model refused, or
 `GET /model` says which provider and model, or `404` when there is none.
 
 **What it costs, and who can spend it.** Every editor and admin, and every API key with one
-of those roles, can spend the key, within the limits above, and the limit is counted per
-replica. Under formancy's briefing somebody can still ask the model for something else; the
+of those roles, can spend the key, within the limits above, counted once however many replicas
+answer — and refused while the database cannot count them. Under formancy's briefing somebody can still ask the model for something else; the
 endpoint is narrowed, not closed. Every request is in the audit log as `model.asked` — who,
 which kind, the provider and model, how long the request was, how it ended and the
 provider's status when it failed — never the text. There is no spending cap here; set one with

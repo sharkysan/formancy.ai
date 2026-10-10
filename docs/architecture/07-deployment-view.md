@@ -82,8 +82,10 @@ place that talks to it: outbound HTTPS to `api.anthropic.com`, `api.openai.com` 
 about. The browser never calls a provider; the key never leaves the server
 ([0165](../decisions/0165-a-deployments-model-is-asked-through-its-server.md)).
 
-One database serves relational data, documents, the job queue and full-text
-search. No Redis and no second store, which is a deliberate property of the
+One database serves relational data, documents, the job queue, full-text
+search and every rate limit's count
+([0170](../decisions/0170-a-limit-is-counted-once-in-the-database-every-replica-shares.md)).
+No Redis and no second store, which is a deliberate property of the
 PostgreSQL choice ([0024](../decisions/0024-postgres-over-mongodb.md)) and
 matters most to the self-hoster who has no operations team.
 
@@ -101,15 +103,24 @@ form is not publicly submittable unless it says so.
 
 ## Operational notes a self-hoster needs
 
-- **Run exactly one replica.** Two things break behind more than one, for
-  unrelated reasons, and both are silent.
-  `@fastify/rate-limit`'s default store is in-memory and therefore per-process,
-  so the limit is multiplied by the replica count. And the outbox worker's
+- **Run exactly one replica, for the webhooks' sake.** The outbox worker's
   `claimDueDeliveries` takes no row lock, so every replica picks up the same
-  due delivery and the receiver gets it once per replica. The stable event id
-  makes that survivable for a receiver that dedupes; it does not make it
-  correct. `FOR UPDATE SKIP LOCKED` is the fix and is a contained change to one
-  port method ([0049](../decisions/0049-one-polling-worker.md)).
+  due delivery and the receiver gets it once per replica — silently. The stable
+  event id makes that survivable for a receiver that dedupes; it does not make
+  it correct. `FOR UPDATE SKIP LOCKED` is the fix and is a contained change to
+  one port method ([0049](../decisions/0049-one-polling-worker.md)). The rate
+  limits were the other reason, and are not any more: below.
+- **Every limit counts in the database, whichever replica answers.** One row per
+  route and client in `rate_limit_counters`, an unlogged table the server adds on
+  start; every limited request writes it, about half a millisecond against a
+  database on the same machine (measured 2026-10-10) and a round trip more where
+  it is elsewhere. A count that does not come back within a second is decided
+  without one: submissions, drafts, challenges and file offers go through
+  uncounted, and a login or a model request is refused with `503`. The process
+  says so on standard error when the counter stops answering and when it starts
+  again. A role granted table by table needs `SELECT`, `INSERT`, `UPDATE` and
+  `DELETE` on it
+  ([0170](../decisions/0170-a-limit-is-counted-once-in-the-database-every-replica-shares.md)).
 - **Name the reverse proxy, by its own address.** Every public rate limit counts the
   client's address, and the server believes no `X-Forwarded-For` until
   `FORMANCY_TRUST_PROXY` lists the proxy's address or range — so behind the proxy drawn
@@ -158,7 +169,7 @@ form is not publicly submittable unless it says so.
 - **A model is off until all three of its variables are set**, and half of them stops the
   server at startup. Set, the server needs outbound HTTPS to that one provider, each request
   sends the form it is about, every editor and admin can spend the key — ten requests a
-  minute per session, per replica — and every request is in the audit log as `model.asked`,
+  minute per session, whichever replica answers — and every request is in the audit log as `model.asked`,
   without its text. There is no default model: name one as the provider's documentation
   does, and change it when the provider retires it
   ([0165](../decisions/0165-a-deployments-model-is-asked-through-its-server.md); hazards C8,

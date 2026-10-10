@@ -80,14 +80,23 @@ describe('login', () => {
   test('stores the token it is given', async () => {
     answering(() => json({ token: 't_abc' }))
 
-    expect(await login('admin@example.ch', 'hunter2')).toBe(true)
+    expect(await login('admin@example.ch', 'hunter2')).toBe('signed-in')
     expect(currentToken()).toBe('t_abc')
   })
 
-  test('a refusal is false, and leaves no token behind', async () => {
+  test('a refusal is refused, and leaves no token behind', async () => {
     answering(() => json({ error: 'invalid_credentials' }, 401))
 
-    expect(await login('admin@example.ch', 'wrong')).toBe(false)
+    expect(await login('admin@example.ch', 'wrong')).toBe('refused')
+    expect(currentToken()).toBeNull()
+  })
+
+  test.each([429, 503])('a %i is not a refusal: the password was never looked at', async (status) => {
+    // The login limit answers before the handler does (0170). Reported as a refusal, it would
+    // tell somebody whose password is right that it is wrong.
+    answering(() => json({ error: 'limited' }, status))
+
+    expect(await login('admin@example.ch', 'hunter2')).toBe('unavailable')
     expect(currentToken()).toBeNull()
   })
 
