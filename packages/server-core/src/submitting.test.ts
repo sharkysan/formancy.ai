@@ -197,7 +197,10 @@ describe('a draft is one response, however late and however often it is resumed'
 
   test('resumed a month later, it still submits — once', async () => {
     // A draft exists so that somebody can come back; a token that expired would refuse them
-    // the day they did. Nothing about it reads the clock, and this fails if something starts to.
+    // the day they did. The token sent is the one handed out at the START, a month before it
+    // is sent: one minted by the resume, at the later clock, would pass under any expiry. And
+    // the resume a month on hands back that same token, which a token carrying the time it was
+    // minted could not.
     const hash = await openForm()
     const started = await startDraft(deps, { path: 'contact-us' })
     if (started === undefined) throw new Error('no draft')
@@ -206,11 +209,21 @@ describe('a draft is one response, however late and however often it is resumed'
     now = '2026-11-12T09:00:00.000Z'
     const resumed = await resumeDraft(deps, { path: 'contact-us', draftId: started.draftId, token: started.token })
     if (resumed?.outcome !== 'resumed') throw new Error('not resumed')
+    expect(resumed.submissionToken).toBe(started.submissionToken)
 
-    expect(await send(hash, resumed.submissionToken, resumed.data)).toMatchObject({ ok: true, id: started.draftId })
+    expect(await send(hash, started.submissionToken, resumed.data)).toMatchObject({ ok: true, id: started.draftId })
+    expect(await send(hash, started.submissionToken, resumed.data)).toMatchObject({ ok: false, kind: 'token_spent' })
+  })
 
-    const again = await resumeDraft(deps, { path: 'contact-us', draftId: started.draftId, token: started.token })
-    if (again?.outcome !== 'resumed') throw new Error('not resumed')
-    expect(await send(hash, again.submissionToken, again.data)).toMatchObject({ ok: false, kind: 'token_spent' })
+  test("a form's token sent a month after it was handed out still submits", async () => {
+    // A form left open in a tab over a holiday is a response that was never sent. Refused for
+    // its age, it is lost the moment it is sent — the page has nothing to tell the respondent
+    // but to start again.
+    const hash = await openForm()
+    const token = await handedOut()
+
+    now = '2026-11-12T09:00:00.000Z'
+
+    expect(await send(hash, token)).toMatchObject({ ok: true, id: token.split('.')[0] })
   })
 })
