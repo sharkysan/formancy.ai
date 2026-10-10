@@ -257,6 +257,42 @@ describe('drafting', () => {
     expect(screen.getByRole('button', { name: `Keep ${HOLDS.name}` })).toBeTruthy()
   })
 
+  test('quotes the model: why it declined, and the last answer of a run that gave up', async () => {
+    /*
+     * The status says that the model declined, not why: without its words beneath, the
+     * person cannot tell a request no example can check from one the model misread. And a
+     * run that gave up lists what was wrong with an answer the person has not seen.
+     */
+    const user = userEvent.setup()
+    const reason = 'No example can check a colour.'
+    const declined = render(
+      <ScenarioPane
+        session={createBuilderSession(form)}
+        scenarios={[]}
+        onChange={() => undefined}
+        ask={model(JSON.stringify({ declined: reason })).ask}
+      />,
+    )
+    await user.type(screen.getByRole('textbox', { name: /What should this form do/ }), 'It should look blue.')
+    await user.click(screen.getByRole('button', { name: 'Draft examples' }))
+    expect((await screen.findByText(reason)).closest('[role="status"]')).toBeNull()
+    declined.unmount()
+
+    const prose = 'Sure! Here are some examples.'
+    render(
+      <ScenarioPane
+        session={createBuilderSession(form)}
+        scenarios={[]}
+        onChange={() => undefined}
+        ask={model(prose).ask}
+        attempts={1}
+      />,
+    )
+    await user.type(screen.getByRole('textbox', { name: /What should this form do/ }), 'anything')
+    await user.click(screen.getByRole('button', { name: 'Draft examples' }))
+    expect(await screen.findByText(prose)).toBeTruthy()
+  })
+
   test('Keep and Discard take the draft away and the focus to the heading, rather than to the page', async () => {
     // The button pressed leaves with its draft; without somewhere to go, the focus falls to
     // <body> and a keyboard user starts again from the top of the page.

@@ -7,6 +7,7 @@ import { createBuilderText } from './messages.js'
 import {
   draftExpectations,
   draftProblems,
+  draftQuotes,
   draftScenarios,
   draftStatus,
   draftVerdict,
@@ -414,6 +415,25 @@ describe('what the drafting part says', () => {
     }
     expect(draftProblems(stopped, text)).toEqual([])
     expect(draftProblems(undefined, text)).toEqual([])
+  })
+
+  test('quotes the model’s reason when it declined, and the last answer when no answer held an example', () => {
+    /*
+     * Decided here, once: each part decided it for itself, and either could drop the quote
+     * with nothing failing. The status says that the model declined, never why; the reason
+     * is the model's words, shown beneath it. The last answer belongs with the problems
+     * listed about it, so a run that stopped, declined or could not reach the model shows
+     * none, and neither does an answer that was empty.
+     */
+    const ended = (how: 'gave-up' | 'stopped' | 'unreachable' | 'declined', extra: Partial<Drafted> = {}): Drafted =>
+      ({ ok: false, attempts: 1, problems: [{ kind: 'not-json' }], lastAnswer: 'prose', ended: how, ...extra }) as Drafted
+
+    expect(draftQuotes(ended('declined', { reason: 'No.' }))).toEqual({ declined: 'No.', lastAnswer: undefined })
+    expect(draftQuotes(ended('gave-up'))).toEqual({ declined: undefined, lastAnswer: 'prose' })
+    expect(draftQuotes(ended('gave-up', { lastAnswer: '' }))).toEqual({ declined: undefined, lastAnswer: undefined })
+    for (const quiet of [ended('stopped'), ended('unreachable', { reason: 'offline' }), ready, undefined]) {
+      expect(draftQuotes(quiet)).toEqual({ declined: undefined, lastAnswer: undefined })
+    }
   })
 
   test('every reason an item is not an example is said, to the person and to the model, apart from the others', () => {

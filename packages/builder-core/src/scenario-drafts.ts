@@ -367,6 +367,26 @@ export function draftProblems(result: Drafted | undefined, text: BuilderText): s
   }
 }
 
+/** The model's own words a drafting part shows, quoted as text beneath its status. */
+export interface DraftQuotes {
+  /** Why it declined, as it wrote it. The status says that it declined, never why. */
+  readonly declined: string | undefined
+  /** What it last answered, when no answer held an example: what the problems listed are about. */
+  readonly lastAnswer: string | undefined
+}
+
+/**
+ * Which of the model's words a drafting part quotes, decided once for both builders. Each
+ * part decided it for itself, and either could drop the quote with nothing failing.
+ */
+export function draftQuotes(result: Drafted | undefined): DraftQuotes {
+  if (result === undefined || result.ok) return { declined: undefined, lastAnswer: undefined }
+  return {
+    declined: result.ended === 'declined' ? result.reason : undefined,
+    lastAnswer: result.ended === 'gave-up' && result.lastAnswer !== '' ? result.lastAnswer : undefined,
+  }
+}
+
 const REASON_IDS = {
   'not-an-object': 'drafts.reason.notAnObject',
   'unknown-key': 'drafts.reason.unknownKey',

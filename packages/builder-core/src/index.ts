@@ -31,6 +31,7 @@ export type { RunHistory, ScenarioRunChange } from './scenario-runs.js'
 export {
   draftExpectations,
   draftProblems,
+  draftQuotes,
   draftScenarios,
   draftStatus,
   draftVerdict,
@@ -39,6 +40,7 @@ export {
 export type {
   DraftNote,
   DraftProblem,
+  DraftQuotes,
   DraftState,
   Drafted,
   DraftingOptions,

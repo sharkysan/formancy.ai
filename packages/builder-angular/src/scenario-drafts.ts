@@ -18,6 +18,7 @@ import {
   createStop,
   draftExpectations,
   draftProblems,
+  draftQuotes,
   draftScenarios,
   draftStatus,
   draftVerdict,
@@ -90,7 +91,7 @@ const NO_DRAFTS: readonly Scenario[] = []
 
       <p role="status" data-formancy-part="scenario-drafts-status">{{ status() }}</p>
 
-      @if (declined(); as reason) {
+      @if (quoted().declined; as reason) {
         <!-- The model's words, quoted: text, never markup, whatever it wrote. -->
         <blockquote data-formancy-part="scenario-drafts-declined">{{ reason }}</blockquote>
       }
@@ -102,7 +103,7 @@ const NO_DRAFTS: readonly Scenario[] = []
               <li>{{ problem }}</li>
             }
           </ul>
-          @if (lastAnswer(); as answer) {
+          @if (quoted().lastAnswer; as answer) {
             <details>
               <summary>{{ 'drafts.lastAnswer' | builderText: text() }}</summary>
               <pre>{{ answer }}</pre>
@@ -240,16 +241,8 @@ export class FormancyScenarioDrafts {
     draftStatus({ busy: this.busy(), result: this.result(), note: this.note() }, this.text()),
   )
   protected readonly problems = computed(() => draftProblems(this.result(), this.text()))
-  protected readonly declined = computed(() => {
-    const outcome = this.result()
-    return outcome === undefined || outcome.ok || outcome.ended !== 'declined' ? undefined : outcome.reason
-  })
-  protected readonly lastAnswer = computed(() => {
-    const outcome = this.result()
-    return outcome === undefined || outcome.ok || outcome.ended !== 'gave-up' || outcome.lastAnswer === ''
-      ? undefined
-      : outcome.lastAnswer
-  })
+  /** The model's words quoted beneath the status — builder-core's choice, as the React part's is. */
+  protected readonly quoted = computed(() => draftQuotes(this.result()))
 
   protected async run(): Promise<void> {
     const intent = this.intent()

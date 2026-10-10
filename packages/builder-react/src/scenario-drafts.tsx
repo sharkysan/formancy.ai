@@ -4,6 +4,7 @@ import {
   createStop,
   draftExpectations,
   draftProblems,
+  draftQuotes,
   draftScenarios,
   draftStatus,
   draftVerdict,
@@ -173,8 +174,8 @@ export function ScenarioDrafts({
     done(draft, 'kept')
   }
 
-  const failed = result?.ok === false ? result : undefined
   const problems = draftProblems(result, text)
+  const quoted = draftQuotes(result)
 
   return (
     <section data-formancy-part="scenario-drafts" aria-labelledby={headingId}>
@@ -207,10 +208,10 @@ export function ScenarioDrafts({
         {draftStatus({ busy, result, note }, text)}
       </p>
 
-      {failed?.ended === 'declined' && failed.reason !== undefined ? (
+      {quoted.declined === undefined ? null : (
         /* The model's words, quoted: text, never markup, whatever it wrote. */
-        <blockquote data-formancy-part="scenario-drafts-declined">{failed.reason}</blockquote>
-      ) : null}
+        <blockquote data-formancy-part="scenario-drafts-declined">{quoted.declined}</blockquote>
+      )}
 
       {problems.length === 0 ? null : (
         <div data-formancy-part="scenario-drafts-problems">
@@ -219,10 +220,10 @@ export function ScenarioDrafts({
               <li key={index}>{problem}</li>
             ))}
           </ul>
-          {failed === undefined || failed.ended !== 'gave-up' || failed.lastAnswer === '' ? null : (
+          {quoted.lastAnswer === undefined ? null : (
             <details>
               <summary>{text('drafts.lastAnswer')}</summary>
-              <pre>{failed.lastAnswer}</pre>
+              <pre>{quoted.lastAnswer}</pre>
             </details>
           )}
         </div>
