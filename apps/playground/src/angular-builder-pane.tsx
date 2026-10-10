@@ -56,16 +56,25 @@ export function AngularBuilderPane({
     let cancelled = false
 
     setProblem(undefined)
-    void mountAngularBuilder(element, session, tab, {
-      keep: (block) => saving.current(block),
-      keepScenarios: (next) => revising.current(next),
-    })
+    void mountAngularBuilder(
+      element,
+      session,
+      tab,
+      // Drawn on the first render, so the builder never shows the page's lists empty.
+      { preview: latest.current, blocks: offered.current, scenarios: examples.current },
+      {
+        keep: (block) => saving.current(block),
+        keepScenarios: (next) => revising.current(next),
+      },
+    )
       .then((builder) => {
         if (cancelled) {
           builder.unmount()
           return
         }
         mounted.current = builder
+        // Pushed again, for whatever changed while the bootstrap was in flight; a signal
+        // set to the value it holds changes nothing.
         builder.explain(latest.current)
         builder.offer(offered.current)
         builder.check(examples.current)

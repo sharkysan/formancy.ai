@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { userEvent } from '@testing-library/user-event'
 import { referencedMessages } from '@formancy/builder-core'
 import { App } from './app.js'
-import { builderTextFor } from './builder-pane.js'
+import { TAB_NAMES, builderTextFor } from './builder-pane.js'
 import { STARTER_SCHEMA } from './starter.js'
 import { STARTER_SCENARIOS } from './starter-scenarios.js'
 
@@ -396,6 +396,78 @@ describe('the examples, in either builder', () => {
     await builtWith('Angular')
     const angular = await scenarioPanel()
     await waitFor(() => expect(removable(angular)).toEqual(offered(gone)), { timeout: 10_000 })
+  })
+  test('the Angular panel never says there are none while the page has some', async () => {
+    // The Angular builder started with an empty list and was handed the page's after it had
+    // drawn, so every mount first drew the empty state — and its status is a live region, so
+    // "No scenarios." could be announced before "All … hold", on every switch to Angular.
+    const none = builderTextFor('en')('scenarios.none')
+    const said: string[] = []
+    const listening = new MutationObserver(() => {
+      const panel = screen.queryByRole('region', { name: 'Scenarios' })
+      const status = panel === null ? null : within(panel).queryByRole('status')
+      if (status?.textContent) said.push(status.textContent)
+    })
+    listening.observe(document.body, { subtree: true, childList: true, characterData: true })
+
+    render(<App />)
+    await builtWith('Angular')
+    const panel = await scenarioPanel()
+    await waitFor(() => expect(within(panel).getByRole('status').textContent).toContain('hold'))
+    listening.disconnect()
+
+    expect(said).not.toContain(none)
+  })
+})
+
+/**
+ * The same panes, in either builder.
+ *
+ * The Angular host chose its panels by hand, and its comment said they mirrored the React
+ * pane's while the Fields tab had no prompt pane and the Arrangement tab no layout node
+ * properties — and nothing compared them, so the missing examples panel was found by
+ * reading, not by a test. This compares what each builder draws on every tab, so the next
+ * pane mounted in one builder alone fails here instead of waiting to be noticed.
+ *
+ * Compared by the parts the two builders emit (`data-formancy-part`), not by role and name:
+ * neither the prompt pane nor the layout node's properties is a named region, and the parts
+ * are the contract both builders share by design — the themes dress them, and
+ * `workbench.test` already derives them from both packages' sources.
+ */
+describe('the same panes, in either builder', () => {
+  /** Every part drawn in the Editor pane, as a set. */
+  const partsOnScreen = (): string[] => {
+    const editor = screen.getByRole('region', { name: 'Editor' })
+    return [
+      ...new Set(
+        [...editor.querySelectorAll('[data-formancy-part]')].map(
+          (element) => element.getAttribute('data-formancy-part') ?? '',
+        ),
+      ),
+    ].sort()
+  }
+
+  test.each(Object.values(TAB_NAMES))('on the %s tab', async (tab) => {
+    const drawn: Record<'React' | 'Angular', string[]> = { React: [], Angular: [] }
+    for (const which of ['React', 'Angular'] as const) {
+      render(<App />)
+      await builtWith(which)
+      if (which === 'Angular') await angularTree()
+      await userEvent.setup().click(screen.getByRole('button', { name: tab }))
+      // Settled, not merely mounted: the Angular tree draws a tab's panes after the click,
+      // and a pane that reports a selection draws its properties a beat later.
+      await waitFor(
+        () => {
+          drawn[which] = partsOnScreen()
+          expect(drawn[which].length).toBeGreaterThan(0)
+        },
+        { timeout: 10_000 },
+      )
+      await new Promise((settle) => setTimeout(settle, 300))
+      drawn[which] = partsOnScreen()
+      cleanup()
+    }
+    expect(drawn.Angular).toEqual(drawn.React)
   })
 })
 
