@@ -233,8 +233,14 @@ export function BuilderBody({
               that is the point of `ask` being the host's
               ([0109](../../../docs/decisions/0109-an-ai-edit-is-reviewed-before-it-lands.md)).
               Everything after the answer is real: parsed, validated, compiled,
-              type-checked, diffed and held for review. */}
-          <PromptPane session={session} ask={DEMO_MODEL} />
+              type-checked, diffed and held for review — and run against the form's
+              examples, the list the scenario pane runs, before it lands (0160). */}
+          <PromptPane
+            session={session}
+            ask={DEMO_MODEL}
+            scenarios={scenarios}
+            initialValue={sample}
+          />
 
           <FormancyBuilder
             session={session}

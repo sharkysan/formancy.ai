@@ -371,6 +371,15 @@ export const BUILDER_MESSAGES_FR = {
   'prompt.review': 'Examiner ces modifications',
   'prompt.review.costs':
     'Examiner ces modifications — certaines touchent des réponses déjà recueillies',
+  'prompt.review.stops': {
+    one: 'Examiner ces modifications — {count} scénario ne tiendrait plus : {list}',
+    other: 'Examiner ces modifications — {count} scénarios ne tiendraient plus : {list}',
+  },
+  'prompt.review.costsStops': {
+    one: 'Examiner ces modifications — certaines touchent des réponses déjà recueillies, et {count} scénario ne tiendrait plus : {list}',
+    other:
+      'Examiner ces modifications — certaines touchent des réponses déjà recueillies, et {count} scénarios ne tiendraient plus : {list}',
+  },
   'prompt.apply': 'Appliquer ces modifications',
   'prompt.discard': 'Abandonner',
   'prompt.lastAnswer': 'Ce que le modèle a répondu en dernier',
@@ -396,6 +405,8 @@ export const BUILDER_MESSAGES_FR = {
     other:
       'Prêt à examiner après {attempts} tentatives : {count} modifications, et certaines touchent des réponses déjà recueillies. Rien n’a été appliqué.',
   },
+  'prompt.status.wouldStop': 'Ne tiendrait plus une fois appliqué : {list}.',
+  'prompt.status.wouldHold': 'Tiendrait de nouveau une fois appliqué : {list}.',
   'prompt.status.failed': {
     one: 'Rien n’a été appliqué. {count} tentative, et le document ne fonctionnait toujours pas.',
     other: 'Rien n’a été appliqué. {count} tentatives, et le document ne fonctionnait toujours pas.',

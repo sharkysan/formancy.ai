@@ -333,6 +333,40 @@ shipped — and the arrangement pane offered less than React's until both read t
 from `builder-core`: it could not place a field the arrangement leaves out, or add a code
 ([0117](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0117-the-arrangement-pane-offers-the-same-in-both-builders.md)).
 
+### A model's edit, checked against your examples
+
+Bind the prompt pane to the same examples as the scenario pane, and a model's answer is run
+against them before anybody presses Apply:
+
+```ts
+@Component({
+  imports: [FormancyPromptPane, FormancyScenarioPane],
+  template: `
+    <formancy-prompt-pane
+      [session]="session"
+      [ask]="ask"
+      [scenarios]="examples"
+      [initialValue]="sample"
+    />
+    <formancy-scenario-pane [session]="session" [scenarios]="examples" [initialValue]="sample" />
+  `,
+})
+export class Editor {
+  protected readonly session = createBuilderSession(schema)
+  protected readonly ask = askModel
+  // The form's examples and the sample they start from, kept wherever you keep the form.
+  protected readonly examples: readonly Scenario[] = EXAMPLES
+  protected readonly sample = SAMPLE
+}
+```
+
+`scenarios`, `initialValue` and `mode` mean the same on both panes. The review's heading
+names each example the answer would stop holding, and the status names those and any it
+would make hold again. Apply stays enabled, because a rule changed on purpose stops its old
+example holding. A rule no example pins gets no warning, and without `scenarios` the review
+says nothing about examples. In React the same three are props on `PromptPane`
+([0160](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0160-a-proposal-is-checked-against-the-forms-examples.md)).
+
 ## Proof this is not a second implementation
 
 The Angular renderer passes the **same conformance fixtures** as the React one,

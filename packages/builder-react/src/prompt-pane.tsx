@@ -4,6 +4,7 @@ import {
   applyProposal,
   authorForm,
   createStop,
+  proposalHeading,
   proposalStatus,
   proposeEdit,
 } from '@formancy/builder-core'
@@ -14,6 +15,7 @@ import type {
   EditProposal,
   Stop,
 } from '@formancy/builder-core'
+import type { Scenario } from '@formancy/core'
 
 /**
  * Describing a form in words, seeing what that did, and then deciding.
@@ -55,6 +57,11 @@ import type {
  * **A model can decline**, when the format cannot express what was asked. The run
  * ends on that answer, and the pane shows the model's reason, as text, where the
  * problems would be ([0158](../../../docs/decisions/0158-a-model-may-decline.md)).
+ *
+ * **Given the form's examples, it runs them before Apply.** The review names the ones
+ * the answer would stop holding, and those it would make hold again — the one check that
+ * tells a rule written backwards from the rule asked for
+ * ([0160](../../../docs/decisions/0160-a-proposal-is-checked-against-the-forms-examples.md)).
  */
 
 export interface PromptPaneProps {
@@ -66,9 +73,26 @@ export interface PromptPaneProps {
   ask?: AskModel | undefined
   /** How many times to let the model correct itself. Three by default. */
   attempts?: number
+  /**
+   * The form's examples, as `ScenarioPane` takes them. Given, an answer is run against
+   * them before it is shown, and the review names any that would stop holding. Absent,
+   * the review says nothing about examples.
+   */
+  scenarios?: readonly Scenario[] | undefined
+  /** Where every example starts — the form's sample, as `ScenarioPane` takes it. */
+  initialValue?: Readonly<Record<string, unknown>> | undefined
+  /** `client` by default; `server` is what the publish gate and the submission endpoint run. */
+  mode?: 'client' | 'server'
 }
 
-export function PromptPane({ session, ask, attempts }: PromptPaneProps): ReactElement | null {
+export function PromptPane({
+  session,
+  ask,
+  attempts,
+  scenarios,
+  initialValue,
+  mode,
+}: PromptPaneProps): ReactElement | null {
   // Every word this pane shows, in the language the session was opened in (0114).
   const { text } = session
   const [instruction, setInstruction] = useState('')
@@ -126,6 +150,8 @@ export function PromptPane({ session, ask, attempts }: PromptPaneProps): ReactEl
     running.current = stop
     try {
       const current = session.document()
+      // The examples in force with the document the answer is for, taken together.
+      const examples = scenarios === undefined ? undefined : { scenarios, initialValue, mode }
       // Resolves however the run ends — a host's model that threw included, which
       // it reports as unreachable with the host's reason rather than as a document
       // that failed.
@@ -139,7 +165,7 @@ export function PromptPane({ session, ask, attempts }: PromptPaneProps): ReactEl
       setResult(outcome)
       // Held against the document it was written for. Applying later checks
       // that the form has not moved in the meantime.
-      if (outcome.ok) setProposal(proposeEdit(current, outcome.document))
+      if (outcome.ok) setProposal(proposeEdit(current, outcome.document, examples))
     } finally {
       // Read while Stop is still drawn: once it has gone, focus is already on <body>.
       refocus.current = stopButton.current !== null && document.activeElement === stopButton.current
@@ -201,9 +227,7 @@ export function PromptPane({ session, ask, attempts }: PromptPaneProps): ReactEl
              on, and it has to be reachable as one rather than as loose text
              after a status message. */
         >
-          <h3 id={reviewId}>
-            {text(proposal.costsAnswers ? 'prompt.review.costs' : 'prompt.review')}
-          </h3>
+          <h3 id={reviewId}>{proposalHeading(proposal, text)}</h3>
           <ul data-formancy-part="prompt-changes">
             {proposal.changes.map((change) => (
               <li key={`${change.kind}:${change.path}`} data-severity={change.severity}>

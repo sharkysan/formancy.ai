@@ -1,6 +1,6 @@
 export { authorForm, createStop, declinedAnswer } from './authoring.js'
-export { applyProposal, proposalStatus, proposeEdit } from './proposal.js'
-export type { EditProposal } from './proposal.js'
+export { applyProposal, proposalHeading, proposalStatus, proposeEdit } from './proposal.js'
+export type { EditProposal, ProposalExamples } from './proposal.js'
 export { comparedToLastRun, createRunHistory, scenarioStatus } from './scenario-runs.js'
 export type { RunHistory, ScenarioRunChange } from './scenario-runs.js'
 export type {

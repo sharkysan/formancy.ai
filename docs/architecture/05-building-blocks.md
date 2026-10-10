@@ -240,6 +240,11 @@ exactly as it was. Both panes and `@formancy/mcp`'s `propose_form_edit` read
 those, so three surfaces cannot disagree about what counts as a change or when
 a proposal has gone stale
 ([0109](../decisions/0109-an-ai-edit-is-reviewed-before-it-lands.md)).
+Given the form's examples, `proposeEdit` also runs them against both documents through
+`core`'s `runScenarios` and `scenario-runs.ts`'s `comparedToLastRun`, and the proposal
+carries which would stop holding and which would hold again. `proposalHeading` and
+`proposalStatus` say so, so the two panes draw a verdict rather than reaching one
+([0160](../decisions/0160-a-proposal-is-checked-against-the-forms-examples.md)).
 
 Before a proposal there is the asking. `answers.ts` holds what every request to a model
 shares and nothing about forms. `readAnswer` takes the JSON object out of what a model

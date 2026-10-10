@@ -365,6 +365,15 @@ export const BUILDER_MESSAGES_DE = {
   'prompt.stop': 'Anhalten',
   'prompt.review': 'Diese Änderungen prüfen',
   'prompt.review.costs': 'Diese Änderungen prüfen – einige betreffen bereits erfasste Antworten',
+  'prompt.review.stops': {
+    one: 'Diese Änderungen prüfen – {count} Szenario würde nicht mehr gelten: {list}',
+    other: 'Diese Änderungen prüfen – {count} Szenarien würden nicht mehr gelten: {list}',
+  },
+  'prompt.review.costsStops': {
+    one: 'Diese Änderungen prüfen – einige betreffen bereits erfasste Antworten, und {count} Szenario würde nicht mehr gelten: {list}',
+    other:
+      'Diese Änderungen prüfen – einige betreffen bereits erfasste Antworten, und {count} Szenarien würden nicht mehr gelten: {list}',
+  },
   'prompt.apply': 'Diese Änderungen übernehmen',
   'prompt.discard': 'Verwerfen',
   'prompt.lastAnswer': 'Was das Modell zuletzt geantwortet hat',
@@ -390,6 +399,8 @@ export const BUILDER_MESSAGES_DE = {
     other:
       'Bereit zur Prüfung nach {attempts} Versuchen: {count} Änderungen, und einige davon betreffen bereits erfasste Antworten. Nichts wurde übernommen.',
   },
+  'prompt.status.wouldStop': 'Würde bei Übernahme nicht mehr gelten: {list}.',
+  'prompt.status.wouldHold': 'Würde bei Übernahme wieder gelten: {list}.',
   'prompt.status.failed': {
     one: 'Nichts wurde übernommen. {count} Versuch, und das Dokument funktionierte immer noch nicht.',
     other: 'Nichts wurde übernommen. {count} Versuche, und das Dokument funktionierte immer noch nicht.',
