@@ -25,7 +25,10 @@ import { catalogueFile, isCatalogueFile } from './translation.js'
  * **The answer is the catalogue file**, the one a translator downloads and uploads, so it
  * lands through the import and the import's own rules: an empty target erases nothing, an
  * id the form no longer has is not written, and a target translated from wording that has
- * since changed is written and named. There is no second set.
+ * since changed is written and named. There is no second set. What the import is handed is
+ * the request's, though, where the request knows better than the answer: each source is the
+ * one the model was sent, not the one it wrote back, and a target of nothing but spaces is
+ * one left empty.
  *
  * No sentence here: what the model is told is `translate-prompt.ts`'s, and what a person
  * is told is the catalogue's.
@@ -43,13 +46,17 @@ export interface TranslationAnswer {
   readonly locale: string
   /** The language the sources were in. */
   readonly defaultLocale: string
-  /** The ids asked for, in the order the request listed them. */
-  readonly asked: readonly string[]
+  /**
+   * The messages asked for, in the order the request listed them, each with the source the
+   * request sent. That source, and not the one the model wrote back, is what the stale mark
+   * compares with the form's: only the request knows what was asked.
+   */
+  readonly asked: ReadonlyArray<{ readonly id: string; readonly source: string }>
   /** The answer's messages for ids that were asked for, as the model wrote them. */
   readonly messages: CatalogueFile['messages']
-  /** Ids the answer carried that were not asked for: never written, and listed. */
+  /** Ids the answer wrote a target for that were not asked for: never written, and listed. */
   readonly dropped: readonly string[]
-  /** Ids asked for that came back with no target: left for a person, or another turn. */
+  /** Ids asked for that came back with no target, or one of only spaces: left for a person, or another turn. */
   readonly stillMissing: readonly string[]
 }
 
@@ -96,7 +103,7 @@ export interface TranslationProposal extends EditProposal {
   readonly locale: string
   /** Every message it writes, in the order they were asked for. */
   readonly rows: readonly TranslationRowChange[]
-  /** Ids it carried that were not written: never asked for, or translated by a person since. */
+  /** Ids it wrote a target for that were not written: never asked for, or translated by a person since. */
   readonly dropped: readonly string[]
   /** Every message the form refers to that would still have no target in this language. */
   readonly stillMissing: readonly string[]
@@ -127,7 +134,7 @@ export async function translateCatalogue(
   options: TranslationOptions = {},
 ): Promise<TranslationResult> {
   const request = translationPrompt(document, locale)
-  const asked = request.rows.map((row) => row.id)
+  const asked = request.rows.map(({ id, source }) => ({ id, source }))
   if (asked.length === 0) {
     // A turn paid for — through a relay, two pastes by hand — to translate nothing.
     const answer = { locale, defaultLocale: request.defaultLocale, asked, messages: [] }
@@ -152,11 +159,9 @@ export async function translateCatalogue(
   )
   if (!result.ok) return result
 
-  const wanted = new Set(asked)
+  const wanted = new Set(asked.map((row) => row.id))
   const messages = result.value.messages.filter((message) => wanted.has(message.id))
-  const answered = new Set(
-    messages.filter((message) => message.target !== '').map((message) => message.id),
-  )
+  const answered = new Set(messages.filter(writes).map((message) => message.id))
   return {
     ok: true,
     attempts: result.attempts,
@@ -166,9 +171,11 @@ export async function translateCatalogue(
       asked,
       messages,
       dropped: unique(
-        result.value.messages.map((message) => message.id).filter((id) => !wanted.has(id)),
+        result.value.messages
+          .filter((message) => !wanted.has(message.id) && writes(message))
+          .map((message) => message.id),
       ),
-      stillMissing: asked.filter((id) => !answered.has(id)),
+      stillMissing: asked.map((row) => row.id).filter((id) => !answered.has(id)),
     },
   }
 }
@@ -203,6 +210,15 @@ function checkCatalogue(answer: Checkable, locale: string): Verdict<CatalogueFil
   return { ok: true, value: file }
 }
 
+/**
+ * Whether a message carries a translation. A target of nothing but spaces does not: the
+ * import would write it, and a form reads any target its language has before the default
+ * language's, so a label would read " " where the English fallback stood.
+ */
+function writes(message: CatalogueFile['messages'][number]): boolean {
+  return message.target.trim() !== ''
+}
+
 function isMessage(message: unknown): message is CatalogueFile['messages'][number] {
   if (typeof message !== 'object' || message === null) return false
   const { id, source, target } = message as Record<string, unknown>
@@ -221,6 +237,12 @@ function isMessage(message: unknown): message is CatalogueFile['messages'][numbe
  * been translated by a person while it answered; that message is dropped rather than
  * overwritten.
  *
+ * **Stale by what was asked.** Each message goes to the import with the source the request
+ * sent, so the import's stale rule compares what the model was shown with what the form
+ * says now. The model's echo of the source is ignored: one that translated the source too
+ * was marked stale with nothing moved, and one that left it out was marked with nothing
+ * when the English had changed while it answered.
+ *
  * `after` is the proposal this answer continues — *Translate the rest* — whose document it
  * is written over, and whose basis it keeps: if the form has moved since that one was
  * made, Apply refuses this one too.
@@ -233,7 +255,12 @@ export function proposeTranslation(
   const current = session.document()
   const start = after?.document ?? current
   const missing = new Set(missingMessages(start, answer.locale))
-  const kept = answer.messages.filter((message) => missing.has(message.id))
+  const sent = new Map(answer.asked.map((row) => [row.id, row.source]))
+  const wrote = answer.messages.filter(writes)
+  const kept = wrote.flatMap((message) => {
+    const source = sent.get(message.id)
+    return source !== undefined && missing.has(message.id) ? [{ ...message, source }] : []
+  })
 
   const scratch = createBuilderSession(start, { text: session.text })
   scratch.importCatalogue({ locale: answer.locale, defaultLocale: answer.defaultLocale, messages: kept })
@@ -242,8 +269,10 @@ export function proposeTranslation(
 
   const sources = proposed.i18n?.messages[proposed.i18n.defaultLocale] ?? {}
   const written = proposed.i18n?.messages[answer.locale] ?? {}
+  const landed = new Set(kept.map((message) => message.id))
   const rows = answer.asked
-    .filter((id) => missing.has(id) && (written[id] ?? '') !== '')
+    .map((row) => row.id)
+    .filter((id) => landed.has(id))
     .map((id): TranslationRowChange => {
       const source = sources[id] ?? ''
       const now = written[id] ?? ''
@@ -268,10 +297,22 @@ export function proposeTranslation(
     dropped: unique([
       ...(after?.dropped ?? []),
       ...answer.dropped,
-      ...answer.messages.filter((message) => !missing.has(message.id)).map((message) => message.id),
+      ...wrote.filter((message) => !landed.has(message.id)).map((message) => message.id),
     ]),
     stillMissing: missingMessages(proposed, answer.locale),
   }
+}
+
+/**
+ * The proposal a pane holds for review, or none. One that writes nothing has nothing to
+ * apply and nothing to discard, so a pane offers Ask again in its place, and the status and
+ * the dropped list say what came back. Decided here, so neither builder can leave a person
+ * with a sentence and no button.
+ */
+export function translationToReview(
+  proposal: TranslationProposal | undefined,
+): TranslationProposal | undefined {
+  return proposal !== undefined && proposal.rows.length > 0 ? proposal : undefined
 }
 
 /**
@@ -322,9 +363,15 @@ export function translationStatus(
   if (proposal === undefined) return ''
   const count = proposal.rows.length
   const attempts = result?.ok === true ? result.attempts : 1
+  // Nothing written is two different things: a model that left every message empty, and
+  // one whose every translation was dropped, here because a person translated it first.
+  const nothing =
+    proposal.dropped.length === 0
+      ? text('translate.status.none')
+      : text('translate.status.noneWritten', { count: proposal.dropped.length })
   const said =
     count === 0
-      ? text('translate.status.none')
+      ? nothing
       : attempts > 1
         ? text('translate.status.readyAfter', { count, attempts })
         : text('translate.status.ready', { count })

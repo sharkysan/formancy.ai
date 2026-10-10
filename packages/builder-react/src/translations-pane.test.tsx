@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
 import { createBuilderSession, createBuilderText } from '@formancy/builder-core'
-import type { AskModel } from '@formancy/builder-core'
+import type { AskModel, BuilderSession } from '@formancy/builder-core'
 import type { FormSchema } from '@formancy/spec'
 import { TranslationsPane } from './translations-pane.js'
 
@@ -528,6 +528,8 @@ describe('asking a model for what is missing', () => {
   })
 
   test('and nothing in the default language, which has nothing to translate into', () => {
+    // Prevents an Ask over the language every source is written in: a request to translate
+    // the English into English.
     mount(() => Promise.resolve(answer(FRENCH)))
 
     expect(screen.queryByRole('button', { name: /Ask a model/ })).toBeNull()
@@ -574,6 +576,8 @@ describe('asking a model for what is missing', () => {
   })
 
   test('applies it as one undo step, and the language is no longer missing anything', async () => {
+    // Prevents an Apply that writes part of the answer, takes more than one undo to take
+    // back, or leaves the review and Ask on screen for a language with nothing left to ask.
     const user = userEvent.setup()
     const { session } = mount(() => Promise.resolve(answer(FRENCH)))
     await french(user)
@@ -589,6 +593,8 @@ describe('asking a model for what is missing', () => {
   })
 
   test('discards it, and nothing is written', async () => {
+    // Prevents a Discard that writes anything, or leaves the review on screen to be applied
+    // later against a form that has moved on.
     const user = userEvent.setup()
     const { session } = mount(() => Promise.resolve(answer(FRENCH)))
     await french(user)
@@ -626,6 +632,58 @@ describe('asking a model for what is missing', () => {
     expect(session.document().i18n?.messages['fr']).toMatchObject(FRENCH)
     session.undo()
     expect(session.document()).toEqual(half)
+  })
+
+  test('offers Ask again when the model left every message empty', async () => {
+    // A model told to leave a target empty when unsure may leave them all. That proposal
+    // writes nothing, so there is nothing to apply or discard; held as a review, the part
+    // drew no button at all, and only another language or tab got a person out of it.
+    const user = userEvent.setup()
+    const answers = [answer({ 'country.de': '', canton: '', email: '' }), answer(FRENCH)]
+    let turns = 0
+    mount(() => Promise.resolve(answers[turns++]!))
+    await french(user)
+    await user.click(screen.getByRole('button', { name: 'Ask a model for the 3 missing messages' }))
+
+    await waitFor(() =>
+      expect(screen.getByRole('status').textContent).toBe(
+        'The model left every message untranslated. Nothing has been applied. 3 messages are still missing.',
+      ),
+    )
+    expect(screen.queryByRole('region', { name: /^Review these translations/ })).toBeNull()
+
+    await user.click(screen.getByRole('button', { name: 'Ask a model for the 3 missing messages' }))
+
+    expect(within(await review()).getByRole('button', { name: 'Apply these translations' })).toBeTruthy()
+    expect(turns).toBe(2)
+  })
+
+  test('says what was dropped when a person translated everything the model wrote, and offers the rest', async () => {
+    // The model translated both messages, and a person typed both while it answered, so
+    // nothing is written. The part said "the model left every message untranslated", drew
+    // the list that would have said otherwise only inside a review it did not draw, and
+    // drew no button.
+    const user = userEvent.setup()
+    const held: { session?: BuilderSession } = {}
+    held.session = mount(() => {
+      held.session!.setMessage('fr', 'canton', 'Canton')
+      held.session!.setMessage('fr', 'email', 'Adresse électronique')
+      return Promise.resolve(answer({ canton: 'Canton', email: 'Courriel' }))
+    }).session
+    await french(user)
+    await user.click(screen.getByRole('button', { name: 'Ask a model for the 3 missing messages' }))
+
+    await waitFor(() =>
+      expect(screen.getByRole('status').textContent).toBe(
+        'The model translated 2 messages, and none was written: nobody asked for them, or a person has translated them since. Nothing has been applied. 1 message is still missing.',
+      ),
+    )
+    expect(screen.getByText(/^Not written, because/).textContent).toBe(
+      `Not written, because nobody asked for them or a person has translated them since: ${held.session.text.list(['canton', 'email'])}`,
+    )
+    expect(screen.queryByRole('region', { name: /^Review these translations/ })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Ask a model for the 1 missing message' })).toBeTruthy()
+    expect(held.session.document().i18n?.messages['fr']?.['email']).toBe('Adresse électronique')
   })
 
   test('refuses to apply once the form has moved, and keeps the review on screen', async () => {

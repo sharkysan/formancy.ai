@@ -459,6 +459,11 @@ export const BUILDER_MESSAGES_DE = {
     other: 'Bereit zur Prüfung nach {attempts} Versuchen: {count} Übersetzungen. Nichts wurde übernommen.',
   },
   'translate.status.none': 'Das Modell hat keine Meldung übersetzt. Nichts wurde übernommen.',
+  'translate.status.noneWritten': {
+    one: 'Das Modell hat {count} Meldung übersetzt, und sie wurde nicht geschrieben: Niemand hat danach gefragt, oder eine Person hat sie inzwischen übersetzt. Nichts wurde übernommen.',
+    other:
+      'Das Modell hat {count} Meldungen übersetzt, und keine wurde geschrieben: Niemand hat danach gefragt, oder eine Person hat sie inzwischen übersetzt. Nichts wurde übernommen.',
+  },
   'translate.status.stillMissing': {
     one: '{count} Meldung fehlt noch.',
     other: '{count} Meldungen fehlen noch.',

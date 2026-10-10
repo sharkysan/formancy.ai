@@ -19,6 +19,7 @@ import {
   translateCatalogue,
   translationHeading,
   translationStatus,
+  translationToReview,
 } from '@formancy/builder-core'
 import type { BuilderMessageId } from '@formancy/builder-core'
 import { BuilderTextPipe } from './text.pipe.js'
@@ -51,8 +52,8 @@ const FLAGS: Readonly<Record<'stale' | 'unchanged', BuilderMessageId>> = {
  * would read in that language. Apply is `applyProposal`, refused when the form has moved
  * since, one undo step otherwise.
  *
- * What is asked, kept, marked and said is `@formancy/builder-core`'s, so the two builders
- * cannot decide it differently (0091). Signals and `OnPush`, zoneless; the run is one
+ * What is asked, kept, marked, held for review and said is `@formancy/builder-core`'s, so
+ * the two builders cannot decide it differently (0091). Signals and `OnPush`, zoneless; the run is one
  * `await` inside a click, and `DestroyRef` stops it when the part goes — another language
  * chosen, another tab.
  */
@@ -63,7 +64,7 @@ const FLAGS: Readonly<Record<'stale' | 'unchanged', BuilderMessageId>> = {
   template: `
     @if (shown()) {
       <div data-formancy-part="translate">
-        @if (proposal() === undefined) {
+        @if (reviewed() === undefined) {
           <button
             type="button"
             data-formancy-part="translate-ask"
@@ -82,6 +83,14 @@ const FLAGS: Readonly<Record<'stale' | 'unchanged', BuilderMessageId>> = {
         }
 
         <p role="status" data-formancy-part="translate-status">{{ status() }}</p>
+
+        <!-- Outside the review: when everything the model wrote was dropped there is no
+             review, and this is what says why. -->
+        @if (dropped(); as list) {
+          <p data-formancy-part="translate-dropped">
+            {{ 'translate.dropped' | builderText: text() : { list: text().list(list) } }}
+          </p>
+        }
 
         @if (reviewed(); as waiting) {
           <section data-formancy-part="translate-review" [attr.aria-labelledby]="reviewId">
@@ -116,11 +125,6 @@ const FLAGS: Readonly<Record<'stale' | 'unchanged', BuilderMessageId>> = {
                 }
               </tbody>
             </table>
-            @if (waiting.dropped.length > 0) {
-              <p data-formancy-part="translate-dropped">
-                {{ 'translate.dropped' | builderText: text() : { list: text().list(waiting.dropped) } }}
-              </p>
-            }
             <!-- The form as it would read in this language, with its own ids beside the
                  pane's preview of the form as it is. -->
             <section
@@ -221,13 +225,15 @@ export class FormancyTranslationReview {
       this.result() !== undefined ||
       this.proposal() !== undefined,
   )
-  /** The proposal, when it writes anything: a review of nothing is not drawn. */
-  protected readonly reviewed = computed(() => {
-    const waiting = this.proposal()
-    return waiting === undefined || waiting.rows.length === 0 ? undefined : waiting
+  /** The proposal under review: none when it writes nothing, and Ask is offered again. */
+  protected readonly reviewed = computed(() => translationToReview(this.proposal()))
+  /** What the model wrote that was not written, when there is any. */
+  protected readonly dropped = computed(() => {
+    const dropped = this.proposal()?.dropped ?? []
+    return dropped.length === 0 ? undefined : dropped
   })
   protected readonly heading = computed(() => {
-    const waiting = this.proposal()
+    const waiting = this.reviewed()
     return waiting === undefined ? '' : translationHeading(waiting, this.text())
   })
   protected readonly status = computed(() =>
@@ -261,7 +267,7 @@ export class FormancyTranslationReview {
 
   /** An engine for the form as the proposal would leave it, under ids of its own. */
   protected readonly previewInjector = computed((): Injector | undefined => {
-    const waiting = this.proposal()
+    const waiting = this.reviewed()
     if (waiting === undefined) return undefined
     const document = waiting.document as FormSchema
     return previewInjector(document, this.locale(), this.parent, `${document.id}.proposed`)
@@ -302,7 +308,7 @@ export class FormancyTranslationReview {
   }
 
   protected apply(): void {
-    const waiting = this.proposal()
+    const waiting = this.reviewed()
     if (waiting === undefined) return
     const outcome = applyProposal(this.session(), waiting)
     // Kept on screen when refused: the commonest refusal is a form that moved, and the

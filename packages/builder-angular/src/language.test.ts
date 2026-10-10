@@ -611,11 +611,14 @@ describe('the translations, prompt and scenario panes', () => {
       }
       return [...kept, ...shown(copy)]
     }
+    // Written by the model, as in the React part: one whose English became "Remark" while it
+    // answered, written as "Remark" — the same as its source, and from a source that has
+    // since changed — and one it was not asked for.
     const answer = JSON.stringify({
       locale: 'de',
       defaultLocale: 'en',
       messages: [
-        { id: 'note.label', source: 'Old note', target: 'Note' },
+        { id: 'note.label', source: 'Note', target: 'Remark' },
         { id: 'gone.label', source: 'Gone', target: 'Weg' },
       ],
     })
@@ -623,9 +626,9 @@ describe('the translations, prompt and scenario panes', () => {
       TestBed.resetTestingModule()
       document.body.innerHTML = ''
     }
-    const opened = async (ask: unknown, attempts?: number) => {
+    const opened = async (ask: unknown, attempts?: number, session = pseudo()) => {
       const view = await mounted(FormancyTranslationsPane, {
-        session: pseudo(),
+        session,
         ask,
         ...(attempts === undefined ? {} : { attempts }),
       })
@@ -641,7 +644,15 @@ describe('the translations, prompt and scenario panes', () => {
     const seen = outsidePreviews(waiting.root)
     reset()
 
-    const reviewing = await opened(() => Promise.resolve(answer))
+    const moving = pseudo()
+    const reviewing = await opened(
+      () => {
+        moving.setMessage('en', 'note.label', 'Remark')
+        return Promise.resolve(answer)
+      },
+      undefined,
+      moving,
+    )
     await waitFor(() => expect(part(reviewing.root, 'translate-review')).not.toBeNull())
     await reviewing.settle()
     seen.push(...outsidePreviews(reviewing.root))
@@ -657,7 +668,7 @@ describe('the translations, prompt and scenario panes', () => {
     const problems = told.ok ? [] : told.problems.map((problem) => problem.detail)
 
     expect(
-      untranslated(seen, [...catalogueWords(three), 'Note', 'not json at all', ...problems]),
+      untranslated(seen, [...catalogueWords(three), 'Remark', 'not json at all', ...problems]),
     ).toEqual([])
     expect(
       [

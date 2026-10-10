@@ -12,6 +12,7 @@ export {
   translateCatalogue,
   translationHeading,
   translationStatus,
+  translationToReview,
 } from './translate.js'
 export type {
   TranslationAnswer,

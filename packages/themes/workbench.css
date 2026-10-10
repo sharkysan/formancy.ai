@@ -1922,7 +1922,10 @@ kbd {
   color: var(--wb-caution);
 }
 
+/* A line of its own under the status, which it explains: it is drawn when nothing is
+   under review too, when everything the model wrote was dropped. */
 [data-formancy-part='translate-dropped'] {
+  flex: 1 1 100%;
   margin: 0;
   font-size: 0.75rem;
   color: var(--wb-muted);

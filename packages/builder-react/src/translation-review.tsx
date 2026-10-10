@@ -8,6 +8,7 @@ import {
   translateCatalogue,
   translationHeading,
   translationStatus,
+  translationToReview,
 } from '@formancy/builder-core'
 import type {
   AskModel,
@@ -33,10 +34,11 @@ import { useBuilder } from './use-builder.js'
  * to look at, and the form as it would read in that language. Apply is `applyProposal`,
  * refused when the form has moved since, one undo step otherwise.
  *
- * What is asked, what is kept, what is marked and what the status says are
- * `@formancy/builder-core`'s — `translateCatalogue`, `proposeTranslation`,
- * `translationHeading`, `translationStatus` — so the Angular part cannot decide any of
- * them differently (0091). This is the markup, the run's state and its stop.
+ * What is asked, what is kept, what is marked, what is held for review and what the status
+ * says are `@formancy/builder-core`'s — `translateCatalogue`, `proposeTranslation`,
+ * `translationToReview`, `translationHeading`, `translationStatus` — so the Angular part
+ * cannot decide any of them differently (0091). This is the markup, the run's state and its
+ * stop.
  *
  * Its own file so the translations pane does not become the place things go: the pane is
  * a translator's table, and this is a model's turn and its review.
@@ -80,6 +82,8 @@ export function TranslationReview({
   const missing = missingMessages(view.document, locale).length
   if (missing === 0 && !busy && result === undefined && proposal === undefined) return null
 
+  /** The proposal under review: none when it writes nothing, and Ask is offered again. */
+  const reviewed = translationToReview(proposal)
   const failed = result?.ok === false ? result : undefined
   const declined = failed?.ended === 'declined' ? failed.reason : undefined
   const problems =
@@ -117,8 +121,8 @@ export function TranslationReview({
   }
 
   const apply = (): void => {
-    if (proposal === undefined) return
-    const outcome = applyProposal(session, proposal)
+    if (reviewed === undefined) return
+    const outcome = applyProposal(session, reviewed)
     // Kept on screen when refused: the commonest refusal is a form that moved, and the
     // proposal is what the person needs to decide whether to ask again.
     if (outcome.ok) discard()
@@ -129,7 +133,7 @@ export function TranslationReview({
 
   return (
     <div data-formancy-part="translate">
-      {proposal === undefined ? (
+      {reviewed === undefined ? (
         <button
           type="button"
           data-formancy-part="translate-ask"
@@ -149,9 +153,17 @@ export function TranslationReview({
         {translationStatus({ busy, result, proposal, refusal }, text)}
       </p>
 
-      {proposal === undefined || proposal.rows.length === 0 ? null : (
+      {/* Outside the review: when everything the model wrote was dropped there is no review,
+          and this is what says why. */}
+      {proposal === undefined || proposal.dropped.length === 0 ? null : (
+        <p data-formancy-part="translate-dropped">
+          {text('translate.dropped', { list: text.list(proposal.dropped) })}
+        </p>
+      )}
+
+      {reviewed === undefined ? null : (
         <section data-formancy-part="translate-review" aria-labelledby={reviewId}>
-          <h3 id={reviewId}>{translationHeading(proposal, text)}</h3>
+          <h3 id={reviewId}>{translationHeading(reviewed, text)}</h3>
           <table data-formancy-part="translate-rows">
             <thead>
               <tr>
@@ -162,7 +174,7 @@ export function TranslationReview({
               </tr>
             </thead>
             <tbody>
-              {proposal.rows.map((row) => (
+              {reviewed.rows.map((row) => (
                 <tr key={row.id}>
                   {/* The source, not the id, as the translations table shows it. */}
                   <th scope="row">{row.source}</th>
@@ -180,19 +192,14 @@ export function TranslationReview({
               ))}
             </tbody>
           </table>
-          {proposal.dropped.length === 0 ? null : (
-            <p data-formancy-part="translate-dropped">
-              {text('translate.dropped', { list: text.list(proposal.dropped) })}
-            </p>
-          )}
           {/* The form as it would read in this language, with its own ids beside the pane's
               preview of the form as it is. */}
           <TranslationsPreview
-            document={proposal.document}
+            document={reviewed.document}
             locale={locale}
             label={text('translate.preview', { locale })}
             submitLabel={text('translations.previewSubmit')}
-            formId={`${proposal.document.id}.proposed`}
+            formId={`${reviewed.document.id}.proposed`}
           />
           <button type="button" disabled={busy} onClick={apply}>
             {text('translate.apply')}
@@ -200,8 +207,8 @@ export function TranslationReview({
           <button type="button" disabled={busy} onClick={discard}>
             {text('prompt.discard')}
           </button>
-          {proposal.stillMissing.length === 0 ? null : (
-            <button type="button" disabled={busy} onClick={() => void run(proposal)}>
+          {reviewed.stillMissing.length === 0 ? null : (
+            <button type="button" disabled={busy} onClick={() => void run(reviewed)}>
               {text('translate.rest')}
             </button>
           )}

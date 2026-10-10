@@ -14,6 +14,7 @@ import {
   translateCatalogue,
   translationHeading,
   translationStatus,
+  translationToReview,
 } from './translate.js'
 import type { TranslationAnswer } from './translate.js'
 import { TRANSLATION_COMPLAINTS, translationComplaint, translationPrompt } from './translate-prompt.js'
@@ -279,6 +280,9 @@ describe('the request', () => {
 
 describe('asking a model', () => {
   test('keeps a whole answer, in one turn', async () => {
+    // Prevents a whole and right answer costing another turn — through the relay, two more
+    // pastes by hand — or coming back short: every target the model wrote is kept, and
+    // nothing is listed as still missing.
     const model = scripted(answerWith(FRENCH))
 
     const result = await translateCatalogue(model.ask, order, 'fr')
@@ -307,6 +311,9 @@ describe('asking a model', () => {
   })
 
   test('asks again for an answer that is not JSON, or not a catalogue file', async () => {
+    // Prevents prose, or a file whose messages lack a field, reaching the import, which
+    // would read an entry with no id as one the form does not have and one with no source
+    // as stale. Each is asked for again, with what was wrong with it.
     const model = scripted(
       'Bien sûr ! Voici la traduction.',
       JSON.stringify({ locale: 'fr', messages: [{ id: 'email', target: 'Courriel' }] }),
@@ -356,11 +363,14 @@ describe('asking a model', () => {
 
   test('drops and lists an id it was not asked for', async () => {
     // Prevents a model rewriting a translation a person made: "Pays" is French nobody
-    // asked to have redone, and an orphan is not part of the form.
+    // asked to have redone, and an orphan is not part of the form. An id carried back
+    // with an empty target wrote nothing, so nothing of it was dropped: listed, it made
+    // a model that translated nothing read as one whose translations were thrown away.
     const model = scripted(
       answerWith(FRENCH, [
         { id: 'country', source: 'Country', target: 'Contrée' },
         { id: 'gone', source: 'A question nobody asks any more', target: 'Autre chose' },
+        { id: 'country.ch', source: 'Switzerland', target: '' },
       ]),
     )
 
@@ -383,6 +393,8 @@ describe('asking a model', () => {
   })
 
   test('asks for the reason when a decline has none, rather than checking it as a catalogue', async () => {
+    // Prevents a decline with no reason being answered with "it has no locale", which sets
+    // a model writing the catalogue it has just said it cannot. It is asked for the reason.
     const model = scripted(JSON.stringify({ [DECLINE_KEY]: '' }), answerWith(FRENCH))
 
     await translateCatalogue(model.ask, order, 'fr')
@@ -401,6 +413,8 @@ describe('asking a model', () => {
   })
 
   test('stops when the person stops it', async () => {
+    // Prevents a Stop that waits on a model which may never answer: the run ends at once,
+    // as a form's does (0157), and nothing that comes later is kept.
     const stop = createStop()
     const ask = (): Promise<string> => {
       stop.stop()
@@ -451,6 +465,8 @@ describe('a proposal', () => {
   })
 
   test('marks a message translated from wording the form no longer has, by the import’s rule', async () => {
+    // Prevents French for wording the form no longer has landing unmarked, beside the new
+    // English it does not translate.
     const answer = await answered(FRENCH)
     const session = createBuilderSession(order)
     // The English changed while the model was answering.
@@ -463,6 +479,69 @@ describe('a proposal', () => {
       now: 'Courriel',
       flags: ['stale'],
     })
+  })
+
+  test('marks a message stale by the source it was asked with, never by the one the model wrote back', async () => {
+    // The mark answers "has the English moved since the model was asked?", and only the
+    // request knows what it asked. Read off the model's echo, the mark went on every row of
+    // a model that translated the sources as well as the targets, with nothing moved.
+    const rows = translationPrompt(order, 'fr').rows
+    const rewritten = JSON.stringify({
+      locale: 'fr',
+      defaultLocale: 'en',
+      messages: rows.map(({ id }) => ({ id, source: FRENCH[id], target: FRENCH[id] })),
+    })
+    const result = await translateCatalogue(scripted(rewritten).ask, order, 'fr')
+    if (!result.ok) throw new Error('the scripted answer was refused')
+
+    const proposal = proposeTranslation(createBuilderSession(order), result.answer)
+
+    expect(proposal.rows.map((row) => row.id)).toEqual(Object.keys(FRENCH))
+    expect(proposal.rows.filter((row) => row.flags.includes('stale')).map((row) => row.id)).toEqual([])
+  })
+
+  test('and marks one whose English changed while the model answered, whatever source it wrote back', async () => {
+    // D15's own example: the English became a negation while the turn waited, and a model
+    // that left the source out wrote French for the old wording. Read off the echo, the row
+    // carried no mark and Apply took it, since the form had not moved after the answer came.
+    const session = createBuilderSession(order)
+    const ask = (): Promise<string> => {
+      session.setMessage('en', 'email', 'Do not email me')
+      return Promise.resolve(
+        JSON.stringify({
+          locale: 'fr',
+          defaultLocale: 'en',
+          messages: [{ id: 'email', source: '', target: 'Courriel' }],
+        }),
+      )
+    }
+    const result = await translateCatalogue(ask, session.document(), 'fr')
+    if (!result.ok) throw new Error('the answer was refused')
+
+    const proposal = proposeTranslation(session, result.answer)
+
+    expect(proposal.rows).toEqual([
+      { id: 'email', source: 'Do not email me', was: '', now: 'Courriel', flags: ['stale'] },
+    ])
+  })
+
+  test('takes a target of nothing but spaces as one left empty, and writes nothing for it', async () => {
+    // Prevents a French label of " ": the import writes any target but "", and a form
+    // reads any target its language has before the default's, so a blank one hid the
+    // English fallback, counted as translated, and left the language reported complete.
+    const result = await translateCatalogue(
+      scripted(answerWith({ ...FRENCH, canton: '\n\t', email: ' ' })).ask,
+      order,
+      'fr',
+    )
+    if (!result.ok) throw new Error('the scripted answer was refused')
+    expect(result.answer.stillMissing).toEqual(['canton', 'email'])
+
+    const proposal = proposeTranslation(createBuilderSession(order), result.answer)
+
+    expect(proposal.rows.map((row) => row.id)).toEqual(['country.de', 'section.where'])
+    expect(Object.keys(proposal.document.i18n?.messages['fr'] ?? {})).not.toContain('email')
+    expect(proposal.stillMissing).toEqual(['canton', 'email'])
   })
 
   test('never writes an id it was not asked for', async () => {
@@ -486,6 +565,8 @@ describe('a proposal', () => {
   })
 
   test('never overwrites a message a person translated while the model was answering', async () => {
+    // Prevents a model's answer replacing French a person typed while it answered: missing
+    // when the model was asked and not when the answer lands, it is dropped and listed.
     const answer = await answered(FRENCH)
     const session = createBuilderSession(order)
     session.setMessage('fr', 'email', 'Adresse électronique')
@@ -498,6 +579,9 @@ describe('a proposal', () => {
   })
 
   test('is refused once the form has moved, and otherwise applies as one undo step', async () => {
+    // Prevents a proposal made against one form landing on another — here a person
+    // translated the canton after it was made — and an Apply that takes more than one undo
+    // to take back.
     const answer = await answered(FRENCH)
     const moved = createBuilderSession(order)
     const stale = proposeTranslation(moved, answer)
@@ -565,6 +649,8 @@ describe('what a pane says', () => {
   const text = createBuilderText()
 
   test('names the language, and says when something in it is marked', async () => {
+    // Prevents a review whose name hides that something in it needs looking at: the heading
+    // names the region, so a screen reader hears that before the first row.
     const result = await translateCatalogue(scripted(answerWith(FRENCH)).ask, order, 'fr')
     if (!result.ok) throw new Error('refused')
     const proposal = proposeTranslation(createBuilderSession(order), result.answer)
@@ -574,6 +660,8 @@ describe('what a pane says', () => {
   })
 
   test('says what is ready and what is still missing, in the session’s language', async () => {
+    // Prevents a status that says what is ready and not what the model left out, or says
+    // it in English to a session opened in German.
     const result = await translateCatalogue(scripted(answerWith({ email: 'Courriel' })).ask, order, 'fr')
     if (!result.ok) throw new Error('refused')
     const proposal = proposeTranslation(createBuilderSession(order), result.answer)
@@ -623,6 +711,55 @@ describe('what a pane says', () => {
     expect(translationStatus({ busy: false, result: twice, proposal: ready, refusal: undefined }, text)).toBe(
       text('translate.status.readyAfter', { count: 4, attempts: 2 }),
     )
+  })
+
+  test('says a model whose every translation was dropped did that, not that it translated nothing', async () => {
+    // A model that translated every message, each translated by a person while it answered:
+    // "the model left every message untranslated" was false, and with no review drawn for a
+    // proposal of no rows, it was the only thing on screen.
+    const result = await translateCatalogue(scripted(answerWith(FRENCH)).ask, order, 'fr')
+    if (!result.ok) throw new Error('refused')
+    const session = createBuilderSession(order)
+    for (const [id, target] of Object.entries(FRENCH)) session.setMessage('fr', id, `${target} (à la main)`)
+
+    const proposal = proposeTranslation(session, result.answer)
+
+    expect(proposal.rows).toEqual([])
+    expect(proposal.dropped).toEqual(Object.keys(FRENCH))
+    expect(translationStatus({ busy: false, result, proposal, refusal: undefined }, text)).toBe(
+      text('translate.status.noneWritten', { count: 4 }),
+    )
+  })
+
+  test('and says a model that wrote nothing translated nothing, though a person translated one meanwhile', async () => {
+    // The other side of that sentence: an empty target is not a translation dropped.
+    // Counted as one, a model that left every message empty was said to have translated.
+    const result = await translateCatalogue(scripted(answerWith({})).ask, order, 'fr')
+    if (!result.ok) throw new Error('refused')
+    const session = createBuilderSession(order)
+    session.setMessage('fr', 'email', 'Courriel')
+
+    const proposal = proposeTranslation(session, result.answer)
+
+    expect(proposal.dropped).toEqual([])
+    expect(translationStatus({ busy: false, result, proposal, refusal: undefined }, text)).toBe(
+      `${text('translate.status.none')} ${text('translate.status.stillMissing', { count: 3 })}`,
+    )
+  })
+
+  test('holds for review only a proposal that writes something', async () => {
+    // A proposal of no rows has nothing to apply and nothing to discard. Held for review,
+    // both builders drew neither the review nor Ask, and left a sentence and no button,
+    // with nothing but another language or tab to get out.
+    const none = await translateCatalogue(scripted(answerWith({})).ask, order, 'fr')
+    const some = await translateCatalogue(scripted(answerWith({ email: 'Courriel' })).ask, order, 'fr')
+    if (!none.ok || !some.ok) throw new Error('refused')
+    const session = createBuilderSession(order)
+    const writing = proposeTranslation(session, some.answer)
+
+    expect(translationToReview(proposeTranslation(session, none.answer))).toBeUndefined()
+    expect(translationToReview(writing)).toBe(writing)
+    expect(translationToReview(undefined)).toBeUndefined()
   })
 
   test('says a later run stopped, over the proposal an earlier one left', async () => {

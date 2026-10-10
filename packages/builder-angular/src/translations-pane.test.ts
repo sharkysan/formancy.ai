@@ -462,6 +462,7 @@ describe('asking a model for what is missing', () => {
     waitFor(() => screen.getByRole('region', { name: /^Review these translations into fr/ }))
 
   test('offers nothing without a model, as the prompt pane does', async () => {
+    // As in the React pane: a button that cannot work is worse than none.
     const { user } = await mountWith()
     await choose(user, 'fr')
 
@@ -469,6 +470,8 @@ describe('asking a model for what is missing', () => {
   })
 
   test('and nothing in the default language, which has nothing to translate into', async () => {
+    // Prevents an Ask over the language every source is written in: a request to translate
+    // the English into English.
     await mountWith(() => Promise.resolve(answer(FRENCH)))
 
     expect(screen.queryByRole('button', { name: /Ask a model/ })).toBeNull()
@@ -511,6 +514,8 @@ describe('asking a model for what is missing', () => {
   })
 
   test('applies it as one undo step, and the language is no longer missing anything', async () => {
+    // Prevents an Apply that writes part of the answer, takes more than one undo to take
+    // back, or leaves the review and Ask on screen for a language with nothing left to ask.
     const { session, user } = await mountWith(() => Promise.resolve(answer(FRENCH)))
     await choose(user, 'fr')
     await user.click(await waitFor(() => screen.getByRole('button', { name: /Ask a model/ })))
@@ -525,6 +530,8 @@ describe('asking a model for what is missing', () => {
   })
 
   test('discards it, and nothing is written', async () => {
+    // Prevents a Discard that writes anything, or leaves the review on screen to be applied
+    // later against a form that has moved on.
     const { session, user } = await mountWith(() => Promise.resolve(answer(FRENCH)))
     await choose(user, 'fr')
     await user.click(await waitFor(() => screen.getByRole('button', { name: /Ask a model/ })))
@@ -536,6 +543,8 @@ describe('asking a model for what is missing', () => {
   })
 
   test('offers the rest when the model left some out, and the two land together', async () => {
+    // As in the React pane: a model told to leave what it is unsure of empty will. The
+    // rest is asked for over the first answer, and both land in one Apply.
     const asked: string[] = []
     const answers = [answer({ email: 'Courriel' }), answer({ 'country.de': 'Allemagne', canton: 'Canton' })]
     const { session, user } = await mountWith((prompt) => {
@@ -562,7 +571,62 @@ describe('asking a model for what is missing', () => {
     expect(session.document()).toEqual(half)
   })
 
+  test('offers Ask again when the model left every message empty', async () => {
+    // As in the React pane: a proposal that writes nothing has nothing to apply or
+    // discard, and held as a review, the part drew no button at all.
+    const answers = [answer({ 'country.de': '', canton: '', email: '' }), answer(FRENCH)]
+    let turns = 0
+    const { user } = await mountWith(() => Promise.resolve(answers[turns++]!))
+    await choose(user, 'fr')
+    await user.click(await waitFor(() => screen.getByRole('button', { name: 'Ask a model for the 3 missing messages' })))
+
+    await waitFor(() =>
+      expect(screen.getByRole('status').textContent?.trim()).toBe(
+        'The model left every message untranslated. Nothing has been applied. 3 messages are still missing.',
+      ),
+    )
+    expect(screen.queryByRole('region', { name: /^Review these translations/ })).toBeNull()
+
+    await user.click(await waitFor(() => screen.getByRole('button', { name: 'Ask a model for the 3 missing messages' })))
+
+    expect(within(await review()).getByRole('button', { name: 'Apply these translations' })).toBeTruthy()
+    expect(turns).toBe(2)
+  })
+
+  test('says what was dropped when a person translated everything the model wrote, and offers the rest', async () => {
+    // As in the React pane: the part said the model left every message untranslated, drew
+    // the list that would have said otherwise only inside a review it did not draw, and
+    // drew no button.
+    const held: { session?: BuilderSession } = {}
+    const mountedPane = await mountWith(() => {
+      held.session!.setMessage('fr', 'canton', 'Canton')
+      held.session!.setMessage('fr', 'email', 'Adresse électronique')
+      return Promise.resolve(answer({ canton: 'Canton', email: 'Courriel' }))
+    })
+    held.session = mountedPane.session
+    await choose(mountedPane.user, 'fr')
+    await mountedPane.user.click(
+      await waitFor(() => screen.getByRole('button', { name: 'Ask a model for the 3 missing messages' })),
+    )
+
+    await waitFor(() =>
+      expect(screen.getByRole('status').textContent?.trim()).toBe(
+        'The model translated 2 messages, and none was written: nobody asked for them, or a person has translated them since. Nothing has been applied. 1 message is still missing.',
+      ),
+    )
+    expect(screen.getByText(/^\s*Not written, because/).textContent?.trim()).toBe(
+      `Not written, because nobody asked for them or a person has translated them since: ${held.session.text.list(['canton', 'email'])}`,
+    )
+    expect(screen.queryByRole('region', { name: /^Review these translations/ })).toBeNull()
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Ask a model for the 1 missing message' })).toBeTruthy(),
+    )
+    expect(held.session.document().i18n?.messages['fr']?.['email']).toBe('Adresse électronique')
+  })
+
   test('refuses to apply once the form has moved, and keeps the review on screen', async () => {
+    // Prevents the proposal written against one form landing on another: a person typed
+    // the canton's French while the review was open, as in the React pane.
     const { session, user } = await mountWith(() => Promise.resolve(answer(FRENCH)))
     await choose(user, 'fr')
     await user.click(await waitFor(() => screen.getByRole('button', { name: /Ask a model/ })))

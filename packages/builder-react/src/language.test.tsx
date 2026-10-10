@@ -594,13 +594,14 @@ describe('the translations, prompt and scenario panes', () => {
       }
       return [...kept, ...shown(copy)]
     }
-    // Written by the model: one the same as its source, one from a source that has since
-    // changed, and one it was not asked for.
+    // Written by the model: one whose English became "Remark" while it answered, which it
+    // wrote as "Remark" — so the same as its source, and from a source that has since
+    // changed — and one it was not asked for.
     const answer = JSON.stringify({
       locale: 'de',
       defaultLocale: 'en',
       messages: [
-        { id: 'note.label', source: 'Old note', target: 'Note' },
+        { id: 'note.label', source: 'Note', target: 'Remark' },
         { id: 'gone.label', source: 'Gone', target: 'Weg' },
       ],
     })
@@ -614,7 +615,16 @@ describe('the translations, prompt and scenario panes', () => {
     const seen = outsidePreviews(waiting.container)
     waiting.unmount()
 
-    const reviewing = render(<TranslationsPane session={pseudo()} ask={() => Promise.resolve(answer)} />)
+    const moving = pseudo()
+    const reviewing = render(
+      <TranslationsPane
+        session={moving}
+        ask={() => {
+          moving.setMessage('en', 'note.label', 'Remark')
+          return Promise.resolve(answer)
+        }}
+      />,
+    )
     await user.selectOptions(screen.getByRole('combobox', { name: /Language/ }), 'de')
     await user.click(part(reviewing.container, 'translate').querySelector('button')!)
     await waitFor(() => expect(part(reviewing.container, 'translate-review')).not.toBeNull())
@@ -634,7 +644,7 @@ describe('the translations, prompt and scenario panes', () => {
     const problems = told.ok ? [] : told.problems.map((problem) => problem.detail)
 
     expect(
-      untranslated(seen, [...catalogueWords(three), 'Note', 'not json at all', ...problems]),
+      untranslated(seen, [...catalogueWords(three), 'Remark', 'not json at all', ...problems]),
     ).toEqual([])
     expect(
       [

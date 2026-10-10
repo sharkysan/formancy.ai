@@ -466,6 +466,11 @@ export const BUILDER_MESSAGES_FR = {
     other: 'Prêt à examiner après {attempts} tentatives : {count} traductions. Rien n’a été appliqué.',
   },
   'translate.status.none': 'Le modèle n’a traduit aucun message. Rien n’a été appliqué.',
+  'translate.status.noneWritten': {
+    one: 'Le modèle a traduit {count} message, et il n’a pas été écrit : personne ne l’a demandé, ou une personne l’a traduit depuis. Rien n’a été appliqué.',
+    other:
+      'Le modèle a traduit {count} messages, et aucun n’a été écrit : personne ne les a demandés, ou une personne les a traduits depuis. Rien n’a été appliqué.',
+  },
   'translate.status.stillMissing': {
     one: '{count} message manque encore.',
     other: '{count} messages manquent encore.',

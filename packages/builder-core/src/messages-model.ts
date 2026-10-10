@@ -133,6 +133,11 @@ export const MODEL_MESSAGES = {
     other: 'Ready to review after {attempts} attempts: {count} translations. Nothing has been applied.',
   },
   'translate.status.none': 'The model left every message untranslated. Nothing has been applied.',
+  'translate.status.noneWritten': {
+    one: 'The model translated {count} message, and it was not written: nobody asked for it, or a person has translated it since. Nothing has been applied.',
+    other:
+      'The model translated {count} messages, and none was written: nobody asked for them, or a person has translated them since. Nothing has been applied.',
+  },
   'translate.status.stillMissing': {
     one: '{count} message is still missing.',
     other: '{count} messages are still missing.',
