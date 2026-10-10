@@ -11,7 +11,7 @@ import type { BuilderMessageId, BuilderSession, Relay, RelayChat, RelayTurn } fr
  * turn that is waiting: the briefing, folded away, and the request in a box that cannot be
  * edited, with Copy. The person takes it to a chat of their own and pastes the answer
  * back, and from there the run checks it as it checks any answer
- * ([0159](../../../docs/decisions/0159-a-person-carries-the-models-turn.md)).
+ * ([0160](../../../docs/decisions/0160-a-person-carries-the-models-turn.md)).
  *
  * When a paste counts, and what a stop does to the turn, are `@formancy/builder-core`'s
  * (`createRelay`), so the Angular pane cannot decide either differently. This is the

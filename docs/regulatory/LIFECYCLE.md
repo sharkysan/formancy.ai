@@ -202,7 +202,7 @@ Each gate exists for a reason that was paid for at least once:
   request with the clipboard granted to the page's own origin, paste an answer, review and
   apply — with every request the page makes on the way counted the same, and each step that
   did not happen named
-  ([0159](../decisions/0159-a-person-carries-the-models-turn.md)).
+  ([0160](../decisions/0160-a-person-carries-the-models-turn.md)).
   **A different kind of test from the rest of this list**, and the reason is
   structural rather than a coverage gap: jsdom applies no CSS, resolves no media
   queries and performs no layout, so every box measures zero and every cascade

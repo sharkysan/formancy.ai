@@ -1,4 +1,4 @@
-# 0159 — On the website a person carries the model's turn, and the relay is decided once in builder-core
+# 0160 — On the website a person carries the model's turn, and the relay is decided once in builder-core
 
 - **Status:** accepted
 - **Date:** 2026-10-10
@@ -140,7 +140,12 @@ and one case in each builder's `relay-pane.test` holds them to the same.
 **The playground has one relay** (`useState(() => createRelay())` in its page), asked by
 both builders' prompt panes and drawn at the top of both builders' bodies. It names the
 chat — Claude, at `https://claude.ai/new` — in one constant, and nowhere else. No prompt is
-put in a URL. `DEMO_MODEL` and its tests are gone.
+put in a URL. `DEMO_MODEL` and its tests are gone. The case
+[0159](0159-a-proposal-is-checked-against-the-forms-examples.md) wrote against it in
+`two-builders.test.tsx`, *a model's answer, against the form's examples*, now pastes its
+answer into the relay, as a visitor does; the playground hands the same prompt panes the
+open form's examples, so the review a relayed answer reaches names the examples it would
+stop holding.
 
 ## Consequences
 

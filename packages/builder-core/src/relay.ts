@@ -16,7 +16,7 @@ import type { AskModel, AuthoringPrompt } from './answers.js'
  * **Decided here rather than in a pane**, because both builders draw it and two panes
  * deciding when a paste counts would be two answers to one question
  * ([0091](../../../docs/decisions/0091-a-second-builder-is-a-binding.md),
- * [0159](../../../docs/decisions/0159-a-person-carries-the-models-turn.md)). A pane
+ * [0160](../../../docs/decisions/0160-a-person-carries-the-models-turn.md)). A pane
  * subscribes, shows `waiting()`, and hands `answer` what was pasted. No sentence is
  * written here: what a pane says about a turn is the catalogue's.
  *

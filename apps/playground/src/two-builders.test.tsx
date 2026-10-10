@@ -156,7 +156,7 @@ describe('switching which builder is on screen', () => {
  *
  * formancy.ai asks no other site for anything (0154), so its model is a person: the page
  * shows the request, the visitor copies it into a chat of their own and pastes the answer
- * back ([0159](../../../docs/decisions/0159-a-person-carries-the-models-turn.md)). It was
+ * back ([0160](../../../docs/decisions/0160-a-person-carries-the-models-turn.md)). It was
  * a `window.prompt` that showed the request's last line, so nobody could use a real model
  * here. What is pinned is that the whole round trip works in either builder, that the
  * review is the one step it never skips
@@ -309,6 +309,10 @@ describe('describing a change in words', () => {
  * can run nothing: an answer that turns the canton rule round passes every check the model
  * loop makes, the review lists one changed rule, and "Switzerland asks for a canton" is
  * named as broken only after Apply, by the scenario pane.
+ *
+ * The answer arrives the way a visitor's does, pasted into the page's relay (0160), so
+ * what is checked is the prompt pane the page actually mounts, asking the model it
+ * actually has.
  */
 describe('a model’s answer, against the form’s examples', () => {
   /** The starter with its canton rules the wrong way round: valid, compiled — and backwards. */
@@ -330,8 +334,7 @@ describe('a model’s answer, against the form’s examples', () => {
       const user = userEvent.setup()
       render(<App />)
       await builtWith(which)
-      // The stand-in model is `window.prompt`: the visitor plays the model, and so does this.
-      vi.spyOn(window, 'prompt').mockReturnValue(JSON.stringify(backwardsCanton()))
+      if (which === 'Angular') await angularTree()
 
       const instruction = await waitFor(
         () => screen.getByRole('textbox', { name: /Describe the form/ }),
@@ -339,6 +342,13 @@ describe('a model’s answer, against the form’s examples', () => {
       )
       await user.type(instruction, 'ask for a canton outside Switzerland')
       await user.click(screen.getByRole('button', { name: 'Write it' }))
+
+      // The model is the page's relay: the visitor pastes the chat's answer back, and so
+      // does this — the starter with its canton rule turned round.
+      const relay = await screen.findByRole('region', { name: 'Take this request to a model' })
+      await user.click(within(relay).getByRole('textbox', { name: 'The model’s answer' }))
+      await user.paste(JSON.stringify(backwardsCanton()))
+      await user.click(within(relay).getByRole('button', { name: 'Check this answer' }))
 
       const review = await waitFor(
         () => screen.getByRole('region', { name: /would stop holding/ }),

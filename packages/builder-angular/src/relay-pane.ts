@@ -35,7 +35,7 @@ const SAID: Readonly<Record<Said, BuilderMessageId>> = {
  * The prompt pane asks `relay.ask`, and this pane shows the turn waiting: the briefing,
  * folded away, and the request in a box that cannot be edited, with Copy. What is pasted
  * back is checked by the run as any answer is
- * ([0159](../../../docs/decisions/0159-a-person-carries-the-models-turn.md)).
+ * ([0160](../../../docs/decisions/0160-a-person-carries-the-models-turn.md)).
  *
  * When a paste counts and what a stop does to the turn are `createRelay`'s, in
  * `@formancy/builder-core`, so the two panes cannot decide either differently

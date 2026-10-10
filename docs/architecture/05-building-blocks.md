@@ -263,7 +263,7 @@ answer arriving after the stop is discarded. The stop is a callback rather than 
 to pass ([0056](../decisions/0056-agents-get-the-checks.md),
 [0157](../decisions/0157-a-models-turn-can-be-stopped.md)).
 `relay.ts` is a model whose turn a person carries, for a page that may not call one —
-formancy.ai's own ([0159](../decisions/0159-a-person-carries-the-models-turn.md)).
+formancy.ai's own ([0160](../decisions/0160-a-person-carries-the-models-turn.md)).
 `createRelay()` gives an `AskModel` and the turn it is waiting on, as a snapshot with a
 subscription, the shape a session has: a builder's pane shows the request and hands back
 what was pasted. The three rules a pane would otherwise decide are here — one turn at a
@@ -399,7 +399,7 @@ aborts and names any request to another origin
 ([0154](../decisions/0154-the-website-makes-no-request-to-any-other-site.md)). The playground's
 model is therefore a person: both builders' prompt panes ask one relay, and the visitor
 carries each turn to a chat of their own and back
-([0159](../decisions/0159-a-person-carries-the-models-turn.md)).
+([0160](../decisions/0160-a-person-carries-the-models-turn.md)).
 
 ### `@formancy/server-core` and `@formancy/server`
 

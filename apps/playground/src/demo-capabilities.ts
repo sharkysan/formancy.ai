@@ -100,7 +100,7 @@ export const DEMO_SCANNER: Scanner = async ({ label }) =>
  * so the playground's model is a relay: both prompt panes ask it, the relay pane shows the
  * request, the visitor copies it into a chat with a model under their own account and
  * pastes the answer back, and every check after the paste runs in this tab
- * ([0159](../../../docs/decisions/0159-a-person-carries-the-models-turn.md)). It replaced
+ * ([0160](../../../docs/decisions/0160-a-person-carries-the-models-turn.md)). It replaced
  * a stand-in that had the visitor *play* the model in a dialog showing the request's last
  * line, so nobody could use a real one here.
  *

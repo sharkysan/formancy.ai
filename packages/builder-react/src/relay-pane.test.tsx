@@ -8,7 +8,7 @@ import { RelayPane } from './relay-pane.js'
 
 /**
  * The pane a person carries a model's turn through: the request copied out, the answer
- * pasted back ([0159](../../../docs/decisions/0159-a-person-carries-the-models-turn.md)).
+ * pasted back ([0160](../../../docs/decisions/0160-a-person-carries-the-models-turn.md)).
  *
  * When a paste counts, and what a stop does to a turn, are `@formancy/builder-core`'s and
  * tested there once. What is pinned here is the part a person touches: what Copy puts on

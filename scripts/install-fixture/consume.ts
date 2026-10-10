@@ -109,7 +109,7 @@ if (!proposalHeading(proposal, session.text).includes('an email is needed')) {
   throw new Error('the installed proposalHeading did not name the example')
 }
 
-// A relay (0159): a person carries the turn, so the host's model is the relay's `ask`.
+// A relay (0160): a person carries the turn, so the host's model is the relay's `ask`.
 // The turn waiting is the prompt, a paste with no object in it is held back without
 // costing an attempt, and a working one ends the run with the document.
 const relay = createRelay()

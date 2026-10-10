@@ -124,7 +124,7 @@ export function BuilderBody({
   /** The form pane's engine, whose answers the rules tab explains (0128). */
   preview: FormEngine | undefined
   /**
-   * The model both builders' prompt panes ask: a person carrying each turn (0159). The
+   * The model both builders' prompt panes ask: a person carrying each turn (0160). The
    * page's, so a turn asked from either builder is the one relay's.
    */
   relay: Relay
@@ -207,7 +207,7 @@ export function BuilderBody({
               one: it belongs to the run, not to a tab's layout. Nothing while nothing
               waits — and the run is the prompt pane's, under Fields, so it ends if that
               pane goes (0157). The chat is this deployment's choice, named in
-              `demo-capabilities.ts` and nowhere else (0159). */}
+              `demo-capabilities.ts` and nowhere else (0160). */}
           <RelayPane session={session} relay={relay} chat={RELAY_CHAT} />
           {tab === 'rules' ? (
             /* Every rule in the form, and — from the answers typed into the form pane —
@@ -246,7 +246,7 @@ export function BuilderBody({
               {/* Describing a change in words, and reviewing what it did before it
                   lands. The model is the relay: the request is shown above, the visitor
                   carries it to a chat of their own and pastes the answer back, because
-                  this site asks no other site for anything (0154, 0159). Everything
+                  this site asks no other site for anything (0154, 0160). Everything
                   after the paste is real: parsed, validated, compiled, type-checked,
                   diffed and held for review
                   ([0109](../../../docs/decisions/0109-an-ai-edit-is-reviewed-before-it-lands.md))

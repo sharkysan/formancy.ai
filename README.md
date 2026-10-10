@@ -242,7 +242,7 @@ examples run against it so the review names any it would stop holding
 model is the host's `AskModel`; for a page that may not call one, both carry a **relay**
 pane, where a person copies each request to a chat of their own and pastes the answer
 back, and every check after the paste runs in the page
-([0159](./docs/decisions/0159-a-person-carries-the-models-turn.md)). Both save a
+([0160](./docs/decisions/0160-a-person-carries-the-models-turn.md)). Both save a
 field as a **block** to use again — with the rules that live inside it and the words
 it names — and insert one with its keys made unique and its rules following them; the
 host keeps the blocks ([0135](./docs/decisions/0135-a-block-is-a-field-with-its-rules.md)).
@@ -473,7 +473,7 @@ other site for anything. Copy it into a chat of your own, paste the answer back,
 answer is checked, diffed against the form and held for review like any model's. Copying
 puts the whole request on your clipboard, the form included, and pasting it into a chat
 gives it to that service under your own account
-([0159](./docs/decisions/0159-a-person-carries-the-models-turn.md)).
+([0160](./docs/decisions/0160-a-person-carries-the-models-turn.md)).
 
 **`?dir=rtl`** opens the playground right to left: both forms and both builders follow
 the reading order — the marks on a selected node move to the side a line starts on, and a

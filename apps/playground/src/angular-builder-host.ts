@@ -53,7 +53,7 @@ export interface PlaygroundBuilder {
   /** Hands the shorter list back after a Remove here, for the page to keep for both. */
   readonly keepScenarios: (next: readonly Scenario[]) => void
   /**
-   * The page's model: a person carrying each turn (0159). Not a signal: it is the page's
+   * The page's model: a person carrying each turn (0160). Not a signal: it is the page's
    * for its whole life, and the one the React builder asks too.
    */
   readonly relay: Relay
@@ -137,7 +137,7 @@ export function playgroundBuilder(
   ],
   template: `
     <!-- The turn a person is carrying to a model, above the tabs as in the React pane:
-         the same relay, and the chat this deployment names (0159). Nothing while nothing
+         the same relay, and the chat this deployment names (0160). Nothing while nothing
          waits. -->
     <formancy-relay-pane [session]="host.session" [relay]="host.relay" [chat]="chat" />
     @if (host.tab() === 'arrangement') {

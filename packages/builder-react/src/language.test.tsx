@@ -746,7 +746,7 @@ describe('the translations, prompt and scenario panes', () => {
   })
 
   test('the relay pane, on a first turn and a retry, a copy made and one refused, and given prose, likewise', async () => {
-    // The relay's words (0159), from the catalogue like the rest. The request is the
+    // The relay's words (0160), from the catalogue like the rest. The request is the
     // model's to read and is carried as written, in English whatever the author speaks —
     // as the prompt pane's problems are — and the chat's name is the host's.
     const start = {

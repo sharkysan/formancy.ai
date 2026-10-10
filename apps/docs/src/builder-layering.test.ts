@@ -164,7 +164,7 @@ describe('what the two builders each offer', () => {
       // A model's turn carried by a person, for a host whose page may not call one. Both
       // from the start: when a paste counts is `createRelay`'s, and a turn asked from
       // either builder's prompt pane has to be carried in that builder
-      // ([0159](../../../docs/decisions/0159-a-person-carries-the-models-turn.md)).
+      // ([0160](../../../docs/decisions/0160-a-person-carries-the-models-turn.md)).
       pane: 'carrying a model’s turn by hand',
       react: 'RelayPane',
       angular: 'FormancyRelayPane',

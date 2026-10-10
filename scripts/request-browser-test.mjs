@@ -30,7 +30,7 @@
  * asked whether its content security policy refuses what such a document could ask for.
  *
  * And the playground is opened a second time to describe a change and carry the model's
- * turn by hand (0159), once in each builder: the request copied, an answer pasted back, the
+ * turn by hand (0160), once in each builder: the request copied, an answer pasted back, the
  * review read and applied. Its model is a person because the site may call none, so the round trip is the
  * one flow on the page that exists to take something elsewhere — and the person does
  * that, not the page. Whatever the page sends while it happens is counted like the rest.
@@ -93,7 +93,7 @@ async function openTheSchemaEditor(page) {
 }
 
 /**
- * A model's turn, carried by hand through the playground's relay (0159), in each builder.
+ * A model's turn, carried by hand through the playground's relay (0160), in each builder.
  *
  * Describe a change; the relay pane shows the request; Copy puts it on the clipboard, read
  * back here as a visitor's paste would read it; an answer is pasted the way a chat gives

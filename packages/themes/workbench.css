@@ -1432,7 +1432,7 @@ kbd {
 /* ------------------------------------------- a model's turn, carried by hand
  *
  * The request a person copies to a chat of their own, and the answer they paste back
- * (0159). A card above the builder's tabs, because while it is on screen it is the next
+ * (0160). A card above the builder's tabs, because while it is on screen it is the next
  * thing to do: drawn in the signal's colour at its edge, as the review is a card. */
 
 [data-formancy-part='relay-pane'] {

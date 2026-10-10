@@ -375,7 +375,7 @@ Stop, or the pane goes ─▶ turn.onCancel ──────────▶ th
 `AskModel`, races it against the stop, and checks what comes back; the relay decides only
 what a pane cannot be trusted to decide twice — one turn at a time, a paste with no object
 in it held back, and a stop clearing the turn
-([0159](../decisions/0159-a-person-carries-the-models-turn.md)). The request leaves the page
+([0160](../decisions/0160-a-person-carries-the-models-turn.md)). The request leaves the page
 on the clipboard, by the person's press, and the answer comes back the same way. The relay
 and its pane call nothing. Each turn the pane draws takes the focus to Copy, described by the
 turn and what to do with it: from then on the run waits on the person, and a failed answer

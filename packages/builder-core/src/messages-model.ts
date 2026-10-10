@@ -10,7 +10,7 @@ import type { Message } from './messages.js'
  * `messages.ts` was near its size budget, and a model that declines came next
  * ([0158](../../../docs/decisions/0158-a-model-may-decline.md)), and then a model whose
  * turn a person carries, by copying the request out and the answer back
- * ([0159](../../../docs/decisions/0159-a-person-carries-the-models-turn.md)).
+ * ([0160](../../../docs/decisions/0160-a-person-carries-the-models-turn.md)).
  */
 export const MODEL_MESSAGES = {
   'prompt.label': 'Describe the form, or the change you want',
@@ -75,7 +75,7 @@ export const MODEL_MESSAGES = {
   // as it wrote it, rather than set into this sentence.
   'prompt.status.declined': 'Nothing was applied. The model declined this request.',
 
-  // The relay pane: a turn a person carries to a model of their own and back (0159). What
+  // The relay pane: a turn a person carries to a model of their own and back (0160). What
   // it says about what leaves is about the pane alone — the one thing this package can
   // stand behind on a page it never sees — and names no service, because the host names
   // the chat. Both builders' relay-pane tests hold that its Copy only writes the clipboard.

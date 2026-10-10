@@ -34,7 +34,7 @@ account."* The playground names Claude as that chat, in one place, and puts no p
 URL. A pasted
 answer is not bound to the request it answers; the review's diff against the form the run
 was asked about is what shows one that answered something else
-([0159](docs/decisions/0159-a-person-carries-the-models-turn.md)).
+([0160](docs/decisions/0160-a-person-carries-the-models-turn.md)).
 
 **Added: a model's proposal is checked against the form's examples before it lands.** A rule
 turned the wrong way round — `country != "CH"` where `country == "CH"` was meant — passes every

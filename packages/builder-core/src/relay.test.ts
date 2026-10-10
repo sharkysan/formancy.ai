@@ -12,7 +12,7 @@ import type { Relay, RelayTurn } from './relay.js'
  * person: the page shows the request, the visitor copies it into their own chat, and
  * pastes the answer back. Everything after the paste is the same run any host's model
  * gets — read, validated, compiled, type-checked, and held for review
- * ([0159](../../../docs/decisions/0159-a-person-carries-the-models-turn.md)).
+ * ([0160](../../../docs/decisions/0160-a-person-carries-the-models-turn.md)).
  *
  * What is pinned here is that the relay changes nothing about the run except who
  * answers: the turn on screen is the prompt a host's model would have been sent, and

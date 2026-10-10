@@ -1264,7 +1264,7 @@ paragraph is about. Both builders' `prompt-pane.test` (*when the model declines*
 nothing is applied.
 
 On formancy.ai the model is a person carrying each turn
-([0159](../decisions/0159-a-person-carries-the-models-turn.md)): the page shows the request,
+([0160](../decisions/0160-a-person-carries-the-models-turn.md)): the page shows the request,
 the visitor copies it into a chat of their own and pastes the answer back. That puts a hand
 between the prompt and the answer, and the hand can carry the wrong thing. What is held is
 that the relay changes nothing about the run except who answers. `relay.test.ts` holds that
@@ -1309,7 +1309,7 @@ the sample and in the mode given. Each builder's `prompt-pane.test` (*with the f
 examples*) holds that the review region is named by the example while the document is
 unchanged and Apply is enabled. `two-builders.test.tsx`
 holds the same through the playground in both builders, with the starter's canton rule
-turned round. No test runs a real model. The verdict uses the examples as they were when
+turned round and the answer pasted into the page's relay, as a visitor's is. No test runs a real model. The verdict uses the examples as they were when
 Write was pressed, so one added while the review is open is not in it.
 
 *Residual:* the review shows what changed, not whether it is what was asked for — that

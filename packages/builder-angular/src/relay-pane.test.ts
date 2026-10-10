@@ -17,7 +17,7 @@ import { FormancyRelayPane } from './relay-pane.js'
  * linked only when the host names one, that each turn starts clean, and that a turn
  * arriving takes the person to it.
  * When a paste counts is `createRelay`'s, tested once in `@formancy/builder-core`
- * ([0159](../../../docs/decisions/0159-a-person-carries-the-models-turn.md)).
+ * ([0160](../../../docs/decisions/0160-a-person-carries-the-models-turn.md)).
  */
 afterEach(() => {
   TestBed.resetTestingModule()

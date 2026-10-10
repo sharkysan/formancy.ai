@@ -1,7 +1,7 @@
 # 0158 — A model may decline, and a decline ends the run after one turn
 
 - **Status:** accepted; the playground’s stand-in dialog superseded by
-  [0159](0159-a-person-carries-the-models-turn.md)
+  [0160](0160-a-person-carries-the-models-turn.md)
 - **Date:** 2026-10-09
 - **Deciders:** Daniel Bacher
 - **Verified by:** `packages/builder-core/src/authoring.test.ts`, the cases under *a model
