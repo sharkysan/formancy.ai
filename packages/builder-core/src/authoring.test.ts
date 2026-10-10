@@ -440,8 +440,9 @@ describe('stopping a run', () => {
      * listener left over from it would abort a request that had already finished.
      */
     const told = [vi.fn(), vi.fn()]
+    let turns = 0
     const ask = vi.fn<AskModel>((_prompt, turn) => {
-      const at = ask.mock.calls.length - 1
+      const at = turns++
       turn.onCancel(told[at] ?? (() => undefined))
       return at === 0 ? Promise.resolve('nonsense') : new Promise<string>(() => undefined)
     })
