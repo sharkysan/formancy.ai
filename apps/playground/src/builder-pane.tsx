@@ -24,9 +24,9 @@ import {
   createBuilderText,
 } from '@formancy/builder-core'
 import type { FormEngine, Scenario } from '@formancy/core'
-import type { BuilderBlock, BuilderSession, BuilderText, PromptRun, Relay } from '@formancy/builder-core'
+import type { BuilderBlock, BuilderSession, BuilderText, Relay } from '@formancy/builder-core'
 import { AngularBuilderPane } from './angular-builder-pane.js'
-import type { BuilderTab, PreviewState } from './angular-builder-host.js'
+import type { BuilderTab, ModelRuns, PreviewState } from './angular-builder-host.js'
 import { RELAY_CHAT } from './demo-capabilities.js'
 
 /**
@@ -102,7 +102,7 @@ export function BuilderBody({
   onScenarios,
   preview,
   relay,
-  promptRun,
+  runs,
 }: {
   session: BuilderSession
   onChange: (next: string) => void
@@ -130,10 +130,11 @@ export function BuilderBody({
    */
   relay: Relay
   /**
-   * The prompt pane's run, the page's: it goes on when this body, a tab or a builder goes,
-   * and either builder's prompt pane draws it (0163).
+   * The model runs, the page's: each goes on when this body, a tab or a builder goes, and
+   * either builder's pane draws it — the prompt pane's (0163), the translations pane's and
+   * the drafting part's (0164).
    */
-  promptRun: PromptRun
+  runs: ModelRuns
 }) {
   const view = useBuilder(session)
   const explained = usePreviewState(preview)
@@ -206,16 +207,15 @@ export function BuilderBody({
           sample={sample}
           onScenarios={onScenarios}
           relay={relay}
-          promptRun={promptRun}
+          runs={runs}
         />
       ) : (
         <>
           {/* The turn a person is carrying to a model, above the tabs rather than inside
               one: it belongs to the run, not to a tab's layout. Nothing while nothing
-              waits. The prompt pane's run is the page's, so its turn stays here under any
-              tab, in either builder, and after the Schema view (0163); the scenario pane's
-              drafting and the translations pane's runs are still theirs, and end if that
-              pane goes (0157). The chat is this deployment's choice, named in
+              waits. Every run is the page's, so a turn stays here under any tab, in either
+              builder, and after the Schema view — a model's edit (0163), a translation or
+              drafts (0164). The chat is this deployment's choice, named in
               `demo-capabilities.ts` and nowhere else (0160). */}
           <RelayPane session={session} relay={relay} chat={RELAY_CHAT} />
           {tab === 'rules' ? (
@@ -233,8 +233,9 @@ export function BuilderBody({
                nobody has translated is marked, beside the English it stands in for. And
                asks the page's relay for them: the turn is drawn above, as the prompt
                pane's is, and the answer is reviewed message by message before it lands
-               (0161). */
-            <TranslationsPane session={session} ask={relay.ask} />
+               (0161). The run is the page's: asked for French and left, the tab opens on
+               French again, waiting or with its answer, in either builder (0164). */
+            <TranslationsPane session={session} ask={relay.ask} run={runs.translation} />
           ) : tab === 'arrangement' ? (
             <>
               <FormancyLayoutPane session={session} layout="web" onSelect={setArranging} />
@@ -267,7 +268,7 @@ export function BuilderBody({
               <PromptPane
                 session={session}
                 ask={relay.ask}
-                run={promptRun}
+                run={runs.prompt}
                 scenarios={scenarios}
                 initialValue={sample}
               />
@@ -288,13 +289,15 @@ export function BuilderBody({
                   file beside the starter. Without `onChange` the pane draws no Remove
                   button, and it had none. With the relay as well, it drafts examples from
                   what the visitor says the form should do, and one kept goes into the
-                  page's list for this form (0162). */}
+                  page's list for this form (0162). The drafting is the page's, for this
+                  form: the drafts wait through the Schema view and the other builder (0164). */}
               <ScenarioPane
                 session={session}
                 scenarios={scenarios}
                 onChange={onScenarios}
                 initialValue={sample}
                 ask={relay.ask}
+                drafting={runs.drafting}
               />
 
               {editing === null ? null : (

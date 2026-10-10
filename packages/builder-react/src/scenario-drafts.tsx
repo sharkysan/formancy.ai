@@ -1,16 +1,15 @@
-import { useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { ReactElement } from 'react'
 import {
-  createStop,
+  createDraftRun,
   draftExpectations,
   draftProblems,
   draftQuotes,
-  draftScenarios,
   draftStatus,
   draftVerdict,
-  keepDraft,
+  draftsOn,
 } from '@formancy/builder-core'
-import type { AskModel, BuilderSession, DraftNote, Drafted, Stop } from '@formancy/builder-core'
+import type { AskModel, BuilderSession, DraftRun } from '@formancy/builder-core'
 import type { Scenario } from '@formancy/core'
 
 /**
@@ -26,12 +25,18 @@ import type { Scenario } from '@formancy/core'
  *
  * **Nothing reaches the host until Keep.** A draft that fails can be kept: that failure
  * is the question — is the example wrong, or the form? — and the person answers it. What
- * may be kept, what the run says and what the engine makes of a draft are
- * `@formancy/builder-core`'s, so the Angular part cannot decide them differently
- * ([0091](../../../docs/decisions/0091-a-second-builder-is-a-binding.md)).
+ * may be kept, what the run says, what the engine makes of a draft and which form's drafts
+ * a session is shown are `@formancy/builder-core`'s, so the Angular part cannot decide them
+ * differently ([0091](../../../docs/decisions/0091-a-second-builder-is-a-binding.md)).
  *
- * `useSyncExternalStore` against the session's revision, so a draft's verdict is recomputed
- * when the form changes and never stored.
+ * **Whose run it is, is the host's to say.** Given `drafting`, from `createDraftRun`, the part
+ * draws a run the host holds: it goes on when the part goes, and a part drawn over the same
+ * form — a new session of it included — shows its drafts. Without one the part holds its own,
+ * and ends it when it goes or is handed another session, as it always did
+ * ([0164](../../../docs/decisions/0164-a-translation-is-held-for-its-language-and-a-draft-for-its-form.md)).
+ *
+ * `useSyncExternalStore` against the session's revision and the run, so a draft's verdict is
+ * recomputed when the form changes and never stored.
  */
 export interface ScenarioDraftsProps {
   session: BuilderSession
@@ -47,19 +52,12 @@ export interface ScenarioDraftsProps {
   mode?: 'client' | 'server'
   /** How many times to ask. Three by default. */
   attempts?: number
+  /**
+   * The run, held by the host, from `createDraftRun`: it outlives this part. Absent, the part
+   * holds its own, and ends it when it goes or is handed another session (0157, 0162).
+   */
+  drafting?: DraftRun | undefined
 }
-
-/** What a run came to, and the session it was over. */
-interface Held {
-  readonly session: BuilderSession
-  readonly result: Drafted
-  readonly drafts: readonly Scenario[]
-  /** What the last Keep or Discard did. */
-  readonly note: DraftNote | undefined
-}
-
-/** No drafts, as one constant, so the verdicts are not recomputed for a new empty list. */
-const NO_DRAFTS: readonly Scenario[] = []
 
 export function ScenarioDrafts({
   session,
@@ -69,36 +67,28 @@ export function ScenarioDrafts({
   initialValue,
   mode,
   attempts,
+  drafting,
 }: ScenarioDraftsProps): ReactElement {
   const { text } = session
   const revision = useSyncExternalStore(
     (listener) => session.subscribe(listener),
     () => session.revision(),
   )
-  const [intent, setIntent] = useState('')
-  const [busy, setBusy] = useState(false)
   /*
-   * What the last run came to, tagged with the session it was over. Another session is
-   * another form: a host that keeps the pane and opens another document must not be
-   * offered the last one's drafts to keep into the new one's list. Read through the tag
-   * rather than reset by an effect copying state into state.
+   * The part's own run, for a host that gives none: the part's, and its session's. Another
+   * session is another form to a part that holds its own (0162), so a new one ends the run
+   * and forgets its drafts — the words typed stay — and so does the part going (0157). A run
+   * the host gives is the host's, and nothing here ends it.
    */
-  const [held, setHeld] = useState<Held | undefined>(undefined)
-  const mine = held?.session === session ? held : undefined
-  const result = mine?.result
-  /** The drafts still waiting: each one leaves on Keep or Discard. */
-  const drafts = mine?.drafts ?? NO_DRAFTS
-  const note = mine?.note
+  const [own] = useState(createDraftRun)
+  useEffect(() => () => own.discard(), [own, session])
+  const run = drafting ?? own
+
   const headingId = useId()
   const inputId = useId()
   const withheldId = useId()
   const heading = useRef<HTMLHeadingElement>(null)
   const stopButton = useRef<HTMLButtonElement>(null)
-  /** The stop for the run in flight. A ref: pressing it changes nothing on screen by itself. */
-  const running = useRef<Stop | undefined>(undefined)
-  // A part taken off the screen stops its run, and so does another session: a relay is
-  // not left holding a turn about a form nobody is looking at (0157).
-  useEffect(() => () => running.current?.stop(), [session])
 
   /**
    * Set when a run ends, and whether Stop had the focus then. Once the render has settled,
@@ -108,6 +98,29 @@ export function ScenarioDrafts({
    * elsewhere stays there.
    */
   const ended = useRef<{ readonly onStop: boolean } | undefined>(undefined)
+  /*
+   * Read as the run says it ended, before React draws that: Stop is still in the document
+   * then, and once it has gone the focus is already on <body>. The run ends in a promise this
+   * part may never have awaited — another part's, or none's, pressed Draft.
+   */
+  const subscribe = useCallback(
+    (listener: () => void) => {
+      let waiting = draftsOn(run.state(), session).busy
+      return run.subscribe(() => {
+        const now = draftsOn(run.state(), session).busy
+        if (waiting && !now) {
+          ended.current = { onStop: stopButton.current !== null && document.activeElement === stopButton.current }
+        }
+        waiting = now
+        listener()
+      })
+    },
+    [run, session],
+  )
+  const state = useSyncExternalStore(subscribe, run.state, run.state)
+  /** The run as this form shows it: itself, or only the words when it is about another. */
+  const { intent, busy, result, drafts, note } = draftsOn(state, session)
+
   useEffect(() => {
     const just = ended.current
     if (busy || just === undefined) return
@@ -129,49 +142,21 @@ export function ScenarioDrafts({
     [drafts, session, options, revision],
   )
 
-  const run = async (): Promise<void> => {
-    if (intent.trim() === '' || busy) return
-    setBusy(true)
-    setHeld(undefined)
-    const stop = createStop()
-    running.current = stop
-    try {
-      const outcome = await draftScenarios(ask, session.document(), intent, {
-        initialValue,
-        existing: scenarios,
-        stop,
-        attempts,
-      })
-      setHeld({ session, result: outcome, drafts: outcome.ok ? outcome.drafts : [], note: undefined })
-    } finally {
-      // Read while Stop is still drawn: once it has gone, the focus is already on <body>.
-      ended.current = { onStop: stopButton.current !== null && document.activeElement === stopButton.current }
-      running.current = undefined
-      setBusy(false)
-    }
+  const write = (): void => {
+    void run.draft(ask, session, { initialValue, existing: scenarios, attempts })
   }
 
   /** A draft leaves the list, the status says why, and the focus goes back to the heading. */
-  const done = (draft: Scenario, kind: 'kept' | 'discarded'): void => {
-    setHeld(
-      (before) =>
-        before && {
-          ...before,
-          drafts: before.drafts.filter((one) => one !== draft),
-          note: { kind, name: draft.name },
-        },
-    )
+  const discard = (draft: Scenario): void => {
+    run.discardDraft(draft)
     heading.current?.focus()
   }
 
   const keep = (draft: Scenario): void => {
-    const kept = keepDraft(session.document(), scenarios, draft, options)
-    if (!kept.ok) {
-      setHeld((before) => before && { ...before, note: { kind: 'refused', why: kept.refused, name: draft.name } })
-      return
-    }
+    const kept = run.keep(draft, session, scenarios, options)
+    if (kept?.ok !== true) return
     onChange(kept.scenarios)
-    done(draft, 'kept')
+    heading.current?.focus()
   }
 
   const problems = draftProblems(result, text)
@@ -190,16 +175,16 @@ export function ScenarioDrafts({
         disabled={busy}
         placeholder={text('drafts.example')}
         aria-describedby={withheldId}
-        onChange={(event) => setIntent(event.target.value)}
+        onChange={(event) => run.describe(event.target.value)}
       />
       <p id={withheldId} data-formancy-part="scenario-drafts-withheld">
         {text('drafts.withheld')}
       </p>
-      <button type="button" disabled={busy || intent.trim() === ''} onClick={() => void run()}>
+      <button type="button" disabled={busy || intent.trim() === ''} onClick={write}>
         {busy ? text('drafts.writing') : text('drafts.write')}
       </button>
       {busy ? (
-        <button ref={stopButton} type="button" onClick={() => running.current?.stop()}>
+        <button ref={stopButton} type="button" onClick={() => run.stop()}>
           {text('drafts.stop')}
         </button>
       ) : null}
@@ -254,7 +239,7 @@ export function ScenarioDrafts({
                 <button type="button" onClick={() => keep(draft)}>
                   {text('drafts.keep', { name: draft.name })}
                 </button>
-                <button type="button" onClick={() => done(draft, 'discarded')}>
+                <button type="button" onClick={() => discard(draft)}>
                   {text('drafts.discard', { name: draft.name })}
                 </button>
               </li>

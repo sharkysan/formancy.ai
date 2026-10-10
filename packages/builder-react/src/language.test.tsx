@@ -7,6 +7,7 @@ import {
   createBuilderSession,
   createBuilderText,
   createRelay,
+  createTranslationRun,
   editableLayoutPropertiesFor,
   editablePropertiesFor,
   flatten,
@@ -640,6 +641,20 @@ describe('the translations, prompt and scenario panes', () => {
     seen.push(...outsidePreviews(refused.container))
     refused.unmount()
 
+    // A run the host holds for German, drawn on the default language: where it waits, worded
+    // by the catalogue (0164).
+    const held = createTranslationRun()
+    const elsewhere = render(
+      <TranslationsPane session={pseudo()} ask={() => new Promise<string>(() => undefined)} run={held} />,
+    )
+    await user.selectOptions(screen.getByRole('combobox', { name: /Language/ }), 'de')
+    await user.click(part(elsewhere.container, 'translate').querySelector('button')!)
+    await user.selectOptions(screen.getByRole('combobox', { name: /Language/ }), 'en')
+    await waitFor(() => expect(part(elsewhere.container, 'translate-status').textContent).toMatch(/translating into de/))
+    seen.push(...outsidePreviews(elsewhere.container))
+    elsewhere.unmount()
+    held.discard()
+
     const failing = render(
       <TranslationsPane session={pseudo()} ask={() => Promise.resolve('not json at all')} attempts={1} />,
     )
@@ -678,6 +693,7 @@ describe('the translations, prompt and scenario panes', () => {
         'was still not a catalogue',
         'What the model last answered',
         'Another request is still waiting',
+        'A model is translating into de',
       ].filter((prefix) => !seen.some((text) => text.includes(prefix))),
     ).toEqual([])
   })

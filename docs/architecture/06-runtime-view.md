@@ -448,8 +448,9 @@ translation dropped because a person wrote it first: there is nothing to apply o
 so the part offers Ask again, and the status and the list of what was dropped say which.
 
 **The review belongs to its language.** The part is keyed by the locale in both builders, so
-choosing another language, like leaving the tab, ends the run (0157). Through the relay, the
-turn is drawn where the prompt pane's is (6.8), at the top of either builder.
+choosing another language, like leaving the tab, ends a run the part holds itself (0157).
+A run the host holds goes on, and is drawn only under its own language (6.12). Through the
+relay, the turn is drawn where the prompt pane's is (6.8), at the top of either builder.
 *Translate the rest* asks over the proposal under review, and the answer is written over it
 and held against its basis, so the two land together, or neither does if the form moved in
 between.
@@ -535,4 +536,44 @@ Each pane reads whether Stop had the focus as the run reports its end, before dr
 because the run ends in a promise no pane may still be awaiting
 ([0163](../decisions/0163-a-models-run-belongs-to-the-host.md)). The playground holds one at
 the page, beside the relay, and discards it when another demo is chosen. The translations
-pane's run (6.9) and the drafting part's (6.10) are still their parts', and end with them.
+pane's run (6.9) and the drafting part's (6.10) are held the same way since 0164 (6.12).
+
+## 6.12 A translation held for its language, and drafts for their form
+
+```
+page (host)                    builder-core                                  parts, in either builder
+───────────                    ────────────                                  ────────────────────────
+translation = createTranslationRun()
+                               { locale, busy, result, proposal, refusal }   pane opens on the run's locale
+                               translate(ask, session, locale): forgets      Ask ──▶ translate
+                                 the last, asks for locale's missing ones    Translate the rest ──▶ rest
+                               rest: over the held proposal, its basis kept
+                               translationOn(state, drawn)
+                                 drawn == locale ──▶ the run                  the review, Stop, Apply
+                                 another, waiting or held ──▶ elsewhere       one sentence, nothing else
+                                 another, came to nothing ──▶ idle            Ask for the language drawn
+drafting = createDraftRun()
+                               { intent, form: the id asked over, busy,      the box ──▶ describe
+                                 result, drafts, note }                      Draft ──▶ draft(ask, session)
+                               draft over another form: forgets its run
+                               draftsOn(state, session)
+                                 session's form id == form ──▶ the run        drafts, judged against this
+                                                                               session's document as it is
+                                 another id ──▶ the words only                no drafts, Draft idle
+                               keep(draft, session, list): refused for
+                                 another form; else keepDraft (0162)         Keep ──▶ the host's list
+  the visitor looks elsewhere: Schema, another tab, the other builder        unsubscribe — nothing ends
+  back: a new session over the same text ──▶ the same form id ──▶ drawn again, waiting or with drafts
+  another demo ──▶ discard() on each: a run in flight stopped, forgotten, its turn cleared
+part given no run ──▶ holds its own: stopped when it goes; the drafting's also on another session
+```
+
+**Each run is held for what it is about.** A translation is about a language and drafts are
+about a form, so each holder keeps that, and one decision in `builder-core` says what a part
+drawn somewhere else shows of it. A translation under another language is named and not drawn,
+because its review and its Apply would read as that language's; drafts over another form are
+not drawn at all, because Keep would add them to the wrong list. The form is its id, which is
+what survives the playground opening a new session over the same text every time *Build* is
+shown, and what changes when it opens another form. The stops, and the rule that an ending
+lands only on the run still in flight, are the three holders' one shared part
+([0164](../decisions/0164-a-translation-is-held-for-its-language-and-a-draft-for-its-form.md)).

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { ReactElement } from 'react'
 import { referencedMessages } from '@formancy/builder-core'
-import type { AskModel, BuilderSession, CatalogueFile } from '@formancy/builder-core'
+import type { AskModel, BuilderSession, CatalogueFile, TranslationRun } from '@formancy/builder-core'
 import { TranslationReview } from './translation-review.js'
 import { TranslationsPreview } from './translations-preview.js'
 import { useBuilder } from './use-builder.js'
@@ -30,6 +30,12 @@ import { useBuilder } from './use-builder.js'
  * message by message — `TranslationReview`, in a file of its own. Without `ask` nothing
  * of that is drawn, as the prompt pane draws nothing without one
  * ([0161](../../../docs/decisions/0161-a-model-translates-only-what-is-missing.md)).
+ *
+ * **Whose run it is, is the host's to say.** Given `run`, from `createTranslationRun`, the
+ * pane draws a run the host holds: it goes on when the pane goes, and the pane drawn next
+ * opens on the language it is for, waiting or with its answer. Without one the review part
+ * holds its own and stops it when it goes, or when another language is chosen, as before
+ * ([0164](../../../docs/decisions/0164-a-translation-is-held-for-its-language-and-a-draft-for-its-form.md)).
  */
 export interface TranslationsPaneProps {
   session: BuilderSession
@@ -40,16 +46,24 @@ export interface TranslationsPaneProps {
   ask?: AskModel | undefined
   /** How many times to let the model correct itself. Three by default. */
   attempts?: number | undefined
+  /**
+   * The model's run, held by the host, from `createTranslationRun`: it outlives this pane,
+   * and the pane drawn next opens on its language. Absent, the review holds its own, and
+   * stops it when it goes (0157).
+   */
+  run?: TranslationRun | undefined
 }
 
-export function TranslationsPane({ session, ask, attempts }: TranslationsPaneProps): ReactElement {
+export function TranslationsPane({ session, ask, attempts, run }: TranslationsPaneProps): ReactElement {
   const view = useBuilder(session)
   const { text } = session
   const document = view.document
   const i18n = document.i18n
   const defaultLocale = i18n?.defaultLocale ?? 'en'
 
-  const [showing, setShowing] = useState<string>(defaultLocale)
+  // Opened where a held run's work is — its language — rather than on the default, where a
+  // translation waiting for French would only be named (0164).
+  const [showing, setShowing] = useState<string>(() => run?.state().locale ?? defaultLocale)
   const [adding, setAdding] = useState('')
   const [problem, setProblem] = useState<string | null>(null)
   const report = session.lastImportReport()
@@ -184,15 +198,17 @@ export function TranslationsPane({ session, ask, attempts }: TranslationsPanePro
         </label>
       </div>
 
-      {/* Keyed by the language, so choosing another ends the run and the review that
-          belong to this one, rather than leaving French under review beside German. */}
-      {ask === undefined || chosen === defaultLocale ? null : (
+      {/* Keyed by the language: choosing another ends the part's own run and review rather
+          than leaving French under review beside German. A run the host holds goes on, and
+          the part on another language says where it is. */}
+      {ask === undefined ? null : (
         <TranslationReview
           key={chosen}
           session={session}
           ask={ask}
           locale={chosen}
           attempts={attempts}
+          run={run}
         />
       )}
 

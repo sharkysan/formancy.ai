@@ -3,7 +3,7 @@ import { createRunHistory, scenarioStatus } from '@formancy/builder-core'
 import { BuilderTextPipe } from './text.pipe.js'
 import { runScenarios } from '@formancy/core'
 import { FormancyScenarioDrafts } from './scenario-drafts.js'
-import type { AskModel, BuilderSession, Scenario, ScenarioResult } from './types.js'
+import type { AskModel, BuilderSession, DraftRun, Scenario, ScenarioResult } from './types.js'
 import { injectBuilderView } from './view.js'
 
 /**
@@ -29,6 +29,9 @@ import { injectBuilderView } from './view.js'
  * pane draws `formancy-scenario-drafts` beneath the list, whose kept drafts leave through
  * the same output
  * ([0162](../../../docs/decisions/0162-an-example-is-drafted-from-what-the-author-said.md)).
+ * Bound to `[drafting]` as well, from `createDraftRun`, the drafting is the host's: it
+ * outlives the pane, and the pane drawn next over the same form shows it
+ * ([0164](../../../docs/decisions/0164-a-translation-is-held-for-its-language-and-a-draft-for-its-form.md)).
  *
  * Signals and `OnPush`, zoneless. The rerun is a `computed` over the session's
  * revision — the same subscription every other pane here uses — and the
@@ -89,6 +92,7 @@ import { injectBuilderView } from './view.js'
               [initialValue]="initialValue()"
               [mode]="mode()"
               [attempts]="attempts()"
+              [drafting]="drafting()"
               (scenariosChange)="scenariosChange.emit($event)"
             />
           }
@@ -134,6 +138,12 @@ export class FormancyScenarioPane {
   readonly ask = input<AskModel | undefined>(undefined)
   /** How many times drafting asks the model. Three by default. */
   readonly attempts = input<number | undefined>(undefined)
+  /**
+   * The drafting run, held by the host, from `createDraftRun`: it outlives this pane, and a
+   * pane drawn over the same form later shows its drafts. Unbound, the drafting part holds
+   * its own, and ends it when it is destroyed or handed another session (0157, 0162).
+   */
+  readonly drafting = input<DraftRun | undefined>(undefined)
 
   private readonly view = injectBuilderView(this.session)
   /** The previous run and its session; a run over another session is compared with nothing. */

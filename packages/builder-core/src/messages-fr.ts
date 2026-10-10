@@ -463,6 +463,9 @@ export const BUILDER_MESSAGES_FR = {
   'translate.dropped':
     'Non écrits, parce que personne ne les a demandés ou qu’une personne les a traduits depuis : {list}',
   'translate.status.asking': 'Demande des traductions manquantes, et vérification de la réponse.',
+  'translate.status.elsewhereAsking': 'Un modèle traduit en {locale}. Choisissez {locale} pour suivre la demande, ou l’arrêter.',
+  'translate.status.elsewhereHeld':
+    'La traduction en {locale} d’un modèle attend d’être examinée. Choisissez {locale} pour l’examiner. Rien n’a été appliqué.',
   'translate.status.ready': {
     one: 'Prêt à examiner : {count} traduction. Rien n’a été appliqué.',
     other: 'Prêt à examiner : {count} traductions. Rien n’a été appliqué.',

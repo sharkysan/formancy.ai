@@ -2,11 +2,15 @@ import { describe, expect, test, vi } from 'vitest'
 import type { FormSchema } from '@formancy/spec'
 import { authorForm, createStop, declinedAnswer } from './authoring.js'
 import type { AskModel, AuthoringPrompt } from './answers.js'
+import { createDraftRun } from './draft-run.js'
 import { createBuilderText } from './messages.js'
+import { createPromptRun } from './prompt-run.js'
 import { proposalStatus } from './proposal.js'
 import { createRelay, relayMessage } from './relay.js'
 import { draftScenarios } from './scenario-drafts.js'
+import { createBuilderSession } from './session.js'
 import { translateCatalogue, translationStatus } from './translate.js'
+import { createTranslationRun } from './translation-run.js'
 import type { Relay, RelayTurn } from './relay.js'
 
 /**
@@ -293,5 +297,50 @@ describe('one turn at a time', () => {
       JSON.stringify({ locale: 'de', defaultLocale: 'en', messages: [{ id: 'email', source: 'Email', target: 'E-Mail' }] }),
     )
     expect(await translation).toMatchObject({ ok: true })
+  })
+
+  test('holds across the three runs a host may hold, whichever waits, with no pane attached to any', async () => {
+    /*
+     * Held by the host, each run outlives its pane, so a turn can wait for any of the three
+     * while the visitor is anywhere — a translation's while they ask for an edit under Fields,
+     * a draft's while they ask for French (0164). The relay still carries one turn: the run
+     * that asks second ends busy and the one waiting keeps its turn, whichever two they are.
+     */
+    const worded = {
+      ...CURRENT,
+      model: { fields: [{ key: 'email', type: 'text', label: { $t: 'email' } }] },
+      i18n: { defaultLocale: 'en', messages: { en: { email: 'Email' }, fr: {} } },
+    } as unknown as FormSchema
+    const session = createBuilderSession(worded)
+    const relay = createRelay()
+    const prompt = createPromptRun()
+    const translation = createTranslationRun()
+    const drafts = createDraftRun()
+    prompt.instruct('add a phone number')
+    drafts.describe('Email is optional.')
+
+    void translation.translate(relay.ask, session, 'fr')
+    const waiting = await nextTurn(relay, undefined)
+
+    await prompt.write(relay.ask, session)
+    await drafts.draft(relay.ask, session)
+
+    expect(prompt.state().result).toMatchObject({ ok: false, ended: 'busy' })
+    expect(drafts.state().result).toMatchObject({ ok: false, ended: 'busy' })
+    expect(relay.waiting()).toBe(waiting)
+    expect(translation.state().busy).toBe(true)
+
+    relay.answer(
+      JSON.stringify({ locale: 'fr', defaultLocale: 'en', messages: [{ id: 'email', source: 'Email', target: 'Courriel' }] }),
+    )
+    await vi.waitFor(() => expect(translation.state().proposal).toBeDefined())
+
+    // And the other way round: a draft waiting refuses a translation.
+    void drafts.draft(relay.ask, session)
+    const drafting = await nextTurn(relay, waiting)
+    translation.discard()
+    await translation.translate(relay.ask, session, 'fr')
+    expect(translation.state().result).toMatchObject({ ok: false, ended: 'busy' })
+    expect(relay.waiting()).toBe(drafting)
   })
 })

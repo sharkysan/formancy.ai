@@ -456,6 +456,9 @@ export const BUILDER_MESSAGES_DE = {
   'translate.dropped':
     'Nicht geschrieben, weil niemand danach gefragt hat oder eine Person sie inzwischen übersetzt hat: {list}',
   'translate.status.asking': 'Die fehlenden Übersetzungen werden angefragt und die Antwort geprüft.',
+  'translate.status.elsewhereAsking': 'Ein Modell übersetzt gerade auf {locale}. Wähle {locale}, um es zu verfolgen oder anzuhalten.',
+  'translate.status.elsewhereHeld':
+    'Eine Übersetzung eines Modells auf {locale} wartet auf Prüfung. Wähle {locale}, um sie zu prüfen. Nichts wurde übernommen.',
   'translate.status.ready': {
     one: 'Bereit zur Prüfung: {count} Übersetzung. Nichts wurde übernommen.',
     other: 'Bereit zur Prüfung: {count} Übersetzungen. Nichts wurde übernommen.',

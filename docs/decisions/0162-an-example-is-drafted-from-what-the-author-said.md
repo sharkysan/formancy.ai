@@ -1,7 +1,10 @@
 # 0162 — An example is drafted from what the author said, judged by the engine, and kept one at a time
 
 - **Status:** accepted; leaving *Fields* stopping the prompt pane's run in the playground
-  superseded by [0163](0163-a-models-run-belongs-to-the-host.md)
+  superseded by [0163](0163-a-models-run-belongs-to-the-host.md); a draft living as long as its
+  part and its session superseded in part by
+  [0164](0164-a-translation-is-held-for-its-language-and-a-draft-for-its-form.md), for a run the
+  host holds
 - **Date:** 2026-10-10
 - **Deciders:** Daniel Bacher
 - **Verified by:** `packages/builder-core/src/scenario-prompt.test.ts`. *Never carries a rule*
@@ -244,6 +247,13 @@ playground it never meets their turns; a host drawing it beside them does, and i
 > playground holds the prompt pane's run at the page, so leaving *Fields* no longer stops
 > it, and the translations pane can meet its turn and end `busy`. The scenario pane's
 > drafting is still the part's, and leaving *Fields* still stops it.
+>
+> **Superseded in part by [0164](0164-a-translation-is-held-for-its-language-and-a-draft-for-its-form.md):**
+> a host can hold the drafting too, and the playground does, so leaving *Fields* no longer
+> stops it and any of the three runs can meet another's turn. A held run is held for its form,
+> by the form's id rather than the session: a new session of the same form shows its drafts,
+> another form none of them. A part given no run keeps this record's rule: another session is
+> another form, and the part going ends its run.
 
 **Each draft is run on every edit**, beside the list the panel already runs. How long that
 takes for many drafts on a large form is not measured.

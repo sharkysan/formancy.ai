@@ -1,6 +1,8 @@
 # 0163 — A model's run belongs to the host, and outlives the pane that asked
 
-- **Status:** accepted
+- **Status:** accepted; that the translations pane's run and the drafting part's are not
+  carried superseded in part by
+  [0164](0164-a-translation-is-held-for-its-language-and-a-draft-for-its-form.md)
 - **Date:** 2026-10-10
 - **Supersedes:** in part, what [0157](0157-a-models-turn-can-be-stopped.md) decided about a
   pane going away, for a run the host holds; and, of

@@ -10,6 +10,36 @@ later.
 
 ## Unreleased
 
+**Fixed: on formancy.ai, a translation or examples asked of a model are no longer lost when
+the visitor looks elsewhere while their chat answers.** An entry below fixed this for the
+prompt pane and left two runs to their parts: the Translations tab's review, which ended with
+its tab and its language, and the drafting part under *Fields*, whose drafts belonged to the
+session they were drafted in — and the playground opens a new session every time *Build* is
+shown. So a visitor who asked for the French, or for examples, and looked at the JSON, another
+tab or the other builder, came back to nothing, and the answer they pasted had nowhere to go.
+`@formancy/builder-core` now holds both the way `createPromptRun()` holds the prompt pane's,
+each for what it is about. `createTranslationRun()` is held for its language: it keeps the
+language asked for, the proposal and what *Translate the rest* builds on; `TranslationsPane`
+takes it as `run`, `<formancy-translations-pane>` as `[run]`, and a pane given one opens on that
+language, waiting or with its review. Under any other language the pane says where the run is —
+*A model is translating into fr. Choose fr to follow it, or to stop it.* — and draws no review,
+no Stop and no Ask, so a French proposal is never reviewed or applied as German
+(`translationOn`; the sentence in English, German and French). `createDraftRun()` is held for its
+form, by the form's id, because the id is what stays when a page opens the same text in a new
+session: `ScenarioPane` takes it as `drafting`, `<formancy-scenario-pane>` as `[drafting]`, a
+pane over any session of the form shows its drafts judged against the form as it is, and a pane
+over another form shows none and cannot keep them (`draftsOn`). The words typed are the run's
+too. The playground holds both beside the prompt pane's run, hands them to both builders, and
+discards all three when another demo is chosen. A part given no run holds its own as before:
+the translation's ends when the part goes or another language is chosen, the drafting's when
+the part goes or is handed another session. What the three holders share — a stop for every
+run, and an ending that lands only on the run still in flight — is written once. Held runs are
+the host's to end, and two documents with one id are one form to held drafts
+([0164](docs/decisions/0164-a-translation-is-held-for-its-language-and-a-draft-for-its-form.md),
+superseding part of [0161](docs/decisions/0161-a-model-translates-only-what-is-missing.md),
+[0162](docs/decisions/0162-an-example-is-drafted-from-what-the-author-said.md) and
+[0163](docs/decisions/0163-a-models-run-belongs-to-the-host.md)).
+
 **Fixed: a layout address that was not a position could write to every array's
 prototype.** The builder session's layout commands take a path of positions, typed as
 numbers. A caller nothing type-checks, such as an agent's JSON, could pass `'__proto__'`
@@ -79,7 +109,7 @@ was asked with, *In answer to “…”*, in English, German and French. And a r
 over a turn already waiting — back from *Schema*, in the other builder, or the Angular
 builder drawn again for another language — leaves the focus on the control the visitor used,
 rather than taking it to Copy; a turn that arrives still does. The translations pane and the
-scenario pane's drafting still hold their own runs, so their turns are still lost that way
+scenario pane's drafting are held the same way since the 0164 entry above
 ([0163](docs/decisions/0163-a-models-run-belongs-to-the-host.md), superseding part of
 [0157](docs/decisions/0157-a-models-turn-can-be-stopped.md) and
 [0160](docs/decisions/0160-a-person-carries-the-models-turn.md)).

@@ -1266,3 +1266,221 @@ describe('a model asked for the French the starter is missing', () => {
     },
   )
 })
+
+/**
+ * A translation and drafts being carried while the visitor looks elsewhere
+ * ([0164](../../../docs/decisions/0164-a-translation-is-held-for-its-language-and-a-draft-for-its-form.md)).
+ *
+ * 0163 held the prompt pane's run at the page and left these two to their parts: the
+ * Translations tab's review, which ends with its language and its tab, and the drafting part
+ * under Fields, whose drafts belonged to a session the page replaces every time Build is shown.
+ * A visitor who asked for the French, or for examples, and looked at the JSON or the other
+ * builder while their chat answered came back to nothing: the turn stopped, the request gone
+ * from the relay pane, the answer pasted afterwards with nowhere to go. The page holds both now,
+ * beside the prompt pane's run, and each journey here ends with the answer reviewed and applied,
+ * or kept — and nothing sent anywhere on the way.
+ */
+describe('a translation and drafts being carried while the visitor looks elsewhere', () => {
+  const SOURCES = STARTER_SCHEMA.i18n.messages['en'] ?? {}
+  const missing = missingMessages(STARTER_SCHEMA as unknown as FormSchema, 'fr')
+  const FRENCH = JSON.stringify({
+    locale: 'fr',
+    defaultLocale: 'en',
+    messages: missing.map((id) => ({
+      id,
+      source: SOURCES[id],
+      target: id === 'wantedBy' ? 'Souhaité pour le' : `${SOURCES[id] ?? id} (fr)`,
+    })),
+  })
+
+  /** Each way of looking elsewhere from the Translations tab, and back to it. */
+  const away = {
+    'the Schema view and back': async (user: ReturnType<typeof userEvent.setup>) => {
+      await user.click(screen.getByRole('button', { name: 'Schema' }))
+      // Off screen, or the way back below would be no way back at all.
+      expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull()
+      await user.click(screen.getByRole('button', { name: 'Build' }))
+    },
+    'another tab and back': async (user: ReturnType<typeof userEvent.setup>) => {
+      await user.click(screen.getByRole('button', { name: TAB_NAMES.fields }))
+      expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull()
+      await user.click(screen.getByRole('button', { name: TAB_NAMES.translations }))
+    },
+    // The Angular builder draws no structure tree under Translations; what is waited for
+    // below is its Language select, on French.
+    'the Angular builder': async () => {
+      await builtWith('Angular')
+    },
+  } as const
+
+  test.each(Object.keys(away) as Array<keyof typeof away>)(
+    'French asked for in the React builder is still waiting after %s, opens on French, and is reviewed and applied there',
+    async (journey) => {
+      const sent = outbound()
+      try {
+        const user = userEvent.setup()
+        render(<App />)
+        await builtWith('React')
+        await user.click(screen.getByRole('button', { name: TAB_NAMES.translations }))
+        const editor = screen.getByRole('region', { name: 'Editor' })
+        await user.selectOptions(within(editor).getByRole('combobox', { name: 'Language' }), 'fr')
+        await user.click(
+          within(editor).getByRole('button', { name: `Ask a model for the ${String(missing.length)} missing messages` }),
+        )
+        const asked = await screen.findByRole('region', { name: 'Take this request to a model' })
+        const request = (within(asked).getByRole('textbox', { name: 'The request' }) as HTMLTextAreaElement).value
+
+        await away[journey](user)
+
+        // The request is still there to carry, and the tab drawn now is on French, waiting.
+        const relay = await screen.findByRole('region', { name: 'Take this request to a model' }, { timeout: 10_000 })
+        expect((within(relay).getByRole('textbox', { name: 'The request' }) as HTMLTextAreaElement).value).toBe(request)
+        await waitFor(
+          () =>
+            expect(
+              (within(screen.getByRole('region', { name: 'Editor' })).getByRole('combobox', { name: 'Language' }) as HTMLSelectElement)
+                .value,
+            ).toBe('fr'),
+          { timeout: 10_000 },
+        )
+        expect(screen.getByRole('button', { name: 'Stop' })).toBeTruthy()
+
+        await user.click(within(relay).getByRole('textbox', { name: 'The model’s answer' }))
+        await user.paste(FRENCH)
+        await user.click(within(relay).getByRole('button', { name: 'Check this answer' }))
+
+        const review = await screen.findByRole(
+          'region',
+          { name: /^Review these translations into fr/ },
+          { timeout: 10_000 },
+        )
+        expect(undoButton().disabled, 'something was applied before anybody agreed to it').toBe(true)
+        await user.click(within(review).getByRole('button', { name: 'Apply these translations' }))
+        await waitFor(() => expect(undoButton().disabled).toBe(false), { timeout: 10_000 })
+        expect(screen.queryByRole('region', { name: /^Review these translations/ })).toBeNull()
+
+        expect(sent.fetch).not.toHaveBeenCalled()
+        expect(sent.open).not.toHaveBeenCalled()
+        expect(sent.beacon).not.toHaveBeenCalled()
+        expect(sent.window).not.toHaveBeenCalled()
+      } finally {
+        sent.restore()
+      }
+    },
+  )
+
+  test('French waiting is named, not drawn, on the language the tab is on', async () => {
+    // The tab opens on the default language, and a person may choose any other while French
+    // waits. A French review drawn there would be headed French over another language's
+    // preview, and its Apply would land French — so the tab says where it waits.
+    const user = userEvent.setup()
+    const say = builderTextFor('en')
+    render(<App />)
+    await builtWith('React')
+    await user.click(screen.getByRole('button', { name: TAB_NAMES.translations }))
+    const editor = screen.getByRole('region', { name: 'Editor' })
+    const language = within(editor).getByRole('combobox', { name: 'Language' })
+    await user.selectOptions(language, 'fr')
+    await user.click(within(editor).getByRole('button', { name: /Ask a model/ }))
+    await screen.findByRole('region', { name: 'Take this request to a model' })
+
+    await user.selectOptions(language, 'en')
+
+    expect(
+      document.querySelector('[data-formancy-part="translate-status"]')?.textContent,
+    ).toBe(say('translate.status.elsewhereAsking', { locale: 'fr' }))
+    expect(within(editor).queryByRole('button', { name: 'Stop' })).toBeNull()
+    expect(screen.getByRole('region', { name: 'Take this request to a model' })).toBeTruthy()
+  })
+
+  test.each(['React', 'Angular'] as const)(
+    'drafts asked for under Fields in the %s builder are still waiting after the Schema view and back, and one is kept',
+    async (which) => {
+      /*
+       * The page opens a new session every time Build is shown, and the drafts belonged to the
+       * last one: even a run that survived would have had its drafts dropped on the way back.
+       * Held for the form — its id — they are drawn again over the new session of it.
+       */
+      const sent = outbound()
+      try {
+        const user = userEvent.setup()
+        const HOLDS = {
+          name: 'Germany is not asked for a canton',
+          changes: { country: 'DE' },
+          valid: true,
+          visible: { canton: false },
+        }
+        render(<App />)
+        await builtWith(which)
+        if (which === 'Angular') await angularTree()
+        const panel = await waitFor(() => screen.getByRole('region', { name: 'Scenarios' }), { timeout: 10_000 })
+        await user.type(
+          within(panel).getByRole('textbox', { name: /What should this form do/ }),
+          'Only Switzerland asks for a canton.',
+        )
+        await user.click(within(panel).getByRole('button', { name: 'Draft examples' }))
+        await screen.findByRole('region', { name: 'Take this request to a model' }, { timeout: 10_000 })
+
+        await user.click(screen.getByRole('button', { name: 'Schema' }))
+        expect(screen.queryByRole('region', { name: 'Scenarios' })).toBeNull()
+        await user.click(screen.getByRole('button', { name: 'Build' }))
+
+        const relay = await screen.findByRole('region', { name: 'Take this request to a model' }, { timeout: 10_000 })
+        const again = await waitFor(() => screen.getByRole('region', { name: 'Scenarios' }), { timeout: 10_000 })
+        expect(
+          (within(again).getByRole('textbox', { name: /What should this form do/ }) as HTMLTextAreaElement).value,
+        ).toBe('Only Switzerland asks for a canton.')
+        expect(within(again).getByRole('button', { name: 'Stop drafting' })).toBeTruthy()
+
+        await user.click(within(relay).getByRole('textbox', { name: 'The model’s answer' }))
+        await user.paste(JSON.stringify({ scenarios: [HOLDS] }))
+        await user.click(within(relay).getByRole('button', { name: 'Check this answer' }))
+
+        const drafts = await within(again).findByRole('list', { name: 'Drafted examples' }, { timeout: 10_000 })
+        await user.click(within(drafts).getByRole('button', { name: `Keep ${HOLDS.name}` }))
+        await waitFor(
+          () => expect(within(again).getByRole('button', { name: `Remove ${HOLDS.name}` })).toBeTruthy(),
+          { timeout: 10_000 },
+        )
+
+        expect(sent.fetch).not.toHaveBeenCalled()
+        expect(sent.open).not.toHaveBeenCalled()
+        expect(sent.beacon).not.toHaveBeenCalled()
+        expect(sent.window).not.toHaveBeenCalled()
+      } finally {
+        sent.restore()
+      }
+    },
+  )
+
+  test('choosing another form ends a translation’s turn about the last one, and its drafts’', async () => {
+    // Each run is about the form it was asked over. Held across another, its request would wait
+    // above a builder showing something else — and the drafts would be offered to no list.
+    const user = userEvent.setup()
+    render(<App />)
+    await builtWith('React')
+    await user.click(screen.getByRole('button', { name: TAB_NAMES.translations }))
+    const editor = screen.getByRole('region', { name: 'Editor' })
+    await user.selectOptions(within(editor).getByRole('combobox', { name: 'Language' }), 'fr')
+    await user.click(within(editor).getByRole('button', { name: /Ask a model/ }))
+    await screen.findByRole('region', { name: 'Take this request to a model' })
+
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Demo' }), 'wizard')
+    await waitFor(() =>
+      expect(screen.queryByRole('region', { name: 'Take this request to a model' })).toBeNull(),
+    )
+
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Demo' }), 'starter')
+    await user.click(screen.getByRole('button', { name: TAB_NAMES.fields }))
+    const panel = await waitFor(() => screen.getByRole('region', { name: 'Scenarios' }), { timeout: 10_000 })
+    await user.type(within(panel).getByRole('textbox', { name: /What should this form do/ }), 'Only Switzerland asks.')
+    await user.click(within(panel).getByRole('button', { name: 'Draft examples' }))
+    await screen.findByRole('region', { name: 'Take this request to a model' })
+
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Demo' }), 'wizard')
+    await waitFor(() =>
+      expect(screen.queryByRole('region', { name: 'Take this request to a model' })).toBeNull(),
+    )
+    expect(screen.queryByRole('button', { name: 'Stop drafting' })).toBeNull()
+  })
+})

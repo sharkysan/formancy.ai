@@ -1256,7 +1256,13 @@ meanwhile: the holder carries one run at a time, and the instruction cannot chan
 waits (`prompt-run.test.ts`, *keeps the instruction it was asked with while it waits*, which
 also presses Write again and sees nothing asked). Each run has a stop of its own, so a late
 answer to a stopped run is never held as the next one's (*an answer to a stopped run,
-arriving while the next one waits*, now that the holder makes the stops).
+arriving while the next one waits*, now that the holder makes the stops). Since
+[0164](../decisions/0164-a-translation-is-held-for-its-language-and-a-draft-for-its-form.md) the translations pane's run and the drafting part's can be held the same way, and
+the stops are written once for all three, in `run-holder.ts`: a run's ending lands only while
+it is still the run in flight. The same case in `translation-run.test.ts` and
+`draft-run.test.ts` holds it for the other two; with one stop for the holder's life the prompt
+run's and the translation's fail, and with any run's ending allowed to land, *is discarded
+whole* fails in all three.
 
 Once a run has answered, though, the box is the person's again while the proposal is still
 held. What they type next — the following instruction, or the same box in the other builder
@@ -1573,6 +1579,21 @@ that the request names the language and carries none of the starter's rule expre
 codes in either spelling, that every missing message is a row, and that nothing is applied
 before Apply.
 
+A host can hold the translation's run ([0164](../decisions/0164-a-translation-is-held-for-its-language-and-a-draft-for-its-form.md)), and the playground does, so a proposal can
+outlive the pane that asked and be drawn after the visitor has chosen another language. That
+makes a variant of this failure possible: a French proposal reviewed under German — the
+preview in German, the rows read as German — and applied from there, landing French. So a run
+is held for its language, and `translationOn` gives a part drawn on any other only that the
+run waits and for which language: no review, no preview, no Stop and no Apply, and the part
+says where it is. `translation-run.test.ts` (*says where it waits, and holds nothing out to
+review or apply there*) fails with the run handed to every language, and both builders'
+`held-runs.test` (*on another language it says where the run is*) fail with the part drawing
+it so; in the playground, `two-builders.test.tsx` finds the sentence and no Stop under
+English while French waits. A held
+proposal is still refused at Apply when the form has moved since it was asked, in whichever
+session Apply is pressed (*is kept, with the refusal, when the form moved while it waited*),
+and an answer to a stopped translation is never held as the next one's (D10).
+
 *Residual:* **the review is only as good as its reader's command of that language.** A
 mistranslation that reads fluently passes every check here, and nothing in software can tell
 it from a right one. Both marks are hints. *The same as the source* flags words that are
@@ -1632,6 +1653,13 @@ it would check nothing; one whose `absent` names a field inside a group or a row
 there, as D10 describes (`scenario-drafts.test.ts`, *a drafted `absent` … is checked where
 the field is*).
 
+A host can hold the drafting ([0164](../decisions/0164-a-translation-is-held-for-its-language-and-a-draft-for-its-form.md)), and the playground does, so drafts outlive the part
+and the session they were drafted in. They are held for the form, by its id: a part over any
+session of that form shows them, judged against that session's document as it is, and a part
+over another form shows none, and Keep there is refused — another form's list is not where
+they belong (`draft-run.test.ts`, *another form shows none of them, and they cannot be kept
+into its list*, which fails with `draftsOn` ignoring the form and with Keep not asking).
+
 *Residual:* **the examples are only as good as the intent described.** A model writes from
 the author's words, and wrong words make wrong examples; right words can be misread. Told to
 leave out what the words do not say, a model may guess anyway, and nothing checks that it did
@@ -1642,7 +1670,11 @@ builds: a person who pastes the form itself into the same chat has shown the mod
 and nothing here can see that. The drafting part says it as that — what the request carries —
 and tells the person to start a new chat for it; the playground's prompt pane carries the
 whole document through the same relay, so the case is one tab away. Both builders'
-`language.test` require that advice to be drawn. Whether a person follows it is theirs.
+`language.test` require that advice to be drawn. Whether a person follows it is theirs. Held
+drafts take the form's id for the form: two documents with one id — a form replaced wholesale
+under *Schema* with its id kept — are one form to them, and a draft naming fields both have can
+be kept into a form it was not drafted for. The engine's verdict is computed against the form
+on screen, and reading the draft is what shows the rest.
 
 ---
 

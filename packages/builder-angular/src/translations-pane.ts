@@ -14,7 +14,7 @@ import { BuilderTextPipe } from './text.pipe.js'
 import { FormancyForm } from '@formancy/angular'
 import { FormancyTranslationReview } from './translation-review.js'
 import { previewInjector } from './translations-preview.js'
-import type { AskModel, BuilderSession, CatalogueFile, FormSchema } from './types.js'
+import type { AskModel, BuilderSession, CatalogueFile, FormSchema, TranslationRun } from './types.js'
 import { injectBuilderView } from './view.js'
 
 /**
@@ -39,6 +39,12 @@ import { injectBuilderView } from './view.js'
  * message by message — `formancy-translation-review`, in a file of its own. Without `ask`
  * nothing of that is drawn, as the prompt pane draws nothing without one
  * ([0161](../../../docs/decisions/0161-a-model-translates-only-what-is-missing.md)).
+ *
+ * **Whose run it is, is the host's to say.** Bound to `[run]`, from `createTranslationRun`,
+ * the pane draws a run the host holds: it goes on when the pane is destroyed, and the pane
+ * drawn next opens on the language it is for, waiting or with its answer. Unbound, the review
+ * part holds its own and stops it when it goes, or when another language is chosen, as before
+ * ([0164](../../../docs/decisions/0164-a-translation-is-held-for-its-language-and-a-draft-for-its-form.md)).
  */
 @Component({
   selector: 'formancy-translations-pane',
@@ -101,18 +107,18 @@ import { injectBuilderView } from './view.js'
         </div>
 
         @if (ask(); as asking) {
-          @if (chosen() !== defaultLocale()) {
-            <!-- Keyed by the language, as the React pane keys it: choosing another ends
-                 the run and the review that belong to this one, rather than leaving French
-                 under review beside German. A one-item loop is how a template says it. -->
-            @for (locale of [chosen()]; track locale) {
-              <formancy-translation-review
-                [session]="session()"
-                [ask]="asking"
-                [locale]="locale"
-                [attempts]="attempts()"
-              />
-            }
+          <!-- Keyed by the language, as the React pane keys it: choosing another ends the
+               part's own run and review rather than leaving French under review beside
+               German. A run the host holds goes on, and the part on another language says
+               where it is. A one-item loop is how a template says it. -->
+          @for (locale of [chosen()]; track locale) {
+            <formancy-translation-review
+              [session]="session()"
+              [ask]="asking"
+              [locale]="locale"
+              [attempts]="attempts()"
+              [run]="run()"
+            />
           }
         }
 
@@ -222,6 +228,12 @@ export class FormancyTranslationsPane {
   readonly ask = input<AskModel | undefined>(undefined)
   /** How many times to let the model correct itself. Three by default. */
   readonly attempts = input<number | undefined>(undefined)
+  /**
+   * The model's run, held by the host, from `createTranslationRun`: it outlives this pane, and
+   * the pane drawn next opens on its language. Unbound, the review holds its own, and stops it
+   * when it is destroyed (0157).
+   */
+  readonly run = input<TranslationRun | undefined>(undefined)
 
   protected readonly form = FormancyForm
   protected readonly view = injectBuilderView(this.session)
@@ -243,8 +255,14 @@ export class FormancyTranslationsPane {
   protected readonly locales = computed(() =>
     Object.keys(this.view().document.i18n?.messages ?? {}),
   )
+  /**
+   * Where a held run's work is when the pane is drawn — its language — read once per run, so
+   * the pane opens there rather than on the default, where a translation waiting for French
+   * would only be named (0164). Not a subscription: once open, the language is the person's.
+   */
+  private readonly opened = computed(() => this.run()?.state().locale ?? null)
   protected readonly chosen = computed(() => {
-    const showing = this.showing()
+    const showing = this.showing() ?? this.opened()
     return showing !== null && this.locales().includes(showing) ? showing : this.defaultLocale()
   })
   protected readonly referenced = computed(() => referencedMessages(this.view().document))

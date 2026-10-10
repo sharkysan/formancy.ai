@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import type { ReactElement } from 'react'
 import { comparedToLastRun, createRunHistory, scenarioStatus } from '@formancy/builder-core'
 import { runScenarios } from '@formancy/core'
-import type { AskModel, BuilderSession } from '@formancy/builder-core'
+import type { AskModel, BuilderSession, DraftRun } from '@formancy/builder-core'
 import type { Scenario } from '@formancy/core'
 import { ScenarioDrafts } from './scenario-drafts.js'
 
@@ -33,6 +33,9 @@ import { ScenarioDrafts } from './scenario-drafts.js'
  * a model drafts examples from that and the form's fields — never its rules — and each one
  * is kept or discarded by the person, with the verdict the list will give it
  * ([0162](../../../docs/decisions/0162-an-example-is-drafted-from-what-the-author-said.md)).
+ * Given `drafting` as well, from `createDraftRun`, the drafting is the host's: it outlives
+ * the pane, and the pane drawn next over the same form shows it
+ * ([0164](../../../docs/decisions/0164-a-translation-is-held-for-its-language-and-a-draft-for-its-form.md)).
  *
  * `useSyncExternalStore` against the session's revision, which is this
  * repository's ordinary way of reading a store — not a `useEffect` copying
@@ -68,6 +71,12 @@ export interface ScenarioPaneProps {
   ask?: AskModel | undefined
   /** How many times drafting asks the model. Three by default. */
   attempts?: number
+  /**
+   * The drafting run, held by the host, from `createDraftRun`: it outlives this pane, and a
+   * pane drawn over the same form later shows its drafts. Absent, the drafting part holds its
+   * own, and ends it when it goes or is handed another session (0157, 0162).
+   */
+  drafting?: DraftRun | undefined
 }
 
 export function ScenarioPane({
@@ -78,6 +87,7 @@ export function ScenarioPane({
   mode,
   ask,
   attempts,
+  drafting,
 }: ScenarioPaneProps): ReactElement | null {
   const revision = useSyncExternalStore(
     (listener) => session.subscribe(listener),
@@ -170,6 +180,7 @@ export function ScenarioPane({
           initialValue={initialValue}
           {...(mode === undefined ? {} : { mode })}
           {...(attempts === undefined ? {} : { attempts })}
+          drafting={drafting}
         />
       )}
     </section>

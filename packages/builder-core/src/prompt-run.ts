@@ -1,9 +1,9 @@
-import { createStop } from './answers.js'
-import type { AskModel, Stop } from './answers.js'
+import type { AskModel } from './answers.js'
 import { authorForm } from './authoring.js'
 import type { AuthoringResult } from './authoring.js'
 import { applyProposal, proposeEdit } from './proposal.js'
 import type { EditProposal, ProposalExamples } from './proposal.js'
+import { createRunHolder } from './run-holder.js'
 import type { BuilderSession, CommandOutcome } from './session.js'
 
 /**
@@ -107,17 +107,8 @@ const IDLE: PromptRunState = {
 }
 
 export function createPromptRun(): PromptRun {
-  let state = IDLE
-  /** The stop of the run in flight. A run that finds another here was forgotten. */
-  let running: Stop | undefined
-  const listeners = new Set<() => void>()
-
-  const change = (next: Partial<PromptRunState>): void => {
-    const changed = (Object.keys(next) as Array<keyof PromptRunState>).some((key) => next[key] !== state[key])
-    if (!changed) return
-    state = { ...state, ...next }
-    for (const listener of [...listeners]) listener()
-  }
+  // The snapshot, its listeners and one stop per run: what the three held runs share (0164).
+  const run = createRunHolder(IDLE)
 
   const forget = (): Partial<PromptRunState> => ({
     asked: undefined,
@@ -127,24 +118,18 @@ export function createPromptRun(): PromptRun {
   })
 
   return {
-    state: () => state,
-    subscribe(listener) {
-      listeners.add(listener)
-      return () => {
-        listeners.delete(listener)
-      }
-    },
+    state: run.state,
+    subscribe: run.subscribe,
     instruct(instruction) {
-      if (!state.busy) change({ instruction })
+      if (!run.state().busy) run.change({ instruction })
     },
     async write(ask, session, options = {}) {
-      const instruction = state.instruction
-      if (state.busy || instruction.trim() === '') return
-      const stop = createStop()
-      running = stop
+      const instruction = run.state().instruction
+      if (run.state().busy || instruction.trim() === '') return
+      const stop = run.begin()
       // The document the answer is for, and the examples in force with it, taken together.
       const current = session.document()
-      change({ busy: true, ...forget(), asked: instruction })
+      run.change({ busy: true, ...forget(), asked: instruction })
       let held: Partial<PromptRunState> = {}
       try {
         // Resolves however the run ends — a host's model that threw included (0157).
@@ -160,30 +145,23 @@ export function createPromptRun(): PromptRun {
           ...(result.ok ? { proposal: proposeEdit(current, result.document, options.examples) } : {}),
         }
       } finally {
-        if (running === stop) {
-          running = undefined
-          change({ busy: false, ...held })
-        }
+        if (run.end(stop)) run.change({ busy: false, ...held })
       }
     },
-    stop() {
-      running?.stop()
-    },
+    stop: run.stop,
     apply(session) {
-      const proposal = state.proposal
+      const proposal = run.state().proposal
       if (proposal === undefined) return undefined
       const outcome = applyProposal(session, proposal)
       // Kept when refused. The commonest refusal is "the form changed since this was
       // proposed", and throwing the proposal away would lose the one thing the person
       // needs in order to ask again.
-      change(outcome.ok ? { ...forget(), instruction: '' } : { refusal: outcome.message })
+      run.change(outcome.ok ? { ...forget(), instruction: '' } : { refusal: outcome.message })
       return outcome
     },
     discard() {
-      const stop = running
-      running = undefined
-      stop?.stop()
-      change({ busy: false, ...forget() })
+      run.forget()
+      run.change({ busy: false, ...forget() })
     },
   }
 }

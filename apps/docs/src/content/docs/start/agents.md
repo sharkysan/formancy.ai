@@ -469,7 +469,60 @@ own model behind `ask` the request keeps running until it answers, Stop is press
 call `run.stop()` or `run.discard()`. Leave `run` out, and the pane stops its own run when
 it goes, as before
 ([0163](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0163-a-models-run-belongs-to-the-host.md)).
-The translations pane and the scenario pane's drafting still hold their own runs.
+
+The translations pane and the scenario pane's drafting take a held run the same way, each
+held for what it is about
+([0164](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0164-a-translation-is-held-for-its-language-and-a-draft-for-its-form.md)):
+
+```tsx
+import { useState } from 'react'
+import { createDraftRun, createRelay, createTranslationRun } from '@formancy/builder-core'
+import type { BuilderSession } from '@formancy/builder-core'
+import type { Scenario } from '@formancy/core'
+import { RelayPane, ScenarioPane, TranslationsPane } from '@formancy/builder-react'
+
+export function Tabs({ session, tab }: { session: BuilderSession; tab: 'fields' | 'translations' }) {
+  const [relay] = useState(() => createRelay())
+  const [translation] = useState(() => createTranslationRun())
+  const [drafting] = useState(() => createDraftRun())
+  const [scenarios, setScenarios] = useState<readonly Scenario[]>([])
+  return (
+    <>
+      <RelayPane session={session} relay={relay} />
+      {tab === 'translations' ? (
+        <TranslationsPane session={session} ask={relay.ask} run={translation} />
+      ) : (
+        <ScenarioPane
+          session={session}
+          scenarios={scenarios}
+          onChange={setScenarios}
+          ask={relay.ask}
+          drafting={drafting}
+        />
+      )}
+    </>
+  )
+}
+```
+
+In Angular, `[run]="translation"` on `<formancy-translations-pane>` and
+`[drafting]="drafting"` on `<formancy-scenario-pane>`.
+
+- **A translation is held for its language.** The run keeps the language it was asked for,
+  with its proposal and what *Translate the rest* builds on. A translations pane given it opens
+  on that language, waiting or with its review. Under any other language — the default too — the
+  pane says where the run is and draws nothing of it: no review, no Stop, no Ask, so a French
+  proposal is never reviewed or applied as German. `translationOn(run.state(), locale)` is that
+  decision, if you draw your own.
+- **Drafts are held for their form, by its id.** A scenario pane over any session of the same
+  form — a new one, opened over the same document — shows the drafts, judged against the form
+  as it is now. Over a form with another id it shows none of them, and Keep is refused there.
+  `draftsOn(run.state(), session)` is that decision. The words typed into the box are the
+  run's, so two panes over one run share them.
+
+Call `discard()` on each when you open another form. Given no `run` or `drafting`, each part
+holds its own as before: the translation's ends when the part goes or another language is
+chosen, and the drafting's when the part goes or is handed another session.
 
 ### Asking a model for a language's missing messages
 

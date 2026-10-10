@@ -19,7 +19,13 @@ import {
 import { createRichTextEditor } from '@formancy/tiptap'
 import { playgroundUploader } from './demo-uploader.js'
 import { DEMO_OPTIONS_SOURCES, DEMO_SCANNER } from './demo-capabilities.js'
-import { createBuilderSession, createPromptRun, createRelay } from '@formancy/builder-core'
+import {
+  createBuilderSession,
+  createDraftRun,
+  createPromptRun,
+  createRelay,
+  createTranslationRun,
+} from '@formancy/builder-core'
 import type { BuilderBlock, BuilderSession } from '@formancy/builder-core'
 import {
   FormancyArrangeSurface,
@@ -42,7 +48,7 @@ import { EngineInspector } from './engine-inspector.js'
 import { FoldPane, PANES, PaneBoundary, usePaneLayout } from './panes.js'
 import { EditorPane } from './editor-pane.js'
 import type { EditorMode } from './editor-pane.js'
-import type { BuilderTab } from './angular-builder-host.js'
+import type { BuilderTab, ModelRuns } from './angular-builder-host.js'
 import type { PaneId } from './panes.js'
 import { BuilderBody, PLACEHOLDER_SESSION, builderTextFor } from './builder-pane.js'
 import { DEMO_BLOCKS } from './demo-blocks.js'
@@ -176,14 +182,20 @@ export function App() {
    */
   const [relay] = useState(() => createRelay())
   /**
-   * The prompt pane's run, held up here beside the relay for the same reason: a turn takes
-   * as long as the visitor takes to carry it, and while it waits they may look at the JSON,
-   * another tab or the other builder — each of which takes the prompt pane away. Held by
-   * the pane, the run stopped with it and the answer pasted afterwards had nowhere to go
-   * ([0163](../../../docs/decisions/0163-a-models-run-belongs-to-the-host.md)). One for
-   * both builders, so a proposal reviewed in one is the same proposal in the other.
+   * The model runs, held up here beside the relay for the same reason: a turn takes as long
+   * as the visitor takes to carry it, and while it waits they may look at the JSON, another
+   * tab or the other builder — each of which takes the pane that asked away. Held by the
+   * pane, a run stopped with it and the answer pasted afterwards had nowhere to go: the
+   * prompt pane's ([0163](../../../docs/decisions/0163-a-models-run-belongs-to-the-host.md)),
+   * and the translations pane's and the drafting part's
+   * ([0164](../../../docs/decisions/0164-a-translation-is-held-for-its-language-and-a-draft-for-its-form.md)).
+   * One of each for both builders, so what one shows the other shows.
    */
-  const [promptRun] = useState(() => createPromptRun())
+  const [runs] = useState<ModelRuns>(() => ({
+    prompt: createPromptRun(),
+    translation: createTranslationRun(),
+    drafting: createDraftRun(),
+  }))
   const [shown, setShown] = useState<PaneId>('form')
 
   const panes = usePaneLayout()
@@ -325,9 +337,11 @@ export function App() {
               onChange={(event) => {
                 const chosen = DEMOS.find((option) => option.id === event.target.value)
                 if (chosen === undefined) return
-                // Another form: a run asked about this one is ended and forgotten, rather
-                // than left waiting above a builder showing something else (0163).
-                promptRun.discard()
+                // Another form: every run asked about this one is ended and forgotten, rather
+                // than left waiting above a builder showing something else (0163, 0164).
+                runs.prompt.discard()
+                runs.translation.discard()
+                runs.drafting.discard()
                 setDemo(chosen.id)
                 // The text IS the document here — the builder writes it on every
                 // edit and everything else reads it — so loading a demo is setting
@@ -418,7 +432,7 @@ export function App() {
           onScenarios={keepScenarios}
           preview={built?.engine}
           relay={relay}
-          promptRun={promptRun}
+          runs={runs}
           theme={theme}
           themeHost={themeHost}
           overrides={overrides}

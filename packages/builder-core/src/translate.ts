@@ -335,6 +335,10 @@ export function translationHeading(proposal: TranslationProposal, text: BuilderT
  * just pressed; an ending without an answer outranks a proposal still held from an
  * earlier turn, because it is the newer news — *Translate the rest* stopped leaves the
  * first answer on screen, and the sentence says the second did not come.
+ *
+ * A part drawn on another language than a held run's is given `elsewhere` and nothing else
+ * of it (`translationOn`), and says only where the run is
+ * ([0164](../../../docs/decisions/0164-a-translation-is-held-for-its-language-and-a-draft-for-its-form.md)).
  */
 export function translationStatus(
   state: {
@@ -342,9 +346,16 @@ export function translationStatus(
     result: TranslationResult | undefined
     proposal: TranslationProposal | undefined
     refusal: string | undefined
+    elsewhere?: { readonly locale: string; readonly busy: boolean } | undefined
   },
   text: BuilderText,
 ): string {
+  const elsewhere = state.elsewhere
+  if (elsewhere !== undefined) {
+    return text(elsewhere.busy ? 'translate.status.elsewhereAsking' : 'translate.status.elsewhereHeld', {
+      locale: elsewhere.locale,
+    })
+  }
   if (state.busy) return text('translate.status.asking')
   if (state.refusal !== undefined) return text('prompt.status.refused', { reason: state.refusal })
   const result = state.result

@@ -10,6 +10,7 @@ import {
   createBuilderSession,
   createBuilderText,
   createRelay,
+  createTranslationRun,
   editableLayoutPropertiesFor,
   editablePropertiesFor,
   flatten,
@@ -666,6 +667,24 @@ describe('the translations, prompt and scenario panes', () => {
     seen.push(...outsidePreviews(refused.root))
     reset()
 
+    // A run the host holds for German, drawn on the default language: where it waits, worded
+    // by the catalogue (0164).
+    const held = createTranslationRun()
+    const elsewhere = await mounted(FormancyTranslationsPane, {
+      session: pseudo(),
+      ask: () => new Promise<string>(() => undefined),
+      run: held,
+    })
+    await elsewhere.user.selectOptions(screen.getAllByRole('combobox')[0]!, 'de')
+    await elsewhere.settle()
+    await elsewhere.user.click(part(elsewhere.root, 'translate')!.querySelector('button')!)
+    await elsewhere.user.selectOptions(screen.getAllByRole('combobox')[0]!, 'en')
+    await waitFor(() => expect(part(elsewhere.root, 'translate-status')!.textContent).toMatch(/translating into de/))
+    await elsewhere.settle()
+    seen.push(...outsidePreviews(elsewhere.root))
+    reset()
+    held.discard()
+
     const failing = await opened(() => Promise.resolve('not json at all'), 1)
     await waitFor(() => expect(part(failing.root, 'translate-problems')).not.toBeNull())
     await failing.settle()
@@ -701,6 +720,7 @@ describe('the translations, prompt and scenario panes', () => {
         'was still not a catalogue',
         'What the model last answered',
         'Another request is still waiting',
+        'A model is translating into de',
       ].filter((prefix) => !seen.some((text) => text.includes(prefix))),
     ).toEqual([])
   })

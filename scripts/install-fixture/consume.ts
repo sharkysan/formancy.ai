@@ -22,12 +22,15 @@ import {
   authorForm,
   builderView,
   createBuilderSession,
+  createDraftRun,
   createPromptRun,
   createRelay,
   createStop,
+  createTranslationRun,
   declinedAnswer,
   draftScenarios,
   draftVerdict,
+  draftsOn,
   keepDraft,
   ModelBusyError,
   proposalHeading,
@@ -35,10 +38,18 @@ import {
   proposeTranslation,
   relayMessage,
   translateCatalogue,
+  translationOn,
   translationPrompt,
   translationStatus,
 } from '@formancy/builder-core'
-import type { AskModel, PromptRun, ProposalExamples, TranslationProposal } from '@formancy/builder-core'
+import type {
+  AskModel,
+  DraftRun,
+  PromptRun,
+  ProposalExamples,
+  TranslationProposal,
+  TranslationRun,
+} from '@formancy/builder-core'
 import type { BuiltInErrorCode } from '@formancy/core'
 import { mintChallenge, solveChallenge, verifySolution } from '@formancy/challenge'
 import { auditedBy, createMemoryStorage, publishForm } from '@formancy/server-core'
@@ -206,6 +217,32 @@ if (failing.passed || !failing.failures.some((failure) => failure.detail.include
 }
 const keptDraft = keepDraft(schema, [], draftsOut.drafts[0])
 if (!keptDraft.ok || keptDraft.scenarios.length !== 1) throw new Error('the installed keepDraft refused a failing draft')
+
+// A translation and drafts the host holds (0164): each outlives what listened to it, the
+// translation is drawn only under its language, and the drafts over any session of their form.
+const heldTranslation: TranslationRun = createTranslationRun()
+const translationRelay = createRelay()
+const hearing = heldTranslation.subscribe(() => undefined)
+const translatingHeld = heldTranslation.translate(translationRelay.ask, createBuilderSession(worded), 'de')
+hearing()
+const pasted = translationRelay.answer(
+  JSON.stringify({ locale: 'de', defaultLocale: 'en', messages: [{ id: 'email', source: 'Email', target: 'E-Mail' }] }),
+)
+await translatingHeld
+const underGerman = translationOn(heldTranslation.state(), 'de')
+const underEnglish = translationOn(heldTranslation.state(), 'en')
+if (pasted !== 'accepted' || underGerman.proposal === undefined || underEnglish.elsewhere?.locale !== 'de') {
+  throw new Error('the installed createTranslationRun did not hold the German for German alone')
+}
+const heldDrafts: DraftRun = createDraftRun()
+heldDrafts.describe('An email is optional.')
+await heldDrafts.draft(
+  () => Promise.resolve(JSON.stringify({ scenarios: [{ name: 'no email is fine', changes: {}, valid: true }] })),
+  createBuilderSession(schema),
+)
+if (draftsOn(heldDrafts.state(), createBuilderSession(schema)).drafts.length !== 1) {
+  throw new Error('the installed createDraftRun did not show its drafts over a new session of the form')
+}
 
 // One relay asked from several panes (0162): a second request while a turn waits ends busy,
 // through the installed relay and askChecked — a draft's, and a translation's, whose status
