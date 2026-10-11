@@ -10,6 +10,7 @@ import {
   viewChild,
 } from '@angular/core'
 import { arrangeDrop, arrangeDropAndSay, flattenLayout, gapNeighbour } from '@formancy/builder-core'
+import { takeHostOutOfLayout } from './host.js'
 import type { ArrangeDrop, BuilderSession, DrawnNode } from './types.js'
 import { injectBuilderView } from './view.js'
 
@@ -114,6 +115,7 @@ export class FormancyArrangeSurface {
   private readonly marked = new Set<HTMLElement>()
 
   constructor() {
+    takeHostOutOfLayout()
     /*
      * Marking what can be picked up.
      *

@@ -9,7 +9,9 @@
  * demo but the starter the Angular builder put 14px above its prompt box and its language
  * chooser where nothing was drawn, and laid the same document out differently from the React
  * builder. jsdom measures every box at zero, and the suite compares the two builders' lists by
- * name, so only a browser can see it.
+ * name, so only a browser can see it. Since 0174 that element takes no part in layout, and the
+ * list is a grid item of `.builder-pane` in both builders. This check stays because it opens
+ * the wizard, which has no list, and `builders-layout-browser-test.mjs` opens only the starter.
  *
  * So, on the starter, which has suggestions, and on the wizard, which has none: the prompt
  * box under Fields, and the language chooser under Translations, sit as far below the top of

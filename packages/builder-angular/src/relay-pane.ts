@@ -15,6 +15,7 @@ import {
 } from '@angular/core'
 import { relayLeaves } from '@formancy/builder-core'
 import type { BuilderMessageId } from '@formancy/builder-core'
+import { takeHostOutOfLayout } from './host.js'
 import { BuilderTextPipe } from './text.pipe.js'
 import type { BuilderSession, Relay, RelayChat, RelayTurn } from './types.js'
 
@@ -168,6 +169,7 @@ export class FormancyRelayPane {
   private readonly injector = inject(Injector)
 
   constructor() {
+    takeHostOutOfLayout()
     let unsubscribe: (() => void) | undefined
     // The first turn followed is the one found waiting when the pane is drawn.
     let found = true

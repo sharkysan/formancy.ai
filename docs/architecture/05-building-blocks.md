@@ -399,7 +399,9 @@ rendered form, the property and logic panels, the translations pane with a model
 translation under review inside it, the prompt and scenario panes, drafting examples
 inside the scenario pane, and the relay pane beside the prompt — zoneless, `OnPush`, one
 signal per session, `revision()` as the whole subscription
-([0091](../decisions/0091-a-second-builder-is-a-binding.md)). This paragraph
+([0091](../decisions/0091-a-second-builder-is-a-binding.md)). Each of its components takes
+its own element out of layout, so a theme places what it draws as it places the React
+builder's markup ([0174](../decisions/0174-the-builders-hosts-take-no-part-in-layout.md)). This paragraph
 said "the rest of the panes remain React-only" for more than a week after they had all shipped.
 
 `builder-react` is the interface: a structure tree, an arrangement tree, a

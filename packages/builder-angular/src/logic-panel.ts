@@ -20,6 +20,7 @@ import {
   updateRow,
 } from '@formancy/builder-core'
 import type { ConditionDraft, ConditionRow, DraftPlace, RowGroup } from '@formancy/builder-core'
+import { takeHostOutOfLayout } from './host.js'
 import type { BuilderSession, LogicRule } from './types.js'
 import { FormancyLogicComparison } from './logic-comparison.js'
 import { BuilderTextPipe } from './text.pipe.js'
@@ -260,6 +261,10 @@ export class FormancyLogicPanel {
       expression: this.expression(),
     }),
   )
+
+  constructor() {
+    takeHostOutOfLayout()
+  }
 
   protected labelOf(rule: LogicRule): string {
     return ruleKindLabel(rule.kind, this.text())

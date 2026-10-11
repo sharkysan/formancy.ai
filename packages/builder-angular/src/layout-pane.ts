@@ -27,6 +27,7 @@ import {
   wrapAndSay,
   wrapCandidates,
 } from '@formancy/builder-core'
+import { takeHostOutOfLayout } from './host.js'
 import type { BuilderSession, LayoutLocation, LayoutNode, LayoutTreeNode } from './types.js'
 import { FormancyLayoutAdd } from './layout-add.js'
 import { BuilderTextPipe } from './text.pipe.js'
@@ -273,6 +274,7 @@ export class FormancyLayoutPane {
   })
 
   constructor() {
+    takeHostOutOfLayout()
     // Keep focus on the NODE across an edit, not on the number. Guarded on the
     // list changing, and the position read and written inside `untracked`: an
     // Angular effect that reads the signal it writes is a cycle, and Angular

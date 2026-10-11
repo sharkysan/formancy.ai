@@ -4,6 +4,7 @@ import {
   layoutNodeAt,
   layoutPropertyHeading,
 } from '@formancy/builder-core'
+import { takeHostOutOfLayout } from './host.js'
 import type { BuilderSession, EditableProperty, LayoutAddress, LayoutNode } from './types.js'
 import { FormancyProperty } from './property-panel.js'
 import { injectBuilderView } from './view.js'
@@ -68,6 +69,10 @@ export class FormancyLayoutPropertyPanel {
   protected readonly properties = computed((): EditableProperty[] =>
     editableLayoutPropertiesFor(this.node()?.kind ?? '', this.session().text),
   )
+
+  constructor() {
+    takeHostOutOfLayout()
+  }
 
   protected valueOf(name: string): unknown {
     return (this.node() as unknown as Record<string, unknown> | undefined)?.[name]

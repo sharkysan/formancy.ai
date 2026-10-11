@@ -1103,13 +1103,26 @@ in `@formancy/spec` which nodes the page leaves empty, and a fixture naming a la
 drivers to it ([0137](../decisions/0137-a-paged-forms-layout-is-drawn-a-page-at-a-time.md)).
 It was found by reading the code, not by a person filling a form in.
 
+A fifth was in the builder, and it is 0073's mechanism exactly. Angular draws each of the
+builder's components in an element of its own, and none of those elements had been taken out
+of layout. The translations pane is a two-column grid, and the element for a model's review,
+empty on the default language, took its first cell, so in the Angular builder alone the table a
+translator works in was in the narrow column. In the playground the panes also lost the gap
+between them. It changed no role and no name, so every gate passed it, and a person switching
+builders in the playground found it
+([0174](../decisions/0174-the-builders-hosts-take-no-part-in-layout.md)). It belongs here
+rather than under the builder's own entries because the hazard is the same one: what an author
+sees while writing a form is not what the other builder shows them, and nothing reports it.
+
 *Severity:* a control that is covered or missing is a control that cannot be
 operated, so this reaches the same outcome as D4 by a route D4's constraint does not
 watch.
 
 *Constraint:* each cause is replaced by a **structural** contract a test can hold
 rather than by a promise: every element between a grid and the cells inside it takes
-no part in layout, asserted in `packages/angular/src/layout.test.ts`; the typeahead
+no part in layout, asserted in `packages/angular/src/layout.test.ts`, and so does every
+element the Angular builder draws a component in, asserted in
+`packages/builder-angular/src/host.test.ts`; the typeahead
 popup is positioned against an anchor that wraps the control and nothing else,
 asserted in both renderers' widget tests; and every theme positions that anchor,
 gives the popup an explicit offset, and lets the narrow-screen reflow beat a column
@@ -1131,7 +1144,10 @@ renderers' signature surfaces with and without a theme
 Reverting either defect named above reddens it, which was checked by doing so.
 That also corrects a claim this paragraph carried for longer than it was true:
 the playground renders the Angular bindings in a browser, and the gate loads it,
-so that renderer is no longer seen by review alone.
+so that renderer is no longer seen by review alone. Since
+[0174](../decisions/0174-the-builders-hosts-take-no-part-in-layout.md) the gate also opens five
+views of the starter in both builders and finds every builder part in the same place in each,
+and it was watched failing against the builders as deployed before that change.
 
 What stays reviewed is everything else: there are **no pixel baselines**, by
 choice — the renderers ship no styling, so a baseline would be testing demo CSS,

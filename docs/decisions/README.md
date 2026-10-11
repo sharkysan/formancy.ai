@@ -179,7 +179,7 @@ listed under the sections they belong to above.
 | [0076](0076-an-answer-is-one-of-the-options.md) | An answer is one of the options | accepted |
 | [0077](0077-options-may-come-from-a-named-source.md) | Options may come from a named source | accepted |
 | [0078](0078-a-grid-row-is-flat.md) | A grid row is flat | accepted |
-| [0079](0079-a-host-is-undone-without-a-stylesheet.md) | A host element is undone without a stylesheet | accepted |
+| [0079](0079-a-host-is-undone-without-a-stylesheet.md) | A host element is undone without a stylesheet | accepted; the builder's hosts, left boxes, undone by 0174 |
 | [0080](0080-a-choice-control-dresses-its-own-states.md) | A choice control dresses its own states | accepted |
 | [0081](0081-a-page-absorbs-the-form-it-joins.md) | The first page absorbs the form it is added to | accepted |
 | [0082](0082-the-draft-flow-is-demonstrated-in-the-admin.md) | The draft flow is demonstrated in the admin | accepted |
@@ -274,3 +274,4 @@ listed under the sections they belong to above.
 | [0171](0171-the-renderers-words-are-the-forms-language.md) | The renderers' own words are in the form's language, from one catalogue both renderers read | accepted |
 | [0172](0172-a-5xx-says-nothing-of-what-was-thrown.md) | A 5xx says its status and nothing of what was thrown; an id a `uuid` column cannot hold names no row | accepted; a value a `text` column cannot hold, which it left a `500`, decided by 0173 |
 | [0173](0173-a-nul-character-names-nothing-and-a-body-with-one-is-refused.md) | A NUL character names nothing, and a body with one is refused | accepted |
+| [0174](0174-the-builders-hosts-take-no-part-in-layout.md) | The builder's hosts take no part in layout, and the two builders are measured part by part | accepted |

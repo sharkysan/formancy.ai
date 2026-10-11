@@ -41,6 +41,7 @@ import { checkArrangeGaps } from './arrange-browser-test.mjs'
 import { checkMaterialDateButton } from './material-date-browser-test.mjs'
 import { checkNoForeignRequests } from './request-browser-test.mjs'
 import { checkSuggestionsPlacement } from './suggestions-browser-test.mjs'
+import { checkBuildersLayAlike } from './builders-layout-browser-test.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const site = join(root, 'apps', 'site', 'dist')
@@ -201,6 +202,7 @@ async function run() {
     await checkUploadThumbnails(browser, url, check)
     await checkArrangeGaps(browser, url, check)
     await checkSuggestionsPlacement(browser, url, check)
+    await checkBuildersLayAlike(browser, url, check)
     for (const { label, width, height } of WIDTHS) {
       const page = await browser.newPage({ viewport: { width, height } })
       await page.goto(url, { waitUntil: 'load' })
@@ -1061,7 +1063,7 @@ async function run() {
     throw new Error(`${String(failures.length)} browser check(s) failed:\n  ${failures.join('\n  ')}`)
   }
   console.log(
-    `browser checks passed: ${String(WIDTHS.length)} viewports of the playground, plus the site's pages, the starter embedded in one and the starter on its own, drops into the space between two nodes and what can be picked up after, and where each builder puts the panes beside the starter's suggestions, for the layout, gesture and cascade facts jsdom cannot represent; and every request of the pages it opens, none of them to another site`,
+    `browser checks passed: ${String(WIDTHS.length)} viewports of the playground, plus the site's pages, the starter embedded in one and the starter on its own, drops into the space between two nodes and what can be picked up after, where each builder puts the panes beside the starter's suggestions, and every part of the builder in either builder, tab by tab, for the layout, gesture and cascade facts jsdom cannot represent; and every request of the pages it opens, none of them to another site`,
   )
 }
 

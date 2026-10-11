@@ -10,6 +10,7 @@ import {
 } from '@angular/core'
 import { NgComponentOutlet } from '@angular/common'
 import { referencedMessages } from '@formancy/builder-core'
+import { takeHostOutOfLayout } from './host.js'
 import { BuilderTextPipe } from './text.pipe.js'
 import { FormancyForm } from '@formancy/angular'
 import { FormancyTranslationReview } from './translation-review.js'
@@ -296,6 +297,10 @@ export class FormancyTranslationsPane {
   protected readonly previewInjector = computed((): Injector | undefined =>
     previewInjector(this.view().document as FormSchema, this.chosen(), this.parent),
   )
+
+  constructor() {
+    takeHostOutOfLayout()
+  }
 
   protected sourceOf(id: string): string {
     return this.view().document.i18n?.messages[this.defaultLocale()]?.[id] ?? '—'

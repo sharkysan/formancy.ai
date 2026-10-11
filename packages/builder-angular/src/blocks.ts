@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, input, linkedSignal, output } from '@angular/core'
 import type { BuilderBlock, BuilderText } from '@formancy/builder-core'
+import { takeHostOutOfLayout } from './host.js'
 import { BuilderTextPipe } from './text.pipe.js'
 
 /**
@@ -35,6 +36,10 @@ export class FormancyPaletteBlocks {
   readonly blocks = input.required<readonly BuilderBlock[]>()
   readonly text = input.required<BuilderText>()
   readonly chosen = output<BuilderBlock>()
+
+  constructor() {
+    takeHostOutOfLayout()
+  }
 }
 
 /**
@@ -78,4 +83,8 @@ export class FormancySaveBlock {
 
   /** What the person typed, starting from the field's name and following it if it changes. */
   protected readonly name = linkedSignal(() => this.initialName())
+
+  constructor() {
+    takeHostOutOfLayout()
+  }
 }

@@ -277,6 +277,15 @@ is one tab stop rather than one per field, and every destination is offered as a
 sentence rather than an index. The legend under the tree lists every key, so none
 of this has to be told to anybody.
 
+**Style the parts, not the elements.** Each component's own element — `formancy-builder`,
+`formancy-property-panel`, `formancy-translations-pane` and the rest — takes no part in layout,
+so what it draws sits in your grid exactly as the React builder's markup does, and one
+stylesheet, `@formancy/themes/workbench.css` or your own, places both. A margin or a grid
+placement given to the element applies to nothing; give it to the part inside,
+`[data-formancy-part='builder']`. It is set without a stylesheet, so a strict `style-src`
+needs no nonce for it
+([0174](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0174-the-builders-hosts-take-no-part-in-layout.md)).
+
 ### Blocks: a piece of a form, saved to use again
 
 Bind `blocks` and the add palette offers them beside the field types, and `b` saves the

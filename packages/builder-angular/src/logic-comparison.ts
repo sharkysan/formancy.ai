@@ -6,6 +6,7 @@ import {
   operatorsFor,
 } from '@formancy/builder-core'
 import type { BuilderText, ConditionField, ConditionRow, Operator } from '@formancy/builder-core'
+import { takeHostOutOfLayout } from './host.js'
 import { BuilderTextPipe } from './text.pipe.js'
 
 /** The box a value is typed into, by what the field holds. */
@@ -118,6 +119,10 @@ export class FormancyLogicComparison {
     return kind === 'choice' || kind === 'list' ? 'choice' : kind === 'boolean' ? 'boolean' : 'box'
   })
   protected readonly inputType = computed(() => INPUT_TYPE[this.field()?.kind ?? 'other'] ?? 'text')
+
+  constructor() {
+    takeHostOutOfLayout()
+  }
 
   /** Numbered from 1, and only when there is more than one — builder-core decides. */
   protected label(part: 'field' | 'comparison' | 'value'): string {

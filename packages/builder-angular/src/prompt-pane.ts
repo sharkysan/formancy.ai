@@ -14,6 +14,7 @@ import {
   viewChild,
 } from '@angular/core'
 import { createPromptRun, proposalHeading, proposalStatus } from '@formancy/builder-core'
+import { takeHostOutOfLayout } from './host.js'
 import { BuilderTextPipe } from './text.pipe.js'
 import type { AskModel, BuilderSession, PromptRun, PromptRunState, Scenario } from './types.js'
 
@@ -215,6 +216,7 @@ export class FormancyPromptPane {
   private readonly injector = inject(Injector)
 
   constructor() {
+    takeHostOutOfLayout()
     let unsubscribe: (() => void) | undefined
     effect(() => {
       const run = this.held()

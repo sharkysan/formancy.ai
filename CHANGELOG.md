@@ -10,6 +10,22 @@ later.
 
 ## Unreleased
 
+**Fixed: the Angular builder laid its panes out differently from the React one.** On the
+Translations tab the table a translator works in was squeezed into the narrow column of two,
+with the preview pushed under it, and in another language the model's review was squeezed the
+same way. Angular draws every component in an element of its own, and the element for the
+review, empty on the default language, took the first cell of the pane's grid. In the
+playground, the field tree under the prompt box and the arrangement's node panel also sat 14px
+higher than in React, and the options editor's "Choices" had 13px above it that React's does
+not have. **Every element `@formancy/builder-angular` draws a component in now takes no part in
+layout**, as the renderer's have since 0079: `display: contents`, set through CSSOM so a strict
+`style-src` needs no nonce. **A stylesheet that gave a `formancy-*` element a box — a margin, a
+border, a grid placement — no longer applies; style the part inside it**, as a stylesheet for the
+React builder always has. "Choices" is a label for its list rather than a heading, as it is in
+React. `pnpm test:browser` now measures every part of the two builders against each other in
+five views of the starter, which failed on formancy.ai as deployed
+([0174](docs/decisions/0174-the-builders-hosts-take-no-part-in-layout.md)).
+
 **Fixed: a NUL character in a request was a `500`, and two lines at `error` anybody could write.**
 PostgreSQL holds no U+0000 in `text` or `jsonb`, and nothing looked before asking it: a NUL in a
 form's path — `GET /f/contact%00-us`, the public read no limit counts — a sign-in's email, a
