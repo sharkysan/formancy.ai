@@ -3,6 +3,7 @@ import type { FastifyBaseLogger, FastifyInstance, FastifyRequest } from 'fastify
 import { offerUpload, resolveForm, screenUpload } from '@formancy/server-core'
 import type { Actor, FileRecord, ServerDeps } from '@formancy/server-core'
 import type { FileStore } from '../file-store.js'
+import { attachment } from '../header-values.js'
 import { limited } from '../rate-limits.js'
 import type { Budget } from '../rate-limits.js'
 
@@ -352,12 +353,9 @@ export async function fileRoutes(
         .header('content-type', 'application/octet-stream')
         .header('x-content-type-options', 'nosniff')
         .header('content-security-policy', "default-src 'none'; sandbox")
-        // The reader's own name for it, quoted and stripped of anything that
-        // could end the header early.
-        .header(
-          'content-disposition',
-          `attachment; filename="${file.name.replace(/["\r\n]/g, '')}"`,
-        )
+        // The respondent's own name for it, which can be anything: encoded, since Node
+        // refuses a header holding most of what a name can (0175).
+        .header('content-disposition', attachment(file.name))
         .send(stream)
     )
   })

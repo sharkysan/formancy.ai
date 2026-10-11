@@ -590,6 +590,9 @@ refused by `server/nul-characters.ts`, one hook on the root instance before any 
 storage's users and API keys moved to `server/postgres-identities.ts` when that check would have
 taken `postgres-storage.ts` past the size budget: who may sign in changes for its own reason, as a
 form's examples do.
+`server/header-values.ts` makes a response header's value from data — a file's name, a form's
+path — in what Node will write, and is the only place a route may get one from
+([0175](../decisions/0175-a-name-goes-into-a-header-encoded.md)).
 
 ## Starter template collection and gallery
 

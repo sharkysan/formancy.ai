@@ -1,7 +1,9 @@
+import { channel } from 'node:diagnostics_channel'
+import { Readable } from 'node:stream'
 import { afterEach, describe, expect, test } from 'vitest'
-import type { FastifyInstance } from 'fastify'
+import type { FastifyInstance, RouteOptions } from 'fastify'
 import { createMemoryStorage } from '@formancy/server-core'
-import type { Storage } from '@formancy/server-core'
+import type { Completer, Storage } from '@formancy/server-core'
 import { createApp } from './app.js'
 import type { AppOptions } from './app.js'
 import type { LogSink } from './server-log.js'
@@ -196,5 +198,141 @@ describe('a 4xx', () => {
 
     expect(answered.statusCode).toBe(409)
     expect(answered.json()).toEqual({ statusCode: 409, error: 'Conflict', message: 'That form is being changed; try again.' })
+  })
+
+  test('from a fault, under a 4xx its reply already had, says only that status', async () => {
+    // Fastify keeps a reply's status when it is already 400 or more, so a fault thrown after a
+    // route chose one — or while its refusal was being written, as a header Node would not
+    // write did on every route — was answered under that 4xx with the fault's own words:
+    // `ERR_INVALID_CHAR` and Node's sentence under `401 Unauthorized` (0175). Only an error
+    // that names its own status wrote its words for the client.
+    const planted = await plain()
+    planted.get('/planted', async (_request, reply) => {
+      reply.code(404)
+      throw new Error('planted-words-3e7b from below')
+    })
+
+    const answered = await planted.inject({ method: 'GET', url: '/planted' })
+
+    expect(answered.statusCode).toBe(404)
+    expect(answered.json()).toEqual({ statusCode: 404, error: 'Not Found', message: 'Not Found' })
+  })
+})
+
+/** A header value Node refuses to write: U+0001 is no character a header may hold. */
+const UNWRITABLE = 'planted\u0001value'
+
+/** A plain app, with a route of the case's own beside every route the server has. */
+async function plain(options: Partial<AppOptions> = {}): Promise<FastifyInstance> {
+  app = await createApp(createMemoryStorage(), { authSecret: 'a-test-secret-that-is-long-enough-to-sign', ...options })
+  return app
+}
+
+describe('an error thrown while the headers are written', () => {
+  // Node checks a header's value when the reply is written, after the route has answered, and
+  // throws `ERR_INVALID_CHAR`. Fastify answers that error with the headers the reply already
+  // had, so the error's own reply failed the same way, and Fastify's last resort wrote it
+  // without running any hook: `ERR_INVALID_CHAR` and Node's sentence naming the header, in a
+  // 500 — the way a file's name outside Latin-1 reached its downloader (0175).
+
+  test('is answered as any 5xx, without the header, and the log says what was thrown', async () => {
+    const log = capture()
+    const planted = await plain({ log: { sink: log.sink, level: 'info' } })
+    planted.get('/planted', async (_request, reply) => reply.header('x-planted', UNWRITABLE).send({ ok: true }))
+
+    const answered = await planted.inject({ method: 'GET', url: '/planted' })
+
+    expect(answered.statusCode).toBe(500)
+    expect(answered.json()).toEqual({ statusCode: 500, error: 'Internal Server Error', message: 'Internal Server Error' })
+    expect(answered.headers['x-planted']).toBeUndefined()
+    // The operator still learns which route failed and how, from the line Fastify writes.
+    expect(log.lines()).toContainEqual(
+      expect.objectContaining({ event: 'request.failed', route: '/planted', status: 500, kind: 'TypeError', code: 'ERR_INVALID_CHAR' }),
+    )
+  })
+
+  test('is answered the same when the body is a stream, which is how a file is served', async () => {
+    // A stream's headers are set one by one before it is piped, rather than written at once:
+    // the other place Node checks them, and the one the download route reaches.
+    const planted = await plain()
+    planted.get('/planted', async (_request, reply) =>
+      reply.header('content-disposition', `attachment; filename="${UNWRITABLE}"`).send(Readable.from([Buffer.from('bytes')])),
+    )
+
+    const answered = await planted.inject({ method: 'GET', url: '/planted' })
+
+    expect(answered.statusCode).toBe(500)
+    expect(answered.json()).toEqual({ statusCode: 500, error: 'Internal Server Error', message: 'Internal Server Error' })
+    expect(answered.headers['content-disposition']).toBeUndefined()
+  })
+
+  test('leaves a 4xx its own words and drops the header', async () => {
+    // The error's reply carries every header the route set before it threw. Without the one
+    // that cannot be written dropped, a refusal became Node's sentence under the refusal's
+    // status: a 409 saying `Invalid character in header content`.
+    const planted = await plain()
+    planted.get('/planted', async (_request, reply) => {
+      reply.header('x-planted', UNWRITABLE)
+      throw Object.assign(new Error('That form is being changed; try again.'), { statusCode: 409 })
+    })
+
+    const answered = await planted.inject({ method: 'GET', url: '/planted' })
+
+    expect(answered.json()).toEqual({ statusCode: 409, error: 'Conflict', message: 'That form is being changed; try again.' })
+    expect(answered.headers['x-planted']).toBeUndefined()
+  })
+})
+
+describe('every route the server registers', () => {
+  test('answers a reply whose header cannot be written without a word of what Node threw', async () => {
+    // The two cases above on one planted route; this is every route, read from the route table
+    // as Fastify registers it — through the `fastify.initialization` channel the rate limits'
+    // guard uses (0170) — with a header Node cannot write put on every request before its
+    // route runs. A hook a route or a plugin adds after the one that drops it could put one
+    // back, or throw while the error's reply is sent, and either goes out through Fastify's
+    // last resort with Node's words: that is what each answer here is read for.
+    const routes: Array<{ method: string; url: string }> = []
+    const initialization = channel('fastify.initialization')
+    const watch = (message: unknown): void => {
+      const { fastify } = message as { fastify: FastifyInstance }
+      fastify.addHook('onRoute', (route: RouteOptions) => {
+        for (const method of [route.method].flat()) routes.push({ method, url: route.url })
+      })
+      fastify.addHook('onRequest', async (_request, reply) => {
+        reply.header('x-planted', UNWRITABLE)
+      })
+    }
+    const completer: Completer = { complete: () => Promise.resolve({ ok: true, text: '{}' }) }
+    const never = (): Promise<never> => Promise.reject(new Error('the file store was reached'))
+    let server: FastifyInstance
+    initialization.subscribe(watch)
+    try {
+      server = await plain({
+        challengeSecret: 'a-challenge-secret-long-enough-to-sign-with',
+        fileStore: { put: never, open: never, remove: never, sizeOf: never },
+        model: { provider: 'anthropic', model: 'claude-test', completer },
+      })
+    } finally {
+      initialization.unsubscribe(watch)
+    }
+
+    // A guard on the guard: a hook that stopped seeing routes would leave nothing to read.
+    expect(routes.map(({ method, url }) => `${method} ${url}`)).toEqual(
+      expect.arrayContaining(['GET /f/:path/files/:id', 'GET /f/:path/submissions/export.csv', 'HEAD /f/:path/files/:id']),
+    )
+
+    const spoke: string[] = []
+    // And a path no route has, which Fastify's own not-found handler answers.
+    for (const { method, url } of [...routes, { method: 'GET', url: '/no/such/route' }]) {
+      const answered = await server.inject({
+        method: method as 'GET',
+        url: url.replace(/:([^/]+)/g, (_, name: string) => `${name}-1`),
+        ...(method === 'GET' || method === 'HEAD' ? {} : { payload: {} }),
+      })
+      if (/ERR_INVALID_CHAR|Invalid character|x-planted/.test(answered.body) || answered.headers['x-planted'] !== undefined) {
+        spoke.push(`${method} ${url}: ${String(answered.statusCode)} ${answered.body}`)
+      }
+    }
+    expect(spoke).toEqual([])
   })
 })

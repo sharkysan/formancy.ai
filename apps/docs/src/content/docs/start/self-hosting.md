@@ -518,6 +518,13 @@ The CSV unions its columns across every schema version the form has had, so
 data outlives the field that collected it. Values that a spreadsheet would
 execute as a formula are neutralised on the way out.
 
+It downloads as the form's path and `-submissions.csv`. A path with anything in
+it a quoted ASCII name cannot hold — a letter outside English, a line break, a
+quote — is written into the header twice, readably with `_` in its place and exactly in `filename*`, as
+RFC 6266 has it. `v0.4.0` and every release before it answered the export of a
+path outside Latin-1, or with a control character in it, with a `500`
+([0175](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0175-a-name-goes-into-a-header-encoded.md)).
+
 ### Machine access
 
 ```bash

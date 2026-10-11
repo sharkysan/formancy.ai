@@ -303,9 +303,23 @@ its own status, so nothing a database, a disk or a library said reaches the clie
 ([0172](../decisions/0172-a-5xx-says-nothing-of-what-was-thrown.md)). It is done in
 `server/error-replies.ts` by two hooks rather than an error handler, because Fastify writes its
 line about an error only from its own default handler: `onError` remembers what was thrown, and
-`onSend` replaces an error's 5xx body once the status is final. A 4xx, and a 5xx a route answers
-itself, are left as they were. Neither hook reads the log, so an app given none withholds the
-same words.
+`onSend` replaces an error's 5xx body once the status is final. A 4xx from an error that names its
+own status, and a 5xx a route answers itself, are left as they were; a fault answered under a 4xx
+the reply already had says only that status. Neither hook reads the log, so an app given none
+withholds the same words.
+
+`onSend` also drops from an error's reply every header Node's own `validateHeaderName` and
+`validateHeaderValue` refuse. Node checks a header when the reply is written, after the route, and
+Fastify answers that error with the headers the reply already had, so the error's reply failed on
+the same header and went out through Fastify's last resort, which runs no hook — with Node's code
+and sentence in it ([0175](../decisions/0175-a-name-goes-into-a-header-encoded.md)). That a
+header is not built that way in the first place is the other half: **a response header made
+from data is made in `server/header-values.ts`**, where `attachment(name)` puts a name somebody
+else chose into `content-disposition` as RFC 6266 and RFC 8187 have it — a quoted ASCII
+`filename`, and the exact name percent-encoded in `filename*` when ASCII lost anything. A file's
+name and a form's path are the two headers built from data, and `header-values.test.ts` reads the
+server's sources through the TypeScript compiler for any argument to a call that writes a header
+that is neither a literal type nor made there.
 
 A refusal is not a failure either, and a character PostgreSQL cannot hold — the NUL, U+0000, in
 `text` or `jsonb` — was one anybody could turn into a `500` and two lines at `error`. So it is

@@ -41,6 +41,7 @@ import type { ServerLogSettings } from './server-log.js'
 import { withholdServerErrors } from './error-replies.js'
 import { refuseNulCharacters } from './nul-characters.js'
 import { auditTrail } from './audit-trail.js'
+import { attachment } from './header-values.js'
 
 export { CHALLENGE_HEADER, SCHEMA_HASH_HEADER, SUBMISSION_TOKEN_HEADER } from './headers.js'
 
@@ -397,7 +398,8 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
       })
       return reply
         .header('content-type', 'text/csv; charset=utf-8')
-        .header('content-disposition', `attachment; filename="${path}-submissions.csv"`)
+        // The path is the author's, and a path can hold what a header cannot (0175).
+        .header('content-disposition', attachment(`${path}-submissions.csv`))
         .send(csv)
     },
   )

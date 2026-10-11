@@ -163,6 +163,15 @@ because it is what the reader called it, and it is display only.
 Authenticated, `Content-Disposition: attachment`, `nosniff`, and a sandboxing
 CSP. Never inline.
 
+Under the name the respondent gave it, whatever that is. A name in plain ASCII is
+`filename="notes.pdf"`; one with anything else in it is written twice, readably
+with `_` for each character ASCII cannot hold and exactly, percent-encoded as
+UTF-8, in `filename*` — `filename="__ _.pdf"; filename*=UTF-8''%E6%97%A5%E6%9C%AC%20%E2%82%AC.pdf`
+for `日本 €.pdf` — as RFC 6266 has it, which has a reader that knows `filename*`
+prefer it. `v0.4.0`, and every release from `v0.2.0`, could not serve a file named
+outside Latin-1 or with a control character in its name: the download was a `500`
+([0175](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0175-a-name-goes-into-a-header-encoded.md)).
+
 A separate hostname is the right answer to stored XSS via an uploaded HTML or
 SVG file, and a single-container deployment has not got one — forcing a
 download is the accommodation, and it is the one place this deployment model
