@@ -361,14 +361,21 @@ describe('a counter slower than its bound', () => {
     // Abandoned only in the process, a count went on waiting for the lock on the database and
     // held its connection until whoever held the lock let go. Ended there at the bound, it frees
     // the connection without a cancel request, which would cost a connection more.
-    const a = await replica({}, { timeoutMs: 300 })
+    //
+    // Three seconds, where the cases around it bound a count at 300 ms: the count is on the
+    // database for as long as its bound, and this case has to see it there before it ends. At
+    // 300 ms a runner that took longer than that to make its first look found nothing waiting,
+    // and failed on main (a0e8905) with the count already ended, which is the behaviour it
+    // asserts. A longer bound changes when the database ends the count, not whether.
+    const a = await replica({}, { timeoutMs: 3_000 })
     const unlock = await lockTheCounter()
 
     try {
       const admitted = submit(a)
       // On the database and waiting, or the next line would pass without a count to end.
-      await vi.waitFor(async () => expect(await countsWaitingForTheLock()).toBe(1))
+      await vi.waitFor(async () => expect(await countsWaitingForTheLock()).toBe(1), { timeout: 2_000 })
       expect(await admitted).toBe(404)
+      // The lock is still held: only the database's own bound can have ended it.
       await vi.waitFor(async () => expect(await countsWaitingForTheLock()).toBe(0), { timeout: 3_000 })
     } finally {
       await unlock()
