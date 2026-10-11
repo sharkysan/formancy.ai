@@ -105,7 +105,7 @@ type into the form.
 ### Add a field. Set a rule. See it work.
 
 <p align="center">
-  <img src="./docs/images/readme/builder.png" alt="The self-hosted admin editing a conference registration: the structure tree with a nested group and a repeater, a live two-column preview with a grid of colleagues and a calculated total, and the property panel for the selected field" width="100%" />
+  <img src="./docs/images/readme/builder.png" alt="The self-hosted admin editing a conference registration: the structure tree with a nested group and a repeater, a live two-column preview with a grid of colleagues and a calculated total, and beside it the form's examples, all holding, above the property panel for the selected field" width="100%" />
 </p>
 
 A real registration form, open in the admin: a group of attendee details, a
@@ -115,8 +115,10 @@ colleagues on one invoice, a file and a total the engine calculates.
 Add and organise fields in the structure tree, see the form in the live preview,
 and edit labels, validation and other settings in the property panel — each with
 a sentence saying what it does to the data. Arrange fields side by side or into
-sections by drag or by keyboard. The admin reopens published forms and reports
-which changes would invalidate the submissions you already have.
+sections by drag or by keyboard. Above the properties, the form's own examples run
+after every edit, and a publish names any it would stop holding. The admin reopens
+published forms and reports which changes would invalidate the submissions you
+already have.
 
 ### Click an answer. Watch the form adapt.
 
@@ -200,12 +202,21 @@ would be submitted. Switch language or theme without reloading.
   a phone number is typed and stores `5551234567`. Where a typed, deleted or pasted
   character lands is decided once for both renderers, and the server refuses an answer
   that does not fill the mask, because the engine does.
-- **AI-assisted authoring.** Describe a form in the builder, or give your coding
-  agent the MCP tools to author and validate a form definition. A self-hosted server can
-  hold the model — Claude, OpenAI's models or Grok, the operator's choice — with the key on
+- **AI-assisted authoring.** Describe a change in the builder, have a model translate
+  what a language is missing or draft examples from what you say the form should do —
+  every answer checked, diffed and reviewed before it lands — or give your coding agent
+  the MCP tools to author and validate a form definition. On formancy.ai you carry each
+  request to your own Claude and paste the answer back; a self-hosted server can hold the
+  model instead — Claude, OpenAI's models or Grok, the operator's choice — with the key on
   the server rather than in a browser.
+- **Every word in the reader's language.** The questions come from the form's own
+  catalogue, and the renderers' own words — Next, Submit, a row's buttons, what a field
+  announces while a file is sent — follow them, in English, German or French, or a
+  language you add a message at a time.
 - **No third party in the loop.** Spam protection is proof of work computed in
-  the visitor's browser and verified with your own key, not a captcha service.
+  the visitor's browser and verified with your own key, not a captcha service. formancy.ai
+  and the admin load their fonts and editor from themselves, and a browser test fails the
+  site on any request to another host.
 - **Apache-2.0, all of it.** The spec, engine, renderers, builder and backend.
 
 ## Start from a template
@@ -294,7 +305,8 @@ stores the submitted answers. These pieces share the same form model:
 packages/spec           schema types, JSON Schema, canonical hash, diffing,
                         i18n and layout resolution
 packages/expressions    CEL parse/check/compile/evaluate + deterministic metering
-packages/core           the headless reactive engine (rules, rows, wizard, a11y ids)
+packages/core           the headless reactive engine (rules, rows, wizard, a11y ids),
+                        and the renderers' words in each language (core/words)
 packages/react          React binding: hooks, unstyled components, error summary
 packages/angular        Angular binding: signals over the same protocol, zoneless
 packages/conformance    the behaviour + accessibility contract, published so another
