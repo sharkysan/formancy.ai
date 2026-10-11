@@ -1,6 +1,7 @@
 # 0168 — The server keeps a log, and a line is built from a list of fields
 
-- **Status:** accepted
+- **Status:** accepted; a `500` answering with the error's message, which it left, decided by
+  [0172](0172-a-5xx-says-nothing-of-what-was-thrown.md)
 - **Date:** 2026-10-10
 - **Deciders:** Daniel Bacher
 - **Verified by:** `packages/server/src/server.integration.test.ts`, *what reaches the log*, on

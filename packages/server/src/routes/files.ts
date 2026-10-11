@@ -178,61 +178,74 @@ export async function fileRoutes(
       },
     )
 
-    byteRoutes.put('/f/:path/files/:id', async (request, reply) => {
-      if (fileStore === undefined) return reply.code(501).send({ error: 'uploads_unavailable' })
+    byteRoutes.put(
+      '/f/:path/files/:id',
+      {
+        // Counted before the body is read, which is the point: an offer makes a place, not one
+        // attempt at it, and every attempt is read whole — up to the deployment's ceiling on a
+        // file — before the route can refuse it, and one that matches its offer is scanned. The
+        // offer's budget, counted apart from the offers, so a respondent may send each file they
+        // offered. Admitted uncounted, as the offer is: refusing the bytes of a file whose offer
+        // went through would fail every file field while the counter does, and the route needs
+        // the database for the file's row anyway.
+        config: { rateLimit: limited(submissionLimit, 'admit') },
+      },
+      async (request, reply) => {
+        if (fileStore === undefined) return reply.code(501).send({ error: 'uploads_unavailable' })
 
-      const { path, id } = request.params as { path: string; id: string }
-      const form = await storage.getFormByPath(path)
-      if (form === undefined) return reply.code(404).send({ error: 'unknown_form' })
+        const { path, id } = request.params as { path: string; id: string }
+        const form = await storage.getFormByPath(path)
+        if (form === undefined) return reply.code(404).send({ error: 'unknown_form' })
 
-      const file = await storage.getFile(id)
-      // Checked against the form in the URL: an id alone must not be enough to
-      // write bytes into a form somebody cannot submit to.
-      if (file === undefined || file.formId !== form.id) {
-        return reply.code(404).send({ error: 'unknown_file' })
-      }
-      if (file.state !== 'offered') {
-        // An upload is once. Re-writing a claimed file would change what a
-        // stored submission says was attached to it.
-        return reply.code(409).send({ error: 'already_uploaded' })
-      }
+        const file = await storage.getFile(id)
+        // Checked against the form in the URL: an id alone must not be enough to
+        // write bytes into a form somebody cannot submit to.
+        if (file === undefined || file.formId !== form.id) {
+          return reply.code(404).send({ error: 'unknown_file' })
+        }
+        if (file.state !== 'offered') {
+          // An upload is once. Re-writing a claimed file would change what a
+          // stored submission says was attached to it.
+          return reply.code(409).send({ error: 'already_uploaded' })
+        }
 
-      const bytes = request.body
-      if (!Buffer.isBuffer(bytes)) return reply.code(400).send({ error: 'no_body' })
-      if (bytes.byteLength > maxFileBytes) return reply.code(413).send({ error: 'too_large' })
-      if (bytes.byteLength !== file.size) {
-        // The offer named a size and the offer is what was checked against the
-        // field's limit. Accepting a different number of bytes would make that
-        // check a suggestion.
-        return reply.code(400).send({
-          error: 'size_mismatch',
-          message: `This upload was offered as ${String(file.size)} bytes and ${String(bytes.byteLength)} arrived.`,
-        })
-      }
+        const bytes = request.body
+        if (!Buffer.isBuffer(bytes)) return reply.code(400).send({ error: 'no_body' })
+        if (bytes.byteLength > maxFileBytes) return reply.code(413).send({ error: 'too_large' })
+        if (bytes.byteLength !== file.size) {
+          // The offer named a size and the offer is what was checked against the
+          // field's limit. Accepting a different number of bytes would make that
+          // check a suggestion.
+          return reply.code(400).send({
+            error: 'size_mismatch',
+            message: `This upload was offered as ${String(file.size)} bytes and ${String(bytes.byteLength)} arrived.`,
+          })
+        }
 
-      // One request receives a file's bytes at a time (0153). Taken after the checks above,
-      // so a request that was never going to be kept does not hold the file against one that
-      // is.
-      const now = deps.nowIso()
-      const lease = new Date(Date.parse(now) + RECEIVE_LEASE_MS).toISOString()
-      if (!(await storage.leaseFile(file.id, now, lease))) {
-        return reply.code(409).send({
-          error: 'busy',
-          message: "Another request is sending this file's bytes, so these were not kept. Try again in a moment.",
-        })
-      }
+        // One request receives a file's bytes at a time (0153). Taken after the checks above,
+        // so a request that was never going to be kept does not hold the file against one that
+        // is.
+        const now = deps.nowIso()
+        const lease = new Date(Date.parse(now) + RECEIVE_LEASE_MS).toISOString()
+        if (!(await storage.leaseFile(file.id, now, lease))) {
+          return reply.code(409).send({
+            error: 'busy',
+            message: "Another request is sending this file's bytes, so these were not kept. Try again in a moment.",
+          })
+        }
 
-      // Every way out that does not keep the bytes gives the file back, and before the reply:
-      // a client that sends this file again, as it is told to, must not find it still held.
-      const answer = await receive(fileStore, file, bytes, lease, request.log).catch(
-        async (error: unknown) => {
-          await giveBack(file.id, lease, request.log)
-          throw error
-        },
-      )
-      if (answer.status !== 204) await giveBack(file.id, lease, request.log)
-      return reply.code(answer.status).send(answer.body)
-    })
+        // Every way out that does not keep the bytes gives the file back, and before the reply:
+        // a client that sends this file again, as it is told to, must not find it still held.
+        const answer = await receive(fileStore, file, bytes, lease, request.log).catch(
+          async (error: unknown) => {
+            await giveBack(file.id, lease, request.log)
+            throw error
+          },
+        )
+        if (answer.status !== 204) await giveBack(file.id, lease, request.log)
+        return reply.code(answer.status).send(answer.body)
+      },
+    )
   })
 
   /**

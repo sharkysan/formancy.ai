@@ -297,6 +297,11 @@ export interface Storage {
   forgetExpiredChallenges(beforeIso: string): Promise<number>
 
   insertFile(record: FileRecord): Promise<void>
+  /**
+   * The file with this id, or `undefined` for an id no file has — one in no shape this storage's
+   * ids take included. It arrives from a URL and from a response, as anybody wrote it, so it is an
+   * unknown file and never an error.
+   */
   getFile(id: string): Promise<FileRecord | undefined>
 
   /**
@@ -347,6 +352,7 @@ export interface Storage {
    * a table nobody looks at, which is the same as not having it.
    */
   deadDeliveries(limit: number): Promise<DeliveryRecord[]>
+  /** As `getFile`: `undefined` for an id no delivery has, whatever its shape, since it arrives from a URL. */
   getDelivery(id: string): Promise<DeliveryRecord | undefined>
   /** Oldest first, only those due. */
   claimDueDeliveries(nowIso: string, limit: number): Promise<DeliveryRecord[]>

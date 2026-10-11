@@ -250,6 +250,17 @@ bytes, though not the row, and the supplied clamd adapter does not keep a scan i
 Hazard B10 in [`SAFETY-ANALYSIS.md`](SAFETY-ANALYSIS.md) has both, and
 [0153](../decisions/0153-a-file-is-received-by-one-request-at-a-time.md) the fix.
 
+**Every release through `0.4.0` answers a request that fails on the server with what was
+thrown.** Fastify's default reply to an error carries its message: for a database error the
+failing query and its parameters, for a full disk the path it could not write. From `0.2.0`, a
+file's id that is not a uuid — in the address that reads a file or receives its bytes, or in a
+response naming its attachments, the last two public — is such a failure, so anybody could have
+the query and the id they sent read back to them. And the route that receives a file's bytes has
+no rate limit. Fixed after `0.4.0`: a 5xx says its status and nothing of what was thrown, such an
+id is an unknown file, and the bytes are limited as their offer is
+([0172](../decisions/0172-a-5xx-says-nothing-of-what-was-thrown.md)); see the changelog. A NUL
+byte in a form's path or a sign-in's email is still a `500`, now without words.
+
 **Measured functional gaps.** Against the official CEL corpus: 2,344 cases
 total, 704 in scope and run, **586 passed and 118 failed**, 2 refused
 deliberately by formancy's own policy, 1,638 excluded as out of scope. The 118

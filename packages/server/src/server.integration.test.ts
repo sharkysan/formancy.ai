@@ -1041,6 +1041,41 @@ describe('uploaded files', () => {
     expect(after[0]?.['n']).toBe(before[0]?.['n'])
   })
 
+  /**
+   * An id PostgreSQL cannot read as a uuid was a `500`: the column refused the comparison
+   * with `22P02`, and the reply carried the query and the id until 0172. Every suite but this
+   * one runs on the in-memory storage, which only finds no such file — so the two storages
+   * disagreed, and nothing could see it but real SQL.
+   */
+  test('an id that is not one names no file, to read or to send bytes to', async () => {
+    const read = await app.inject({ method: 'GET', url: '/f/claim/files/not-a-file-id', headers: asAdmin() })
+    const sent = await app.inject({
+      method: 'PUT',
+      url: '/f/claim/files/not-a-file-id',
+      headers: { 'content-type': 'application/pdf' },
+      payload: Buffer.from('%PDF-1.4 pretend'),
+    })
+
+    expect({ status: read.statusCode, body: read.json() }).toEqual({ status: 404, body: { error: 'unknown_file' } })
+    expect({ status: sent.statusCode, body: sent.json() }).toEqual({ status: 404, body: { error: 'unknown_file' } })
+  })
+
+  test('and a submission naming one is refused as naming an unknown file', async () => {
+    // The third way an id from outside reaches the files table, and the public one: a response
+    // names its attachments by id. A whole file value, or the engine refuses it as malformed
+    // before any file is looked up.
+    const named = { id: 'not-a-file-id', name: 'a.pdf', size: 8, contentType: 'application/pdf', storageKey: 'a' }
+    const submitted = await app.inject({
+      method: 'POST',
+      url: '/f/claim/submissions',
+      headers: { [SCHEMA_HASH_HEADER]: hash, ...(await handedOut('claim')) },
+      payload: { reference: 'A-3', evidence: [named] },
+    })
+
+    expect(submitted.statusCode).toBe(422)
+    expect(submitted.json()).toEqual({ error: 'invalid', errors: { _files: ['unknown_file:not-a-file-id'] } })
+  })
+
   test('one file, one submission: the second one loses and rolls back', async () => {
     const file = await upload()
     // Two responses, each with its own token: what races here is the file, not the response.
@@ -1695,18 +1730,22 @@ describe('an upload the deployment scans', () => {
 
         const failing = put(file, first, releasing)
         await write.reached
-        write.fail(new Error('ENOSPC: no space left on device'))
+        // As a disk says it: its code, and a sentence naming the path it could not write.
+        write.fail(Object.assign(new Error("ENOSPC: no space left on device, write '/data/files/claim'"), { code: 'ENOSPC' }))
         const answered = await failing
 
-        // Rethrown after a release that failed, the release's error replaced it: a reply
-        // about a dropped connection, for a disk that had filled.
+        // Rethrown after a release that failed, the release's error replaced it: a request
+        // failed for a dropped connection, for a disk that had filled. Which error answered is
+        // the log's to say, by the disk's code. The reply says neither: until 0172 this case
+        // asserted the disk's sentence reaching whoever sent the file.
         expect(answered.statusCode).toBe(500)
-        expect(answered.json()).toMatchObject({ message: 'ENOSPC: no space left on device' })
+        expect(answered.json()).toEqual({ statusCode: 500, error: 'Internal Server Error', message: 'Internal Server Error' })
+        expect(answered.body).not.toMatch(/ENOSPC|no space|\/data\/|Connection terminated/)
         // The release that failed is said in the log, as one, beside the failure it did
         // not replace.
         const events = released.map((line) => JSON.parse(line) as { event: string; level: string })
         expect(events).toContainEqual(expect.objectContaining({ event: 'upload.unreleased', level: 'error' }))
-        expect(events).toContainEqual(expect.objectContaining({ event: 'request.failed', status: 500 }))
+        expect(events).toContainEqual(expect.objectContaining({ event: 'request.failed', status: 500, code: 'ENOSPC' }))
         expect(released.join('')).not.toContain('Connection terminated')
       })
 
@@ -2104,6 +2143,13 @@ describe('dead letters', () => {
 
     expect(missing.statusCode).toBe(404)
   })
+
+  test('so is one whose id is not one, rather than a 500 from the column', async () => {
+    // The same lookup by an id from a URL as a file's, on the management plane.
+    const missing = await app.inject({ method: 'POST', url: '/deliveries/not-a-delivery-id/replay', headers: asAdmin() })
+
+    expect({ status: missing.statusCode, body: missing.json() }).toEqual({ status: 404, body: { error: 'unknown_delivery' } })
+  })
 })
 
 
@@ -2485,19 +2531,33 @@ describe('what reaches the log', () => {
     // line fails it, and so does a request with no line.
     const written: string[] = []
     const providerWords = `invalid x-api-key for planted-org-${randomUUID()}`
-    const swept = await createApp(createPostgresStorage(sql), {
-      authSecret: 'integration-test-secret-with-length',
-      submissionRateLimit: { max: 10_000, timeWindowMs: 60_000 },
-      loginRateLimit: { max: 10_000, timeWindowMs: 60_000 },
-      challengeSecret: 'challenge-signing-key-of-real-length',
-      fileStore,
-      model: {
-        provider: 'anthropic',
-        model: 'claude-test',
-        completer: { complete: () => Promise.resolve({ ok: false, failure: 'unavailable', status: 401, cause: providerWords }) },
+    const storage = createPostgresStorage(sql)
+    const swept = await createApp(
+      {
+        ...storage,
+        // A database error raised by PostgreSQL itself, quoting what the request carried: the
+        // file lookup asks it to read the id as a uuid first, as the storage did until 0172. No
+        // route reaches one with a planted value any more, and the log must still be shown to
+        // keep such an error's words out.
+        getFile: async (id) => {
+          await sql`SELECT ${id}::uuid`
+          return storage.getFile(id)
+        },
       },
-      log: { sink: { write: (line: string) => written.push(line) }, level: 'trace' },
-    })
+      {
+        authSecret: 'integration-test-secret-with-length',
+        submissionRateLimit: { max: 10_000, timeWindowMs: 60_000 },
+        loginRateLimit: { max: 10_000, timeWindowMs: 60_000 },
+        challengeSecret: 'challenge-signing-key-of-real-length',
+        fileStore,
+        model: {
+          provider: 'anthropic',
+          model: 'claude-test',
+          completer: { complete: () => Promise.resolve({ ok: false, failure: 'unavailable', status: 401, cause: providerWords }) },
+        },
+        log: { sink: { write: (line: string) => written.push(line) }, level: 'trace' },
+      },
+    )
 
     /**
      * Every string this sweep sends — header values, the path's parameters, query values
@@ -2710,7 +2770,8 @@ describe('what reaches the log', () => {
           })
         ).statusCode,
       ).toBe(400)
-      // An id the database cannot read: its error's message is the query and its parameters.
+      // An id PostgreSQL cannot read as a uuid, asked of it by the storage above: its error's
+      // message quotes the id.
       expect(
         (await send({ method: 'GET', url: `/f/${path}/files/${plant('file-id')}`, headers: asRoot })).statusCode,
       ).toBe(500)

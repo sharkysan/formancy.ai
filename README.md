@@ -74,14 +74,23 @@ separately in your UI and the formancy backend.
 > published to npm from CI with provenance under the
 > [`@formancy`](https://www.npmjs.com/org/formancy) scope.
 >
-> The server is not ready for a public deployment. It has authentication,
-> role-based authorization, forms that are private until opened, per-IP rate
-> limits counted once across replicas, a request body cap, a publish-time check
-> that refuses regular expressions which can be made to backtrack, an audit log, a
-> request log with no field for an answer or a credential, drafts that carry their
-> own key, a proof-of-work challenge for anonymous submissions, and a token every
-> form is handed out with so that a response sent twice is stored once
-> ([0169](./docs/decisions/0169-a-response-is-stored-once.md)).
+> The server is not ready for a public deployment, though its documents no longer
+> name a single gap as the reason. It has authentication, role-based
+> authorization, forms that are private until opened, per-IP rate limits counted
+> once across replicas, a request body cap, a publish-time check that refuses
+> regular expressions which can be made to backtrack, an audit log, a request log
+> with no field for an answer or a credential, replies to a failure on the server
+> that say nothing of what was thrown, drafts that carry their own key, a
+> proof-of-work challenge for anonymous submissions, and a token every form is
+> handed out with so that a response sent twice is stored once
+> ([0169](./docs/decisions/0169-a-response-is-stored-once.md)). What it knowingly
+> lacks is recorded, with what each costs, as debt in
+> [arc42 §11.2](./docs/architecture/11-risks-and-debt.md) and as residual risk in
+> the [safety analysis](./docs/regulatory/SAFETY-ANALYSIS.md). Among it: while its
+> rate-limit counter cannot answer, the public plane has no limit and nobody can
+> sign in; a limit per address does not slow anybody with many addresses;
+> webhooks want a single replica; and a NUL byte in a form's path is a `500` that
+> anybody can repeat. Read both before putting it in front of the public.
 
 ## What you can build
 

@@ -755,13 +755,24 @@ log cannot say which form**: the route is the pattern, so every form's submissio
 route; the audit log, which records a subject, is where a form is named. An error's class and
 code are what the thrown error calls itself, kept only in an identifier's shape: a dependency
 that put an answer in its error's code, in capitals and digits, would have it written, and the
-sweep catches that on the routes it drives and no further. **A `500` still tells its client what
-was thrown**: Fastify's default error reply carries the error's message — for a database error,
-the query and its parameters — to whoever made the request (`server.integration.test.ts`
-asserts a disk's `ENOSPC` reaching the client), which this change does not touch. **Two kinds of
-line say less than the rest:** a request refused while the server closes is refused before it is
-routed, and its line has no method and no route; one whose client left has no status, because
-its answer was never sent. At `warn` and above neither a 4xx nor a client that left is written.
+sweep catches that on the routes it drives and no further. **A `5xx` tells its client nothing of
+what was thrown, since 2026-10-11.** Until then Fastify's default error reply carried the error's
+message — for a database error the query and its parameters, the request's values and those the
+server added beside them — to whoever made the request, on the public plane anybody who could
+make one happen, and `server.integration.test.ts` asserted a disk's `ENOSPC` reaching the client.
+A 5xx now answers its status's name, and a code only for an error made to be answered, such as
+`RATE_LIMIT_UNAVAILABLE`, while Fastify's default handler still writes its `request.failed` line
+([0172](../decisions/0172-a-5xx-says-nothing-of-what-was-thrown.md)); `error-replies.test.ts`
+holds the reply and the line, each case watched failing, and the `ENOSPC` case asserts the
+opposite of what it did. **A 4xx still carries the thrown error's message**: right for the
+refusals Fastify and the server write, wrong for a library's error that names a 4xx of its own —
+a model provider's SDK does — should one escape a route; the model's adapters catch theirs. An
+error thrown while an error's reply is being sent is answered by Fastify's fallback, past the
+hook that withholds the words. And anybody can write a `request.failed` line at `error`: a NUL
+byte in a form's path, on the read no limit counts, is a `500` (measured 2026-10-11, arc42 §11.2).
+**Two kinds of line say less than the rest:** a request refused while the server closes is
+refused before it is routed, and its line has no method and no route; one whose client left has
+no status, because its answer was never sent. At `warn` and above neither a 4xx nor a client that left is written.
 An exception nothing catches is printed by Node, message and stack, outside the rule. And a deployment that
 forwards standard output somewhere sends it every line above: at `info`, one per request, a
 draft's every save included.
@@ -1770,8 +1781,8 @@ does, since it always names a type.
 ### D14. A respondent is refused for submissions that were not theirs
 
 *How it arises:* every limit on the public plane — a submission, a draft's write and read, a
-challenge, a file offer — counts the client's network address, and the deployment view puts a
-reverse proxy in front of the server. Behind one, every request arrives from the proxy's
+challenge, a file offer and its bytes — counts the client's network address, and the deployment
+view puts a reverse proxy in front of the server. Behind one, every request arrives from the proxy's
 address, so a server that believes only the socket gives everybody one budget: thirty
 submissions a minute between all respondents, and the next one is answered `429` for traffic
 that was not theirs. It shipped that way until 2026-10-09: the server constructed Fastify
@@ -2083,8 +2094,9 @@ everybody; to the operator, one line in the request log.
 storage's pool. At most thirty-two counts are sent at once; one still waiting to be sent at the
 bound is dropped unsent, and one sent is ended by the database at the bound, through those
 connections' `statement_timeout`. A count not had within a second is decided by the route's own
-declaration: submissions, drafts, challenges and file offers are admitted uncounted, so forms go
-on being opened and submitted; a sign-in and a request to the model are refused with a `503`.
+declaration: submissions, drafts, challenges, file offers and a file's bytes are admitted
+uncounted, so forms go on being opened and submitted; a sign-in and a request to the model are
+refused with a `503`.
 `shared-rate-limits.integration.test.ts` locks the table and holds that more submissions than
 storage has connections are each admitted within the bound and that a form's read still answers —
 red against the first version — that a count abandoned under the lock is ended by the database,

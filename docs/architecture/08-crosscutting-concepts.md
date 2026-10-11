@@ -287,6 +287,16 @@ server hands Fastify a `LogController` that writes them.
 not one of pino's level names or `off`. Only `main.ts` passes `createApp` a log; an app built
 without one keeps none.
 
+What a failed request answers is held to the same rule from the other side: a 5xx keeps the
+shape of Fastify's reply and says only its status, with a `code` only for an error that named
+its own status, so nothing a database, a disk or a library said reaches the client
+([0172](../decisions/0172-a-5xx-says-nothing-of-what-was-thrown.md)). It is done in
+`server/error-replies.ts` by two hooks rather than an error handler, because Fastify writes its
+line about an error only from its own default handler: `onError` remembers what was thrown, and
+`onSend` replaces an error's 5xx body once the status is final. A 4xx, and a 5xx a route answers
+itself, are left as they were. Neither hook reads the log, so an app given none withholds the
+same words.
+
 The audit log is the other record, and the two do different jobs: the audit log says who did
 what to whose data, in the transaction that did it, and is read by people with the right to;
 the request log says what the server answered, and how long it took, to whoever reads the

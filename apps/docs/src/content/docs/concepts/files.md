@@ -136,6 +136,15 @@ they arrive: a `.json` file is not parsed, a `.txt` file is not decoded, and
 neither is refused for not being the request the server expected. That route
 alone takes any body as bytes; no other route is handed them.
 
+**As often as an offer, from one address.** Sending the bytes is limited as
+offering a file is: thirty a minute per address, counted apart from the offers,
+and answered `429` past that before a byte of the body is read — an offer makes
+a place for a file, not one attempt at it. While the server cannot count, both
+go through uncounted
+([0172](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0172-a-5xx-says-nothing-of-what-was-thrown.md)).
+A file's address with an id the server never hands out — one that is not a
+uuid — is `404 unknown_file`, as a file that is not there is.
+
 **Being allowed to submit is not being allowed to upload… and it is the same
 rule.** The upload gate and the submission gate are one function, because a
 form nobody may submit to is not a form anybody may upload to — otherwise the

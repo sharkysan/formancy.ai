@@ -268,7 +268,8 @@ listed under the sections they belong to above.
 | [0165](0165-a-deployments-model-is-asked-through-its-server.md) | A deployment's model is asked through its server, and the server writes the briefing | accepted; its limit counted per process superseded by 0170 |
 | [0166](0166-a-deployment-keeps-a-forms-examples-and-runs-them-at-publish.md) | A deployment keeps a form's examples, and runs them at publish | accepted |
 | [0167](0167-the-relay-says-what-each-request-carries.md) | A request to a model names its kind, and the relay pane says what that kind carries | accepted |
-| [0168](0168-the-log-is-built-from-a-list-of-fields.md) | The server keeps a log, and a line is built from a list of fields | accepted |
+| [0168](0168-the-log-is-built-from-a-list-of-fields.md) | The server keeps a log, and a line is built from a list of fields | accepted; a `500` answering with the error's message, which it left, decided by 0172 |
 | [0169](0169-a-response-is-stored-once.md) | A response is stored once, under the id it was handed | accepted |
-| [0170](0170-a-limit-is-counted-once-in-the-database-every-replica-shares.md) | A limit is counted once, in the database every replica shares | accepted |
+| [0170](0170-a-limit-is-counted-once-in-the-database-every-replica-shares.md) | A limit is counted once, in the database every replica shares | accepted; a file's bytes, which it left without a limit, limited by 0172 |
 | [0171](0171-the-renderers-words-are-the-forms-language.md) | The renderers' own words are in the form's language, from one catalogue both renderers read | accepted |
+| [0172](0172-a-5xx-says-nothing-of-what-was-thrown.md) | A 5xx says its status and nothing of what was thrown; an id a `uuid` column cannot hold names no row | accepted |

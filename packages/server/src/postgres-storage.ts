@@ -3,7 +3,7 @@ import { drizzle } from 'drizzle-orm/postgres-js'
 import type postgres from 'postgres'
 import type { FormSchema } from '@formancy/spec'
 import type { AuditEntry, FileRecord, Role, Storage } from '@formancy/server-core'
-import { apiKeys, auditLog, auditRow, spentChallenges, deliveries, drafts, files, forms, formVersions, submissions, webhooks } from './db.js'
+import { apiKeys, auditLog, auditRow, spentChallenges, deliveries, drafts, files, forms, formVersions, isUuid, submissions, webhooks } from './db.js'
 import { examplesStorage } from './postgres-examples.js'
 import { users } from './db.js'
 
@@ -268,6 +268,8 @@ export function createPostgresStorage(sql: postgres.Sql): Storage {
     },
 
     async getFile(id) {
+      // An id from a URL or a response: one the column cannot hold is no file, not a 22P02 (0172).
+      if (!isUuid(id)) return undefined
       const [row] = await db.select().from(files).where(eq(files.id, id)).limit(1)
       return row === undefined ? undefined : toFileRecord(row)
     },
@@ -370,6 +372,7 @@ export function createPostgresStorage(sql: postgres.Sql): Storage {
     },
 
     async getDelivery(id) {
+      if (!isUuid(id)) return undefined
       const [row] = await db.select().from(deliveries).where(eq(deliveries.id, id)).limit(1)
       return row === undefined ? undefined : toDeliveryRecord(row)
     },

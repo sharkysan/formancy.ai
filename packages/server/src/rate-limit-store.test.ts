@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { channel } from 'node:diagnostics_channel'
 import { createServer } from 'node:net'
 import type { AddressInfo, Socket } from 'node:net'
@@ -184,13 +185,15 @@ describe('the limits the routes register', () => {
     expect(routes).not.toContain('GET /f/:path')
   })
 
-  test('cover every route somebody without a session reaches, but a form’s read and a file’s bytes', async () => {
+  test('cover every route somebody without a session reaches, but a form’s read', async () => {
     // Derived from the route table and from what each route answers a request with no session,
     // never from a list here: the submission routes moved out of `app.ts` into a plugin of their
     // own while this limit was being written (0169), and a route that moves and leaves its limit
-    // behind is unlimited with every case above still green. Two such routes have no limit: a
-    // form's read, which every visitor makes first (`routes/submissions.ts` says why), and the
-    // bytes for a file, which only an offer — limited — makes a place for, and only once.
+    // behind is unlimited with every case above still green. One such route has no limit: a
+    // form's read, which every visitor makes first (`routes/submissions.ts` says why). The bytes
+    // for a file were the second, on the reasoning that only a limited offer makes a place for
+    // them; but a place takes any number of attempts at it, each read whole before the route
+    // can refuse it, and nothing said that was deliberate.
     const { app, routes, limits } = await built(createMemoryStorage(), { fileStore: unreached() })
     const counted = new Set(limits.map(({ method, url }) => `${method} ${url}`))
 
@@ -205,7 +208,7 @@ describe('the limits the routes register', () => {
     }
 
     expect(counted.size).toBeGreaterThan(5)
-    expect(unlimited.sort()).toEqual(['GET /f/:path', 'PUT /f/:path/files/:id'])
+    expect(unlimited.sort()).toEqual(['GET /f/:path'])
   })
 
   test('each name the window the plugin reads, and say what they do when they cannot be counted', async () => {
@@ -289,6 +292,25 @@ describe('when the counter cannot answer', () => {
 
     // The form does not exist: the request reached the route, past the limit.
     expect(response.statusCode).toBe(404)
+  })
+
+  test('a file’s bytes are admitted uncounted, as the offer that made a place for them is', async () => {
+    // Refusing the bytes while their offer goes through would accept every file a respondent
+    // picks and then refuse it: every file field would fail for as long as the counter does —
+    // the outage of every form with one that admitting exists to prevent — and the route needs
+    // the database for the file's row anyway, so with the database down it fails on its own.
+    const { app } = await built(createMemoryStorage(), { fileStore: unreached(), rateLimitStore: unreachable() })
+
+    const response = await app.inject({
+      method: 'PUT',
+      url: `/f/contact-us/files/${randomUUID()}`,
+      headers: { 'content-type': 'application/pdf' },
+      payload: Buffer.from('%PDF-1.4'),
+    })
+
+    // The form does not exist: the request reached the route, past the limit.
+    expect(response.statusCode).toBe(404)
+    expect(response.json()).toEqual({ error: 'unknown_form' })
   })
 
   test('a login is refused, and the answer says nothing about the database', async () => {
