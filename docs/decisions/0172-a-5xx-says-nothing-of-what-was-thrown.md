@@ -1,6 +1,7 @@
 # 0172 — A 5xx says its status and nothing of what was thrown
 
-- **Status:** accepted
+- **Status:** accepted; a value a `text` column cannot hold, which it left a `500`, decided by
+  [0173](0173-a-nul-character-names-nothing-and-a-body-with-one-is-refused.md)
 - **Date:** 2026-10-11
 - **Deciders:** Daniel Bacher
 - **Verified by:** `packages/server/src/error-replies.test.ts` — a database error whose message is

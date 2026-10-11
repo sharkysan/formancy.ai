@@ -125,7 +125,11 @@ they arrive, which is what a second replica needs.
 `maxFileSize`, and the deployment's ceiling. A browser's file picker filter is
 a convenience for the person filling the form in, and nothing at all to
 somebody posting to the endpoint directly. A size that is not a whole number of
-bytes — a fraction, a negative — is refused there too; zero is a size.
+bytes — a fraction, a negative — is refused there too; zero is a size. A name
+or a type with a NUL character in it is refused before the offer is read,
+`400 nul_character`, as a request body with one is anywhere
+([0173](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0173-a-nul-character-names-nothing-and-a-body-with-one-is-refused.md));
+the bytes themselves may hold NUL bytes like any others.
 
 The offered size is then binding: a different number of bytes is refused, or
 the size check was only a suggestion.

@@ -88,9 +88,8 @@ separately in your UI and the formancy backend.
 > [arc42 §11.2](./docs/architecture/11-risks-and-debt.md) and as residual risk in
 > the [safety analysis](./docs/regulatory/SAFETY-ANALYSIS.md). Among it: while its
 > rate-limit counter cannot answer, the public plane has no limit and nobody can
-> sign in; a limit per address does not slow anybody with many addresses;
-> webhooks want a single replica; and a NUL byte in a form's path is a `500` that
-> anybody can repeat. Read both before putting it in front of the public.
+> sign in; a limit per address does not slow anybody with many addresses; and
+> webhooks want a single replica. Read both before putting it in front of the public.
 
 ## What you can build
 

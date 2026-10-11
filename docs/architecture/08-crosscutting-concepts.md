@@ -297,6 +297,16 @@ line about an error only from its own default handler: `onError` remembers what 
 itself, are left as they were. Neither hook reads the log, so an app given none withholds the
 same words.
 
+A refusal is not a failure either, and a character PostgreSQL cannot hold — the NUL, U+0000, in
+`text` or `jsonb` — was one anybody could turn into a `500` and two lines at `error`. So it is
+decided at the two places every route shares
+([0173](../decisions/0173-a-nul-character-names-nothing-and-a-body-with-one-is-refused.md)): the
+PostgreSQL storage finds no row for a lookup by a value with one, so a route answers it as it
+answers any name nothing has, in its own order; and `server/nul-characters.ts`, a `preValidation`
+hook on the root instance, refuses a body with one in any string or member's name with a `400`
+naming where it sits, after the body is parsed and before any route's own `preHandler`, as a body
+that does not parse is refused. A file's bytes are not looked at.
+
 The audit log is the other record, and the two do different jobs: the audit log says who did
 what to whose data, in the transaction that did it, and is read by people with the right to;
 the request log says what the server answered, and how long it took, to whoever reads the

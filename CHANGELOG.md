@@ -10,6 +10,25 @@ later.
 
 ## Unreleased
 
+**Fixed: a NUL character in a request was a `500`, and two lines at `error` anybody could write.**
+PostgreSQL holds no U+0000 in `text` or `jsonb`, and nothing looked before asking it: a NUL in a
+form's path — `GET /f/contact%00-us`, the public read no limit counts — a sign-in's email, a
+submission's answers, a draft, a schema, a form's examples, a file's name or type, an origin or an
+API key's name failed in the database, each a `500` and two lines at `error`, the failure's and
+the request's, as often as anybody liked. The in-memory storage every other test runs on holds one, so only real
+PostgreSQL saw it. Now **a NUL in an address names nothing**: the route answers as it does for
+anything that is not there — `404 unknown_form` for a form's path — and asks for a session first
+where it needs one. **A body with one in any string or member's name is refused as malformed**,
+before any route runs, `400 {"error":"nul_character","pointer":"/email","message":"…"}`, the JSON
+Pointer saying where it sits so a host can say which answer to correct; a sign-in's is the same
+answer for every address, so it says nothing about which have an account
+([0173](docs/decisions/0173-a-nul-character-names-nothing-and-a-body-with-one-is-refused.md)). The
+body is refused whole, which costs three answers that used to be given: a sign-in whose password
+has a NUL is `400` rather than `401`, and a user created with one through `POST /users`, which
+accepted it, cannot sign in; a model request with one in its text is not sent; and a submission
+with one in an answer the form would have dropped, a hidden field's, is refused rather than stored
+without it. Every other control character, and the bytes of a file, are accepted as before.
+
 **Fixed: a request that failed on the server told whoever made it what was thrown.** A 5xx was
 Fastify's default reply, whose `message` is the thrown error's own: for a database error the
 failing query and its parameters, for a full disk the path it could not write — handed to anybody
@@ -30,7 +49,8 @@ replayed, is a `404` too. **Sending a file's bytes is limited as offering one is
 minute per address, counted apart, `429` before the body is read, and admitted uncounted while the
 count cannot be had — because it was the one public route beside a form's read with no limit,
 nothing said that was meant, and every attempt is read whole, up to the deployment's ceiling on a
-file. A NUL byte in a form's path or a sign-in's email is still a `500`, now without words.
+file. A NUL byte in a form's path or a sign-in's email stayed a `500` here, now without words; the
+entry above fixes it.
 
 **Added: the renderers' own words are in the form's language.** A form's questions are the
 author's, translated in the document; everything a renderer says around them — Next, Back,

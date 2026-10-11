@@ -173,6 +173,12 @@ export interface ExamplesRecord {
 }
 
 export interface Storage {
+  /**
+   * The form at this path, or `undefined` for a path no form has — one holding a character this
+   * storage cannot keep included, such as a NUL in PostgreSQL's `text`. It arrives from a URL, as
+   * anybody wrote it, so it is an unknown form and never an error. `getDraft`, `getUserByEmail`
+   * and `findApiKeysByPrefix` find none the same way: what they look up arrives from a request too.
+   */
   getFormByPath(path: string): Promise<FormRecord | undefined>
   listForms(): Promise<FormRecord[]>
   createForm(record: FormRecord): Promise<void>

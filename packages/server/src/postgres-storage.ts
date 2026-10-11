@@ -2,10 +2,10 @@ import { and, desc, eq, inArray, isNull, lt, lte, max, ne, or } from 'drizzle-or
 import { drizzle } from 'drizzle-orm/postgres-js'
 import type postgres from 'postgres'
 import type { FormSchema } from '@formancy/spec'
-import type { AuditEntry, FileRecord, Role, Storage } from '@formancy/server-core'
-import { apiKeys, auditLog, auditRow, spentChallenges, deliveries, drafts, files, forms, formVersions, isUuid, submissions, webhooks } from './db.js'
+import type { AuditEntry, FileRecord, Storage } from '@formancy/server-core'
+import { auditLog, auditRow, spentChallenges, deliveries, drafts, files, fitsText, forms, formVersions, isUuid, submissions, webhooks } from './db.js'
 import { examplesStorage } from './postgres-examples.js'
-import { users } from './db.js'
+import { identitiesStorage } from './postgres-identities.js'
 
 /** The Storage port over Postgres — the mirror of server-core's in-memory one. */
 export function createPostgresStorage(sql: postgres.Sql): Storage {
@@ -14,8 +14,12 @@ export function createPostgresStorage(sql: postgres.Sql): Storage {
   return {
     // A form's examples, beside it: their own file, by the reason they change (0166).
     ...examplesStorage(db),
+    // Who may sign in, and with what: users and API keys, their own file by theirs.
+    ...identitiesStorage(db),
 
     async getFormByPath(path) {
+      // A path from a URL: one a text column cannot hold is no form, not a 22021 (0173).
+      if (!fitsText(path)) return undefined
       const rows = await db.select().from(forms).where(eq(forms.path, path)).limit(1)
       const row = rows[0]
       if (row === undefined) return undefined
@@ -449,6 +453,7 @@ export function createPostgresStorage(sql: postgres.Sql): Storage {
     },
 
     async getDraft(formId, draftId) {
+      if (!fitsText(draftId)) return undefined
       const rows = await db
         .select()
         .from(drafts)
@@ -464,75 +469,6 @@ export function createPostgresStorage(sql: postgres.Sql): Storage {
         updatedAt: row.updatedAt.toISOString(),
       }
     },
-
-    async insertUser(record) {
-      await db.insert(users).values({
-        id: record.id,
-        email: record.email,
-        passwordHash: record.passwordHash,
-        role: record.role,
-        createdAt: new Date(record.createdAt),
-      })
-    },
-
-    async getUserByEmail(email) {
-      const rows = await db.select().from(users).where(eq(users.email, email)).limit(1)
-      const row = rows[0]
-      if (row === undefined) return undefined
-      return {
-        id: row.id,
-        email: row.email,
-        passwordHash: row.passwordHash,
-        role: row.role as Role,
-        createdAt: row.createdAt.toISOString(),
-      }
-    },
-
-    async insertApiKey(record) {
-      await db.insert(apiKeys).values({
-        id: record.id,
-        name: record.name,
-        prefix: record.prefix,
-        secretHash: record.secretHash,
-        role: record.role,
-        createdAt: new Date(record.createdAt),
-        revokedAt: record.revokedAt === null ? null : new Date(record.revokedAt),
-      })
-    },
-
-    async listApiKeys() {
-      const rows = await db.select().from(apiKeys)
-      return rows.map(toApiKeyRecord)
-    },
-
-    async findApiKeysByPrefix(prefix) {
-      const rows = await db.select().from(apiKeys).where(eq(apiKeys.prefix, prefix))
-      return rows.map(toApiKeyRecord)
-    },
-
-    async revokeApiKey(id, atIso) {
-      await db.update(apiKeys).set({ revokedAt: new Date(atIso) }).where(eq(apiKeys.id, id))
-    },
-  }
-}
-
-function toApiKeyRecord(row: {
-  id: string
-  name: string
-  prefix: string
-  secretHash: string
-  role: string
-  createdAt: Date
-  revokedAt: Date | null
-}) {
-  return {
-    id: row.id,
-    name: row.name,
-    prefix: row.prefix,
-    secretHash: row.secretHash,
-    role: row.role as Role,
-    createdAt: row.createdAt.toISOString(),
-    revokedAt: row.revokedAt === null ? null : row.revokedAt.toISOString(),
   }
 }
 
