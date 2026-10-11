@@ -298,6 +298,30 @@ again.
   exists for exactly that, and `runsOn` is already in place so the ordering question can
   be answered without restructuring anything.
 
+## A 5xx says nothing of what was thrown (Unreleased)
+
+**A client may see new answers.**
+
+- A 5xx the server did not answer on purpose is
+  `{"statusCode":500,"error":"Internal Server Error","message":"Internal Server Error"}`: the
+  status's name as both words, where `message` was the thrown error's own. A client that showed a
+  5xx's `message` shows the status's name. A sign-in or a request to the model refused for want
+  of a count keeps `"code": "RATE_LIMIT_UNAVAILABLE"`, and its `message` is now
+  `Service Unavailable`. A 4xx is answered as before
+  ([0172](docs/decisions/0172-a-5xx-says-nothing-of-what-was-thrown.md)).
+- `GET` and `PUT /f/:path/files/:id` with an id that is not a uuid answer `404` with
+  `{"error":"unknown_file"}`, a response naming such a file `422`, and
+  `POST /deliveries/:id/replay` with one `404`, where each was a `500`.
+- `PUT /f/:path/files/:id` is limited, thirty a minute per address, counted apart from the offers:
+  past that it answers `429` with `Retry-After`. An uploader that resends a file's bytes in a loop
+  meets it.
+
+**If you implement `Storage` yourself**, rather than using `@formancy/server`'s PostgreSQL one:
+`getFile` and `getDelivery` answer `undefined` for an id no row has, whatever its shape, rather
+than throwing — the id arrives from a URL or a response, as anybody wrote it.
+
+**The database.** Nothing changes.
+
 ## Every rate limit is counted in the database (Unreleased)
 
 **The database.** The server adds a table, `rate_limit_counters`, on start with `CREATE UNLOGGED

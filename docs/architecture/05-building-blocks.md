@@ -576,7 +576,12 @@ holds the list of fields and events, the logger Fastify is handed, the `LogContr
 writes Fastify's own lines about a request through it, and the `frameworkErrors` handler for what
 Fastify refuses before routing; `server/log-settings.ts` reads
 `FORMANCY_LOG_LEVEL`, for the reason `trust-proxy.ts` exists. Writing an audit row left `app.ts`
-for `server/audit-trail.ts` to make room, its failure being the log's business.
+for `server/audit-trail.ts` to make room, its failure being the log's business. What a failed
+request answers is `server/error-replies.ts`, beside it rather than in it: the reply's rule
+shares the log's for what a code looks like, and is not the log's to keep
+([0172](../decisions/0172-a-5xx-says-nothing-of-what-was-thrown.md)). `server/db.ts` holds what a
+`uuid` column can be asked about, which the PostgreSQL storage checks a file's or a delivery's id
+against before it asks.
 
 ## Starter template collection and gallery
 

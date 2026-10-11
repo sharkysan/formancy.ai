@@ -1,6 +1,7 @@
 # 0170 — A limit is counted once, in the database every replica shares
 
-- **Status:** accepted
+- **Status:** accepted; a file's bytes, which it left without a limit, limited by
+  [0172](0172-a-5xx-says-nothing-of-what-was-thrown.md)
 - **Date:** 2026-10-10
 - **Deciders:** Daniel Bacher
 - **Verified by:** `packages/server/src/shared-rate-limits.integration.test.ts`, on real

@@ -171,6 +171,17 @@ export const submissions = pgTable('submissions', {
 })
 
 /**
+ * Whether `id` can be compared with a `uuid` column: the hyphenated form every id this server
+ * mints has. PostgreSQL refuses anything it cannot read as a uuid with an error, `22P02`, where
+ * a `text` column — or the in-memory storage — finds no row; so a lookup by an id from a URL
+ * that is not one answers no row without asking (0172). A spelling PostgreSQL would also read,
+ * braced or without hyphens, names no row either: no id was handed out in one.
+ */
+export function isUuid(id: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+}
+
+/**
  * Bootstrap DDL for the thin slice — drizzle-kit migrations arrive with the
  * lifecycle work; a self-hosted skeleton that creates its own tables on first
  * start is worth more right now than a migration pipeline.

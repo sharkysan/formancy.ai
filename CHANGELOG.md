@@ -10,6 +10,28 @@ later.
 
 ## Unreleased
 
+**Fixed: a request that failed on the server told whoever made it what was thrown.** A 5xx was
+Fastify's default reply, whose `message` is the thrown error's own: for a database error the
+failing query and its parameters, for a full disk the path it could not write — handed to anybody
+who could make one happen, and on the public plane anybody could, with a file's id that is not a
+uuid. The request log had stopped writing those words; the reply had not. Now a 5xx says its
+status and nothing of what was thrown,
+`{"statusCode":500,"error":"Internal Server Error","message":"Internal Server Error"}`, and keeps a
+`code` only when the error was made to be answered, as `RATE_LIMIT_UNAVAILABLE` is; a 4xx still
+says what to fix, and a route that answers a 5xx itself keeps its words. The log's
+`request.failed` line, with the error's kind and code, is written as before, because the reply is
+replaced on its way out rather than by an error handler of our own, which would have taken
+Fastify's line about the error with it
+([0172](docs/decisions/0172-a-5xx-says-nothing-of-what-was-thrown.md)). **A file's id that is not a
+uuid is `404 unknown_file`**, to read it or to send its bytes, and a response naming one is
+refused as naming an unknown file, where each was a `500`: PostgreSQL refuses to compare a `uuid`
+column with it, which the in-memory storage every other test runs on never does. A delivery's,
+replayed, is a `404` too. **Sending a file's bytes is limited as offering one is** — thirty a
+minute per address, counted apart, `429` before the body is read, and admitted uncounted while the
+count cannot be had — because it was the one public route beside a form's read with no limit,
+nothing said that was meant, and every attempt is read whole, up to the deployment's ceiling on a
+file. A NUL byte in a form's path or a sign-in's email is still a `500`, now without words.
+
 **Added: the renderers' own words are in the form's language.** A form's questions are the
 author's, translated in the document; everything a renderer says around them — Next, Back,
 Submit, a repeater's buttons and where a row is, a ranking's, a file's Cancel uploading and Try

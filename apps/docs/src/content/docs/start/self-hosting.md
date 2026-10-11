@@ -231,9 +231,9 @@ limited requests, each by a second at most, and the rest of the server answers a
 
 **When the database does not answer within a second**, a limit decides without a count:
 
-- **Submissions, drafts, challenges and file offers go through, uncounted.** Each needs the
-  database for its own work, so with the database down they fail anyway; with only the counter
-  failing, refusing them would take every form down.
+- **Submissions, drafts, challenges, file offers and a file's bytes go through, uncounted.** Each
+  needs the database for its own work, so with the database down they fail anyway; with only the
+  counter failing, refusing them would take every form down.
 - **A sign-in and a request to the model are refused**, with `503` and the code
   `RATE_LIMIT_UNAVAILABLE`, because guessing passwords and spending your key are what those two
   limits are for. Sessions already signed in keep working; the admin says the server did not
@@ -650,8 +650,23 @@ that field holds, so none of those has anywhere to go
 That costs you something when a request fails. A `500` names the class of what was thrown and
 the route, not the line of code or the sentence it said; a scanner or a model provider that
 could not be reached is said to have failed, not why. And the log cannot say which form a line
-was for — the audit log names a subject. Note that a `500` still sends the client the error's
-message, which is Fastify's default reply and not the log.
+was for — the audit log names a subject.
+
+**The client is told less than the log.** A request that fails on the server is answered with its
+status and nothing of what was thrown — not a database error's query or its parameters, not the
+path a full disk could not write, not the error's code
+([0172](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0172-a-5xx-says-nothing-of-what-was-thrown.md)):
+
+```json
+{"statusCode":500,"error":"Internal Server Error","message":"Internal Server Error"}
+```
+
+An error the server answers on purpose keeps its code: a sign-in that could not be counted is
+`{"statusCode":503,"code":"RATE_LIMIT_UNAVAILABLE","error":"Service Unavailable","message":"Service Unavailable"}`.
+A refusal, a 4xx, still says what to fix, and a route that answers a 5xx itself — `501` with
+`uploads_unavailable` when there is no file store — keeps its own sentence. The reply carries no
+request id, so when somebody reports a `500`, find its `request.failed` line by the route and the
+time.
 
 `FORMANCY_LOG_LEVEL` sets how much is written; `off` writes none of it. A few plain sentences
 at startup — that the server is listening, which model it asks, that it generated an ephemeral

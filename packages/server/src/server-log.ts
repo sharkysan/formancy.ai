@@ -295,8 +295,11 @@ function isIdentifier(value: unknown): value is string {
   return typeof value === 'string' && /^[A-Za-z_$][\w$]{0,63}$/.test(value)
 }
 
-/** `ECONNREFUSED`, `22P02`, `FST_ERR_CTP_BODY_TOO_LARGE`: capitals, digits and underscores. */
-function isCode(value: unknown): value is string {
+/**
+ * `ECONNREFUSED`, `22P02`, `FST_ERR_CTP_BODY_TOO_LARGE`: capitals, digits and underscores. The
+ * one rule for what a code looks like, which the reply to a 5xx keeps a code by as well (0172).
+ */
+export function isCode(value: unknown): value is string {
   return typeof value === 'string' && /^[A-Z0-9_]{1,64}$/.test(value)
 }
 
