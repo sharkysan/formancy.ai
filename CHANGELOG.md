@@ -8,7 +8,63 @@ Loosely [Keep a Changelog](https://keepachangelog.com), with reasons attached �
 a line that says only *what* changed is rarely the line you need six months
 later.
 
-## Unreleased
+## 0.5.0 — 2026-10-11
+
+**The first release since `0.4.0`, and the spec version does not move.** Version 4 is still the
+newest, and it is frozen, so a document `0.4.0` wrote is read unchanged, and one this release
+writes is read by a reader pinned to `0.4.0`. What moves is around the document:
+
+- **A model edits a form, translates what a language is missing and drafts examples.** It does
+  each under review, and each is checked against the form's examples before it lands. On
+  formancy.ai the visitor carries the model's turn to a chat of their own, so the site asks no
+  other host for anything
+  ([0154](docs/decisions/0154-the-website-makes-no-request-to-any-other-site.md),
+  [0160](docs/decisions/0160-a-person-carries-the-models-turn.md)). A deployment can give its
+  builders a model of the operator's choosing, asked through the server so that its key never
+  reaches a browser
+  ([0165](docs/decisions/0165-a-deployments-model-is-asked-through-its-server.md)).
+- **A deployment keeps a form's examples, and publishing runs them**
+  ([0166](docs/decisions/0166-a-deployment-keeps-a-forms-examples-and-runs-them-at-publish.md)).
+- **The renderers' own words are in the form's language**: English, German or French
+  ([0171](docs/decisions/0171-the-renderers-words-are-the-forms-language.md)).
+- **The server is harder to misuse.** It keeps a request log, counts every rate limit once
+  across replicas, stores a response sent twice once, answers a failure without saying what was
+  thrown, refuses a NUL character rather than failing on it, and serves a file under any name
+  its respondent gave it.
+
+**Upgrading from `0.4.0`: what breaks, and for whom.** Each item is an entry below, and where an
+implementation or stored data has to move, it is a section of [`MIGRATIONS.md`](MIGRATIONS.md).
+
+- **A host whose engine is built in German or French.** The renderers' buttons, accessible
+  names and announcements are in that language now, so a test that finds a German form's
+  controls by their English names stops finding them. The builders' catalogue loses
+  `translations.previewSubmit`.
+- **A host that submits anonymously without the admin.** It sends back the
+  `X-Formancy-Submission-Token` its form was handed out with, or is refused
+  `400 submission_token_required`. The renderers send nothing, so nothing in them changes.
+- **Anybody implementing `Storage` themselves.** `insertSubmission` answers whether it stored
+  and refuses an id already stored, `hasSubmission`, `getExamples` and `keepExamples` are new,
+  and `updateFile` is replaced by `leaseFile`, `settleFile` and `releaseFile`. A lookup by an id
+  or a path its column cannot hold finds no row rather than failing.
+- **Code that calls `authorForm`, `proposalStatus` or an `AskModel` directly.** `authorForm`
+  resolves with `ended: 'unreachable'` where it rejected, `proposalStatus` takes the run's
+  `result`, an `AskModel` takes a second argument, and a prompt built by hand needs `kind`,
+  `attempt` and `limit`. Each is a compile error rather than a silent change, except the first.
+- **A client that read the words of a `5xx`.** A failure on the server says its status and
+  nothing of what was thrown
+  ([0172](docs/decisions/0172-a-5xx-says-nothing-of-what-was-thrown.md)).
+- **A client that sends a NUL character in any string.** The body is refused
+  `400 nul_character`, with a pointer to where the character is. A user created with one in their
+  password can no longer sign in
+  ([0173](docs/decisions/0173-a-nul-character-names-nothing-and-a-body-with-one-is-refused.md)).
+- **A stylesheet that gave the Angular builder's own `formancy-*` elements a box.** They take no
+  part in layout now, so style the part inside
+  ([0174](docs/decisions/0174-the-builders-hosts-take-no-part-in-layout.md)).
+- **A deployment that set `FORMANCY_FILES_DIR` or `FORMANCY_S3_ENDPOINT` to an empty string.**
+  The server reads either as unset now, where an empty directory meant the working directory.
+
+Newest first, as it was written. Nothing was published in between, so there is no `0.5.0`
+anywhere that means something narrower.
 
 **Fixed: a file named outside Latin-1 could not be downloaded, and the `500` said why in Node's
 words.** A file's name goes into the download's `content-disposition` and a form's path into its
@@ -967,6 +1023,50 @@ stood as bare text before the radios.
 **Removed: the SurveyJS comparison from formancy.ai/angular-form-builder.** The page makes its
 case about formancy alone: the starter running, the install, saving and opening a form, and the
 tested versions ([0141](docs/decisions/0141-the-angular-page-compares-with-no-other-product.md)).
+
+### What 0.5.0 knowingly does not have
+
+`RELEASING.md` asks a release entry to say this, because the absence a reader discovers
+for themselves is the one that costs them a day. Everything 0.4.0 listed is still true
+unless it appears below; these are the ones this release adds or changes.
+
+- **Two kinds of word on a form are still one language.** The renderers' own words follow the
+  form's language now, so 0.4.0's first item no longer stands as written. A field's error is
+  still the engine's code, `required` or `minLength`, under a German question, and a repeater's
+  `addLabel` and `removeLabel` are plain strings in every spec version, not `Text`.
+- **The SurveyJS comparison is gone from formancy.ai**, so 0.4.0's caveat about re-reading it
+  no longer applies.
+- **The server is still not ready for a public deployment.** The README says so, and arc42
+  §11.2 says what each gap costs. Among them:
+  - While the rate-limit counter cannot answer, the public plane is not limited. Submissions,
+    drafts, challenges and file offers are admitted uncounted rather than refused, so that a
+    fault in the defence is not an outage of every form.
+  - Behind a reverse proxy that `FORMANCY_TRUST_PROXY` does not name, every respondent shares
+    one budget.
+  - Webhooks still want one replica, because the outbox takes no row lock.
+  - There is no resumable or multipart upload, and a file's bytes pass through the server on
+    their way to the object store, so the request body cap is also the largest single file.
+  - Neither compose file runs an object store. A fresh Garage node accepts no data until a
+    layout is assigned, which compose cannot declare.
+  - A file's name has no length of its own, only the body cap's, and percent-encoding makes
+    each non-ASCII character six to twelve characters of the download's header. What a proxy in
+    front of the server does with a header that long was not tried.
+  - A form's path may hold any character but a NUL, line breaks and control characters
+    included. The export names its file encoded now, so such a path no longer fails it, but
+    nothing refuses the path when it is published.
+- **A model's answer is only as good as its review.** Through the relay, nothing binds a pasted
+  answer to the request it answers, so an answer from another chat or an earlier turn is
+  checked and proposed like the right one, and the review's diff is the only defence. A model's
+  translation is reviewed only as well as its reviewer reads the language.
+- **A form's examples are saved whole, and the last save wins.** Two people changing one
+  form's examples at once replace each other's list. The publish runs them against the
+  published version and names only what this publish changes, on the thread answering it.
+- **Nothing opens the admin in a browser.** It needs a server behind it, and the browser gate
+  opens formancy.ai's pages only, so the admin's layout and its requests are checked by hand.
+  The Angular builder is measured against the React one part by part now, in the playground
+  only, since the admin is React.
+- **No spec version is open.** As in 0.4.0, the next construct that changes what a document may
+  say costs a version 5, with its migration note and an upgrade for every pinned reader.
 
 ## 0.4.0 — 2026-10-09
 

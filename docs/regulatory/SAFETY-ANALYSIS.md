@@ -1635,7 +1635,7 @@ condition that was asked for — both spellings of an inverted rule are valid CE
 panel that reruns them after every edit and **names** what broke, and `check_scenarios`
 is the same check for an agent
 ([0111](../decisions/0111-a-scenario-panel-names-what-stopped-holding.md)). What broke is
-measured against the last run over the same document only. Until a fix after `0.4.0`, a
+measured against the last run over the same document only. Until `0.5.0`, a
 panel kept on screen while its host opened another document compared runs across the two
 by name. It could name examples as broken, or repaired, that had never run against the
 document open. `scenario-runs.test.ts` and each builder's `scenario-pane.test` hold the
@@ -1795,7 +1795,7 @@ byte parser only ever saw the types with no parser of their own — so a `.txt` 
 reached the upload route as a string or an object and was refused as `no_body`, and a `.json`
 file that was not valid JSON was refused as malformed before the route ran. The form's `accept`
 list allowed both, and the offer said so. Every release with uploads, 0.2.0 to 0.4.0, does
-this; fixed on 2026-10-09, after 0.4.0.
+this; fixed on 2026-10-09, in 0.5.0.
 
 *Severity:* the field says the upload failed, so nobody believes the file was attached; but a
 person with that file has no way to attach it, and a form that requires it cannot be
