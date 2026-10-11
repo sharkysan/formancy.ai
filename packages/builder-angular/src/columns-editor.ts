@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core'
 import { createBuilderText } from '@formancy/builder-core'
 import type { BuilderText } from '@formancy/builder-core'
+import { takeHostOutOfLayout } from './host.js'
 import type { DataGridColumn, FieldDef } from './types.js'
 import { BuilderTextPipe } from './text.pipe.js'
 
@@ -158,6 +159,10 @@ export class FormancyColumnsEditor {
   protected readonly unnamed = computed(() =>
     this.children().filter((child) => !this.draft().some((column) => column.field === child.key)),
   )
+
+  constructor() {
+    takeHostOutOfLayout()
+  }
 
   protected fieldId(at: number): string {
     return `${this.headingId}-field-${String(at)}`

@@ -23,6 +23,7 @@ import {
   draftVerdict,
   draftsOn,
 } from '@formancy/builder-core'
+import { takeHostOutOfLayout } from './host.js'
 import { BuilderTextPipe } from './text.pipe.js'
 import type { AskModel, BuilderSession, DraftRun, DraftRunState, Scenario, ScenarioResult } from './types.js'
 import { injectBuilderView } from './view.js'
@@ -194,6 +195,7 @@ export class FormancyScenarioDrafts {
   private readonly injector = inject(Injector)
 
   constructor() {
+    takeHostOutOfLayout()
     let unsubscribe: (() => void) | undefined
     effect(() => {
       const run = this.held()

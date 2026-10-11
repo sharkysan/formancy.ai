@@ -138,10 +138,20 @@ assumption is a structural contract a test *can* hold — the popup is positione
 anchor that wraps the control; every element between a grid and its cells is
 `display: contents` — and those are proxies, honestly labelled as proxies.
 
-A real gate is a browser: Playwright over the reference theme at a fixed viewport, which
-[§10](10-verification.md) already describes as the narrow use for pixel testing and which
-is not configured. Until it is, the accurate statement is that appearance is reviewed and
-not verified.
+**This section said a browser gate was not configured, and one is.** `pnpm test:browser` loads
+the composed site in Chromium and asks for computed values and geometry rather than pixels
+([0102](../decisions/0102-what-jsdom-cannot-see-is-checked-in-a-browser.md)). It measures
+horizontal overflow, the pane row's columns, `touch-action`, the starter embedded and on its
+own, and, since [0174](../decisions/0174-the-builders-hosts-take-no-part-in-layout.md), every
+part of the Angular builder against the React builder in five views of the starter. That last
+check was added after a visitor, not a gate, found the Angular builder's translation table in
+the narrow column of two: 0073's bug again, in the builder, where no host element had been
+taken out of layout.
+
+What it does not do is say what anything looks like. It asks the questions it was written to
+ask, at the viewports it opens, against one theme and one form, and takes no screenshot on
+purpose. So the accurate statement is narrower than before and still the same in kind: what
+is measured is verified, and appearance beyond it is reviewed.
 
 ## 11.3 Accepted architectural risks
 

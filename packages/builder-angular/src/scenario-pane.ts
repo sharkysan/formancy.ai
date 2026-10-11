@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core'
 import { createRunHistory, scenarioStatus } from '@formancy/builder-core'
+import { takeHostOutOfLayout } from './host.js'
 import { BuilderTextPipe } from './text.pipe.js'
 import { runScenarios } from '@formancy/core'
 import { FormancyScenarioDrafts } from './scenario-drafts.js'
@@ -177,6 +178,10 @@ export class FormancyScenarioPane {
     const failing = results.filter((result) => !result.passed).length
     return scenarioStatus(results.length, failing, this.change(), this.text())
   })
+
+  constructor() {
+    takeHostOutOfLayout()
+  }
 
   protected remove(name: string): void {
     this.scenariosChange.emit((this.scenarios() ?? []).filter((one) => one.name !== name))

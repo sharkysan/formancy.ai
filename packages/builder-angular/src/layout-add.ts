@@ -10,6 +10,7 @@ import {
   upgradeAndSay,
 } from '@formancy/builder-core'
 import type { LayoutAddition } from '@formancy/builder-core'
+import { takeHostOutOfLayout } from './host.js'
 import type { BuilderSession, LayoutLocation, LayoutNode } from './types.js'
 import { BuilderTextPipe } from './text.pipe.js'
 import { injectBuilderView } from './view.js'
@@ -158,6 +159,10 @@ export class FormancyLayoutAdd {
         label: describeLayoutTarget(this.view().document, location, undefined, this.text()),
       }))
   })
+
+  constructor() {
+    takeHostOutOfLayout()
+  }
 
   protected key(addition: LayoutAddition): string {
     if (addition.what === 'field') return `field:${addition.path}`

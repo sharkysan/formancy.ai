@@ -22,6 +22,7 @@ import {
   translationToReview,
 } from '@formancy/builder-core'
 import type { BuilderMessageId } from '@formancy/builder-core'
+import { takeHostOutOfLayout } from './host.js'
 import { BuilderTextPipe } from './text.pipe.js'
 import { previewInjector } from './translations-preview.js'
 import type { AskModel, BuilderSession, FormSchema, TranslationRun, TranslationRunState } from './types.js'
@@ -235,6 +236,7 @@ export class FormancyTranslationReview {
   protected readonly reviewId = `formancy-translation-review-${String(this.serial)}`
 
   constructor() {
+    takeHostOutOfLayout()
     let unsubscribe: (() => void) | undefined
     effect(() => {
       const run = this.held()

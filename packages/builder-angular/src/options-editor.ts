@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core'
 import { LIST_WORDS, createBuilderText, nextChoice, withPicture } from '@formancy/builder-core'
 import type { BuilderText } from '@formancy/builder-core'
+import { takeHostOutOfLayout } from './host.js'
 import type { FieldOption } from './types.js'
 import { BuilderTextPipe } from './text.pipe.js'
 
@@ -43,9 +44,12 @@ let nextId = 0
   imports: [BuilderTextPipe],
   template: `
     <div data-formancy-part="options-editor">
-      <h3 [attr.id]="headingId" data-formancy-part="options-heading">
+      <!-- A label for the list, not a heading, as the React editor and both columns editors
+           draw it: a heading here was the one part the two builders drew as different
+           elements, and the theme's margins are written for a div (0174). -->
+      <div [attr.id]="headingId" data-formancy-part="options-heading">
         {{ words().heading | builderText: text() }}
-      </h3>
+      </div>
       @if (draft().length === 0) {
         <p data-formancy-part="options-empty">{{ words().empty | builderText: text() }}</p>
       } @else {
@@ -130,6 +134,10 @@ export class FormancyOptionsEditor {
     if (held !== null && incoming === this.pushed) return held
     return [...this.options()]
   })
+
+  constructor() {
+    takeHostOutOfLayout()
+  }
 
   protected valueId(at: number): string {
     return `${this.headingId}-value-${String(at)}`

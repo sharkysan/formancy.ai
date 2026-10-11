@@ -205,7 +205,12 @@ Each gate exists for a reason that was paid for at least once:
   ([0160](../decisions/0160-a-person-carries-the-models-turn.md)). And it compares where the
   playground's two builders put the prompt box and the language chooser, on the starter and on
   a demo with no suggestions, because the Angular builder's element for them is in the
-  document on every demo and the room around a list once sat on it.
+  document on every demo and the room around a list once sat on it. Since 2026-10-11 it
+  compares the two builders whole: five views of the starter, opened in each builder, with
+  every part found by `data-formancy-part` and its box relative to the builder pane required to
+  be the same in both. Written before the fix and watched failing against formancy.ai as
+  deployed, where the Angular builder's translation table sat in the narrow column
+  ([0174](../decisions/0174-the-builders-hosts-take-no-part-in-layout.md)).
   **A different kind of test from the rest of this list**, and the reason is
   structural rather than a coverage gap: jsdom applies no CSS, resolves no media
   queries and performs no layout, so every box measures zero and every cascade

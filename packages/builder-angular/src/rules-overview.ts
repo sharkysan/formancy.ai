@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core'
 import { explainRows, explainRule, rulesOverview } from '@formancy/builder-core'
 import type { BuilderSession, Capabilities, RowVerdict, RuleVerdict } from '@formancy/builder-core'
+import { takeHostOutOfLayout } from './host.js'
 import { BuilderTextPipe } from './text.pipe.js'
 import { injectBuilderView } from './view.js'
 
@@ -130,6 +131,10 @@ export class FormancyRulesOverview {
     })
     return { whole, byRow }
   })
+
+  constructor() {
+    takeHostOutOfLayout()
+  }
 
   protected verdictOf(index: number): RuleVerdict | undefined {
     return this.verdicts().whole.get(index)

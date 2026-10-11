@@ -128,6 +128,16 @@ scrolled the page for anybody using their own design system. The surface now
 declares it inline and the themes do not declare it at all. A theme still owns
 the height, the border, the background and the cursor.
 
+**An element a framework adds is not a box.** Angular draws every component in an element
+of its own, and React has none, so a stylesheet written for one framework's markup would
+place the other's differently, and nothing would report it. Every such element takes no part
+in layout, `display: contents`, in the renderer
+([0073](../decisions/0073-a-host-element-is-not-a-layout.md)) and in the builder
+([0174](../decisions/0174-the-builders-hosts-take-no-part-in-layout.md)). It is set through
+CSSOM in the constructor, never as a component style, which a strict `style-src` would block
+([0079](../decisions/0079-a-host-is-undone-without-a-stylesheet.md)). A consumer styles the
+part, never the element.
+
 Themes are strictly downstream and are never a dependency. The shipped themes
 are deliberately *different design languages* rather than palette swaps —
 different radii, typefaces, spacing, and different devices for showing an

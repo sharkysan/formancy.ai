@@ -15,6 +15,7 @@ import type {
   FieldDef,
   FieldOption,
 } from './types.js'
+import { takeHostOutOfLayout } from './host.js'
 import { FormancyColumnsEditor } from './columns-editor.js'
 import { FormancyOptionsEditor } from './options-editor.js'
 import { injectBuilderView } from './view.js'
@@ -146,6 +147,10 @@ export class FormancyProperty {
     return incoming
   })
 
+  constructor() {
+    takeHostOutOfLayout()
+  }
+
   protected asText(raw: unknown): string {
     return typeof raw === 'string' || typeof raw === 'number' ? String(raw) : ''
   }
@@ -270,6 +275,10 @@ export class FormancyPropertyPanel {
     const field = this.def()
     return field === undefined ? [] : editablePropertiesFor(field.type, field.widget, this.session().text)
   })
+
+  constructor() {
+    takeHostOutOfLayout()
+  }
 
   protected valueOf(name: string): unknown {
     return (this.def() as unknown as Record<string, unknown> | undefined)?.[name]

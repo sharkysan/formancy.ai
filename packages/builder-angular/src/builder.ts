@@ -42,6 +42,7 @@ import type {
   TreeNode,
 } from './types.js'
 import { dropLocation } from '@formancy/builder-core'
+import { takeHostOutOfLayout } from './host.js'
 import { FormancyPaletteBlocks, FormancySaveBlock } from './blocks.js'
 import { BuilderTextPipe } from './text.pipe.js'
 import { injectBuilderView } from './view.js'
@@ -308,6 +309,7 @@ export class FormancyBuilder {
   })
 
   constructor() {
+    takeHostOutOfLayout()
     /*
      * Keep focus on the FIELD across an edit, not on the number.
      *
