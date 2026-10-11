@@ -56,7 +56,7 @@ author the JSON directly or use a coding agent through MCP. The shared engine
 handles validation and calculations, so you do not need to implement each rule
 separately in your UI and the formancy backend.
 
-> **Status: beta, version 0.4.0.**
+> **Status: beta, version 0.5.0.**
 >
 > **Every spec version is frozen.** Each only adds, so an older document
 > keeps working and its submissions keep their shape — upgrading is one line and
@@ -657,7 +657,7 @@ cut, and what the pipeline signs and attests.
 Releases are published from CI with npm provenance, and each one carries a
 CycloneDX SBOM signed with cosign.
 
-**`0.4.0` is the current beta.** Every package under the
+**`0.5.0` is the current beta.** Every package under the
 [`@formancy`](https://www.npmjs.com/org/formancy) scope moves on one version
 number, so any two of them at the same version are known to work together — which
 is what makes the support matrix size one

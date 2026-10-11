@@ -298,7 +298,7 @@ again.
   exists for exactly that, and `runsOn` is already in place so the ordering question can
   be answered without restructuring anything.
 
-## A NUL character is refused (Unreleased)
+## A NUL character is refused (0.5.0)
 
 **A client may see new answers.**
 
@@ -323,7 +323,7 @@ or changes a password, so their address stays taken.
 
 **The database.** Nothing changes: no row ever held a NUL, since every write of one failed.
 
-## A 5xx says nothing of what was thrown (Unreleased)
+## A 5xx says nothing of what was thrown (0.5.0)
 
 **A client may see new answers.**
 
@@ -347,7 +347,7 @@ than throwing — the id arrives from a URL or a response, as anybody wrote it.
 
 **The database.** Nothing changes.
 
-## Every rate limit is counted in the database (Unreleased)
+## Every rate limit is counted in the database (0.5.0)
 
 **The database.** The server adds a table, `rate_limit_counters`, on start with `CREATE UNLOGGED
 TABLE IF NOT EXISTS`, as it creates every table: one row per route and client, the key, the count
@@ -378,7 +378,7 @@ against its limit within a second; nothing was checked and nothing was asked, an
 the remedy. The admin says so. The public routes never answer it: while the count cannot be had,
 they go through uncounted.
 
-## A response is sent with the token its form was handed out with (Unreleased)
+## A response is sent with the token its form was handed out with (0.5.0)
 
 **Why you cannot skip this.** A response sent twice — the retry a dropped connection forces, a
 replay — was stored twice, with two ids and two webhooks, and nothing told the copies from two
@@ -427,7 +427,7 @@ what came back, as `spendChallenge` does; `createMemoryStorage` is a second impl
 beside yours. `ServerDeps.draftSecret` keeps its name and now signs the token as well as a
 draft's key.
 
-## A form's examples are kept beside it (Unreleased)
+## A form's examples are kept beside it (0.5.0)
 
 **The database.** The server adds a table, `form_examples`, on start with `CREATE TABLE IF NOT
 EXISTS`, as it creates every table: one row per form, its primary key the form's id and a
@@ -459,7 +459,7 @@ It is the same list 0097 put there, so a client that shows it needs nothing new;
 pipeline that fails on any warning will now fail on these too. And the audit log has one more
 action, `form.examples.changed`.
 
-## A file is received by one request at a time (Unreleased)
+## A file is received by one request at a time (0.5.0)
 
 **The database.** `files` gains a nullable `receiving_until timestamptz`, which the server adds
 on start with `ADD COLUMN IF NOT EXISTS`, as it added the access and webhook-health columns

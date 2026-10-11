@@ -408,7 +408,7 @@ What is kept and is not an example is not run, and one warning names it
 ([0166](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0166-a-deployment-keeps-a-forms-examples-and-runs-them-at-publish.md)).
 The `jq` gate above fails on these too.
 
-:::caution[Needs a server newer than v0.4.0]
+:::caution[Needs v0.5.0 or newer]
 `v0.4.0` and every image before it has no `/f/:path/examples` route, and its
 publish runs no examples.
 :::
@@ -593,12 +593,11 @@ The server reads the empty directory as unset and is left one store. Leave the f
 out and it is told about two, refuses to start, and compose restarts it into the same
 refusal for as long as you let it.
 
-:::caution[Needs a server newer than v0.4.0]
+:::caution[Needs v0.5.0 or newer]
 `v0.4.0` and every image before it read `FORMANCY_FILES_DIR=""` as a directory: with the
 endpoint set they refuse two stores, and without it they switch uploads on in the
-container's working directory, which the image's user cannot write. Until a release
-carries the fix, an object store through compose means
-[a checkout](#from-a-checkout).
+container's working directory, which the image's user cannot write. `v0.5.0` reads the
+empty string as unset.
 :::
 
 Neither compose file runs the store itself: a fresh Garage node accepts no data until a
@@ -780,7 +779,7 @@ server does not start with the one its provider's SDK reads set; xAI goes throug
 
 Both compose files pass the three variables through when they are set.
 
-:::caution[Needs a server newer than v0.4.0]
+:::caution[Needs v0.5.0 or newer]
 `v0.4.0` and every image before it has no model and ignores all three variables.
 :::
 

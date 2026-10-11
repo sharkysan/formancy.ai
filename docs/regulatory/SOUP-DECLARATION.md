@@ -5,7 +5,7 @@ developed under IEC 62304, and who therefore has to record what this software
 is, what it needs, what it is known to get wrong, and what evidence exists that
 it works. Read [`MDR-CONTEXT.md`](MDR-CONTEXT.md) first.
 
-**This document describes version `0.4.0`.** Everything below is true of that
+**This document describes version `0.5.0`.** Everything below is true of that
 version and of no other. Pin an exact version; a range is not characterised
 software, and neither is `latest`.
 
@@ -17,9 +17,9 @@ software, and neither is `latest`.
 | Supplier | the formancy project (open source) |
 | Licence | Apache-2.0 for every package ([0002](../decisions/0002-apache-2-0.md)) |
 | Source | this repository, in full, including tests |
-| Package version | `0.4.0`, published to npm under the `@formancy` scope |
+| Package version | `0.5.0`, published to npm under the `@formancy` scope |
 | Spec version | `"4"`, **frozen as of 0.4.0** ([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)) — the version this release writes and the one this document characterises. Versions `"1"` ([0042](../decisions/0042-freeze-the-spec.md)), `"2"` ([0051](../decisions/0051-spec-2-adds-types.md)) and `"3"` ([0088](../decisions/0088-spec-3-freezes-with-four-constructs.md)) are frozen too and stay readable, so a deployment pinned to any of them is characterising a settled format. No version is open. What each version added, and what freezing one costs, is in [`MIGRATIONS.md`](../../MIGRATIONS.md) |
-| Development stage | beta. 0.1.0 was the first release and predates spec versioning: it pins documents to version 1 and refuses anything later rather than ignoring the property. 0.2.0 reads version 2; 0.3.0 reads version 3; 0.4.0 reads version 4 and **writes** it by default, so a form authored here is refused by a reader pinned to 0.3.0 — loudly, which is the point |
+| Development stage | beta. 0.1.0 was the first release and predates spec versioning: it pins documents to version 1 and refuses anything later rather than ignoring the property. 0.2.0 reads version 2; 0.3.0 reads version 3; 0.4.0 reads version 4 and **writes** it by default, so a form authored here is refused by a reader pinned to 0.3.0 — loudly, which is the point. 0.5.0 reads and writes version 4 as 0.4.0 does, so the two read each other's documents |
 | Integrity | each tarball carries a SLSA v1 provenance attestation issued by GitHub's OIDC identity for the workflow run that built it, plus a registry signature. Verify with `npm audit signatures`. The server image is published to GHCR and **signed by digest**, with the SBOM attached as a CycloneDX attestation — verify with `cosign verify` and `cosign verify-attestation` against the digest rather than the tag, since a tag is mutable. There is deliberately no `latest`, for the reason this table gives two rows down. The pipeline is described in [`RELEASING.md`](../../RELEASING.md) |
 
 The two version lines are independent and both matter. The package version
@@ -72,11 +72,11 @@ What it does **not** do, and must not be assumed to do:
 | Renderer (React) | React `^19.0.0` (peer dependency) |
 | Renderer (Angular) | `@angular/core` `^22.0.0` (peer dependency), zoneless change detection. **Under a strict `style-src` Content Security Policy this package needs Angular's `ngCspNonce`**: it ships one component stylesheet, `:host { display: contents }`, which takes the recursing layout component's host element out of the box tree so a consumer's grid sees the same children it sees in React ([0073](../decisions/0073-a-host-element-is-not-a-layout.md)). Without it a table layout collapses to one column. `@formancy/angular/material` additionally needs `@angular/material` and `@angular/cdk` `^22.0.0` — optional peers, tested against 22.1.7 — and a Material theme of the application's choosing ([0132](../decisions/0132-material-draws-what-it-has-an-equivalent-for.md)) |
 | Database (server only) | PostgreSQL 17 or 18 |
-| Deployment (server only) | Two compose files are supplied: `compose.yaml` builds from a checkout, `compose.published.yaml` runs the signed published image and requires `FORMANCY_VERSION` to be pinned, because no `latest` tag is published. Every variable `.env.example` documents is passed through by both, and following its object-store block leaves the server one store — the object store — rather than two, both checked by `packages/server/src/compose.test.ts`. Switching to the object store through compose sets `FORMANCY_FILES_DIR=""`, which only a server newer than `0.4.0` reads as unset |
+| Deployment (server only) | Two compose files are supplied: `compose.yaml` builds from a checkout, `compose.published.yaml` runs the signed published image and requires `FORMANCY_VERSION` to be pinned, because no `latest` tag is published. Every variable `.env.example` documents is passed through by both, and following its object-store block leaves the server one store — the object store — rather than two, both checked by `packages/server/src/compose.test.ts`. Switching to the object store through compose sets `FORMANCY_FILES_DIR=""`, which only a server from `0.5.0` on reads as unset |
 | Pictures on options | A host with a strict Content Security Policy needs `img-src` to allow `data:` for pictures a document carries, and the hosts it names for the others; without it the option still works and its picture does not load ([0126](../decisions/0126-an-option-may-carry-a-picture.md)) |
 | File uploads | A thumbnail needs `createImageBitmap` and a 2D canvas, which every browser in the stylesheet row has; without them no thumbnail is drawn and the file's name is shown alone. It needs no `img-src` permission, because it is drawn from the file's bytes and no URL is involved. A figure on the progress bar needs the host's uploader to report one, which `fetch` cannot do for an upload; a cancel stops the transfer only if the uploader passes the signal on ([0130](../decisions/0130-each-file-is-its-own-upload.md)) |
 | Virus scanning (server only, optional) | A ClamAV daemon reachable over TCP when `FORMANCY_CLAMD_HOST` is set, spoken to with its INSTREAM command and no client library. Run once against ClamAV 1.5.4 (`clamav/clamav:stable`, 2026-10-09); the adapter's tests use a protocol stand-in. **Set `AlertExceedsMax yes`**: ClamAV's shipped `clamd.conf` says content past `MaxFileSize` or `MaxScanSize` is not flagged otherwise, and is answered clean. Unreachable, every upload is refused ([0131](../decisions/0131-an-upload-is-scanned-before-it-is-kept.md)) |
-| A model for the builders (server only, optional, after `0.4.0`) | An account with Anthropic, OpenAI or xAI, named by `FORMANCY_MODEL_PROVIDER` with its key and model, and outbound HTTPS from the server to that provider's API — `api.anthropic.com`, `api.openai.com` or `api.x.ai`. All three or none; half is refused at startup, and none is the default. With Anthropic, a model with adaptive thinking (Opus 4.6, Sonnet 4.6 or later). Each request sends the form, or its words, to that provider ([0165](../decisions/0165-a-deployments-model-is-asked-through-its-server.md); hazards C8, C9 and D17) |
+| A model for the builders (server only, optional, from `0.5.0`) | An account with Anthropic, OpenAI or xAI, named by `FORMANCY_MODEL_PROVIDER` with its key and model, and outbound HTTPS from the server to that provider's API — `api.anthropic.com`, `api.openai.com` or `api.x.ai`. All three or none; half is refused at startup, and none is the default. With Anthropic, a model with adaptive thinking (Opus 4.6, Sonnet 4.6 or later). Each request sends the form, or its words, to that provider ([0165](../decisions/0165-a-deployments-model-is-asked-through-its-server.md); hazards C8, C9 and D17) |
 | Stylesheets (`@formancy/themes`) | Chrome 120, Edge 120, Firefox 113, Safari 16.4 — the first releases with both `:dir()` and `color-mix()`. **A host that bundles them must target these or later**: a bundler targeting older browsers rewrites `:dir(rtl)` as a list of right-to-left languages, after which a page's `dir` no longer mirrors the layout; Vite's default target did ([0123](../decisions/0123-the-builder-reads-right-to-left.md)). Loaded with a plain `<link>`, they are not rewritten |
 | Module format | ESM only; no CommonJS build is published ([0038](../decisions/0038-esm-only.md)) |
 
@@ -205,7 +205,7 @@ the stored-XSS class entirely
 commercial extensions; none is used, and depending on one would contradict the
 project's open-core line.
 
-**`@anthropic-ai/sdk` and `openai`**, after `0.4.0`, are the providers' own clients for the
+**`@anthropic-ai/sdk` and `openai`**, new in `0.5.0`, are the providers' own clients for the
 model a deployment may configure for its builders
 ([0165](../decisions/0165-a-deployments-model-is-asked-through-its-server.md)). They are in
 the server's image whether or not a model is configured, and loaded when it starts; neither
@@ -230,7 +230,8 @@ here.
 IEC 62304 §7.1.2 asks for the supplier's published anomaly list.
 [`CHANGELOG.md`](../../CHANGELOG.md) is it: every entry says what changed and why, and the
 defects found by review are named there rather than summarised away. What follows is what a
-manufacturer characterising `0.4.0` needs on one page.
+manufacturer characterising `0.5.0` needs on one page, with the anomalies of earlier releases
+that `0.5.0` fixes, so that one still running them knows what it is upgrading away from.
 
 **`0.2.0`, `0.3.0` and `0.4.0` can take an accepted submission's attachment away, and replace
 its bytes.** The `PUT` that receives a file's bytes writes the row back as it read it before
@@ -244,7 +245,7 @@ under a new id, for every attempt — so it takes a proxy or HTTP library retryi
 an integrator's uploader that sends the bytes again without offering again, or whoever holds
 the file's id, on purpose. Reproduced on real PostgreSQL against `0.4.0`'s route, with a
 scanner held open and, without one, with the write held open; `0.2.0` and `0.3.0` have the same
-sequence without the scan, read in their source but not run. Fixed after `0.4.0`, with a
+sequence without the scan, read in their source but not run. Fixed in `0.5.0`, with a
 residual: a request whose scan and write together outlast two minutes can still replace the
 bytes, though not the row, and the supplied clamd adapter does not keep a scan inside that.
 Hazard B10 in [`SAFETY-ANALYSIS.md`](SAFETY-ANALYSIS.md) has both, and
@@ -256,7 +257,7 @@ failing query and its parameters, for a full disk the path it could not write. F
 file's id that is not a uuid — in the address that reads a file or receives its bytes, or in a
 response naming its attachments, the last two public — is such a failure, so anybody could have
 the query and the id they sent read back to them. And the route that receives a file's bytes has
-no rate limit. Fixed after `0.4.0`: a 5xx says its status and nothing of what was thrown, such an
+no rate limit. Fixed in `0.5.0`: a 5xx says its status and nothing of what was thrown, such an
 id is an unknown file, and the bytes are limited as their offer is
 ([0172](../decisions/0172-a-5xx-says-nothing-of-what-was-thrown.md)); see the changelog.
 
@@ -266,7 +267,7 @@ which no limit counts — in a sign-in's email, in a submission's answers or in 
 sends to be looked up or kept fails in the database, and the reply is the error's, quoting the
 failing query and the value, as the entry above says. The `500`s were measured on real PostgreSQL
 against the code after `0.4.0`; that each release looks up and stores these values the same way
-was read in its source, not run. Fixed after `0.4.0`: a NUL in an address names nothing, and a
+was read in its source, not run. Fixed in `0.5.0`: a NUL in an address names nothing, and a
 body with one is refused as malformed, `400`
 ([0173](../decisions/0173-a-nul-character-names-nothing-and-a-body-with-one-is-refused.md)); see
 the changelog.
@@ -281,7 +282,7 @@ as Latin-1 before a file and as UTF-8 before an export — Node.js 22 with Fasti
 on 2026-10-11. Read in those releases' source and measured on the code just before the fix, not
 run on them. After `0.4.0` the `500` lost its words to 0172's change everywhere but here,
 because the error's reply failed on the same header and Fastify 5.12.5's last-resort reply runs
-no hook. Fixed after `0.4.0`: a name is encoded as RFC 6266 and RFC 8187 have it, and an error's
+no hook. Fixed in `0.5.0`: a name is encoded as RFC 6266 and RFC 8187 have it, and an error's
 reply drops a header Node would refuse
 ([0175](../decisions/0175-a-name-goes-into-a-header-encoded.md)).
 
@@ -305,7 +306,7 @@ or `0.3.0`. Both files pass `FORMANCY_FILES_DIR` to the server as a literal path
 deployment that follows the object-store block of `.env.example` hands the server two
 stores, and it refuses to start on every restart — measured with the published `v0.4.0`
 image. A blanked `FORMANCY_FILES_DIR` does not help with those images either: they read the
-empty string as a directory. Fixed after `0.4.0`, in the compose files and in the server
+empty string as a directory. Fixed in `0.5.0`, in the compose files and in the server
 together; see the changelog.
 
 **With the S3 object store, a download fails if it is still streaming thirty seconds after
@@ -315,18 +316,18 @@ is cut off part-way however steadily it is arriving — and how long a download 
 mostly the downloader's connection, which backpressure carries back to the store. Thirty
 seconds is the store's default and the server sets no other, so no setting changes it. The
 local store has no such bound. An upload to the object store is bounded the same way, as a
-whole, and stays so after the fix. Fixed after `0.4.0` for downloads, at the cost of
+whole, and stays so after the fix. Fixed in `0.5.0` for downloads, at the cost of
 leaving nothing in the server to end a download whose reader has stopped reading
 ([0155](../decisions/0155-the-object-store-is-timed-on-its-silence.md)); see the changelog.
 
-**Behind a reverse proxy, every respondent shares one rate-limit budget.** `0.4.0` counts
-every public limit by the address on the socket, and behind the reverse proxy the deployment
-view draws, that address is the proxy's for every request: thirty submissions a minute
-between everybody, and the next refused with `429` for traffic that was not theirs. The
-operator is not told, because the server writes no request log, and nothing in `0.4.0` can
-be set to change it. Hazard D14 in [`SAFETY-ANALYSIS.md`](SAFETY-ANALYSIS.md) has it. The
-setting that follows `0.4.0`, `FORMANCY_TRUST_PROXY`, is in
-[`CHANGELOG.md`](../../CHANGELOG.md) under *Unreleased*; set wider than the proxy, it turns
+**Behind a reverse proxy nobody named, every respondent shares one rate-limit budget.** `0.4.0`
+counts every public limit by the address on the socket, and behind the reverse proxy the
+deployment view draws, that address is the proxy's for every request: thirty submissions a
+minute between everybody, and the next refused with `429` for traffic that was not theirs. The
+operator is not told, because that server writes no request log, and nothing in `0.4.0` can be
+set to change it. Hazard D14 in [`SAFETY-ANALYSIS.md`](SAFETY-ANALYSIS.md) has it. `0.5.0` adds
+the setting, `FORMANCY_TRUST_PROXY`, and a request log that names each request's route and
+status; with the setting unset it counts as `0.4.0` does. Set wider than the proxy, it turns
 this into the opposite defect, a client choosing the address it is counted by
 ([0156](../decisions/0156-a-proxy-is-trusted-by-its-address.md)).
 
@@ -350,7 +351,41 @@ software has. `signature` and `tagpicker` have since left this list the same way
 field type and a spec 3 widget — and the list is checked rather than read. `apps/docs/src/soup.test.ts` now checks every name in this list against the
 format's own vocabulary, so it cannot happen again in that direction.
 
-### Characterised by this document, and new since 0.3.0
+### Characterised by this document, and new since 0.4.0
+
+`0.5.0` reads and writes `specVersion: "4"`, as `0.4.0` does, so no document and no stored
+submission changes. What changes what a *deployment* stores, configures or answers is below;
+each has its section in [`MIGRATIONS.md`](../../MIGRATIONS.md) where something must move.
+
+- **Two tables and a column, added on start.** `form_examples` keeps a form's examples beside
+  it and never in a version
+  ([0166](../decisions/0166-a-deployment-keeps-a-forms-examples-and-runs-them-at-publish.md)).
+  `rate_limit_counters`, unlogged, is the count every replica spends
+  ([0170](../decisions/0170-a-limit-is-counted-once-in-the-database-every-replica-shares.md)).
+  `files.receiving_until` is the lease under which one request receives a file's bytes
+  ([0153](../decisions/0153-a-file-is-received-by-one-request-at-a-time.md)). There is nothing
+  to run.
+- **Settings, each optional.** `FORMANCY_TRUST_PROXY` names the proxies whose
+  `X-Forwarded-For` is believed ([0156](../decisions/0156-a-proxy-is-trusted-by-its-address.md)).
+  `FORMANCY_LOG_LEVEL` sets how much the request log writes. `FORMANCY_MODEL_PROVIDER`,
+  `FORMANCY_MODEL_API_KEY` and `FORMANCY_MODEL` give the builders a model, asked through the
+  server with the provider's own client above
+  ([0165](../decisions/0165-a-deployments-model-is-asked-through-its-server.md)). An empty
+  `FORMANCY_FILES_DIR` or `FORMANCY_S3_ENDPOINT` is read as unset.
+- **What a client is answered.** An anonymous submission without the token its form was
+  handed out with is refused, and one sent twice is stored once
+  ([0169](../decisions/0169-a-response-is-stored-once.md)). A `5xx`, or a fault answered under
+  a `4xx`, says its status and nothing of what was thrown
+  ([0172](../decisions/0172-a-5xx-says-nothing-of-what-was-thrown.md),
+  [0175](../decisions/0175-a-name-goes-into-a-header-encoded.md)). A body with a NUL character
+  in any string is refused `400`
+  ([0173](../decisions/0173-a-nul-character-names-nothing-and-a-body-with-one-is-refused.md)).
+  A file is downloaded, and a form exported, under any name, encoded (0175).
+- **The admin loads nothing from another host.** Its faces and its editor are served from the
+  deployment's own origin, where `0.4.0`'s asked Google Fonts and jsDelivr;
+  `apps/admin/src/no-other-host.test.tsx` reads its page for any other address.
+
+### Characterised by an earlier version of this document, and new in 0.4.0
 
 `0.4.0` reads and writes `specVersion: "4"`. Everything version 4 added is listed in
 [`MIGRATIONS.md`](../../MIGRATIONS.md); the parts that change what a *deployment* stores or
@@ -408,7 +443,7 @@ Still from 0.2.0 and unchanged:
   breaker, and SSRF defence that validates the resolved address and connects to it.
 - **Rate limiting** at four scopes, and a **proof-of-work challenge** on the public
   submission plane. The rate limiter's default store is per process, so it is wrong behind
-  more than one replica — stated here because it is silent. Fixed after `0.4.0`: every limit
+  more than one replica — stated here because it is silent. Fixed in `0.5.0`: every limit
   counts in the PostgreSQL the replicas share, a public limit admits uncounted and a login or
   a model request is refused while that count cannot be had
   ([0170](../decisions/0170-a-limit-is-counted-once-in-the-database-every-replica-shares.md));
@@ -425,21 +460,19 @@ Still from 0.2.0 and unchanged:
 
 Resumable and multipart uploads, and presigned uploads that would keep bytes out of the
 server's own data path. (Virus scanning was in this list until 0.4.0, which scans every upload
-when a deployment runs ClamAV — above. So was a submission token, until the release after it:
-every form is now handed out with one, so that a response sent twice is stored once, and it
+when a deployment runs ClamAV — above. So was a submission token, until 0.5.0: every form is
+handed out with one, so that a response sent twice is stored once, and it
 adds no dependency — an HMAC from `@noble/hashes`, already declared above
 ([0169](../decisions/0169-a-response-is-stored-once.md)).)
 
-**The server writes no request log.** Fastify is constructed with the logger off, so no
-submission content can reach a request log — and nothing can tell an operator why a request
-failed either. Its background workers do print a failed pass's error to standard error,
-unredacted; hazard C3 says what that can carry.
-There is no redaction configuration, so a deployment that adds a logger owns that question
-alone. Hazard C3 has the detail. The request log that follows `0.4.0` — a line per request and
-per error, built from a list of fields, with the workers' failures and the database's notices
-through the same rule — is in [`CHANGELOG.md`](../../CHANGELOG.md) under *Unreleased*
-([0168](../decisions/0168-the-log-is-built-from-a-list-of-fields.md)), and is what C3 now
-describes; none of it is in `0.4.0`.
+**`0.4.0` and earlier write no request log; `0.5.0` writes one.** In the earlier releases
+Fastify is constructed with the logger off, so nothing can tell an operator why a request
+failed, and the background workers print a failed pass's error to standard error, unredacted.
+`0.5.0` writes a line per request and per error to standard output, built from a list of
+fields, with the workers' failures and the database's notices through the same rule
+([0168](../decisions/0168-the-log-is-built-from-a-list-of-fields.md)); hazard C3 says what it
+holds and what it leaves out. There is no redaction configuration: what a line may carry is the
+list, and a deployment that adds a logger of its own owns that question alone.
 
 **Accessibility**, stated precisely because vague claims here are worse than
 none: the conformance suite structurally requires that every control be
