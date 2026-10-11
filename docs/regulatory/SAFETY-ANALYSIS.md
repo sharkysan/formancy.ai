@@ -764,11 +764,24 @@ A 5xx now answers its status's name, and a code only for an error made to be ans
 `RATE_LIMIT_UNAVAILABLE`, while Fastify's default handler still writes its `request.failed` line
 ([0172](../decisions/0172-a-5xx-says-nothing-of-what-was-thrown.md)); `error-replies.test.ts`
 holds the reply and the line, each case watched failing, and the `ENOSPC` case asserts the
-opposite of what it did. **A 4xx still carries the thrown error's message**: right for the
-refusals Fastify and the server write, wrong for a library's error that names a 4xx of its own —
-a model provider's SDK does — should one escape a route; the model's adapters catch theirs. An
-error thrown while an error's reply is being sent is answered by Fastify's fallback, past the
-hook that withholds the words. **A NUL character in a request's address or body is not a line at
+opposite of what it did. **A 4xx from an error that names its status still carries its
+message**: right for the refusals Fastify and the server write, wrong for a library's error that
+names a 4xx of its own — a model provider's SDK does — should one escape a route; the model's
+adapters catch theirs. A fault answered under a 4xx its reply already had says only that status.
+**An error thrown while a reply's headers were written said Node's words, until 2026-10-11.** A
+file whose name was outside Latin-1 or held a control character — anybody who may submit to a
+form can name one so — could not be read back through the server, and a form at a path with a
+line break could not be exported: Node refused `content-disposition` after the route had
+answered, the error's own reply carried the same header and failed the same way, and Fastify's
+last resort wrote it past the hook, a `500` saying `ERR_INVALID_CHAR` and `Invalid character in
+header content ["content-disposition"]`. Any header Node refuses did the same under a route's own
+`401` or `404`. A name is now encoded into the header, and an error's reply drops a header Node
+would refuse ([0175](../decisions/0175-a-name-goes-into-a-header-encoded.md));
+`attachment-names.integration.test.ts` holds both routes on real PostgreSQL, and
+`error-replies.test.ts` puts such a header on a request to every route in the route table, each
+watched failing. An error thrown by a hook while an error's reply is being sent is still answered
+by Fastify's fallback; no `onSend` hook runs after the one that withholds but Fastify's own on a
+`HEAD` route. **A NUL character in a request's address or body is not a line at
 `error`, since 2026-10-11.** Until then one in a form's path, on the read no limit counts, was a
 `500` and two lines at `error`, so anybody could write them at will — and so was one in a
 sign-in's email, an answer, a draft and most else a request sends to be kept. One in an address now names nothing,

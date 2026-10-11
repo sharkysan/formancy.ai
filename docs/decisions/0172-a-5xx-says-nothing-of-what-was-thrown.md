@@ -1,7 +1,10 @@
 # 0172 — A 5xx says its status and nothing of what was thrown
 
 - **Status:** accepted; a value a `text` column cannot hold, which it left a `500`, decided by
-  [0173](0173-a-nul-character-names-nothing-and-a-body-with-one-is-refused.md)
+  [0173](0173-a-nul-character-names-nothing-and-a-body-with-one-is-refused.md); an error thrown
+  while a reply's headers were written, which reached its client past the hook, and a fault
+  answered under a 4xx, which kept its words, decided by
+  [0175](0175-a-name-goes-into-a-header-encoded.md)
 - **Date:** 2026-10-11
 - **Deciders:** Daniel Bacher
 - **Verified by:** `packages/server/src/error-replies.test.ts` — a database error whose message is

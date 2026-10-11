@@ -271,6 +271,20 @@ body with one is refused as malformed, `400`
 ([0173](../decisions/0173-a-nul-character-names-nothing-and-a-body-with-one-is-refused.md)); see
 the changelog.
 
+**Every release through `0.4.0` cannot export a form whose path holds a character outside
+Latin-1 or a control character, and from `0.2.0` cannot serve a file named so.** The name goes
+into `content-disposition`, Node.js refuses to write a header holding such a character, and the
+answer is a `500` carrying Node's `ERR_INVALID_CHAR` and its sentence naming the header. The
+supplied uploaders send a file's own name, so a file named in Japanese on a respondent's disk is
+enough; the bytes are kept, and can be read from the store directly. A Latin-1 name such as `café.pdf` is served, as one raw byte that the server sent
+as Latin-1 before a file and as UTF-8 before an export — Node.js 22 with Fastify 5.12.5, measured
+on 2026-10-11. Read in those releases' source and measured on the code just before the fix, not
+run on them. After `0.4.0` the `500` lost its words to 0172's change everywhere but here,
+because the error's reply failed on the same header and Fastify 5.12.5's last-resort reply runs
+no hook. Fixed after `0.4.0`: a name is encoded as RFC 6266 and RFC 8187 have it, and an error's
+reply drops a header Node would refuse
+([0175](../decisions/0175-a-name-goes-into-a-header-encoded.md)).
+
 **Measured functional gaps.** Against the official CEL corpus: 2,344 cases
 total, 704 in scope and run, **586 passed and 118 failed**, 2 refused
 deliberately by formancy's own policy, 1,638 excluded as out of scope. The 118

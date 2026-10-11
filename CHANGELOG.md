@@ -10,6 +10,28 @@ later.
 
 ## Unreleased
 
+**Fixed: a file named outside Latin-1 could not be downloaded, and the `500` said why in Node's
+words.** A file's name goes into the download's `content-disposition` and a form's path into its
+export's, and Node refuses to write a header holding anything but a tab, printable ASCII and the
+bytes 0x80–0xFF. So a file a respondent named `日本 €.pdf`, or one whose name a script gave a
+control character, could not be read back, and a form published at a path with a line break or in
+Japanese could not be exported: each a `500` whose body was Node's
+`{"code":"ERR_INVALID_CHAR","message":"Invalid character in header content [\"content-disposition\"]"}`
+— past the fix below that withholds a 5xx's words, because the error's own reply failed on the
+same header and Fastify's last resort writes it without running a hook. Now **a name is encoded**
+as RFC 6266 and RFC 8187 have it:
+`attachment; filename="__ _.pdf"; filename*=UTF-8''%E6%97%A5%E6%9C%AC%20%E2%82%AC.pdf`, the exact
+name in `filename*`, which RFC 6266 has a reader prefer, and a name in plain ASCII keeping the
+header it had. A name in Latin-1, `café.pdf`, which went out as one raw byte, is `caf_.pdf` in
+`filename` now, with the name in `filename*`; a client that reads only `filename` sees that. `"`,
+CR and LF were deleted from a name before, and are encoded now. **An error's reply drops a header
+Node would refuse**, so a header a route gets wrong costs the client its answer and not Node's
+words, and **a fault answered under a 4xx the reply already had** — a refusal whose header could
+not be written — says only that status rather than the fault's words
+([0175](docs/decisions/0175-a-name-goes-into-a-header-encoded.md)). The download has had this
+since `0.2.0` and the export since `0.1.0`, by their source; the failures were measured on the
+code just before this change, not on those releases.
+
 **Fixed: in the admin, a field's name ran on from the last line of the form's examples.** The
 Properties column draws the examples above the field's properties, and the workbench theme
 rules off every section from the one above it except the property panel, which it expects
