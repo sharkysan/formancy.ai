@@ -182,6 +182,17 @@ export function isUuid(id: string): boolean {
 }
 
 /**
+ * Whether `value` can be compared with a `text` column: PostgreSQL holds no NUL character in
+ * text and refuses one with an error, `22021`, where the in-memory storage finds no row. So a
+ * lookup by a value with one — a form's path from a URL, an API key's prefix from a header —
+ * answers no row without asking, as `isUuid` does for its column (0173). No row was ever
+ * written with one, since no write of one ever succeeded.
+ */
+export function fitsText(value: string): boolean {
+  return !value.includes('\u0000')
+}
+
+/**
  * Bootstrap DDL for the thin slice — drizzle-kit migrations arrive with the
  * lifecycle work; a self-hosted skeleton that creates its own tables on first
  * start is worth more right now than a migration pipeline.

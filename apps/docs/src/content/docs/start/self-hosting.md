@@ -668,6 +668,20 @@ A refusal, a 4xx, still says what to fix, and a route that answers a 5xx itself 
 request id, so when somebody reports a `500`, find its `request.failed` line by the route and the
 time.
 
+**A NUL character is refused, not failed on.** PostgreSQL holds no U+0000, so a request body with
+one in any string or any member's name is answered `400` before any route runs — on a management
+route, before a session is asked for, as a body that does not parse is — with the JSON Pointer to
+where it sits:
+
+```json
+{"error":"nul_character","pointer":"/email","message":"The NUL character (U+0000) is in no string this server accepts, and this request's body has one at /email."}
+```
+
+One in an address — `%00` in a form's path — is answered as a name nothing has: `404` with
+`unknown_form` for a path. Both are written at `info`, so nobody can fill the `error` lines with
+them, and a file's bytes are not looked at
+([0173](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0173-a-nul-character-names-nothing-and-a-body-with-one-is-refused.md)).
+
 `FORMANCY_LOG_LEVEL` sets how much is written; `off` writes none of it. A few plain sentences
 at startup — that the server is listening, which model it asks, that it generated an ephemeral
 `FORMANCY_AUTH_SECRET` — are not part of the log and are written whatever the level, and so is

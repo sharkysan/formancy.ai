@@ -39,6 +39,7 @@ import { checkedMaxFileBytes, DEFAULT_MAX_FILE_BYTES } from './upload-settings.j
 import { serverLogOptions } from './server-log.js'
 import type { ServerLogSettings } from './server-log.js'
 import { withholdServerErrors } from './error-replies.js'
+import { refuseNulCharacters } from './nul-characters.js'
 import { auditTrail } from './audit-trail.js'
 
 export { CHALLENGE_HEADER, SCHEMA_HASH_HEADER, SUBMISSION_TOKEN_HEADER } from './headers.js'
@@ -157,8 +158,10 @@ export async function createApp(storage: Storage, options: AppOptions): Promise<
     // Which hop's word request.ip takes, and so whose budget a rate limit spends.
     trustProxy: options.trustProxy ?? false,
   })
-  // Before any route: a 5xx says its status and nothing of what was thrown (0172).
+  // Before any route: a 5xx says its status and nothing of what was thrown (0172), and a body
+  // with a NUL character in it, which nothing here can keep, is refused as malformed (0173).
   withholdServerErrors(app)
+  refuseNulCharacters(app)
 
   const maxFileBytes = checkedMaxFileBytes(options.maxFileBytes ?? DEFAULT_MAX_FILE_BYTES, 'maxFileBytes')
   const fileStore = options.fileStore

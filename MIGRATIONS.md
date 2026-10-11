@@ -298,6 +298,31 @@ again.
   exists for exactly that, and `runsOn` is already in place so the ordering question can
   be answered without restructuring anything.
 
+## A NUL character is refused (Unreleased)
+
+**A client may see new answers.**
+
+- A request body with a NUL character, U+0000, in any string or any member's name is answered
+  `400` with `{"error":"nul_character","pointer":"…","message":"…"}` before the route runs, where
+  `pointer` is the JSON Pointer to where it sits
+  ([0173](docs/decisions/0173-a-nul-character-names-nothing-and-a-body-with-one-is-refused.md)).
+  Most such bodies were a `500`. Three were answered: a sign-in with one in its password (`401`,
+  or a session for the user below), a model request with one in its text (`200`), and a submission
+  with one only in an answer the form drops (`201`, stored without it). A management route answers
+  it before it asks for a session, as it answers a body that does not parse.
+- A NUL in an address — `%00` in a form's path, a draft's or a file's id — is answered as a name
+  nothing has: `404 unknown_form` for a path, where it was a `500`.
+
+**Users.** `POST /users` accepted a password with a NUL in it. Such a user cannot sign in now, and
+nothing records which users they are: the password is stored as a hash. No route deletes a user
+or changes a password, so their address stays taken.
+
+**If you implement `Storage` yourself:** `getFormByPath`, `getDraft`, `getUserByEmail` and
+`findApiKeysByPrefix` find nothing for a value no row could hold, rather than throwing, as
+`getFile` does for an id.
+
+**The database.** Nothing changes: no row ever held a NUL, since every write of one failed.
+
 ## A 5xx says nothing of what was thrown (Unreleased)
 
 **A client may see new answers.**

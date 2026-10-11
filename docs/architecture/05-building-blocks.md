@@ -581,7 +581,13 @@ request answers is `server/error-replies.ts`, beside it rather than in it: the r
 shares the log's for what a code looks like, and is not the log's to keep
 ([0172](../decisions/0172-a-5xx-says-nothing-of-what-was-thrown.md)). `server/db.ts` holds what a
 `uuid` column can be asked about, which the PostgreSQL storage checks a file's or a delivery's id
-against before it asks.
+against before it asks, and what a `text` column can — no NUL character — which it checks a
+form's path, a draft's id, an email and an API key's prefix against. A body with a NUL in it is
+refused by `server/nul-characters.ts`, one hook on the root instance before any route
+([0173](../decisions/0173-a-nul-character-names-nothing-and-a-body-with-one-is-refused.md)). The
+storage's users and API keys moved to `server/postgres-identities.ts` when that check would have
+taken `postgres-storage.ts` past the size budget: who may sign in changes for its own reason, as a
+form's examples do.
 
 ## Starter template collection and gallery
 

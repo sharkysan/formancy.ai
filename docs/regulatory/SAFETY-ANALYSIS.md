@@ -768,8 +768,15 @@ opposite of what it did. **A 4xx still carries the thrown error's message**: rig
 refusals Fastify and the server write, wrong for a library's error that names a 4xx of its own —
 a model provider's SDK does — should one escape a route; the model's adapters catch theirs. An
 error thrown while an error's reply is being sent is answered by Fastify's fallback, past the
-hook that withholds the words. And anybody can write a `request.failed` line at `error`: a NUL
-byte in a form's path, on the read no limit counts, is a `500` (measured 2026-10-11, arc42 §11.2).
+hook that withholds the words. **A NUL character in a request's address or body is not a line at
+`error`, since 2026-10-11.** Until then one in a form's path, on the read no limit counts, was a
+`500` and two lines at `error`, so anybody could write them at will — and so was one in a
+sign-in's email, an answer, a draft and most else a request sends to be kept. One in an address now names nothing,
+and one in a body is refused with a `400` before any route runs, both written at `info`
+([0173](../decisions/0173-a-nul-character-names-nothing-and-a-body-with-one-is-refused.md));
+`nul-character.integration.test.ts` finds no line at `error` for either on any route in the
+route table, on real PostgreSQL. A `500` anybody can cause is still a line at `error` they can
+write as often as they like.
 **Two kinds of line say less than the rest:** a request refused while the server closes is
 refused before it is routed, and its line has no method and no route; one whose client left has
 no status, because its answer was never sent. At `warn` and above neither a 4xx nor a client that left is written.
