@@ -10,6 +10,12 @@ later.
 
 ## Unreleased
 
+**Fixed: in the admin, a field's name ran on from the last line of the form's examples.** The
+Properties column draws the examples above the field's properties, and the workbench theme
+rules off every section from the one above it except the property panel, which it expects
+first. The admin's stylesheet now gives the panel the same rule, gap and spacing as the logic
+panel under it whenever something is drawn above it.
+
 **Fixed: the Angular builder laid its panes out differently from the React one.** On the
 Translations tab the table a translator works in was squeezed into the narrow column of two,
 with the preview pushed under it, and in another language the model's review was squeezed the
