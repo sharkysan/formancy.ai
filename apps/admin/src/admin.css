@@ -383,6 +383,18 @@ body::before {
   color-scheme: light;
 }
 
+/* The Properties column stacks the form's examples above a field's properties and its logic.
+   The workbench theme rules off every section from the one above it except the property
+   panel, which it expects first in its column, so after the examples its name ran on from
+   their last line. Here, rather than in the theme: a rule there that asked what comes before
+   the panel would read the two builders differently, because the Angular panel is the first
+   child of its own element wherever it stands. */
+.wb-body > [data-formancy-part='property-panel']:not(:first-child) {
+  margin-block-start: 1rem;
+  padding-block-start: 0.75rem;
+  border-block-start: 2px solid var(--wb-rule);
+}
+
 .wb-pane button,
 .wb-tools button,
 .wb-page button {
