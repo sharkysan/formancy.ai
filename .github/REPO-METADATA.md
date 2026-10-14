@@ -67,3 +67,29 @@ Deleted when their pull request merges, by the setting rather than by hand
 ```bash
 gh repo edit sharkysan/formancy.ai --delete-branch-on-merge
 ```
+
+## The `npm` environment
+
+`NPM_TOKEN` is a secret of the environment `npm`, not of the repository
+([0176](../docs/decisions/0176-the-npm-token-is-a-secret-of-the-npm-environment.md)).
+The environment admits only `v*` tags, so the release job, which runs on a
+tag, gets the token, and a workflow on any other branch or tag that names the
+environment is refused before it starts.
+
+```bash
+# The environment, with a deployment policy of its own rather than "any branch"
+gh api -X PUT repos/sharkysan/formancy.ai/environments/npm \
+  -F 'deployment_branch_policy[protected_branches]=false' \
+  -F 'deployment_branch_policy[custom_branch_policies]=true'
+# Only v* tags may deploy to it
+gh api -X POST repos/sharkysan/formancy.ai/environments/npm/deployment-branch-policies \
+  -f name='v*' -f type=tag
+# The token, as a secret of the environment (prompts for the value)
+gh secret set NPM_TOKEN --env npm --repo sharkysan/formancy.ai
+# And then not of the repository
+gh secret delete NPM_TOKEN --repo sharkysan/formancy.ai
+```
+
+The order matters: set the environment's secret before deleting the
+repository's, and both only once the release job names the environment, or the
+next tag's release finds no token.
