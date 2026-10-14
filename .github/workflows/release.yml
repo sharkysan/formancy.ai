@@ -26,6 +26,13 @@ jobs:
   release:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # NPM_TOKEN is a secret of the `npm` environment, not of the repository: a
+    # repository secret is handed to any workflow on any branch a collaborator
+    # pushes, and an environment's only to a job that names it, past a
+    # deployment policy that admits `v*` tags alone (0176, REPO-METADATA.md).
+    # apps/docs/src/npm-token-environment.test.ts fails when a job reads the
+    # token without naming the environment.
+    environment: npm
     permissions:
       contents: write # create the GitHub release
       id-token: write # OIDC, for npm provenance and keyless signing
@@ -48,7 +55,7 @@ jobs:
       - name: The npm token must work, and must not want an OTP
         run: |
           if [ -z "${NODE_AUTH_TOKEN}" ]; then
-            echo "::error::NPM_TOKEN is not set on this repository"
+            echo "::error::NPM_TOKEN is not set on the npm environment (REPO-METADATA.md)"
             exit 1
           fi
           WHO=$(npm whoami 2>&1) || {

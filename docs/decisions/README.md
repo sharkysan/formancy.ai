@@ -276,3 +276,4 @@ listed under the sections they belong to above.
 | [0173](0173-a-nul-character-names-nothing-and-a-body-with-one-is-refused.md) | A NUL character names nothing, and a body with one is refused | accepted |
 | [0174](0174-the-builders-hosts-take-no-part-in-layout.md) | The builder's hosts take no part in layout, and the two builders are measured part by part | accepted |
 | [0175](0175-a-name-goes-into-a-header-encoded.md) | A name goes into a header encoded, and an error's reply drops a header that cannot be written | accepted |
+| [0176](0176-the-npm-token-is-a-secret-of-the-npm-environment.md) | The npm token is a secret of the `npm` environment, which only release tags reach | accepted |

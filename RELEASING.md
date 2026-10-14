@@ -64,6 +64,17 @@ three are in place.
 The only secret is `NPM_TOKEN`, and **its type matters more than its
 permissions**.
 
+It is a secret of the **`npm` environment**, not of the repository
+([0176](docs/decisions/0176-the-npm-token-is-a-secret-of-the-npm-environment.md)).
+A repository secret is handed to any workflow, on any branch a collaborator
+pushes, that asks for it; an environment's only to a job that names the
+environment, and the `npm` environment's deployment policy admits `v*` tags
+alone. The release job names it, and
+`apps/docs/src/npm-token-environment.test.ts` fails when a job reads the token
+without naming it. The environment and its policy are repository settings,
+written down in [`.github/REPO-METADATA.md`](.github/REPO-METADATA.md) with
+the commands that set them; nothing in the tree can read them.
+
 npm accounts set to `auth-and-writes` two-factor authentication demand a
 one-time password for every publish. A classic **Publish** token does not
 bypass that, so CI fails with:
