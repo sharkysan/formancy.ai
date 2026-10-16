@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react'
-import type { RemoteOption } from '@formancy/spec'
+import type { RemoteOptionsAnswer } from '@formancy/spec'
 
 /**
  * What a source is asked for.
@@ -31,7 +31,13 @@ export interface OptionsRequest {
    * shows an opaque identifier. So the source answers in the right language instead.
    */
   locale: string
-  /** How many rows the control can show. A hint: the control caps what arrives anyway. */
+  /**
+   * How many rows the control can show. A hint: the control caps what arrives anyway.
+   *
+   * A source that pages reads `limit + 1` rows to know whether there are more, answers a
+   * page of `limit`, and never counts the rest: a count reads every matching row on every
+   * keystroke, which is the scan paging exists to avoid.
+   */
   limit: number
   /** Aborted when the answer stops being wanted — a newer keystroke, or an unmount. */
   signal: AbortSignal
@@ -47,10 +53,26 @@ export interface OptionsRequest {
  * surface on a self-hosted instance.
  */
 export interface OptionsSource {
-  resolve(request: OptionsRequest): Promise<readonly RemoteOption[]>
+  /**
+   * Every matching row, as a list — exactly as before a page could be answered, its true
+   * total included — or one page of them: `{ options, more, withheld? }`.
+   *
+   * `more` says rows match beyond these, and the control says so without a number, since
+   * nobody counted one. `withheld` counts rows the source matched and cannot hand over — a
+   * value a select could not store — because a source withholds and counts rather than
+   * filtering silently. A page with any other key, a `more` that is not a boolean or a
+   * `withheld` that is not a whole count is refused whole, and the field says its source
+   * failed rather than showing a list that looks complete
+   * ([0177](../../../docs/decisions/0177-a-source-may-say-its-list-goes-on.md)).
+   */
+  resolve(request: OptionsRequest): Promise<RemoteOptionsAnswer>
   /** How long to wait after a keystroke before asking. The control has a default. */
   debounceMs?: number
-  /** Below this many characters, do not ask at all. The control says so on screen. */
+  /**
+   * Below this many characters, do not ask at all. The control says so on screen: a
+   * typeahead how many to type, and a plain select — whose query is always empty, so it
+   * never asks — that its answers are found by searching.
+   */
   minQueryLength?: number
   /** How many rows to show at once. */
   maxRows?: number

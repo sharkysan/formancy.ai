@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { KeyboardEvent } from 'react'
 import { narrowOptionsByLabel } from '@formancy/spec'
+import { optionsStatus } from '@formancy/core/words'
 import { useFormText } from '../context.js'
 import type { FieldBinding } from '../use-field.js'
 import { useSourcedOptions } from '../use-sourced-options.js'
@@ -31,7 +32,11 @@ export function TypeaheadSelectField({
    * first clears the answer on the way out.
    */
   const [query, setQuery] = useState<string | null>(null)
-  const [open, setOpen] = useState(false)
+  const [opened, setOpen] = useState(false)
+  /** A field disabled by a rule while its list was showing has no list: nobody can
+   *  choose from it, and its region would say "no options match" under a read-only
+   *  answer. */
+  const open = opened && !field.disabled
   /** The arrowed-over option by VALUE, not by index: the filtered list changes on
    *  every keystroke and an index would point at a different row after one. */
   const [activeValue, setActiveValue] = useState<string | null>(null)
@@ -40,6 +45,22 @@ export function TypeaheadSelectField({
   // source is asked what somebody is looking for rather than for everything.
   const sourced = useSourcedOptions({ ...field, path }, query ?? '')
   const options = sourced.options
+  // The source's one sentence, said only where the person can act on it: completeness
+  // and "Searching…" while the list is open, what typing fixes even while it is closed,
+  // and nothing on a disabled field (0177).
+  const said =
+    sourced.remote === null
+      ? ''
+      : optionsStatus(text, {
+          control: 'typeahead',
+          open,
+          disabled: field.disabled,
+          failed: sourced.remote.failed,
+          busy: sourced.remote.busy,
+          needs: sourced.remote.needs,
+          query: query ?? '',
+          completeness: sourced.remote.completeness,
+        })
 
   const chosen = options.find((option) => option.value === field.value)
   // A source is the authority on what matches: it was handed the query, and
@@ -227,12 +248,12 @@ export function TypeaheadSelectField({
       <p
         role="status"
         data-formancy-part="typeahead-status"
-        {...(statusState({ sourced, open, matches: matches.length }) === undefined
+        {...(statusState({ sourced, said, open, matches: matches.length }) === undefined
           ? {}
-          : { 'data-state': statusState({ sourced, open, matches: matches.length }) })}
+          : { 'data-state': statusState({ sourced, said, open, matches: matches.length }) })}
       >
-        {sourced.remote !== null && sourced.remote.status !== ''
-          ? sourced.remote.status
+        {said !== ''
+          ? said
           : open && matches.length === 0 && sourced.remote?.busy !== true
             ? text('options.noMatch')
             : ''}

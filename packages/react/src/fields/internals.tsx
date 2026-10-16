@@ -135,17 +135,20 @@ export function FieldShell({
  */
 export function statusState({
   sourced,
+  said,
   open,
   matches,
 }: {
-  sourced: { remote: { busy: boolean; failed: boolean; status: string } | null }
+  sourced: { remote: { busy: boolean; failed: boolean } | null }
+  /** The source's sentence as `optionsStatus` composed it, before "no options match". */
+  said: string
   open: boolean
   matches: number
 }): string | undefined {
   if (sourced.remote === null) return open && matches === 0 ? 'empty' : undefined
   if (sourced.remote.busy) return 'busy'
   if (sourced.remote.failed) return 'failed'
-  if (sourced.remote.status !== '') return 'hint'
+  if (said !== '') return 'hint'
   return open && matches === 0 ? 'empty' : undefined
 }
 

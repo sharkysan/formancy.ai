@@ -4,7 +4,7 @@ import { createFormEngine } from '@formancy/core'
 import type { FormEngine } from '@formancy/core'
 import { FORM_WORDS, FORM_WORDS_DE, createFormText } from '@formancy/core/words'
 import type { FormWordId } from '@formancy/core/words'
-import type { FormSchema } from '@formancy/spec'
+import type { FormSchema, RemoteOptionsAnswer } from '@formancy/spec'
 import type { ReactNode } from 'react'
 import {
   ErrorSummary,
@@ -16,7 +16,7 @@ import {
   UploaderProvider,
   useSubmit,
 } from './index.js'
-import type { FormWordsByLocale, OptionsSources, Scanner, StoredFile, Uploader } from './index.js'
+import type { FormWordsByLocale, OptionsSource, OptionsSources, Scanner, StoredFile, Uploader } from './index.js'
 
 /**
  * The renderer's own words, in the form's language.
@@ -397,8 +397,8 @@ describe('every live region in a German form', () => {
     expect(screen.getByText(de('file.unavailable'))).toBeTruthy()
   })
 
-  test('says what a search is doing in German: too short, searching, capped, failed', async () => {
-    let answer: (rows: Array<{ value: string; label: string }>) => void = () => undefined
+  test('says what a search is doing in German: too short, searching, capped, held, withheld, more, failed', async () => {
+    let answer: (rows: RemoteOptionsAnswer) => void = () => undefined
     let fail: (error: unknown) => void = () => undefined
     const sources: OptionsSources = {
       orte: {
@@ -433,10 +433,24 @@ describe('every live region in a German form', () => {
         { value: 'ZG', label: 'Zug' },
       ]),
     )
-    await waitFor(() => expect(status('typeahead-status')).toBe(de('options.capped', { shown: 1, total: 2 })))
+    const capped = de('options.capped', { shown: 1, total: 2 })
+    await waitFor(() => expect(status('typeahead-status')).toBe(capped))
+
+    // Held through the next search, in German too: the rows on screen are still the last
+    // answer's, and `aria-busy` is what says a search is running.
+    fireEvent.change(box, { target: { value: 'Zür' } })
+    await waitFor(() => expect(box.getAttribute('aria-busy')).toBe('true'))
+    expect(status('typeahead-status')).toBe(capped)
+    await act(async () => answer({ options: [{ value: 'ZH', label: 'Zürich' }], more: false, withheld: 1 }))
+    await waitFor(() => expect(status('typeahead-status')).toBe(de('options.withheld', { count: 1 })))
+
+    fireEvent.change(box, { target: { value: 'Zü' } })
+    await waitFor(() => expect(box.getAttribute('aria-busy')).toBe('true'))
+    await act(async () => answer({ options: [{ value: 'ZH', label: 'Zürich' }], more: true }))
+    await waitFor(() => expect(status('typeahead-status')).toBe(de('options.more', { count: 1 })))
 
     fireEvent.change(box, { target: { value: 'Zug' } })
-    await waitFor(() => expect(status('typeahead-status')).toBe(de('options.searching')))
+    await waitFor(() => expect(box.getAttribute('aria-busy')).toBe('true'))
     await act(async () => fail(new Error('down')))
     await waitFor(() => expect(status('typeahead-status')).toBe(de('options.failed')))
     // Every theme styles a failure by this. It was decided by whether the sentence began
@@ -465,7 +479,35 @@ describe('every live region in a German form', () => {
     mount(document([{ key: 'ort', type: 'select', label: 'Ort', optionsSource: 'orte' }]), {
       around: (form) => <OptionsSourcesProvider value={sources}>{form}</OptionsSourcesProvider>,
     })
-    await waitFor(() => expect(status('select-status')).toBe(de('options.failed')))
+    // A select's own failure, which does not ask anybody to type into it.
+    await waitFor(() => expect(status('select-status')).toBe(de('options.failedListed')))
+  })
+
+  test('says what a plain select’s list leaves out in German: capped, more, search only', async () => {
+    // A select's own sentences, each the one a German reader of a list nobody types into
+    // meets: the English literal back in any of them is a half-translated form.
+    const ORT = [{ key: 'ort', type: 'select', label: 'Ort', optionsSource: 'orte' }]
+    const rows = [
+      { value: 'ZH', label: 'Zürich' },
+      { value: 'ZG', label: 'Zug' },
+    ]
+    const withSource = (source: OptionsSource) => ({
+      around: (form: ReactNode) => <OptionsSourcesProvider value={{ orte: source }}>{form}</OptionsSourcesProvider>,
+    })
+
+    mount(document(ORT), withSource({ debounceMs: 0, maxRows: 1, resolve: () => Promise.resolve(rows) }))
+    await waitFor(() => expect(status('select-status')).toBe(de('options.cappedListed', { count: 1, total: 2 })))
+    cleanup()
+
+    mount(
+      document(ORT),
+      withSource({ debounceMs: 0, maxRows: 1, resolve: () => Promise.resolve({ options: rows.slice(0, 1), more: true }) }),
+    )
+    await waitFor(() => expect(status('select-status')).toBe(de('options.moreListed', { count: 1 })))
+    cleanup()
+
+    mount(document(ORT), withSource({ debounceMs: 0, minQueryLength: 2, resolve: () => Promise.resolve(rows) }))
+    await waitFor(() => expect(status('select-status')).toBe(de('options.searchOnly')))
   })
 
   test('says a scan is running, and why it did not work, in German', async () => {
