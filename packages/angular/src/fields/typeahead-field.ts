@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core'
+import { optionsStatus } from '@formancy/core/words'
 import { narrowOptionsByLabel } from '@formancy/spec'
 import { injectField } from '../field.js'
 import { injectFormText } from '../text.js'
@@ -95,7 +96,7 @@ import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
           [attr.aria-activedescendant]="activeId()"
           [value]="text()"
           (input)="onInput($event)"
-          (click)="open.set(true)"
+          (click)="opened.set(true)"
           (keydown)="onKeyDown($event)"
           (blur)="onBlur()"
         />
@@ -117,9 +118,9 @@ import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
       <!-- Present from the start and empty until there is something to say: a live
            region created at the moment it gets its text is one several screen
            readers never announce. -->
-      <!-- ONE region, four things it may say, and never the error region: a source
-           being down is not a wrong answer, and the error region is the control's
-           describedby target carrying the engine's verdict. -->
+      <!-- ONE region, one sentence in it at a time, and never the error region: a
+           source being down is not a wrong answer, and the error region is the
+           control's describedby target carrying the engine's verdict. -->
       <p role="status" data-formancy-part="typeahead-status" [attr.data-state]="statusState()">{{ statusMessage() }}</p>
     </formancy-field-shell>
   `,
@@ -134,7 +135,15 @@ export class FormancyTypeaheadSelect extends FieldComponentBase {
    * clears the answer on the way out.
    */
   protected readonly query = signal<string | null>(null)
-  protected readonly open = signal(false)
+  /** Whether the person opened the list. Only they open it and close it. */
+  protected readonly opened = signal(false)
+  /**
+   * Whether the list is showing: opened, and not disabled by a rule. A box a rule disables
+   * under the person is not reliably blurred, so a list left open would stay on screen with
+   * rows a click still stores into a field nobody may change, and its region would say "no
+   * options match" under a read-only answer. React derives the same (0177).
+   */
+  protected readonly open = computed(() => this.opened() && !this.field.snapshot().disabled)
   /** The arrowed-over option by VALUE, not by index: the filtered list changes on
    *  every keystroke and an index would point at a different row after one. */
   protected readonly activeValue = signal<string | null>(null)
@@ -193,11 +202,31 @@ export class FormancyTypeaheadSelect extends FieldComponentBase {
   })
 
   /**
+   * What the source's state comes to, decided by `optionsStatus` as the plain select's is
+   * (0177): a failure and too few characters whenever they stand, because typing fixes
+   * them; what the list leaves out, and Searching…, only while the list is open, since
+   * under a closed one there is nothing to act on; nothing while the field is disabled.
+   * Empty for a field that lists its own options.
+   */
+  private readonly sourceStatus = computed(() =>
+    optionsStatus(this.words, {
+      control: 'typeahead',
+      open: this.open(),
+      disabled: this.field.snapshot().disabled,
+      failed: this.remote.failed(),
+      busy: this.remote.busy(),
+      needs: this.remote.needs(),
+      query: this.sourceQuery(),
+      completeness: this.remote.completeness(),
+    }),
+  )
+
+  /**
    * A source's own words win over "no options match": while a request is in flight,
    * "nothing matched" is not yet true.
    */
   protected readonly statusMessage = computed(() => {
-    const fromSource = this.remote.status()
+    const fromSource = this.sourceStatus()
     if (fromSource !== '') return fromSource
     return this.open() && this.matches().length === 0 && !this.remote.busy()
       ? this.words('options.noMatch')
@@ -208,7 +237,7 @@ export class FormancyTypeaheadSelect extends FieldComponentBase {
   protected readonly statusState = computed(() => {
     if (this.remote.busy()) return 'busy'
     if (this.remote.failed()) return 'failed'
-    if (this.remote.status() !== '') return 'hint'
+    if (this.sourceStatus() !== '') return 'hint'
     return this.open() && this.matches().length === 0 ? 'empty' : null
   })
 
@@ -234,7 +263,7 @@ export class FormancyTypeaheadSelect extends FieldComponentBase {
 
   protected onInput(event: Event): void {
     this.setQuery((event.target as HTMLInputElement).value)
-    this.open.set(true)
+    this.opened.set(true)
     // Nothing is active on a keystroke: aria-activedescendant is ABSENT rather
     // than pointing at a row the person has not moved to.
     this.activeValue.set(null)
@@ -246,7 +275,7 @@ export class FormancyTypeaheadSelect extends FieldComponentBase {
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault()
       if (!this.open()) {
-        this.open.set(true)
+        this.opened.set(true)
         // Opens ON the answer when there is one, so Down then Enter cannot
         // quietly change an answer somebody only wanted to look at.
         const fallback = event.key === 'ArrowDown' ? matches[0] : matches[matches.length - 1]
@@ -274,7 +303,7 @@ export class FormancyTypeaheadSelect extends FieldComponentBase {
       event.preventDefault()
       const index = this.activeIndex()
       if (index === -1) {
-        this.open.set(false)
+        this.opened.set(false)
         return
       }
       this.choose(matches[index]!.value)
@@ -286,7 +315,7 @@ export class FormancyTypeaheadSelect extends FieldComponentBase {
       event.preventDefault()
       // "Never mind about this list", not "delete what I chose earlier": the query
       // is abandoned and the ANSWER is untouched.
-      this.open.set(false)
+      this.opened.set(false)
       this.activeValue.set(null)
       this.setQuery(null)
     }
@@ -295,12 +324,12 @@ export class FormancyTypeaheadSelect extends FieldComponentBase {
   protected choose(value: string): void {
     this.field.setValue(value)
     this.setQuery(null)
-    this.open.set(false)
+    this.opened.set(false)
     this.activeValue.set(null)
   }
 
   protected onBlur(): void {
-    this.open.set(false)
+    this.opened.set(false)
     this.activeValue.set(null)
     const typed = this.query()
     if (typed !== null) {

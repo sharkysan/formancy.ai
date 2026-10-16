@@ -53,6 +53,9 @@ export {
   provideFormancyOptionsSources,
 } from './options-source.js'
 export type { OptionsRequest, OptionsSource, OptionsSources } from './options-source.js'
+// What a source may answer, so a host types its page against the contract the control reads
+// (0177), from the package it already imports the source's own types from.
+export type { RemoteOption, RemoteOptionsAnswer, RemoteOptionsPage } from '@formancy/spec'
 export { FORMANCY_SCANNER, injectScanner, provideFormancyScanner } from './scanning.js'
 export type { ScanRequest, Scanner } from './scanning.js'
 export { FORMANCY_UPLOADER, injectUploader, provideFormancyUploader } from './uploads.js'

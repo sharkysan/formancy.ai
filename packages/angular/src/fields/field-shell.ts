@@ -102,20 +102,18 @@ export abstract class FieldComponentBase {
   protected readonly sourceQuery = signal('')
 
   /** The remote half, or an inert one for the ordinary field that lists its options. */
-  protected readonly remote = injectSourcedOptions(
-    computed(() => {
-      const def = this.field.snapshot().def
-      return { key: def.key, ...(def.optionsSource === undefined ? {} : { optionsSource: def.optionsSource }) }
-    }),
-    () => this.context.path,
-    computed(() => {
+  protected readonly remote = injectSourcedOptions({
+    sourceName: computed(() => this.field.snapshot().def.optionsSource),
+    dataPath: () => this.context.path,
+    storedValue: computed(() => {
       const value = this.field.snapshot().value
       return typeof value === 'string' && value !== '' ? value : undefined
     }),
-    this.sourceQuery,
-    () => this.engine.locale(),
-    computed(() => this.sourceEnabled()),
-  )
+    query: this.sourceQuery,
+    locale: () => this.engine.locale(),
+    enabled: computed(() => this.sourceEnabled()),
+    disabled: computed(() => this.field.snapshot().disabled),
+  })
 
   /**
    * Whether THIS component is the one that will render the field.

@@ -356,8 +356,8 @@ describe('every live region in a German form', () => {
     expect(screen.getByText(de('file.unavailable'))).toBeTruthy()
   })
 
-  test('says what a search is doing in German: too short, searching, capped, failed', async () => {
-    let answer: (rows: Array<{ value: string; label: string }>) => void = () => undefined
+  test('says what a search is doing in German: too short, searching, capped, held, withheld, more, failed', async () => {
+    let answer: (rows: unknown) => void = () => undefined
     let fail: (error: unknown) => void = () => undefined
     const sources: OptionsSources = {
       orte: {
@@ -366,7 +366,7 @@ describe('every live region in a German form', () => {
         maxRows: 1,
         resolve: () =>
           new Promise((resolve, reject) => {
-            answer = resolve
+            answer = resolve as (rows: unknown) => void
             fail = reject
           }),
       },
@@ -376,6 +376,7 @@ describe('every live region in a German form', () => {
       { providers: [provideFormancyOptionsSources(sources)] },
     )
     const box = screen.getByRole('combobox', { name: 'Ort' })
+    const busy = (): string | null => box.getAttribute('aria-busy')
 
     fireEvent.input(box, { target: { value: 'Z' } })
     await waitFor(() => expect(status('typeahead-status')).toBe(de('options.tooShort', { count: 2 })))
@@ -392,8 +393,21 @@ describe('every live region in a German form', () => {
     ])
     await waitFor(() => expect(status('typeahead-status')).toBe(de('options.capped', { shown: 1, total: 2 })))
 
+    // Held while the next search is on its way, rather than replaced by "Suche…" and said
+    // again once it settles: it describes the rows still on screen.
     fireEvent.input(box, { target: { value: 'Zug' } })
-    await waitFor(() => expect(status('typeahead-status')).toBe(de('options.searching')))
+    await waitFor(() => expect(busy()).toBe('true'))
+    expect(status('typeahead-status')).toBe(de('options.capped', { shown: 1, total: 2 }))
+    answer({ options: [{ value: 'ZG', label: 'Zug' }], more: false, withheld: 1 })
+    await waitFor(() => expect(status('typeahead-status')).toBe(de('options.withheld', { count: 1 })))
+
+    fireEvent.input(box, { target: { value: 'Zu' } })
+    await waitFor(() => expect(busy()).toBe('true'))
+    answer({ options: [{ value: 'ZG', label: 'Zug' }], more: true })
+    await waitFor(() => expect(status('typeahead-status')).toBe(de('options.more', { count: 1 })))
+
+    fireEvent.input(box, { target: { value: 'Zugs' } })
+    await waitFor(() => expect(busy()).toBe('true'))
     fail(new Error('down'))
     await waitFor(() => expect(status('typeahead-status')).toBe(de('options.failed')))
     // Every theme styles a failure by this. It was decided by whether the sentence began
@@ -423,7 +437,36 @@ describe('every live region in a German form', () => {
     await mount(document_([{ key: 'ort', type: 'select', label: 'Ort', optionsSource: 'orte' }]), {
       providers: [provideFormancyOptionsSources(sources)],
     })
-    await waitFor(() => expect(status('select-status')).toBe(de('options.failed')))
+    // Its own failure, which says it asks again when the person moves to it: nobody can
+    // type into a list, so the typeahead's "type to try again" was a promise it broke.
+    await waitFor(() => expect(status('select-status')).toBe(de('options.failedListed')))
+  })
+
+  test('says what a plain select’s list leaves out in German: capped, more, search only', async () => {
+    // A list nobody can type into has sentences of its own, and each is found here by its
+    // German, so one written back as English, or as the typeahead's, fails by name.
+    const ORTE = [
+      { value: 'ZH', label: 'Zürich' },
+      { value: 'ZG', label: 'Zug' },
+      { value: 'BE', label: 'Bern' },
+    ]
+    const select = document_([{ key: 'ort', type: 'select', label: 'Ort', optionsSource: 'orte' }])
+    const answering = (answer: unknown, extra: { minQueryLength?: number } = {}): OptionsSources => ({
+      orte: { debounceMs: 0, maxRows: 2, ...extra, resolve: () => Promise.resolve(answer) as never },
+    })
+
+    await mount(select, { providers: [provideFormancyOptionsSources(answering(ORTE))] })
+    await waitFor(() => expect(status('select-status')).toBe(de('options.cappedListed', { count: 2, total: 3 })))
+    TestBed.resetTestingModule()
+    document.body.innerHTML = ''
+
+    await mount(select, { providers: [provideFormancyOptionsSources(answering({ options: ORTE, more: true }))] })
+    await waitFor(() => expect(status('select-status')).toBe(de('options.moreListed', { count: 2 })))
+    TestBed.resetTestingModule()
+    document.body.innerHTML = ''
+
+    await mount(select, { providers: [provideFormancyOptionsSources(answering(ORTE, { minQueryLength: 2 }))] })
+    await waitFor(() => expect(status('select-status')).toBe(de('options.searchOnly')))
   })
 
   test('says a scan is running, and why it did not work, in German', async () => {
