@@ -12,7 +12,14 @@
  * ran once. A fixture that can be opened, type-checked and linted in place is
  * also one somebody can extend without reading the runner.
  */
-import { CURRENT_SPEC_VERSION, DECLINE_KEY, modelDataPaths, resolvedLocale } from '@formancy/spec'
+import {
+  CURRENT_SPEC_VERSION,
+  DECLINE_KEY,
+  acceptRemoteAnswer,
+  capRemoteAnswer,
+  modelDataPaths,
+  resolvedLocale,
+} from '@formancy/spec'
 import { validateSchema } from '@formancy/spec/validate'
 import schemaJson from '@formancy/spec/schema.json'
 import { parse, referencedPaths, rewritePath } from '@formancy/expressions'
@@ -52,8 +59,9 @@ import type {
   TranslationView,
 } from '@formancy/builder-core'
 import type { BuiltInErrorCode } from '@formancy/core'
-import { FORM_WORDS, FORM_WORDS_DE, createFormText } from '@formancy/core/words'
+import { FORM_WORDS, FORM_WORDS_DE, createFormText, optionsStatus } from '@formancy/core/words'
 import type { FormWordsByLocale } from '@formancy/core/words'
+import type { OptionsSources, RemoteOptionsAnswer } from '@formancy/react'
 import { mintChallenge, solveChallenge, verifySolution } from '@formancy/challenge'
 import { auditedBy, createMemoryStorage, publishForm } from '@formancy/server-core'
 import type { FormSchema } from '@formancy/spec'
@@ -232,6 +240,47 @@ const bilingual = { i18n: { defaultLocale: 'en', messages: { en: {}, de: {} } } 
 if (createFormText({ locale: resolvedLocale(bilingual, 'fr') })('form.submit') !== FORM_WORDS['form.submit']) {
   throw new Error('the installed resolvedLocale did not send a French reader to the default')
 }
+// A source that pages (0177), typed as a host types it, against the installed renderer's
+// `OptionsSources`: it reads one row more than it shows and counts nothing. The installed spec
+// reads the page and decides what it leaves out, and the installed words entry says so as
+// "there are more", with no total — the sentence a list of every row could not have produced.
+const POINTS = ['Bern', 'Basel', 'Biel'].map((label) => ({ value: label.toLowerCase(), label }))
+const paging: OptionsSources = {
+  points: {
+    maxRows: 2,
+    resolve: ({ limit }) => {
+      const read = POINTS.slice(0, limit + 1)
+      return Promise.resolve({ options: read.slice(0, limit), more: read.length > limit })
+    },
+  },
+}
+const pageAnswer: RemoteOptionsAnswer = await paging['points']!.resolve({
+  kind: 'search',
+  source: 'points',
+  path: 'point',
+  query: 'b',
+  values: [],
+  locale: 'en',
+  limit: 2,
+  signal: new AbortController().signal,
+})
+const pageRead = acceptRemoteAnswer(pageAnswer)
+if (pageRead === undefined) throw new Error('the installed acceptRemoteAnswer refused a page')
+const englishWords = createFormText({ locale: 'en' })
+const saidOfPage = optionsStatus(englishWords, {
+  control: 'typeahead',
+  open: true,
+  disabled: false,
+  failed: false,
+  busy: false,
+  needs: 0,
+  query: 'b',
+  completeness: capRemoteAnswer(pageRead, 2).completeness,
+})
+if (saidOfPage !== englishWords('options.more', { count: 2 })) {
+  throw new Error(`the installed optionsStatus said "${saidOfPage}" of a page that goes on`)
+}
+
 const keptDraft = keepDraft(schema, [], draftsOut.drafts[0])
 if (!keptDraft.ok || keptDraft.scenarios.length !== 1) throw new Error('the installed keepDraft refused a failing draft')
 
