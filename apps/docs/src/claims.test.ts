@@ -213,17 +213,25 @@ describe('the claim a regulated buyer reads', () => {
    * Checked on the two surfaces where the claim travels without the document that
    * explains it. `MDR-CONTEXT.md` is not one of them: it makes the disclaimer its own
    * first section and then spends pages on 62304.
+   *
+   * The page is every source file under `apps/site/src`, not `app.tsx` by name: the
+   * paragraph moved to `licence.tsx` with its section, and the guard that read one
+   * file lost it. A section moving is the page's own seam, so it must not need this
+   * file to follow.
    */
+  const site = join(repo, 'apps', 'site', 'src')
   const surfaces = (): Array<{ name: string; text: string }> => [
     { name: 'README.md', text: readFileSync(join(repo, 'README.md'), 'utf8') },
-    {
-      name: 'apps/site/src/app.tsx',
-      // Comments stripped first, and not as a nicety: a guard that reads the comment
-      // explaining the claim is the exact shape of guard this file exists to prevent.
-      text: readFileSync(join(repo, 'apps', 'site', 'src', 'app.tsx'), 'utf8')
-        .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
-        .replace(/\/\*[\s\S]*?\*\//g, ''),
-    },
+    ...readdirSync(site)
+      .filter((file) => file.endsWith('.tsx') && !file.endsWith('.test.tsx'))
+      .map((file) => ({
+        name: `apps/site/src/${file}`,
+        // Comments stripped first, and not as a nicety: a guard that reads the comment
+        // explaining the claim is the exact shape of guard this file exists to prevent.
+        text: readFileSync(join(site, file), 'utf8')
+          .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
+          .replace(/\/\*[\s\S]*?\*\//g, ''),
+      })),
   ]
 
   test('never names IEC 62304 without denying conformity in the same breath', () => {

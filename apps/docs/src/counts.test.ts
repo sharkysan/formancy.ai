@@ -166,9 +166,13 @@ describe('the package version on the landing page', () => {
       JSON.parse(read('package.json')) as { version: string }
     ).version
     expect(version).toMatch(/^\d+\.\d+\.\d+/)
-    // Both files, because the page is now two of them and a literal in either
-    // is the same wrong number on the same page.
-    for (const file of ['app.tsx', 'chrome.tsx']) {
+    // Every source file of the page rather than a list of them: it was two files
+    // and then three, and a literal in any is the same wrong number on the same page.
+    const files = readdirSync(join(repo, 'apps', 'site', 'src')).filter(
+      (file) => file.endsWith('.tsx') && !file.endsWith('.test.tsx'),
+    )
+    expect(files).toContain('chrome.tsx')
+    for (const file of files) {
       expect(read('apps', 'site', 'src', file), file).not.toContain(version)
     }
   })

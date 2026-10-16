@@ -442,6 +442,11 @@ Its effects are CSS scroll-driven animations with no scroll listener anywhere,
 and `prefers-reduced-motion` removes them in the stylesheet rather than in
 script.
 
+Its licence section, `src/licence.tsx`, names the two modules built on formancy that are
+sold rather than given away, Formancy Data and Formancy Report. Each module's item says
+it is not free beside its own links
+([0179](../decisions/0179-the-paid-modules-are-named-as-not-free.md)).
+
 It has **two pages**, and they are drawn in one shell: `src/shell.css` holds the
 tokens, the type scale and the backdrop, and `src/chrome.tsx` holds the bar, the
 footer and the mark that both render

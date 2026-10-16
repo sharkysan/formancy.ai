@@ -1523,6 +1523,92 @@ kbd {
   line-height: 1.55;
 }
 
+/* The paid modules, under both columns and above the regulatory note. Bordered
+   like the terms rather than lit like the feature cards: they are what the claim
+   above does not cover, and a glowing card would sell them louder than the free
+   thing the section is about. */
+.licence-modules {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 1.25rem;
+  padding-block-start: clamp(1.25rem, 3vh, 2rem);
+  border-block-start: 1px solid var(--edge);
+}
+
+.licence-modules-lede {
+  margin: 0;
+  max-width: 78ch;
+  color: var(--muted);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.licence-modules-lede strong {
+  color: #fff;
+  font-weight: 500;
+}
+
+.licence-modules ul {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 40rem) {
+  .licence-modules ul {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.licence-modules li {
+  display: grid;
+  gap: 0.6rem;
+  align-content: start;
+  padding: 1.25rem;
+  border: 1px solid var(--edge-strong);
+  border-radius: var(--radius);
+  background: var(--glass);
+}
+
+.licence-modules h3 {
+  margin: 0;
+  font-size: 1.0625rem;
+}
+
+.licence-modules li p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+
+/* The terms, said on the item itself so a link reached alone still carries them. */
+.licence-modules .licence-module-terms {
+  justify-self: start;
+  padding: 0.15rem 0.6rem;
+  border: 1px solid var(--edge-strong);
+  border-radius: 999px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+}
+
+.licence-modules .licence-module-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.25rem;
+}
+
+.licence-module-links a,
+.licence-modules-lede a {
+  color: var(--text);
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}
+
 /* ------------------------------------------------------------ the panel
  *
  * The running submission. It sits in the corner from the first section and
