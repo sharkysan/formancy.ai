@@ -1,0 +1,46 @@
+/*
+ * The room: the self-hosted admin's dark bench, as a palette.
+ *
+ * A dark ground, glass panels, violet for what the person acts on and teal for what the
+ * system did. The admin wears it by importing this file, and an application outside this
+ * repository wears the same room the same way, rather than by copying the values (0178).
+ *
+ * Custom properties on :root and the colour scheme they are drawn for, and nothing else:
+ * no rule for an element and no face loaded. What uses them is the importer's own
+ * stylesheet, and --display names faces a page loads itself; the admin serves Archivo and
+ * IBM Plex from Fontsource (0154).
+ *
+ * The --wb-* below recolour workbench.css, and only after it: both say :root, so load this
+ * one second, or the workbench's light defaults win and its panes stay light in the dark
+ * room.
+ */
+
+:root {
+  --ground: #080a12;
+  --glass: rgb(17 22 36 / 74%);
+  --text: #eef1f8;
+  --muted: #95a0b4;
+  --edge: rgb(255 255 255 / 9%);
+  --edge-strong: rgb(255 255 255 / 15%);
+  --client: #8b7bff;
+  --server: #3fe0d5;
+  --invalid: #ff7a8a;
+  --ok: #4fdc8a;
+  --warn: #ffd27a;
+
+  --display: 'Archivo', 'Archivo Variable', 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+
+  --wb-ink: var(--text);
+  --wb-bench: #0b0f18;
+  --wb-panel: #0f1422;
+  --wb-surface: #151b2b;
+  --wb-rule: rgb(255 255 255 / 12%);
+  --wb-muted: var(--muted);
+  --wb-signal: var(--client);
+  --wb-derived: var(--server);
+  --wb-invalid: var(--invalid);
+  --wb-ok: var(--ok);
+  --wb-caution: #f0b429;
+
+  color-scheme: dark;
+}

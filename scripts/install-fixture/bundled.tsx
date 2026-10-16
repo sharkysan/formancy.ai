@@ -16,6 +16,8 @@ import { PropertyPanel } from '@formancy/builder-react'
 import { createBuilderSession } from '@formancy/builder-core'
 import type { FormSchema } from '@formancy/spec'
 import '@formancy/themes/blueprint.css'
+// The room's palette, which other repositories import from the tarball rather than copy (0178).
+import '@formancy/themes/room.css'
 
 const schema = {
   specVersion: '1',

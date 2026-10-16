@@ -7,6 +7,10 @@
  * its variables — not one of its rules is overridden for colour — so the tool
  * and the playground stay one tool in two places.
  *
+ * The room's variables, those --wb-* among them, are not declared here: they
+ * are @formancy/themes/room.css, which app.tsx imports after the workbench, so
+ * the palette the admin wears is the one the package publishes (0178).
+ *
  * The form previews stay in the Blueprint theme on white paper: an admin
  * previews what the people filling the form in will see, not the admin.
  */
@@ -23,36 +27,6 @@
 @import '@fontsource/ibm-plex-sans/600.css';
 @import '@fontsource/ibm-plex-mono/400.css';
 @import '@fontsource/ibm-plex-mono/500.css';
-
-:root {
-  --ground: #080a12;
-  --glass: rgb(17 22 36 / 74%);
-  --text: #eef1f8;
-  --muted: #95a0b4;
-  --edge: rgb(255 255 255 / 9%);
-  --edge-strong: rgb(255 255 255 / 15%);
-  --client: #8b7bff;
-  --server: #3fe0d5;
-  --invalid: #ff7a8a;
-  --ok: #4fdc8a;
-  --warn: #ffd27a;
-
-  --display: 'Archivo', 'Archivo Variable', 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
-
-  --wb-ink: var(--text);
-  --wb-bench: #0b0f18;
-  --wb-panel: #0f1422;
-  --wb-surface: #151b2b;
-  --wb-rule: rgb(255 255 255 / 12%);
-  --wb-muted: var(--muted);
-  --wb-signal: var(--client);
-  --wb-derived: var(--server);
-  --wb-invalid: var(--invalid);
-  --wb-ok: var(--ok);
-  --wb-caution: #f0b429;
-
-  color-scheme: dark;
-}
 
 * {
   box-sizing: border-box;

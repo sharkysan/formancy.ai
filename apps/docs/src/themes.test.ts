@@ -113,13 +113,16 @@ function themes(): Array<{ name: string; css: string }> {
 }
 
 /**
- * Every stylesheet the package ships: the four form themes and `workbench.css`, which
- * styles both builders.
+ * Every stylesheet the package ships: the four form themes, `workbench.css`, which
+ * styles both builders, and `room.css`, the admin's palette, which styles nothing and
+ * only declares custom properties.
  *
  * The reading-order cases read these rather than `themes()`, which keeps only the
  * stylesheets that style a form. They read four of the five while their comment said
  * five, and the one left out was the builder's — found 2026-10-09, verifying the
  * builders right to left, when its drop indicators turned out to draw on a fixed side.
+ * The palette lays nothing out, and the case that asks each stylesheet to use logical
+ * properties excuses it for that, by what it holds rather than by its name.
  */
 function stylesheets(): Array<{ name: string; css: string }> {
   return readdirSync(join(repo, 'packages', 'themes'))
@@ -154,6 +157,31 @@ describe('what a theme must not try to own', () => {
         /touch-action\s*:/,
       )
     }
+  })
+})
+
+describe('what the package publishes', () => {
+  test('is every stylesheet it holds, exported and packed', () => {
+    /*
+     * A stylesheet in the directory and not in `exports` cannot be imported by name, and
+     * one missing from `files` is left out of the tarball. Either is invisible here: every
+     * app in this workspace resolves the package through a symlink to its directory, so
+     * the file is found by everybody except the people who install it. The room's palette
+     * is the first stylesheet published for other repositories to import
+     * ([0178](../../../docs/decisions/0178-the-rooms-palette-is-published.md)), and
+     * leaving it off either list is how it would have shipped.
+     */
+    const manifest = JSON.parse(readFileSync(join(repo, 'packages', 'themes', 'package.json'), 'utf8')) as {
+      exports: Record<string, string>
+      files: string[]
+    }
+    const names = stylesheets().map(({ name }) => name)
+
+    // A guard on the guard: an empty directory listing would export everything it holds.
+    expect(names).toEqual(expect.arrayContaining(['blueprint.css', 'workbench.css']))
+    expect(
+      names.filter((name) => manifest.exports[`./${name}`] !== `./${name}` || !manifest.files.includes(name)),
+    ).toEqual([])
   })
 })
 
@@ -1160,8 +1188,16 @@ describe('which side a theme puts things on', () => {
      * assertion of absence, and a stylesheet that positioned nothing at all
      * would satisfy it completely. Each theme has to be *using* the logical
      * properties for their absence to mean anything.
+     *
+     * Except a stylesheet that lays nothing out. `room.css` is one `:root` rule of custom
+     * properties, a palette, so it has no side to name and nothing to name it with —
+     * `room.test.ts` holds it to being only that. Told apart by having no rule for anything
+     * but `:root`, rather than by its name, so a theme cannot be excused by being renamed.
      */
+    const laysOut = ({ css }: { css: string }): boolean =>
+      rulesOf(withoutComments(css)).some(({ selectors }) => selectors.some((selector) => selector !== ':root'))
     const silent = stylesheets()
+      .filter(laysOut)
       .filter(
         ({ css }) =>
           !/margin-inline|padding-inline|inset-inline|border-inline|text-align\s*:\s*(start|end)/.test(

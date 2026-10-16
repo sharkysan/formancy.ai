@@ -1,7 +1,7 @@
 {
   "name": "@formancy/themes",
   "version": "0.5.0",
-  "description": "Reference themes for formancy renderers — four unrelated looks, CSS only, targeting data-formancy-part hooks.",
+  "description": "Reference themes for formancy renderers — four unrelated looks targeting data-formancy-part hooks — with the builders' stylesheet and the admin's palette. CSS only.",
   "license": "Apache-2.0",
   "type": "module",
   "exports": {
@@ -9,7 +9,8 @@
     "./dusk.css": "./dusk.css",
     "./pop.css": "./pop.css",
     "./paper.css": "./paper.css",
-    "./workbench.css": "./workbench.css"
+    "./workbench.css": "./workbench.css",
+    "./room.css": "./room.css"
   },
   "files": [
     "blueprint.css",
@@ -17,6 +18,7 @@
     "pop.css",
     "paper.css",
     "workbench.css",
+    "room.css",
     "LICENSE",
     "NOTICE"
   ],
@@ -27,7 +29,7 @@
     "check:pkg": "publint"
   },
   "//check:pkg": [
-    "publint only: this package ships five stylesheets and no types, so there is",
+    "publint only: this package ships stylesheets and no types, so there is",
     "nothing for attw to resolve. Every other published package runs both, and this",
     "one ran NEITHER until somebody counted — which is how the two Angular packages",
     "ended up on a weaker check than their thirteen siblings.",

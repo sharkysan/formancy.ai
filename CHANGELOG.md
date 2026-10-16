@@ -10,6 +10,18 @@ later.
 
 ## Unreleased
 
+**Added: the admin's palette, as `@formancy/themes/room.css`.** The dark ground, the glass, the
+violet for what a person acts on and the teal for what the system did were the `:root` block of
+the admin's own stylesheet, which is in no package, so Formancy Report and Formancy Data each
+copied it into their apps by hand and pinned their copies with a test that cannot see this
+repository — a colour moved here moved nothing there, silently. Now it is published: the custom
+properties the admin declared, at the values it had, with every colour of `workbench.css` set to
+them and `color-scheme: dark`, and nothing else — no rule for an element and no face loaded.
+Import it after `workbench.css`, since both say `:root`. The admin imports it the same way and
+declares none of it itself. The names are API from now on, and a value moved is a change every
+importer sees, said here when it happens
+([0178](docs/decisions/0178-the-rooms-palette-is-published.md)).
+
 **Added: a source may say its list goes on, and count what it cannot hand over.** A list from a
 source was rows and nothing else, and the control counted the rows it was handed, so *Showing
 the first 50 of 120* was true only of a source that returned every row. A source backed by a

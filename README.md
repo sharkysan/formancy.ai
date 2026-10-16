@@ -332,7 +332,8 @@ packages/server         Fastify + Postgres: publish, resolve, replayed submissio
                         drafts with lazy migration, files (local or S3, scanned
                         by ClamAV if you run it), webhooks, CSV export, a form's
                         examples run at publish, and an opt-in model adapter
-packages/themes         reference themes. Nothing depends on them
+packages/themes         reference themes, the builders' stylesheet and the
+                        admin's palette. Nothing depends on them
 packages/tiptap         a TipTap editor held to formancy's rich-text grammar
 packages/challenge      the proof-of-work challenge: mint, solve and verify
 packages/mcp            formancy as tools for a coding agent (MCP)

@@ -163,6 +163,15 @@ the builders' sources and checks; the prompt pane, the scenarios and seven other
 none until it did
 ([0143](../decisions/0143-the-workbench-dresses-every-part-a-builder-draws.md)).
 
+**The admin's room is published, not copied.** The palette the admin is drawn in — its ground,
+glass, violet and teal, and the workbench's colours pointed at them — is
+`@formancy/themes/room.css`: custom properties on `:root` and `color-scheme: dark`, and no rule
+for an element. The admin imports it after `workbench.css` and declares none of it, so an
+application in another repository that wears the same room imports the same file rather than a
+copy that drifts without saying so; `apps/docs/src/room.test.ts` holds it to being only a
+palette, to setting every colour the workbench declares, and the admin to having no second copy
+([0178](../decisions/0178-the-rooms-palette-is-published.md)).
+
 **The playground's theme editor reads a theme rather than knowing one.** Every token a theme
 declares on its own selector gets a control, discovered from the live stylesheet because
 the shipped themes share no vocabulary, and what it hands back is a patch of only what
