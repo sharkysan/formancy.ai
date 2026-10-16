@@ -1,6 +1,7 @@
 # 0077 — Options may come from a named source
 
-- **Status:** accepted
+- **Status:** accepted; what a source may answer beyond its rows, and what a sourced control says
+  and when, decided by [0177](0177-a-source-may-say-its-list-goes-on.md)
 - **Date:** 2026-09-27
 - **Deciders:** Daniel Bacher
 - **Verified by:** `packages/spec/src/validate.test.ts` (7 cases: a select naming a

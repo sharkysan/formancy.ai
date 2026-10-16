@@ -8,6 +8,62 @@ Loosely [Keep a Changelog](https://keepachangelog.com), with reasons attached �
 a line that says only *what* changed is rarely the line you need six months
 later.
 
+## Unreleased
+
+**Added: a source may say its list goes on, and count what it cannot hand over.** A list from a
+source was rows and nothing else, and the control counted the rows it was handed, so *Showing
+the first 50 of 120* was true only of a source that returned every row. A source backed by a
+database pages: it reads `limit + 1` rows to know there are more, and does not count them,
+because a count reads every matching row on every keystroke — so it either looked complete or
+claimed a total of `limit + 1`. Now `OptionsSource.resolve` may answer one page,
+`{ options, more, withheld? }`, as well as every matching row. `more` is said without a number —
+*Showing the first 50; there are more — keep typing to narrow.* — and `withheld` counts the rows
+a source matched and cannot hand over, a value a select could not store, which are then said
+rather than left out unsaid. A page whose `more` is not a boolean, whose `withheld` is not a
+whole count, or which carries any other key — a `total`, a misspelt `moer` — is refused whole,
+and the field says its source failed rather than showing a cut list as the whole one. A list is
+read exactly as before, its true total included. New in `@formancy/spec`: `acceptRemoteAnswer`,
+`capRemoteAnswer`, `RemoteOptionsAnswer`, `RemoteOptionsPage` and `RemoteCompleteness`, the page
+types re-exported by both renderers beside `OptionsSources`; `acceptRemoteOptions` and
+`capRemoteOptions` are unchanged. What a sourced control says is now decided once, for both
+renderers, by `optionsStatus` in `@formancy/core/words`, where React and Angular each wrote the
+order by hand. The playground's *Where to collect it* answers a page, as a database would
+([0177](docs/decisions/0177-a-source-may-say-its-list-goes-on.md)).
+
+**Changed, and every host with a sourced field sees it: a control says only what its person can
+act on.** Measured on `0.5.0`, a plain select said "keep typing to narrow" past its cap, "type at
+least 2 characters" over a source with a minimum and "Type to try again" when its source failed —
+nobody can type into a `<select>` — and since its question never changes, a React select whose
+source was down once stayed down for as long as the form was open. An Angular one was asked again,
+but only as a side effect: an Angular sourced select or typeahead read a definition rebuilt on every
+change to the field's state, so it sent its source the same question again after a choice and when
+the person left the field, three searches where one was asked for. A typeahead's sentence stayed
+under the field after a choice and while its list was closed, and a field a rule had disabled
+searched its source and said it, so a saved record opened read-only said "keep typing to narrow"
+under every long lookup. And every debounced search took the region through *Searching…* and back
+to the same sentence, which a screen reader heard each time. Now a plain select has sentences of
+its own — `options.cappedListed`, `options.moreListed`, `options.searchOnly` and
+`options.failedListed`, in English, German and French — and asks its source again when the person
+moves to it after a failure, and only then. An Angular sourced field asks when what it asks changes
+or the field is disabled or enabled, and not again for a choice or a blur. A typeahead says what its
+list leaves out, and *Searching…*, only while the list is open. A field disabled by a rule asks its
+source only for the name of what it holds: no search, no busy box, no list, nothing said. Neither
+renderer hid a typeahead's list when a rule disabled the field under it, and a box disabled under
+the person is not reliably blurred, so the list could stay drawn and a click on a row change the
+answer of a field the form had made read-only; both now hide it while the field is disabled. And a
+sentence about what the list leaves out stands while the next search is in flight, because the rows
+on screen are still the ones it describes, so a search that settles on the same sentence announces
+nothing again; `aria-busy` on the box says a search is in flight.
+
+**Breaking, for a host that calls `resolve` itself or reworded the options words.** A call to
+`resolve` now gets a list or a page, and code that treated the answer as an array does not compile
+until it narrows it, with `Array.isArray` or through `acceptRemoteAnswer`; a source that only
+implements `resolve` compiles unchanged. A host that reworded `options.failed` or `options.capped`
+sees a plain select say `options.failedListed` or `options.cappedListed` in the shipped words, its
+own word reaching only the typeahead now. And a disabled field over a source that answers `labels`
+with nothing, counting on a search to name what the field holds, shows its stored value itself.
+See [`MIGRATIONS.md`](MIGRATIONS.md). No document changes and the spec version does not move.
+
 ## 0.5.0 — 2026-10-11
 
 **The first release since `0.4.0`, and the spec version does not move.** Version 4 is still the
