@@ -51,10 +51,10 @@ formancy
 |---|---|---|
 | Keystroke, large conditional form | 1 ms | ≈0.38 ms |
 | Cold graph compile | 30 ms | ≈1.7 ms |
-| `@formancy/core` bundle | 18 kB brotli | **20.8 kB** — over, re-measured 2026-10-10 |
-| `@formancy/spec` bundle | — | 25.8 kB for the whole barrel — the index and the chunk it shares with `/validate`, re-measured 2026-10-10 with `resolvedLocale`, most of whose 0.3 kB is the comment the bundler keeps |
-| `@formancy/react` bundle | 4 kB brotli | **24.7 kB** for the whole barrel, measured 2026-10-10 |
-| `@formancy/core/words` bundle | — | 5.1 kB, the renderers' words in English, German and French, an entry of its own, re-measured 2026-10-10 |
+| `@formancy/core` bundle | 18 kB brotli | **20.8 kB** — over, re-measured 2026-10-16 |
+| `@formancy/spec` bundle | — | 26.8 kB for the whole barrel — the index and the chunk it shares with `/validate`, re-measured 2026-10-16 with `acceptRemoteAnswer` and `capRemoteAnswer`, whose 1.0 kB is 0.3 kB with the comments the bundler keeps taken out |
+| `@formancy/react` bundle | 4 kB brotli | **24.9 kB** for the whole barrel, measured 2026-10-16 |
+| `@formancy/core/words` bundle | — | 6.5 kB, the renderers' words in English, German and French and what a sourced control says, an entry of its own, re-measured 2026-10-16 |
 | `uqr`, the QR encoder | — | 6.6 kB brotli, **external** rather than bundled, measured 2026-09-27 |
 
 The performance gate is written to fail on a regression greater than 15%,
@@ -123,6 +123,18 @@ languages, because which one a form is read in is known only when it is: the pri
 reader's language never depending on the host remembering to import it. Choosing that language
 by the catalogue the document is read in rather than by the engine's locale as asked put
 `resolvedLocale` into the spec barrel, which moved from 25.5 to 25.8 kB; the React row did not
+move.
+
+**What a source may answer, and what a sourced control says, moved three rows and not the
+engine's.** A source may answer one page that says its list goes on, and what a control says
+about it is decided once for both renderers
+([0177](../decisions/0177-a-source-may-say-its-list-goes-on.md)). Measured on 2026-10-16 on the
+code before and after the change, each built the same way: the spec barrel went from 25.8 to
+26.8 kB with `acceptRemoteAnswer` and `capRemoteAnswer`; `@formancy/core/words` from 5.1 to
+6.5 kB with six sentences in three languages and `optionsStatus`; the React barrel from 24.7 to
+24.9 kB, a hook that hands the decision over and two controls that call it. Most of the first
+is comment: with every comment taken out of both builds by esbuild, the spec barrel grew 0.3 kB
+and the words entry 0.9 kB. The engine's `dist/index.mjs` was byte-identical, and its row did not
 move.
 
 **The spec figure moved 4.3 kB in one change, and the reason is worth the line.**

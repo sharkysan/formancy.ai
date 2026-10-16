@@ -1,5 +1,5 @@
 import { InjectionToken, inject } from '@angular/core'
-import type { RemoteOption } from '@formancy/spec'
+import type { RemoteOptionsAnswer } from '@formancy/spec'
 
 /**
  * What a source is asked for.
@@ -35,7 +35,13 @@ export interface OptionsRequest {
    * shows an opaque identifier. So the source answers in the right language instead.
    */
   locale: string
-  /** How many rows the control can show. A hint: the control caps what arrives anyway. */
+  /**
+   * How many rows the control can show. A hint: the control caps what arrives anyway.
+   *
+   * A source that pages reads one row past this to learn whether its list goes on, and
+   * answers `more` without counting the rest: a count would read every matching row on
+   * every keystroke, the scan paging exists to avoid.
+   */
   limit: number
   /** Aborted when the answer stops being wanted — a newer keystroke, or a destroy. */
   signal: AbortSignal
@@ -51,7 +57,18 @@ export interface OptionsRequest {
  * surface on a self-hosted instance.
  */
 export interface OptionsSource {
-  resolve(request: OptionsRequest): Promise<readonly RemoteOption[]>
+  /**
+   * Either every matching row, as a list, read exactly as it always was and its true total
+   * included, or one page of them, `{ options, more, withheld? }`.
+   *
+   * `more` is said under the field without a number, because nobody counted one.
+   * `withheld` counts rows the source matched and cannot hand over, such as a value a select
+   * could not store: a source withholds and counts, and never filters in silence. Anything
+   * else in a page, an unknown key included, refuses the whole answer, which the field
+   * reports as a source that failed rather than a list that looks complete
+   * ([0177](../../../docs/decisions/0177-a-source-may-say-its-list-goes-on.md)).
+   */
+  resolve(request: OptionsRequest): Promise<RemoteOptionsAnswer>
   /** How long to wait after a keystroke before asking. The control has a default. */
   debounceMs?: number
   /** Below this many characters, do not ask at all. The control says so on screen. */

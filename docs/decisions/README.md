@@ -177,7 +177,7 @@ listed under the sections they belong to above.
 | [0074](0074-a-table-child-may-span.md) | A table child may span | accepted |
 | [0075](0075-a-datagrid-is-drawn-not-tabulated.md) | A datagrid is drawn, not tabulated | accepted |
 | [0076](0076-an-answer-is-one-of-the-options.md) | An answer is one of the options | accepted |
-| [0077](0077-options-may-come-from-a-named-source.md) | Options may come from a named source | accepted |
+| [0077](0077-options-may-come-from-a-named-source.md) | Options may come from a named source | accepted; what a source may answer beyond its rows, and what a sourced control says and when, decided by 0177 |
 | [0078](0078-a-grid-row-is-flat.md) | A grid row is flat | accepted |
 | [0079](0079-a-host-is-undone-without-a-stylesheet.md) | A host element is undone without a stylesheet | accepted; the builder's hosts, left boxes, undone by 0174 |
 | [0080](0080-a-choice-control-dresses-its-own-states.md) | A choice control dresses its own states | accepted |
@@ -277,3 +277,4 @@ listed under the sections they belong to above.
 | [0174](0174-the-builders-hosts-take-no-part-in-layout.md) | The builder's hosts take no part in layout, and the two builders are measured part by part | accepted |
 | [0175](0175-a-name-goes-into-a-header-encoded.md) | A name goes into a header encoded, and an error's reply drops a header that cannot be written | accepted |
 | [0176](0176-the-npm-token-is-a-secret-of-the-npm-environment.md) | The npm token is a secret of the `npm` environment, which only release tags reach | accepted |
+| [0177](0177-a-source-may-say-its-list-goes-on.md) | A source may say its list goes on, and a sourced control says only what the person can act on | accepted |

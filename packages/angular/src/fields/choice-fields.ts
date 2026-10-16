@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, effect, input } from '@angular/core'
-import { FormancyTextPipe } from '../text.js'
+import { optionsStatus } from '@formancy/core/words'
+import { FormancyTextPipe, injectFormText } from '../text.js'
 import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
 import { FormancyTypeaheadSelect } from './typeahead-field.js'
 
@@ -93,6 +94,7 @@ export class FormancyCheckboxField extends FieldComponentBase {
         [attr.aria-describedby]="control()['aria-describedby']"
         [disabled]="control().disabled === true"
         (change)="onChange($event)"
+        (focus)="onFocus()"
         (blur)="field.touch()"
       >
         <!-- The empty option is the unanswered state; without it the browser
@@ -104,11 +106,12 @@ export class FormancyCheckboxField extends FieldComponentBase {
           <option [value]="option.value" [selected]="selected() === option.value">{{ option.label }}</option>
         }
       </select>
-      <!-- Only a sourced select has anything to say: how many rows were left out, or
-           that the source could not be reached. Never the error region, which carries
-           the engine's verdict -- a source being down is not a wrong answer. -->
+      <!-- Only a sourced select has anything to say: that its source failed, that it
+           answers only a search, or what its list leaves out, in words for a list nobody
+           can type into. Never the error region, which carries the engine's verdict -- a
+           source being down is not a wrong answer. -->
       @if (remote.sourced()) {
-        <p role="status" data-formancy-part="select-status">{{ remote.status() }}</p>
+        <p role="status" data-formancy-part="select-status">{{ sourceStatus() }}</p>
       }
     </formancy-field-shell>
     }
@@ -130,9 +133,41 @@ export class FormancySelectField extends FieldComponentBase {
     return typeof value === 'string' ? value : ''
   })
 
+  private readonly words = injectFormText()
+
+  /**
+   * The one sentence under a sourced list, decided by `optionsStatus` as the typeahead's
+   * is (0177). Always "open": a native select has no event for its list showing, and it
+   * says what it can while it is enabled. Its query is the empty one it always asks with.
+   */
+  protected readonly sourceStatus = computed(() =>
+    optionsStatus(this.words, {
+      control: 'select',
+      open: true,
+      disabled: this.field.snapshot().disabled,
+      failed: this.remote.failed(),
+      busy: this.remote.busy(),
+      needs: this.remote.needs(),
+      query: '',
+      completeness: this.remote.completeness(),
+    }),
+  )
+
   protected onChange(event: Event): void {
     const raw = (event.target as HTMLSelectElement).value
     this.field.setValue(raw === '' ? null : raw)
+  }
+
+  /**
+   * Moving to a select whose search failed asks again, and nothing else does.
+   *
+   * Its query never changes, so without this a failure was final. Focus precedes every
+   * way of opening a native list, by pointer or by keyboard, which has no event of its
+   * own. Not on a timer: that would load a source that is down, from every sourced
+   * select on every open form, with a live region speaking on a schedule.
+   */
+  protected onFocus(): void {
+    if (this.remote.failed()) this.remote.retry()
   }
 }
 

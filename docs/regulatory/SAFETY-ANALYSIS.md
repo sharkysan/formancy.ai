@@ -246,6 +246,42 @@ to compare a form's lists against their configuration had nowhere to read them. 
 written, and asserted in `packages/server-core/src/use-cases.test.ts` both ways round — a
 form naming sources records them, a form naming none records no such field.
 
+### A7a. A list from a source looks complete when it is not
+
+*How it arises:* a select whose answers come from a source (A7) shows at most `maxRows` of
+the rows the source answered. A source backed by a database pages and does not count, and
+until [0177](../decisions/0177-a-source-may-say-its-list-goes-on.md) it could answer rows and
+nothing else: one page was indistinguishable from every row there is, so it looked complete,
+or claimed a total of `limit + 1`. A row the source matched and could not hand over — a value
+a select cannot store — had nowhere to go but out, unsaid. Either way the person looking for an
+answer that exists sees a list without it, reads it as not offered, and chooses the nearest
+row that is. The membership check passes that row, because it is a member: the wrong answer is
+a valid one, and nothing afterwards can tell it from a right one.
+
+*Constraint:* a source may answer a page, `{ options, more, withheld? }`, beside every row, and
+`acceptRemoteAnswer` in `@formancy/spec` refuses the whole answer for anything ambiguous — a
+`more` missing or not a boolean, a `withheld` that is not a whole count, any other key — so a
+misspelt or unasked-for key cannot make a cut list read as the whole one; a refused answer is
+shown as a source that failed. `capRemoteAnswer` never reports a list complete when the control
+cut it, the source said more rows match, or the source withheld any, which a fast-check property
+holds over every answer and limit. `optionsStatus` in `@formancy/core/words` says which, in one
+sentence for both renderers, and the sentence stands while a newer search is in flight, since
+the rows it describes are still on screen. Verified by `packages/spec/src/options-source.test.ts`,
+`packages/core/src/options-status.test.ts` and each renderer's `options-source` test, which on
+0.5.0's renderers failed with a page refused as a failure and a capped sentence left standing
+under a closed list.
+
+*Residual:*
+
+- **The control believes the source.** A page that says `more: false` when more rows match, or a
+  source that drops a row without counting it, is the silently partial list again, and nothing
+  here can detect it. A deployment's source is part of the device's own verification.
+- **Completeness is not said while a typeahead's list is closed, nor under a field a rule has
+  disabled**, by design: nobody is choosing from a list there. It is said again when the list
+  opens.
+- **One sentence at a time.** While `more` is said, a `withheld` count is not, being a lower
+  bound; and over a list the control cut, the rows the source withheld go unsaid.
+
 ### A8. One response is stored twice
 
 *How it arises:* the answer to a submission never reaches the page — a dropped connection, a
@@ -501,6 +537,39 @@ it rather than as a hand performs it. Nothing gates against that: the conformanc
 speak filling in and clicking by accessible name and cannot say "draw", so pointer
 behaviour is held by hand in each renderer, twice over, and a gesture whose tail nobody
 thought of is a gesture nobody tested. This one was found by a person using the playground.
+
+### B6a. A field a rule disabled is changed through the list its typeahead left open
+
+*How it arises:* a `disabled` rule greys a field out, and the field keeps its answer — the
+spec's own description of the rule. A renderer holds that by disabling the control's element:
+the engine's `setValue` does not refuse a disabled field. A typeahead draws its list itself,
+outside that element, and a row stores its value on a click. Neither renderer hid the list when
+a rule disabled the field under it, and a box disabled under the person is not reliably blurred —
+jsdom fires no blur — so a rule landing while the list was open, on a value the host set, say,
+left the list drawn and `aria-expanded` true, and a click on a row changed the answer of a field
+the form had made read-only. Measured in Angular in jsdom on 2026-10-16, with the change below
+taken out: the list still drawn under the disabled field, and a click on *Zürich* stored `ZH`.
+Both renderers drew the list this way on 0.5.0, read from their code.
+
+*Constraint:* each typeahead draws its list only while the person has it open **and** its field
+is not disabled — React's `open = opened && !field.disabled`, and Angular's `open` computed the
+same way — so a disabled field has no row to click, `aria-expanded` is false and its status line
+says nothing ([0177](../decisions/0177-a-source-may-say-its-list-goes-on.md)). Held by *a
+typeahead disabled while its list is open draws no list and says nothing* in each renderer's
+`options-source` test, which failed in Angular before the change and in React with its mask
+taken out.
+
+*Residual:*
+
+- **Hidden, not closed.** Enabled again before anything closed it, the list the person had open
+  shows again.
+- **The element is the only guard, and the tag picker is not held to it.** The engine accepts a
+  value set on a disabled field, so a host calling `setValue` changes one, and a control that
+  draws anything clickable outside its disabled element has to stop that itself. The tag picker
+  does not. Measured in React in jsdom on 2026-10-16: a tag picker disabled while its list was
+  open kept the list, a click on a row added that answer, and its chips' remove buttons stayed
+  enabled, so a click took an answer away. Angular's has the same shape, read from its code. It
+  was found while hiding the typeahead's list and is not changed with it.
 
 ### B7. An attachment is recorded against the wrong row of a repeater
 

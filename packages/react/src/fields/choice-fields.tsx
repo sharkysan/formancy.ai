@@ -1,3 +1,4 @@
+import { optionsStatus } from '@formancy/core/words'
 import { useFormText } from '../context.js'
 import { useField } from '../use-field.js'
 import { useSourcedOptions } from '../use-sourced-options.js'
@@ -42,12 +43,29 @@ export function SelectField({ path, label }: FieldComponentProps) {
   // The query the plain control searches with is the empty one: a native select has
   // nothing to type into, so it offers whatever the source returns for "everything",
   // capped. A source with more rows than that is a source whose field wants the
-  // typeahead widget, and the status region says how many were left out.
+  // typeahead widget, and the status region says what the list leaves out, in words
+  // that ask nobody to type.
   // One hook, unconditionally: it hands back the document's own options when the
   // field names no source, so there is no branch above a hook to reorder React's
   // list the moment the builder sets one on a live document.
   const sourced = useSourcedOptions({ ...field, path }, '', field.def.widget !== 'typeahead')
   const options = sourced.options
+  const remote = sourced.remote
+  // Open whenever it is enabled, as far as the sentence goes: a native select has no
+  // "list opened" event to wait for (0177).
+  const said =
+    remote === null
+      ? ''
+      : optionsStatus(text, {
+          control: 'select',
+          open: true,
+          disabled: field.disabled,
+          failed: remote.failed,
+          busy: remote.busy,
+          needs: remote.needs,
+          query: '',
+          completeness: remote.completeness,
+        })
   // Every hook runs before the branch on purpose: the builder can set a widget on
   // a live document, and a branch above a hook would reorder React's hook list
   // the moment it did.
@@ -85,6 +103,14 @@ export function SelectField({ path, label }: FieldComponentProps) {
         {...field.controlProps}
         value={typeof field.value === 'string' ? field.value : ''}
         onChange={(event) => field.setValue(event.target.value === '' ? null : event.target.value)}
+        // A failed source is asked again when the person moves to the field. Focus
+        // comes before every way of opening a native select, by pointer or by keyboard,
+        // and it is the person's own act: not a timer, which would load a source that
+        // is down and speak in a live region on a schedule. Only after a failure, so a
+        // select is not refetched on every visit.
+        onFocus={() => {
+          if (remote?.failed === true) remote.retry()
+        }}
         onBlur={() => field.touch()}
       >
         {/* The empty option is the unanswered state; without it the browser
@@ -97,12 +123,13 @@ export function SelectField({ path, label }: FieldComponentProps) {
           </option>
         ))}
       </select>
-      {/* Only a sourced select has anything to say: how many rows were left out, or
-          that the source could not be reached. Never the error region, which carries
-          the engine's verdict — a source being down is not a wrong answer. */}
-      {sourced.remote === null ? null : (
+      {/* Only a sourced select has anything to say: what its list leaves out, that
+          its source answers only a search, or that the source could not be reached.
+          Never the error region, which carries the engine's verdict — a source being
+          down is not a wrong answer. */}
+      {remote === null ? null : (
         <p role="status" data-formancy-part="select-status">
-          {sourced.remote.status}
+          {said}
         </p>
       )}
     </FieldShell>

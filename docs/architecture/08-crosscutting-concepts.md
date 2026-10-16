@@ -223,7 +223,11 @@ decides that once, and `resolveText` reads through it. A host adds a language or
 `removeLabel`, still win. A count follows the rules, and a list the conjunction, of the language
 its message is written in. No literal word is
 left in a renderer's source, which a test reads the compiler's tree and every template for
-([0171](../decisions/0171-the-renderers-words-are-the-forms-language.md)).
+([0171](../decisions/0171-the-renderers-words-are-the-forms-language.md)). Which sentence a
+control over an options source says, and when, is decided once beside those words, by
+`optionsStatus`, for both renderers: they hand it what only they know — whether a typeahead's
+list is open, whether the field is disabled — and draw what it returns
+([0177](../decisions/0177-a-source-may-say-its-list-goes-on.md)).
 
 ## 8.9 Error handling
 

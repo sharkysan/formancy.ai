@@ -60,6 +60,7 @@ export default defineConfig({
             { label: 'Files', slug: 'concepts/files' },
             { label: 'Rich text', slug: 'concepts/rich-text' },
             { label: 'Scanning', slug: 'concepts/scanning' },
+            { label: 'Lists from a source', slug: 'concepts/options-sources' },
             { label: 'Conformance', slug: 'concepts/conformance' },
           ],
         },

@@ -1,9 +1,8 @@
 import { DestroyRef, computed, effect, inject, signal } from '@angular/core'
 import type { Signal, WritableSignal } from '@angular/core'
-import { acceptRemoteOptions, capRemoteOptions } from '@formancy/spec'
-import type { RemoteOption } from '@formancy/spec'
+import { acceptRemoteAnswer, capRemoteAnswer } from '@formancy/spec'
+import type { RemoteCompleteness, RemoteOption } from '@formancy/spec'
 import { injectOptionsSources } from './options-source.js'
-import { injectFormText } from './text.js'
 
 /**
  * A field's options, from the document or from the deployment.
@@ -11,7 +10,8 @@ import { injectFormText } from './text.js'
  * The same contract the React binding states in `use-sourced-options.ts`, written
  * out here rather than shared: the async lifecycle is expressed in this framework's
  * own primitives, and a shared abstraction would report that both bindings
- * implemented it when one had not.
+ * implemented it when one had not. What a control SAYS about it is not decided here:
+ * `optionsStatus` in `@formancy/core/words` decides that once, for both (0177).
  *
  * `optionsSource` decides which answers EXIST rather than how they are shown, so the
  * plain `<select>` honours it as well as the typeahead — one ignoring it would render
@@ -28,30 +28,42 @@ export interface SourcedOptionsState {
   /** A request is in flight. The control says `aria-busy`; it never disables itself. */
   busy: Signal<boolean>
   /**
-   * The last request failed. Its own signal, so a theme's `data-state` is read off the
-   * state and not off the sentence — which keyed on English prose, and would have
-   * stopped matching the day the sentence was said in German (0171).
+   * The last request failed, or its answer was refused. Its own signal, so a theme's
+   * `data-state` is read off the state and not off the sentence — which keyed on English
+   * prose, and would have stopped matching the day the sentence was said in German (0171).
    */
   failed: Signal<boolean>
-  /** The one thing the field says out loud, in the form's language, or the empty string. */
-  status: Signal<string>
+  /**
+   * What the last SETTLED answer left out, kept while a newer search is in flight: the
+   * rows on screen are still that answer's, and a search that settles on the same
+   * sentence then changes nothing a screen reader would hear again.
+   */
+  completeness: Signal<RemoteCompleteness>
+  /** The source's minimum query length, or 0. */
+  needs: Signal<number>
   /** Whether this field is sourced at all. False is the ordinary case. */
   sourced: Signal<boolean>
+  /**
+   * Ask again what was last asked. A plain select's only way back from a failure: its
+   * query never changes, so nothing else would ever ask.
+   */
+  retry(): void
 }
 
-const DEBOUNCE_MS = 250
-const MIN_QUERY = 0
-const MAX_ROWS = 50
-
 /**
- * Wire a field's remote options up.
+ * What a control hands over, by name.
  *
- * Called from a component's field context, so it may inject. `query` is the signal
- * the control types into; a plain select passes a constant empty one, which asks the
- * source for everything and shows what fits.
+ * Named rather than positional: `enabled` and `disabled` are two signals of one type,
+ * and swapped they would compile and invert the control.
  */
-export function injectSourcedOptions(
-  definition: Signal<{ optionsSource?: string; key: string }>,
+export interface SourcedOptionsInputs {
+  /**
+   * The source the document names, or undefined for a field that lists its own.
+   *
+   * The name, not the field's definition: a signal compares by identity, and a definition
+   * rebuilt on every snapshot re-ran the search on every choice and every blur.
+   */
+  sourceName: Signal<string | undefined>
   /**
    * The field's DATA PATH — `canton`, or `people[1].canton` inside a repeater.
    *
@@ -59,10 +71,11 @@ export function injectSourcedOptions(
    * so a resolver could not tell two same-named sourced fields apart and never saw
    * which row it was answering for.
    */
-  dataPath: () => string,
-  storedValue: Signal<string | undefined>,
-  query: Signal<string>,
-  locale: () => string,
+  dataPath: () => string
+  storedValue: Signal<string | undefined>
+  /** What the control types into; a plain select passes a constant empty one. */
+  query: Signal<string>
+  locale: () => string
   /**
    * Whether this instance is the one that will render.
    *
@@ -71,8 +84,29 @@ export function injectSourcedOptions(
    * same flag for the same reason; without it a sourced typeahead sent every request
    * twice, and one set of answers was read by nobody.
    */
-  enabled: Signal<boolean>,
-): SourcedOptionsState {
+  enabled: Signal<boolean>
+  /**
+   * Disabled by a rule. Nothing is searched for a field nobody can change: it asks only
+   * for the name of what it holds.
+   */
+  disabled: Signal<boolean>
+}
+
+const DEBOUNCE_MS = 250
+const MIN_QUERY = 0
+const MAX_ROWS = 50
+
+/** This binding's "nothing left out", one value, so storing it again is no change. */
+const COMPLETE: RemoteCompleteness = { kind: 'complete' }
+
+/**
+ * Wire a field's remote options up.
+ *
+ * Called from a component's field context, so it may inject. A plain select's query
+ * is a constant empty one, which asks the source for everything and shows what fits.
+ */
+export function injectSourcedOptions(inputs: SourcedOptionsInputs): SourcedOptionsState {
+  const { sourceName, dataPath, storedValue, query, locale, enabled, disabled } = inputs
   const sources = injectOptionsSources()
   const destroyRef = inject(DestroyRef)
 
@@ -80,13 +114,14 @@ export function injectSourcedOptions(
   const named: WritableSignal<ReadonlyMap<string, string>> = signal(new Map())
   const busy = signal(false)
   const failed = signal(false)
-  const text = injectFormText()
-  const capped = signal<{ shown: number; total: number } | null>(null)
+  const completeness = signal<RemoteCompleteness>(COMPLETE)
+  /** Moved by `retry` and read by the search, so asking again is the search re-running. */
+  const attempt = signal(0)
 
-  const source = () => {
-    const name = definition().optionsSource
+  const source = computed(() => {
+    const name = sourceName()
     return name === undefined ? undefined : sources?.[name]
-  }
+  })
 
   let generation = 0
   let inFlight: AbortController | undefined
@@ -105,34 +140,53 @@ export function injectSourcedOptions(
     labelRequests.clear()
   })
 
+  /** A failed or refused answer: nothing to offer, and nothing it said still stands. */
+  const fail = (): void => {
+    failed.set(true)
+    rows.set([])
+    completeness.set(COMPLETE)
+  }
+
   // The search, debounced and superseded by ABORTING rather than by ignoring: a
   // request nobody wants any more is one a host should be able to cancel, and the
   // signal is the only way to say so.
   effect(() => {
     const resolver = source()
     const text = query()
-    const name = definition().optionsSource ?? ''
+    const name = sourceName() ?? ''
     const path = dataPath()
+    const off = disabled()
+    attempt()
+
+    stop()
+    // Bumped BEFORE every early return, not after one. Deleting characters back under
+    // the minimum aborts whatever is in flight, and with the generation unchanged that
+    // abort arrived at a handler that still believed it was current -- so backspacing
+    // reported the source as broken, and left the box marked busy with nothing in
+    // flight. A rule disabling the field mid-search is the same abort.
+    const mine = (generation += 1)
     if (!enabled() || resolver === undefined) return
+
+    if (off) {
+      // Nothing is searched for a field nobody can change, and nothing said stands.
+      busy.set(false)
+      failed.set(false)
+      completeness.set(COMPLETE)
+      return
+    }
 
     const minQueryLength = resolver.minQueryLength ?? MIN_QUERY
     const maxRows = resolver.maxRows ?? MAX_ROWS
 
-    stop()
-    // Bumped BEFORE the early return, not after it. Deleting characters back under the
-    // minimum aborts whatever is in flight, and with the generation unchanged that
-    // abort arrived at a handler that still believed it was current -- so backspacing
-    // reported the source as broken, and left the box marked busy with nothing in
-    // flight.
-    const mine = (generation += 1)
-
     if (text.trim().length < minQueryLength) {
       rows.set([])
-      capped.set(null)
+      completeness.set(COMPLETE)
       busy.set(false)
       return
     }
 
+    // `completeness` is NOT reset when a search starts: it describes the rows still on
+    // screen until the answer that replaces them arrives.
     const controller = new AbortController()
     inFlight = controller
     timer = setTimeout(() => {
@@ -153,21 +207,17 @@ export function injectSourcedOptions(
           if (mine !== generation) return
           // Refused whole rather than filtered: a partial list silently lacks the row
           // somebody came for, and they cannot tell that from a source that has none.
-          const accepted = acceptRemoteOptions(answer)
+          const accepted = acceptRemoteAnswer(answer)
           if (accepted === undefined) {
-            failed.set(true)
-            rows.set([])
-            capped.set(null)
+            fail()
             return
           }
-          const result = capRemoteOptions(accepted, maxRows)
+          const result = capRemoteAnswer(accepted, maxRows)
           rows.set(result.shown)
-          capped.set(result.capped ? { shown: result.shown.length, total: result.total } : null)
+          completeness.set(result.completeness)
         })
         .catch(() => {
-          if (mine !== generation) return
-          failed.set(true)
-          rows.set([])
+          if (mine === generation) fail()
         })
         .finally(() => {
           if (mine === generation) busy.set(false)
@@ -177,7 +227,8 @@ export function injectSourcedOptions(
 
   // The names of what is already stored. Without this, a resumed draft, a wizard page
   // change or a datagrid row move — which remounts every control in the row by design
-  // — renders an empty box over an answer the form holds.
+  // — renders an empty box over an answer the form holds. A disabled field asks too:
+  // the name of what it holds is all it shows.
   //
   // Asked at most ONCE per value, and remembered as "asked" rather than inferred from
   // the answer. A source is entitled not to know a value: a resumed form may hold one
@@ -200,7 +251,7 @@ export function injectSourcedOptions(
     void resolver
       .resolve({
         kind: 'labels',
-        source: definition().optionsSource ?? '',
+        source: sourceName() ?? '',
         path: dataPath(),
         query: '',
         values: [value],
@@ -209,10 +260,12 @@ export function injectSourcedOptions(
         signal: controller.signal,
       })
       .then((answer) => {
-        const accepted = acceptRemoteOptions(answer)
+        // Through the same gate as a search, so a page names values as a list does and
+        // an answer refused there names nothing here.
+        const accepted = acceptRemoteAnswer(answer)
         if (accepted === undefined) return
         const next = new Map(named())
-        for (const row of accepted) next.set(row.value, row.label)
+        for (const row of accepted.options) next.set(row.value, row.label)
         named.set(next)
       })
       // A name that does not arrive is not an error anybody can act on: the control
@@ -226,24 +279,12 @@ export function injectSourcedOptions(
     named: named.asReadonly(),
     busy: busy.asReadonly(),
     failed: failed.asReadonly(),
+    completeness: completeness.asReadonly(),
     // `computed`, not a bare arrow: the template reads these, and a plain function
     // would re-run on every change detection instead of when its inputs move.
-    sourced: computed(() => definition().optionsSource !== undefined),
-    unavailable: computed(
-      () => definition().optionsSource !== undefined && source() === undefined,
-    ),
-    status: computed(() => {
-      const resolver = source()
-      if (resolver === undefined) return ''
-      if (failed()) return text('options.failed')
-      const needs = resolver.minQueryLength ?? MIN_QUERY
-      if (query().trim().length < needs) return text('options.tooShort', { count: needs })
-      // Set only once a request is actually on its way — after the debounce — so
-      // nothing announces per keystroke.
-      if (busy()) return text('options.searching')
-      const limit = capped()
-      if (limit !== null) return text('options.capped', { shown: limit.shown, total: limit.total })
-      return ''
-    }),
+    needs: computed(() => source()?.minQueryLength ?? MIN_QUERY),
+    sourced: computed(() => sourceName() !== undefined),
+    unavailable: computed(() => sourceName() !== undefined && source() === undefined),
+    retry: () => attempt.update((count) => count + 1),
   }
 }

@@ -88,13 +88,35 @@ export const FORM_WORDS = {
   // ------------------------------------------- options, typeahead, tag picker
   'options.unavailable':
     'This field\'s answers come from "{source}", which this application has not provided.',
+  /** A typeahead's: typing asks again. */
   'options.failed': 'The options could not be loaded. Type to try again.',
+  /** A plain select's: nobody can type into one, and moving to it asks again. */
+  'options.failedListed':
+    'The options could not be loaded. They are asked for again each time you move to this field.',
+  /** A typeahead's, below its source's minimum. */
   'options.tooShort': {
     one: 'Type at least {count} character to search.',
     other: 'Type at least {count} characters to search.',
   },
+  /** A plain select's, over a source that answers only a search of some length. */
+  'options.searchOnly': "This field's answers are found by searching, which this list cannot do.",
   'options.searching': 'Searching…',
+  /** A typeahead's, over every row there is, cut to what it shows. */
   'options.capped': 'Showing the first {shown} of {total} — keep typing to narrow.',
+  /** A plain select's `options.capped`, which cannot ask anybody to type. */
+  'options.cappedListed': { other: 'Showing the first {count} of {total}.' },
+  /** A typeahead's, over a page that goes on: how many match is not known, so not said. */
+  'options.more': { other: 'Showing the first {count}; there are more — keep typing to narrow.' },
+  /** A plain select's `options.more`. */
+  'options.moreListed': { other: 'Showing the first {count}; there are more than this list can show.' },
+  /**
+   * Either control's: rows the source matched and could not hand over, counted. Said of
+   * the matches, not as "more": a page may withhold every row it matched and show none.
+   */
+  'options.withheld': {
+    one: 'One match cannot be chosen here.',
+    other: '{count} matches cannot be chosen here.',
+  },
   'options.noMatch': 'No options match',
   /** The popup list's name, which must differ from the field's own. */
   'options.suggestions': '{label} suggestions',
@@ -317,3 +339,7 @@ function pluralForm(message: PluralMessage, rules: Intl.PluralRules, count: numb
 
 export { FORM_WORDS_DE } from './words-de.js'
 export { FORM_WORDS_FR } from './words-fr.js'
+// What a sourced control says, beside the words it says it in: every renderer reads both,
+// and the engine neither (0177).
+export { optionsStatus } from './options-status.js'
+export type { OptionsStatusState } from './options-status.js'

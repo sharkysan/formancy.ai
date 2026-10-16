@@ -2,6 +2,9 @@ export { FormancyProvider, useFormEngine, useFormText } from './context.js'
 // The form's own words (0171): the catalogue is `@formancy/core/words`, and a host passes
 // its languages to `FormancyProvider` in this shape.
 export type { FormText, FormWordId, FormWordValues, FormWords, FormWordsByLocale } from '@formancy/core/words'
+// What a source may answer (0177), named where a host writing one already imports
+// `OptionsSources` from: every row, or one page that says whether its list goes on.
+export type { RemoteOption, RemoteOptionsAnswer, RemoteOptionsPage } from '@formancy/spec'
 export { useField } from './use-field.js'
 export type { FieldBinding } from './use-field.js'
 export { useRepeater } from './use-repeater.js'

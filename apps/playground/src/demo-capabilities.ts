@@ -2,11 +2,14 @@
  * The protocol types, taken from the React package — and that is a smell this
  * module is in a position to notice rather than fix. `OptionsSource`,
  * `OptionsSources` and `Scanner` are declared **independently and identically**
- * in `@formancy/react` and `@formancy/angular`; the two declarations are
- * byte-for-byte the same today and nothing makes them stay that way.
+ * in `@formancy/react` and `@formancy/angular`; the two declare the same types
+ * today, each documented in its renderer's words, and nothing makes them stay that
+ * way.
  *
  * The capabilities below are passed to BOTH providers and typecheck structurally
- * against each, which is why this works at all. Recorded as debt in
+ * against each, which is why this works at all — and why the page this source
+ * answers is held to both declarations of what a source may answer by the
+ * workspace's typecheck, the only thing that holds them together. Recorded as debt in
  * `docs/architecture/11-risks-and-debt.md` rather than moved, because moving a
  * published type is a change to two packages' public surfaces.
  */
@@ -44,6 +47,17 @@ import type { RelayChat } from '@formancy/builder-core'
  * Slow on purpose, by a quarter of a second: the busy state, the debounce and the
  * "searching" announcement are the parts of this that only exist under latency, and a
  * demo that answered instantly would show none of them.
+ *
+ * **It answers a page, as a database would**
+ * ([0177](../../../docs/decisions/0177-a-source-may-say-its-list-goes-on.md)). It reads
+ * one row more than the control can show, to know whether there are more, and counts
+ * nothing: a count reads every matching row on every keystroke, which is the scan paging
+ * exists to avoid. So opening *Where to collect it* says there are more without saying how many,
+ * and typing narrows it to silence. And one point it holds has no code yet, so a select
+ * could not store it: the source withholds that row and counts it, which is what typing
+ * `chur` shows, rather than leaving the visitor to read "no such point" for one that exists.
+ *
+ * These are the points a person can choose.
  */
 export const PICKUP_POINTS = [
   'Zürich Hauptbahnhof',
@@ -58,11 +72,21 @@ export const PICKUP_POINTS = [
   'Winterthur Altstadt',
 ].map((label, index) => ({ value: `p${String(index + 1)}`, label }))
 
+/**
+ * Every point the stand-in's table holds, in the order it reads them: the ones above, and
+ * one with no code yet. Kept apart from `PICKUP_POINTS`, because it is not a point anybody
+ * can choose, and nothing that offers a list should be able to offer it by mistake.
+ */
+const TABLE: readonly { code: string | null; label: string }[] = [
+  ...PICKUP_POINTS.map((point) => ({ code: point.value, label: point.label })),
+  { code: null, label: 'Chur Bahnhof' },
+]
+
 export const DEMO_OPTIONS_SOURCES: OptionsSources = {
   'pickup-points': {
     minQueryLength: 0,
     maxRows: 6,
-    resolve: ({ kind, query, values, signal }) =>
+    resolve: ({ kind, query, values, limit, signal }) =>
       new Promise((resolve, reject) => {
         const timer = setTimeout(() => {
           if (kind === 'labels') {
@@ -73,11 +97,17 @@ export const DEMO_OPTIONS_SOURCES: OptionsSources = {
           // query, and a control that re-filtered its answer would drop rows the
           // source matched on data the person cannot see.
           const folded = query.trim().toLowerCase()
-          resolve(
-            folded === ''
-              ? PICKUP_POINTS
-              : PICKUP_POINTS.filter((point) => point.label.toLowerCase().includes(folded)),
-          )
+          const matching = TABLE.filter((row) => row.label.toLowerCase().includes(folded))
+          // `LIMIT limit + 1`, in a database: the extra row says whether the list goes
+          // on, and is never shown.
+          const read = matching.slice(0, limit + 1)
+          const page = read.slice(0, limit)
+          resolve({
+            options: page.flatMap((row) => (row.code === null ? [] : [{ value: row.code, label: row.label }])),
+            more: read.length > limit,
+            // Withheld and counted, never filtered out unsaid.
+            withheld: page.filter((row) => row.code === null).length,
+          })
         }, 250)
         // Honouring the signal is the point of it: a keystroke that supersedes an
         // earlier one should cancel the work, not just ignore the answer.

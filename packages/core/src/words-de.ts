@@ -38,13 +38,33 @@ export const FORM_WORDS_DE = {
   'options.unavailable':
     'Die Antworten dieses Felds kommen aus „{source}“, das diese Anwendung nicht bereitstellt.',
   'options.failed': 'Die Optionen konnten nicht geladen werden. Tippen Sie, um es erneut zu versuchen.',
+  'options.failedListed':
+    'Die Optionen konnten nicht geladen werden. Sie werden jedes Mal erneut angefragt, wenn Sie zu diesem Feld wechseln.',
   'options.tooShort': {
     one: 'Geben Sie mindestens {count} Zeichen ein, um zu suchen.',
     other: 'Geben Sie mindestens {count} Zeichen ein, um zu suchen.',
   },
+  'options.searchOnly':
+    'Die Antworten dieses Felds werden über eine Suche gefunden, die diese Liste nicht bietet.',
   'options.searching': 'Suche läuft…',
   'options.capped':
     'Die ersten {shown} von {total} werden angezeigt – tippen Sie weiter, um einzugrenzen.',
+  'options.cappedListed': {
+    one: 'Die erste von {total} wird angezeigt.',
+    other: 'Die ersten {count} von {total} werden angezeigt.',
+  },
+  'options.more': {
+    one: 'Die erste Option wird angezeigt; es gibt weitere – tippen Sie weiter, um einzugrenzen.',
+    other: 'Die ersten {count} werden angezeigt; es gibt weitere – tippen Sie weiter, um einzugrenzen.',
+  },
+  'options.moreListed': {
+    one: 'Die erste Option wird angezeigt; es gibt mehr, als diese Liste zeigen kann.',
+    other: 'Die ersten {count} werden angezeigt; es gibt mehr, als diese Liste zeigen kann.',
+  },
+  'options.withheld': {
+    one: 'Ein Treffer kann hier nicht ausgewählt werden.',
+    other: '{count} Treffer können hier nicht ausgewählt werden.',
+  },
   'options.noMatch': 'Keine passenden Optionen',
   'options.suggestions': 'Vorschläge für {label}',
   'tagpicker.chosen': '{label}: ausgewählt',

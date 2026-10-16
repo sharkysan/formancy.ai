@@ -298,6 +298,44 @@ again.
   exists for exactly that, and `runsOn` is already in place so the ordering question can
   be answered without restructuring anything.
 
+## A source may answer a page (unreleased)
+
+**If you implement an options source, nothing has to change.** A list of rows is read exactly as
+before, its true total included. To say that a list goes on without counting it, answer one page:
+read one row more than `limit` and say whether you got it
+([0177](docs/decisions/0177-a-source-may-say-its-list-goes-on.md)).
+
+```ts
+resolve: async ({ kind, query, values, limit, signal }) => {
+  if (kind === 'labels') return yourRowsByValue(values, { signal })
+  const rows = await yourSearch(query, { limit: limit + 1, signal })
+  return { options: rows.slice(0, limit), more: rows.length > limit }
+}
+```
+
+A row you matched and cannot hand over — a value longer than the 200 characters a select can
+store, say — is left out of `options` and counted in `withheld`. A page is read strictly: `more` is
+required and a boolean, `withheld` a whole number of 0 or more, and any other key, a `total`
+included, refuses the whole answer, which the field shows as a source that failed.
+
+**If you call `resolve` yourself** — a test, or a source that wraps another — its answer is now a
+list or a page, and code that treated it as an array does not compile. Narrow it with
+`Array.isArray(answer) ? answer : answer.options`, or read it through `acceptRemoteAnswer` from
+`@formancy/spec`, which refuses what the controls refuse.
+
+**If you reworded the options words**, in `FormancyProvider`'s `words` or
+`provideFormancy(engine, { words })`: a plain select no longer says `options.failed` or
+`options.capped`. It says `options.failedListed` and `options.cappedListed`, and the new
+`options.moreListed` and `options.searchOnly`; a typeahead says the new `options.more`, and either
+control `options.withheld`. Add your words for them. `options.capped` keeps its id and its
+`{shown}` and `{total}`, for the typeahead.
+
+**If your source answers `labels` with nothing**, counting on a search to name what a field holds:
+a field a rule disables no longer searches, so it shows the stored value itself. Answer `labels`
+with the rows for the values asked.
+
+Nothing is stored differently, no document changes and the spec version does not move.
+
 ## A NUL character is refused (0.5.0)
 
 **A client may see new answers.**
