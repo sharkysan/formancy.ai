@@ -35,12 +35,34 @@ export const FORM_WORDS_FR = {
   'options.unavailable':
     'Les réponses de ce champ proviennent de « {source} », que cette application ne fournit pas.',
   'options.failed': 'Les options n’ont pas pu être chargées. Tapez pour réessayer.',
+  'options.failedListed':
+    'Les options n’ont pas pu être chargées. Elles sont redemandées chaque fois que vous revenez à ce champ.',
   'options.tooShort': {
     one: 'Tapez au moins {count} caractère pour rechercher.',
     other: 'Tapez au moins {count} caractères pour rechercher.',
   },
+  'options.searchOnly':
+    'Les réponses de ce champ se trouvent par une recherche, que cette liste ne permet pas.',
   'options.searching': 'Recherche…',
   'options.capped': 'Affichage des {shown} premiers sur {total} — continuez à taper pour affiner.',
+  'options.cappedListed': {
+    one: 'Affichage du premier sur {total}.',
+    other: 'Affichage des {count} premiers sur {total}.',
+  },
+  // `one` is 0 as well as 1, and a page that goes on may hand over none (every row of it
+  // withheld), so these two say the number rather than "le premier".
+  'options.more': {
+    one: 'Affichage de {count} option ; il y en a d’autres — continuez à taper pour affiner.',
+    other: 'Affichage des {count} premiers ; il y en a d’autres — continuez à taper pour affiner.',
+  },
+  'options.moreListed': {
+    one: 'Affichage de {count} option ; il y en a plus que cette liste ne peut en afficher.',
+    other: 'Affichage des {count} premiers ; il y en a plus que cette liste ne peut en afficher.',
+  },
+  'options.withheld': {
+    one: 'Un autre ne peut pas être choisi ici.',
+    other: '{count} autres ne peuvent pas être choisis ici.',
+  },
   'options.noMatch': 'Aucune option ne correspond',
   'options.suggestions': 'Suggestions pour {label}',
   'tagpicker.chosen': '{label} : choisis',

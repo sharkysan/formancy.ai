@@ -178,6 +178,24 @@ describe('a shipped language', () => {
     }
   })
 
+  test.each([['English', FORM_WORDS] as const, ...shipped])(
+    '%s says every value but the count in every form of a counted message',
+    (_, words) => {
+      // The case above compares a message's forms together, so a French `other` that
+      // dropped `{total}` passed while its `one` still said it — "Affichage des 50
+      // premiers." with the total gone. A form may say the count in words, "One more",
+      // "Eine weitere", and leave out nothing else.
+      for (const id of ids as FormWordId[]) {
+        const message: Message = words[id]
+        if (typeof message === 'string') continue
+        const needed = placeholders(FORM_WORDS[id]).filter((name) => name !== 'count')
+        for (const [form, said] of Object.entries(message)) {
+          expect(placeholders(said), `${id} ${form}`).toEqual(expect.arrayContaining(needed))
+        }
+      }
+    },
+  )
+
   test.each(shipped)('%s has no empty message, and every count has `other`', (_, words) => {
     for (const [id, message] of Object.entries(words)) {
       if (typeof message === 'string') expect(message.trim(), id).not.toBe('')

@@ -26,8 +26,18 @@ export {
   layoutChildren,
   layoutNodeShows,
 } from './layout.js'
-export { acceptRemoteOptions, capRemoteOptions } from './options-source.js'
-export type { RemoteOption } from './options-source.js'
+export {
+  acceptRemoteAnswer,
+  acceptRemoteOptions,
+  capRemoteAnswer,
+  capRemoteOptions,
+} from './options-source.js'
+export type {
+  RemoteCompleteness,
+  RemoteOption,
+  RemoteOptionsAnswer,
+  RemoteOptionsPage,
+} from './options-source.js'
 export { datagridColumns } from './datagrid.js'
 export type { DataGridColumnPlan } from './datagrid.js'
 export { foldForMatch, narrowOptionsByLabel } from './typeahead.js'

@@ -93,6 +93,9 @@ export function acceptRemoteOptions(rows: unknown): readonly RemoteOption[] | un
  * The caller says how many it can show; saying "there are more" is what keeps the
  * narrowing honest, because a list silently cut at fifty looks like a source that does
  * not have the fifty-first row.
+ *
+ * Its `total` is true only of rows that are every row there is. A page that goes on has
+ * no total, so a page goes through `capRemoteAnswer`, which says what this cannot.
  */
 export function capRemoteOptions(
   rows: readonly RemoteOption[],
@@ -104,4 +107,114 @@ export function capRemoteOptions(
     total: rows.length,
     capped: rows.length > limit,
   }
+}
+
+/**
+ * One page of a source's rows, and what the source knows about the rest without counting.
+ *
+ * A source backed by a database pages: it reads `limit + 1` rows to know whether there
+ * are more, and does not count them, because a count reads every matching row on every
+ * keystroke — the scan paging exists to avoid. Handed only rows, such a source either
+ * looks complete or claims a total of `limit + 1`. So a source may say what it does know
+ * ([0177](../../../docs/decisions/0177-a-source-may-say-its-list-goes-on.md)).
+ */
+export interface RemoteOptionsPage {
+  readonly options: readonly RemoteOption[]
+  /**
+   * Rows match beyond these, and how many is not known. Required: a page that does not
+   * say whether it goes on is a guess, and the guess that shows nothing is "complete".
+   */
+  readonly more: boolean
+  /**
+   * Among the rows this answer covers, how many matched and are not in `options` because
+   * the source cannot hand them over — a value a select could not store, say. A source
+   * never filters silently: it withholds and counts. When `more` is true this is a lower
+   * bound, and nothing says it.
+   */
+  readonly withheld?: number
+}
+
+/** What a source may answer: every matching row, as a list, or one page of them. */
+export type RemoteOptionsAnswer = readonly RemoteOption[] | RemoteOptionsPage
+
+/**
+ * What a control can say about the rows it shows.
+ *
+ * A flat `kind`, as the request has, so a renderer reads it with one `switch`. `more`
+ * carries no total because nobody counted one; `capped` carries one because the rows it
+ * was cut from were every row there is.
+ */
+export type RemoteCompleteness =
+  | { readonly kind: 'complete' }
+  | { readonly kind: 'more'; readonly shown: number }
+  | { readonly kind: 'capped'; readonly shown: number; readonly total: number }
+  | { readonly kind: 'withheld'; readonly withheld: number }
+
+/**
+ * One value for "nothing left out", so a renderer storing one answer's after another's
+ * stores the same thing: React's state and Angular's signals compare by identity, and a
+ * search that settles complete again then renders nothing.
+ */
+const COMPLETE: RemoteCompleteness = { kind: 'complete' }
+
+const PAGE_KEYS: ReadonlySet<string> = new Set(['options', 'more', 'withheld'])
+
+/**
+ * A source's answer, in either shape, if every part of it is usable — and `undefined` if
+ * any is not.
+ *
+ * A list is every matching row, exactly as before a page could be answered, so it reads
+ * as nothing more and nothing withheld and keeps its true total.
+ *
+ * A page is **refused whole** for anything ambiguous, as a list is for one bad row
+ * ([0077](../../../docs/decisions/0077-options-may-come-from-a-named-source.md)): a `more`
+ * that is not a boolean, a `withheld` that is not a whole count, and any key this does not
+ * know. A misspelt `moer: true`, or a `total` read as nothing, would otherwise show a cut
+ * list as complete — the failure the envelope exists to prevent. A refused answer is a
+ * source that failed, which the field says, and never a list that looks whole.
+ *
+ * Beside `acceptRemoteOptions` rather than instead of it: that one is published, and
+ * widening what it returns would hand a JavaScript caller an object where it had an array.
+ */
+export function acceptRemoteAnswer(answer: unknown): Required<RemoteOptionsPage> | undefined {
+  if (Array.isArray(answer)) {
+    const options = acceptRemoteOptions(answer)
+    return options === undefined ? undefined : { options, more: false, withheld: 0 }
+  }
+  if (typeof answer !== 'object' || answer === null) return undefined
+  if (Object.keys(answer).some((key) => !PAGE_KEYS.has(key))) return undefined
+
+  const page = answer as { options?: unknown; more?: unknown; withheld?: unknown }
+  const options = acceptRemoteOptions(page.options)
+  if (options === undefined || typeof page.more !== 'boolean') return undefined
+  // Absent or `undefined` is none withheld; `null` is not a count, and not read as one.
+  const withheld = page.withheld === undefined ? 0 : page.withheld
+  // A safe integer, so the count said is the count sent.
+  if (typeof withheld !== 'number' || !Number.isSafeInteger(withheld) || withheld < 0) return undefined
+
+  return { options, more: page.more, withheld }
+}
+
+/**
+ * The rows a control shows of an accepted answer, and what it can truthfully say about
+ * the rest — one thing, in this order:
+ *
+ * - **`more`** when the source said its list goes on, with how many are shown and never a
+ *   total, even when it also withheld rows: while more rows match, a withheld count covers
+ *   only this page and is a lower bound, which is a number nobody should be told.
+ * - **`capped`** when the control cut rows the source handed over, with their number as
+ *   the total, which is true because the source did not say there were more.
+ * - **`withheld`** when nothing else was left out and the source withheld rows.
+ * - **`complete`** only when nothing was cut, nothing more matches and nothing was
+ *   withheld. A list is never silently partial.
+ */
+export function capRemoteAnswer(
+  answer: Required<RemoteOptionsPage>,
+  limit: number,
+): { shown: readonly RemoteOption[]; completeness: RemoteCompleteness } {
+  const { shown, total, capped } = capRemoteOptions(answer.options, limit)
+  if (answer.more) return { shown, completeness: { kind: 'more', shown: shown.length } }
+  if (capped) return { shown, completeness: { kind: 'capped', shown: shown.length, total } }
+  if (answer.withheld > 0) return { shown, completeness: { kind: 'withheld', withheld: answer.withheld } }
+  return { shown, completeness: COMPLETE }
 }
