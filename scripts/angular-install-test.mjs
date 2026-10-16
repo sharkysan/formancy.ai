@@ -115,6 +115,15 @@ try {
           typescript: '~6.0.3',
           vite: '^8.3.0',
         },
+        // Nothing here installs vitest; @angular/build names it as an optional peer,
+        // and npm 10 resolves that peer's own peers all the same. vitest 4.1.12,
+        // published 2026-10-15, names @vitest/browser-webdriverio ^4.1.11, which has
+        // no 4.1.12, and its 4.1.11 wants vitest 4.1.11 exactly: npm 10.9 stops on
+        // "Cannot read properties of null (reading 'edgesOut')" for @angular/build
+        // 22.0.0, whose range, ^4.0.8, picks 4.1.12 (measured 2026-10-16 in node:22;
+        // 22.2.3 allows ^5 and was not hit). Held to a release whose set is whole
+        // until vitest publishes one; drop it when this test passes without it.
+        overrides: { vitest: '4.1.11' },
       },
       null,
       2,
