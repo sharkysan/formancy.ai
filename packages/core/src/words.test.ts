@@ -183,8 +183,8 @@ describe('a shipped language', () => {
     (_, words) => {
       // The case above compares a message's forms together, so a French `other` that
       // dropped `{total}` passed while its `one` still said it — "Affichage des 50
-      // premiers." with the total gone. A form may say the count in words, "One more",
-      // "Eine weitere", and leave out nothing else.
+      // premiers." with the total gone. A form may say the count in words, "One match",
+      // "Ein Treffer", and leave out nothing else.
       for (const id of ids as FormWordId[]) {
         const message: Message = words[id]
         if (typeof message === 'string') continue

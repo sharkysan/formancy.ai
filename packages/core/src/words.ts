@@ -109,10 +109,13 @@ export const FORM_WORDS = {
   'options.more': { other: 'Showing the first {count}; there are more — keep typing to narrow.' },
   /** A plain select's `options.more`. */
   'options.moreListed': { other: 'Showing the first {count}; there are more than this list can show.' },
-  /** Either control's: rows the source matched and could not hand over, counted. */
+  /**
+   * Either control's: rows the source matched and could not hand over, counted. Said of
+   * the matches, not as "more": a page may withhold every row it matched and show none.
+   */
   'options.withheld': {
-    one: 'One more cannot be chosen here.',
-    other: '{count} more cannot be chosen here.',
+    one: 'One match cannot be chosen here.',
+    other: '{count} matches cannot be chosen here.',
   },
   'options.noMatch': 'No options match',
   /** The popup list's name, which must differ from the field's own. */

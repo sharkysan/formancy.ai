@@ -60,8 +60,8 @@ export const FORM_WORDS_FR = {
     other: 'Affichage des {count} premiers ; il y en a plus que cette liste ne peut en afficher.',
   },
   'options.withheld': {
-    one: 'Un autre ne peut pas être choisi ici.',
-    other: '{count} autres ne peuvent pas être choisis ici.',
+    one: 'Un résultat ne peut pas être choisi ici.',
+    other: '{count} résultats ne peuvent pas être choisis ici.',
   },
   'options.noMatch': 'Aucune option ne correspond',
   'options.suggestions': 'Suggestions pour {label}',

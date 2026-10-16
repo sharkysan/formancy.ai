@@ -62,8 +62,8 @@ export const FORM_WORDS_DE = {
     other: 'Die ersten {count} werden angezeigt; es gibt mehr, als diese Liste zeigen kann.',
   },
   'options.withheld': {
-    one: 'Eine weitere kann hier nicht ausgewählt werden.',
-    other: '{count} weitere können hier nicht ausgewählt werden.',
+    one: 'Ein Treffer kann hier nicht ausgewählt werden.',
+    other: '{count} Treffer können hier nicht ausgewählt werden.',
   },
   'options.noMatch': 'Keine passenden Optionen',
   'options.suggestions': 'Vorschläge für {label}',

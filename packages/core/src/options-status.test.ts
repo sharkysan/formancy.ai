@@ -152,6 +152,22 @@ describe('what a sourced control says', () => {
     }
   })
 
+  test('and what is withheld is said as true over a list of none', () => {
+    // A page may withhold every row it matched — the playground's `chur` does — and then
+    // shows none. "One more cannot be chosen here." over an empty list is one more than
+    // nothing, and it stands where "No options match" would, so the sentence has to be true
+    // with no rows beside it. The sentence is the thing held, so each language's word for
+    // "further" is named here.
+    const further: Record<string, RegExp> = { '': /\bmore\b/i, de: /\bweitere\b/i, fr: /\bautres?\b/i }
+    for (const [locale, word] of Object.entries(further)) {
+      const text = createFormText({ locale })
+      for (const count of [1, 2]) {
+        const said = optionsStatus(text, { ...settled, completeness: { kind: 'withheld', withheld: count } })
+        expect(said, `${locale} ${String(count)}`).not.toMatch(word)
+      }
+    }
+  })
+
   test('and each new sentence is the catalogue’s, not the typeahead’s said again', () => {
     // A select whose words were the typeahead's would tell its reader to type.
     const english = createFormText({ locale: '' })
