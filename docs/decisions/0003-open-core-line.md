@@ -1,6 +1,7 @@
 # 0003 — Give away the engine, sell operating the platform
 
-- **Status:** accepted
+- **Status:** accepted; its sold list as only operating the platform, and its "nothing to
+  buy", superseded in part by [0179](0179-the-paid-modules-are-named-as-not-free.md)
 - **Date:** 2026-09-19
 - **Deciders:** Daniel Bacher
 - **Verified by:** Not mechanically enforced, and it cannot be: where the

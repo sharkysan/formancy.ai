@@ -70,7 +70,8 @@ record whose only enforcement is "we remember" says so plainly.
 |---|---|---|
 | [0001](0001-purpose-built-spec.md) | Write a new schema spec rather than adopt form.io's | accepted |
 | [0002](0002-apache-2-0.md) | Apache-2.0 for everything, no dual licensing | accepted |
-| [0003](0003-open-core-line.md) | Give away the engine, sell operating the platform | accepted |
+| [0003](0003-open-core-line.md) | Give away the engine, sell operating the platform | accepted; its sold list as only operating the platform, and its "nothing to buy", superseded in part by 0179 |
+| [0179](0179-the-paid-modules-are-named-as-not-free.md) | Two modules built on formancy are sold, and the landing page names them as not free | accepted |
 
 ### Architecture
 

@@ -22,6 +22,7 @@ import { LiveRules, highlight, sourceOf } from './source.js'
 import { useJourney } from './use-journey.js'
 import { HeroStudio } from './hero-studio.js'
 import { Backdrop, PLAYGROUND, REPO, SiteBar, SiteFooter } from './chrome.js'
+import { Licence } from './licence.js'
 
 /**
  * formancy.ai.
@@ -298,76 +299,7 @@ export function App(): ReactElement {
         </div>
 
         <Section id="licence" className="wide licence" journey={journey} section="licence">
-          <div className="licence-claim">
-            <p className="eyebrow">Licence</p>
-            <h2>Apache-2.0. The whole thing.</h2>
-            <p className="lede">
-              The spec, the engine, both renderers, the builder and the backend. No paywalled
-              accessibility, no premium components, no clause that turns running it for your own
-              users into distribution.
-            </p>
-            <div className="actions">
-              <a className="action" href={REPO} rel="noreferrer noopener">
-                github.com/sharkysan/formancy.ai
-              </a>
-            </div>
-          </div>
-
-          {/* What the licence actually gives, beside the claim rather than under it: the
-              section was a centred paragraph with a screen of air around it, and the three
-              things below are the reason Apache-2.0 was chosen over MIT rather than
-              decoration. */}
-          <dl className="licence-terms">
-            <div>
-              <dt>An express patent grant</dt>
-              <dd>
-                With a retaliation clause, which is the term an acquirer&rsquo;s open-source
-                office looks for first. MIT has none.
-              </dd>
-            </div>
-            <div>
-              <dt>Running it is not distributing it</dt>
-              <dd>
-                Offering a form to your own users triggers nothing. No source disclosure, no
-                obligation that arrives with your first visitor.
-              </dd>
-            </div>
-            <div>
-              <dt>Attribution that travels</dt>
-              <dd>
-                A NOTICE file ships in every package, and the licence text with it — checked
-                before a release can publish.
-              </dd>
-            </div>
-          </dl>
-
-          {/* The paragraph a buyer with a regulator behind them is looking for, and the
-              disclaimer is half of it rather than a hedge on it: conformity attaches to a
-              device with an intended purpose, a component cannot have one, and a supplier
-              who claims otherwise is the one to be suspicious of. The two halves travel
-              together -- `apps/docs/src/claims.test.ts` fails if either is left behind,
-              and if a document named here is not where the link says. */}
-          <p className="licence-provenance">
-            <strong>Built to be incorporated.</strong> formancy is not a medical device and
-            claims no conformity. It ships the characterisation a manufacturer needs under
-            IEC 62304 to treat it as software of known provenance — a{' '}
-            <a href={`${REPO}/blob/main/docs/regulatory/SOUP-DECLARATION.md`} rel="noreferrer noopener">
-              SOUP declaration
-            </a>
-            , a{' '}
-            <a href={`${REPO}/blob/main/docs/regulatory/SAFETY-ANALYSIS.md`} rel="noreferrer noopener">
-              safety analysis
-            </a>
-            , the{' '}
-            <a href={`${REPO}/blob/main/docs/regulatory/LIFECYCLE.md`} rel="noreferrer noopener">
-              lifecycle
-            </a>{' '}
-            and the{' '}
-            <a href={`${REPO}/tree/main/docs/decisions`} rel="noreferrer noopener">
-              design rationale
-            </a>{' '}
-            — as an input to your risk analysis, not a substitute for it.
-          </p>
+          <Licence />
         </Section>
 
         <Finale journey={journey} />

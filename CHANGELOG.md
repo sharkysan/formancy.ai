@@ -10,6 +10,17 @@ later.
 
 ## Unreleased
 
+**Added, on the landing page: the two paid modules, each saying it is not free.** Formancy Data
+(forms from an existing PostgreSQL or SQL Server database) and Formancy Report (paginated PDF
+reports) are built on formancy in repositories of their own, under source-available licences:
+free to read, evaluate and develop with, paid in production, no published price yet. The page
+named neither, and its one sentence about licensing is *Apache-2.0. The whole thing.*, so both
+now sit directly under that sentence, and each module's item says *Not free · paid in
+production* beside its own links. A link is often reached on its own, so a single sentence
+above both would not have been enough. Nothing in any `@formancy/*` package changes, and
+nothing moves off the free side
+([0179](docs/decisions/0179-the-paid-modules-are-named-as-not-free.md)).
+
 **Added: the admin's palette, as `@formancy/themes/room.css`.** The dark ground, the glass, the
 violet for what a person acts on and the teal for what the system did were the `:root` block of
 the admin's own stylesheet, which is in no package, so Formancy Report and Formancy Data each

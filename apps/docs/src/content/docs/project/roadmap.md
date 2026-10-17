@@ -433,9 +433,12 @@ immutable — and what was missing was that anybody noticed.
 ### Deferred, with the reason
 
 **PDF output and e-signatures.** The strongest commercial pull on form.io's list,
-and explicitly in the sold tier here. Expensive, and it needs a deterministic
-render path that does not exist yet — the honest version of this feature is not
-"print the form". It also wants `signature` first.
+and explicitly in the sold tier here. Paginated PDF reports now exist outside this
+repository as [Formancy Report](https://github.com/sharkysan/formancy.ai-report), a
+separate module that is not free: source-available, and paid in production
+([0179](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0179-the-paid-modules-are-named-as-not-free.md)).
+The formancy packages themselves still render no PDF. The honest version of that
+feature is not "print the form", and e-signatures still want `signature` first.
 
 **Offline mode.** Expensive, narrow, and it argues with the rule that the server
 is the authority on validity. A form that validated offline and is rejected on

@@ -127,6 +127,35 @@ describe('the page is a document first', () => {
     expect(offered.some((href) => href.includes('LIFECYCLE.md'))).toBe(true)
     expect(offered.some((href) => href.includes('docs/decisions'))).toBe(true)
   })
+
+  test('a link to a paid module says beside it that the module is not free', () => {
+    // The section it sits in says "Apache-2.0. The whole thing." A link to a module
+    // under another licence, without its terms beside it, reads as part of the whole
+    // thing — and the visitor finds out it is paid on the way to production. So every
+    // link to one, wherever on the page and however it is spelled, has to sit in the
+    // item that names that module's terms; text elsewhere on the page cannot pass for
+    // it. Both modules are named here rather than read from the page's own list, so
+    // dropping one from the page fails too.
+    render(<App />)
+
+    const offered = [
+      'https://formancy.ai/data/examples/',
+      'https://github.com/sharkysan/formancy.ai-data',
+      'https://formancy.ai/report/',
+      'https://github.com/sharkysan/formancy.ai-report',
+    ]
+    const paid = screen
+      .getAllByRole('link')
+      .filter((link) => /formancy\.ai-(data|report)|formancy\.ai\/(data|report)\//.test(link.getAttribute('href') ?? ''))
+    expect(paid.map((link) => link.getAttribute('href')).sort()).toEqual([...offered].sort())
+
+    for (const link of paid) {
+      const item = link.closest('li')
+      expect(item, `${link.getAttribute('href') ?? ''} is not in a module's item`).not.toBeNull()
+      expect(item?.textContent, `${link.getAttribute('href') ?? ''} has no terms beside it`).toMatch(/not free/i)
+      expect(item?.textContent).toMatch(/paid in production/i)
+    }
+  })
 })
 
 describe('the demo is the product, not a picture of it', () => {
