@@ -44,7 +44,7 @@ const OWNS_ITS_PROCESS: ReadonlyArray<{ name: string; why: string }> = [
 /**
  * Every package `pnpm publish` would push that ships script, with its directory.
  *
- * Script read off the manifest rather than listed: `@formancy/themes` exports five
+ * Script read off the manifest rather than listed: `@formancy/themes` exports
  * stylesheets and nothing a host could run, so it has no console to write to — and a
  * package that later starts exporting a module is scanned without anybody adding it.
  */

@@ -97,7 +97,10 @@ describe('the workbench', () => {
     const root = /:root\s*\{([^}]*)\}/.exec(css)?.[1] ?? ''
     const declared = [...root.matchAll(/(--wb-[a-z-]+)\s*:/g)].map(([, token]) => token!).sort()
     const readme = readFileSync(join(repo, 'packages', 'themes', 'README.md'), 'utf8')
-    const section = readme.slice(readme.indexOf('## The builders'), readme.indexOf('## Right to left'))
+    // Up to the next heading, not to a named one: the room's section, which follows, names
+    // the same tokens, and a token dropped here would pass on the strength of it.
+    const start = readme.indexOf('## The builders')
+    const section = readme.slice(start, readme.indexOf('\n## ', start + 1))
     const named = [...new Set([...section.matchAll(/`(--wb-[a-z-]+)`/g)].map(([, token]) => token!))].sort()
 
     expect(declared.length).toBeGreaterThan(5)

@@ -278,3 +278,4 @@ listed under the sections they belong to above.
 | [0175](0175-a-name-goes-into-a-header-encoded.md) | A name goes into a header encoded, and an error's reply drops a header that cannot be written | accepted |
 | [0176](0176-the-npm-token-is-a-secret-of-the-npm-environment.md) | The npm token is a secret of the `npm` environment, which only release tags reach | accepted |
 | [0177](0177-a-source-may-say-its-list-goes-on.md) | A source may say its list goes on, and a sourced control says only what the person can act on | accepted |
+| [0178](0178-the-rooms-palette-is-published.md) | The admin's palette is published, and the admin imports it like anybody else | accepted |

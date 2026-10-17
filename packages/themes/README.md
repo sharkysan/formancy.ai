@@ -2,8 +2,8 @@
 
 # @formancy/themes
 
-Four reference themes. CSS only — no JavaScript, no build step, no dependency
-on any renderer.
+Four reference themes, the builders' stylesheet and the admin's palette. CSS
+only — no JavaScript, no build step, no dependency on any renderer.
 
 ## What they are for
 
@@ -38,9 +38,10 @@ import '@formancy/themes/paper.css'
 <div data-formancy-theme="blueprint">…your form…</div>
 ```
 
-Every file is scoped under `[data-formancy-theme]`, so a page can load all of
+Every theme is scoped under `[data-formancy-theme]`, so a page can load all of
 them and switch by changing one attribute — which is what the playground and
-the landing page do.
+the landing page do. `workbench.css` and `room.css`, below, are not themes and
+are not scoped: each sets its variables on `:root`, for the whole page.
 
 Each theme sets its own text colour, colour scheme and `box-sizing` on its
 subtree, so it does not depend on the host page's reset. It does not paint the
@@ -73,13 +74,50 @@ rather than with rules of your own:
 | `--wb-invalid`, `--wb-ok`, `--wb-caution` | broken, fine, and costing something |
 | `--wb-sans`, `--wb-mono` | the two faces |
 
+## The room: `room.css`
+
+`room.css` is the palette formancy.ai's self-hosted admin is drawn in — a dark ground, glass
+panels, violet for what a person acts on and teal for what the system did — so that an
+application meant to be the same room imports it rather than copying the values. The admin
+imports it the same way. It is custom properties on `:root` and `color-scheme: dark`, and
+nothing else: no rule for any element, and no face loaded. Your own stylesheet reads them.
+
+```ts
+import '@formancy/themes/workbench.css'
+import '@formancy/themes/room.css' // after the workbench
+```
+
+| Variable | What it is |
+|---|---|
+| `--ground` | the page, behind everything |
+| `--glass` | a panel over the ground, which shows it through |
+| `--text`, `--muted` | text, and quiet text |
+| `--edge`, `--edge-strong` | a line, and a line that bounds a panel |
+| `--client` | violet: what the person acts on |
+| `--server` | teal: what the system did |
+| `--invalid`, `--ok`, `--warn` | broken, fine, and half-way |
+| `--display` | the face for headings: Archivo, then IBM Plex Sans |
+
+It also sets every colour of `workbench.css` to the room's — `--wb-ink`, `--wb-bench`,
+`--wb-panel`, `--wb-surface`, `--wb-rule`, `--wb-muted`, `--wb-signal`, `--wb-derived`,
+`--wb-invalid`, `--wb-ok` and `--wb-caution` — and leaves its faces as the workbench sets
+them. Those take effect only after `workbench.css`: both say `:root`, so whichever loads later
+wins, and loaded first the builder keeps its light panes in the dark room.
+
+The faces are not loaded. `--display` names Archivo and IBM Plex Sans, and the workbench's
+faces are IBM Plex; a page loads them itself, as the admin does from Fontsource, or falls back
+to the system's.
+
+The names are what you write `var()` around, so they are this package's API, and a value is
+the room: a change to one changes every page that imports it, and the changelog says so.
+
 ## Right to left, and your bundler
 
-Every file here — the four themes and `workbench.css`, which styles the two builders —
-says which side a thing is on in reading order: logical properties, and `:dir(rtl)` where
-CSS has no logical form, as for an icon's `background-position` or the bar an inset shadow
-draws down one side of a selected item. Set `dir="rtl"` on the page, or on anything above
-the form or the builder, and the layout follows.
+Every file here that lays anything out — the four themes, and `workbench.css`, which styles
+the two builders — says which side a thing is on in reading order: logical properties, and
+`:dir(rtl)` where CSS has no logical form, as for an icon's `background-position` or the bar
+an inset shadow draws down one side of a selected item. Set `dir="rtl"` on the page, or on
+anything above the form or the builder, and the layout follows.
 
 **That holds only while `:dir()` reaches the browser as written.** A bundler targeting
 browsers older than the ones `:dir()` shipped in rewrites it. Vite's default target had

@@ -9,6 +9,8 @@ import { TranslationsTab } from './translations-tab.js'
 import { WebhooksPane } from './webhooks-pane.js'
 import { SignIn } from './sign-in.js'
 import '@formancy/themes/workbench.css'
+// After the workbench, whose light defaults its --wb-* recolour: both say :root.
+import '@formancy/themes/room.css'
 import '@formancy/themes/blueprint.css'
 import './admin.css'
 import { Mark } from './mark.js'
