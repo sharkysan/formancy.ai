@@ -1,7 +1,7 @@
 import { fileURLToPath } from 'node:url'
 import angular from '@analogjs/vite-plugin-angular'
 import { defineConfig } from 'vite'
-import { CSS_TARGET } from '../../css-target'
+import { CSS_TARGET } from '../../css-target.ts'
 
 /**
  * An Angular application built with Vite and Analog's Angular plugin — the toolchain this

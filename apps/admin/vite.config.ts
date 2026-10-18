@@ -1,7 +1,7 @@
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
-import { monacoFromThisSite } from '../../monaco-from-this-site'
-import { MONACO_VS } from './src/monaco-path'
+import { monacoFromThisSite } from '../../monaco-from-this-site.ts'
+import { MONACO_VS } from './src/monaco-path.ts'
 
 export default defineConfig({
   plugins: [react(), monacoFromThisSite(MONACO_VS)],

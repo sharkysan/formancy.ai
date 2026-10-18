@@ -3,6 +3,7 @@
   "version": "0.5.0",
   "description": "Keyboard-first Angular builder UI for formancy form documents.",
   "license": "Apache-2.0",
+  "type": "module",
   "//exports": [
     "Pointing into dist, so this package is importable from elsewhere in the",
     "workspace. `publishConfig.linkDirectory: false` means the link a sibling",

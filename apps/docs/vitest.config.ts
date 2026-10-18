@@ -1,5 +1,5 @@
 import { defineConfig } from 'vitest/config'
-import { coverage } from '../../vitest.coverage'
+import { coverage } from '../../vitest.coverage.ts'
 
 /**
  * The docs app has no unit-testable code — Astro builds it — so this exists for

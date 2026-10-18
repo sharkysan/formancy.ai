@@ -2,7 +2,7 @@ import { fileURLToPath } from 'node:url'
 import angular from '@analogjs/vite-plugin-angular'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
-import { RENDER_TIMEOUT_MS, coverage } from '../../vitest.coverage'
+import { RENDER_TIMEOUT_MS, coverage } from '../../vitest.coverage.ts'
 
 /**
  * The Angular tsconfig, resolved when the plugin asks rather than when this
