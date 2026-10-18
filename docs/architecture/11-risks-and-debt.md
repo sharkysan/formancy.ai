@@ -234,16 +234,21 @@ arbitrary in six months, which is why it is written down.
 of [0002](../decisions/0002-apache-2-0.md), accepted on purpose; the answer is
 the open-core line, not a licence restriction.
 
-**The landing page states the paid modules' terms and nothing checks them.** Formancy Data
-and Formancy Report are named under the licence claim as not free, paid in production
-([0179](../decisions/0179-the-paid-modules-are-named-as-not-free.md)). Those terms were read
-from each repository's `LICENSE.md` on 2026-10-16. A test here can hold that every link to a
-module sits beside them, but not that they are still what the licences say, because that
-would need the network in CI. The pages the links lead to are deployed by those
-repositories. On the same date both loaded fonts from Google; on 2026-10-17 both served their
-own faces, by formancy.ai-data 0072 and formancy.ai-report 0023, which those repositories'
-gates hold and [0154](../decisions/0154-the-website-makes-no-request-to-any-other-site.md)'s
-gate does not open.
+**The landing page states the paid modules' terms and nothing checks them.** Formancy Data,
+Formancy Report and Formancy Health are named under the licence claim as not free, paid in
+production ([0179](../decisions/0179-the-paid-modules-are-named-as-not-free.md),
+[0180](../decisions/0180-formancy-health-is-named-before-its-first-release.md)). Those terms
+were read from each repository's `LICENSE.md`, Data's and Report's on 2026-10-16 and Health's
+on 2026-10-18. A test here can hold that every link to a module sits beside them, but not that
+they are still what the licences say, because that would need the network in CI. The same is
+true of HL7's trademark sentence in Formancy Health's item, copied from that repository's
+`NOTICE`, and of Formancy Health being unreleased on 2026-10-18, which its item deliberately
+does not say. The pages the links lead to are deployed by those repositories. On 2026-10-16
+Data's and Report's loaded fonts from Google; on 2026-10-17 both served their own faces, by
+formancy.ai-data 0072 and formancy.ai-report 0023. Health's demo, read on 2026-10-18, sent a
+content security policy that allows nothing from another site. Those repositories' gates hold
+all three, and [0154](../decisions/0154-the-website-makes-no-request-to-any-other-site.md)'s
+gate does not open them.
 
 ## 11.4 The spec freeze, and what it locked in
 

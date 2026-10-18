@@ -72,6 +72,7 @@ record whose only enforcement is "we remember" says so plainly.
 | [0002](0002-apache-2-0.md) | Apache-2.0 for everything, no dual licensing | accepted |
 | [0003](0003-open-core-line.md) | Give away the engine, sell operating the platform | accepted; its sold list as only operating the platform, and its "nothing to buy", superseded in part by 0179 |
 | [0179](0179-the-paid-modules-are-named-as-not-free.md) | Two modules built on formancy are sold, and the landing page names them as not free | accepted |
+| [0180](0180-formancy-health-is-named-before-its-first-release.md) | Formancy Health is named beside the other paid modules, before its first release | accepted |
 
 ### Architecture
 
