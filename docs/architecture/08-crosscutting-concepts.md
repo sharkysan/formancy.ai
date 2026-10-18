@@ -53,7 +53,7 @@ also why the engine's tests never need to mock a clock.
 |---|---|---|
 | **Structural** | ajv against the spec's JSON Schema, ahead-of-time compiled | a field with no `key` |
 | **Semantic** | `validateSchema`, expressing what JSON Schema cannot | a duplicate key; a rename whose old key still exists; a page below the top level; a pattern that does not compile; a message reference that resolves nowhere |
-| **Model** | the engine, against answers | `required`, `min`, `maxLength`, anchored `pattern`, the closed format list, and expression-driven rules |
+| **Model** | the engine, against answers | `required`, `min`, `maxLength`, anchored `pattern`, the closed format list, and expression-driven rules — on a repeater too, against its rows as a whole: `minItems`, `maxItems`, `required` as a row, and the rules aimed at it ([0184](../decisions/0184-a-repeater-is-validated-as-a-field-is.md)) |
 
 Messages in the first two tiers are written for a form author, not for a
 compiler. "There is no `en` catalogue, so the language everything falls back to
@@ -67,7 +67,13 @@ A specified behaviour, not an emergent one
 ([0013](../decisions/0013-hidden-field-semantics.md)):
 
 - A hidden field is excluded from validation.
-- `clearOnHide`, default `true`, decides whether its answer is pruned.
+- What a rule hides, it hides whole: the fields inside a hidden group and the rows of a
+  hidden repeater are hidden and unvalidated with it, and so is a repeater's every row on a
+  page the answers walk past
+  ([0184](../decisions/0184-a-repeater-is-validated-as-a-field-is.md)). The same holds for
+  `disabled`.
+- `clearOnHide`, default `true`, decides whether its answer is pruned — a group's and a
+  repeater's for everything inside them.
 - The **server** applies the same semantics from its own evaluation, so a
   client cannot smuggle data into a hidden branch by sending it anyway.
 - Invariant, held by property tests: hiding then unhiding restores the value if

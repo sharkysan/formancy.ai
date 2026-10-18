@@ -91,6 +91,7 @@ Each encodes semantics the engine and the renderers must implement, and
 | calculated value | a computed field tracks its inputs, and a value handed in for it is not shown or submitted |
 | clear on hide | whether a hidden field's answer is dropped or kept |
 | repeating group | per-row validation, and re-indexing when a row is removed |
+| repeater bounds | a repeater's own error — too many rows for its `maxItems`, none where it is required — drawn on the repeater and read off its group by its legend |
 | wizard page validation | next validates only the current page; submit validates everything and returns to the first page with a problem |
 | wizard with layout | a paged form drawn with a layout shows the page somebody is on, arranged as the layout says, and leaves out what the layout leaves out |
 | placed group | a group a layout places whole is drawn as its fields, on the page they are on — where both renderers threw |

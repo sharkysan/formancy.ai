@@ -48,6 +48,14 @@ scope: `item` (the row) and `index` (its position).
 
 Errors land on the instance that failed — `items[1].qty` — not on the template.
 
+Target the repeater itself — `items`, without the brackets — and the rule is about the rows
+as a whole. A `validate` rule reads them as a list, `size(items) <= 3`, and its error lands on
+`items`; `required` asks for at least one row; `visible` and `disabled` take the rows with the
+repeater. The repeater's own `minItems` and `maxItems` are checked the same way, with the
+codes a `selectboxes` reports for the same questions, and a renderer offers no add button
+past `maxItems` and no remove button at `minItems`
+([0184](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0184-a-repeater-is-validated-as-a-field-is.md)).
+
 ## A computed field is read-only
 
 Only its rule writes a computed field. A value typed into it, set on it with
@@ -137,11 +145,14 @@ repeater's rows cannot be written as one expression. What a form can do instead:
   Angular starter's expense claim asks for the same reason.
 - **Keep the rows, and add them up where they arrive.** The stored submission holds every row, so
   a webhook's receiver or a report can total them. The form shows no total then.
-- **Add the rows up one by one, and refuse a row the total does not name:**
+- **Add the rows up one by one, and cap the repeater at the rows the total names:**
 
 ```jsonc
-{ "target": "total", "kind": "computed", "cel": "(size(fees) > 0 && 'amount' in fees[0] && fees[0].amount != null ? fees[0].amount : 0.0) + (size(fees) > 1 && 'amount' in fees[1] && fees[1].amount != null ? fees[1].amount : 0.0) + (size(fees) > 2 && 'amount' in fees[2] && fees[2].amount != null ? fees[2].amount : 0.0)" },
-{ "target": "total", "kind": "validate", "cel": "size(fees) <= 3", "code": "tooManyFees" }
+{ "key": "fees", "type": "repeater", "maxItems": 3, "fields": [{ "key": "amount", "type": "number" }] }
+```
+
+```jsonc
+{ "target": "total", "kind": "computed", "cel": "(size(fees) > 0 && 'amount' in fees[0] && fees[0].amount != null ? fees[0].amount : 0.0) + (size(fees) > 1 && 'amount' in fees[1] && fees[1].amount != null ? fees[1].amount : 0.0) + (size(fees) > 2 && 'amount' in fees[2] && fees[2].amount != null ? fees[2].amount : 0.0)" }
 ```
 
 The last is the one that shows a total, and **it costs a cap on the rows.** Each row is a term
@@ -151,17 +162,16 @@ row the add button made has no `amount` at all until somebody types one: read wi
 guard, one untouched row stops the whole total, which keeps whatever it said before. Outside a
 row rule `has()` cannot take an indexed row, so the guard is `in`.
 
-The cap has to be the `validate` rule, for two reasons measured on 2026-10-18:
+The cap is the repeater's own `maxItems`, set to the number of rows the total names. The add
+button is not offered past it, and a submission with more rows — a draft, a script, a client
+that never drew the button — is refused with `maxItems` in the browser and on the server, so no
+row is ever left out of the total.
 
-- **A repeater's `maxItems` caps nothing yet.** The engine adds a row past it when asked, which is
-  what both renderers' add buttons do, and a submission with more rows is accepted in the browser
-  and on the server. Without the rule a fourth fee is added, stored, and left out of the total.
-- **The rule goes on the total, not on the repeater.** A `validate` rule whose target is the
-  repeater itself is accepted and never evaluated, because the engine validates fields and a
-  repeater is not one.
-
-So the person meets the cap as an error under the total after adding a row too many, not as an
-add button that stops, and the server refuses the submission the same way.
+Until 2026-10-18 this page put the cap in a `validate` rule on the total, `size(fees) <= 3`,
+because `maxItems` capped nothing and a rule aimed at the repeater was never run. Both are
+enforced now ([0184](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0184-a-repeater-is-validated-as-a-field-is.md)),
+and a form that kept the rule keeps working: it refuses the same fourth row, under the total
+rather than on the repeater.
 
 A running total down the rows does not get round it: a row rule that reads `fees` reads its own
 row, and the form is refused as a cycle. Counting characters — a string per row as long as its

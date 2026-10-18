@@ -298,6 +298,55 @@ again.
   exists for exactly that, and `runsOn` is already in place so the ordering question can
   be answered without restructuring anything.
 
+## A repeater is validated as a field is (unreleased)
+
+**If a published form says something about a repeater, read it again before you upgrade.** A
+form version is immutable and the engine that reads it is not, so these are enforced on the next
+submission, without a republish, in the browser and on the server
+([0184](docs/decisions/0184-a-repeater-is-validated-as-a-field-is.md)):
+
+- `maxItems` — more rows are refused with `maxItems`, and a draft saved with more rows is refused
+  until it loses one. No add button is offered at the maximum.
+- `required` on the repeater, or a `required` rule aimed at it — no rows are refused with
+  `required`. A row is enough; what a row must hold is still said by the fields in it.
+- A `validate` rule whose target is the repeater — it runs now, reading the form as a field's
+  rule does, and refuses with its `code`, or `invalid` when it cannot be evaluated. **It has never
+  run before**, so nothing has ever shown it to be right: one written wrong refuses every
+  submission. Run it against the form's examples, or a submission you know is good.
+- `minItems` — a short list is still topped up as the form opens, and a row cannot be removed
+  below it. No remove button is offered at the minimum.
+
+And two things that hid less than they said, now hide what they say: a field inside a group a
+`visible` rule hides is not drawn and not validated, so a submission refused for a required one
+there is accepted; and `clearOnHide: false` on a group or a repeater keeps its answers, where they
+were cleared whatever it said.
+
+**If you keep examples for a form** — in the admin, through `PUT /f/:path/examples`, or as
+`check_scenarios` input: one that expects the form to be invalid lists every error, and a
+repeater outside its bounds now has one at its own path. Add it, as
+`"errors": { "items": ["maxItems"] }`; `errors` and `visible` may name a list now, and setting
+one whole is still refused.
+
+**If you add or remove rows yourself**, through `engine.addRow`, `removeRow`, `useRepeater` or
+`injectRepeater`: past a bound they throw a `RangeError`. Ask first —
+
+```ts
+if (engine.canAddRow(['items'])) engine.addRow(['items'])
+```
+
+— or read `canAdd` and `canRemove` from `useRepeater` and `injectRepeater`.
+
+**If you read the engine's errors by field**, from `validate`, `submit`, `visibleErrors` or
+`firstInvalid`: a repeater's own path, `items`, appears beside its rows' — `{ items: ['maxItems'] }`
+— and `getFieldSnapshot(['items'])` answers for it with `type: 'repeater'`.
+
+**If you style or replace the repeater's markup**: its fieldset has the engine's `id` for it, a
+`data-state` of `valid` or `invalid`, an `aria-describedby`, a `required-hint` when it is required
+and a `data-formancy-part="error"` paragraph when it is invalid, between the rows and the add
+button. The Angular renderer no longer tops the rows up to `minItems` in an effect; the engine
+does it, when the form opens and when a repeater a rule hid is shown again.
+
+Nothing is stored differently, no document changes and the spec version does not move.
 ## A deployment with no model says so in a 200 (unreleased)
 
 **A client may see a new answer.** `GET /model` on a server with no model answers `200` with

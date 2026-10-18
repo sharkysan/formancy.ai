@@ -95,7 +95,7 @@ required · Field type (see below)
 
 optional · boolean · default `false`
 
-**Required.** Whether the form can be sent without an answer to this field. Turning this on for a field that already exists invalidates the submissions that left it empty, so publishing reports it as a lossy change.
+**Required.** Whether the form can be sent without an answer to this field — for a repeater, without a row. Turning this on for a field that already exists invalidates the submissions that left it empty, so publishing reports it as a lossy change.
 
 #### `renamedFrom`
 
@@ -160,7 +160,7 @@ Each item:
 
 - `key` — required · **Key.** The name this field's answer is stored under, and the field's identity for as long as the form exists. It becomes a column in exported data and a variable in logic expressions, so it has to read like an identifier: a letter or an underscore, then letters, digits or underscores. Changing a key is a data migration rather than an edit, so say where it came from with "renamedFrom".
 - `type` — required · **Field type.** What kind of answer the field collects, or — for a group, a page or a repeater — how it holds the fields inside it. The type decides which control the reader sees and how the answer is stored, so changing it on a live form may leave existing answers unreadable.
-- `required` — optional · **Required.** Whether the form can be sent without an answer to this field. Turning this on for a field that already exists invalidates the submissions that left it empty, so publishing reports it as a lossy change.
+- `required` — optional · **Required.** Whether the form can be sent without an answer to this field — for a repeater, without a row. Turning this on for a field that already exists invalidates the submissions that left it empty, so publishing reports it as a lossy change.
 - `renamedFrom` — optional · **Renamed from.** The key this field used to be called. Set it in the same edit that changes the key and the answers already collected follow the field across. The old key must be gone from this form: if a field still uses it, you have made a copy rather than a rename, and the two would fight over the same answers.
 - `clearOnHide` — optional · **Clear when hidden.** What happens to an answer when a rule hides its field. On (the default), the answer is removed from the submission, so a hidden branch cannot carry data. Off, the answer is kept and comes back when the field reappears.
 - `label` — optional · **Label.** What the person filling the form in reads next to this field, or a reference to it in the message catalogue.
@@ -187,13 +187,13 @@ Each item:
 
 optional · integer · minimum 0 · maximum 1000
 
-**Minimum rows.** How many rows the form opens with and will not go below. A repeater that promises one row shows one empty row, not an add button and a shrug.
+**Minimum rows.** How many rows the form opens with and will not go below: no row is removed past it, and a repeater a rule hid opens with it again. A repeater that promises one row shows one empty row, not an add button and a shrug.
 
 ##### `maxItems`
 
 optional · integer · minimum 1 · maximum 1000
 
-**Maximum rows.** How many rows a person may add.
+**Maximum rows.** How many rows the repeater may hold. No add button is offered past it, and a submission with more rows is refused.
 
 ##### `addLabel`
 
@@ -591,7 +591,7 @@ Each item:
 
 - `key` — required · **Key.** The name this field's answer is stored under, and the field's identity for as long as the form exists. It becomes a column in exported data and a variable in logic expressions, so it has to read like an identifier: a letter or an underscore, then letters, digits or underscores. Changing a key is a data migration rather than an edit, so say where it came from with "renamedFrom".
 - `type` — required · **Field type.** What kind of answer the field collects, or — for a group, a page or a repeater — how it holds the fields inside it. The type decides which control the reader sees and how the answer is stored, so changing it on a live form may leave existing answers unreadable.
-- `required` — optional · **Required.** Whether the form can be sent without an answer to this field. Turning this on for a field that already exists invalidates the submissions that left it empty, so publishing reports it as a lossy change.
+- `required` — optional · **Required.** Whether the form can be sent without an answer to this field — for a repeater, without a row. Turning this on for a field that already exists invalidates the submissions that left it empty, so publishing reports it as a lossy change.
 - `renamedFrom` — optional · **Renamed from.** The key this field used to be called. Set it in the same edit that changes the key and the answers already collected follow the field across. The old key must be gone from this form: if a field still uses it, you have made a copy rather than a rename, and the two would fight over the same answers.
 - `clearOnHide` — optional · **Clear when hidden.** What happens to an answer when a rule hides its field. On (the default), the answer is removed from the submission, so a hidden branch cannot carry data. Off, the answer is kept and comes back when the field reappears.
 - `label` — optional · **Label.** What the person filling the form in reads next to this field, or a reference to it in the message catalogue.

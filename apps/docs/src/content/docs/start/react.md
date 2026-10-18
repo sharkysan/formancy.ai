@@ -243,7 +243,9 @@ controls do, or the person types into a box that does not keep what they type
 
 ## The rest of the hook family
 
-- `useRepeater(path)` — row count, `addRow`, `removeRow` for a repeater.
+- `useRepeater(path)` — row count, `addRow`, `removeRow` for a repeater, and `canAdd` and
+  `canRemove`, which say whether its `maxItems` and `minItems` allow one more or one fewer;
+  past either, `addRow` and `removeRow` throw.
 - `useWizard()` — page state and `next`/`back`/`goTo` for a paged form; `next`
   validates only the current page, submit validates everything.
 - `useSubmit()` — returns a submit function producing `{ ok, errors }`.

@@ -438,22 +438,36 @@ describe('a path that names something other than one answer', () => {
     expect(failures.map((failure) => failure.detail)).toEqual([])
   })
 
-  test('and it is said the same wherever an example names it, expectations as well as answers', () => {
+  test('and it is said the same wherever an example names it as an answer', () => {
     /*
      * Every key an example has goes through the one check before anything is set. An
-     * expectation about the list as a whole got the rename sentence just as the answer did,
-     * and a fix to `changes` alone would have left four of the five saying it.
+     * expectation about the list as an answer — its value, or its absence from what is
+     * sent — got the rename sentence just as the answer did, and a fix to `changes` alone
+     * would have left them saying it.
      */
     const asAnAnswer = saidOf(conference, 'colleagues')[0]?.detail
-    for (const expectation of [
-      { errors: { colleagues: ['maxItems'] } },
-      { visible: { colleagues: true } },
-      { values: { colleagues: [] } },
-      { absent: ['colleagues'] },
-    ]) {
+    for (const expectation of [{ values: { colleagues: [] } }, { absent: ['colleagues'] }]) {
       const failures = failuresOf(conference, { changes: {}, valid: true, ...expectation })
       expect(failures.map((failure) => failure.detail), JSON.stringify(expectation)).toEqual([asAnAnswer])
     }
+  })
+
+  test('while what the engine says at the list itself, its errors and whether it is shown, may be expected', () => {
+    /*
+     * The engine reports a list's bounds and the rules aimed at it at the list's own path,
+     * and hides it whole (0184), so an example about a fourth colleague on a list of three
+     * has an error to compare with. Refused as a path, it could not say so — the change
+     * 0182 said this check would need on the day the engine answered there. Setting the
+     * list whole stays refused: it is filled row by row.
+     */
+    const fourth = Object.fromEntries(['Ada', 'Grace', 'Edsger', 'Barbara'].map((who, row) => [`colleagues[${String(row)}].who`, who]))
+    expect(
+      failuresOf(conference, { changes: fourth, valid: false, errors: { colleagues: ['maxItems'] }, visible: { colleagues: true } }),
+    ).toEqual([])
+    expect(failuresOf(conference, { changes: fourth, valid: false }).map((failure) => failure.detail)).toEqual([
+      '"colleagues": expected no error, got maxItems.',
+    ])
+    expect(failuresOf(conference, { changes: { colleagues: [] }, valid: true }).map((failure) => failure.about)).toEqual(['path'])
   })
 
   test.each([

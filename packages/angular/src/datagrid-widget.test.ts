@@ -43,7 +43,6 @@ function schema(widget?: 'datagrid'): FormSchema {
           key: 'items',
           type: 'repeater',
           label: 'Items',
-          minItems: 2,
           addLabel: 'Add item',
           removeLabel: 'Remove item',
           ...(widget === undefined
@@ -72,7 +71,15 @@ async function mount(widget?: 'datagrid'): Promise<void> {
   const view = await render(FormancyForm, {
     providers: [
       provideZonelessChangeDetection(),
-      provideFormancy(createFormEngine({ schema: schema(widget), capabilities: CLOCK })),
+      provideFormancy(
+        createFormEngine({
+          schema: schema(widget),
+          // Two rows by value rather than by `minItems`, so each has its remove button: a
+          // repeater at its minimum offers none (0184).
+          initialValue: { items: [{}, {}] },
+          capabilities: CLOCK,
+        }),
+      ),
     ],
   })
   await view.fixture.whenStable()

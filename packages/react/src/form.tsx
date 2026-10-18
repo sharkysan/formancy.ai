@@ -32,6 +32,7 @@ import { SignatureField } from './fields/signature-field.js'
 import { StaticField } from './fields/static-field.js'
 import { DateField, DateTimeField, TimeField } from './fields/temporal-fields.js'
 import { TextField, TextareaField } from './fields/text-fields.js'
+import { RequiredHint } from './fields/internals.js'
 import type { FieldComponent, FormancyFormProps, Registry } from './fields/internals.js'
 
 /**
@@ -291,6 +292,9 @@ function RepeaterSection({
   const engine = useFormEngine()
   const text = useFormText()
   const repeater = useRepeater(wire)
+  // The repeater's own state, as a field has one: whether it is shown, disabled or
+  // required, and its errors — the bounds' and the rules' aimed at it (0184).
+  const field = useField(wire)
   const def = engine.repeaters().find((candidate) => candidate.wire === wire)?.def
   const label = engine.text(def?.label) ?? labels?.[wire] ?? wire
   // The document's words when it has them — a plain string in every spec version, so in
@@ -374,11 +378,15 @@ function RepeaterSection({
     <>
       {/* Position context in the NAME, so a screen-reader user knows which
           row this button kills without walking the tree. */}
-      <button type="button" data-formancy-part="row-remove" onClick={() => repeater.removeRow(index)}>
-        <span data-formancy-part="row-action-text">
-          {text('repeater.removeRow', { remove: removeLabel, position: index + 1, count: repeater.rowCount })}
-        </span>
-      </button>
+      {/* Absent at the repeater's `minItems`, as the move buttons are at the ends: the
+          engine would refuse the row, and a button that does nothing announces one. */}
+      {repeater.canRemove ? (
+        <button type="button" data-formancy-part="row-remove" disabled={field.disabled} onClick={() => repeater.removeRow(index)}>
+          <span data-formancy-part="row-action-text">
+            {text('repeater.removeRow', { remove: removeLabel, position: index + 1, count: repeater.rowCount })}
+          </span>
+        </button>
+      ) : null}
       {/* Reordering by button, which is the KEYBOARD route and therefore the
           primary one: WCAG 2.5.7 requires a non-drag equivalent for any drag, so
           a drag affordance can only ever be a second route to these.
@@ -390,14 +398,14 @@ function RepeaterSection({
           the tab order in some browsers and announces a control that does
           nothing; a row that cannot move up simply has no such button. */}
       {index > 0 ? (
-        <button type="button" data-formancy-part="row-up" onClick={() => repeater.moveRow(index, index - 1)}>
+        <button type="button" data-formancy-part="row-up" disabled={field.disabled} onClick={() => repeater.moveRow(index, index - 1)}>
           <span data-formancy-part="row-action-text">
             {text('repeater.moveUp', { label, position: index + 1, count: repeater.rowCount })}
           </span>
         </button>
       ) : null}
       {index < repeater.rowCount - 1 ? (
-        <button type="button" data-formancy-part="row-down" onClick={() => repeater.moveRow(index, index + 1)}>
+        <button type="button" data-formancy-part="row-down" disabled={field.disabled} onClick={() => repeater.moveRow(index, index + 1)}>
           <span data-formancy-part="row-action-text">
             {text('repeater.moveDown', { label, position: index + 1, count: repeater.rowCount })}
           </span>
@@ -459,11 +467,26 @@ function RepeaterSection({
     ),
   )
 
+  // A hidden repeater leaves the DOM, as a hidden field does: its rows are not validated
+  // and its add button would take answers to a question that was withdrawn.
+  if (!field.visible) return null
+  const showError = field.touched && field.errors.length > 0
+
   return (
     // The repeater's own path, inert, beside its rows' — the rows name their fields, and
-    // without this nothing named the repeater an arrangement places.
-    <fieldset data-formancy-part="repeater" data-formancy-field-path={wire}>
+    // without this nothing named the repeater an arrangement places. Its own id, so the
+    // error summary's link and a failed submit land here; a fieldset takes no focus, so
+    // `focusControl` moves it to the first control inside. Described, as a radio group
+    // is, by the required hint and its error, never `aria-invalid`, which a group lacks.
+    <fieldset
+      data-formancy-part="repeater"
+      data-formancy-field-path={wire}
+      data-state={showError ? 'invalid' : 'valid'}
+      id={field.controlProps.id}
+      aria-describedby={field.controlProps['aria-describedby']}
+    >
       <legend data-formancy-part="repeater-legend">{label}</legend>
+      <RequiredHint field={field} />
       {grid ? (
         // A container inside the fieldset rather than the fieldset itself, so the legend
         // and the Add button do not become grid items.
@@ -502,9 +525,17 @@ function RepeaterSection({
       ) : (
         rows
       )}
-      <button type="button" onClick={() => repeater.addRow()}>
-        {addLabel}
-      </button>
+      {showError ? (
+        <p data-formancy-part="error" {...field.errorProps}>
+          {field.errors.join(', ')}
+        </p>
+      ) : null}
+      {/* Not offered at `maxItems`, for the reason the remove button is not at `minItems`. */}
+      {repeater.canAdd ? (
+        <button type="button" disabled={field.disabled} onClick={() => repeater.addRow()}>
+          {addLabel}
+        </button>
+      ) : null}
     </fieldset>
   )
 }

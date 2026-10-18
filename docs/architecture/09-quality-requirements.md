@@ -51,9 +51,9 @@ formancy
 |---|---|---|
 | Keystroke, large conditional form | 1 ms | ≈0.38 ms |
 | Cold graph compile | 30 ms | ≈1.7 ms |
-| `@formancy/core` bundle | 18 kB brotli | **22.1 kB** — over, re-measured 2026-10-18 |
+| `@formancy/core` bundle | 18 kB brotli | **22.4 kB** — over, re-measured 2026-10-18 |
 | `@formancy/spec` bundle | — | 26.8 kB for the whole barrel — the index and the chunk it shares with `/validate`, re-measured 2026-10-16 with `acceptRemoteAnswer` and `capRemoteAnswer`, whose 1.0 kB is 0.3 kB with the comments the bundler keeps taken out |
-| `@formancy/react` bundle | 4 kB brotli | **24.9 kB** for the whole barrel, measured 2026-10-16 |
+| `@formancy/react` bundle | 4 kB brotli | **25.0 kB** for the whole barrel, re-measured 2026-10-18 |
 | `@formancy/core/words` bundle | — | 6.5 kB, the renderers' words in English, German and French and what a sourced control says, an entry of its own, re-measured 2026-10-16 |
 | `uqr`, the QR encoder | — | 6.6 kB brotli, **external** rather than bundled, measured 2026-09-27 |
 
@@ -153,6 +153,18 @@ a sentence per finding, in a module nothing outside the package calls, so its co
 block comments, which the bundler drops, rather than JSDoc, which it keeps: written as JSDoc
 first, the figure was 22.0. As with the runner itself, a consumer that never imports
 `runScenarios` does not ship it.
+
+**A repeater's bounds moved the engine's row 0.3 kB, and its code more than that.** A
+repeater is validated as a field is — its `maxItems`, its `minItems`, `required` on it and the
+rules aimed at it — and a row past either bound is refused, in the engine, where both renderers
+and the server's replay read it; and the scenario runner lets an example expect what the engine
+says at a list itself ([0184](../decisions/0184-a-repeater-is-validated-as-a-field-is.md)).
+Measured on 2026-10-18 on the code before and after the change, each built the same way: 22.1
+to 22.4 kB. With comments and whitespace taken out of both builds by esbuild the code went from
+13.8 to 14.3 kB; the difference is that the row machinery left `engine.ts` for a module of the
+package's own, whose comments are block comments the bundler drops, as 0182's are, where in the
+engine they were JSDoc it keeps. Written as JSDoc, that module put 0.7 kB more into the figure. The React barrel went from 24.9 to 25.0 kB,
+24.89 to 24.98 — a hook asking two questions and a section drawing one error.
 
 **The spec figure moved 4.3 kB in one change, and the reason is worth the line.**
 `diffSchemas` stopped comparing only a field's identity, its type and its `required`

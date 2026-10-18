@@ -362,7 +362,9 @@ export function createAngularDriver(
 
     async errorsFor(path) {
       const { engine } = requireMounted()
-      const paths = path === undefined ? engine.fieldPaths() : [path]
+      // A repeater's own path too: its bounds and its rules give it errors of its own, read
+      // off its group by its legend as a radio group's are (0184).
+      const paths = path === undefined ? [...engine.fieldPaths(), ...engine.repeaterPaths()] : [path]
       const messages: ConformanceMessage[] = []
       for (const candidate of paths) {
         const control = (() => {

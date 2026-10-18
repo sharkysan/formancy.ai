@@ -52,7 +52,6 @@ function schema(widget?: 'datagrid'): FormSchema {
           key: 'items',
           type: 'repeater',
           label: 'Items',
-          minItems: 2,
           addLabel: 'Add item',
           removeLabel: 'Remove item',
           ...(widget === undefined
@@ -78,8 +77,15 @@ function schema(widget?: 'datagrid'): FormSchema {
 }
 
 function mount(widget?: 'datagrid'): void {
+  const engine = createFormEngine({
+    schema: schema(widget),
+    // Two rows by value rather than by `minItems`, so each has its remove button: a
+    // repeater at its minimum offers none (0184).
+    initialValue: { items: [{}, {}] },
+    capabilities: CLOCK,
+  })
   render(
-    <FormancyProvider engine={createFormEngine({ schema: schema(widget), capabilities: CLOCK })}>
+    <FormancyProvider engine={engine}>
       <FormancyForm onSubmit={() => undefined} />
     </FormancyProvider>,
   )

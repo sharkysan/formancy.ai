@@ -151,6 +151,10 @@ to name instead, and so is `colleagues[].fee`, the spelling a rule uses for ever
 field in a row the list does not have is neither visible nor hidden, and an example that says
 it is one or the other fails
 ([0182](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0182-a-list-is-filled-row-by-row.md)).
+What the engine says at a list itself is the exception: `errors` and `visible` may name it,
+`"errors": { "colleagues": ["maxItems"] }` for a fourth colleague on a list of three, because a
+list's bounds and the rules aimed at it are reported at the list, and a rule hides it whole
+([0184](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0184-a-repeater-is-validated-as-a-field-is.md)).
 
 **A deployment can keep them, and its publish runs them.** The server keeps each form's
 examples and the sample they start from beside the form — `GET` and `PUT /f/:path/examples`,

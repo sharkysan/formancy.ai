@@ -10,6 +10,59 @@ later.
 
 ## Unreleased
 
+**Fixed: a repeater's `maxItems`, `required` on it and every rule aimed at it were enforced by
+nothing.** The engine validated fields, and a repeater is not one. A submission with more rows
+than `maxItems`, or none where the repeater was required, was stored, in the browser and in the
+server's replay of the same engine; a `required` or `validate` rule whose target was the
+repeater was accepted at publish and never evaluated, so a rule an author wrote failed open
+where validation fails closed; and `minItems` held only when the form opened, since nothing
+stopped a row being removed below it. Found on 2026-10-18 while documenting how to total a
+repeater's rows, and recorded before it was fixed (hazard A1, arc42 §11.2). A repeater is now
+validated as a field is: `maxItems` and `minItems` against its rows, with the codes a
+`selectboxes` reports; `required` as at least one row; a `required` or `validate` rule aimed at
+it, failing closed when it cannot be evaluated; and `type` for rows that are not a list of
+objects, which a string posted where the rows belong had been stored as. `addRow` past
+`maxItems` and `removeRow` below `minItems` throw a `RangeError`, `canAddRow` and `canRemoveRow`
+say so first, and neither renderer offers the button — no add button at the maximum, no remove
+buttons at the minimum, absent as the move buttons are at the ends. The repeater draws its own
+error inside its fieldset, described by it, and the error summary names it by its label. A
+short submission is still topped up with empty rows as the browser opens the form, so it is
+refused only where a field in a row is required
+([0184](docs/decisions/0184-a-repeater-is-validated-as-a-field-is.md)). And an example may now
+expect `errors` and `visible` at a list's own path, which 0182 refused while the engine said
+nothing there; a list is still filled row by row, and the briefing a model drafts examples
+from says where a repeater's own errors go. Held by
+`packages/core/src/repeater-bounds.test.ts`, each renderer's `repeater-bounds` test, the
+conformance fixture `repeater-bounds.json`, and, posted straight at the API against PostgreSQL,
+the server's integration tests.
+
+**Fixed: what a rule hid, it hid only at its own wire.** A field inside a group a `visible` rule
+hid was still drawn and still validated, so a required one made the form impossible to send —
+in the browser, and on the server, which refused it too; a repeater's rows on a page the answers
+walk past were validated, the failure skipping a page exists to prevent; and `clearOnHide` on a
+group or a repeater was read from nothing, so their answers were cleared whatever it said. What
+a rule hides or disables, it now hides or disables whole: a group with its fields, a repeater
+with its rows. A repeater a rule hid and cleared opens again with its `minItems` when it is
+shown, in the engine, and the Angular renderer's effect that topped rows up on its own is gone —
+it put back a row React let go (0023).
+
+**Breaking, for a host whose published form says something about a repeater, or that adds and
+removes rows itself.** A published form version is immutable and the engine reading it is not,
+so a form with `maxItems`, `required` on a repeater or a rule aimed at one now refuses
+submissions it stored before, without being republished — and a `validate` rule aimed at a
+repeater, never run until now, refuses every submission if it was written wrong. A draft saved
+with more rows than the maximum is refused until it loses one. A field in a group a rule hides
+stops being drawn and validated, and a group or repeater with `clearOnHide: false` keeps its
+answers. An example that expects a form to be invalid lists every error, so one about a
+repeater outside its bounds fails until it lists the list's own error too. `addRow` and
+`removeRow` throw past a bound; `getFieldSnapshot`, `validate`,
+`visibleErrors` and `firstInvalid` answer for a repeater's own path; `useRepeater` and
+`injectRepeater` gain `canAdd` and `canRemove`; and a repeater's fieldset gains an `id`,
+`data-state`, `aria-describedby`, a required hint and an error. See
+[`MIGRATIONS.md`](MIGRATIONS.md). No stored submission changes and the spec version does not
+move; the schema's descriptions of `required`, `minItems` and `maxItems` say what a repeater
+does with them, and the playground's `recipients` repeater shows both bounds.
+
 **Fixed: a computed field could be typed over, and the server could store what was typed.**
 The spec said nobody can type over a `computed` field. The renderers drew it as an ordinary control,
 though, so a computed *Total, CHF* took typing, and the only way to stop it was a `disabled` rule
@@ -86,11 +139,11 @@ being true
 demo form found `map` and `filter` and nothing to total a repeater's fees with, and the logic page
 listed no functions that would have told it so. The page now lists every function each kind of
 rule may call, held to the engine's allow-list by `apps/docs/src/list-totals.test.ts`, says there
-is no `sum`, and gives a total written out row by row with a `validate` rule capping the rows — a
-rule, because a repeater's `maxItems` caps nothing yet and a rule aimed at the repeater itself is
-never run. Both were measured while writing it, and are now carried in arc42 §11.2 and hazard A1
-together with `required` on a repeater, which is not enforced either. The test runs the page's
-example rather than trusting it. The roadmap says what a function that adds a list up would take,
+is no `sum`, and gives a total written out row by row, capped by the repeater's own `maxItems`.
+Written first, the page capped the rows with a `validate` rule on the total, because `maxItems`
+capped nothing and a rule aimed at the repeater was never run — measured while writing it, with
+`required` on a repeater unenforced as well, and fixed in the entry above. The test runs the
+page's example rather than trusting it. The roadmap says what a function that adds a list up would take,
 starting with a spec version. No package changes.
 
 **Corrected: hazard A7 said a document naming a source the deployment never configured is refused

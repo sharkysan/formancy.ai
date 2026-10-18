@@ -237,6 +237,27 @@ describe('what a model drafting examples is told', () => {
     expect(user).toContain('as items[0].note')
   })
 
+  test('says a repeater’s own errors are expected at its path, which the runner takes for them', () => {
+    // The engine reports a list's bounds at the list (0184), and an example that expects
+    // errors names every one there is. Told only that a repeater is not a path, a model
+    // drafting "a second item is one too many" had no way to write the error it was about.
+    const form = {
+      specVersion: '4',
+      id: 'bounded',
+      title: 'Bounded',
+      model: {
+        fields: [{ key: 'items', type: 'repeater', label: 'Items', maxItems: 1, fields: [{ key: 'qty', type: 'number', label: 'Quantity' }] }],
+      },
+    } as unknown as FormSchema
+
+    const spelled = /are expected at its own path, as (\S+?)\./.exec(scenarioPrompt(form, 'anything').user)?.[1]
+    expect(spelled).toBe('items')
+    const [result] = runScenarios(form, [
+      { name: 'two', changes: { 'items[0].qty': 1, 'items[1].qty': 2 }, valid: false, errors: { [spelled!]: ['maxItems'] } },
+    ])
+    expect(result?.failures).toEqual([])
+  })
+
   test('names every code the engine reports by itself, and this form’s own by name alone', () => {
     // An example expecting `required` where the engine says `required` holds; one expecting
     // "mandatory" fails for a reason that is not about the rule.

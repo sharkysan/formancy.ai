@@ -196,7 +196,7 @@ function request(document: FormSchema, intent: string, options: ScenarioPromptOp
     `The form: ${JSON.stringify(document.title)}.`,
     'Its fields, by the path an example names each one with:',
     inventory(document),
-    `A field inside a group is named through the group, as ${formatPath(['address', 'street'])}, and a field in a repeater’s row by the row’s position from 0, as ${formatPath(['items', 0, 'note'])}. A group or a repeater is not itself a path.`,
+    `A field inside a group is named through the group, as ${formatPath(['address', 'street'])}, and a field in a repeater’s row by the row’s position from 0, as ${formatPath(['items', 0, 'note'])}. A group or a repeater is not itself a path, but a repeater’s own errors — too many rows, too few, none where it is required, and a rule aimed at it — are expected at its own path, as ${formatPath(['items'])}.`,
     '',
     `The error codes the engine reports by itself: ${Object.keys(BUILT_IN_ERROR_CODES).join(', ')}.`,
     ...ownCodes(document),

@@ -8,8 +8,8 @@ import type { SchemaWords } from './messages.js'
  */
 export const SCHEMA_WORDS_FR: SchemaWords = {
   Required: 'Obligatoire',
-  'Whether the form can be sent without an answer to this field. Turning this on for a field that already exists invalidates the submissions that left it empty, so publishing reports it as a lossy change.':
-    'Si le formulaire peut être envoyé sans réponse à ce champ. L’activer sur un champ existant invalide les envois qui l’ont laissé vide ; la publication le signale donc comme une modification avec perte.',
+  'Whether the form can be sent without an answer to this field — for a repeater, without a row. Turning this on for a field that already exists invalidates the submissions that left it empty, so publishing reports it as a lossy change.':
+    'Si le formulaire peut être envoyé sans réponse à ce champ — pour une répétition, sans ligne. L’activer sur un champ existant invalide les envois qui l’ont laissé vide ; la publication le signale donc comme une modification avec perte.',
   'Clear when hidden': 'Effacer quand masqué',
   'What happens to an answer when a rule hides its field. On (the default), the answer is removed from the submission, so a hidden branch cannot carry data. Off, the answer is kept and comes back when the field reappears.':
     'Ce qui arrive à une réponse quand une règle masque son champ. Activé (par défaut) : la réponse est retirée de l’envoi, afin qu’une branche masquée ne transporte aucune donnée. Désactivé : la réponse est gardée et revient quand le champ réapparaît.',
@@ -92,10 +92,11 @@ export const SCHEMA_WORDS_FR: SchemaWords = {
   'How many points one answer may carry across all its strokes. An unbounded point list is a payload amplifier, so this has a ceiling like everything else here.':
     'Combien de points une réponse peut contenir sur l’ensemble de ses traits. Une liste de points sans limite démultiplie le volume de données, elle a donc un plafond comme tout le reste ici.',
   'Minimum rows': 'Lignes minimum',
-  'How many rows the form opens with and will not go below. A repeater that promises one row shows one empty row, not an add button and a shrug.':
-    'Avec combien de lignes le formulaire s’ouvre, et en dessous de combien il ne descend pas. Une répétition qui promet une ligne affiche une ligne vide, pas un bouton d’ajout et un haussement d’épaules.',
+  'How many rows the form opens with and will not go below: no row is removed past it, and a repeater a rule hid opens with it again. A repeater that promises one row shows one empty row, not an add button and a shrug.':
+    'Avec combien de lignes le formulaire s’ouvre, et en dessous de combien il ne descend pas : aucune ligne n’est retirée au-delà, et une répétition qu’une règle a masquée s’ouvre de nouveau avec ce nombre. Une répétition qui promet une ligne affiche une ligne vide, pas un bouton d’ajout et un haussement d’épaules.',
   'Maximum rows': 'Lignes maximum',
-  'How many rows a person may add.': 'Combien de lignes une personne peut ajouter.',
+  'How many rows the repeater may hold. No add button is offered past it, and a submission with more rows is refused.':
+    'Combien de lignes la répétition peut contenir. Au-delà, aucun bouton d’ajout n’est proposé, et un envoi avec plus de lignes est refusé.',
   'Add button label': 'Libellé du bouton d’ajout',
   'The accessible name of the control that adds a row.':
     'Le nom accessible de la commande qui ajoute une ligne.',

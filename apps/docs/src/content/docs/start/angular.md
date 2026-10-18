@@ -162,7 +162,7 @@ controls do, or the person types into a box that does not keep what they type
 | Helper | What it gives you |
 | --- | --- |
 | `injectField(path)` | `snapshot` signal, `setValue`, `touch` |
-| `injectRepeater(path)` | `rowCount` signal, `addRow`, `removeRow` |
+| `injectRepeater(path)` | `rowCount` signal, `addRow`, `removeRow`, and `canAdd` and `canRemove` signals for its `maxItems` and `minItems`, past which the two throw |
 | `injectWizard()` | `page` signal, `pageCount`, `next`, `back`, `goTo` |
 | `injectSubmit()` | submit, with focus moved to the first problem on failure |
 

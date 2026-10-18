@@ -38,18 +38,31 @@ integration test that posts directly to the API.
 *Residual:* a rule the form author did not write is not enforced by anything.
 The software validates what it was told to validate.
 
-*And what it is told about a repeater it does not check.* The engine validates
-fields, and a repeater is not one: its `maxItems`, `required` on it, and a
-`required` or `validate` rule whose target is the repeater are accepted at
-publish and evaluated nowhere, in the browser or on the server. A submission
-with more rows than `maxItems`, or none where the repeater is required, is
-stored, and a rule aimed at the repeater fails open where A5 says validation
-fails closed. A rule on a field inside each row, or on a field beside the
-repeater that reads `size()` of it, is evaluated as any other. Found on
-2026-10-18; `apps/docs/src/list-totals.test.ts` asserts the `maxItems` and
-`validate` cases so that enforcing them fails it, and the two `required` cases
-were measured and are held by nothing
-([§11.2](../architecture/11-risks-and-debt.md)).
+*And what it is told about a repeater, which until 2026-10-18 it did not check.*
+The engine validated fields, and a repeater is not one: its `maxItems`, `required`
+on it, and a `required` or `validate` rule whose target was the repeater were
+accepted at publish and evaluated nowhere, in the browser or on the server. A
+submission with more rows than `maxItems`, or none where the repeater was
+required, was stored, and a rule aimed at the repeater failed open where A5 says
+validation fails closed. A repeater is now validated as a field is
+([0184](../decisions/0184-a-repeater-is-validated-as-a-field-is.md)): its rows
+against `minItems` and `maxItems`, `required` as at least one row, a `required` or
+`validate` rule aimed at it, and rows that are not a list of objects as `type`.
+Verified by `packages/core/src/repeater-bounds.test.ts`, and on the server by
+`packages/server-core/src/repeater-bounds.test.ts` and the *a repeater's rows,
+posted straight at the API* block of `packages/server/src/server.integration.test.ts`,
+which post too many rows, none, and rows a rule forbids straight at the API and
+assert each refused with the engine's code and nothing stored; each failed against
+the engine before the change. A form version published before carries the same
+document and is enforced from now on, so a submission it would have stored is
+refused. A rule on a field inside each row, or on a field beside the repeater that
+reads `size()` of it, was always evaluated as any other.
+
+*Residual:* `minItems` is met rather than refused. A submission with fewer rows is
+topped up with empty rows, as the browser opens the form
+([0023](../decisions/0023-model-properties-in-engine.md)), and is refused only if a
+field in those rows is required. A form whose minimum means "this many answers"
+rather than "this many rows" has to say so with `required` on the row's fields.
 
 ### A2. Client and server disagree about whether a submission is valid
 
@@ -135,7 +148,12 @@ values under server-hidden subtrees
 integration test that posts a value in a hidden branch and asserts it is absent
 from the stored row.
 
-*Residual:* none known.
+*Residual:* none known beyond the one an author chooses: `clearOnHide: false`
+keeps a hidden field's answer, by design. Since 2026-10-18 that is read on a group
+and a repeater too, where it was read from nothing and their answers were stripped
+whatever it said; a hidden group or repeater that keeps its answers is not
+validated, and neither is anything inside it
+([0184](../decisions/0184-a-repeater-is-validated-as-a-field-is.md)).
 
 ### A5. An expression fails at runtime and the failure is interpreted as a pass
 
@@ -1443,6 +1461,18 @@ neither renderer seeds rows
 screenshotting the playground, not by a test — recorded because it illustrates
 the general rule that a property enforced in two renderers will eventually be
 enforced differently in two renderers.
+
+That sentence was not true until 2026-10-18. The Angular renderer still topped the
+rows up in an effect, and nothing stopped a removal below the minimum, so the last
+row of a `minItems: 1` repeater went and stayed gone under React and came back
+empty under Angular. The engine now refuses the removal, says so through
+`canRemoveRow`, and opens a repeater a rule hid and cleared with its minimum again;
+the effect is gone, and neither renderer offers a remove button at the minimum or
+an add button at `maxItems`
+([0184](../decisions/0184-a-repeater-is-validated-as-a-field-is.md)). Verified by
+`packages/core/src/repeater-bounds.test.ts` and by the same cases in
+`packages/react/src/repeater-bounds.test.tsx` and
+`packages/angular/src/repeater-bounds.test.ts`.
 
 ### D6. A device failure is presented as a wrong answer
 

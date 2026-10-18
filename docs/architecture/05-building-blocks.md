@@ -113,6 +113,7 @@ comprehension would capture.
 | `error-codes.ts` | Types only: `BuiltInErrorCode`, every code the engine reports of its own accord, which the validators and the engine are typed against, and `ValidationReport` beside it. Nothing in the bundle ([0162](../decisions/0162-an-example-is-drafted-from-what-the-author-said.md)) |
 | `interaction.ts` | Touched state, which decides when a message is shown |
 | `wizard.ts` | Page navigation and per-page validation semantics |
+| `rows.ts` | A repeater's rows: their identity ([0041](../decisions/0041-repeater-row-identity.md)), the seeding to `minItems`, `addRow`, `removeRow` and `moveRow` refused past the bounds with `canAdd` and `canRemove` saying so first, and `repeaterViolations`, what is wrong with the rows as a whole ([0184](../decisions/0184-a-repeater-is-validated-as-a-field-is.md)) |
 | `strip.ts` | `clearOnHide` pruning, applied identically on client and server |
 | `computed-targets.ts` | The fields `computed` rules write, which nothing else may: refused by `setValue`, taken out of the initial value before the first pass — a resumed draft, a prefill, on the server the request body — and said as `readOnly` on the snapshot, which both renderers draw ([0181](../decisions/0181-a-computed-value-is-the-engines.md)) |
 | `top-level-fields.ts` | The data fields at the top of the value, pages being transparent: the variables both the engine and `expressionProblems` declare, walked once |
