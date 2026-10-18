@@ -10,6 +10,17 @@ later.
 
 ## Unreleased
 
+**Fixed: a tag picker a rule disabled could still be changed.** A `disabled` rule greys a field
+out and the field keeps its answer, and a renderer holds that by disabling the control's
+elements, since the engine does not refuse a value set on a disabled field. The tag picker draws
+two kinds outside its text box. Measured on 2026-10-18 in jsdom: in React each chip's remove
+button stayed enabled and took an answer away, and a list open when the rule landed stayed drawn
+with rows a click added; in Angular the text box was not disabled either, so a disabled tag
+picker was typed into and chosen from as though it were enabled. Every release since `0.3.0`
+has the tag picker this way. Both renderers now disable the box and every remove button with the
+field, and draw no list while it is disabled, as the typeahead does since 0177. Held by *a tag
+picker a rule disables* in each renderer's tag picker tests (hazard B6a).
+
 **Added, on the landing page: the two paid modules, each saying it is not free.** Formancy Data
 (forms from an existing PostgreSQL or SQL Server database) and Formancy Report (paginated PDF
 reports) are built on formancy in repositories of their own, under source-available licences:

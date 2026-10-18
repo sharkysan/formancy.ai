@@ -538,7 +538,7 @@ speak filling in and clicking by accessible name and cannot say "draw", so point
 behaviour is held by hand in each renderer, twice over, and a gesture whose tail nobody
 thought of is a gesture nobody tested. This one was found by a person using the playground.
 
-### B6a. A field a rule disabled is changed through the list its typeahead left open
+### B6a. A field a rule disabled is changed through what its control draws outside its box
 
 *How it arises:* a `disabled` rule greys a field out, and the field keeps its answer — the
 spec's own description of the rule. A renderer holds that by disabling the control's element:
@@ -559,17 +559,25 @@ typeahead disabled while its list is open draws no list and says nothing* in eac
 `options-source` test, which failed in Angular before the change and in React with its mask
 taken out.
 
+The tag picker draws a list too, and a remove button on each chip. Measured on 2026-10-18 in
+jsdom, before the change: in React the remove buttons stayed enabled and a click took an answer
+away, and a list open when the rule landed stayed drawn with rows a click added; in Angular the
+text box was not disabled either, so the field was typed into and chosen from as though enabled.
+Every release since `0.3.0` drew it this way. Now its text box and every remove button are
+disabled with the field, and its list is drawn only while the field is not disabled, derived as
+the typeahead's is. Held by *a tag picker a rule disables* in `packages/react/src/tagpicker.test.tsx`
+and `packages/angular/src/new-types.test.ts`, whose two cases failed in both renderers before the
+change. The Angular case asserts the disabled elements rather than clicking them: jsdom
+dispatches a synthetic click to a disabled button's listener, which no browser does.
+
 *Residual:*
 
 - **Hidden, not closed.** Enabled again before anything closed it, the list the person had open
   shows again.
-- **The element is the only guard, and the tag picker is not held to it.** The engine accepts a
-  value set on a disabled field, so a host calling `setValue` changes one, and a control that
-  draws anything clickable outside its disabled element has to stop that itself. The tag picker
-  does not. Measured in React in jsdom on 2026-10-16: a tag picker disabled while its list was
-  open kept the list, a click on a row added that answer, and its chips' remove buttons stayed
-  enabled, so a click took an answer away. Angular's has the same shape, read from its code. It
-  was found while hiding the typeahead's list and is not changed with it.
+- **The element is the only guard.** The engine accepts a value set on a disabled field, so a
+  host calling `setValue` changes one, and a control that draws anything clickable outside its
+  disabled element has to stop that itself. The typeahead and the tag picker do now; a control
+  added later is held to it only by whoever writes its tests.
 
 ### B7. An attachment is recorded against the wrong row of a repeater
 

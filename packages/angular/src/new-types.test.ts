@@ -911,6 +911,61 @@ describe('the tag picker, which must behave as the React one does', () => {
       expect(parts, `no ${part}`).toContain(part)
     }
   })
+
+  /*
+   * A `disabled` rule greys a field out and the field keeps its answer. The engine
+   * does not refuse a value set on a disabled field, so the control's elements are
+   * the only guard (hazard B6a). Both cases failed before the change, worse than in
+   * React: the text box was not disabled at all, so a disabled tag picker was typed
+   * into and chosen from, and its chips' remove buttons took answers away.
+   */
+  describe('a tag picker a rule disables', () => {
+    const lockable = (): FormSchema => {
+      const schema = tagging()
+      return {
+        ...schema,
+        model: {
+          fields: [...schema.model.fields, { key: 'locked', type: 'checkbox', label: 'Locked' }],
+        },
+        logic: { rules: [{ target: 'topics', kind: 'disabled', cel: 'locked == true' }] },
+      }
+    }
+
+    test('keeps its answers: no chip can be removed and nothing typed', async () => {
+      const engine = engineFor(lockable())
+      engine.setValue(['topics'], ['a11y'])
+      engine.setValue(['locked'], true)
+      await renderForm(engine)
+
+      // The disabled elements ARE the guard: a browser fires no click on a disabled button
+      // and takes no typing into a disabled box. jsdom's `fireEvent.click` dispatches to the
+      // listener regardless, so clicking here would test jsdom; React's case clicks with
+      // user-event, which, like a browser, does not. This package has no user-event.
+      const box = screen.getByRole('combobox', { name: 'Topics' })
+      const remove = screen.getByRole('button', { name: /remove accessibility/i })
+      expect(box).toHaveProperty('disabled', true)
+      expect(remove).toHaveProperty('disabled', true)
+      expect((engine.value() as { topics?: unknown }).topics).toEqual(['a11y'])
+    })
+
+    test('draws no list when the rule lands while the list is open', async () => {
+      const engine = engineFor(lockable())
+      const view = await renderForm(engine)
+
+      const box = screen.getByRole('combobox', { name: 'Topics' })
+      fireEvent.input(box, { target: { value: 'a' } })
+      await waitFor(() => {
+        expect(screen.getAllByRole('option').length).toBeGreaterThan(0)
+      })
+
+      // The rule lands under the open list — a host setting a value, or another field.
+      engine.setValue(['locked'], true)
+      await view.fixture.whenStable()
+
+      expect(screen.queryAllByRole('option')).toEqual([])
+      expect(box.getAttribute('aria-expanded')).toBe('false')
+    })
+  })
 })
 
 describe('a skipped page under Angular, which must match the React one', () => {
