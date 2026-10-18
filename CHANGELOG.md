@@ -39,6 +39,18 @@ it and asks no source about any answer, and the server's image is one, since its
 the browser's search to the server's check, arc42 §6.16, now say so — and that a `selectboxes`
 naming a source draws no rows in either renderer, which nothing had said.
 
+**Fixed: the published schema gave spec version 3 as the default.** `formancy.schema.json` gave
+`specVersion` a `default` of `"3"`, and its description said version 3 was the one this package
+writes, while the package has written `"4"` since `0.4.0`. A `default` is what an editor completing
+from the schema offers — Monaco in the playground's Schema view, or any editor pointed at
+`@formancy/spec/schema.json` — so a document started that way declared a version behind and was
+refused the moment it used a version 4 construct; the spec reference printed the same default. The
+builders and the admin were not affected, since they write `CURRENT_SPEC_VERSION`. The default is
+now `"4"`, and the description says the default is the newest version instead of naming one, and
+what versions 2, 3 and 4 each added. Held by *offers the versions the package speaks, and defaults
+to the one it writes* in `packages/spec/src/schema.test.ts`, which reads the versions and the
+default from the code, so opening version 5 fails there until the schema follows.
+
 **Fixed: a tag picker a rule disabled could still be changed.** A `disabled` rule greys a field
 out and the field keeps its answer, and a renderer holds that by disabling the control's
 elements, since the engine does not refuse a value set on a disabled field. The tag picker draws
