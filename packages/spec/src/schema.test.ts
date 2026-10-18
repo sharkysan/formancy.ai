@@ -1,7 +1,13 @@
 import { Ajv2020 } from 'ajv/dist/2020.js'
 import { describe, expect, test } from 'vitest'
 import schemaDocument from '../formancy.schema.json' with { type: 'json' }
-import { CONTAINER_FIELD_TYPES, FIELD_TYPES, WIDGETS_BY_FIELD_TYPE } from './types.js'
+import {
+  CONTAINER_FIELD_TYPES,
+  CURRENT_SPEC_VERSION,
+  FIELD_TYPES,
+  SPEC_VERSIONS,
+  WIDGETS_BY_FIELD_TYPE,
+} from './types.js'
 
 describe('formancy.schema.json', () => {
   test('is itself a valid JSON Schema 2020-12 document', () => {
@@ -50,6 +56,22 @@ describe('formancy.schema.json', () => {
         Object.entries(WIDGETS_BY_FIELD_TYPE).map(([type, widgets]) => [type, [...widgets]]),
       ),
     )
+  })
+
+  test('offers the versions the package speaks, and defaults to the one it writes', () => {
+    // The default is what an editor proposes when somebody types `"specVersion": ` —
+    // Monaco in the playground, or any editor pointed at the published schema — and what
+    // the spec reference prints beside the property. It said "3" for as long as the
+    // package wrote "4", because nothing compared it to the constant the package writes
+    // with, so a document started from that proposal declared a version behind and was
+    // refused the moment it used a version 4 construct. Read from the code, so opening
+    // version 5 fails here until the schema says so too.
+    const specVersion = schemaDocument.properties.specVersion
+
+    expect(specVersion.enum).toEqual([...SPEC_VERSIONS])
+    expect(specVersion.default).toBe(CURRENT_SPEC_VERSION)
+    // And the one it writes is the newest, which is what the description says of it.
+    expect(SPEC_VERSIONS[SPEC_VERSIONS.length - 1]).toBe(CURRENT_SPEC_VERSION)
   })
 
   test('has the stable $id the published spec reference is served from', () => {

@@ -14,8 +14,8 @@
  "properties": {
   "specVersion": {
    "title": "Spec version",
-   "description": "Which version of the document format this form is written against. Version 1 is frozen: a document that validates today will validate against every future release that speaks spec 1. Version 2 is a superset — it adds field types and layout kinds and removes nothing — so every version 1 document is also a valid version 2 document, and upgrading is a one-line change. Independent of the package version. Version 3 adds the `signature` field type and is the version this package writes; it is a superset in the same way, so every version 2 document is a valid version 3 document.",
-   "default": "3",
+   "description": "Which version of the document format this form is written against. Independent of the package version. A version is frozen once it is released: a document that validates today will validate against every future release that speaks its version. Each version is a superset of the one before and removes nothing, so a document of an older version is also a valid document of every newer one, and upgrading is a one-line change. The other direction is refused rather than guessed at: a reader that speaks only an older version rejects a document written against a newer one instead of dropping the part it does not know. Version 2 added field types, widgets and layout kinds; version 3 the `signature` field type, the `check` and `skip` rule kinds and the `tagpicker` widget; version 4 the `ranking` and `matrix` field types, the `rating` and `slider` widgets, and the `step`, `mask` and option `image` properties. The default is the newest version, which is the one this package writes.",
+   "default": "4",
    "enum": [
     "1",
     "2",
