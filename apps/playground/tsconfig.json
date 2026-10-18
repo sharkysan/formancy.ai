@@ -1,6 +1,8 @@
 {
+  "//": "allowImportingTsExtensions because src/build-base.test.ts imports the real vite.config.ts, whose imports name their .ts files so that Node can load the config itself, the way Vite's native config loader does. Allowed here because nothing in this project is emitted.",
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "allowImportingTsExtensions": true,
     "lib": [
       "ES2023",
       "DOM",

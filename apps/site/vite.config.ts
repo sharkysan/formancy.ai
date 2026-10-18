@@ -1,8 +1,8 @@
 import { fileURLToPath } from 'node:url'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
-import { CSS_TARGET } from '../../css-target'
-import { countDecisionRecords, countFieldTypes, packageVersion } from './decision-records'
+import { CSS_TARGET } from '../../css-target.ts'
+import { countDecisionRecords, countFieldTypes, packageVersion } from './decision-records.ts'
 
 export default defineConfig({
   plugins: [react()],

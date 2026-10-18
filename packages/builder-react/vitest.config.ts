@@ -1,5 +1,5 @@
 import { defineConfig } from 'vitest/config'
-import { RENDER_TIMEOUT_MS, coverage } from '../../vitest.coverage'
+import { RENDER_TIMEOUT_MS, coverage } from '../../vitest.coverage.ts'
 
 export default defineConfig({
   test: {

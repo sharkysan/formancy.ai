@@ -2,9 +2,9 @@ import { fileURLToPath } from 'node:url'
 import angular from '@analogjs/vite-plugin-angular'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
-import { CSS_TARGET } from '../../css-target'
-import { monacoFromThisSite } from '../../monaco-from-this-site'
-import { MONACO_VS } from './src/monaco-path'
+import { CSS_TARGET } from '../../css-target.ts'
+import { monacoFromThisSite } from '../../monaco-from-this-site.ts'
+import { MONACO_VS } from './src/monaco-path.ts'
 
 /**
  * The playground is served from a subdirectory, and has to be built knowing it.

@@ -1,7 +1,7 @@
 import { fileURLToPath } from 'node:url'
 import angular from '@analogjs/vite-plugin-angular'
 import { defineConfig } from 'vitest/config'
-import { RENDER_TIMEOUT_MS, coverage } from '../../vitest.coverage'
+import { RENDER_TIMEOUT_MS, coverage } from '../../vitest.coverage.ts'
 
 export default defineConfig({
   resolve: {

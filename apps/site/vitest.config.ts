@@ -1,7 +1,7 @@
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
-import { countDecisionRecords, countFieldTypes, packageVersion } from './decision-records'
-import { RENDER_TIMEOUT_MS, coverage } from '../../vitest.coverage'
+import { countDecisionRecords, countFieldTypes, packageVersion } from './decision-records.ts'
+import { RENDER_TIMEOUT_MS, coverage } from '../../vitest.coverage.ts'
 
 export default defineConfig({
   plugins: [react()],
