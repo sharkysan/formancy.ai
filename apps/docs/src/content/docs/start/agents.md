@@ -124,6 +124,34 @@ carry — the last one because validity alone cannot tell a cleared branch from 
 was never filled. Write one for every rule you add. The tool refuses an empty set rather
 than reporting that all nought scenarios hold.
 
+**Every key names one answer, by its path.** A field inside a group is named through the
+group, `home.street`; a page is left out, since it scopes nothing; and a field in a
+repeater's row is named by the row's position from 0, `colleagues[0].fee`. That is also how a
+list is filled: one answer at a time, and naming a row the list does not have yet adds it. For
+a form whose `count` is worked out as `size(colleagues)`,
+
+```json
+{
+  "name": "two colleagues are both counted",
+  "changes": {
+    "colleagues[0].who": "Ada",
+    "colleagues[0].fee": 100,
+    "colleagues[1].who": "Grace",
+    "colleagues[1].fee": 120
+  },
+  "valid": true,
+  "values": { "count": 2 }
+}
+```
+
+starts from an empty list and ends with two rows. A scenario does not set a list whole, and
+cannot remove a row the answers it starts from already have. A list, a group, one row or a
+page named as though it were one answer is a failure that says which it is and offers a path
+to name instead, and so is `colleagues[].fee`, the spelling a rule uses for every row. A
+field in a row the list does not have is neither visible nor hidden, and an example that says
+it is one or the other fails
+([0182](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0182-a-list-is-filled-row-by-row.md)).
+
 **A deployment can keep them, and its publish runs them.** The server keeps each form's
 examples and the sample they start from beside the form — `GET` and `PUT /f/:path/examples`,
 with the permission publishing takes — and every publish runs them against the version the

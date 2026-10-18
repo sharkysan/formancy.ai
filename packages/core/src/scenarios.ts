@@ -1,7 +1,8 @@
 import type { FormSchema } from '@formancy/spec'
 import type { CapabilitySource } from '@formancy/expressions'
 import { createFormEngine } from './engine.js'
-import { parsePath } from './path.js'
+import { formatPath, parsePath } from './path.js'
+import { notOneAnswer } from './scenario-paths.js'
 import { getAt } from './value.js'
 
 /**
@@ -55,6 +56,12 @@ export interface Scenario {
    * decides its branch is two steps and needs `initialValue` for the first.
    * The templates have carried this shape since they shipped, and a list of
    * steps would be the honest alternative the day one of them needs it.
+   *
+   * Each key, here and in every expectation, is one answer's path: `home.street`
+   * through a group, `items[0].note` by a row's position from 0 — which adds the
+   * row when the list does not have it yet, so a list is filled one answer at a
+   * time. A list, a group, a row or a page is not a key, and naming one fails
+   * saying which it is ([0182](../../../docs/decisions/0182-a-list-is-filled-row-by-row.md)).
    */
   readonly changes: Readonly<Record<string, unknown>>
   /** Whether the form validates afterwards. */
@@ -171,6 +178,10 @@ export function runScenarios(
      * A scenario naming `otherReson` would otherwise set nothing, assert
      * nothing and pass — green while checking a field that does not exist,
      * which is exactly how a renamed field leaves its scenarios behind.
+     *
+     * And a path that is not one answer says what it is instead. A list, a group
+     * or a page is something the form has, and calling it a rename sends somebody
+     * looking for one rather than telling them how to name what is in it.
      */
     const named = [
       ...Object.keys(scenario.changes),
@@ -181,10 +192,7 @@ export function runScenarios(
     ]
     for (const path of [...new Set(named)]) {
       if (known(path)) continue
-      failures.push({
-        about: 'path',
-        detail: `This form has no "${path}". A scenario naming a field that is not there checks nothing — it was probably renamed.`,
-      })
+      failures.push({ about: 'path', detail: notOneAnswer(schema, path, known) })
     }
 
     if (failures.length > 0) return { name: scenario.name, passed: false, failures }
@@ -216,7 +224,20 @@ export function runScenarios(
       })
     }
 
+    /*
+     * A row's field is known whatever the number of rows, and its snapshot says visible,
+     * so `visible` on a row the list does not have held — green about a field nobody can
+     * see. The rows there now are the ones it can be asked about.
+     */
+    const present = new Set(engine.fieldPaths())
     for (const [path, want] of Object.entries(scenario.visible ?? {})) {
+      if (!present.has(formatPath(parsePath(path)))) {
+        failures.push({
+          about: 'visible',
+          detail: `"${path}" is in a row the list does not have, so it is neither visible nor hidden.`,
+        })
+        continue
+      }
       const got = engine.getFieldSnapshot(parsePath(path)).visible
       if (got === want) continue
       failures.push({

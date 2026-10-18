@@ -37,7 +37,7 @@ export const DRAFT_MESSAGES_FR = {
   'drafts.status.discarded': '{name} écarté.',
   'drafts.status.taken': 'Pas gardé : il existe déjà un scénario nommé {name}.',
   'drafts.status.unknownPath':
-    'Pas gardé : {name} nomme un champ que ce formulaire n’a pas, et ne vérifierait rien.',
+    'Pas gardé : {name} nomme autre chose qu’un des champs de ce formulaire, et ne vérifierait rien.',
   'drafts.status.stopped': 'Arrêté. Rien n’a été rédigé.',
   'drafts.status.unreachable': 'Rien n’a été rédigé. Le modèle n’a pas pu être joint : {reason}',
   'drafts.status.unreachableNoReason': 'Rien n’a été rédigé. Le modèle n’a pas pu être joint.',

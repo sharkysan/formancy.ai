@@ -315,6 +315,254 @@ describe('running a set of them', () => {
   })
 })
 
+describe('a path that names something other than one answer', () => {
+  /*
+   * A conference registration, as the form the report was about was: colleagues to bring,
+   * up to three, each with a fee, and a figure the form works out from the list. Pages,
+   * groups and a group inside a row are here because each is a path an example can name
+   * that is not a field.
+   */
+  const conference: FormSchema = {
+    specVersion: '2',
+    id: 'conference',
+    title: 'Conference registration',
+    model: {
+      fields: [
+        {
+          key: 'details',
+          type: 'page',
+          fields: [
+            {
+              key: 'home',
+              type: 'group',
+              fields: [
+                { key: 'street', type: 'text' },
+                { key: 'city', type: 'text' },
+              ],
+            },
+            { key: 'name', type: 'text', label: 'Name' },
+            { key: 'notes', type: 'group', fields: [] },
+          ],
+        },
+        {
+          key: 'party',
+          type: 'page',
+          fields: [
+            {
+              key: 'colleagues',
+              type: 'repeater',
+              maxItems: 3,
+              fields: [
+                { key: 'who', type: 'text', required: true },
+                { key: 'fee', type: 'number' },
+                { key: 'badge', type: 'group', fields: [{ key: 'title', type: 'text' }] },
+              ],
+            },
+            { key: 'count', type: 'number' },
+          ],
+        },
+      ],
+    },
+    logic: { rules: [{ target: 'count', kind: 'computed', cel: 'size(colleagues)' }] },
+  }
+
+  const failuresOf = (schema: FormSchema, scenario: Omit<Scenario, 'name'>) =>
+    runScenarios(schema, [{ name: 'one', ...scenario }])[0]?.failures ?? []
+
+  /** What the runner says about `path` when it is set. */
+  const saidOf = (schema: FormSchema, path: string) =>
+    failuresOf(schema, { changes: { [path]: 'x' }, valid: true })
+
+  /**
+   * The sentence a path gets from a form that has nothing at all: what "this form has no
+   * such field" reads as for exactly that path. Compared, rather than its wording matched,
+   * so a sentence about a list cannot pass by containing some other phrase.
+   */
+  const missing = (path: string) => saidOf({ ...conference, model: { fields: [] }, logic: { rules: [] } }, path)[0]?.detail
+
+  /** The paths a sentence offers in place of the one it is about. */
+  const offered = (detail: string, path: string) =>
+    [...detail.matchAll(/"([^"]+)"/g)].map((match) => match[1]!).filter((quoted) => quoted !== path)
+
+  /** Whether the runner takes `path` as one answer a scenario can name. */
+  const taken = (path: string) => saidOf(conference, path).every((failure) => failure.about !== 'path')
+
+  test('a repeater named whole is said to be a list, with the spelling that fills it', () => {
+    /*
+     * The report. An example filled `colleagues` in one step and was told the form has no
+     * "colleagues", that it was probably renamed. The list was there, so the sentence sent
+     * somebody looking for a rename that never happened, and said nothing of how a list
+     * is filled.
+     */
+    const failures = failuresOf(conference, {
+      changes: { colleagues: [{ who: 'Ada', fee: 100 }, { who: 'Grace', fee: 120 }] },
+      valid: true,
+      values: { count: 2 },
+    })
+
+    expect(failures.map((failure) => failure.about)).toEqual(['path'])
+    const detail = failures[0]!.detail
+    expect(detail).toContain('"colleagues"')
+    expect(detail, 'a list is told the form does not have it').not.toBe(missing('colleagues'))
+    const instead = offered(detail, 'colleagues')
+    expect(instead, 'it says what a list is and not how to name what is in it').not.toEqual([])
+    for (const path of instead) expect(taken(path), `it offers "${path}", which the runner refuses`).toBe(true)
+
+    // The publish runs the examples in server mode, and its warning is this sentence too.
+    const [onTheServer] = runScenarios(
+      conference,
+      [{ name: 'one', changes: { colleagues: [{ who: 'Ada', fee: 100 }] }, valid: true }],
+      { mode: 'server' },
+    )
+    expect(onTheServer?.failures.map((failure) => failure.detail)).toEqual([detail])
+  })
+
+  test('and the spelling it offers fills the list, adding each row it names', () => {
+    /*
+     * The advice, taken. A row named by its position is there afterwards, so two of them
+     * make a list of two and the figure worked out from the list sees both. If naming a row
+     * the list does not have set nothing, the sentence would be sending people to a spelling
+     * that checks nothing.
+     */
+    const failures = failuresOf(conference, {
+      changes: {
+        'colleagues[0].who': 'Ada',
+        'colleagues[0].fee': 100,
+        'colleagues[1].who': 'Grace',
+        'colleagues[1].fee': 120,
+      },
+      valid: true,
+      values: { count: 2, 'colleagues[1].fee': 120 },
+    })
+
+    expect(failures.map((failure) => failure.detail)).toEqual([])
+  })
+
+  test('and it is said the same wherever an example names it, expectations as well as answers', () => {
+    /*
+     * Every key an example has goes through the one check before anything is set. An
+     * expectation about the list as a whole got the rename sentence just as the answer did,
+     * and a fix to `changes` alone would have left four of the five saying it.
+     */
+    const asAnAnswer = saidOf(conference, 'colleagues')[0]?.detail
+    for (const expectation of [
+      { errors: { colleagues: ['maxItems'] } },
+      { visible: { colleagues: true } },
+      { values: { colleagues: [] } },
+      { absent: ['colleagues'] },
+    ]) {
+      const failures = failuresOf(conference, { changes: {}, valid: true, ...expectation })
+      expect(failures.map((failure) => failure.detail), JSON.stringify(expectation)).toEqual([asAnAnswer])
+    }
+  })
+
+  test.each([
+    // A group named whole: its fields are named through it, never the group.
+    ['home'],
+    // A group inside a row: through the row and the group.
+    ['colleagues[0].badge'],
+    // A row named alone, which is no more one answer than the list is.
+    ['colleagues[0]'],
+    // A field of a row with the row left out: the field is there, only its position is not.
+    ['colleagues.fee'],
+    // And a group of a row, the same way: through the row's position and then the group.
+    ['colleagues.badge'],
+    // The spelling a rule targets every row with. A scenario sets one row, so it is a
+    // position that is missing, not a field.
+    ['colleagues[].fee'],
+    // A page holds fields and scopes none, so its fields are named as though it were not there,
+    // whether the first thing on it is a list or a group.
+    ['party'],
+    ['details'],
+    // And a field named through its page is offered without it.
+    ['details.name'],
+  ])('"%s" is said to be what it is, with a spelling the runner takes', (path) => {
+    // Each of these got the rename sentence: told the form has no such field, about a path
+    // that names something the form plainly has.
+    const failures = saidOf(conference, path)
+
+    expect(failures.map((failure) => failure.about)).toEqual(['path'])
+    const detail = failures[0]!.detail
+    expect(detail, 'it is told the form does not have it').not.toBe(missing(path))
+    const instead = offered(detail, path)
+    expect(instead).not.toEqual([])
+    for (const offer of instead) expect(taken(offer), `it offers "${offer}", which the runner refuses`).toBe(true)
+  })
+
+  test('a sentence with nothing the engine takes to offer offers nothing', () => {
+    /*
+     * The sentence offers a path only when the engine takes it. A group with no fields has
+     * none, and a page named before a field the form does not have would offer that field
+     * without the page: `zip`, which is not there either. Either would send somebody from
+     * one wrong path to a second.
+     */
+    for (const path of ['notes', 'details.zip']) {
+      const detail = saidOf(conference, path)[0]!.detail
+      expect(detail, path).not.toBe(missing(path))
+      expect(offered(detail, path), path).toEqual([])
+    }
+  })
+
+  test('a field that is not there still gets the sentence about a rename', () => {
+    /*
+     * The other direction, so telling a list from a field cannot turn into telling every
+     * missing path it is something else. A misspelt list, a field a group does not have, a
+     * field a row does not have, with its position or without, a position on a group, a key
+     * under a field that holds one answer, and a path that does not parse are each still a
+     * field that is not there.
+     */
+    for (const path of ['collegues', 'home.zip', 'colleagues[0].feee', 'colleagues.feee', 'home[0]', 'name.first', 'home..street']) {
+      expect(saidOf(conference, path).map((failure) => failure.detail), path).toEqual([missing(path)])
+    }
+  })
+
+  test('a repeater inside a row is said to be one the engine has no fields for', () => {
+    /*
+     * `validateSchema` refuses a repeater inside a repeater's row, and the engine opens such
+     * a document anyway and skips the inner one. The runner is handed documents nobody
+     * validated — `check_scenarios` takes whatever an agent sends — so a path into it got
+     * the rename sentence about a field the document plainly has, and no spelling can reach.
+     */
+    const nested: FormSchema = {
+      specVersion: '2',
+      id: 'nested',
+      title: 'Nested',
+      model: {
+        fields: [
+          {
+            key: 'outer',
+            type: 'repeater',
+            fields: [{ key: 'inner', type: 'repeater', fields: [{ key: 'x', type: 'text' }] }],
+          },
+        ],
+      },
+    }
+    const path = 'outer[0].inner[0].x'
+    const detail = saidOf(nested, path)[0]!.detail
+
+    expect(detail).not.toBe(missing(path))
+    expect(offered(detail, path)).toEqual([])
+  })
+
+  test('a field in a row the list does not have is neither shown nor hidden', () => {
+    /*
+     * The engine answers for a row's field whatever the number of rows, so `visible` on a
+     * third colleague, with two in the list, held: green about a field nobody can see or
+     * fill in, the silent pass the path check exists to prevent. Expected hidden, it was
+     * reported as visible, which it is not either. Whatever was expected, the answer is that
+     * the row is not there.
+     */
+    const twoRows = { 'colleagues[0].who': 'Ada', 'colleagues[1].who': 'Grace' }
+    const shown = failuresOf(conference, { changes: twoRows, valid: true, visible: { 'colleagues[2].fee': true } })
+    const hidden = failuresOf(conference, { changes: twoRows, valid: true, visible: { 'colleagues[2].fee': false } })
+
+    expect(shown.map((failure) => failure.about)).toEqual(['visible'])
+    expect(hidden.map((failure) => failure.detail)).toEqual(shown.map((failure) => failure.detail))
+    // And a row that is there is still answered, so the check is not simply always failing.
+    expect(failuresOf(conference, { changes: twoRows, valid: true, visible: { 'colleagues[1].fee': true } })).toEqual([])
+  })
+})
+
 describe('the mode a scenario runs in', () => {
   test('is the client by default and the server when asked', () => {
     /*

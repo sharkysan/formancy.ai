@@ -243,6 +243,22 @@ describe('what may be kept', () => {
     expect(keepDraft(FORM, [], ghost)).toEqual({ ok: false, refused: 'unknown-path' })
   })
 
+  test('nor can one naming a list whole, which checks nothing either', () => {
+    /*
+     * The briefing tells the model a repeater is not a path, and a model can write one
+     * anyway: `items` filled in one step. The run stops before anything is set, as it does
+     * for a missing field, so it is refused the same way. What the refusal says of it is
+     * the next describe's.
+     */
+    const listed: FormSchema = {
+      ...FORM,
+      model: { fields: [...FORM.model.fields, { key: 'items', type: 'repeater', fields: [{ key: 'qty', type: 'number' }] }] },
+    }
+    const whole: Scenario = { ...ASKS_FOR_A_CANTON, name: 'whole', changes: { country: 'CH', items: [{ qty: 2 }] } }
+
+    expect(keepDraft(listed, [], whole)).toEqual({ ok: false, refused: 'unknown-path' })
+  })
+
   test('a drafted `absent` on a field inside a group or a row is checked where the field is', () => {
     /*
      * The briefing offers `absent` for any path, and the inventory names fields inside a
@@ -328,9 +344,12 @@ describe('what the drafting part says', () => {
     expect(draftStatus({ busy: false, result: ready, note: undefined }, text)).toBe(
       '1 example drafted. None is kept until you keep it. 1 item in the answer could not be used.',
     )
+    // Of a missing field and of a list named whole alike, so it says neither: it said the
+    // form does not have what it named, which of a list is false. The draft's verdict says
+    // which it is.
     const refused = { kind: 'refused', why: 'unknown-path', name: 'ghost' } as const
     expect(draftStatus({ busy: false, result: ready, note: refused }, text)).toContain(
-      'Not kept: ghost names a field',
+      'Not kept: ghost names something that is not one of this form’s fields, so it would check nothing.',
     )
   })
 

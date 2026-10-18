@@ -192,7 +192,7 @@ describe('drafting', () => {
 
     expect(changed).not.toHaveBeenCalled()
     const statuses = screen.getAllByRole('status').map((status) => status.textContent ?? '')
-    expect(statuses.some((said) => said.includes(`Not kept: ${GHOST.name} names a field`))).toBe(true)
+    expect(statuses.some((said) => said.includes(`Not kept: ${GHOST.name} names something that is not one of this form’s fields`))).toBe(true)
   })
 
   test('a draft’s verdict follows the form, rather than being the one it arrived with', async () => {

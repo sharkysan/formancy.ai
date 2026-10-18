@@ -282,3 +282,4 @@ listed under the sections they belong to above.
 | [0176](0176-the-npm-token-is-a-secret-of-the-npm-environment.md) | The npm token is a secret of the `npm` environment, which only release tags reach | accepted |
 | [0177](0177-a-source-may-say-its-list-goes-on.md) | A source may say its list goes on, and a sourced control says only what the person can act on | accepted |
 | [0178](0178-the-rooms-palette-is-published.md) | The admin's palette is published, and the admin imports it like anybody else | accepted |
+| [0182](0182-a-list-is-filled-row-by-row.md) | A scenario fills a list row by row, and a path that is not one answer says what it is | accepted |

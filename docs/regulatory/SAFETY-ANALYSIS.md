@@ -1784,7 +1784,17 @@ fix. An example's `absent` on a field inside a group or a repeater's row was loo
 key at the top of the submission, where no such key is, so it held whatever the form did: an
 example that read as a check and checked nothing. Since 0162 the runner looks it up through
 the path; `scenarios.test.ts` (*is looked for where the field is*) fails with the key lookup
-put back, and also holds that a field hidden and cleared there passes.
+put back, and also holds that a field hidden and cleared there passes. An example naming a
+list, a group, one row or a page was told the form had no field by that name and that it was
+probably renamed, from `0.4.0` to this change: a failure in the right place with the wrong
+reason, which sends somebody to delete an example as stale or to look for a rename, rather
+than to name the list's rows. Since 0182 it says what the path names and offers a path the
+engine takes; *a path that names something other than one answer* fails with the old sentence
+put back, and holds that a field that is not there still gets it. And an example's `visible`
+on a field in a row the list does not have held, because the engine answers for a row's field
+whatever the number of rows — an expectation that read as a check and checked nothing. It
+fails now; *a field in a row the list does not have is neither shown nor hidden* fails with
+that check taken out.
 
 The examples also run **before Apply**. Given the form's examples, each prompt pane runs
 them against the document as it is and as the proposal would leave it, through
