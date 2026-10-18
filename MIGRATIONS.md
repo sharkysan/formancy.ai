@@ -291,14 +291,14 @@ again.
 
 ## Known pre-1.0 caveats
 
-- Both spec versions are frozen; the PACKAGES are not. Their APIs will still change
+- Every spec version is frozen; the PACKAGES are not. Their APIs will still change
   before 1.0, and those changes are documented here.
-- Async validators do not exist. When they arrive they will need a new rule kind and an
-  `async` property, which is a **spec 3** change now that 2 is frozen — the version line
-  exists for exactly that, and `runsOn` is already in place so the ordering question can
-  be answered without restructuring anything.
+- An asynchronous validator is not a property on a rule. It is `kind: "check"`, a rule kind
+  in spec 3 that names a check the deployment answers
+  ([0086](docs/decisions/0086-a-check-is-named-and-answered-elsewhere.md)), because a CEL
+  expression is synchronous by construction.
 
-## A repeater is validated as a field is (unreleased)
+## A repeater is validated as a field is (0.6.0)
 
 **If a published form says something about a repeater, read it again before you upgrade.** A
 form version is immutable and the engine that reads it is not, so these are enforced on the next
@@ -347,7 +347,7 @@ button. The Angular renderer no longer tops the rows up to `minItems` in an effe
 does it, when the form opens and when a repeater a rule hid is shown again.
 
 Nothing is stored differently, no document changes and the spec version does not move.
-## A deployment with no model says so in a 200 (unreleased)
+## A deployment with no model says so in a 200 (0.6.0)
 
 **A client may see a new answer.** `GET /model` on a server with no model answers `200` with
 `{ "provider": null, "model": null }`, where it answered `404` with
@@ -369,7 +369,7 @@ The admin needs nothing: every release that has the route already reads the new 
 `POST /model/complete` on a server with no model still answers `404` `model_not_configured`.
 Nothing is stored differently.
 
-## A source may answer a page (unreleased)
+## A source may answer a page (0.6.0)
 
 **If you implement an options source, nothing has to change.** A list of rows is read exactly as
 before, its true total included. To say that a list goes on without counting it, answer one page:
@@ -395,11 +395,12 @@ list or a page, and code that treated it as an array does not compile. Narrow it
 `@formancy/spec`, which refuses what the controls refuse.
 
 **If you reworded the options words**, in `FormancyProvider`'s `words` or
-`provideFormancy(engine, { words })`: a plain select no longer says `options.failed` or
-`options.capped`. It says `options.failedListed` and `options.cappedListed`, and the new
-`options.moreListed` and `options.searchOnly`; a typeahead says the new `options.more`, and either
-control `options.withheld`. Add your words for them. `options.capped` keeps its id and its
-`{shown}` and `{total}`, for the typeahead.
+`provideFormancy(engine, { words })`: a plain select no longer says `options.failed`,
+`options.capped` or `options.tooShort`. It says `options.failedListed`, `options.cappedListed` and
+`options.searchOnly`, and the new `options.moreListed`; a typeahead says the new `options.more`, and
+either control `options.withheld`. Add your words for them; a language you added says them in
+English until you do. `options.capped` and `options.tooShort` keep their ids and their parameters,
+for the typeahead.
 
 **If your source answers `labels` with nothing**, counting on a search to name what a field holds:
 a field a rule disables no longer searches, so it shows the stored value itself. Answer `labels`
@@ -407,7 +408,7 @@ with the rows for the values asked.
 
 Nothing is stored differently, no document changes and the spec version does not move.
 
-## A computed field is the engine's (unreleased)
+## A computed field is the engine's (0.6.0)
 
 **Only its rule writes a field a `computed` rule targets**
 ([0181](docs/decisions/0181-a-computed-value-is-the-engines.md)).

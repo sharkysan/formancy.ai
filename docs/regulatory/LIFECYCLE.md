@@ -18,7 +18,7 @@ quality management system, and this is not a claim of IEC 62304 conformity.**
 | §5.5 Unit implementation and verification | **Yes** | Test-first development, with per-package coverage reported; the suite size is stated as a dated floor under [Verification gates](#verification-gates) rather than transcribed twice — this row said 1,155 while that one said 1,661, both written on one day |
 | §5.6 Software integration and integration testing | **Yes** | Conformance suite across five implementations; integration tests against real PostgreSQL |
 | §5.7 Software system testing | Partially | End-to-end verification performed manually and recorded; not automated end-to-end |
-| §5.8 Software release | Partially | Released to npm from CI with provenance and a signed SBOM, and the server image to GHCR signed by digest; the gates are mechanical and no human sign-off is recorded against a checklist. The packed tarballs are installed into a project outside the workspace and run before release (`test:e2e:install`), but nothing re-checks a version once it is on the registry |
+| §5.8 Software release | Partially | Released to npm from CI with provenance and a signed SBOM, and the server image to GHCR signed by digest; the gates are mechanical and no human sign-off is recorded against a checklist. CI installs the packed tarballs into a project outside the workspace and runs them on every push to `main` (`test:e2e:install`); the release workflow repeats `build`, `typecheck`, `test` and `check:pkg` and not that gate, nothing requires CI to have passed on the commit a tag names, and nothing re-checks a version once it is on the registry |
 | §6 Software maintenance | **No** | Releases exist, and no maintenance process is defined for them — no support commitment, no backport policy, and no defined response time beyond `SECURITY.md` |
 | §7 Risk management | Partially | [`SAFETY-ANALYSIS.md`](SAFETY-ANALYSIS.md) identifies failure modes; no ISO 14971 file, by design |
 | §8 Configuration management | **Yes** | Git, pinned dependencies, lockfile, immutable published schema versions |
@@ -82,8 +82,9 @@ pnpm install --frozen-lockfile
 pnpm build
 pnpm build:web
 pnpm typecheck
-pnpm test
+pnpm test:coverage
 pnpm check:pkg
+node scripts/verify-licenses.mjs
 pnpm test:e2e:install
 pnpm test:e2e:angular
 pnpm test:browser
@@ -112,8 +113,8 @@ Each gate exists for a reason that was paid for at least once:
 - **`typecheck`** — carries part of the architecture. The isomorphic packages
   have no `@types/node`, so a Node import is a compile error rather than a
   review finding ([0008](../decisions/0008-layered-packages.md)).
-- **`test`** — **over 1,600 tests**, of which 62 run against a real
-  PostgreSQL instance through Testcontainers. Versioning defects only manifest
+- **`test`** — **over 1,600 tests**, the server's integration suites among them
+  against a real PostgreSQL instance through Testcontainers. Versioning defects only manifest
   against real SQL semantics, so a mocked database would not find them. The
   figure is a floor rather than a count: it was 1,661 when measured on
   2026-09-26, and an exact number here goes stale on the next commit that adds
@@ -146,7 +147,10 @@ Each gate exists for a reason that was paid for at least once:
   `compatibility.json`: the tarballs installed into an Angular project at that version, with
   Material at the same one, built by that project's own Angular and run in Chromium. The
   install test above cannot: an Angular package is consumed by an Angular build, whose linker
-  is the consumer's. The engine and the server also run once per Node version, in CI's `node` job
+  is the consumer's. Its project holds `vitest`, an optional peer of `@angular/build` that it
+  never installs, at 4.1.11: on 2026-10-16 npm 10.9 could not resolve Angular 22.0.0's range
+  otherwise, so the lowest Angular is tested with an override a consumer's project will not have
+  until vitest publishes a whole set, and the override goes when the test passes without it. The engine and the server also run once per Node version, in CI's `node` job
   ([0134](../decisions/0134-the-versions-it-says-are-the-versions-it-runs.md)).
 - **The contributor agreement**, in a workflow of its own rather than in the list
   above, because it is not a `pnpm` script and needs no install:
@@ -220,8 +224,9 @@ Each gate exists for a reason that was paid for at least once:
   screenshots: the renderers ship no styling, so a pixel baseline would be
   testing demo CSS, and a baseline is a file somebody updates when it goes red.
 
-**None of these gates is mechanically required.** `main` carries no branch
-protection rule, so every one of them reports and a maintainer decides. That is
+**None of these gates is mechanically required.** A ruleset protects `main`
+against deletion and force-pushes, read from GitHub's API on 2026-10-18, and it
+requires no check to pass, so every gate reports and a maintainer decides. That is
 recorded in [§11.6](../architecture/11-risks-and-debt.md) rather than left to be
 inferred from the fact that the gates exist.
 
@@ -241,6 +246,15 @@ compilation at ≈1.7 ms against a 30 ms budget.
   run with the workflow's secrets. `apps/docs/src/workflow-actions.test.ts` reads
   every workflow and fails on a third-party action named by tag; GitHub's own
   `actions/*` and `github/*` are exempt.
+- **The publishing token.** `NPM_TOKEN` is a secret of the `npm` environment, not
+  of the repository, so GitHub hands it only to a job that names the environment
+  ([0176](../decisions/0176-the-npm-token-is-a-secret-of-the-npm-environment.md)).
+  `apps/docs/src/npm-token-environment.test.ts` reads every workflow and fails on a
+  job that reads the token without naming it; it failed on the release job before
+  the change. Which refs the environment admits is a repository setting nothing in
+  the tree can read: on 2026-10-18 it admits `v*` tags only, read back from GitHub's
+  API after a rule admitting `main` as well, which no document recorded, was
+  removed.
 - **Generated artefacts.** The ahead-of-time schema validator is committed and
   stamped with the hash of the schema it was generated from, so a stale artefact
   is detectable rather than silent ([0040](../decisions/0040-no-eval.md)).

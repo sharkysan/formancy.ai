@@ -15,8 +15,8 @@ newer and any bundler from the last few years.
 :::note[Beta]
 The packages are published with provenance — `npm audit signatures` will tell you
 which workflow run built one — and their APIs will change before 1.0. The *document
-format* is frozen and stays frozen: `specVersion: "1"`, `"2"` and `"3"` all are, and each
-later version only adds. A reader **refuses** a document from a version it does not know
+format* is frozen and stays frozen: every spec version is, and each later version only
+adds. A reader **refuses** a document from a version it does not know
 rather than ignoring the part it cannot read, so the version a release speaks is worth
 checking against the version a document declares — `MIGRATIONS.md` lists both.
 :::

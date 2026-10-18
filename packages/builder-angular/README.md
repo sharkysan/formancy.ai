@@ -152,9 +152,10 @@ both inert, and this reads them from the outside.
 
 ## What it does not have yet
 
-Nothing the React builder has. What it does not have is a **demonstration**: no
-application mounts this package, so parity is a property of its tests rather than
-something anybody can see working.
+Nothing the React builder has. It can be seen working: the
+[playground](https://formancy.ai/playground/) offers it beside the React builder,
+over the same session, and [`apps/angular-starter`](../../apps/angular-starter)
+mounts it beside an Angular Material form.
 
 ## Licence
 

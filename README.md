@@ -56,7 +56,7 @@ author the JSON directly or use a coding agent through MCP. The shared engine
 handles validation and calculations, so you do not need to implement each rule
 separately in your UI and the formancy backend.
 
-> **Status: beta, version 0.5.0.**
+> **Status: beta, version 0.6.0.**
 >
 > **Every spec version is frozen.** Each only adds, so an older document
 > keeps working and its submissions keep their shape — upgrading is one line and
@@ -143,7 +143,7 @@ ask a model of your own for a change through the relay, and inspect the answers 
 would be submitted. Switch language or theme without reloading.
 `pnpm --filter @formancy/playground dev` runs it locally.
 
-### Six reasons to build with formancy
+### Reasons to build with formancy
 
 - **The builder is open source, too.** The visual editor, Angular and React
   renderers, and optional backend are all Apache-2.0. Inspect, adapt and host
@@ -512,9 +512,8 @@ into the form, why a field is hidden or required now. Beside the fields, each
 form's own examples run after every edit. The switchers are not decoration
 either.
 
-**Theme** proves the headless claim: the renderers ship no CSS, and two themes
-that look like unrelated products swap live with no remount and no component
-change.
+**Theme** proves the headless claim: the renderers ship no CSS, and themes that
+look like unrelated products swap live with no remount and no component change.
 
 **Language** proves the i18n section. The demo form's labels are `$t`
 references into three catalogues, and French is deliberately incomplete —
@@ -568,8 +567,10 @@ after every mount and every DOM-mutating change.
 them identically rather than each getting it slightly wrong: `aria-invalid`
 only when validated *and* invalid, `aria-required` reactive because
 requiredness can be expression-driven, real `fieldset`/`legend` for groups,
-exactly one polite live region per form, and an error summary that takes focus
-without `role="alert"` — focusing it already announces it.
+and an error summary that takes focus without `role="alert"` — focusing it
+already announces it. The one polite live region per form that 0021 intends is
+not built; instead a typeahead, a select fed by a source, a file field and a
+scanner each carry their own `role="status"` line.
 
 **Side-by-side layouts** are where reading order and visual order most easily
 come apart, so four criteria shape how they are built:
@@ -658,7 +659,7 @@ cut, and what the pipeline signs and attests.
 Releases are published from CI with npm provenance, and each one carries a
 CycloneDX SBOM signed with cosign.
 
-**`0.5.0` is the current beta.** Every package under the
+**`0.6.0` is the current beta.** Every package under the
 [`@formancy`](https://www.npmjs.com/org/formancy) scope moves on one version
 number, so any two of them at the same version are known to work together — which
 is what makes the support matrix size one
@@ -675,7 +676,7 @@ npm audit signatures
 The list of packages is not repeated here, because a list in prose goes stale and
 this one did: it said ten, and `@formancy/builder-react` — the package a
 prospective adopter most wants to see — was the exception that "lands in the next
-release". It lands in this one, along with `@formancy/challenge`,
+release". It first reached npm in `0.2.0`, along with `@formancy/challenge`,
 `@formancy/mcp` and `@formancy/tiptap`. The authoritative list is the composition
 table in
 [`SOUP-DECLARATION.md`](./docs/regulatory/SOUP-DECLARATION.md), which
@@ -684,3 +685,12 @@ table in
 ## License
 
 Apache-2.0. See [LICENSE](./LICENSE) and [NOTICE](./NOTICE).
+
+[Formancy Data](https://github.com/sharkysan/formancy.ai-data),
+[Formancy Report](https://github.com/sharkysan/formancy.ai-report) and
+[Formancy Health](https://github.com/sharkysan/formancy.ai-health), modules
+built on formancy, are not part of this: each lives in a repository of its own
+under a source-available licence, not Apache-2.0 — free to read, evaluate and
+develop with, in a company too, and paid in production
+([0179](./docs/decisions/0179-the-paid-modules-are-named-as-not-free.md),
+[0180](./docs/decisions/0180-formancy-health-is-named-before-its-first-release.md)).

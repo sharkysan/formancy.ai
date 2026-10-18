@@ -33,7 +33,7 @@ These are ordered, and the order has been used to settle real arguments.
 | 3 | **The application owns its markup** | Renderers emit no styling; every id and ARIA attribute comes from the engine |
 | 4 | **Accessible by construction, not by audit** | A renderer whose markup is not navigable by role and accessible name fails the test suite |
 | 5 | **Fast on large conditional forms** | Measured budgets in CI, not claims |
-| 6 | **Nothing essential is withheld** | Apache-2.0; the sold features are about operating the platform, not using it |
+| 6 | **Nothing essential is withheld** | Apache-2.0 for everything in this repository; what is sold is operating the platform and modules built beside it in repositories of their own, never what a developer needs to evaluate and adopt formancy ([0003](../decisions/0003-open-core-line.md), [0179](../decisions/0179-the-paid-modules-are-named-as-not-free.md)) |
 
 Goal 1 is load-bearing: a design that compromises it should be rejected even
 when it is otherwise better. Goal 2 is the one that cannot be retrofitted once
@@ -59,7 +59,7 @@ signature, address, rating, slider, tabs and accordions, and conditional page
 routing.
 
 That list is what was out of **v0.1**, and most of it has shipped since — through spec
-versions 2 and 3, which is what the version line is for. The roadmap says which, and
+versions 2, 3 and 4, which is what the version line is for. The roadmap says which, and
 which are deliberately not coming; this paragraph is kept because the *reason* for the
 cut is architecture rather than history.
 
@@ -70,6 +70,6 @@ cut is architecture rather than history.
 | Application developer | Idiomatic bindings, their own markup, types that are right |
 | Form author (non-technical) | Errors at authoring time, not at fill-in time |
 | Person filling in a form | A form that is navigable, that does not lose their answers, and that does not reject them for reasons it will not explain |
-| Self-hoster | One container, one database, no hidden dependencies, no paywall |
+| Self-hoster | One container, one database, no hidden dependencies, no paywall in front of anything this repository ships |
 | Auditor | A submission that can be read against the schema that produced it, years later |
 | Contributor | To understand the repository in ten minutes |

@@ -1,6 +1,6 @@
 {
   "name": "@formancy/expressions",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "CEL parse, type-check, compile and evaluate, with formancy's safety policy.",
   "license": "Apache-2.0",
   "type": "module",

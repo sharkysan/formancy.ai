@@ -8,250 +8,122 @@ Loosely [Keep a Changelog](https://keepachangelog.com), with reasons attached �
 a line that says only *what* changed is rarely the line you need six months
 later.
 
-## Unreleased
+## 0.6.0 — 2026-10-18
+
+**The spec version does not move.** Version 4 is still the newest and frozen, so `0.5.0` and
+`0.6.0` read each other's documents. What moves is how the engine validates a repeater, a hidden
+group and a computed field, the renderers' controls over an options source and their tag picker,
+what an example is told about a list, one server route, a published palette and the landing page.
+
+**Breaking.** [`MIGRATIONS.md`](MIGRATIONS.md) says what to change for each.
+
+- `resolve` answers a list or a page, so code that treated the answer as an array does not
+  compile until it narrows it, with `Array.isArray` or `acceptRemoteAnswer`. A source that only
+  implements `resolve` compiles unchanged.
+- A plain select says `options.failedListed`, `options.cappedListed` and `options.searchOnly`
+  where it said `options.failed`, `options.capped` and `options.tooShort`; a host's own words for
+  those reach only the typeahead. A language a host adds says the new ids in English until it
+  words them.
+- A field a rule disabled no longer searches, so over a source that answers `labels` with
+  nothing it shows its stored value itself.
+- A published form whose repeater has `maxItems` or `required`, or a rule aimed at it, now
+  refuses submissions it stored before, without being republished, and a `validate` rule aimed at
+  a repeater refuses every submission if it was written wrong. A field in a group a rule hides is
+  no longer drawn or validated, and `clearOnHide: false` on a group or a repeater keeps its
+  answers. `addRow` and `removeRow` throw past a bound, and `canAddRow` and `canRemoveRow` say so
+  first.
+- Only its rule writes a computed field. A value set on it, or handed in by a draft, a prefill or
+  a request body, is dropped, so a field whose expression cannot be evaluated yet is empty where
+  it used to show the earlier value.
+- `GET /model` on a server with no model answers `200` with `{ "provider": null, "model": null }`,
+  not `404`. Read the provider: a string is a model, `null` is none.
 
 **Fixed: a repeater's `maxItems`, `required` on it and every rule aimed at it were enforced by
-nothing.** The engine validated fields, and a repeater is not one. A submission with more rows
-than `maxItems`, or none where the repeater was required, was stored, in the browser and in the
-server's replay of the same engine; a `required` or `validate` rule whose target was the
-repeater was accepted at publish and never evaluated, so a rule an author wrote failed open
-where validation fails closed; and `minItems` held only when the form opened, since nothing
-stopped a row being removed below it. Found on 2026-10-18 while documenting how to total a
-repeater's rows, and recorded before it was fixed (hazard A1, arc42 §11.2). A repeater is now
-validated as a field is: `maxItems` and `minItems` against its rows, with the codes a
-`selectboxes` reports; `required` as at least one row; a `required` or `validate` rule aimed at
-it, failing closed when it cannot be evaluated; and `type` for rows that are not a list of
-objects, which a string posted where the rows belong had been stored as. `addRow` past
-`maxItems` and `removeRow` below `minItems` throw a `RangeError`, `canAddRow` and `canRemoveRow`
-say so first, and neither renderer offers the button — no add button at the maximum, no remove
-buttons at the minimum, absent as the move buttons are at the ends. The repeater draws its own
-error inside its fieldset, described by it, and the error summary names it by its label. A
-short submission is still topped up with empty rows as the browser opens the form, so it is
-refused only where a field in a row is required
-([0184](docs/decisions/0184-a-repeater-is-validated-as-a-field-is.md)). And an example may now
-expect `errors` and `visible` at a list's own path, which 0182 refused while the engine said
-nothing there; a list is still filled row by row, and the briefing a model drafts examples
-from says where a repeater's own errors go. Held by
-`packages/core/src/repeater-bounds.test.ts`, each renderer's `repeater-bounds` test, the
-conformance fixture `repeater-bounds.json`, and, posted straight at the API against PostgreSQL,
-the server's integration tests.
+nothing**, in the browser or on the server, through `0.5.0`: too many rows, or none where they
+were required, were stored, and a rule aimed at the repeater failed open (hazard A1). A repeater
+is now validated as a field is, neither renderer offers a button past a bound, and the error
+summary names it ([0184](docs/decisions/0184-a-repeater-is-validated-as-a-field-is.md)).
 
-**Fixed: what a rule hid, it hid only at its own wire.** A field inside a group a `visible` rule
-hid was still drawn and still validated, so a required one made the form impossible to send —
-in the browser, and on the server, which refused it too; a repeater's rows on a page the answers
-walk past were validated, the failure skipping a page exists to prevent; and `clearOnHide` on a
-group or a repeater was read from nothing, so their answers were cleared whatever it said. What
-a rule hides or disables, it now hides or disables whole: a group with its fields, a repeater
-with its rows. A repeater a rule hid and cleared opens again with its `minItems` when it is
-shown, in the engine, and the Angular renderer's effect that topped rows up on its own is gone —
-it put back a row React let go (0023).
+**Fixed: what a rule hid, it hid only at its own wire.** A required field in a group a rule hid
+made the form impossible to send, on the server too; a repeater's rows on a page the answers walk
+past were validated; and `clearOnHide` on a group or a repeater was ignored. A rule now hides or
+disables a group with its fields and a repeater with its rows.
 
-**Breaking, for a host whose published form says something about a repeater, or that adds and
-removes rows itself.** A published form version is immutable and the engine reading it is not,
-so a form with `maxItems`, `required` on a repeater or a rule aimed at one now refuses
-submissions it stored before, without being republished — and a `validate` rule aimed at a
-repeater, never run until now, refuses every submission if it was written wrong. A draft saved
-with more rows than the maximum is refused until it loses one. A field in a group a rule hides
-stops being drawn and validated, and a group or repeater with `clearOnHide: false` keeps its
-answers. An example that expects a form to be invalid lists every error, so one about a
-repeater outside its bounds fails until it lists the list's own error too. `addRow` and
-`removeRow` throw past a bound; `getFieldSnapshot`, `validate`,
-`visibleErrors` and `firstInvalid` answer for a repeater's own path; `useRepeater` and
-`injectRepeater` gain `canAdd` and `canRemove`; and a repeater's fieldset gains an `id`,
-`data-state`, `aria-describedby`, a required hint and an error. See
-[`MIGRATIONS.md`](MIGRATIONS.md). No stored submission changes and the spec version does not
-move; the schema's descriptions of `required`, `minItems` and `maxItems` say what a repeater
-does with them, and the playground's `recipients` repeater shows both bounds.
-
-**Fixed: a computed field could be typed over, and the server could store what was typed.**
-The spec said nobody can type over a `computed` field. The renderers drew it as an ordinary control,
-though, so a computed *Total, CHF* took typing, and the only way to stop it was a `disabled` rule
-with `cel: "true"`. What happened to the typed value depended on the expression. When it could be
-evaluated, the engine overwrote the value at once. When it could not, because an input it reads
-was still empty, the rule wrote nothing and the typed value stood. The server's replay did the
-same: a total sent with `qty` left out of `price * qty` was stored as the computed total, which
-`SAFETY-ANALYSIS.md` A3 said could not happen. Every release up to `0.5.0` does this. Now only the
-rule writes a computed field. `setValue` on it does nothing. Its value is taken out of whatever the
-engine is handed — a resumed draft, a prefill, and on the server the request body — before the
-first pass. The field snapshot gains `readOnly`, and both renderers and Material draw the text,
-paragraph, number, date, time and date-and-time controls `readonly`. They do not use `disabled`,
-so the value stays in the tab order and is announced. Other controls are drawn as before, and a
-change made in one does not take, though the Angular binding can go on showing it; the logic page
-says to add a `disabled` rule to such a field. A host that put a value into a computed field, or a
-draft resumed with an input empty, now sees the field empty where it used to see the earlier
-value. Held by `packages/core/src/computed-targets.test.ts`, by *stores no computed value it did
-not compute* in `server-core`, by each renderer's `computed-field` test and Material's controls
-test, and by the `calculated-value` conformance fixture, which is now mounted with a total handed
-in. Every one of those cases failed before the change
+**Fixed: a computed field could be typed over, and the server could store what was typed**, in
+every release up to `0.5.0`. While an input its expression reads was empty, a typed value stood,
+and the server stored a total sent without that input (hazard A3). The field snapshot now says
+`readOnly`, and both renderers and Material draw its text, number and date controls `readonly`
 ([0181](docs/decisions/0181-a-computed-value-is-the-engines.md)).
 
-**Fixed: an example naming a list was told the form had no such field.** `runScenarios` checks
-every path an example names before it sets anything, and asked the engine for a field's
-snapshot to do it, which only an answer has. So a list, a group, one row and a page each got
-the sentence for a field that is not there — *This form has no "colleagues" … it was probably
-renamed* — about something the form plainly has, sending somebody to look for a rename instead
-of telling them how to name what is in it. It came from an agent filling a repeater in one step,
-and every release since `0.4.0` says it, in the scenario panes, `check_scenarios` and the
-publish's warnings alike, which all show the runner's sentence. Now the sentence says what the
-path names and offers a path to name instead, only one the engine takes: a list is filled one
-answer at a time by the row's position from 0, `colleagues[0].fee`, and naming a row the list
-does not have yet adds it. A list is still not set whole, for the reasons
-[0182](docs/decisions/0182-a-list-is-filled-row-by-row.md) gives. A row's field without its
-position (`colleagues.fee`) and a rule's spelling for every row (`colleagues[].fee`) are said to
-be missing a position. Found beside it: `visible` on a field in a row the list does not have
-held, because the engine answers for a row's field whatever the number of rows, so an example
-could pass about a field nobody can see; it fails now. The drafting part's refusal of such a
-draft said it names a field the form does not have, and now says, in each language, that it
-names something that is not one of the form's fields. `@formancy/core` grows from 21.2 to
-22.1 kB (§9.3).
+**Fixed: a tag picker a rule disabled could still be changed**, in every release since `0.3.0`:
+a chip's remove button and a list left open under the rule changed its answer, and in Angular the
+box took typing. Both renderers now disable all of it with the field (hazard B6a).
 
-**Fixed: every sign-in to a deployment without a model logged a failed request.** No model is how
-a deployment ships, and `GET /model` answered it with a `404`, which the browser prints as a
-failure whatever the page does with it. Measured on 2026-10-18 with the server from its build and
-the admin from Vite, in Chromium: one *Failed to load resource: the server responded with a status
-of 404 (Not Found)* on every sign-in, though the admin read it, correctly, as no model. A console
-that shows a failure on every sign-in teaches whoever reads it to step over failures. Now the
-route answers `200` with `{ "provider": null, "model": null }`, the shape it answers with a model,
-and the console stays clean. `POST /model/complete` on a server with no model is still a `404`:
-that request nothing can serve. A viewer's sign-in still logs a `403`, since a viewer may not ask
-and the admin does not know who signed in. The admin needed no change: it already read an answer
-naming no model as none, and still reads `0.5.0`'s `404` that way. Held by *is said when this
-deployment has none* in `model-route.test.ts`, and the admin's `server-model.test.tsx`
+**Fixed: a control over a source said what its person could not act on**, measured on `0.5.0`:
+a plain select asked its reader to type, a React one whose source failed once stayed failed, an
+Angular one searched three times for one choice, and a field a rule disabled searched and spoke.
+A plain select now has sentences of its own and asks again when the person comes back after a
+failure; a disabled field asks only for the name of what it holds, and says nothing.
+
+**Fixed: an example naming a list was told the form had no such field**, in every release since
+`0.4.0`. It is told what the path names and how to name a row instead, `colleagues[0].fee`, and
+an example expecting a field to be visible in a row the list does not have now fails
+([0182](docs/decisions/0182-a-list-is-filled-row-by-row.md)).
+
+**Fixed: every sign-in without a model logged a failed request**, the `404` above, which teaches
+whoever reads the console to step over failures
 ([0183](docs/decisions/0183-no-model-is-an-answer.md)).
 
-**Breaking, for a page of your own that reads `GET /model`.** One that read the `404` as none and
-any `200` as a model now reads a model whose provider is `null`. Read the provider: a string is a
-model, `null` is none — and keep reading a `404` as none while it may meet a `0.5.0` server. See
-[`MIGRATIONS.md`](MIGRATIONS.md). Nothing is stored differently and the spec version does not move.
+**Fixed: the published schema defaulted `specVersion` to `"3"`**, so an editor completing from it
+started a document a version behind the `"4"` the package writes.
 
-**Added, on the landing page: Formancy Health, beside the other two paid modules.** It exports
-formancy forms, their submissions and Formancy Report PDFs as HL7® FHIR® R4 resources, shaped to
-a country's profiles, starting with Switzerland's CH Core and CH ORF. Like Formancy Data and
-Formancy Report it lives in a repository of its own, under a source-available licence: free to
-read, evaluate and develop with, paid in production, no published price yet. Its item says *Not
-free · paid in production* beside a link to its demo at `formancy.ai/health/` and one to its
-repository, and carries HL7's trademark sentence, since it names FHIR. It is linked before its
-first release, which its item does not say, because nothing here could tell when that stops
-being true
-([0180](docs/decisions/0180-formancy-health-is-named-before-its-first-release.md)).
-
-**Documented: no expression adds up a list, and what a form can do instead.** An agent building a
-demo form found `map` and `filter` and nothing to total a repeater's fees with, and the logic page
-listed no functions that would have told it so. The page now lists every function each kind of
-rule may call, held to the engine's allow-list by `apps/docs/src/list-totals.test.ts`, says there
-is no `sum`, and gives a total written out row by row, capped by the repeater's own `maxItems`.
-Written first, the page capped the rows with a `validate` rule on the total, because `maxItems`
-capped nothing and a rule aimed at the repeater was never run — measured while writing it, with
-`required` on a repeater unenforced as well, and fixed in the entry above. The test runs the
-page's example rather than trusting it. The roadmap says what a function that adds a list up would take,
-starting with a spec version. No package changes.
-
-**Corrected: hazard A7 said a document naming a source the deployment never configured is refused
-at publish.** It is where the deployment configures any sources. One that configures none publishes
-it and asks no source about any answer, and the server's image is one, since its `main.ts` passes
-`createApp` no sources. A7, the options concept page and a new runtime view of the whole flow from
-the browser's search to the server's check, arc42 §6.16, now say so — and that a `selectboxes`
-naming a source draws no rows in either renderer, which nothing had said.
-
-**Fixed: the published schema gave spec version 3 as the default.** `formancy.schema.json` gave
-`specVersion` a `default` of `"3"`, and its description said version 3 was the one this package
-writes, while the package has written `"4"` since `0.4.0`. A `default` is what an editor completing
-from the schema offers — Monaco in the playground's Schema view, or any editor pointed at
-`@formancy/spec/schema.json` — so a document started that way declared a version behind and was
-refused the moment it used a version 4 construct; the spec reference printed the same default. The
-builders and the admin were not affected, since they write `CURRENT_SPEC_VERSION`. The default is
-now `"4"`, and the description says the default is the newest version instead of naming one, and
-what versions 2, 3 and 4 each added. Held by *offers the versions the package speaks, and defaults
-to the one it writes* in `packages/spec/src/schema.test.ts`, which reads the versions and the
-default from the code, so opening version 5 fails there until the schema follows.
-
-**Fixed: a tag picker a rule disabled could still be changed.** A `disabled` rule greys a field
-out and the field keeps its answer, and a renderer holds that by disabling the control's
-elements, since the engine does not refuse a value set on a disabled field. The tag picker draws
-two kinds outside its text box. Measured on 2026-10-18 in jsdom: in React each chip's remove
-button stayed enabled and took an answer away, and a list open when the rule landed stayed drawn
-with rows a click added; in Angular the text box was not disabled either, so a disabled tag
-picker was typed into and chosen from as though it were enabled. Every release since `0.3.0`
-has the tag picker this way. Both renderers now disable the box and every remove button with the
-field, and draw no list while it is disabled, as the typeahead does since 0177. Held by *a tag
-picker a rule disables* in each renderer's tag picker tests (hazard B6a).
-
-**Added, on the landing page: the two paid modules, each saying it is not free.** Formancy Data
-(forms from an existing PostgreSQL or SQL Server database) and Formancy Report (paginated PDF
-reports) are built on formancy in repositories of their own, under source-available licences:
-free to read, evaluate and develop with, paid in production, no published price yet. The page
-named neither, and its one sentence about licensing is *Apache-2.0. The whole thing.*, so both
-now sit directly under that sentence, and each module's item says *Not free · paid in
-production* beside its own links. A link is often reached on its own, so a single sentence
-above both would not have been enough. Nothing in any `@formancy/*` package changes, and
-nothing moves off the free side
-([0179](docs/decisions/0179-the-paid-modules-are-named-as-not-free.md)).
-
-**Added: the admin's palette, as `@formancy/themes/room.css`.** The dark ground, the glass, the
-violet for what a person acts on and the teal for what the system did were the `:root` block of
-the admin's own stylesheet, which is in no package, so Formancy Report and Formancy Data each
-copied it into their apps by hand and pinned their copies with a test that cannot see this
-repository — a colour moved here moved nothing there, silently. Now it is published: the custom
-properties the admin declared, at the values it had, with every colour of `workbench.css` set to
-them and `color-scheme: dark`, and nothing else — no rule for an element and no face loaded.
-Import it after `workbench.css`, since both say `:root`. The admin imports it the same way and
-declares none of it itself. The names are API from now on, and a value moved is a change every
-importer sees, said here when it happens
-([0178](docs/decisions/0178-the-rooms-palette-is-published.md)).
-
-**Added: a source may say its list goes on, and count what it cannot hand over.** A list from a
-source was rows and nothing else, and the control counted the rows it was handed, so *Showing
-the first 50 of 120* was true only of a source that returned every row. A source backed by a
-database pages: it reads `limit + 1` rows to know there are more, and does not count them,
-because a count reads every matching row on every keystroke — so it either looked complete or
-claimed a total of `limit + 1`. Now `OptionsSource.resolve` may answer one page,
-`{ options, more, withheld? }`, as well as every matching row. `more` is said without a number —
-*Showing the first 50; there are more — keep typing to narrow.* — and `withheld` counts the rows
-a source matched and cannot hand over, a value a select could not store, which are then said
-rather than left out unsaid. A page whose `more` is not a boolean, whose `withheld` is not a
-whole count, or which carries any other key — a `total`, a misspelt `moer` — is refused whole,
-and the field says its source failed rather than showing a cut list as the whole one. A list is
-read exactly as before, its true total included. New in `@formancy/spec`: `acceptRemoteAnswer`,
-`capRemoteAnswer`, `RemoteOptionsAnswer`, `RemoteOptionsPage` and `RemoteCompleteness`, the page
-types re-exported by both renderers beside `OptionsSources`; `acceptRemoteOptions` and
-`capRemoteOptions` are unchanged. What a sourced control says is now decided once, for both
-renderers, by `optionsStatus` in `@formancy/core/words`, where React and Angular each wrote the
-order by hand. The playground's *Where to collect it* answers a page, as a database would
+**Added: a source may say its list goes on.** `OptionsSource.resolve` may answer one page,
+`{ options, more, withheld? }`, so a source backed by a database no longer looks complete or
+claims a total of `limit + 1`. A malformed page is refused whole and shown as a failed source.
+New in `@formancy/spec`: `acceptRemoteAnswer`, `capRemoteAnswer` and the page's types; what a
+control says is decided once, by `optionsStatus` in `@formancy/core/words`
 ([0177](docs/decisions/0177-a-source-may-say-its-list-goes-on.md)).
 
-**Changed, and every host with a sourced field sees it: a control says only what its person can
-act on.** Measured on `0.5.0`, a plain select said "keep typing to narrow" past its cap, "type at
-least 2 characters" over a source with a minimum and "Type to try again" when its source failed —
-nobody can type into a `<select>` — and since its question never changes, a React select whose
-source was down once stayed down for as long as the form was open. An Angular one was asked again,
-but only as a side effect: an Angular sourced select or typeahead read a definition rebuilt on every
-change to the field's state, so it sent its source the same question again after a choice and when
-the person left the field, three searches where one was asked for. A typeahead's sentence stayed
-under the field after a choice and while its list was closed, and a field a rule had disabled
-searched its source and said it, so a saved record opened read-only said "keep typing to narrow"
-under every long lookup. And every debounced search took the region through *Searching…* and back
-to the same sentence, which a screen reader heard each time. Now a plain select has sentences of
-its own — `options.cappedListed`, `options.moreListed`, `options.searchOnly` and
-`options.failedListed`, in English, German and French — and asks its source again when the person
-moves to it after a failure, and only then. An Angular sourced field asks when what it asks changes
-or the field is disabled or enabled, and not again for a choice or a blur. A typeahead says what its
-list leaves out, and *Searching…*, only while the list is open. A field disabled by a rule asks its
-source only for the name of what it holds: no search, no busy box, no list, nothing said. Neither
-renderer hid a typeahead's list when a rule disabled the field under it, and a box disabled under
-the person is not reliably blurred, so the list could stay drawn and a click on a row change the
-answer of a field the form had made read-only; both now hide it while the field is disabled. And a
-sentence about what the list leaves out stands while the next search is in flight, because the rows
-on screen are still the ones it describes, so a search that settles on the same sentence announces
-nothing again; `aria-busy` on the box says a search is in flight.
+**Added: the admin's palette, as `@formancy/themes/room.css`.** Formancy Data and Formancy
+Report copied the admin's `:root` by hand, so a colour moved here moved nothing there; now they
+import it. It holds the admin's custom properties at their values, sets `workbench.css`'s
+colours to them and loads no face. Import it after `workbench.css`. Its names are API from now
+on ([0178](docs/decisions/0178-the-rooms-palette-is-published.md)).
 
-**Breaking, for a host that calls `resolve` itself or reworded the options words.** A call to
-`resolve` now gets a list or a page, and code that treated the answer as an array does not compile
-until it narrows it, with `Array.isArray` or through `acceptRemoteAnswer`; a source that only
-implements `resolve` compiles unchanged. A host that reworded `options.failed` or `options.capped`
-sees a plain select say `options.failedListed` or `options.cappedListed` in the shipped words, its
-own word reaching only the typeahead now. And a disabled field over a source that answers `labels`
-with nothing, counting on a search to name what the field holds, shows its stored value itself.
-See [`MIGRATIONS.md`](MIGRATIONS.md). No document changes and the spec version does not move.
+**Added, on formancy.ai: the three paid modules, each marked not free.** Formancy Data, Formancy
+Report and Formancy Health are source-available, free to evaluate and develop with, and paid in
+production. They sit under the page's *Apache-2.0. The whole thing.*, each with *Not free · paid in
+production* beside its own links; Formancy Health is linked before its first release. No
+`@formancy/*` package changes ([0179](docs/decisions/0179-the-paid-modules-are-named-as-not-free.md),
+[0180](docs/decisions/0180-formancy-health-is-named-before-its-first-release.md)).
+
+### What 0.6.0 knowingly does not have
+
+Everything 0.5.0 listed still holds. New, or found while making this release:
+
+- **A control believes its source.** A page saying `more: false` while more rows match is a
+  silently partial list, and nothing in the browser can check `withheld` either (arc42 §11.2).
+- **One sentence at a time.** Rows withheld go unsaid beside `more` or a cap, and a sentence
+  about the list stays up, rather than *Searching…*, while the next search runs.
+- **A failed select is asked again only when the person comes back to it**, not while they stay
+  on it.
+- **`room.css` loads no faces**, and the playground and the landing page still declare rooms of
+  their own that nothing holds to it.
+- **Nothing checks the paid modules' terms** the landing page states, nor the pages it links to,
+  which those repositories deploy.
+- **A computed field drawn as a tick box, a choice, a slider or a picker is not read-only.** A
+  change in one does not take, though the Angular binding can go on showing it; give such a field
+  a `disabled` rule. No theme styles `[readonly]`, so a read-only box looks like an editable one.
+- **No expression adds up a list.** There is no `sum`; the logic page says what a form can do
+  instead.
+- **A `selectboxes` naming a source draws no rows**, in either renderer.
+- **A submission with fewer rows than `minItems` is topped up with empty rows**, as the browser
+  opens the form, so it is refused only where a field in those rows is required (0023). At
+  `maxItems` the add button goes, and nothing says why unless the author does.
+- **A group a layout places whole keeps its heading while a rule hides its fields**, since a group
+  has no snapshot of its own (arc42 §11.2).
+- **A deployment that configures no sources checks no sourced answer**, at publish or at
+  submission, and the server's image is one (hazard A7).
 
 ## 0.5.0 — 2026-10-11
 

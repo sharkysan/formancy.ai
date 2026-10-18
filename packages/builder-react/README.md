@@ -134,6 +134,10 @@ error and a trailing backslash becomes something worse: `"C:\"` escapes the
 closing quote and the expression runs on into whatever follows. There is a test
 for that exact string.
 
-## What it does not do yet
+## What it does not do
 
-Conditions that combine more than one comparison.
+Conditions nested past one level. Comparisons combine with *and* or *or*, and a
+group of them may sit inside another, which is "(A and B) or C"; a group inside a
+group holds comparisons only, and the compiler refuses a third level, because
+three levels in nobody can tell what the parentheses do
+([0127](../../docs/decisions/0127-a-condition-nests-one-level.md)).

@@ -7,7 +7,10 @@ anybody noticed.
 
 Take them at **1440×900** unless a section says otherwise, from the **built** site rather
 than the dev server — the dev server injects styles the build does not, and it renders a
-`@monaco-editor/react` cancellation error the build has no trace of.
+`@monaco-editor/react` cancellation error the build has no trace of. And in an **`en-US`**
+browser locale: a date field is the platform's input and draws the browser's own format, so a
+German browser puts `04.05.2027` into an English page. The README's pictures were retaken for
+that at 0.5.0 and the social card at 0.6.0.
 
 ```bash
 pnpm build:web
@@ -17,7 +20,7 @@ cd apps/site/dist && python -m http.server 4399
 ## `readme/hero.jpg` — the landing page
 
 `http://localhost:4399/` at 1440×900, saved as JPEG. Nothing to set up: the page opens on
-the Paper appearance with an empty form, which is what a visitor sees.
+the Dusk appearance with an empty form, which is what a visitor sees.
 
 ## `readme/themes.png` — one form, four themes
 
@@ -61,8 +64,9 @@ group's three settings in it.
 
 ## `readme/playground.png` — the playground
 
-`http://localhost:4399/playground/` at 1600×1000, with a few answers typed in so the
-engine pane shows a submission value rather than empty rows.
+`http://localhost:4399/playground/` at 2400×1350, wide enough that the form pane draws the
+React and the Angular renderer side by side — at 1600 it draws one — with a few answers typed
+in so the engine pane shows a submission value rather than empty rows.
 
 ## `../../apps/site/public/og.png` — the social card
 

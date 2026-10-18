@@ -76,11 +76,10 @@ or random source, so a replay is byte-identical
 ([0019](../decisions/0019-injected-capabilities.md)). An engine constructed
 without a capability source throws rather than falling back to `Date.now()`.
 
-*Residual:* none known today, because every validator runs in both places —
-the `runsOn` property that would let an author mark a rule client-only is
-designed but **not in the spec**. When it lands, a rule marked
-`runsOn: 'client'` will by definition not be enforced on the server, and that
-will need to be understood by whoever authors rules.
+*Residual:* a validate rule marked `runsOn: "client"` is by definition not
+enforced on the server, and whoever authors rules has to understand that. Every
+other validator runs in both places
+([0043](../decisions/0043-runs-on.md)).
 
 ### A3. A calculated value is supplied by the client rather than computed
 
@@ -267,8 +266,8 @@ option's value, and a dropdown or a tag picker, which cannot show a picture, is 
 the validator refuses rather than one that validates and shows nothing.
 
 *Residual:* the engine checks a value against the options **the document carries**. A
-field that carries none has nothing to be outside of, by design — it is the seam remote
-options will need. And a component supplied through `registry.byType` or
+field that carries none has nothing to be outside of, by design — it is the seam
+`optionsSource` uses (A7). And a component supplied through `registry.byType` or
 `registry.byPath` renders in the same slot and can still store whatever the engine
 accepts for every other kind of field; nothing in the renderers constrains a consumer's
 own component, and the engine validates the value rather than its provenance. **An
@@ -332,7 +331,7 @@ form naming sources records them, a form naming none records no such field.
 
 *How it arises:* a select whose answers come from a source (A7) shows at most `maxRows` of
 the rows the source answered. A source backed by a database pages and does not count, and
-until [0177](../decisions/0177-a-source-may-say-its-list-goes-on.md) it could answer rows and
+until [0177](../decisions/0177-a-source-may-say-its-list-goes-on.md), in `0.6.0`, it could answer rows and
 nothing else: one page was indistinguishable from every row there is, so it looked complete,
 or claimed a total of `limit + 1`. A row the source matched and could not hand over — a value
 a select cannot store — had nowhere to go but out, unsaid. Either way the person looking for an
@@ -827,7 +826,7 @@ form is **private until opened**, and an origin allowlist — when set — is
 matched exactly, with a missing `Origin` header refused
 ([0044](../decisions/0044-access-outside-the-document.md)).
 
-*Residual:* **v0.1 has no multi-tenancy**. Authorisation is per-user and
+*Residual:* **no release has multi-tenancy**. Authorisation is per-user and
 per-form, and there is no tenant boundary. A deployment serving more than one
 organisation must provide that boundary itself.
 
@@ -990,8 +989,9 @@ no outbound request the library makes on its own.
 *Residual:* renderers emit the application's own markup. A consuming
 application that injects unsanitised HTML into a form is outside this boundary. The
 directives above are reasoned from what the code emits and asserted where a test can see
-it; **no browser in this repository has been served a strict CSP and observed**, because
-nothing here renders the Angular bindings in a browser at all ([§11](../architecture/11-risks-and-debt.md)).
+it; **no browser in this repository has been served a strict CSP and observed**, because the
+one policy any page here sets is the playground's `img-src` and `connect-src` (C6), and none
+sets `style-src` or `script-src` ([§11](../architecture/11-risks-and-debt.md)).
 A manufacturer shipping under a policy should verify it against their own page.
 
 ### C5. A part-filled form is read or altered by a stranger
@@ -2499,7 +2499,7 @@ are compared with nothing.
 1. Map each entry onto a hazardous situation in the device, or record that it
    cannot produce one.
 2. Pay particular attention to **A5** (visibility rules fail open), **C2** (no
-   tenant boundary), **D3** (pattern linting not yet implemented) and the
+   tenant boundary), **D3** (patterns stored before the publish-time check were never analysed) and the
    pre-release package versions. These are the entries where the residual risk
    is real rather than theoretical. Note which *spec* version you are
    characterising: `"1"` ([0042](../decisions/0042-freeze-the-spec.md)), `"2"`
