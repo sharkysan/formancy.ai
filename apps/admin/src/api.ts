@@ -334,9 +334,10 @@ export interface ServerModel {
 /**
  * Whether the server has a model, and which (0165).
  *
- * `undefined` for none — a 404, or an answer that does not name one: a server older than
- * the route answers `/model` some other way, and reading any 200 as a model would draw a
- * prompt pane whose every turn fails.
+ * `undefined` for none: the server's `{ provider: null, model: null }` (0183), and any other
+ * answer that does not name one — a `404` from a server before 0183, a viewer's `403`, or a
+ * server older than the route answering `/model` some other way. Reading any 200 as a model
+ * would draw a prompt pane whose every turn fails.
  */
 export async function fetchModel(): Promise<ServerModel | undefined> {
   const response = await authed(`${BASE}/model`)

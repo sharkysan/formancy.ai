@@ -268,7 +268,7 @@ listed under the sections they belong to above.
 | [0162](0162-an-example-is-drafted-from-what-the-author-said.md) | An example is drafted from what the author said, judged by the engine, and kept one at a time | accepted; leaving Fields stopping the prompt pane's run in the playground superseded by 0163; a draft living as long as its part and its session, for a run the host holds, superseded in part by 0164 |
 | [0163](0163-a-models-run-belongs-to-the-host.md) | A model's run belongs to the host, and outlives the pane that asked | accepted; the translations pane's run and the drafting part's not being carried superseded in part by 0164 |
 | [0164](0164-a-translation-is-held-for-its-language-and-a-draft-for-its-form.md) | A translation is held for its language, and a draft for its form | accepted |
-| [0165](0165-a-deployments-model-is-asked-through-its-server.md) | A deployment's model is asked through its server, and the server writes the briefing | accepted; its limit counted per process superseded by 0170 |
+| [0165](0165-a-deployments-model-is-asked-through-its-server.md) | A deployment's model is asked through its server, and the server writes the briefing | accepted; its limit counted per process superseded by 0170; `GET /model`'s `404` for a deployment with no model superseded by 0183 |
 | [0166](0166-a-deployment-keeps-a-forms-examples-and-runs-them-at-publish.md) | A deployment keeps a form's examples, and runs them at publish | accepted |
 | [0167](0167-the-relay-says-what-each-request-carries.md) | A request to a model names its kind, and the relay pane says what that kind carries | accepted |
 | [0168](0168-the-log-is-built-from-a-list-of-fields.md) | The server keeps a log, and a line is built from a list of fields | accepted; a `500` answering with the error's message, which it left, decided by 0172 |
@@ -283,3 +283,4 @@ listed under the sections they belong to above.
 | [0177](0177-a-source-may-say-its-list-goes-on.md) | A source may say its list goes on, and a sourced control says only what the person can act on | accepted |
 | [0178](0178-the-rooms-palette-is-published.md) | The admin's palette is published, and the admin imports it like anybody else | accepted |
 | [0182](0182-a-list-is-filled-row-by-row.md) | A scenario fills a list row by row, and a path that is not one answer says what it is | accepted |
+| [0183](0183-no-model-is-an-answer.md) | A deployment with no model says so in a 200, not a 404 | accepted |

@@ -63,7 +63,7 @@ export function App() {
   useEffect(() => {
     if (!signedIn) return
     // None, rather than an error: a viewer is refused the answer, and a server without
-    // the route has no model to offer either.
+    // the route has no model to offer either. A server with none says so in a 200 (0183).
     void fetchModel()
       .then(setModel)
       .catch(() => setModel(undefined))

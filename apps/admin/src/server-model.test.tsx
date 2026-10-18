@@ -32,6 +32,9 @@ const ANSWER = {
   model: { fields: [...SCHEMA.model.fields, { key: 'phone', type: 'text', label: 'Phone' }] },
 }
 
+/** What the server answers when it has no model, since 0183: an answer, not a 404. */
+const NONE = { provider: null, model: null }
+
 interface Call {
   readonly url: string
   readonly method: string
@@ -50,9 +53,7 @@ function serve(model: { provider: string; model: string } | undefined, answer: u
       const json = (value: unknown, status = 200): Response =>
         new Response(JSON.stringify(value), { status, headers: { 'content-type': 'application/json' } })
 
-      if (input === '/api/model') {
-        return Promise.resolve(model === undefined ? json({ error: 'model_not_configured' }, 404) : json(model))
-      }
+      if (input === '/api/model') return Promise.resolve(json(model ?? NONE))
       if (input === '/api/model/complete') return Promise.resolve(json(answer))
       if (input === '/api/forms' && method === 'GET') {
         return Promise.resolve(json({ forms: [{ path: 'contact', title: 'Contact us', version: 1, schemaHash: 'hash-1' }] }))
@@ -220,6 +221,23 @@ describe('askServerModel', () => {
 })
 
 describe('fetchModel', () => {
+  test('is none for the server’s answer that it has none', async () => {
+    // The 200 a deployment without a model gives (0183). Read as a model because it is a
+    // 200, it would draw a prompt pane naming "null", whose every turn the server refuses.
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(new Response(JSON.stringify(NONE), { status: 200 }))))
+    expect(await fetchModel()).toBeUndefined()
+  })
+
+  test('is none for a server before 0183, which said so with a 404', async () => {
+    // The admin and the server are built apart, so an admin can be newer than the server its
+    // `/api` reaches; that server's "none" must not become an error or a model.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve(new Response(JSON.stringify({ error: 'model_not_configured' }), { status: 404 }))),
+    )
+    expect(await fetchModel()).toBeUndefined()
+  })
+
   test('is none for an answer that is not a model, whatever its status', async () => {
     // A server older than this route answers `/model` some other way; reading any 200 as
     // a model would draw a pane whose every turn fails.

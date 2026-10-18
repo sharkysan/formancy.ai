@@ -132,7 +132,8 @@ function serve({
       const json = (value: unknown, status = 200): Response =>
         new Response(JSON.stringify(value), { status, headers: { 'content-type': 'application/json' } })
 
-      if (input === '/api/model') return model === undefined ? json({ error: 'model_not_configured' }, 404) : json(model)
+      // The server's answer when it has no model, as it gives it since 0183.
+      if (input === '/api/model') return json(model ?? { provider: null, model: null })
       if (input === '/api/model/complete') return json({ text: JSON.stringify(answer) })
       if (input === '/api/forms' && method === 'GET') {
         return json({ forms: published ? [{ path: 'contact', title: 'Contact us', version: 1, schemaHash: 'hash-1' }] : [] })

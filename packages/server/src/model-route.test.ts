@@ -128,12 +128,16 @@ describe('whether there is a model', () => {
     expect(response.json()).toEqual({ provider: 'anthropic', model: 'claude-test' })
   })
 
-  test('is 404 when this deployment has none', async () => {
-    // Off unless set: the admin draws nothing new, rather than a button that cannot work.
+  test('is said when this deployment has none: a 200 naming no provider and no model', async () => {
+    // Off is the default, so it is the answer most deployments give, and it is an answer
+    // rather than a failure (0183). As a 404 every editor's sign-in logged a failed request in
+    // the browser's console, for a deployment configured exactly as shipped. The same two
+    // members as when there is one, so a host reads one shape, and null rather than absent,
+    // so a host cannot mistake the answer for one from a server that names neither.
     const { app, tokens } = await serve(undefined)
     const response = await app.inject({ method: 'GET', url: '/model', headers: { authorization: `Bearer ${tokens.editor}` } })
-    expect(response.statusCode).toBe(404)
-    expect(response.json()).toEqual({ error: 'model_not_configured' })
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toEqual({ provider: null, model: null })
   })
 
   test('is not said to a visitor or a viewer', async () => {

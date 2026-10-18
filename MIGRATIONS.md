@@ -298,6 +298,28 @@ again.
   exists for exactly that, and `runsOn` is already in place so the ordering question can
   be answered without restructuring anything.
 
+## A deployment with no model says so in a 200 (unreleased)
+
+**A client may see a new answer.** `GET /model` on a server with no model answers `200` with
+`{ "provider": null, "model": null }`, where it answered `404` with
+`{ "error": "model_not_configured" }`. With a model it answers `{ "provider": …, "model": … }` as
+before, and who may ask is unchanged
+([0183](docs/decisions/0183-no-model-is-an-answer.md)).
+
+**If a page of yours asks it** — to decide whether to draw the prompt pane — read the provider
+rather than the status: a string is a model, `null` is none. Keep reading a `404` as none while
+the page may meet a `0.5.0` server, which is the only release that answers it that way:
+
+```ts
+const response = await fetch('/api/model', { headers: { authorization: `Bearer ${session}` } })
+const body = response.ok ? ((await response.json()) as { provider: string | null; model: string | null }) : undefined
+const model = typeof body?.provider === 'string' && typeof body.model === 'string' ? body : undefined
+```
+
+The admin needs nothing: every release that has the route already reads the new answer as none.
+`POST /model/complete` on a server with no model still answers `404` `model_not_configured`.
+Nothing is stored differently.
+
 ## A source may answer a page (unreleased)
 
 **If you implement an options source, nothing has to change.** A list of rows is read exactly as
