@@ -1,5 +1,5 @@
 import type { FieldDef, FieldType, FormSchema, LogicRule, Text } from '@formancy/spec'
-import { LIST_VALUED_FIELD_TYPES, ROW_ID, ROW_ID_PREFIX, resolveText } from '@formancy/spec'
+import { LIST_VALUED_FIELD_TYPES, resolveText } from '@formancy/spec'
 import { captureCapabilities, compile, evaluate } from '@formancy/expressions'
 import type {
   Capabilities,
@@ -18,7 +18,7 @@ import type { FieldIds } from './ids.js'
 import { createInteractionState } from './interaction.js'
 import { modelViolations } from './model-validators.js'
 import { unanswered } from './answered.js'
-import { formatPath, parsePath, templateWire } from './path.js'
+import { formatPath, parsePath, templateWire, withinAny } from './path.js'
 import { buildFieldProps } from './props.js'
 import type { FieldProps } from './props.js'
 import type { Path } from './path.js'
@@ -26,6 +26,8 @@ import { createValueStore } from './store.js'
 import { computedTargets, isComputed, withoutComputedValues } from './computed-targets.js'
 import { getAt, setAt } from './value.js'
 import { refusedRule } from './rule-refusal.js'
+import { createRows, repeaterViolations } from './rows.js'
+import type { RepeaterNode } from './rows.js'
 import { topLevelDataFields } from './top-level-fields.js'
 import { createWizard } from './wizard.js'
 import type { Wizard } from './wizard.js'
@@ -170,8 +172,17 @@ export interface FormEngine {
   /** The current submission value. */
   value(): unknown
   rowCount(path: Path): number
+  /**
+   * Add an empty row. Past the repeater's `maxItems` it throws, as a row index that is not
+   * a row does, rather than storing a row the document forbids (0184).
+   */
   addRow(path: Path): void
+  /** Whether `addRow` would add one: what a renderer asks before offering the button. */
+  canAddRow(path: Path): boolean
+  /** Remove a row. Below the repeater's `minItems` it throws, as `addRow` does past its maximum. */
   removeRow(path: Path, index: number): void
+  /** Whether `removeRow` would remove one, which is the same answer for every row. */
+  canRemoveRow(path: Path): boolean
   /**
    * Move a row from one position to another, taking its state with it.
    *
@@ -191,6 +202,7 @@ export interface FormEngine {
    */
   rowId(path: Path, index: number): string
   pageOf(path: Path): number
+  /** A field's state — or a repeater's, whose errors are its bounds' and its rules' (0184). */
   getFieldSnapshot(path: Path): FieldSnapshot
   /** Not on a field a computed rule writes, whose value is the rule's (`readOnly`, 0181). */
   setValue(path: Path, value: unknown): void
@@ -240,13 +252,6 @@ interface FieldNode {
   page: number
 }
 
-interface RepeaterNode {
-  path: Path
-  wire: string
-  def: FieldDef
-  page: number
-}
-
 interface CompiledRule {
   rule: LogicRule
   program: Program
@@ -274,7 +279,7 @@ function otherSide(mode: 'client' | 'server'): 'client' | 'server' {
  * say they are required in their description instead. See
  * `FieldPropsInput.grouped`.
  */
-const GROUPED_TYPES: ReadonlySet<string> = new Set(['radio', 'selectboxes', 'ranking', 'matrix'])
+const GROUPED_TYPES: ReadonlySet<string> = new Set(['radio', 'selectboxes', 'ranking', 'matrix', 'repeater'])
 
 export function createFormEngine(options: FormEngineOptions): FormEngine {
   const { schema } = options
@@ -288,6 +293,8 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
   const staticNodes: FieldNode[] = []
   const repeaters: RepeaterNode[] = []
   const pageDefs: Array<{ key: string; def: FieldDef }> = []
+  /** Groups by wire, for what a rule hiding one does to the answers in it. */
+  const groupDefs = new Map<string, FieldDef>()
   let pageCount = 0
 
   function walk(defs: readonly FieldDef[], parent: Path, page: number): void {
@@ -296,6 +303,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
         pageDefs.push({ key: def.key, def })
         walk(def.fields ?? [], parent, pageCount++)
       } else if (def.type === 'group') {
+        groupDefs.set(formatPath([...parent, def.key]), def)
         walk(def.fields ?? [], [...parent, def.key], page)
       } else if (def.type === 'repeater') {
         const path = [...parent, def.key]
@@ -328,76 +336,15 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
     }
   }
 
-  /** A row is an object unless something wrote the array by hand. */
-  function isRowObject(row: unknown): row is Record<string, unknown> {
-    return typeof row === 'object' && row !== null && !Array.isArray(row)
-  }
-
-  function currentRowCount(repeater: RepeaterNode): number {
-    const value = store.get(repeater.path)
-    return Array.isArray(value) ? value.length : 0
-  }
-
-  function currentRows(repeater: RepeaterNode): readonly unknown[] {
-    const value = store.get(repeater.path)
-    return Array.isArray(value) ? value : []
-  }
-
-  /**
-   * One counter per repeater, monotonic for the engine's lifetime. It is never
-   * decremented on removal, so a deleted row's id is never reissued — a new row
-   * wearing a dead row's id would be indistinguishable from it in any export or
-   * audit trail that recorded the first.
-   *
-   * A counter rather than a random id because the engine has no ambient
-   * randomness to draw on (see docs/decisions/0019-injected-capabilities.md),
-   * and uniqueness is only ever needed within one repeater of one submission.
-   */
-  const rowIdCounters = new Map<string, number>()
-
-  function mintRowId(repeater: RepeaterNode): string {
-    const next = (rowIdCounters.get(repeater.wire) ?? 0) + 1
-    rowIdCounters.set(repeater.wire, next)
-    return `${ROW_ID_PREFIX}${String(next)}`
-  }
-
-  /**
-   * Give every row an id, keeping any that arrived with the data.
-   *
-   * Data written before rows had identity is not stranded: it is adopted on
-   * load. An id that IS present is kept, because a draft, a log or an export
-   * may already refer to it — and the counter is advanced past it so the next
-   * row cannot collide with what is already there.
-   */
-  function adoptRowIds(repeater: RepeaterNode): void {
-    const rows = currentRows(repeater)
-    if (rows.length === 0) return
-
-    let highest = rowIdCounters.get(repeater.wire) ?? 0
-    for (const row of rows) {
-      const existing = isRowObject(row) ? row[ROW_ID] : undefined
-      if (typeof existing !== 'string') continue
-      const suffix = existing.startsWith(ROW_ID_PREFIX)
-        ? Number.parseInt(existing.slice(ROW_ID_PREFIX.length), 10)
-        : Number.NaN
-      if (Number.isInteger(suffix) && suffix > highest) highest = suffix
-    }
-    rowIdCounters.set(repeater.wire, highest)
-
-    const adopted = rows.map((row) => {
-      const base = isRowObject(row) ? row : {}
-      if (typeof base[ROW_ID] === 'string') return row
-      return { ...base, [ROW_ID]: mintRowId(repeater) }
-    })
-    if (adopted.some((row, index) => row !== rows[index])) store.set(repeater.path, adopted)
-  }
-
   /** Every field that exists RIGHT NOW: static fields plus one template
-   *  instantiation per existing row. */
-  function activeNodes(): FieldNode[] {
+   *  instantiation per existing row — and, for what is validated, touched and listed
+   *  as an error, each repeater itself just before its rows, since it has bounds,
+   *  requiredness and rules of its own (0184). */
+  function activeNodes(withRepeaters = false): FieldNode[] {
     const nodes = [...staticNodes]
     for (const repeater of repeaters) {
-      const count = currentRowCount(repeater)
+      if (withRepeaters) nodes.push(repeater)
+      const count = rows.count(repeater)
       for (let row = 0; row < count; row++) {
         walkTemplate(repeater.def.fields ?? [], [...repeater.path, row], repeater.page, nodes)
       }
@@ -643,6 +590,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
   const computed = computedTargets(allRules)
   const store = createValueStore(withoutComputedValues(options.initialValue ?? {}, computed))
   const interaction = createInteractionState()
+  const rows = createRows(store, interaction)
   const errorsByWire = new Map<string, string[]>()
   const serverErrorsByWire = new Map<string, string[]>()
 
@@ -651,6 +599,10 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
   const hiddenWires = new Set<string>()
   const disabledWires = new Set<string>()
   const requiredWires = new Set<string>()
+  // Inherited: what a rule hides or disables, it hides or disables whole — a group with
+  // the fields in it, a repeater with its rows (0184).
+  const hiddenAt = (path: Path): boolean => withinAny(hiddenWires, path)
+  const disabledAt = (path: Path): boolean => withinAny(disabledWires, path)
 
   const snapshotCache = new Map<string, FieldSnapshot>()
   const fieldListeners = new Map<string, Set<() => void>>()
@@ -756,7 +708,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
         const repeater = repeaterByWire.get(wire.slice(0, bracket))
         if (!repeater) continue
         const index = Number(wire.slice(bracket + 1, wire.indexOf(']', bracket)))
-        if (index >= currentRowCount(repeater)) {
+        if (index >= rows.count(repeater)) {
           set.delete(wire)
           dropped.push(wire)
         }
@@ -768,10 +720,12 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
   function applyRules(): void {
     if (compiledRules.length === 0 || applyingRules) return
     applyingRules = true
+    let seeded = false
     try {
       const capabilities: Capabilities = captureCapabilities(capabilitySource!)
       const bag = buildBag()
       const metaChanged: string[] = []
+      const shown: string[] = []
 
       store.transact(() => {
         for (const entry of computedInOrder) {
@@ -787,7 +741,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
           }
 
           const { repeater } = entry.row
-          currentRows(repeater).forEach((row, index) => {
+          rows.of(repeater).forEach((row, index) => {
             const outcome = evaluate(entry.program, rowBag(bag, repeater, row, index), { capabilities })
             if (outcome.ok) store.set(instancePath(entry, index), outcome.value)
           })
@@ -804,10 +758,14 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
             if (visible && wasHidden) {
               hiddenWires.delete(wire)
               metaChanged.push(wire)
+              shown.push(wire)
             } else if (!visible && !wasHidden) {
               hiddenWires.add(wire)
               metaChanged.push(wire)
-              if (resolveNode(path)?.def.clearOnHide !== false) store.remove(path)
+              // A group's and a repeater's own `clearOnHide` too, which a lookup that knew
+              // only leaf fields never read: their answers were cleared whatever it said.
+              const def = resolveNode(path)?.def ?? repeaterByWire.get(wire)?.def ?? groupDefs.get(wire)
+              if (def?.clearOnHide !== false) store.remove(path)
             }
           } else {
             const set = entry.rule.kind === 'required' ? requiredWires : disabledWires
@@ -832,7 +790,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
             )
             continue
           }
-          currentRows(entry.row.repeater).forEach((row, index) => {
+          rows.of(entry.row.repeater).forEach((row, index) => {
             const outcome = evaluate(entry.program, rowBag(bag, entry.row!.repeater, row, index), { capabilities })
             applyMeta(
               entry,
@@ -844,13 +802,27 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
           })
         }
 
+        // A repeater shown again opens as it opened the first time, with its minimum —
+        // not with the rows its hiding cleared and an error for rows nobody removed (0023).
+        for (const repeater of repeaters) {
+          const under = shown.some((wire) => repeater.wire === wire || repeater.wire.startsWith(`${wire}.`))
+          if (under && !hiddenAt(repeater.path)) seeded = rows.topUp(repeater) || seeded
+        }
+
         metaChanged.push(...pruneStaleInstances())
       })
 
-      invalidate(metaChanged)
+      invalidate(withContents(metaChanged))
     } finally {
       applyingRules = false
     }
+    // The rows just seeded are rows like any other, and their own rules run now.
+    if (seeded) applyRules()
+  }
+
+  /** A container's change is its contents' too: hiding a group hides every field in it. */
+  function withContents(wires: readonly string[]): Set<string> {
+    return new Set(wires.length === 0 ? [] : [...wires, ...valueRelated(new Set(wires))])
   }
 
   // ----------------------------------------------------------------- skipping
@@ -1052,7 +1024,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
     // turn — not on the next one, when somebody has already pressed Submit.
     const pagesChanged = applySkips()
     if (pagesChanged.length > 0) {
-      invalidate(pagesChanged)
+      invalidate(withContents(pagesChanged))
       wizardInstance?.refresh()
     }
     applyRules()
@@ -1062,9 +1034,12 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
 
   // -------------------------------------------------------------- validation
 
-  function requiredViolated(node: FieldNode, value: unknown): boolean {
+  /** What the model says about one answer, or about a repeater's rows as a whole. */
+  function modelCodes(node: FieldNode, value: unknown): string[] {
     const required = node.def.required === true || requiredWires.has(node.wire)
-    return required && unanswered(node.def, value)
+    if (node.def.type === 'repeater') return repeaterViolations(node.def, value, required)
+    const codes: string[] = required && unanswered(node.def, value) ? ['required' satisfies BuiltInErrorCode] : []
+    return [...codes, ...modelViolations(node.def, value)]
   }
 
   function runValidation(): ValidationReport {
@@ -1074,10 +1049,11 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
     const capabilities = capabilitySource === undefined ? undefined : captureCapabilities(capabilitySource)
     const bag = compiledRules.length > 0 ? buildBag() : undefined
 
-    for (const node of activeNodes()) {
+    for (const node of activeNodes(true)) {
       // A hidden field is not part of the conversation: not validated,
-      // required or otherwise. The server applies the same reading.
-      if (hiddenWires.has(node.wire)) {
+      // required or otherwise — nor is anything inside a hidden group or a
+      // hidden repeater. The server applies the same reading.
+      if (hiddenAt(node.path)) {
         if (errorsByWire.has(node.wire)) {
           errorsByWire.delete(node.wire)
           changedWires.push(node.wire)
@@ -1086,10 +1062,9 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
       }
 
       const value = store.get(node.path)
-      const codes: string[] = []
-      if (requiredViolated(node, value)) codes.push('required' satisfies BuiltInErrorCode)
-      codes.push(...modelViolations(node.def, value))
+      const codes = modelCodes(node, value)
 
+      // A rule aimed at the repeater itself reads the form's bag, as a field's does.
       const checks = validateByTemplateWire.get(templateWire(node.wire))
       if (checks !== undefined && bag !== undefined && capabilities !== undefined) {
         const repeater = repeaterOf(node.path)
@@ -1099,7 +1074,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
             : rowBag(
                 bag,
                 repeater,
-                currentRows(repeater)[node.path[repeater.path.length] as number],
+                rows.of(repeater)[node.path[repeater.path.length] as number],
                 node.path[repeater.path.length] as number,
               )
         for (const entry of checks) {
@@ -1131,7 +1106,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
   let wizardInstance: Wizard | undefined
 
   function validateOnePage(pageIndex: number): boolean {
-    const pageNodes = activeNodes().filter((node) => node.page === pageIndex)
+    const pageNodes = activeNodes(true).filter((node) => node.page === pageIndex)
     // Pressing next must SHOW the page's problems, so the page gets touched
     // whether or not it validates; later pages stay pristine.
     interaction.touchMany(pageNodes.map((node) => node.path))
@@ -1155,13 +1130,8 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
   for (const repeater of repeaters) {
     // Adopt first: a seeded row must not be handed an id that rows already in
     // the data are using.
-    adoptRowIds(repeater)
-
-    const minimum = repeater.def.minItems ?? 0
-    if (currentRowCount(repeater) >= minimum) continue
-    const rows = [...currentRows(repeater)]
-    while (rows.length < minimum) rows.push({ [ROW_ID]: mintRowId(repeater) })
-    store.set(repeater.path, rows)
+    rows.adopt(repeater)
+    rows.topUp(repeater)
   }
 
   // The first pass: initial visibility and computed values, before anyone asks.
@@ -1169,37 +1139,6 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
   // Which pages are live, before anybody has typed: a form that opens on a page
   // the answers already walk past would open on an empty step.
   applySkips()
-
-  /**
-   * Rewrite the row index in every piece of position-keyed state under one repeater.
-   *
-   * Touched-ness is the only such state today: errors are recomputed from values, so a
-   * row that moved is re-validated where it lands. If a second wire-keyed store is ever
-   * added, it belongs here rather than in each caller.
-   *
-   * `newIndexOf` returns the row's new index, or undefined when the row is gone.
-   */
-  function remapRowState(
-    repeaterWire: string,
-    newIndexOf: (index: number) => number | undefined,
-  ): void {
-    // `items[3].name` under `items`, and only directly under it: a nested repeater's
-    // wires carry their own bracket and are remapped by their own call.
-    const rowOf = new RegExp(`^${escapeForPattern(repeaterWire)}\\[(\\d+)\\]`)
-    interaction.remap((wire) => {
-      const match = rowOf.exec(wire)
-      if (match === null) return wire
-      const index = Number(match[1])
-      const moved = newIndexOf(index)
-      if (moved === undefined) return undefined
-      return `${repeaterWire}[${String(moved)}]${wire.slice(match[0].length)}`
-    })
-  }
-
-  /** A wire is a literal here, not a pattern: `items[0].name` has brackets and a dot. */
-  function escapeForPattern(value: string): string {
-    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  }
 
   return {
     schema: () => schema,
@@ -1213,74 +1152,13 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
       pageDefs.map((page, index) => ({ ...page, skipped: skippedPages.has(index) })),
     value: () => store.root(),
 
-    rowCount: (path) => currentRowCount(requireRepeater(path)),
-
-    addRow(path) {
-      const repeater = requireRepeater(path)
-      store.set(repeater.path, [...currentRows(repeater), { [ROW_ID]: mintRowId(repeater) }])
-    },
-
-    rowId(path, index) {
-      const repeater = requireRepeater(path)
-      const row = currentRows(repeater)[index]
-      if (row === undefined) {
-        throw new RangeError(`No row ${String(index)} in "${repeater.wire}"`)
-      }
-      const id = isRowObject(row) ? row[ROW_ID] : undefined
-      if (typeof id !== 'string') {
-        // adoptRowIds runs for every repeater at construction and addRow mints
-        // one, so a row without an id means something wrote the array directly.
-        throw new Error(`Row ${String(index)} of "${repeater.wire}" has no ${ROW_ID}`)
-      }
-      return id
-    },
-
-    removeRow(path, index) {
-      const repeater = requireRepeater(path)
-      const rows = store.get(repeater.path)
-      if (!Array.isArray(rows) || index < 0 || index >= rows.length) {
-        throw new RangeError(`Cannot remove row ${index} of "${repeater.wire}"`)
-      }
-      store.set(
-        repeater.path,
-        rows.filter((_, i) => i !== index),
-      )
-      // The row's own touched-ness goes with it, and everything after it shifts down.
-      // Without this the state stays with the POSITION: measured, visiting the first of
-      // two required empty rows and removing it left the surviving row -- which nobody
-      // had visited -- reporting touched, invalid, and "required".
-      remapRowState(repeater.wire, (row) =>
-        row === index ? undefined : row > index ? row - 1 : row,
-      )
-    },
-
-    moveRow(path, from, to) {
-      const repeater = requireRepeater(path)
-      const rows = store.get(repeater.path)
-      if (!Array.isArray(rows)) {
-        throw new RangeError(`"${repeater.wire}" holds no rows`)
-      }
-      for (const index of [from, to]) {
-        if (index < 0 || index >= rows.length) {
-          throw new RangeError(`Cannot move row ${index} of "${repeater.wire}"`)
-        }
-      }
-      if (from === to) return
-
-      const moved = [...rows]
-      const [row] = moved.splice(from, 1)
-      moved.splice(to, 0, row)
-      store.set(repeater.path, moved)
-
-      // Each row's touched-ness follows the row. Removing shifts a suffix by one;
-      // moving shifts the whole span between the two positions, so every row it passes
-      // would otherwise inherit a stranger's state.
-      remapRowState(repeater.wire, (index) => {
-        if (index === from) return to
-        if (from < to) return index > from && index <= to ? index - 1 : index
-        return index >= to && index < from ? index + 1 : index
-      })
-    },
+    rowCount: (path) => rows.count(requireRepeater(path)),
+    addRow: (path) => rows.add(requireRepeater(path)),
+    canAddRow: (path) => rows.canAdd(requireRepeater(path)),
+    rowId: (path, index) => rows.id(requireRepeater(path), index),
+    removeRow: (path, index) => rows.remove(requireRepeater(path), index),
+    canRemoveRow: (path) => rows.canRemove(requireRepeater(path)),
+    moveRow: (path, from, to) => rows.move(requireRepeater(path), from, to),
 
     pageOf(path) {
       const node = resolveNode(path) ?? repeaterByWire.get(formatPath(path))
@@ -1293,11 +1171,12 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
       const cached = snapshotCache.get(wire)
       if (cached) return cached
 
-      const node = resolveNode(path)
+      // A repeater answers too: its bounds and its rules give it errors of its own (0184).
+      const node = resolveNode(path) ?? repeaterByWire.get(wire)
       if (!node) throw new Error(`Unknown field "${wire}"`)
 
       const required = node.def.required === true || requiredWires.has(wire)
-      const disabled = disabledWires.has(wire)
+      const disabled = disabledAt(node.path)
       const touched = interaction.isTouched(node.path)
       const errors = Object.freeze([
         ...(errorsByWire.get(wire) ?? NO_ERRORS),
@@ -1312,7 +1191,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
         label: resolveText(schema, node.def.label, locale),
         def: node.def,
         required,
-        visible: !hiddenWires.has(wire),
+        visible: !hiddenAt(node.path),
         disabled,
         readOnly: isComputed(computed, wire),
         touched,
@@ -1356,7 +1235,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
         return visibleErrorsCache
       }
       const list: Array<{ path: string; codes: readonly string[] }> = []
-      for (const node of activeNodes()) {
+      for (const node of activeNodes(true)) {
         if (!interaction.isTouched(node.path)) continue
         const codes = [
           ...(errorsByWire.get(node.wire) ?? NO_ERRORS),
@@ -1402,7 +1281,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
     },
 
     firstInvalid() {
-      for (const node of activeNodes()) {
+      for (const node of activeNodes(true)) {
         if (errorsByWire.has(node.wire) || serverErrorsByWire.has(node.wire)) return node.wire
       }
       return null
@@ -1417,7 +1296,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
     },
 
     submit() {
-      interaction.touchMany(activeNodes().map((node) => node.path))
+      interaction.touchMany(activeNodes(true).map((node) => node.path))
       const report = runValidation()
       return { ok: report.valid, errors: report.errors }
     },

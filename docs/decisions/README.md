@@ -110,8 +110,9 @@ record whose only enforcement is "we remember" says so plainly.
 | [0020](0020-identity-stable-snapshots.md) | Make snapshot identity the reactivity contract | accepted |
 | [0021](0021-engine-owns-aria.md) | The engine owns element ids and ARIA composition | accepted |
 | [0022](0022-fail-open-fail-closed.md) | Fail open on metadata, fail closed on validation | accepted |
-| [0023](0023-model-properties-in-engine.md) | Model properties are honoured by the engine, not by renderers | accepted |
+| [0023](0023-model-properties-in-engine.md) | Model properties are honoured by the engine, not by renderers | accepted; the removal below `minItems` it left to the renderers, refused by 0184 |
 | [0181](0181-a-computed-value-is-the-engines.md) | A computed value is the engine's: nothing else writes it, and its control is read-only | accepted |
+| [0184](0184-a-repeater-is-validated-as-a-field-is.md) | A repeater is validated as a field is, and no row is added or removed past its bounds | accepted |
 
 ### The server
 
@@ -282,5 +283,5 @@ listed under the sections they belong to above.
 | [0176](0176-the-npm-token-is-a-secret-of-the-npm-environment.md) | The npm token is a secret of the `npm` environment, which only release tags reach | accepted |
 | [0177](0177-a-source-may-say-its-list-goes-on.md) | A source may say its list goes on, and a sourced control says only what the person can act on | accepted |
 | [0178](0178-the-rooms-palette-is-published.md) | The admin's palette is published, and the admin imports it like anybody else | accepted |
-| [0182](0182-a-list-is-filled-row-by-row.md) | A scenario fills a list row by row, and a path that is not one answer says what it is | accepted |
+| [0182](0182-a-list-is-filled-row-by-row.md) | A scenario fills a list row by row, and a path that is not one answer says what it is | accepted; `errors` and `visible` at a list's own path, which it refused, let through by 0184 |
 | [0183](0183-no-model-is-an-answer.md) | A deployment with no model says so in a 200, not a 404 | accepted |

@@ -168,13 +168,6 @@ export function modelViolations(def: FieldDef, value: unknown): BuiltInErrorCode
 }
 
 /**
- * Field types whose answer is a list.
- *
- * A repeater is absent on purpose: its rows are fields in their own right and
- * the engine bounds them where it manages them, not here where it would only
- * see an opaque array.
- */
-/**
  * Field types whose answer is ONE option's value.
  *
  * `selectboxes` is absent because its answer is a list; the branch above already
@@ -182,6 +175,14 @@ export function modelViolations(def: FieldDef, value: unknown): BuiltInErrorCode
  */
 const CHOOSER_TYPES = new Set(['select', 'radio'])
 
+/**
+ * Field types whose answer is a list.
+ *
+ * A repeater is absent on purpose: its rows are fields in their own right, and
+ * the list of them is bounded where rows are managed — `repeaterViolations` in
+ * `rows.ts`, with the same `minItems` and `maxItems` codes — not here, where it
+ * would only see an opaque array.
+ */
 const LIST_VALUED = new Set(['selectboxes', 'ranking', 'file'])
 
 /**

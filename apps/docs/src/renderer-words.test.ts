@@ -391,9 +391,22 @@ function tagWords(tag: string, line: number): Found[] {
   return found
 }
 
+/**
+ * `@let name = expression;`, Angular's declaration of a value a template shows later. The
+ * expression may hold a string with a `;` in it, so quotes are walked rather than split on.
+ */
+const LET_DECLARATION = /@let\s+[A-Za-z_$][\w$]*\s*=\s*((?:[^;'"`]|'[^']*'|"[^"]*"|`[^`]*`)*);/g
+
 /** A text node's words, once interpolations are read and control flow is taken out. */
-function textWords(text: string, line: number): Found[] {
+function textWords(node: string, line: number): Found[] {
   const found: Found[] = []
+  // A declared value is read where it is declared, as an interpolation is, and taken out:
+  // left in, its expression read as text — `= s.field.snapshot();` reported as a word. Each
+  // is swapped for as many line breaks as it spanned, so what follows keeps its line.
+  const text = node.replace(LET_DECLARATION, (declaration: string, expression: string, offset: number) => {
+    found.push(...expressionWords(expression, 'screen', line + lineAt(node, offset)))
+    return declaration.replace(/[^\n]/g, ' ')
+  })
   let rest = ''
   let at = 0
   for (;;) {
@@ -556,6 +569,8 @@ describe('the rules the guard reads by', () => {
     expect(inSnippet(template("@if (busy) {<p>{{ busy ? 'Searching…' : '' }}</p>}"))).toEqual([
       'Searching…',
     ])
+    // A value declared to be shown later is read where it is declared.
+    expect(inSnippet(template("@let word = busy ? 'Searching…' : ''; <p>{{ word }}</p>"))).toEqual(['Searching…'])
   })
 
   test('and leaves alone what is for the browser, the compiler or a comparison', () => {
@@ -570,6 +585,7 @@ describe('the rules the guard reads by', () => {
     const template = `@Component({ selector: 'x-y', template: \`
       <!-- A comment says anything it likes. -->
       @if (entry.state === 'failed') {
+        @let field = state.field.snapshot();
         <button type="button">{{ 'form.retry' | formancyText: { name: entry.name } }}</button>
         <span aria-hidden="true">&times;&ngsp;</span>
       }

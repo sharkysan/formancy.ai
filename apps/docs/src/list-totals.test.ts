@@ -14,12 +14,14 @@ import type { FormSchema, LogicRule } from '@formancy/spec'
  * page did not say so: it listed no functions at all. The list it gives now is the
  * allow-list the engine enforces, read from `KIND_POLICIES`, and the workaround it gives
  * is taken out of the page and run, because a workaround written from reasoning is the
- * kind of advice that is wrong in the one detail that matters. This one was: the obvious
- * cap, `maxItems` on the repeater, caps nothing, and the obvious place for a rule that
- * caps it, the repeater, runs nothing.
+ * kind of advice that is wrong in the one detail that matters. This one was, when it was
+ * first written: the obvious cap, `maxItems` on the repeater, capped nothing, and the
+ * obvious place for a rule that caps it, the repeater, ran nothing. These cases asserted
+ * both so that enforcing either would fail them, which is what happened on 2026-10-18
+ * (0184); they now hold the cap the page gives instead.
  *
- * When a case here fails because the engine changed — a `sum` arrived, a repeater's
- * `maxItems` came to be enforced — the page is what is out of date, not the case.
+ * When a case here fails because the engine changed — a `sum` arrived, a repeater's bound
+ * stopped being enforced — the page is what is out of date, not the case.
  */
 const here = dirname(fileURLToPath(import.meta.url))
 const page = readFileSync(join(here, 'content', 'docs', 'concepts', 'logic.md'), 'utf8')
@@ -120,12 +122,28 @@ function replay(rules: readonly unknown[], fees: readonly unknown[], repeater: R
   return { total: (engine.value() as { total?: unknown }).total, errors: outcome.errors }
 }
 
-/** The rules in the page's own example, taken out of its code block. */
-function pageRules(): LogicRule[] {
-  const text = section('No function adds up a list')
-  const block = /```jsonc\n([\s\S]*?)\n```/.exec(text)?.[1]
-  expect(block, 'the workaround has no jsonc block').toBeDefined()
-  return JSON.parse(`[${block!}]`) as LogicRule[]
+/** The page's own example, taken out of its two code blocks: the repeater, then the rules. */
+function pageExample(): { repeater: Record<string, unknown>; rules: LogicRule[] } {
+  const blocks = [...section('No function adds up a list').matchAll(/```jsonc\n([\s\S]*?)\n```/g)].map(
+    (match) => match[1]!,
+  )
+  expect(blocks, 'the workaround is a repeater and its rules, one block each').toHaveLength(2)
+  const [repeater, rules] = blocks as [string, string]
+  return {
+    repeater: JSON.parse(repeater) as Record<string, unknown>,
+    rules: JSON.parse(`[${rules}]`) as LogicRule[],
+  }
+}
+
+/** The rules in the page's own example. */
+const pageRules = (): LogicRule[] => pageExample().rules
+
+/** The repeater's properties the page sets, beside the key, type and fields `feeForm` has. */
+function pageBounds(): Record<string, unknown> {
+  const { key, type, fields, ...bounds } = pageExample().repeater
+  // The page's repeater is the one these forms hold, or its bound is about another list.
+  expect({ key, type, fields }).toEqual({ key: 'fees', type: 'repeater', fields: [{ key: 'amount', type: 'number' }] })
+  return bounds
 }
 
 const FOUR_FEES = [{ amount: 10 }, { amount: 20 }, { amount: 30 }, { amount: 40 }]
@@ -158,17 +176,20 @@ describe('what logic.md says about adding up a list', () => {
 
   test('its example totals the rows it names, and refuses one more', () => {
     // The workaround, run as the server runs it. A total that read one row too few, or a
-    // cap rule that refused nothing, would be advice that stores a wrong total.
+    // cap that refused nothing, would be advice that stores a wrong total.
     const rules = pageRules()
-    expect(replay(rules, [{ amount: 10 }, { amount: 20.5 }, { amount: null }])).toEqual({ total: 30.5, errors: {} })
-    expect(replay(rules, FOUR_FEES).errors).toEqual({ total: [expect.any(String)] })
+    expect(replay(rules, [{ amount: 10 }, { amount: 20.5 }, { amount: null }], pageBounds())).toEqual({
+      total: 30.5,
+      errors: {},
+    })
+    expect(replay(rules, FOUR_FEES, pageBounds()).errors).toEqual({ fees: ['maxItems'] })
   })
 
   test('its example totals a row nobody has typed into as nothing, in the browser', async () => {
     // A row the add button made has no `amount` at all, which is not the `null` the replay
     // above was handed; a term that errored there would leave the total unwritten while the
     // person types. Read after the microtask the engine evaluates in, as a renderer reads it.
-    const engine = createFormEngine({ schema: feeForm(pageRules()), capabilities: CLOCK })
+    const engine = createFormEngine({ schema: feeForm(pageRules(), pageBounds()), capabilities: CLOCK })
     engine.addRow(['fees'])
     engine.addRow(['fees'])
     engine.setValue(['fees', 1, 'amount'], 12.5)
@@ -176,29 +197,32 @@ describe('what logic.md says about adding up a list', () => {
     expect(engine.getFieldSnapshot(['total']).value).toBe(12.5)
   })
 
-  test('without its rule, a fourth row is stored and left out of the total', () => {
-    // Why the rule is there: `maxItems` on the repeater refuses nothing. The engine adds a
-    // row past it when asked, which is what both renderers' add buttons do, and the replay
-    // accepts the submission. When this fails, `maxItems` is enforced and the paragraph
-    // that says it is not is wrong.
-    const total = pageRules().filter((rule) => rule.kind === 'computed')
-    expect(replay(total, FOUR_FEES, { maxItems: 3 })).toEqual({ total: 60, errors: {} })
+  test('its cap is the one the total names, and no row is added past it', () => {
+    // The page sets `maxItems` to the rows its total writes out. One more than that and a
+    // fourth fee is stored and left out of the total; one fewer and a fee the total could
+    // count is refused. And the engine adds no row past it, so neither renderer offers one.
+    const named = pageRules()
+      .find((rule) => rule.kind === 'computed')!
+      .cel!.match(/size\(fees\) > \d+/g)!.length
+    expect(pageBounds()).toEqual({ maxItems: named })
 
-    const engine = createFormEngine({ schema: feeForm(total, { maxItems: 3 }), capabilities: CLOCK })
-    for (let row = 0; row < 4; row += 1) engine.addRow(['fees'])
-    expect(engine.rowCount(['fees'])).toBe(4)
+    const engine = createFormEngine({ schema: feeForm(pageRules(), pageBounds()), capabilities: CLOCK })
+    for (let row = 0; row < named; row += 1) engine.addRow(['fees'])
+    expect(engine.canAddRow(['fees'])).toBe(false)
+    expect(() => engine.addRow(['fees'])).toThrow(RangeError)
+    expect(engine.rowCount(['fees'])).toBe(named)
   })
 
-  test('the rule goes on the total, because one on the repeater is never run', () => {
-    // The obvious target is the repeater, and a `validate` rule there is accepted and
-    // evaluates nothing: the engine validates fields, and a repeater is not one. When this
-    // fails, the page's "not on the repeater" is out of date.
-    const cap = pageRules().find((rule) => rule.kind === 'validate')!
-    const onRepeater = [
-      ...pageRules().filter((rule) => rule.kind === 'computed'),
-      { ...cap, target: 'fees' },
-    ]
-    expect(replay(onRepeater, FOUR_FEES).errors).toEqual({})
+  test('the cap the page used to give still refuses the same row', () => {
+    // A form written from the page before 2026-10-18 carries a `validate` rule on the total
+    // and no `maxItems`. The page says it keeps working, under the total rather than on the
+    // repeater; and the same rule aimed at the repeater, which the page said was never run,
+    // is run now and refuses there.
+    const total = pageRules().filter((rule) => rule.kind === 'computed')
+    const cap = { target: 'total', kind: 'validate', cel: 'size(fees) <= 3', code: 'tooManyFees' } as LogicRule
+    expect(section('No function adds up a list')).toContain(`\`${cap.cel!}\``)
+    expect(replay([...total, cap], FOUR_FEES).errors).toEqual({ total: ['tooManyFees'] })
+    expect(replay([...total, { ...cap, target: 'fees' }], FOUR_FEES).errors).toEqual({ fees: ['tooManyFees'] })
   })
 
   test('the number of rows the page names is the most its shape compiles to', () => {

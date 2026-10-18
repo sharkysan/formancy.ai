@@ -10,6 +10,10 @@ export interface RepeaterBinding {
   rowCount: Signal<number>
   /** Stable per-row keys, in row order. Never track a row by its index. */
   rowIds: Signal<readonly string[]>
+  /** Whether the engine would add a row: under the repeater's `maxItems`, or unbounded. */
+  canAdd: Signal<boolean>
+  /** Whether the engine would remove a row: above the repeater's `minItems`. */
+  canRemove: Signal<boolean>
   addRow(): void
   removeRow(index: number): void
   /** Move a row. The keyboard route to reordering; a drag is a second route to this. */
@@ -51,6 +55,16 @@ export function injectRepeater(path: string | Path): RepeaterBinding {
     rowIds: computed(() => {
       version()
       return Array.from({ length: rowCount() }, (_, index) => engine.rowId(parsed, index))
+    }),
+    // Asked of the engine rather than worked out here from the count and the definition,
+    // so the button a renderer offers is the row the engine would add (0184).
+    canAdd: computed(() => {
+      rowCount()
+      return engine.canAddRow(parsed)
+    }),
+    canRemove: computed(() => {
+      rowCount()
+      return engine.canRemoveRow(parsed)
     }),
     addRow: () => engine.addRow(parsed),
     removeRow: (index) => engine.removeRow(parsed, index),

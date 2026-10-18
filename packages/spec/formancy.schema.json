@@ -116,7 +116,7 @@
     },
     "required": {
      "title": "Required",
-     "description": "Whether the form can be sent without an answer to this field. Turning this on for a field that already exists invalidates the submissions that left it empty, so publishing reports it as a lossy change.",
+     "description": "Whether the form can be sent without an answer to this field — for a repeater, without a row. Turning this on for a field that already exists invalidates the submissions that left it empty, so publishing reports it as a lossy change.",
      "type": "boolean",
      "default": false
     },
@@ -206,14 +206,14 @@
       "properties": {
        "minItems": {
         "title": "Minimum rows",
-        "description": "How many rows the form opens with and will not go below. A repeater that promises one row shows one empty row, not an add button and a shrug.",
+        "description": "How many rows the form opens with and will not go below: no row is removed past it, and a repeater a rule hid opens with it again. A repeater that promises one row shows one empty row, not an add button and a shrug.",
         "type": "integer",
         "minimum": 0,
         "maximum": 1000
        },
        "maxItems": {
         "title": "Maximum rows",
-        "description": "How many rows a person may add.",
+        "description": "How many rows the repeater may hold. No add button is offered past it, and a submission with more rows is refused.",
         "type": "integer",
         "minimum": 1,
         "maximum": 1000

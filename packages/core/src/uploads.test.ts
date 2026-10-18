@@ -413,6 +413,8 @@ describe('the uploads of a file field', () => {
     uploads.sender = (file, attempt) => upload(file, attempt) as never
     uploads.queue.add([picked('taxi.pdf')])
 
+    // A third row first: the repeater opens at its `minItems` of two and goes no lower.
+    engine.addRow(['items'])
     engine.removeRow(['items'], 0)
     calls[0]!.resolve(receipt('taxi') as never)
     await settle()

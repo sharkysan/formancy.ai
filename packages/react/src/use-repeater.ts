@@ -7,6 +7,10 @@ export interface RepeaterBinding {
   rowCount: number
   /** Stable per-row keys, in row order. Never key a row by its index. */
   rowIds: readonly string[]
+  /** Whether the engine would add a row: under the repeater's `maxItems`, or unbounded. */
+  canAdd: boolean
+  /** Whether the engine would remove a row: above the repeater's `minItems`. */
+  canRemove: boolean
   addRow(): void
   removeRow(index: number): void
   /** Move a row. The keyboard route to reordering; a drag is a second route to this. */
@@ -30,6 +34,12 @@ export function useRepeater(path: string | Path): RepeaterBinding {
   )
   const getRowCount = useCallback(() => engine.rowCount(parsed), [engine, parsed])
   const rowCount = useSyncExternalStore(subscribe, getRowCount, getRowCount)
+  // Asked of the engine rather than worked out here from the count and the definition, so
+  // the button a renderer offers is the row the engine would add (0184).
+  const getCanAdd = useCallback(() => engine.canAddRow(parsed), [engine, parsed])
+  const canAdd = useSyncExternalStore(subscribe, getCanAdd, getCanAdd)
+  const getCanRemove = useCallback(() => engine.canRemoveRow(parsed), [engine, parsed])
+  const canRemove = useSyncExternalStore(subscribe, getCanRemove, getCanRemove)
 
   const addRow = useCallback(() => engine.addRow(parsed), [engine, parsed])
   const removeRow = useCallback((index: number) => engine.removeRow(parsed, index), [engine, parsed])
@@ -57,7 +67,7 @@ export function useRepeater(path: string | Path): RepeaterBinding {
   const rowIds = useMemo(() => (rowIdList === '' ? [] : rowIdList.split(' ')), [rowIdList])
 
   return useMemo(
-    () => ({ rowCount, rowIds, addRow, removeRow, moveRow }),
-    [rowCount, rowIds, addRow, removeRow, moveRow],
+    () => ({ rowCount, rowIds, canAdd, canRemove, addRow, removeRow, moveRow }),
+    [rowCount, rowIds, canAdd, canRemove, addRow, removeRow, moveRow],
   )
 }

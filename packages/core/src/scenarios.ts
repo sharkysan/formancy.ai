@@ -62,6 +62,9 @@ export interface Scenario {
    * row when the list does not have it yet, so a list is filled one answer at a
    * time. A list, a group, a row or a page is not a key, and naming one fails
    * saying which it is ([0182](../../../docs/decisions/0182-a-list-is-filled-row-by-row.md)).
+   * The one exception is what the engine says at a list itself: `errors` and
+   * `visible` may name it, as `{ "items": ["maxItems"] }`
+   * ([0184](../../../docs/decisions/0184-a-repeater-is-validated-as-a-field-is.md)).
    */
   readonly changes: Readonly<Record<string, unknown>>
   /** Whether the form validates afterwards. */
@@ -183,17 +186,31 @@ export function runScenarios(
      * or a page is something the form has, and calling it a rename sends somebody
      * looking for one rather than telling them how to name what is in it.
      */
-    const named = [
-      ...Object.keys(scenario.changes),
-      ...Object.keys(scenario.errors ?? {}),
-      ...Object.keys(scenario.visible ?? {}),
-      ...Object.keys(scenario.values ?? {}),
-      ...(scenario.absent ?? []),
-    ]
-    for (const path of [...new Set(named)]) {
-      if (known(path)) continue
-      failures.push({ about: 'path', detail: notOneAnswer(schema, path, known) })
+    /*
+     * A list has a snapshot of its own, for what the engine says at the list itself — its
+     * bounds' errors and the rules' aimed at it, and whether a rule hides it (0184) — so
+     * `errors` and `visible` may name one. Set, or expected as a value or as absent, it is
+     * still named as one answer, which it is not: a list is filled row by row (0182).
+     */
+    const lists = new Set(engine.repeaterPaths())
+    const asAnswer = (path: string): boolean => {
+      try {
+        return !lists.has(formatPath(parsePath(path)))
+      } catch {
+        return true
+      }
     }
+    const named: Array<[string, boolean]> = [
+      ...Object.keys(scenario.changes).map((path): [string, boolean] => [path, true]),
+      ...Object.keys(scenario.errors ?? {}).map((path): [string, boolean] => [path, false]),
+      ...Object.keys(scenario.visible ?? {}).map((path): [string, boolean] => [path, false]),
+      ...Object.keys(scenario.values ?? {}).map((path): [string, boolean] => [path, true]),
+      ...(scenario.absent ?? []).map((path): [string, boolean] => [path, true]),
+    ]
+    const refused = new Set(
+      named.filter(([path, answer]) => !known(path) || (answer && !asAnswer(path))).map(([path]) => path),
+    )
+    for (const path of refused) failures.push({ about: 'path', detail: notOneAnswer(schema, path, known) })
 
     if (failures.length > 0) return { name: scenario.name, passed: false, failures }
 
@@ -229,7 +246,7 @@ export function runScenarios(
      * so `visible` on a row the list does not have held — green about a field nobody can
      * see. The rows there now are the ones it can be asked about.
      */
-    const present = new Set(engine.fieldPaths())
+    const present = new Set([...engine.fieldPaths(), ...lists])
     for (const [path, want] of Object.entries(scenario.visible ?? {})) {
       if (!present.has(formatPath(parsePath(path)))) {
         failures.push({

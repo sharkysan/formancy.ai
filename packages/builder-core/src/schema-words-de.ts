@@ -13,8 +13,8 @@ import type { SchemaWords } from './messages.js'
  */
 export const SCHEMA_WORDS_DE: SchemaWords = {
   Required: 'Pflichtfeld',
-  'Whether the form can be sent without an answer to this field. Turning this on for a field that already exists invalidates the submissions that left it empty, so publishing reports it as a lossy change.':
-    'Ob das Formular ohne Antwort auf dieses Feld abgeschickt werden kann. Bei einem bestehenden Feld macht das Einschalten die Einsendungen ungültig, die es leer gelassen haben – das Veröffentlichen meldet es deshalb als verlustbehaftete Änderung.',
+  'Whether the form can be sent without an answer to this field — for a repeater, without a row. Turning this on for a field that already exists invalidates the submissions that left it empty, so publishing reports it as a lossy change.':
+    'Ob das Formular ohne Antwort auf dieses Feld abgeschickt werden kann – bei einer Wiederholung: ohne Zeile. Bei einem bestehenden Feld macht das Einschalten die Einsendungen ungültig, die es leer gelassen haben – das Veröffentlichen meldet es deshalb als verlustbehaftete Änderung.',
   'Clear when hidden': 'Beim Verbergen leeren',
   'What happens to an answer when a rule hides its field. On (the default), the answer is removed from the submission, so a hidden branch cannot carry data. Off, the answer is kept and comes back when the field reappears.':
     'Was mit einer Antwort geschieht, wenn eine Regel ihr Feld verbirgt. Ein (der Standard): Die Antwort wird aus der Einsendung entfernt, sodass ein verborgener Zweig keine Daten mitführen kann. Aus: Die Antwort bleibt und kommt zurück, wenn das Feld wieder erscheint.',
@@ -97,10 +97,11 @@ export const SCHEMA_WORDS_DE: SchemaWords = {
   'How many points one answer may carry across all its strokes. An unbounded point list is a payload amplifier, so this has a ceiling like everything else here.':
     'Wie viele Punkte eine Antwort über alle Striche hinweg enthalten darf. Eine unbegrenzte Punktliste vervielfacht die Datenmenge, also hat auch sie eine Obergrenze wie alles andere hier.',
   'Minimum rows': 'Mindestanzahl Zeilen',
-  'How many rows the form opens with and will not go below. A repeater that promises one row shows one empty row, not an add button and a shrug.':
-    'Mit wie vielen Zeilen das Formular beginnt und unter wie viele es nicht fällt. Eine Wiederholung, die eine Zeile verspricht, zeigt eine leere Zeile – nicht einen Hinzufügen-Knopf und ein Achselzucken.',
+  'How many rows the form opens with and will not go below: no row is removed past it, and a repeater a rule hid opens with it again. A repeater that promises one row shows one empty row, not an add button and a shrug.':
+    'Mit wie vielen Zeilen das Formular beginnt und unter wie viele es nicht fällt: Darunter wird keine Zeile entfernt, und eine Wiederholung, die eine Regel verborgen hat, beginnt wieder damit. Eine Wiederholung, die eine Zeile verspricht, zeigt eine leere Zeile – nicht einen Hinzufügen-Knopf und ein Achselzucken.',
   'Maximum rows': 'Höchstanzahl Zeilen',
-  'How many rows a person may add.': 'Wie viele Zeilen jemand hinzufügen darf.',
+  'How many rows the repeater may hold. No add button is offered past it, and a submission with more rows is refused.':
+    'Wie viele Zeilen die Wiederholung haben darf. Darüber hinaus wird kein Hinzufügen-Knopf angeboten, und eine Einsendung mit mehr Zeilen wird abgewiesen.',
   'Add button label': 'Beschriftung des Hinzufügen-Knopfs',
   'The accessible name of the control that adds a row.':
     'Der zugängliche Name des Bedienelements, das eine Zeile hinzufügt.',

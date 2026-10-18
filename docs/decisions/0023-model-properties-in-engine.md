@@ -11,6 +11,11 @@
   across renderers: its first step expects `contacts[0].name` and
   `contacts[0].email` to be visible before any `addItem`, and that fixture runs
   through both renderer drivers ([0033](0033-one-suite-n-drivers.md)).
+- **History:** the clean-up this record calls incomplete was finished on 2026-10-18. The
+  Angular effect is gone, `removeRow` refuses to go below `minItems`, and a repeater a rule
+  hid and cleared opens again with its minimum, in the engine
+  ([0184](0184-a-repeater-is-validated-as-a-field-is.md)). The paragraph under *What it costs*
+  that says otherwise describes the code before that, and is left as it was written.
 
 ## Context
 

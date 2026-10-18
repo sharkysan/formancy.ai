@@ -63,6 +63,7 @@ describe('builtinFixtures', () => {
       'a matrix answers one question per row, and a required one needs every row',
       'a paged form drawn with a layout shows the page somebody is on, as the layout arranges it',
       'a ranking stores the order chosen, and starts with nothing in it',
+      'a repeater says when it holds more rows than it allows, or none where one is required',
       'a repeating group validates each item and re-indexes when one is removed',
       'a required field blocks submit until it has a value',
       'a wizard validates the current page on next and the whole form on submit',

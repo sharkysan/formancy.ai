@@ -272,6 +272,82 @@ describe('the walking skeleton, end to end', () => {
   })
 })
 
+describe("a repeater's rows, posted straight at the API", () => {
+  /**
+   * What a repeater is told about its rows, held where it matters: the server replays the
+   * browser's engine, so what the engine did not check this did not either, and a modified
+   * client or a script meets no renderer's missing button (0184). Its own form, so the counts
+   * the cases above take of `contact-us` are untouched.
+   */
+  const fees = {
+    specVersion: '4',
+    id: 'fees',
+    title: 'Fees',
+    model: {
+      fields: [
+        {
+          key: 'fees',
+          type: 'repeater',
+          label: 'Fees',
+          required: true,
+          maxItems: 3,
+          fields: [{ key: 'amount', type: 'number', label: 'Amount' }],
+        },
+      ],
+    },
+    logic: {
+      rules: [{ target: 'fees', kind: 'validate', cel: 'size(fees) != 2', code: 'notTwo' }],
+    },
+  }
+  let feesHash = ''
+
+  beforeAll(async () => {
+    const published = await app.inject({ method: 'POST', url: '/forms', headers: asAdmin(), payload: { path: 'fees', schema: fees } })
+    expect(published.statusCode).toBe(201)
+    feesHash = (published.json() as { schemaHash: string }).schemaHash
+    await app.inject({ method: 'PUT', url: '/f/fees/access', headers: asAdmin(), payload: { submit: 'public' } })
+  })
+
+  const post = async (payload: unknown) =>
+    app.inject({
+      method: 'POST',
+      url: '/f/fees/submissions',
+      headers: { [SCHEMA_HASH_HEADER]: feesHash, ...(await handedOut('fees')) },
+      payload: payload as Record<string, unknown>,
+    })
+  const rows = (count: number) => ({ fees: Array.from({ length: count }, (_, at) => ({ amount: at + 1 })) })
+
+  test('more rows than its maxItems are refused with its code, and nothing is stored', async () => {
+    // Four rows on `maxItems: 3` were stored, as the engine never counted them.
+    const response = await post(rows(4))
+    expect(response.statusCode).toBe(422)
+    expect(response.json()).toEqual({ error: 'invalid', errors: { fees: ['maxItems'] } })
+    const stored = await sql`SELECT count(*)::int AS n FROM submissions s JOIN forms f ON f.id = s.form_id WHERE f.path = 'fees'`
+    expect(stored[0]!['n']).toBe(0)
+  })
+
+  test('no rows, where the repeater is required, are refused', async () => {
+    // Measured on 2026-10-18 by a server-mode submission of none: accepted.
+    for (const payload of [{}, { fees: [] }]) {
+      const response = await post(payload)
+      expect(response.statusCode).toBe(422)
+      expect(response.json()).toEqual({ error: 'invalid', errors: { fees: ['required'] } })
+    }
+  })
+
+  test('a validate rule aimed at the repeater is run, and refuses with its own code', async () => {
+    // Accepted at publish and evaluated nowhere: the rule failed open.
+    const response = await post(rows(2))
+    expect(response.statusCode).toBe(422)
+    expect(response.json()).toEqual({ error: 'invalid', errors: { fees: ['notTwo'] } })
+  })
+
+  test('rows within every bound are stored', async () => {
+    // The premise: a server refusing every repeater would pass the three cases above.
+    expect((await post(rows(3))).statusCode).toBe(201)
+  })
+})
+
 describe('listing and export', () => {
   test('the submissions list is newest first and version-tagged', async () => {
     const response = await app.inject({ method: 'GET', url: '/f/contact-us/submissions', headers: asAdmin() })

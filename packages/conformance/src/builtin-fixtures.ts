@@ -936,6 +936,124 @@ export const builtinFixtures: readonly Fixture[] = [
     ],
   },
   {
+    name: 'a repeater says when it holds more rows than it allows, or none where one is required',
+    description: 'A repeater\'s maxItems and its required are what the data must be, so the engine checks them as it checks a field and the renderer draws the error on the repeater itself: inside its fieldset, in the group\'s description, where a driver reading the group by its legend finds it. The codes are the ones a selectboxes reports for the same questions — maxItems for too many, required for none — because how many answers a question may have is one question however it is asked. Mounted with three rows where two are allowed, which is what a draft or a host\'s own value can bring, since the renderer offers no add button past the maximum. Removing rows clears the error as the rows go, and removing them all brings back the other one: a required repeater needs a row, not a row with something typed in it.',
+    tags: [
+      'repeater',
+      'validation',
+    ],
+    schema: {
+      specVersion: '1',
+      id: 'party',
+      title: 'Who is coming?',
+      model: {
+        fields: [
+          {
+            key: 'guests',
+            type: 'repeater',
+            label: 'Guests',
+            required: true,
+            maxItems: 2,
+            addLabel: 'Add guest',
+            removeLabel: 'Remove guest',
+            fields: [
+              {
+                key: 'name',
+                type: 'text',
+                label: 'Name',
+              },
+            ],
+          },
+        ],
+      },
+    },
+    initialValues: {
+      guests: [
+        {
+          name: 'Ada',
+        },
+        {
+          name: 'Grace',
+        },
+        {
+          name: 'Edsger',
+        },
+      ],
+    },
+    steps: [
+      {
+        submit: true,
+      },
+      {
+        expectSubmit: {
+          status: 'rejected',
+        },
+      },
+      {
+        expectErrors: {
+          guests: [
+            'maxItems',
+          ],
+          'guests[0].name': [],
+        },
+      },
+      {
+        removeItem: {
+          path: 'guests',
+          index: 2,
+        },
+      },
+      {
+        expectNoErrors: true,
+      },
+      {
+        removeItem: {
+          path: 'guests',
+          index: 1,
+        },
+      },
+      {
+        removeItem: {
+          path: 'guests',
+          index: 0,
+        },
+      },
+      {
+        expectErrors: {
+          guests: [
+            'required',
+          ],
+        },
+      },
+      {
+        addItem: 'guests',
+      },
+      {
+        expectNoErrors: true,
+      },
+      {
+        set: {
+          'guests[0].name': 'Ada',
+        },
+      },
+      {
+        submit: true,
+      },
+      {
+        expectSubmit: {
+          status: 'accepted',
+          data: {
+            guests: [
+              {
+                name: 'Ada',
+              },
+            ],
+          },
+        },
+      },
+    ],
+  },
+  {
     name: 'a repeating group validates each item and re-indexes when one is removed',
     description: 'Removing an item is not the same as clearing it: everything after it moves down by one, and so do its values and its messages. A message left behind on contacts[1] after contacts[0] was removed points at a field that is no longer on screen, which is the classic repeater bug and the reason this case pins the indices so hard. The email format rule is row-scoped — it runs once per item with `item` bound to that row — so a bad address in one row must flag that row and no other.',
     tags: [

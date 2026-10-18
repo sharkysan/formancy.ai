@@ -18,6 +18,12 @@
   the list*). `packages/builder-core/src/scenario-drafts.test.ts`: *what a Keep did outranks
   what the run came to* fails with the refusal's old sentence, and *nor can one naming a list
   whole* holds that such a draft is refused.
+- **History:** on 2026-10-18 the engine came to answer at a list's own path — a repeater's
+  bounds and the rules aimed at it are reported there, and a rule hides it whole — so `errors`
+  and `visible` may now name a list, as *An expectation about a list as a whole* below said
+  they would have to ([0184](0184-a-repeater-is-validated-as-a-field-is.md)). Setting a list
+  whole, and `values` or `absent` on one, stay refused as this record decided. That paragraph is
+  left as it was written.
 
 ## Context
 

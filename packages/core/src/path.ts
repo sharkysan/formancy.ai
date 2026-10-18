@@ -84,3 +84,13 @@ export function formatPath(path: Path): string {
 export function templateWire(wire: string): string {
   return wire.replace(/\[\d+\]/, '[]')
 }
+
+/**
+ * Whether `wires` holds the path's own wire or the wire of anything above it — `a`, `a.b`,
+ * `a.b[0]` for `a.b[0].c`. What a rule hides or disables, it does to everything inside.
+ */
+export function withinAny(wires: ReadonlySet<string>, path: Path): boolean {
+  if (wires.size === 0) return false
+  for (let end = 1; end <= path.length; end++) if (wires.has(formatPath(path.slice(0, end)))) return true
+  return false
+}
