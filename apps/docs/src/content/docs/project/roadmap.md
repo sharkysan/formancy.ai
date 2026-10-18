@@ -467,7 +467,9 @@ repository as [Formancy Report](https://github.com/sharkysan/formancy.ai-report)
 separate module that is not free: source-available, and paid in production
 ([0179](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0179-the-paid-modules-are-named-as-not-free.md)).
 The formancy packages themselves still render no PDF. The honest version of that
-feature is not "print the form", and e-signatures still want `signature` first.
+feature is not "print the form". And the `signature` field, shipped in spec 3, is not
+an e-signature: it collects a drawn mark or a typed name, with no identity proof, no
+certificate and no timestamp authority behind it.
 
 **Offline mode.** Expensive, narrow, and it argues with the rule that the server
 is the authority on validity. A form that validated offline and is rejected on
@@ -481,8 +483,10 @@ anything decorative is the consumer's markup through the component registry. Thi
 is a deliberate difference, not a gap.
 
 **Analytics, multi-tenancy, SSO and teams.** The sold tier, by design. The
-open-core line is drawn so that everything a developer needs to adopt formancy is
-free and everything about *operating* it for other people is not.
+open-core line is drawn so that the engine, and everything a developer needs to
+evaluate and adopt formancy, is free. What is sold is *operating* it for other
+people, and the modules built beside it — Formancy Data, Formancy Report and
+Formancy Health ([0179](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0179-the-paid-modules-are-named-as-not-free.md)).
 
 **Agent-facing features.** `@formancy/mcp` already exists, so this is extending
 something rather than starting it.

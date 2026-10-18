@@ -3,7 +3,7 @@ title: What is formancy?
 description: A visual form builder for Angular and React. Conditional fields, validation and your own styling, with one engine running in the browser and on the server. Open source, with an optional self-hosted backend.
 ---
 
-:::caution[Status: beta, version 0.5.0]
+:::caution[Status: beta, version 0.6.0]
 formancy is beta software: **every spec version is frozen; the package APIs are not.**
 
 `specVersion: "4"` — the newest, with the `ranking` and `matrix` field types, the `rating`
@@ -68,12 +68,16 @@ Angular ship byte-identical ARIA wiring.
 **Apache-2.0, with no paywalled essentials.** The spec, engine, renderers,
 conformance suite and self-hostable backend are free forever. The conformance
 suite is itself published, so a third party building a Vue, Svelte or Solid
-renderer can certify against the same behavioural contract.
+renderer can certify against the same behavioural contract. Formancy Data,
+Formancy Report and Formancy Health, modules built on formancy, are not part of
+this: each lives in a repository of its own under a source-available licence —
+free to read, evaluate and develop with, and paid in production
+([0179](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0179-the-paid-modules-are-named-as-not-free.md)).
 
 ## What keeps the renderers honest
 
-Both renderers pass the same [conformance suite](/docs/concepts/conformance/): six
-fixtures, written once as data, executed against each implementation. A driver
+Both renderers pass the same [conformance suite](/docs/concepts/conformance/): its
+fixtures are written once as data and executed against each implementation. A driver
 may locate a control only by **accessible name and role** — never a test id or
 a CSS selector — so a renderer whose markup a screen reader cannot use cannot
 pass the suite either.

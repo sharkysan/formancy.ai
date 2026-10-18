@@ -1,6 +1,6 @@
 {
   "name": "formancy",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "private": true,
   "type": "module",
   "description": "A modern, self-hostable form engine, builder and backend for React and Angular.",

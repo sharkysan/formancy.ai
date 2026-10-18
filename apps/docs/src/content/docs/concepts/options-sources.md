@@ -172,7 +172,9 @@ each empty the list, and a sentence is not held past any of them.
 
 What a control says is decided once, by `optionsStatus` in `@formancy/core/words`, and both
 renderers draw what it returns; the words are in the form's language, English, German or French,
-or a host's own a message at a time
+or a host's own, given a message at a time under the `options.` ids of `FORM_WORDS`. A plain
+select has ids of its own where its sentence differs from the typeahead's, so words a host gave
+the typeahead's sentence do not reach it
 ([0177](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0177-a-source-may-say-its-list-goes-on.md)).
 
 ## A select whose source failed asks again
@@ -213,8 +215,14 @@ server, is drawn in the architecture's
 - **The active option is not scrolled into view**, so a keyboard user arrowing down a long page
   does not see where they are past what the theme's list shows
   ([0072](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0072-a-typeahead-is-a-combobox-over-the-same-answer.md)).
-- **A typeahead asks for a page when it is drawn**, before anybody opens it — one read per sourced
-  field per form opened.
+- **A typeahead asks for a page when it is drawn**, before anybody opens it, if its source has no
+  minimum and the field is enabled — one read per such field per form opened. Over a source with a
+  minimum it asks nothing until somebody types that much.
+- **A `selectboxes` fed by a source**, as tick boxes or as a tag picker. The format allows
+  `optionsSource` on a `selectboxes` from version 3, and the server checks each value submitted
+  as it does a select's, but neither renderer offers the source's rows: React's control reads
+  only the document's options and asks the source nothing; Angular's asks for a page, as a plain
+  select does, and draws none of it. Either shows the question with nothing to choose.
 - **A "Show more" row, or an offset to ask for the next page.** An option that is not an answer
   would be something the person could choose and the field could not store.
 - **Checking the source.** The control believes what it is told: a page that says `more: false`

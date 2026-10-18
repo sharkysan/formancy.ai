@@ -16,8 +16,8 @@ work inside the monorepo instead, clone
 
 :::note[Beta]
 The packages are published with provenance, and their APIs will change before 1.0. The
-*document format* is frozen and stays frozen: `specVersion: "1"`, `"2"` and `"3"` all are,
-and each later version only adds. A reader **refuses** a document from a version it does
+*document format* is frozen and stays frozen: every spec version is, and each later
+version only adds. A reader **refuses** a document from a version it does
 not know rather than ignoring the part it cannot read, so the version a release speaks is
 worth checking against the version a document declares — `MIGRATIONS.md` lists both.
 :::

@@ -41,10 +41,11 @@ curl -O https://raw.githubusercontent.com/sharkysan/formancy.ai/main/compose.pub
 curl -O https://raw.githubusercontent.com/sharkysan/formancy.ai/main/.env.example
 cp .env.example .env          # then follow what it says
 
-FORMANCY_VERSION=v0.2.0 docker compose -f compose.published.yaml up -d
+FORMANCY_VERSION=v0.6.0 docker compose -f compose.published.yaml up -d
 ```
 
-`v0.2.0` is the oldest release with an image; pin the one you want. `FORMANCY_VERSION` has no
+`v0.6.0` is an example: `v0.2.0` is the oldest release with an image, and several sections
+below need `v0.5.0` or newer. Pin the one you want. `FORMANCY_VERSION` has no
 default and compose stops without it, because there is no `latest` tag to fall
 back on. That is deliberate: the
 [SOUP declaration](https://github.com/sharkysan/formancy.ai/blob/main/docs/regulatory/SOUP-DECLARATION.md)

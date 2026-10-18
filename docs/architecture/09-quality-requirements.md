@@ -185,9 +185,9 @@ either way.
 
 **The React figure needs reading carefully rather than reporting as a breach.** 4 kB was
 written for a tree-shaken entry — the design is per-entry `exports` so that
-`@formancy/react/fields/date` pulls only what it needs — and 17.5 kB is the *whole barrel*,
-every field type, the error summary, the resume notice and the wizard included. Those are
-not the same number, and which one the budget meant cannot be settled without running a
+`@formancy/react/fields/date` pulls only what it needs — and the figure in the table is the
+*whole barrel*, every field type, the error summary, the resume notice and the wizard
+included. Those are not the same number, and which one the budget meant cannot be settled without running a
 bundler over a realistic import, which nothing here does.
 
 **The React figure moves when a control is added, and it has three times in a day.**
@@ -222,17 +222,19 @@ queue — a row per file with its bar, cancel, retry and order, and a thumbnail 
 canvas. The queue's decisions are `@formancy/core`'s and counted in that row
 ([0130](../decisions/0130-each-file-is-its-own-upload.md)).
 
-**`@formancy/core` is now 17.8 kB against an 18 kB budget, and that is tight enough to say
-out loud.** The last 0.5 kB is `unknown-paths.ts`, a publish-time check that reports a rule
-reading a path the model does not define
+**`@formancy/core` was once 17.8 kB against an 18 kB budget, and that was tight enough to
+say out loud.** The last 0.5 kB was `unknown-paths.ts`, a publish-time check that reports a
+rule reading a path the model does not define
 ([0097](../decisions/0097-a-publish-may-warn.md)). No browser runs it. It is in `core` because
 `core` is the lowest layer that can see both the spec's model and the expression walker, and
 because the server and the builder's authoring check both want it — but it is measured here,
 in the browser engine's figure, which is the honest place for a cost a renderer pays for
 something it does not use. The per-entry `exports` map means a consumer importing
-`@formancy/core` for the engine alone does not ship it; the figure above is the whole barrel,
-as the React note below explains. The next thing added to this package should either be
-smaller than 0.2 kB or arrive with a decision about splitting the barrel.
+`@formancy/core` for the engine alone does not ship it; the figure in the table is the whole
+barrel, as the React note above explains. This note then asked that the next thing added to
+the package be smaller than 0.2 kB or arrive with a decision about splitting the barrel.
+`runScenarios` arrived without one and took the package over its budget, where the table and
+the notes above it still have it.
 
 The figure is re-measured rather than incremented, which is what `apps/docs/src/bundles.test.ts`
 is for. It has now failed on two consecutive changes before the number was updated — and the
@@ -261,7 +263,9 @@ for it in install size and not in their application bundle, and one who has a co
 pays 6.6 kB brotli for a dependency with none of its own. The 0.4 kB the barrel grew is
 the drawing component, not the encoder.
 
-So the honest position is: **the budget is unverified, not met and not missed.** Writing a
+So the honest position is: **the budgets are measured, and none is enforced.** The core
+figure is over its budget, the React figure cannot be read against its own until somebody
+settles which number 4 kB meant, and nothing fails when either grows. Writing a
 `size-limit` threshold now would mean choosing a number that passes, which is a guard
 written green — the one shape this repository refuses. It is listed as debt in
 [§11](11-risks-and-debt.md) instead.

@@ -8,7 +8,11 @@ platform dependencies become permissible.
 ```
 L5  themes                       CSS only. Nothing depends on these.
     ├─ blueprint.css             light, technical, invalid = leading bar
-    └─ dusk.css                  dark, rounded, invalid = ring
+    ├─ dusk.css                  dark, rounded, invalid = ring
+    ├─ pop.css                   loud, outlined, hard shadow, invalid = sticker
+    ├─ paper.css                 editorial, a line to write on, invalid = italic note
+    ├─ workbench.css             the two builders, through --wb-*; not a form theme (0143)
+    └─ room.css                  the admin's palette: custom properties on :root, no rule (0178)
 ─────────────────────────────────────────────────────────────────────
 L4  unstyled component kits      semantic HTML, zero CSS, a11y-correct
     builder-react                the builder's own UI, on react
@@ -457,17 +461,17 @@ module's item says it is not free beside its own links
 Health's carries HL7's trademark sentence, because its description names FHIR
 ([0180](../decisions/0180-formancy-health-is-named-before-its-first-release.md)).
 
-It has **two pages**, and they are drawn in one shell: `src/shell.css` holds the
-tokens, the type scale and the backdrop, and `src/chrome.tsx` holds the bar, the
-footer and the mark that both render
+Its pages — the landing page, the templates gallery and the Angular form builder — are
+drawn in one shell: `src/shell.css` holds the tokens, the type scale and the backdrop, and
+`src/chrome.tsx` holds the bar, the footer and the mark that every page renders
 ([0106](../decisions/0106-one-shell-for-every-page-of-the-site.md)). The second
 page — the templates gallery — shipped with its own palette, its own font stack
 (naming a family nothing loads), its own navigation and its own footer, which is
 two design systems inside a product whose argument is that a consumer's design
 system owns the markup. The split is structural rather than a copied stylesheet:
-the navigation is one list, so a third page joins every page's bar by existing,
-and the browser gate compares the two pages' computed ground, families and bar
-against **each other** rather than against a literal. The faces come with that shell too,
+the navigation is one list, so a page joins every page's bar by existing, and the
+browser gate compares each other page's computed ground, families and bar against
+**the landing page's** rather than against a literal. The faces come with that shell too,
 from Fontsource's packages rather than a font service, and the playground serves its own
 copy of Monaco's build. The same gate opens one of each kind of page the site serves and
 aborts and names any request to another origin

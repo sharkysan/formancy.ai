@@ -6,10 +6,14 @@
 - **Deciders:** Daniel Bacher
 - **Verified by:** Not mechanically enforced, and it cannot be: where the
   commercial line falls is a promise, not a property of the code. What is
-  checkable is that nothing gates the free side — all ten packages declare
-  `"license": "Apache-2.0"` and `publishConfig.access: "public"`, and the
-  repository contains no licence-key, entitlement or feature-flag code. Nothing
-  fails if a feature moves across the line.
+  checkable is that nothing gates the free side — every published package
+  declares `"license": "Apache-2.0"` and `publishConfig.access: "public"`, and
+  the repository contains no licence-key, entitlement or feature-flag code. Of
+  those, `scripts/verify-licenses.mjs` checks the licence field, and that LICENSE
+  and NOTICE are where each package packs from, on every pull request (`ci.yml`)
+  and again before `release.yml` publishes; the access field and the absence of
+  gating code are checked by nothing. Nothing fails if a feature moves across the
+  line.
 
 ## Context
 

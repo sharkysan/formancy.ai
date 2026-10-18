@@ -39,8 +39,8 @@ now shows a deployment to `npm` in the repository's activity, which is noise and
 
 **What it does not do.** It does not protect against anyone who may push a `v*` tag: they can
 still publish, which is what a tag is for. It does not replace the token with npm's trusted
-publishing, which `RELEASING.md` names as the better destination once a first release exists;
-that would remove the secret altogether, and this would then be moot.
+publishing, which `RELEASING.md` names as the better destination; that would remove the secret
+altogether, and this would then be moot.
 
 ## Alternatives considered
 
@@ -48,8 +48,9 @@ that would remove the secret altogether, and this would then be moot.
 release job but every other workflow on every other branch, which the repository secret reaches.
 
 **Trusted publishing now.** No token at all. Deferred, not rejected: it is configured per package on
-npmjs.com against a package that already exists, and is worth doing after the next release; when
-it lands this record is superseded.
+npmjs.com against a package that already exists, which every `@formancy` package did when read
+from the registry on 2026-10-18, and is worth doing once 0.6.0, the first release through this
+environment, has published; when it lands this record is superseded.
 
 **Required reviewers on the environment.** A second person approves each release run. Not for one
 maintainer: it would be the same person approving their own tag.

@@ -5,7 +5,7 @@ developed under IEC 62304, and who therefore has to record what this software
 is, what it needs, what it is known to get wrong, and what evidence exists that
 it works. Read [`MDR-CONTEXT.md`](MDR-CONTEXT.md) first.
 
-**This document describes version `0.5.0`.** Everything below is true of that
+**This document describes version `0.6.0`.** Everything below is true of that
 version and of no other. Pin an exact version; a range is not characterised
 software, and neither is `latest`.
 
@@ -17,9 +17,9 @@ software, and neither is `latest`.
 | Supplier | the formancy project (open source) |
 | Licence | Apache-2.0 for every package ([0002](../decisions/0002-apache-2-0.md)) |
 | Source | this repository, in full, including tests |
-| Package version | `0.5.0`, published to npm under the `@formancy` scope |
+| Package version | `0.6.0`, published to npm under the `@formancy` scope |
 | Spec version | `"4"`, **frozen as of 0.4.0** ([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)) — the version this release writes and the one this document characterises. Versions `"1"` ([0042](../decisions/0042-freeze-the-spec.md)), `"2"` ([0051](../decisions/0051-spec-2-adds-types.md)) and `"3"` ([0088](../decisions/0088-spec-3-freezes-with-four-constructs.md)) are frozen too and stay readable, so a deployment pinned to any of them is characterising a settled format. No version is open. What each version added, and what freezing one costs, is in [`MIGRATIONS.md`](../../MIGRATIONS.md) |
-| Development stage | beta. 0.1.0 was the first release and predates spec versioning: it pins documents to version 1 and refuses anything later rather than ignoring the property. 0.2.0 reads version 2; 0.3.0 reads version 3; 0.4.0 reads version 4 and **writes** it by default, so a form authored here is refused by a reader pinned to 0.3.0 — loudly, which is the point. 0.5.0 reads and writes version 4 as 0.4.0 does, so the two read each other's documents |
+| Development stage | beta. 0.1.0 was the first release and predates spec versioning: it pins documents to version 1 and refuses anything later rather than ignoring the property. 0.2.0 reads version 2; 0.3.0 reads version 3; 0.4.0 reads version 4 and **writes** it by default, so a form authored here is refused by a reader pinned to 0.3.0 — loudly, which is the point. 0.5.0 and 0.6.0 read and write version 4 as 0.4.0 does, so the three read each other's documents |
 | Integrity | each tarball carries a SLSA v1 provenance attestation issued by GitHub's OIDC identity for the workflow run that built it, plus a registry signature. Verify with `npm audit signatures`. The server image is published to GHCR and **signed by digest**, with the SBOM attached as a CycloneDX attestation — verify with `cosign verify` and `cosign verify-attestation` against the digest rather than the tag, since a tag is mutable. There is deliberately no `latest`, for the reason this table gives two rows down. The pipeline is described in [`RELEASING.md`](../../RELEASING.md) |
 
 The two version lines are independent and both matter. The package version
@@ -230,8 +230,88 @@ here.
 IEC 62304 §7.1.2 asks for the supplier's published anomaly list.
 [`CHANGELOG.md`](../../CHANGELOG.md) is it: every entry says what changed and why, and the
 defects found by review are named there rather than summarised away. What follows is what a
-manufacturer characterising `0.5.0` needs on one page, with the anomalies of earlier releases
-that `0.5.0` fixes, so that one still running them knows what it is upgrading away from.
+manufacturer characterising `0.6.0` needs on one page, with the anomalies of earlier releases
+that `0.5.0` and `0.6.0` fix, so that one still running them knows what it is upgrading away from.
+
+**Every release through `0.5.0` validates nothing a document says about a repeater.** The engine
+validated fields, and a repeater is not one: its `maxItems`, `required` on it, and a `required` or
+`validate` rule whose target is the repeater were accepted at publish and evaluated nowhere, in
+the browser or in the server's replay. A submission with more rows than allowed, or none where
+rows were required, was stored, and a rule aimed at a repeater failed open where validation
+fails closed. Found on 2026-10-18 and recorded before it was fixed. Fixed in `0.6.0`: a repeater
+is validated as a field is, the engine refuses a row added or removed past a bound, and neither
+renderer offers the button. **A short submission is still topped up** with empty rows, as the
+browser opens the form, so `minItems` refuses it only where a field in those rows is required.
+Hazard A1 in [`SAFETY-ANALYSIS.md`](SAFETY-ANALYSIS.md), and
+[0184](../decisions/0184-a-repeater-is-validated-as-a-field-is.md).
+
+**Every release through `0.5.0` hides only what a rule names.** A field inside a group a
+`visible` rule hid was still drawn and validated, so a required one made the form impossible to
+send, the server refusing it too; a repeater's rows on a page the answers walk past were
+validated; and `clearOnHide` on a group or a repeater was read from nothing. Fixed in `0.6.0`: a
+rule hides or disables a group with its fields and a repeater with its rows.
+
+**Every release through `0.5.0` lets a computed field be typed over, and its server store what
+was typed.** The renderers drew a field a `computed` rule writes as an ordinary control, and the
+engine took a value set on it. Where the expression could be evaluated the rule overwrote that
+value at once; where it could not, because an input it reads was still empty, the typed value
+stood. The server replays the same engine, so a total sent with an input it reads left out was
+stored as though computed. Read from each release's engine code, and every case that holds the
+fix failed before it. Fixed in `0.6.0`: only the rule writes a computed field, a value handed in
+— a draft, a prefill, a request body — is dropped before the first pass, the field's snapshot
+says `readOnly`, and both renderers and Material draw its text, paragraph, number, date, time and
+date-and-time controls read-only. **A control with no read-only state of its own** — a tick box,
+a choice, a slider, a picker — is drawn as before; a change in it does not take, though the
+Angular binding can go on showing it, and a `disabled` rule on such a field is the documented
+remedy. Hazard A3 in [`SAFETY-ANALYSIS.md`](SAFETY-ANALYSIS.md), and
+[0181](../decisions/0181-a-computed-value-is-the-engines.md).
+
+**From `0.4.0` through `0.5.0`, an example that names a list is told the form has no such
+field**, and so is one naming a group, a row or a page, in the scenario panes, `check_scenarios`
+and the publish's warnings alike. Worse for an example used as evidence: one expecting a field to
+be visible in a row the list does not have passes, so it vouches for a field nobody can see.
+Fixed in `0.6.0`: the check says what the path names and how to name a row, and that example
+fails ([0182](../decisions/0182-a-list-is-filled-row-by-row.md)).
+
+**Every release from `0.3.0` through `0.5.0` lets a tag picker a rule disabled be changed.** A
+`disabled` rule greys a field out and the field keeps its answer; a renderer holds that by
+disabling the control's elements, because the engine accepts a value set on a disabled field.
+The tag picker draws a list, and a remove button on each chip, outside its text box. Measured in
+jsdom on 2026-10-18, before the fix: in React the remove buttons stayed enabled and a click took
+an answer away, and a list open when the rule landed stayed drawn with rows a click added; in
+Angular the text box was not disabled either, so the field was typed into and chosen from as
+though enabled. Fixed in `0.6.0`: the box and every remove button are disabled with the field,
+and the list is drawn only while the field is enabled. Hazard B6a in
+[`SAFETY-ANALYSIS.md`](SAFETY-ANALYSIS.md).
+
+**Through `0.5.0`, a typeahead a rule disabled can be changed through its list.** A rule landing
+while the list was open left it drawn, and a click on a row changed the answer of a field the
+form had made read-only. Measured in jsdom with the fix taken out, in both renderers; that
+`0.5.0` draws it this way was read from its code. Fixed in `0.6.0`: each typeahead draws its
+list only while its field is enabled ([0177](../decisions/0177-a-source-may-say-its-list-goes-on.md)). Hazard B6a.
+
+**Through `0.5.0`, a list from a source can look complete when it is not.** A source could answer
+rows and nothing else, and the control counted what it was handed, so a source that pages either
+looked complete or claimed a total of `limit + 1`, and a row it matched and could not hand over
+was left out unsaid. A person who does not see the answer that exists picks the nearest one that
+is offered, and the membership check passes it. `0.6.0` lets a source answer a page,
+`{ options, more, withheld? }`, refuses an ambiguous page whole as a source that failed, and never
+calls a list complete that the control cut, that the source said goes on, or from which it
+withheld rows — held by `packages/spec/src/options-source.test.ts`, with a property over answers
+and limits, by `packages/core/src/options-status.test.ts` and by each renderer's
+`options-source` test. **A source written for `0.5.0` gains nothing until it answers pages**, and
+a page that says `more: false` when more rows match is the same defect, which nothing here
+detects. Hazard A7a ([0177](../decisions/0177-a-source-may-say-its-list-goes-on.md)).
+
+**Through `0.5.0`, a sourced control can tell its person to do what they cannot.** As the
+changelog records, measured on `0.5.0`: a plain select said *keep typing to narrow*, *type at
+least 2 characters* and *Type to try again*, though nobody can type into a `<select>`, and a React
+select whose source failed once stayed failed for as long as the form was open; a field a rule
+disabled searched its source and said what it found; and an Angular sourced field searched again
+after a choice and a blur. Fixed in `0.6.0`: what a sourced control says is decided once, by
+`optionsStatus` in `@formancy/core/words`; a plain select has sentences of its own and asks again
+when the person comes back to it after a failure; and a disabled field asks only for the name of
+what it holds and says nothing. Held by each renderer's `options-source` test.
 
 **`0.2.0`, `0.3.0` and `0.4.0` can take an accepted submission's attachment away, and replace
 its bytes.** The `PUT` that receives a file's bytes writes the row back as it read it before
@@ -301,6 +381,18 @@ expressions should read that file rather than this summary.
   over several answers names none of them ([0078](../decisions/0078-a-grid-row-is-flat.md)).
 - Multi-tenancy is absent entirely.
 
+**Found while making `0.6.0`, and not changed by it:**
+
+- **A deployment that configures no options sources checks no sourced answer.** It publishes a
+  document naming any source and asks nothing about a value submitted for one. The server's own
+  `main.ts` composes `createApp` with no sources, so the image as shipped is such a deployment;
+  hazard A7 had said a document naming an unconfigured source is refused at publish, which holds
+  only where the deployment configures some.
+- **A `selectboxes` naming a source draws no rows** in either renderer, though the document is
+  valid and the server checks every value in it (arc42 §11.2).
+- **No expression totals a list.** `sum`, `fold` and their like are refused when the engine is
+  built; the logic page says what a form can do instead.
+
 **The object store cannot be used through either compose file in `0.4.0`**, nor in `0.2.0`
 or `0.3.0`. Both files pass `FORMANCY_FILES_DIR` to the server as a literal path, so a
 deployment that follows the object-store block of `.env.example` hands the server two
@@ -351,7 +443,47 @@ software has. `signature` and `tagpicker` have since left this list the same way
 field type and a spec 3 widget — and the list is checked rather than read. `apps/docs/src/soup.test.ts` now checks every name in this list against the
 format's own vocabulary, so it cannot happen again in that direction.
 
-### Characterised by this document, and new since 0.4.0
+### Characterised by this document, and new since 0.5.0
+
+`0.6.0` reads and writes `specVersion: "4"`, as `0.4.0` and `0.5.0` do, so no document changes,
+and the schema validates what it did: only its `specVersion` default, now `"4"`, and descriptions
+moved. **A deployment's answers change**, though no table or setting does, and a published
+form version is held to them without being republished, because the version is immutable and
+the engine reading it is not. The server refuses a submission a repeater's bounds, `required` on
+it or a rule aimed at it refuses, where it stored it (above, hazard A1); it accepts one it refused
+for a required field inside a hidden group; it stores no value for a computed field that its
+replay did not compute (hazard A3); and `GET /model` on a deployment with no model answers `200`
+naming none, where it answered `404` ([0183](../decisions/0183-no-model-is-an-answer.md)). What a *host* sees is below;
+[`MIGRATIONS.md`](../../MIGRATIONS.md) has what must move.
+
+- **A repeater answers as a field does**: its own path has a snapshot and errors, `addRow` and
+  `removeRow` throw past a bound, and `canAddRow` and `canRemoveRow` say so first
+  ([0184](../decisions/0184-a-repeater-is-validated-as-a-field-is.md)).
+- **A computed field is the engine's.** `setValue` on one does nothing, a value handed in for one
+  is dropped, and its snapshot says `readOnly`
+  ([0181](../decisions/0181-a-computed-value-is-the-engines.md)).
+- **An example's failure says what its path names**, a list, a group, a row or a page, where it
+  said the field does not exist ([0182](../decisions/0182-a-list-is-filled-row-by-row.md)).
+
+- **A source may answer a page**, `{ options, more, withheld? }`, read strictly by
+  `acceptRemoteAnswer` and `capRemoteAnswer` in `@formancy/spec`; a page they refuse is shown as a
+  source that failed ([0177](../decisions/0177-a-source-may-say-its-list-goes-on.md)). A host that calls `resolve` itself gets a list or a page, and
+  code that treated the answer as an array no longer compiles.
+- **What a sourced control says, and when it asks**, decided by `optionsStatus` in
+  `@formancy/core/words`. A plain select has words of its own — `options.cappedListed`,
+  `options.moreListed`, `options.searchOnly` and `options.failedListed` — and a host that reworded
+  the typeahead's sees the shipped words under a plain select until it words the new ones. A field
+  a rule disables asks its source for `labels` alone.
+- **A control a rule disables draws nothing clickable outside its disabled element.** A
+  typeahead's or a tag picker's list is not drawn, and a tag picker's remove buttons are disabled
+  (hazard B6a).
+- **A palette, `@formancy/themes/room.css`**: custom properties on `:root` and
+  `color-scheme: dark`, no rule for an element and no face loaded. It must load after
+  `workbench.css`, since both say `:root`. Its names and values are API from `0.6.0`, and
+  `apps/docs/src/room.test.ts` pins every value
+  ([0178](../decisions/0178-the-rooms-palette-is-published.md)).
+
+### Characterised by an earlier version of this document, and new in 0.5.0
 
 `0.5.0` reads and writes `specVersion: "4"`, as `0.4.0` does, so no document and no stored
 submission changes. What changes what a *deployment* stores, configures or answers is below;
@@ -465,10 +597,10 @@ handed out with one, so that a response sent twice is stored once, and it
 adds no dependency — an HMAC from `@noble/hashes`, already declared above
 ([0169](../decisions/0169-a-response-is-stored-once.md)).)
 
-**`0.4.0` and earlier write no request log; `0.5.0` writes one.** In the earlier releases
+**`0.4.0` and earlier write no request log; from `0.5.0` on the server writes one.** In the earlier releases
 Fastify is constructed with the logger off, so nothing can tell an operator why a request
 failed, and the background workers print a failed pass's error to standard error, unredacted.
-`0.5.0` writes a line per request and per error to standard output, built from a list of
+From `0.5.0` the server writes a line per request and per error to standard output, built from a list of
 fields, with the workers' failures and the database's notices through the same rule
 ([0168](../decisions/0168-the-log-is-built-from-a-list-of-fields.md)); hazard C3 says what it
 holds and what it leaves out. There is no redaction configuration: what a line may carry is the
@@ -495,16 +627,20 @@ viewports and asserts that nothing scrolls sideways, how many columns the pane r
 and the computed `touch-action` of both renderers' signature surfaces with and without a
 theme — and, since 2026-10-09, that a picked image is decoded and drawn as its thumbnail in
 both renderers, at its own shape and within the theme's size. It covers the two mechanisms
-that produced D4a's third instance and D4c, a file field's thumbnail, and nothing wider: no pixel baselines by choice, one engine rather than Safari, and one demo schema
-rather than the conformance suite. A manufacturer relying on visual correctness must still
+that produced D4a's third instance and D4c, a file field's thumbnail, and since then the
+checks `scripts/browser-test.mjs` imports by name: the templates gallery and the Angular page
+drawn in the landing page's shell, both builders laid out alike (D4a), a drop between two nodes
+on the preview, the Material starter's date button, where the relay's suggestions sit, and that
+no page asks another host for anything (C6). Nothing else of appearance: no pixel baselines by
+choice, one engine rather than Safari, and one demo schema rather than the conformance suite. A manufacturer relying on visual correctness must still
 verify it in the browsers it ships to.
 
 ## Verification evidence
 
 | Evidence | Where |
 |---|---|
-| Every automated test in the repository passing at this commit, across ten packages and two applications | `pnpm test`, which prints the count |
-| 29 of those run against a real PostgreSQL instance via Testcontainers, rather than a stub | `packages/server/src/server.integration.test.ts` |
+| Every automated test in the repository passing at this commit, in every package and application that has tests | `pnpm test`, which prints the count |
+| The server's integration suites run against a real PostgreSQL instance, and the object store's against a real Garage, via Testcontainers, rather than a stub | `packages/server/src/*.integration.test.ts` |
 | One behavioural conformance suite executed against the engine, both renderers and the server | `packages/conformance` ([0033](../decisions/0033-one-suite-n-drivers.md)) |
 | Property-based invariants over hide/unhide, repeater identity and evaluation order | `packages/core` |
 | The official CEL corpus, with results pinned | `packages/expressions/CEL-CONFORMANCE.md` |

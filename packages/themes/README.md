@@ -138,7 +138,10 @@ A stylesheet loaded with a plain `<link>` is not rewritten and needs nothing.
 
 ## Writing your own
 
-Copy one and change it. The whole surface is these attributes:
+Copy one and change it. The surface is `data-formancy-part` attributes, and every
+part either renderer emits that has anything to draw is styled in every form theme
+shipped here — `apps/docs/src/themes.test.ts` fails on one that is not — so a copy
+already names them all. These are where to start, not the whole list:
 
 - fields: `field` (with `data-state="invalid|valid"`), `label`, `error`,
   `required-hint`, `radio-option`, `checkbox-option`, `static`

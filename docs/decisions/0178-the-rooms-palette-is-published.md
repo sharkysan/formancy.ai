@@ -53,7 +53,9 @@ statement of the room, and the admin reads it the way an application elsewhere d
 
 **A repository downstream depends on a release instead of a pin.** Its room moves when it
 takes a release of `@formancy/themes`, a bump somebody makes and reviews, and between bumps
-it is the room of the release it names — which is what a copy only claimed to be.
+it is the room of the release it names — which is what a copy only claimed to be. 0.6.0 is
+the first release of `@formancy/themes` to carry `room.css`, so it is the lowest a downstream
+repository can name.
 
 **The names are API now, and a value is a visible change for every importer.** `--client`
 cannot be renamed for the admin's convenience, and a darker `--muted` reaches Report's and
