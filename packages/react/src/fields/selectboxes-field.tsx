@@ -71,7 +71,11 @@ export function TagPickerField({ path, label }: FieldComponentProps) {
   // somebody has already given is offering them a way to do nothing.
   const remaining = options.filter((option) => !chosen.includes(option.value))
   const matches = narrowOptionsByLabel(remaining, query)
-  const expanded = open && matches.length > 0
+  // A field a rule disabled draws no list, whatever the person had open: the list and the
+  // chips' remove buttons are outside the text box, and the engine does not refuse a value
+  // set on a disabled field, so each element is its own guard (B6a). Derived rather than
+  // closed in answer to the rule, as the typeahead's is (0177).
+  const expanded = open && !field.disabled && matches.length > 0
 
   const add = (value: string): void => {
     // Rebuilt in the options' OWN order rather than the order they were chosen,
@@ -116,6 +120,7 @@ export function TagPickerField({ path, label }: FieldComponentProps) {
                   // Named after the answer, not "Remove": a row of identical
                   // buttons is a row a screen reader cannot tell apart.
                   aria-label={text('tagpicker.remove', { option: labelFor(value) })}
+                  disabled={field.disabled}
                   onClick={() => remove(value)}
                 >
                   ×

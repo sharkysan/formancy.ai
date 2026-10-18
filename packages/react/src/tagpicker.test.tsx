@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'vitest'
-import { cleanup, render, screen, within } from '@testing-library/react'
+import { act, cleanup, render, screen, within } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
 import { createFormEngine } from '@formancy/core'
 import type { FormSchema } from '@formancy/spec'
@@ -135,6 +135,67 @@ describe('the chips', () => {
     await user.keyboard('{Enter}')
 
     expect(answers(engine)).toEqual([])
+  })
+})
+
+/*
+ * A `disabled` rule greys a field out and the field keeps its answer. The engine
+ * does not refuse a value set on a disabled field, so the control's elements are
+ * the only guard — and a tag picker draws two kinds outside its text box, the
+ * list and each chip's remove button (hazard B6a). Both cases failed before the
+ * change: the remove button stayed enabled and took an answer away, and a list
+ * open when the rule landed stayed drawn with rows a click stored from.
+ */
+describe('a tag picker a rule disables', () => {
+  const lockable: FormSchema = {
+    ...schema,
+    model: {
+      fields: [...schema.model.fields, { key: 'locked', type: 'checkbox', label: 'Locked' }],
+    },
+    logic: { rules: [{ target: 'topics', kind: 'disabled', cel: 'locked == true' }] },
+  }
+
+  const mountLockable = (initial: Record<string, unknown>): ReturnType<typeof createFormEngine> => {
+    const engine = createFormEngine({
+      schema: lockable,
+      capabilities: { now: () => 0, today: () => '2026-10-18', random: () => 0.5 },
+      initialValue: initial,
+    })
+    render(
+      <FormancyProvider engine={engine}>
+        <FormancyForm onSubmit={() => undefined} />
+      </FormancyProvider>,
+    )
+    return engine
+  }
+
+  test('keeps its answers: no chip can be removed and nothing typed', async () => {
+    const user = userEvent.setup()
+    const engine = mountLockable({ topics: ['a11y'], locked: true })
+
+    const remove = screen.getByRole('button', { name: /remove accessibility/i })
+    expect(remove).toHaveProperty('disabled', true)
+    expect(screen.getByRole('combobox', { name: 'Topics' })).toHaveProperty('disabled', true)
+
+    await user.click(remove)
+    expect(answers(engine)).toEqual(['a11y'])
+  })
+
+  test('draws no list when the rule lands while the list is open', async () => {
+    const user = userEvent.setup()
+    const engine = mountLockable({ topics: [], locked: false })
+
+    const box = screen.getByRole('combobox', { name: 'Topics' })
+    await user.type(box, 'a')
+    expect(screen.getAllByRole('option').length).toBeGreaterThan(0)
+
+    // The rule lands under the open list — a host setting a value, or another field.
+    await act(async () => {
+      engine.setValue(['locked'], true)
+    })
+
+    expect(screen.queryAllByRole('option')).toEqual([])
+    expect(box.getAttribute('aria-expanded')).toBe('false')
   })
 })
 

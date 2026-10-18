@@ -53,6 +53,7 @@ import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
                   type="button"
                   data-formancy-part="tagpicker-remove"
                   [attr.aria-label]="'tagpicker.remove' | formancyText: { option: labelFor(value) }"
+                  [disabled]="field.snapshot().disabled"
                   (click)="remove(value)"
                 >
                   &times;
@@ -73,6 +74,7 @@ import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
             [attr.aria-invalid]="control()['aria-invalid']"
             [attr.aria-required]="control()['aria-required']"
             [attr.aria-describedby]="control()['aria-describedby']"
+            [disabled]="field.snapshot().disabled"
             [attr.aria-expanded]="expanded()"
             [attr.aria-controls]="listboxId()"
             aria-autocomplete="list"
@@ -123,7 +125,15 @@ export class FormancyTagPickerField extends FieldComponentBase {
     ),
   )
 
-  protected readonly expanded = computed(() => this.open() && this.matches().length > 0)
+  /**
+   * A field a rule disabled draws no list, whatever the person had open: the list and the
+   * chips' remove buttons are outside the text box, and the engine does not refuse a value
+   * set on a disabled field, so each element is its own guard (B6a). Derived rather than
+   * closed in answer to the rule, as the typeahead's is (0177).
+   */
+  protected readonly expanded = computed(
+    () => this.open() && !this.field.snapshot().disabled && this.matches().length > 0,
+  )
   protected readonly listboxId = computed(() => `${this.control().id}:listbox`)
 
   protected labelFor(value: string): string {
