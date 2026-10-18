@@ -64,7 +64,7 @@ The data contract, and nothing that evaluates it.
 | `version-ledger.ts` | The spec version every construct arrived in — a document's keys, a field's, an option's, a rule's and a layout node's, every rule kind and layout kind — one table each, keyed by the TypeScript type that lists them, so a construct added without a version is a compile error ([0145](../decisions/0145-a-version-for-everything-a-document-can-say.md)) |
 | `version-errors.ts` | What a document uses that the version it declares does not define, read from the ledger and named in the error. Left `validate.ts` at its size ceiling when spec 4 added fourteen constructs |
 | `option-image.ts` | An option's picture: where it may come from (`isImageSource`, the schema's own pattern, held to it by a test) and where it can be shown (`optionImageRefusal`) — asked by the validator, both renderers and the builder ([0126](../decisions/0126-an-option-may-carry-a-picture.md)) |
-| `options-source.ts` | What a deployment's own source may hand a control, checked once for both renderers. `acceptRemoteOptions` refuses a list whole for one bad row ([0077](../decisions/0077-options-may-come-from-a-named-source.md)); `acceptRemoteAnswer` reads every row or one page that says its list goes on and counts what it withholds, refusing a page whole for anything ambiguous, and `capRemoteAnswer` decides what a control can truthfully say about the rows it does not show ([0177](../decisions/0177-a-source-may-say-its-list-goes-on.md)) |
+| `options-source.ts` | What a deployment's own source may hand a control, checked once for both renderers. `acceptRemoteOptions` refuses a list whole for one bad row ([0077](../decisions/0077-options-may-come-from-a-named-source.md)); `acceptRemoteAnswer` reads every row or one page that says its list goes on and counts what it withholds, refusing a page whole for anything ambiguous, and `capRemoteAnswer` decides what a control can truthfully say about the rows it does not show ([0177](../decisions/0177-a-source-may-say-its-list-goes-on.md)). The flow they sit in, from the browser's search to the server's membership check, is [§6.16](06-runtime-view.md) |
 | `mask.ts` | An input mask: whether an answer fills it, how the control shows it, and `editMasked` — where a typed, deleted or pasted character lands. Here because the engine and both renderers act on a mask and must agree ([0125](../decisions/0125-a-mask-stores-what-was-typed.md)) |
 | `schema-errors.ts` | Every reason a document is refused, by code, in English. An error carries its code and the values its sentence names beside the English, so a builder can say it in another language; `schemaError` takes exactly the values a code's sentence names, checked by the compiler ([0122](../decisions/0122-a-validator-error-has-a-code.md)) |
 | `canonical.ts` | Deterministic serialisation. **Throws** rather than dropping undefined, NaN or Infinity ([0010](../decisions/0010-canonical-hash.md)) |
@@ -133,6 +133,7 @@ Deliberately small, and structurally parallel:
 | The form's own words | `useFormText()`, from `FormancyProvider` | `injectFormText()` and the `formancyText` pipe, from `provideFormancy`, which Material's groups use too |
 | A design system's registry | — | `material/src/` — `@formancy/angular/material`, Angular Material for the types it has an equivalent for, the default control for the rest ([0132](../decisions/0132-material-draws-what-it-has-an-equivalent-for.md)) |
 | File uploads, drawn | `fields/file-field.tsx` | `fields/file-field.ts`, `fields/file-thumbnail.ts` |
+| Options from a source ([§6.16](06-runtime-view.md)) | `options-source.ts`, `use-sourced-options.ts` | `options-source.ts`, `sourced-options.ts` |
 | Conformance driver | `conformance-driver.tsx` | `conformance-driver.ts` |
 
 Neither contains a CSS file. Both resolve labels through the engine rather than
@@ -526,6 +527,10 @@ a form, mints its challenge and takes its submissions, and `server-core/submitti
 hands out, a draft's and a response's, are signed side by side in `server-core/signing.ts`, so
 that what each is signed over can be read together and one cannot stand in for the other. Both
 `app.ts` and `use-cases.ts` came under the budget with it, and left the size test's list.
+`server-core/options-membership.ts` holds `checkMembership`, which `createSubmission` asks after
+the replay and before anything is written whether each sourced answer is one the deployment's
+source offers, and `sourceNamesIn`, which `publishForm` holds a document's lists to
+([§6.16](06-runtime-view.md)).
 What every limit counts
 in is a port of the rate-limit plugin's own: `server/postgres-rate-limits.ts` is the store over
 the database every replica shares, on connections it opens itself so that it cannot hold up

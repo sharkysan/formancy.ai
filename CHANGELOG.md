@@ -21,6 +21,24 @@ first release, which its item does not say, because nothing here could tell when
 being true
 ([0180](docs/decisions/0180-formancy-health-is-named-before-its-first-release.md)).
 
+**Documented: no expression adds up a list, and what a form can do instead.** An agent building a
+demo form found `map` and `filter` and nothing to total a repeater's fees with, and the logic page
+listed no functions that would have told it so. The page now lists every function each kind of
+rule may call, held to the engine's allow-list by `apps/docs/src/list-totals.test.ts`, says there
+is no `sum`, and gives a total written out row by row with a `validate` rule capping the rows — a
+rule, because a repeater's `maxItems` caps nothing yet and a rule aimed at the repeater itself is
+never run. Both were measured while writing it, and are now carried in arc42 §11.2 and hazard A1
+together with `required` on a repeater, which is not enforced either. The test runs the page's
+example rather than trusting it. The roadmap says what a function that adds a list up would take,
+starting with a spec version. No package changes.
+
+**Corrected: hazard A7 said a document naming a source the deployment never configured is refused
+at publish.** It is where the deployment configures any sources. One that configures none publishes
+it and asks no source about any answer, and the server's image is one, since its `main.ts` passes
+`createApp` no sources. A7, the options concept page and a new runtime view of the whole flow from
+the browser's search to the server's check, arc42 §6.16, now say so — and that a `selectboxes`
+naming a source draws no rows in either renderer, which nothing had said.
+
 **Fixed: a tag picker a rule disabled could still be changed.** A `disabled` rule greys a field
 out and the field keeps its answer, and a renderer holds that by disabling the control's
 elements, since the engine does not refuse a value set on a disabled field. The tag picker draws

@@ -29,7 +29,7 @@ a reader who knows it can find things without being told.
 | [3. Context and scope](architecture/03-context-and-scope.md) | The system boundary and everything across it |
 | [4. Solution strategy](architecture/04-solution-strategy.md) | The five ideas the rest follows from |
 | [5. Building blocks](architecture/05-building-blocks.md) | The layer cake, then inside each package |
-| [6. Runtime view](architecture/06-runtime-view.md) | A keystroke, a submission and its replay, publishing, resuming a draft |
+| [6. Runtime view](architecture/06-runtime-view.md) | A keystroke, a submission and its replay, a webhook, publishing, resuming a draft, an upload, a model's turn, a limited request, a field's answers from a source |
 | [7. Deployment view](architecture/07-deployment-view.md) | What exists today, what is intended, and what a self-hoster needs to know |
 | [8. Cross-cutting concepts](architecture/08-crosscutting-concepts.md) | Paths, snapshots, determinism, validation, hidden fields, accessibility, theming, i18n, errors, security |
 | [9. Quality requirements](architecture/09-quality-requirements.md) | Scenarios and budgets, each stated so it can fail |

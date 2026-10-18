@@ -187,6 +187,35 @@ holding only what was typed ([0125](https://github.com/sharkysan/formancy.ai/blo
   command get one answer, and then a package whose manifest declares a `bin` that calls it.
   Until a manifest declares it, a page that names the package or its command fails
   `apps/docs/src/package-references.test.ts`.
+- **A function that adds up a list.** An expression has `map`, `filter` and `size()`, and nothing
+  that turns a list of amounts into their total, so a total over a repeater's rows is written out
+  one row at a time under a cap — [Logic](/docs/concepts/logic/#no-function-adds-up-a-list) shows
+  how, and what it costs. What adding one would take:
+  - **A spec version.** A function is something a document can say, and version 4 is frozen
+    ([0140](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)).
+    A version 4 reader handed a document calling it would find the document valid and then fail
+    to build the form; the version a document declares is how a reader knows beforehand whether
+    it can read it
+    ([0051](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0051-spec-2-adds-types.md)).
+  - **A version gate that reads inside an expression.** The version ledger names a document's
+    constructs and not the functions in its rules
+    ([0145](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0145-a-version-for-everything-a-document-can-say.md)),
+    and `validateSchema` cannot parse one, since the expression language is a layer above the
+    spec: today it passes a version 4 document calling `sum`, and only building the engine
+    refuses it. What a kind may call would have to depend on the version the document declares.
+  - **One definition, in `@formancy/expressions`.** Both renderers and the server's replay run the
+    same engine build
+    ([0006](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0006-one-engine-build.md)),
+    so the function is written once — but it has to decide what the format never had to: a total
+    of `decimal` amounts stays a `decimal`, an unanswered row is a rule rather than an error, and
+    its cost is metered by the length of the list, so the replay cannot run out of steps where the
+    browser did not.
+  - **The same total on the server.** A computed value is recomputed on the replay and overwrites
+    what the browser sent, so a total has to come out the same, in row order, in both.
+  - **A type for what it returns.** Publishing checks each expression against the types the model
+    declares
+    ([0054](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0054-expressions-that-never-work.md)),
+    and a list reaches an expression with elements of no declared type.
 
 Field **type names** for several of these are reserved — `multiselect` and `combobox` are
 absent from the type list, the first because several ticks from one list is already a type

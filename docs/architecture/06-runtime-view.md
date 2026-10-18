@@ -762,3 +762,114 @@ it on that connection waits for the lock too, so on storage's pool a lock on the
 stopped every route. `shared-rate-limits.integration.test.ts` locks the table, sends more
 submissions than storage has connections, and asserts each is admitted within the bound and a
 form's read answers.
+
+## 6.16 A field's answers from a source
+
+```
+browser: use-sourced-options.ts, sourced-options.ts        host's OptionsSources       server
+───────────────────────────────────────────────────        ─────────────────────       ──────
+a select names optionsSource "pickup-points"
+  sources[name]?  none ──▶ options.unavailable where the chooser would be, nothing asked
+  a value stored ──▶ resolve({ kind: 'labels', values: [it] }) ───▶  its name
+                     once per value, disabled or not
+                     refused or failed ──▶ the value itself is shown
+  the search, when drawn and whenever what it asks changes:
+    the generation moves, the search before it is aborted  ───▶  signal.aborted
+    disabled by a rule ──▶ nothing asked: not busy, no failure, nothing said
+    query under minQueryLength ──▶ nothing asked, rows emptied
+    the source's debounce, then busy
+    resolve({ kind: 'search', source, path, query,
+              locale, limit: maxRows, signal })            ───▶  every row, or a page:
+                                                            ◀───  { options, more, withheld? }
+    an older generation's answer ──▶ dropped; busy stays the newer search's
+    rejected, or refused by acceptRemoteAnswer ──▶ failed, rows emptied
+    capRemoteAnswer ──▶ the rows shown, and complete | more | capped | withheld
+  offered: those rows, the stored answer first when they lack it
+  optionsStatus ──▶ one sentence in the field's status region, never its error region
+  failed: a typeahead asks again on the next keystroke, a select when it is focused
+  chosen ──▶ engine.setValue: a string, and no list to hold it to
+
+POST /f/:path/submissions ───────────────────────────────────────────▶  the replay in 6.2, valid
+                                                                       checkMembership
+                                                                         no sources configured ──▶ none asked
+                                                                         sourcedAnswers, from the schema:
+                                                                           each value of a list answer;
+                                                                           a hidden field's cleared already
+                                                                         a name not configured ──▶ 503
+                                                                         members absent ──▶ that source unchecked
+                                                         members(values) ◀── once per source
+                                                         throws ────────▶ 503 source_unavailable
+                                                         names some ────▶ 422 { path: ["option"] }
+                                                                         ▼ nothing written before here
+                                                                       stored, as 6.2
+```
+
+**The document names a list, and the host answers for it.** A select carrying
+`optionsSource` has no options of its own; the renderer looks the name up in the map the host
+handed `OptionsSourcesProvider` or `provideFormancyOptionsSources`, synchronously, so a name the
+host lacks is a sentence where the chooser would be rather than an empty chooser, and nothing is
+asked. Nothing in formancy makes a request: `resolve` is a call into whatever already holds the
+list ([0077](../decisions/0077-options-may-come-from-a-named-source.md)). The two renderers write
+this lifecycle out each in its own primitives — an effect for each kind of request in
+`packages/react/src/use-sourced-options.ts`, an `effect` over signals for each in
+`packages/angular/src/sourced-options.ts` — and read one decision for everything a source's answer
+means and everything the control says.
+
+**One search at a time, and the newest wins.** A plain select asks with the empty query when it is
+drawn; a typeahead asks the same, then again after each keystroke, once the source's debounce has
+passed. A request is superseded by aborting it, so a host that honours `signal` stops work nobody
+is waiting for. The generation that marks the current request moves before any early return, so
+the abort sent by a newer keystroke, a query backspaced under the minimum or a rule disabling the
+field lands in a handler that knows it is stale: it reports no failure, and leaves `busy` to the
+search that replaced it. A disabled field asks for no page at all, and says nothing. The name of
+what a field holds comes from a `labels` request, asked at most once per value and whether the
+field is disabled or not, because a resumed draft or a read-only record holds a value no row on
+the screen names
+([0177](../decisions/0177-a-source-may-say-its-list-goes-on.md)).
+
+**An answer is believed, or refused whole.** `acceptRemoteAnswer` in `@formancy/spec` reads every
+row or a page, and refuses the whole answer for one bad row or anything ambiguous in a page; a
+refused answer is a source that failed, which the field says in its status region and never in its
+error region, since a source being down is not a wrong answer. `capRemoteAnswer` decides what the
+control can truthfully say about the rows it does not show, and `optionsStatus` in
+`@formancy/core/words` which one sentence the control says, from what only the control knows:
+whether a typeahead's list is open, whether anybody can type into it, whether the field is
+disabled. The control does not narrow a source's rows again — the source was handed the query —
+and it always offers the stored answer, so an answer outside the current rows is not an empty box.
+What the last answer left out is held while the next search is in flight, because the rows on the
+screen are still that answer's.
+
+**The browser's list is a convenience; what may be stored is the server's question.** The engine
+cannot ask it: a sourced field has no options to compare a value with, so the engine refuses only a
+value that is not a string, on both sides. `createSubmission` in
+`packages/server-core/src/submitting.ts` asks after the replay has passed and before anything is
+written, through `checkMembership` in `options-membership.ts`: every sourced answer, walked from the
+schema rather than from what arrived, and a list answer as one value each. A field hidden with its
+answer cleared has nothing left to ask about; a field a rule disabled is asked about like any
+other. One `members` call per source names the values it does not offer, and each comes back as `option` under the field's path, in the shape the engine's own
+errors take, so a host can hand the `422` to `applyServerErrors` and it clears when the value
+changes. A source that throws, or a name the deployment does not configure, fails the submission
+closed with `503`: nothing is wrong with the answers, and the person can send them again.
+Membership is asked **now**, so a value withdrawn from the list since it was chosen is refused,
+with nothing to offer instead.
+
+**Where the deployment configures no sources, nothing is asked.** `checkMembership` answers
+`ok` without asking, and `publishForm` takes a document naming any list; only a deployment that
+configures some has a document naming another refused at publish, `422 unknown_options_source`.
+The server's own `main.ts` passes `createApp` no `optionsSources` — read on 2026-10-18, since no
+test imports a composition root — so the image as shipped is that deployment: a sourced answer it
+receives is stored with no source asked about it. A deployment wanting the check composes
+`createApp` itself, with `optionsSources` beside its storage.
+
+**Only a select asks.** A `selectboxes` may name a source since spec 3, and the server checks every
+value in its answer ([0085](../decisions/0085-a-tag-picker-is-a-widget-and-a-widget-has-a-version.md)),
+but neither renderer draws a source's rows for one: the tag picker and the tick boxes draw the
+document's options, of which a sourced field has none, and say nothing. React asks the source
+nothing; Angular asks it for a page and draws none of it, twice under the tag picker. Measured on
+2026-10-18 by mounting a sourced `selectboxes`, with and without `widget: "tagpicker"`, in each
+renderer; no case in either suite holds it ([§11.2](11-risks-and-debt.md)).
+
+The browser half is held by each renderer's `options-source.test`, near-copies with the same case
+names, since the conformance driver cannot supply a source; the server half by
+`packages/server-core/src/options-membership.test.ts`, and the publish refusal by its cases in
+`use-cases.test.ts`.
