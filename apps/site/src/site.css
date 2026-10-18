@@ -1548,18 +1548,16 @@ kbd {
   font-weight: 500;
 }
 
+/* As many across as fit at the width an item needs to keep its terms on one line
+   and its repository address unbroken: a breakpoint on the viewport put three in
+   1100px, where the section is narrower than the window and both broke. */
 .licence-modules ul {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 21rem), 1fr));
   gap: 1rem;
   margin: 0;
   padding: 0;
   list-style: none;
-}
-
-@media (min-width: 40rem) {
-  .licence-modules ul {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 .licence-modules li {
@@ -1600,6 +1598,12 @@ kbd {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem 1.25rem;
+}
+
+/* Somebody else's trademark line: owed, and small print, so it sits last. */
+.licence-modules .licence-module-mark {
+  font-size: 0.75rem;
+  line-height: 1.5;
 }
 
 .licence-module-links a,

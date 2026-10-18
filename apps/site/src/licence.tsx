@@ -2,7 +2,7 @@ import type { ReactElement } from 'react'
 import { REPO } from './chrome.js'
 
 /**
- * The licence section: what is free, and the two modules built on it that are not.
+ * The licence section: what is free, and the modules built on it that are not.
  *
  * A file of its own because `app.tsx` is at its ceiling in `size.test.ts`, whose
  * note names the seam as one section per file. The section wrapper stays in the
@@ -15,9 +15,13 @@ import { REPO } from './chrome.js'
  * 404 in development and on a preview deployment, where nothing else is served.
  *
  * Their terms are read from each repository's `LICENSE.md` (Formancy Data 1.1,
- * Formancy Report 1) on 2026-10-16. Nothing here checks them against those texts;
- * if either licence changes, this changes by hand. What `site.test.tsx` holds is
- * that every link to a module sits beside the words saying it is not free.
+ * Formancy Report 1 on 2026-10-16; Formancy Health 1 on 2026-10-18). Nothing here
+ * checks them against those texts; if a licence changes, this changes by hand. What
+ * `site.test.tsx` holds is that every link to a module sits beside the words saying
+ * it is not free.
+ *
+ * `mark` is the sentence a module owes somebody else's trademarks it is described
+ * by, said in its own item so it travels with the words that need it.
  */
 const MODULES = [
   {
@@ -31,6 +35,14 @@ const MODULES = [
     does: 'Paginated PDF reports from formancy forms, Formancy Data datasets or your own JSON, designed in native Angular and React editors and rendered on your server.',
     demo: { href: 'https://formancy.ai/report/', label: 'Open the Studio' },
     repo: 'formancy.ai-report',
+  },
+  {
+    name: 'Formancy Health',
+    does: 'Exports formancy forms, their submissions and Formancy Report PDFs as HL7® FHIR® R4 resources, shaped to the profiles a country publishes, starting with Switzerland’s CH Core and CH ORF.',
+    demo: { href: 'https://formancy.ai/health/', label: 'Try the demo' },
+    repo: 'formancy.ai-health',
+    // HL7's own sentence, as Formancy Health's NOTICE quotes it from the FHIR licence page.
+    mark: 'HL7, FHIR and the FHIR [FLAME DESIGN] are the registered trademarks of Health Level Seven International and their use does not constitute endorsement by HL7.',
   },
 ] as const
 
@@ -86,7 +98,7 @@ export function Licence(): ReactElement {
           since a link is often reached alone — by tab, or from a list of links. */}
       <div className="licence-modules">
         <p className="licence-modules-lede">
-          <strong>Not free: two modules built on formancy.</strong> Each has a repository and a
+          <strong>Not free: the modules built on formancy.</strong> Each has a repository and a
           source-available licence of its own, not Apache-2.0. Reading the source, evaluating
           and developing with it cost nothing, in a company too; running it in production needs
           a paid licence. There is no published price yet — ask at{' '}
@@ -104,6 +116,7 @@ export function Licence(): ReactElement {
                   github.com/sharkysan/{module.repo}
                 </a>
               </p>
+              {'mark' in module && <p className="licence-module-mark">{module.mark}</p>}
             </li>
           ))}
         </ul>

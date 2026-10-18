@@ -134,7 +134,7 @@ describe('the page is a document first', () => {
     // thing — and the visitor finds out it is paid on the way to production. So every
     // link to one, wherever on the page and however it is spelled, has to sit in the
     // item that names that module's terms; text elsewhere on the page cannot pass for
-    // it. Both modules are named here rather than read from the page's own list, so
+    // it. Every module is named here rather than read from the page's own list, so
     // dropping one from the page fails too.
     render(<App />)
 
@@ -143,10 +143,14 @@ describe('the page is a document first', () => {
       'https://github.com/sharkysan/formancy.ai-data',
       'https://formancy.ai/report/',
       'https://github.com/sharkysan/formancy.ai-report',
+      'https://formancy.ai/health/',
+      'https://github.com/sharkysan/formancy.ai-health',
     ]
     const paid = screen
       .getAllByRole('link')
-      .filter((link) => /formancy\.ai-(data|report)|formancy\.ai\/(data|report)\//.test(link.getAttribute('href') ?? ''))
+      .filter((link) =>
+        /formancy\.ai-(data|report|health)|formancy\.ai\/(data|report|health)\//.test(link.getAttribute('href') ?? ''),
+      )
     expect(paid.map((link) => link.getAttribute('href')).sort()).toEqual([...offered].sort())
 
     for (const link of paid) {
@@ -155,6 +159,22 @@ describe('the page is a document first', () => {
       expect(item?.textContent, `${link.getAttribute('href') ?? ''} has no terms beside it`).toMatch(/not free/i)
       expect(item?.textContent).toMatch(/paid in production/i)
     }
+  })
+
+  test('a page that uses HL7\'s marks says whose they are', () => {
+    // Formancy Health is described by the standard it implements, so the page says
+    // HL7 and FHIR — and HL7 asks every use of its marks that is not its own to say
+    // they are its and that their use is no endorsement. Read from the rendered page,
+    // not from the module list: a mark that reaches the page by any other sentence
+    // owes the same line, and a sentence nobody renders would satisfy a source check.
+    render(<App />)
+
+    const page = document.body.textContent ?? ''
+    expect(page).toMatch(/\b(HL7|FHIR)\b/)
+    expect(page).toContain(
+      'HL7, FHIR and the FHIR [FLAME DESIGN] are the registered trademarks of Health Level ' +
+        'Seven International and their use does not constitute endorsement by HL7.',
+    )
   })
 })
 

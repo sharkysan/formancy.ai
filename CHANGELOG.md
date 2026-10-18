@@ -10,6 +10,17 @@ later.
 
 ## Unreleased
 
+**Added, on the landing page: Formancy Health, beside the other two paid modules.** It exports
+formancy forms, their submissions and Formancy Report PDFs as HL7® FHIR® R4 resources, shaped to
+a country's profiles, starting with Switzerland's CH Core and CH ORF. Like Formancy Data and
+Formancy Report it lives in a repository of its own, under a source-available licence: free to
+read, evaluate and develop with, paid in production, no published price yet. Its item says *Not
+free · paid in production* beside a link to its demo at `formancy.ai/health/` and one to its
+repository, and carries HL7's trademark sentence, since it names FHIR. It is linked before its
+first release, which its item does not say, because nothing here could tell when that stops
+being true
+([0180](docs/decisions/0180-formancy-health-is-named-before-its-first-release.md)).
+
 **Fixed: a tag picker a rule disabled could still be changed.** A `disabled` rule greys a field
 out and the field keeps its answer, and a renderer holds that by disabling the control's
 elements, since the engine does not refuse a value set on a disabled field. The tag picker draws
