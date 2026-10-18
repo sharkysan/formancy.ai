@@ -1048,7 +1048,7 @@
       {
        "const": "computed",
        "title": "Computed",
-       "description": "Writes the expression's result into the field whenever something it reads changes. The person filling the form in cannot type over it."
+       "description": "Writes the expression's result into the field whenever something it reads changes, and nothing else writes the field: a value typed into it, set on it or handed in with the form is not kept, on the server either. While the expression cannot be evaluated — an input it reads is still empty — the field keeps what the rule last wrote, or stays empty. A text, paragraph, number, date or time box draws the field read-only, so it can still be reached and read. Any other control is drawn as usual and does not keep a change made in it; add a `disabled` rule to grey it out."
       },
       {
        "const": "validate",

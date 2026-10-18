@@ -1,7 +1,7 @@
 import { check, parse } from '@formancy/expressions'
 import type { DeclaredType, ExpressionKind, VariableDeclarations } from '@formancy/expressions'
 import type { FormSchema, LogicRule } from '@formancy/spec'
-import { topLevelDataFields } from './engine.js'
+import { topLevelDataFields } from './top-level-fields.js'
 
 /**
  * Expressions that can never work, found before a form is published.

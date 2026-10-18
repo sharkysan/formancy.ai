@@ -31,6 +31,8 @@ import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
   imports: [FormancyFieldShell, FormancyTextPipe],
   template: `
     <formancy-field-shell [field]="field" [label]="context.label" [path]="context.path">
+      <!-- A computed field's value is the engine's: read-only, never disabled, so it is still
+           reached and read (0181). Every control that takes typed text says it. -->
       <input
         type="text"
         [id]="control().id"
@@ -39,6 +41,7 @@ import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
         [attr.aria-required]="control()['aria-required']"
         [attr.aria-describedby]="control()['aria-describedby']"
         [disabled]="control().disabled === true"
+        [readOnly]="field.snapshot().readOnly"
         [value]="text()"
         [attr.placeholder]="placeholder()"
         [attr.inputmode]="inputMode()"
@@ -208,6 +211,7 @@ export class FormancyTextField extends FieldComponentBase {
         [attr.aria-required]="control()['aria-required']"
         [attr.aria-describedby]="control()['aria-describedby']"
         [disabled]="control().disabled === true"
+        [readOnly]="field.snapshot().readOnly"
         [value]="text()"
         (input)="onInput($event)"
         (blur)="field.touch()"

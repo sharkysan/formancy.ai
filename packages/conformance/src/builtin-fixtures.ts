@@ -9,7 +9,7 @@ import type { Fixture } from './types.js'
 export const builtinFixtures: readonly Fixture[] = [
   {
     name: 'a calculated field recomputes from its inputs and is never typed into',
-    description: 'A computed value is derived on every change to anything it reads, not on blur and not on submit, so what a person sees is never briefly wrong. It is read-only in the accessible tree, which is how a renderer stops someone typing into a value the engine will overwrite. It travels in the payload so that a consumer reads the same number the person saw rather than recomputing it and disagreeing.',
+    description: 'A computed value is derived on every change to anything it reads, not on blur and not on submit, so what a person sees is never briefly wrong. Only its rule writes it: a value handed in for it with the form is not its value, which the first step holds, and a renderer draws it read-only rather than disabled, so a person can reach and read it but is not invited to type into a value the engine will not keep. It travels in the payload so that a consumer reads the same number the person saw rather than recomputing it and disagreeing.',
     tags: [
       'calculation',
     ],
@@ -35,7 +35,6 @@ export const builtinFixtures: readonly Fixture[] = [
             key: 'total',
             type: 'number',
             label: 'Total',
-            readOnly: true,
           },
         ],
       },
@@ -49,7 +48,15 @@ export const builtinFixtures: readonly Fixture[] = [
         ],
       },
     },
+    initialValues: {
+      total: 999,
+    },
     steps: [
+      {
+        expectValue: {
+          total: null,
+        },
+      },
       {
         set: {
           quantity: 3,

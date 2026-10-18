@@ -101,6 +101,7 @@ import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
           [attr.aria-required]="control()['aria-required']"
           [attr.aria-describedby]="control()['aria-describedby']"
           [disabled]="control().disabled === true"
+          [readOnly]="field.snapshot().readOnly"
           [value]="text()"
           (input)="onInput($event)"
           (blur)="field.touch()"

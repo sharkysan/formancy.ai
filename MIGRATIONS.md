@@ -336,6 +336,26 @@ with the rows for the values asked.
 
 Nothing is stored differently, no document changes and the spec version does not move.
 
+## A computed field is the engine's (unreleased)
+
+**Only its rule writes a field a `computed` rule targets**
+([0181](docs/decisions/0181-a-computed-value-is-the-engines.md)).
+
+- **If you put a value into one** — `initialValue` as a prefill, or `setValue` — it is no longer
+  kept. `setValue` on a computed field does nothing, and the field's value is taken out of the
+  initial value before the first pass. It only ever stood while an input the rule reads was empty;
+  as soon as the rule could be evaluated it was overwritten.
+- **If you draw your own controls** through the registry or `useField` / `injectField`, the field
+  snapshot has a new `readOnly`. Draw the field read-only when it is set, as the built-in controls
+  do, or a person types into a box that keeps nothing. Code that builds a `FieldSnapshot` by hand,
+  a test double say, does not compile until it sets `readOnly`.
+- **What is stored changes in one case.** A submission whose computed field the server cannot
+  compute, because an input it reads is missing, is stored without that field. Until now it was
+  stored with whatever value was sent. A resumed draft in the same state shows the field empty
+  rather than the value computed earlier.
+
+No document changes, nothing stored is converted, and the spec version does not move.
+
 ## A NUL character is refused (0.5.0)
 
 **A client may see new answers.**

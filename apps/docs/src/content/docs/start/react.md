@@ -236,6 +236,11 @@ Per-path entries beat per-type entries beat the built-in defaults. A design
 system replaces the entire visual layer by handing in a registry, without
 forking anything.
 
+A field a `computed` rule writes has `field.readOnly` set, and `setValue` on it
+does nothing: its value is the rule's. Draw it with `readOnly` as the built-in
+controls do, or the person types into a box that does not keep what they type
+([logic](/docs/concepts/logic/#a-computed-field-is-read-only)).
+
 ## The rest of the hook family
 
 - `useRepeater(path)` — row count, `addRow`, `removeRow` for a repeater.

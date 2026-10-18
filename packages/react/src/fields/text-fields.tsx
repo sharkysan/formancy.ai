@@ -103,6 +103,9 @@ export function TextField({ path, label }: FieldComponentProps) {
       <input
         type="text"
         {...field.controlProps}
+        // A computed field's value is the engine's: read-only, never disabled, so it is
+        // still reached and read (0181). Every control that takes typed text says it.
+        readOnly={field.readOnly}
         value={shown}
         // The shape as the hint, and a keypad when every position takes a digit.
         placeholder={mask === undefined ? undefined : maskPlaceholder(mask)}
@@ -180,6 +183,7 @@ export function TextareaField({ path, label }: FieldComponentProps) {
     <FieldShell path={path} field={field} label={label}>
       <textarea
         {...field.controlProps}
+        readOnly={field.readOnly}
         value={typeof field.value === 'string' ? field.value : ''}
         onChange={(event) => field.setValue(event.target.value)}
         onBlur={() => field.touch()}
@@ -195,6 +199,7 @@ export function NumberField({ path, label }: FieldComponentProps) {
       <input
         type="number"
         {...field.controlProps}
+        readOnly={field.readOnly}
         value={typeof field.value === 'number' ? field.value : ''}
         onChange={(event) =>
           field.setValue(event.target.value === '' ? null : event.target.valueAsNumber)

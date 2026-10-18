@@ -479,7 +479,8 @@ export const STARTER_SCHEMA = {
     rules: [
       { target: 'canton', kind: 'visible', cel: 'country == "CH"' },
       { target: 'canton', kind: 'required', cel: 'country == "CH"' },
-      // A computed value, per repeater row: `item` is the row being evaluated.
+      // A computed value, per repeater row: `item` is the row being evaluated. Each row's
+      // line total is drawn read-only, because only this rule writes it (0181).
       {
         target: 'items[].lineTotal',
         kind: 'computed',
