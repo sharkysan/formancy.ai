@@ -45,7 +45,7 @@ export const DRAFT_MESSAGES = {
   'drafts.status.discarded': 'Discarded {name}.',
   'drafts.status.taken': 'Not kept: there is already a scenario called {name}.',
   'drafts.status.unknownPath':
-    'Not kept: {name} names a field this form does not have, so it would check nothing.',
+    'Not kept: {name} names something that is not one of this form’s fields, so it would check nothing.',
   'drafts.status.stopped': 'Stopped. Nothing was drafted.',
   'drafts.status.unreachable': 'Nothing was drafted. The model could not be reached: {reason}',
   'drafts.status.unreachableNoReason': 'Nothing was drafted. The model could not be reached.',

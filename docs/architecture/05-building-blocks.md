@@ -167,7 +167,11 @@ answer written down, run against the real engine in the mode asked for. It repor
 rather than asserts, because the caller is sometimes a test and sometimes a panel. Every path
 an example names is read through the path, `absent` included, so a field inside a group or a
 repeater's row is checked where it is
-([0162](../decisions/0162-an-example-is-drafted-from-what-the-author-said.md)). It
+([0162](../decisions/0162-an-example-is-drafted-from-what-the-author-said.md)). A path that is
+not one answer — a list, a group, one row, a page — is a failure, and `scenario-paths.ts` says
+what it names, walking the document as the engine scopes it, with a path the engine takes to
+name instead; a list is filled one answer at a time, by the row's position
+([0182](../decisions/0182-a-list-is-filled-row-by-row.md)). It
 lives here rather than in a builder because a package is where the reason to change
 lives — this changes when the engine's verdict surface changes, not when a palette does
 — and the cost of that is in [§9.3](09-quality-requirements.md), where the bundle is

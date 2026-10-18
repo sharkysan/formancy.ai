@@ -66,6 +66,12 @@ otherwise set nothing, assert nothing and pass — green while checking a field 
 not exist, which is exactly how a renamed field leaves its scenarios behind. Every path
 a scenario names is checked before anything is set.
 
+> **Later, and not a change to this decision:** a path that is not one answer — a list, a
+> group, one row, a page — was told the form has no such field and was probably renamed. It
+> is still a failure, and now says what the path names and offers one the engine takes; a list
+> is filled one answer at a time, by the row's position from 0
+> ([0182](0182-a-list-is-filled-row-by-row.md)).
+
 **Time is fixed by default.** A form with a `today()` bound would otherwise pass until
 the date it was written against goes by and then fail for a reason that is not a change
 to anything.

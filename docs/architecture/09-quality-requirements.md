@@ -51,7 +51,7 @@ formancy
 |---|---|---|
 | Keystroke, large conditional form | 1 ms | ≈0.38 ms |
 | Cold graph compile | 30 ms | ≈1.7 ms |
-| `@formancy/core` bundle | 18 kB brotli | **21.2 kB** — over, re-measured 2026-10-18 |
+| `@formancy/core` bundle | 18 kB brotli | **22.1 kB** — over, re-measured 2026-10-18 |
 | `@formancy/spec` bundle | — | 26.8 kB for the whole barrel — the index and the chunk it shares with `/validate`, re-measured 2026-10-16 with `acceptRemoteAnswer` and `capRemoteAnswer`, whose 1.0 kB is 0.3 kB with the comments the bundler keeps taken out |
 | `@formancy/react` bundle | 4 kB brotli | **24.9 kB** for the whole barrel, measured 2026-10-16 |
 | `@formancy/core/words` bundle | — | 6.5 kB, the renderers' words in English, German and French and what a sourced control says, an entry of its own, re-measured 2026-10-16 |
@@ -144,6 +144,15 @@ says `readOnly` ([0181](../decisions/0181-a-computed-value-is-the-engines.md)). 
 Most of that is comment. With every comment taken out of both builds by esbuild the barrel went
 from 14.0 to 14.2 kB. The React barrel did not move, since the change there is one attribute on
 six controls.
+
+**Saying what a path names cost 0.9 kB.** 21.2 became 22.1, re-measured on 2026-10-18, when
+`runScenarios` stopped telling an example that names a list, a group, a row or a page that the
+form has no such field, and said what it names instead
+([0182](../decisions/0182-a-list-is-filled-row-by-row.md)). It is a walk over the document and
+a sentence per finding, in a module nothing outside the package calls, so its comments are
+block comments, which the bundler drops, rather than JSDoc, which it keeps: written as JSDoc
+first, the figure was 22.0. As with the runner itself, a consumer that never imports
+`runScenarios` does not ship it.
 
 **The spec figure moved 4.3 kB in one change, and the reason is worth the line.**
 `diffSchemas` stopped comparing only a field's identity, its type and its `required`

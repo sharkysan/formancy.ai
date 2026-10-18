@@ -32,6 +32,26 @@ test, and by the `calculated-value` conformance fixture, which is now mounted wi
 in. Every one of those cases failed before the change
 ([0181](docs/decisions/0181-a-computed-value-is-the-engines.md)).
 
+**Fixed: an example naming a list was told the form had no such field.** `runScenarios` checks
+every path an example names before it sets anything, and asked the engine for a field's
+snapshot to do it, which only an answer has. So a list, a group, one row and a page each got
+the sentence for a field that is not there — *This form has no "colleagues" … it was probably
+renamed* — about something the form plainly has, sending somebody to look for a rename instead
+of telling them how to name what is in it. It came from an agent filling a repeater in one step,
+and every release since `0.4.0` says it, in the scenario panes, `check_scenarios` and the
+publish's warnings alike, which all show the runner's sentence. Now the sentence says what the
+path names and offers a path to name instead, only one the engine takes: a list is filled one
+answer at a time by the row's position from 0, `colleagues[0].fee`, and naming a row the list
+does not have yet adds it. A list is still not set whole, for the reasons
+[0182](docs/decisions/0182-a-list-is-filled-row-by-row.md) gives. A row's field without its
+position (`colleagues.fee`) and a rule's spelling for every row (`colleagues[].fee`) are said to
+be missing a position. Found beside it: `visible` on a field in a row the list does not have
+held, because the engine answers for a row's field whatever the number of rows, so an example
+could pass about a field nobody can see; it fails now. The drafting part's refusal of such a
+draft said it names a field the form does not have, and now says, in each language, that it
+names something that is not one of the form's fields. `@formancy/core` grows from 21.2 to
+22.1 kB (§9.3).
+
 **Added, on the landing page: Formancy Health, beside the other two paid modules.** It exports
 formancy forms, their submissions and Formancy Report PDFs as HL7® FHIR® R4 resources, shaped to
 a country's profiles, starting with Switzerland's CH Core and CH ORF. Like Formancy Data and

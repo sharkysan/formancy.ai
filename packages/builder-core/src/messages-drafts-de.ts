@@ -36,7 +36,7 @@ export const DRAFT_MESSAGES_DE = {
   'drafts.status.discarded': '{name} verworfen.',
   'drafts.status.taken': 'Nicht behalten: Es gibt schon ein Szenario namens {name}.',
   'drafts.status.unknownPath':
-    'Nicht behalten: {name} nennt ein Feld, das dieses Formular nicht hat, und würde nichts prüfen.',
+    'Nicht behalten: {name} nennt etwas, das keines der Felder dieses Formulars ist, und würde nichts prüfen.',
   'drafts.status.stopped': 'Angehalten. Nichts wurde entworfen.',
   'drafts.status.unreachable': 'Nichts wurde entworfen. Das Modell war nicht erreichbar: {reason}',
   'drafts.status.unreachableNoReason': 'Nichts wurde entworfen. Das Modell war nicht erreichbar.',

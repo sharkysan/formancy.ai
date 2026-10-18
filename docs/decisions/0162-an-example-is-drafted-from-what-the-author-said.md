@@ -275,6 +275,12 @@ string reports that string, `code` or not, and the string is in the condition, w
 withheld. Wherever the form has a `validate` rule, the request says such a code may exist and
 that it cannot list it, and an example expecting that error can only guess its code.
 
+> **Later, and not a change to this decision:** an example written by hand meets the same
+> vocabulary, and a path outside it is told what it names — a list, a group, a row, a page —
+> rather than that the form does not have it; a draft naming a list whole is refused as one
+> naming a missing field is, in a sentence true of both
+> ([0182](0182-a-list-is-filled-row-by-row.md)).
+
 **`Scenario` has a field it did not have.** `because` is optional and type-only. A host
 that stores what `onChange` hands it stores the reason with the example.
 
