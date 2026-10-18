@@ -13,6 +13,10 @@ import { MaterialFieldBase } from './base.js'
  * of them. The value handling is the default controls', kept line for line — this file
  * changes how a field looks, never what it stores.
  *
+ * A field a computed rule writes is read-only here as in the default controls, through
+ * `matInput`'s own `readonly`, so Material draws it as a value to read rather than a box
+ * to fill (0181).
+ *
  * **Material's asterisk stays.** It is drawn by CSS on an empty `aria-hidden` element, so the
  * label's text and the control's accessible name are the field's name alone — the name
  * every renderer gives, and the one the conformance suite finds the control by — while a
@@ -34,6 +38,7 @@ import { MaterialFieldBase } from './base.js'
           [attr.name]="control().name"
           [required]="field.snapshot().required"
           [disabled]="field.snapshot().disabled"
+          [readonly]="field.snapshot().readOnly"
           [errorStateMatcher]="matcher"
           [aria-describedby]="describedBy() ?? ''"
           [value]="text()"
@@ -77,6 +82,7 @@ export class FormancyMaterialTextField extends MaterialFieldBase {
         [attr.name]="control().name"
         [required]="field.snapshot().required"
         [disabled]="field.snapshot().disabled"
+        [readonly]="field.snapshot().readOnly"
         [errorStateMatcher]="matcher"
         [aria-describedby]="describedBy() ?? ''"
         [value]="text()"
@@ -113,6 +119,7 @@ export class FormancyMaterialTextareaField extends MaterialFieldBase {
           [attr.name]="control().name"
           [required]="field.snapshot().required"
           [disabled]="field.snapshot().disabled"
+          [readonly]="field.snapshot().readOnly"
           [errorStateMatcher]="matcher"
           [aria-describedby]="describedBy() ?? ''"
           [value]="text()"
@@ -161,6 +168,7 @@ export class FormancyMaterialNumberField extends MaterialFieldBase {
         [attr.name]="control().name"
         [required]="field.snapshot().required"
         [disabled]="field.snapshot().disabled"
+        [readonly]="field.snapshot().readOnly"
         [errorStateMatcher]="matcher"
         [aria-describedby]="describedBy() ?? ''"
         [value]="text()"
@@ -199,6 +207,7 @@ export class FormancyMaterialDateField extends MaterialFieldBase {
         [attr.max]="latest()"
         [required]="field.snapshot().required"
         [disabled]="field.snapshot().disabled"
+        [readonly]="field.snapshot().readOnly"
         [errorStateMatcher]="matcher"
         [aria-describedby]="describedBy() ?? ''"
         [value]="text()"

@@ -18,13 +18,15 @@ import type { FieldIds } from './ids.js'
 import { createInteractionState } from './interaction.js'
 import { modelViolations } from './model-validators.js'
 import { unanswered } from './answered.js'
-import { formatPath, parsePath } from './path.js'
+import { formatPath, parsePath, templateWire } from './path.js'
 import { buildFieldProps } from './props.js'
 import type { FieldProps } from './props.js'
 import type { Path } from './path.js'
 import { createValueStore } from './store.js'
+import { computedTargets, isComputed, withoutComputedValues } from './computed-targets.js'
 import { getAt, setAt } from './value.js'
 import { refusedRule } from './rule-refusal.js'
+import { topLevelDataFields } from './top-level-fields.js'
 import { createWizard } from './wizard.js'
 import type { Wizard } from './wizard.js'
 
@@ -58,6 +60,13 @@ export interface FieldSnapshot {
   required: boolean
   visible: boolean
   disabled: boolean
+  /**
+   * A `computed` rule writes this field, so its value is the engine's: a value set on it
+   * does not take. A control draws it read-only where it has a read-only state — never
+   * disabled, which would take it out of the tab order and grey out a value meant to be
+   * read (0181).
+   */
+  readOnly: boolean
   touched: boolean
   /**
    * A check about this answer is in flight.
@@ -183,6 +192,7 @@ export interface FormEngine {
   rowId(path: Path, index: number): string
   pageOf(path: Path): number
   getFieldSnapshot(path: Path): FieldSnapshot
+  /** Not on a field a computed rule writes, whose value is the rule's (`readOnly`, 0181). */
   setValue(path: Path, value: unknown): void
   touch(path: Path): void
   subscribeField(path: Path, listener: () => void): () => void
@@ -629,7 +639,9 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
 
   // ------------------------------------------------------------------- state
 
-  const store = createValueStore(options.initialValue ?? {})
+  /** The fields only a computed rule writes: nothing handed in stands in for them (0181). */
+  const computed = computedTargets(allRules)
+  const store = createValueStore(withoutComputedValues(options.initialValue ?? {}, computed))
   const interaction = createInteractionState()
   const errorsByWire = new Map<string, string[]>()
   const serverErrorsByWire = new Map<string, string[]>()
@@ -1055,12 +1067,6 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
     return required && unanswered(node.def, value)
   }
 
-  /** The template form of an instance wire: `items[1].qty` -> `items[].qty`.
-   *  Static wires come back unchanged. */
-  function templateWireOf(wire: string): string {
-    return wire.replace(/\[\d+\]/, '[]')
-  }
-
   function runValidation(): ValidationReport {
     validatedOnce = true
     const report: Record<string, string[]> = {}
@@ -1084,7 +1090,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
       if (requiredViolated(node, value)) codes.push('required' satisfies BuiltInErrorCode)
       codes.push(...modelViolations(node.def, value))
 
-      const checks = validateByTemplateWire.get(templateWireOf(node.wire))
+      const checks = validateByTemplateWire.get(templateWire(node.wire))
       if (checks !== undefined && bag !== undefined && capabilities !== undefined) {
         const repeater = repeaterOf(node.path)
         const evaluationBag =
@@ -1308,6 +1314,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
         required,
         visible: !hiddenWires.has(wire),
         disabled,
+        readOnly: isComputed(computed, wire),
         touched,
         errors,
         ids,
@@ -1326,7 +1333,9 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
       return snapshot
     },
 
-    setValue: (path, value) => store.set(path, value),
+    setValue: (path, value) => {
+      if (!isComputed(computed, formatPath(path))) store.set(path, value)
+    },
     touch: (path) => interaction.touch(path),
 
     subscribeField(path, listener) {
@@ -1413,22 +1422,6 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
       return { ok: report.valid, errors: report.errors }
     },
   }
-}
-
-/** The data fields sitting at the top level of the value: pages are
- *  transparent, everything else scopes.
- *
- *  Exported because `expressionProblems` has to declare exactly the same
- *  variables this does, and a second copy of that walk is the pair that
- *  drifts — silently, since a rule naming a field the other walk forgot
- *  reads as an undeclared identifier rather than as a bug in here. */
-export function topLevelDataFields(defs: readonly FieldDef[]): FieldDef[] {
-  const out: FieldDef[] = []
-  for (const def of defs) {
-    if (def.type === 'page') out.push(...topLevelDataFields(def.fields ?? []))
-    else out.push(def)
-  }
-  return out
 }
 
 function topSegment(reference: string): string {

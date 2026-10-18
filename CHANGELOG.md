@@ -10,6 +10,28 @@ later.
 
 ## Unreleased
 
+**Fixed: a computed field could be typed over, and the server could store what was typed.**
+The spec said nobody can type over a `computed` field. The renderers drew it as an ordinary control,
+though, so a computed *Total, CHF* took typing, and the only way to stop it was a `disabled` rule
+with `cel: "true"`. What happened to the typed value depended on the expression. When it could be
+evaluated, the engine overwrote the value at once. When it could not, because an input it reads
+was still empty, the rule wrote nothing and the typed value stood. The server's replay did the
+same: a total sent with `qty` left out of `price * qty` was stored as the computed total, which
+`SAFETY-ANALYSIS.md` A3 said could not happen. Every release up to `0.5.0` does this. Now only the
+rule writes a computed field. `setValue` on it does nothing. Its value is taken out of whatever the
+engine is handed — a resumed draft, a prefill, and on the server the request body — before the
+first pass. The field snapshot gains `readOnly`, and both renderers and Material draw the text,
+paragraph, number, date, time and date-and-time controls `readonly`. They do not use `disabled`,
+so the value stays in the tab order and is announced. Other controls are drawn as before, and a
+change made in one does not take, though the Angular binding can go on showing it; the logic page
+says to add a `disabled` rule to such a field. A host that put a value into a computed field, or a
+draft resumed with an input empty, now sees the field empty where it used to see the earlier
+value. Held by `packages/core/src/computed-targets.test.ts`, by *stores no computed value it did
+not compute* in `server-core`, by each renderer's `computed-field` test and Material's controls
+test, and by the `calculated-value` conformance fixture, which is now mounted with a total handed
+in. Every one of those cases failed before the change
+([0181](docs/decisions/0181-a-computed-value-is-the-engines.md)).
+
 **Added, on the landing page: Formancy Health, beside the other two paid modules.** It exports
 formancy forms, their submissions and Formancy Report PDFs as HL7® FHIR® R4 resources, shaped to
 a country's profiles, starting with Switzerland's CH Core and CH ORF. Like Formancy Data and

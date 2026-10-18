@@ -26,8 +26,10 @@ export type JsonValue =
  * in @formancy/spec — the spec landed labels, options and repeater chrome as
  * its version-0 presentation-lite, which is exactly the moment this interface
  * promised to shrink to an import. What remains is the readonly deepening of
- * `fields` (a fixture is data, never mutated) and `readOnly`, which the spec
- * has not modelled yet.
+ * `fields` (a fixture is data, never mutated) and `readOnly`, which nothing
+ * reads. A field is read-only because a computed rule writes it, which the
+ * engine derives from the rules (0181); the property stays so that a fixture
+ * written with it still type-checks, and no shipped fixture carries it.
  */
 export interface ConformanceFieldDef extends Omit<FieldDef, 'fields'> {
   /** The fields held inside a `group`, a `page` or a repeater. */

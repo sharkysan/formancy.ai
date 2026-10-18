@@ -179,6 +179,8 @@ function NumberFallback({ path, label }: FieldComponentProps) {
       <input
         type="number"
         {...field.controlProps}
+        // As `NumberField` does: a computed number is read, not typed (0181).
+        readOnly={field.readOnly}
         value={typeof field.value === 'number' ? field.value : ''}
         onChange={(event) =>
           field.setValue(event.target.value === '' ? null : event.target.valueAsNumber)

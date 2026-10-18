@@ -78,8 +78,9 @@ POST /f/contact-us/submissions
                                        │
                                        ▼
                                   replay in server mode:
-                                   · recompute every computedValue,
-                                     OVERWRITING what arrived
+                                   · drop what arrived for every
+                                     computed field, then recompute it
+                                     (nothing where it cannot, 0181)
                                    · recompute visibility and requiredness
                                    · strip values under server-hidden subtrees
                                    · run every validator (see note below)

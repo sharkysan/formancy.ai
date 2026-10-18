@@ -263,6 +263,26 @@ describe('createSubmission', () => {
     expect(canonical['total']).toBe(20)
   })
 
+  test('stores no computed value it did not compute, even when it cannot compute one', async () => {
+    // `price * qty` cannot be evaluated with `qty` left out, and a computed rule that
+    // cannot be evaluated writes nothing (0054). The replay overwrote a sent total only
+    // when it could compute one, so here the client's number was stored as the computed
+    // value: SAFETY-ANALYSIS A3, through the one gap its constraint did not cover (0181).
+    const published = await publishForm(deps, { path: 'contact-us', schema })
+    if (!published.ok) throw new Error('publish failed')
+
+    const outcome = await createSubmission(deps, {
+      path: 'contact-us',
+      declaredSchemaHash: published.schemaHash,
+      actor: 'authenticated',
+      data: { email: 'a@b.ch', price: 10.0, total: 999999 },
+    })
+
+    expect(outcome.ok).toBe(true)
+    if (!outcome.ok) return
+    expect(outcome.canonicalData).toEqual({ email: 'a@b.ch', price: 10 })
+  })
+
   test('an unknown form path is its own failure kind', async () => {
     const outcome = await createSubmission(deps, {
       path: 'ghost',

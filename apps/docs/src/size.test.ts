@@ -36,11 +36,11 @@ const CEILINGS: Record<string, { lines: number; why: string }> = {
     why: 'One factory holding every command. The seam is one concern per file — model, arrangement, translation, version — over a shared attempt/commit core. The repath family left for `repath.ts` when this budget refused the rule rewriting, which is the seam working as intended. Finding things — a field by key path, a container, a layout node by position — left for `navigate.ts` when the builder’s words moved into the catalogue: none of it is a command. The translation commands left for `translation.ts` the day one of them needed a line this ceiling would not give.',
   },
   'packages/core/src/engine.ts': {
-    lines: 1440,
-    why: 'The engine is one subject and its parts are genuinely coupled through the graph. The seam, if there is one, is the check and skip machinery — whose protocol types left for `checks.ts` to pay for the `formId` option, since this budget allows no growth at all; what counts as an answer per type left for `answered.ts` when the matrix brought its own idea of one; and the validation report\'s type left for `error-codes.ts`, beside the codes it carries, to pay for the import that types them. The machinery itself still needs the graph and the store, which is why it has not followed.',
+    lines: 1433,
+    why: 'The engine is one subject and its parts are genuinely coupled through the graph. The seam, if there is one, is the check and skip machinery — whose protocol types left for `checks.ts` to pay for the `formId` option, since this budget allows no growth at all; what counts as an answer per type left for `answered.ts` when the matrix brought its own idea of one; the validation report\'s type left for `error-codes.ts`, beside the codes it carries, to pay for the import that types them; and when a computed field became read-only, which fields a rule writes went to `computed-targets.ts` and the top-level walk `expressionProblems` shares to `top-level-fields.ts`. The machinery itself still needs the graph and the store, which is why it has not followed.',
   },
   'packages/conformance/src/builtin-fixtures.ts': {
-    lines: 1913,
+    lines: 1920,
     why: 'GENERATED from fixtures/*.json. Splitting this means splitting the fixtures, which are the unit of meaning — so this number moves when the suite gains a case, which is the one entry here whose growth is not a signal.',
   },
   'apps/site/src/app.tsx': {

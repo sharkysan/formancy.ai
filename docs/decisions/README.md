@@ -111,6 +111,7 @@ record whose only enforcement is "we remember" says so plainly.
 | [0021](0021-engine-owns-aria.md) | The engine owns element ids and ARIA composition | accepted |
 | [0022](0022-fail-open-fail-closed.md) | Fail open on metadata, fail closed on validation | accepted |
 | [0023](0023-model-properties-in-engine.md) | Model properties are honoured by the engine, not by renderers | accepted |
+| [0181](0181-a-computed-value-is-the-engines.md) | A computed value is the engine's: nothing else writes it, and its control is read-only | accepted |
 
 ### The server
 
@@ -122,7 +123,7 @@ record whose only enforcement is "we remember" says so plainly.
 | [0027](0027-lazy-draft-migration.md) | Migrate drafts lazily on resume, never eagerly | accepted |
 | [0028](0028-server-core-split.md) | Separate the use cases from the HTTP framework | accepted |
 | [0029](0029-rest-and-openapi.md) | REST with OpenAPI, not tRPC and not GraphQL | accepted |
-| [0030](0030-never-trust-client-state.md) | Recompute every derived value on the server | accepted |
+| [0030](0030-never-trust-client-state.md) | Recompute every derived value on the server | accepted; a value sent for a computed field it could not recompute, which it stored as sent, decided by 0181 |
 | [0031](0031-enumeration-resistant-login.md) | Make a failed login indistinguishable from an unknown user | accepted |
 | [0032](0032-csv-formula-neutralisation.md) | Neutralise formulas in exported CSV | accepted |
 | [0044](0044-access-outside-the-document.md) | Who may submit is a property of the deployment, not of the document | accepted |

@@ -28,7 +28,7 @@ what depends on what.
 | `visible` | the field is shown |
 | `disabled` | the field is greyed out but keeps its answer |
 | `required` | the field is required, on top of any fixed `required` |
-| `computed` | the result is written into the field; nobody can type over it |
+| `computed` | the result is written into the field, and nothing else writes it ([below](#a-computed-field-is-read-only)) |
 | `validate` | *false* means the field carries the error named by `code` |
 
 A field may carry one rule per kind — two visibility rules would have no defined
@@ -47,6 +47,34 @@ scope: `item` (the row) and `index` (its position).
 ```
 
 Errors land on the instance that failed — `items[1].qty` — not on the template.
+
+## A computed field is read-only
+
+Only its rule writes a computed field. A value typed into it, set on it with
+`setValue` or handed in with the form — a resumed draft, a prefill, and on the
+server the request body — is not kept, so what is stored is always what the rule
+wrote. While the expression cannot be evaluated, because an input it reads is
+still empty, the rule writes nothing: the field keeps the value the rule wrote
+last, or stays empty.
+
+The field snapshot says so with `readOnly`, and both renderers draw the text,
+paragraph, number, date, time and date-and-time controls with `readonly`, which
+leaves the value in the tab order and announced as read-only. Not `disabled`:
+that would take it out of the tab order and grey out a number somebody is meant
+to read.
+
+What this does not do:
+
+- **Every other control is drawn as it always is** — a tick box, a choice, a
+  ranking or a matrix, a rating, a slider, a typeahead or a tag picker, rich
+  text, a file, a signature, and a scanner's button beside a read-only text box
+  — and a change made in it does not take: the value stays the rule's. React
+  draws the control back to it; the Angular binding can go on showing the
+  change until the value next moves. Give such a field a `disabled` rule as
+  well.
+- **No shipped theme styles a read-only box differently** from one that takes
+  typing. If yours should look like a result rather than a question, style
+  `[readonly]`, or add a `disabled` rule.
 
 ## Why CEL
 

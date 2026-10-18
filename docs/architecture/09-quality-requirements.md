@@ -51,7 +51,7 @@ formancy
 |---|---|---|
 | Keystroke, large conditional form | 1 ms | ≈0.38 ms |
 | Cold graph compile | 30 ms | ≈1.7 ms |
-| `@formancy/core` bundle | 18 kB brotli | **20.8 kB** — over, re-measured 2026-10-16 |
+| `@formancy/core` bundle | 18 kB brotli | **21.2 kB** — over, re-measured 2026-10-18 |
 | `@formancy/spec` bundle | — | 26.8 kB for the whole barrel — the index and the chunk it shares with `/validate`, re-measured 2026-10-16 with `acceptRemoteAnswer` and `capRemoteAnswer`, whose 1.0 kB is 0.3 kB with the comments the bundler keeps taken out |
 | `@formancy/react` bundle | 4 kB brotli | **24.9 kB** for the whole barrel, measured 2026-10-16 |
 | `@formancy/core/words` bundle | — | 6.5 kB, the renderers' words in English, German and French and what a sourced control says, an entry of its own, re-measured 2026-10-16 |
@@ -136,6 +136,14 @@ code before and after the change, each built the same way: the spec barrel went 
 is comment: with every comment taken out of both builds by esbuild, the spec barrel grew 0.3 kB
 and the words entry 0.9 kB. The engine's `dist/index.mjs` was byte-identical, and its row did not
 move.
+
+**A computed value became the engine's, and the engine paid for it.** The fields a `computed` rule
+writes are collected once; `setValue` refuses them, the initial value loses them, and the snapshot
+says `readOnly` ([0181](../decisions/0181-a-computed-value-is-the-engines.md)). Measured on
+2026-10-18 on the code before and after the change, each built the same way: 20.8 to 21.2 kB.
+Most of that is comment. With every comment taken out of both builds by esbuild the barrel went
+from 14.0 to 14.2 kB. The React barrel did not move, since the change there is one attribute on
+six controls.
 
 **The spec figure moved 4.3 kB in one change, and the reason is worth the line.**
 `diffSchemas` stopped comparing only a field's identity, its type and its `required`

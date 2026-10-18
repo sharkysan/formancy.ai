@@ -88,7 +88,7 @@ Each encodes semantics the engine and the renderers must implement, and
 | --- | --- |
 | required field | submit blocked until a value exists |
 | conditional visibility | a field appears and disappears with its condition |
-| calculated value | a computed field tracks its inputs |
+| calculated value | a computed field tracks its inputs, and a value handed in for it is not shown or submitted |
 | clear on hide | whether a hidden field's answer is dropped or kept |
 | repeating group | per-row validation, and re-indexing when a row is removed |
 | wizard page validation | next validates only the current page; submit validates everything and returns to the first page with a problem |

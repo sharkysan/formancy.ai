@@ -114,6 +114,8 @@ comprehension would capture.
 | `interaction.ts` | Touched state, which decides when a message is shown |
 | `wizard.ts` | Page navigation and per-page validation semantics |
 | `strip.ts` | `clearOnHide` pruning, applied identically on client and server |
+| `computed-targets.ts` | The fields `computed` rules write, which nothing else may: refused by `setValue`, taken out of the initial value before the first pass — a resumed draft, a prefill, on the server the request body — and said as `readOnly` on the snapshot, which both renderers draw ([0181](../decisions/0181-a-computed-value-is-the-engines.md)) |
+| `top-level-fields.ts` | The data fields at the top of the value, pages being transparent: the variables both the engine and `expressionProblems` declare, walked once |
 | `words.ts` | **A second entry, `@formancy/core/words`**, which the engine never imports: the renderers' own words in English, German and French, and `createFormText`, which reads them in the locale the document is read in (`resolvedLocale`, from `@formancy/spec`) a message at a time over a host's ([0171](../decisions/0171-the-renderers-words-are-the-forms-language.md)); and, from `options-status.ts`, `optionsStatus`, the one sentence a sourced control says, decided once for both renderers ([0177](../decisions/0177-a-source-may-say-its-list-goes-on.md)) |
 | `uploads.ts` | A file field's uploads: one at a time, each waiting, sending with its progress, or refused; cancel and retry; kept with the form by the row's identity, so a row that moves keeps them; the thumbnail size both renderers draw at ([0130](../decisions/0130-each-file-is-its-own-upload.md)) |
 

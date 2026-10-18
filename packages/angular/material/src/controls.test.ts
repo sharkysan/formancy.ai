@@ -55,6 +55,26 @@ describe('a field Material draws', () => {
     expect(control.closest('mat-form-field')).not.toBeNull()
   })
 
+  // A computed value is the engine's (0181). Material's form field has the default
+  // controls' read-only state, through `matInput`, and a field it draws without it is a
+  // total a person types into and watches the engine take back.
+  test.each([
+    ['text', "'fixed'"],
+    ['textarea', "'fixed'"],
+    ['number', '1.0'],
+    ['date', "'2026-10-09'"],
+    ['time', "'09:30'"],
+  ])('a %s a computed rule writes is read-only, and not disabled', async (type, cel) => {
+    await mount({
+      ...form([{ key: 'a', type, label: 'A' }]),
+      logic: { rules: [{ target: 'a', kind: 'computed', cel }] },
+    })
+
+    const control = screen.getByLabelText('A') as HTMLInputElement
+    expect(control.readOnly).toBe(true)
+    expect(control.disabled).toBe(false)
+  })
+
   test('a date is stored as the calendar day typed, and a time as HH:MM', async () => {
     const engine = await mount(
       form([

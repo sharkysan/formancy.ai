@@ -16,6 +16,7 @@ export function DateField({ path, label }: FieldComponentProps) {
       <input
         type="date"
         {...field.controlProps}
+        readOnly={field.readOnly}
         value={typeof field.value === 'string' ? field.value : ''}
         onChange={(event) => field.setValue(event.target.value === '' ? null : event.target.value)}
         onBlur={() => field.touch()}
@@ -44,6 +45,7 @@ export function TimeField({ path, label }: FieldComponentProps) {
       <input
         type="time"
         {...field.controlProps}
+        readOnly={field.readOnly}
         /* Bounds are handed to the browser as well as checked by the engine. The
            engine's check is the truth — it runs again on the server — and this is
            what lets the platform grey out what it will not accept, which is a better
@@ -100,6 +102,7 @@ export function DateTimeField({ path, label }: FieldComponentProps) {
       <input
         type="datetime-local"
         {...field.controlProps}
+        readOnly={field.readOnly}
         value={asLocal()}
         onChange={(event) => {
           const local = event.target.value

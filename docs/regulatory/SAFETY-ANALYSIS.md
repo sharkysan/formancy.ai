@@ -74,13 +74,56 @@ will need to be understood by whoever authors rules.
 *How it arises:* a computed field's value is attacker-controlled in the request
 body like any other field.
 
-*Constraint:* every `computedValue` is recomputed on the server and whatever
-arrived is overwritten, not merged
-([0030](../decisions/0030-never-trust-client-state.md)). What is stored is the
-canonical result, not the request body.
+*Constraint:* every `computedValue` is recomputed on the server, and nothing
+that arrived for a computed field is kept: the engine drops a computed field's
+value from what it is handed before its first pass, so what is stored is what
+the replay computed, or nothing where it could not compute anything
+([0030](../decisions/0030-never-trust-client-state.md),
+[0181](../decisions/0181-a-computed-value-is-the-engines.md)). What is stored is
+the canonical result, not the request body. Verified by
+`packages/server-core/src/use-cases.test.ts` — *never trusts the client:
+hidden-branch data is stripped and computed lies are overwritten*, and *stores
+no computed value it did not compute, even when it cannot compute one* — and by
+`packages/core/src/computed-targets.test.ts`.
 
-*Residual:* none known for computed fields. A field that is *not* declared
-computed is stored as sent, which is correct behaviour and not a defect.
+This entry said "none known" while the second of those cases would have failed.
+The replay overwrote a value sent for a computed field only when it could
+evaluate the field's expression. A computed rule that cannot be evaluated
+writes nothing ([0054](../decisions/0054-expressions-that-never-work.md)), so
+with an input the expression reads left out — `qty` absent from `price * qty` —
+the total that arrived was stored as the computed total. Every release up to
+`0.5.0` does this, read from their engines' code. A value typed into the field in
+the browser while an input was empty reached the server the same way. Found on 2026-10-18 by
+following up a report that a computed total was drawn as an ordinary input.
+
+The same rule holds in the browser. The engine refuses a value set on a computed
+field, and the renderers draw the text, paragraph, number, date, time and
+date-and-time controls read-only. Held by each renderer's `computed-field` test
+and by the `calculated-value` conformance fixture, whose first step expects a
+value handed in for the total not to be shown.
+
+*Residual:*
+
+- **What the person saw is not always what is stored.** A computed rule that
+  cannot be evaluated keeps what it last wrote in the browser, while the replay
+  starts from nothing. A form submitted after an input was emptied showed the
+  last total and stores none. The stored record agrees with its own inputs, and
+  the screen did not.
+- **A control with no read-only state is drawn as an ordinary control.** That
+  covers a tick box, a choice, a slider, a picker and the rest. A change made in
+  it does not take. React draws the control back to the engine's value. The
+  Angular binding can go on showing the change: measured in jsdom on
+  2026-10-18, a ticked box over `false` and a select showing `b` over `a`. That
+  was already true before this change of any computed value whose expression
+  could be evaluated. A `disabled` rule on such a field is the documented
+  remedy.
+- **A host writing a whole row or group** with `setValue` on its parent path
+  writes a computed member's value with it. The next pass overwrites that value
+  when it can evaluate the expression, and keeps it until then. The server is
+  not exposed, because it starts from the request body, which is stripped.
+
+A field that is *not* declared computed is stored as sent, which is correct
+behaviour and not a defect.
 
 ### A4. Data is smuggled into a branch of the form the person could not see
 

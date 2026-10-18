@@ -152,6 +152,11 @@ Note what you did **not** have to get right: the `id`, the `for`, the
 (`snapshot().ids`, `snapshot().props`) so that React and Angular emit identical
 accessibility wiring — the correctness lives in one place instead of two.
 
+A field a `computed` rule writes has `snapshot().readOnly` set, and `setValue` on
+it does nothing: its value is the rule's. Bind `[readOnly]` to it as the built-in
+controls do, or the person types into a box that does not keep what they type
+([logic](/docs/concepts/logic/#a-computed-field-is-read-only)).
+
 ## The other inject helpers
 
 | Helper | What it gives you |

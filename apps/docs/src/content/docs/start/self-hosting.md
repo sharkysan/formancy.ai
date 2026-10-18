@@ -469,9 +469,11 @@ version, which the schema hash does; or expire.
 
 Three things happen that are easy to miss:
 
-- The server **replays the engine** over your payload. Computed values are
-  recomputed and overwrite whatever you sent; fields the server evaluates as
-  hidden are stripped. A client cannot smuggle data into a hidden branch.
+- The server **replays the engine** over your payload. Whatever you sent for a
+  computed field is dropped and the value recomputed, and where it cannot be —
+  an input it reads is missing — it is stored empty; fields the server
+  evaluates as hidden are stripped. A client cannot smuggle data into a hidden
+  branch, or a number into a calculated one.
 - What is stored is that canonical result, bound to the exact schema version
   that produced it.
 - An invalid submission comes back `422` with the *same* error shape the

@@ -78,3 +78,9 @@ export function formatPath(path: Path): string {
   }
   return wire
 }
+
+/** The template form of an instance wire: `items[1].qty` -> `items[].qty`.
+ *  Static wires come back unchanged; repeaters do not nest. */
+export function templateWire(wire: string): string {
+  return wire.replace(/\[\d+\]/, '[]')
+}

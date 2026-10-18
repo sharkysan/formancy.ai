@@ -106,7 +106,9 @@ function previewEngine(company: boolean, previous?: FormEngine): FormEngine {
         // Doubles on both sides: a JSON number is a double and `double * int` has no
         // overload, which is the trap `expressionProblems` exists to catch at publish.
         { target: 'heroTotal', kind: 'computed', cel: "heroTicket == 'workshops' ? 790.0 : 490.0" },
-        // Computed, so nobody types into it. The engine still owns the value.
+        // Computed, so it is read-only already and nobody types into it (0181). Disabled as
+        // well for the look: no theme styles a read-only box, and the total should read as
+        // an outcome rather than a question.
         { target: 'heroTotal', kind: 'disabled', cel: 'true' },
       ],
     },
