@@ -193,9 +193,13 @@ a SQL `IN` clause without building a list. A value it does not offer is refused 
 `option` code a document's own options produce, before anything is written. A source that throws
 fails the submission closed, `503` and retryable. A source configured without `members` means
 *this list exists and I cannot check it*, and then nothing checks. A document naming a source the
-deployment does not configure is refused at publish, where the deployment configures any. Paging
-changes none of this: `more` and `withheld` are what the browser is told, and `members` is asked
-about every value submitted.
+deployment does not configure is refused at publish, where the deployment configures any. One that
+configures none checks nothing, at publish or at submission, and the server's image is one: its
+`main.ts` passes `createApp` no sources, so a deployment that wants the check composes `createApp`
+with `optionsSources` itself. Paging changes none of this: `more` and `withheld` are what the
+browser is told, and `members` is asked about every value submitted. The whole flow, browser and
+server, is drawn in the architecture's
+[runtime view](https://github.com/sharkysan/formancy.ai/blob/main/docs/architecture/06-runtime-view.md).
 
 ## Styling it
 
@@ -215,3 +219,7 @@ about every value submitted.
   would be something the person could choose and the field could not store.
 - **Checking the source.** The control believes what it is told: a page that says `more: false`
   when more rows match is a list that looks complete, and nothing here can tell.
+- **A source for a `selectboxes`.** The format allows `optionsSource` on one since spec 3, and the
+  server checks every value in its answer, but neither renderer asks a source for a tag picker's
+  or tick boxes' rows: such a field draws the document's options, of which it has none, and says
+  nothing. Use a `select` with `widget: "typeahead"` for one answer from a source.

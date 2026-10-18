@@ -236,7 +236,8 @@ left in a renderer's source, which a test reads the compiler's tree and every te
 control over an options source says, and when, is decided once beside those words, by
 `optionsStatus`, for both renderers: they hand it what only they know — whether a typeahead's
 list is open, whether the field is disabled — and draw what it returns
-([0177](../decisions/0177-a-source-may-say-its-list-goes-on.md)).
+([0177](../decisions/0177-a-source-may-say-its-list-goes-on.md)); [§6.16](06-runtime-view.md) draws
+where that sentence comes in the flow.
 
 ## 8.9 Error handling
 

@@ -30,13 +30,26 @@ explains why it exists.
 API, bypassing browser-side validation entirely.
 
 *Constraint:* the server rebuilds the engine from the exact version the client
-declared and revalidates every rule
+declared and revalidates every rule on every field
 ([0030](../decisions/0030-never-trust-client-state.md)). Client validation is
 treated as a user-experience feature and never as a check. Verified by an
 integration test that posts directly to the API.
 
 *Residual:* a rule the form author did not write is not enforced by anything.
 The software validates what it was told to validate.
+
+*And what it is told about a repeater it does not check.* The engine validates
+fields, and a repeater is not one: its `maxItems`, `required` on it, and a
+`required` or `validate` rule whose target is the repeater are accepted at
+publish and evaluated nowhere, in the browser or on the server. A submission
+with more rows than `maxItems`, or none where the repeater is required, is
+stored, and a rule aimed at the repeater fails open where A5 says validation
+fails closed. A rule on a field inside each row, or on a field beside the
+repeater that reads `size()` of it, is evaluated as any other. Found on
+2026-10-18; `apps/docs/src/list-totals.test.ts` asserts the `maxItems` and
+`validate` cases so that enforcing them fails it, and the two `required` cases
+were measured and are held by nothing
+([§11.2](../architecture/11-risks-and-debt.md)).
 
 ### A2. Client and server disagree about whether a submission is valid
 
@@ -217,17 +230,25 @@ against the document.
 *Constraint:* the server asks the deployment. `ServerDeps.optionsSources[name].members`
 is given the submitted values and returns the ones it does not offer; a non-member is
 refused with the same `option` code a document option produces, after the engine has run
-and **before anything is written**. At publish time a document naming a source the
-deployment has never configured is refused outright, so a form cannot be frozen with a
-list nobody can resolve. A source that throws fails the submission **closed** — 503 and
-retryable — because an accepted bogus value is undetectable afterwards while a refusal
-leaves the draft holding the answers.
+and **before anything is written**. At publish time, where the deployment configures any
+sources, a document naming one it has never configured is refused outright, so a form
+cannot be frozen with a list nobody can resolve. A source that throws fails the submission
+**closed** — 503 and retryable — because an accepted bogus value is undetectable afterwards
+while a refusal leaves the draft holding the answers.
 
 *Residual, and it is the point of the hazard rather than a footnote:*
 
 - **`members` is optional.** A deployment may declare a source and not supply one, which
   means *this source exists and I cannot check membership*. Then nothing checks, and the
   stored value is whatever was sent.
+- **A deployment that configures no sources checks nothing.** It cannot judge a name, so it
+  publishes a document naming any list and asks no source about any answer. The server's own
+  `main.ts` passes `createApp` no `optionsSources` (read on 2026-10-18; no test imports a
+  composition root), so the image as shipped is such a
+  deployment: a manufacturer relying on this constraint composes `createApp` with its sources.
+  `use-cases.test.ts` holds the publish half (*while a deployment that configures no sources at
+  all publishes it unchecked*) and `options-membership.test.ts` the submission half (*a
+  deployment with no sources configured at all cannot judge, and says nothing*).
 - **Membership NOW, never membership THEN.** A value legal when it was chosen can be
   refused minutes later; there is no re-offer path, because a published version is frozen
   and `staleVersionPolicy` does not negotiate.
