@@ -762,7 +762,12 @@ questions are long and have many answers can be larger, and is refused with a `4
 answer may be up to 64,000 tokens. When the browser goes away, even before its session was
 checked, the server abandons the call to the provider. A failure is a `502` with a sentence
 for the person: the key refused, the server being limited, the model refused, or unreachable.
-`GET /model` says which provider and model, or `404` when there is none.
+`GET /model` says which provider and model, as `{ "provider": …, "model": … }`, and with both
+`null` when there is none: no model is how a deployment ships, so it is answered with a `200`
+rather than as a failure every sign-in would log in the browser's console. `v0.5.0` answered it
+with a `404`, which a page of your own should still read as none while it may meet that server
+([0183](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0183-no-model-is-an-answer.md)).
+Asking `POST /model/complete` of a server with no model is a `404`.
 
 **What it costs, and who can spend it.** Every editor and admin, and every API key with one
 of those roles, can spend the key, within the limits above, counted once however many replicas

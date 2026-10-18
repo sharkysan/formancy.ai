@@ -52,6 +52,25 @@ draft said it names a field the form does not have, and now says, in each langua
 names something that is not one of the form's fields. `@formancy/core` grows from 21.2 to
 22.1 kB (§9.3).
 
+**Fixed: every sign-in to a deployment without a model logged a failed request.** No model is how
+a deployment ships, and `GET /model` answered it with a `404`, which the browser prints as a
+failure whatever the page does with it. Measured on 2026-10-18 with the server from its build and
+the admin from Vite, in Chromium: one *Failed to load resource: the server responded with a status
+of 404 (Not Found)* on every sign-in, though the admin read it, correctly, as no model. A console
+that shows a failure on every sign-in teaches whoever reads it to step over failures. Now the
+route answers `200` with `{ "provider": null, "model": null }`, the shape it answers with a model,
+and the console stays clean. `POST /model/complete` on a server with no model is still a `404`:
+that request nothing can serve. A viewer's sign-in still logs a `403`, since a viewer may not ask
+and the admin does not know who signed in. The admin needed no change: it already read an answer
+naming no model as none, and still reads `0.5.0`'s `404` that way. Held by *is said when this
+deployment has none* in `model-route.test.ts`, and the admin's `server-model.test.tsx`
+([0183](docs/decisions/0183-no-model-is-an-answer.md)).
+
+**Breaking, for a page of your own that reads `GET /model`.** One that read the `404` as none and
+any `200` as a model now reads a model whose provider is `null`. Read the provider: a string is a
+model, `null` is none — and keep reading a `404` as none while it may meet a `0.5.0` server. See
+[`MIGRATIONS.md`](MIGRATIONS.md). Nothing is stored differently and the spec version does not move.
+
 **Added, on the landing page: Formancy Health, beside the other two paid modules.** It exports
 formancy forms, their submissions and Formancy Report PDFs as HL7® FHIR® R4 resources, shaped to
 a country's profiles, starting with Switzerland's CH Core and CH ORF. Like Formancy Data and

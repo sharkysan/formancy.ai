@@ -634,7 +634,8 @@ lands only on the run still in flight, are the three holders' one shared part
 admin, in the browser                      server                                  provider
 ─────────────────────                      ──────                                  ────────
 signed in ──▶ GET /model ───────────────▶  requires form.publish
-              404 ◀────────────────────── none configured: no prompt pane drawn
+              { provider: null,            none configured, an answer and not a 404
+                model: null } ◀──────────  (0183): no prompt pane drawn
               { provider, model } ◀──────  one is: prompt pane, Translations ask,
                                            and a line saying where a request goes
 a run asks askServerModel(prompt, turn)

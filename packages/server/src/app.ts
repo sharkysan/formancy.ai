@@ -121,8 +121,8 @@ export interface AppOptions {
   scanner?: Scanner
   /**
    * The deployment's model, which the builders ask through `/model/complete` under the
-   * briefing this server writes. Absent, there is none: `/model` answers 404 and the admin
-   * draws no prompt pane (0165).
+   * briefing this server writes. Absent, there is none: `/model` names no provider and no
+   * model, and the admin draws no prompt pane (0165, 0183).
    */
   model?: DeploymentModel
   /** Model requests per session per minute. Defaults to 10: a run of three turns, three times. */

@@ -37,8 +37,9 @@ export const MODEL_BODY_LIMIT_BYTES = 1024 * 1024
 /**
  * The builders' requests to the deployment's model (0165).
  *
- * `GET /model` says whether there is one, and which, to somebody who may edit a form: the
- * admin draws the prompt pane only when there is. `POST /model/complete` takes
+ * `GET /model` says whether there is one, and which, to somebody who may edit a form —
+ * `{ provider, model }`, both `null` when there is none (0183) — and the admin draws the
+ * prompt pane only when there is. `POST /model/complete` takes
  * `{ kind, user }` and answers `{ text }` — the model's answer, for the browser to check
  * — or `{ declined }` when the provider refused, which the admin's `AskModel` hands back as
  * a decline (0158). Everything else is an error with a sentence for the person.
@@ -61,10 +62,11 @@ export async function modelRoutes(
 ): Promise<void> {
   // Asking a model is part of editing a form, so it takes the permission editing does:
   // `form.publish`, which an editor and an admin hold and a viewer does not.
-  app.get('/model', { preHandler: requires('form.publish') }, async (_request, reply) => {
-    if (model === undefined) return reply.code(404).send({ error: 'model_not_configured' })
-    return reply.send({ provider: model.provider, model: model.model })
-  })
+  // None is how a deployment ships, so it is an answer and not a missing resource (0183): a
+  // 404 here was a failed request in the console of every editor's sign-in.
+  app.get('/model', { preHandler: requires('form.publish') }, async (_request, reply) =>
+    reply.send(model === undefined ? { provider: null, model: null } : { provider: model.provider, model: model.model }),
+  )
 
   app.post(
     '/model/complete',
@@ -88,6 +90,8 @@ export async function modelRoutes(
       },
     },
     async (request, reply) => {
+      // Asking a model that is not there is a request nothing can serve, unlike asking whether
+      // there is one, so it stays an error; the admin never sends it once `/model` said none.
       if (model === undefined) return reply.code(404).send({ error: 'model_not_configured' })
       const body = (request.body ?? {}) as BuilderRequest
 
