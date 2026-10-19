@@ -1,3 +1,4 @@
+import { getAt } from '@formancy/core'
 import { diffSchemas } from '@formancy/spec'
 import type { Change, FormSchema } from '@formancy/spec'
 import { draftKey, sameToken, submissionToken } from './signing.js'
@@ -141,12 +142,10 @@ function dataColumns(schema: FormSchema): string[] {
   return columns
 }
 
+/** The answer a submission holds at a column, read as the engine reads one: its own, so an
+ *  unanswered `constructor` is an empty cell and not `function Object` (0185). */
 function cellValue(data: unknown, column: string): string {
-  let current: unknown = data
-  for (const segment of column.split('.')) {
-    if (current === null || typeof current !== 'object') return ''
-    current = (current as Record<string, unknown>)[segment]
-  }
+  const current = getAt(data, column.split('.'))
   if (current === undefined || current === null) return ''
   if (typeof current === 'object') return JSON.stringify(current)
   if (typeof current === 'string' && FORMULA_STARTERS.has(current.charAt(0))) {
@@ -360,28 +359,30 @@ function applyRenames(fields: FormSchema['model']['fields'], data: Record<string
       applyRenames(field.fields ?? [], data)
       continue
     }
-    if (field.renamedFrom !== undefined && !(field.key in data) && field.renamedFrom in data) {
+    // What the draft holds as its own, not `in`: every object answers `constructor`, so a
+    // rename to it was never applied and one from it moved `function Object` (0185).
+    if (field.renamedFrom !== undefined && !Object.hasOwn(data, field.key) && Object.hasOwn(data, field.renamedFrom)) {
       data[field.key] = data[field.renamedFrom]
       delete data[field.renamedFrom]
     }
-    if (field.type === 'group' && typeof data[field.key] === 'object' && data[field.key] !== null) {
-      applyRenames(field.fields ?? [], data[field.key] as Record<string, unknown>)
+    const held = getAt(data, [field.key])
+    if (field.type === 'group' && typeof held === 'object' && held !== null) {
+      applyRenames(field.fields ?? [], held as Record<string, unknown>)
     }
   }
 }
 
-/** Remove and return the value at a dotted path, pruning nothing else. */
+/** Remove and return the value at a dotted path, pruning nothing else — what the draft
+ *  holds there as its own, never what every object inherits. */
 function takeAtDottedPath(data: Record<string, unknown>, dottedPath: string): unknown {
   const segments = dottedPath.split('.')
-  let parent: Record<string, unknown> = data
-  for (const segment of segments.slice(0, -1)) {
-    const next = parent[segment]
-    if (next === null || typeof next !== 'object' || Array.isArray(next)) return undefined
-    parent = next as Record<string, unknown>
-  }
+  const parent = getAt(data, segments.slice(0, -1))
   const last = segments[segments.length - 1]!
-  const value = parent[last]
-  delete parent[last]
+  if (parent === null || typeof parent !== 'object' || Array.isArray(parent) || !Object.hasOwn(parent, last)) {
+    return undefined
+  }
+  const value = (parent as Record<string, unknown>)[last]
+  delete (parent as Record<string, unknown>)[last]
   return value
 }
 

@@ -269,6 +269,11 @@ knowing about, because they are now expensive to revisit:
   pages never moves data, and that is now permanent.
 - **`_id` is reserved** and no field may use it
   ([0041](../decisions/0041-repeater-row-identity.md)).
+- **`__proto__` is refused** as a key and as a matrix row's value — the one
+  thing a frozen version stopped accepting after it froze, because no document
+  holding it ever stored an answer ([0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)). A stored version with a field
+  so keyed is refused by the engine when it is opened, until it is republished; one with a
+  matrix row so valued opens, and no body Fastify parses can answer that row.
 - **CEL is the expression language** ([0016](../decisions/0016-cel.md)), with
   its 118 known corpus gaps.
 

@@ -85,7 +85,7 @@ export type {
   LayoutNode,
 } from './layout.js'
 export { modelDataPaths } from './paths.js'
-export { ROW_ID, ROW_ID_PREFIX } from './types.js'
+export { ROW_ID, ROW_ID_PREFIX, UNSTORABLE_KEY } from './types.js'
 export {
   collectFieldPaths,
   isMessageRef,

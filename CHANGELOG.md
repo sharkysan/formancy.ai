@@ -8,6 +8,61 @@ Loosely [Keep a Changelog](https://keepachangelog.com), with reasons attached �
 a line that says only *what* changed is rarely the line you need six months
 later.
 
+## Unreleased
+
+**Fixed: a field keyed after a name every object has was answered by what the object
+inherits**, in every release through `0.6.0`. A key is a name the author chooses, and the format
+admits `constructor`, `toString`, `valueOf`, `hasOwnProperty` and the rest of
+`Object.prototype`'s; a path was read with `value[key]`, which finds those on any object. So a
+required field keyed `constructor` and left empty counted as answered by `function Object` — an
+anonymous `{}` was stored with `201` where the key `contractor` was refused `422` — the renderer
+was handed the function as the field's value, a rule reading it could not be evaluated and a
+`visible` rule showed what it was meant to hide, the export printed the function's source, and a
+draft's rename to it was never applied. A list or a check the deployment supplies was looked up
+the same way: a `select` sourced from `constructor` was published against a deployment that
+configures other sources, and its answers stored unchecked (hazards A1, A7, B11). Every reader of
+an answer now reads what the value holds as its own, and a deployment's lists and checks are
+found among their own names ([0185](docs/decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)). Found behind CodeQL's alerts 30 and 31 on `setAt`, which are
+not prototype pollution: the write goes into a fresh object, and the paths come from the
+published document.
+
+**Fixed: a group, a row or a matrix answer holding an answered `constructor` could not be read
+by any rule**, in every release through `0.6.0`. The expression library, `@marcbachmann/cel-js`, tells a map by
+its `constructor` member, so such an object was no map to it: every rule reading it failed, a
+`validate` rule refusing the submission and a `visible` rule showing what it hides.
+`@formancy/expressions` now hands the library such an object as a `Map`, and charges every
+member read out of it as it charges any read, so the budget holds as it did. A map an
+expression builds still holds no `constructor`: the library leaves the key out of a literal.
+
+**Fixed: a list answered a field keyed `length`**, because a list holds its own: `{ "address":
+[] }` was stored for a form whose `address.length` is required, and `[1, 2]` for one asking
+`length` at the top. A path now reads a key only out of an object and an index only out of a
+list, as a write puts them. A submission sent as a list is still stored where nothing required
+asks it anything.
+
+**Fixed: a translation a locale lacked showed a function where its id is a name every object
+has.** A French reader of a form whose message `toString` was written only in English was
+handed `Function.prototype.toString` as the label; `resolveText` and `resolvedLocale` now read a
+catalogue's own messages and a document's own catalogues, so the English is the fallback as for
+any other id. The builders' translation views still read a catalogue by id as they did.
+
+**Refused: `__proto__` as a field's key or a matrix row's value**, which every frozen spec
+version accepted and no release ever stored an answer under: written, it replaces the object's
+prototype, so what was typed was lost, and the server's parser refuses a body that carries it.
+`validateSchema` refuses it with the new code `key.unstorable`, said in German and French by the
+builder's catalogues, and `parsePath` and `formatPath` refuse it too, so the engine will not open
+a document with a field so keyed. **A form version published before with such a field answers
+every submission with a `500` until it is republished without it** — loud on purpose, where it
+lost an answer quietly. One with a matrix row so valued still opens, since nothing is lost in it
+unsaid: Fastify's parser refuses a body answering that row with a `400`, so a required one
+takes no submission until it is republished. [`MIGRATIONS.md`](MIGRATIONS.md) says what else to
+read again before upgrading.
+
+**The cost is measured.** A keystroke over 5,000 subscribed fields went from 0.32–0.38 to
+0.49–0.60 ms in `packages/core/bench/perf.mjs`, inside its 1 ms budget, and the engine's bundle
+and the spec's barrel each grew 0.3 kB
+([§9.3](docs/architecture/09-quality-requirements.md)).
+
 ## 0.6.0 — 2026-10-18
 
 **The spec version does not move.** Version 4 is still the newest and frozen, so `0.5.0` and

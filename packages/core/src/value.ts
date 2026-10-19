@@ -10,14 +10,26 @@ import type { Path } from './path.js'
  * reference comparison, which is what keeps change detection O(changed paths)
  * on a five-thousand-field form. Hand-rolled rather than Immer for the same
  * reason: this is the hot path, and it is sixty lines.
+ *
+ * Both read only what a value holds as its OWN: `constructor` is a key an author
+ * may choose, and read through inheritance an unanswered one held `function
+ * Object` and counted as answered (0185). And a key only out of an object, an
+ * index only out of a list, as `write` writes them: a list's own `length` is no
+ * answer to a field keyed `length`.
  */
 export function getAt(root: unknown, path: Path): unknown {
   let current = root
   for (const segment of path) {
     if (current === null || typeof current !== 'object') return undefined
-    current = (current as Record<string | number, unknown>)[segment]
+    current = ownAt(current, segment)
   }
   return current
+}
+
+/* What a container holds at a segment, never what it inherits there, nor a key a list has. */
+function ownAt(container: object, segment: string | number): unknown {
+  if (Array.isArray(container) !== (typeof segment === 'number')) return undefined
+  return Object.hasOwn(container, segment) ? (container as Record<string | number, unknown>)[segment] : undefined
 }
 
 export function setAt(root: unknown, path: Path, value: unknown): unknown {
@@ -38,13 +50,13 @@ function write(container: unknown, path: Path, depth: number, value: unknown): u
     // A numeric segment means an array, whatever was there before: writing
     // rows[0] into a slot that held a scalar replaces it with a fresh array.
     const next = Array.isArray(container) ? container.slice() : []
-    next[segment] = isLeaf ? value : write(next[segment], path, depth + 1, value)
+    next[segment] = isLeaf ? value : write(ownAt(next, segment), path, depth + 1, value)
     return next
   }
 
   const isPlainObject = container !== null && typeof container === 'object' && !Array.isArray(container)
   const next: Record<string, unknown> = isPlainObject ? { ...(container as Record<string, unknown>) } : {}
-  next[segment] = isLeaf ? value : write(next[segment], path, depth + 1, value)
+  next[segment] = isLeaf ? value : write(ownAt(next, segment), path, depth + 1, value)
   return next
 }
 

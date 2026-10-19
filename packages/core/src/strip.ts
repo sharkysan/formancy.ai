@@ -32,7 +32,9 @@ function stripOne(root: unknown, path: Path): unknown {
   }
 
   if (parent === null || typeof parent !== 'object' || Array.isArray(parent)) return root
-  if (!(target in parent)) return root
+  // Its own, not `in`: every object answers `toString`, and removing what was never
+  // there copied the value and cost it its identity (0185).
+  if (!Object.hasOwn(parent, target)) return root
 
   const { [target]: _removed, ...remaining } = parent as Record<string, unknown>
   return setAt(root, parentPath, remaining)

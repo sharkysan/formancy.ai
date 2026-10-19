@@ -162,6 +162,17 @@ than assumed**, because the library's own claim is the unquantified phrase
 `packages/expressions/CEL-CONFORMANCE.md`
 ([0036](../decisions/0036-pin-the-cel-corpus.md)).
 
+**Its anomaly that reached formancy is a member named `constructor`.** Version 8.0.0 tells a
+map from anything else by `value.constructor`, so an object holding a member of its own by that
+name is `Unsupported type` to it, and every expression reading the object fails, whatever member
+it asks for. A key is a name an author chooses, so through `0.6.0` a group, a repeater's row or a
+matrix answer holding an answered `constructor` could be read by no rule. `@formancy/expressions`
+now hands such an object to the library as a `Map`, which it reads by `get`, and charges each
+member read out of it as it charges any read; held by `own-members.test.ts` there
+([0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)). The library also
+leaves `__proto__`, `constructor` and `prototype` out of a map literal, as a defence of its own,
+so `{"constructor": 1}` evaluates to `{}` — measured on 2026-10-19, and not worked around.
+
 `recheck` decides whether a form's `pattern` may be published. It statically
 analyses each expression for catastrophic backtracking, which is the only
 moment that cost can be refused — a JavaScript regular expression cannot be
@@ -232,6 +243,29 @@ IEC 62304 §7.1.2 asks for the supplier's published anomaly list.
 defects found by review are named there rather than summarised away. What follows is what a
 manufacturer characterising `0.6.0` needs on one page, with the anomalies of earlier releases
 that `0.5.0` and `0.6.0` fix, so that one still running them knows what it is upgrading away from.
+
+**Every release through `0.6.0` answers a field keyed after a name every object has with what the
+object inherits.** A path was read with `value[key]`, so a required field keyed `constructor` and
+left empty counted as answered by `function Object` and was stored, a rule reading it could not be
+evaluated and a `visible` rule showed what it hid, the export printed a function's source, a draft's
+rename to such a key was never applied, and a list the deployment supplies was found under
+`constructor` where it configured none, its answers stored unchecked. A group, a row or a matrix
+answer holding an answered `constructor` could be read by no rule, because the expression library
+tells a map by that member; a list sent where a group was asked for answered a field keyed
+`length` with its own; and a message id `toString` missing from a locale gave the renderer a
+function for a label. A field keyed `__proto__` lost every answer, and a matrix row so valued
+could not be answered past the server's parser. Measured on 2026-10-18 and 2026-10-19 against
+`0.6.0`'s code. Fixed after `0.6.0`: an answer is read as the value's own, a list answers no key,
+the library is handed such an object as a `Map`, and `__proto__` is refused as a key. Hazard B11
+in [`SAFETY-ANALYSIS.md`](SAFETY-ANALYSIS.md), and
+[0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md).
+
+**In every release, a group keyed `constructor` holding a field keyed `prototype` cannot be
+answered.** Fastify 5.12.5 parses a JSON body with `secure-json-parse` 4.1.0, which refuses an
+object under `constructor` that has a `prototype` member, as prototype poisoning, with a `400`; a
+submission or a draft answering that field is such a body. Measured on 2026-10-19, and the same for
+a matrix keyed `constructor` with a row valued `prototype`. The format does not refuse the pair,
+since the limit is the server's parser and not the document.
 
 **Every release through `0.5.0` validates nothing a document says about a repeater.** The engine
 validated fields, and a repeater is not one: its `maxItems`, `required` on it, and a `required` or

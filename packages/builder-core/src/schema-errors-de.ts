@@ -28,6 +28,8 @@ export const SCHEMA_ERRORS_DE: SchemaErrorSentences = {
     'Ein anderes Feld verwendet bereits den Schlüssel „{key}“. Ein Schlüssel bezeichnet eine Antwort, zwei Felder können ihn also nicht teilen.',
   'key.reserved':
     '„{key}“ ist reserviert: Damit trägt eine Zeile einer Wiederholung ihre Identität, also kann kein Feld so heißen.',
+  'key.unstorable':
+    '„{key}“ kann keine Antwort bezeichnen: Jedes JavaScript-Objekt hat diesen Namen bereits, eine darunter gespeicherte Antwort ginge also verloren. Wähle einen anderen Namen.',
   'rename.self':
     'Dieses Feld gibt an, aus sich selbst umbenannt worden zu sein. Entferne „renamedFrom“ oder setze es auf den Schlüssel, den dieses Feld früher hatte.',
   'rename.keyInUse':

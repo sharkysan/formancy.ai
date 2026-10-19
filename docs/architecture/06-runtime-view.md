@@ -40,7 +40,8 @@ changes only when that field's state changes
 both frameworks avoid re-rendering the rest of the form — and lets React work
 with no memoisation on the consumer's side.
 
-Measured at ≈0.38 ms against a 1 ms budget on a large form.
+Measured at ≈0.54 ms against a 1 ms budget on a large form, re-measured 2026-10-19
+([§9.3](09-quality-requirements.md)).
 
 ## 6.2 A submission, and the server's replay
 

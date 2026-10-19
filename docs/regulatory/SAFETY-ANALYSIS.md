@@ -318,6 +318,13 @@ while a refusal leaves the draft holding the answers.
   forever in an immutable record; a source is under no such obligation, and recording the
   label would change what the field collects.
 
+*And the name is looked up among the deployment's own.* Through 0.6.0 the lookup read
+`optionsSources[name]`, so a source named `constructor` was found in every object's prototype: a
+document naming it was published against a deployment that configures other sources, and its
+answers were stored unchecked, since what was found has no `members` — measured on 2026-10-18. A
+name is now one the deployment configured or none, at publish and at submission ([0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md); B11).
+Verified by `packages/server-core/src/own-properties.test.ts`.
+
 A manufacturer incorporating formancy should treat `optionsSource` as an explicit,
 per-field weakening of A6's guarantee — greppable in every published version, and named in
 the `form.published` audit row's `optionsSources` detail, sorted and once each — rather
@@ -787,6 +794,88 @@ store alone; so can a deployment's own scanner or store, or a stalled disk under
 store. **Nothing tells it apart** from any other `409` on that route — the request log (C3)
 records the status, not which refusal it was — and a test asserts the residual so that closing
 it is deliberate.
+
+### B11. An answer is read from what every object has, or written where no object keeps one
+
+*How it arises:* a key is a name the author chooses, and the format admits names every
+JavaScript object already answers to — `constructor`, `toString`, `valueOf`, `hasOwnProperty`
+and the rest of `Object.prototype`'s, and `__proto__`. Through 0.6.0 the engine walked a value by
+`value[key]`, which reads what an object inherits as readily as what it holds, and so did the
+server's export, a draft's migration, the builder's rule overview and the lookups of a
+deployment's lists and checks. Measured on 2026-10-18 and 2026-10-19 against 0.6.0's code — the
+published packages for the required field and `__proto__`, the release commit built from source
+for the rest:
+
+- a required field keyed `constructor` and left empty counted as answered by `function Object`,
+  and an anonymous `{}` was stored with `201` where the key `contractor` was refused — A1 by
+  another road;
+- a rule reading such a field unanswered could not be evaluated, so a `visible` rule showed the
+  field it was meant to keep hidden (A5's fail-open half), and the renderer was handed the
+  function as the field's value;
+- the export printed `function Object() { [native code] }` for every row that left it empty,
+  and a draft's declared rename to `constructor` was never applied (B1, B2);
+- a `select` sourced from `constructor` was published against a deployment that configures other
+  sources, and its answers were stored unchecked (A7);
+- a group, a row or a matrix answer holding an answered `constructor` could not be read by any
+  expression, because the expression library tells a map by its `constructor`: a `validate` rule
+  reading it refused the submission, and a `visible` rule showed what it hides (A5);
+- a list holds its own `length`, so a required field keyed `length` was answered by a list sent
+  where its group or the whole submission should be, and the list was stored (A1);
+- a message whose id is `toString`, missing from a locale's catalogue, was handed to the renderer
+  as `Function.prototype.toString` rather than the default's words;
+- and `__proto__`, assigned, replaces the object's prototype: what was typed into a field so
+  keyed was lost, a computed field inside a group so keyed was shown and never stored, and a
+  body carrying the key — a matrix answer whose row is so valued — is refused by the server's
+  parser with a `400`.
+
+*Found:* behind CodeQL's `js/remote-property-injection` alerts 30 and 31 on `setAt`'s writes,
+which are not prototype pollution — the write goes into a fresh object, the server's parser
+refuses a body carrying `__proto__`, and the paths come from the published document — while the
+read beside them had been wrong since the path model was written.
+
+*Constraint:* an answer is what the value holds as its own ([0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)). `getAt` reads a key
+only out of an object and an index only out of a list, as a write puts them; `getAt`, `setAt`'s
+recursion, `stripPaths`, the bag an expression reads, a matrix's rows, the export, a draft's
+migration, the rule overview and the server's walks for a submission's sourced answers and files
+read through `getAt` or `Object.hasOwn`; a deployment's lists and checks are looked up among their
+own names, and a catalogue's messages among its own ids. `@formancy/expressions` hands the library
+an object holding its own `constructor` as a `Map`, every member read out of it charged as any
+read is. `validateSchema` refuses `__proto__` as a field's key and a matrix row's value with
+`key.unstorable`, and `parsePath` and `formatPath` refuse it, so an engine handed a document no
+validator saw refuses to open rather than lose what is typed into a field so keyed. Held by
+`own-properties.test.ts` in `packages/core`, `packages/server-core` and `packages/server`,
+`own-members.test.ts` in `packages/expressions`, the validator's *a key that can name no answer*,
+the spec's *a message id or a locale named after what every object has* and the rule overview's
+*a field keyed after a name every object has*. The cases for each defect failed against 0.6.0's
+code, and those that read what a value does hold are controls, which passed before as after;
+each change reverted on its own was caught by the case meant for it.
+
+*Residual:*
+
+- **A version stored before with a field keyed `__proto__` cannot be opened.** Its public read
+  answers, and every submission is refused with a `500` until it is republished without the key;
+  nothing finds such versions for an operator. Asserted by the server's `own-properties.test.ts`.
+- **A version stored before with a matrix row valued `__proto__` opens**, and no submission
+  answering that row passes the server's parser, which refuses it with a `400`; a required one
+  takes no submission at all, refused `required` without the row. Nothing is lost unsaid, so the
+  engine does not refuse it; the same test asserts it.
+- **A group keyed `constructor` holding a field keyed `prototype`** — or a matrix so keyed with
+  such a row — is valid, and the server's parser refuses any body that answers it with a `400`,
+  measured on 2026-10-19. The format does not refuse the pair, because the limit is one parser's.
+- **The renderers look up a host's option sources by name** as they did, so a field sourced from
+  `constructor` in a browser whose host supplies no such source fails as a source that cannot
+  answer rather than as one that is missing. The server, which is the authority, refuses it.
+- **Members a form does not define are stored as they arrive**, `toString` among them, as any
+  other member the form does not have is (0173 records the behaviour; no record decides it). And
+  a submission sent as a list is stored as sent where no required field asks it anything:
+  `[1, 2]` was stored with `201` for such a form, measured on 2026-10-19.
+- **The builders' translation views read a catalogue by id as they did**, so a message whose id
+  is `toString` counts as translated in a locale that lacks it — `missingMessages` leaves it out,
+  measured on 2026-10-19 — while the person filling the form in that locale reads the default's
+  words.
+- **A map an expression builds holds no `constructor`, `prototype` or `__proto__`**: the library
+  leaves those keys out of a literal, so `{"constructor": 1}` evaluates to `{}`. A `computed` field
+  writing such a map out loses the member without an error.
 
 
 

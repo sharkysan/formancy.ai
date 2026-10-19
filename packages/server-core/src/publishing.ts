@@ -152,8 +152,10 @@ export async function publishForm(
   // Caught here rather than at the first submission, because a published version is
   // frozen forever: a form naming a list nobody can resolve is a form whose select
   // renders a message instead of a chooser, and nothing would have said so.
-  if (deps.optionsSources !== undefined) {
-    const unknown = sourceNamesIn(schema).filter((name) => deps.optionsSources?.[name] === undefined)
+  // Its own names: `constructor` is not a list because every object answers to it (0185).
+  const sources = deps.optionsSources
+  if (sources !== undefined) {
+    const unknown = sourceNamesIn(schema).filter((name) => !Object.hasOwn(sources, name) || sources[name] === undefined)
     if (unknown.length > 0) return { ok: false, kind: 'unknown_options_source', sources: unknown }
   }
 

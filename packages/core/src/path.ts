@@ -1,3 +1,5 @@
+import { UNSTORABLE_KEY } from '@formancy/spec'
+
 /**
  * The path model.
  *
@@ -14,6 +16,10 @@
 export type PathSegment = string | number
 export type Path = readonly PathSegment[]
 
+/* The spec's one key no value can hold, refused at both translation points as a "." is, so
+ * an engine handed a document no validator saw refuses to open rather than lose answers (0185). */
+const UNSTORABLE = `the key "${UNSTORABLE_KEY}" names no member a value can hold: written, it replaces the object's prototype`
+
 export function parsePath(wire: string): Path {
   if (wire === '') return []
 
@@ -27,7 +33,9 @@ export function parsePath(wire: string): Path {
     if (i === keyStart) {
       throw new Error(`Invalid path "${wire}": expected a key at position ${keyStart}`)
     }
-    segments.push(wire.slice(keyStart, i))
+    const key = wire.slice(keyStart, i)
+    if (key === UNSTORABLE_KEY) throw new Error(`Invalid path "${wire}": ${UNSTORABLE}`)
+    segments.push(key)
 
     // Zero or more [index] directly after the key.
     while (i < wire.length && wire[i] === '[') {
@@ -73,6 +81,7 @@ export function formatPath(path: Path): string {
       if (segment === '' || /[.\[\]]/.test(segment)) {
         throw new Error(`Invalid path key ${JSON.stringify(segment)}: keys must be non-empty and free of ".", "[" and "]"`)
       }
+      if (segment === UNSTORABLE_KEY) throw new Error(`Invalid path key "${segment}": ${UNSTORABLE}`)
       wire += wire === '' ? segment : `.${segment}`
     }
   }

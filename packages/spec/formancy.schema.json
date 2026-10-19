@@ -14,7 +14,7 @@
  "properties": {
   "specVersion": {
    "title": "Spec version",
-   "description": "Which version of the document format this form is written against. Independent of the package version. A version is frozen once it is released: a document that validates today will validate against every future release that speaks its version. Each version is a superset of the one before and removes nothing, so a document of an older version is also a valid document of every newer one, and upgrading is a one-line change. The other direction is refused rather than guessed at: a reader that speaks only an older version rejects a document written against a newer one instead of dropping the part it does not know. Version 2 added field types, widgets and layout kinds; version 3 the `signature` field type, the `check` and `skip` rule kinds and the `tagpicker` widget; version 4 the `ranking` and `matrix` field types, the `rating` and `slider` widgets, and the `step`, `mask` and option `image` properties. The default is the newest version, which is the one this package writes.",
+   "description": "Which version of the document format this form is written against. Independent of the package version. A version is frozen once it is released: a document that validates today will validate against every future release that speaks its version, save one that keys a field or a matrix row `__proto__`, which no release could store an answer under. Each version is a superset of the one before and removes nothing, so a document of an older version is also a valid document of every newer one, and upgrading is a one-line change. The other direction is refused rather than guessed at: a reader that speaks only an older version rejects a document written against a newer one instead of dropping the part it does not know. Version 2 added field types, widgets and layout kinds; version 3 the `signature` field type, the `check` and `skip` rule kinds and the `tagpicker` widget; version 4 the `ranking` and `matrix` field types, the `rating` and `slider` widgets, and the `step`, `mask` and option `image` properties. The default is the newest version, which is the one this package writes.",
    "default": "4",
    "enum": [
     "1",
@@ -874,7 +874,7 @@
   },
   "fieldKey": {
    "title": "Key",
-   "description": "The name this field's answer is stored under, and the field's identity for as long as the form exists. It becomes a column in exported data and a variable in logic expressions, so it has to read like an identifier: a letter or an underscore, then letters, digits or underscores. Changing a key is a data migration rather than an edit, so say where it came from with \"renamedFrom\".",
+   "description": "The name this field's answer is stored under, and the field's identity for as long as the form exists. It becomes a column in exported data and a variable in logic expressions, so it has to read like an identifier: a letter or an underscore, then letters, digits or underscores. Changing a key is a data migration rather than an edit, so say where it came from with \"renamedFrom\". Two keys are refused: `_id`, which every repeater row carries its identity under, and `__proto__`, which every JavaScript object already has, so an answer stored under it would be lost.",
    "type": "string",
    "maxLength": 64,
    "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
@@ -1520,7 +1520,7 @@
    "properties": {
     "value": {
      "title": "Value",
-     "description": "What the answer for this row is stored under. Stable like a field key: changing it detaches the answers already collected.",
+     "description": "What the answer for this row is stored under. Stable like a field key: changing it detaches the answers already collected. Not `__proto__`, which every JavaScript object already has, so an answer stored under it would be lost.",
      "type": "string",
      "minLength": 1,
      "maxLength": 200

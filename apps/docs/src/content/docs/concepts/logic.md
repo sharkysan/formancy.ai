@@ -133,6 +133,11 @@ comparison, `&&`, `||`, `? :`, `in` and indexing work in every kind.
 `random` is the one a kind withholds: a `visible` or `required` rule that flipped on a coin toss
 would make a form behave differently each time it was opened, and unverifiable on the server.
 
+A map an expression writes cannot hold the keys `constructor`, `prototype` or `__proto__`: the
+CEL library leaves them out of a literal, as a defence of its own, so `{"constructor": item.name}`
+is `{}`. A map it reads can — a group or a row with a field keyed `constructor` is read like any
+other ([0185](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)).
+
 ## No function adds up a list
 
 There is no `sum`, no `fold` and no `reduce`. `map` and `filter` make a list, and the only
