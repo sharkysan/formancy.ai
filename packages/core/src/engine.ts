@@ -657,13 +657,13 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
    *  field must not keep wearing yesterday's error either. */
   let validatedOnce = false
 
-  /** One value bag per pass: every declared top-level name present, with null
-   *  standing in for an empty leaf so expressions bind rather than throw. */
+  /** One value bag per pass: every declared top-level name present, read as the root's own
+   *  (0185), with null standing in for an empty leaf so expressions bind rather than throw. */
   function buildBag(): Record<string, unknown> {
-    const root = store.root() as Record<string, unknown> | null
+    const root = store.root()
     const bag: Record<string, unknown> = {}
     for (const [name, type] of Object.entries(declarations)) {
-      const raw = root !== null && typeof root === 'object' ? root[name] : undefined
+      const raw = getAt(root, [name])
       bag[name] = raw !== undefined ? raw : type === 'map' ? {} : type === 'list' ? [] : null
     }
     return bag
@@ -967,7 +967,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
     invalidate([wire])
 
     for (const rule of rules) {
-      const checker = checks?.[rule.check ?? '']
+      const checker = checks !== undefined && Object.hasOwn(checks, rule.check ?? '') ? checks[rule.check ?? ''] : undefined
       inFlight += 1
       const settled = (codes: string[] | undefined): void => {
         inFlight -= 1
@@ -984,8 +984,8 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
       }
 
       if (checker === undefined) {
-        // Named and absent: the document asks for a check this deployment has not
-        // supplied. Failing closed is the same answer `optionsSource` gives.
+        // Named and absent from the deployment's own checks, `toString` among them (0185): the
+        // document asks for one this deployment has not supplied, and fails closed as `optionsSource` does.
         settled(['check_unavailable' satisfies BuiltInErrorCode])
         continue
       }

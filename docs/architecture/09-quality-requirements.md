@@ -37,7 +37,7 @@ formancy
 | Q5 | A field is hidden and then shown again | The value returns if and only if `clearOnHide` is `false` | Property-based test, `fast-check` |
 | Q6 | A repeater row is added then removed | The value is identical to before | Property-based test |
 | Q7 | A published version is updated by any path into the database | The write is rejected | Database trigger; integration test |
-| Q8 | A keystroke on a form of 500 fields with 200 conditionals | **< 1 ms** | Measured **≈0.38 ms** |
+| Q8 | A keystroke on a form of 500 fields with 200 conditionals | **< 1 ms** | Measured **≈0.54 ms** by `packages/core/bench/perf.mjs`, a store of 5,000 subscribed fields, re-measured 2026-10-19 (§9.3) |
 | Q9 | Cold graph compilation for the same form | **< 30 ms** | Measured **≈1.7 ms** |
 | Q10 | A renderer emits markup that a screen reader cannot navigate | The conformance suite cannot drive it, so it fails | Structural, by [0034](../decisions/0034-accessible-name-only.md) |
 | Q11 | Any mount, and any DOM-mutating state change | Zero axe-core violations | In the conformance run |
@@ -49,10 +49,10 @@ formancy
 
 | Budget | Limit | Actual |
 |---|---|---|
-| Keystroke, large conditional form | 1 ms | ≈0.38 ms |
+| Keystroke, large conditional form | 1 ms | ≈0.54 ms, the median of seven runs re-measured 2026-10-19; 0.34 on the same machine before [0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md) |
 | Cold graph compile | 30 ms | ≈1.7 ms |
-| `@formancy/core` bundle | 18 kB brotli | **22.4 kB** — over, re-measured 2026-10-18 |
-| `@formancy/spec` bundle | — | 26.8 kB for the whole barrel — the index and the chunk it shares with `/validate`, re-measured 2026-10-16 with `acceptRemoteAnswer` and `capRemoteAnswer`, whose 1.0 kB is 0.3 kB with the comments the bundler keeps taken out |
+| `@formancy/core` bundle | 18 kB brotli | **22.7 kB** — over, re-measured 2026-10-19 |
+| `@formancy/spec` bundle | — | 27.1 kB for the whole barrel — the index and the chunk it shares with `/validate`, re-measured 2026-10-19 with `UNSTORABLE_KEY`, the sentence that refuses it and a catalogue read as its own |
 | `@formancy/react` bundle | 4 kB brotli | **25.0 kB** for the whole barrel, re-measured 2026-10-18 |
 | `@formancy/core/words` bundle | — | 6.5 kB, the renderers' words in English, German and French and what a sourced control says, an entry of its own, re-measured 2026-10-16 |
 | `uqr`, the QR encoder | — | 6.6 kB brotli, **external** rather than bundled, measured 2026-09-27 |
@@ -165,6 +165,29 @@ to 22.4 kB. With comments and whitespace taken out of both builds by esbuild the
 package's own, whose comments are block comments the bundler drops, as 0182's are, where in the
 engine they were JSDoc it keeps. Written as JSDoc, that module put 0.7 kB more into the figure. The React barrel went from 24.9 to 25.0 kB,
 24.89 to 24.98 — a hook asking two questions and a section drawing one error.
+
+**Reading an answer as the value's own moved the engine's row 0.3 kB, and the spec's 0.3.** A
+path is walked through what a value holds as its own, the deployment's checks and lists and a
+catalogue's messages are looked up the same way, and `__proto__` is refused as a key, by the
+validator and by the path model ([0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)). Measured on
+2026-10-19 on the code before and after the change, each built the same way, with Node 24 on
+one Windows machine: the engine 22.43 to 22.69 kB and the spec barrel 26.81 to 27.07. With
+comments and whitespace taken out of each file by esbuild, the engine's code went from 14.33 to
+14.46 kB and the spec's from 13.29 to 13.42; the rest is the JSDoc the bundler keeps on what
+each package exports. The helpers nothing outside their package calls carry block comments,
+which it drops: written as JSDoc first, the engine's figure was 0.08 kB higher.
+
+**And it made a keystroke slower, inside its budget.** The store asks every subscribed field
+whether its value changed by reading it through the path, so a keystroke on a large form is
+thousands of reads, and each now asks `Object.hasOwn` and `Array.isArray` at every segment.
+`packages/core/bench/perf.mjs`, run on 2026-10-19 seven times each way, alternately, against the
+engine built before and after the change on one Windows machine with Node 24 and other sessions
+running: a keystroke over 5,000 subscribed fields went from 0.32–0.38 ms to 0.49–0.60 ms, and to
+0.91 ms in one run of the seven after. In four of those rounds a build asking `Object.hasOwn`
+alone measured 0.51–0.56 ms, so the list rule costs nothing this bench can tell apart.
+`Object.hasOwn` was the cheapest of the own-property tests tried; reading first and asking the
+prototype only when it answered was slower. The figure in the keystroke row above was 0.38 ms
+from 2026-09-20 and was not dated.
 
 **The spec figure moved 4.3 kB in one change, and the reason is worth the line.**
 `diffSchemas` stopped comparing only a field's identity, its type and its `required`

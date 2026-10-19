@@ -33,6 +33,14 @@ data reads, comprehension iterations and the size of collections an expression
 budget would let a submission pass in a browser and fail its replay on a busy
 server, which would break the one-engine guarantee.
 
+**A map is handed over as one the library can read.** The library tells a map
+by `value.constructor`, so an object holding a member of its own by that name —
+a group or a row with a field keyed `constructor` — is handed to it as a `Map`,
+every member read out of it charged as any read is
+([0185](../../docs/decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)).
+A map an expression writes still holds no `constructor`, `prototype` or
+`__proto__`: the library leaves them out of a literal.
+
 Capabilities (`now`, `today`, `random`) arrive as frozen values. This package
 structurally cannot read a clock.
 

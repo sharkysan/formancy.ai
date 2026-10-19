@@ -123,7 +123,10 @@ artifact with real switching costs — your forms and submissions are written
 against it. Packages 0.9 and 1.4 can both speak spec `"1"`.
 
 Spec **`"1"` is frozen.** A document that validates today will validate against
-every future release that speaks spec 1. It was deliberately shipped as `"0"`
+every future release that speaks spec 1 — save one that keys a field `__proto__`, which no
+release could store an answer under, and which is refused since
+[0185](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md).
+It was deliberately shipped as `"0"`
 and unstable first, because three things about the model turned out to be
 undiscoverable without a renderer and a server in the loop: what happens to a
 hidden field's answer, how a repeating-group row keeps an identity that is not

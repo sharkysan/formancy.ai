@@ -1,4 +1,5 @@
 import type { FieldDef } from '@formancy/spec'
+import { getAt } from './value.js'
 
 /**
  * Whether a field's value leaves its question unanswered — what `required` refuses.
@@ -17,10 +18,10 @@ export function unanswered(def: Pick<FieldDef, 'type' | 'rows'>, value: unknown)
   // attached both arrive, and `[]` is not an answer.
   if (Array.isArray(value)) return value.length === 0
   // A matrix asks one question per row, so a required one is answered when every row is
-  // (0139): half a matrix is not an answer to it.
+  // (0139): half a matrix is not an answer to it. A row's column is the answer's own, as a
+  // field's answer is (0185).
   if (def.type === 'matrix') {
-    const answer = value as Record<string, unknown>
-    return (def.rows ?? []).some((row) => typeof answer[row.value] !== 'string')
+    return (def.rows ?? []).some((row) => typeof getAt(value, [row.value]) !== 'string')
   }
   // A signature is an object either way, so the generic `return false` below
   // would accept `{ drawn: [] }` — an empty canvas presented as a signature.

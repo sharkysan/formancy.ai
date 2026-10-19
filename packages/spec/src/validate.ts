@@ -2,7 +2,7 @@ import type { ValidateFunction } from 'ajv/dist/2020.js'
 import documentValidatorFn from './generated/document-validator.js'
 import { modelDataPaths } from './paths.js'
 import { collectFieldPaths, isMessageRef, modelPathsForLayout } from './presentation.js'
-import { ROW_ID } from './types.js'
+import { ROW_ID, UNSTORABLE_KEY } from './types.js'
 import { layoutChildren } from './layout.js'
 import type { FieldDef, FormSchema, Text } from './types.js'
 import type { LayoutNode } from './layout.js'
@@ -492,6 +492,11 @@ function presentationErrors(schema: FormSchema): SchemaError[] {
  * its position cannot give it. A field claiming the same key would collide with
  * it inside every row, so the collision is refused here rather than discovered
  * when two things disagree about what `items[0]._id` means.
+ *
+ * `__proto__` belongs to no one: an answer written under it replaces the object's
+ * prototype, so a field keyed with it, or a matrix row valued with it, collected
+ * answers no release ever stored. Refused although every version is frozen, because no
+ * document holding it ever worked (0185).
  */
 function reservedKeyErrors(schema: FormSchema): SchemaError[] {
   const errors: SchemaError[] = []
@@ -502,6 +507,14 @@ function reservedKeyErrors(schema: FormSchema): SchemaError[] {
       if (field.key === ROW_ID) {
         errors.push(schemaError(`${path}/key`, 'key.reserved', { key: ROW_ID }))
       }
+      if (field.key === UNSTORABLE_KEY) {
+        errors.push(schemaError(`${path}/key`, 'key.unstorable', { key: UNSTORABLE_KEY }))
+      }
+      field.rows?.forEach((row, rowIndex) => {
+        if (row.value === UNSTORABLE_KEY) {
+          errors.push(schemaError(`${path}/rows/${String(rowIndex)}/value`, 'key.unstorable', { key: UNSTORABLE_KEY }))
+        }
+      })
       walk(field.fields ?? [], `${path}/fields`)
     }
   }

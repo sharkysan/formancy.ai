@@ -30,6 +30,8 @@ export const SCHEMA_ERRORS = {
     'Another field already uses the key "{key}". A key identifies one answer, so two fields cannot share one.',
   'key.reserved':
     '"{key}" is reserved: it is how a repeater row carries its identity, so no field can be called that.',
+  'key.unstorable':
+    '"{key}" cannot name an answer: every JavaScript object already has it, so an answer stored under it would be lost. Choose another name.',
   'rename.self':
     'This field says it was renamed from itself. Drop "renamedFrom", or set it to the key this field used to have.',
   'rename.keyInUse':

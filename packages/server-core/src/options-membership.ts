@@ -1,3 +1,4 @@
+import { getAt } from '@formancy/core'
 import type { FieldDef, FormSchema } from '@formancy/spec'
 
 /**
@@ -51,11 +52,11 @@ export function sourcedAnswers(
 
   const walk = (fields: readonly FieldDef[], data: unknown, prefix: string): void => {
     if (typeof data !== 'object' || data === null) return
-    const record = data as Record<string, unknown>
 
     for (const field of fields) {
       const at = prefix === '' ? field.key : `${prefix}.${field.key}`
-      const held = record[field.key]
+      // What the submission holds, as the engine reads it: never a member of every object (0185).
+      const held = getAt(data, [field.key])
 
       if (field.fields !== undefined) {
         // A repeater's rows are a list; a group's children are one object.
@@ -132,7 +133,8 @@ export async function checkMembership(
   const errors: Record<string, string[]> = {}
 
   for (const [name, group] of bySource) {
-    const source = sources[name]
+    // Its own, never inherited: `constructor` names no list this deployment has (0185).
+    const source = Object.hasOwn(sources, name) ? sources[name] : undefined
     // A source the deployment has not configured cannot vouch for anything. Treated
     // as unavailable rather than as absent: the document says these answers come
     // from somewhere, and accepting them unchecked would be the silent version of

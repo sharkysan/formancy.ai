@@ -85,7 +85,10 @@ library ([0017](../decisions/0017-expression-facade.md)).
 
 `parse` · `check` · `compile` · `evaluate` are the surface. Around them sit the
 things a thin pass-through would have nowhere to put: `limits.ts` (AST size and
-depth), `budget.ts` (per-expression and per-submission wall-clock), `kinds.ts`
+depth), `budget.ts` (per-expression and per-submission wall-clock, and the
+metered view of the values an expression reads, which hands the library an
+object holding its own `constructor` as a `Map`, since the library tells a map
+by that member — [0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)), `kinds.ts`
 (the function allow-list per expression slot, so a `visible` expression cannot
 perform a lookup), `capabilities.ts` (the injected clock and randomness),
 `references.ts` (the static variable extraction the dependency graph needs),
@@ -110,7 +113,7 @@ comprehension would capture.
 | `engine.ts` | `createFormEngine`. The model walk, logic compilation, snapshot construction and caching, validation, submit |
 | `graph.ts` | The dependency DAG, topologically sorted, cycle-checked |
 | `store.ts` | Path-addressed value storage with change tracking |
-| `path.ts` / `value.ts` | Parsing, formatting and traversal of data paths |
+| `path.ts` / `value.ts` | Parsing, formatting and traversal of data paths, reading only what a value holds as its own — a key only out of an object, an index only out of a list — and refusing `__proto__` as a key ([0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)) |
 | `props.ts` | Every ARIA attribute, composed centrally ([0021](../decisions/0021-engine-owns-aria.md)) |
 | `ids.ts` | Deterministic, SSR-stable element ids |
 | `model-validators.ts` | min, max, lengths, anchored patterns, and formats as explicit regular expressions because `URL` is unavailable |

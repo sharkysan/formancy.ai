@@ -21,6 +21,21 @@ The rule that matters: **a page contributes nothing**
 addressed exactly as if pages did not exist, so moving a field between pages
 never moves data. A group nests; a repeater indexes.
 
+**A path reads what the value holds as its own.** `getAt` and `setAt` in
+`packages/core/src/value.ts` ask `Object.hasOwn` at every segment, and read a
+key only out of an object and an index only out of a list, as a write puts
+them; so does every other reader of an answer by a field's key — the strip, the
+export, a draft's migration, the builder's rule overview, the server's walks
+for a submission's sourced answers and its files — through `getAt` or the same
+call. A key is a name an author chose, and `constructor` is one an author may
+choose: read through inheritance, an unanswered one was `function Object`, and
+a list answered a field keyed `length` with its own. The expression library
+tells a map by its `constructor`, so `@formancy/expressions` hands it an object
+holding its own as a `Map`, metered as any value is. The one name no value can
+hold, `__proto__`, is no key: `parsePath` and `formatPath` refuse it, as they
+refuse a key with a `.` in it, and the spec names it once as `UNSTORABLE_KEY`
+([0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)).
+
 ## 8.2 Snapshots and change propagation
 
 `getFieldSnapshot(path)` returns a frozen object — value, type, resolved label,
@@ -272,6 +287,7 @@ a translated sentence in the error summary without translating them. §11 lists 
 | A response sent twice | Every form is handed out with a token naming the id its response will be stored under, signed for that form with the deployment's key, and a draft with one naming the draft. The id is the submission's primary key, so the same response sent again — the retry a lost answer forces, a replay — is refused `409 submission_token_spent`, and nothing is stored, delivered or audited a second time; a refused attempt spends nothing. Required of an anonymous submission. It binds no version, which the schema hash does, and does not expire; and it is not an anti-automation measure — a script reads the form for one, and what prices a script is the challenge. Held by `submitting.test.ts`, the PostgreSQL suite's *a response is stored once* and the admin's `fill-pane.test.tsx`; hazards A8 and D18 ([0169](../decisions/0169-a-response-is-stored-once.md)) |
 | Account enumeration | A decoy hash, so both paths do the same work ([0031](../decisions/0031-enumeration-resistant-login.md)) |
 | Export injection | Type-aware formula neutralisation ([0032](../decisions/0032-csv-formula-neutralisation.md)) |
+| A name read through what every object has | An answer, a deployment's list, a deployment's check and a catalogue's message are read by the name a document gives among what the value, the deployment or the catalogue holds as its own, never through `Object.prototype`; an object holding its own `constructor` is handed to the expression library as a `Map`, which it can read; and `__proto__` is refused as a key by the validator and the path model ([0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)). CodeQL's `js/remote-property-injection` alerts 30 and 31 point at `setAt`'s writes, which go into a fresh object and are no prototype pollution; `own-properties.test.ts` in core, server-core and the server and `own-members.test.ts` in expressions hold what was behind them |
 | SSRF on webhooks | Resolve DNS in-process, refuse if ANY returned address is private, connect to the checked address through a pinned agent with Host and SNI preserved; redirects not followed ([0048](../decisions/0048-webhook-delivery.md)) |
 | ReDoS from a form author | Anchored patterns, compiled at save time; `recheck` linting at publish is designed and **not yet implemented** |
 

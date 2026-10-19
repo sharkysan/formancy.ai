@@ -269,7 +269,9 @@ The spec carries its own version, independent of the packages
 ([0009](../decisions/0009-independent-spec-version.md)). Version `"1"` is
 **frozen** as of 2026-09-20 ([0042](../decisions/0042-freeze-the-spec.md)) and
 version `"2"` as of 0.2.0 ([0051](../decisions/0051-spec-2-adds-types.md)): a
-document that validates today keeps validating, in either version. Version `"3"` is
+document that validates today keeps validating, in either version, save one that keys a field
+`__proto__`, which no release could store an answer under
+([0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)). Version `"3"` is
 **frozen** as of 2026-09-29 with 0.3.0, and carries `signature`, the `tagpicker`
 widget and the `check` and `skip` rule kinds
 ([0088](../decisions/0088-spec-3-freezes-with-four-constructs.md)). Version `"4"` is

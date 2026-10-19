@@ -102,6 +102,14 @@ export const ROW_ID = '_id'
 export const ROW_ID_PREFIX = 'r'
 
 /**
+ * The one name no answer can be stored under: not a field's key, and not a matrix row's
+ * value, which is a key of its answer. Assigned, `__proto__` replaces an object's prototype
+ * instead of adding a member, so an answer written there is lost. Every other name an object
+ * inherits, `constructor` among them, is a key like any other, read as the value's own (0185).
+ */
+export const UNSTORABLE_KEY = '__proto__'
+
+/**
  * Every field type this package understands, across both spec versions.
  *
  * `SPEC_1_FIELD_TYPES` says which of them version 1 allows; the rest need

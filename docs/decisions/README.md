@@ -96,7 +96,7 @@ record whose only enforcement is "we remember" says so plainly.
 | [0014](0014-presentation-sections.md) | Keep words and arrangement in optional sections | accepted |
 | [0015](0015-diff-before-server.md) | Build `diffSchemas` before there is data to corrupt | accepted |
 | [0041](0041-repeater-row-identity.md) | A repeater row carries its own identity | accepted |
-| [0042](0042-freeze-the-spec.md) | Freeze the spec at version 1 | accepted |
+| [0042](0042-freeze-the-spec.md) | Freeze the spec at version 1 | accepted; a document valid today staying valid, for one holding the key `__proto__`, which no release could store an answer under, narrowed by 0185 |
 | [0043](0043-runs-on.md) | A validation rule says which side it runs on | accepted |
 
 ### The engine
@@ -113,6 +113,7 @@ record whose only enforcement is "we remember" says so plainly.
 | [0023](0023-model-properties-in-engine.md) | Model properties are honoured by the engine, not by renderers | accepted; the removal below `minItems` it left to the renderers, refused by 0184 |
 | [0181](0181-a-computed-value-is-the-engines.md) | A computed value is the engine's: nothing else writes it, and its control is read-only | accepted |
 | [0184](0184-a-repeater-is-validated-as-a-field-is.md) | A repeater is validated as a field is, and no row is added or removed past its bounds | accepted |
+| [0185](0185-an-answer-is-what-the-value-holds-as-its-own.md) | An answer is what the value holds as its own, and `__proto__` names none | accepted |
 
 ### The server
 

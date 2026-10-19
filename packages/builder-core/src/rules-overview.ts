@@ -1,3 +1,4 @@
+import { getAt } from '@formancy/core'
 import { compile, evaluate } from '@formancy/expressions'
 import type { Capabilities, Program, VariableDeclarations } from '@formancy/expressions'
 import type { FieldDef, FormSchema, LogicRule } from '@formancy/spec'
@@ -366,12 +367,13 @@ function compiledFor(cel: string, document: FormSchema, inRow: boolean): Program
   return compiled.ok ? compiled.program : undefined
 }
 
-/** Every top-level answer, null where there is none, as the engine binds them. */
+/** Every top-level answer, null where there is none, as the engine binds them: its own, so
+ *  a field keyed `constructor` is not `function Object` (0185). */
 function valuesOf(
   keys: readonly string[],
   answers: Readonly<Record<string, unknown>>,
 ): Record<string, unknown> {
-  return Object.fromEntries(keys.map((key) => [key, answers[key] ?? null]))
+  return Object.fromEntries(keys.map((key) => [key, getAt(answers, [key]) ?? null]))
 }
 
 function decide(
@@ -427,8 +429,8 @@ function withEveryField(fields: readonly FieldDef[], row: unknown): Record<strin
       : {}
   for (const field of fields) {
     if (field.type === 'page') Object.assign(item, withEveryField(field.fields ?? [], item))
-    else if (field.type === 'group') item[field.key] = withEveryField(field.fields ?? [], item[field.key])
-    else if (field.type !== 'repeater' && item[field.key] === undefined) item[field.key] = null
+    else if (field.type === 'group') item[field.key] = withEveryField(field.fields ?? [], getAt(item, [field.key]))
+    else if (field.type !== 'repeater' && getAt(item, [field.key]) === undefined) item[field.key] = null
   }
   return item
 }
@@ -446,10 +448,5 @@ function answerTo(
 }
 
 function read(answers: Readonly<Record<string, unknown>>, path: string): unknown {
-  let current: unknown = answers
-  for (const segment of path.split('.')) {
-    if (typeof current !== 'object' || current === null) return undefined
-    current = (current as Record<string, unknown>)[segment]
-  }
-  return current
+  return getAt(answers, path.split('.'))
 }

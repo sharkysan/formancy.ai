@@ -317,3 +317,83 @@ describe('why a field in a repeater row is shown or hidden now, row by row', () 
     expect(explainRows(visibleRule, form([visibleRule]), { country: 'CH' }, english, capabilities)).toBeUndefined()
   })
 })
+
+describe('a field keyed after a name every object has', () => {
+  // The answers were read with `answers[key]`, so an unanswered field keyed `constructor`
+  // was bound as `function Object`: the rule could not be decided, and the overview said the
+  // field was shown because of it beside a preview whose engine had decided it (0185).
+  const contractor = (rules: LogicRule[]): FormSchema =>
+    ({
+      specVersion: '4',
+      id: 'works',
+      title: 'Works',
+      model: {
+        fields: [
+          { key: 'constructor', type: 'text', label: 'Contractor' },
+          { key: 'canton', type: 'text', label: 'Canton' },
+          {
+            key: 'items',
+            type: 'repeater',
+            label: 'Items',
+            fields: [
+              { key: 'toString', type: 'text', label: 'Label' },
+              { key: 'note', type: 'text', label: 'Note' },
+            ],
+          },
+        ],
+      },
+      logic: { rules },
+    }) as FormSchema
+  const engineFor = (document: FormSchema, value: Record<string, unknown>) =>
+    createFormEngine({ schema: document, initialValue: value, capabilities: CLOCK })
+
+  test('decides a rule on the form that reads it unanswered, as the engine does', () => {
+    const rule: LogicRule = { target: 'canton', kind: 'visible', cel: 'constructor == "ACME"' }
+    const document = contractor([rule])
+
+    expect(explainRule(rule, document, {}, english, capabilities)?.outcome).toBe('fails')
+    expect(engineFor(document, {}).getFieldSnapshot(['canton']).visible).toBe(false)
+  })
+
+  test('and a rule in a row that reads it unanswered, as the engine does', () => {
+    // The row was spread from what arrived and filled where `item[key] === undefined`, which
+    // an inherited name never is, so the field nobody typed into was not bound as null.
+    const rule: LogicRule = { target: 'items[].note', kind: 'visible', cel: 'item.toString == "x"' }
+    const document = contractor([rule])
+    const answers = { items: [{ note: 'a' }] }
+
+    expect(explainRows(rule, document, answers, english, capabilities)?.map((row) => row.outcome)).toEqual(['fails'])
+    expect(engineFor(document, answers).getFieldSnapshot(['items', 0, 'note']).visible).toBe(false)
+  })
+
+  test('and a rule in a row with a member keyed constructor, read by the rule or not', () => {
+    // The row is bound with every member it declares, `constructor` among them as null, and
+    // the expression library told a map by its `constructor`: a row holding one of its own
+    // was no map to it, so every rule on the row was undecided, whatever it read (0185).
+    const rule: LogicRule = { target: 'items[].note', kind: 'visible', cel: 'item.qty > 10.0' }
+    const document = {
+      specVersion: '4',
+      id: 'works',
+      title: 'Works',
+      model: {
+        fields: [
+          {
+            key: 'items',
+            type: 'repeater',
+            label: 'Items',
+            fields: [
+              { key: 'qty', type: 'number', label: 'Qty' },
+              { key: 'note', type: 'text', label: 'Note' },
+              { key: 'constructor', type: 'text', label: 'Contractor' },
+            ],
+          },
+        ],
+      },
+      logic: { rules: [rule] },
+    } as FormSchema
+    const answers = { items: [{ qty: 2.5 }] }
+
+    expect(explainRows(rule, document, answers, english, capabilities)?.map((row) => row.outcome)).toEqual(['fails'])
+    expect(engineFor(document, answers).getFieldSnapshot(['items', 0, 'note']).visible).toBe(false)
+  })
+})

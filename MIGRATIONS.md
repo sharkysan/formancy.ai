@@ -14,7 +14,9 @@ can both speak spec `"1"`.
 ## Spec version 4 is FROZEN
 
 Spec `"4"` is frozen as of 2026-10-09, and first released with `0.4.0`. A document that
-validates today will validate against every future release that speaks spec 4. **No version
+validates today will validate against every future release that speaks spec 4, save one that
+keys a field or a matrix row `__proto__`, which no release could store an answer under
+([0185](docs/decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)). **No version
 is open now**: the next construct that needs one opens version 5
 ([0140](docs/decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)).
 
@@ -90,7 +92,9 @@ Nothing migrates submissions. A submission stays bound to the version it was col
 ## Spec version 3 is FROZEN
 
 Spec `"3"` is frozen as of 2026-09-29, with the `0.3.0` release. A document that validates
-today will validate against every future release that speaks spec 3.
+today will validate against every future release that speaks spec 3, save one that keys a field
+`__proto__`
+([0185](docs/decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)).
 
 **Version 3 is a superset of version 2 and removes nothing.** Upgrading is the same one
 line, and `upgradeSpecVersion` still does nothing else.
@@ -167,7 +171,9 @@ collected under.
 ## Spec version 2 is FROZEN
 
 Spec `"2"` is frozen as of 2026-09-28, with the `0.2.0` beta. A document that validates
-today will validate against every future release that speaks spec 2.
+today will validate against every future release that speaks spec 2, save one that keys a field
+`__proto__`
+([0185](docs/decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)).
 
 **Version 2 is a superset of version 1 and removes nothing.** Upgrading a document is one
 line — `specVersion: "1"` becomes `"2"` — and nothing rebinds: no key changes, no answer
@@ -244,7 +250,9 @@ change afterwards. Relaxing it later is allowed and would be spec 3.
 ## Spec version 1 is FROZEN
 
 Spec `"1"` is frozen as of 2026-09-20. A document that validates today will
-validate against every future release that speaks spec 1.
+validate against every future release that speaks spec 1, save one that keys a field
+`__proto__`
+([0185](docs/decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)).
 
 It shipped as `"0"` and unstable first, on purpose. Three things about the
 model turned out to be undiscoverable without a renderer and a server actually
@@ -297,6 +305,60 @@ again.
   in spec 3 that names a check the deployment answers
   ([0086](docs/decisions/0086-a-check-is-named-and-answered-elsewhere.md)), because a CEL
   expression is synchronous by construction.
+
+## An answer is read as the value's own, and `__proto__` names none (unreleased)
+
+**If a form keys a field or a matrix row `__proto__`, republish it under another key.** No
+release could store an answer under it: the engine wrote it into the object's prototype, and the
+server's parser refuses a body that carries it. `validateSchema` now refuses it with
+`key.unstorable`, so publishing such a document is a `422`. The engine refuses to open one with
+a field so keyed — a version stored before answers its public read, and every submission to it
+is a `500`, with a line at `error`, until it is republished ([0185](docs/decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)). One with a matrix row so valued
+opens as it did, and takes no submission answering that row, which the parser refuses with a
+`400`; a required one takes none at all. Their answers were never stored, so there is nothing
+for `renamedFrom` to carry.
+
+**If a form keys a field after a name every object has** — `constructor`, `toString`,
+`valueOf`, `hasOwnProperty`, `isPrototypeOf` and the rest of `Object.prototype`'s — it is read
+as the answer now, on the next submission, without a republish:
+
+- a required one left empty is refused with `required`, where it was stored as answered;
+- a rule reading it unanswered reads `null`, so a field a `visible` rule shows only for an answer
+  stays hidden until there is one, where it was shown from the start;
+- the export's cell for it is empty where nobody answered, not the source of a function;
+- a draft renamed to it carries its answer across, which it did not.
+
+**If a group, a repeater's row or a matrix holds a member keyed `constructor`**, a rule reading
+it decides now. The expression library told a map by its `constructor`, so once that member was
+answered every rule reading the object failed: a `validate` rule refused the submission and a
+`visible` rule showed what it hides. Read again any submission refused for
+such a rule, and any field shown that such a rule should have hidden. A map an expression writes
+out itself still holds no `constructor`, `prototype` or `__proto__`.
+
+**If a form keys a field `length`**, a list sent where its group or the whole submission should
+be answers it no more: a required one is refused with `required`, where the list's length was
+taken for the answer and the list was stored.
+
+**If a form's messages are named after what every object has** — `toString`, `valueOf` — a
+locale missing one reads the default's words, where the engine handed the renderer a function.
+The builders' translation views still count such a message as translated in every locale.
+
+**If your deployment supplies lists or checks**, a name the document gives is looked up among
+the ones you configured, and nothing else. A `select` sourced from `constructor` is refused at
+publish where you configure sources, and its answers `503 source_unavailable` at submission,
+where they were stored unchecked; a check named `toString` answers `check_unavailable`.
+
+**If you call the path model or read a value yourself**: `parsePath` and `formatPath` throw on
+`__proto__`, and `getAt` reads only what a value holds as its own, a key only out of an object and
+an index only out of a list, so `getAt({}, ['constructor'])` and `getAt([], ['length'])` are
+`undefined`. `evaluate` reports `missing_variable` for a declared name the bag does not hold as
+its own, `constructor` among them.
+
+**If your builder speaks a language of its own**, `key.unstorable` is a new sentence of the
+validator's. `SCHEMA_ERRORS_DE` and `SCHEMA_ERRORS_FR` say it; a catalogue of yours shows the
+English until it does.
+
+Nothing is stored differently, and the spec version does not move.
 
 ## A repeater is validated as a field is (0.6.0)
 

@@ -38,7 +38,8 @@ export function bindValues(
 ): Record<string, unknown> {
   const bound: Record<string, unknown> = {}
   for (const [name, type] of Object.entries(declarations)) {
-    const raw = values[name]
+    // The bag's own, so a declared `constructor` it lacks is missing, not `function Object` (0185).
+    const raw = Object.hasOwn(values, name) ? values[name] : undefined
     if (raw === undefined) {
       throw new ExpressionError({
         kind: 'runtime',

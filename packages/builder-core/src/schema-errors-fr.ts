@@ -27,6 +27,8 @@ export const SCHEMA_ERRORS_FR: SchemaErrorSentences = {
     'Un autre champ utilise déjà la clé « {key} ». Une clé désigne une réponse : deux champs ne peuvent donc pas la partager.',
   'key.reserved':
     '« {key} » est réservé : c’est ainsi qu’une ligne de répétition porte son identité, si bien qu’aucun champ ne peut s’appeler ainsi.',
+  'key.unstorable':
+    '« {key} » ne peut pas désigner une réponse : tout objet JavaScript porte déjà ce nom, si bien qu’une réponse enregistrée sous ce nom serait perdue. Choisissez un autre nom.',
   'rename.self':
     'Ce champ indique avoir été renommé à partir de lui-même. Supprimez « renamedFrom », ou donnez-lui la clé que ce champ avait auparavant.',
   'rename.keyInUse':

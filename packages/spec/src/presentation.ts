@@ -40,12 +40,20 @@ export function resolveText(
   const messages = schema.i18n?.messages
   if (messages === undefined) return undefined
 
-  const asked = messages[resolvedLocale(schema, locale)]?.[text.$t]
+  const asked = messageIn(messages, resolvedLocale(schema, locale), text.$t)
   if (asked !== undefined) return asked
 
   const fallbackLocale = schema.i18n?.defaultLocale
   if (fallbackLocale === undefined) return undefined
-  return messages[fallbackLocale]?.[text.$t]
+  return messageIn(messages, fallbackLocale, text.$t)
+}
+
+/* A catalogue's own message, never what every object inherits: an id is a name the author
+ * chooses, and a French reader of a form whose `toString` was English only was handed
+ * `Function.prototype.toString` as the label (0185). */
+function messageIn(messages: Readonly<FormI18n['messages']>, locale: string, id: string): string | undefined {
+  const catalogue = Object.hasOwn(messages, locale) ? messages[locale] : undefined
+  return catalogue !== undefined && Object.hasOwn(catalogue, id) ? catalogue[id] : undefined
 }
 
 /**
@@ -69,7 +77,8 @@ export function resolvedLocale(
   locale: string,
 ): string {
   const i18n = schema.i18n
-  if (i18n === undefined || i18n.messages[locale] !== undefined) return locale
+  // Its own catalogues: `messages['constructor']` is `function Object`, a catalogue nobody wrote.
+  if (i18n === undefined || Object.hasOwn(i18n.messages, locale)) return locale
   return i18n.defaultLocale
 }
 

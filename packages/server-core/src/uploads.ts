@@ -1,3 +1,4 @@
+import { getAt } from '@formancy/core'
 import { modelDataPaths } from '@formancy/spec'
 import type { FieldDef, FormSchema } from '@formancy/spec'
 import { maySubmit } from './access.js'
@@ -275,10 +276,10 @@ function referencedFileIds(schema: FormSchema, data: unknown): string[] {
 
   const walk = (fields: readonly FieldDef[], value: unknown): void => {
     if (value === null || typeof value !== 'object' || Array.isArray(value)) return
-    const record = value as Record<string, unknown>
 
     for (const field of flattenPages(fields)) {
-      const held = record[field.key]
+      // What the submission holds, as the engine reads it: never a member of every object (0185).
+      const held = getAt(value, [field.key])
       if (held === undefined) continue
 
       if (field.type === 'file') {

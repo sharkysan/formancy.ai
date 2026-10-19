@@ -166,6 +166,15 @@ Two guards back this up. The old key must be gone from the form (otherwise you
 have made a copy, not a rename), and two fields may not both claim to be
 renamed from the same dead key — old answers can only move to one place.
 
+Two keys are refused. `_id` is how every repeater row carries its identity, so a
+field of that name would collide with it in every row. `__proto__` is a name
+every JavaScript object already has: an answer written under it replaces the
+object's prototype instead of being stored, so `validateSchema` refuses it as a
+field's key and as a matrix row's value, with the code `key.unstorable`. Every
+other name an object inherits — `constructor`, `toString`, `valueOf` — is a key
+like any other, and its answer is read as the submission's own
+([0185](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)).
+
 ## Clearing on hide
 
 When a rule hides a field, what happens to what the person already typed?
@@ -217,8 +226,8 @@ Three things are deliberate here:
 
 `validateSchema` from `@formancy/spec/validate` is the gate, and the server runs
 it before anything is persisted. It enforces what JSON Schema alone cannot:
-duplicate keys, the `renamedFrom` rules above, and — in spec v0 — repeaters
-nested inside repeaters.
+duplicate keys, the `renamedFrom` rules above, the two refused keys, and — in
+spec v0 — repeaters nested inside repeaters.
 
 ```ts
 import { validateSchema } from '@formancy/spec/validate'

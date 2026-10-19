@@ -117,6 +117,39 @@ describe('resolvedLocale', () => {
   })
 })
 
+describe('a message id or a locale named after what every object has', () => {
+  // An id is a name the author chooses, and the catalogues were read with `messages[locale]
+  // [id]`, which finds what every object inherits as readily as what it holds (0185).
+  const named: FormSchema = {
+    specVersion: '1',
+    id: 'contact',
+    title: 'Contact',
+    model: { fields: [{ key: 'name', type: 'text', label: { $t: 'toString' } }] },
+    i18n: {
+      defaultLocale: 'en',
+      messages: { en: { toString: 'Name' }, fr: { other: 'Autre' } },
+    },
+  }
+
+  test('a translation the locale lacks falls back to the default, whatever the id is called', () => {
+    // A French reader of this valid form was shown `Function.prototype.toString` as the
+    // label, typeof function, where the English words were the fallback.
+    expect(validateSchema(named).valid).toBe(true)
+    expect(resolveText(named, { $t: 'toString' }, 'fr')).toBe('Name')
+  })
+
+  test('and a locale the document has no catalogue for is its default, whatever it is called', () => {
+    // `messages['constructor']` is `function Object`, which is not undefined: a reader asking
+    // for that locale was read a catalogue nobody wrote, and every message resolved to nothing.
+    expect(resolvedLocale(named, 'constructor')).toBe('en')
+    expect(resolveText(named, { $t: 'toString' }, 'constructor')).toBe('Name')
+    // And a default that names no catalogue, in a document no validator saw: the function's
+    // own `name` came back as the label, "Object".
+    const unwritten = { i18n: { defaultLocale: 'constructor', messages: {} } }
+    expect(resolveText(unwritten, { $t: 'name' }, 'constructor')).toBeUndefined()
+  })
+})
+
 const withLayout: FormSchema = {
   specVersion: '1',
   id: 'order',

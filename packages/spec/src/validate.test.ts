@@ -240,6 +240,86 @@ describe('validateSchema semantic rules', () => {
   })
 })
 
+describe('a key that can name no answer', () => {
+  test('refuses a field keyed _id, which every repeater row carries as its identity', () => {
+    // Inside a row the field's answer and the row's identity would be one member, and
+    // which of the two `items[0]._id` meant would depend on who wrote last (0041).
+    const claimed = revise((draft) => {
+      draft.model.fields.push({ key: 'items', type: 'repeater', fields: [{ key: '_id', type: 'text' }] })
+    })
+
+    expect(onlyError(validateSchema(claimed))).toEqual({
+      path: '/model/fields/2/fields/0/key',
+      code: 'key.reserved',
+      values: { key: '_id' },
+      message: '"_id" is reserved: it is how a repeater row carries its identity, so no field can be called that.',
+    })
+  })
+
+  test.each([
+    ['at the top of the form', (draft: FormSchema) => draft.model.fields.push({ key: '__proto__', type: 'text' }), '/model/fields/2/key'],
+    [
+      'inside a group',
+      (draft: FormSchema) =>
+        draft.model.fields.push({ key: 'outer', type: 'group', fields: [{ key: '__proto__', type: 'text' }] }),
+      '/model/fields/2/fields/0/key',
+    ],
+  ])('refuses a field keyed __proto__ %s, whose answers no release has ever stored', (_where, edit, path) => {
+    // Written under `__proto__`, an answer replaces the object's prototype instead of
+    // joining it, so `{ name: 'Ann' }` came back from writing "my answer" there, and a
+    // server built on Fastify refuses any body that carries the key with a 400. It was
+    // valid, published and filled in, and its answers went nowhere (0185).
+    expect(onlyError(validateSchema(revise(edit)))).toEqual({
+      path,
+      code: 'key.unstorable',
+      values: { key: '__proto__' },
+      message:
+        '"__proto__" cannot name an answer: every JavaScript object already has it, so an answer stored under it would be lost. Choose another name.',
+    })
+  })
+
+  test('refuses a matrix row valued __proto__, which its answer is stored under', () => {
+    // A row's value is a key of the answer, so the row is the field's case again: the
+    // renderers wrote it as a member and the server refused every answer to it (0185).
+    const document: FormSchema = {
+      specVersion: '4',
+      id: 'survey',
+      title: 'Survey',
+      model: {
+        fields: [
+          {
+            key: 'rating',
+            type: 'matrix',
+            rows: [
+              { value: 'taste', label: 'Taste' },
+              { value: '__proto__', label: 'Price' },
+            ],
+            options: [
+              { value: 'good', label: 'Good' },
+              { value: 'bad', label: 'Bad' },
+            ],
+          },
+        ],
+      },
+    }
+
+    expect(onlyError(validateSchema(document))).toMatchObject({
+      path: '/model/fields/0/rows/1/value',
+      code: 'key.unstorable',
+      values: { key: '__proto__' },
+    })
+  })
+
+  test.each(['constructor', 'toString', 'valueOf', 'hasOwnProperty', 'prototype', 'proto'])(
+    'and accepts "%s", which a value holds as its own like any other key',
+    (key) => {
+      // The refusal is one name. These were always stored as they were given, and refusing
+      // them would make a frozen version's documents invalid for nothing they did wrong.
+      expect(validateSchema(revise((draft) => draft.model.fields.push({ key, type: 'text' }))).valid).toBe(true)
+    },
+  )
+})
+
 /** Keys drawn from a small pool so that duplicates, renames pointing at a live
  *  key and renames pointing at nothing all turn up on their own. */
 const arbKey = fc.oneof(

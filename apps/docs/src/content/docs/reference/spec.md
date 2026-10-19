@@ -24,7 +24,7 @@ A formancy form. The document holds the data contract only: what the form collec
 
 required · one of `"1"`, `"2"`, `"3"`, `"4"` · default `"4"`
 
-**Spec version.** Which version of the document format this form is written against. Independent of the package version. A version is frozen once it is released: a document that validates today will validate against every future release that speaks its version. Each version is a superset of the one before and removes nothing, so a document of an older version is also a valid document of every newer one, and upgrading is a one-line change. The other direction is refused rather than guessed at: a reader that speaks only an older version rejects a document written against a newer one instead of dropping the part it does not know. Version 2 added field types, widgets and layout kinds; version 3 the `signature` field type, the `check` and `skip` rule kinds and the `tagpicker` widget; version 4 the `ranking` and `matrix` field types, the `rating` and `slider` widgets, and the `step`, `mask` and option `image` properties. The default is the newest version, which is the one this package writes.
+**Spec version.** Which version of the document format this form is written against. Independent of the package version. A version is frozen once it is released: a document that validates today will validate against every future release that speaks its version, save one that keys a field or a matrix row `__proto__`, which no release could store an answer under. Each version is a superset of the one before and removes nothing, so a document of an older version is also a valid document of every newer one, and upgrading is a one-line change. The other direction is refused rather than guessed at: a reader that speaks only an older version rejects a document written against a newer one instead of dropping the part it does not know. Version 2 added field types, widgets and layout kinds; version 3 the `signature` field type, the `check` and `skip` rule kinds and the `tagpicker` widget; version 4 the `ranking` and `matrix` field types, the `rating` and `slider` widgets, and the `step`, `mask` and option `image` properties. The default is the newest version, which is the one this package writes.
 
 ### `id`
 
@@ -81,7 +81,7 @@ One field of the form. Most fields collect a single answer; a group, a page and 
 
 required · Key (see below) · max length 64 · pattern `^[A-Za-z_][A-Za-z0-9_]*$`
 
-**Key.** The name this field's answer is stored under, and the field's identity for as long as the form exists. It becomes a column in exported data and a variable in logic expressions, so it has to read like an identifier: a letter or an underscore, then letters, digits or underscores. Changing a key is a data migration rather than an edit, so say where it came from with "renamedFrom".
+**Key.** The name this field's answer is stored under, and the field's identity for as long as the form exists. It becomes a column in exported data and a variable in logic expressions, so it has to read like an identifier: a letter or an underscore, then letters, digits or underscores. Changing a key is a data migration rather than an edit, so say where it came from with "renamedFrom". Two keys are refused: `_id`, which every repeater row carries its identity under, and `__proto__`, which every JavaScript object already has, so an answer stored under it would be lost.
 
 Examples: `"email"`, `"invoice_total"`, `"passengerCount"`
 
@@ -158,7 +158,7 @@ optional · Fields (see below)
 
 Each item:
 
-- `key` — required · **Key.** The name this field's answer is stored under, and the field's identity for as long as the form exists. It becomes a column in exported data and a variable in logic expressions, so it has to read like an identifier: a letter or an underscore, then letters, digits or underscores. Changing a key is a data migration rather than an edit, so say where it came from with "renamedFrom".
+- `key` — required · **Key.** The name this field's answer is stored under, and the field's identity for as long as the form exists. It becomes a column in exported data and a variable in logic expressions, so it has to read like an identifier: a letter or an underscore, then letters, digits or underscores. Changing a key is a data migration rather than an edit, so say where it came from with "renamedFrom". Two keys are refused: `_id`, which every repeater row carries its identity under, and `__proto__`, which every JavaScript object already has, so an answer stored under it would be lost.
 - `type` — required · **Field type.** What kind of answer the field collects, or — for a group, a page or a repeater — how it holds the fields inside it. The type decides which control the reader sees and how the answer is stored, so changing it on a live form may leave existing answers unreadable.
 - `required` — optional · **Required.** Whether the form can be sent without an answer to this field — for a repeater, without a row. Turning this on for a field that already exists invalidates the submissions that left it empty, so publishing reports it as a lossy change.
 - `renamedFrom` — optional · **Renamed from.** The key this field used to be called. Set it in the same edit that changes the key and the answers already collected follow the field across. The old key must be gone from this form: if a field still uses it, you have made a copy rather than a rename, and the two would fight over the same answers.
@@ -319,7 +319,7 @@ required · array of Row · at least 1 item
 
 Each item:
 
-- `value` — required · **Value.** What the answer for this row is stored under. Stable like a field key: changing it detaches the answers already collected.
+- `value` — required · **Value.** What the answer for this row is stored under. Stable like a field key: changing it detaches the answers already collected. Not `__proto__`, which every JavaScript object already has, so an answer stored under it would be lost.
 - `label` — required · **Label.** What the person answering reads for this row.
 
 #### `file`
@@ -589,7 +589,7 @@ required · Fields (see below)
 
 Each item:
 
-- `key` — required · **Key.** The name this field's answer is stored under, and the field's identity for as long as the form exists. It becomes a column in exported data and a variable in logic expressions, so it has to read like an identifier: a letter or an underscore, then letters, digits or underscores. Changing a key is a data migration rather than an edit, so say where it came from with "renamedFrom".
+- `key` — required · **Key.** The name this field's answer is stored under, and the field's identity for as long as the form exists. It becomes a column in exported data and a variable in logic expressions, so it has to read like an identifier: a letter or an underscore, then letters, digits or underscores. Changing a key is a data migration rather than an edit, so say where it came from with "renamedFrom". Two keys are refused: `_id`, which every repeater row carries its identity under, and `__proto__`, which every JavaScript object already has, so an answer stored under it would be lost.
 - `type` — required · **Field type.** What kind of answer the field collects, or — for a group, a page or a repeater — how it holds the fields inside it. The type decides which control the reader sees and how the answer is stored, so changing it on a live form may leave existing answers unreadable.
 - `required` — optional · **Required.** Whether the form can be sent without an answer to this field — for a repeater, without a row. Turning this on for a field that already exists invalidates the submissions that left it empty, so publishing reports it as a lossy change.
 - `renamedFrom` — optional · **Renamed from.** The key this field used to be called. Set it in the same edit that changes the key and the answers already collected follow the field across. The old key must be gone from this form: if a field still uses it, you have made a copy rather than a rename, and the two would fight over the same answers.
@@ -604,7 +604,7 @@ A list of fields.
 
 max length 64 · pattern `^[A-Za-z_][A-Za-z0-9_]*$`
 
-The name this field's answer is stored under, and the field's identity for as long as the form exists. It becomes a column in exported data and a variable in logic expressions, so it has to read like an identifier: a letter or an underscore, then letters, digits or underscores. Changing a key is a data migration rather than an edit, so say where it came from with "renamedFrom".
+The name this field's answer is stored under, and the field's identity for as long as the form exists. It becomes a column in exported data and a variable in logic expressions, so it has to read like an identifier: a letter or an underscore, then letters, digits or underscores. Changing a key is a data migration rather than an edit, so say where it came from with "renamedFrom". Two keys are refused: `_id`, which every repeater row carries its identity under, and `__proto__`, which every JavaScript object already has, so an answer stored under it would be lost.
 
 Examples: `"email"`, `"invoice_total"`, `"passengerCount"`
 
@@ -826,7 +826,7 @@ One thing a matrix asks its question of.
 
 required · string · min length 1 · max length 200
 
-**Value.** What the answer for this row is stored under. Stable like a field key: changing it detaches the answers already collected.
+**Value.** What the answer for this row is stored under. Stable like a field key: changing it detaches the answers already collected. Not `__proto__`, which every JavaScript object already has, so an answer stored under it would be lost.
 
 #### `label`
 

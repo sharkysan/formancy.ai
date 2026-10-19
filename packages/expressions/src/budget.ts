@@ -97,20 +97,42 @@ export function createMeter(budget: EvaluationBudget): Meter {
     }
   }
 
+  /** Built once per object per pass: a rule reading a row member by member would otherwise
+   *  copy the row at every read. */
+  const asMaps = new WeakMap<object, MeteredMap>()
+
   /**
    * Only plain objects and arrays are wrapped. A Proxy has no internal slots,
    * so a wrapped Date throws from getTime() and a wrapped Decimal would no
    * longer be recognised as one; those values are handed through untouched,
    * which is safe because they hold a bounded amount of data.
+   *
+   * An object holding a member of its own named `constructor` is handed over as
+   * a `Map` instead, because the library tells a map by `value.constructor`: to
+   * it such an object was no map at all, and every expression reading it failed
+   * — a repeater row with a field keyed `constructor` failed every rule on the
+   * row (0185). A `Map` is the library's other map, read through `get`.
    */
   function measure(value: unknown): unknown {
     if (!isTraversable(value)) return value
+    if (!Array.isArray(value) && Object.hasOwn(value as object, 'constructor')) {
+      const source = value as Record<string, unknown>
+      let map = asMaps.get(source)
+      if (map === undefined) asMaps.set(source, (map = new MeteredMap(Object.entries(source), read)))
+      return map
+    }
     return new Proxy(value as object, {
       get(target, key, receiver) {
         charge()
         return measure(Reflect.get(target, key, receiver))
       },
     })
+  }
+
+  /* A member read out of a `MeteredMap`: charged and measured, as the Proxy's `get` does. */
+  function read(member: unknown): unknown {
+    charge()
+    return measure(member)
   }
 
   return {
@@ -124,6 +146,35 @@ export function createMeter(budget: EvaluationBudget): Meter {
     measure,
   }
 }
+
+/**
+ * A `Map` whose every member read is charged, for an object the library could not read as
+ * a map (see `measure`). The library reads a `Map`'s members through `get` and by iterating
+ * its entries, and so does `toExpressionValue` with a result, so those are what charge;
+ * `has`, `keys` and `size` charge nothing, as the Proxy's `has` and `ownKeys` do not. Its
+ * `constructor` is `Map`'s, because that is how the library knows a map from a message.
+ */
+class MeteredMap extends Map<string, unknown> {
+  readonly #read: (member: unknown) => unknown
+
+  constructor(entries: ReadonlyArray<readonly [string, unknown]>, read: (member: unknown) => unknown) {
+    super(entries)
+    this.#read = read
+  }
+
+  override get(key: string): unknown {
+    return this.#read(super.get(key))
+  }
+
+  override *entries(): MapIterator<[string, unknown]> {
+    for (const [key, member] of super.entries()) yield [key, this.#read(member)]
+  }
+
+  override [Symbol.iterator](): MapIterator<[string, unknown]> {
+    return this.entries()
+  }
+}
+Object.defineProperty(MeteredMap.prototype, 'constructor', { value: Map })
 
 function isTraversable(value: unknown): boolean {
   if (typeof value !== 'object' || value === null) return false
