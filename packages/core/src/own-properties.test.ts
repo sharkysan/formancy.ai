@@ -338,4 +338,19 @@ describe('__proto__ names no path', () => {
 
     expect(() => createFormEngine({ schema: document })).toThrow(/"__proto__"/)
   })
+
+  test('a write handed such a path anyway defines a member and changes no prototype', () => {
+    // setAt takes a Path, not a wire path, so parsePath's refusal is not the only
+    // door: an assignment under `__proto__` reached the setter, replaced the copy's
+    // prototype and dropped the answer, `{ name: 'Ann' }` back from a write of
+    // "typed answer". A write defines what the value holds as its own instead.
+    const written = setAt({ name: 'Ann' }, ['__proto__'], 'typed answer') as Record<string, unknown>
+    expect(Object.getPrototypeOf(written)).toBe(Object.prototype)
+    expect(Object.hasOwn(written, '__proto__')).toBe(true)
+    expect(getAt(written, ['__proto__'])).toBe('typed answer')
+
+    const nested = setAt({}, ['outer', '__proto__', 'total'], 4) as Record<string, Record<string, unknown>>
+    expect(Object.getPrototypeOf(nested.outer)).toBe(Object.prototype)
+    expect(getAt(nested, ['outer', '__proto__', 'total'])).toBe(4)
+  })
 })

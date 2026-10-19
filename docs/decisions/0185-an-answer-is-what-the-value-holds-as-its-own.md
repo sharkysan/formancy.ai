@@ -20,8 +20,8 @@
   does not hold; a member somebody put on `Object.prototype` or `Array.prototype` not spread into
   a group or a row a write creates, and not answering a required matrix's row; `formatPath` and
   `parsePath` refusing `__proto__` anywhere in a path and admitting `proto`, `_proto_`,
-  `prototype` and `constructor`; and `createFormEngine` refusing a document holding a field keyed
-  `__proto__`. Every case for a defect failed against the engine before the change, each for its
+  `prototype` and `constructor`; `createFormEngine` refusing a document holding a field keyed
+  `__proto__`; and `setAt` handed `__proto__` anyway defining a member and changing no prototype. Every case for a defect failed against the engine before the change, each for its
   reason; the cases that read what a value does hold are the controls, and passed before as
   after. Each change was then reverted on its own and caught: `write`'s object and array halves,
   the list rule, the strip, the bag, the checks, the matrix, and each refusal in the path model.
@@ -139,7 +139,9 @@ row's value, which is a key of the row's answer, under the code `key.unstorable`
 `UNSTORABLE_KEY` in `@formancy/spec` names it once, and the engine's path model reads it from
 there: `parsePath` and `formatPath` refuse it as they refuse a key with a `.` in it, so an
 engine handed a document no validator saw refuses to open rather than lose what a person
-types.
+types. And `setAt` defines what it writes as the copy's own member rather than assigning it, so
+a `Path` that reaches it without `parsePath` — it takes the segments, not the wire form — puts
+an answer under `__proto__` and reaches no setter the copy inherits.
 
 **Refused although every version is frozen**, because the freeze promises that a document
 which works keeps working, and no document holding this key ever did. That is the difference

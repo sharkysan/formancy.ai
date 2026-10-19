@@ -51,7 +51,8 @@ version accepted and no release ever stored an answer under: written, it replace
 prototype, so what was typed was lost, and the server's parser refuses a body that carries it.
 `validateSchema` refuses it with the new code `key.unstorable`, said in German and French by the
 builder's catalogues, and `parsePath` and `formatPath` refuse it too, so the engine will not open
-a document with a field so keyed. **A form version published before with such a field answers
+a document with a field so keyed; and a write defines what it puts as the value's own member, so
+a path that reaches `setAt` without `parsePath` changes no prototype either. **A form version published before with such a field answers
 every submission with a `500` until it is republished without it** — loud on purpose, where it
 lost an answer quietly. One with a matrix row so valued still opens, since nothing is lost in it
 unsaid: Fastify's parser refuses a body answering that row with a `400`, so a required one

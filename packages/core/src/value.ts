@@ -50,14 +50,22 @@ function write(container: unknown, path: Path, depth: number, value: unknown): u
     // A numeric segment means an array, whatever was there before: writing
     // rows[0] into a slot that held a scalar replaces it with a fresh array.
     const next = Array.isArray(container) ? container.slice() : []
-    next[segment] = isLeaf ? value : write(ownAt(next, segment), path, depth + 1, value)
-    return next
+    return own(next, segment, isLeaf ? value : write(ownAt(next, segment), path, depth + 1, value))
   }
 
   const isPlainObject = container !== null && typeof container === 'object' && !Array.isArray(container)
   const next: Record<string, unknown> = isPlainObject ? { ...(container as Record<string, unknown>) } : {}
-  next[segment] = isLeaf ? value : write(ownAt(next, segment), path, depth + 1, value)
-  return next
+  return own(next, segment, isLeaf ? value : write(ownAt(next, segment), path, depth + 1, value))
+}
+
+/*
+ * `copy` holding `value` at `segment` as its own member: defined, not assigned, so
+ * that no key reaches a setter the copy inherits. Assigned, `__proto__` replaced the
+ * copy's prototype and dropped the answer; parsePath refuses that key, but a Path
+ * reaches setAt without it (0185). On a list it is an index, as an assignment is.
+ */
+function own<T extends object>(copy: T, segment: string | number, value: unknown): T {
+  return Object.defineProperty(copy, segment, { value, writable: true, enumerable: true, configurable: true })
 }
 
 /**
