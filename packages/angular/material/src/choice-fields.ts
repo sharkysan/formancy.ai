@@ -139,7 +139,10 @@ export class FormancyMaterialCheckboxField extends MaterialFieldBase {}
   imports: [MatRadioModule, MatFormFieldModule, NgComponentOutlet, FormancyTextPipe],
   template: `
     @if (offered(); as offered) {
+      <!-- The engine's control id on the group, as the default group carries it, and each
+           option's host keeps its own: focusControl moves into Material's first option (0186). -->
       <fieldset
+        [id]="control().id"
         data-formancy-part="field"
         [attr.data-formancy-field-path]="context.path"
         [attr.data-state]="showError() ? 'invalid' : 'valid'"
@@ -184,7 +187,10 @@ export class FormancyMaterialRadioGroupField extends MaterialFieldBase {
   imports: [MatCheckboxModule, MatFormFieldModule, NgComponentOutlet, FormancyTextPipe],
   template: `
     @if (offered(); as offered) {
+      <!-- The engine's control id on the group, as the default group carries it, and each
+           option's host keeps its own: focusControl moves into Material's first option (0186). -->
       <fieldset
+        [id]="control().id"
         data-formancy-part="field"
         [attr.data-formancy-field-path]="context.path"
         [attr.data-state]="showError() ? 'invalid' : 'valid'"

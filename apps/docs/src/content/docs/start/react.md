@@ -236,6 +236,15 @@ Per-path entries beat per-type entries beat the built-in defaults. A design
 system replaces the entire visual layer by handing in a registry, without
 forking anything.
 
+Put the field's id on what you draw. `controlProps.id` is the engine's control id, and the
+links in `<ErrorSummary />`, and a submit through `useSubmit()` that fails, move focus by it.
+Spread it on the control, or, for a field answered by several controls, as a radio group or a
+set of tick boxes is, put `field.ids.control` on the group around them: a group takes no focus,
+so focus moves to the first control inside. A component that draws the id nowhere is a field
+the summary names and cannot take anybody to. The built-in controls do the same — a group
+carries it on its fieldset, and a signature on the box its name is typed into
+([0186](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0186-a-fields-control-id-names-its-group-or-its-control.md)).
+
 A field a `computed` rule writes has `field.readOnly` set, and `setValue` on it
 does nothing: its value is the rule's. Draw it with `readOnly` as the built-in
 controls do, or the person types into a box that does not keep what they type

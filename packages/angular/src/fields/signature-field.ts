@@ -50,7 +50,13 @@ import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
           }
         </svg>
 
+        <!-- The field's control id, because this is the one part of a signature a keyboard
+             can use: the error summary's link and a failed submit land here, and the shell's
+             label, which points at the id, labels this box. Its name stays its own words,
+             since aria-label outranks a label; without the id nothing had it, and the link,
+             the submit and the label all reached nothing (0186). -->
         <input
+          [id]="control().id"
           data-formancy-part="signature-typed"
           type="text"
           [attr.aria-label]="'signature.typed' | formancyText"

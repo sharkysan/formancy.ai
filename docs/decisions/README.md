@@ -108,12 +108,13 @@ record whose only enforcement is "we remember" says so plainly.
 | [0018](0018-static-dependencies.md) | Extract dependencies statically and reject cycles at save time | accepted |
 | [0019](0019-injected-capabilities.md) | Inject the clock and randomness; never read them ambiently | accepted |
 | [0020](0020-identity-stable-snapshots.md) | Make snapshot identity the reactivity contract | accepted |
-| [0021](0021-engine-owns-aria.md) | The engine owns element ids and ARIA composition | accepted |
+| [0021](0021-engine-owns-aria.md) | The engine owns element ids and ARIA composition | accepted; which element carries a field's control id, which it left to each renderer, decided by 0186 |
 | [0022](0022-fail-open-fail-closed.md) | Fail open on metadata, fail closed on validation | accepted |
 | [0023](0023-model-properties-in-engine.md) | Model properties are honoured by the engine, not by renderers | accepted; the removal below `minItems` it left to the renderers, refused by 0184 |
 | [0181](0181-a-computed-value-is-the-engines.md) | A computed value is the engine's: nothing else writes it, and its control is read-only | accepted |
 | [0184](0184-a-repeater-is-validated-as-a-field-is.md) | A repeater is validated as a field is, and no row is added or removed past its bounds | accepted |
 | [0185](0185-an-answer-is-what-the-value-holds-as-its-own.md) | An answer is what the value holds as its own, and `__proto__` names none | accepted |
+| [0186](0186-a-fields-control-id-names-its-group-or-its-control.md) | A field's control id names its group or its control, and focus moves into the group | accepted |
 
 ### The server
 

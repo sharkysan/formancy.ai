@@ -190,6 +190,15 @@ providers: [
 ]
 ```
 
+Put the field's id on what you draw. `snapshot().ids.control` is the engine's control id, and
+the links in `FormancyErrorSummary`, and a submit through `injectSubmit()` that fails, move
+focus by it. Put it on the control, or, for a field answered by several controls, as a radio
+group or a set of tick boxes is, on the group around them: a group takes no focus, so focus
+moves to the first control inside. A component that draws the id nowhere is a field the summary
+names and cannot take anybody to. The built-in controls do the same, Material's among them — a
+group carries it on its fieldset, and a signature on the box its name is typed into
+([0186](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0186-a-fields-control-id-names-its-group-or-its-control.md)).
+
 ### With Angular Material
 
 `@formancy/angular/material` is that registry, filled with Angular Material:

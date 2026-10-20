@@ -213,7 +213,10 @@ export function SelectBoxesField({ path, label }: FieldComponentProps) {
   }
 
   return (
+    // The field's control id on the group, and each box keeps its own, as the radio group
+    // does and for its reason (0186).
     <fieldset
+      id={field.ids.control}
       data-formancy-part="field"
       data-formancy-field-path={path}
       data-state={showError ? 'invalid' : 'valid'}

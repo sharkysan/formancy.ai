@@ -141,7 +141,13 @@ export function RadioGroupField({ path, label }: FieldComponentProps) {
   const options = useResolvedOptions(field)
   const showError = field.touched && field.errors.length > 0
   return (
+    // The field's control id on the group, as the rating, the ranking and the matrix carry
+    // it, and each radio keeps its own `<id>:<value>`: the error summary's link and a failed
+    // submit focus by this id, and a fieldset takes no focus, so `focusControl` moves into
+    // the first radio. Without it no element had the id and both left focus where it was
+    // (0186).
     <fieldset
+      id={field.ids.control}
       data-formancy-part="field"
       data-formancy-field-path={path}
       data-state={showError ? 'invalid' : 'valid'}

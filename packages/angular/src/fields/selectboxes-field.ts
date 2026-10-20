@@ -196,7 +196,10 @@ export class FormancyTagPickerField extends FieldComponentBase {
            exactly as the select hands over to the typeahead. -->
       <formancy-tagpicker-field />
     } @else {
+    <!-- The field's control id on the group, and each box keeps its own, as the radio
+         group does and for its reason (0186). -->
     <fieldset
+      [id]="control().id"
       data-formancy-part="field"
       [attr.data-formancy-field-path]="context.path"
       [attr.data-state]="showError() ? 'invalid' : 'valid'"

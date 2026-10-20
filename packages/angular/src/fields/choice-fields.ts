@@ -176,7 +176,13 @@ export class FormancySelectField extends FieldComponentBase {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormancyTextPipe],
   template: `
+    <!-- The field's control id on the group, as the rating, the ranking and the matrix
+         carry it, and each radio keeps its own <id>:<value>: the error summary's link and
+         a failed submit focus by this id, and a fieldset takes no focus, so focusControl
+         moves into the first radio. Without it no element had the id and both left focus
+         where it was (0186). -->
     <fieldset
+      [id]="control().id"
       data-formancy-part="field"
       [attr.data-formancy-field-path]="context.path"
       [attr.data-state]="showError() ? 'invalid' : 'valid'"
