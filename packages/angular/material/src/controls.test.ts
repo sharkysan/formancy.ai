@@ -5,8 +5,11 @@ import { afterEach, describe, expect, test } from 'vitest'
 import { createFormEngine } from '@formancy/core'
 import type { FormEngine } from '@formancy/core'
 import { FORM_WORDS, FORM_WORDS_DE } from '@formancy/core/words'
-import type { FormSchema } from '@formancy/spec'
-import { FormancyErrorSummary, FormancyForm, provideFormancy } from '../../src/index'
+import { FIELD_TYPES, WIDGETS_BY_FIELD_TYPE } from '@formancy/spec'
+import type { FieldDef, FieldType, FieldWidget, FormSchema } from '@formancy/spec'
+import { focusControl } from '../../src/focus-control.js'
+import { FormancyErrorSummary, FormancyForm, provideFormancy, provideFormancyUploader } from '../../src/index'
+import type { Uploader } from '../../src/index'
 import { provideFormancyMaterial } from './index'
 
 /**
@@ -264,6 +267,181 @@ describe('where Material and the engine both have an opinion', () => {
     fireEvent.click(link)
 
     expect(document.activeElement).toBe(screen.getByLabelText('Agree'))
+  })
+})
+
+describe('a group of radios and a group of ticks, under the engine’s control id (0186)', () => {
+  /*
+   * Material's groups are this adapter's fieldsets, and they carried no element with the
+   * engine's control id, as the default groups did not: the error summary's link and a failed
+   * submit found nothing to focus. The fieldset carries it now, as the default group's does,
+   * and `focusControl` moves into Material's first option, whose host keeps its own
+   * `<id>:<value>`. The signature has no Material control; the default one draws it, and
+   * `packages/angular/src/control-id.test.ts` holds it.
+   */
+  @Component({
+    selector: 'formancy-test-material-summary-host',
+    imports: [FormancyErrorSummary, FormancyForm],
+    template: `<formancy-error-summary /><formancy-form />`,
+  })
+  class SummaryHost {}
+
+  const size = {
+    key: 'size',
+    type: 'radio',
+    label: 'Size',
+    required: true,
+    options: [
+      { value: 's', label: 'Small' },
+      { value: 'l', label: 'Large' },
+    ],
+  }
+  const extras = {
+    key: 'extras',
+    type: 'selectboxes',
+    label: 'Extras',
+    required: true,
+    options: [
+      { value: 'wrap', label: 'Wrap' },
+      { value: 'card', label: 'Card' },
+    ],
+  }
+
+  async function mountGroups(fields: unknown[], summary: boolean): Promise<FormEngine> {
+    const engine = createFormEngine({ schema: form(fields) })
+    const view = await render(summary ? SummaryHost : FormancyForm, {
+      providers: [provideZonelessChangeDetection(), provideFormancy(engine), ...provideFormancyMaterial()],
+    })
+    await view.fixture.whenStable()
+    return engine
+  }
+
+  /** Each group first, then the other, so the submit's case shows it goes to the first. */
+  const CASES = [
+    {
+      kind: 'radios',
+      fields: [size, extras],
+      where: 'Material’s first radio',
+      link: 'Size: required',
+      first: () => screen.getByRole('radio', { name: 'Small' }),
+    },
+    {
+      kind: 'ticks',
+      fields: [extras, size],
+      where: 'Material’s first box',
+      link: 'Extras: required',
+      first: () => screen.getByRole('checkbox', { name: 'Wrap' }),
+    },
+  ]
+
+  test('each group carries the engine’s id, and each option’s host keeps its own', async () => {
+    // A host focusing a field by `ids.control` reached nothing; and the options' ids are the
+    // ones Material puts on their hosts, `<id>:<value>`, which are not moved to make room.
+    const engine = await mountGroups([size, extras], false)
+    const sizeId = engine.getFieldSnapshot(['size']).ids.control
+    const extrasId = engine.getFieldSnapshot(['extras']).ids.control
+
+    expect(document.getElementById(sizeId)).toBe(screen.getByRole('group', { name: 'Size' }))
+    expect(document.getElementById(extrasId)).toBe(screen.getByRole('group', { name: 'Extras' }))
+    expect(document.getElementById(`${sizeId}:s`)?.contains(screen.getByRole('radio', { name: 'Small' }))).toBe(true)
+    expect(document.getElementById(`${extrasId}:wrap`)?.contains(screen.getByRole('checkbox', { name: 'Wrap' }))).toBe(
+      true,
+    )
+  })
+
+  test.each(CASES)('the error summary’s link to required $kind left empty lands on $where', async ({ fields, link, first }) => {
+    // The link named the group and did nothing, so focus stayed on the summary.
+    await mountGroups(fields, true)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }))
+    fireEvent.click(await screen.findByRole('link', { name: link }))
+
+    expect(document.activeElement).toBe(first())
+  })
+
+  test.each(CASES)(
+    'a failed submit without a summary, whose first invalid field is required $kind, lands on $where',
+    async ({ fields, first }) => {
+      // Focus stayed where it was, so nothing said where the problem was.
+      await mountGroups(fields, false)
+
+      fireEvent.click(screen.getByRole('button', { name: 'Submit' }))
+
+      expect(document.activeElement).toBe(first())
+    },
+  )
+})
+
+describe('every field, under Material, under the engine’s control id (0186)', () => {
+  /*
+   * The rule the two groups above were missed by, over every type and widget the spec has,
+   * with Material's registry provided: whether Material draws the field or hands it back to
+   * the default control, one element carries the engine's id and focus moved by it lands in
+   * the field. The table is the default renderer's, in `packages/angular/src/control-id.test.ts`,
+   * so the two registries are held over the same fields; keyed by the spec's own type, so a
+   * type added there without an entry here is a compile error.
+   */
+  const options = [
+    { value: 'a', label: 'A' },
+    { value: 'b', label: 'B' },
+  ]
+  const MINIMAL: Record<FieldType, Partial<FieldDef> | { noControl: string }> = {
+    text: {},
+    textarea: {},
+    // Bounds, because a rating with no `max` has nothing to draw.
+    number: { min: 0, max: 10 },
+    checkbox: {},
+    select: { options },
+    radio: { options },
+    selectboxes: { options },
+    ranking: { options },
+    matrix: { rows: options, options },
+    date: {},
+    time: {},
+    datetime: {},
+    // Drawn with the uploader every case below supplies; without one, no control (0186).
+    file: {},
+    richtext: {},
+    signature: {},
+    repeater: { fields: [{ key: 'x', type: 'text', label: 'X' }] },
+    hidden: { noControl: 'it is collected without being shown' },
+    static: { noControl: 'it is text to read, and takes no answer' },
+    group: { noControl: 'it holds fields, each held here as itself, and takes no answer of its own' },
+    page: { noControl: 'it is a step that holds fields, and takes no answer of its own' },
+  }
+  const widgets: Partial<Record<FieldType, readonly FieldWidget[]>> = WIDGETS_BY_FIELD_TYPE
+  const DRAWN = FIELD_TYPES.flatMap((type) => {
+    const minimal = MINIMAL[type]
+    if ('noControl' in minimal) return []
+    return [undefined, ...(widgets[type] ?? [])].map((widget) => ({
+      name: widget === undefined ? `a ${type}` : `a ${type} drawn as ${widget}`,
+      field: { key: 'f', type, label: 'F', ...minimal, ...(widget === undefined ? {} : { widget }) },
+    }))
+  })
+  /** Never called: a file field draws its control only where the host can take a file. */
+  const upload: Uploader = () => new Promise(() => undefined)
+
+  test.each(DRAWN)('$name has one element with its control id, and focus moved by it lands in the field', async ({ field }) => {
+    // Material's checkbox puts the id on its host and the input inside (0132), and its groups
+    // carried none; a control Material draws later is held here without a case of its own.
+    const engine = createFormEngine({ schema: form([field]) })
+    const view = await render(FormancyForm, {
+      providers: [
+        provideZonelessChangeDetection(),
+        provideFormancy(engine),
+        provideFormancyUploader(upload),
+        ...provideFormancyMaterial(),
+      ],
+    })
+    await view.fixture.whenStable()
+    const id = engine.getFieldSnapshot(['f']).ids.control
+    const named = Array.from(document.querySelectorAll<HTMLElement>('[id]')).filter((element) => element.id === id)
+    const drawn = document.querySelector('[data-formancy-field-path="f"]')
+
+    expect(named).toHaveLength(1)
+    expect(drawn?.contains(document.activeElement)).toBe(false)
+    focusControl(named[0] ?? null)
+    expect(drawn?.contains(document.activeElement)).toBe(true)
   })
 })
 

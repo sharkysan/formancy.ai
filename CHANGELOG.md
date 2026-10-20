@@ -64,6 +64,26 @@ read again before upgrading.
 and the spec's barrel each grew 0.3 kB
 ([§9.3](docs/architecture/09-quality-requirements.md)).
 
+**Fixed: the error summary's link to a radio group, a set of tick boxes or a signature took
+nobody anywhere**, in both renderers and in Angular Material, in every release through `0.6.0`.
+Each link goes to the field's control id, and a failed submit on a page without a summary moves
+focus by it too, but these three drew no element with the id: the link's handler, which stops
+the browser's own jump, found nothing to focus, so focus stayed on the link and the page did not
+scroll, and a failed submit whose first invalid field was one of them left focus on Submit. A
+radio group's and a set of tick boxes' fieldsets now carry the id, as the rating's, the
+ranking's, the matrix's and the repeater's groups do, and focus moves into the first option; a
+signature carries it on the box its name is typed into, which also gives the field's label,
+always pointed at that id, the box it labels. **No option's id changes**: each is still
+`<control id>:<value>`. A host focusing a field by `ids.control` now finds an element for all
+three, but a fieldset takes no focus, so for a group it has to move to the first control inside,
+as the renderers do; their helper for that is not exported
+([0186](docs/decisions/0186-a-fields-control-id-names-its-group-or-its-control.md)). A host's
+tests may notice the signature: `getByLabelText` with the field's label found the drawing surface,
+by its `aria-label`, and now finds the typed box as well and throws on two, so find the box by its
+role and its own name, *Type your name*, and the surface as an image. The box keeps that name
+rather than taking the label's, which WCAG 2.5.3 (Label in Name) counts as a failure, until a
+change of its own renames it.
+
 ## 0.6.0 — 2026-10-18
 
 **The spec version does not move.** Version 4 is still the newest and frozen, so `0.5.0` and

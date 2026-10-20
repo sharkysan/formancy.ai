@@ -666,6 +666,11 @@ dispatches a synthetic click to a disabled button's listener, which no browser d
   host calling `setValue` changes one, and a control that draws anything clickable outside its
   disabled element has to stop that itself. The typeahead and the tag picker do now; a control
   added later is held to it only by whoever writes its tests.
+- **A signature's typed box is not disabled with its field.** A signature a rule disables still
+  takes a typed name: measured on 2026-10-20 in jsdom in both renderers, and under Material,
+  which draws the default signature. The box carries the field's control id and nothing else of
+  its `controlProps`, and spreading them would disable it, which is left to a fix of its own
+  ([0186](../decisions/0186-a-fields-control-id-names-its-group-or-its-control.md)).
 
 ### B7. An attachment is recorded against the wrong row of a repeater
 
@@ -1328,6 +1333,24 @@ found two ways a design system's control loses what the engine owns: Material's 
 showed an error without Angular forms, and an error summary's link did nothing when the
 engine's id was on a component's host — both fixed, both held by tests. One divergence is kept
 and said: Material does not mark an empty required field `aria-invalid`.
+
+*And three fields drew no element with their id.* A radio group and a set of tick boxes, in
+both renderers and in Material, and a signature drew nothing that carried the engine's control
+id, so the error summary's link to one did nothing — focus stayed on the link — and a failed
+submit whose first invalid field was one left focus on Submit: a person told that the form had a
+problem and not taken to it. Measured on `0.6.0`. Their groups and the signature's typed box
+carry the id now, and focus moves to the first option or to the box
+([0186](../decisions/0186-a-fields-control-id-names-its-group-or-its-control.md)), held by each
+renderer's `control-id.test` and Material's `controls.test.ts` — the three fields by cases of
+their own, and the rule they were missed by over every type the spec has and every widget it
+allows each, so a type or a widget added later that draws no element with the id fails without
+a case of its own. What remains: the typed box is not described by the field's error, so a
+screen reader landing on it hears the box and not the problem, and it is named *Type your name*
+under a visible label *Signature* that its name does not contain, a WCAG 2.5.3 (Label in Name)
+failure no axe rule reports, measured in React; a field drawn with no control — a file field with no upload route,
+a select whose source the deployment lacks — still carries no element with the id, measured on
+2026-10-20; and a host moving focus into a group by the id has to do what `focusControl` does,
+which is not exported.
 
 ### D4a. A form is laid out differently by the two renderers, and nothing reports it
 

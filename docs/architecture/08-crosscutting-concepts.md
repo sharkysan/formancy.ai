@@ -113,6 +113,17 @@ polite live region per form, with error text as a `describedby` target and
 summary with `tabindex="-1"` that receives focus but deliberately does not get
 `role="alert"`, because focusing it already announces it.
 
+The summary's links and a failed submit move focus by the field's control id, so every field
+drawn with a control has an element carrying it: the control, when there is one, and the group,
+when the field is answered by several — the rating's `role="radiogroup"`, and the fieldsets of a
+radio group, a set of tick boxes, a ranking, a matrix and a repeater, in Material's groups too.
+A group takes no focus, so `focusControl` moves it to the first control inside. Each option
+keeps its own `<control id>:<value>`, and a signature carries the id on the box its name is
+typed into, the one part of it a keyboard can use. Each renderer's tests, and Material's, hold
+the rule over every type the spec has and every widget it allows each, so the next group is held
+to it without a case of its own
+([0186](../decisions/0186-a-fields-control-id-names-its-group-or-its-control.md)).
+
 The verification side of this is
 [0034](../decisions/0034-accessible-name-only.md): a conformance driver may
 find elements only by role and accessible name, so unreachable markup fails the

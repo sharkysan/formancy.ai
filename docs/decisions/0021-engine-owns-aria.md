@@ -1,6 +1,7 @@
 # 0021 — The engine owns element ids and ARIA composition
 
-- **Status:** accepted
+- **Status:** accepted; which element carries a field's control id, which it left to each
+  renderer, decided by [0186](0186-a-fields-control-id-names-its-group-or-its-control.md)
 - **Date:** 2026-09-19
 - **Deciders:** Daniel Bacher
 - **Verified by:** `packages/core/src/ids.test.ts` — "two different fields can
