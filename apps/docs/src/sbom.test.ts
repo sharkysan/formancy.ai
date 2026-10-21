@@ -37,7 +37,7 @@ const PACKAGES = [
 const component = (name: string, version: string) => ({
   name: name.split('/').at(-1),
   version,
-  purl: `pkg:npm/${name.replace('@', '%40')}@${version}`,
+  purl: `pkg:npm/${name.replace(/^@/, '%40')}@${version}`,
 })
 const ref = (name: string, version: string) => `pkg:npm/${name}@${version}`
 
