@@ -33,6 +33,33 @@ const here = dirname(fileURLToPath(import.meta.url))
 const repo = join(here, '..', '..', '..')
 const release = readFileSync(join(repo, '.github', 'workflows', 'release.yml'), 'utf8')
 
+/**
+ * The commands of a step's `run: |` block, line continuations joined, each with the
+ * directory it runs in: the checkout, or the step's `working-directory`, until a `cd`
+ * moves it. Quotes are dropped from the words, so `"${RUNNER_TEMP}"/x/*.tgz` reads
+ * `${RUNNER_TEMP}/x/*.tgz`. Enough shell to follow where a command runs, and no more.
+ */
+function shell(step: string): { cwd: string; words: string[] }[] {
+  const lines = step.split('\n')
+  const at = lines.findIndex((line) => /^\s+run:\s*\|\s*$/.test(line))
+  if (at === -1) return []
+  const indent = /^ */.exec(lines[at + 1] ?? '')![0].length
+  const body: string[] = []
+  for (const line of lines.slice(at + 1)) {
+    if (line.trim() !== '' && /^ */.exec(line)![0].length < indent) break
+    body.push(line.slice(indent))
+  }
+  let cwd = /working-directory:\s*(\S+)/.exec(step)?.[1] ?? '${GITHUB_WORKSPACE}'
+  const commands: { cwd: string; words: string[] }[] = []
+  for (const command of body.join('\n').replace(/\\\n\s*/g, ' ').split(/\n|&&|;/)) {
+    const words = command.trim().split(/\s+/).filter((word) => word !== '').map((word) => word.replace(/["']/g, ''))
+    if (words.length === 0 || words[0]!.startsWith('#')) continue
+    if (words[0] === 'cd') cwd = words[1] ?? '~'
+    else commands.push({ cwd, words })
+  }
+  return commands
+}
+
 describe('the release workflow', () => {
   test('is the file being checked, and publishes something', () => {
     // A guard on the guard: a renamed workflow would make everything below pass
@@ -102,6 +129,51 @@ describe('the release workflow', () => {
     // written with a line continuation.
     const signing = /cosign sign(?![-\w])[\s\S]{0,400}/.exec(release)?.[0] ?? ''
     expect(signing).toMatch(/@sha256:|outputs\.digest|DIGEST/)
+  })
+
+  test('makes the SBOM from what a consumer installs, and checks it before publishing', () => {
+    /*
+     * cdxgen over the pnpm workspace described the workbench: 0.6.0's SBOM named none of
+     * the packages it released, marked Playwright, TypeScript and Vite as required, and
+     * left out tslib, which both Angular packages depend on (0187). So the step packs
+     * what the release publishes with the helper the install gates use, installs those
+     * tarballs with npm in a project of their own outside the checkout -- no lifecycle
+     * script, no peer -- and runs cdxgen over that, and `scripts/sbom.mjs` checks the
+     * result. All of it before `pnpm publish`: a refusal after it stopped a release
+     * whose version was already on npm, without its SBOM, image or GitHub release.
+     *
+     * Where cdxgen runs is followed through the step's `cd`s rather than looked for as a
+     * phrase: a step that installed under RUNNER_TEMP and then ran cdxgen over the
+     * checkout would hold every phrase and describe the workspace again.
+     */
+    const steps = release.split(/\n(?= {6}- )/)
+    const sbomAt = steps.findIndex((step) => step.includes('@cyclonedx/cdxgen'))
+    const checkAt = steps.findIndex((step) => step.includes('scripts/sbom.mjs'))
+    const publishAt = steps.findIndex((step) => /\bpnpm publish\b/.test(step))
+    expect(sbomAt, 'no step runs cdxgen').toBeGreaterThan(-1)
+    expect(publishAt, 'no step publishes').toBeGreaterThan(-1)
+    expect(checkAt, 'no step runs scripts/sbom.mjs after cdxgen').toBeGreaterThan(sbomAt)
+    expect(checkAt, 'the SBOM is checked after publishing').toBeLessThan(publishAt)
+
+    const commands = shell(steps[sbomAt]!)
+    const packed = commands.find(({ words }) => words[0] === 'node' && words[1] === 'scripts/pack.mjs')
+    const install = commands.find(({ words }) => words[0] === 'npm' && ['install', 'i', 'ci'].includes(words[1]!))
+    const cdxgen = commands.find(({ words }) => words.some((word) => word.startsWith('@cyclonedx/cdxgen')))
+    expect(packed, 'the step packs nothing with scripts/pack.mjs').toBeDefined()
+    expect(install, 'the step installs nothing with npm').toBeDefined()
+    expect(cdxgen).toBeDefined()
+
+    // The tarballs it installs are the ones it packed.
+    const tarballs = packed!.words[2]!
+    expect(install!.words.some((word) => word.startsWith(`${tarballs}/`) && word.endsWith('.tgz'))).toBe(true)
+    // As a consumer installs them, with no install script run and no peer, the host's.
+    expect(install!.words).toContain('--ignore-scripts')
+    expect(install!.words.some((word) => word === '--legacy-peer-deps' || word === '--omit=peer')).toBe(true)
+    // Into a directory outside the checkout, which cdxgen then reads, required only.
+    expect(install!.cwd).toMatch(/RUNNER_TEMP|runner\.temp/)
+    const target = cdxgen!.words.at(-1) === '.' ? cdxgen!.cwd : cdxgen!.words.at(-1)
+    expect(target).toBe(install!.cwd)
+    expect(cdxgen!.words).toContain('--required-only')
   })
 
   test('attaches the SBOM to the image, not only to the release page', () => {

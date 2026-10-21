@@ -100,40 +100,49 @@ jobs:
       - name: Every tarball carries its licence
         run: node scripts/verify-licenses.mjs
 
+      # A bill of materials for what a consumer installs, so a consumer — or an
+      # auditor — can answer "what is in this" without resolving it themselves.
+      #
+      # Made from the tarballs, not the workspace (0187). cdxgen over the pnpm
+      # workspace described the workbench: 0.6.0's SBOM named none of the
+      # packages it released, marked Playwright, TypeScript, Vite and ng-packagr
+      # as required, and left out tslib, which both Angular packages depend on.
+      # So the packages this release publishes are packed by the helper the
+      # install gates use, installed by npm into a project of their own outside
+      # the checkout as a consumer installs them, with no lifecycle script run
+      # and no peer, which is the host's to bring, and cdxgen reads that,
+      # --required-only.
+      #
+      # Before publishing, so that a wrong SBOM stops the release while its
+      # version can still be cut again. After it, the same refusal would leave a
+      # version on npm with no SBOM, no image and no GitHub release.
+      - name: Generate a CycloneDX SBOM
+        run: |
+          node scripts/pack.mjs "${RUNNER_TEMP}/formancy-tarballs"
+          mkdir "${RUNNER_TEMP}/formancy-sbom"
+          cd "${RUNNER_TEMP}/formancy-sbom"
+          printf '{ "name": "formancy", "version": "%s", "private": true }\n' "${GITHUB_REF_NAME#v}" > package.json
+          npm install --ignore-scripts --legacy-peer-deps --no-audit --no-fund "${RUNNER_TEMP}"/formancy-tarballs/*.tgz
+          npx --yes @cyclonedx/cdxgen@12.8.4 \
+            --type javascript \
+            --required-only \
+            --output "${GITHUB_WORKSPACE}/formancy-${GITHUB_REF_NAME}-sbom.cdx.json" \
+            --project-name formancy \
+            --project-version "${GITHUB_REF_NAME#v}" \
+            .
+
+      # Every package this release publishes, at its version, each given every
+      # dependency its manifest declares, read from the SBOM's dependency graph
+      # -- and the CEL evaluator by name, because it decides whether a
+      # submission is valid and an SBOM without it would be worse than none.
+      - name: The SBOM names what this release publishes and what each package depends on
+        run: node scripts/sbom.mjs "formancy-${GITHUB_REF_NAME}-sbom.cdx.json" "${GITHUB_REF_NAME#v}"
+
       - name: Publish to npm with provenance
         run: pnpm publish -r --access public --provenance --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: 'true'
-
-      # A bill of materials for what actually ships, so a consumer — or an
-      # auditor — can answer "what is in this" without resolving it themselves.
-      #
-      # --required-only because an SBOM for a released artefact should describe
-      # the artefact, not the workbench. It keeps every runtime dependency
-      # (verified: cel-js, noble/hashes, node-rs/argon2, ajv, fastify,
-      # drizzle-orm, jose, postgres) and drops the test tooling — 71 components
-      # rather than 1067.
-      - name: Generate a CycloneDX SBOM
-        run: |
-          npx --yes @cyclonedx/cdxgen@12.8.4 \
-            --type javascript \
-            --required-only \
-            --output "formancy-${GITHUB_REF_NAME}-sbom.cdx.json" \
-            --project-name formancy \
-            --project-version "${GITHUB_REF_NAME#v}" \
-            .
-          node -e "
-            const s = require('./formancy-${GITHUB_REF_NAME}-sbom.cdx.json');
-            const purls = (s.components ?? []).map((c) => c.purl ?? '').join('\n');
-            // The evaluator decides whether a submission is valid. An SBOM that
-            // omitted it would be worse than none, so the release stops here.
-            if (!purls.includes('%40marcbachmann/cel-js')) {
-              console.error('::error::SBOM is missing the CEL evaluator');
-              process.exit(1);
-            }
-            console.log('SBOM: ' + String((s.components ?? []).length) + ' components');
-          "
 
       - uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3
 

@@ -1,14 +1,18 @@
 /**
- * Packing the publishable packages, for the tests that install them somewhere else.
+ * Packing the publishable packages, for the tests that install them somewhere else
+ * and for the release's SBOM.
  *
  * Shared by `install-test.mjs` (the React and isomorphic packages) and
  * `angular-install-test.mjs` (the Angular ones), which used to be one script: the
  * second needs the same tarballs and a different project, and two copies of how a
- * package is packed would be two answers to what a release pushes.
+ * package is packed would be two answers to what a release pushes. The release
+ * workflow runs it as well, `node scripts/pack.mjs <directory>`, and makes its SBOM
+ * from what it packs (0187); `apps/docs/src/sbom.test.ts` fails when what it finds is
+ * not what `pnpm publish -r` publishes.
  */
 import { execFileSync } from 'node:child_process'
-import { readFileSync, readdirSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
+import { mkdirSync, readFileSync, readdirSync } from 'node:fs'
+import { basename, dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 export const repo = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -66,4 +70,13 @@ export function pack(packages, work) {
     tarballs.set(name, file.startsWith(work) ? file : join(work, file))
   }
   return tarballs
+}
+
+// `node scripts/pack.mjs <directory>`: what a release publishes, packed for its SBOM.
+if (basename(process.argv[1] ?? '') === 'pack.mjs') {
+  const [destination] = process.argv.slice(2)
+  if (destination === undefined) throw new Error('usage: pack.mjs <directory>')
+  const work = resolve(destination)
+  mkdirSync(work, { recursive: true })
+  for (const [name, file] of pack(publishable(), work)) console.log(`${name}: ${file}`)
 }

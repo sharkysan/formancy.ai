@@ -287,3 +287,4 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0178](0178-the-rooms-palette-is-published.md) | The admin's palette is published, and the admin imports it like anybody else | accepted |
 | [0182](0182-a-list-is-filled-row-by-row.md) | A scenario fills a list row by row, and a path that is not one answer says what it is | accepted; `errors` and `visible` at a list's own path, which it refused, let through by 0184 |
 | [0183](0183-no-model-is-an-answer.md) | A deployment with no model says so in a 200, not a 404 | accepted |
+| [0187](0187-the-sbom-describes-what-a-consumer-installs.md) | The SBOM describes what a consumer installs, and is checked before anything is published | accepted |

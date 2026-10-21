@@ -18,7 +18,7 @@ quality management system, and this is not a claim of IEC 62304 conformity.**
 | §5.5 Unit implementation and verification | **Yes** | Test-first development, with per-package coverage reported; the suite size is stated as a dated floor under [Verification gates](#verification-gates) rather than transcribed twice — this row said 1,155 while that one said 1,661, both written on one day |
 | §5.6 Software integration and integration testing | **Yes** | Conformance suite across five implementations; integration tests against real PostgreSQL |
 | §5.7 Software system testing | Partially | End-to-end verification performed manually and recorded; not automated end-to-end |
-| §5.8 Software release | Partially | Released to npm from CI with provenance and a signed SBOM, and the server image to GHCR signed by digest; the gates are mechanical and no human sign-off is recorded against a checklist. CI installs the packed tarballs into a project outside the workspace and runs them on every push to `main` (`test:e2e:install`); the release workflow repeats `build`, `typecheck`, `test` and `check:pkg` and not that gate, nothing requires CI to have passed on the commit a tag names, and nothing re-checks a version once it is on the registry |
+| §5.8 Software release | Partially | Released to npm from CI with provenance and a signed SBOM of what a consumer installs, checked before publishing, and the server image to GHCR signed by digest; the gates are mechanical and no human sign-off is recorded against a checklist. CI installs the packed tarballs into a project outside the workspace and runs them on every push to `main` (`test:e2e:install`); the release workflow repeats `build`, `typecheck`, `test` and `check:pkg` and not that gate, nothing requires CI to have passed on the commit a tag names, and nothing re-checks a version once it is on the registry |
 | §6 Software maintenance | **No** | Releases exist, and no maintenance process is defined for them — no support commitment, no backport policy, and no defined response time beyond `SECURITY.md` |
 | §7 Risk management | Partially | [`SAFETY-ANALYSIS.md`](SAFETY-ANALYSIS.md) identifies failure modes; no ISO 14971 file, by design |
 | §8 Configuration management | **Yes** | Git, pinned dependencies, lockfile, immutable published schema versions |
@@ -309,8 +309,11 @@ Stated plainly, because a gap named is more useful than a gap implied:
   regression test and described in the commit.
 - No formal release *review*. Releases are cut from CI and the gates are
   mechanical — tests, typecheck, package linting, licence presence, tag-to-
-  manifest version agreement — but no human sign-off is recorded against a
-  checklist. See [`RELEASING.md`](../../RELEASING.md).
+  manifest version agreement, and an SBOM that names every package published and
+  what each declares, checked before publishing
+  ([0187](../decisions/0187-the-sbom-describes-what-a-consumer-installs.md)) — but
+  no human sign-off is recorded against a checklist. See
+  [`RELEASING.md`](../../RELEASING.md).
 - No manual accessibility audit and no published VPAT.
 - Nothing verifies a release **after it is published**. `test:e2e:install` packs
   the tarballs and installs them into a project outside the workspace, which is
@@ -321,7 +324,12 @@ Stated plainly, because a gap named is more useful than a gap implied:
   `apps/playground` building them from the workspace is what covers them.
 - The container image's SBOM describes npm dependencies and not the base image or
   its system packages, so a manufacturer characterising the container has half of
-  what they need. The signing side is done: the image goes to GHCR signed by
+  what they need — and that half at the versions a consumer of the npm packages
+  resolved on the release day, which the image, built from the lockfile, need not
+  hold. The release's SBOM names no peer, `@tiptap/extension-list`, which a
+  consumer's npm installs for `@formancy/tiptap`, among them
+  ([0187](../decisions/0187-the-sbom-describes-what-a-consumer-installs.md)). The
+  signing side is done: the image goes to GHCR signed by
   digest with the SBOM attached as an attestation, and each npm tarball carries a
   SLSA v1 provenance attestation, all keylessly — there is no private key to
   protect or leak.
