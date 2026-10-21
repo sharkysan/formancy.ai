@@ -657,7 +657,7 @@ knowingly missing from it. [`RELEASING.md`](./RELEASING.md) — how a release is
 cut, and what the pipeline signs and attests.
 
 Releases are published from CI with npm provenance, and each one carries a
-CycloneDX SBOM signed with cosign.
+CycloneDX SBOM of what a consumer installs, signed with cosign.
 
 **`0.7.0` is the current beta.** Every package under the
 [`@formancy`](https://www.npmjs.com/org/formancy) scope moves on one version

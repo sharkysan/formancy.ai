@@ -8,6 +8,23 @@ Loosely [Keep a Changelog](https://keepachangelog.com), with reasons attached �
 a line that says only *what* changed is rarely the line you need six months
 later.
 
+## Unreleased
+
+**The release's SBOM describes what a consumer installs, and is checked before anything is
+published.** Until now it was cdxgen over the pnpm workspace, made after `pnpm publish`, and its
+one check was that the CEL evaluator appeared somewhere in it. `0.6.0`'s, read from its release
+page on 2026-10-21, passed that check and named none of the packages it released, marked
+Playwright, TypeScript, Vite, ng-packagr and Angular's builder as required, and named no tslib,
+which both Angular packages depend on. It is now made from the tarballs the release publishes,
+installed by npm as a consumer installs them, with no install script run and no peer, and
+`scripts/sbom.mjs` refuses one that leaves out a published package at the release's version or a
+dependency a package's manifest declares — before publishing, where a refusal still leaves the
+version free. It names no peer, so neither React and Angular, which the host brings, nor
+`@tiptap/extension-list`, which a consumer's npm installs for `@formancy/tiptap`; and it names the
+versions npm resolved on the release day, which the server image, built from the lockfile and
+carrying this SBOM as its attestation, need not hold
+([0187](docs/decisions/0187-the-sbom-describes-what-a-consumer-installs.md)).
+
 ## 0.7.0 — 2026-10-21
 
 **A minor release, and the spec version does not move.** Version 4 is still the newest and
