@@ -115,8 +115,9 @@ Trusted publishing is the better destination — it removes the token entirely,
 so there is no secret to rotate or leak — but it is configured per package on
 npmjs.com against a package that already exists. Every published `@formancy`
 package does, read from the registry on 2026-10-18, so that precondition is met.
-Worth setting up once 0.6.0, the first release through the `npm` environment,
-has published.
+0.6.0, the first release through the `npm` environment, published on 2026-10-18,
+read from the registry on 2026-10-20, so it is worth setting up now; until it is,
+a release publishes with the token.
 
 ## The SBOM
 

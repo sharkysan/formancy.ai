@@ -231,8 +231,8 @@ recorded in [§11.6](../architecture/11-risks-and-debt.md) rather than left to b
 inferred from the fact that the gates exist.
 
 Additionally, performance budgets are measured rather than asserted: a
-keystroke on a large form at ≈0.38 ms against a 1 ms budget, and cold graph
-compilation at ≈1.7 ms against a 30 ms budget.
+keystroke on a large form at ≈0.54 ms against a 1 ms budget, re-measured
+2026-10-19, and cold graph compilation at ≈1.7 ms against a 30 ms budget.
 
 ## Configuration management
 

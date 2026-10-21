@@ -5,7 +5,7 @@ developed under IEC 62304, and who therefore has to record what this software
 is, what it needs, what it is known to get wrong, and what evidence exists that
 it works. Read [`MDR-CONTEXT.md`](MDR-CONTEXT.md) first.
 
-**This document describes version `0.6.0`.** Everything below is true of that
+**This document describes version `0.7.0`.** Everything below is true of that
 version and of no other. Pin an exact version; a range is not characterised
 software, and neither is `latest`.
 
@@ -17,9 +17,9 @@ software, and neither is `latest`.
 | Supplier | the formancy project (open source) |
 | Licence | Apache-2.0 for every package ([0002](../decisions/0002-apache-2-0.md)) |
 | Source | this repository, in full, including tests |
-| Package version | `0.6.0`, published to npm under the `@formancy` scope |
+| Package version | `0.7.0`, published to npm under the `@formancy` scope |
 | Spec version | `"4"`, **frozen as of 0.4.0** ([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)) — the version this release writes and the one this document characterises. Versions `"1"` ([0042](../decisions/0042-freeze-the-spec.md)), `"2"` ([0051](../decisions/0051-spec-2-adds-types.md)) and `"3"` ([0088](../decisions/0088-spec-3-freezes-with-four-constructs.md)) are frozen too and stay readable, so a deployment pinned to any of them is characterising a settled format. No version is open. What each version added, and what freezing one costs, is in [`MIGRATIONS.md`](../../MIGRATIONS.md) |
-| Development stage | beta. 0.1.0 was the first release and predates spec versioning: it pins documents to version 1 and refuses anything later rather than ignoring the property. 0.2.0 reads version 2; 0.3.0 reads version 3; 0.4.0 reads version 4 and **writes** it by default, so a form authored here is refused by a reader pinned to 0.3.0 — loudly, which is the point. 0.5.0 and 0.6.0 read and write version 4 as 0.4.0 does, so the three read each other's documents |
+| Development stage | beta. 0.1.0 was the first release and predates spec versioning: it pins documents to version 1 and refuses anything later rather than ignoring the property. 0.2.0 reads version 2; 0.3.0 reads version 3; 0.4.0 reads version 4 and **writes** it by default, so a form authored here is refused by a reader pinned to 0.3.0 — loudly, which is the point. 0.5.0, 0.6.0 and 0.7.0 read and write version 4 as 0.4.0 does, so the four read each other's documents, save one that keys a field or a matrix row `__proto__`, which 0.7.0 refuses ([0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)) |
 | Integrity | each tarball carries a SLSA v1 provenance attestation issued by GitHub's OIDC identity for the workflow run that built it, plus a registry signature. Verify with `npm audit signatures`. The server image is published to GHCR and **signed by digest**, with the SBOM attached as a CycloneDX attestation — verify with `cosign verify` and `cosign verify-attestation` against the digest rather than the tag, since a tag is mutable. There is deliberately no `latest`, for the reason this table gives two rows down. The pipeline is described in [`RELEASING.md`](../../RELEASING.md) |
 
 The two version lines are independent and both matter. The package version
@@ -29,10 +29,13 @@ submissions*, which is the artefact with real switching costs.
 > **A manufacturer must pin the spec version as well as the package version.**
 > Each version is a superset of the one before it: it adds field types, layout kinds
 > and properties, and removes nothing, so a document characterised under version 1 is
-> unchanged and still valid under every later one. But a reader that speaks only one version
-> cannot read a document written against a later one — the failure is a validation error
-> rather than a silent one ([0051](../decisions/0051-spec-2-adds-types.md)). This document
-> characterises the released package, which writes version 4.
+> unchanged and still valid under every later one — save one that keys a field or a matrix
+> row `__proto__`, which `0.7.0` refuses in every version, since no release could store an
+> answer under it ([0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)).
+> But a reader that speaks only one version cannot read a document written against a later
+> one — the failure is a validation error rather than a silent one
+> ([0051](../decisions/0051-spec-2-adds-types.md)). This document characterises the released
+> package, which writes version 4.
 >
 > **The data format is stable; the code is not.** Every spec version is frozen, so a form
 > document written against any of them — and the submissions stored against it — keeps its
@@ -241,8 +244,9 @@ here.
 IEC 62304 §7.1.2 asks for the supplier's published anomaly list.
 [`CHANGELOG.md`](../../CHANGELOG.md) is it: every entry says what changed and why, and the
 defects found by review are named there rather than summarised away. What follows is what a
-manufacturer characterising `0.6.0` needs on one page, with the anomalies of earlier releases
-that `0.5.0` and `0.6.0` fix, so that one still running them knows what it is upgrading away from.
+manufacturer characterising `0.7.0` needs on one page, with the anomalies of earlier releases
+that `0.5.0`, `0.6.0` and `0.7.0` fix, so that one still running them knows what it is upgrading
+away from.
 
 **Every release through `0.6.0` answers a field keyed after a name every object has with what the
 object inherits.** A path was read with `value[key]`, so a required field keyed `constructor` and
@@ -255,7 +259,7 @@ tells a map by that member; a list sent where a group was asked for answered a f
 `length` with its own; and a message id `toString` missing from a locale gave the renderer a
 function for a label. A field keyed `__proto__` lost every answer, and a matrix row so valued
 could not be answered past the server's parser. Measured on 2026-10-18 and 2026-10-19 against
-`0.6.0`'s code. Fixed after `0.6.0`: an answer is read as the value's own, a list answers no key,
+`0.6.0`'s code. Fixed in `0.7.0`: an answer is read as the value's own, a list answers no key,
 the library is handed such an object as a `Map`, and `__proto__` is refused as a key. Hazard B11
 in [`SAFETY-ANALYSIS.md`](SAFETY-ANALYSIS.md), and
 [0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md).
@@ -266,6 +270,18 @@ object under `constructor` that has a `prototype` member, as prototype poisoning
 submission or a draft answering that field is such a body. Measured on 2026-10-19, and the same for
 a matrix keyed `constructor` with a row valued `prototype`. The format does not refuse the pair,
 since the limit is the server's parser and not the document.
+
+**Every release through `0.6.0` draws a radio group, a set of tick boxes and a signature with no
+element carrying the field's control id**, in both renderers and, for the two groups, in Angular
+Material — the signature since it arrived in `0.3.0`, and Material since it arrived in `0.4.0`.
+The error summary's link and a failed submit move focus by that id, so a link to one of
+them left focus on the link and did not scroll, and a failed submit whose first invalid field was
+one of them left focus on Submit: a person told that the form had a problem and not taken to it.
+Measured in React against the published `0.6.0`, and in all three by the tests that hold the fix,
+each of which failed before it. Fixed in `0.7.0`: the groups' fieldsets and the signature's typed
+box carry the id, and focus moves to the first option or to the box. Hazard D4 in
+[`SAFETY-ANALYSIS.md`](SAFETY-ANALYSIS.md), and
+[0186](../decisions/0186-a-fields-control-id-names-its-group-or-its-control.md).
 
 **Every release through `0.5.0` validates nothing a document says about a repeater.** The engine
 validated fields, and a repeater is not one: its `maxItems`, `required` on it, and a `required` or
@@ -415,6 +431,38 @@ expressions should read that file rather than this summary.
   over several answers names none of them ([0078](../decisions/0078-a-grid-row-is-flat.md)).
 - Multi-tenancy is absent entirely.
 
+**`0.7.0` cannot open a version stored with a field keyed `__proto__`, on purpose.** Every
+earlier release opened it and lost what was typed into that field without a word; `0.7.0`'s
+engine refuses it, so its public read answers `200` and every submission to it is answered
+`500` until it is republished without the key. Nothing finds such versions for an operator: search the
+stored documents for the key
+([0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)).
+
+**Found while making `0.7.0`, and not changed by it:**
+
+- **A radio group a rule disables still takes a choice**, in both renderers, because its radios
+  are not disabled with the field; Material's radio group is. Measured on 2026-10-20 in jsdom,
+  and drawn so in every release, read from the renderers' code. **So does React's rating**:
+  `disabled` sits on its `role="radiogroup"` element, which disables nothing, and its radios
+  carry none — measured the same day, all eleven radios of a 0–10 rating enabled and a click
+  storing `3`, and drawn so since the rating arrived in `0.4.0`. Angular's rating, which
+  Material draws, disables each radio. Hazard B6a.
+- **A signature a rule disables still takes a typed name or a drawing, and its Clear button
+  erases the answer**, in both renderers and under Material, measured on 2026-10-20 in jsdom.
+  Its typed box is not described by the field's error, and is named *Type your name* under the
+  visible label *Signature*, a WCAG 2.5.3 (Label in Name) failure no axe rule reports (hazards
+  B6a and D4, [0186](../decisions/0186-a-fields-control-id-names-its-group-or-its-control.md)).
+- **A required tag picker says nowhere that it is required.** Its text box is described by a
+  hint whose id no element carries, and has no `aria-required`, in both renderers: measured on
+  2026-10-20 in jsdom, and drawn so since `0.3.0`, read from their code. Hazard D4.
+- **A submission is not required to be an object, and what a form does not define is stored as
+  sent.** One sent as a list is stored with `201` unless a required field asks it something —
+  `[1, 2]` was, measured on 2026-10-19 — and members the form does not define are stored as they
+  arrive. Hazard B11.
+- **A `computed` field writing out a map an expression builds loses its `constructor`,
+  `prototype` and `__proto__` without an error**, because the library leaves those keys out of a
+  literal (above). Hazard B11.
+
 **Found while making `0.6.0`, and not changed by it:**
 
 - **A deployment that configures no options sources checks no sourced answer.** It publishes a
@@ -477,7 +525,36 @@ software has. `signature` and `tagpicker` have since left this list the same way
 field type and a spec 3 widget — and the list is checked rather than read. `apps/docs/src/soup.test.ts` now checks every name in this list against the
 format's own vocabulary, so it cannot happen again in that direction.
 
-### Characterised by this document, and new since 0.5.0
+### Characterised by this document, and new since 0.6.0
+
+`0.7.0` reads and writes `specVersion: "4"`, as `0.4.0` to `0.6.0` do, and adds no dependency,
+table or setting. **The schema refuses one thing more**: `validateSchema` refuses `__proto__`
+as a field's key and as a matrix row's value, with `key.unstorable`, in every spec version, where
+every earlier release accepted it; no release could store an answer under it (above, hazard
+B11). **A deployment's answers change**, and a published form version is held to them without
+being republished. The server refuses with `required` a submission leaving empty a required
+field keyed after a name every object has, `constructor` or `toString`, or keyed `length` with a
+list sent in its group's place, where it stored it; a rule reading a group, a row or a matrix
+answer holding an answered `constructor` decides, where it failed; where the deployment
+configures sources, a document naming a source `constructor` is refused at publish as one it
+does not configure, and an answer to a version stored before with such a source is refused
+`503 source_unavailable`, where it was stored unchecked; and a stored version with a field
+keyed `__proto__` answers every submission `500` until it is republished, where it lost that one
+answer ([0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)). What a *host*
+sees is below; [`MIGRATIONS.md`](../../MIGRATIONS.md) has what must move.
+
+- **An answer is what the value holds as its own.** `getAt` reads a key only out of an object
+  and an index only out of a list, `parsePath` and `formatPath` throw on `__proto__`, `evaluate`
+  reports `missing_variable` for a declared name the bag does not hold as its own, and a
+  translation a locale lacks falls back to the default's words whatever its id (0185).
+- **Every field drawn with a control has an element carrying its control id.** A radio group's
+  and a set of tick boxes' fieldsets carry it, in both renderers and in Material, and so does a
+  signature's typed box, which the field's label now labels; every option keeps
+  `<control id>:<value>`. The error summary's link and a failed submit land in all three, where
+  they left focus on the link or on Submit (hazard D4,
+  [0186](../decisions/0186-a-fields-control-id-names-its-group-or-its-control.md)).
+
+### Characterised by an earlier version of this document, and new in 0.6.0
 
 `0.6.0` reads and writes `specVersion: "4"`, as `0.4.0` and `0.5.0` do, so no document changes,
 and the schema validates what it did: only its `specVersion` default, now `"4"`, and descriptions
@@ -678,7 +755,7 @@ verify it in the browsers it ships to.
 | One behavioural conformance suite executed against the engine, both renderers and the server | `packages/conformance` ([0033](../decisions/0033-one-suite-n-drivers.md)) |
 | Property-based invariants over hide/unhide, repeater identity and evaluation order | `packages/core` |
 | The official CEL corpus, with results pinned | `packages/expressions/CEL-CONFORMANCE.md` |
-| Performance budgets, measured: keystroke ≈0.38 ms against a <1 ms budget; graph compile ≈1.7 ms against a <30 ms budget | `packages/core/bench/perf.mjs` |
+| Performance budgets, measured: keystroke ≈0.54 ms against a <1 ms budget, re-measured 2026-10-19; graph compile ≈1.7 ms against a <30 ms budget | `packages/core/bench/perf.mjs` |
 | Layout and gesture facts jsdom cannot represent — horizontal overflow, computed grid columns and computed `touch-action` for both renderers — at four viewports in Chromium against the composed site, and a picked image drawn as its thumbnail | `pnpm test:browser` |
 | Package-publication gates: `publint`, `@arethetypeswrong/cli` | `pnpm check:pkg` |
 | Bundle sizes, measured by hand and dated rather than gated — `size-limit` is **not** wired up, and this table named it as a gate until 2026-09-27 | [§9.3](../architecture/09-quality-requirements.md) |
