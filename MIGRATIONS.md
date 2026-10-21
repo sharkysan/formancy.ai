@@ -306,7 +306,35 @@ again.
   ([0086](docs/decisions/0086-a-check-is-named-and-answered-elsewhere.md)), because a CEL
   expression is synchronous by construction.
 
-## An answer is read as the value's own, and `__proto__` names none (unreleased)
+## A radio group, a set of tick boxes and a signature carry the field's control id (0.7.0)
+
+**If a test of yours finds a signature by the field's label**, it finds two elements now, and
+Testing Library throws. The label always pointed at the control id, which nothing carried, so
+`getByLabelText('Signature')` found only the drawing surface, by its `aria-label`; the box a name
+is typed into carries the id now, so the label labels it too
+([0186](docs/decisions/0186-a-fields-control-id-names-its-group-or-its-control.md)). Find each
+by its role and its own name:
+
+```ts
+screen.getByRole('textbox', { name: 'Type your name' }) // the typed box, in English
+screen.getByRole('img', { name: 'Signature' }) // the drawing surface, named by the field's label
+```
+
+**If you style or select the markup**: a radio group's and a set of tick boxes' fieldsets carry
+the control id, in both renderers and in Material, and so does a signature's typed box. Every
+option keeps its own, `<control id>:<value>`.
+
+**If you move focus by `ids.control` yourself**, you now find an element for all three, but a
+fieldset takes no focus: focus it, and where focus did not land, focus the first control inside,
+as the renderers' `focusControl` does. That helper is not exported.
+
+**If you draw a field through the registry**, put the id on your control, or on the group around
+several; the React and Angular start pages say how. A component that draws it nowhere is a field
+the error summary names and cannot take anybody to, as before.
+
+Nothing is stored differently, no document changes and the spec version does not move.
+
+## An answer is read as the value's own, and `__proto__` names none (0.7.0)
 
 **If a form keys a field or a matrix row `__proto__`, republish it under another key.** No
 release could store an answer under it: the engine wrote it into the object's prototype, and the
@@ -344,9 +372,13 @@ locale missing one reads the default's words, where the engine handed the render
 The builders' translation views still count such a message as translated in every locale.
 
 **If your deployment supplies lists or checks**, a name the document gives is looked up among
-the ones you configured, and nothing else. A `select` sourced from `constructor` is refused at
-publish where you configure sources, and its answers `503 source_unavailable` at submission,
-where they were stored unchecked; a check named `toString` answers `check_unavailable`.
+the ones you configured, as the object's own members, and nothing else. A `select` sourced from
+`constructor` is refused at publish where you configure sources, and its answers
+`503 source_unavailable` at submission, where they were stored unchecked; a check named
+`toString` answers `check_unavailable`. So hand them in as an object's own members: a list or a
+check an object holds through its prototype — a getter or a method its class defines, a member
+an `Object.create` inherits — is not found, and is refused as above. That is read from the code, not
+measured.
 
 **If you call the path model or read a value yourself**: `parsePath` and `formatPath` throw on
 `__proto__`, and `getAt` reads only what a value holds as its own, a key only out of an object and
@@ -355,8 +387,9 @@ an index only out of a list, so `getAt({}, ['constructor'])` and `getAt([], ['le
 its own, `constructor` among them.
 
 **If your builder speaks a language of its own**, `key.unstorable` is a new sentence of the
-validator's. `SCHEMA_ERRORS_DE` and `SCHEMA_ERRORS_FR` say it; a catalogue of yours shows the
-English until it does.
+validator's. `SCHEMA_ERRORS_DE` and `SCHEMA_ERRORS_FR` say it. A catalogue of yours typed as
+`SchemaErrorSentences`, which asks for every code, does not compile until it says it too; one
+typed as `SchemaErrorWords`, which takes any subset, compiles and shows the English.
 
 Nothing is stored differently, and the spec version does not move.
 

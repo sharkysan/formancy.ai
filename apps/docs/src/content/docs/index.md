@@ -3,7 +3,7 @@ title: What is formancy?
 description: A visual form builder for Angular and React. Conditional fields, validation and your own styling, with one engine running in the browser and on the server. Open source, with an optional self-hosted backend.
 ---
 
-:::caution[Status: beta, version 0.6.0]
+:::caution[Status: beta, version 0.7.0]
 formancy is beta software: **every spec version is frozen; the package APIs are not.**
 
 `specVersion: "4"` — the newest, with the `ranking` and `matrix` field types, the `rating`
@@ -15,8 +15,9 @@ and `slider` widgets and the `step` and `mask` properties — needs `0.4.0` or n
 the version your installed packages actually speak, which is what the
 [React](/docs/start/react/) and [Angular](/docs/start/angular/) quickstarts say.
 
-**Every version only adds**, so an older document still validates and upgrading one is a
-single line with nothing rebinding — see
+**Every version only adds**, so an older document still validates, save one that keys a field
+`__proto__`, which `0.7.0` refuses because no release could store an answer under it, and
+upgrading one is a single line with nothing rebinding — see
 [`MIGRATIONS.md`](https://github.com/sharkysan/formancy.ai/blob/main/MIGRATIONS.md), which
 lists what each version added and what freezing one costs. The direction that costs
 something is the other one: a reader pinned to an older version refuses a newer document

@@ -8,81 +8,161 @@ Loosely [Keep a Changelog](https://keepachangelog.com), with reasons attached �
 a line that says only *what* changed is rarely the line you need six months
 later.
 
-## Unreleased
+## 0.7.0 — 2026-10-21
+
+**A minor release, and the spec version does not move.** Version 4 is still the newest and
+frozen, so `0.6.0` and `0.7.0` read each other's documents, save one that keys a field or a
+matrix row `__proto__`: `0.7.0` refuses it, and no release could store an answer under it. What
+moves is how every reader of an answer reads a value, one key the validator refuses, and which
+element carries the control id of a radio group, a set of tick boxes and a signature. No
+dependency changes and nothing is stored differently, but a host can break, so this is a minor
+release, where a breaking change lands before 1.0 ([`MIGRATIONS.md`](MIGRATIONS.md)). **A host
+takes it by choosing it**: `npm install`, as the quickstarts run it, wrote `^0.6.0` for a host
+that installed `0.6.0`, and that range does not take `0.7.0`, so such a host keeps `0.6.0` until
+it moves to `^0.7.0`, which is when the Breaking list below applies; a server run from
+`compose.published.yaml` runs the tag `FORMANCY_VERSION` pins, which has no default. A package
+such a host adds later without a version comes at `0.7.0`, and pins the `@formancy` packages it
+depends on to `0.7.0` exactly, beside the host's `0.6.0` ones: add it as `@0.6.0`, or move every
+package at once.
+
+**Breaking.** [`MIGRATIONS.md`](MIGRATIONS.md) says what to change for each.
+
+- A form keying a field `__proto__` is refused at publish with the new code `key.unstorable`. A
+  version published before with such a field still answers its read, and every submission
+  with a `500` until it is republished without the key; the engine refuses to open it in the
+  browser too. One with a matrix row so valued still opens, and takes no submission that
+  answers that row.
+- A published form keying a field after a name every object has — `constructor`, `toString`,
+  `valueOf` — is read by its own answer on the next submission, without a republish: a required
+  one left empty is refused where it was stored, and a rule reading it unanswered reads `null`,
+  so a field such a rule shows stays hidden until there is an answer. A required field keyed
+  `length` is no longer answered by a list sent in its group's place.
+- `parsePath` and `formatPath` throw on `__proto__`; `getAt` reads only what a value holds as
+  its own, a key only out of an object and an index only out of a list; and `evaluate` reports
+  `missing_variable` for a declared name the bag does not hold as its own.
+- A deployment's lists and checks are found only among the members its objects hold as their
+  own, so one a host hands in through a prototype — a getter or a method a class defines, a
+  member an `Object.create` inherits — is not found: a form naming such a list is refused at
+  publish, an answer to one stored before is refused `503 source_unavailable`, and such a check
+  answers `check_unavailable`. Read from the code, not measured.
+- A host's test that found a signature by `getByLabelText` and the field's label now finds the
+  typed box as well as the drawing surface, and throws on two. Find the box by its role and its
+  own name, *Type your name*, and the surface as an image.
+- `SchemaErrorCode` gains `key.unstorable`, so a host's catalogue typed as
+  `SchemaErrorSentences`, which asks for every code, does not compile until it words it. Typed
+  as `SchemaErrorWords`, which takes any subset, it compiles and shows the sentence in English.
 
 **Fixed: a field keyed after a name every object has was answered by what the object
-inherits**, in every release through `0.6.0`. A key is a name the author chooses, and the format
-admits `constructor`, `toString`, `valueOf`, `hasOwnProperty` and the rest of
-`Object.prototype`'s; a path was read with `value[key]`, which finds those on any object. So a
+inherits**, in every release through `0.6.0`. A path was read with `value[key]`, which finds
+`constructor`, `toString`, `valueOf` and the rest of `Object.prototype`'s on any object. So a
 required field keyed `constructor` and left empty counted as answered by `function Object` — an
 anonymous `{}` was stored with `201` where the key `contractor` was refused `422` — the renderer
-was handed the function as the field's value, a rule reading it could not be evaluated and a
-`visible` rule showed what it was meant to hide, the export printed the function's source, and a
-draft's rename to it was never applied. A list or a check the deployment supplies was looked up
-the same way: a `select` sourced from `constructor` was published against a deployment that
-configures other sources, and its answers stored unchecked (hazards A1, A7, B11). Every reader of
-an answer now reads what the value holds as its own, and a deployment's lists and checks are
-found among their own names ([0185](docs/decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)). Found behind CodeQL's alerts 30 and 31 on `setAt`, which are
-not prototype pollution: the write goes into a fresh object, and the paths come from the
-published document.
+was handed the function as the field's value, a `visible` rule reading it showed what it was
+meant to hide and the builder's rule overview explained it as undecided, the export printed the
+function's source, a draft's rename to it was never applied, and a draft resumed after a field
+keyed `toString` was removed came back with `Function.prototype.toString` set aside under
+`__orphaned` as its answer. A list or a check the deployment supplies was looked up the same
+way: a `select` sourced from `constructor` was published against a deployment that configures
+other sources, and its answers stored unchecked (hazards A1, A7, B11). Every reader of an
+answer now reads what the value holds as its own, and a deployment's lists and checks are found
+among their own names
+([0185](docs/decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md)). Found behind
+CodeQL's alerts 30 and 31 on `setAt`, which are not prototype pollution: the write goes into a
+fresh object, and the paths come from the published document. CodeQL closed both as fixed on
+its analysis of `main` on 2026-10-19, read from GitHub's API on 2026-10-20.
 
 **Fixed: a group, a row or a matrix answer holding an answered `constructor` could not be read
-by any rule**, in every release through `0.6.0`. The expression library, `@marcbachmann/cel-js`, tells a map by
-its `constructor` member, so such an object was no map to it: every rule reading it failed, a
-`validate` rule refusing the submission and a `visible` rule showing what it hides.
+by any rule**, in every release through `0.6.0`. The expression library, `@marcbachmann/cel-js`,
+tells a map by its `constructor` member, so every rule reading such an object failed: a
+`validate` rule refused the submission and a `visible` rule showed what it hides.
 `@formancy/expressions` now hands the library such an object as a `Map`, and charges every
-member read out of it as it charges any read, so the budget holds as it did. A map an
-expression builds still holds no `constructor`: the library leaves the key out of a literal.
+member read out of it as it charges any read, so the budget holds as it did.
 
 **Fixed: a list answered a field keyed `length`**, because a list holds its own: `{ "address":
 [] }` was stored for a form whose `address.length` is required, and `[1, 2]` for one asking
 `length` at the top. A path now reads a key only out of an object and an index only out of a
-list, as a write puts them. A submission sent as a list is still stored where nothing required
-asks it anything.
+list, as a write puts them.
 
 **Fixed: a translation a locale lacked showed a function where its id is a name every object
 has.** A French reader of a form whose message `toString` was written only in English was
 handed `Function.prototype.toString` as the label; `resolveText` and `resolvedLocale` now read a
 catalogue's own messages and a document's own catalogues, so the English is the fallback as for
-any other id. The builders' translation views still read a catalogue by id as they did.
+any other id.
 
 **Refused: `__proto__` as a field's key or a matrix row's value**, which every frozen spec
 version accepted and no release ever stored an answer under: written, it replaces the object's
 prototype, so what was typed was lost, and the server's parser refuses a body that carries it.
-`validateSchema` refuses it with the new code `key.unstorable`, said in German and French by the
-builder's catalogues, and `parsePath` and `formatPath` refuse it too, so the engine will not open
-a document with a field so keyed; and a write defines what it puts as the value's own member, so
-a path that reaches `setAt` without `parsePath` changes no prototype either. **A form version published before with such a field answers
-every submission with a `500` until it is republished without it** — loud on purpose, where it
-lost an answer quietly. One with a matrix row so valued still opens, since nothing is lost in it
-unsaid: Fastify's parser refuses a body answering that row with a `400`, so a required one
-takes no submission until it is republished. [`MIGRATIONS.md`](MIGRATIONS.md) says what else to
-read again before upgrading.
+`validateSchema` refuses it with `key.unstorable`, said in German and French by the builder's
+catalogues, and `parsePath` and `formatPath` refuse it too, so the engine will not open a
+document with a field so keyed — loud on purpose, where it lost an answer quietly. A write
+defines what it puts as the value's own member, so a path that reaches `setAt` without
+`parsePath` changes no prototype either.
 
-**The cost is measured.** A keystroke over 5,000 subscribed fields went from 0.32–0.38 to
-0.49–0.60 ms in `packages/core/bench/perf.mjs`, inside its 1 ms budget, and the engine's bundle
-and the spec's barrel each grew 0.3 kB
-([§9.3](docs/architecture/09-quality-requirements.md)).
+**The cost of the engine's reads is measured; the copy into a `Map` is not.** A keystroke over
+5,000 subscribed fields went from 0.32–0.38 to 0.49–0.60 ms in `packages/core/bench/perf.mjs`,
+and to 0.91 ms in one run of the seven, inside its 1 ms budget, and the engine's bundle and the
+spec's barrel each grew 0.3 kB ([§9.3](docs/architecture/09-quality-requirements.md)). An object
+holding its own `constructor` is copied into a `Map` once per evaluation, and no benchmark here
+evaluates an expression.
 
 **Fixed: the error summary's link to a radio group, a set of tick boxes or a signature took
-nobody anywhere**, in both renderers and in Angular Material, in every release through `0.6.0`.
-Each link goes to the field's control id, and a failed submit on a page without a summary moves
-focus by it too, but these three drew no element with the id: the link's handler, which stops
-the browser's own jump, found nothing to focus, so focus stayed on the link and the page did not
-scroll, and a failed submit whose first invalid field was one of them left focus on Submit. A
-radio group's and a set of tick boxes' fieldsets now carry the id, as the rating's, the
-ranking's, the matrix's and the repeater's groups do, and focus moves into the first option; a
-signature carries it on the box its name is typed into, which also gives the field's label,
-always pointed at that id, the box it labels. **No option's id changes**: each is still
-`<control id>:<value>`. A host focusing a field by `ids.control` now finds an element for all
-three, but a fieldset takes no focus, so for a group it has to move to the first control inside,
-as the renderers do; their helper for that is not exported
-([0186](docs/decisions/0186-a-fields-control-id-names-its-group-or-its-control.md)). A host's
-tests may notice the signature: `getByLabelText` with the field's label found the drawing surface,
-by its `aria-label`, and now finds the typed box as well and throws on two, so find the box by its
-role and its own name, *Type your name*, and the surface as an image. The box keeps that name
-rather than taking the label's, which WCAG 2.5.3 (Label in Name) counts as a failure, until a
-change of its own renames it.
+nobody anywhere**, in both renderers and in Angular Material, in every release through `0.6.0`
+that drew them: the signature since it arrived in `0.3.0`, and Material since it arrived in
+`0.4.0`. Each link goes to the field's control id, and a failed submit on a page without a
+summary moves focus by it too, but these three drew no element with the id: focus stayed on the
+link, the page did not scroll, and a failed submit whose first invalid field was one of them
+left focus on Submit (hazard D4). A radio group's and a set of tick boxes' fieldsets now carry
+the id, as the rating's, the ranking's, the matrix's and the repeater's groups do, and focus
+moves into the first option; a signature carries it on the box its name is typed into, which the
+field's label now labels. **No option's id changes**: each is still `<control id>:<value>`. Each
+renderer's tests, and Material's, now hold the rule over every field type drawn with a control,
+and each of its widgets
+([0186](docs/decisions/0186-a-fields-control-id-names-its-group-or-its-control.md)).
+
+### What 0.7.0 knowingly does not have
+
+Everything 0.6.0 listed still holds. New, or found while making this release:
+
+- **A radio group a rule disables still takes a choice**, in both renderers: its radios are not
+  disabled with the field. Measured on 2026-10-20 in jsdom, where a click on an option stored
+  it in React and in Angular; Material's radio group is disabled and took none. Neither
+  renderer has disabled them in any release, read from their code (hazard B6a). **React's
+  rating takes one too**: `disabled` sits on its `role="radiogroup"` element, which disables
+  nothing, and its radios carry none. Measured the same day, all eleven radios of a 0–10 rating
+  were enabled and a click stored `3`; drawn so since the rating arrived in `0.4.0`, read from
+  the code. Angular's rating, which Material draws, disables each radio.
+- **A signature a rule disables still takes a typed name or a drawing, and its Clear button
+  erases the answer**, in both renderers and under Material, which draws the default signature:
+  measured on 2026-10-20 in jsdom, a stroke was stored and Clear turned a typed `Ann` into no
+  answer (hazard B6a). Its typed box is not described by the field's error, so a screen reader
+  taken there from the summary hears the box and not the problem, and its name, *Type your
+  name*, does not contain the visible label *Signature*: a WCAG 2.5.3 (Label in Name) failure
+  that no axe rule reports, measured in React.
+- **A required tag picker says nowhere that it is required.** Its text box is described by a
+  hint whose id no element carries, and has no `aria-required`, in both renderers: measured on
+  2026-10-20 in jsdom, and drawn so since `0.3.0`, read from their code (hazard D4).
+- **`focusControl` is not exported**, nor the event that first opens a tab a layout hides a field
+  behind, so a host moving focus by a group's id, which names a fieldset that takes no focus,
+  has to move it to the first control itself. A field drawn with no control — a file field in a
+  deployment that takes no uploads, a select whose source the deployment lacks — still has no
+  element with the id, and its summary link still does nothing.
+- **A version stored with a field keyed `__proto__` cannot be opened**, and nothing finds such
+  versions for an operator: search the stored documents for the key.
+- **A group keyed `constructor` holding a field keyed `prototype`**, or a matrix so keyed with a
+  row so valued, is valid, and the server's parser refuses every body that answers it with a
+  `400`.
+- **The builders' translation views read a catalogue by id as they did**, so a message
+  `toString` that French lacks is not listed as missing, though the person filling the form in
+  French reads the English.
+- **The renderers look up a host's option sources by name as they did**, so a field sourced from
+  `constructor` in a browser whose host supplies none by that name fails as a source that cannot
+  answer, rather than as one that is missing.
+- **A submission is not required to be an object.** One sent as a list is stored with `201`
+  unless a required field asks it something, and members the form does not define are stored as
+  sent.
+- **A map an expression builds holds no `constructor`, `prototype` or `__proto__`**: the library
+  leaves those keys out of a literal, so `{"constructor": 1}` evaluates to `{}`, and a `computed`
+  field writing such a map out loses the member without an error.
 
 ## 0.6.0 — 2026-10-18
 
