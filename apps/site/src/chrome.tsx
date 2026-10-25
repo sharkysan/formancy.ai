@@ -150,6 +150,8 @@ export function SiteFooter(): ReactElement {
         Source
       </a>
       <a href="/docs">Documentation</a>
+      <a href="/legal/">Legal notice</a>
+      <a href="/privacy/">Privacy</a>
       <span className="spacer">{`Spec version ${CURRENT_SPEC_VERSION} · packages ${__PACKAGE_VERSION__}, beta`}</span>
     </footer>
   )
