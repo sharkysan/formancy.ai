@@ -47,19 +47,28 @@ field the layout leaves out stays out on every page
 Most types store one value. Some do not, and the difference matters more than
 the control does — it is what a consumer reading the submission gets.
 
-| Type | Answer | Added in |
-| --- | --- | --- |
-| `text`, `textarea`, `date`, `hidden` | a string | 1 |
-| `number` | a number | 1 |
-| `checkbox` | a boolean — a required one is a consent gate, so only a tick satisfies it | 1 |
-| `select`, `radio` | the chosen option's `value` | 1 |
-| `selectboxes` | the chosen values, **in the options' declared order** so two people who choose the same answers store the same array | 2 |
-| `time`, `datetime` | one fixed-width string — a wall clock with no zone, or an instant in UTC | 2 |
-| `file` | `{ id, name, size, contentType, storageKey }` per attachment — never the bytes | 2 |
-| `richtext` | a string in the [formatted-text grammar](#formatted-text-is-not-html) | 2 |
-| `signature` | `{ drawn }`, the strokes as points, or `{ typed }`, a name — never both, and never stroke timing | 3 |
-| `ranking` | the chosen values **in the order chosen**, most preferred first — an option nobody ranked is not in it ([0138](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0138-a-ranking-stores-the-order-chosen.md)) | 4 |
-| `matrix` | `{ row: column }` for each row answered, under the rows' values — `{}` untouched; a required one needs every row ([0139](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0139-a-matrix-answers-one-question-per-row.md)) | 4 |
+**Every answer is checked for this shape**, in the browser and when the server replays a
+submission, whether or not the field has a constraint: an object posted for a `text` field
+is refused as `type`. An unanswered field is an absent key. Where the last column says
+`null`, a cleared control writes that too; a list is empty as `[]` and never `null`, and an
+empty string is an answer only to a field whose answer is text. A `static` field stores
+nothing, and a value handed in for one is dropped
+([0189](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0189-every-answer-has-the-shape-its-type-says.md)).
+
+| Type | Answer | Added in | Unanswered |
+| --- | --- | --- | --- |
+| `text`, `textarea`, `hidden` | a string | 1 | absent, `null` or `''` |
+| `date` | a `YYYY-MM-DD` string | 1 | absent or `null` |
+| `number` | a number | 1 | absent or `null` |
+| `checkbox` | a boolean — a required one is a consent gate, so only a tick satisfies it | 1 | absent or `null` |
+| `select`, `radio` | the chosen option's `value` | 1 | absent or `null` |
+| `selectboxes` | the chosen values, **in the options' declared order** so two people who choose the same answers store the same array | 2 | absent or `[]` |
+| `time`, `datetime` | one fixed-width string — a wall clock with no zone, or an instant in UTC | 2 | absent or `null` |
+| `file` | `{ id, name, size, contentType, storageKey }` per attachment — never the bytes | 2 | absent or `[]` |
+| `richtext` | a string in the [formatted-text grammar](#formatted-text-is-not-html) | 2 | absent, `null` or `''` |
+| `signature` | `{ drawn }`, the strokes as points, or `{ typed }`, a name — never both, and never stroke timing | 3 | absent or `null` |
+| `ranking` | the chosen values **in the order chosen**, most preferred first — an option nobody ranked is not in it ([0138](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0138-a-ranking-stores-the-order-chosen.md)) | 4 | absent or `[]` |
+| `matrix` | `{ row: column }` for each row answered, under the rows' values — `{}` untouched; a required one needs every row ([0139](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0139-a-matrix-answers-one-question-per-row.md)) | 4 | absent or `{}` |
 
 A `file` answer is written by the upload endpoints rather than typed: the
 client asks `POST /f/:path/files` where to put a file, PUTs the bytes to the

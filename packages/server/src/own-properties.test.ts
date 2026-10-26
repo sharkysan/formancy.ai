@@ -162,7 +162,8 @@ describe('a form a list answers', () => {
     const posted = await submit(app, 'address', '{"address":[]}')
 
     expect(posted.statusCode).toBe(422)
-    expect(posted.json()).toEqual({ error: 'invalid', errors: { 'address.length': ['required'] } })
+    // The group is refused for its own shape too: a list where its object belongs (0189).
+    expect(posted.json()).toEqual({ error: 'invalid', errors: { address: ['type'], 'address.length': ['required'] } })
   })
 
   test('and to a whole submission sent as a list, for a required field keyed length', async () => {

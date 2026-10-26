@@ -130,7 +130,8 @@ function previewEngine(company: boolean, previous?: FormEngine): FormEngine {
       heroEmail: previous?.getFieldSnapshot(['heroEmail']).value ?? '',
       heroTicket: previous?.getFieldSnapshot(['heroTicket']).value ?? 'conference',
       heroWorkshops: previous?.getFieldSnapshot(['heroWorkshops']).value ?? [],
-      heroArriving: previous?.getFieldSnapshot(['heroArriving']).value ?? '',
+      // An unanswered date is null; `''` is an answer only to a text field (0189).
+      heroArriving: previous?.getFieldSnapshot(['heroArriving']).value ?? null,
       heroProgramme: previous?.getFieldSnapshot(['heroProgramme']).value ?? null,
     },
   })

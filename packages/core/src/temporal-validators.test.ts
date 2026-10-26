@@ -73,8 +73,9 @@ describe('a time answer', () => {
     expect(errorsFor({ slot: '9:30' })).toEqual({ slot: ['shape'] })
     expect(errorsFor({ slot: '24:00' })).toEqual({ slot: ['shape'] })
     expect(errorsFor({ slot: '09:30:00' })).toEqual({ slot: ['shape'] })
-    // The hostile-payload path: a non-string where a string belongs.
-    expect(errorsFor({ slot: 930 })).toEqual({ slot: ['shape'] })
+    // The hostile-payload path: a non-string where a string belongs, refused on the
+    // answer's shape before the time's own (0189).
+    expect(errorsFor({ slot: 930 })).toEqual({ slot: ['type'] })
   })
 
   test('that is empty trips nothing, because emptiness is required’s job', () => {

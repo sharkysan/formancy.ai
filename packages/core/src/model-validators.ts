@@ -1,6 +1,9 @@
-import { TEMPORAL_SHAPES, fitsMask } from '@formancy/spec'
-import type { FieldDef, FieldFormat } from '@formancy/spec'
+import { ANSWER_KINDS, TEMPORAL_SHAPES, fitsAnswerShape, fitsMask } from '@formancy/spec'
+import type { FieldDef, FieldFormat, StoredFile } from '@formancy/spec'
 import type { BuiltInErrorCode } from './error-codes.js'
+import { formatPath } from './path.js'
+import type { Path } from './path.js'
+import { getAt } from './value.js'
 
 /**
  * The spec's built-in model validators: bounds, pattern, format.
@@ -12,7 +15,15 @@ import type { BuiltInErrorCode } from './error-codes.js'
  * message catalog nothing about what to say.
  */
 export function modelViolations(def: FieldDef, value: unknown): BuiltInErrorCode[] {
-  if (value === undefined || value === null || value === '') return []
+  if (value === undefined) return []
+
+  // The answer's shape, before any constraint reads it: the one check every field gets,
+  // constrained or not (0189). A `text` field with no constraints used to store an object
+  // posted for it, because nothing here looked.
+  const wrongShape = shapeViolations(def, value)
+  if (wrongShape.length > 0 || value === null) return wrongShape
+  // Only a text answer reaches here empty: `''` is a shape error for everything else.
+  if (value === '') return []
 
   const codes: BuiltInErrorCode[] = []
 
@@ -20,14 +31,7 @@ export function modelViolations(def: FieldDef, value: unknown): BuiltInErrorCode
   // field — bounds its length rather than its magnitude. `minItems` and
   // `maxItems` are the same two properties a repeater uses, deliberately:
   // "how many" is one question however it is asked.
-  if (LIST_VALUED.has(def.type)) {
-    if (!Array.isArray(value)) {
-      // A scalar where a list belongs is the hostile-payload path. Failing it
-      // here rather than letting `.length` be undefined is what stops a
-      // bounded field being unbounded for anyone who sends the wrong shape.
-      codes.push('type')
-      return codes
-    }
+  if (LIST_VALUED.has(def.type) && Array.isArray(value)) {
     if (def.minItems !== undefined && value.length < def.minItems) codes.push('minItems')
     if (def.maxItems !== undefined && value.length > def.maxItems) codes.push('maxItems')
     if (def.type === 'file') codes.push(...fileViolations(def, value))
@@ -52,20 +56,6 @@ export function modelViolations(def: FieldDef, value: unknown): BuiltInErrorCode
   // object, and refused in the same way when it has a shape no control produces (0139).
   if (def.type === 'matrix') return matrixViolations(def, value)
 
-  // A chooser stores ONE OPTION'S VALUE, which is a string. Anything else is the
-  // hostile-payload path, and refusing it here is what stops it from being invisible:
-  // a field whose options live elsewhere (`optionsSource`) has no list to compare
-  // against, and the server's own membership check walks only strings — so an object or
-  // an array produced no answer to ask about and was stored unexamined. Measured before
-  // this existed: `sourcedAnswers` returned `[]` for `{"canton": {"$gt": ""}}`.
-  //
-  // Before the type, because "not a string" is a better answer than "not an offered
-  // option" for a value that could never have been one.
-  if (CHOOSER_TYPES.has(def.type) && typeof value !== 'string') {
-    codes.push('type')
-    return codes
-  }
-
   // A chosen answer is one of the options offered, checked here because this is the one
   // function the browser and the server both run: a payload posted straight at the
   // server never went through a control
@@ -79,15 +69,11 @@ export function modelViolations(def: FieldDef, value: unknown): BuiltInErrorCode
   // since a list living outside the document cannot be checked against it.
   if (offersOptions(def) && !offers(def, value)) codes.push('option')
 
-  if (def.min !== undefined || def.max !== undefined) {
-    if (typeof value !== 'number' || Number.isNaN(value)) {
-      // A non-number where a number belongs must fail, not sail through NaN
-      // comparisons vacuously — this is the hostile-payload path on the server.
-      codes.push(def.min !== undefined ? 'min' : 'max')
-    } else {
-      if (def.min !== undefined && value < def.min) codes.push('min')
-      if (def.max !== undefined && value > def.max) codes.push('max')
-    }
+  // A bound and a step belong to a number, and a number's shape — finite, never NaN, which
+  // every comparison would vacuously pass — was settled above.
+  if (typeof value === 'number') {
+    if (def.min !== undefined && value < def.min) codes.push('min')
+    if (def.max !== undefined && value > def.max) codes.push('max')
   }
 
   /*
@@ -110,14 +96,10 @@ export function modelViolations(def: FieldDef, value: unknown): BuiltInErrorCode
    * tolerance is a millionth of a step, which is far below any granularity a
    * person can express and far above the error binary fractions accumulate.
    */
-  if (def.step !== undefined && def.step > 0) {
-    if (typeof value !== 'number' || Number.isNaN(value)) {
-      codes.push('step')
-    } else {
-      const from = def.min ?? 0
-      const steps = (value - from) / def.step
-      if (Math.abs(steps - Math.round(steps)) > 1e-6) codes.push('step')
-    }
+  if (typeof value === 'number' && def.step !== undefined && def.step > 0) {
+    const from = def.min ?? 0
+    const steps = (value - from) / def.step
+    if (Math.abs(steps - Math.round(steps)) > 1e-6) codes.push('step')
   }
 
   const text = typeof value === 'string' ? value : undefined
@@ -132,8 +114,8 @@ export function modelViolations(def: FieldDef, value: unknown): BuiltInErrorCode
   // `shape` rather than `pattern` as the code: `pattern` is the author's own regular
   // expression, and a message catalogue needs to tell these two apart.
   const shape = TEMPORAL_SHAPE_CHECKS[def.type]
-  if (shape !== undefined) {
-    if (text === undefined || !shape.test(text)) {
+  if (shape !== undefined && text !== undefined) {
+    if (!shape.test(text)) {
       codes.push('shape')
     } else {
       if (def.earliest !== undefined && text < def.earliest) codes.push('earliest')
@@ -159,8 +141,8 @@ export function modelViolations(def: FieldDef, value: unknown): BuiltInErrorCode
   // An answer fills its mask, or it is not one: a character in every position, each
   // the kind the position takes, and none of the characters the mask writes. Here
   // rather than in the control because a payload posted straight at the server never
-  // went through one (0125). A value that is not text at all fails it too.
-  if (def.mask !== undefined && (text === undefined || !fitsMask(def.mask, text))) {
+  // went through one (0125).
+  if (def.mask !== undefined && text !== undefined && !fitsMask(def.mask, text)) {
     codes.push('mask')
   }
 
@@ -168,12 +150,58 @@ export function modelViolations(def: FieldDef, value: unknown): BuiltInErrorCode
 }
 
 /**
- * Field types whose answer is ONE option's value.
- *
- * `selectboxes` is absent because its answer is a list; the branch above already
- * refuses a scalar there, and each tick is checked against the options separately.
+ * Whether an answer has the shape its type stores, read from the format's own table, and
+ * nothing more: `['type']` when it does not, `[]` when it does or is absent. `null` is a shape
+ * only where `nullable` says so (0189).
  */
-const CHOOSER_TYPES = new Set(['select', 'radio'])
+export function shapeViolations(def: FieldDef, value: unknown): BuiltInErrorCode[] {
+  if (value === undefined) return []
+  const kind = ANSWER_KINDS[def.type]
+  if (value === null) return kind.nullable ? [] : ['type']
+  return fitsAnswerShape(kind.shape, value) ? [] : ['type']
+}
+
+/**
+ * The shapes the engine's field-by-field pass never asks about, as wire and codes (0189).
+ *
+ * Two kinds of stored value it does not reach. **A group's own value**: the engine validates
+ * fields, and a group is not one, so a string or a list posted where its object belongs was
+ * stored. **An answer a rule hid and kept**: a hidden field is not part of the conversation
+ * and is not validated, but one whose `clearOnHide` is false keeps its value, and that value
+ * is stored — measured, an object posted for such a text field was accepted. Only the shape
+ * is asked of either: a hidden field is still not asked to be answered, or to be long enough.
+ *
+ * Walked through the value as the engine walks the model: a page scopes nothing, a group
+ * nests, and each row of a repeater holds its own. Entries rather than an object written by
+ * key: a wire carries a row's index, taken from the value, and the caller's
+ * `Object.fromEntries` defines each one as its own property.
+ */
+export function storedShapeViolations(
+  fields: readonly FieldDef[],
+  value: unknown,
+  hidden: (path: Path) => boolean,
+): Array<[wire: string, codes: BuiltInErrorCode[]]> {
+  const out: Array<[wire: string, codes: BuiltInErrorCode[]]> = []
+  const visit = (defs: readonly FieldDef[], parent: Path): void => {
+    for (const def of defs) {
+      if (def.type === 'page') {
+        visit(def.fields ?? [], parent)
+        continue
+      }
+      const path = [...parent, def.key]
+      const held = getAt(value, path)
+      if (held === undefined) continue
+      const codes = def.type === 'group' || hidden(path) ? shapeViolations(def, held) : []
+      if (codes.length > 0) out.push([formatPath(path), codes])
+      else if (def.type === 'group') visit(def.fields ?? [], path)
+      else if (def.type === 'repeater' && Array.isArray(held)) {
+        held.forEach((_, index) => visit(def.fields ?? [], [...path, index]))
+      }
+    }
+  }
+  visit(fields, [])
+  return out
+}
 
 /**
  * Field types whose answer is a list.
@@ -191,8 +219,7 @@ const LIST_VALUED = new Set(['selectboxes', 'ranking', 'file'])
  * row is answered is `required`'s question, not this one.
  */
 function matrixViolations(def: FieldDef, value: unknown): BuiltInErrorCode[] {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) return ['type']
-  const entries = Object.entries(value)
+  const entries = Object.entries(value as object)
   if (entries.some(([, column]) => typeof column !== 'string')) return ['type']
   const rows = new Set((def.rows ?? []).map((row) => row.value))
   const codes: BuiltInErrorCode[] = []
@@ -232,24 +259,6 @@ const TEMPORAL_SHAPE_CHECKS: Partial<Record<string, RegExp>> = Object.fromEntrie
   Object.entries(TEMPORAL_SHAPES).map(([type, source]) => [type, new RegExp(source)]),
 )
 
-/** One attached file, as the submission stores it. Never the bytes. */
-interface StoredFile {
-  id: string
-  name: string
-  size: number
-  contentType: string
-  storageKey: string
-}
-
-function isStoredFile(value: unknown): value is StoredFile {
-  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false
-  const file = value as Record<string, unknown>
-  return ['id', 'name', 'storageKey'].every((key) =>
-    typeof file[key] === 'string' && file[key].length > 0,
-  ) && typeof file['contentType'] === 'string' &&
-    typeof file['size'] === 'number' && Number.isSafeInteger(file['size']) && file['size'] >= 0
-}
-
 /**
  * What the server checks about attached files, and the browser only suggests.
  *
@@ -258,7 +267,6 @@ function isStoredFile(value: unknown): value is StoredFile {
  * form and nothing at all to somebody posting to the endpoint directly.
  */
 function fileViolations(def: FieldDef, files: readonly unknown[]): BuiltInErrorCode[] {
-  if (!files.every(isStoredFile)) return ['type']
   const codes: BuiltInErrorCode[] = []
 
   for (const entry of files) {
@@ -342,8 +350,6 @@ const FORMAT_CHECKS: Record<FieldFormat, (value: string) => boolean> = {
  * ([0083](../../../docs/decisions/0083-a-signature-is-points-or-a-name.md)).
  */
 function signatureViolations(def: FieldDef, value: unknown): BuiltInErrorCode[] {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) return ['type']
-
   const answer = value as { drawn?: unknown; typed?: unknown }
   const hasDrawn = answer.drawn !== undefined
   const hasTyped = answer.typed !== undefined

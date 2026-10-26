@@ -68,7 +68,7 @@ also why the engine's tests never need to mock a clock.
 |---|---|---|
 | **Structural** | ajv against the spec's JSON Schema, ahead-of-time compiled | a field with no `key` |
 | **Semantic** | `validateSchema`, expressing what JSON Schema cannot | a duplicate key; a rename whose old key still exists; a page below the top level; a pattern that does not compile; a message reference that resolves nowhere |
-| **Model** | the engine, against answers | `required`, `min`, `maxLength`, anchored `pattern`, the closed format list, and expression-driven rules — on a repeater too, against its rows as a whole: `minItems`, `maxItems`, `required` as a row, and the rules aimed at it ([0184](../decisions/0184-a-repeater-is-validated-as-a-field-is.md)) |
+| **Model** | the engine, against answers | first each answer's shape, read from the format's own table — an object posted for a text field is `type` whether or not the field has a constraint ([0189](../decisions/0189-every-answer-has-the-shape-its-type-says.md)); then `required`, `min`, `maxLength`, anchored `pattern`, the closed format list, and expression-driven rules — on a repeater too, against its rows as a whole: `minItems`, `maxItems`, `required` as a row, and the rules aimed at it ([0184](../decisions/0184-a-repeater-is-validated-as-a-field-is.md)) |
 
 Messages in the first two tiers are written for a form author, not for a
 compiler. "There is no `en` catalogue, so the language everything falls back to

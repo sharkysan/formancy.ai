@@ -1,4 +1,5 @@
-import type { LogicRule } from '@formancy/spec'
+import { ANSWER_KINDS, modelDataFields } from '@formancy/spec'
+import type { FormModel, LogicRule } from '@formancy/spec'
 import { parsePath, templateWire } from './path.js'
 import type { Path } from './path.js'
 import { stripPaths } from './strip.js'
@@ -15,13 +16,26 @@ export function computedTargets(rules: readonly LogicRule[]): ReadonlySet<string
   return new Set(rules.filter((rule) => rule.kind === 'computed').map((rule) => rule.target))
 }
 
-/** Whether a computed rule writes the field at `wire`, a row's included. */
-export function isComputed(targets: ReadonlySet<string>, wire: string): boolean {
+/**
+ * The fields that collect nothing — `static` ones — in the same form. A value handed in
+ * or set for one is dropped as a computed field's is: it answers no question, and stored
+ * it would read as an answer to every consumer of the submission (0189).
+ */
+export function staticTargets(model: FormModel): ReadonlySet<string> {
+  return new Set(
+    modelDataFields(model)
+      .filter(({ def }) => ANSWER_KINDS[def.type].shape === 'nothing')
+      .map(({ path }) => path),
+  )
+}
+
+/** Whether the field at `wire`, a row's included, is one of `targets`. */
+export function isTarget(targets: ReadonlySet<string>, wire: string): boolean {
   return targets.has(templateWire(wire))
 }
 
-/** `value` — a draft, a prefill, a request body — with nothing left at a computed field. */
-export function withoutComputedValues(value: unknown, targets: ReadonlySet<string>): unknown {
+/** `value` — a draft, a prefill, a request body — with nothing left at any of `targets`. */
+export function withoutValuesAt(value: unknown, targets: ReadonlySet<string>): unknown {
   const paths: Path[] = []
   for (const target of targets) {
     const marker = target.indexOf('[]')

@@ -1,5 +1,5 @@
 import type { FieldDef, FieldType, FormSchema, LogicRule, Text } from '@formancy/spec'
-import { LIST_VALUED_FIELD_TYPES, resolveText } from '@formancy/spec'
+import { resolveText } from '@formancy/spec'
 import { captureCapabilities, compile, evaluate } from '@formancy/expressions'
 import type {
   Capabilities,
@@ -16,19 +16,20 @@ import type { Check } from './checks.js'
 import type { BuiltInErrorCode, ValidationReport } from './error-codes.js'
 import type { FieldIds } from './ids.js'
 import { createInteractionState } from './interaction.js'
-import { modelViolations } from './model-validators.js'
+import { modelViolations, storedShapeViolations } from './model-validators.js'
 import { unanswered } from './answered.js'
 import { formatPath, parsePath, templateWire, withinAny } from './path.js'
 import { buildFieldProps } from './props.js'
 import type { FieldProps } from './props.js'
 import type { Path } from './path.js'
 import { createValueStore } from './store.js'
-import { computedTargets, isComputed, withoutComputedValues } from './computed-targets.js'
+import { computedTargets, isTarget, staticTargets, withoutValuesAt } from './computed-targets.js'
+import { computedWriter } from './computed-value.js'
 import { getAt, setAt } from './value.js'
 import { refusedRule } from './rule-refusal.js'
 import { createRows, repeaterViolations } from './rows.js'
 import type { RepeaterNode } from './rows.js'
-import { topLevelDataFields } from './top-level-fields.js'
+import { bagType, topLevelDataFields } from './top-level-fields.js'
 import { createWizard } from './wizard.js'
 import type { Wizard } from './wizard.js'
 
@@ -435,29 +436,8 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
     )
   }
 
-  /** Top-level declarations: scalar leaves are dyn because any field can be
-   *  empty while the user types; containers and list answers keep their shape.
-   *  Nested reads go through the container dynamically.
-   *
-   *  A list answer is declared so that `buildBag` seeds it with `[]` rather
-   *  than null. `'a' in topics` is false against an empty list and an ERROR
-   *  against null, and a visibility rule that errors fails OPEN — so
-   *  declaring a selectboxes field `dyn` shows every field it was meant to
-   *  hide, right up until the first tick. */
-  const listValued: readonly FieldType[] = LIST_VALUED_FIELD_TYPES
   const topLevel = topLevelDataFields(schema.model.fields)
-  const declarations: VariableDeclarations = Object.fromEntries(
-    topLevel.map((def): [string, DeclaredType] => [
-      def.key,
-      // A matrix is a map too: seeded `{}` so `has(rating.taste)` answers on an untouched
-      // form rather than erroring, which a visibility rule would read as "show" (0139).
-      def.type === 'group' || def.type === 'matrix'
-        ? 'map'
-        : listValued.includes(def.type)
-          ? 'list'
-          : 'dyn',
-    ]),
-  )
+  const declarations: VariableDeclarations = Object.fromEntries(topLevel.map((def) => [def.key, bagType(def)]))
 
   if (rules.some((rule) => rule.target.includes('[]'))) {
     for (const reserved of Object.keys(ROW_VARIABLES)) {
@@ -588,7 +568,9 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
 
   /** The fields only a computed rule writes: nothing handed in stands in for them (0181). */
   const computed = computedTargets(allRules)
-  const store = createValueStore(withoutComputedValues(options.initialValue ?? {}, computed))
+  /** Those, and the fields that collect nothing: nothing handed in or set lands on either. */
+  const unwritable = new Set([...computed, ...staticTargets(schema.model)])
+  const store = createValueStore(withoutValuesAt(options.initialValue ?? {}, unwritable))
   const interaction = createInteractionState()
   const rows = createRows(store, interaction)
   const errorsByWire = new Map<string, string[]>()
@@ -693,6 +675,9 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
     return `${entry.row!.repeater.wire}[${index}].${formatPath(entry.row!.memberPath)}`
   }
 
+  /** A computed result as its field stores it, or `undefined` when it does not fit (0189). */
+  const storable = computedWriter(schema.model)
+
   function instancePath(entry: CompiledRule, index: number): Path {
     return [...entry.row!.repeater.path, index, ...entry.row!.memberPath]
   }
@@ -733,9 +718,10 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
             const outcome = evaluate(entry.program, bag, { capabilities })
             // A computed rule that cannot evaluate (half-filled inputs) writes
             // nothing; the previous value stands until the inputs make sense.
-            if (outcome.ok) {
-              store.set(entry.targetPath, outcome.value)
-              bag[topSegment(entry.rule.target)] = outcome.value
+            const stored = outcome.ok ? storable(entry.rule.target, outcome.value) : undefined
+            if (stored !== undefined) {
+              store.set(entry.targetPath, stored.value)
+              bag[topSegment(entry.rule.target)] = stored.value
             }
             continue
           }
@@ -743,7 +729,8 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
           const { repeater } = entry.row
           rows.of(repeater).forEach((row, index) => {
             const outcome = evaluate(entry.program, rowBag(bag, repeater, row, index), { capabilities })
-            if (outcome.ok) store.set(instancePath(entry, index), outcome.value)
+            const stored = outcome.ok ? storable(entry.rule.target, outcome.value) : undefined
+            if (stored !== undefined) store.set(instancePath(entry, index), stored.value)
           })
           // Aggregates downstream must see the rows as just written.
           bag[topSegment(repeater.wire)] = store.get(repeater.path) ?? []
@@ -1044,7 +1031,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
 
   function runValidation(): ValidationReport {
     validatedOnce = true
-    const report: Record<string, string[]> = {}
+    const report: Record<string, string[]> = Object.fromEntries(storedShapeViolations(schema.model.fields, store.root(), hiddenAt))
     const changedWires: string[] = []
     const capabilities = capabilitySource === undefined ? undefined : captureCapabilities(capabilitySource)
     const bag = compiledRules.length > 0 ? buildBag() : undefined
@@ -1193,7 +1180,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
         required,
         visible: !hiddenAt(node.path),
         disabled,
-        readOnly: isComputed(computed, wire),
+        readOnly: isTarget(computed, wire),
         touched,
         errors,
         ids,
@@ -1213,7 +1200,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
     },
 
     setValue: (path, value) => {
-      if (!isComputed(computed, formatPath(path))) store.set(path, value)
+      if (!isTarget(unwritable, formatPath(path))) store.set(path, value)
     },
     touch: (path) => interaction.touch(path),
 

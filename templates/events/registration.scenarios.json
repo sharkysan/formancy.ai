@@ -2,7 +2,7 @@
   {
     "name": "meal is required when the branch applies",
     "changes": {
-      "meal": ""
+      "meal": null
     },
     "valid": false,
     "errors": {

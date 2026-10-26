@@ -2,7 +2,7 @@
   {
     "name": "budget is required when the branch applies",
     "changes": {
-      "budget": ""
+      "budget": null
     },
     "valid": false,
     "errors": {
@@ -14,7 +14,7 @@
   {
     "name": "currency is required when the branch applies",
     "changes": {
-      "currency": ""
+      "currency": null
     },
     "valid": false,
     "errors": {

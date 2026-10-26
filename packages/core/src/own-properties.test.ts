@@ -154,14 +154,15 @@ describe('a list holds rows, and only rows', () => {
   })
 
   test.each([
-    ['inside a group sent as a list', [{ key: 'address', type: 'group', label: 'Address', fields: [{ key: 'length', type: 'text', label: 'Length', required: true }] }], { address: [] }, 'address.length'],
-    ['at the top of a submission sent as a list', [{ key: 'length', type: 'number', label: 'Length', required: true }], ['x', 'y'], 'length'],
-  ])('a required field keyed length %s is refused as required', (_where, fields, initialValue, wire) => {
+    // The group is also refused for its own shape, a list where its object belongs (0189).
+    ['inside a group sent as a list', [{ key: 'address', type: 'group', label: 'Address', fields: [{ key: 'length', type: 'text', label: 'Length', required: true }] }], { address: [] }, 'address.length', { address: ['type'] }],
+    ['at the top of a submission sent as a list', [{ key: 'length', type: 'number', label: 'Length', required: true }], ['x', 'y'], 'length', {}],
+  ])('a required field keyed length %s is refused as required', (_where, fields, initialValue, wire, also) => {
     // The server replays this engine over what was posted: a list answered the question with
     // its length, and was stored as the submission.
     const engine = createFormEngine({ schema: form(fields), mode: 'server', initialValue })
 
-    expect(engine.submit()).toEqual({ ok: false, errors: { [wire]: ['required'] } })
+    expect(engine.submit()).toEqual({ ok: false, errors: { ...also, [wire]: ['required'] } })
   })
 })
 

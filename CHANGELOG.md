@@ -10,6 +10,24 @@ later.
 
 ## Unreleased
 
+**Every answer has the shape its type says, or it is refused.** The engine read a value's
+type only where a constraint needed it, so a `text` field with no length, pattern, format or
+mask stored an object posted for it, a `number` with no bounds stored a string, and every
+`hidden`, `richtext` and optional `checkbox` stored whatever arrived. The format now states
+each type's answer as data — `ANSWER_KINDS` in `@formancy/spec` — and the engine checks it
+first, for every field, in the browser and on the replay: a value of another shape is
+`type`. `null` stays unanswered for a single answer and is refused for a list, a matrix and
+files; `''` is an answer only to a text field; a group holds an object, which nothing checked
+because a group is not a field; an answer a rule hid but kept is checked for its shape, though
+for nothing else; a `static` field stores nothing. **A
+submission that was accepted can now be refused** with `422`, including against form
+versions published before. A computed result that does not fit its field is no longer
+stored: `42.0` into a text field used to store a number, and a decimal — the documented way
+to add up money — stored an object that made the form impossible to submit; a decimal into
+a number field is now stored as the number it writes. `StoredFile` moves into
+`@formancy/spec`, and both renderers re-export it
+([0189](docs/decisions/0189-every-answer-has-the-shape-its-type-says.md)).
+
 **The documentation names no other form product.** The roadmap's *Measured against the
 competition* is now *What an adopter weighs*, and the architecture introduction describes the
 architecture formancy reacts against rather than naming a vendor. A sentence about what another
