@@ -6,7 +6,7 @@ import { validateSchema } from './validate.js'
 /**
  * `signature`, and the version that carries it.
  *
- * A drawn mark is the last of the three components form.io and FormEngine both
+ * A drawn mark is the last of the three components form platforms commonly
  * charge for, and the only one still unbuilt. It is a **field type**, so it is a
  * spec version: a reader that has never heard of it renders nothing, collects
  * nothing and drops the answer, which looks exactly like a field somebody left
