@@ -62,6 +62,11 @@ export const FORM_WORDS_DE = {
   'error.box': 'Die Unterschrift geht über ihr Feld hinaus. Löschen Sie sie und unterschreiben Sie erneut.',
   'error.maxPoints': 'Die Unterschrift ist zu detailliert, um sie zu speichern. Löschen Sie sie und unterschreiben Sie erneut.',
 
+  'answer.yes': 'Ja',
+  'answer.no': 'Nein',
+  'answer.drawnSignature': 'Eine gezeichnete Unterschrift',
+  'answer.row': '{label} {position}',
+
   'repeater.add': '{label} hinzufügen',
   'repeater.remove': '{label} entfernen',
   'repeater.removeRow': '{remove}, {position} von {count}',

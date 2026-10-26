@@ -10,6 +10,15 @@ later.
 
 ## Unreleased
 
+**A submission is read back in words.** The admin's submissions tab printed each submission
+as its JSON — `{"country":"CH"}` — which is what the server keeps, not what anybody answered.
+`answersInWords` in `@formancy/core/words` now reads each answer back under its question: a
+choice by its option's label, a list joined as the language joins one, numbers and dates as the
+reader writes them, a matrix row by row, files by name, fields in a group or a row under their
+container. An answer the document cannot name is said as stored rather than dropped. The admin
+shows submissions to the current version this way, with the stored JSON one disclosure away;
+an older version's stay as stored, because the API does not yet hand out an older document
+([0193](docs/decisions/0193-a-submission-is-read-back-in-words.md)).
 **A field can be duplicated, and its type changed, in both builders.** Neither was possible:
 changing a type meant deleting the field and adding another, losing its label, options and
 the rules aimed at it, and duplicating meant adding it again by hand. `d` on the structure tree

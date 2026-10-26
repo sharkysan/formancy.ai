@@ -8,6 +8,7 @@ import { FillPane } from './fill-pane.js'
 import { TranslationsTab } from './translations-tab.js'
 import { WebhooksPane } from './webhooks-pane.js'
 import { SignIn } from './sign-in.js'
+import { SubmissionAnswers } from './submission-answers.js'
 import '@formancy/themes/workbench.css'
 // After the workbench, whose light defaults its --wb-* recolour: both say :root.
 import '@formancy/themes/room.css'
@@ -17,6 +18,7 @@ import { Mark } from './mark.js'
 import { createFormEngine } from '@formancy/core'
 import { validateSchema } from '@formancy/spec/validate'
 import { CURRENT_SPEC_VERSION } from '@formancy/spec'
+import type { FormSchema } from '@formancy/spec'
 import { ErrorSummary, FormancyForm, FormancyProvider } from '@formancy/react'
 import {
   Unauthorized,
@@ -371,8 +373,14 @@ function VersionsPane({ path }: { path: string }) {
 
 function SubmissionsPane({ path }: { path: string }) {
   const [submissions, setSubmissions] = useState<SubmissionEntry[]>([])
+  // The current version's document, to read its own submissions back through (0193). An older
+  // version's document is not one the API hands out, so its submissions stay as stored.
+  const [current, setCurrent] = useState<{ version: number; schema: FormSchema } | undefined>()
   useEffect(() => {
     fetchSubmissions(path).then(setSubmissions).catch(() => setSubmissions([]))
+    fetchForm(path)
+      .then(({ version, schema }) => setCurrent({ version, schema }))
+      .catch(() => setCurrent(undefined))
   }, [path])
   return (
     <div className="wb-page">
@@ -386,7 +394,7 @@ function SubmissionsPane({ path }: { path: string }) {
           <tr>
             <th>Submitted</th>
             <th>Version</th>
-            <th>Data</th>
+            <th>Answers</th>
           </tr>
         </thead>
         <tbody>
@@ -397,7 +405,11 @@ function SubmissionsPane({ path }: { path: string }) {
                 <span className="wb-version">v{submission.version}</span>
               </td>
               <td>
-                <code className="wb-data">{JSON.stringify(submission.data)}</code>
+                {current?.version === submission.version ? (
+                  <SubmissionAnswers schema={current.schema} data={submission.data} />
+                ) : (
+                  <code className="wb-data">{JSON.stringify(submission.data)}</code>
+                )}
               </td>
             </tr>
           ))}

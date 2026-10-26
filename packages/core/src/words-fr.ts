@@ -58,6 +58,11 @@ export const FORM_WORDS_FR = {
   'error.box': 'La signature dépasse de son cadre. Effacez-la et signez à nouveau.',
   'error.maxPoints': 'La signature est trop détaillée pour être conservée. Effacez-la et signez à nouveau.',
 
+  'answer.yes': 'Oui',
+  'answer.no': 'Non',
+  'answer.drawnSignature': 'Une signature dessinée',
+  'answer.row': '{label} {position}',
+
   'repeater.add': 'Ajouter {label}',
   'repeater.remove': 'Supprimer {label}',
   'repeater.removeRow': '{remove}, {position} sur {count}',

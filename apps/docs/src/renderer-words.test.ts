@@ -623,7 +623,10 @@ describe('every word in the catalogue', () => {
       // of the three sentences of the resume notice — so a literal written back there was
       // caught by the source guard above and by nothing that looks at a German form.
       const named = literalsIn(join(repo, path))
-      const ids = Object.keys(FORM_WORDS) as FormWordId[]
+      // `answer.*` are said about a submission read back afterwards — `answersInWords` — and
+      // never drawn on a form, so no form's test can find them; `answers-in-words.test.ts` in
+      // core reads them in German instead (0193).
+      const ids = (Object.keys(FORM_WORDS) as FormWordId[]).filter((id) => !id.startsWith('answer.'))
       expect(ids.filter((id) => !named.has(id) && NOT_BY_NAME[id] === undefined)).toEqual([])
     },
   )
