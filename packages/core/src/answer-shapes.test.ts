@@ -145,8 +145,9 @@ describe('a group holds an object', () => {
     expect(errorsOf({})).toEqual({})
   })
 
-  // A hidden group is not part of the conversation, as a hidden field is not.
-  test('a hidden group is not asked', () => {
+  // A hidden group is not part of the conversation, but a group a rule hides and keeps
+  // (`clearOnHide: false`) is still stored, so what it holds has to be what a group holds.
+  test('a hidden group that keeps its value still holds an object', () => {
     const hidden = createFormEngine({
       schema: {
         ...schemaOf([{ key: 'address', type: 'group', clearOnHide: false, fields: [{ key: 'street', type: 'text' }] }]),
@@ -155,7 +156,47 @@ describe('a group holds an object', () => {
       capabilities,
       initialValue: { address: 'Main' },
     })
-    expect(hidden.validate().errors).toEqual({})
+    expect(hidden.validate().errors).toEqual({ address: ['type'] })
+  })
+})
+
+describe('a field a rule hides and keeps still has its shape', () => {
+  // A hidden field is not validated — it is not part of the conversation — but one whose
+  // `clearOnHide` is false keeps its value, and that value is stored. Measured before this:
+  // an object posted for such a text field was stored with `submit()` reporting ok.
+  const kept = (fields: FieldDef[], initialValue: Record<string, unknown>) =>
+    createFormEngine({
+      schema: {
+        ...schemaOf([{ key: 'gate', type: 'checkbox' }, ...fields]),
+        logic: { rules: fields.map((field) => ({ kind: 'visible' as const, target: field.key, cel: 'gate == true' })) },
+      },
+      capabilities,
+      mode: 'server',
+      initialValue: { gate: false, ...initialValue },
+    }).submit()
+
+  test('an answer of the wrong shape is refused, and nothing else is asked of it', () => {
+    expect(kept([{ key: 'note', type: 'text', clearOnHide: false, required: true }], { note: { $gt: '' } })).toEqual({
+      ok: false,
+      errors: { note: ['type'] },
+    })
+    // Required, and empty: a hidden field is still not asked to be answered.
+    expect(kept([{ key: 'note', type: 'text', clearOnHide: false, required: true, minLength: 5 }], { note: 'ab' })).toEqual({
+      ok: true,
+      errors: {},
+    })
+  })
+
+  test('so is a repeater that keeps something other than rows', () => {
+    expect(
+      kept([{ key: 'items', type: 'repeater', clearOnHide: false, fields: [{ key: 'qty', type: 'number' }] }], { items: 'rows' }),
+    ).toEqual({ ok: false, errors: { items: ['type'] } })
+  })
+
+  test('and a field inside a group a rule hid', () => {
+    expect(
+      kept([{ key: 'address', type: 'group', clearOnHide: false, fields: [{ key: 'zip', type: 'number' }] }], { address: { zip: '8000' } }),
+    ).toEqual({ ok: false, errors: { 'address.zip': ['type'] } })
   })
 })
 

@@ -16,7 +16,7 @@ import type { Check } from './checks.js'
 import type { BuiltInErrorCode, ValidationReport } from './error-codes.js'
 import type { FieldIds } from './ids.js'
 import { createInteractionState } from './interaction.js'
-import { groupViolations, modelViolations } from './model-validators.js'
+import { modelViolations, storedShapeViolations } from './model-validators.js'
 import { unanswered } from './answered.js'
 import { formatPath, parsePath, templateWire, withinAny } from './path.js'
 import { buildFieldProps } from './props.js'
@@ -1031,7 +1031,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
 
   function runValidation(): ValidationReport {
     validatedOnce = true
-    const report: Record<string, string[]> = Object.fromEntries(groupViolations(schema.model.fields, store.root(), hiddenAt))
+    const report: Record<string, string[]> = Object.fromEntries(storedShapeViolations(schema.model.fields, store.root(), hiddenAt))
     const changedWires: string[] = []
     const capabilities = capabilitySource === undefined ? undefined : captureCapabilities(capabilitySource)
     const bag = compiledRules.length > 0 ? buildBag() : undefined

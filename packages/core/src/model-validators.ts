@@ -18,11 +18,10 @@ export function modelViolations(def: FieldDef, value: unknown): BuiltInErrorCode
   if (value === undefined) return []
 
   // The answer's shape, before any constraint reads it: the one check every field gets,
-  // constrained or not, read from the format's own table (0189). A `text` field with no
-  // constraints used to store an object posted for it, because nothing here looked.
-  const kind = ANSWER_KINDS[def.type]
-  if (value === null) return kind.nullable ? [] : ['type']
-  if (!fitsAnswerShape(kind.shape, value)) return ['type']
+  // constrained or not (0189). A `text` field with no constraints used to store an object
+  // posted for it, because nothing here looked.
+  const wrongShape = shapeViolations(def, value)
+  if (wrongShape.length > 0 || value === null) return wrongShape
   // Only a text answer reaches here empty: `''` is a shape error for everything else.
   if (value === '') return []
 
@@ -151,22 +150,37 @@ export function modelViolations(def: FieldDef, value: unknown): BuiltInErrorCode
 }
 
 /**
- * The groups whose value is not an object, as wire and codes (0189).
- *
- * The engine validates fields, and a group is not one — its fields are — so its own value
- * was checked by nothing: a string posted where the object belongs was stored, and every
- * reader of `address.street` met a string where an object was promised. Walked through the
- * value as the engine walks the model: a page scopes nothing, a group nests, and each row of
- * a repeater holds its own. A group that is absent is unanswered, and a hidden one is not
- * part of the conversation, as a hidden field is not.
+ * Whether an answer has the shape its type stores, read from the format's own table, and
+ * nothing more: `['type']` when it does not, `[]` when it does or is absent. `null` is a shape
+ * only where `nullable` says so (0189).
  */
-export function groupViolations(
+export function shapeViolations(def: FieldDef, value: unknown): BuiltInErrorCode[] {
+  if (value === undefined) return []
+  const kind = ANSWER_KINDS[def.type]
+  if (value === null) return kind.nullable ? [] : ['type']
+  return fitsAnswerShape(kind.shape, value) ? [] : ['type']
+}
+
+/**
+ * The shapes the engine's field-by-field pass never asks about, as wire and codes (0189).
+ *
+ * Two kinds of stored value it does not reach. **A group's own value**: the engine validates
+ * fields, and a group is not one, so a string or a list posted where its object belongs was
+ * stored. **An answer a rule hid and kept**: a hidden field is not part of the conversation
+ * and is not validated, but one whose `clearOnHide` is false keeps its value, and that value
+ * is stored — measured, an object posted for such a text field was accepted. Only the shape
+ * is asked of either: a hidden field is still not asked to be answered, or to be long enough.
+ *
+ * Walked through the value as the engine walks the model: a page scopes nothing, a group
+ * nests, and each row of a repeater holds its own. Entries rather than an object written by
+ * key: a wire carries a row's index, taken from the value, and the caller's
+ * `Object.fromEntries` defines each one as its own property.
+ */
+export function storedShapeViolations(
   fields: readonly FieldDef[],
   value: unknown,
   hidden: (path: Path) => boolean,
 ): Array<[wire: string, codes: BuiltInErrorCode[]]> {
-  // Entries rather than an object written by key: a wire carries a row's index, taken from
-  // the value, and the caller's `Object.fromEntries` defines each one as its own property.
   const out: Array<[wire: string, codes: BuiltInErrorCode[]]> = []
   const visit = (defs: readonly FieldDef[], parent: Path): void => {
     for (const def of defs) {
@@ -176,11 +190,11 @@ export function groupViolations(
       }
       const path = [...parent, def.key]
       const held = getAt(value, path)
-      if (held === undefined || hidden(path)) continue
-      if (def.type === 'group') {
-        if (fitsAnswerShape('group', held)) visit(def.fields ?? [], path)
-        else out.push([formatPath(path), ['type']])
-      } else if (def.type === 'repeater' && Array.isArray(held)) {
+      if (held === undefined) continue
+      const codes = def.type === 'group' || hidden(path) ? shapeViolations(def, held) : []
+      if (codes.length > 0) out.push([formatPath(path), codes])
+      else if (def.type === 'group') visit(def.fields ?? [], path)
+      else if (def.type === 'repeater' && Array.isArray(held)) {
         held.forEach((_, index) => visit(def.fields ?? [], [...path, index]))
       }
     }

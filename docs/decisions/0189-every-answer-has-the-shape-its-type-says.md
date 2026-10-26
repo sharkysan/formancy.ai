@@ -11,10 +11,12 @@
     a `static` field is dropped; a computed result of the wrong shape is not written, at the
     top level and in a row; a decimal computed into a number field is stored as the number
     it writes, and not written when no double holds it exactly; a group whose value is not an
-    object is refused, at the top level and in a row, and a hidden one is not asked. Twenty-eight
-    of its cases failed against the engine before the change, and the group's four once the
-    rest had passed — found by compiling stored values against the type a form's submissions
-    are given, the change this one was made for.
+    object is refused, at the top level and in a row; and an answer a rule hid but kept
+    (`clearOnHide: false`) is refused for its shape, and asked nothing else. Twenty-eight of its
+    cases failed against the engine before the change; the group's four failed once the rest
+    passed, found by compiling stored values against the type a form's submissions are given,
+    the change this one was made for; and the hidden ones' four after that, found writing the
+    page that says what the type promises.
   - **`packages/server-core/src/use-cases.test.ts`**, *refuses an answer of the wrong shape on
     a field with no constraints*: an object posted for an unconstrained text field and a
     string for an unconstrained number, straight at the replay. Before the change it was
@@ -63,6 +65,10 @@ fails is `type`.
   choice is `null`; an empty string there is a value no control writes.
 - **A group holds an object.** The engine validates fields and a group is not one, so its own
   value was checked by nothing; it is now, as the report's first entries.
+- **Shape holds whether or not a field is shown.** A hidden field is not validated, but one a
+  rule hid with `clearOnHide: false` keeps its value and that value is stored — measured, an
+  object posted for such a text field was accepted. Its shape is checked; nothing else is, so
+  a hidden field is still never asked to be answered.
 - **A number is finite.** `NaN` cannot arrive as JSON, but a host's prefill can hand one
   over, and every bound compared against it is vacuously satisfied.
 - **A `static` field collects nothing**: a value handed in for one is dropped and a value

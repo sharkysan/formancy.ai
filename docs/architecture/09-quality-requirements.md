@@ -51,7 +51,7 @@ formancy
 |---|---|---|
 | Keystroke, large conditional form | 1 ms | ≈0.54 ms, the median of seven runs re-measured 2026-10-19; 0.34 on the same machine before [0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md) |
 | Cold graph compile | 30 ms | ≈1.7 ms |
-| `@formancy/core` bundle | 18 kB brotli | **23.7 kB** — over, re-measured 2026-10-26 |
+| `@formancy/core` bundle | 18 kB brotli | **23.9 kB** — over, re-measured 2026-10-26 |
 | `@formancy/spec` bundle | — | 28.0 kB for the whole barrel — the index and the chunk it shares with `/validate`, re-measured 2026-10-26 with `ANSWER_KINDS`, `fitsAnswerShape` and `StoredFile` |
 | `@formancy/react` bundle | 4 kB brotli | **25.0 kB** for the whole barrel, re-measured 2026-10-18 |
 | `@formancy/core/words` bundle | — | 6.5 kB, the renderers' words in English, German and French and what a sourced control says, an entry of its own, re-measured 2026-10-16 |
@@ -109,12 +109,12 @@ reach the bundle — `runScenarios` reads an `absent` path through the path rath
 top-level key, a few lines and an import — and re-measured after it, also on 2026-10-10, the
 figure still rounds to 20.8 kB.
 
-**Every answer's shape, checked, cost 1.0 kB, and most of it is prose.** 22.7 became 23.7
-kB when the engine began checking each answer and each group against the format's own table
-and storing a computed result only in its field's shape
+**Every answer's shape, checked, cost 1.2 kB, and most of it is prose.** 22.7 became 23.9
+kB when the engine began checking each answer, each group and each answer a rule hid but kept
+against the format's own table, and storing a computed result only in its field's shape
 ([0189](../decisions/0189-every-answer-has-the-shape-its-type-says.md)). Measured on
 2026-10-26 with the doc comments stripped from `dist/index.mjs`, the same build went from
-15.7 to 16.0 kB: the code is 0.3 kB, and the rest is the comments the build keeps. The row
+15.7 to 16.1 kB: the code is 0.4 kB, and the rest is the comments the build keeps. The row
 counts them because a consumer's bundler receives them, and stripping them only for the
 figure would be the accounting this section refuses.
 

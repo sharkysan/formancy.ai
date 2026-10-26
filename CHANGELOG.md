@@ -18,7 +18,8 @@ each type's answer as data — `ANSWER_KINDS` in `@formancy/spec` — and the en
 first, for every field, in the browser and on the replay: a value of another shape is
 `type`. `null` stays unanswered for a single answer and is refused for a list, a matrix and
 files; `''` is an answer only to a text field; a group holds an object, which nothing checked
-because a group is not a field; a `static` field stores nothing. **A
+because a group is not a field; an answer a rule hid but kept is checked for its shape, though
+for nothing else; a `static` field stores nothing. **A
 submission that was accepted can now be refused** with `422`, including against form
 versions published before. A computed result that does not fit its field is no longer
 stored: `42.0` into a text field used to store a number, and a decimal — the documented way
