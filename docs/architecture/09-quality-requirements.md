@@ -52,7 +52,7 @@ formancy
 | Keystroke, large conditional form | 1 ms | ≈0.54 ms, the median of seven runs re-measured 2026-10-19; 0.34 on the same machine before [0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md) |
 | Cold graph compile | 30 ms | ≈1.7 ms |
 | `@formancy/core` bundle | 18 kB brotli | **23.9 kB** — over, re-measured 2026-10-26 |
-| `@formancy/spec` bundle | — | 28.0 kB for the whole barrel — the index and the chunk it shares with `/validate`, re-measured 2026-10-26 with `ANSWER_KINDS`, `fitsAnswerShape` and `StoredFile` |
+| `@formancy/spec` bundle | — | 29.7 kB for the whole barrel — the index and the chunk it shares with `/validate`, re-measured 2026-10-26 with `ANSWER_KINDS`, `StoredFile` and `answersTypeScript` |
 | `@formancy/react` bundle | 4 kB brotli | **25.0 kB** for the whole barrel, re-measured 2026-10-18 |
 | `@formancy/core/words` bundle | — | 6.5 kB, the renderers' words in English, German and French and what a sourced control says, an entry of its own, re-measured 2026-10-16 |
 | `uqr`, the QR encoder | — | 6.6 kB brotli, **external** rather than bundled, measured 2026-09-27 |
@@ -117,6 +117,14 @@ against the format's own table, and storing a computed result only in its field'
 15.7 to 16.1 kB: the code is 0.4 kB, and the rest is the comments the build keeps. The row
 counts them because a consumer's bundler receives them, and stripping them only for the
 figure would be the accounting this section refuses.
+
+**The type printer is in the spec's barrel, and a renderer does not ship it.** 28.0 became
+29.7 kB with `answersTypeScript` ([0190](../decisions/0190-a-form-has-a-type.md)): measured
+on 2026-10-26 without the doc comments, 14.6 became 15.7, so 1.1 kB is code. It sits in the
+barrel rather than behind an entry of its own because the package declares `sideEffects:
+false`, so a renderer that never imports it does not carry it — the row is the package, not
+what a form pulls — and a third entry is the build-shape change this section once watched
+report an improvement that was only accounting.
 
 **The renderers' words arrived as a second entry, and cost the engine's figure nothing.**
 Next, Back, Submit, a row's buttons and every live region's sentences, in three languages,

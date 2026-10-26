@@ -1,0 +1,13 @@
+{
+  "specVersion": "4",
+  "id": "install-check",
+  "title": "Install check",
+  "model": {
+    "fields": [
+      { "key": "name", "type": "text", "label": "Name" },
+      { "key": "country", "type": "select", "label": "Country", "options": [{ "value": "CH", "label": "Switzerland" }] },
+      { "key": "proof", "type": "file", "label": "Proof" },
+      { "key": "sign", "type": "signature", "label": "Signature", "box": [100, 50] }
+    ]
+  }
+}

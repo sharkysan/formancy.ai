@@ -463,6 +463,31 @@ script reads the form for one like anybody else (C1's residual, and 0059's reaso
 
 ---
 
+### A9. Code reading submissions is given a type the stored data does not have
+
+*How it arises:* an integrator types a form's submission data with what `formancy types`
+printed, and the type says a field holds a string where a stored submission holds something
+else — so code that trusted the type mishandles real data without a compiler noticing.
+
+*Constraint:* the type is printed from `ANSWER_KINDS`, the table the engine refuses a
+submission against, and is never re-derived from documentation
+([0190](../decisions/0190-a-form-has-a-type.md),
+[0189](../decisions/0189-every-answer-has-the-shape-its-type-says.md)). Every key is
+optional, because no static reading of a document can say which fields a replay will find
+answered. Verified by `packages/cli/src/agreement.test.ts`, which compiles values the engine
+keeps and refuses for every field type against the printed type, and by the install test,
+which runs the packed bin and type-checks its output outside the workspace.
+
+*Residual:*
+
+- **The type describes one version of the form.** A submission bound to another version
+  holds that version's answers. The printed header names the schema hash it came from; using
+  it for submissions of another version is the integrator's mistake to make.
+- **It is wider than the data in one place**: `''` for a date, a time or a choice with no
+  listed options compiles, and the engine refuses it.
+- **Submissions stored before 0189** were not checked for their shape and may hold answers the
+  type does not describe.
+
 ## B — Correct data is lost or altered
 
 ### B1. Answers are orphaned when a field is renamed

@@ -13,6 +13,13 @@ not partial.
 a validator whose messages are written for form authors, a canonical content
 hash, and `diffSchemas` with a compatible / lossy / breaking severity model.
 
+**A type per form** (`@formancy/cli`) — `formancy types form.json` prints the TypeScript type
+of what the form's submissions hold, from `answersTypeScript` in `@formancy/spec`, which reads
+the same table of answer shapes the engine refuses a submission against
+([0189](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0189-every-answer-has-the-shape-its-type-says.md),
+[0190](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0190-a-form-has-a-type.md)).
+See [Typed submissions](/docs/concepts/typed-submissions/).
+
 **Expressions** (`@formancy/expressions`) — CEL behind our own
 parse / check / compile / evaluate interface, with structural and runtime
 limits, per-kind function allow-lists, injected capabilities, and an exact
@@ -179,14 +186,15 @@ holding only what was typed ([0125](https://github.com/sharkysan/formancy.ai/blo
 - **Multi-tenancy, PDF output, e-signatures, analytics.**
 - **A Vue renderer.** The engine protocol is designed for one; it is not a
   commitment yet.
-- **A command-line tool.** This page credited one with emitting a TypeScript type per
-  form, and the migration guide and the versioning page with migrating documents; no such
-  package was built. Migrating a document is `upgradeSpecVersion` from `@formancy/spec`, a
-  function. A type per form has nothing behind it. What would make it go: the type derived
-  from a form's model by a function in `@formancy/spec`, so that a build script and a
-  command get one answer, and then a package whose manifest declares a `bin` that calls it.
-  Until a manifest declares it, a page that names the package or its command fails
-  `apps/docs/src/package-references.test.ts`.
+- ~~**A command-line tool.**~~ **Built, with one command, and the way this said it would
+  have to be.** The type is derived from a form's model by `answersTypeScript` in
+  `@formancy/spec`, and `@formancy/cli` declares a `formancy` bin that calls it, so a build
+  script and the command get one answer. Getting there took more than a printer: the engine
+  checked an answer's shape only where a constraint read it, so a type printed from the
+  documentation would have been wrong about stored data, and every answer is now checked
+  first ([0189](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0189-every-answer-has-the-shape-its-type-says.md)).
+  Migrating a document is still `upgradeSpecVersion`, a function; there is no `migrate`
+  command, and this page once credited one.
 - **A function that adds up a list.** An expression has `map`, `filter` and `size()`, and nothing
   that turns a list of amounts into their total, so a total over a repeater's rows is written out
   one row at a time under a cap — [Logic](/docs/concepts/logic/#no-function-adds-up-a-list) shows
@@ -492,9 +500,11 @@ something rather than starting it.
 - **A generated API that returns `any`.** Per-form endpoints that hand you
   untyped data. What exists here is the checked half: the server runs every submission
   through the engine, against the version it was filled in on, and refuses one that fails
-  it. The typed half does not exist — both renderers hand a submission's data over as
-  `unknown` — and this line used to credit it to a command that was never built (see
-  *What does not exist yet*).
+  it. The typed half is `formancy types`, which prints the type of what a form's
+  submissions hold from the same table the engine checks them against, so the type and the
+  replay cannot describe an answer two ways. The renderers still hand the data over as
+  `unknown`: the type is the integrator's to apply, and it says what the stored data is, not
+  what any one submit returned.
 - **Markup baked into the renderers.** Bootstrap classes in a renderer's core
   mean that theming it is fighting it. Here the markup belongs to the
   consumer's design system.

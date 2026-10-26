@@ -20,8 +20,9 @@
  * **What this proves, and only this.** The tarballs `pnpm pack` produces install
  * into a plain npm project; every entry point resolves, including the separate
  * ones; the types resolve under `bundler` resolution with `skipLibCheck` off; the
- * code runs under Node; and an ordinary Vite build compiles a page that imports
- * them, stylesheet included.
+ * code runs under Node; an ordinary Vite build compiles a page that imports
+ * them, stylesheet included; and the `formancy` bin runs from its tarball and
+ * prints a type that compiles there.
  *
  * It does **not** talk to npm, so it says nothing about the registry copy: a
  * release that packed differently from `pnpm pack` would still slip through.
@@ -135,7 +136,7 @@ try {
           types: ['vite/client'],
         },
         /*
-         * The two consumer files by name, and not `*.ts`.
+         * The consumer files by name, and not `*.ts`.
          *
          * `vite.config.ts` imports Vite, whose own declarations are
          * Node-flavoured — so with `skipLibCheck` off and a glob, tsc
@@ -151,7 +152,7 @@ try {
          * on what npm happened to install. Named by file, there is nothing left
          * to differ.
          */
-        include: ['consume.ts', 'bundled.tsx', 'render.tsx'],
+        include: ['consume.ts', 'bundled.tsx', 'render.tsx', 'answers.ts', 'typed.ts'],
       },
       null,
       2,
@@ -163,6 +164,12 @@ try {
   // can still find the workspace, and resolving through it is the thing this
   // test exists to avoid.
   run('npm', ['install', '--no-audit', '--no-fund', '--loglevel', 'error'], project)
+
+  // `answers.ts` is what the installed bin prints, so it exists only once the bin has run
+  // from its tarball; `typed.ts` uses it, and the type-check below compiles both.
+  console.log('running the installed formancy bin…')
+  // Spelled as the documentation spells it: the package's one bin, run by the package's name.
+  run('npx', ['@formancy/cli', 'types', 'form.json', '--out', 'answers.ts'], project)
 
   console.log('type-checking the consumer against the installed types…')
   run('npx', ['tsc', '--noEmit', '-p', 'tsconfig.json'], project)

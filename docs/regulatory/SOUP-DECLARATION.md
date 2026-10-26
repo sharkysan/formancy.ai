@@ -85,7 +85,7 @@ What it does **not** do, and must not be assumed to do:
 
 ## Composition and third-party dependencies
 
-Fifteen published packages, layered so that the isomorphic ones cannot
+Sixteen published packages, layered so that the isomorphic ones cannot
 acquire a platform dependency ([0008](../decisions/0008-layered-packages.md)).
 Workspace dependencies between them are not listed: the whole repository is
 delivered as one version under one licence, so assessing `@formancy/server` is
@@ -106,6 +106,7 @@ not separately assessing `@formancy/spec`.
 | `@formancy/server-core` | `@noble/hashes ^2.4.0`, `recheck ^4.5.0` |
 | `@formancy/server` | `@anthropic-ai/sdk ^0.132.1`, `@fastify/rate-limit ^11.2.0`, `@node-rs/argon2 ^2.2.1`, `drizzle-orm ^0.45.2`, `fastify ^5.12.5`, `jose ^6.2.12`, `openai ^7.31.0`, `postgres ^3.4.9`, `undici ^8.10.2` |
 | `@formancy/mcp` | `@modelcontextprotocol/sdk ^1.30.1`, `zod ^4.6.5` |
+| `@formancy/cli` | none |
 | `@formancy/themes` | none (CSS only) |
 | `@formancy/tiptap` | `@tiptap/core ^3.31.3`, `@tiptap/extension-bold ^3.31.3`, `@tiptap/extension-bullet-list ^3.31.3`, `@tiptap/extension-document ^3.31.3`, `@tiptap/extension-italic ^3.31.3`, `@tiptap/extension-link ^3.31.3`, `@tiptap/extension-list-item ^3.31.3`, `@tiptap/extension-ordered-list ^3.31.3`, `@tiptap/extension-paragraph ^3.31.3`, `@tiptap/extension-text ^3.31.3`, `@tiptap/pm ^3.31.3` |
 

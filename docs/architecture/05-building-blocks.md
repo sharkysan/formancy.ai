@@ -34,6 +34,7 @@ L0  spec                         types · JSON Schema · diff · canonical hash
                                  model's briefings (0165); no HTTP types
     server                       Fastify routes, PostgreSQL, auth runtime
     mcp                          an agent's view of a running server
+    cli                          `formancy types`: depends on spec only
 ```
 
 **`tiptap` is at L4 and nothing depends on it.** It is the only package a
@@ -199,6 +200,15 @@ the annotations are the only thing a client has to decide whether a call needs a
 person's agreement, the result envelope is one shape across all nine, and the prompts
 carry the **order** of operations, which is most of what an agent gets wrong
 ([0112](../decisions/0112-the-mcp-server-says-what-its-tools-do.md)).
+
+### `@formancy/cli`
+
+One command, `formancy types`, which prints the TypeScript type of what a form's
+submissions hold. The type is `answersTypeScript` in `@formancy/spec`, printed from
+`ANSWER_KINDS` — the table the engine refuses a submission against — so the command is that
+function, a validation of the document first and a file write. It depends on the spec alone:
+the engine is a test dependency, there to hold the printed type and the engine to the same
+answers ([0190](../decisions/0190-a-form-has-a-type.md)).
 
 ### `@formancy/builder-core` and `@formancy/builder-react`
 
