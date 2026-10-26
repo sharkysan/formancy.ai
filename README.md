@@ -337,6 +337,7 @@ packages/themes         reference themes, the builders' stylesheet and the
 packages/tiptap         a TipTap editor held to formancy's rich-text grammar
 packages/challenge      the proof-of-work challenge: mint, solve and verify
 packages/mcp            formancy as tools for a coding agent (MCP)
+packages/cli            `formancy types`: the TypeScript type of a form's submissions
 apps/site               formancy.ai — the landing page, which renders a real form
 apps/playground         the one-screen demo (editor / live form / engine state)
 apps/angular-starter    an Angular application: the builder and a Material form

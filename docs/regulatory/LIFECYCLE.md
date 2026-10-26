@@ -143,6 +143,11 @@ Each gate exists for a reason that was paid for at least once:
   each one fail. It runs once per React version in `compatibility.json` — the lowest the
   peer range admits and the newest — and renders a form with that React under Node, since the
   bundle it builds is never executed ([0134](../decisions/0134-the-versions-it-says-are-the-versions-it-runs.md)).
+  It also runs the installed `formancy` bin, which prints the type of a fixture form's
+  submissions, and type-checks that type and a consumer of it against the installed
+  `@formancy/spec` — the one place a command is run from its tarball. Watched failing with
+  `SignatureAnswer` taken out of the spec's exports
+  ([0190](../decisions/0190-a-form-has-a-type.md)).
 - **`test:e2e:angular`** — the Angular packages' equivalent, once per Angular version in
   `compatibility.json`: the tarballs installed into an Angular project at that version, with
   Material at the same one, built by that project's own Angular and run in Chromium. The

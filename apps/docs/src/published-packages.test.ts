@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import ts from 'typescript'
 import { describe, expect, test } from 'vitest'
 
 /**
@@ -30,14 +31,15 @@ const repo = join(here, '..', '..', '..')
 /**
  * Published packages that are RUN rather than imported, with the reason.
  *
- * Both are composition roots with a `main` that listens on something. Nothing
- * imports a server, and requiring one to be imported would mean writing a fake
- * consumer whose only purpose is to satisfy this test — which is the shape of
- * cargo-cult this repository argues against.
+ * Each is a composition root with a `main`: two listen on something and one is a
+ * command. Nothing imports a server or a command, and requiring one to be imported
+ * would mean writing a fake consumer whose only purpose is to satisfy this test —
+ * which is the shape of cargo-cult this repository argues against.
  *
  * They are not unverified: `packages/server` has integration tests that build the
- * real app against real PostgreSQL and a signed container image, and
- * `packages/mcp` has its tools driven directly.
+ * real app against real PostgreSQL and a signed container image, `packages/mcp`
+ * has its tools driven directly, and `packages/cli` runs its command in-process
+ * and, from the packed tarball, in the install test.
  */
 const RUN_RATHER_THAN_IMPORTED: ReadonlyArray<{ name: string; why: string }> = [
   {
@@ -47,6 +49,10 @@ const RUN_RATHER_THAN_IMPORTED: ReadonlyArray<{ name: string; why: string }> = [
   {
     name: '@formancy/mcp',
     why: 'An MCP server over a running backend. Its tools are driven directly by its own suite; nothing imports a server.',
+  },
+  {
+    name: '@formancy/cli',
+    why: 'A command: `formancy types` is run, not imported. Its suite runs the command in-process, and the install test runs the bin from the packed tarball.',
   },
 ]
 
@@ -313,14 +319,16 @@ describe('what a package imports from itself', () => {
   /** Files under `dir` that name `self` in an import. */
   const selfImports = (dir: string, self: string): string[] => {
     const found: string[] = []
-    // Built from a plain string rather than a template literal: inside one,
-    // `\s` is an unrecognised escape and quietly becomes `s`, so the pattern
-    // matched `fromsomething` and nothing else. Caught by putting the
-    // self-import back and watching this guard stay green — which is the whole
-    // reason the rule says to make a guard fail before trusting it.
-    const needle = new RegExp(
-      '(?:from|import)\\s+[\'"]' + self.replace('/', '\\/') + '(?:/[^\'"]*)?[\'"]',
-    )
+    // The module specifiers the file actually imports, as TypeScript's own scanner reads
+    // them — never text that looks like an import. A regular expression over the source
+    // matched the import line `answersTypeScript` writes into a string, and the test
+    // expecting it, and reported both as importing their own package. (Before that, the
+    // pattern was built in a template literal, where `\s` quietly became `s` and it matched
+    // nothing: caught by putting a self-import back and watching the guard stay green.)
+    const importsSelf = (text: string): boolean =>
+      ts
+        .preProcessFile(text, true, true)
+        .importedFiles.some(({ fileName }) => fileName === self || fileName.startsWith(`${self}/`))
 
     const walk = (at: string): void => {
       for (const entry of readdirSync(at, { withFileTypes: true })) {
@@ -331,7 +339,7 @@ describe('what a package imports from itself', () => {
         }
         if (!/\.(ts|tsx|mts)$/.test(entry.name)) continue
         const file = join(at, entry.name)
-        if (needle.test(readFileSync(file, 'utf8'))) {
+        if (importsSelf(readFileSync(file, 'utf8'))) {
           found.push(file.slice(repo.length + 1).replaceAll('\\', '/'))
         }
       }

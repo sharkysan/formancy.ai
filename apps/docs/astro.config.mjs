@@ -61,6 +61,7 @@ export default defineConfig({
             { label: 'Rich text', slug: 'concepts/rich-text' },
             { label: 'Scanning', slug: 'concepts/scanning' },
             { label: 'Lists from a source', slug: 'concepts/options-sources' },
+            { label: 'Typed submissions', slug: 'concepts/typed-submissions' },
             { label: 'Conformance', slug: 'concepts/conformance' },
           ],
         },

@@ -181,9 +181,10 @@ jobs:
         env:
           FORMANCY_ANGULAR: ${{ matrix.angular }}
 
-  # The engine and the server on each Node the matrix names: the lowest the server says it
-  # runs on, which is also the container's, and the newest LTS. The server's integration
-  # tests run here too, against real PostgreSQL and Garage, as they do in verify.
+  # The engine, the server and the two commands on each Node the matrix names: the lowest the
+  # server says it runs on, which is also the container's, and the newest LTS. The server's
+  # integration tests run here too, against real PostgreSQL and Garage, as they do in verify.
+  # `formancy types` is in it because it runs on whatever Node its user has.
   node:
     name: node (${{ matrix.node }})
     needs: matrix
@@ -216,7 +217,7 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
-      - run: pnpm turbo run test --filter=@formancy/spec --filter=@formancy/expressions --filter=@formancy/core --filter=@formancy/server-core --filter=@formancy/server --filter=@formancy/mcp
+      - run: pnpm turbo run test --filter=@formancy/spec --filter=@formancy/expressions --filter=@formancy/core --filter=@formancy/server-core --filter=@formancy/server --filter=@formancy/mcp --filter=@formancy/cli
 
   # What jsdom structurally cannot see. jsdom applies no CSS, resolves no media
   # queries and performs no layout -- every box measures zero and every cascade

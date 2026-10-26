@@ -73,6 +73,10 @@ component_management:
       name: packages/challenge
       paths:
         - packages/challenge/**
+    - component_id: cli
+      name: packages/cli
+      paths:
+        - packages/cli/**
     - component_id: conformance
       name: packages/conformance
       paths:

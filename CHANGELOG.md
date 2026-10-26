@@ -10,6 +10,18 @@ later.
 
 ## Unreleased
 
+**A form has a type: `formancy types` prints what its submissions hold.** A new package,
+`@formancy/cli`, declares a `formancy` bin whose one command takes a form's JSON and prints
+the TypeScript type of its submission data, with `--out` to write it and `--name` to call it
+something other than the form's id followed by `Answers`. The roadmap claimed such a command
+for months before one existed; it exists now because every answer's shape is checked by the
+engine, so the type is true of stored data rather than of the documentation. The type comes
+from `answersTypeScript` in `@formancy/spec`, for a build script that has the document
+already. Every key is optional, `null` is unanswered exactly where the engine says so, and a
+choice is a union of its options' values. `SignatureAnswer` is now exported from
+`@formancy/spec`, which the printed type imports
+([0190](docs/decisions/0190-a-form-has-a-type.md)).
+
 **Every answer has the shape its type says, or it is refused.** The engine read a value's
 type only where a constraint needed it, so a `text` field with no length, pattern, format or
 mask stored an object posted for it, a `number` with no bounds stored a string, and every
