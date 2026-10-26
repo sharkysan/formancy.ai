@@ -13,7 +13,8 @@ import {
 import type { ElementRef, Signal } from '@angular/core'
 import { parsePath } from '@formancy/core'
 import { injectEngine } from './provide.js'
-import { FormancyTextPipe, injectFormText } from './text.js'
+import { errorSentence } from '@formancy/core/words'
+import { injectFormText } from './text.js'
 
 /**
  * The error summary a failed submit focuses.
@@ -27,14 +28,13 @@ import { FormancyTextPipe, injectFormText } from './text.js'
 @Component({
   selector: 'formancy-error-summary',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormancyTextPipe],
   template: `
     @if (errors().length > 0) {
       <div data-formancy-part="error-summary" tabindex="-1" #region>
         <h2 data-formancy-part="error-summary-heading">{{ heading() }}</h2>
         <ul>
-          @for (entry of errors(); track entry.path) {
-            <li><a [attr.href]="'#' + controlIdOf(entry.path)" (click)="focusControl($event, entry.path)">{{ 'errors.entry' | formancyText: { label: labelFor(entry.path), codes: entry.codes.join(', ') } }}</a></li>
+          @for (entry of entries(); track entry.path) {
+            <li><a [attr.href]="'#' + controlIdOf(entry.path)" (click)="focusControl($event, entry.path)">{{ entry.text }}</a></li>
           }
         </ul>
       </div>
@@ -66,6 +66,18 @@ export class FormancyErrorSummary {
       previousCount = count
     })
   }
+
+  /**
+   * Each entry: the field's name and each of its codes said as the field says it (0191).
+   * `codes` stays given for a host whose own wording of the entry used it.
+   */
+  protected readonly entries = computed(() =>
+    this.errors().map(({ path, codes }) => {
+      const { def } = this.engine.getFieldSnapshot(parsePath(path))
+      const problems = codes.map((code) => errorSentence(this.text, def, code)).join(' ')
+      return { path, text: this.text('errors.entry', { label: this.labelFor(path), problems, codes: codes.join(', ') }) }
+    }),
+  )
 
   /** Counted by the form's language, never by `=== 1` (0171). */
   protected readonly heading = computed(() => this.text('errors.heading', { count: this.errors().length }))

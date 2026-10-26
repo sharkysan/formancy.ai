@@ -3,6 +3,7 @@ import { optionsStatus } from '@formancy/core/words'
 import { FormancyTextPipe, injectFormText } from '../text.js'
 import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
 import { FormancyTypeaheadSelect } from './typeahead-field.js'
+import { FormancyErrorText } from './error-text.js'
 
 
 /**
@@ -174,7 +175,7 @@ export class FormancySelectField extends FieldComponentBase {
 @Component({
   selector: 'formancy-radio-group-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormancyTextPipe],
+  imports: [FormancyErrorText, FormancyTextPipe],
   template: `
     <!-- The field's control id on the group, as the rating, the ranking and the matrix
          carry it, and each radio keeps its own <id>:<value>: the error summary's link and
@@ -217,7 +218,7 @@ export class FormancySelectField extends FieldComponentBase {
         </span>
       }
       @if (showError()) {
-        <p data-formancy-part="error" [id]="field.snapshot().props.error.id">{{ errorText() }}</p>
+        <p data-formancy-part="error" [id]="field.snapshot().props.error.id" [formancyErrorText]="field.snapshot()"></p>
       }
     </fieldset>
   `,
@@ -228,7 +229,6 @@ export class FormancyRadioGroupField extends FieldComponentBase {
     return snapshot.touched && snapshot.errors.length > 0
   })
 
-  protected readonly errorText = computed(() => this.field.snapshot().errors.join(', '))
 
   protected optionId(option: { value: string }): string {
     return `${this.field.snapshot().ids.control}:${option.value}`

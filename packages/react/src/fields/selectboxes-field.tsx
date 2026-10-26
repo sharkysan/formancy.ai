@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { narrowOptionsByLabel } from '@formancy/spec'
 import { useFormText } from '../context.js'
 import { useField } from '../use-field.js'
-import { FieldShell, OptionPicture, RequiredHint, useResolvedOptions } from './internals.js'
+import { ErrorText, FieldShell, OptionPicture, RequiredHint, useResolvedOptions } from './internals.js'
 import type { FieldComponentProps } from './internals.js'
 
 
@@ -245,11 +245,7 @@ export function SelectBoxesField({ path, label }: FieldComponentProps) {
           </span>
         )
       })}
-      {showError ? (
-        <p data-formancy-part="error" {...field.errorProps}>
-          {field.errors.join(', ')}
-        </p>
-      ) : null}
+      {showError ? <ErrorText field={field} /> : null}
     </fieldset>
   )
 }

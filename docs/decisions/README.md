@@ -291,3 +291,4 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0188](0188-the-documentation-names-no-other-product.md) | The documentation names no other form product | accepted |
 | [0189](0189-every-answer-has-the-shape-its-type-says.md) | Every answer has the shape its type says, and the format says it once | accepted |
 | [0190](0190-a-form-has-a-type.md) | A form has a type, printed from the table the engine enforces | accepted |
+| [0191](0191-an-error-is-said-not-coded.md) | An error is said, not coded, and the catalogue says it | accepted |

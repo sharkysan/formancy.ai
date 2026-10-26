@@ -10,6 +10,7 @@ import { BACK_COMMAND, NEXT_COMMAND, addItemCommand, removeItemCommand } from '.
 import type { Fixture, FixtureStep, StepKind } from './types.js'
 import { parseFixture, stepKind } from './validate.js'
 import { mountOptionsFor } from './mount.js'
+import { codesAt, shownAsCodes, summarize } from './messages.js'
 
 export type StepStatus = 'passed' | 'failed' | 'skipped' | 'crashed'
 export type FixtureStatus = 'passed' | 'failed' | 'crashed'
@@ -427,8 +428,10 @@ async function performStep(step: FixtureStep, context: RunContext): Promise<Mism
       expected[path] = [...codes].sort()
       actual[path] = codesAt(messages, path)
     }
-    if (structuralEqual(expected, actual)) return undefined
-    return { detail: 'message codes differ', expected, actual }
+    if (!structuralEqual(expected, actual)) return { detail: 'message codes differ', expected, actual }
+    const coded = shownAsCodes(messages)
+    if (coded.length === 0) return undefined
+    return { detail: 'an error is shown as its code rather than said', expected: [], actual: coded.map(summarize) }
   }
 
   if ('expectNoErrors' in step) {
@@ -584,17 +587,6 @@ async function snapshotQuietly(driver: RendererDriver): Promise<string | undefin
   } catch {
     return undefined
   }
-}
-
-function codesAt(messages: readonly ConformanceMessage[], path: string): readonly string[] {
-  return messages
-    .filter((message) => message.path === path)
-    .map((message) => message.code)
-    .sort()
-}
-
-function summarize(message: ConformanceMessage): string {
-  return `${message.path}: ${message.code}`
 }
 
 /**

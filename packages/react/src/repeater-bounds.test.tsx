@@ -97,6 +97,7 @@ describe('the repeater’s own error', () => {
     // An error on the repeater had nowhere to be drawn: the renderers drew errors under
     // fields, and a repeater is not one. The summary names it as #196 names a field.
     mount(guests({ required: true }), undefined, true)
+    // The group's "required" hint, before anything is submitted — not the error.
     expect(within(group()).getByText('required')).toBeDefined()
 
     await userEvent.click(screen.getByRole('button', { name: 'Submit' }))
@@ -105,9 +106,9 @@ describe('the repeater’s own error', () => {
       .split(' ')
       .map((id) => document.getElementById(id))
       .find((element) => element?.getAttribute('data-formancy-part') === 'error')
-    expect(error?.textContent).toBe('required')
+    expect(error?.textContent).toBe('Add at least one row.')
     expect(group().contains(error ?? null)).toBe(true)
-    expect(screen.getByRole('link', { name: 'Guests: required' })).toBeDefined()
+    expect(screen.getByRole('link', { name: 'Guests: Add at least one row.' })).toBeDefined()
 
     await userEvent.click(screen.getByRole('button', { name: 'Add guest' }))
     expect(group().querySelector('[data-formancy-part="error"]')).toBeNull()
@@ -118,7 +119,7 @@ describe('the repeater’s own error', () => {
     // control in it does, as the summary does for any field whose id names no control.
     mount(guests({ required: true }), undefined, true)
     await userEvent.click(screen.getByRole('button', { name: 'Submit' }))
-    await userEvent.click(screen.getByRole('link', { name: 'Guests: required' }))
+    await userEvent.click(screen.getByRole('link', { name: 'Guests: Add at least one row.' }))
     expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Add guest' }))
   })
 

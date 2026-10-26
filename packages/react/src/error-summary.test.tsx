@@ -117,9 +117,10 @@ describe('ErrorSummary without a labels prop', () => {
 
     fireEvent.click(screen.getByText('send'))
 
+    // Each said, not coded (0191).
     expect(screen.getAllByRole('link').map((link) => link.textContent)).toEqual([
-      'Your email: required',
-      'code: required',
+      'Your email: This question needs an answer.',
+      'code: This question needs an answer.',
     ])
   })
 })

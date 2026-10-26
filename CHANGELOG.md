@@ -10,6 +10,21 @@ later.
 
 ## Unreleased
 
+**A field's errors are said, not shown as codes.** The renderers drew the engine's codes —
+`required, minLength` under a question, in English under a German form — and the error summary
+set them into a translated sentence. Each code is now a sentence in the form's language with
+the field's own limit in it ("Enter at least 5 characters.", "Attach at most 3 files.",
+"Frühestens: 3. Mai 2027."), from `errorSentence` in `@formancy/core/words`, which both
+renderers and Material call. The sentences are ordinary words (`error.required`,
+`error.minLength`, …) in English, German and French, so a host changes them as it changes a
+button. The codes are unchanged in `submit()`, the API and the conformance fixtures. The error
+text now holds one `span` per sentence carrying `data-formancy-code`, which is where the
+conformance drivers read the code; a third-party driver that split the text on `", "` must read
+it there instead, and the suite now fails a message whose text is its own code. The summary's
+entry is `{label}: {problems}`, with `{codes}` still given to a host's own wording of it.
+`FormancyErrorText` is exported from `@formancy/angular` for a host's own control
+([0191](docs/decisions/0191-an-error-is-said-not-coded.md)).
+
 **A form has a type: `formancy types` prints what its submissions hold.** A new package,
 `@formancy/cli`, declares a `formancy` bin whose one command takes a form's JSON and prints
 the TypeScript type of its submission data, with `--out` to write it and `--name` to call it

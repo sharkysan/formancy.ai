@@ -8,6 +8,7 @@ import {
 } from '@angular/core'
 import { FormancyTextPipe } from '../text.js'
 import { FieldComponentBase } from './field-shell.js'
+import { FormancyErrorText } from './error-text.js'
 
 /**
  * Options put in order ([0138](../../../../docs/decisions/0138-a-ranking-stores-the-order-chosen.md)).
@@ -25,7 +26,7 @@ import { FieldComponentBase } from './field-shell.js'
 @Component({
   selector: 'formancy-ranking-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormancyTextPipe],
+  imports: [FormancyErrorText, FormancyTextPipe],
   template: `
     <fieldset
       [id]="control().id"
@@ -104,7 +105,7 @@ import { FieldComponentBase } from './field-shell.js'
         </ul>
       }
       @if (showError()) {
-        <p data-formancy-part="error" [id]="field.snapshot().props.error.id">{{ errorText() }}</p>
+        <p data-formancy-part="error" [id]="field.snapshot().props.error.id" [formancyErrorText]="field.snapshot()"></p>
       }
     </fieldset>
   `,
@@ -117,7 +118,6 @@ export class FormancyRankingField extends FieldComponentBase {
     return snapshot.touched && snapshot.errors.length > 0
   })
 
-  protected readonly errorText = computed(() => this.field.snapshot().errors.join(', '))
 
   /** The values in the order chosen, as stored. */
   private readonly order = computed<readonly string[]>(() => {

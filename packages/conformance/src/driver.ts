@@ -72,6 +72,10 @@ export interface RendererDriver {
    * Validation messages, from the accessible error text associated with the
    * control (`aria-describedby`, `aria-errormessage`, `role="alert"`). With no
    * argument, every message in the form.
+   *
+   * A renderer says an error rather than showing its code (0191), so a message's `code`
+   * cannot be read from its words: this package's renderers carry it on each sentence's
+   * element as `data-formancy-code`, and their drivers read it there.
    */
   errorsFor(path?: string): Promise<readonly ConformanceMessage[]>
 
@@ -164,7 +168,10 @@ export interface ConformanceMessage {
   readonly path: string
   /** Machine-readable and stable, e.g. `required`, `minLength`, `pattern`. */
   readonly code: string
-  /** What a person actually reads. Carried for diagnostics, never asserted. */
+  /**
+   * What a person actually reads. Its wording is never asserted; that it is not the code
+   * itself is, where a driver reports it (0191).
+   */
   readonly text?: string
   readonly severity?: 'error' | 'warning'
 }

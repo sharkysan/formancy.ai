@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed } from '@angular/core'
 import { FormancyTextPipe } from '../text.js'
 import { FieldComponentBase } from './field-shell.js'
+import { FormancyErrorText } from './error-text.js'
 
 /**
  * One question asked of several rows ([0139](../../../../docs/decisions/0139-a-matrix-answers-one-question-per-row.md)).
@@ -13,7 +14,7 @@ import { FieldComponentBase } from './field-shell.js'
 @Component({
   selector: 'formancy-matrix-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormancyTextPipe],
+  imports: [FormancyErrorText, FormancyTextPipe],
   template: `
     <fieldset
       [id]="control().id"
@@ -51,7 +52,7 @@ import { FieldComponentBase } from './field-shell.js'
         }
       </div>
       @if (showError()) {
-        <p data-formancy-part="error" [id]="field.snapshot().props.error.id">{{ errorText() }}</p>
+        <p data-formancy-part="error" [id]="field.snapshot().props.error.id" [formancyErrorText]="field.snapshot()"></p>
       }
     </fieldset>
   `,
@@ -62,7 +63,6 @@ export class FormancyMatrixField extends FieldComponentBase {
     return snapshot.touched && snapshot.errors.length > 0
   })
 
-  protected readonly errorText = computed(() => this.field.snapshot().errors.join(', '))
 
   /** The rows, their labels resolved as the options' are. */
   protected readonly rows = computed(() =>

@@ -85,9 +85,9 @@ const LANDING: Record<Key, () => HTMLElement> = {
 
 /** The three fields, as each case names them, and the summary's link to each. */
 const CASES = [
-  { kind: 'radio group', key: 'smoker', where: 'its first radio', link: 'Smoker: required' },
-  { kind: 'set of tick boxes', key: 'allergies', where: 'its first box', link: 'Allergies: required' },
-  { kind: 'signature', key: 'mark', where: 'the box a name is typed into', link: 'Signature: required' },
+  { kind: 'radio group', key: 'smoker', where: 'its first radio', link: 'Smoker: This question needs an answer.' },
+  { kind: 'set of tick boxes', key: 'allergies', where: 'its first box', link: 'Allergies: This question needs an answer.' },
+  { kind: 'signature', key: 'mark', where: 'the box a name is typed into', link: 'Signature: This question needs an answer.' },
 ] as const
 
 const controlId = (engine: FormEngine, key: Key): string => engine.getFieldSnapshot([key]).ids.control

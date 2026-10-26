@@ -123,9 +123,9 @@ describe('the repeater’s own error', () => {
       .split(' ')
       .map((id) => document.getElementById(id))
       .find((element) => element?.getAttribute('data-formancy-part') === 'error')
-    expect(error?.textContent?.trim()).toBe('required')
+    expect(error?.textContent?.trim()).toBe('Add at least one row.')
     expect(group().contains(error ?? null)).toBe(true)
-    expect(screen.getByRole('link', { name: 'Guests: required' })).toBeDefined()
+    expect(screen.getByRole('link', { name: 'Guests: Add at least one row.' })).toBeDefined()
 
     await press('Add guest')
     expect(group().querySelector('[data-formancy-part="error"]')).toBeNull()
@@ -136,7 +136,7 @@ describe('the repeater’s own error', () => {
     // control in it does, as the summary does for any field whose id names no control.
     const { press } = await mount(guests({ required: true }), undefined, true)
     await press('Submit')
-    await press('Guests: required', 'link')
+    await press('Guests: Add at least one row.', 'link')
     expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Add guest' }))
   })
 

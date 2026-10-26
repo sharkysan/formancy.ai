@@ -116,7 +116,7 @@ describe('FormancyForm', () => {
     expect(engine.getFieldSnapshot(['size']).value).toBe('l')
   })
 
-  test('error codes render joined as the aria-describedby target once the field is touched', async () => {
+  test('the errors are said in the aria-describedby target once the field is touched', async () => {
     const engine = createFormEngine({
       schema: flatSchema([{ key: 'email', type: 'text', label: 'Email', required: true }]),
     })
@@ -128,7 +128,8 @@ describe('FormancyForm', () => {
     const control = screen.getByLabelText('Email')
     const describedBy = control.getAttribute('aria-describedby')
     expect(describedBy).not.toBeNull()
-    expect(document.getElementById(describedBy as string)?.textContent).toBe('required')
+    // Said, not coded (0191).
+    expect(document.getElementById(describedBy as string)?.textContent).toBe('This question needs an answer.')
     expect(control.getAttribute('aria-invalid')).toBe('true')
   })
 

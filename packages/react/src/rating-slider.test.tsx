@@ -244,13 +244,13 @@ describe('when a scale has been left alone', () => {
      */
     const engine = mount(required('rating'))
 
-    expect(screen.queryByText(/required/)).toBeNull()
+    expect(screen.queryByText(/needs an answer/)).toBeNull()
     engine.validate()
     engine.getFieldSnapshot(['score'])
     const user = userEvent.setup()
     await tabAway(user, screen.getAllByRole('radio')[0]!)
 
-    expect(screen.getByText(/required/)).toBeTruthy()
+    expect(screen.getByText(/needs an answer/)).toBeTruthy()
   })
 
   test('and a rating shows a step refusal it could never have produced itself', async () => {

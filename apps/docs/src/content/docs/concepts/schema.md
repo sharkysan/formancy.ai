@@ -337,9 +337,11 @@ reads its default language in both, and the playground's Language switch changes
 language or changes a word through its renderer — see the
 [React](/docs/start/react/#the-forms-own-words-in-its-language) and
 [Angular](/docs/start/angular/#the-forms-own-words-in-its-language) quickstarts. What stays
-in one language: a field's error is the engine's code, `required`, and a repeater's
-`addLabel` and `removeLabel` are plain strings, so a form that sets them says them as written
+in one language: a repeater's `addLabel` and `removeLabel` are plain strings, so a form that
+sets them says them as written
 ([0171](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0171-the-renderers-words-are-the-forms-language.md)).
+A field's errors follow the form's language: the engine reports a code and the field says a
+sentence with its own limit in it ([0191](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0191-an-error-is-said-not-coded.md)).
 
 ## Arrangement: `layouts`
 

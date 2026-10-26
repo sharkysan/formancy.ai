@@ -53,8 +53,8 @@ formancy
 | Cold graph compile | 30 ms | ≈1.7 ms |
 | `@formancy/core` bundle | 18 kB brotli | **23.9 kB** — over, re-measured 2026-10-26 |
 | `@formancy/spec` bundle | — | 29.7 kB for the whole barrel — the index and the chunk it shares with `/validate`, re-measured 2026-10-26 with `ANSWER_KINDS`, `StoredFile` and `answersTypeScript` |
-| `@formancy/react` bundle | 4 kB brotli | **25.0 kB** for the whole barrel, re-measured 2026-10-18 |
-| `@formancy/core/words` bundle | — | 6.5 kB, the renderers' words in English, German and French and what a sourced control says, an entry of its own, re-measured 2026-10-16 |
+| `@formancy/react` bundle | 4 kB brotli | **25.2 kB** for the whole barrel, re-measured 2026-10-26 with every error said through one `ErrorText` ([0191](../decisions/0191-an-error-is-said-not-coded.md)) |
+| `@formancy/core/words` bundle | — | 9.8 kB, the renderers' words in English, German and French — what a sourced control says, and every error said — an entry of its own, re-measured 2026-10-26 |
 | `uqr`, the QR encoder | — | 6.6 kB brotli, **external** rather than bundled, measured 2026-09-27 |
 
 The performance gate is written to fail on a regression greater than 15%,
@@ -117,6 +117,14 @@ against the format's own table, and storing a computed result only in its field'
 15.7 to 16.1 kB: the code is 0.4 kB, and the rest is the comments the build keeps. The row
 counts them because a consumer's bundler receives them, and stripping them only for the
 figure would be the accounting this section refuses.
+
+**Every error said cost the words entry 3.3 kB, and every renderer pays it.** 6.5 became 9.8
+kB when each of the engine's codes got a sentence in English, German and French and the
+function that fills one from the field
+([0191](../decisions/0191-an-error-is-said-not-coded.md)). All three languages ship with every
+renderer for the reason the entry already gave: which one a form is read in is known only when
+it is. The React barrel moved 0.2 kB, for one `ErrorText` where six copies of the error markup
+were.
 
 **The type printer is in the spec's barrel, and a renderer does not ship it.** 28.0 became
 29.7 kB with `answersTypeScript` ([0190](../decisions/0190-a-form-has-a-type.md)): measured
