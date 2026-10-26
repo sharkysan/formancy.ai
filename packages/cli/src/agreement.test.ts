@@ -128,6 +128,11 @@ function compiles(values: unknown[]): boolean[] {
     moduleResolution: ts.ModuleResolutionKind.NodeNext,
     target: ts.ScriptTarget.ES2022,
     types: [],
+    // The language's own library and no DOM, and its declarations not re-checked: what is on
+    // trial is the printed type, and under coverage on a shared CI runner the full library
+    // made each compile take most of a minute.
+    lib: ['lib.es2022.d.ts'],
+    skipLibCheck: true,
   }
   const host = ts.createCompilerHost(options)
   const readFile = host.readFile.bind(host)
@@ -156,6 +161,30 @@ function compiles(values: unknown[]): boolean[] {
 describe('the printed type and the engine agree', () => {
   const kept = cases.flatMap(([key, values]) => values.map((value) => ({ key, value })))
   const refused = cases.flatMap(([key, , values]) => values.map((value) => ({ key, value })))
+  const whole = createFormEngine({
+    schema,
+    initialValue: Object.fromEntries(cases.map(([key, values]) => [key, values[0]])),
+  })
+
+  /**
+   * Every value the tests below ask about, compiled in one program, once: a program per test
+   * paid for the compiler four times over, which on a shared runner under coverage was the
+   * difference between seconds and a timeout.
+   */
+  const verdicts = (() => {
+    let cached: { kept: boolean[]; refused: boolean[]; wider: boolean[]; whole: boolean } | undefined
+    return () => {
+      if (cached !== undefined) return cached
+      const keptValues = kept.map(({ key, value }) => engineOn({ [key]: value }).kept)
+      const refusedValues = refused.map(({ key, value }) => ({ [key]: value }))
+      const widerValues = wider.map(([key, value]) => ({ [key]: value }))
+      const all = compiles([...keptValues, ...refusedValues, ...widerValues, whole.value()])
+      let at = 0
+      const take = (count: number): boolean[] => all.slice(at, (at += count))
+      cached = { kept: take(keptValues.length), refused: take(refusedValues.length), wider: take(widerValues.length), whole: take(1)[0]! }
+      return cached
+    }
+  })()
 
   // Guards the list itself: a case the engine did not actually treat as described would make
   // the comparison below a comparison with a wrong premise.
@@ -168,29 +197,21 @@ describe('the printed type and the engine agree', () => {
   // The direction a consumer depends on: a stored submission that did not compile against its
   // own form's type would make the type a lie about real data.
   test('everything the engine keeps compiles, as it is stored', () => {
-    const storedValues = kept.map(({ key, value }) => engineOn({ [key]: value }).kept)
-    const verdicts = compiles(storedValues)
-    expect(kept.filter((_, index) => !verdicts[index])).toEqual([])
+    expect(kept.filter((_, index) => !verdicts().kept[index])).toEqual([])
   })
 
   test('everything the engine refuses for what it is does not compile', () => {
-    const verdicts = compiles(refused.map(({ key, value }) => ({ [key]: value })))
-    expect(refused.filter((_, index) => verdicts[index])).toEqual([])
+    expect(refused.filter((_, index) => verdicts().refused[index])).toEqual([])
   })
 
   // Pinned rather than tolerated: if a later TypeScript or a later printer closes the gap,
   // this fails and the comment above stops being true.
   test("the one gap: '' where the engine wants a non-empty string", () => {
-    const verdicts = compiles(wider.map(([key, value]) => ({ [key]: value })))
-    expect(verdicts).toEqual(wider.map(() => true))
+    expect(verdicts().wider).toEqual(wider.map(() => true))
   })
 
   test('a whole submission compiles', () => {
-    const engine = createFormEngine({
-      schema,
-      initialValue: Object.fromEntries(cases.map(([key, values]) => [key, values[0]])),
-    })
-    expect(engine.validate().valid).toBe(true)
-    expect(compiles([engine.value()])).toEqual([true])
+    expect(whole.validate().valid).toBe(true)
+    expect(verdicts().whole).toBe(true)
   })
 })
