@@ -151,7 +151,7 @@ export function modelViolations(def: FieldDef, value: unknown): BuiltInErrorCode
 }
 
 /**
- * The groups whose value is not an object, by wire (0189).
+ * The groups whose value is not an object, as wire and codes (0189).
  *
  * The engine validates fields, and a group is not one — its fields are — so its own value
  * was checked by nothing: a string posted where the object belongs was stored, and every
@@ -164,8 +164,10 @@ export function groupViolations(
   fields: readonly FieldDef[],
   value: unknown,
   hidden: (path: Path) => boolean,
-): Record<string, BuiltInErrorCode[]> {
-  const out: Record<string, BuiltInErrorCode[]> = {}
+): Array<[wire: string, codes: BuiltInErrorCode[]]> {
+  // Entries rather than an object written by key: a wire carries a row's index, taken from
+  // the value, and the caller's `Object.fromEntries` defines each one as its own property.
+  const out: Array<[wire: string, codes: BuiltInErrorCode[]]> = []
   const visit = (defs: readonly FieldDef[], parent: Path): void => {
     for (const def of defs) {
       if (def.type === 'page') {
@@ -177,7 +179,7 @@ export function groupViolations(
       if (held === undefined || hidden(path)) continue
       if (def.type === 'group') {
         if (fitsAnswerShape('group', held)) visit(def.fields ?? [], path)
-        else out[formatPath(path)] = ['type']
+        else out.push([formatPath(path), ['type']])
       } else if (def.type === 'repeater' && Array.isArray(held)) {
         held.forEach((_, index) => visit(def.fields ?? [], [...path, index]))
       }

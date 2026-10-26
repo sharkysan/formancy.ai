@@ -1031,7 +1031,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
 
   function runValidation(): ValidationReport {
     validatedOnce = true
-    const report: Record<string, string[]> = groupViolations(schema.model.fields, store.root(), hiddenAt)
+    const report: Record<string, string[]> = Object.fromEntries(groupViolations(schema.model.fields, store.root(), hiddenAt))
     const changedWires: string[] = []
     const capabilities = capabilitySource === undefined ? undefined : captureCapabilities(capabilitySource)
     const bag = compiledRules.length > 0 ? buildBag() : undefined
