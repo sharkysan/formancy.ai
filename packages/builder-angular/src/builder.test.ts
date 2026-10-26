@@ -456,3 +456,22 @@ describe('dragging', () => {
     expect(document.activeElement?.getAttribute('role')).toBe('treeitem')
   })
 })
+
+describe('d duplicates the focused field', () => {
+  // A copy straight after the original, its rules with it, said aloud (0192) — the React
+  // builder's case, and listed in the legend as every other command is.
+  test('puts a copy after it and says so', async () => {
+    const { session, press, tab } = await mount({
+      specVersion: '4',
+      id: 'contact',
+      title: 'Contact',
+      model: { fields: [{ key: 'email', type: 'text', label: 'Email' }, { key: 'phone', type: 'text', label: 'Phone' }] },
+    } as FormSchema)
+    await tab()
+    await press('d')
+
+    expect(session.document().model.fields.map((field) => field.key)).toEqual(['email', 'email2', 'phone'])
+    expect(screen.getByRole('status').textContent).toBe('Duplicated Email.')
+    expect(screen.getByText('d')).toBeTruthy()
+  })
+})

@@ -6,8 +6,9 @@ import {
   output,
   signal,
 } from '@angular/core'
-import { createBuilderText, editablePropertiesFor, nameOf } from '@formancy/builder-core'
-import type { BuilderText } from '@formancy/builder-core'
+import { changeFieldType, createBuilderText, editablePropertiesFor, nameOf, paletteEntries, retypeTargets } from '@formancy/builder-core'
+import type { BuilderText, PaletteEntry } from '@formancy/builder-core'
+import type { FieldType } from '@formancy/spec'
 import type {
   BuilderSession,
   DataGridColumn,
@@ -238,6 +239,18 @@ export class FormancyProperty {
       <div data-formancy-part="property-panel">
         <h2>{{ heading() }}</h2>
         <p data-formancy-part="property-panel-type">{{ field.type }}</p>
+        @if (kinds().length > 0) {
+          <!-- What kind of question the field asks, among the kinds it may become (0192). -->
+          <div data-formancy-part="property">
+            <label [for]="kindId">{{ kindLabel() }}</label>
+            <select [id]="kindId" (change)="retype($event)">
+              <option [value]="field.type" selected>{{ ownKind() }}</option>
+              @for (kind of kinds(); track kind.type) {
+                <option [value]="kind.type">{{ kind.title }}</option>
+              }
+            </select>
+          </div>
+        }
 
         @for (property of properties(); track property.name) {
           <formancy-property
@@ -278,6 +291,22 @@ export class FormancyPropertyPanel {
 
   constructor() {
     takeHostOutOfLayout()
+  }
+
+  protected readonly kindId = `formancy-property-${String((nextId += 1))}`
+  protected readonly kindLabel = computed(() => this.session().text('retype.label'))
+  /** The kinds this field may become; none for a group, a page or a repeater (0192). */
+  protected readonly kinds = computed((): PaletteEntry[] => {
+    this.view()
+    return retypeTargets(this.session(), this.keyPath())
+  })
+  protected readonly ownKind = computed(() => {
+    const type = this.def()?.type ?? ''
+    return paletteEntries(undefined, this.session().text).find((entry) => entry.type === type)?.title ?? type
+  })
+
+  protected retype(event: Event): void {
+    changeFieldType(this.session(), this.keyPath(), (event.target as HTMLSelectElement).value as FieldType)
   }
 
   protected valueOf(name: string): unknown {

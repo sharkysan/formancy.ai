@@ -10,6 +10,18 @@ later.
 
 ## Unreleased
 
+**A field can be duplicated, and its type changed, in both builders.** Neither was possible:
+changing a type meant deleting the field and adding another, losing its label, options and
+the rules aimed at it, and duplicating meant adding it again by hand. `d` on the structure tree
+now puts a copy straight after the focused field, under a key of its own, with every rule about
+it aimed at the copy — including rules that read other fields, since the copy stays in the same
+form. The property panel's *Kind of question* changes the type among the single-answer types
+the document's version allows, keeping the properties the new type takes and giving a choice
+its first option. `duplicateField`, `changeFieldType`, `retypeTargets` and their `…AndSay`
+forms are exported from `@formancy/builder-core`. A changed type is lossy for a published form,
+as the diff at publish says: a resumed draft has that answer refused for its old shape
+([0192](docs/decisions/0192-a-field-can-be-copied-and-its-kind-changed.md)).
+
 **A field's errors are said, not shown as codes.** The renderers drew the engine's codes —
 `required, minLength` under a question, in English under a German form — and the error summary
 set them into a translated sentence. Each code is now a sentence in the form's language with

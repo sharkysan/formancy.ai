@@ -106,6 +106,7 @@ function ownWords(document: FormSchema): string[] {
     'p',
     'u',
     'm',
+    'd',
   ]
 }
 

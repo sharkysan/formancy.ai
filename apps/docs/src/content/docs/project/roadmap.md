@@ -55,6 +55,9 @@ Both builders carry every pane, decided once in `builder-core` so the two cannot
 different things ([0091](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0091-a-second-builder-is-a-binding.md)), and both save a field
 as a block — with the rules that live inside it — to insert into the next form
 ([0135](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0135-a-block-is-a-field-with-its-rules.md)).
+`d` duplicates a field in place, with every rule about it aimed at the copy, and the
+property panel changes what kind of question a field asks while keeping what still applies
+([0192](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0192-a-field-can-be-copied-and-its-kind-changed.md)).
 The builder's words come from one catalogue in `builder-core`, English, German and French: a
 session refuses, offers destinations and names layout nodes in the language it was
 opened in, and every surface of both builders shows and announces everything in it. The

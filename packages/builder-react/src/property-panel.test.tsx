@@ -316,3 +316,26 @@ describe('a matrix in the property panel', () => {
     expect(screen.queryByLabelText('Picture address')).toBeNull()
   })
 })
+
+describe('the kind of question', () => {
+  // Changing a field's type was impossible from the panel: `type` is not a property, so
+  // the only way was to delete the field and add another, losing its label, its options
+  // and its rules' target (0192).
+  test('is chosen in the panel, and what still applies is kept', async () => {
+    const user = userEvent.setup()
+    const session = mountFor('email')
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Kind of question' }), 'textarea')
+    expect(fieldNamed('email', session)).toEqual({ key: 'email', type: 'textarea', label: 'Email' })
+  })
+
+  // A repeater holds other fields; offering to make it a question would offer to throw them away.
+  test('is not offered for a field that holds others', () => {
+    const session = createBuilderSession({
+      ...schema,
+      specVersion: '4',
+      model: { fields: [{ key: 'items', type: 'repeater', label: 'Items', fields: [{ key: 'x', type: 'text', label: 'X' }] }] },
+    } as FormSchema)
+    render(<PropertyPanel session={session} keyPath={['items']} />)
+    expect(screen.queryByRole('combobox', { name: 'Kind of question' })).toBeNull()
+  })
+})

@@ -1,10 +1,10 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
-import type { DataGridColumn, FieldDef, FieldOption } from '@formancy/spec'
+import type { DataGridColumn, FieldDef, FieldOption, FieldType } from '@formancy/spec'
 import type { BuilderSession, BuilderText } from '@formancy/builder-core'
 import { ColumnsEditor } from './columns-editor.js'
 import { OptionsEditor } from './options-editor.js'
-import { editablePropertiesFor } from '@formancy/builder-core'
+import { changeFieldType, editablePropertiesFor, paletteEntries, retypeTargets } from '@formancy/builder-core'
 import type { EditableProperty } from '@formancy/builder-core'
 import { nameOf } from '@formancy/builder-core'
 import { useBuilder } from './use-builder.js'
@@ -46,6 +46,7 @@ export function PropertyPanel({ session, keyPath }: PropertyPanelProps): ReactEl
     <div data-formancy-part="property-panel">
       <h2>{nameOf(view.document, def)}</h2>
       <p data-formancy-part="property-panel-type">{def.type}</p>
+      <KindOfQuestion session={session} keyPath={keyPath} type={def.type} />
 
       {properties.map((property) => (
         <PropertyField
@@ -69,6 +70,39 @@ export function PropertyPanel({ session, keyPath }: PropertyPanelProps): ReactEl
           }}
         />
       ))}
+    </div>
+  )
+}
+
+/**
+ * What kind of question the field asks, as a choice among the kinds it may become (0192):
+ * every single-answer type its version allows, with what still applies kept. Nothing for a
+ * group, a page or a repeater, which hold other fields and so cannot change kind.
+ */
+function KindOfQuestion({
+  session,
+  keyPath,
+  type,
+}: {
+  session: BuilderSession
+  keyPath: readonly string[]
+  type: FieldType
+}): ReactElement | null {
+  const id = useId()
+  const targets = retypeTargets(session, keyPath)
+  if (targets.length === 0) return null
+  const own = paletteEntries(undefined, session.text).find((entry) => entry.type === type)?.title ?? type
+  return (
+    <div data-formancy-part="property">
+      <label htmlFor={id}>{session.text('retype.label')}</label>
+      <select id={id} value={type} onChange={(event) => changeFieldType(session, keyPath, event.target.value as FieldType)}>
+        <option value={type}>{own}</option>
+        {targets.map((target) => (
+          <option key={target.type} value={target.type}>
+            {target.title}
+          </option>
+        ))}
+      </select>
     </div>
   )
 }

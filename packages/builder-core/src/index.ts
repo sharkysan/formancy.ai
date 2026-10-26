@@ -248,4 +248,6 @@ export {
   saveBlockAndSay,
   withBlock,
 } from './blocks.js'
+export { duplicateAndSay, duplicateField } from './duplicate.js'
+export { changeFieldType, retypeAndSay, retypeTargets } from './retype.js'
 export type { BlockPlaced, BlockSaved, BuilderBlock } from './blocks.js'
