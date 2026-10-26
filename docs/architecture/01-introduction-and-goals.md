@@ -6,8 +6,8 @@ A form platform: a versioned schema, an engine that evaluates it, renderers for
 React and Angular, a builder, and a self-hostable backend that stores
 submissions bound to the exact form version that produced them.
 
-It exists because [form.io](https://form.io) is the category's incumbent and
-its architecture is the reason for building something else. Four problems drive
+It exists because the architecture the category settled on is the reason for
+building something else. Four problems drive
 the project, and all four were weighted equally:
 
 1. **Renderer architecture and developer experience.** An imperative,

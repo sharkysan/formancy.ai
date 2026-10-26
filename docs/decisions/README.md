@@ -247,7 +247,7 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0138](0138-a-ranking-stores-the-order-chosen.md) | A ranking stores the order chosen, starts empty, and is put in order with buttons | accepted; its words, English here, decided by 0171 |
 | [0139](0139-a-matrix-answers-one-question-per-row.md) | A matrix answers one question per row, and stores the rows answered | accepted |
 | [0140](0140-spec-4-freezes-with-the-two-types-it-opened-for.md) | Spec 4 freezes with the two types it was opened for, and nothing opens version 5 yet | accepted |
-| [0141](0141-the-angular-page-compares-with-no-other-product.md) | The Angular page compares formancy with no other product | accepted |
+| [0141](0141-the-angular-page-compares-with-no-other-product.md) | The Angular page compares formancy with no other product | accepted; extended to all documentation by 0188 |
 | [0142](0142-the-angular-starter-is-dressed-in-materials-tokens.md) | The Angular starter is dressed in Material's tokens, and loads the face they name | accepted |
 | [0143](0143-the-workbench-dresses-every-part-a-builder-draws.md) | The workbench dresses every part a builder draws | accepted |
 | [0144](0144-one-mark-and-the-sites-favicon-is-it.md) | One mark, and the site's favicon is it | accepted |
@@ -288,3 +288,4 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0182](0182-a-list-is-filled-row-by-row.md) | A scenario fills a list row by row, and a path that is not one answer says what it is | accepted; `errors` and `visible` at a list's own path, which it refused, let through by 0184 |
 | [0183](0183-no-model-is-an-answer.md) | A deployment with no model says so in a 200, not a 404 | accepted |
 | [0187](0187-the-sbom-describes-what-a-consumer-installs.md) | The SBOM describes what a consumer installs, and is checked before anything is published | accepted |
+| [0188](0188-the-documentation-names-no-other-product.md) | The documentation names no other form product | accepted |

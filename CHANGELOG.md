@@ -10,6 +10,15 @@ later.
 
 ## Unreleased
 
+**The documentation names no other form product.** The roadmap's *Measured against the
+competition* is now *What an adopter weighs*, and the architecture introduction describes the
+architecture formancy reacts against rather than naming a vendor. A sentence about what another
+product charges for or leads with is true on a day, and nothing here can keep it true — the reason
+0141 took the comparison off the Angular page, now applied everywhere a reader takes as current.
+The changelog and the decision records keep the names they were written with, because they record
+what was argued at the time; `apps/docs/src/other-products.test.ts` fails if a name comes back
+anywhere else ([0188](docs/decisions/0188-the-documentation-names-no-other-product.md)).
+
 **The release's SBOM describes what a consumer installs, and is checked before anything is
 published.** Until now it was cdxgen over the pnpm workspace, made after `pnpm publish`, and its
 one check was that the CEL evaluator appeared somewhere in it. `0.6.0`'s, read from its release

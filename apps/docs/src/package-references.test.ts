@@ -7,7 +7,7 @@ import { describe, expect, test } from 'vitest'
  * Every package and command the documentation names is one the workspace has.
  *
  * **The defect this exists for.** The roadmap told somebody weighing formancy against
- * form.io that `npx @formancy/cli types` emits a real type per form, and the migration guide
+ * another product that `npx @formancy/cli types` emits a real type per form, and the migration guide
  * and the versioning page both said `@formancy/cli migrate` rewrites documents forward. There
  * was no `packages/cli`, no workspace package by that name, and the only command any manifest
  * declared was the MCP server's — so the one line on the roadmap a reader could copy and run

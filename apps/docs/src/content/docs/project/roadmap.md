@@ -273,10 +273,9 @@ the next reserved name to ship cannot sit here quietly either.
 | ~~`time`, `datetime`~~ | **Shipped.** One canonical fixed-width string each, with `earliest`/`latest` bounds ([0067](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0067-a-temporal-answer-is-one-fixed-width-string.md)) | This row said time zones are where form platforms lose data, and the semantics are written down now: a `datetime` is an instant in UTC, a `time` is a wall clock with no zone, and there is deliberately no per-field `timezone` — a zone *name* would put the host's IANA data into the replay contract |
 | ~~`toggle`~~ | **Shipped, and not as a type.** `widget: "toggle"` on a checkbox, in spec 2 — drawn as a switch by both renderers, each with its own test file | This row was in a table of things that are not here, unstruck, while the widget had been in the spec since version 2. Its reasoning still holds and is why it is a widget rather than a type: a switch is a checkbox with different paint *unless* it commits immediately, and in a form it must not. What was wrong was the heading above it, not the argument in it — found by somebody reading the repository against a competitor's feature list, which is one of the two stale claims a reader found that nineteen guards had not |
 
-`signature`, `datagrid` and `qrcode` are the three
-[FormEngine](https://formengine.io) groups as "special components", and they are
-the three most asked about. That is the reason they are named here rather than
-left out as v2-era omissions. All three are now shipped.
+`signature`, `datagrid` and `qrcode` are the three most asked about. That is the
+reason they are named here rather than left out as v2-era omissions. All three are
+now shipped.
 
 ## What comes next
 
@@ -391,19 +390,16 @@ unpaged
 ([0089](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0089-a-page-is-unwrapped-into-its-neighbour.md)).
 It also found that a page carrying a `skip` rule could not be deleted at all.
 
-## Measured against the competition
+## What an adopter weighs
 
-[form.io](https://form.io/features/) is the benchmark this project was started
-against, and [FormEngine](https://formengine.io) is the closest thing to a modern
-answer to it. Worth saying plainly which of their features matter, which are
-already here, and which are deliberately not coming. Ordered by what would change
-an adopter's decision, not by what is easiest.
+Worth saying plainly which of the features a form platform is chosen for matter,
+which are already here, and which are deliberately not coming. Ordered by what
+would change an adopter's decision, not by what is easiest.
 
 ### The one that decides adoption
 
-**A pointer-driven builder a non-technical person can use.** This is what form.io
-is bought for and what FormEngine leads with, and it is the thing a buyer judges
-in ten minutes. Most of it exists here — the structure tree, the arrangement
+**A pointer-driven builder a non-technical person can use.** This is what a form
+platform is bought for, and it is the thing a buyer judges in ten minutes. Most of it exists here — the structure tree, the arrangement
 tree, the palette, a property panel generated from the spec's own JSON Schema,
 and a condition editor that compiles to CEL — and each got its keyboard route
 first and a drag surface afterwards. That order is not politeness: WCAG 2.2
@@ -424,7 +420,7 @@ each item there says what would have to exist for it to go.*
 
 ### Worth doing, because the hard half already exists
 
-**Save and resume a draft.** ~~form.io sells this.~~ **Built, and it was the endpoint
+**Save and resume a draft.** **Built, and it was the endpoint
 and the token that this said were missing.** A resumed draft is rebound against the exact
 version it was written under — `compatible` silently, `lossy` with a migration report,
 `breaking` read-only — and the routes are there: `POST /f/:path/drafts` starts one and
@@ -441,9 +437,9 @@ mean the same thing for the life of its submissions — so changing a block chan
 used it, and storing blocks is the host's: neither the admin nor the server keeps them yet
 ([0135](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0135-a-block-is-a-field-with-its-rules.md)).
 
-**The components they charge for, or lead with** — signature, data grid, QR code,
-autocomplete, tag picker. Each is small on its own and collectively they are a
-priced tier elsewhere. See the table above for what each actually costs.
+**The components a form platform charges for** — signature, data grid, QR code,
+autocomplete, tag picker. Each is small on its own and collectively they are often
+a priced tier. See the table above for what each actually costs.
 
 **Translated form content.** Built, including the file a vendor works in. The format
 always allowed `label: { $t: "..." }` and the engine always resolved it; what was missing
@@ -451,7 +447,7 @@ was any way to produce one. An author extracts, a translator works down a table,
 message whose field has gone is kept rather than collected. "Self-hosted, nothing phones
 home" is a European pitch where this is table stakes rather than a nicety.
 
-**Two people editing one form**, which form.io calls collision control. Built. The
+**Two people editing one form**, sometimes sold as collision control. Built. The
 409-on-stale-hash pattern that was already on the submission path now runs on the publish
 route too: an editor declares the version it opened, and one overtaken by somebody else is
 refused with the current schema attached, so it can show what changed rather than fetching
@@ -461,8 +457,8 @@ immutable — and what was missing was that anybody noticed.
 
 ### Deferred, with the reason
 
-**PDF output and e-signatures.** The strongest commercial pull on form.io's list,
-and explicitly in the sold tier here. Paginated PDF reports now exist outside this
+**PDF output and e-signatures.** The strongest commercial pull among form
+platforms, and explicitly in the sold tier here. Paginated PDF reports now exist outside this
 repository as [Formancy Report](https://github.com/sharkysan/formancy.ai-report), a
 separate module that is not free: source-available, and paid in production
 ([0179](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0179-the-paid-modules-are-named-as-not-free.md)).
@@ -475,7 +471,7 @@ certificate and no timestamp authority behind it.
 is the authority on validity. A form that validated offline and is rejected on
 reconnect is a worse experience than one that said it needed a connection.
 
-**FormEngine's display components** — breadcrumbs, cards, menus, tooltips,
+**Display components** — breadcrumbs, cards, menus, tooltips,
 progress rings, skeleton placeholders. These are a *page* toolkit, and a form
 library that grows one starts competing with its host application's design
 system instead of composing with it. The layout kinds here stay structural, and
@@ -493,18 +489,18 @@ something rather than starting it.
 
 ### Deliberately not copying
 
-- **A generated API that returns `any`.** form.io's per-form endpoints hand you
+- **A generated API that returns `any`.** Per-form endpoints that hand you
   untyped data. What exists here is the checked half: the server runs every submission
   through the engine, against the version it was filled in on, and refuses one that fails
   it. The typed half does not exist — both renderers hand a submission's data over as
   `unknown` — and this line used to credit it to a command that was never built (see
   *What does not exist yet*).
-- **Markup baked into the renderers.** Bootstrap classes in the core are the
-  reason theming form.io means fighting it. Here the markup belongs to the
+- **Markup baked into the renderers.** Bootstrap classes in a renderer's core
+  mean that theming it is fighting it. Here the markup belongs to the
   consumer's design system.
 - **Charging for accessibility.** It is a property of passing the conformance
   suite, not a tier.
-- **An importer for form.io schemas.** A clean-slate spec was chosen on purpose;
+- **An importer for another product's schemas.** A clean-slate spec was chosen on purpose;
   an importer would drag the model it was meant to escape back in.
 
 ## Versioning promises

@@ -965,7 +965,7 @@ describe('the side the server replays as', () => {
 
 describe('two people editing one form', () => {
   /*
-   * form.io calls it collision control. The mechanism was already here and
+   * Sometimes sold as collision control. The mechanism was already here and
    * pointed the other way: a SUBMISSION declares the version it was rendered
    * against, and a stale one is refused with `version_changed` carrying the
    * current schema, so the client can re-render rather than guess.
