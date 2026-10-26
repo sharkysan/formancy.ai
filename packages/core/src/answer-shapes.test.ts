@@ -115,6 +115,50 @@ describe('a number is a finite number', () => {
   })
 })
 
+describe('a group holds an object', () => {
+  const schema = schemaOf([
+    { key: 'address', type: 'group', fields: [{ key: 'street', type: 'text' }] },
+    {
+      key: 'items',
+      type: 'repeater',
+      fields: [{ key: 'where', type: 'group', fields: [{ key: 'room', type: 'text' }] }],
+    },
+  ])
+  const errorsOf = (initialValue: Record<string, unknown>): Record<string, string[]> =>
+    createFormEngine({ schema, initialValue }).validate().errors
+
+  // A group is not a field the engine visits, so its own value was checked by nothing: a
+  // string posted where the object belongs was stored, and every reader of `address.street`
+  // met a string where an object was promised. Found by compiling stored values against the
+  // type a form's submissions are given.
+  test.each([['Main'], [['Main']], [null]])('%o in place of one is refused', (value) => {
+    expect(errorsOf({ address: value })).toEqual({ address: ['type'] })
+  })
+
+  test('so is one in a row', () => {
+    expect(errorsOf({ items: [{ _id: 'r1', where: 'kitchen' }] })).toEqual({ 'items[0].where': ['type'] })
+  })
+
+  test('an object, an empty one, or none at all is fine', () => {
+    expect(errorsOf({ address: { street: 'Main' } })).toEqual({})
+    expect(errorsOf({ address: {} })).toEqual({})
+    expect(errorsOf({})).toEqual({})
+  })
+
+  // A hidden group is not part of the conversation, as a hidden field is not.
+  test('a hidden group is not asked', () => {
+    const hidden = createFormEngine({
+      schema: {
+        ...schemaOf([{ key: 'address', type: 'group', clearOnHide: false, fields: [{ key: 'street', type: 'text' }] }]),
+        logic: { rules: [{ kind: 'visible', target: 'address', cel: 'false' }] },
+      },
+      capabilities,
+      initialValue: { address: 'Main' },
+    })
+    expect(hidden.validate().errors).toEqual({})
+  })
+})
+
 describe('a static field collects nothing', () => {
   const schema = schemaOf([
     { key: 'note', type: 'static', label: 'Read this' },

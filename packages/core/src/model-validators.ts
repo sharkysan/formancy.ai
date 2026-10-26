@@ -1,6 +1,9 @@
 import { ANSWER_KINDS, TEMPORAL_SHAPES, fitsAnswerShape, fitsMask } from '@formancy/spec'
 import type { FieldDef, FieldFormat, StoredFile } from '@formancy/spec'
 import type { BuiltInErrorCode } from './error-codes.js'
+import { formatPath } from './path.js'
+import type { Path } from './path.js'
+import { getAt } from './value.js'
 
 /**
  * The spec's built-in model validators: bounds, pattern, format.
@@ -145,6 +148,43 @@ export function modelViolations(def: FieldDef, value: unknown): BuiltInErrorCode
   }
 
   return codes
+}
+
+/**
+ * The groups whose value is not an object, by wire (0189).
+ *
+ * The engine validates fields, and a group is not one — its fields are — so its own value
+ * was checked by nothing: a string posted where the object belongs was stored, and every
+ * reader of `address.street` met a string where an object was promised. Walked through the
+ * value as the engine walks the model: a page scopes nothing, a group nests, and each row of
+ * a repeater holds its own. A group that is absent is unanswered, and a hidden one is not
+ * part of the conversation, as a hidden field is not.
+ */
+export function groupViolations(
+  fields: readonly FieldDef[],
+  value: unknown,
+  hidden: (path: Path) => boolean,
+): Record<string, BuiltInErrorCode[]> {
+  const out: Record<string, BuiltInErrorCode[]> = {}
+  const visit = (defs: readonly FieldDef[], parent: Path): void => {
+    for (const def of defs) {
+      if (def.type === 'page') {
+        visit(def.fields ?? [], parent)
+        continue
+      }
+      const path = [...parent, def.key]
+      const held = getAt(value, path)
+      if (held === undefined || hidden(path)) continue
+      if (def.type === 'group') {
+        if (fitsAnswerShape('group', held)) visit(def.fields ?? [], path)
+        else out[formatPath(path)] = ['type']
+      } else if (def.type === 'repeater' && Array.isArray(held)) {
+        held.forEach((_, index) => visit(def.fields ?? [], [...path, index]))
+      }
+    }
+  }
+  visit(fields, [])
+  return out
 }
 
 /**

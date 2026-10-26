@@ -75,7 +75,8 @@ constraint reads it, in the browser and on the replay alike
 ([0189](../decisions/0189-every-answer-has-the-shape-its-type-says.md)). A value of another
 shape is refused as `type`. `null` means unanswered only for a single answer; a list is
 empty as `[]` and a matrix as `{}`, and an empty string is an answer only to a text field.
-A `static` field collects nothing, so a value handed in for one is dropped. Verified by
+A group's value is an object, or it is refused, at the top level and in every row. A `static`
+field collects nothing, so a value handed in for one is dropped. Verified by
 `packages/core/src/answer-shapes.test.ts`, which posts a value of the wrong shape at every
 answering type, and on the server by *refuses an answer of the wrong shape on a field with
 no constraints* in `packages/server-core/src/use-cases.test.ts`, which failed against the
