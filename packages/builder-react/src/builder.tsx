@@ -15,6 +15,7 @@ import {
   treeKeyHelp,
   undoAndSay,
   unwrapAndSay,
+  duplicateAndSay,
   upgradeAndSay,
 } from '@formancy/builder-core'
 import { useBuilder } from './use-builder.js'
@@ -262,6 +263,11 @@ export function FormancyBuilder({
       case 'U':
         event.preventDefault()
         announce(unwrapAndSay(session, focused.keyPath))
+        break
+      case 'd':
+      case 'D':
+        event.preventDefault()
+        announce(duplicateAndSay(session, focused.keyPath))
         break
       case 'Delete':
       case 'Backspace': {

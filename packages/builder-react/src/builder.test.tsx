@@ -676,3 +676,25 @@ describe('and what it says when the page was empty', () => {
     expect(session.document().model.fields).toEqual([])
   })
 })
+
+describe('d duplicates the focused field', () => {
+  // A copy straight after the original, its rules with it, said aloud (0192) — and listed,
+  // since a command missing from the legend is one only its author knows about.
+  test('puts a copy after it and says so', async () => {
+    const user = userEvent.setup()
+    const session = createBuilderSession({
+      specVersion: '4',
+      id: 'contact',
+      title: 'Contact',
+      model: { fields: [{ key: 'email', type: 'text', label: 'Email' }, { key: 'phone', type: 'text', label: 'Phone' }] },
+    } as FormSchema)
+    render(<FormancyBuilder session={session} />)
+
+    await user.tab()
+    await user.keyboard('d')
+
+    expect(session.document().model.fields.map((field) => field.key)).toEqual(['email', 'email2', 'phone'])
+    expect(screen.getByRole('status').textContent).toBe('Duplicated Email.')
+    expect(screen.getByText('d')).toBeTruthy()
+  })
+})

@@ -1,4 +1,5 @@
 import { BLOCK_MESSAGES } from './messages-blocks.js'
+import { FIELD_EDIT_MESSAGES } from './messages-fields.js'
 import { DRAFT_MESSAGES } from './messages-drafts.js'
 import { LOGIC_MESSAGES } from './messages-logic.js'
 import { MODEL_MESSAGES } from './messages-model.js'
@@ -387,6 +388,7 @@ export const BUILDER_MESSAGES = {
   ...BUILDER_OWN_MESSAGES,
   ...LOGIC_MESSAGES,
   ...BLOCK_MESSAGES,
+  ...FIELD_EDIT_MESSAGES,
   ...MODEL_MESSAGES,
   ...DRAFT_MESSAGES,
 } as const satisfies Record<string, Message>

@@ -189,6 +189,7 @@ export function treeKeyHelp(
     ['a', text('keys.add.what')],
     ['p', text('keys.addPage.what')],
     ['u', text('keys.unwrap.what')],
+    ['d', text('keys.duplicate.what')],
     ['m', text('keys.move.what')],
     ...(options.blocks === true ? [['b', text('keys.block.what')] as const] : []),
     [text('keys.delete.key'), text('keys.delete.what')],

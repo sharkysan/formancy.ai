@@ -30,6 +30,7 @@ import {
   typesNeedingUpgrade,
   undoAndSay,
   unwrapAndSay,
+  duplicateAndSay,
   upgradeAndSay,
 } from '@formancy/builder-core'
 import type { BuilderBlock } from '@formancy/builder-core'
@@ -513,6 +514,11 @@ export class FormancyBuilder {
       case 'U':
         event.preventDefault()
         this.announce(unwrapAndSay(this.session(), focused.keyPath))
+        break
+      case 'd':
+      case 'D':
+        event.preventDefault()
+        this.announce(duplicateAndSay(this.session(), focused.keyPath))
         break
       case 'Delete':
       case 'Backspace': {

@@ -287,8 +287,11 @@ export class Editor {
 ```
 
 It is a **keyboard interface**: `↑` `↓` and `Home`/`End` to move about, `a` to add a
-field, `m` to move one, `p` to add a page, `u` to take a container away and keep
-what is inside, `Delete` to remove, `Ctrl+Z`/`Ctrl+Y` to undo and redo. The tree
+field, `m` to move one, `d` to duplicate one with the rules about it, `p` to add a page,
+`u` to take a container away and keep what is inside, `Delete` to remove,
+`Ctrl+Z`/`Ctrl+Y` to undo and redo. The property panel changes what kind of question a
+field asks, keeping what still applies
+([0192](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0192-a-field-can-be-copied-and-its-kind-changed.md)). The tree
 is one tab stop rather than one per field, and every destination is offered as a
 sentence rather than an index. The legend under the tree lists every key, so none
 of this has to be told to anybody.

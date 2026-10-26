@@ -511,3 +511,30 @@ describe('a matrix in the property panel', () => {
     expect(screen.queryByLabelText('Picture address')).toBeNull()
   })
 })
+
+describe('the kind of question', () => {
+  // The React panel's case: a field's type was not changeable from the panel at all (0192).
+  test('is chosen in the panel, and what still applies is kept', async () => {
+    const { session, select } = await mountFor('email')
+    await select(screen.getByRole('combobox', { name: 'Kind of question' }), 'textarea')
+    expect(session.document().model.fields.find((field) => field.key === 'email')).toEqual({
+      key: 'email',
+      type: 'textarea',
+      label: 'Email',
+    })
+  })
+
+  test('is not offered for a field that holds others', async () => {
+    const session = createBuilderSession({
+      ...schema,
+      specVersion: '4',
+      model: { fields: [{ key: 'items', type: 'repeater', label: 'Items', fields: [{ key: 'x', type: 'text', label: 'X' }] }] },
+    } as FormSchema)
+    const view = await render(FormancyPropertyPanel, {
+      componentInputs: { session, keyPath: ['items'] },
+      providers: [provideZonelessChangeDetection()],
+    })
+    await view.fixture.whenStable()
+    expect(screen.queryByRole('combobox', { name: 'Kind of question' })).toBeNull()
+  })
+})
