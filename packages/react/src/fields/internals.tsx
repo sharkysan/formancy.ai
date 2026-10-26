@@ -1,6 +1,8 @@
+import { Fragment } from 'react'
 import type { ComponentType, ReactNode } from 'react'
 import { isImageSource } from '@formancy/spec'
 import type { FieldDef, FieldType } from '@formancy/spec'
+import { errorSentence } from '@formancy/core/words'
 import { useFormEngine, useFormText } from '../context.js'
 import { useField } from '../use-field.js'
 import type { FieldBinding } from '../use-field.js'
@@ -58,6 +60,29 @@ export interface FormancyFormProps {
   onSubmit?: (outcome: SubmitOutcome) => void
 }
 
+/**
+ * A field's errors, said: one sentence per code, in the form's language, with the field's own
+ * limit in it (0191).
+ *
+ * Each sentence is its own element carrying its code in `data-formancy-code`, so a tool
+ * reading the screen — the conformance driver — reads the code where it is rather than
+ * parsing it out of prose, and the codes stay the engine's vocabulary while a person reads
+ * the words.
+ */
+export function ErrorText({ field }: { field: FieldBinding }) {
+  const text = useFormText()
+  return (
+    <p data-formancy-part="error" {...field.errorProps}>
+      {field.errors.map((code, index) => (
+        <Fragment key={code}>
+          {index > 0 ? ' ' : null}
+          <span data-formancy-code={code}>{errorSentence(text, field.def, code)}</span>
+        </Fragment>
+      ))}
+    </p>
+  )
+}
+
 /** Shared unstyled shell: real label, control, error text as the describedby
  *  target. Zero CSS; `data-formancy-part` is the styling hook. */
 export function FieldShell({
@@ -83,11 +108,7 @@ export function FieldShell({
         {label}
       </label>
       {children}
-      {field.touched && field.errors.length > 0 ? (
-        <p data-formancy-part="error" {...field.errorProps}>
-          {field.errors.join(', ')}
-        </p>
-      ) : null}
+      {field.touched && field.errors.length > 0 ? <ErrorText field={field} /> : null}
     </div>
   )
 }

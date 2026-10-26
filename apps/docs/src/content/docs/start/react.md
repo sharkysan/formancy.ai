@@ -152,8 +152,11 @@ Every id, with its English, is `FORM_WORDS` in `@formancy/core/words`; `FORM_WOR
 `submitLabel` names the submit button, and a repeater's `addLabel` and `removeLabel` in the
 document name its buttons. A component of your own reads the same words with `useFormText()`.
 `ResumeNotice` speaks the form's language inside the form's `FormancyProvider`, and English
-outside it. Two things are not the renderer's to translate: a field's error is the engine's
-code, such as `required`, and `addLabel` is a plain string in one language
+outside it. A field's errors are said in the same language: the engine reports a code, such
+as `minLength`, and the field shows "Enter at least 5 characters." with its own limit in it —
+`error.minLength` among those ids, changed like any other word
+([0191](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0191-an-error-is-said-not-coded.md)). One thing is not the renderer's to translate: `addLabel` is a plain string in
+one language
 ([0171](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0171-the-renderers-words-are-the-forms-language.md)).
 
 ## Two of the same form on one page
@@ -262,8 +265,9 @@ controls do, or the person types into a box that does not keep what they type
   invalid), in document order.
 
 Note that `errors` on a field are **codes** (`"required"`, `"minLength"`,
-`"pattern"`…), not sentences: message text belongs to your message catalog, not
-to the engine.
+`"pattern"`…), not sentences: they are the engine's vocabulary, and what the API returns.
+What a person reads is `errorSentence(text, def, code)` from `@formancy/core/words`, which
+the shipped controls call and a control of your own can too ([0191](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0191-an-error-is-said-not-coded.md)).
 
 ## A model's edit, checked against your examples
 

@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input, signal } from '@an
 import { narrowOptionsByLabel } from '@formancy/spec'
 import { FormancyTextPipe } from '../text.js'
 import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
+import { FormancyErrorText } from './error-text.js'
 
 
 /**
@@ -187,7 +188,7 @@ export class FormancyTagPickerField extends FieldComponentBase {
 @Component({
   selector: 'formancy-select-boxes-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormancyTagPickerField, FormancyTextPipe],
+  imports: [FormancyErrorText, FormancyTagPickerField, FormancyTextPipe],
   template: `
     @if (tagpicker()) {
       <!-- A widget changes the CONTROL and nothing else: same field, same
@@ -231,7 +232,7 @@ export class FormancyTagPickerField extends FieldComponentBase {
         </span>
       }
       @if (showError()) {
-        <p data-formancy-part="error" [id]="field.snapshot().props.error.id">{{ errorText() }}</p>
+        <p data-formancy-part="error" [id]="field.snapshot().props.error.id" [formancyErrorText]="field.snapshot()"></p>
       }
     </fieldset>
     }
@@ -245,7 +246,6 @@ export class FormancySelectBoxesField extends FieldComponentBase {
     return snapshot.touched && snapshot.errors.length > 0
   })
 
-  protected readonly errorText = computed(() => this.field.snapshot().errors.join(', '))
 
   protected readonly chosen = computed<readonly unknown[]>(() => {
     const value = this.field.snapshot().value

@@ -180,7 +180,7 @@ describe('a text field with the scanner widget', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Submit' }))
     await waitFor(() => {
-      expect(errorOf('Serial number')).toBe('pattern')
+      expect(errorOf('Serial number')).toBe('Enter it in the form this question asks for.')
     })
     // Still there afterwards: refusing it is the engine's answer, not a reason to
     // forget what the camera read.

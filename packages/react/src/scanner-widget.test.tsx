@@ -210,7 +210,7 @@ describe('a text field with the scanner widget', () => {
       const field = screen
         .getByRole('textbox', { name: 'Serial number' })
         .closest('[data-formancy-part="field"]')!
-      expect(field.querySelector('[data-formancy-part="error"]')?.textContent).toBe('pattern')
+      expect(field.querySelector('[data-formancy-code="pattern"]')?.textContent).toBe('Enter it in the form this question asks for.')
     })
     // Still there afterwards: refusing it is the engine's answer, not a reason to
     // forget what the camera read.

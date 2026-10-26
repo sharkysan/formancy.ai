@@ -280,10 +280,12 @@ Server verdicts arrive in the identical shape local errors use and render
 through the same path, so a renderer has one error model rather than two, and
 they are cleared per field on edit.
 
-Error codes, not sentences, are what the engine produces. Text belongs to the
-message catalogue. Which catalogue is not decided: the renderers show a field's codes as
-codes, the conformance drivers read them so, and the renderers' own words (0171) put them in
-a translated sentence in the error summary without translating them. §11 lists it.
+Error codes, not sentences, are what the engine produces and the API returns. What a person
+reads is the renderers' catalogue's: `errorSentence` in `@formancy/core/words` says each code
+in the form's language with the field's own limit in it, both renderers call it, and each
+sentence carries its code as `data-formancy-code`, which is where the conformance drivers
+read it ([0191](../decisions/0191-an-error-is-said-not-coded.md)). A `validate` rule's own
+code, or the message its expression returns, is the author's word and is said as itself.
 
 ## 8.10 Security
 

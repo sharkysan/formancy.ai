@@ -2,7 +2,7 @@ import { optionsStatus } from '@formancy/core/words'
 import { useFormText } from '../context.js'
 import { useField } from '../use-field.js'
 import { useSourcedOptions } from '../use-sourced-options.js'
-import { FieldShell, OptionPicture, RequiredHint, useResolvedOptions } from './internals.js'
+import { ErrorText, FieldShell, OptionPicture, RequiredHint, useResolvedOptions } from './internals.js'
 import type { FieldComponentProps } from './internals.js'
 import { TypeaheadSelectField } from './typeahead-field.js'
 
@@ -175,11 +175,7 @@ export function RadioGroupField({ path, label }: FieldComponentProps) {
           </span>
         )
       })}
-      {showError ? (
-        <p data-formancy-part="error" {...field.errorProps}>
-          {field.errors.join(', ')}
-        </p>
-      ) : null}
+      {showError ? <ErrorText field={field} /> : null}
     </fieldset>
   )
 }

@@ -52,8 +52,8 @@ const CEILINGS: Record<string, { lines: number; why: string }> = {
     why: 'Refusing a fixture that could not run honestly. One subject — and four have left it: the message catalogue and the names a driver searches by went to validate-text.ts when this budget refused the locale check, the locale and layout a fixture mounts with to mount.ts, the vocabulary of the spec a fixture may use to vocabulary.ts when ranking added a type, and the JSON predicates under them to values.ts, which both now share.',
   },
   'packages/conformance/src/runner.ts': {
-    lines: 684,
-    why: 'Executing a fixture against a driver. One subject.',
+    lines: 676,
+    why: 'Executing a fixture against a driver. One subject. What a driver\'s messages say — the codes at a path, and which are shown as codes — left for `messages.ts` when the check that an error is said needed lines (0191).',
   },
 }
 

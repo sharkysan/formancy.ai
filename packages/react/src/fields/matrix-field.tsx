@@ -1,6 +1,6 @@
 import { useFormEngine } from '../context.js'
 import { useField } from '../use-field.js'
-import { RequiredHint, useResolvedOptions } from './internals.js'
+import { ErrorText, RequiredHint, useResolvedOptions } from './internals.js'
 import type { FieldComponentProps } from './internals.js'
 
 /**
@@ -68,11 +68,7 @@ export function MatrixField({ path, label }: FieldComponentProps) {
           </fieldset>
         ))}
       </div>
-      {showError ? (
-        <p data-formancy-part="error" {...field.errorProps}>
-          {field.errors.join(', ')}
-        </p>
-      ) : null}
+      {showError ? <ErrorText field={field} /> : null}
     </fieldset>
   )
 }

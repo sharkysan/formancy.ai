@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, computed } from '@angular/core'
 import { MatFormFieldModule } from '@angular/material/form-field'
 import { MatInputModule } from '@angular/material/input'
 import { MaterialFieldBase } from './base.js'
+import { FormancyErrorText } from '@formancy/angular'
 
 /**
  * The answers typed into a box, drawn in Material's form field: text, a paragraph, a
@@ -26,7 +27,7 @@ import { MaterialFieldBase } from './base.js'
 @Component({
   selector: 'formancy-material-text-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatFormFieldModule, MatInputModule, NgComponentOutlet],
+  imports: [FormancyErrorText, MatFormFieldModule, MatInputModule, NgComponentOutlet],
   template: `
     @if (plain()) {
       <mat-form-field [attr.data-formancy-field-path]="context.path">
@@ -45,7 +46,7 @@ import { MaterialFieldBase } from './base.js'
           (input)="onInput($event)"
           (blur)="field.touch()"
         />
-        <mat-error [id]="errorId()">{{ errorText() }}</mat-error>
+        <mat-error [id]="errorId()" [formancyErrorText]="field.snapshot()"></mat-error>
       </mat-form-field>
     } @else {
       <ng-container *ngComponentOutlet="fallbackFor('text')" />
@@ -72,7 +73,7 @@ export class FormancyMaterialTextField extends MaterialFieldBase {
 @Component({
   selector: 'formancy-material-textarea-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatFormFieldModule, MatInputModule],
+  imports: [FormancyErrorText, MatFormFieldModule, MatInputModule],
   template: `
     <mat-form-field [attr.data-formancy-field-path]="context.path">
       <mat-label>{{ context.label }}</mat-label>
@@ -89,7 +90,7 @@ export class FormancyMaterialTextField extends MaterialFieldBase {
         (input)="onInput($event)"
         (blur)="field.touch()"
       ></textarea>
-      <mat-error [id]="errorId()">{{ errorText() }}</mat-error>
+      <mat-error [id]="errorId()" [formancyErrorText]="field.snapshot()"></mat-error>
     </mat-form-field>
   `,
 })
@@ -107,7 +108,7 @@ export class FormancyMaterialTextareaField extends MaterialFieldBase {
 @Component({
   selector: 'formancy-material-number-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatFormFieldModule, MatInputModule, NgComponentOutlet],
+  imports: [FormancyErrorText, MatFormFieldModule, MatInputModule, NgComponentOutlet],
   template: `
     @if (plain()) {
       <mat-form-field [attr.data-formancy-field-path]="context.path">
@@ -126,7 +127,7 @@ export class FormancyMaterialTextareaField extends MaterialFieldBase {
           (input)="onInput($event)"
           (blur)="field.touch()"
         />
-        <mat-error [id]="errorId()">{{ errorText() }}</mat-error>
+        <mat-error [id]="errorId()" [formancyErrorText]="field.snapshot()"></mat-error>
       </mat-form-field>
     } @else {
       <ng-container *ngComponentOutlet="fallbackFor('number')" />
@@ -157,7 +158,7 @@ export class FormancyMaterialNumberField extends MaterialFieldBase {
 @Component({
   selector: 'formancy-material-date-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatFormFieldModule, MatInputModule],
+  imports: [FormancyErrorText, MatFormFieldModule, MatInputModule],
   template: `
     <mat-form-field [attr.data-formancy-field-path]="context.path">
       <mat-label>{{ context.label }}</mat-label>
@@ -175,7 +176,7 @@ export class FormancyMaterialNumberField extends MaterialFieldBase {
         (input)="onInput($event)"
         (blur)="field.touch()"
       />
-      <mat-error [id]="errorId()">{{ errorText() }}</mat-error>
+      <mat-error [id]="errorId()" [formancyErrorText]="field.snapshot()"></mat-error>
     </mat-form-field>
   `,
 })
@@ -194,7 +195,7 @@ export class FormancyMaterialDateField extends MaterialFieldBase {
 @Component({
   selector: 'formancy-material-time-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatFormFieldModule, MatInputModule],
+  imports: [FormancyErrorText, MatFormFieldModule, MatInputModule],
   template: `
     <mat-form-field [attr.data-formancy-field-path]="context.path">
       <mat-label>{{ context.label }}</mat-label>
@@ -214,7 +215,7 @@ export class FormancyMaterialDateField extends MaterialFieldBase {
         (input)="onInput($event)"
         (blur)="field.touch()"
       />
-      <mat-error [id]="errorId()">{{ errorText() }}</mat-error>
+      <mat-error [id]="errorId()" [formancyErrorText]="field.snapshot()"></mat-error>
     </mat-form-field>
   `,
 })

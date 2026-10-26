@@ -47,8 +47,6 @@ export abstract class MaterialFieldBase {
     return snapshot.touched && snapshot.errors.length > 0
   })
 
-  /** Codes joined as the default controls join them, which the conformance driver reads. */
-  protected readonly errorText = computed(() => this.field.snapshot().errors.join(', '))
   protected readonly errorId = computed(() => this.field.snapshot().props.error.id)
 
   /** The engine's description ids without its error id, which Material adds itself. */

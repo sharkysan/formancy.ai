@@ -32,7 +32,7 @@ import { SignatureField } from './fields/signature-field.js'
 import { StaticField } from './fields/static-field.js'
 import { DateField, DateTimeField, TimeField } from './fields/temporal-fields.js'
 import { TextField, TextareaField } from './fields/text-fields.js'
-import { RequiredHint } from './fields/internals.js'
+import { ErrorText, RequiredHint } from './fields/internals.js'
 import type { FieldComponent, FormancyFormProps, Registry } from './fields/internals.js'
 
 /**
@@ -525,11 +525,7 @@ function RepeaterSection({
       ) : (
         rows
       )}
-      {showError ? (
-        <p data-formancy-part="error" {...field.errorProps}>
-          {field.errors.join(', ')}
-        </p>
-      ) : null}
+      {showError ? <ErrorText field={field} /> : null}
       {/* Not offered at `maxItems`, for the reason the remove button is not at `minItems`. */}
       {repeater.canAdd ? (
         <button type="button" disabled={field.disabled} onClick={() => repeater.addRow()}>

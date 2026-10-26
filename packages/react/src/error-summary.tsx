@@ -1,6 +1,7 @@
 import { focusControl } from './focus-control.js'
 import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react'
 import { parsePath } from '@formancy/core'
+import { errorSentence } from '@formancy/core/words'
 import { useFormEngine, useFormText } from './context.js'
 
 export interface ErrorSummaryProps {
@@ -50,7 +51,8 @@ export function ErrorSummary({ labels }: ErrorSummaryProps) {
       </h2>
       <ul>
         {errors.map(({ path, codes }) => {
-          const controlId = engine.getFieldSnapshot(parsePath(path)).ids.control
+          const snapshot = engine.getFieldSnapshot(parsePath(path))
+          const controlId = snapshot.ids.control
           return (
             <li key={path}>
               <a
@@ -61,9 +63,13 @@ export function ErrorSummary({ labels }: ErrorSummaryProps) {
                   focusControl(document.getElementById(controlId))
                 }}
               >
-                {/* The codes are the engine's vocabulary and stay codes; the sentence they
-                    sit in is the form's. */}
-                {text('errors.entry', { label: labelFor(path), codes: codes.join(', ') })}
+                {/* Each code said as the field says it (0191); `codes` stays given for a
+                    host whose own wording of the entry used it. */}
+                {text('errors.entry', {
+                  label: labelFor(path),
+                  problems: codes.map((code) => errorSentence(text, snapshot.def, code)).join(' '),
+                  codes: codes.join(', '),
+                })}
               </a>
             </li>
           )

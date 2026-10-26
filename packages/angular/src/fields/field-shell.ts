@@ -6,6 +6,7 @@ import type { FieldBinding } from '../field.js'
 import { injectEngine } from '../provide.js'
 import { injectFieldContext } from '../registry.js'
 import { injectSourcedOptions } from '../sourced-options.js'
+import { FormancyErrorText } from './error-text.js'
 
 
 /**
@@ -30,6 +31,7 @@ import { injectSourcedOptions } from '../sourced-options.js'
  *  describedby target. */
 @Component({
   selector: 'formancy-field-shell',
+  imports: [FormancyErrorText],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div
@@ -40,7 +42,7 @@ import { injectSourcedOptions } from '../sourced-options.js'
       <label data-formancy-part="label" [id]="field().snapshot().props.label.id" [attr.for]="field().snapshot().props.label.for">{{ label() }}</label>
       <ng-content />
       @if (showError()) {
-        <p data-formancy-part="error" [id]="field().snapshot().props.error.id">{{ errorText() }}</p>
+        <p data-formancy-part="error" [id]="field().snapshot().props.error.id" [formancyErrorText]="field().snapshot()"></p>
       }
     </div>
   `,
@@ -56,7 +58,6 @@ export class FormancyFieldShell {
     return snapshot.touched && snapshot.errors.length > 0
   })
 
-  protected readonly errorText = computed(() => this.field().snapshot().errors.join(', '))
 }
 
 /** The state every leaf control shares; components extend it so the templates

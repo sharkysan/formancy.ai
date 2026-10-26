@@ -25,6 +25,7 @@ import type { RepeaterBinding } from './repeater.js'
 import { injectEngine } from './provide.js'
 import { FORMANCY_FIELD_CONTEXT, FORMANCY_REGISTRY } from './registry.js'
 import { FormancyTextPipe, injectFormText } from './text.js'
+import { FormancyErrorText } from './fields/error-text.js'
 
 /*
  * A field's place in a form, and a repeater's: the slot that resolves a field to a
@@ -137,7 +138,7 @@ interface RepeaterRow {
 @Component({
   selector: 'formancy-repeater',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgTemplateOutlet, FormancyFieldSlot, FormancyTextPipe],
+  imports: [FormancyErrorText, NgTemplateOutlet, FormancyFieldSlot, FormancyTextPipe],
   template: `
     @if (state; as s) {
       @let field = s.field.snapshot();
@@ -258,7 +259,7 @@ interface RepeaterRow {
             }
           }
           @if (field.touched && field.errors.length > 0) {
-            <p data-formancy-part="error" [id]="field.props.error.id">{{ field.errors.join(', ') }}</p>
+            <p data-formancy-part="error" [id]="field.props.error.id" [formancyErrorText]="field"></p>
           }
           <!-- Not offered at maxItems, for the reason the remove button is not at minItems. -->
           @if (s.repeater.canAdd()) {

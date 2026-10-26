@@ -383,9 +383,13 @@ export function createAngularDriver(
         const errorId = engine.getFieldSnapshot(parsePath(candidate)).ids.error
         for (const id of describedBy.split(/\s+/)) {
           if (id !== errorId) continue
-          const text = document.getElementById(id)?.textContent?.trim()
-          if (text == null || text === '') continue
-          for (const code of text.split(', ')) messages.push({ path: candidate, code, text })
+          // Each sentence carries its code (0191): the code is read where it is, and the
+          // text is what a person reads, rather than codes parsed out of the prose.
+          for (const said of document.getElementById(id)?.querySelectorAll('[data-formancy-code]') ?? []) {
+            const code = said.getAttribute('data-formancy-code')
+            const text = said.textContent?.trim() ?? ''
+            if (code !== null && code !== '') messages.push({ path: candidate, code, text })
+          }
         }
       }
       return messages

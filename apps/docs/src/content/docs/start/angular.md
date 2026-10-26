@@ -108,9 +108,11 @@ Every id, with its English, is `FORM_WORDS` in `@formancy/core/words`; `FORM_WOR
 the document name its buttons. A component of your own — a registry's control, say — reads
 the same words with `injectFormText()`, or in its template with the `formancyText` pipe,
 `{{ 'form.next' | formancyText }}`, which Material's groups use too. `formancy-resume-notice`
-speaks the form's language under the form's `provideFormancy`, and English outside it. Two
-things are not the renderer's to translate: a field's error is the engine's code, such as
-`required`, and `addLabel` is a plain string in one language
+speaks the form's language under the form's `provideFormancy`, and English outside it. A
+field's errors are said in the same language — the engine's code `minLength` is shown as
+"Enter at least 5 characters." — and a control of your own says them the same way with
+`<p [formancyErrorText]="snapshot">` ([0191](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0191-an-error-is-said-not-coded.md)). One thing is not the renderer's to
+translate: `addLabel` is a plain string in one language
 ([0171](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0171-the-renderers-words-are-the-forms-language.md)).
 
 ## Drive one field yourself

@@ -272,17 +272,121 @@ describe('the error summary in a German form', () => {
     fireEvent.click(screen.getByRole('button', { name: 'go' }))
 
     expect(screen.getByRole('heading', { name: de('errors.heading', { count: 2 }) })).toBeTruthy()
-    // The codes are the engine's, and stay codes; the sentence around them is the form's.
+    // The error said in German too, not left as the engine's code (0191).
     const entry = createFormText({ locale: 'de' })
+    const problems = entry('error.required')
+    expect(problems).toBe('Diese Frage braucht eine Antwort.')
     expect(screen.getAllByRole('link').map((link) => link.textContent)).toEqual([
-      entry('errors.entry', { label: 'Name', codes: 'required' }),
-      entry('errors.entry', { label: 'Ort', codes: 'required' }),
+      entry('errors.entry', { label: 'Name', problems }),
+      entry('errors.entry', { label: 'Ort', problems }),
     ])
     cleanup()
 
     mount(document(fields.slice(0, 1)), { children: [<ErrorSummary key="summary" />, <Submit key="submit" />] })
     fireEvent.click(screen.getByRole('button', { name: 'go' }))
     expect(screen.getByRole('heading', { name: de('errors.heading', { count: 1 }) })).toBeTruthy()
+  })
+})
+
+describe('every error in a German form', () => {
+  /**
+   * Each word an error is said with, with a field that reports it and what its sentence is
+   * filled with (0191). The ids are written out, so this is where a German form's every error
+   * is found by its German words, as every other surface of the form is.
+   */
+  const stored = (name: string, size: number, contentType: string): StoredFile => ({
+    id: name,
+    name,
+    size,
+    contentType,
+    storageKey: `k/${name}`,
+  })
+  const options = [
+    { value: 'a', label: 'A' },
+    { value: 'b', label: 'B' },
+  ]
+  const ERRORS: Record<string, { field: Record<string, unknown>; value?: unknown; values?: Record<string, string | number> }> = {
+    'error.required': { field: { type: 'text', required: true } },
+    'error.required.checkbox': { field: { type: 'checkbox', required: true }, value: false },
+    'error.required.rows': { field: { type: 'repeater', required: true, fields: [{ key: 'x', type: 'text', label: 'X' }] } },
+    'error.required.files': { field: { type: 'file', required: true }, value: [] },
+    'error.invalid': { field: { type: 'text' }, value: 'x' },
+    'error.check_unavailable': { field: { type: 'text' }, value: 'x' },
+    'error.type': { field: { type: 'text' }, value: { x: 1 } },
+    'error.option': { field: { type: 'select', options }, value: 'z' },
+    'error.duplicate': { field: { type: 'ranking', options }, value: ['a', 'a'] },
+    'error.row': { field: { type: 'matrix', options, rows: [{ value: 'r', label: 'R' }] }, value: { q: 'a' } },
+    'error.min': { field: { type: 'number', min: 1500 }, value: 3, values: { min: '1.500' } },
+    'error.max': { field: { type: 'number', max: 9 }, value: 10, values: { max: '9' } },
+    'error.step': { field: { type: 'number', step: 5 }, value: 3, values: { step: '5' } },
+    'error.minLength': { field: { type: 'text', minLength: 5 }, value: 'ab', values: { count: 5 } },
+    'error.maxLength': { field: { type: 'text', maxLength: 2 }, value: 'abc', values: { count: 2 } },
+    'error.pattern': { field: { type: 'text', pattern: '[A-Z]{3}' }, value: 'ab' },
+    'error.mask': { field: { type: 'text', mask: '999' }, value: 'ab' },
+    'error.email': { field: { type: 'text', format: 'email' }, value: 'x' },
+    'error.url': { field: { type: 'text', format: 'url' }, value: 'x' },
+    'error.uuid': { field: { type: 'text', format: 'uuid' }, value: 'x' },
+    'error.shape': { field: { type: 'date' }, value: '2026-1-1', values: { format: 'YYYY-MM-DD' } },
+    'error.earliest': { field: { type: 'date', earliest: '2027-05-03' }, value: '2027-01-01', values: { earliest: '3. Mai 2027' } },
+    'error.latest': { field: { type: 'date', latest: '2027-05-03' }, value: '2027-06-01', values: { latest: '3. Mai 2027' } },
+    'error.minItems.choices': { field: { type: 'selectboxes', options, minItems: 2 }, value: ['a'], values: { count: 2 } },
+    'error.maxItems.choices': { field: { type: 'selectboxes', options, maxItems: 1 }, value: ['a', 'b'], values: { count: 1 } },
+    'error.minItems.files': { field: { type: 'file', minItems: 2 }, value: [stored('a.pdf', 3, 'application/pdf')], values: { count: 2 } },
+    'error.maxItems.files': {
+      field: { type: 'file', maxItems: 1 },
+      value: [stored('b.pdf', 3, 'application/pdf'), stored('c.pdf', 3, 'application/pdf')],
+      values: { count: 1 },
+    },
+    // Rows are topped up to `minItems` when the form opens, so fewer is a host's write.
+    'error.minItems.rows': { field: { type: 'repeater', minItems: 2, fields: [{ key: 'x', type: 'text', label: 'X' }] }, values: { count: 2 } },
+    'error.maxItems.rows': {
+      field: { type: 'repeater', maxItems: 1, fields: [{ key: 'x', type: 'text', label: 'X' }] },
+      value: [{ _id: 'r1' }, { _id: 'r2' }],
+      values: { count: 1 },
+    },
+    'error.maxFileSize': { field: { type: 'file', maxFileSize: 2_000_000 }, value: [stored('d.pdf', 3_000_000, 'application/pdf')], values: { maxFileSize: '2 MB' } },
+    'error.accept': { field: { type: 'file', accept: ['.pdf'] }, value: [stored('e.png', 3, 'image/png')], values: { accept: '.pdf' } },
+    'error.box': { field: { type: 'signature', box: [100, 50] }, value: { drawn: [[[200, 10]]] } },
+    'error.maxPoints': { field: { type: 'signature', box: [100, 50], maxPoints: 1 }, value: { drawn: [[[1, 1], [2, 2]]] } },
+  }
+  const keyOf = (id: string): string => id.replace(/[^a-zA-Z]/g, '_')
+
+  test('is said in German, by the word for its code, with the field’s own limit in it', async () => {
+    const fields = Object.entries(ERRORS).map(([id, { field }]) => ({ key: keyOf(id), label: id, ...field }))
+    const engine = createFormEngine({
+      schema: document(fields, {
+        logic: {
+          rules: [
+            { kind: 'validate', target: keyOf('error.invalid'), cel: 'false' },
+            // A check runs on the server unless it says otherwise, and this one is asked in the browser.
+            { kind: 'check', target: keyOf('error.check_unavailable'), check: 'lookup', runsOn: 'both' },
+          ],
+        },
+      }),
+      locale: 'de',
+      capabilities: CLOCK,
+      initialValue: Object.fromEntries(
+        Object.entries(ERRORS).flatMap(([id, { value }]) => (value === undefined ? [] : [[keyOf(id), value]])),
+      ),
+    })
+    engine.setValue([keyOf('error.minItems.rows')], [])
+    // A check runs when its answer is written, and a value handed in is not a write.
+    engine.setValue([keyOf('error.check_unavailable')], 'y')
+    const uploader: Uploader = async () => stored('x.pdf', 1, 'application/pdf')
+    render(
+      <FormancyProvider engine={engine}>
+        <UploaderProvider value={uploader}>
+          <FormancyForm />
+        </UploaderProvider>
+      </FormancyProvider>,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: de('form.submit') }))
+
+    for (const [id, { values }] of Object.entries(ERRORS)) {
+      const sentence = de(id as FormWordId, values)
+      await waitFor(() => expect(screen.getAllByText(sentence, { selector: '[data-formancy-code]' }).length, id).toBeGreaterThan(0))
+    }
   })
 })
 

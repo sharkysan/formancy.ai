@@ -6,6 +6,7 @@ import { MatInputModule } from '@angular/material/input'
 import { MatRadioModule } from '@angular/material/radio'
 import { FormancyTextPipe } from '@formancy/angular'
 import { MaterialFieldBase } from './base.js'
+import { FormancyErrorText } from '@formancy/angular'
 
 /**
  * The answers chosen from a set, drawn with Material: a list, a tick, a group of radios,
@@ -42,7 +43,7 @@ function plainOptions(
 @Component({
   selector: 'formancy-material-select-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatFormFieldModule, MatInputModule, NgComponentOutlet],
+  imports: [FormancyErrorText, MatFormFieldModule, MatInputModule, NgComponentOutlet],
   template: `
     @if (offered(); as offered) {
       <mat-form-field [attr.data-formancy-field-path]="context.path">
@@ -67,7 +68,7 @@ function plainOptions(
             </option>
           }
         </select>
-        <mat-error [id]="errorId()">{{ errorText() }}</mat-error>
+        <mat-error [id]="errorId()" [formancyErrorText]="field.snapshot()"></mat-error>
       </mat-form-field>
     } @else {
       <ng-container *ngComponentOutlet="fallbackFor('select')" />
@@ -102,7 +103,7 @@ export class FormancyMaterialSelectField extends MaterialFieldBase {
 @Component({
   selector: 'formancy-material-checkbox-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatCheckboxModule, MatFormFieldModule],
+  imports: [FormancyErrorText, MatCheckboxModule, MatFormFieldModule],
   template: `
     <div [attr.data-formancy-field-path]="context.path">
       <mat-checkbox
@@ -116,7 +117,7 @@ export class FormancyMaterialSelectField extends MaterialFieldBase {
         >{{ context.label }}</mat-checkbox
       >
       @if (showError()) {
-        <mat-error [id]="errorId()">{{ errorText() }}</mat-error>
+        <mat-error [id]="errorId()" [formancyErrorText]="field.snapshot()"></mat-error>
       }
     </div>
   `,
@@ -136,7 +137,7 @@ export class FormancyMaterialCheckboxField extends MaterialFieldBase {}
 @Component({
   selector: 'formancy-material-radio-group-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatRadioModule, MatFormFieldModule, NgComponentOutlet, FormancyTextPipe],
+  imports: [FormancyErrorText, MatRadioModule, MatFormFieldModule, NgComponentOutlet, FormancyTextPipe],
   template: `
     @if (offered(); as offered) {
       <!-- The engine's control id on the group, as the default group carries it, and each
@@ -166,7 +167,7 @@ export class FormancyMaterialCheckboxField extends MaterialFieldBase {}
           }
         </mat-radio-group>
         @if (showError()) {
-          <mat-error [id]="errorId()">{{ errorText() }}</mat-error>
+          <mat-error [id]="errorId()" [formancyErrorText]="field.snapshot()"></mat-error>
         }
       </fieldset>
     } @else {
@@ -184,7 +185,7 @@ export class FormancyMaterialRadioGroupField extends MaterialFieldBase {
 @Component({
   selector: 'formancy-material-select-boxes-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatCheckboxModule, MatFormFieldModule, NgComponentOutlet, FormancyTextPipe],
+  imports: [FormancyErrorText, MatCheckboxModule, MatFormFieldModule, NgComponentOutlet, FormancyTextPipe],
   template: `
     @if (offered(); as offered) {
       <!-- The engine's control id on the group, as the default group carries it, and each
@@ -212,7 +213,7 @@ export class FormancyMaterialRadioGroupField extends MaterialFieldBase {
           >
         }
         @if (showError()) {
-          <mat-error [id]="errorId()">{{ errorText() }}</mat-error>
+          <mat-error [id]="errorId()" [formancyErrorText]="field.snapshot()"></mat-error>
         }
       </fieldset>
     } @else {

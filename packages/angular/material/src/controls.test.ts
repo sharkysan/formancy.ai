@@ -221,7 +221,7 @@ describe('where Material and the engine both have an opinion', () => {
     // the error would be described twice.
     const ids = (control.getAttribute('aria-describedby') ?? '').split(/\s+/)
     expect(ids.filter((id) => id === 'f:m:email:error')).toHaveLength(1)
-    expect(document.getElementById('f:m:email:error')?.textContent?.trim()).toBe('required')
+    expect(document.getElementById('f:m:email:error')?.textContent?.trim()).toBe('This question needs an answer.')
     // Material's decision, not the engine's: an EMPTY required field is never marked
     // aria-invalid, so it is not announced as invalid before anything was typed. The
     // error is still its description. The default control marks it; this is the one
@@ -262,8 +262,9 @@ describe('where Material and the engine both have an opinion', () => {
     await view.fixture.whenStable()
 
     fireEvent.click(screen.getByRole('button', { name: 'Submit' }))
-    // The summary names a field by the host's labels, or its path: "ok: required".
-    const link = await screen.findByRole('link', { name: /required/ })
+    // The summary names a field by the host's labels, or its path, and says the error: a
+    // required tick box asks for the tick (0191).
+    const link = await screen.findByRole('link', { name: /Tick this box to continue/ })
     fireEvent.click(link)
 
     expect(document.activeElement).toBe(screen.getByLabelText('Agree'))
@@ -322,14 +323,14 @@ describe('a group of radios and a group of ticks, under the engine’s control i
       kind: 'radios',
       fields: [size, extras],
       where: 'Material’s first radio',
-      link: 'Size: required',
+      link: 'Size: This question needs an answer.',
       first: () => screen.getByRole('radio', { name: 'Small' }),
     },
     {
       kind: 'ticks',
       fields: [extras, size],
       where: 'Material’s first box',
-      link: 'Extras: required',
+      link: 'Extras: This question needs an answer.',
       first: () => screen.getByRole('checkbox', { name: 'Wrap' }),
     },
   ]

@@ -57,6 +57,18 @@ control — none of them can be driven, so none of them can pass. Accessibility
 stops being a workstream somebody schedules and becomes a structural property of
 a passing test run.
 
+### An error is said, and its code travels with it
+
+A fixture asserts error *codes* — `required`, `minLength` — never wording, so it runs under any
+language. A person reads a sentence instead ("Enter at least 5 characters."), so the code cannot
+be read from the words: each sentence carries it as `data-formancy-code`, inside the error
+element the control's `aria-describedby` points at. The driver finds that element through the
+accessibility relation, as before, and reads the code where it is rather than parsing prose
+([0191](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0191-an-error-is-said-not-coded.md)).
+
+What the suite does assert about the words is only this: a message whose text is its own code
+fails, because that is a renderer drawing the engine's vocabulary instead of saying it.
+
 There will be a moment when a renderer is awkward to query and `data-testid`
 looks like the pragmatic unblock. That escape hatch deletes the guarantee: the
 suite would then pass over markup no screen reader can use, and it would keep

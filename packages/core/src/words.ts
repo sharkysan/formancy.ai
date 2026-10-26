@@ -1,6 +1,8 @@
 import { FORM_WORDS_DE } from './words-de.js'
 import { FORM_WORDS_FR } from './words-fr.js'
 
+export { errorSentence } from './error-words.js'
+
 /**
  * The renderers' own words: what a form says that its author did not write.
  *
@@ -28,8 +30,9 @@ import { FORM_WORDS_FR } from './words-fr.js'
  * three languages of button labels, and nothing here imports the engine.
  *
  * **What this is not**: the document's catalogue, which is the author's and published with
- * the form; the engine's error codes, which are the engine's vocabulary and which a
- * renderer shows as codes; and the builders' words, which are for the person building.
+ * the form; the engine's error codes, which stay the engine's vocabulary and the API's —
+ * what a person reads for one is a word here, `errorSentence` (0191); and the builders'
+ * words, which are for the person building.
  *
  * Placeholders are `{name}` and stay visible when a value is missing. A count is a plural
  * message keyed by `Intl.PluralRules` category, so the language chooses the form rather
@@ -68,8 +71,51 @@ export const FORM_WORDS = {
     one: 'There is {count} problem to fix',
     other: 'There are {count} problems to fix',
   },
-  /** One entry: the field's name and the engine's codes for it. */
-  'errors.entry': '{label}: {codes}',
+  /**
+   * One entry: the field's name and what is wrong with it, said. `{codes}` is still given —
+   * the engine's codes, joined — for a host whose own wording of this entry used it.
+   */
+  'errors.entry': '{label}: {problems}',
+
+  // ---------------------------------------------------------------- an error
+  // What a field says for each code the engine reports (0191), with the field's own limit
+  // filled in. A code the catalogue does not know — a validate rule's own — is said as itself.
+  'error.required': 'This question needs an answer.',
+  /** A required tick box is a consent gate: unticked is an answer, and only a tick will do. */
+  'error.required.checkbox': 'Tick this box to continue.',
+  /** A required repeater asks for a row, and a required file field for a file. */
+  'error.required.rows': 'Add at least one row.',
+  'error.required.files': 'Attach a file.',
+  'error.invalid': 'This answer is not accepted.',
+  'error.check_unavailable': 'This answer could not be checked just now. Try again in a moment.',
+  'error.type': 'This is not the kind of answer this question takes.',
+  'error.option': 'Choose one of the options offered.',
+  'error.duplicate': 'Rank each option only once.',
+  'error.row': 'Answer only the rows this question asks about.',
+  'error.min': 'Enter {min} or more.',
+  'error.max': 'Enter {max} or less.',
+  'error.step': 'Enter a value in steps of {step}.',
+  'error.minLength': { one: 'Enter at least {count} character.', other: 'Enter at least {count} characters.' },
+  'error.maxLength': { one: 'Enter at most {count} character.', other: 'Enter at most {count} characters.' },
+  'error.pattern': 'Enter it in the form this question asks for.',
+  'error.mask': 'Fill in every position of the format shown, each with what it takes.',
+  'error.email': 'Enter an email address, such as name@example.com.',
+  'error.url': 'Enter a web address that starts with https:// or http://.',
+  'error.uuid': 'Enter an identifier of 32 hexadecimal digits in five groups.',
+  /** `{format}` is the stored form a date, time or date and time takes. */
+  'error.shape': 'Enter it as {format}.',
+  'error.earliest': 'Enter {earliest} or later.',
+  'error.latest': 'Enter {latest} or earlier.',
+  'error.minItems.choices': { one: 'Choose at least {count}.', other: 'Choose at least {count}.' },
+  'error.maxItems.choices': { one: 'Choose at most {count}.', other: 'Choose at most {count}.' },
+  'error.minItems.files': { one: 'Attach at least {count} file.', other: 'Attach at least {count} files.' },
+  'error.maxItems.files': { one: 'Attach at most {count} file.', other: 'Attach at most {count} files.' },
+  'error.minItems.rows': { one: 'Add at least {count} row.', other: 'Add at least {count} rows.' },
+  'error.maxItems.rows': { one: 'Add at most {count} row.', other: 'Add at most {count} rows.' },
+  'error.maxFileSize': 'A file can be at most {maxFileSize}.',
+  'error.accept': 'Attach a file of one of these types: {accept}.',
+  'error.box': 'The signature goes outside its box. Clear it and sign again.',
+  'error.maxPoints': 'The signature is too detailed to keep. Clear it and sign again.',
 
   // -------------------------------------------------------------- a repeater
   /** Only when the document gives the repeater no `addLabel` of its own. */
