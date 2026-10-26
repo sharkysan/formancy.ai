@@ -62,7 +62,8 @@ describe('model validators', () => {
     expect(errors('5551234567')).toBeUndefined()
     expect(errors('5551234')).toEqual(['mask'])
     expect(errors('(555) 123-4567')).toEqual(['mask'])
-    expect(errors(5551234567)).toEqual(['mask'])
+    // Not text at all is refused on its shape, before the mask is read (0189).
+    expect(errors(5551234567)).toEqual(['type'])
     // Emptiness stays required's, as for every model validator.
     expect(errors('')).toBeUndefined()
   })
@@ -112,8 +113,10 @@ describe('model validators', () => {
     expect(report.errors['items[1].sku']).toBeUndefined()
   })
 
-  test('a wrong-typed value fails the validator rather than passing it vacuously', () => {
-    expect(errorsFor({ qty: 'many' })['qty']).toEqual(['min'])
+  test('a wrong-typed value fails on its shape rather than passing the bound vacuously', () => {
+    // Was `min`, when only a bound looked at the type; the shape is now every field's
+    // first question, constrained or not (0189).
+    expect(errorsFor({ qty: 'many' })['qty']).toEqual(['type'])
   })
 })
 
@@ -249,7 +252,8 @@ describe('an answer is one of the options offered', () => {
     // An empty optional field trips nothing here, so an author never has to write
     // "unless it is empty" into a list of options.
     expect(chosen({})).toEqual({})
-    expect(chosen({ country: '', extras: [] })).toEqual({})
+    // A cleared chooser is null; `''` is a value no control writes, refused on its shape (0189).
+    expect(chosen({ country: null, extras: [] })).toEqual({})
   })
 
   test('refuses a scalar where a list of ticks belongs, before comparing anything', () => {
@@ -308,7 +312,7 @@ describe('a chooser stores a string, or it stores nothing', () => {
 
   test('leaves emptiness to required, like every other model validator', () => {
     expect(errorsOf({})).toEqual({})
-    expect(errorsOf({ canton: '' })).toEqual({})
+    expect(errorsOf({ canton: null })).toEqual({})
   })
 
   test('a non-string on a LISTED chooser was already refused, and still is', () => {
@@ -382,9 +386,9 @@ describe('a step, which says which numbers count', () => {
     expect(codesFor({ min: 0, max: 10 }, 7)).not.toContain('step')
   })
 
-  test('and refuses a non-number the way the bounds do, rather than comparing NaN', () => {
+  test('and refuses a non-number on its shape, rather than comparing NaN', () => {
     // The hostile-payload path on the server: a string where a number belongs
     // must fail rather than sail through arithmetic that is vacuously true.
-    expect(codesFor({ step: 5 }, 'seven')).toContain('step')
+    expect(codesFor({ step: 5 }, 'seven')).toEqual(['type'])
   })
 })

@@ -283,6 +283,23 @@ describe('createSubmission', () => {
     expect(outcome.canonicalData).toEqual({ email: 'a@b.ch', price: 10 })
   })
 
+  test('refuses an answer of the wrong shape on a field with no constraints (0189)', async () => {
+    // `canton` is a text field with no length, pattern, format or mask, so before the shape
+    // check nothing on the replay read its type: an object posted for it was stored as an
+    // object, and a reader of the submission met an answer no control could have written.
+    const published = await publishForm(deps, { path: 'contact-us', schema })
+    if (!published.ok) throw new Error('publish failed')
+
+    const outcome = await createSubmission(deps, {
+      path: 'contact-us',
+      declaredSchemaHash: published.schemaHash,
+      actor: 'authenticated',
+      data: { email: 'a@b.ch', country: 'CH', canton: { $gt: '' }, qty: '3' },
+    })
+
+    expect(outcome).toMatchObject({ ok: false, kind: 'invalid', errors: { canton: ['type'], qty: ['type'] } })
+  })
+
   test('an unknown form path is its own failure kind', async () => {
     const outcome = await createSubmission(deps, {
       path: 'ghost',

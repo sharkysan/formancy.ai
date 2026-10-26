@@ -1,4 +1,6 @@
+import { ANSWER_KINDS } from '@formancy/spec'
 import type { FieldDef } from '@formancy/spec'
+import type { DeclaredType } from '@formancy/expressions'
 
 /** The data fields sitting at the top level of the value: pages are
  *  transparent, everything else scopes.
@@ -14,4 +16,22 @@ export function topLevelDataFields(defs: readonly FieldDef[]): FieldDef[] {
     else out.push(def)
   }
   return out
+}
+
+/**
+ * How the engine declares a top-level field to its expressions, read from its answer's
+ * shape (0189). Scalar leaves are `dyn`, because any field can be empty while somebody
+ * types and CEL has no nullable scalars; containers and list answers keep their shape.
+ *
+ * A list is declared so that the bag seeds it with `[]` rather than null: `'a' in topics`
+ * is false against an empty list and an ERROR against null, and a visibility rule that
+ * errors fails OPEN — so a selectboxes field declared `dyn` would show every field it was
+ * meant to hide, right up until the first tick. A matrix is a map, seeded `{}`, so
+ * `has(rating.taste)` answers on an untouched form rather than erroring (0139).
+ */
+export function bagType(def: FieldDef): DeclaredType {
+  const { shape } = ANSWER_KINDS[def.type]
+  if (shape === 'group' || shape === 'matrix') return 'map'
+  if (shape === 'choices' || shape === 'files' || shape === 'rows') return 'list'
+  return 'dyn'
 }

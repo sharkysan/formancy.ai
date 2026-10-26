@@ -51,8 +51,8 @@ formancy
 |---|---|---|
 | Keystroke, large conditional form | 1 ms | ≈0.54 ms, the median of seven runs re-measured 2026-10-19; 0.34 on the same machine before [0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md) |
 | Cold graph compile | 30 ms | ≈1.7 ms |
-| `@formancy/core` bundle | 18 kB brotli | **22.7 kB** — over, re-measured 2026-10-19 |
-| `@formancy/spec` bundle | — | 27.1 kB for the whole barrel — the index and the chunk it shares with `/validate`, re-measured 2026-10-19 with `UNSTORABLE_KEY`, the sentence that refuses it and a catalogue read as its own |
+| `@formancy/core` bundle | 18 kB brotli | **23.4 kB** — over, re-measured 2026-10-26 |
+| `@formancy/spec` bundle | — | 28.0 kB for the whole barrel — the index and the chunk it shares with `/validate`, re-measured 2026-10-26 with `ANSWER_KINDS`, `fitsAnswerShape` and `StoredFile` |
 | `@formancy/react` bundle | 4 kB brotli | **25.0 kB** for the whole barrel, re-measured 2026-10-18 |
 | `@formancy/core/words` bundle | — | 6.5 kB, the renderers' words in English, German and French and what a sourced control says, an entry of its own, re-measured 2026-10-16 |
 | `uqr`, the QR encoder | — | 6.6 kB brotli, **external** rather than bundled, measured 2026-09-27 |
@@ -108,6 +108,15 @@ byte-identical to the one before the change. The fix that followed in the same c
 reach the bundle — `runScenarios` reads an `absent` path through the path rather than as a
 top-level key, a few lines and an import — and re-measured after it, also on 2026-10-10, the
 figure still rounds to 20.8 kB.
+
+**Every answer's shape, checked, cost 0.7 kB, and most of it is prose.** 22.7 became 23.4
+kB when the engine began checking each answer against the format's own table and storing a
+computed result only in its field's shape
+([0189](../decisions/0189-every-answer-has-the-shape-its-type-says.md)). Measured on
+2026-10-26 with the doc comments stripped from `dist/index.mjs`, the same build went from
+15.7 to 15.9 kB: the code is 0.2 kB, and the rest is the comments the build keeps. The row
+counts them because a consumer's bundler receives them, and stripping them only for the
+figure would be the accounting this section refuses.
 
 **The renderers' words arrived as a second entry, and cost the engine's figure nothing.**
 Next, Back, Submit, a row's buttons and every live region's sentences, in three languages,

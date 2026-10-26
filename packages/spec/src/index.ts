@@ -84,7 +84,9 @@ export type {
   FormLayout,
   LayoutNode,
 } from './layout.js'
-export { modelDataPaths } from './paths.js'
+export { modelDataFields, modelDataPaths } from './paths.js'
+export { ANSWER_KINDS, fitsAnswerShape, isStoredFile } from './answers.js'
+export type { AnswerKind, AnswerShape, StoredFile } from './answers.js'
 export { ROW_ID, ROW_ID_PREFIX, UNSTORABLE_KEY } from './types.js'
 export {
   collectFieldPaths,

@@ -64,6 +64,34 @@ topped up with empty rows, as the browser opens the form
 field in those rows is required. A form whose minimum means "this many answers"
 rather than "this many rows" has to say so with `required` on the row's fields.
 
+### A1a. An answer is stored in a shape its field cannot hold
+
+*How it arises:* a request made directly to the API posts an object, a number or a
+list for a field whose answer is a string, or the reverse.
+
+*Constraint:* the format states each field type's answer as data — `ANSWER_KINDS` in
+`packages/spec/src/answers.ts` — and the engine checks every answer against it before any
+constraint reads it, in the browser and on the replay alike
+([0189](../decisions/0189-every-answer-has-the-shape-its-type-says.md)). A value of another
+shape is refused as `type`. `null` means unanswered only for a single answer; a list is
+empty as `[]` and a matrix as `{}`, and an empty string is an answer only to a text field.
+A `static` field collects nothing, so a value handed in for one is dropped. Verified by
+`packages/core/src/answer-shapes.test.ts`, which posts a value of the wrong shape at every
+answering type, and on the server by *refuses an answer of the wrong shape on a field with
+no constraints* in `packages/server-core/src/use-cases.test.ts`, which failed against the
+engine before the change with the object stored.
+
+Until 2026-10-26 the shape was read only by a constraint that needed it. A `number` with no
+`min`, `max` or `step`, a `text` with no length, pattern, format or mask, and every
+`hidden`, `richtext` and optional `checkbox` were stored as whatever was posted: every
+release up to `0.7.0`, read from their engines' code. A form version published before is
+enforced from now on, so a submission it would have stored is refused.
+
+*Residual:* what a field's answer *holds* beyond its shape is each constraint's own check,
+as before: a `text` field with no constraints accepts any string, of any length up to the
+request body cap. Submissions stored before the change are not re-examined, and may hold
+an answer of another shape.
+
 ### A2. Client and server disagree about whether a submission is valid
 
 *How it arises:* the classic split-implementation defect — two codebases
@@ -133,6 +161,18 @@ value handed in for the total not to be shown.
   writes a computed member's value with it. The next pass overwrites that value
   when it can evaluate the expression, and keeps it until then. The server is
   not exposed, because it starts from the request body, which is stripped.
+
+*A computed result is stored only in its field's shape*
+([0189](../decisions/0189-every-answer-has-the-shape-its-type-says.md)). A rule's result
+can be any type, and until 2026-10-26 it was stored as it came: `42.0` computed into a text
+field stored a number, and a decimal — the documented way to add up money — stored an
+object whose units are a `bigint`, which made the form's value impossible to serialise. A
+result of another shape is now not written, as when the expression cannot be evaluated; a
+decimal into a number field is stored as the number it writes when a double holds it
+exactly, and not written when one does not. Verified by the *a computed value is stored
+only in the shape of the field it fills* block of `packages/core/src/answer-shapes.test.ts`.
+The residual is the author's: a total of more than fifteen significant digits, or a
+result of the wrong type, leaves its field empty, and nothing at publish says so.
 
 A field that is *not* declared computed is stored as sent, which is correct
 behaviour and not a defect.

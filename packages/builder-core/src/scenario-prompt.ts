@@ -176,7 +176,7 @@ export function scenarioBriefing(): string {
     '',
     `Answers as JSON, by field type: ${Object.entries(ANSWER_EXAMPLES)
       .map(([type, example]) => `${type} ${JSON.stringify(example)}`)
-      .join(', ')}. A select or radio answer is one option value, and a list-valued field’s empty answer is [], never null. Anything else that holds text is a string.`,
+      .join(', ')}. A select or radio answer is one option value, and a list-valued field’s empty answer is [], never null. Anything else that holds text is a string. To leave a number, a date, a time, a choice or a tick box unanswered, set it to null: "" is an answer only to a field that holds text.`,
     `Every example starts from the starting answers, never from the example before it, and runs as though today were ${EXAMPLE_TODAY}.`,
     '',
     'For example, for this form:',

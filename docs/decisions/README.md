@@ -289,3 +289,4 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0183](0183-no-model-is-an-answer.md) | A deployment with no model says so in a 200, not a 404 | accepted |
 | [0187](0187-the-sbom-describes-what-a-consumer-installs.md) | The SBOM describes what a consumer installs, and is checked before anything is published | accepted |
 | [0188](0188-the-documentation-names-no-other-product.md) | The documentation names no other form product | accepted |
+| [0189](0189-every-answer-has-the-shape-its-type-says.md) | Every answer has the shape its type says, and the format says it once | accepted |

@@ -25,7 +25,8 @@ export type BuiltInErrorCode =
   | 'invalid'
   // A `check` rule whose check this deployment does not supply, or which failed to answer.
   | 'check_unavailable'
-  // An answer of a shape no control produces: a scalar where a list belongs, and the like.
+  // An answer of a shape its type does not store (`ANSWER_KINDS`, 0189): an object for a text
+  // field, a string for a number, a scalar where a list belongs.
   | 'type'
   // Not one of the options offered; a ranking that names one twice; a matrix row not asked.
   | 'option'
