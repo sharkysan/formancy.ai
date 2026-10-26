@@ -23,30 +23,20 @@ const here = dirname(fileURLToPath(import.meta.url))
 const repo = join(here, '..', '..', '..')
 
 /**
- * Whether a text names the product, as a test rather than a pattern, because one of them needs
- * two different tests.
- *
- * `FormEngine` is also this repository's own engine type. In prose it is a word outside
- * backticks, which reaches the product's domain too. In the site's source the type is an
- * identifier, so there only the domain counts — and that is a substring search, not a regular
- * expression, because CodeQL reads an unanchored pattern ending in a domain as a URL check that
- * lets any host through (js/regex/missing-regexp-anchor). Matching anywhere is the point here.
+ * `FormEngine` is also this repository's own engine type, so it is the one entry whose two
+ * patterns differ. In prose it is a word outside backticks, which reaches the product's link
+ * too. In the site's source the type is an identifier, so there only the domain counts — and it
+ * is found as the lowercase word the domain is spelled with, which the type never is, rather
+ * than as the domain itself. CodeQL reads a pattern or a substring test ending in a domain as a
+ * URL check that lets any host through (js/regex/missing-regexp-anchor, then
+ * js/incomplete-url-substring-sanitization), and here matching anywhere is the point.
  */
-type Product = { name: string; prose: (text: string) => boolean; source: (text: string) => boolean }
-
-const spelled =
-  (pattern: RegExp) =>
-  (text: string): boolean =>
-    pattern.test(text)
+type Product = { name: string; prose: RegExp; source: RegExp }
 
 const products: readonly Product[] = [
-  { name: 'form.io', prose: spelled(/\bform\.?io\b/i), source: spelled(/\bform\.?io\b/i) },
-  {
-    name: 'FormEngine',
-    prose: spelled(/(?<![`\w])FormEngine(?![`\w])/i),
-    source: (text) => text.toLowerCase().includes('formengine.io'),
-  },
-  { name: 'SurveyJS', prose: spelled(/\bsurvey\.?js\b/i), source: spelled(/\bsurvey\.?js\b/i) },
+  { name: 'form.io', prose: /\bform\.?io\b/i, source: /\bform\.?io\b/i },
+  { name: 'FormEngine', prose: /(?<![`\w])FormEngine(?![`\w])/i, source: /\bformengine\b/ },
+  { name: 'SurveyJS', prose: /\bsurvey\.?js\b/i, source: /\bsurvey\.?js\b/i },
 ]
 
 /** Prose with inline code and fenced blocks removed, so an identifier is not a name. */
@@ -80,10 +70,10 @@ const prose = [
 /** The landing page and its siblings, whose text is in markup and components. */
 const site = files(join(repo, 'apps', 'site'), pages)
 
-const named = (paths: string[], names: (product: Product) => (text: string) => boolean, strip: (text: string) => string) =>
+const named = (paths: string[], pattern: (product: Product) => RegExp, strip: (text: string) => string) =>
   paths.flatMap((path) => {
     const text = strip(readFileSync(path, 'utf8'))
-    return products.filter((product) => names(product)(text)).map((product) => `${path.slice(repo.length + 1)}: ${product.name}`)
+    return products.filter((product) => pattern(product).test(text)).map((product) => `${path.slice(repo.length + 1)}: ${product.name}`)
   })
 
 describe('the documentation names no other product', () => {
@@ -111,16 +101,16 @@ describe('the documentation names no other product', () => {
   // code still documents, and the rule must not push anybody to rename it.
   test('the engine type in backticks is not mistaken for the product', () => {
     const formEngine = products.find((product) => product.name === 'FormEngine')!
-    expect(formEngine.prose(withoutCode('`FormEngine` comes from `@formancy/core`'))).toBe(false)
-    expect(formEngine.prose(withoutCode('what FormEngine leads with'))).toBe(true)
+    expect(formEngine.prose.test(withoutCode('`FormEngine` comes from `@formancy/core`'))).toBe(false)
+    expect(formEngine.prose.test(withoutCode('what FormEngine leads with'))).toBe(true)
   })
 
   // The product's link is the word too, so the prose test needs no domain of its own — and in
   // the site's source the type is everywhere, so there the domain is all that counts.
   test('the domain is found in prose and source, and the type in source is not', () => {
     const formEngine = products.find((product) => product.name === 'FormEngine')!
-    expect(formEngine.prose('[the closest thing](https://formengine.io)')).toBe(true)
-    expect(formEngine.source("<a href='https://formengine.io'>")).toBe(true)
-    expect(formEngine.source("import type { FormEngine } from '@formancy/core'")).toBe(false)
+    expect(formEngine.prose.test('[the closest thing](https://formengine.io)')).toBe(true)
+    expect(formEngine.source.test("<a href='https://formengine.io'>")).toBe(true)
+    expect(formEngine.source.test("import type { FormEngine } from '@formancy/core'")).toBe(false)
   })
 })
