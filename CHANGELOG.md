@@ -10,6 +10,15 @@ later.
 
 ## Unreleased
 
+**The answers can be checked before they are sent.** With `review` on React's `FormancyForm` or
+`[review]` on Angular's `formancy-form`, the last step offers **Check your answers** where it would
+send. It validates the whole form as sending would and goes to a problem if there is one;
+otherwise it shows every answer in words under its question, each with a **Change** back to that
+question's page and control, and the form is sent from there. Off unless asked for. Both renderers
+draw `answersToReview` from `@formancy/core/words`, and `answersInWords` now gives each line the
+`field` it answers, a matrix's own for its rows. The playground turns it on
+([0204](docs/decisions/0204-answers-can-be-checked-before-they-are-sent.md)).
+
 **A field with a limit counts while somebody types.** A text or a long text field with a `maxLength`
 shows, under its box, the limit, then what is left, then how many too many — counted as the engine's
 check counts, named in the control's `aria-describedby`, and spoken by a polite live region only once

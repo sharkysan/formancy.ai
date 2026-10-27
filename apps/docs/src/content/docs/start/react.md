@@ -113,6 +113,16 @@ otherwise resolved as a scroll by the browser before any handler runs — so a
 signature drawn with a finger would pan the page instead. Its height, border,
 background and cursor are still yours.
 
+### Checking the answers before sending
+
+`<FormancyForm review />` puts a step between the last question and sending: where the form
+would send, it offers **Check your answers**. Pressing it validates the whole form as sending
+would; with a problem it goes to the problem, and without one it shows every answer in words
+under its question — an option by its label, a date as the reader writes one — each with a
+**Change** that returns to that question's page and focuses it. The form is sent from there. A
+question nobody answered has no line: the review is of what will be sent
+([0204](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0204-answers-can-be-checked-before-they-are-sent.md)).
+
 ## The form's own words, in its language
 
 The questions are yours. The words around them — Next, Back, Submit, a repeater's Add and

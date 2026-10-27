@@ -402,7 +402,7 @@
 
 [data-formancy-theme='dusk'] [data-formancy-part='repeater'] button,
 [data-formancy-theme='dusk'] [data-formancy-part='wizard-nav'] button,
-[data-formancy-theme='dusk'] [data-formancy-part='submit'] {
+[data-formancy-theme='dusk'] :is([data-formancy-part='submit'], [data-formancy-part='check-answers']) {
   font: inherit;
   font-family: var(--fm-sans);
   font-size: 0.8125rem;
@@ -422,7 +422,7 @@
   background: color-mix(in srgb, var(--fm-signal) 14%, transparent);
 }
 
-[data-formancy-theme='dusk'] [data-formancy-part='submit'] {
+[data-formancy-theme='dusk'] :is([data-formancy-part='submit'], [data-formancy-part='check-answers']) {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -436,12 +436,12 @@
   box-shadow: 0 10px 30px -12px color-mix(in srgb, var(--fm-signal) 80%, transparent);
 }
 
-[data-formancy-theme='dusk'] [data-formancy-part='submit']:hover {
+[data-formancy-theme='dusk'] :is([data-formancy-part='submit'], [data-formancy-part='check-answers']):hover {
   background: linear-gradient(100deg, color-mix(in srgb, var(--fm-signal) 82%, white), #3fd0c9);
 }
 
 /* Decorative: the button already says what it does. */
-[data-formancy-theme='dusk'] [data-formancy-part='submit']::after {
+[data-formancy-theme='dusk'] :is([data-formancy-part='submit'], [data-formancy-part='check-answers'])::after {
   content: '→' / '';
 }
 
@@ -475,7 +475,7 @@
 
 [data-formancy-theme='dusk'] [data-formancy-part='repeater'] button:focus-visible,
 [data-formancy-theme='dusk'] [data-formancy-part='wizard-nav'] button:focus-visible,
-[data-formancy-theme='dusk'] [data-formancy-part='submit']:focus-visible {
+[data-formancy-theme='dusk'] :is([data-formancy-part='submit'], [data-formancy-part='check-answers']):focus-visible {
   outline: 2px solid var(--fm-signal);
   outline-offset: 3px;
 }
@@ -2019,3 +2019,51 @@
   padding: 0;
   font-weight: 600;
 }
+
+/* Checking the answers before sending (0204): each question, its answer and its "Change" on one
+   line that wraps rather than overflows on a narrow screen, a rule between the lines. */
+[data-formancy-theme='dusk'] [data-formancy-part='review'] {
+  display: grid;
+  gap: 1rem;
+  margin-block: 1rem;
+}
+
+[data-formancy-theme='dusk'] [data-formancy-part='review-heading'] {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+[data-formancy-theme='dusk'] [data-formancy-part='review-answers'] {
+  margin: 0;
+}
+
+[data-formancy-theme='dusk'] [data-formancy-part='review-answer'] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  padding-block: 0.5rem;
+  border-bottom: 1px solid var(--fm-edge);
+}
+
+[data-formancy-theme='dusk'] [data-formancy-part='review-answer'] :is(dt, dd) {
+  margin: 0;
+}
+
+[data-formancy-theme='dusk'] [data-formancy-part='review-answer'] dt {
+  flex: 0 1 12rem;
+  font-weight: 600;
+}
+
+[data-formancy-theme='dusk'] [data-formancy-part='review-answer'] dd {
+  flex: 1 1 12rem;
+}
+
+[data-formancy-theme='dusk'] [data-formancy-part='review-answer'] dd:last-child {
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+}
+
+[data-formancy-theme='dusk'] [data-formancy-part='review-empty'] {
+  color: var(--fm-muted);
+}
+

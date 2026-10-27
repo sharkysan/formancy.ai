@@ -3,10 +3,10 @@ import { countSentence } from '@formancy/core/words'
 import { useFormText } from '../context.js'
 import type { FieldBinding } from '../use-field.js'
 
-/** How long typing pauses before the count is spoken: long enough not to talk over a word. */
+/* How long typing pauses before the count is spoken: long enough not to talk over a word. */
 const PAUSE_MS = 1000
 
-/**
+/*
  * A character count under a box with a `maxLength` (0203): the limit, then what is left, shown at
  * once and read with the control through `aria-describedby`; and said in a polite live region
  * once typing pauses, so a screen reader hears it without hearing every keystroke. Nothing is

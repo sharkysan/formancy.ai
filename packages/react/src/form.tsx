@@ -9,7 +9,7 @@ import { useFormEngine, useFormText } from './context.js'
 import { useField } from './use-field.js'
 import type { FieldBinding } from './use-field.js'
 import { useRepeater } from './use-repeater.js'
-import { useSubmit } from './use-submit.js'
+import { CheckAnswersButton, Review, SubmitButton, useReview } from './review.js'
 import { useWizard } from './use-wizard.js'
 import { RichText } from './rich-text.js'
 import {
@@ -61,38 +61,13 @@ export function FormancyForm(props: FormancyFormProps) {
   return engine.wizard() === undefined ? <FlatForm {...props} /> : <PagedForm {...props} />
 }
 
-function SubmitButton({ submitLabel, onSubmit, onFailedNavigate }: FormancyFormProps & { onFailedNavigate?: (page: number) => void }) {
-  const engine = useFormEngine()
-  const text = useFormText()
-  const submit = useSubmit()
-  return (
-    <button
-      type="button"
-      data-formancy-part="submit"
-      onClick={() => {
-        const outcome = submit()
-        if (!outcome.ok && onFailedNavigate !== undefined) {
-          const firstInvalid = engine.firstInvalid()
-          if (firstInvalid !== null) onFailedNavigate(engine.pageOf(parsePath(firstInvalid)))
-        }
-        onSubmit?.(
-          outcome.ok
-            ? { ok: true, errors: outcome.errors, data: engine.value() }
-            : { ok: false, errors: outcome.errors },
-        )
-      }}
-    >
-      {/* The host's word when it gave one, and the form's language's otherwise (0171). */}
-      {submitLabel ?? text('form.submit')}
-    </button>
-  )
-}
-
 function FlatForm(props: FormancyFormProps) {
+  const review = useReview()
+  if (review.reviewing) return <Review onChange={review.change}><SubmitButton {...props} /></Review>
   return (
     <>
       <FieldList {...props} />
-      <SubmitButton {...props} />
+      {props.review === true ? <CheckAnswersButton onCheck={review.check} /> : <SubmitButton {...props} />}
     </>
   )
 }
@@ -108,6 +83,7 @@ function PagedForm(props: FormancyFormProps) {
   const engine = useFormEngine()
   const text = useFormText()
   const wizard = useWizard()
+  const review = useReview((page) => wizard.goTo(page))
   // The live pages, with the index they have in the form kept beside them: a
   // form that named a step Next never reaches reads as a broken button rather
   // than as a page that does not apply, and `aria-current` has to compare
@@ -116,6 +92,14 @@ function PagedForm(props: FormancyFormProps) {
     .pages()
     .map((page, index) => ({ ...page, index }))
     .filter((page) => !page.skipped)
+
+  if (review.reviewing) {
+    return (
+      <Review onChange={review.change}>
+        <SubmitButton {...props} onFailedNavigate={(page) => wizard.goTo(page)} />
+      </Review>
+    )
+  }
 
   return (
     <>
@@ -140,6 +124,8 @@ function PagedForm(props: FormancyFormProps) {
           <button type="button" onClick={() => void wizard.next()}>
             {text('form.next')}
           </button>
+        ) : props.review === true ? (
+          <CheckAnswersButton onCheck={review.check} />
         ) : (
           <SubmitButton {...props} onFailedNavigate={(page) => wizard.goTo(page)} />
         )}

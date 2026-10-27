@@ -508,7 +508,7 @@ export function App() {
                         >
                           <FormancyProvider engine={built.engine} key={source}>
                             <ErrorSummary />
-                            <FormancyForm layout="web" />
+                            <FormancyForm layout="web" review />
                           </FormancyProvider>
                         </form>
                       </section>

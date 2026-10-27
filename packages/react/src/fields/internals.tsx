@@ -58,6 +58,11 @@ export interface FormancyFormProps {
    */
   layout?: string
   submitLabel?: string
+  /**
+   * Show the answers in words before sending, each with a way back to its question: the last
+   * step offers "Check your answers" in place of sending (0204). Off unless asked for.
+   */
+  review?: boolean
   onSubmit?: (outcome: SubmitOutcome) => void
 }
 

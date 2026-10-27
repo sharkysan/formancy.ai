@@ -4,6 +4,8 @@ import { FORM_WORDS_FR } from './words-fr.js'
 export { errorSentence } from './error-words.js'
 export { countSentence } from './count-words.js'
 export { answersInWords } from './answers-in-words.js'
+export { answersToReview } from './review.js'
+export type { ReviewedAnswer } from './review.js'
 export type { SaidAnswer } from './answers-in-words.js'
 
 /**
@@ -95,6 +97,11 @@ export const FORM_WORDS = {
   'error.option': 'Choose one of the options offered.',
   // An option chosen alone or not at all, ticked with others (0199).
   'error.exclusive': 'One of the answers ticked can only be chosen on its own.',
+  // Checking the answers before they are sent, where a form asks for that (0204).
+  'review.open': 'Check your answers',
+  'review.heading': 'Check your answers before you send them',
+  'review.change': 'Change',
+  'review.empty': 'Nothing has been answered yet.',
   // A character count, under a field with a `maxLength` (0203): the limit while it is empty,
   // then what is left, then how many too many.
   'count.limit': { one: 'You can enter up to {count} character.', other: 'You can enter up to {count} characters.' },

@@ -6,6 +6,11 @@ import type { FormText } from './words.js'
 export interface SaidAnswer {
   /** The data path the answer is stored at: `address.city`, `items[1].sku`. */
   readonly path: string
+  /**
+   * The field the answer is to: `path`, but a matrix's own for each of its rows, which are
+   * answered one line each and are not fields. Where a "Change" goes (0204).
+   */
+  readonly field: string
   /** The question, and the questions it sits inside: "Address › City", "Items 2 › SKU". */
   readonly label: string
   /** The answer in words: an option's label, a date as the reader writes one, a file's name. */
@@ -72,12 +77,12 @@ export function answersInWords(
         for (const row of def.rows ?? []) {
           const column = ownValue(held, row.value)
           if (column === undefined || column === null) continue
-          out.push({ path: `${path}.${row.value}`, label: `${label} › ${resolveText(schema, row.label, locale) ?? row.value}`, said: optionLabel(def.options, column) })
+          out.push({ path: `${path}.${row.value}`, field: path, label: `${label} › ${resolveText(schema, row.label, locale) ?? row.value}`, said: optionLabel(def.options, column) })
         }
         continue
       }
       const said = sayAnswer(def, held, optionLabel, text, language)
-      if (said !== undefined) out.push({ path, label, said })
+      if (said !== undefined) out.push({ path, field: path, label, said })
     }
   }
   visit(schema.model.fields, data, '', '')

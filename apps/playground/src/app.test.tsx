@@ -149,7 +149,8 @@ describe('the page', () => {
     render(<App />)
 
     expect(within(form()).getByLabelText('First name')).toBeTruthy()
-    expect(within(form()).getByRole('button', { name: 'Submit' })).toBeTruthy()
+    // The playground checks the answers before sending (0204), so the form ends there.
+    expect(within(form()).getByRole('button', { name: 'Check your answers' })).toBeTruthy()
   })
 
   test('has a way out to the source', () => {

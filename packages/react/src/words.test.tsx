@@ -64,6 +64,7 @@ function mount(
     children,
     layout,
     submitLabel,
+    review,
   }: {
     locale?: string
     words?: FormWordsByLocale
@@ -71,6 +72,7 @@ function mount(
     children?: ReactNode
     layout?: string
     submitLabel?: string
+    review?: boolean
   } = {},
 ): FormEngine {
   const engine = createFormEngine({ schema, locale, capabilities: CLOCK })
@@ -81,6 +83,7 @@ function mount(
         <FormancyForm
           {...(layout === undefined ? {} : { layout })}
           {...(submitLabel === undefined ? {} : { submitLabel })}
+          {...(review === undefined ? {} : { review })}
         />
       </FormancyProvider>,
     ),
@@ -285,6 +288,23 @@ describe('the error summary in a German form', () => {
     mount(document(fields.slice(0, 1)), { children: [<ErrorSummary key="summary" />, <Submit key="submit" />] })
     fireEvent.click(screen.getByRole('button', { name: 'go' }))
     expect(screen.getByRole('heading', { name: de('errors.heading', { count: 1 }) })).toBeTruthy()
+  })
+})
+
+describe('checking the answers in a German form (0204)', () => {
+  // The button, the heading and "Change", each found by its German words; and the empty review.
+  test('is said in German, and never in English', () => {
+    mount(document([{ key: 'name', type: 'text', label: 'Name' }]), { review: true })
+    expect(screen.queryByRole('button', { name: en('review.open') })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: de('review.open') }))
+    expect(screen.getByRole('heading', { name: de('review.heading') })).toBeTruthy()
+    expect(screen.getByText(de('review.empty'))).toBeTruthy()
+    cleanup()
+
+    mount(document([{ key: 'name', type: 'text', label: 'Name' }]), { review: true })
+    fireEvent.change(screen.getByRole('textbox', { name: 'Name' }), { target: { value: 'Ada' } })
+    fireEvent.click(screen.getByRole('button', { name: de('review.open') }))
+    expect(screen.getByRole('button', { name: `${de('review.change')} Name` })).toBeTruthy()
   })
 })
 

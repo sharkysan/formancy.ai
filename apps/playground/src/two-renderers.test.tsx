@@ -162,11 +162,12 @@ describe('the Language switch', () => {
      * The switch rebuilt both engines in the chosen locale and the questions followed;
      * the Submit button under them stayed English in both panes, because the renderers'
      * own words were literals (0171). Read off the shipped catalogues rather than through
-     * the function the renderers ask, which could be wrong for both in the same way.
+     * the function the renderers ask, which could be wrong for both in the same way. The
+     * playground checks the answers before sending (0204), so the button is that one.
      */
     const user = userEvent.setup()
     await mounted()
-    const submit = (pane: HTMLElement, name: string) => within(pane).queryByRole('button', { name })
+    const end = (pane: HTMLElement, name: string) => within(pane).queryByRole('button', { name })
 
     for (const [locale, words] of [
       ['de', FORM_WORDS_DE],
@@ -176,13 +177,13 @@ describe('the Language switch', () => {
 
       await waitFor(
         () => {
-          expect(submit(reactPane(), words['form.submit']), `React in ${locale}`).not.toBeNull()
-          expect(submit(angularPane(), words['form.submit']), `Angular in ${locale}`).not.toBeNull()
+          expect(end(reactPane(), words['review.open']), `React in ${locale}`).not.toBeNull()
+          expect(end(angularPane(), words['review.open']), `Angular in ${locale}`).not.toBeNull()
         },
         { timeout: 10_000 },
       )
-      expect(submit(reactPane(), FORM_WORDS['form.submit'])).toBeNull()
-      expect(submit(angularPane(), FORM_WORDS['form.submit'])).toBeNull()
+      expect(end(reactPane(), FORM_WORDS['review.open'])).toBeNull()
+      expect(end(angularPane(), FORM_WORDS['review.open'])).toBeNull()
     }
   })
 })
