@@ -19,7 +19,7 @@ import { createInteractionState } from './interaction.js'
 import { modelViolations, storedShapeViolations } from './model-validators.js'
 import { unanswered } from './answered.js'
 import { formatPath, parsePath, templateWire, topSegment, withinAny } from './path.js'
-import { GROUPED_FIELD_TYPES, buildFieldProps } from './props.js'
+import { buildFieldProps } from './props.js'
 import type { Path } from './path.js'
 import { createValueStore } from './store.js'
 import { computedTargets, isTarget, staticTargets, withoutValuesAt } from './computed-targets.js'
@@ -197,7 +197,6 @@ interface CompiledRule {
 }
 
 const NO_ERRORS: readonly string[] = Object.freeze([])
-const NO_MESSAGES: Readonly<Record<string, string>> = Object.freeze({})
 
 /** Variables every row-scoped rule sees on top of the form's fields. */
 const ROW_VARIABLES: Record<string, DeclaredType> = { item: 'map', index: 'int' }
@@ -377,7 +376,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
   // building a new engine.
   const locale = options.locale ?? schema.i18n?.defaultLocale ?? ''
   // What each field's rules say for their codes, in that language, by the rules' own target (0198).
-  const messagesByTarget = ruleMessages(allRules, (text) => resolveText(schema, text, locale))
+  const messagesOf = ruleMessages(allRules, (text) => resolveText(schema, text, locale))
   const orders = optionOrders(schema.model, capabilitySource)
 
   if (rules.length > 0 && capabilitySource === undefined) {
@@ -1135,7 +1134,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
         type: node.def.type,
         label: resolveText(schema, node.def.label, locale),
         description: resolveText(schema, node.def.description, locale),
-        messages: messagesByTarget.get(templateWire(wire)) ?? NO_MESSAGES,
+        messages: messagesOf(templateWire(wire)),
         optionOrder: orders.get(templateWire(wire)),
         def: node.def,
         required,
@@ -1152,8 +1151,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
           disabled,
           touched,
           errors,
-          grouped: GROUPED_FIELD_TYPES.has(node.def.type),
-          described: node.def.description !== undefined,
+          def: node.def,
           checking: checkingWires.has(wire),
         }),
       })

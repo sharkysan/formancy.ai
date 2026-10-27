@@ -1,5 +1,7 @@
+import type { FieldDef } from '@formancy/spec'
 import { describedBy } from './ids.js'
 import type { FieldIds } from './ids.js'
+import { showsCount } from './counted.js'
 
 /**
  * The prop getters — theming mechanism number one, and the floor under every
@@ -35,6 +37,7 @@ export interface FieldProps {
   label: { id: string; for: string }
   hint: { id: string }
   description: { id: string }
+  count: { id: string }
   error: { id: string }
 }
 
@@ -66,13 +69,24 @@ export interface FieldPropsInput {
    * expressed this differently would announce the same form differently while
    * both looked right.
    */
-  grouped: boolean
+  grouped?: boolean
   /**
    * The field has a description (0194), drawn at `ids.description`: named in
    * `aria-describedby` so it is read out with the control, never as its name. Only when
    * there is one, since an id pointing at nothing is an error an auditor reports.
    */
   described?: boolean
+  /**
+   * The field shows a character count (0203), drawn at `ids.count`: named after the description,
+   * so the limit and what is left are read with the control. `showsCount` — the one test
+   * the engine and `countSentence` ask.
+   */
+  counted?: boolean
+  /**
+   * The field's definition, from which `grouped`, `described` and `counted` are read where they
+   * are not given — what the engine hands, so the three are decided here and nowhere else.
+   */
+  def?: Pick<FieldDef, 'type' | 'description' | 'maxLength'>
   /** A check about this answer is waiting for the deployment to answer. */
   checking?: boolean
   disabled: boolean
@@ -82,12 +96,16 @@ export interface FieldPropsInput {
 
 export function buildFieldProps(input: FieldPropsInput): FieldProps {
   const showError = input.touched && input.errors.length > 0
+  const { def } = input
+  const grouped = input.grouped ?? (def !== undefined && GROUPED_FIELD_TYPES.has(def.type))
+  const described = input.described ?? def?.description !== undefined
+  const counted = input.counted ?? (def !== undefined && showsCount(def))
 
   const control: ControlProps = { id: input.ids.control, name: input.wire }
   // Not on a group: `aria-required` is not supported on `role="group"`, so on
   // a fieldset it is ignored by assistive technology and reported as invalid
   // ARIA. The hint below carries it instead.
-  if (input.required && !input.grouped) control['aria-required'] = true
+  if (input.required && !grouped) control['aria-required'] = true
   if (input.disabled) control.disabled = true
   if (input.checking) control['aria-busy'] = true
   if (showError) control['aria-invalid'] = true
@@ -95,8 +113,9 @@ export function buildFieldProps(input: FieldPropsInput): FieldProps {
   // Error text is a describedby target and must NOT also be a live region —
   // that combination is the classic double-announcement bug.
   const describes = describedBy(input.ids, {
-    hint: input.grouped && input.required,
-    description: input.described === true,
+    hint: grouped && input.required,
+    description: described,
+    count: counted,
     error: showError,
   })
   if (describes !== undefined) control['aria-describedby'] = describes
@@ -106,6 +125,7 @@ export function buildFieldProps(input: FieldPropsInput): FieldProps {
     label: Object.freeze({ id: input.ids.label, for: input.ids.control }),
     hint: Object.freeze({ id: input.ids.hint }),
     description: Object.freeze({ id: input.ids.description }),
+    count: Object.freeze({ id: input.ids.count }),
     error: Object.freeze({ id: input.ids.error }),
   })
 }

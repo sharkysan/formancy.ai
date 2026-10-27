@@ -61,7 +61,9 @@ test('a preview is a real translated form, with conditional fields and no submis
   // "Check answers" under German questions was the one English word in the form.
   expect(dialog.queryByRole('button', { name: 'Check answers' })).toBeNull()
   await user.click(dialog.getByRole('button', { name: 'Antworten prüfen' }))
-  expect(dialog.getByRole('status').textContent).toContain('required')
+  // The gallery's own region, found by what it says: the form inside has live regions of its
+  // own — a character count's, once a field has a limit (0203).
+  expect(dialog.getByText(/Check the required fields/).getAttribute('role')).toBe('status')
   await user.click(dialog.getByRole('button', { name: 'Close preview' }))
   expect(screen.queryByRole('dialog')).toBeNull()
 })

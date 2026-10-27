@@ -110,11 +110,18 @@ serialisable objects carrying every ARIA attribute, composed once.
 
 Specified centrally and not left to renderers: `aria-invalid` only when
 validated *and* invalid; `aria-required` reactive because requiredness can be
-expression-driven; real `fieldset` and `legend` for groups; **exactly one**
-polite live region per form, with error text as a `describedby` target and
-**not** also a live region — the classic double-announcement bug; and an error
-summary with `tabindex="-1"` that receives focus but deliberately does not get
-`role="alert"`, because focusing it already announces it.
+expression-driven; real `fieldset` and `legend` for groups; error text as a
+`describedby` target and **not** also a live region — the classic double-announcement
+bug; and an error summary with `tabindex="-1"` that receives focus but deliberately does
+not get `role="alert"`, because focusing it already announces it.
+
+The polite live regions a form has are each one control's own status — a sourced list's, a
+typeahead's, an upload's, a scanner's, and a character count's — and never the error. Until
+2026-10-27 this section said there was exactly one per form; there was never a form-wide one.
+A character count's region speaks only once typing pauses, and nothing when the form opens, so
+a page of counted fields does not talk over the person; the count itself is named in the
+control's `aria-describedby` after the description, so it is heard when the box is reached
+([0203](../decisions/0203-a-limit-is-counted-while-typing.md)).
 
 The summary's links and a failed submit move focus by the field's control id, so every field
 drawn with a control has an element carrying it: the control, when there is one, and the group,

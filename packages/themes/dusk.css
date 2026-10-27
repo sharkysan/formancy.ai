@@ -97,6 +97,15 @@
   color: var(--fm-muted);
 }
 
+/* A character count under a box with a limit (0203): quiet as the help text, its figures in
+   columns so the line does not shimmer as they change. */
+[data-formancy-theme='dusk'] [data-formancy-part='count'] {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--fm-muted);
+}
+
 /* No outer border: the control is a well cut into the surface — a fill that
    differs from the surface, and a shadow on its upper inside edge. */
 [data-formancy-theme='dusk'] [data-formancy-part='field'] :is(input, select, textarea, [data-formancy-part='richtext-surface']) {

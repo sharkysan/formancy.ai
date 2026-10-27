@@ -2,6 +2,7 @@ import { FORM_WORDS_DE } from './words-de.js'
 import { FORM_WORDS_FR } from './words-fr.js'
 
 export { errorSentence } from './error-words.js'
+export { countSentence } from './count-words.js'
 export { answersInWords } from './answers-in-words.js'
 export type { SaidAnswer } from './answers-in-words.js'
 
@@ -94,6 +95,11 @@ export const FORM_WORDS = {
   'error.option': 'Choose one of the options offered.',
   // An option chosen alone or not at all, ticked with others (0199).
   'error.exclusive': 'One of the answers ticked can only be chosen on its own.',
+  // A character count, under a field with a `maxLength` (0203): the limit while it is empty,
+  // then what is left, then how many too many.
+  'count.limit': { one: 'You can enter up to {count} character.', other: 'You can enter up to {count} characters.' },
+  'count.left': { one: 'You have {count} character remaining.', other: 'You have {count} characters remaining.' },
+  'count.over': { one: 'You have {count} character too many.', other: 'You have {count} characters too many.' },
   'error.duplicate': 'Rank each option only once.',
   'error.row': 'Answer only the rows this question asks about.',
   'error.min': 'Enter {min} or more.',

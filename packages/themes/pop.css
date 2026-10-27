@@ -93,6 +93,16 @@
   color: var(--fm-muted);
 }
 
+/* A character count under a box with a limit (0203): quiet as the help text, its figures in
+   columns so the line does not shimmer as they change. */
+[data-formancy-theme='pop'] [data-formancy-part='count'] {
+  flex-basis: 100%;
+  margin-block: 0.25rem 0;
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--fm-muted);
+}
+
 [data-formancy-theme='pop'] [data-formancy-part='required-hint']::before {
   content: '★ ' / '';
   color: var(--fm-pink);

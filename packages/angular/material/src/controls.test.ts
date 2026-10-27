@@ -151,6 +151,18 @@ describe('a field Material draws', () => {
     expect(within(group).getAllByRole('radio').map((radio) => (radio as HTMLInputElement).value)).toEqual(['press', 'search', 'friend', 'none'])
   })
 
+  // The default control's count, outside Material's form field, named by the box (0203).
+  test('a text and a long text with a limit show the character count the default control shows', async () => {
+    await mount(form([
+      { key: 'a', type: 'text', label: 'A', maxLength: 5 },
+      { key: 'b', type: 'textarea', label: 'B', maxLength: 7 },
+    ]))
+    for (const [label, limit] of [['A', 5], ['B', 7]] as const) {
+      const count = screen.getByText(`You can enter up to ${String(limit)} characters.`)
+      expect(screen.getByLabelText(label).getAttribute('aria-describedby')?.split(' ')).toContain(count.id)
+    }
+  })
+
   // An option chosen alone or not at all, as the default control ticks it (0199).
   test('an exclusive option in a group of ticks clears the rest, and is cleared by another', async () => {
     const engine = await mount({

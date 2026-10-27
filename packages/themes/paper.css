@@ -90,6 +90,16 @@
   color: var(--fm-muted);
 }
 
+/* A character count under a box with a limit (0203): a margin note, its figures in columns. */
+[data-formancy-theme='paper'] [data-formancy-part='count'] {
+  margin: 0.25rem 0 0;
+  font-family: var(--fm-serif);
+  font-size: 0.875rem;
+  font-style: italic;
+  font-variant-numeric: tabular-nums;
+  color: var(--fm-muted);
+}
+
 /* A line to write on. */
 [data-formancy-theme='paper'] [data-formancy-part='field'] :is(input, select, textarea, [data-formancy-part='richtext-surface']) {
   font: inherit;

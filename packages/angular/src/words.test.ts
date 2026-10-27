@@ -265,6 +265,24 @@ describe('the error summary in a German form', () => {
   })
 })
 
+describe('a character count in a German form (0203)', () => {
+  // The React binding's case: the limit, what is left and how many too many, in German.
+  test('is said in German, and never in English', async () => {
+    const note = [{ key: 'notiz', type: 'textarea', label: 'Notiz', maxLength: 10 }]
+    for (const [value, id, count] of [
+      [undefined, 'count.limit', 10],
+      ['Hallo', 'count.left', 5],
+      ['Hallo Welt!', 'count.over', 1],
+    ] as const) {
+      await mount(document_(note), value === undefined ? {} : { initialValue: { notiz: value } })
+      expect(screen.getByText(de(id, { count }))).toBeTruthy()
+      expect(screen.queryByText(en(id, { count }))).toBeNull()
+      TestBed.resetTestingModule()
+      document.body.innerHTML = ''
+    }
+  })
+})
+
 describe('every error in a German form', () => {
   /**
    * Each word an error is said with, with a field that reports it and what its sentence is

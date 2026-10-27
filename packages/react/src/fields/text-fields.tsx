@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { answerFromText, editMasked, formatMasked, maskIsNumeric, maskPlaceholder } from '@formancy/spec'
 import { useFormText } from '../context.js'
 import { useField } from '../use-field.js'
+import { CharacterCount } from './character-count.js'
 import { useScanner } from '../scanning.js'
 import { FieldShell, usePlaceholder } from './internals.js'
 import type { FieldComponentProps } from './internals.js'
@@ -177,6 +178,7 @@ export function TextField({ path, label }: FieldComponentProps) {
           </p>
         </>
       ) : null}
+      <CharacterCount field={field} />
     </FieldShell>
   )
 }
@@ -196,6 +198,7 @@ export function TextareaField({ path, label }: FieldComponentProps) {
         onChange={(event) => field.setValue(event.target.value)}
         onBlur={() => field.touch()}
       />
+      <CharacterCount field={field} />
     </FieldShell>
   )
 }

@@ -288,6 +288,20 @@ describe('the error summary in a German form', () => {
   })
 })
 
+describe('a character count in a German form (0203)', () => {
+  // The limit, what is left and how many too many, each found by its German words.
+  test('is said in German, and never in English', () => {
+    mount(document([{ key: 'notiz', type: 'textarea', label: 'Notiz', maxLength: 10 }]))
+    expect(screen.getByText(de('count.limit', { count: 10 }))).toBeTruthy()
+    expect(screen.queryByText(en('count.limit', { count: 10 }))).toBeNull()
+    const box = screen.getByRole('textbox', { name: 'Notiz' })
+    fireEvent.change(box, { target: { value: 'Hallo' } })
+    expect(screen.getByText(de('count.left', { count: 5 }))).toBeTruthy()
+    fireEvent.change(box, { target: { value: 'Hallo Welt!' } })
+    expect(screen.getByText(de('count.over', { count: 1 }))).toBeTruthy()
+  })
+})
+
 describe('every error in a German form', () => {
   /**
    * Each word an error is said with, with a field that reports it and what its sentence is

@@ -66,6 +66,7 @@ describe('rendering one schema in two places at once', () => {
     }
     expect(Object.keys(react).sort()).toEqual([
       'control',
+      'count',
       'description',
       'error',
       'hint',

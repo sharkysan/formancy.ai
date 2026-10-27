@@ -8,7 +8,7 @@ describe('fieldIds', () => {
     const second = fieldIds('contact', ['address', 'city'])
 
     expect(first).toEqual(second)
-    expect(new Set(Object.values(first)).size).toBe(5)
+    expect(new Set(Object.values(first)).size).toBe(6)
   })
 
   test('ids are stable strings with no whitespace, so they are valid HTML ids', () => {
