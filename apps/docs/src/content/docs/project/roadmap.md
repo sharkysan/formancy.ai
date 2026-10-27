@@ -108,12 +108,12 @@ field is shown because of it. The verdicts are tested to agree with the engine; 
 field in a repeater row is listed, and has no verdict, because it has one per row
 ([0128](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0128-a-form-says-why-a-field-is-hidden.md)).
 
-**Spec version 5 is open**, so far with five properties: a field's `description`, help text
+**Spec version 5 is open**, so far with six properties: a field's `description`, help text
 read out with the control rather than as its name; its `autocomplete`, the input purpose
 WCAG 1.3.5 asks for, set on the control for a browser to fill ([0195](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0195-a-field-says-what-its-answer-is-for-autofill.md)); its
 `placeholder`, an example of the answer that never stands in for the label ([0196](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0196-a-placeholder-is-an-example-never-the-label.md)); and its
 `default`, the answer a new form, a new row or a field shown again starts with, which the field checks as an answer and nothing handed in is given ([0197](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0197-a-default-is-where-something-fresh-starts.md)) — the first three
-drawn by both renderers and the fourth applied by the engine, all offered by the builder's panel, and the texts extracted for translation ([0194](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0194-spec-5-opens-with-a-fields-description.md)). A `validate` rule says its own `message`, in the form's language, for its code, where its code used to be shown as written, and the builder asks for it ([0198](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0198-a-rule-says-its-own-message.md)). It is what a new
+drawn by both renderers and the fourth applied by the engine, all offered by the builder's panel, and the texts extracted for translation ([0194](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0194-spec-5-opens-with-a-fields-description.md)). A `validate` rule says its own `message`, in the form's language, for its code, where its code used to be shown as written, and the builder asks for it ([0198](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0198-a-rule-says-its-own-message.md)). An option of a list of ticks may be one chosen alone — "None of these" — which every control ticks by one function and the engine refuses with anything else ([0199](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0199-an-option-can-be-chosen-only-on-its-own.md)). It is what a new
 document is written in, and it is in no release yet.
 
 **Spec version 4 is frozen**, with two field types, two widgets and three properties
@@ -302,11 +302,12 @@ Roughly in order, and subject to change. The ordering is argued below rather
 than asserted.
 
 1. **The rest of version 5**, which is open with a field's `description`
-   ([0194](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0194-spec-5-opens-with-a-fields-description.md)), its autofill hint, its placeholder, its default and a
-   rule's own message: a choice's extras — "Other, please specify", an exclusive "None", and
-   options shown in a shuffled order. Each changes what a document may
-   say, which is why they wait for one version together rather than cost a version each; version
-   5 freezes when they are in.
+   ([0194](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0194-spec-5-opens-with-a-fields-description.md)), its autofill hint, its placeholder, its default, a
+   rule's own message and an option chosen only on its own: options shown in a shuffled order,
+   which changes what a document may say. Version 5 freezes when it is in. "Other, please
+   specify" left the list, because a document can already say it — an option, a text field and
+   a `visible` rule — and what is missing is the builder doing the three in one step
+   ([0199](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0199-an-option-can-be-chosen-only-on-its-own.md)).
 2. **XLIFF**, if somebody asks for it. The exchange format is JSON carrying the source
    beside every target, which converts to XLIFF in a script; a real XLIFF implementation
    is a specification, a namespace and versions, and half of one is worse than none.

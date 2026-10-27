@@ -77,6 +77,15 @@ export function withPicture(
   return { ...rest, image: { src, ...(alt === undefined || alt === '' ? {} : { alt }) } }
 }
 
+/**
+ * A choice made one that is chosen alone, or not, as both options editors change it (0199).
+ * Unticked, the key goes: `exclusive: false` says nothing a missing flag does not.
+ */
+export function withExclusive(option: FieldOption, on: boolean): FieldOption {
+  const { exclusive: _, ...rest } = option
+  return on ? { ...rest, exclusive: true } : rest
+}
+
 export function layoutPropertyHeading(kind: LayoutNode['kind'], text: BuilderText): string {
   return text(`layoutProps.heading.${kind}`)
 }

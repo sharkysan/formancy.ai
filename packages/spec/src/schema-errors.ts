@@ -51,6 +51,8 @@ export const SCHEMA_ERRORS = {
     'Two rows of this matrix share the value "{value}". A matrix stores each answer under its row, so it could not say which row was answered — give each row a value of its own.',
   'matrix.duplicateColumn':
     'Two columns of this matrix share the value "{value}". A matrix stores the column chosen, so it could not say which of the two was — give each column a value of its own.',
+  'option.exclusiveNotAList':
+    'Only an option of a list of ticks can be chosen on its own: in a radio group or a dropdown every option already is, and a ranking or a matrix uses them all. Remove "exclusive", or make the field a list of ticks.',
   'mask.noPositions':
     'This mask has nowhere to type, so the field could take no answer. Use 9 for a digit, a for a letter or * for either.',
 

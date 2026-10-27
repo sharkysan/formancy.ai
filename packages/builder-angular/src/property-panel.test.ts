@@ -318,6 +318,43 @@ describe('a choice’s picture', () => {
   })
 })
 
+describe('a choice chosen only on its own (0199)', () => {
+  // The cases React's panel is held to.
+  const mountAllergies = async (type: 'selectboxes' | 'radio') => {
+    const session = createBuilderSession({
+      specVersion: '5',
+      id: 'health',
+      title: 'Health',
+      model: { fields: [{ key: 'allergies', type, label: 'Allergies', options: [{ value: 'none', label: 'None of these' }] }] },
+    } as FormSchema)
+    const view = await render(FormancyPropertyPanel, {
+      componentInputs: { session, keyPath: ['allergies'] },
+      providers: [provideZonelessChangeDetection()],
+    })
+    await view.fixture.whenStable()
+    const user = userEvent.setup()
+    const settle = async (): Promise<void> => void (await view.fixture.whenStable())
+    return { session, user, settle }
+  }
+
+  test('can be set on a list of ticks, and taken off again leaves no flag', async () => {
+    const { session, user, settle } = await mountAllergies('selectboxes')
+
+    await user.click(screen.getByRole('checkbox', { name: 'Only on its own' }))
+    await settle()
+    expect(fieldNamed('allergies', session)['options']).toEqual([{ value: 'none', label: 'None of these', exclusive: true }])
+    await user.click(screen.getByRole('checkbox', { name: 'Only on its own' }))
+    await settle()
+    expect(fieldNamed('allergies', session)['options']).toEqual([{ value: 'none', label: 'None of these' }])
+  })
+
+  test('is not offered where every option already is', async () => {
+    await mountAllergies('radio')
+
+    expect(screen.queryByRole('checkbox', { name: 'Only on its own' })).toBeNull()
+  })
+})
+
 describe('editing a datagrid’s columns', () => {
   /*
    * The other shape generation cannot produce: the schema says "array of

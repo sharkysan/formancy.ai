@@ -500,6 +500,12 @@ export interface FieldOption {
    * Presentation: the answer is still `value`. Spec version 4.
    */
   image?: OptionImage
+  /**
+   * `selectboxes` only: chosen alone or not at all — "None of these". The engine refuses an
+   * answer holding it with anything else, and a control ticking it clears the rest. Spec
+   * version 5 (0199).
+   */
+  exclusive?: boolean
 }
 
 /** A picture beside an option's label (0126). */

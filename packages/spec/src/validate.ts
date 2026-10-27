@@ -201,6 +201,17 @@ function semanticErrors(schema: FormSchema): SchemaError[] {
       }
     }
 
+    // Only a list of ticks can hold an option with others: in a radio group or a dropdown
+    // every option is exclusive already, and a ranking or a matrix uses every one. The flag
+    // would validate and do nothing, which is the documented-but-inert failure (0199).
+    if (field.type !== 'selectboxes') {
+      field.options?.forEach((option, index) => {
+        if (option.exclusive === true) {
+          errors.push(schemaError(`${path}/options/${String(index)}/exclusive`, 'option.exclusiveNotAList'))
+        }
+      })
+    }
+
     // A picture where the control cannot show one would validate and show nothing:
     // the documented-but-inert failure (0126).
     const hidesImages = optionImageRefusal(field)

@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core'
+import { ticked } from '@formancy/core'
 import { narrowOptionsByLabel } from '@formancy/spec'
 import { FormancyTextPipe } from '../text.js'
 import { FieldComponentBase, FormancyFieldShell } from './field-shell.js'
@@ -147,12 +148,10 @@ export class FormancyTagPickerField extends FieldComponentBase {
   }
 
   protected add(value: string): void {
-    // The options' own order, never the order they were chosen: two people
-    // choosing the same answers store the same array.
-    const next = this.options()
-      .map((option) => option.value)
-      .filter((candidate) => candidate === value || this.chosen().includes(candidate))
-    this.field.setValue(next)
+    // The options' own order, and an exclusive option alone: the core's one function, as the
+    // React binding's (0199).
+    const order = this.options().map((option) => option.value)
+    this.field.setValue(ticked(this.field.snapshot().def, order, this.chosen(), value, true))
     this.query.set('')
     this.open.set(false)
   }
@@ -265,12 +264,10 @@ export class FormancySelectBoxesField extends FieldComponentBase {
 
   protected toggle(value: string, event: Event): void {
     const on = (event.target as HTMLInputElement).checked
-    // Rebuilt in the options' own order rather than the order they were
-    // ticked, so two people choosing the same answers store the same array and
-    // the React binding stores it identically.
-    const next = this.options()
-      .map((option) => option.value)
-      .filter((candidate) => (candidate === value ? on : this.isChosen(candidate)))
-    this.field.setValue(next)
+    // Rebuilt in the options' own order rather than the order they were ticked, so two people
+    // choosing the same answers store the same array, and an exclusive option ticked alone —
+    // the core's one function, so the React binding stores it identically (0199).
+    const order = this.options().map((option) => option.value)
+    this.field.setValue(ticked(this.field.snapshot().def, order, this.chosen(), value, on))
   }
 }

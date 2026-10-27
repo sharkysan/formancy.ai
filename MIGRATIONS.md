@@ -47,6 +47,10 @@ it ([0051](docs/decisions/0051-spec-2-adds-types.md)).
   the catalogue, said for the rule's `code` in the form's language. Needs a `code`, which no other
   rule on the field may share when either has a message (`rule.codeShared`). A version 4 document
   carrying one is refused, naming the property ([0198](docs/decisions/0198-a-rule-says-its-own-message.md)).
+- `exclusive` on an option of a `selectboxes` field — chosen alone or not at all. A list holding it
+  with anything else is refused with the new code `exclusive`. On any other kind of field it is
+  refused (`option.exclusiveNotAList`); a version 4 document carrying one is refused, naming the
+  property ([0199](docs/decisions/0199-an-option-can-be-chosen-only-on-its-own.md)).
 
 ## Spec version 4 is FROZEN
 

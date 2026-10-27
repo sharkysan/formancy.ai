@@ -92,6 +92,8 @@ export const FORM_WORDS = {
   'error.check_unavailable': 'This answer could not be checked just now. Try again in a moment.',
   'error.type': 'This is not the kind of answer this question takes.',
   'error.option': 'Choose one of the options offered.',
+  // An option chosen alone or not at all, ticked with others (0199).
+  'error.exclusive': 'One of the answers ticked can only be chosen on its own.',
   'error.duplicate': 'Rank each option only once.',
   'error.row': 'Answer only the rows this question asks about.',
   'error.min': 'Enter {min} or more.',

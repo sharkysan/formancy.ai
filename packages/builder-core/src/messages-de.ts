@@ -255,6 +255,7 @@ export const BUILDER_MESSAGES_DE = {
   'rows.newRow': 'Neue Zeile',
   'options.image': 'Bildadresse',
   'options.imageAlt': 'Was das Bild zeigt',
+  'options.exclusive': 'Nur allein',
   'list.remove': 'Entfernen',
   'columns.heading': 'Spalten',
   'columns.empty':

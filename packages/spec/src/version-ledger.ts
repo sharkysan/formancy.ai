@@ -88,6 +88,7 @@ export const OPTION_PROPERTY_SINCE = {
   value: 1,
   label: 1,
   image: 4,
+  exclusive: 5,
 } as const satisfies Record<keyof FieldOption, SpecVersionNumber>
 
 /** A row exists only on a `matrix`, so nothing here is newer than the type that holds it. */

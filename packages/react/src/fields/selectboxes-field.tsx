@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { ticked } from '@formancy/core'
 import { narrowOptionsByLabel } from '@formancy/spec'
 import { useFormText } from '../context.js'
 import { useField } from '../use-field.js'
@@ -78,13 +79,9 @@ export function TagPickerField({ path, label }: FieldComponentProps) {
   const expanded = open && !field.disabled && matches.length > 0
 
   const add = (value: string): void => {
-    // Rebuilt in the options' OWN order rather than the order they were chosen,
-    // so two people choosing the same answers store the same array and a diff of
-    // two submissions means something.
-    const next = options
-      .map((option) => option.value)
-      .filter((candidate) => candidate === value || chosen.includes(candidate))
-    field.setValue(next)
+    // In the options' own order, and an exclusive option alone (0199): the core's, as the
+    // list of ticks below and both of Angular's are.
+    field.setValue(ticked(field.def, options.map((option) => option.value), chosen, value, true))
     setQuery('')
     setOpen(false)
   }
@@ -203,13 +200,11 @@ export function SelectBoxesField({ path, label }: FieldComponentProps) {
   const chosen = Array.isArray(field.value) ? (field.value as unknown[]) : []
 
   const toggle = (value: string, on: boolean): void => {
-    // Rebuilt in the options' own order rather than in the order they were
-    // ticked, so two people choosing the same answers store the same array and
-    // a diff of two submissions means something.
-    const next = options
-      .map((option) => option.value)
-      .filter((candidate) => (candidate === value ? on : chosen.includes(candidate)))
-    field.setValue(next)
+    // Rebuilt in the options' own order rather than in the order they were ticked, so two
+    // people choosing the same answers store the same array — and an exclusive option is
+    // ticked alone, by the core's one function, so no control stores what the engine
+    // refuses (0199).
+    field.setValue(ticked(field.def, options.map((option) => option.value), chosen, value, on))
   }
 
   return (

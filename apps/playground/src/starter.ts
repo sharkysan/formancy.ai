@@ -262,6 +262,9 @@ export const STARTER_SCHEMA = {
           { value: 'giftwrap', label: { $t: 'extras.giftwrap' } },
           { value: 'insurance', label: { $t: 'extras.insurance' } },
           { value: 'signature', label: { $t: 'extras.signature' } },
+          // Chosen alone or not at all (spec 5): ticking it clears the rest, ticking another
+          // clears it, and the server refuses an answer holding it with anything else.
+          { value: 'nothing', label: { $t: 'extras.nothing' }, exclusive: true },
         ],
       },
       // `widget: 'tagpicker'` on a selectboxes: several answers narrowed by typing
