@@ -504,6 +504,9 @@ export const STARTER_SCHEMA = {
         kind: 'validate',
         cel: 'item.qty == null || item.qty > 0.0',
         code: 'notPositive',
+        // A rule's own message (spec 5): what the person reads, in the form's language,
+        // where the code `notPositive` used to be shown as it is.
+        message: { $t: 'items.qty.positive' },
       },
       // A rule on a field in a repeater row, as the builder's condition editor writes
       // it: the CEL compiled from the `editor` metadata beside it. It runs once per

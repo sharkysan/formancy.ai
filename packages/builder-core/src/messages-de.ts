@@ -286,6 +286,8 @@ export const BUILDER_MESSAGES_DE = {
   'logic.what': 'Was die Regel tut',
   'logic.check': 'Welche Prüfung',
   'logic.check.example': 'email-bereits-vergeben',
+  'logic.message': 'Was sie sagt, wenn eine Antwort abgelehnt wird',
+  'logic.message.example': 'Reisende müssen mindestens 18 sein.',
   'logic.calculation': 'Die Berechnung',
   'logic.calculation.example': 'menge * stueckpreis',
   'logic.match': 'Zutreffen müssen',

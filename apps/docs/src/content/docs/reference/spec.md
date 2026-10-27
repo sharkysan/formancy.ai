@@ -570,7 +570,13 @@ optional · string · min length 1 · max length 2000
 
 optional · string · min length 1 · max length 64
 
-**Error code.** For a validate rule: the machine-readable code the field carries while the check fails. The message a person reads is looked up from this code per language, so it does not live here.
+**Error code.** For a validate rule: the machine-readable code the field carries while the check fails — what a submission's report says. What a person reads is the rule's message, in the form's language; a rule with none has its code said as it is written.
+
+#### `message`
+
+optional · Text (see below)
+
+**Message.** For a validate rule: what the person reads while it fails — "Travellers must be 18 or older." — in place of its code. Say what to do, not only what is wrong. Text, or a reference to it in the message catalogue, so it is read in the form's language, and said for the rule's code wherever the field carries it, a verdict from the server included. Needs a code, and no other rule on the field may share it. Needs spec version 5.
 
 #### `editor`
 
@@ -619,6 +625,12 @@ optional · value · default `"server"`
 
 Requires `cel`.
 `check` is not allowed here.
+
+#### `validate`
+
+#### Every other kind
+
+`message` is not allowed here.
 
 ## Named definitions
 

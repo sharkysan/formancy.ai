@@ -589,6 +589,9 @@ describe('extracting every text in a document', () => {
         ],
       },
     ] as unknown as NonNullable<FormSchema['layouts']>,
+    logic: {
+      rules: [{ target: 'country', kind: 'validate', cel: "country != 'DE'", code: 'ships', message: 'We ship to Switzerland only.' }],
+    },
   }
 
   /** Every property the format's schema says is text, wherever it sits in the schema. */
@@ -612,7 +615,7 @@ describe('extracting every text in a document', () => {
 
   // The guard on the guard: a schema read that found nothing would pass every case below.
   test('reads the format’s text properties from its schema', () => {
-    expect([...TEXT_PROPERTIES].sort()).toEqual(['alt', 'description', 'header', 'label', 'placeholder'])
+    expect([...TEXT_PROPERTIES].sort()).toEqual(['alt', 'description', 'header', 'label', 'message', 'placeholder'])
   })
 
   test('leaves no literal behind, in any place text lives', () => {
@@ -635,6 +638,8 @@ describe('extracting every text in a document', () => {
     }
     walk(document.model, 'model')
     walk(document.layouts, 'layouts')
+    // A rule's message is text a person reads, in the logic rather than the model (0198).
+    walk(document.logic, 'logic')
 
     expect(literals).toEqual([])
   })
@@ -652,6 +657,7 @@ describe('extracting every text in a document', () => {
     expect(said).toContain('Full name')
     expect(said).toContain('Where to')
     expect(said).toContain('Anna Muster')
+    expect(said).toContain('We ship to Switzerland only.')
   })
 
   test('an option keeps its own reference when the options are reordered', () => {

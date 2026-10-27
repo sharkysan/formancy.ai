@@ -15,7 +15,7 @@ what depends on what.
       { "target": "subtotal", "kind": "computed", "cel": "price * qty" },
       { "target": "reason",   "kind": "required", "cel": "vip == true" },
       { "target": "qty",      "kind": "validate", "cel": "qty == null || qty <= 100.0",
-        "code": "tooMany" }
+        "code": "tooMany", "message": "We take orders of up to 100 at a time." }
     ]
   }
 }
@@ -34,6 +34,19 @@ what depends on what.
 A field may carry one rule per kind — two visibility rules would have no defined
 winner, and silently picking one is worse than refusing. `validate` is the
 exception: each is an independent check, so a field can have as many as it needs.
+
+## What a rule says
+
+A `validate` rule's `code` is what the field carries and a submission's report holds — a word
+for machines. What the person reads is the rule's `message`: text, or a reference into the
+catalogue, said in the form's language under the field and in the error summary, and for the
+same code when the server sends it back. Say what would be accepted, not only that something
+is wrong.
+
+A message needs a `code`, and no other rule on the field may share it. A rule without a message
+has its code said as it is written, so give every rule a person can fail one. The builder asks
+for it before it adds the rule. Spec version 5
+([0198](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0198-a-rule-says-its-own-message.md)).
 
 ## Rules inside repeater rows
 

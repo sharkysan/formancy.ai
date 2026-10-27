@@ -2572,6 +2572,32 @@ how many followed. With `FORMANCY_LOG_LEVEL` at `off` or `fatal`, nothing says i
 
 ---
 
+### D20. A person is told the wrong reason an answer is refused, or none they can read
+
+*How it arises:* a field's error is shown as a code — a `validate` rule's own word, `notPositive`,
+which no catalogue knows — or as words that do not describe what the rule checks, so the person
+cannot tell what would be accepted and abandons the form or changes the wrong answer.
+
+*Constraint:* the engine's own codes are said from the renderers' catalogue in the form's language
+([0191](../decisions/0191-an-error-is-said-not-coded.md)); a rule's code is said by the rule's own
+`message`, resolved by the engine in the same language and said by the same function under the
+field, in the error summary and for a verdict from the server
+([0198](../decisions/0198-a-rule-says-its-own-message.md)). The document is refused when two rules on one field share
+a code and either has a message, so one code has one sentence. The builder will not add a rule that
+rejects an answer without its message, where the document can hold one. Verified by
+`packages/core/src/rule-message.test.ts`, both renderers' `rule-message.test`, and both builders'
+`logic-panel.test`.
+
+*Residual:*
+
+- **The message is the author's, and nothing checks it against the rule.** A sentence that
+  misdescribes its condition is said exactly as written.
+- **A message is said for its code on its field, whoever raised it**, so a rule whose code is one the
+  engine reports itself — `min` — words the engine's error too.
+- **A document before spec 5 has no messages**, and a hand-written rule with none: its code is said
+  as written. A rule the builder writes in such a document carries no code, and is said as the
+  engine's `invalid` — that the answer is not valid, and not why.
+
 ## E — Provenance is lost
 
 ### E1. A submission cannot be joined to the schema that produced it

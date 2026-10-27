@@ -51,7 +51,7 @@ formancy
 |---|---|---|
 | Keystroke, large conditional form | 1 ms | ≈0.54 ms, the median of seven runs re-measured 2026-10-19; 0.34 on the same machine before [0185](../decisions/0185-an-answer-is-what-the-value-holds-as-its-own.md) |
 | Cold graph compile | 30 ms | ≈1.7 ms |
-| `@formancy/core` bundle | 18 kB brotli | **24.6 kB** — over, re-measured 2026-10-27 with a field's default, applied by the engine ([0197](../decisions/0197-a-default-is-where-something-fresh-starts.md)) |
+| `@formancy/core` bundle | 18 kB brotli | **24.8 kB** — over, re-measured 2026-10-27 with a field's default, applied by the engine ([0197](../decisions/0197-a-default-is-where-something-fresh-starts.md)), and a rule's own message resolved onto the snapshot ([0198](../decisions/0198-a-rule-says-its-own-message.md)) |
 | `@formancy/spec` bundle | — | 30.1 kB for the whole barrel — the index and the chunk it shares with `/validate`, re-measured 2026-10-27 with spec 5's `description` and the autofill list `AUTOCOMPLETE_TOKENS` ([0195](../decisions/0195-a-field-says-what-its-answer-is-for-autofill.md)) |
 | `@formancy/react` bundle | 4 kB brotli | **25.4 kB** for the whole barrel, re-measured 2026-10-27 with a field's, a group's and a page's description drawn ([0194](../decisions/0194-spec-5-opens-with-a-fields-description.md)) |
 | `@formancy/core/words` bundle | — | 11.3 kB, the renderers' words in English, German and French — what a sourced control says, every error said, and a submission read back — an entry of its own, re-measured 2026-10-27 |

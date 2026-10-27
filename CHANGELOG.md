@@ -10,6 +10,18 @@ later.
 
 ## Unreleased
 
+**A rule says its own message (spec 5), and the builder stops telling people their answer is
+`condition`.** A `validate` rule's code was shown as it is written — `notPositive` under a
+quantity — because no catalogue knows an author's word, and every rule the builder wrote had the
+code `condition`. A validate rule may now carry `message`, text or a catalogue reference, said for
+its code under the field, in the error summary and for a server's verdict, in the form's
+language. It needs a code no other rule on the field shares. The snapshot carries the resolved
+messages as `messages`, and `errorSentence` takes them as a fourth argument; `FieldSnapshot` is now
+declared in `snapshot.ts`, exported as before. The builder asks for the message before it adds a
+rule that rejects an answer, gives the rule a code of its own, and extracts the message for
+translation; in a document older than spec 5 it asks nothing and writes no code, so the engine's
+`invalid` is said instead ([0198](docs/decisions/0198-a-rule-says-its-own-message.md)).
+
 **A field can start answered (spec 5).** `default` on a text, long text, hidden, number, tick box,
 date, time, date and time or choice field is the answer **something fresh** starts with: a form
 opened with nothing handed in, a row added, a field shown again after its hiding cleared it. A

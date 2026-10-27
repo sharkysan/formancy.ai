@@ -160,6 +160,12 @@ export function translationCommands(core: SessionCore): TranslationCommands {
           walk(layout.nodes, layout.name)
         }
 
+        // A rule's message is read by the person whose answer it refuses (0198). By its code,
+        // which is the rule's identity on its field, as an option's value is the option's.
+        for (const rule of draft.logic?.rules ?? []) {
+          lift(rule as unknown as Record<string, unknown>, 'message', `${rule.target}.rule.${rule.code ?? 'message'}`)
+        }
+
         // Nothing to lift: leave the document exactly as it was rather than
         // attaching an empty catalogue to a form nobody is translating.
         if (Object.keys(catalogue).length === 0) return undefined
@@ -324,5 +330,7 @@ export function referencedIds(document: FormSchema): Set<string> {
   }
   walk(document.model)
   walk(document.layouts)
+  // A rule's message is read by the person whose answer it refuses (0198).
+  walk(document.logic)
   return found
 }

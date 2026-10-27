@@ -1,4 +1,4 @@
-import type { FieldDef, FieldType, FormSchema, LogicRule, Text } from '@formancy/spec'
+import type { FieldDef, FormSchema, LogicRule, Text } from '@formancy/spec'
 import { resolveText } from '@formancy/spec'
 import { captureCapabilities, compile, evaluate } from '@formancy/expressions'
 import type {
@@ -14,13 +14,12 @@ import type { GraphNode } from './graph.js'
 import { fieldIds } from './ids.js'
 import type { Check } from './checks.js'
 import type { BuiltInErrorCode, ValidationReport } from './error-codes.js'
-import type { FieldIds } from './ids.js'
+import type { FieldSnapshot } from './snapshot.js'
 import { createInteractionState } from './interaction.js'
 import { modelViolations, storedShapeViolations } from './model-validators.js'
 import { unanswered } from './answered.js'
 import { formatPath, parsePath, templateWire, topSegment, withinAny } from './path.js'
 import { GROUPED_FIELD_TYPES, buildFieldProps } from './props.js'
-import type { FieldProps } from './props.js'
 import type { Path } from './path.js'
 import { createValueStore } from './store.js'
 import { computedTargets, isTarget, staticTargets, withoutValuesAt } from './computed-targets.js'
@@ -28,81 +27,12 @@ import { computedWriter } from './computed-value.js'
 import { filled, refusedDefault, reopened } from './defaults.js'
 import { getAt, setAt } from './value.js'
 import { refusedRule } from './rule-refusal.js'
+import { ruleMessages } from './rule-messages.js'
 import { createRows, repeaterViolations } from './rows.js'
 import type { RepeaterNode } from './rows.js'
 import { bagType, topLevelDataFields } from './top-level-fields.js'
 import { createWizard } from './wizard.js'
 import type { Wizard } from './wizard.js'
-
-/**
- * The engine assembly for spec version 0.
- *
- * The schema walk fixes the data shape: a `group` scopes its children into a
- * nested object, a `repeater` into rows — but a `page` scopes NOTHING. Pages
- * are presentation; if they scoped data, moving a field to another wizard step
- * would be a data migration for every existing submission.
- *
- * Logic rules are compiled ONCE, when the engine is built: parse, type-check,
- * kind policy and the computed-dependency cycle check all happen here, so a
- * form that can loop or read a ghost field never reaches a user. Evaluation
- * failures on half-filled forms, by contrast, are normal control flow and fail
- * OPEN for metadata (a broken visibility rule shows the field rather than
- * silently swallowing data) and CLOSED for validation.
- *
- * A rule targeting `items[].total` is row-scoped: it runs once per row, with
- * two extra variables in scope — `item`, the row, and `index`, its position.
- *
- * Snapshots are identity-stable: a field's snapshot object is replaced only
- * when its value, visibility, requiredness, touched state or errors actually
- * change, which is what lets useSyncExternalStore and OnPush change detection
- * work with no memoisation on the consumer's side.
- */
-export interface FieldSnapshot {
-  value: unknown
-  /** The model field type, so component registries can dispatch on it. */
-  type: FieldType
-  required: boolean
-  visible: boolean
-  disabled: boolean
-  /**
-   * A `computed` rule writes this field, so its value is the engine's: a value set on it
-   * does not take. A control draws it read-only where it has a read-only state — never
-   * disabled, which would take it out of the tab order and grey out a value meant to be
-   * read (0181).
-   */
-  readOnly: boolean
-  touched: boolean
-  /**
-   * A check about this answer is in flight.
-   *
-   * On the snapshot rather than left for a host to track, because a control that
-   * looks finished and is not is one somebody submits — and the renderers say so
-   * with `aria-busy`, never by disabling, which would move focus out from under
-   * whoever is typing.
-   */
-  checking: boolean
-  /** Error CODES (e.g. "required") — text belongs to the message catalog, not the engine. */
-  errors: readonly string[]
-  /**
-   * The label already resolved to a string in the engine's locale.
-   *
-   * `def.label` may be a reference into the message catalogue, and resolving it
-   * in the engine rather than in each renderer is what keeps React and Angular
-   * from disagreeing about what a field is called — the same reasoning that put
-   * ids and ARIA wiring here.
-   *
-   * Always present, undefined when the field declares no label at all — a
-   * renderer then falls back to something of its own.
-   */
-  label: string | undefined
-  /** The field's help text, resolved as `label` is; undefined when it has none (0194). */
-  description: string | undefined
-  /** The model definition, verbatim — renderers read options and extras from it. */
-  def: FieldDef
-  ids: FieldIds
-  /** Ready-to-spread ARIA wiring; see props.ts for the rules it encodes. */
-  props: FieldProps
-}
 
 export interface FormEngineOptions {
   schema: FormSchema
@@ -266,6 +196,7 @@ interface CompiledRule {
 }
 
 const NO_ERRORS: readonly string[] = Object.freeze([])
+const NO_MESSAGES: Readonly<Record<string, string>> = Object.freeze({})
 
 /** Variables every row-scoped rule sees on top of the form's fields. */
 const ROW_VARIABLES: Record<string, DeclaredType> = { item: 'map', index: 'int' }
@@ -276,6 +207,33 @@ function otherSide(mode: 'client' | 'server'): 'client' | 'server' {
 }
 
 
+/*
+ * The engine assembly for spec version 0.
+ *
+ * The schema walk fixes the data shape: a `group` scopes its children into a
+ * nested object, a `repeater` into rows — but a `page` scopes NOTHING. Pages
+ * are presentation; if they scoped data, moving a field to another wizard step
+ * would be a data migration for every existing submission.
+ *
+ * Logic rules are compiled ONCE, when the engine is built: parse, type-check,
+ * kind policy and the computed-dependency cycle check all happen here, so a
+ * form that can loop or read a ghost field never reaches a user. Evaluation
+ * failures on half-filled forms, by contrast, are normal control flow and fail
+ * OPEN for metadata (a broken visibility rule shows the field rather than
+ * silently swallowing data) and CLOSED for validation.
+ *
+ * A rule targeting `items[].total` is row-scoped: it runs once per row, with
+ * two extra variables in scope — `item`, the row, and `index`, its position.
+ *
+ * Snapshots are identity-stable: a field's snapshot object is replaced only
+ * when its value, visibility, requiredness, touched state or errors actually
+ * change, which is what lets useSyncExternalStore and OnPush change detection
+ * work with no memoisation on the consumer's side.
+ *
+ * A block comment rather than JSDoc, with one line of that below for the declaration a host
+ * reads: the bundler keeps JSDoc and drops the rest (§9.3).
+ */
+/** An engine over a validated document: its answers, its rules compiled once, and a snapshot per field. */
 export function createFormEngine(options: FormEngineOptions): FormEngine {
   const { schema } = options
 
@@ -422,6 +380,8 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
   // would make every cached snapshot silently wrong. Switching language means
   // building a new engine.
   const locale = options.locale ?? schema.i18n?.defaultLocale ?? ''
+  // What each field's rules say for their codes, in that language, by the rules' own target (0198).
+  const messagesByTarget = ruleMessages(allRules, (text) => resolveText(schema, text, locale))
 
   if (rules.length > 0 && capabilitySource === undefined) {
     throw new Error(
@@ -1176,6 +1136,7 @@ export function createFormEngine(options: FormEngineOptions): FormEngine {
         type: node.def.type,
         label: resolveText(schema, node.def.label, locale),
         description: resolveText(schema, node.def.description, locale),
+        messages: messagesByTarget.get(templateWire(wire)) ?? NO_MESSAGES,
         def: node.def,
         required,
         visible: !hiddenAt(node.path),

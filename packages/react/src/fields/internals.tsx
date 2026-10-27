@@ -76,7 +76,7 @@ export function ErrorText({ field }: { field: FieldBinding }) {
       {field.errors.map((code, index) => (
         <Fragment key={code}>
           {index > 0 ? ' ' : null}
-          <span data-formancy-code={code}>{errorSentence(text, field.def, code)}</span>
+          <span data-formancy-code={code}>{errorSentence(text, field.def, code, field.messages)}</span>
         </Fragment>
       ))}
     </p>

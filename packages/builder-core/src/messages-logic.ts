@@ -20,6 +20,10 @@ export const LOGIC_MESSAGES = {
   'logic.check': 'Which check',
   // Examples in the box, not values: a check's name and a calculation in CEL.
   'logic.check.example': 'email-not-taken',
+  // What a validate rule says while it fails, in place of its code (0198): asked for, since an
+  // error that says only that something is wrong leaves the person to guess what is right.
+  'logic.message': 'What it says when an answer is rejected',
+  'logic.message.example': 'Travellers must be 18 or older.',
   'logic.calculation': 'The calculation',
   'logic.calculation.example': 'qty * unitPrice',
   'logic.match': 'Match',

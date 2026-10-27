@@ -9,6 +9,8 @@
  * there is no cycle.
  */
 
+import type { Text } from './types.js'
+
 /** The form's behaviour, apart from its data model. */
 export interface FormLogic {
   rules: LogicRule[]
@@ -68,6 +70,12 @@ export interface LogicRule {
   cel?: string
   /** validate only: the error code the field carries while the check fails. */
   code?: string
+  /**
+   * validate only: what the person reads while the rule fails, in place of its code — text or a
+   * catalogue reference, read in the form's language. Needs `code`, which no other rule on the
+   * field may share. Spec version 5 (0198).
+   */
+  message?: Text
   /**
    * Where this rule runs.
    *

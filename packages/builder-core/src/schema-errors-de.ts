@@ -63,6 +63,8 @@ export const SCHEMA_ERRORS_DE: SchemaErrorSentences = {
     'Nur eine Regel vom Typ „validate“ oder „check“ kann wählen, wo sie läuft. Eine Regel vom Typ „{kind}“, die sich im Browser anders verhielte als auf dem Server, ließe den Server nicht prüfen, was der Browser getan hat.',
   'rule.duplicate':
     '„{target}“ hat bereits eine Regel vom Typ „{kind}“. Ein Feld kann eine Regel pro Typ tragen, weil bei zweien kein Gewinner festgelegt wäre.',
+  'rule.codeShared':
+    'Eine andere Regel auf „{target}“ meldet bereits „{code}“, und eine der beiden hat eine Meldung. Ein Code wird auf einem Feld nur auf eine Weise gesagt – geben Sie dieser Regel einen eigenen Code.',
 
   // ------------------------------------------------------- translations
   'i18n.noDefaultCatalogue':

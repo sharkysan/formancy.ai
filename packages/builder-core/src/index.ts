@@ -224,6 +224,7 @@ export {
   RULE_KIND_CHOICES,
   comparisonLabel,
   composeRule,
+  ruleTakesMessage,
   draftIsComplete,
   operatorLabel,
   ruleKindHint,

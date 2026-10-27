@@ -4,6 +4,7 @@ import {
   RULE_KIND_CHOICES,
   comparisonLabel,
   composeRule,
+  ruleTakesMessage,
   draftIsComplete,
   kindCarriesCondition,
   kindWrites,
@@ -14,7 +15,8 @@ import {
   ruleKindsFor,
   ruleTargetFor,
 } from './logic.js'
-import { RULE_KINDS } from '@formancy/spec'
+import { RULE_KINDS, SPEC_VERSIONS } from '@formancy/spec'
+import { validateSchema } from '@formancy/spec/validate'
 import { BUILDER_MESSAGES_DE } from './messages-de.js'
 import { createBuilderText } from './messages.js'
 import type { ConditionDraft, ConditionField } from './condition-draft.js'
@@ -133,6 +135,64 @@ describe('what the editor composes', () => {
     expect(rule.editor).toBeUndefined()
   })
 
+})
+
+describe('a validate rule the editor composes (0198)', () => {
+  const adult: ConditionDraft = { join: 'all', items: [{ field: 'age', operator: 'isAtLeast', text: '18' }] }
+  const fields = [{ path: 'age', label: 'Age', kind: 'number' as const, options: [] }]
+
+  // The message is said for the code the field carries, so the rule needs one of its own.
+  test('says its message, under a code of its own on its field', () => {
+    const rule = composeRule({ kind: 'validate', target: 'age', draft: adult, fields, check: '', message: ' Travellers must be 18 or older. ', rules: [] })
+    expect(rule).toMatchObject({ code: 'condition', message: 'Travellers must be 18 or older.' })
+  })
+
+  // Two rules on one field sharing a code with a message is a document the format refuses.
+  // Another field's codes are that field's.
+  test('takes the next code when the field already has one, and ignores other fields’', () => {
+    const rules = [
+      { target: 'age', kind: 'validate' as const, cel: 'age < 120', code: 'condition', message: 'Really?' },
+      { target: 'other', kind: 'validate' as const, cel: 'true', code: 'condition-2', message: 'Other.' },
+    ]
+    expect(composeRule({ kind: 'validate', target: 'age', draft: adult, fields, check: '', message: 'Too young.', rules }).code).toBe('condition-2')
+  })
+
+  // The editor used to give every rule the code `condition`, which no catalogue words, so the
+  // person read "condition". With nothing to say, the engine's own `invalid` is said instead.
+  test('without a message carries no code', () => {
+    expect(composeRule({ kind: 'validate', target: 'age', draft: adult, fields, check: '' }).code).toBeUndefined()
+  })
+
+  // An error that says only that something is wrong leaves the person to guess what would be
+  // right, so the editor asks for the words before it adds the rule.
+  test('is not complete without a message', () => {
+    expect(draftIsComplete({ kind: 'validate', draft: adult, check: '', message: '  ' })).toBe(false)
+    expect(draftIsComplete({ kind: 'validate', draft: adult, check: '', message: 'Too young.' })).toBe(true)
+  })
+})
+
+describe('where a rule may say its own message (0198)', () => {
+  // Read against the validator at every version the format has, so the builder cannot offer
+  // a message a document of that version refuses, nor withhold one it would hold.
+  test('is exactly where the format holds one', () => {
+    for (const specVersion of SPEC_VERSIONS) {
+      const document = {
+        specVersion,
+        id: 'f',
+        title: 'F',
+        model: { fields: [{ key: 'age', type: 'number', label: 'Age' }] },
+        logic: { rules: [{ target: 'age', kind: 'validate', cel: 'age >= 18', code: 'adult', message: 'Too young.' }] },
+      } as FormSchema
+      expect(ruleTakesMessage(specVersion), specVersion).toBe(validateSchema(document).valid)
+    }
+  })
+
+  // An older document cannot hold one, so the editor does not ask — or no validate rule could
+  // be added to it at all.
+  test('is not asked for where the document cannot hold one', () => {
+    const adult: ConditionDraft = { join: 'all', items: [{ field: 'age', operator: 'isAtLeast', text: '18' }] }
+    expect(draftIsComplete({ kind: 'validate', draft: adult, check: '' })).toBe(true)
+  })
 })
 
 describe('when a draft is enough to add', () => {
@@ -259,6 +319,16 @@ describe('which messages a document refers to', () => {
 
   test('every reference it carries, in the order a person meets them', () => {
     expect(referencedMessages(document_())).toEqual(['name', 'colour', 'colour.red'])
+  })
+
+  // A rule's message is read by the person whose answer it refuses, so a translator has to be
+  // handed it; after the model's, since it is met after the question it is about (0198).
+  test('and a rule’s message, after the questions', () => {
+    const withRule = document_({
+      specVersion: '5',
+      logic: { rules: [{ target: 'name', kind: 'validate', cel: "name != ''", code: 'given', message: { $t: 'name.given' } }] },
+    })
+    expect(referencedMessages(withRule)).toEqual(['name', 'colour', 'colour.red', 'name.given'])
   })
 
   test('and the layouts too, because a heading is text a reader sees', () => {

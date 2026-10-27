@@ -67,7 +67,7 @@ export function ErrorSummary({ labels }: ErrorSummaryProps) {
                     host whose own wording of the entry used it. */}
                 {text('errors.entry', {
                   label: labelFor(path),
-                  problems: codes.map((code) => errorSentence(text, snapshot.def, code)).join(' '),
+                  problems: codes.map((code) => errorSentence(text, snapshot.def, code, snapshot.messages)).join(' '),
                   codes: codes.join(', '),
                 })}
               </a>

@@ -1,4 +1,4 @@
-import type { FormSchema, LogicRule } from '@formancy/spec'
+import type { FormSchema, LogicRule, SpecVersion } from '@formancy/spec'
 import type { Operator } from './conditions.js'
 import { compileGroup } from './conditions.js'
 import { groupOf, rowsOf } from './condition-draft.js'
@@ -180,6 +180,10 @@ export function composeRule(input: {
   check: string
   /** Raw CEL, for a kind that writes an expression rather than a condition. */
   expression?: string
+  /** validate only: what the person reads while the rule fails (0198). */
+  message?: string
+  /** The document's rules, so a validate rule's code is its own on its field. */
+  rules?: readonly LogicRule[]
 }): LogicRule {
   const group = groupOf(input.draft, input.fields)
   const written =
@@ -191,12 +195,33 @@ export function composeRule(input: {
           // next opening of the panel tells.
           { cel: input.expression ?? '' }
         : { cel: compileGroup(group), editor: group }
+  const message = input.kind === 'validate' ? (input.message ?? '').trim() : ''
   return {
     target: input.target,
     kind: input.kind,
     ...written,
-    ...(input.kind === 'validate' ? { code: 'condition' } : {}),
+    // A code of its own on its field, which the message is said for. Without a message, none:
+    // the engine's `invalid`, said in the reader's language — every rule used to carry
+    // `condition`, which no catalogue words, and the person read that word (0198).
+    ...(message === '' ? {} : { code: freshCode(input.rules ?? [], input.target), message }),
   } as LogicRule
+}
+
+/** `condition`, or `condition-2` and on, whichever no rule on the field reports yet. */
+function freshCode(rules: readonly LogicRule[], target: string): string {
+  const taken = new Set(rules.filter((rule) => rule.target === target).map((rule) => rule.code))
+  let code = 'condition'
+  for (let next = 2; taken.has(code); next++) code = `condition-${String(next)}`
+  return code
+}
+
+/**
+ * Whether a validate rule in a document of this version may say its own message (0198): from
+ * spec 5. Held to the validator at every version by `logic.test.ts`, since the ledger says it
+ * once and this says it again.
+ */
+export function ruleTakesMessage(specVersion: SpecVersion): boolean {
+  return Number(specVersion) >= 5
 }
 
 /** Whether what is on screen is enough to add. */
@@ -205,6 +230,7 @@ export function draftIsComplete(input: {
   draft: ConditionDraft
   check: string
   expression?: string
+  message?: string
 }): boolean {
   // A check with no name asks nobody, an empty expression calculates nothing,
   // and an empty comparison compiles to an expression about nothing. Which of
@@ -215,7 +241,13 @@ export function draftIsComplete(input: {
     case 'expression':
       return (input.expression ?? '').trim() !== ''
     default:
-      return rowsOf(input.draft).every((row) => row.field !== '')
+      // A validate rule says what is wrong as well, where it is asked to — an error that says
+      // only that something is leaves the person to guess what would be right. `undefined` is
+      // not asked: a document older than spec 5 cannot hold one (0198).
+      return (
+        rowsOf(input.draft).every((row) => row.field !== '') &&
+        (input.kind !== 'validate' || input.message === undefined || input.message.trim() !== '')
+      )
   }
 }
 
@@ -228,7 +260,8 @@ export function draftIsComplete(input: {
  *
  * Framework-free, so both translation panes ask the same question. It walks the
  * model AND the layouts, because a section's heading is text a reader sees and
- * lives in the arrangement rather than in the model.
+ * lives in the arrangement rather than in the model — and the logic, whose
+ * rules' messages are read by the person an answer is refused for.
  */
 export function referencedMessages(document: FormSchema): string[] {
   const found: string[] = []
@@ -252,5 +285,7 @@ export function referencedMessages(document: FormSchema): string[] {
   }
   walk(document.model)
   walk(document.layouts)
+  // Last: a rule's message is met after the question it is about (0198).
+  walk(document.logic)
   return found
 }
