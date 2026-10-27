@@ -269,6 +269,36 @@ describe('a choice’s picture', () => {
   })
 })
 
+describe('a choice chosen only on its own (0199)', () => {
+  const allergies = (type: 'selectboxes' | 'radio') =>
+    createBuilderSession({
+      specVersion: '5',
+      id: 'health',
+      title: 'Health',
+      model: { fields: [{ key: 'allergies', type, label: 'Allergies', options: [{ value: 'none', label: 'None of these' }] }] },
+    } as FormSchema)
+  const optionsOf = (session: ReturnType<typeof createBuilderSession>) =>
+    (session.document().model.fields[0] as unknown as Record<string, unknown>)['options']
+
+  test('can be set on a list of ticks, and taken off again leaves no flag', async () => {
+    const user = userEvent.setup()
+    const session = allergies('selectboxes')
+    render(<PropertyPanel session={session} keyPath={['allergies']} />)
+
+    await user.click(screen.getByRole('checkbox', { name: 'Only on its own' }))
+    expect(optionsOf(session)).toEqual([{ value: 'none', label: 'None of these', exclusive: true }])
+    await user.click(screen.getByRole('checkbox', { name: 'Only on its own' }))
+    expect(optionsOf(session)).toEqual([{ value: 'none', label: 'None of these' }])
+  })
+
+  // In a radio group every option is already chosen alone; the document refuses the flag.
+  test('is not offered where every option already is', () => {
+    render(<PropertyPanel session={allergies('radio')} keyPath={['allergies']} />)
+
+    expect(screen.queryByRole('checkbox', { name: 'Only on its own' })).toBeNull()
+  })
+})
+
 describe('a matrix in the property panel', () => {
   /*
    * Its rows are value/label pairs like choices, and they arrived as a text box asking for

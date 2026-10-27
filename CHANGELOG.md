@@ -10,6 +10,15 @@ later.
 
 ## Unreleased
 
+**A list of ticks can say "none" (spec 5).** An option marked `exclusive` — "None of these",
+"Prefer not to say" — is chosen alone or not at all: ticking it clears the others, ticking another
+clears it, and the engine refuses a list holding it with anything else, as `exclusive`, so the server
+refuses one posted past the controls. Every control — React's and Angular's lists and tag pickers,
+and Material's — computes its next answer with `ticked` from `@formancy/core`, so none can store
+what the engine refuses. Only on a list of ticks; the builder offers it there as "Only on its own".
+Before, a person could answer "None" and "Nuts" at once, and it was stored as both
+([0199](docs/decisions/0199-an-option-can-be-chosen-only-on-its-own.md)).
+
 **A rule says its own message (spec 5), and the builder stops telling people their answer is
 `condition`.** A `validate` rule's code was shown as it is written — `notPositive` under a
 quantity — because no catalogue knows an author's word, and every rule the builder wrote had the

@@ -43,6 +43,11 @@ export function modelViolations(def: FieldDef, value: unknown): BuiltInErrorCode
     // for the list rather than one per bad member: the field is wrong, and naming which
     // index would describe a payload rather than the question.
     if (offersOptions(def) && !value.every((tick) => offers(def, tick))) codes.push('option')
+    // "None of these" and "Nuts" at once: chosen alone or not at all, or the list says two
+    // things. No control stores it (`ticked`), so this is the payload posted past one (0199).
+    if (value.length > 1 && value.some((tick) => def.options?.some((option) => option.value === tick && option.exclusive === true))) {
+      codes.push('exclusive')
+    }
     return codes
   }
 

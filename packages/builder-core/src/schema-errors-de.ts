@@ -49,6 +49,8 @@ export const SCHEMA_ERRORS_DE: SchemaErrorSentences = {
     'Zwei Zeilen dieser Matrix haben den Wert «{value}». Eine Matrix speichert jede Antwort unter ihrer Zeile und könnte also nicht sagen, welche Zeile beantwortet wurde – gib jeder Zeile einen eigenen Wert.',
   'matrix.duplicateColumn':
     'Zwei Spalten dieser Matrix haben den Wert «{value}». Eine Matrix speichert die gewählte Spalte und könnte also nicht sagen, welche der beiden es war – gib jeder Spalte einen eigenen Wert.',
+  'option.exclusiveNotAList':
+    'Nur eine Option einer Liste von Häkchen kann allein gewählt werden: In einer Optionsgruppe oder einer Auswahlliste ist es jede Option bereits, und eine Rangfolge oder eine Matrix verwendet alle. Entfernen Sie „exclusive“ oder machen Sie das Feld zu einer Liste von Häkchen.',
   'mask.noPositions':
     'Diese Maske hat keine Stelle zum Tippen, das Feld könnte also keine Antwort aufnehmen. Verwende 9 für eine Ziffer, a für einen Buchstaben oder * für beides.',
 

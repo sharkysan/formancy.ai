@@ -46,11 +46,12 @@ export type BuiltInErrorCode =
   | 'shape'
   | 'earliest'
   | 'latest'
-  // Lists and files.
+  // Lists and files; an option chosen with others that is chosen alone or not at all (0199).
   | 'minItems'
   | 'maxItems'
   | 'maxFileSize'
   | 'accept'
+  | 'exclusive'
   // Signatures.
   | 'box'
   | 'maxPoints'

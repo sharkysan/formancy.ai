@@ -1397,6 +1397,11 @@
        "$ref": "#/$defs/text"
       }
      }
+    },
+    "exclusive": {
+     "title": "Only on its own",
+     "description": "For a list of ticks: this option is chosen alone or not at all — \"None of these\", \"Prefer not to say\". Ticking it clears the others, ticking another clears it, and an answer holding it with anything else is refused, on the server too. On a list of ticks only: in a radio group or a dropdown every option already is. Needs spec version 5.",
+     "type": "boolean"
     }
    }
   },

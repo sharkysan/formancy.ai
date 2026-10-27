@@ -50,6 +50,7 @@ let nextId = 0
         [options]="asOptions(value())"
         [text]="text()"
         [pictures]="property().pictures === true"
+        [exclusive]="property().exclusive === true"
         [list]="property().list ?? 'options'"
         (changed)="changed.emit($event.length === 0 ? undefined : $event)"
       />

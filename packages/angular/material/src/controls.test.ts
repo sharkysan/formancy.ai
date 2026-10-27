@@ -128,6 +128,32 @@ describe('a field Material draws', () => {
     expect(screen.getByLabelText('Large').closest('mat-radio-group')).not.toBeNull()
     expect(engine.value()).toEqual({ ok: true, size: 'l', extras: ['wrap', 'card'] })
   })
+
+  // An option chosen alone or not at all, as the default control ticks it (0199).
+  test('an exclusive option in a group of ticks clears the rest, and is cleared by another', async () => {
+    const engine = await mount({
+      ...form([
+        {
+          key: 'extras',
+          type: 'selectboxes',
+          label: 'Extras',
+          options: [
+            { value: 'wrap', label: 'Wrap' },
+            { value: 'card', label: 'Card' },
+            { value: 'none', label: 'Nothing extra', exclusive: true },
+          ],
+        },
+      ]),
+      specVersion: '5',
+    } as FormSchema)
+    const extras = screen.getByRole('group', { name: 'Extras' })
+
+    fireEvent.click(within(extras).getByLabelText('Wrap'))
+    fireEvent.click(within(extras).getByLabelText('Nothing extra'))
+    expect(engine.value()).toEqual({ extras: ['none'] })
+    fireEvent.click(within(extras).getByLabelText('Card'))
+    expect(engine.value()).toEqual({ extras: ['card'] })
+  })
 })
 
 describe('what Material cannot draw', () => {

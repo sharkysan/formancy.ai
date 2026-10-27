@@ -35,6 +35,7 @@ export const FORM_WORDS_DE = {
   'error.check_unavailable': 'Diese Antwort konnte gerade nicht geprüft werden. Versuchen Sie es gleich noch einmal.',
   'error.type': 'Diese Art von Antwort passt nicht zu dieser Frage.',
   'error.option': 'Wählen Sie eine der angebotenen Optionen.',
+  'error.exclusive': 'Eine der angekreuzten Antworten kann nur allein gewählt werden.',
   'error.duplicate': 'Ordnen Sie jede Option nur einmal ein.',
   'error.row': 'Beantworten Sie nur die Zeilen, nach denen gefragt wird.',
   'error.min': 'Geben Sie {min} oder mehr ein.',

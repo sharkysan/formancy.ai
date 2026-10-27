@@ -27,6 +27,7 @@ const EVERY_CODE: Record<BuiltInErrorCode, FieldDef> = {
   type: text,
   option: { key: 'c', type: 'select' },
   duplicate: { key: 'r', type: 'ranking' },
+  exclusive: { key: 's', type: 'selectboxes' },
   row: { key: 'm', type: 'matrix' },
   min: { key: 'n', type: 'number', min: 1 },
   max: { key: 'n', type: 'number', max: 9 },

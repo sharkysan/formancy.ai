@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
 import type { FieldOption } from '@formancy/spec'
-import { createBuilderText, LIST_WORDS, nextChoice, withPicture } from '@formancy/builder-core'
+import { createBuilderText, LIST_WORDS, nextChoice, withExclusive, withPicture } from '@formancy/builder-core'
 import type { BuilderText } from '@formancy/builder-core'
 
 /**
@@ -30,6 +30,11 @@ export interface OptionsEditorProps {
    * builder-core decides from the field's type and widget (0126).
    */
   pictures?: boolean
+  /**
+   * Whether a choice may be one chosen alone — `EditableProperty.exclusive`, which
+   * builder-core decides: a list of ticks only (0199).
+   */
+  exclusive?: boolean
 }
 
 const ENGLISH = createBuilderText()
@@ -40,6 +45,7 @@ export function OptionsEditor({
   onChange,
   text = ENGLISH,
   pictures = false,
+  exclusive = false,
 }: OptionsEditorProps): ReactElement {
   const id = useId()
 
@@ -140,6 +146,17 @@ export function OptionsEditor({
                     onChange={(event) => put(index, withPicture(option, { alt: event.target.value }))}
                   />
                 </>
+              ) : null}
+
+              {exclusive ? (
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={option.exclusive === true}
+                    onChange={(event) => put(index, withExclusive(option, event.target.checked))}
+                  />
+                  {text('options.exclusive')}
+                </label>
               ) : null}
 
               <button

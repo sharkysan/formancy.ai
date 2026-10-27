@@ -53,7 +53,7 @@ const fill = (template: string, values: Record<string, string | number>): string
   template.replace(/\{(\w+)\}/g, (whole, name: string) => String(values[name] ?? whole))
 
 const document = (fields: unknown[], extra: Record<string, unknown> = {}): FormSchema =>
-  ({ specVersion: '4', id: 'worte', title: 'Worte', model: { fields }, ...extra }) as unknown as FormSchema
+  ({ specVersion: '5', id: 'worte', title: 'Worte', model: { fields }, ...extra }) as unknown as FormSchema
 
 function mount(
   schema: FormSchema,
@@ -315,6 +315,7 @@ describe('every error in a German form', () => {
     'error.type': { field: { type: 'text' }, value: { x: 1 } },
     'error.option': { field: { type: 'select', options }, value: 'z' },
     'error.duplicate': { field: { type: 'ranking', options }, value: ['a', 'a'] },
+    'error.exclusive': { field: { type: 'selectboxes', options: [...options, { value: 'n', label: 'N', exclusive: true }] }, value: ['a', 'n'] },
     'error.row': { field: { type: 'matrix', options, rows: [{ value: 'r', label: 'R' }] }, value: { q: 'a' } },
     'error.min': { field: { type: 'number', min: 1500 }, value: 3, values: { min: '1.500' } },
     'error.max': { field: { type: 'number', max: 9 }, value: 10, values: { max: '9' } },

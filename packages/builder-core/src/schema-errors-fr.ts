@@ -48,6 +48,8 @@ export const SCHEMA_ERRORS_FR: SchemaErrorSentences = {
     'Deux lignes de cette matrice ont la valeur « {value} ». Une matrice enregistre chaque réponse sous sa ligne : elle ne pourrait pas dire quelle ligne a été répondue — donnez à chaque ligne sa propre valeur.',
   'matrix.duplicateColumn':
     'Deux colonnes de cette matrice ont la valeur « {value} ». Une matrice enregistre la colonne choisie : elle ne pourrait pas dire laquelle des deux — donnez à chaque colonne sa propre valeur.',
+  'option.exclusiveNotAList':
+    'Seule une option d’une liste de cases peut être choisie seule : dans un groupe de boutons radio ou une liste déroulante, chaque option l’est déjà, et un classement ou une matrice les utilise toutes. Retirez « exclusive », ou faites du champ une liste de cases.',
   'mask.noPositions':
     'Ce masque n’a aucune position où saisir : le champ ne pourrait recevoir aucune réponse. Utilisez 9 pour un chiffre, a pour une lettre ou * pour l’un ou l’autre.',
 

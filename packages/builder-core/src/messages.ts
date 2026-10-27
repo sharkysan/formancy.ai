@@ -307,6 +307,8 @@ const BUILDER_OWN_MESSAGES = {
   // Offered only where a choice can show a picture: radio buttons and checkboxes.
   'options.image': 'Picture address',
   'options.imageAlt': 'What the picture shows',
+  // A choice chosen alone or not at all — "None of these" (0199).
+  'options.exclusive': 'Only on its own',
   'list.remove': 'Remove',
   'columns.heading': 'Columns',
   'columns.empty':

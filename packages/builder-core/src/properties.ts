@@ -51,6 +51,11 @@ export interface EditableProperty {
    */
   pictures?: boolean
   /**
+   * For `options`: whether a choice may be one that is chosen alone — "None of these". Only on
+   * a list of ticks, where the document may carry the flag (0199).
+   */
+  exclusive?: boolean
+  /**
    * For `options`: which list it is — a field's choices, or a matrix's rows, which have the
    * same shape and need their own words: an editor headed "Choices" over the rows, adding
    * "New choice", would name the wrong thing (0139).
@@ -218,7 +223,7 @@ export function editablePropertiesFor(
     inLanguage(
       // A row never carries a picture; a choice may, where the field draws one.
       property.kind === 'options'
-        ? { ...property, pictures: property.list === 'options' && pictures }
+        ? { ...property, pictures: property.list === 'options' && pictures, exclusive: property.list === 'options' && type === 'selectboxes' }
         : property,
       text,
     ),

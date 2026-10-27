@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core'
-import { LIST_WORDS, createBuilderText, nextChoice, withPicture } from '@formancy/builder-core'
+import { LIST_WORDS, createBuilderText, nextChoice, withExclusive, withPicture } from '@formancy/builder-core'
 import type { BuilderText } from '@formancy/builder-core'
 import { takeHostOutOfLayout } from './host.js'
 import type { FieldOption } from './types.js'
@@ -89,6 +89,16 @@ let nextId = 0
                   (input)="setPicture(at, 'alt', $event)"
                 />
               }
+              @if (exclusive()) {
+                <label>
+                  <input
+                    type="checkbox"
+                    [checked]="option.exclusive === true"
+                    (change)="setExclusive(at, $event)"
+                  />
+                  {{ 'options.exclusive' | builderText: text() }}
+                </label>
+              }
               <button
                 type="button"
                 [attr.aria-label]="
@@ -116,6 +126,11 @@ export class FormancyOptionsEditor {
    * builder-core decides from the field's type and widget (0126).
    */
   readonly pictures = input(false)
+  /**
+   * Whether a choice may be one chosen alone — `EditableProperty.exclusive`, which
+   * builder-core decides: a list of ticks only (0199).
+   */
+  readonly exclusive = input(false)
   /** A field's choices, or a matrix's rows: the same editor, its own words (0139). */
   readonly list = input<'options' | 'rows'>('options')
   protected readonly words = computed(() => LIST_WORDS[this.list()])
@@ -170,6 +185,12 @@ export class FormancyOptionsEditor {
           : option,
       ),
     )
+  }
+
+  /** The whole choice, as `withExclusive` makes it: unticked, the flag is a key that is gone. */
+  protected setExclusive(at: number, event: Event): void {
+    const on = (event.target as HTMLInputElement).checked
+    this.commit(this.draft().map((option, index) => (index === at ? withExclusive(option, on) : option)))
   }
 
   protected labelText(option: FieldOption): string {

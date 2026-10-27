@@ -89,6 +89,18 @@ top three" is `maxItems: 3`, and a complete order is `minItems` set to the numbe
 options. A ranking starts empty rather than in the options' written order, because an
 order nobody chose is not an answer.
 
+An option of a `selectboxes` field may be one chosen alone — "None of these":
+
+```json
+{ "value": "none", "label": "None of these", "exclusive": true }
+```
+
+Ticking it clears the others and ticking another clears it, and a list holding it with
+anything else is refused with `exclusive`, on the server too. It is how a list says *none*
+as an answer, which an empty list cannot: that is also what somebody who skipped the
+question leaves. Spec version 5
+([0199](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0199-an-option-can-be-chosen-only-on-its-own.md)).
+
 An option on a `radio` or `selectboxes` field may carry a picture, which changes
 nothing about the answer:
 

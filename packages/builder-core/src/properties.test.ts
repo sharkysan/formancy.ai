@@ -6,6 +6,7 @@ import {
   editablePropertiesFor,
   layoutKinds,
 } from './properties.js'
+import { withExclusive } from './editors.js'
 
 const names = (type: string): string[] =>
   editablePropertiesFor(type).map((property) => property.name)
@@ -44,6 +45,26 @@ describe('editablePropertiesFor', () => {
     expect(pictures('selectboxes')).toBe(true)
     expect(pictures('select')).toBe(false)
     expect(pictures('selectboxes', 'tagpicker')).toBe(false)
+  })
+
+  // Only a list of ticks can hold an option with others; anywhere else the document refuses the
+  // flag, so offering it would offer an edit that is refused (0199).
+  test('choices offer "only on its own" exactly on a list of ticks', () => {
+    const exclusive = (type: string, widget?: string) =>
+      editablePropertiesFor(type, widget).find((property) => property.name === 'options')?.exclusive
+
+    expect(exclusive('selectboxes')).toBe(true)
+    expect(exclusive('selectboxes', 'tagpicker')).toBe(true)
+    expect(exclusive('radio')).toBe(false)
+    expect(exclusive('select')).toBe(false)
+  })
+
+  // Unticked, the key goes: an option that says `exclusive: false` says nothing a missing one
+  // does not, and a document that carries it is noisier to diff.
+  test('an option made exclusive and back carries no flag', () => {
+    const none = { value: 'none', label: 'None' }
+    expect(withExclusive(none, true)).toEqual({ ...none, exclusive: true })
+    expect(withExclusive(withExclusive(none, true), false)).toEqual(none)
   })
 
   test('a property belonging to another type is not offered', () => {

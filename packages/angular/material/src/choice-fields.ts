@@ -4,6 +4,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox'
 import { MatFormFieldModule } from '@angular/material/form-field'
 import { MatInputModule } from '@angular/material/input'
 import { MatRadioModule } from '@angular/material/radio'
+import { ticked } from '@formancy/core'
 import { FormancyTextPipe } from '@formancy/angular'
 import { MaterialFieldBase } from './base.js'
 import { FormancyErrorText } from '@formancy/angular'
@@ -239,11 +240,9 @@ export class FormancyMaterialSelectBoxesField extends MaterialFieldBase {
   })
 
   protected toggle(value: string, on: boolean): void {
-    // In the options' own order, not the order they were ticked, as the default control
-    // stores it: two people choosing the same answers store the same array.
-    const next = (this.offered() ?? [])
-      .map((option) => option.value)
-      .filter((candidate) => (candidate === value ? on : this.chosen().includes(candidate)))
-    this.field.setValue(next)
+    // In the options' own order, and an exclusive option alone, as the default control stores
+    // it — the core's one function (0199).
+    const order = (this.offered() ?? []).map((option) => option.value)
+    this.field.setValue(ticked(this.field.snapshot().def, order, this.chosen(), value, on))
   }
 }

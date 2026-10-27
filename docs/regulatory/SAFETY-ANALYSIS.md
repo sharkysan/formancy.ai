@@ -38,6 +38,13 @@ integration test that posts directly to the API.
 *Residual:* a rule the form author did not write is not enforced by anything.
 The software validates what it was told to validate.
 
+*And an answer that contradicts itself.* An option marked `exclusive` — "None of these" — is
+chosen alone or not at all ([0199](../decisions/0199-an-option-can-be-chosen-only-on-its-own.md)): a list holding it with
+another option is refused with `exclusive` by the engine, browser and server alike, and no
+control produces one, because every control computes its next list with core's `ticked`.
+Verified by `packages/core/src/exclusive.test.ts`, each renderer's `exclusive.test` and
+Material's case in `controls.test.ts`.
+
 *And what it is told about a repeater, which until 2026-10-18 it did not check.*
 The engine validated fields, and a repeater is not one: its `maxItems`, `required`
 on it, and a `required` or `validate` rule whose target was the repeater were

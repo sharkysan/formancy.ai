@@ -65,6 +65,7 @@ const WORDED: Record<BuiltInErrorCode, Worded> = {
   check_unavailable: said('error.check_unavailable'),
   type: said('error.type'),
   option: said('error.option'),
+  exclusive: said('error.exclusive'),
   duplicate: said('error.duplicate'),
   row: said('error.row'),
   min: (def, locale) => ({ id: 'error.min', values: number('min', def?.min, locale) }),

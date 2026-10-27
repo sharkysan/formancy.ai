@@ -55,6 +55,7 @@ export const BUILT_IN_ERROR_CODES = {
   maxItems: true,
   maxFileSize: true,
   accept: true,
+  exclusive: true,
   box: true,
   maxPoints: true,
 } as const satisfies Record<BuiltInErrorCode, true>

@@ -32,6 +32,7 @@ export const FORM_WORDS_FR = {
   'error.check_unavailable': "Cette réponse n'a pas pu être vérifiée pour l'instant. Réessayez dans un moment.",
   'error.type': 'Ce type de réponse ne convient pas à cette question.',
   'error.option': "Choisissez l'une des options proposées.",
+  'error.exclusive': "L'une des réponses cochées ne peut être choisie que seule.",
   'error.duplicate': 'Classez chaque option une seule fois.',
   'error.row': 'Répondez seulement aux lignes que pose cette question.',
   'error.min': 'Saisissez {min} ou plus.',

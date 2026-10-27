@@ -258,6 +258,7 @@ export const BUILDER_MESSAGES_FR = {
   'rows.newRow': 'Nouvelle ligne',
   'options.image': 'Adresse de l’image',
   'options.imageAlt': 'Ce que montre l’image',
+  'options.exclusive': 'Uniquement seule',
   'list.remove': 'Supprimer',
   'columns.heading': 'Colonnes',
   'columns.empty':

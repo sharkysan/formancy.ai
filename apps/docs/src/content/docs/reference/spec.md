@@ -187,6 +187,7 @@ Each item:
 - `value` — required · **Value.** What is stored in the submission when this option is chosen. Stable like a field key: changing it detaches the answers already collected.
 - `label` — required · **Label.** What the person choosing reads.
 - `image` — optional · **Image.** A picture shown with this option, on radio buttons and checkboxes — never in a dropdown, as a chip, in a ranking or in a matrix, which cannot show one, so the document is refused if it asks. The label still names the option and is what is announced; the picture is beside it. Needs spec version 4.
+- `exclusive` — optional · **Only on its own.** For a list of ticks: this option is chosen alone or not at all — "None of these", "Prefer not to say". Ticking it clears the others, ticking another clears it, and an answer holding it with anything else is refused, on the server too. On a list of ticks only: in a radio group or a dropdown every option already is. Needs spec version 5.
 
 #### `repeater`
 
@@ -697,6 +698,12 @@ required · Text (see below)
 optional · object
 
 **Image.** A picture shown with this option, on radio buttons and checkboxes — never in a dropdown, as a chip, in a ranking or in a matrix, which cannot show one, so the document is refused if it asks. The label still names the option and is what is announced; the picture is beside it. Needs spec version 4.
+
+#### `exclusive`
+
+optional · boolean
+
+**Only on its own.** For a list of ticks: this option is chosen alone or not at all — "None of these", "Prefer not to say". Ticking it clears the others, ticking another clears it, and an answer holding it with anything else is refused, on the server too. On a list of ticks only: in a radio group or a dropdown every option already is. Needs spec version 5.
 
 ### Message reference
 
