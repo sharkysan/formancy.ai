@@ -14,6 +14,7 @@ import {
   rowsOf,
   ruleKindHint,
   ruleKindLabel,
+  ruleSays,
   ruleTakesMessage,
   ruleKindsFor,
   ruleTargetFor,
@@ -62,6 +63,10 @@ import { injectBuilderView } from './view.js'
               <!-- The expression, shown. A developer should not have to guess
                    what the condition compiled to. -->
               <code>{{ entry.rule.cel }}</code>
+              <!-- And what it says when it rejects an answer, read back where it was written. -->
+              @if (saysOf(entry.rule); as says) {
+                <span data-formancy-part="logic-message">{{ says }}</span>
+              }
               <button
                 type="button"
                 [attr.aria-label]="
@@ -283,6 +288,10 @@ export class FormancyLogicPanel {
 
   constructor() {
     takeHostOutOfLayout()
+  }
+
+  protected saysOf(rule: LogicRule): string | undefined {
+    return ruleSays(this.view().document, rule)
   }
 
   protected labelOf(rule: LogicRule): string {

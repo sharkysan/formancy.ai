@@ -10,6 +10,11 @@ later.
 
 ## Unreleased
 
+**The logic panel lists what a rule says.** A rule that rejects an answer is shown with its message,
+in the document's own language, beside its kind and its expression, in both builders — before, an
+author could write a message and never read it back (`ruleSays` in `@formancy/builder-core`;
+[0198](docs/decisions/0198-a-rule-says-its-own-message.md)).
+
 **The answers can be checked before they are sent.** With `review` on React's `FormancyForm` or
 `[review]` on Angular's `formancy-form`, the last step offers **Check your answers** where it would
 send. It validates the whole form as sending would and goes to a problem if there is one;

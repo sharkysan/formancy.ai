@@ -21,6 +21,7 @@ import {
   rowsOf,
   ruleKindHint,
   ruleKindLabel,
+  ruleSays,
   ruleTakesMessage,
   ruleKindsFor,
   ruleTargetFor,
@@ -87,6 +88,10 @@ export function LogicPanel({ session, keyPath }: LogicPanelProps): ReactElement 
               {/* The expression, shown. A developer should not have to guess
                   what the condition compiled to. */}
               <code>{rule.cel}</code>
+              {/* And what it says when it rejects an answer, read back where it was written. */}
+              {ruleSays(view.document, rule) === undefined ? null : (
+                <span data-formancy-part="logic-message">{ruleSays(view.document, rule)}</span>
+              )}
               <button
                 type="button"
                 aria-label={text('logic.remove', { rule: ruleKindLabel(rule.kind, text), target })}

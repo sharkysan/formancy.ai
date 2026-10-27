@@ -256,6 +256,16 @@ describe('authoring a rule', () => {
     expect(rulesOf(session)[0]).not.toHaveProperty('message')
   })
 
+  // Read back where it was written: the list shows what a rule that rejects an answer says.
+  test('lists a rule with what it says', () => {
+    mount({
+      ...schema,
+      specVersion: '5',
+      logic: { rules: [{ target: 'canton', kind: 'validate', cel: "canton != ''", code: 'given', message: 'Name the canton.' }] },
+    })
+    expect(screen.getByRole('listitem').textContent).toContain('Name the canton.')
+  })
+
   test('cancelling adds nothing', async () => {
     const user = userEvent.setup()
     const session = mount()
