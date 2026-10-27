@@ -333,14 +333,16 @@ describe('the spec version 2 freeze', () => {
     typesInFour: string[]
   } => {
     /*
-     * Both files, because the layout vocabulary moved out of `types.ts` when spec
-     * 4 pushed that file past its size ceiling. Reading one of them returned an
-     * empty list for `SPEC_1_LAYOUT_KINDS`, so every layout kind looked like a
-     * version 2 addition and `field` — a version 1 kind since the beginning — was
-     * reported as missing from the version 2 section.
+     * Every source file of the spec package, not a list of them. The layout vocabulary moved
+     * out of `types.ts` when spec 4 pushed that file past its size ceiling, and reading one
+     * file returned an empty list for `SPEC_1_LAYOUT_KINDS`, so every layout kind looked like
+     * a version 2 addition; the widget lists moved out the same way when spec 5 did (0195),
+     * and a list of two files broke again. Wherever a list is declared, it is read.
      */
-    const types = ['types.ts', 'layout.ts']
-      .map((name) => readFileSync(join(repo, 'packages', 'spec', 'src', name), 'utf8'))
+    const source = join(repo, 'packages', 'spec', 'src')
+    const types = readdirSync(source)
+      .filter((name) => name.endsWith('.ts') && !name.endsWith('.test.ts'))
+      .map((name) => readFileSync(join(source, name), 'utf8'))
       .join('\n')
     const list = (name: string): string[] => {
       const found = new RegExp(`export const ${name}[^=]*=\\s*\\[([^\\]]*)\\]`, 's').exec(types)

@@ -492,6 +492,14 @@ optional · one of `"tagpicker"`
 
 **Widget.** How this field should look. Presentation only: it never changes what the field collects. `tagpicker` narrows a long list by typing and shows the answers as chips; the answer is still an array of offered option values, in the options’ own order.
 
+#### `text`, `textarea`, `number`, `date`, `select`
+
+##### `autocomplete`
+
+optional · one of `"name"`, `"honorific-prefix"`, `"given-name"`, `"additional-name"`, `"family-name"`, `"honorific-suffix"`, `"nickname"`, `"username"`, `"organization-title"`, `"organization"`, `"street-address"`, `"address-line1"`, `"address-line2"`, `"address-line3"`, `"address-level4"`, `"address-level3"`, `"address-level2"`, `"address-level1"`, `"country"`, `"country-name"`, `"postal-code"`, `"transaction-currency"`, `"transaction-amount"`, `"language"`, `"bday"`, `"bday-day"`, `"bday-month"`, `"bday-year"`, `"sex"`, `"url"`, `"photo"`, `"tel"`, `"tel-country-code"`, `"tel-national"`, `"tel-area-code"`, `"tel-local"`, `"tel-local-prefix"`, `"tel-local-suffix"`, `"tel-extension"`, `"email"`, `"impp"`
+
+**Autofill.** What the answer is, in the words browsers and assistive technology share — `email`, `given-name`, `postal-code` — so a browser can fill it in and a person's own tools can mark it, as WCAG 1.3.5 asks of a field that collects information about the person filling the form in. One of the input purposes the standard names, except the password and payment-card ones: a form platform keeps its answers, and storing a card number or a password in a submission is not something to invite. On text, long text, number, date and choice fields. Needs spec version 5.
+
 ## Logic rules
 
 Every rule of the form, in one flat list. A rule names the field it applies to; the order here does not matter, because evaluation order comes from what depends on what.

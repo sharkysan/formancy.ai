@@ -52,6 +52,7 @@ function plainOptions(
           matNativeControl
           [id]="control().id"
           [attr.name]="control().name"
+          [attr.autocomplete]="field.snapshot().def.autocomplete ?? null"
           [required]="field.snapshot().required"
           [disabled]="field.snapshot().disabled"
           [errorStateMatcher]="matcher"

@@ -2,12 +2,8 @@ import { describe, expect, test } from 'vitest'
 
 import schema from '../formancy.schema.json' with { type: 'json' }
 import { DECLINE_KEY, authoringBriefing, authoringFacts } from './authoring.js'
-import {
-  CURRENT_SPEC_VERSION,
-  FIELD_TYPES,
-  SPEC_1_FIELD_TYPES,
-  WIDGETS_BY_FIELD_TYPE,
-} from './types.js'
+import { CURRENT_SPEC_VERSION, FIELD_TYPES, SPEC_1_FIELD_TYPES } from './types.js'
+import { WIDGETS_BY_FIELD_TYPE } from './widgets.js'
 
 /**
  * The briefing a language model is given before it writes a document.

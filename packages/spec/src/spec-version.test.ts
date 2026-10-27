@@ -2,13 +2,11 @@ import { describe, expect, test } from 'vitest'
 import {
   CURRENT_SPEC_VERSION,
   FIELD_TYPES,
-  FIELD_WIDGETS,
   SPEC_1_FIELD_TYPES,
-  SPEC_3_WIDGETS,
   SPEC_4_FIELD_TYPES,
-  SPEC_4_WIDGETS,
   SPEC_VERSIONS,
 } from './types.js'
+import { FIELD_WIDGETS, SPEC_3_WIDGETS, SPEC_4_WIDGETS } from './widgets.js'
 import type { FormSchema } from './types.js'
 import { upgradeSpecVersion } from './upgrade.js'
 import { validateSchema } from './validate.js'

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { FIELD_WIDGETS, SPEC_2_WIDGETS, WIDGETS_BY_FIELD_TYPE } from './types.js'
+import { FIELD_WIDGETS, SPEC_2_WIDGETS, WIDGETS_BY_FIELD_TYPE } from './widgets.js'
 import type { FormSchema } from './types.js'
 import { validateSchema } from './validate.js'
 

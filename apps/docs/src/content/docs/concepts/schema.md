@@ -167,6 +167,18 @@ the label, and the builder extracts it for translation with the rest. It needs s
 which is open: a version 4 document carrying one is refused by name
 ([0194](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0194-spec-5-opens-with-a-fields-description.md)).
 
+A field that asks about the person filling the form in can also say what its answer is, for a
+browser to fill and their own tools to mark — WCAG 1.3.5's input purposes, as `autocomplete`:
+
+```json
+{ "key": "email", "type": "text", "label": "Email", "autocomplete": "email" }
+```
+
+On text, long text, number, date and choice fields, from a closed list that leaves out the
+password and payment-card purposes on purpose: a form platform keeps its answers, and a hint that
+invites a browser to put a card number into a stored submission is not one to offer. Spec
+version 5 ([0195](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0195-a-field-says-what-its-answer-is-for-autofill.md)).
+
 ## A key is an identity, forever
 
 ```jsonc

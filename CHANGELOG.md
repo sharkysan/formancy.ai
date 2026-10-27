@@ -10,6 +10,15 @@ later.
 
 ## Unreleased
 
+**A field can say what its answer is, for autofill (spec 5).** WCAG 1.3.5 asks a field about the
+person filling the form in to name its purpose, and nothing could. `autocomplete` on a text, long
+text, number, date or choice field — `email`, `given-name`, `postal-code` — is now set on the
+control by both renderers and Material, offered by the builder from the schema, and refused in a
+version 4 document. The list is the standard's input purposes **without the password and
+payment-card ones**: every answer here is stored, and a hint inviting a browser to put a card
+number into a submission is not one to offer
+([0195](docs/decisions/0195-a-field-says-what-its-answer-is-for-autofill.md)).
+
 **Spec version 5 is open, with a field's `description`.** Help text had nowhere to go but the
 label, which made every control's accessible name a paragraph. A field, a group, a page or a
 repeater may now carry `description` — text or a catalogue reference — drawn under the question

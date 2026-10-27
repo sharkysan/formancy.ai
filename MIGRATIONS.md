@@ -29,6 +29,11 @@ it ([0051](docs/decisions/0051-spec-2-adds-types.md)).
   than as part of its name. Text, or a reference into the catalogue; on a group, a page or a
   repeater it describes the whole set. A version 4 document carrying one is refused, naming the
   property ([0194](docs/decisions/0194-spec-5-opens-with-a-fields-description.md)).
+- `autocomplete` on a text, long text, number, date or choice field — the input purpose
+  WCAG 1.3.5 asks a field about the person to say (`email`, `given-name`, `postal-code`), set on
+  the control for a browser to fill. A closed list: the standard's purposes without the password
+  and payment-card ones. A version 4 document carrying one is refused, naming the property
+  ([0195](docs/decisions/0195-a-field-says-what-its-answer-is-for-autofill.md)).
 
 ## Spec version 4 is FROZEN
 

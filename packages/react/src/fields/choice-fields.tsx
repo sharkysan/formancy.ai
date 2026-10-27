@@ -101,6 +101,8 @@ export function SelectField({ path, label }: FieldComponentProps) {
           for the same reason — the explicit form of the same contract. */}
       <select
         {...field.controlProps}
+        // What the answer is, for a browser to fill (WCAG 1.3.5, 0195); absent, no attribute.
+        autoComplete={field.def.autocomplete}
         value={typeof field.value === 'string' ? field.value : ''}
         onChange={(event) => field.setValue(event.target.value === '' ? null : event.target.value)}
         // A failed source is asked again when the person moves to the field. Focus

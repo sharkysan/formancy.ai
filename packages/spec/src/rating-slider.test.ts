@@ -1,12 +1,11 @@
 import { describe, expect, test } from 'vitest'
+import { CURRENT_SPEC_VERSION, SPEC_VERSIONS } from './types.js'
 import {
-  CURRENT_SPEC_VERSION,
   FIELD_WIDGETS,
   SPEC_3_WIDGETS,
   SPEC_4_WIDGETS,
-  SPEC_VERSIONS,
   WIDGETS_BY_FIELD_TYPE,
-} from './types.js'
+} from './widgets.js'
 import type { FormSchema } from './types.js'
 import { validateSchema } from './validate.js'
 
