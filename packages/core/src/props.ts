@@ -38,6 +38,16 @@ export interface FieldProps {
   error: { id: string }
 }
 
+/**
+ * The field types a renderer draws as a fieldset and a legend.
+ *
+ * Several controls answering one question, which is a `group` to assistive
+ * technology — and `role="group"` does not support `aria-required`, so these
+ * say they are required in their description instead. See
+ * `FieldPropsInput.grouped`.
+ */
+export const GROUPED_FIELD_TYPES: ReadonlySet<string> = new Set(['radio', 'selectboxes', 'ranking', 'matrix', 'repeater'])
+
 export interface FieldPropsInput {
   wire: string
   ids: FieldIds
@@ -57,6 +67,12 @@ export interface FieldPropsInput {
    * both looked right.
    */
   grouped: boolean
+  /**
+   * The field has a description (0194), drawn at `ids.description`: named in
+   * `aria-describedby` so it is read out with the control, never as its name. Only when
+   * there is one, since an id pointing at nothing is an error an auditor reports.
+   */
+  described?: boolean
   /** A check about this answer is waiting for the deployment to answer. */
   checking?: boolean
   disabled: boolean
@@ -80,6 +96,7 @@ export function buildFieldProps(input: FieldPropsInput): FieldProps {
   // that combination is the classic double-announcement bug.
   const describes = describedBy(input.ids, {
     hint: input.grouped && input.required,
+    description: input.described === true,
     error: showError,
   })
   if (describes !== undefined) control['aria-describedby'] = describes

@@ -34,7 +34,7 @@ const picture = (body: string): string =>
   )}`
 
 export const STARTER_SCHEMA = {
-  specVersion: '4',
+  specVersion: '5',
   id: 'order',
   title: 'Order',
   model: {
@@ -44,7 +44,9 @@ export const STARTER_SCHEMA = {
 
       { key: 'firstName', type: 'text', label: { $t: 'firstName' }, required: true },
       { key: 'lastName', type: 'text', label: { $t: 'lastName' }, required: true },
-      { key: 'email', type: 'text', label: { $t: 'email' }, format: 'email', required: true },
+      // A description (spec 5): help text under the question, read out with the control
+      // rather than as its name, so the label stays "Email".
+      { key: 'email', type: 'text', label: { $t: 'email' }, description: { $t: 'email.help' }, format: 'email', required: true },
       // A mask: the control writes "+41" and the spaces, the answer holds the nine
       // digits typed. Paste "+41 79 123 45 67" and it is read as one number, not as
       // a 4 and a 1 followed by seven more.

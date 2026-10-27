@@ -14,13 +14,14 @@
  "properties": {
   "specVersion": {
    "title": "Spec version",
-   "description": "Which version of the document format this form is written against. Independent of the package version. A version is frozen once it is released: a document that validates today will validate against every future release that speaks its version, save one that keys a field or a matrix row `__proto__`, which no release could store an answer under. Each version is a superset of the one before and removes nothing, so a document of an older version is also a valid document of every newer one, and upgrading is a one-line change. The other direction is refused rather than guessed at: a reader that speaks only an older version rejects a document written against a newer one instead of dropping the part it does not know. Version 2 added field types, widgets and layout kinds; version 3 the `signature` field type, the `check` and `skip` rule kinds and the `tagpicker` widget; version 4 the `ranking` and `matrix` field types, the `rating` and `slider` widgets, and the `step`, `mask` and option `image` properties. The default is the newest version, which is the one this package writes.",
-   "default": "4",
+   "description": "Which version of the document format this form is written against. Independent of the package version. A version is frozen once it is released: a document that validates today will validate against every future release that speaks its version, save one that keys a field or a matrix row `__proto__`, which no release could store an answer under. Each version is a superset of the one before and removes nothing, so a document of an older version is also a valid document of every newer one, and upgrading is a one-line change. The other direction is refused rather than guessed at: a reader that speaks only an older version rejects a document written against a newer one instead of dropping the part it does not know. Version 2 added field types, widgets and layout kinds; version 3 the `signature` field type, the `check` and `skip` rule kinds and the `tagpicker` widget; version 4 the `ranking` and `matrix` field types, the `rating` and `slider` widgets, and the `step`, `mask` and option `image` properties; version 5, which is open, a field's `description`. The default is the newest version, which is the one this package writes.",
+   "default": "5",
    "enum": [
     "1",
     "2",
     "3",
-    "4"
+    "4",
+    "5"
    ]
   },
   "id": {
@@ -134,6 +135,11 @@
     "label": {
      "title": "Label",
      "description": "What the person filling the form in reads next to this field, or a reference to it in the message catalogue.",
+     "$ref": "#/$defs/text"
+    },
+    "description": {
+     "title": "Description",
+     "description": "Help text under the question — \"as on your passport\" — read out with the control rather than as part of its name, so the label stays short. On a group, a page or a repeater it is read out with the whole set. Text, or a reference to it in the message catalogue. Needs spec version 5.",
      "$ref": "#/$defs/text"
     }
    },

@@ -1,5 +1,5 @@
 ---
-title: Spec reference (v4)
+title: Spec reference (v5)
 description: Every property of a formancy form document, generated from the JSON Schema in packages/spec.
 ---
 
@@ -9,7 +9,7 @@ the source of truth — edit it, not this page.
 :::
 
 :::note
-This page describes spec version 4. Earlier versions are **frozen**: a
+This page describes spec version 5. Earlier versions are **frozen**: a
 document that validates against one keeps validating. A newer version only adds, and
 a reader of an older one refuses a document it cannot fully understand rather than
 dropping an answer from it. See [Versioning](/docs/concepts/versioning/) for how that
@@ -22,9 +22,9 @@ A formancy form. The document holds the data contract only: what the form collec
 
 ### `specVersion`
 
-required · one of `"1"`, `"2"`, `"3"`, `"4"` · default `"4"`
+required · one of `"1"`, `"2"`, `"3"`, `"4"`, `"5"` · default `"5"`
 
-**Spec version.** Which version of the document format this form is written against. Independent of the package version. A version is frozen once it is released: a document that validates today will validate against every future release that speaks its version, save one that keys a field or a matrix row `__proto__`, which no release could store an answer under. Each version is a superset of the one before and removes nothing, so a document of an older version is also a valid document of every newer one, and upgrading is a one-line change. The other direction is refused rather than guessed at: a reader that speaks only an older version rejects a document written against a newer one instead of dropping the part it does not know. Version 2 added field types, widgets and layout kinds; version 3 the `signature` field type, the `check` and `skip` rule kinds and the `tagpicker` widget; version 4 the `ranking` and `matrix` field types, the `rating` and `slider` widgets, and the `step`, `mask` and option `image` properties. The default is the newest version, which is the one this package writes.
+**Spec version.** Which version of the document format this form is written against. Independent of the package version. A version is frozen once it is released: a document that validates today will validate against every future release that speaks its version, save one that keys a field or a matrix row `__proto__`, which no release could store an answer under. Each version is a superset of the one before and removes nothing, so a document of an older version is also a valid document of every newer one, and upgrading is a one-line change. The other direction is refused rather than guessed at: a reader that speaks only an older version rejects a document written against a newer one instead of dropping the part it does not know. Version 2 added field types, widgets and layout kinds; version 3 the `signature` field type, the `check` and `skip` rule kinds and the `tagpicker` widget; version 4 the `ranking` and `matrix` field types, the `rating` and `slider` widgets, and the `step`, `mask` and option `image` properties; version 5, which is open, a field's `description`. The default is the newest version, which is the one this package writes.
 
 ### `id`
 
@@ -117,6 +117,12 @@ optional · Text (see below)
 
 **Label.** What the person filling the form in reads next to this field, or a reference to it in the message catalogue.
 
+#### `description`
+
+optional · Text (see below)
+
+**Description.** Help text under the question — "as on your passport" — read out with the control rather than as part of its name, so the label stays short. On a group, a page or a repeater it is read out with the whole set. Text, or a reference to it in the message catalogue. Needs spec version 5.
+
 ### Field types
 
 What kind of answer the field collects, or — for a group, a page or a repeater — how it holds the fields inside it. The type decides which control the reader sees and how the answer is stored, so changing it on a live form may leave existing answers unreadable.
@@ -164,6 +170,7 @@ Each item:
 - `renamedFrom` — optional · **Renamed from.** The key this field used to be called. Set it in the same edit that changes the key and the answers already collected follow the field across. The old key must be gone from this form: if a field still uses it, you have made a copy rather than a rename, and the two would fight over the same answers.
 - `clearOnHide` — optional · **Clear when hidden.** What happens to an answer when a rule hides its field. On (the default), the answer is removed from the submission, so a hidden branch cannot carry data. Off, the answer is kept and comes back when the field reappears.
 - `label` — optional · **Label.** What the person filling the form in reads next to this field, or a reference to it in the message catalogue.
+- `description` — optional · **Description.** Help text under the question — "as on your passport" — read out with the control rather than as part of its name, so the label stays short. On a group, a page or a repeater it is read out with the whole set. Text, or a reference to it in the message catalogue. Needs spec version 5.
 
 Every other type is an answer field: a field that collects one answer and holds no other fields.
 
@@ -595,6 +602,7 @@ Each item:
 - `renamedFrom` — optional · **Renamed from.** The key this field used to be called. Set it in the same edit that changes the key and the answers already collected follow the field across. The old key must be gone from this form: if a field still uses it, you have made a copy rather than a rename, and the two would fight over the same answers.
 - `clearOnHide` — optional · **Clear when hidden.** What happens to an answer when a rule hides its field. On (the default), the answer is removed from the submission, so a hidden branch cannot carry data. Off, the answer is kept and comes back when the field reappears.
 - `label` — optional · **Label.** What the person filling the form in reads next to this field, or a reference to it in the message catalogue.
+- `description` — optional · **Description.** Help text under the question — "as on your passport" — read out with the control rather than as part of its name, so the label stays short. On a group, a page or a repeater it is read out with the whole set. Text, or a reference to it in the message catalogue. Needs spec version 5.
 
 ### Fields
 

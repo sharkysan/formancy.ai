@@ -40,12 +40,12 @@ export interface FormSchema {
  * compatible the rest of it looks
  * ([0051](../../../docs/decisions/0051-spec-2-adds-types.md)).
  */
-export const SPEC_VERSIONS = ['1', '2', '3', '4'] as const
+export const SPEC_VERSIONS = ['1', '2', '3', '4', '5'] as const
 
 export type SpecVersion = (typeof SPEC_VERSIONS)[number]
 
 /** What a document gets when nothing says otherwise: the newest this package speaks. */
-export const CURRENT_SPEC_VERSION: SpecVersion = '4'
+export const CURRENT_SPEC_VERSION: SpecVersion = '5'
 
 /** Field types version 1 defines. Everything else needs `specVersion: "2"`. */
 export const SPEC_1_FIELD_TYPES = [
@@ -427,6 +427,12 @@ export interface FieldDef {
    * and inventing a side-channel would be worse than carrying them openly.
    */
   label?: Text
+  /**
+   * Help text under the question, read out with the control — `aria-describedby`, not its
+   * name — so the label stays a label and the explanation does not become every control's
+   * accessible name. On a container it describes the whole set. Spec version 5 (0194).
+   */
+  description?: Text
   options?: FieldOption[]
   /**
    * `matrix` fields: the things the one question is asked of, each a value and a label like

@@ -108,6 +108,11 @@ field is shown because of it. The verdicts are tested to agree with the engine; 
 field in a repeater row is listed, and has no verdict, because it has one per row
 ([0128](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0128-a-form-says-why-a-field-is-hidden.md)).
 
+**Spec version 5 is open**, so far with one property: a field's `description`, help text
+read out with the control rather than as its name, drawn by both renderers, in every theme,
+offered by the builder's panel and extracted for translation ([0194](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0194-spec-5-opens-with-a-fields-description.md)). It is what a new
+document is written in, and it is in no release yet.
+
 **Spec version 4 is frozen**, with two field types, two widgets and three properties
 ([0140](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)). The types are the
 survey constructs that store an answer no other type holds: `ranking`, the order chosen
@@ -170,7 +175,7 @@ holding only what was typed ([0125](https://github.com/sharkysan/formancy.ai/blo
   translator works down a table per language with untranslated messages marked rather
   than shown as their fallback. A message nothing refers to any more is listed and never
   collected ([0084](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0084-a-translation-is-authored-not-imported.md)).
-  One press extracts every text the format has — `Text` appears in exactly four places —
+  One press extracts every text the format has — wherever its schema says a property is text —
   the form is previewed in the language being worked on without editing the document to
   look at it, and a catalogue goes out and comes back as a file carrying the source beside
   every target. Not XLIFF: that is a format with a specification and a namespace, and
@@ -293,13 +298,18 @@ now shipped.
 Roughly in order, and subject to change. The ordering is argued below rather
 than asserted.
 
-1. **XLIFF**, if somebody asks for it. The exchange format is JSON carrying the source
+1. **The rest of version 5**, which is open with a field's `description`
+   ([0194](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0194-spec-5-opens-with-a-fields-description.md)): a field's autofill hint, which WCAG 1.3.5 asks for; a placeholder that never
+   stands in for the label; a default value in the document; the message a `validate` rule
+   shows, written and translated by the author; and a choice's extras — "Other, please specify",
+   an exclusive "None", and options shown in a shuffled order. Each changes what a document may
+   say, which is why they wait for one version together rather than cost a version each; version
+   5 freezes when they are in.
+2. **XLIFF**, if somebody asks for it. The exchange format is JSON carrying the source
    beside every target, which converts to XLIFF in a script; a real XLIFF implementation
    is a specification, a namespace and versions, and half of one is worse than none.
 
-Nothing named here needs a spec version. Version 4 is frozen with the two survey types it
-was opened for, and version 5 opens when something needs it — not before, because an open
-version is a format a document cannot be written against with confidence
+Version 4 is frozen with the two survey types it was opened for
 ([0140](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)).
 
 ### Done since this list was written

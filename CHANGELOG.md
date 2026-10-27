@@ -10,6 +10,18 @@ later.
 
 ## Unreleased
 
+**Spec version 5 is open, with a field's `description`.** Help text had nowhere to go but the
+label, which made every control's accessible name a paragraph. A field, a group, a page or a
+repeater may now carry `description` — text or a catalogue reference — drawn under the question
+by both renderers and Material, named in the control's `aria-describedby` so it is read out after
+the name, resolved in the form's language by the engine, styled in all four themes, offered by
+the builder's property panel and extracted for translation. Version 5 is the version this package
+now writes, and **it is open**: it will gain an autofill hint, a placeholder, a default value, a
+`validate` rule's own message and a choice's extras before it freezes. A version 4 document
+carrying a `description` is refused by name, and a form the builder writes now declares 5, which
+0.7.0 refuses. Translation extraction also picks up an option picture's `alt` and a matrix row's
+label, which it never did ([0194](docs/decisions/0194-spec-5-opens-with-a-fields-description.md)).
+
 **A submission is read back in words.** The admin's submissions tab printed each submission
 as its JSON — `{"country":"CH"}` — which is what the server keeps, not what anybody answered.
 `answersInWords` in `@formancy/core/words` now reads each answer back under its question: a

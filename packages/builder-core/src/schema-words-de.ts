@@ -21,6 +21,9 @@ export const SCHEMA_WORDS_DE: SchemaWords = {
   Label: 'Beschriftung',
   'What the person filling the form in reads next to this field, or a reference to it in the message catalogue.':
     'Was die Person, die das Formular ausfüllt, neben diesem Feld liest – oder ein Verweis darauf im Meldungskatalog.',
+  Description: 'Beschreibung',
+  'Help text under the question — "as on your passport" — read out with the control rather than as part of its name, so the label stays short. On a group, a page or a repeater it is read out with the whole set. Text, or a reference to it in the message catalogue. Needs spec version 5.':
+    'Hilfetext unter der Frage – „wie im Pass“ –, der mit dem Steuerelement vorgelesen wird statt als Teil seines Namens, damit die Beschriftung kurz bleibt. Bei einer Gruppe, einer Seite oder einer Wiederholung wird er mit dem ganzen Satz vorgelesen. Text oder ein Verweis darauf im Meldungskatalog. Braucht Spec-Version 5.',
   'Minimum length': 'Mindestlänge',
   'The shortest answer that counts, in characters.': 'Die kürzeste gültige Antwort, in Zeichen.',
   'Maximum length': 'Höchstlänge',

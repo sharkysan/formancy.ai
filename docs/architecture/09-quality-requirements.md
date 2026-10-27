@@ -53,7 +53,7 @@ formancy
 | Cold graph compile | 30 ms | ≈1.7 ms |
 | `@formancy/core` bundle | 18 kB brotli | **23.9 kB** — over, re-measured 2026-10-26 |
 | `@formancy/spec` bundle | — | 29.7 kB for the whole barrel — the index and the chunk it shares with `/validate`, re-measured 2026-10-26 with `ANSWER_KINDS`, `StoredFile` and `answersTypeScript` |
-| `@formancy/react` bundle | 4 kB brotli | **25.2 kB** for the whole barrel, re-measured 2026-10-26 with every error said through one `ErrorText` ([0191](../decisions/0191-an-error-is-said-not-coded.md)) |
+| `@formancy/react` bundle | 4 kB brotli | **25.4 kB** for the whole barrel, re-measured 2026-10-27 with a field's, a group's and a page's description drawn ([0194](../decisions/0194-spec-5-opens-with-a-fields-description.md)) |
 | `@formancy/core/words` bundle | — | 11.3 kB, the renderers' words in English, German and French — what a sourced control says, every error said, and a submission read back — an entry of its own, re-measured 2026-10-27 |
 | `uqr`, the QR encoder | — | 6.6 kB brotli, **external** rather than bundled, measured 2026-09-27 |
 

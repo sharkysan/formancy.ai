@@ -30,6 +30,9 @@ import { FormancyErrorText } from './error-text.js'
              aria-required, so the engine describes the group by this instead. -->
         <span data-formancy-part="required-hint" [id]="field.snapshot().ids.hint">{{ 'form.required' | formancyText }}</span>
       }
+      @if (field.snapshot().description; as said) {
+        <p data-formancy-part="description" [id]="field.snapshot().ids.description">{{ said }}</p>
+      }
       <div data-formancy-part="matrix" [attr.data-columns]="options().length">
         @for (row of rows(); track row.value) {
           <fieldset data-formancy-part="matrix-row">

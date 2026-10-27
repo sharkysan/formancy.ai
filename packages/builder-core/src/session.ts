@@ -231,9 +231,9 @@ export interface BuilderSession {
   /**
    * Turn every literal in the document into a reference, in one step.
    *
-   * `Text` appears in exactly four places — a field's label, an option's label, a
-   * datagrid column's heading, and a layout node's label — and this reaches all
-   * four. Doing it property by property is a chore people abandon halfway, which
+   * `Text` is wherever the schema says so — a field's label and description, an option's
+   * label and picture, a matrix row, a column heading, a layout node's label — and this
+   * reaches every one. Doing it property by property is a chore people abandon halfway, which
    * leaves a form half translatable and a catalogue that looks finished.
    *
    * The ids it mints need not be stable, which looks wrong and is not: a

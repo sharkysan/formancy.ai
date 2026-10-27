@@ -2707,8 +2707,9 @@ are compared with nothing.
    ([0051](../decisions/0051-spec-2-adds-types.md)) and `"3"`
    ([0088](../decisions/0088-spec-3-freezes-with-four-constructs.md)) are all
    frozen, so stored data written against any of them has a settled shape — and so is
-   `"4"` ([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)), what the source writes and 0.4.0 first releases. It is the
-   software that is still moving; the format is settled in every version it has.
+   `"4"` ([0140](../decisions/0140-spec-4-freezes-with-the-two-types-it-opened-for.md)), which 0.4.0 first releases. Version `"5"` is open and in no
+   release: the source writes it and it may still gain constructs, so characterise against a
+   frozen version ([0194](../decisions/0194-spec-5-opens-with-a-fields-description.md)). Otherwise it is the software that is still moving.
 3. Decide whether automated accessibility checking is sufficient evidence for
    the device's intended users, and plan a manual audit if it is not.
 4. Treat the 118 known CEL corpus failures as a functional limitation to be

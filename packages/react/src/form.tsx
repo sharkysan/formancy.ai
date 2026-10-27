@@ -32,7 +32,7 @@ import { SignatureField } from './fields/signature-field.js'
 import { StaticField } from './fields/static-field.js'
 import { DateField, DateTimeField, TimeField } from './fields/temporal-fields.js'
 import { TextField, TextareaField } from './fields/text-fields.js'
-import { ErrorText, RequiredHint } from './fields/internals.js'
+import { Description, ErrorText, RequiredHint } from './fields/internals.js'
 import type { FieldComponent, FormancyFormProps, Registry } from './fields/internals.js'
 
 /**
@@ -97,6 +97,13 @@ function FlatForm(props: FormancyFormProps) {
   )
 }
 
+/** The current step's help text (0194), under the steps and above its questions. */
+function PageDescription({ page }: { page: number }) {
+  const engine = useFormEngine()
+  const description = engine.text(engine.pages()[page]?.def.description)
+  return description === undefined ? null : <p data-formancy-part="description">{description}</p>
+}
+
 function PagedForm(props: FormancyFormProps) {
   const engine = useFormEngine()
   const text = useFormText()
@@ -121,6 +128,7 @@ function PagedForm(props: FormancyFormProps) {
           ))}
         </ol>
       </nav>
+      <PageDescription page={wizard.page} />
       <FieldList {...props} page={wizard.page} />
       <div data-formancy-part="wizard-nav">
         {wizard.canGoBack ? (
@@ -258,16 +266,25 @@ function GroupSection({
 }) {
   const engine = useFormEngine()
   const headingId = useId()
+  const descriptionId = useId()
   const label = resolveText(engine.schema(), group.def.label, engine.locale())
+  // A group's help text describes the whole set (0194), so the group names it.
+  const description = engine.text(group.def.description)
   return (
     <div
       data-formancy-part="group"
       data-formancy-field-path={path}
       {...(label === undefined ? {} : { role: 'group', 'aria-labelledby': headingId })}
+      {...(description === undefined ? {} : { 'aria-describedby': descriptionId })}
     >
       {label === undefined ? null : (
         <p id={headingId} data-formancy-part="group-heading">
           {label}
+        </p>
+      )}
+      {description === undefined ? null : (
+        <p id={descriptionId} data-formancy-part="description">
+          {description}
         </p>
       )}
       {group.fields.map((wire) => (
@@ -487,6 +504,7 @@ function RepeaterSection({
     >
       <legend data-formancy-part="repeater-legend">{label}</legend>
       <RequiredHint field={field} />
+      <Description field={field} />
       {grid ? (
         // A container inside the fieldset rather than the fieldset itself, so the legend
         // and the Add button do not become grid items.

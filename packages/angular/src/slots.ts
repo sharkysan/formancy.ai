@@ -163,6 +163,9 @@ interface RepeaterRow {
           @if (field.required) {
             <span data-formancy-part="required-hint" [id]="field.ids.hint">{{ 'form.required' | formancyText }}</span>
           }
+          @if (field.description; as said) {
+            <p data-formancy-part="description" [id]="field.ids.description">{{ said }}</p>
+          }
           <!-- The buttons a row carries, written once and used by both arrangements.
                Each one's text sits in its own element so a THEME can clip it and draw a
                mark instead, which is what a grid wants: "Remove recipient 1 of 1" on
@@ -422,9 +425,13 @@ export class FormancyRepeaterSection implements OnInit {
       [attr.data-formancy-field-path]="path()"
       [attr.role]="label() === undefined ? null : 'group'"
       [attr.aria-labelledby]="label() === undefined ? null : headingId"
+      [attr.aria-describedby]="description() === undefined ? null : descriptionId"
     >
       @if (label(); as text) {
         <p [id]="headingId" data-formancy-part="group-heading">{{ text }}</p>
+      }
+      @if (description(); as said) {
+        <p [id]="descriptionId" data-formancy-part="description">{{ said }}</p>
       }
       @for (wire of group().fields; track wire) {
         <formancy-field [path]="wire" [fallbackLabel]="labels()?.[wire]" />
@@ -448,4 +455,7 @@ export class FormancyGroupSection {
     const text = resolveText(this.engine.schema(), this.group().def.label, this.engine.locale())
     return text === '' ? undefined : text
   })
+  /** A group's help text describes the whole set (0194), so the group names it. */
+  protected readonly descriptionId = `${this.headingId}-description`
+  protected readonly description = computed(() => this.engine.text(this.group().def.description))
 }

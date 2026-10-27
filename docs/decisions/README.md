@@ -246,7 +246,7 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0137](0137-a-paged-forms-layout-is-drawn-a-page-at-a-time.md) | A paged form's layout is drawn a page at a time | accepted |
 | [0138](0138-a-ranking-stores-the-order-chosen.md) | A ranking stores the order chosen, starts empty, and is put in order with buttons | accepted; its words, English here, decided by 0171 |
 | [0139](0139-a-matrix-answers-one-question-per-row.md) | A matrix answers one question per row, and stores the rows answered | accepted |
-| [0140](0140-spec-4-freezes-with-the-two-types-it-opened-for.md) | Spec 4 freezes with the two types it was opened for, and nothing opens version 5 yet | accepted |
+| [0140](0140-spec-4-freezes-with-the-two-types-it-opened-for.md) | Spec 4 freezes with the two types it was opened for, and nothing opens version 5 yet | accepted; version 5 opened by 0194 |
 | [0141](0141-the-angular-page-compares-with-no-other-product.md) | The Angular page compares formancy with no other product | accepted; extended to all documentation by 0188 |
 | [0142](0142-the-angular-starter-is-dressed-in-materials-tokens.md) | The Angular starter is dressed in Material's tokens, and loads the face they name | accepted |
 | [0143](0143-the-workbench-dresses-every-part-a-builder-draws.md) | The workbench dresses every part a builder draws | accepted |
@@ -294,3 +294,4 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0191](0191-an-error-is-said-not-coded.md) | An error is said, not coded, and the catalogue says it | accepted |
 | [0192](0192-a-field-can-be-copied-and-its-kind-changed.md) | A field can be duplicated with its rules, and its kind changed with what still applies | accepted |
 | [0193](0193-a-submission-is-read-back-in-words.md) | A submission is read back in words, through the version it was made on | accepted |
+| [0194](0194-spec-5-opens-with-a-fields-description.md) | Spec 5 opens with a field's description, for a batch that lands together | accepted |

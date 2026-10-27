@@ -198,6 +198,9 @@ export class FormancySelectField extends FieldComponentBase {
              after the legend. Visible too, because WCAG 1.4.1. -->
         <span data-formancy-part="required-hint" [id]="field.snapshot().ids.hint">{{ 'form.required' | formancyText }}</span>
       }
+      @if (field.snapshot().description; as said) {
+        <p data-formancy-part="description" [id]="field.snapshot().ids.description">{{ said }}</p>
+      }
       @for (option of options(); track option.value) {
         <span data-formancy-part="radio-option">
           <input

@@ -462,11 +462,11 @@ describe('the spec version 2 freeze', () => {
     ).toEqual([])
   })
 
-  test('and says every version the code speaks is frozen, and none is open', () => {
+  test('and says every version the code speaks is frozen but the newest, which is open', () => {
     // Version 4 was open, and this case said so; it froze with the two types it was opened
-    // for (0140). Read from the code's own list of versions, so a version 5 the code learns
-    // to speak has to arrive with a heading here saying which it is — and while it is open,
-    // this case is where that has to be written down.
+    // for (0140). Version 5 is open (0194), and this is where that is written down: every
+    // version but the newest says FROZEN, the newest says OPEN, and no other does. Read from
+    // the code's own list of versions, so a version 6 has to arrive with a heading too.
     const text = readFileSync(join(repo, 'MIGRATIONS.md'), 'utf8')
     const types = readFileSync(join(repo, 'packages', 'spec', 'src', 'types.ts'), 'utf8')
     const versions = [
@@ -474,10 +474,12 @@ describe('the spec version 2 freeze', () => {
     ].map((match) => match[1]!)
 
     expect(versions.length, 'no versions were read out of the code').toBeGreaterThan(3)
-    for (const version of versions) {
+    const newest = versions[versions.length - 1]!
+    for (const version of versions.slice(0, -1)) {
       expect(text, `version ${version}`).toContain(`## Spec version ${version} is FROZEN`)
     }
-    expect(text).not.toMatch(/^## Spec version \d+ is OPEN/m)
+    expect(text, `version ${newest}`).toContain(`## Spec version ${newest} is OPEN`)
+    expect([...text.matchAll(/^## Spec version (\d+) is OPEN/gm)].map((match) => match[1])).toEqual([newest])
   })
 
   test('says the version is frozen and what a version 1 document may not carry', () => {
