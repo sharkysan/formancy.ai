@@ -10,6 +10,15 @@ later.
 
 ## Unreleased
 
+**A text, long text or number field can show an example of its answer (spec 5).** `placeholder`
+— text or a catalogue reference, in the form's language — is drawn in the empty box by both
+renderers and Material, extracted by the builder for translation, and refused in a version 4
+document. It is an example, **never the label**: it disappears once somebody types and many
+screen readers never announce it, so the label stays required and the property's description
+says what goes where. On a masked field the author's example replaces the `+41 __ ___ __ __`
+shape, which is still drawn when there is none
+([0196](docs/decisions/0196-a-placeholder-is-an-example-never-the-label.md)).
+
 **A field can say what its answer is, for autofill (spec 5).** WCAG 1.3.5 asks a field about the
 person filling the form in to name its purpose, and nothing could. `autocomplete` on a text, long
 text, number, date or choice field — `email`, `given-name`, `postal-code` — is now set on the

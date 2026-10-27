@@ -209,6 +209,11 @@ export function Description({ field }: { field: FieldBinding }) {
   )
 }
 
+/** A field's placeholder in the form's language (0196), resolved by the engine as every text is. */
+export function usePlaceholder(field: FieldBinding): string | undefined {
+  return useFormEngine().text(field.def.placeholder)
+}
+
 /** One option's element id, in the shape the radio group already uses, so a
  *  reader of the DOM meets one convention rather than two. */
 export function optionDomId(field: FieldBinding, value: string): string {

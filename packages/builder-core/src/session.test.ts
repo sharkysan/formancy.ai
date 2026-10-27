@@ -572,7 +572,7 @@ describe('extracting every text in a document', () => {
           label: 'Travellers',
           widget: 'datagrid',
           columns: [{ field: 'name', header: 'Full name' }],
-          fields: [{ key: 'name', type: 'text', label: 'Name' }],
+          fields: [{ key: 'name', type: 'text', label: 'Name', placeholder: 'Anna Muster' }],
         },
       ],
     },
@@ -612,7 +612,7 @@ describe('extracting every text in a document', () => {
 
   // The guard on the guard: a schema read that found nothing would pass every case below.
   test('reads the format’s text properties from its schema', () => {
-    expect([...TEXT_PROPERTIES].sort()).toEqual(['alt', 'description', 'header', 'label'])
+    expect([...TEXT_PROPERTIES].sort()).toEqual(['alt', 'description', 'header', 'label', 'placeholder'])
   })
 
   test('leaves no literal behind, in any place text lives', () => {
@@ -651,6 +651,7 @@ describe('extracting every text in a document', () => {
     expect(said).toContain('Switzerland')
     expect(said).toContain('Full name')
     expect(said).toContain('Where to')
+    expect(said).toContain('Anna Muster')
   })
 
   test('an option keeps its own reference when the options are reordered', () => {

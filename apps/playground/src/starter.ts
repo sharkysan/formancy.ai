@@ -246,7 +246,9 @@ export const STARTER_SCHEMA = {
         ],
       },
 
-      { key: 'notes', type: 'textarea', label: { $t: 'notes' }, maxLength: 500 },
+      // A placeholder (spec 5): an example of the answer, gone as soon as there is one —
+      // which is why what the question asks stays in the label.
+      { key: 'notes', type: 'textarea', label: { $t: 'notes' }, placeholder: { $t: 'notes.example' }, maxLength: 500 },
       // selectboxes: several answers from one list. The answer is the list of
       // values ticked, in the options' own order.
       {

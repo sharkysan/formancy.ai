@@ -70,6 +70,8 @@ export abstract class FieldComponentBase {
   protected readonly field = injectField(this.context.path)
   protected readonly control = computed(() => this.field.snapshot().props.control)
   protected readonly engine = injectEngine()
+  /** The author's example for the empty box, in the form's language (0196); null for none. */
+  protected readonly authoredPlaceholder = computed(() => this.engine.text(this.field.snapshot().def.placeholder) ?? null)
 
   /**
    * Option labels resolved to strings, since a label may be a reference into

@@ -118,6 +118,7 @@ export function translationCommands(core: SessionCore): TranslationCommands {
             const path = at.join('.')
             lift(def as unknown as Record<string, unknown>, 'label', `${path}.label`)
             lift(def as unknown as Record<string, unknown>, 'description', `${path}.description`)
+            lift(def as unknown as Record<string, unknown>, 'placeholder', `${path}.placeholder`)
             for (const option of def.options ?? []) {
               // By VALUE rather than by index: an option's value is its identity,
               // so the id reads as the thing it names rather than as a position.

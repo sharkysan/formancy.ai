@@ -500,6 +500,14 @@ optional · one of `"name"`, `"honorific-prefix"`, `"given-name"`, `"additional-
 
 **Autofill.** What the answer is, in the words browsers and assistive technology share — `email`, `given-name`, `postal-code` — so a browser can fill it in and a person's own tools can mark it, as WCAG 1.3.5 asks of a field that collects information about the person filling the form in. One of the input purposes the standard names, except the password and payment-card ones: a form platform keeps its answers, and storing a card number or a password in a submission is not something to invite. On text, long text, number, date and choice fields. Needs spec version 5.
 
+#### `text`, `textarea`, `number`
+
+##### `placeholder`
+
+optional · Text (see below)
+
+**Placeholder.** An example of the answer, shown in the empty box until somebody types — "079 123 45 67". Never instead of a label: it disappears as soon as there is an answer, and many readers never announce it, so what the question asks belongs in the label and how to answer it in the description. On a masked field it replaces the shape the control would show. Text, or a reference to it in the message catalogue. On text, long text and number fields. Needs spec version 5.
+
 ## Logic rules
 
 Every rule of the form, in one flat list. A rule names the field it applies to; the order here does not matter, because evaluation order comes from what depends on what.
