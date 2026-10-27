@@ -1,0 +1,141 @@
+import { ANSWER_KINDS, resolveText } from '@formancy/spec'
+import type { FieldDef, FieldOption, FormSchema } from '@formancy/spec'
+import type { FormText } from './words.js'
+
+/** One answer, under its question, as a person reads it. */
+export interface SaidAnswer {
+  /** The data path the answer is stored at: `address.city`, `items[1].sku`. */
+  readonly path: string
+  /** The question, and the questions it sits inside: "Address › City", "Items 2 › SKU". */
+  readonly label: string
+  /** The answer in words: an option's label, a date as the reader writes one, a file's name. */
+  readonly said: string
+}
+
+/**
+ * What a submission says, question by question, in document order (0193).
+ *
+ * A stored submission is what the server keeps — `{"country":"CH"}` — and not what anybody
+ * answered: the person chose "Switzerland". Each answer is read back through its own question,
+ * by the shape `ANSWER_KINDS` gives it ([0189](../../../docs/decisions/0189-every-answer-has-the-shape-its-type-says.md)):
+ * a choice by its option's label, a list by its labels joined as the language joins one, a
+ * matrix row by row, a date as the reader writes one, a file by its name.
+ *
+ * **Read against the version the submission was made on**, which is the caller's to supply:
+ * read against another, an answer can belong to a question that no longer exists.
+ *
+ * **What cannot be named is said as stored**, not dropped — an option removed since, a value no
+ * control wrote. A reviewer must see what was submitted, and a blank is not that. An unanswered
+ * question has no line, and a field that collects nothing never has one.
+ *
+ * `text` gives the words around the answers in the form's language, and `locale` the language
+ * the document's own questions and options are read in — its default when not given.
+ */
+export function answersInWords(
+  schema: FormSchema,
+  data: unknown,
+  text: FormText,
+  locale: string = schema.i18n?.defaultLocale ?? '',
+): SaidAnswer[] {
+  const language = text.locale === '' ? 'en-GB' : text.locale
+  const out: SaidAnswer[] = []
+  const labelOf = (def: FieldDef): string => resolveText(schema, def.label, locale) ?? def.key
+  const optionLabel = (options: readonly FieldOption[] | undefined, value: unknown): string => {
+    const option = options?.find((candidate) => candidate.value === value)
+    return option === undefined ? String(value) : (resolveText(schema, option.label, locale) ?? option.value)
+  }
+
+  const visit = (fields: readonly FieldDef[], value: unknown, pathPrefix: string, labelPrefix: string): void => {
+    for (const def of fields) {
+      const { shape } = ANSWER_KINDS[def.type]
+      if (shape === 'page') {
+        visit(def.fields ?? [], value, pathPrefix, labelPrefix)
+        continue
+      }
+      if (shape === 'nothing') continue
+      const held = ownValue(value, def.key)
+      const path = `${pathPrefix}${def.key}`
+      const label = `${labelPrefix}${labelOf(def)}`
+      if (shape === 'group') {
+        visit(def.fields ?? [], held, `${path}.`, `${label} › `)
+        continue
+      }
+      if (shape === 'rows') {
+        if (!Array.isArray(held)) continue
+        held.forEach((row, index) => {
+          const position = text('answer.row', { label, position: index + 1 })
+          visit(def.fields ?? [], row, `${path}[${String(index)}].`, `${position} › `)
+        })
+        continue
+      }
+      if (shape === 'matrix' && isRecord(held)) {
+        for (const row of def.rows ?? []) {
+          const column = ownValue(held, row.value)
+          if (column === undefined || column === null) continue
+          out.push({ path: `${path}.${row.value}`, label: `${label} › ${resolveText(schema, row.label, locale) ?? row.value}`, said: optionLabel(def.options, column) })
+        }
+        continue
+      }
+      const said = sayAnswer(def, held, optionLabel, text, language)
+      if (said !== undefined) out.push({ path, label, said })
+    }
+  }
+  visit(schema.model.fields, data, '', '')
+  return out
+}
+
+/** One answer in words, or `undefined` when there is none to say. */
+function sayAnswer(
+  def: FieldDef,
+  value: unknown,
+  optionLabel: (options: readonly FieldOption[] | undefined, value: unknown) => string,
+  text: FormText,
+  language: string,
+): string | undefined {
+  if (value === undefined || value === null || value === '') return undefined
+  if (Array.isArray(value) && value.length === 0) return undefined
+  switch (ANSWER_KINDS[def.type].shape) {
+    case 'boolean':
+      return typeof value === 'boolean' ? text(value ? 'answer.yes' : 'answer.no') : String(value)
+    case 'number':
+      return typeof value === 'number' ? new Intl.NumberFormat(language).format(value) : String(value)
+    case 'temporal':
+      return typeof value === 'string' ? temporal(def, value, language) : String(value)
+    case 'choice':
+      return optionLabel(def.options, value)
+    case 'choices':
+      return Array.isArray(value) ? list(value.map((item) => optionLabel(def.options, item)), language) : String(value)
+    case 'files':
+      return Array.isArray(value) ? list(value.map((file) => (isRecord(file) && typeof file['name'] === 'string' ? file['name'] : String(file))), language) : String(value)
+    case 'signature':
+      if (isRecord(value) && typeof value['typed'] === 'string') return value['typed']
+      return text('answer.drawnSignature')
+    default:
+      return typeof value === 'string' ? value : JSON.stringify(value)
+  }
+}
+
+/** A date as the reader writes one; a time as it reads everywhere; an instant in UTC, said so. */
+function temporal(def: FieldDef, value: string, language: string): string {
+  if (def.type === 'date' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return new Intl.DateTimeFormat(language, { dateStyle: 'long', timeZone: 'UTC' }).format(new Date(`${value}T00:00:00Z`))
+  }
+  if (def.type === 'datetime' && !Number.isNaN(Date.parse(value))) {
+    const said = new Intl.DateTimeFormat(language, { dateStyle: 'long', timeStyle: 'short', timeZone: 'UTC' }).format(new Date(value))
+    return `${said} UTC`
+  }
+  return value
+}
+
+function list(items: readonly string[], language: string): string {
+  return new Intl.ListFormat(language, { type: 'conjunction' }).format(items)
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+/** An answer the value holds as its own, never one every object inherits (0185). */
+function ownValue(value: unknown, key: string): unknown {
+  return isRecord(value) && Object.hasOwn(value, key) ? value[key] : undefined
+}

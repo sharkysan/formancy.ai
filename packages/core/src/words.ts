@@ -2,6 +2,8 @@ import { FORM_WORDS_DE } from './words-de.js'
 import { FORM_WORDS_FR } from './words-fr.js'
 
 export { errorSentence } from './error-words.js'
+export { answersInWords } from './answers-in-words.js'
+export type { SaidAnswer } from './answers-in-words.js'
 
 /**
  * The renderers' own words: what a form says that its author did not write.
@@ -116,6 +118,15 @@ export const FORM_WORDS = {
   'error.accept': 'Attach a file of one of these types: {accept}.',
   'error.box': 'The signature goes outside its box. Clear it and sign again.',
   'error.maxPoints': 'The signature is too detailed to keep. Clear it and sign again.',
+
+  // ----------------------------------------------------------- a submission, read back
+  // What `answersInWords` says around a submission's answers (0193): not drawn on a form, said
+  // to whoever reads one afterwards.
+  'answer.yes': 'Yes',
+  'answer.no': 'No',
+  'answer.drawnSignature': 'A drawn signature',
+  /** A repeater's row, counted from one: "Items 2". */
+  'answer.row': '{label} {position}',
 
   // -------------------------------------------------------------- a repeater
   /** Only when the document gives the repeater no `addLabel` of its own. */

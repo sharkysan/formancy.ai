@@ -293,3 +293,4 @@ Decision numbers are global across this index, not per section; 0041–0053 and
 | [0190](0190-a-form-has-a-type.md) | A form has a type, printed from the table the engine enforces | accepted |
 | [0191](0191-an-error-is-said-not-coded.md) | An error is said, not coded, and the catalogue says it | accepted |
 | [0192](0192-a-field-can-be-copied-and-its-kind-changed.md) | A field can be duplicated with its rules, and its kind changed with what still applies | accepted |
+| [0193](0193-a-submission-is-read-back-in-words.md) | A submission is read back in words, through the version it was made on | accepted |

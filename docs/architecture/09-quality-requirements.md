@@ -54,7 +54,7 @@ formancy
 | `@formancy/core` bundle | 18 kB brotli | **23.9 kB** — over, re-measured 2026-10-26 |
 | `@formancy/spec` bundle | — | 29.7 kB for the whole barrel — the index and the chunk it shares with `/validate`, re-measured 2026-10-26 with `ANSWER_KINDS`, `StoredFile` and `answersTypeScript` |
 | `@formancy/react` bundle | 4 kB brotli | **25.2 kB** for the whole barrel, re-measured 2026-10-26 with every error said through one `ErrorText` ([0191](../decisions/0191-an-error-is-said-not-coded.md)) |
-| `@formancy/core/words` bundle | — | 9.8 kB, the renderers' words in English, German and French — what a sourced control says, and every error said — an entry of its own, re-measured 2026-10-26 |
+| `@formancy/core/words` bundle | — | 11.3 kB, the renderers' words in English, German and French — what a sourced control says, every error said, and a submission read back — an entry of its own, re-measured 2026-10-27 |
 | `uqr`, the QR encoder | — | 6.6 kB brotli, **external** rather than bundled, measured 2026-09-27 |
 
 The performance gate is written to fail on a regression greater than 15%,
@@ -125,6 +125,12 @@ function that fills one from the field
 renderer for the reason the entry already gave: which one a form is read in is known only when
 it is. The React barrel moved 0.2 kB, for one `ErrorText` where six copies of the error markup
 were.
+
+**A submission read back is in the words entry, and a renderer does not ship it.** 9.8 became
+11.3 kB with `answersInWords` and its four words
+([0193](../decisions/0193-a-submission-is-read-back-in-words.md)). It lives beside the words it
+says its answers with, and no renderer calls it: the package declares `sideEffects: false`, so a
+renderer's bundler leaves it out, and the row is the entry, not what a form pulls.
 
 **The type printer is in the spec's barrel, and a renderer does not ship it.** 28.0 became
 29.7 kB with `answersTypeScript` ([0190](../decisions/0190-a-form-has-a-type.md)): measured

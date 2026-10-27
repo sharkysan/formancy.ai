@@ -44,6 +44,7 @@ const versions = [
 
 const submissions = [
   { id: 's1', submittedAt: '2026-09-20T10:00:00Z', version: 2, data: { email: 'ada@example.ch' } },
+  { id: 's0', submittedAt: '2026-09-19T10:00:00Z', version: 1, data: { email: 'old@example.ch' } },
 ]
 
 /** Every request the workspace makes, and a record of what it sent. */
@@ -228,11 +229,23 @@ describe('the tabs', () => {
 
     await user.click(await screen.findByRole('button', { name: 'submissions' }))
 
-    expect(await screen.findByText(/ada@example.ch/)).toBeTruthy()
+    expect(await screen.findByText('ada@example.ch', { selector: 'dd' })).toBeTruthy()
     // The columns are unioned across schema versions, which is the whole
     // reason the export is a server concern rather than a table dump.
     const link = screen.getByRole('link', { name: /Download CSV/ })
     expect(link.getAttribute('href')).toContain('contact')
+  })
+
+  // A submission read back under its question, not as its JSON (0193) — for the version whose
+  // document the admin has, which is the current one; an older version's stays as stored.
+  test('a submission to the current version is shown question by question', async () => {
+    const stub: Stub = { calls: [] }
+    const user = await openForm(stub)
+    await user.click(await screen.findByRole('button', { name: 'submissions' }))
+
+    const current = (await screen.findByText('ada@example.ch', { selector: 'dd' })).closest('.wb-answers')!
+    expect(within(current as HTMLElement).getByText('Email', { selector: 'dt' })).toBeTruthy()
+    expect(screen.getByText('{"email":"old@example.ch"}', { selector: 'code' })).toBeTruthy()
   })
 
   test('switching away and back does not lose an unpublished edit', async () => {

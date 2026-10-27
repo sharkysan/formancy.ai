@@ -549,6 +549,34 @@ body::before {
   white-space: nowrap;
 }
 
+/* A submission read back question by question (0193): the question muted, the answer as
+   written, and what is stored one disclosure away. */
+.wb-answers dl {
+  display: grid;
+  grid-template-columns: minmax(8rem, max-content) 1fr;
+  gap: 0.25rem 1rem;
+  margin: 0 0 0.5rem;
+}
+
+.wb-answers dl > div {
+  display: contents;
+}
+
+.wb-answers dt {
+  color: #9aa3b8;
+}
+
+.wb-answers dd {
+  margin: 0;
+  word-break: break-word;
+}
+
+.wb-answers summary {
+  cursor: pointer;
+  color: #9aa3b8;
+  font-size: 0.8125rem;
+}
+
 .wb-version {
   padding: 0.0625rem 0.5rem;
   border-radius: 999px;
