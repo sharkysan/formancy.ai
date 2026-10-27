@@ -101,6 +101,21 @@ as an answer, which an empty list cannot: that is also what somebody who skipped
 question leaves. Spec version 5
 ([0199](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0199-an-option-can-be-chosen-only-on-its-own.md)).
 
+A radio group, a list of ticks or a ranking can show its options in a shuffled order, so the
+first is not chosen for being first:
+
+```jsonc
+{ "key": "channel", "type": "radio", "label": "How did you hear of us?", "shuffle": true,
+  "options": [ { "value": "friend", "label": "A friend" }, { "value": "press", "label": "The press" },
+               { "value": "other", "label": "Other", "keepPlace": true } ] }
+```
+
+The engine chooses the order once, from the `random()` it is given — so a shuffled form needs
+`capabilities` even without rules — and keeps it while the form is filled in; an option with
+`keepPlace` stays where it is written. Only presentation: what is ticked is stored in the order
+written above, so two people choosing the same answers store the same list. Spec version 5
+([0200](https://github.com/sharkysan/formancy.ai/blob/main/docs/decisions/0200-options-can-be-shown-in-a-shuffled-order.md)).
+
 An option on a `radio` or `selectboxes` field may carry a picture, which changes
 nothing about the answer:
 

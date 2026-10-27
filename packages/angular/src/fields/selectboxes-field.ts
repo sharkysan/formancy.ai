@@ -150,8 +150,7 @@ export class FormancyTagPickerField extends FieldComponentBase {
   protected add(value: string): void {
     // The options' own order, and an exclusive option alone: the core's one function, as the
     // React binding's (0199).
-    const order = this.options().map((option) => option.value)
-    this.field.setValue(ticked(this.field.snapshot().def, order, this.chosen(), value, true))
+    this.field.setValue(ticked(this.field.snapshot().def, this.chosen(), value, true))
     this.query.set('')
     this.open.set(false)
   }
@@ -267,7 +266,6 @@ export class FormancySelectBoxesField extends FieldComponentBase {
     // Rebuilt in the options' own order rather than the order they were ticked, so two people
     // choosing the same answers store the same array, and an exclusive option ticked alone —
     // the core's one function, so the React binding stores it identically (0199).
-    const order = this.options().map((option) => option.value)
-    this.field.setValue(ticked(this.field.snapshot().def, order, this.chosen(), value, on))
+    this.field.setValue(ticked(this.field.snapshot().def, this.chosen(), value, on))
   }
 }

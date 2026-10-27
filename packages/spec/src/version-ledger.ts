@@ -60,6 +60,7 @@ export const FIELD_PROPERTY_SINCE = {
   autocomplete: 5,
   placeholder: 5,
   default: 5,
+  shuffle: 5,
   options: 1,
   rows: 4,
   optionsSource: { select: 2, selectboxes: 3 },
@@ -89,6 +90,7 @@ export const OPTION_PROPERTY_SINCE = {
   label: 1,
   image: 4,
   exclusive: 5,
+  keepPlace: 5,
 } as const satisfies Record<keyof FieldOption, SpecVersionNumber>
 
 /** A row exists only on a `matrix`, so nothing here is newer than the type that holds it. */

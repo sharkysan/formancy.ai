@@ -65,6 +65,12 @@ export interface FieldSnapshot {
    * nothing.
    */
   messages: Readonly<Record<string, string>>
+  /**
+   * The order a shuffled field's options are shown in, chosen once from the engine's `random()`
+   * and kept for its life; undefined for options shown as written (0200). Presentation only:
+   * `inOptionOrder` applies it to what a renderer draws, and nothing stored follows it.
+   */
+  optionOrder: readonly string[] | undefined
   /** The model definition, verbatim — renderers read options and extras from it. */
   def: FieldDef
   ids: FieldIds

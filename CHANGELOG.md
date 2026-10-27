@@ -10,6 +10,15 @@ later.
 
 ## Unreleased
 
+**Options can be shown in a shuffled order (spec 5).** `shuffle` on a radio group, a list of ticks or a
+ranking shows the options in an order the engine chooses once, from the `random()` it is given, and
+keeps for its life; an option with `keepPlace` — "None of these", "Other" — stays where it is written.
+The order is on the snapshot as `optionOrder`, applied by every renderer with `inOptionOrder`, and
+**nothing stored follows it**: `ticked` now orders by the options as written, so it takes no order
+argument. A host rendering a shuffled form must pass `capabilities`, even with no rules; without them
+the engine refuses the form, naming `random()`. Refused on a dropdown and a matrix, whose order is
+their meaning ([0200](docs/decisions/0200-options-can-be-shown-in-a-shuffled-order.md)).
+
 **A list of ticks can say "none" (spec 5).** An option marked `exclusive` — "None of these",
 "Prefer not to say" — is chosen alone or not at all: ticking it clears the others, ticking another
 clears it, and the engine refuses a list holding it with anything else, as `exclusive`, so the server

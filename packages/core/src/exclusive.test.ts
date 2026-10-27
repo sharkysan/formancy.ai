@@ -42,23 +42,21 @@ describe('an exclusive option', () => {
 })
 
 describe('a tick', () => {
-  const order = ['nuts', 'milk', 'none', 'unsaid']
-
   // In the options' own order, as before: two people choosing the same answers store the
   // same array.
   test('adds the option in the options’ order, and unticking takes it out', () => {
-    expect(ticked(allergies, order, ['milk'], 'nuts', true)).toEqual(['nuts', 'milk'])
-    expect(ticked(allergies, order, ['nuts', 'milk'], 'nuts', false)).toEqual(['milk'])
+    expect(ticked(allergies, ['milk'], 'nuts', true)).toEqual(['nuts', 'milk'])
+    expect(ticked(allergies, ['nuts', 'milk'], 'nuts', false)).toEqual(['milk'])
   })
 
   // What the person meant by ticking "None" is that nothing else applies.
   test('on an exclusive option clears every other, an exclusive one included', () => {
-    expect(ticked(allergies, order, ['nuts', 'milk'], 'none', true)).toEqual(['none'])
-    expect(ticked(allergies, order, ['none'], 'unsaid', true)).toEqual(['unsaid'])
+    expect(ticked(allergies, ['nuts', 'milk'], 'none', true)).toEqual(['none'])
+    expect(ticked(allergies, ['none'], 'unsaid', true)).toEqual(['unsaid'])
   })
 
   // And ticking something after "None" means "None" no longer holds.
   test('on any other clears the exclusive ones', () => {
-    expect(ticked(allergies, order, ['none'], 'milk', true)).toEqual(['milk'])
+    expect(ticked(allergies, ['none'], 'milk', true)).toEqual(['milk'])
   })
 })

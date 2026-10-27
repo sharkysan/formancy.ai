@@ -81,7 +81,7 @@ export function TagPickerField({ path, label }: FieldComponentProps) {
   const add = (value: string): void => {
     // In the options' own order, and an exclusive option alone (0199): the core's, as the
     // list of ticks below and both of Angular's are.
-    field.setValue(ticked(field.def, options.map((option) => option.value), chosen, value, true))
+    field.setValue(ticked(field.def, chosen, value, true))
     setQuery('')
     setOpen(false)
   }
@@ -204,7 +204,7 @@ export function SelectBoxesField({ path, label }: FieldComponentProps) {
     // people choosing the same answers store the same array — and an exclusive option is
     // ticked alone, by the core's one function, so no control stores what the engine
     // refuses (0199).
-    field.setValue(ticked(field.def, options.map((option) => option.value), chosen, value, on))
+    field.setValue(ticked(field.def, chosen, value, on))
   }
 
   return (

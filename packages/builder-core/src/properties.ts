@@ -56,6 +56,11 @@ export interface EditableProperty {
    */
   exclusive?: boolean
   /**
+   * For `options`: whether a choice may keep its place when the options are shuffled — where
+   * they can be: a radio group, a list of ticks and a ranking (0200).
+   */
+  keepPlace?: boolean
+  /**
    * For `options`: which list it is — a field's choices, or a matrix's rows, which have the
    * same shape and need their own words: an editor headed "Choices" over the rows, adding
    * "New choice", would name the wrong thing (0139).
@@ -72,6 +77,9 @@ export interface EditableProperty {
  * field. `renamedFrom` is written by the session, never by a person.
  */
 const NOT_OURS = new Set(['key', 'type', 'fields', 'renamedFrom'])
+
+/** The types whose options may be shuffled, which the schema's `shuffle` branch names (0200). */
+const SHUFFLED_TYPES = new Set(['radio', 'selectboxes', 'ranking'])
 
 interface JsonSchemaNode {
   title?: string
@@ -223,7 +231,7 @@ export function editablePropertiesFor(
     inLanguage(
       // A row never carries a picture; a choice may, where the field draws one.
       property.kind === 'options'
-        ? { ...property, pictures: property.list === 'options' && pictures, exclusive: property.list === 'options' && type === 'selectboxes' }
+        ? { ...property, pictures: property.list === 'options' && pictures, exclusive: property.list === 'options' && type === 'selectboxes', keepPlace: property.list === 'options' && SHUFFLED_TYPES.has(type) }
         : property,
       text,
     ),

@@ -176,6 +176,7 @@ export function PropertyField({
         text={text}
         pictures={property.pictures === true}
         exclusive={property.exclusive === true}
+        keepPlace={property.keepPlace === true}
         list={property.list ?? 'options'}
         onChange={(next) => onChange(next.length === 0 ? undefined : next)}
       />

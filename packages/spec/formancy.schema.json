@@ -1039,6 +1039,28 @@
        }
       }
      }
+    },
+    {
+     "if": {
+      "properties": {
+       "type": {
+        "enum": [
+         "radio",
+         "selectboxes",
+         "ranking"
+        ]
+       }
+      }
+     },
+     "then": {
+      "properties": {
+       "shuffle": {
+        "title": "Shuffled order",
+        "description": "Shows the options in an order of their own for each person who opens the form, so the first is not chosen for being first. Options that keep their place — \"None of these\", \"Other\" — stay where they are written. Presentation only: the answer is the same values, stored in the options' written order. On a radio group, a list of ticks and a ranking; a dropdown's order is how a long list is searched, and a matrix's columns are a scale. Needs spec version 5.",
+        "type": "boolean"
+       }
+      }
+     }
     }
    ],
    "unevaluatedProperties": false
@@ -1401,6 +1423,11 @@
     "exclusive": {
      "title": "Only on its own",
      "description": "For a list of ticks: this option is chosen alone or not at all — \"None of these\", \"Prefer not to say\". Ticking it clears the others, ticking another clears it, and an answer holding it with anything else is refused, on the server too. On a list of ticks only: in a radio group or a dropdown every option already is. Needs spec version 5.",
+     "type": "boolean"
+    },
+    "keepPlace": {
+     "title": "Keeps its place",
+     "description": "When the options are shuffled, this one stays where it is written — \"None of these\" last, \"Other\" after the rest. Needs spec version 5.",
      "type": "boolean"
     }
    }

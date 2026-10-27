@@ -2,6 +2,7 @@ import { Fragment } from 'react'
 import type { ComponentType, ReactNode } from 'react'
 import { isImageSource } from '@formancy/spec'
 import type { FieldDef, FieldType } from '@formancy/spec'
+import { inOptionOrder } from '@formancy/core'
 import { errorSentence } from '@formancy/core/words'
 import { useFormEngine, useFormText } from '../context.js'
 import { useField } from '../use-field.js'
@@ -234,15 +235,16 @@ export interface ResolvedOption {
  * rather than blank. A picture from somewhere the format does not allow is left
  * out, by the same test the Angular binding makes (0126).
  */
-export function useResolvedOptions(field: { def: FieldDef }): ResolvedOption[] {
+export function useResolvedOptions(field: { def: FieldDef; optionOrder?: readonly string[] | undefined }): ResolvedOption[] {
   const engine = useFormEngine()
-  return (field.def.options ?? []).map((option) => ({
+  // In the order the engine chose for a shuffled field, and as written otherwise (0200).
+  return inOptionOrder((field.def.options ?? []).map((option) => ({
     value: option.value,
     label: engine.text(option.label) ?? option.value,
     ...(option.image !== undefined && isImageSource(option.image.src)
       ? { image: { src: option.image.src, alt: engine.text(option.image.alt) ?? '' } }
       : {}),
-  }))
+  })), field.optionOrder)
 }
 
 /**

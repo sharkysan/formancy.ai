@@ -259,6 +259,7 @@ export const BUILDER_MESSAGES_FR = {
   'options.image': 'Adresse de l’image',
   'options.imageAlt': 'Ce que montre l’image',
   'options.exclusive': 'Uniquement seule',
+  'options.keepPlace': 'Garde sa place quand l’ordre est mélangé',
   'list.remove': 'Supprimer',
   'columns.heading': 'Colonnes',
   'columns.empty':

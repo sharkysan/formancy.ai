@@ -6,13 +6,9 @@ import type { FieldDef } from '@formancy/spec'
  * with one JSDoc line below: the bundler keeps JSDoc (§9.3).
  */
 /** A list of ticks after one tick, in the options' order; an exclusive option is chosen alone. */
-export function ticked(
-  def: FieldDef,
-  order: readonly string[],
-  chosen: readonly unknown[],
-  value: string,
-  on: boolean,
-): string[] {
+export function ticked(def: FieldDef, chosen: readonly unknown[], value: string, on: boolean): string[] {
+  // The written order, never the order a shuffled list is shown in (0200).
+  const order = (def.options ?? []).map((option) => option.value)
   const exclusive = new Set((def.options ?? []).filter((option) => option.exclusive === true).map((option) => option.value))
   const kept = (candidate: string): boolean => {
     if (candidate === value) return on

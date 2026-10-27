@@ -299,6 +299,26 @@ describe('a choice chosen only on its own (0199)', () => {
   })
 })
 
+describe('a choice that keeps its place (0200)', () => {
+  // Where the options can be shuffled, so "Other" stays after the rest.
+  test('can be set on a radio group, and taken off again leaves no flag', async () => {
+    const user = userEvent.setup()
+    const session = createBuilderSession({
+      specVersion: '5',
+      id: 'survey',
+      title: 'Survey',
+      model: { fields: [{ key: 'channel', type: 'radio', label: 'Channel', shuffle: true, options: [{ value: 'other', label: 'Other' }] }] },
+    } as FormSchema)
+    render(<PropertyPanel session={session} keyPath={['channel']} />)
+    const options = () => (session.document().model.fields[0] as unknown as Record<string, unknown>)['options']
+
+    await user.click(screen.getByRole('checkbox', { name: 'Keeps its place when shuffled' }))
+    expect(options()).toEqual([{ value: 'other', label: 'Other', keepPlace: true }])
+    await user.click(screen.getByRole('checkbox', { name: 'Keeps its place when shuffled' }))
+    expect(options()).toEqual([{ value: 'other', label: 'Other' }])
+  })
+})
+
 describe('a matrix in the property panel', () => {
   /*
    * Its rows are value/label pairs like choices, and they arrived as a text box asking for

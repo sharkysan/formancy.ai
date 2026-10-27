@@ -51,6 +51,11 @@ it ([0051](docs/decisions/0051-spec-2-adds-types.md)).
   with anything else is refused with the new code `exclusive`. On any other kind of field it is
   refused (`option.exclusiveNotAList`); a version 4 document carrying one is refused, naming the
   property ([0199](docs/decisions/0199-an-option-can-be-chosen-only-on-its-own.md)).
+- `shuffle` on a `radio`, `selectboxes` or `ranking` field, and `keepPlace` on an option — shown in an
+  order the engine chooses once from the injected `random()`, the anchored options where they are
+  written. Presentation only; answers are stored in the written order. A shuffled form needs a
+  capabilities source. A version 4 document carrying either is refused, naming the property
+  ([0200](docs/decisions/0200-options-can-be-shown-in-a-shuffled-order.md)).
 
 ## Spec version 4 is FROZEN
 

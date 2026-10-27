@@ -188,6 +188,7 @@ Each item:
 - `label` — required · **Label.** What the person choosing reads.
 - `image` — optional · **Image.** A picture shown with this option, on radio buttons and checkboxes — never in a dropdown, as a chip, in a ranking or in a matrix, which cannot show one, so the document is refused if it asks. The label still names the option and is what is announced; the picture is beside it. Needs spec version 4.
 - `exclusive` — optional · **Only on its own.** For a list of ticks: this option is chosen alone or not at all — "None of these", "Prefer not to say". Ticking it clears the others, ticking another clears it, and an answer holding it with anything else is refused, on the server too. On a list of ticks only: in a radio group or a dropdown every option already is. Needs spec version 5.
+- `keepPlace` — optional · **Keeps its place.** When the options are shuffled, this one stays where it is written — "None of these" last, "Other" after the rest. Needs spec version 5.
 
 #### `repeater`
 
@@ -541,6 +542,14 @@ optional · array
 
 **Default.** The answer this field starts with in a new form — "CH", 2, true, or the options a list of ticks starts ticked. An answer like any other: it is submitted unless somebody changes it, so make it the answer most people give, never a guess for them to correct. Stored as written, and not translated. A new row starts with it, and so does a field shown again after a rule hid and cleared it; a resumed draft, a prefill and the server's replay of a submission start as they were handed in. The form refuses to open with one the field itself would refuse — not an option, out of bounds, the wrong shape. On text, long text, hidden, number, tick box, date, time, date and time, and choice fields. Needs spec version 5.
 
+#### `radio`, `selectboxes`, `ranking`
+
+##### `shuffle`
+
+optional · boolean
+
+**Shuffled order.** Shows the options in an order of their own for each person who opens the form, so the first is not chosen for being first. Options that keep their place — "None of these", "Other" — stay where they are written. Presentation only: the answer is the same values, stored in the options' written order. On a radio group, a list of ticks and a ranking; a dropdown's order is how a long list is searched, and a matrix's columns are a scale. Needs spec version 5.
+
 ## Logic rules
 
 Every rule of the form, in one flat list. A rule names the field it applies to; the order here does not matter, because evaluation order comes from what depends on what.
@@ -704,6 +713,12 @@ optional · object
 optional · boolean
 
 **Only on its own.** For a list of ticks: this option is chosen alone or not at all — "None of these", "Prefer not to say". Ticking it clears the others, ticking another clears it, and an answer holding it with anything else is refused, on the server too. On a list of ticks only: in a radio group or a dropdown every option already is. Needs spec version 5.
+
+#### `keepPlace`
+
+optional · boolean
+
+**Keeps its place.** When the options are shuffled, this one stays where it is written — "None of these" last, "Other" after the rest. Needs spec version 5.
 
 ### Message reference
 

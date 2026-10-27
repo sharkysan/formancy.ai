@@ -838,6 +838,12 @@ a non-list (`type`) in client and server mode alike, and the document refuses tw
 sharing a value. Tested in `packages/core/src/ranking.test.ts` in both modes, and in both
 renderers by the conformance fixture for rankings.
 
+A shuffled ranking shows the options to choose from in an order of the engine's choosing
+([0200](../decisions/0200-options-can-be-shown-in-a-shuffled-order.md)); what is stored is still only what the person ranked, in
+their order. A shuffled list of ticks stores its answers in the options' written order, never
+the order shown, so two people choosing the same answers store the same list. Verified by
+`packages/core/src/shuffle.test.ts` and each renderer's `shuffle.test`.
+
 *Residual:* **a partial ranking is an answer.** Without `minItems`, a person who ranks one of
 five options has answered, and nothing distinguishes "the other four do not matter" from
 "stopped halfway". A form that needs a complete order must set `minItems` to the number of

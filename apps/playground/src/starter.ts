@@ -258,13 +258,17 @@ export const STARTER_SCHEMA = {
         key: 'extras',
         type: 'selectboxes',
         label: { $t: 'extras' },
+        // A shuffled order (spec 5): each engine shows these in an order of its own, from the
+        // random() it is given — so the two previews may differ — with "Nothing extra" kept
+        // last. What is ticked is stored in the order written here.
+        shuffle: true,
         options: [
           { value: 'giftwrap', label: { $t: 'extras.giftwrap' } },
           { value: 'insurance', label: { $t: 'extras.insurance' } },
           { value: 'signature', label: { $t: 'extras.signature' } },
           // Chosen alone or not at all (spec 5): ticking it clears the rest, ticking another
           // clears it, and the server refuses an answer holding it with anything else.
-          { value: 'nothing', label: { $t: 'extras.nothing' }, exclusive: true },
+          { value: 'nothing', label: { $t: 'extras.nothing' }, exclusive: true, keepPlace: true },
         ],
       },
       // `widget: 'tagpicker'` on a selectboxes: several answers narrowed by typing

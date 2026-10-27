@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core'
+import { inOptionOrder } from '@formancy/core'
 import { isImageSource } from '@formancy/spec'
 import type { FieldOption } from '@formancy/spec'
 import { injectField } from '../field.js'
@@ -85,7 +86,8 @@ export abstract class FieldComponentBase {
   protected readonly options = computed<
     ReadonlyArray<{ value: string; label: string; image?: { src: string; alt: string } }>
   >(() =>
-    (this.field.snapshot().def.options ?? []).map((option: FieldOption) => ({
+    // In the order the engine chose for a shuffled field, and as written otherwise (0200).
+    inOptionOrder((this.field.snapshot().def.options ?? []).map((option: FieldOption) => ({
       value: option.value,
       label: this.engine.text(option.label) ?? option.value,
       ...(option.image !== undefined && isImageSource(option.image.src)
@@ -96,7 +98,7 @@ export abstract class FieldComponentBase {
             },
           }
         : {}),
-    })),
+    })), this.field.snapshot().optionOrder),
   )
 
   /**

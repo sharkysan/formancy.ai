@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
 import type { FieldOption } from '@formancy/spec'
-import { createBuilderText, LIST_WORDS, nextChoice, withExclusive, withPicture } from '@formancy/builder-core'
+import { createBuilderText, LIST_WORDS, nextChoice, withFlag, withPicture } from '@formancy/builder-core'
 import type { BuilderText } from '@formancy/builder-core'
 
 /**
@@ -35,6 +35,11 @@ export interface OptionsEditorProps {
    * builder-core decides: a list of ticks only (0199).
    */
   exclusive?: boolean
+  /**
+   * Whether a choice may keep its place when the options are shuffled —
+   * `EditableProperty.keepPlace`: a radio group, a list of ticks or a ranking (0200).
+   */
+  keepPlace?: boolean
 }
 
 const ENGLISH = createBuilderText()
@@ -46,6 +51,7 @@ export function OptionsEditor({
   text = ENGLISH,
   pictures = false,
   exclusive = false,
+  keepPlace = false,
 }: OptionsEditorProps): ReactElement {
   const id = useId()
 
@@ -153,9 +159,20 @@ export function OptionsEditor({
                   <input
                     type="checkbox"
                     checked={option.exclusive === true}
-                    onChange={(event) => put(index, withExclusive(option, event.target.checked))}
+                    onChange={(event) => put(index, withFlag(option, 'exclusive', event.target.checked))}
                   />
                   {text('options.exclusive')}
+                </label>
+              ) : null}
+
+              {keepPlace ? (
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={option.keepPlace === true}
+                    onChange={(event) => put(index, withFlag(option, 'keepPlace', event.target.checked))}
+                  />
+                  {text('options.keepPlace')}
                 </label>
               ) : null}
 
